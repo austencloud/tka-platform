@@ -43,8 +43,8 @@ export interface Scene3DSnapshot {
     prop: string;
     effortId: string;
     planeMode: string;
-    customBluePlane: string;
-    customRedPlane: string;
+    customLeftPlane: string;
+    customRightPlane: string;
   };
   visiblePlanes: string[];
   showGridLabels: boolean;
@@ -54,7 +54,7 @@ export interface Scene3DSnapshot {
   stageGroundOffset: number;
   effectToggles: Record<string, boolean>;
   sceneFeatures: Record<string, boolean>;
-  props: { bluePropType?: string; redPropType?: string };
+  props: { leftPropType?: string; rightPropType?: string };
   /** Playback tempo at save time. Absent when the playback seam was
    *  unavailable (v1 snapshots, or capture outside the viewer). */
   bpm?: number;
@@ -73,8 +73,8 @@ export interface StoredPerformerSettings {
 export interface StoredPerformerSnapshot {
   position: { x: number; z: number };
   facingAngle: number;
-  customBluePlane: string;
-  customRedPlane: string;
+  customLeftPlane: string;
+  customRightPlane: string;
   name?: string | null;
   /** Absent = no overrides (v1 snapshots). */
   settings?: StoredPerformerSettings;
@@ -109,8 +109,8 @@ const StoredPerformerSettingsSchema = z.object({
 const StoredPerformerSnapshotSchema = z.object({
   position: z.object({ x: z.number(), z: z.number() }),
   facingAngle: z.number(),
-  customBluePlane: z.string(),
-  customRedPlane: z.string(),
+  customLeftPlane: z.string(),
+  customRightPlane: z.string(),
   name: z.string().nullable().optional(),
   settings: StoredPerformerSettingsSchema.optional(),
 });
@@ -138,8 +138,8 @@ export const Scene3DSnapshotSchema = z.object({
     prop: z.string(),
     effortId: z.string(),
     planeMode: z.string(),
-    customBluePlane: z.string(),
-    customRedPlane: z.string(),
+    customLeftPlane: z.string(),
+    customRightPlane: z.string(),
   }),
   visiblePlanes: z.array(z.string()),
   showGridLabels: z.boolean(),
@@ -150,8 +150,8 @@ export const Scene3DSnapshotSchema = z.object({
   effectToggles: z.record(z.string(), z.boolean()),
   sceneFeatures: z.record(z.string(), z.boolean()),
   props: z.object({
-    bluePropType: z.string().optional(),
-    redPropType: z.string().optional(),
+    leftPropType: z.string().optional(),
+    rightPropType: z.string().optional(),
   }),
   bpm: z.number().optional(),
   groups: GroupsSchema.optional(),

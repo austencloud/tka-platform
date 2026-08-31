@@ -171,8 +171,8 @@ async function run() {
   });
   if (flags.prop) {
     const propConfig = {
-      bluePropType: flags.prop,
-      redPropType: flags.prop,
+      leftPropType: flags.prop,
+      rightPropType: flags.prop,
       catDogMode: false,
     };
     built.data.intendedProp = propConfig;

@@ -41,8 +41,8 @@ const projectRoot = path.resolve(
 // difference is exercised. Motions are loose (the hasher only reads the listed
 // fields).
 function makeFixture(overrides?: {
-  blueReversal?: boolean;
-  redReversal?: boolean;
+  leftReversal?: boolean;
+  rightReversal?: boolean;
   stepGridMode?: string;
   blueTurns?: number;
 }): SequenceData {
@@ -59,7 +59,7 @@ function makeFixture(overrides?: {
     skewSteps: null,
     skewDir: null,
   });
-  const step = (n: number, blueRev: boolean, redRev: boolean) => ({
+  const step = (n: number, leftRev: boolean, rightRev: boolean) => ({
     id: `s${n}`,
     letter: "A",
     startPosition: "alpha1",
@@ -67,12 +67,12 @@ function makeFixture(overrides?: {
     stepNumber: n,
     duration: 1,
     isBlank: false,
-    blueReversal: blueRev,
-    redReversal: redRev,
+    leftReversal: leftRev,
+    rightReversal: rightRev,
     gridMode: overrides?.stepGridMode ?? "diamond",
     motions: {
-      blue: motion("cw", overrides?.blueTurns ?? 0),
-      red: motion("cw", 0),
+      left: motion("cw", overrides?.blueTurns ?? 0),
+      right: motion("cw", 0),
     },
   });
   return {
@@ -82,7 +82,7 @@ function makeFixture(overrides?: {
     startPosition: null,
     steps: [
       step(1, false, false),
-      step(2, overrides?.blueReversal ?? false, overrides?.redReversal ?? false),
+      step(2, overrides?.leftReversal ?? false, overrides?.rightReversal ?? false),
     ],
   } as unknown as SequenceData;
 }
@@ -93,8 +93,8 @@ describe("content-hash V2 — fork-proof contract", () => {
   });
 
   it("V1 includes reversal flags; V2 ignores them (FORK-PROOF for reversals)", async () => {
-    const base = makeFixture({ blueReversal: false });
-    const flipped = makeFixture({ blueReversal: true });
+    const base = makeFixture({ leftReversal: false });
+    const flipped = makeFixture({ leftReversal: true });
 
     const v1Base = await computeHash(base, HASH_VERSION_V1);
     const v1Flip = await computeHash(flipped, HASH_VERSION_V1);
@@ -132,12 +132,12 @@ describe("content-hash V2 — fork-proof contract", () => {
   });
 
   it("default computeHash() == explicit V2 (active basis is now V2)", async () => {
-    const seq = makeFixture({ blueReversal: true });
+    const seq = makeFixture({ leftReversal: true });
     expect(await computeHash(seq)).toBe(await computeHash(seq, HASH_VERSION_V2));
   });
 
   it("V1 byte-stability lock (golden) — fork detection depends on this never drifting", async () => {
-    const seq = makeFixture({ blueReversal: true, redReversal: false });
+    const seq = makeFixture({ leftReversal: true, rightReversal: false });
     // Locked V1 hash of the fixture. If this changes, V1 hashing drifted and
     // every stored contentHash in the corpus would be invalidated.
     expect(await computeHash(seq, HASH_VERSION_V1)).toBe(
@@ -152,9 +152,9 @@ interface RawDoc {
   isCircular?: boolean;
   gridMode?: string;
   startPosition?: unknown;
-  blueSoloProp?: { steps: unknown[] };
-  redSoloProp?: { steps: unknown[] };
-  stepPairings?: Array<{ letter: string | null; blueReversal?: boolean; redReversal?: boolean }>;
+  leftSoloProp?: { steps: unknown[] };
+  rightSoloProp?: { steps: unknown[] };
+  stepPairings?: Array<{ letter: string | null; leftReversal?: boolean; rightReversal?: boolean }>;
 }
 
 function loadCorpus(): RawDoc[] {
@@ -164,7 +164,7 @@ function loadCorpus(): RawDoc[] {
   );
   const parsed = JSON.parse(readFileSync(file, "utf8")) as { documents: RawDoc[] };
   return parsed.documents.filter(
-    (d) => d.blueSoloProp?.steps?.length && d.redSoloProp?.steps?.length && d.stepPairings?.length
+    (d) => d.leftSoloProp?.steps?.length && d.rightSoloProp?.steps?.length && d.stepPairings?.length
   );
 }
 
@@ -173,8 +173,8 @@ function loadCorpus(): RawDoc[] {
 // flags and gridMode (the derived fields V2 drops). Two docs with the same
 // fingerprint are the SAME physical sequence — merging them is correct dedup.
 function motionFingerprint(doc: RawDoc): string {
-  const bp = (doc.blueSoloProp?.steps ?? []) as Record<string, unknown>[];
-  const rp = (doc.redSoloProp?.steps ?? []) as Record<string, unknown>[];
+  const bp = (doc.leftSoloProp?.steps ?? []) as Record<string, unknown>[];
+  const rp = (doc.rightSoloProp?.steps ?? []) as Record<string, unknown>[];
   const sp = doc.stepPairings ?? [];
   const m = (s: Record<string, unknown> | undefined) =>
     s
@@ -192,8 +192,8 @@ function motionFingerprint(doc: RawDoc): string {
 function toSequence(doc: RawDoc): SequenceData | null {
   try {
     const steps = deriveSteps(
-      doc.blueSoloProp as never,
-      doc.redSoloProp as never,
+      doc.leftSoloProp as never,
+      doc.rightSoloProp as never,
       doc.stepPairings as never
     );
     return {

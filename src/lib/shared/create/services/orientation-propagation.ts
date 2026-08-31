@@ -12,7 +12,7 @@ import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/mo
 import type {
   Orientation} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
-  MotionColor
+  HandSide
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 
@@ -22,7 +22,7 @@ import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/or
  */
 export function propagateOrientationsForColor(
   steps: StepData[],
-  color: MotionColor,
+  color: HandSide,
   initialOrientation: Orientation
 ): StepData[] {
   const updatedSteps = [...steps];
@@ -78,26 +78,26 @@ export function recalculateAllOrientations(
 
   const startPosition = sequence.startPosition;
   let updatedSteps = [...sequence.steps];
-  const blueStartMotion = startPosition.motions[MotionColor.BLUE];
-  const redStartMotion = startPosition.motions[MotionColor.RED];
+  const leftStartMotion = startPosition.motions[HandSide.LEFT];
+  const rightStartMotion = startPosition.motions[HandSide.RIGHT];
 
   // Recalculate orientations for blue prop
-  if (blueStartMotion) {
-    const blueStartOrientation = blueStartMotion.endOrientation;
+  if (leftStartMotion) {
+    const leftStartOrientation = leftStartMotion.endOrientation;
     updatedSteps = propagateOrientationsForColor(
       updatedSteps,
-      MotionColor.BLUE,
-      blueStartOrientation
+      HandSide.LEFT,
+      leftStartOrientation
     );
   }
 
   // Recalculate orientations for red prop
-  if (redStartMotion) {
-    const redStartOrientation = redStartMotion.endOrientation;
+  if (rightStartMotion) {
+    const rightStartOrientation = rightStartMotion.endOrientation;
     updatedSteps = propagateOrientationsForColor(
       updatedSteps,
-      MotionColor.RED,
-      redStartOrientation
+      HandSide.RIGHT,
+      rightStartOrientation
     );
   }
 

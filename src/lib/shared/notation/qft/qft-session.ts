@@ -36,8 +36,8 @@ export interface QftSessionHand {
 export interface QftSession {
   entered: boolean;
   handCount: QftHandCount;
-  blue: QftSessionHand;
-  red: QftSessionHand;
+  left: QftSessionHand;
+  right: QftSessionHand;
   /** Whole-app rotation in compass eighths. */
   originPhase: number;
   vtgMode: VtgMode;
@@ -147,8 +147,8 @@ function readV3(raw: unknown): QftSession | null {
   return {
     entered: session.entered === true,
     handCount: session.handCount === "one" ? "one" : "two",
-    blue: readHand(session.blue, DEFAULT_BLUE),
-    red: readHand(session.red, DEFAULT_RED),
+    left: readHand(session.left, DEFAULT_BLUE),
+    right: readHand(session.right, DEFAULT_RED),
     originPhase: normalizedPhase(session.originPhase),
     vtgMode: MODE_ORDER.includes(session.vtgMode as VtgMode)
       ? (session.vtgMode as VtgMode)
@@ -199,17 +199,17 @@ function readV2(raw: unknown): QftSession | null {
         ? legacyInstrumentSource(session)
         : {
             kind: "flower",
-            index: Math.floor(num(session.blueIndex, 0, AXIS_LENGTH - 1, 6)),
+            index: Math.floor(num(session.leftIndex, 0, AXIS_LENGTH - 1, 6)),
           };
 
   return {
     entered: session.entered === undefined ? true : session.entered === true,
     handCount: appMode === "matrix" ? "two" : "one",
-    blue: { source: blueSource, radius },
-    red: {
+    left: { source: blueSource, radius },
+    right: {
       source: {
         kind: "flower",
-        index: Math.floor(num(session.redIndex, 0, AXIS_LENGTH - 1, 7)),
+        index: Math.floor(num(session.rightIndex, 0, AXIS_LENGTH - 1, 7)),
       },
       radius: 1,
     },

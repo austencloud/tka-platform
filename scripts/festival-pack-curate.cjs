@@ -265,8 +265,8 @@ function localCard(record, slot) {
   const endPosition = record?.steps?.at(-1)?.endPosition;
   const requirement = SLOT_REQUIREMENTS[slot];
   const turns = (record?.steps ?? []).flatMap((step) => [
-    step?.motions?.blue?.turns,
-    step?.motions?.red?.turns,
+    step?.motions?.left?.turns,
+    step?.motions?.right?.turns,
   ]);
   const difficultyIsValid =
     record?.level === 1 &&

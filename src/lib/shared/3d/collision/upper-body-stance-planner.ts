@@ -4,8 +4,8 @@ export interface GripTargetXZ {
 }
 
 export interface UpperBodyStanceTargets {
-  blue: GripTargetXZ | null;
-  red: GripTargetXZ | null;
+  left: GripTargetXZ | null;
+  right: GripTargetXZ | null;
 }
 
 export interface UpperBodyStancePlan {
@@ -37,7 +37,7 @@ function smoothstep01(value: number): number {
 export function planUpperBodyStance(
   targets: UpperBodyStanceTargets
 ): UpperBodyStancePlan {
-  const active = [targets.blue, targets.red].filter(
+  const active = [targets.left, targets.right].filter(
     (target): target is GripTargetXZ => target !== null
   );
   if (active.length < 2) return { yawRad: 0, pitchRad: 0 };

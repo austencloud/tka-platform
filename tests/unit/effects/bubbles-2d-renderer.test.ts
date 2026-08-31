@@ -8,42 +8,42 @@ import {
 import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 
 type PosBag = {
-  bluePosA?: { x: number; y: number } | null;
-  bluePosB?: { x: number; y: number } | null;
-  redPosA?: { x: number; y: number } | null;
-  redPosB?: { x: number; y: number } | null;
+  leftPosA?: { x: number; y: number } | null;
+  leftPosB?: { x: number; y: number } | null;
+  rightPosA?: { x: number; y: number } | null;
+  rightPosB?: { x: number; y: number } | null;
 };
 
 /** Map the legacy 4-slot bag to the flat EmitterTip[] contract. */
 function toEmitters(bag: PosBag): EmitterTip[] {
   const out: EmitterTip[] = [];
-  if (bag.bluePosA)
+  if (bag.leftPosA)
     out.push({
-      ...bag.bluePosA,
+      ...bag.leftPosA,
       propIndex: 0,
       tipIndex: 0,
       end: "A",
       color: "#4ea3ff",
     });
-  if (bag.bluePosB)
+  if (bag.leftPosB)
     out.push({
-      ...bag.bluePosB,
+      ...bag.leftPosB,
       propIndex: 0,
       tipIndex: 1,
       end: "B",
       color: "#4ea3ff",
     });
-  if (bag.redPosA)
+  if (bag.rightPosA)
     out.push({
-      ...bag.redPosA,
+      ...bag.rightPosA,
       propIndex: 1,
       tipIndex: 0,
       end: "A",
       color: "#ff5a5a",
     });
-  if (bag.redPosB)
+  if (bag.rightPosB)
     out.push({
-      ...bag.redPosB,
+      ...bag.rightPosB,
       propIndex: 1,
       tipIndex: 1,
       end: "B",
@@ -121,10 +121,10 @@ function makeParams(overrides: Partial<Bubbles2DParams> = {}): Bubbles2DParams {
 }
 
 const ALL_TIPS = toEmitters({
-  bluePosA: { x: 100, y: 100 },
-  bluePosB: { x: 120, y: 100 },
-  redPosA: { x: 200, y: 100 },
-  redPosB: { x: 220, y: 100 },
+  leftPosA: { x: 100, y: 100 },
+  leftPosB: { x: 120, y: 100 },
+  rightPosA: { x: 200, y: 100 },
+  rightPosB: { x: 220, y: 100 },
 });
 
 // Base tips plus one tunnel kaleidoscope layer (propIndex 2/3).
@@ -170,10 +170,10 @@ describe("Bubbles2DRenderer", () => {
     for (let i = 0; i < 40; i++) {
       rA.render(ctxA, restParams, ALL_TIPS, step);
       const moving = toEmitters({
-        bluePosA: { x: 100 + i * 30, y: 100 },
-        bluePosB: { x: 120 + i * 30, y: 100 },
-        redPosA: { x: 200 + i * 30, y: 100 },
-        redPosB: { x: 220 + i * 30, y: 100 },
+        leftPosA: { x: 100 + i * 30, y: 100 },
+        leftPosB: { x: 120 + i * 30, y: 100 },
+        rightPosA: { x: 200 + i * 30, y: 100 },
+        rightPosB: { x: 220 + i * 30, y: 100 },
       });
       rB.render(ctxB, moveParams, moving, step);
     }

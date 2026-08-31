@@ -9,66 +9,66 @@ import {
 import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/create-pictograph-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
-import type { SoloMotionColor } from "$lib/shared/foundation/services/sequence-motion-profile";
+import type { SoloMotionHand } from "$lib/shared/foundation/services/sequence-motion-profile";
 import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 
 export class StartPositionDeriver {
   deriveFromFirstStep(firstStep: StepData): StartPositionData {
-    const blueMotion = firstStep.motions?.[MotionColor.BLUE];
-    const redMotion = firstStep.motions?.[MotionColor.RED];
+    const leftMotion = firstStep.motions?.[HandSide.LEFT];
+    const rightMotion = firstStep.motions?.[HandSide.RIGHT];
 
     // Invisible placeholder = hand not really there (both-required Step shape).
-    if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) {
+    if (!isVisibleMotion(leftMotion) || !isVisibleMotion(rightMotion)) {
       throw new Error(
         "Cannot derive start position: first beat missing blue or red motion"
       );
     }
 
-    const blueStartLocation = blueMotion.startLocation;
-    const redStartLocation = redMotion.startLocation;
+    const leftStartLocation = leftMotion.startLocation;
+    const rightStartLocation = rightMotion.startLocation;
 
     const gridPosition = getGridPositionFromLocations(
-      blueStartLocation,
-      redStartLocation
+      leftStartLocation,
+      rightStartLocation
     );
 
     const letter = this.getLetterFromGridPosition(gridPosition);
 
-    const gridMode = blueMotion.gridMode;
+    const gridMode = leftMotion.gridMode;
 
-    const blueStaticMotion = createMotionData({
+    const leftStaticMotion = createMotionData({
       motionType: MotionType.STATIC,
-      startLocation: blueStartLocation,
-      endLocation: blueStartLocation,
-      startOrientation: blueMotion.startOrientation,
-      endOrientation: blueMotion.startOrientation,
+      startLocation: leftStartLocation,
+      endLocation: leftStartLocation,
+      startOrientation: leftMotion.startOrientation,
+      endOrientation: leftMotion.startOrientation,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: MotionColor.BLUE,
+      hand: HandSide.LEFT,
       isVisible: true,
-      propType: blueMotion.propType,
-      arrowLocation: blueStartLocation,
+      propType: leftMotion.propType,
+      arrowLocation: leftStartLocation,
       gridMode,
     });
 
-    const redStaticMotion = createMotionData({
+    const rightStaticMotion = createMotionData({
       motionType: MotionType.STATIC,
-      startLocation: redStartLocation,
-      endLocation: redStartLocation,
-      startOrientation: redMotion.startOrientation,
-      endOrientation: redMotion.startOrientation,
+      startLocation: rightStartLocation,
+      endLocation: rightStartLocation,
+      startOrientation: rightMotion.startOrientation,
+      endOrientation: rightMotion.startOrientation,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: MotionColor.RED,
+      hand: HandSide.RIGHT,
       isVisible: true,
-      propType: redMotion.propType,
-      arrowLocation: redStartLocation,
+      propType: rightMotion.propType,
+      arrowLocation: rightStartLocation,
       gridMode,
     });
 
@@ -78,8 +78,8 @@ export class StartPositionDeriver {
       startPosition: gridPosition,
       endPosition: gridPosition,
       motions: {
-        [MotionColor.BLUE]: blueStaticMotion,
-        [MotionColor.RED]: redStaticMotion,
+        [HandSide.LEFT]: leftStaticMotion,
+        [HandSide.RIGHT]: rightStaticMotion,
       },
     });
 
@@ -96,16 +96,16 @@ export class StartPositionDeriver {
       candidate: StartPositionData | null | undefined
     ): candidate is StartPositionData => {
       if (!candidate) return false;
-      const blueVisible = isVisibleMotion(
-        candidate.motions?.[MotionColor.BLUE]
+      const leftVisible = isVisibleMotion(
+        candidate.motions?.[HandSide.LEFT]
       );
-      const redVisible = isVisibleMotion(candidate.motions?.[MotionColor.RED]);
+      const rightVisible = isVisibleMotion(candidate.motions?.[HandSide.RIGHT]);
       if (profile.kind === "solo") {
-        return profile.color === "blue"
-          ? blueVisible && !redVisible
-          : redVisible && !blueVisible;
+        return profile.hand === HandSide.LEFT
+          ? leftVisible && !rightVisible
+          : rightVisible && !leftVisible;
       }
-      return blueVisible && redVisible;
+      return leftVisible && rightVisible;
     };
 
     if (isRenderable(sequence.startPosition)) {
@@ -120,7 +120,7 @@ export class StartPositionDeriver {
     if (firstStep) {
       try {
         return profile.kind === "solo"
-          ? this.deriveSoloFromFirstStep(firstStep, profile.color)
+          ? this.deriveSoloFromFirstStep(firstStep, profile.hand)
           : this.deriveFromFirstStep(firstStep);
       } catch (error) {
         console.warn("Failed to derive start position from first beat:", error);
@@ -133,12 +133,12 @@ export class StartPositionDeriver {
 
   private deriveSoloFromFirstStep(
     firstStep: StepData,
-    color: SoloMotionColor
+    hand: SoloMotionHand
   ): StartPositionData {
-    const source = firstStep.motions?.[color];
+    const source = firstStep.motions?.[hand];
     if (!isVisibleMotion(source)) {
       throw new Error(
-        `Cannot derive solo start position: first beat missing ${color} motion`
+        `Cannot derive solo start position: first beat missing ${hand} motion`
       );
     }
 
@@ -155,7 +155,7 @@ export class StartPositionDeriver {
 
     return createStartPositionData({
       gridPosition: null,
-      motions: { [color]: staticMotion },
+      motions: { [hand]: staticMotion },
     });
   }
 

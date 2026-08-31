@@ -57,8 +57,8 @@ function seq(
   id: string,
   author: string,
   level: number,
-  blueTurns: number,
-  redTurns: number,
+  leftTurns: number,
+  rightTurns: number,
 ): SequenceData {
   return {
     id,
@@ -67,7 +67,7 @@ function seq(
     steps: [
       {
         isBlank: false,
-        motions: { blue: { turns: blueTurns }, red: { turns: redTurns } },
+        motions: { left: { turns: leftTurns }, right: { turns: rightTurns } },
       },
     ],
   } as unknown as SequenceData;
@@ -80,7 +80,7 @@ function bookSeq(id: string, author: string, reversalPattern?: string): Sequence
     author,
     level: 2,
     ...(reversalPattern ? { reversalPattern } : {}),
-    steps: [{ isBlank: false, motions: { blue: { turns: 1 }, red: { turns: 1 } } }],
+    steps: [{ isBlank: false, motions: { left: { turns: 1 }, right: { turns: 1 } } }],
   } as unknown as SequenceData;
 }
 

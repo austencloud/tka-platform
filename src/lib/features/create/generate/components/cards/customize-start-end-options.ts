@@ -8,8 +8,8 @@ export interface CustomizeStartEndLocalState {
   blockedStartPositions: GridPosition[];
   /** Allowed end positions. Empty = unconstrained ("Any"). */
   endPositions: GridPosition[];
-  blueStartOrientation: Orientation;
-  redStartOrientation: Orientation;
+  leftStartOrientation: Orientation;
+  rightStartOrientation: Orientation;
 }
 
 /**
@@ -45,7 +45,7 @@ export function buildStartEndOptions(
     // it, and leaving both set would union two goals in the engine.
     endPosition: null,
     endPositions: local.endPositions,
-    blueStartOrientation: local.blueStartOrientation,
-    redStartOrientation: local.redStartOrientation,
+    leftStartOrientation: local.leftStartOrientation,
+    rightStartOrientation: local.rightStartOrientation,
   };
 }

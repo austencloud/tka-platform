@@ -87,18 +87,18 @@ export class LOOPParameterProvider {
   ): RotationDirections {
     if (propContinuity === PropContinuity.CONTINUOUS) {
       return {
-        blueRotationDirection: this.PictographFilter.selectRandom([
+        leftRotationDirection: this.PictographFilter.selectRandom([
           RotationDirection.CLOCKWISE,
           RotationDirection.COUNTER_CLOCKWISE,
         ]),
-        redRotationDirection: this.PictographFilter.selectRandom([
+        rightRotationDirection: this.PictographFilter.selectRandom([
           RotationDirection.CLOCKWISE,
           RotationDirection.COUNTER_CLOCKWISE,
         ]),
       };
     }
 
-    return { blueRotationDirection: "", redRotationDirection: "" };
+    return { leftRotationDirection: "", rightRotationDirection: "" };
   }
 
 
@@ -155,10 +155,10 @@ export class LOOPParameterProvider {
     );
     const canEnforce = enforceParity && hasHalfTurns && hasWholeTurns;
 
-    const blue = this.allocateSingleHand(wordLength, turnsPool, canEnforce);
-    const red = this.allocateSingleHand(wordLength, turnsPool, canEnforce);
+    const left = this.allocateSingleHand(wordLength, turnsPool, canEnforce);
+    const right = this.allocateSingleHand(wordLength, turnsPool, canEnforce);
 
-    return { blue, red };
+    return { left, right };
   }
 
   private allocateSingleHand(

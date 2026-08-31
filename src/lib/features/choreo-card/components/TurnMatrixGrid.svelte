@@ -31,21 +31,21 @@
           <span class="corner-red">R</span>
         </div>
 
-        {#each TURN_VALUES as red (red)}
-          <div class="header-cell col-header" role="columnheader" aria-label="Red {red} turns">
-            <span class="header-val red-val">{formatTurn(red)}</span>
+        {#each TURN_VALUES as right (right)}
+          <div class="header-cell col-header" role="columnheader" aria-label="Red {right} turns">
+            <span class="header-val red-val">{formatTurn(right)}</span>
           </div>
         {/each}
       {/if}
 
-      {#each TURN_VALUES as blue (blue)}
+      {#each TURN_VALUES as left (left)}
         {#if showAxes}
-          <div class="header-cell row-header" role="rowheader" aria-label="Blue {blue} turns">
-            <span class="header-val blue-val">{formatTurn(blue)}</span>
+          <div class="header-cell row-header" role="rowheader" aria-label="Blue {left} turns">
+            <span class="header-val blue-val">{formatTurn(left)}</span>
           </div>
         {/if}
-        {#each TURN_VALUES as red (red)}
-          {@render cell(blue, red)}
+        {#each TURN_VALUES as right (right)}
+          {@render cell(left, right)}
         {/each}
       {/each}
     </div>

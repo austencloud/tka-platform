@@ -14,7 +14,7 @@ import {
 	GridLocation,
 	GridMode,
 	MotionType,
-	MotionColor,
+	HandSide,
 	Orientation,
 	RotationDirection,
 } from "../domain/pictograph-types";
@@ -137,14 +137,14 @@ export function createMockPictographData(
 	const idx = Math.abs(code) % POSITION_PAIRS.length;
 	const pair = POSITION_PAIRS[idx]!;
 
-	const blueMotion = MOTION_TYPES[code % MOTION_TYPES.length]!;
-	const redMotion = MOTION_TYPES[(code + 1) % MOTION_TYPES.length]!;
+	const leftMotion = MOTION_TYPES[code % MOTION_TYPES.length]!;
+	const rightMotion = MOTION_TYPES[(code + 1) % MOTION_TYPES.length]!;
 
-	const blueOrientation = ORIENTATIONS[code % ORIENTATIONS.length]!;
-	const redOrientation = ORIENTATIONS[(code + 2) % ORIENTATIONS.length]!;
+	const leftOrientation = ORIENTATIONS[code % ORIENTATIONS.length]!;
+	const rightOrientation = ORIENTATIONS[(code + 2) % ORIENTATIONS.length]!;
 
-	const blueTurns = (code % 4) * 0.5; // 0, 0.5, 1, 1.5
-	const redTurns = ((code + 1) % 4) * 0.5;
+	const leftTurns = (code % 4) * 0.5; // 0, 0.5, 1, 1.5
+	const rightTurns = ((code + 1) % 4) * 0.5;
 
 	// Use box mode for letters that naturally use intercardinal positions
 	const needsBox =
@@ -153,22 +153,22 @@ export function createMockPictographData(
 	return {
 		letter: upper,
 		gridMode: needsBox ? GridMode.BOX : GridMode.DIAMOND,
-		blueHand: {
-			color: MotionColor.BLUE,
+		leftHand: {
+			color: HandSide.LEFT,
 			location: pair[0],
-			orientation: blueOrientation,
-			motionType: blueMotion,
-			endLocation: getEndLocation(pair[0], blueMotion),
-			turns: blueTurns,
+			orientation: leftOrientation,
+			motionType: leftMotion,
+			endLocation: getEndLocation(pair[0], leftMotion),
+			turns: leftTurns,
 			rotationDirection: RotationDirection.NO_ROTATION,
 		},
-		redHand: {
-			color: MotionColor.RED,
+		rightHand: {
+			color: HandSide.RIGHT,
 			location: pair[1],
-			orientation: redOrientation,
-			motionType: redMotion,
-			endLocation: getEndLocation(pair[1], redMotion),
-			turns: redTurns,
+			orientation: rightOrientation,
+			motionType: rightMotion,
+			endLocation: getEndLocation(pair[1], rightMotion),
+			turns: rightTurns,
 			rotationDirection: RotationDirection.NO_ROTATION,
 		},
 	};

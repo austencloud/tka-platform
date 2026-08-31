@@ -127,8 +127,8 @@ function convertToRawSequence(data: Record<string, unknown>): RawStepData[] {
       sequenceStartPosition: gridPos,
       endPos: gridPos,
       letter: (startPos["letter"] as string) || undefined,
-      blueAttributes: motions ? convertMotionToRawAttributes(motions["blue"]) : undefined,
-      redAttributes: motions ? convertMotionToRawAttributes(motions["red"]) : undefined,
+      leftAttributes: motions ? convertMotionToRawAttributes(motions["blue"]) : undefined,
+      rightAttributes: motions ? convertMotionToRawAttributes(motions["red"]) : undefined,
     });
   }
 
@@ -149,8 +149,8 @@ function convertToRawSequence(data: Record<string, unknown>): RawStepData[] {
       letter: (step["letter"] as string) || undefined,
       startPos: (step["startPosition"] as string) || undefined,
       endPos: (step["endPosition"] as string) || undefined,
-      blueAttributes: motions ? convertMotionToRawAttributes(motions["blue"]) : undefined,
-      redAttributes: motions ? convertMotionToRawAttributes(motions["red"]) : undefined,
+      leftAttributes: motions ? convertMotionToRawAttributes(motions["blue"]) : undefined,
+      rightAttributes: motions ? convertMotionToRawAttributes(motions["red"]) : undefined,
     });
   }
 
@@ -185,8 +185,8 @@ function convertLibraryBeats(
     result.push({
       beat: stepNumber,
       letter: (step["letter"] as string) || undefined,
-      blueAttributes: motions ? convertMotionToRawAttributes(motions["blue"]) : undefined,
-      redAttributes: motions ? convertMotionToRawAttributes(motions["red"]) : undefined,
+      leftAttributes: motions ? convertMotionToRawAttributes(motions["blue"]) : undefined,
+      rightAttributes: motions ? convertMotionToRawAttributes(motions["red"]) : undefined,
     });
   }
 

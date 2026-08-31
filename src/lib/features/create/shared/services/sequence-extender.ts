@@ -382,18 +382,18 @@ export class SequenceExtender {
     step: StepData,
     gridMode: GridMode
   ): Promise<Letter | null> {
-    const blueMotion = step.motions?.blue;
-    const redMotion = step.motions?.red;
+    const leftMotion = step.motions?.left;
+    const rightMotion = step.motions?.right;
 
     // Invisible placeholder = hand not really there (both-required Step shape).
-    if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) {
+    if (!isVisibleMotion(leftMotion) || !isVisibleMotion(rightMotion)) {
       return null;
     }
 
     try {
       const letter = await this.motionQueryHandler.findLetterByMotionConfiguration(
-        blueMotion,
-        redMotion,
+        leftMotion,
+        rightMotion,
         gridMode
       );
       return letter as Letter | null;

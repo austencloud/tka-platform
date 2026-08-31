@@ -3,7 +3,7 @@ import {
   resolveStartOrientation,
   positionFamilyOf,
 } from "../start-ori-register";
-import { Orientation, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { Orientation, HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
@@ -13,34 +13,34 @@ const { IN, CLOCK, COUNTER } = Orientation;
 describe("resolveStartOrientation — family-aware register table", () => {
   it("radial is in|in for every family", () => {
     for (const fam of ["alpha", "beta", "gamma"] as const) {
-      expect(resolveStartOrientation("radial", fam)).toEqual({ blue: IN, red: IN });
+      expect(resolveStartOrientation("radial", fam)).toEqual({ left: IN, right: IN });
     }
   });
 
   it("mixed (split): alpha=in|counter, beta=in|clock, gamma=in|counter", () => {
-    expect(resolveStartOrientation("split", "alpha")).toEqual({ blue: IN, red: COUNTER });
-    expect(resolveStartOrientation("split", "beta")).toEqual({ blue: IN, red: CLOCK });
-    expect(resolveStartOrientation("split", "gamma")).toEqual({ blue: IN, red: COUNTER });
+    expect(resolveStartOrientation("split", "alpha")).toEqual({ left: IN, right: COUNTER });
+    expect(resolveStartOrientation("split", "beta")).toEqual({ left: IN, right: CLOCK });
+    expect(resolveStartOrientation("split", "gamma")).toEqual({ left: IN, right: COUNTER });
   });
 
   it("nonradial: alpha=clock|counter, beta=counter|clock, gamma=clock|counter", () => {
-    expect(resolveStartOrientation("nonradial", "alpha")).toEqual({ blue: CLOCK, red: COUNTER });
-    expect(resolveStartOrientation("nonradial", "beta")).toEqual({ blue: COUNTER, red: CLOCK });
-    expect(resolveStartOrientation("nonradial", "gamma")).toEqual({ blue: CLOCK, red: COUNTER });
+    expect(resolveStartOrientation("nonradial", "alpha")).toEqual({ left: CLOCK, right: COUNTER });
+    expect(resolveStartOrientation("nonradial", "beta")).toEqual({ left: COUNTER, right: CLOCK });
+    expect(resolveStartOrientation("nonradial", "gamma")).toEqual({ left: CLOCK, right: COUNTER });
   });
 });
 
 function startPose(
-  blue: GridLocation,
-  red: GridLocation,
+  left: GridLocation,
+  right: GridLocation,
   named?: Partial<StartPositionData>,
 ): StartPositionData {
   return {
     isStartPosition: true,
     id: "sp",
     motions: {
-      [MotionColor.BLUE]: createMotionData({ color: MotionColor.BLUE, startLocation: blue, endLocation: blue }),
-      [MotionColor.RED]: createMotionData({ color: MotionColor.RED, startLocation: red, endLocation: red }),
+      [HandSide.LEFT]: createMotionData({ hand: HandSide.LEFT, startLocation: left, endLocation: left }),
+      [HandSide.RIGHT]: createMotionData({ hand: HandSide.RIGHT, startLocation: right, endLocation: right }),
     },
     ...named,
   } as StartPositionData;

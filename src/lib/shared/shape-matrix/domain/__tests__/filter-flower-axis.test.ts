@@ -95,8 +95,8 @@ describe("applyFilter", () => {
   it("defaultMatrixFilters: collapse on, all turns, diamond default", () => {
     const m = defaultMatrixFilters();
     expect(m.collapse).toBe(true);
-    expect(m.blue.turns.size).toBe(7);
-    expect(m.red.style).toBe("all");
-    expect(m.blue.grid).toBe("diamond");
+    expect(m.left.turns.size).toBe(7);
+    expect(m.right.style).toBe("all");
+    expect(m.left.grid).toBe("diamond");
   });
 });

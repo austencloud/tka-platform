@@ -46,23 +46,23 @@
     decompositionOverride = !previewDecomposed;
   }
 
-  const blueName = $derived.by(() =>
-    fuseState.blue.sequence
-      ? simplifyRepeatedWord(getSequenceDisplayName(fuseState.blue.sequence))
+  const leftName = $derived.by(() =>
+    fuseState.left.sequence
+      ? simplifyRepeatedWord(getSequenceDisplayName(fuseState.left.sequence))
       : "Blue path"
   );
-  const redName = $derived.by(() =>
-    fuseState.red.sequence
-      ? simplifyRepeatedWord(getSequenceDisplayName(fuseState.red.sequence))
+  const rightName = $derived.by(() =>
+    fuseState.right.sequence
+      ? simplifyRepeatedWord(getSequenceDisplayName(fuseState.right.sequence))
       : "Red path"
   );
   const previewDescription = $derived(
     fuseState.previewSequence && fuseState.appliedLength
-      ? `Combined preview of Blue path ${blueName} and Red path ${redName}, ${fuseState.appliedLength} steps at ${fuseState.bpm} BPM.`
+      ? `Combined preview of Blue path ${leftName} and Red path ${rightName}, ${fuseState.appliedLength} steps at ${fuseState.bpm} BPM.`
       : "Combined preview is loading."
   );
   const previewRevision = $derived(
-    fuseState.blue.revision + fuseState.red.revision
+    fuseState.left.revision + fuseState.right.revision
   );
 </script>
 
@@ -107,7 +107,7 @@
   {#if compact}
     <div class="mobile-source-toolbar" aria-label="Source path controls">
       <FuseSourceCard
-        side="blue"
+        side="left"
         compactHero={true}
         toolbarOnly={true}
         {onChooseFirstStep}
@@ -115,7 +115,7 @@
         {onEditPairing}
       />
       <FuseSourceCard
-        side="red"
+        side="right"
         compactHero={true}
         toolbarOnly={true}
         {onChooseFirstStep}

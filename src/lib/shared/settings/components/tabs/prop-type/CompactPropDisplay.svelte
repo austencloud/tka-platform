@@ -34,7 +34,7 @@
     catDogMode?: boolean;
     leftBuugengFlipped?: boolean;
     rightBuugengFlipped?: boolean;
-    onToggleBig?: (hand: "blue" | "red") => void;
+    onToggleBig?: (hand: "left" | "right") => void;
   }>();
 
   // Display info
@@ -78,7 +78,7 @@
         <button
           class="action-btn"
           class:active={leftIsBig}
-          onclick={() => onToggleBig?.("blue")}
+          onclick={() => onToggleBig?.("left")}
           aria-label="Toggle big size"
           aria-pressed={leftIsBig}
           title="Big version"
@@ -116,7 +116,7 @@
           <button
             class="action-btn"
             class:active={rightIsBig}
-            onclick={() => onToggleBig?.("red")}
+            onclick={() => onToggleBig?.("right")}
             aria-label="Toggle big size"
             aria-pressed={rightIsBig}
             title="Big version"

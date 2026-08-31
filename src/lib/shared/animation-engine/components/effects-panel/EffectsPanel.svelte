@@ -379,7 +379,7 @@
   const customColors = $derived.by(() => {
     if (activeEffect !== "trails") return null;
     const c = effectsConfigState.personalDefault("trails");
-    return c ? { blue: c.blueColor, red: c.redColor } : null;
+    return c ? { left: c.leftColor, right: c.rightColor } : null;
   });
 
   async function handleCustomizeOpen(): Promise<void> {

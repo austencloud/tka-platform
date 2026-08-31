@@ -50,8 +50,8 @@ export interface BeatScore {
   /** null = ground-truth beat the pipeline never detected (deletion). */
   detectedIndex: number | null;
   letter?: string;
-  blue: HandScore | null;
-  red: HandScore | null;
+  left: HandScore | null;
+  right: HandScore | null;
   /** matched/scored across both hands; 0 when unaligned or nothing scored. */
   score: number;
   /** min(blue, red) confidence of the detected beat; null when deletion. */
@@ -107,13 +107,13 @@ function scoreHand(detected: StaffMotionNotation, truth: GroundTruthMotion): Han
 function beatSimilarity(detected: BeatNotation, truth: GroundTruthBeat): number {
   let matched = 0;
   let scored = 0;
-  if (truth.blue) {
-    const h = scoreHand(detected.blue, truth.blue);
+  if (truth.left) {
+    const h = scoreHand(detected.left, truth.left);
     matched += h.matched;
     scored += h.scored;
   }
-  if (truth.red) {
-    const h = scoreHand(detected.red, truth.red);
+  if (truth.right) {
+    const h = scoreHand(detected.right, truth.right);
     matched += h.matched;
     scored += h.scored;
   }
@@ -191,7 +191,7 @@ function emptyPerField(): Record<FieldName, { matched: number; scored: number }>
 }
 
 function minConfidence(beat: BeatNotation): number {
-  return Math.min(beat.blue.confidence, beat.red.confidence);
+  return Math.min(beat.left.confidence, beat.right.confidence);
 }
 
 interface CoreResult {
@@ -212,8 +212,8 @@ function scoreCore(detected: BeatNotation[], truthBeats: GroundTruthBeat[]): Cor
       const beatScore: BeatScore = {
         truthIndex: step.truthIndex,
         detectedIndex: null,
-        blue: null,
-        red: null,
+        left: null,
+        right: null,
         score: 0,
         confidence: null,
       };
@@ -225,21 +225,21 @@ function scoreCore(detected: BeatNotation[], truthBeats: GroundTruthBeat[]): Cor
       return {
         truthIndex: null,
         detectedIndex: step.detectedIndex,
-        blue: null,
-        red: null,
+        left: null,
+        right: null,
         score: 0,
         confidence: minConfidence(d),
       };
     }
 
     const t = truthBeats[step.truthIndex]!;
-    const blue = t.blue ? scoreHand(d.blue, t.blue) : null;
-    const red = t.red ? scoreHand(d.red, t.red) : null;
-    const matched = (blue?.matched ?? 0) + (red?.matched ?? 0);
-    const scored = (blue?.scored ?? 0) + (red?.scored ?? 0);
+    const left = t.left ? scoreHand(d.left, t.left) : null;
+    const right = t.right ? scoreHand(d.right, t.right) : null;
+    const matched = (left?.matched ?? 0) + (right?.matched ?? 0);
+    const scored = (left?.scored ?? 0) + (right?.scored ?? 0);
     totalMatched += matched;
     totalScored += scored;
-    for (const hand of [blue, red]) {
+    for (const hand of [left, right]) {
       if (!hand) continue;
       for (const f of hand.fields) {
         perField[f.field].scored++;
@@ -250,8 +250,8 @@ function scoreCore(detected: BeatNotation[], truthBeats: GroundTruthBeat[]): Cor
     const beatScore: BeatScore = {
       truthIndex: step.truthIndex,
       detectedIndex: step.detectedIndex,
-      blue,
-      red,
+      left,
+      right,
       score: scored === 0 ? 0 : matched / scored,
       confidence: minConfidence(d),
     };
@@ -313,7 +313,7 @@ function mirrorStaff(m: StaffMotionNotation): StaffMotionNotation {
  * clock/counter swap, cw/ccw swap. Everything mirror-invariant stays.
  */
 export function mirrorBeatNotation(b: BeatNotation): BeatNotation {
-  return { blue: mirrorStaff(b.blue), red: mirrorStaff(b.red) };
+  return { left: mirrorStaff(b.left), right: mirrorStaff(b.right) };
 }
 
 

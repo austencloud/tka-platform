@@ -108,6 +108,16 @@ export function normalizeLegacyPropConfig<T>(value: T): T {
   return normalized as T;
 }
 
+/** Converts a generic legacy `{ blue, red }` hand pair into `{ left, right }`. */
+export function normalizeLegacyHandPair<T>(value: T): T {
+  if (!isRecord(value)) return value;
+
+  const normalized: UnknownRecord = { ...value };
+  moveLegacyField(normalized, value, "left", "blue");
+  moveLegacyField(normalized, value, "right", "red");
+  return normalized as T;
+}
+
 /**
  * Normalizes every known persisted hand-identity field on a sequence document.
  * This is deliberately structural and retains unrelated application metadata.
@@ -134,6 +144,9 @@ export function normalizeLegacySequence<T>(value: T): T {
   }
   if (Array.isArray(value.stepPairings)) {
     normalized.stepPairings = value.stepPairings.map(normalizeLegacyStepPairing);
+  }
+  if (value.loopSpec !== undefined) {
+    normalized.loopSpec = normalizeLegacyHandPair(value.loopSpec);
   }
   if (value.intendedProp !== undefined) {
     normalized.intendedProp = normalizeLegacyPropConfig(value.intendedProp);

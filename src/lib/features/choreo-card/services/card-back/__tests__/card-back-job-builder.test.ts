@@ -51,7 +51,7 @@ function fakeBitmap(tag: string, w = 100, h = 50): ImageBitmap {
   return { __tag: tag, width: w, height: h, close: vi.fn() } as unknown as ImageBitmap;
 }
 
-const EMPTY_PATHS: MandalaPaths = { blue: [], red: [], purple: [] };
+const EMPTY_PATHS: MandalaPaths = { left: [], right: [], purple: [] };
 
 /**
  * Build a fully-faked deps object. Each rasterizer returns a tagged sentinel so
@@ -129,8 +129,8 @@ function makeSequence(extra: Partial<SequenceData> = {}): SequenceData {
     beat: 1,
     letter: "A",
     motions: {
-      blue: { motionType: "pro", turns: 0, rotationDirection: "cw" },
-      red: { motionType: "pro", turns: 0, rotationDirection: "ccw" },
+      left: { motionType: "pro", turns: 0, rotationDirection: "cw" },
+      right: { motionType: "pro", turns: 0, rotationDirection: "ccw" },
     },
   };
   return {
@@ -237,8 +237,8 @@ describe("buildBackJob", () => {
         height: HEIGHT,
         bleedPx: BLEED,
         theme: "cosmic",
-        bluePropType: PropType.CLUB,
-        redPropType: PropType.CLUB,
+        leftPropType: PropType.CLUB,
+        rightPropType: PropType.CLUB,
       },
       deps,
     );

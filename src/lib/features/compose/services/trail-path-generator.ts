@@ -35,13 +35,13 @@ export interface TrailPoint {
  */
 export interface GeneratedTrailData {
   /** Trail points for blue prop's left end */
-  blueLeft: TrailPoint[];
+  leftLeft: TrailPoint[];
   /** Trail points for blue prop's right end */
-  blueRight: TrailPoint[];
+  leftRight: TrailPoint[];
   /** Trail points for red prop's left end */
-  redLeft: TrailPoint[];
+  rightLeft: TrailPoint[];
   /** Trail points for red prop's right end */
-  redRight: TrailPoint[];
+  rightRight: TrailPoint[];
   /** Total number of steps in the sequence */
   totalSteps: number;
   /** Samples per beat used for generation */
@@ -59,9 +59,9 @@ export interface TrailGenerationConfig {
   /** Number of samples per beat (higher = smoother trails, default: 120) */
   samplesPerStep?: number;
   /** Blue prop dimensions */
-  bluePropDimensions: { width: number; height: number };
+  leftPropDimensions: { width: number; height: number };
   /** Red prop dimensions */
-  redPropDimensions: { width: number; height: number };
+  rightPropDimensions: { width: number; height: number };
 }
 
 
@@ -81,16 +81,16 @@ export function generateTrailsForSequence(
   sequence: SequenceData,
   config: TrailGenerationConfig
 ): GeneratedTrailData {
-  const { canvasSize, bluePropDimensions, redPropDimensions } = config;
+  const { canvasSize, leftPropDimensions, rightPropDimensions } = config;
   const samplesPerStep = config.samplesPerStep ?? 120;
 
   const totalSteps = sequence.steps.length ?? 0;
   if (totalSteps === 0) {
     return {
-      blueLeft: [],
-      blueRight: [],
-      redLeft: [],
-      redRight: [],
+      leftLeft: [],
+      leftRight: [],
+      rightLeft: [],
+      rightRight: [],
       totalSteps: 0,
       samplesPerStep,
       canvasSize,
@@ -102,10 +102,10 @@ export function generateTrailsForSequence(
   if (!initialized) {
     console.error("Failed to initialize orchestrator for trail generation");
     return {
-      blueLeft: [],
-      blueRight: [],
-      redLeft: [],
-      redRight: [],
+      leftLeft: [],
+      leftRight: [],
+      rightLeft: [],
+      rightRight: [],
       totalSteps,
       samplesPerStep,
       canvasSize,
@@ -113,20 +113,20 @@ export function generateTrailsForSequence(
   }
 
   // Configure endpoint calculators for each prop
-  const blueEndpointConfig: PropEndpointConfig = {
+  const leftEndpointConfig: PropEndpointConfig = {
     canvasSize,
-    propDimensions: bluePropDimensions,
+    propDimensions: leftPropDimensions,
   };
-  const redEndpointConfig: PropEndpointConfig = {
+  const rightEndpointConfig: PropEndpointConfig = {
     canvasSize,
-    propDimensions: redPropDimensions,
+    propDimensions: rightPropDimensions,
   };
 
   // Initialize trail arrays
-  const blueLeft: TrailPoint[] = [];
-  const blueRight: TrailPoint[] = [];
-  const redLeft: TrailPoint[] = [];
-  const redRight: TrailPoint[] = [];
+  const leftLeft: TrailPoint[] = [];
+  const leftRight: TrailPoint[] = [];
+  const rightLeft: TrailPoint[] = [];
+  const rightRight: TrailPoint[] = [];
 
   // Sample through the entire sequence
   const totalSamples = totalSteps * samplesPerStep;
@@ -137,40 +137,40 @@ export function generateTrailsForSequence(
 
     // Get prop states at this playback position
     orchestrator.calculateState(playbackPosition);
-    const blueState = orchestrator.getBluePropState();
-    const redState = orchestrator.getRedPropState();
+    const leftState = orchestrator.getLeftPropState();
+    const rightState = orchestrator.getRightPropState();
 
     // Calculate endpoints using shared calculator
-    const blueEnds = calculatePropEndpoints(blueState, blueEndpointConfig);
-    const redEnds = calculatePropEndpoints(redState, redEndpointConfig);
+    const leftEnds = calculatePropEndpoints(leftState, leftEndpointConfig);
+    const rightEnds = calculatePropEndpoints(rightState, rightEndpointConfig);
 
     // Add points to trails
-    blueLeft.push({
-      x: blueEnds.left.x,
-      y: blueEnds.left.y,
+    leftLeft.push({
+      x: leftEnds.left.x,
+      y: leftEnds.left.y,
       beat: playbackPosition,
       timestamp,
     });
-    blueRight.push({
-      x: blueEnds.right.x,
-      y: blueEnds.right.y,
+    leftRight.push({
+      x: leftEnds.right.x,
+      y: leftEnds.right.y,
       beat: playbackPosition,
       timestamp,
     });
-    redLeft.push({ x: redEnds.left.x, y: redEnds.left.y, beat: playbackPosition, timestamp });
-    redRight.push({
-      x: redEnds.right.x,
-      y: redEnds.right.y,
+    rightLeft.push({ x: rightEnds.left.x, y: rightEnds.left.y, beat: playbackPosition, timestamp });
+    rightRight.push({
+      x: rightEnds.right.x,
+      y: rightEnds.right.y,
       beat: playbackPosition,
       timestamp,
     });
   }
 
   return {
-    blueLeft,
-    blueRight,
-    redLeft,
-    redRight,
+    leftLeft,
+    leftRight,
+    rightLeft,
+    rightRight,
     totalSteps,
     samplesPerStep,
     canvasSize,
@@ -189,24 +189,24 @@ export function getTrailPointsAtBeat(
   currentStep: number,
   maxTrailLength?: number
 ): {
-  blueLeft: TrailPoint[];
-  blueRight: TrailPoint[];
-  redLeft: TrailPoint[];
-  redRight: TrailPoint[];
+  leftLeft: TrailPoint[];
+  leftRight: TrailPoint[];
+  rightLeft: TrailPoint[];
+  rightRight: TrailPoint[];
 } {
   // Calculate the sample index for the current beat
   const sampleIndex = Math.floor(currentStep * trailData.samplesPerStep);
 
   // Get all points up to current beat
-  const endIndex = Math.min(sampleIndex + 1, trailData.blueLeft.length);
+  const endIndex = Math.min(sampleIndex + 1, trailData.leftLeft.length);
   const startIndex = maxTrailLength
     ? Math.max(0, endIndex - maxTrailLength)
     : 0;
 
   return {
-    blueLeft: trailData.blueLeft.slice(startIndex, endIndex),
-    blueRight: trailData.blueRight.slice(startIndex, endIndex),
-    redLeft: trailData.redLeft.slice(startIndex, endIndex),
-    redRight: trailData.redRight.slice(startIndex, endIndex),
+    leftLeft: trailData.leftLeft.slice(startIndex, endIndex),
+    leftRight: trailData.leftRight.slice(startIndex, endIndex),
+    rightLeft: trailData.rightLeft.slice(startIndex, endIndex),
+    rightRight: trailData.rightRight.slice(startIndex, endIndex),
   };
 }

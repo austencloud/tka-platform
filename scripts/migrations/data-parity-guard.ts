@@ -65,10 +65,10 @@ const LIMIT = (() => {
 interface Fingerprint {
   word: string;
   identityHash: string; // computeHash(hydrate(seq)) — the phantom-fork sink
-  bluePathHash: string;
-  redPathHash: string;
-  blueSoloHash: string;
-  redSoloHash: string;
+  leftPathHash: string;
+  rightPathHash: string;
+  leftSoloHash: string;
+  rightSoloHash: string;
   stepSignatures: string; // JSON of generateSignatures(steps)
   encoderRoundTripHash: string; // computeHash(hydrate(decode(encode(seq))))
   viewFieldsDigest: string; // direct digest of handPath/skew/pathShape/prefloat/turns/plane
@@ -87,10 +87,10 @@ async function fingerprint(seq: SequenceData): Promise<Fingerprint> {
   return {
     word: seq.word ?? "?",
     identityHash: await safe(() => computeHash(hydrated)),
-    bluePathHash: String(composed["bluePathHash"] ?? ""),
-    redPathHash: String(composed["redPathHash"] ?? ""),
-    blueSoloHash: String(composed["blueSoloHash"] ?? ""),
-    redSoloHash: String(composed["redSoloHash"] ?? ""),
+    leftPathHash: String(composed["bluePathHash"] ?? ""),
+    rightPathHash: String(composed["redPathHash"] ?? ""),
+    leftSoloHash: String(composed["blueSoloHash"] ?? ""),
+    rightSoloHash: String(composed["redSoloHash"] ?? ""),
     stepSignatures: await safe(() =>
       JSON.stringify(stepSig.generateSignatures(hydrated.steps ?? []))
     ),

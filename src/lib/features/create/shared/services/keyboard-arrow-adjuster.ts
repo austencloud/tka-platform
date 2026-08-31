@@ -20,7 +20,7 @@
  */
 
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {
   createMotionData,
@@ -83,7 +83,7 @@ export function handleWASDMovement(
     `🎯 WASD adjustment: ${key} → (${adjustment.x}, ${adjustment.y})px for ${selectedArrow.color} arrow`
   );
 
-  const currentMotion = stepData.motions[selectedArrow.color as MotionColor];
+  const currentMotion = stepData.motions[selectedArrow.color as HandSide];
   if (!currentMotion) {
     logger.warn(`No motion data found for ${selectedArrow.color} arrow`);
     return stepData;

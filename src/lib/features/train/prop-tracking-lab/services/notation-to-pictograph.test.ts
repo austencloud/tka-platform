@@ -22,16 +22,16 @@ function note(over: Partial<StaffMotionNotation>): StaffMotionNotation {
 
 describe('notationToPictographData', () => {
   it('builds blue+red motions with mapped enums and locations', () => {
-    const blue = note({ staff: 'blue', startLocation: 'n', endLocation: 'e' });
-    const red = note({ staff: 'red', startLocation: 's', endLocation: 'w', motionType: MotionType.ANTI });
-    const pd = notationToPictographData(blue, red, 'beat-1');
+    const left = note({ staff: 'blue', startLocation: 'n', endLocation: 'e' });
+    const right = note({ staff: 'red', startLocation: 's', endLocation: 'w', motionType: MotionType.ANTI });
+    const pd = notationToPictographData(left, right, 'beat-1');
 
     expect(pd.id).toBe('beat-1');
-    expect(pd.motions.blue!.motionType).toBe(MotionType.PRO);
-    expect(pd.motions.blue!.startLocation).toBe(GridLocation.NORTH);
-    expect(pd.motions.blue!.endLocation).toBe(GridLocation.EAST);
-    expect(pd.motions.red!.motionType).toBe(MotionType.ANTI);
-    expect(pd.motions.red!.startLocation).toBe(GridLocation.SOUTH);
+    expect(pd.motions.left!.motionType).toBe(MotionType.PRO);
+    expect(pd.motions.left!.startLocation).toBe(GridLocation.NORTH);
+    expect(pd.motions.left!.endLocation).toBe(GridLocation.EAST);
+    expect(pd.motions.right!.motionType).toBe(MotionType.ANTI);
+    expect(pd.motions.right!.startLocation).toBe(GridLocation.SOUTH);
   });
 
   it('derives diamond grid mode for cardinal locations', () => {
@@ -58,6 +58,6 @@ describe('notationToPictographData', () => {
       note({ staff: 'red' }),
       'b',
     );
-    expect(pd.motions.blue!.turns).toBe('fl');
+    expect(pd.motions.left!.turns).toBe('fl');
   });
 });

@@ -52,19 +52,19 @@ function beat(index: number, segments: TraceBeat["segments"]): TraceBeat {
 }
 
 const ONE_HAND_ROUND: TraceRoundGeometry = {
-  beats: [beat(0, { blue: move(N, E) })],
+  beats: [beat(0, { left: move(N, E) })],
 };
 
 const TWO_HAND_ROUND: TraceRoundGeometry = {
-  beats: [beat(0, { blue: move(N, E), red: move(S, W) })],
+  beats: [beat(0, { left: move(N, E), right: move(S, W) })],
 };
 
 const HOLD_ROUND: TraceRoundGeometry = {
-  beats: [beat(0, { blue: move(N, E), red: hold(S) })],
+  beats: [beat(0, { left: move(N, E), right: hold(S) })],
 };
 
 const DASH_ROUND: TraceRoundGeometry = {
-  beats: [beat(0, { blue: move(N, S) })],
+  beats: [beat(0, { left: move(N, S) })],
 };
 
 /** A flawless trace of one segment, sampled at a chosen event rate. */
@@ -265,8 +265,8 @@ describe("two-hand beat gating", () => {
 
     evaluator.ingest("blue", perfectTrace(N, E, 40));
     expect(evaluator.state.beatIndex).toBe(0);
-    expect(evaluator.state.satisfied.blue).toBe(true);
-    expect(evaluator.state.satisfied.red).toBe(false);
+    expect(evaluator.state.satisfied.left).toBe(true);
+    expect(evaluator.state.satisfied.right).toBe(false);
 
     evaluator.ingest("red", perfectTrace(S, W, 40));
     expect(evaluator.state.completedBeats).toBe(1);
@@ -343,7 +343,7 @@ describe("corridor excursions", () => {
 describe("shared-grid preflight", () => {
   it("rejects two hands aimed at the same point at the same time", () => {
     const result = sharedGridPreflight({
-      beats: [beat(0, { blue: move(N, E), red: move(S, E) })],
+      beats: [beat(0, { left: move(N, E), right: move(S, E) })],
     });
     expect(result.passes).toBe(false);
     expect(result.worstSeparation).toBeCloseTo(0, 9);
@@ -352,7 +352,7 @@ describe("shared-grid preflight", () => {
 
   it("rejects two hands holding the same point", () => {
     const result = sharedGridPreflight({
-      beats: [beat(0, { blue: hold(N), red: hold(N) })],
+      beats: [beat(0, { left: hold(N), right: hold(N) })],
     });
     expect(result.passes).toBe(false);
     expect(result.worstSeparation).toBeCloseTo(0, 9);
@@ -362,7 +362,7 @@ describe("shared-grid preflight", () => {
     // Same arc, opposite directions: the fingertips have to pass through each
     // other.
     const result = sharedGridPreflight({
-      beats: [beat(0, { blue: move(N, E), red: move(E, N) })],
+      beats: [beat(0, { left: move(N, E), right: move(E, N) })],
     });
     expect(result.passes).toBe(false);
   });
@@ -370,9 +370,9 @@ describe("shared-grid preflight", () => {
   it("accepts routes that only cross at different beats", () => {
     const result = sharedGridPreflight({
       beats: [
-        beat(0, { blue: move(N, E), red: move(S, W) }),
+        beat(0, { left: move(N, E), right: move(S, W) }),
         // Blue now travels through the corner red used on the previous beat.
-        beat(1, { blue: move(E, S), red: move(W, N) }),
+        beat(1, { left: move(E, S), right: move(W, N) }),
       ],
     });
     expect(result.passes).toBe(true);
@@ -401,7 +401,7 @@ describe("regression: the physical touch floor bounds the checkpoint shrink", ()
    * so a player well inside the corridor still missed it, coverage fell under
    * the hard gate, and a correct round scored zero.
    */
-  const ARC_ROUND: TraceRoundGeometry = { beats: [beat(0, { blue: move(N, E) })] };
+  const ARC_ROUND: TraceRoundGeometry = { beats: [beat(0, { left: move(N, E) })] };
 
   /** The route, nudged a constant distance to the outside of its own curve. */
   function offsetTrace(offset: number): TraceSample[] {
@@ -475,8 +475,8 @@ describe("regression: a hold does not eat the next beat's samples", () => {
    */
   const HOLD_THEN_MOVE: TraceRoundGeometry = {
     beats: [
-      beat(0, { blue: hold(S), red: move(N, E) }),
-      beat(1, { blue: move(S, W), red: hold(E) }),
+      beat(0, { left: hold(S), right: move(N, E) }),
+      beat(1, { left: move(S, W), right: hold(E) }),
     ],
   };
 
@@ -507,16 +507,16 @@ describe("regression: a hold does not eat the next beat's samples", () => {
   it("grades the same gesture identically however it is batched", () => {
     // The invariant behind the fix: how the browser chopped the stroke into
     // frames is not something the player did, so it cannot change the grade.
-    const blue = [...holdTrace(S, 20, 0, 16), ...perfectTrace(S, W, 20, 320, 16)];
-    const red = [...perfectTrace(N, E, 20, 0, 16), ...holdTrace(E, 20, 320, 16)];
+    const left = [...holdTrace(S, 20, 0, 16), ...perfectTrace(S, W, 20, 320, 16)];
+    const right = [...perfectTrace(N, E, 20, 0, 16), ...holdTrace(E, 20, 320, 16)];
 
     const batched = createTraceEvaluator(HOLD_THEN_MOVE);
-    batched.ingest("blue", blue);
-    batched.ingest("red", red);
+    batched.ingest("blue", left);
+    batched.ingest("red", right);
 
     const trickled = createTraceEvaluator(HOLD_THEN_MOVE);
-    for (const sample of blue) trickled.ingest("blue", [sample]);
-    for (const sample of red) trickled.ingest("red", [sample]);
+    for (const sample of left) trickled.ingest("blue", [sample]);
+    for (const sample of right) trickled.ingest("red", [sample]);
 
     expect(batched.state.completedBeats).toBe(trickled.state.completedBeats);
     expect(batched.state.divergences.map((d) => d.reason)).toEqual(

@@ -20,7 +20,7 @@
     MotionType,
     RotationDirection,
     Orientation,
-    MotionColor,
+    HandSide,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -29,8 +29,8 @@
   // State
   let activeTab = $state<"positions" | "categories">("categories");
   let selectedGroup = $state<"all" | "zeta" | "eta">("all");
-  let blueOrientation = $state<Orientation>(Orientation.IN);
-  let redOrientation = $state<Orientation>(Orientation.IN);
+  let leftOrientation = $state<Orientation>(Orientation.IN);
+  let rightOrientation = $state<Orientation>(Orientation.IN);
 
   // Orientation options for the switcher
   const ORIENTATIONS = [
@@ -41,14 +41,14 @@
   ] as const;
 
   // Get user's prop types from reactive settings (responds to Alt+number, P key)
-  const bluePropType = $derived.by(() => {
+  const leftPropType = $derived.by(() => {
     const settings = getSettings();
-    return (settings.bluePropType ?? settings.propType ?? PropType.STAFF) as PropType;
+    return (settings.leftPropType ?? settings.propType ?? PropType.STAFF) as PropType;
   });
 
-  const redPropType = $derived.by(() => {
+  const rightPropType = $derived.by(() => {
     const settings = getSettings();
-    return (settings.redPropType ?? settings.propType ?? PropType.STAFF) as PropType;
+    return (settings.rightPropType ?? settings.propType ?? PropType.STAFF) as PropType;
   });
 
   // Position to hand location mapping (only Zeta and Eta positions for skewed mode)
@@ -114,36 +114,36 @@
     if (!locations) {
       throw new Error(`No location mapping found for position: ${position}`);
     }
-    const [blueLocation, redLocation] = locations;
+    const [leftLocation, rightLocation] = locations;
     const gridMode = GridMode.SKEWED;
 
-    const blueMotion = createMotionData({
+    const leftMotion = createMotionData({
       motionType: MotionType.STATIC,
-      startLocation: blueLocation,
-      endLocation: blueLocation,
-      startOrientation: blueOrientation,
-      endOrientation: blueOrientation,
+      startLocation: leftLocation,
+      endLocation: leftLocation,
+      startOrientation: leftOrientation,
+      endOrientation: leftOrientation,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: MotionColor.BLUE,
+      color: HandSide.LEFT,
       isVisible: true,
-      propType: bluePropType,
-      arrowLocation: blueLocation,
+      propType: leftPropType,
+      arrowLocation: leftLocation,
       gridMode,
     });
 
-    const redMotion = createMotionData({
+    const rightMotion = createMotionData({
       motionType: MotionType.STATIC,
-      startLocation: redLocation,
-      endLocation: redLocation,
-      startOrientation: redOrientation,
-      endOrientation: redOrientation,
+      startLocation: rightLocation,
+      endLocation: rightLocation,
+      startOrientation: rightOrientation,
+      endOrientation: rightOrientation,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: MotionColor.RED,
+      color: HandSide.RIGHT,
       isVisible: true,
-      propType: redPropType,
-      arrowLocation: redLocation,
+      propType: rightPropType,
+      arrowLocation: rightLocation,
       gridMode,
     });
 
@@ -152,8 +152,8 @@
       startPosition: position,
       endPosition: position,
       motions: {
-        [MotionColor.BLUE]: blueMotion,
-        [MotionColor.RED]: redMotion,
+        [HandSide.LEFT]: leftMotion,
+        [HandSide.RIGHT]: rightMotion,
       },
     };
   }
@@ -236,8 +236,8 @@
         {#each ORIENTATIONS as ori}
           <button
             class="ori-chip"
-            class:active={blueOrientation === ori.value}
-            onclick={() => (blueOrientation = ori.value)}
+            class:active={leftOrientation === ori.value}
+            onclick={() => (leftOrientation = ori.value)}
             title={ori.label}
           >
             <i class="fas {ori.icon}" aria-hidden="true"></i>
@@ -252,8 +252,8 @@
         {#each ORIENTATIONS as ori}
           <button
             class="ori-chip"
-            class:active={redOrientation === ori.value}
-            onclick={() => (redOrientation = ori.value)}
+            class:active={rightOrientation === ori.value}
+            onclick={() => (rightOrientation = ori.value)}
             title={ori.label}
           >
             <i class="fas {ori.icon}" aria-hidden="true"></i>
@@ -268,8 +268,8 @@
     {#each displayPositions as position (position)}
       {@const pictograph = createStaticPictograph(position)}
       {@const positionLocations = POSITION_LOCATIONS[position]}
-      {@const blueLoc = positionLocations?.[0] ?? GridLocation.NORTH}
-      {@const redLoc = positionLocations?.[1] ?? GridLocation.SOUTH}
+      {@const leftLoc = positionLocations?.[0] ?? GridLocation.NORTH}
+      {@const rightLoc = positionLocations?.[1] ?? GridLocation.SOUTH}
       <article class="card">
         <div class="pictograph-area">
           <PictographContainer
@@ -280,8 +280,8 @@
         <footer class="card-footer">
           <span class="position-name">{formatPosition(position)}</span>
           <div class="locations">
-            <span class="loc blue">{blueLoc.slice(0, 2).toUpperCase()}</span>
-            <span class="loc red">{redLoc.slice(0, 2).toUpperCase()}</span>
+            <span class="loc blue">{leftLoc.slice(0, 2).toUpperCase()}</span>
+            <span class="loc red">{rightLoc.slice(0, 2).toUpperCase()}</span>
           </div>
         </footer>
       </article>

@@ -1,7 +1,7 @@
 import { deriveSteps } from "$lib/shared/foundation/services/step-deriver";
 import {
-	extractBlueSoloProp,
-	extractRedSoloProp,
+	extractLeftSoloProp,
+	extractRightSoloProp,
 	extractStepPairings,
 } from "./sequence-decomposer";
 import type { SequenceData } from "../domain/models/sequence-data";
@@ -13,6 +13,7 @@ import { calculateHandpathDirection } from "$lib/shared/pictograph/arrow/positio
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 import { ensureStepPlacement } from "$lib/shared/pictograph/shared/services/motion-placement";
+import { normalizeLegacySequence } from "@tka/tka-types";
 
 // Legacy sequences saved before SoloPropStepData carried prefloatMotionType
 // will arrive here with derived float motions whose prefloat fields are
@@ -29,66 +30,66 @@ function backfillPrefloatFromLegacySteps(
 		const orig = original[i];
 		if (!orig?.motions) return step;
 
-		const blue = step.motions?.blue;
-		const red = step.motions?.red;
-		const origBlue = orig.motions.blue;
-		const origRed = orig.motions.red;
+		const left = step.motions?.left;
+		const right = step.motions?.right;
+		const origLeft = orig.motions.left;
+		const origRight = orig.motions.right;
 
-		const needsBlueBackfill =
-			blue?.motionType === MotionType.FLOAT &&
-			!blue.prefloatMotionType &&
-			origBlue?.prefloatMotionType;
-		const needsRedBackfill =
-			red?.motionType === MotionType.FLOAT &&
-			!red.prefloatMotionType &&
-			origRed?.prefloatMotionType;
+		const needsLeftBackfill =
+			left?.motionType === MotionType.FLOAT &&
+			!left.prefloatMotionType &&
+			origLeft?.prefloatMotionType;
+		const needsRightBackfill =
+			right?.motionType === MotionType.FLOAT &&
+			!right.prefloatMotionType &&
+			origRight?.prefloatMotionType;
 
-		if (!needsBlueBackfill && !needsRedBackfill) return step;
+		if (!needsLeftBackfill && !needsRightBackfill) return step;
 
 		const patched = { ...step, motions: { ...step.motions } };
 
-		if (needsBlueBackfill && blue && origBlue) {
+		if (needsLeftBackfill && left && origLeft) {
 			const handpath = calculateHandpathDirection(
-				blue.startLocation,
-				blue.endLocation
+				left.startLocation,
+				left.endLocation
 			);
 			const prefRot =
 				handpath === "cw"
-					? origBlue.prefloatMotionType === MotionType.PRO
+					? origLeft.prefloatMotionType === MotionType.PRO
 						? RotationDirection.CLOCKWISE
 						: RotationDirection.COUNTER_CLOCKWISE
 					: handpath === "ccw"
-						? origBlue.prefloatMotionType === MotionType.PRO
+						? origLeft.prefloatMotionType === MotionType.PRO
 							? RotationDirection.COUNTER_CLOCKWISE
 							: RotationDirection.CLOCKWISE
 						: undefined;
 
-			patched.motions.blue = {
-				...blue,
-				prefloatMotionType: origBlue.prefloatMotionType,
+			patched.motions.left = {
+				...left,
+				prefloatMotionType: origLeft.prefloatMotionType,
 				...(prefRot && { prefloatRotationDirection: prefRot }),
 			};
 		}
 
-		if (needsRedBackfill && red && origRed) {
+		if (needsRightBackfill && right && origRight) {
 			const handpath = calculateHandpathDirection(
-				red.startLocation,
-				red.endLocation
+				right.startLocation,
+				right.endLocation
 			);
 			const prefRot =
 				handpath === "cw"
-					? origRed.prefloatMotionType === MotionType.PRO
+					? origRight.prefloatMotionType === MotionType.PRO
 						? RotationDirection.CLOCKWISE
 						: RotationDirection.COUNTER_CLOCKWISE
 					: handpath === "ccw"
-						? origRed.prefloatMotionType === MotionType.PRO
+						? origRight.prefloatMotionType === MotionType.PRO
 							? RotationDirection.COUNTER_CLOCKWISE
 							: RotationDirection.CLOCKWISE
 						: undefined;
 
-			patched.motions.red = {
-				...red,
-				prefloatMotionType: origRed.prefloatMotionType,
+			patched.motions.right = {
+				...right,
+				prefloatMotionType: origRight.prefloatMotionType,
 				...(prefRot && { prefloatRotationDirection: prefRot }),
 			};
 		}
@@ -113,7 +114,7 @@ export function deriveStartPositionFromSteps(
 	const first = steps[0];
 	// Invisible placeholder = hand not really there (both-required Step shape);
 	// deriving a start cell from a placeholder's default location would lie.
-	if (!isVisibleMotion(first?.motions?.blue) || !isVisibleMotion(first?.motions?.red)) return undefined;
+	if (!isVisibleMotion(first?.motions?.left) || !isVisibleMotion(first?.motions?.right)) return undefined;
 	try {
     return startPositionDeriver.deriveFromFirstStep(first) as SequenceData["startPosition"];
 	} catch {
@@ -126,6 +127,7 @@ export function deriveStartPositionFromSteps(
  * Ensures derived fields are up-to-date with current domain logic.
  */
 export function hydrate(sequence: SequenceData): SequenceData {
+		sequence = normalizeLegacySequence(sequence);
 		// constructed creatorIntent from legacy fields
 		if (!sequence.creatorIntent) {
 			const legacyPropConfig = sequence.intendedProp;
@@ -139,8 +141,8 @@ export function hydrate(sequence: SequenceData): SequenceData {
 					creatorIntent: {
 						...(legacyPropConfig && {
 							propConfig: {
-								bluePropType: legacyPropConfig.bluePropType,
-								redPropType: legacyPropConfig.redPropType,
+								leftPropType: legacyPropConfig.leftPropType,
+								rightPropType: legacyPropConfig.rightPropType,
 								catDogMode: legacyPropConfig.catDogMode,
 							},
 						}),
@@ -151,16 +153,16 @@ export function hydrate(sequence: SequenceData): SequenceData {
 		}
 
 		if (
-			sequence.blueSoloProp &&
-			sequence.redSoloProp &&
+			sequence.leftSoloProp &&
+			sequence.rightSoloProp &&
 			sequence.stepPairings &&
 			sequence.stepPairings.length > 0
 		) {
 			const derived = deriveSteps(
-				sequence.blueSoloProp,
-				sequence.redSoloProp,
+				sequence.leftSoloProp,
+				sequence.rightSoloProp,
 				sequence.stepPairings,
-				{ bluePropType: PropType.STAFF, redPropType: PropType.STAFF, catDogMode: false }
+				{ leftPropType: PropType.STAFF, rightPropType: PropType.STAFF, catDogMode: false }
 			);
 
 			const steps = backfillPrefloatFromLegacySteps(derived, sequence.steps);
@@ -186,7 +188,7 @@ export function hydrate(sequence: SequenceData): SequenceData {
 		// the fields immediately derive them on the fly (see hand-path explorer).
 		// There is no bulk migration script - that path is archived in favour of
 		// lazy heal-on-save (content-hash V2).
-		if (sequence.steps.length > 0 && !sequence.blueSoloProp) {
+		if (sequence.steps.length > 0 && !sequence.leftSoloProp) {
 			console.debug(
 				`[SequenceHydrator] Sequence "${sequence.word || sequence.id}" has steps but no ` +
 				`compositional fields; will heal on next save/publish. Derive read-time if needed.`
@@ -210,11 +212,12 @@ export function hydrate(sequence: SequenceData): SequenceData {
 }
 
 export function ensureComposition(sequence: SequenceData): SequenceData {
+	sequence = normalizeLegacySequence(sequence);
 	// Nothing to decompose from an empty sequence.
 	if (sequence.steps.length === 0) return sequence;
 
-	const blueSoloProp = extractBlueSoloProp(sequence);
-	const redSoloProp = extractRedSoloProp(sequence);
+	const leftSoloProp = extractLeftSoloProp(sequence);
+	const rightSoloProp = extractRightSoloProp(sequence);
 	const stepPairings = extractStepPairings(sequence);
 
 	// Persist a start position alongside the compositional fields. It is NOT
@@ -230,13 +233,13 @@ export function ensureComposition(sequence: SequenceData): SequenceData {
 
 	return {
 		...sequence,
-		blueSoloProp,
-		redSoloProp,
+		leftSoloProp,
+		rightSoloProp,
 		stepPairings,
-		bluePathHash: blueSoloProp.handPath.contentHash,
-		redPathHash: redSoloProp.handPath.contentHash,
-		blueSoloHash: blueSoloProp.contentHash,
-		redSoloHash: redSoloProp.contentHash,
+		leftPathHash: leftSoloProp.handPath.contentHash,
+		rightPathHash: rightSoloProp.handPath.contentHash,
+		leftSoloHash: leftSoloProp.contentHash,
+		rightSoloHash: rightSoloProp.contentHash,
 		...(startPosition && { startPosition }),
 	};
 }

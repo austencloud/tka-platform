@@ -50,18 +50,18 @@ export class PropCommandHandler implements IVoiceCommandHandler {
     }
 
     if (hand === "blue") {
-      await settingsService.updateSetting("bluePropType", propType);
+      await settingsService.updateSetting("leftPropType", propType);
       return { success: true, message: `Blue prop: ${propType}` };
     }
 
     if (hand === "red") {
-      await settingsService.updateSetting("redPropType", propType);
+      await settingsService.updateSetting("rightPropType", propType);
       return { success: true, message: `Red prop: ${propType}` };
     }
 
     // Both hands
-    await settingsService.updateSetting("bluePropType", propType);
-    await settingsService.updateSetting("redPropType", propType);
+    await settingsService.updateSetting("leftPropType", propType);
+    await settingsService.updateSetting("rightPropType", propType);
     return { success: true, message: `Props: ${propType}` };
   }
 }

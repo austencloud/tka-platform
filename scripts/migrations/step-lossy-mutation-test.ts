@@ -41,10 +41,10 @@ async function fingerprintHydrated(seq: SequenceData): Promise<Record<string, st
   const composed = ensureComposition(seq) as AnyRec;
   return {
     identityHash: await computeHash(seq),
-    bluePathHash: String(composed["bluePathHash"] ?? ""),
-    redPathHash: String(composed["redPathHash"] ?? ""),
-    blueSoloHash: String(composed["blueSoloHash"] ?? ""),
-    redSoloHash: String(composed["redSoloHash"] ?? ""),
+    leftPathHash: String(composed["bluePathHash"] ?? ""),
+    rightPathHash: String(composed["redPathHash"] ?? ""),
+    leftSoloHash: String(composed["blueSoloHash"] ?? ""),
+    rightSoloHash: String(composed["redSoloHash"] ?? ""),
     stepSignatures: JSON.stringify(stepSig.generateSignatures(seq.steps ?? [])),
     viewFieldsDigest: viewFieldsDigest(seq.steps ?? []),
   };

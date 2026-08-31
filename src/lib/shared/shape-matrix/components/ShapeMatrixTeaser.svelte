@@ -17,10 +17,10 @@
   let err = $state("");
 
   const rowAxis = $derived(
-    data ? applyFilter(data.axis, filters.blue, false) : []
+    data ? applyFilter(data.axis, filters.left, false) : []
   );
   const colAxis = $derived(
-    data ? applyFilter(data.axis, filters.red, false) : []
+    data ? applyFilter(data.axis, filters.right, false) : []
   );
 
   onMount(async () => {

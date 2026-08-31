@@ -98,9 +98,9 @@ export class ImageComposer {
     options: Partial<SequenceExportOptions>
   ): Promise<PictographVisibilityOptions> {
     const v = await this.getVisibilitySettings(options.visibilityOverrides);
-    if (options.blueVisible === false) v.showBlueMotion = false;
-    if (options.redVisible === false) v.showRedMotion = false;
-    if (v.showBlueMotion === false || v.showRedMotion === false) v.showTKA = false;
+    if (options.leftVisible === false) v.showLeftMotion = false;
+    if (options.rightVisible === false) v.showRightMotion = false;
+    if (v.showLeftMotion === false || v.showRightMotion === false) v.showTKA = false;
     return v;
   }
 
@@ -178,18 +178,18 @@ export class ImageComposer {
       overrides.showNonRadialPoints !== undefined
     ) {
       // Resolve prop types: prefer overrides, fall back to app settings, then default to STAFF
-      let bluePropType = overrides.bluePropType;
-      let redPropType = overrides.redPropType;
-      if (!bluePropType || !redPropType) {
+      let leftPropType = overrides.leftPropType;
+      let rightPropType = overrides.rightPropType;
+      if (!leftPropType || !rightPropType) {
         try {
           const { getSettings } = await import("$lib/shared/application/state/app-state.svelte");
           const appSettings = getSettings();
-          bluePropType ??= appSettings.bluePropType;
-          redPropType ??= appSettings.redPropType;
+          leftPropType ??= appSettings.leftPropType;
+          rightPropType ??= appSettings.rightPropType;
         } catch {
           // Worker context — no app state available, use default prop type
-          bluePropType ??= PropType.STAFF;
-          redPropType ??= PropType.STAFF;
+          leftPropType ??= PropType.STAFF;
+          rightPropType ??= PropType.STAFF;
         }
       }
       return {
@@ -202,12 +202,12 @@ export class ImageComposer {
         darkMode: overrides.darkMode,
         showGrid: overrides.showGrid,
         handPointVisibility: overrides.handPointVisibility,
-        bluePropType,
-        redPropType,
+        leftPropType,
+        rightPropType,
         // Locked card path: chirality comes ONLY from explicit overrides so a
         // printed card never inherits the operator's personal handedness.
-        blueBuugengFlipped: overrides.blueBuugengFlipped,
-        redBuugengFlipped: overrides.redBuugengFlipped,
+        leftBuugengFlipped: overrides.leftBuugengFlipped,
+        rightBuugengFlipped: overrides.rightBuugengFlipped,
         handPathMode: overrides.handPathMode,
       };
     }
@@ -236,10 +236,10 @@ export class ImageComposer {
       showNonRadialPoints: visibilityManager.getNonRadialVisibility(),
       darkMode: animVisibilityManager.isDarkMode(),
       handPointVisibility: visibilityManager.getHandPointVisibility(),
-      bluePropType: appSettings.bluePropType,
-      redPropType: appSettings.redPropType,
-      blueBuugengFlipped: appSettings.blueBuugengFlipped ?? false,
-      redBuugengFlipped: appSettings.redBuugengFlipped ?? false,
+      leftPropType: appSettings.leftPropType,
+      rightPropType: appSettings.rightPropType,
+      leftBuugengFlipped: appSettings.leftBuugengFlipped ?? false,
+      rightBuugengFlipped: appSettings.rightBuugengFlipped ?? false,
     };
 
     if (overrides) {
@@ -254,12 +254,12 @@ export class ImageComposer {
         darkMode: overrides.darkMode ?? globalSettings.darkMode,
         showGrid: overrides.showGrid ?? true,
         handPointVisibility: overrides.handPointVisibility ?? globalSettings.handPointVisibility,
-        bluePropType: overrides.bluePropType ?? globalSettings.bluePropType,
-        redPropType: overrides.redPropType ?? globalSettings.redPropType,
-        blueBuugengFlipped:
-          overrides.blueBuugengFlipped ?? globalSettings.blueBuugengFlipped,
-        redBuugengFlipped:
-          overrides.redBuugengFlipped ?? globalSettings.redBuugengFlipped,
+        leftPropType: overrides.leftPropType ?? globalSettings.leftPropType,
+        rightPropType: overrides.rightPropType ?? globalSettings.rightPropType,
+        leftBuugengFlipped:
+          overrides.leftBuugengFlipped ?? globalSettings.leftBuugengFlipped,
+        rightBuugengFlipped:
+          overrides.rightBuugengFlipped ?? globalSettings.rightBuugengFlipped,
         handPathMode: overrides.handPathMode,
       };
     }
@@ -290,10 +290,10 @@ export class ImageComposer {
       options.visibilityOverrides
     );
 
-    if (options.blueVisible === false) visibilitySettings.showBlueMotion = false;
-    if (options.redVisible === false) visibilitySettings.showRedMotion = false;
+    if (options.leftVisible === false) visibilitySettings.showLeftMotion = false;
+    if (options.rightVisible === false) visibilitySettings.showRightMotion = false;
 
-    if (visibilitySettings.showBlueMotion === false || visibilitySettings.showRedMotion === false) {
+    if (visibilitySettings.showLeftMotion === false || visibilitySettings.showRightMotion === false) {
       visibilitySettings.showTKA = false;
     }
 
@@ -334,11 +334,11 @@ export class ImageComposer {
 
     const hasPropOverride =
       options.propTypeOverride ||
-      options.bluePropTypeOverride ||
-      options.redPropTypeOverride;
+      options.leftPropTypeOverride ||
+      options.rightPropTypeOverride;
 
-    const effectiveBluePropType = options.bluePropTypeOverride ?? options.propTypeOverride;
-    const effectiveRedPropType = options.redPropTypeOverride ?? options.propTypeOverride;
+    const effectiveLeftPropType = options.leftPropTypeOverride ?? options.propTypeOverride;
+    const effectiveRightPropType = options.rightPropTypeOverride ?? options.propTypeOverride;
 
     if (hasStartPosition && effectiveStartPosition) {
       const startStepNumber = options.addStepNumbers ? 0 : undefined;
@@ -346,8 +346,8 @@ export class ImageComposer {
         ? this.applyPropTypeOverride(
             effectiveStartPosition,
             options.propTypeOverride,
-            options.bluePropTypeOverride,
-            options.redPropTypeOverride
+            options.leftPropTypeOverride,
+            options.rightPropTypeOverride
           )
         : effectiveStartPosition;
       await this.renderPictographAt(
@@ -359,8 +359,8 @@ export class ImageComposer {
         startStepNumber,
         gridOffsetY,
         visibilitySettings,
-        effectiveBluePropType,
-        effectiveRedPropType,
+        effectiveLeftPropType,
+        effectiveRightPropType,
         gridOffsetX
       );
       renderedCount++;
@@ -385,8 +385,8 @@ export class ImageComposer {
         ? this.applyPropTypeOverride(
             beat,
             options.propTypeOverride,
-            options.bluePropTypeOverride,
-            options.redPropTypeOverride
+            options.leftPropTypeOverride,
+            options.rightPropTypeOverride
           )
         : beat;
       await this.renderPictographAt(
@@ -398,8 +398,8 @@ export class ImageComposer {
         stepNumber,
         gridOffsetY,
         visibilitySettings,
-        effectiveBluePropType,
-        effectiveRedPropType,
+        effectiveLeftPropType,
+        effectiveRightPropType,
         gridOffsetX
       );
 
@@ -443,8 +443,8 @@ export class ImageComposer {
     options: Partial<SequenceExportOptions>
   ): CardFrontChromeDeps {
     const { columns, rows, stepSize, gridOffsetY, gridOffsetX, isDarkMode } = layout;
-    const effectiveBluePropType = options.bluePropTypeOverride ?? options.propTypeOverride;
-    const effectiveRedPropType = options.redPropTypeOverride ?? options.propTypeOverride;
+    const effectiveLeftPropType = options.leftPropTypeOverride ?? options.propTypeOverride;
+    const effectiveRightPropType = options.rightPropTypeOverride ?? options.propTypeOverride;
     return {
       textRenderer: this.TextRenderer,
       qrCodeGenerator: this.qrCodeGenerator,
@@ -459,8 +459,8 @@ export class ImageComposer {
           gridOffsetX,
           isDarkMode,
           options,
-          effectiveBluePropType,
-          effectiveRedPropType
+          effectiveLeftPropType,
+          effectiveRightPropType
         );
       },
       renderQRCode: async (c) => {
@@ -473,8 +473,8 @@ export class ImageComposer {
             stepSize,
             gridOffsetY,
             isDarkMode,
-            effectiveBluePropType,
-            effectiveRedPropType,
+            effectiveLeftPropType,
+            effectiveRightPropType,
             gridOffsetX,
             options.deckId,
             options.deckName,
@@ -493,20 +493,20 @@ export class ImageComposer {
     blob: Blob
   ): void {
     const isDark = visibilitySettings.darkMode ?? false;
-    const blueProp = visibilitySettings.bluePropType;
-    const redProp = visibilitySettings.redPropType;
-    const catDogModeEnabled = !!(blueProp && redProp && blueProp !== redProp);
+    const leftProp = visibilitySettings.leftPropType;
+    const rightProp = visibilitySettings.rightPropType;
+    const catDogModeEnabled = !!(leftProp && rightProp && leftProp !== rightProp);
 
     const previewOptions: PreviewCellRenderOptions = {
       size: stepSize,
-      bluePropType: blueProp,
-      redPropType: redProp,
+      leftPropType: leftProp,
+      rightPropType: rightProp,
       catDogModeEnabled,
       // Write-through into the preview-cell cache: the key MUST carry the same
       // chirality this blob was rendered with, or an unflipped export would be
       // served to a flipped card cell.
-      blueBuugengFlipped: visibilitySettings.blueBuugengFlipped ?? false,
-      redBuugengFlipped: visibilitySettings.redBuugengFlipped ?? false,
+      leftBuugengFlipped: visibilitySettings.leftBuugengFlipped ?? false,
+      rightBuugengFlipped: visibilitySettings.rightBuugengFlipped ?? false,
       showStepNumbers: false,
       showNonRadialPoints: visibilitySettings.showNonRadialPoints ?? true,
       showGrid: visibilitySettings.showGrid ?? true,
@@ -542,15 +542,15 @@ export class ImageComposer {
     stepNumber?: number,
     titleOffset: number = 0,
     visibilitySettings?: PictographVisibilityOptions,
-    bluePropType?: PropType,
-    redPropType?: PropType,
+    leftPropType?: PropType,
+    rightPropType?: PropType,
     horizontalOffset: number = 0
   ): Promise<void> {
     try {
       const finalVisibilitySettings: PictographVisibilityOptions = {
         ...visibilitySettings,
-        bluePropType: bluePropType ?? visibilitySettings?.bluePropType,
-        redPropType: redPropType ?? visibilitySettings?.redPropType,
+        leftPropType: leftPropType ?? visibilitySettings?.leftPropType,
+        rightPropType: rightPropType ?? visibilitySettings?.rightPropType,
       };
 
       if (this.useCompositionalCaching && this.layerCompositor) {
@@ -597,8 +597,8 @@ export class ImageComposer {
             {
               size: stepSize,
               visibility: finalVisibilitySettings,
-              bluePropType: bluePropType,
-              redPropType: redPropType,
+              leftPropType: leftPropType,
+              rightPropType: rightPropType,
             }
           );
           img = await canvasToImage(pictographCanvas);
@@ -722,8 +722,8 @@ export class ImageComposer {
     stepSize: number,
     headerHeight: number,
     isDarkMode: boolean,
-    bluePropType?: PropType,
-    redPropType?: PropType,
+    leftPropType?: PropType,
+    rightPropType?: PropType,
     horizontalOffset: number = 0,
     deckId?: string,
     deckName?: string,
@@ -754,8 +754,8 @@ export class ImageComposer {
               style: "modern",
               margin: 1,
               darkMode: isDarkMode,
-              bluePropType: bluePropType,
-              redPropType: redPropType,
+              leftPropType: leftPropType,
+              rightPropType: rightPropType,
               deckId,
               deckName,
             }
@@ -786,8 +786,8 @@ export class ImageComposer {
     gridOffsetX: number,
     isDarkMode: boolean,
     options: Partial<SequenceExportOptions>,
-    bluePropType?: PropType,
-    redPropType?: PropType,
+    leftPropType?: PropType,
+    rightPropType?: PropType,
   ): Promise<void> {
     try {
       const { calculate: calculateMandalaGeometry } = await import(
@@ -796,19 +796,19 @@ export class ImageComposer {
       const { getMandalaPathOptions } = await import(
         "../../mandala/services/mandala-path-options"
       );
-      const tipEnds = pairTipEnds(bluePropType, redPropType);
+      const tipEnds = pairTipEnds(leftPropType, rightPropType);
       // The card traces the same hand paths the animation draws, so it uses the
       // shape the caller was showing. Unset means the arc default.
       const paths = calculateMandalaGeometry(
         sequence.steps ?? [],
-        bluePropType,
-        redPropType,
+        leftPropType,
+        rightPropType,
         getMandalaPathOptions(
           options.mandalaPathShape ?? "arc",
           tipEnds === 1 ? 1 : 2,
         ),
       );
-      if (paths.blue.length === 0 && paths.red.length === 0) return;
+      if (paths.left.length === 0 && paths.right.length === 0) return;
 
       const layoutMode = options.startPositionLayout ?? "row";
       const { placements } = getMandalaPlacements({
@@ -817,8 +817,8 @@ export class ImageComposer {
         rows,
         includeStartPosition: options.includeStartPosition ?? false,
         showQRCode: options.visibilityOverrides?.showQRCode ?? false,
-        blueVisible: options.blueVisible ?? true,
-        redVisible: options.redVisible ?? true,
+        leftVisible: options.leftVisible ?? true,
+        rightVisible: options.rightVisible ?? true,
         mandalaEnabled: true,
         startPositionLayout: layoutMode,
       });
@@ -827,18 +827,18 @@ export class ImageComposer {
 
       const palette = isDarkMode
         ? {
-            blueStroke: DARK_MOTION_BLUE_STROKE,
-            blueFill: DARK_MOTION_BLUE_FILL,
-            redStroke: DARK_MOTION_RED_STROKE,
-            redFill: DARK_MOTION_RED_FILL,
+            leftStroke: DARK_MOTION_BLUE_STROKE,
+            leftFill: DARK_MOTION_BLUE_FILL,
+            rightStroke: DARK_MOTION_RED_STROKE,
+            rightFill: DARK_MOTION_RED_FILL,
             purpleStroke: DARK_MOTION_PURPLE_STROKE,
             purpleFill: DARK_MOTION_PURPLE_FILL,
           }
         : {
-            blueStroke: LIGHT_MOTION_BLUE_STROKE,
-            blueFill: LIGHT_MOTION_BLUE_FILL,
-            redStroke: LIGHT_MOTION_RED_STROKE,
-            redFill: LIGHT_MOTION_RED_FILL,
+            leftStroke: LIGHT_MOTION_BLUE_STROKE,
+            leftFill: LIGHT_MOTION_BLUE_FILL,
+            rightStroke: LIGHT_MOTION_RED_STROKE,
+            rightFill: LIGHT_MOTION_RED_FILL,
             purpleStroke: LIGHT_MOTION_PURPLE_STROKE,
             purpleFill: LIGHT_MOTION_PURPLE_FILL,
           };
@@ -884,23 +884,23 @@ export class ImageComposer {
   >(
     data: T,
     propType?: PropType,
-    bluePropType?: PropType,
-    redPropType?: PropType
+    leftPropType?: PropType,
+    rightPropType?: PropType
   ): T {
-    const finalBlueProp = bluePropType ?? propType;
-    const finalRedProp = redPropType ?? propType;
+    const finalLeftProp = leftPropType ?? propType;
+    const finalRightProp = rightPropType ?? propType;
 
     const result = {
       ...data,
       motions: {
-        blue:
-          data.motions.blue && finalBlueProp
-            ? { ...data.motions.blue, propType: finalBlueProp }
-            : data.motions.blue,
-        red:
-          data.motions.red && finalRedProp
-            ? { ...data.motions.red, propType: finalRedProp }
-            : data.motions.red,
+        left:
+          data.motions.left && finalLeftProp
+            ? { ...data.motions.left, propType: finalLeftProp }
+            : data.motions.left,
+        right:
+          data.motions.right && finalRightProp
+            ? { ...data.motions.right, propType: finalRightProp }
+            : data.motions.right,
       },
     };
 
@@ -930,13 +930,13 @@ export class ImageComposer {
     );
     const preparedPictograph = await preparer.prepareSingle(pictographData, {
       themeMode,
-      bluePropType: visibilitySettings.bluePropType,
-      redPropType: visibilitySettings.redPropType,
+      leftPropType: visibilitySettings.leftPropType,
+      rightPropType: visibilitySettings.rightPropType,
       handPathMode: visibilitySettings.handPathMode ?? false,
-      showBlueMotion: visibilitySettings.showBlueMotion,
-      showRedMotion: visibilitySettings.showRedMotion,
-      blueBuugengFlipped: visibilitySettings.blueBuugengFlipped,
-      redBuugengFlipped: visibilitySettings.redBuugengFlipped,
+      showLeftMotion: visibilitySettings.showLeftMotion,
+      showRightMotion: visibilitySettings.showRightMotion,
+      leftBuugengFlipped: visibilitySettings.leftBuugengFlipped,
+      rightBuugengFlipped: visibilitySettings.rightBuugengFlipped,
     });
 
     const { options: layerOptions, visibility: layerVisibility } = buildCellLayerOptions(

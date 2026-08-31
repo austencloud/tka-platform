@@ -10,7 +10,7 @@ Uses PictographContainer (the actual pictograph renderer) instead of custom SVG.
     GridMode,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
-    MotionColor,
+    HandSide,
     MotionType,
     Orientation,
     RotationDirection,
@@ -73,7 +73,7 @@ Uses PictographContainer (the actual pictograph renderer) instead of custom SVG.
     endPosition: null,
     gridMode,
     motions: {
-      blue: createMotionData({
+      left: createMotionData({
         motionType: MotionType.STATIC,
         rotationDirection: RotationDirection.NO_ROTATION,
         startLocation: HAND_TO_LOCATION[leftHand],
@@ -84,10 +84,10 @@ Uses PictographContainer (the actual pictograph renderer) instead of custom SVG.
         isVisible: true,
         propType: PropType.HAND,
         arrowLocation: HAND_TO_LOCATION[leftHand],
-        color: MotionColor.BLUE,
+        color: HandSide.LEFT,
         gridMode,
       }),
-      red: createMotionData({
+      right: createMotionData({
         motionType: MotionType.STATIC,
         rotationDirection: RotationDirection.NO_ROTATION,
         startLocation: HAND_TO_LOCATION[rightHand],
@@ -98,7 +98,7 @@ Uses PictographContainer (the actual pictograph renderer) instead of custom SVG.
         isVisible: true,
         propType: PropType.HAND,
         arrowLocation: HAND_TO_LOCATION[rightHand],
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         gridMode,
       }),
     },
@@ -116,8 +116,8 @@ Uses PictographContainer (the actual pictograph renderer) instead of custom SVG.
     showPositions={false}
     disableTransitions={true}
     cellIndex={0}
-    bluePropTypeOverride={PropType.HAND}
-    redPropTypeOverride={PropType.HAND}
+    leftPropTypeOverride={PropType.HAND}
+    rightPropTypeOverride={PropType.HAND}
   />
 </div>
 

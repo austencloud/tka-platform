@@ -26,7 +26,7 @@
  */
 
 import { getContext, setContext } from "svelte";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { reducedMotion } from "$lib/shared/transitions/motion";
 import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
@@ -169,7 +169,7 @@ export function locationName(location: GridLocation): string {
 
 /** "Blue" / "Red" — the label that always travels WITH the color, never instead of it. */
 export function handName(hand: TraceHand): string {
-  return hand === MotionColor.BLUE ? "Blue" : "Red";
+  return hand === HandSide.LEFT ? "Blue" : "Red";
 }
 
 /** Where a segment begins on the stage, whether it moves or holds. */

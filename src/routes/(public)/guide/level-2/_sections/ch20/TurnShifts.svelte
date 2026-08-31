@@ -11,7 +11,7 @@
   import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -39,7 +39,7 @@
     letter: null,
     gridMode: GridMode.DIAMOND,
     motions: {
-      red: createMotionData({
+      right: createMotionData({
         motionType: type,
         rotationDirection: rot,
         startLocation: from,
@@ -47,7 +47,7 @@
         startOrientation: startOri,
         endOrientation: endOri,
         turns,
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
@@ -55,7 +55,7 @@
   });
   const stat = (id: string, loc: GridLocation, ori: Orientation) =>
     redStaff(id, MotionType.STATIC, loc, loc, ori, ori, RotationDirection.NO_ROTATION);
-  const toHM = (m: ReturnType<typeof redStaff>["motions"]["red"]) => ({
+  const toHM = (m: ReturnType<typeof redStaff>["motions"]["right"]) => ({
     type: m.motionType,
     from: m.startLocation,
     to: m.endLocation,
@@ -80,8 +80,8 @@
       id: `${data.id}-anim-${stepNumber}`,
       stepNumber,
       motions: {
-        blue: createPlaceholderMotion(MotionColor.BLUE, { location: startLoc, orientation: IN }),
-        red: data.motions.red,
+        left: createPlaceholderMotion(HandSide.LEFT, { location: startLoc, orientation: IN }),
+        right: data.motions.right,
       },
     }) as unknown as StepData;
   const rowSteps = (key: keyof typeof ANIM): StepData[] => {
@@ -98,12 +98,12 @@
     {
       kind: "half",
       step: halfOf(proCombined, E),
-      fallbackMotion: toHM(proCombined.motions.red),
+      fallbackMotion: toHM(proCombined.motions.right),
       frameLabel: "halfway",
     },
     {
       kind: "end",
-      step: animStep(stat("pro-end", SO_, proCombined.motions.red.endOrientation), 0, SO_),
+      step: animStep(stat("pro-end", SO_, proCombined.motions.right.endOrientation), 0, SO_),
       frameLabel: "end",
       thumbLabel: "out",
     },
@@ -125,13 +125,13 @@
     {
       kind: "half",
       step: halfOf(antiCombined, E),
-      fallbackMotion: toHM(antiCombined.motions.red),
+      fallbackMotion: toHM(antiCombined.motions.right),
       frameLabel: "halfway",
       thumbLabel: "out",
     },
     {
       kind: "end",
-      step: animStep(stat("anti-end", SO_, antiCombined.motions.red.endOrientation), 0, SO_),
+      step: animStep(stat("anti-end", SO_, antiCombined.motions.right.endOrientation), 0, SO_),
       frameLabel: "end",
       thumbLabel: "in",
     },

@@ -33,10 +33,10 @@ import {
 
 export interface LedSamplerConfig {
   canvasSize: number;
-  bluePropDimensions: { width: number; height: number };
-  redPropDimensions: { width: number; height: number };
-  bluePropType?: string;
-  redPropType?: string;
+  leftPropDimensions: { width: number; height: number };
+  rightPropDimensions: { width: number; height: number };
+  leftPropType?: string;
+  rightPropType?: string;
   /**
    * Overlaid tunnel layers. When present, LEDs are also emitted for each
    * layer's blue/red props (propIndex >= 2) so the LED effect covers the whole
@@ -44,8 +44,8 @@ export interface LedSamplerConfig {
    * position path. Absent = the plain two-prop case.
    */
   additionalLayers?: Array<{
-    blueProp: PropState | null;
-    redProp: PropState | null;
+    leftProp: PropState | null;
+    rightProp: PropState | null;
     opacity?: number;
   }>;
   /** Tunnel rainbow spectrum. When false, overlaid layers take the pattern's
@@ -84,8 +84,8 @@ export class LedSampler {
   }
 
   update(
-    blueProp: PropState | null,
-    redProp: PropState | null,
+    leftProp: PropState | null,
+    rightProp: PropState | null,
     config: LedSamplerConfig,
     currentTime: number,
     ledConfig: LedOverlayConfig
@@ -114,36 +114,36 @@ export class LedSampler {
     const gain = 1 / 255;
 
     let count = 0;
-    if (blueProp) {
+    if (leftProp) {
       count = this.emitProp(
-        blueProp,
+        leftProp,
         config,
-        config.bluePropDimensions,
-        config.bluePropType ?? null,
+        config.leftPropDimensions,
+        config.leftPropType ?? null,
         0,
         ledCount,
         pattern,
         frameIndex,
         gain,
         config.tunnelPropColors
-          ? tunnelColorFromHex(config.tunnelPropColors.blue).rgb01
+          ? tunnelColorFromHex(config.tunnelPropColors.left).rgb01
           : null,
         count
       );
     }
-    if (redProp) {
+    if (rightProp) {
       count = this.emitProp(
-        redProp,
+        rightProp,
         config,
-        config.redPropDimensions,
-        config.redPropType ?? null,
+        config.rightPropDimensions,
+        config.rightPropType ?? null,
         1,
         ledCount,
         pattern,
         frameIndex,
         gain,
         config.tunnelPropColors
-          ? tunnelColorFromHex(config.tunnelPropColors.red).rgb01
+          ? tunnelColorFromHex(config.tunnelPropColors.right).rgb01
           : null,
         count
       );
@@ -162,20 +162,20 @@ export class LedSampler {
         li++
       ) {
         const layer = layers[li]!;
-        if (layer.blueProp) {
+        if (layer.leftProp) {
           const propIndex = 2 + li * 2;
           count = this.emitProp(
-            layer.blueProp,
+            layer.leftProp,
             config,
-            config.bluePropDimensions,
-            config.bluePropType ?? null,
+            config.leftPropDimensions,
+            config.leftPropType ?? null,
             propIndex,
             ledCount,
             pattern,
             frameIndex,
             gain,
             exact
-              ? tunnelColorFromHex(exact.blue).rgb01
+              ? tunnelColorFromHex(exact.left).rgb01
               : spectrum
                 ? tunnelPropColor(propIndex, layers.length).rgb01
                 : null,
@@ -183,20 +183,20 @@ export class LedSampler {
             layer.opacity ?? 1
           );
         }
-        if (layer.redProp) {
+        if (layer.rightProp) {
           const propIndex = 3 + li * 2;
           count = this.emitProp(
-            layer.redProp,
+            layer.rightProp,
             config,
-            config.redPropDimensions,
-            config.redPropType ?? null,
+            config.rightPropDimensions,
+            config.rightPropType ?? null,
             propIndex,
             ledCount,
             pattern,
             frameIndex,
             gain,
             exact
-              ? tunnelColorFromHex(exact.red).rgb01
+              ? tunnelColorFromHex(exact.right).rgb01
               : spectrum
                 ? tunnelPropColor(propIndex, layers.length).rgb01
                 : null,

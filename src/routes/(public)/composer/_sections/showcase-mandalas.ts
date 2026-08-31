@@ -24,9 +24,9 @@ export const SHOWCASE_MANDALAS = [
         "duration": 1,
         "startPosition": "gamma7",
         "endPosition": "gamma11",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "isVisible": true,
             "arrowPlacementData": {
               "rotationAngle": 0,
@@ -60,7 +60,7 @@ export const SHOWCASE_MANDALAS = [
             "endOrientation": "out",
             "skewSteps": null
           },
-          "blue": {
+          "left": {
             "endOrientation": "in",
             "skewSteps": null,
             "propType": "staff",
@@ -96,7 +96,7 @@ export const SHOWCASE_MANDALAS = [
           }
         },
         "id": "step-1-1784271464863",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond"
       },
       {
@@ -108,9 +108,9 @@ export const SHOWCASE_MANDALAS = [
         "isBlank": false,
         "gridMode": "diamond",
         "id": "step-2-1784271464863",
-        "redReversal": false,
+        "rightReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "turns": 0,
             "motionType": "pro",
             "handPath": null,
@@ -144,7 +144,7 @@ export const SHOWCASE_MANDALAS = [
             "startLocation": "s",
             "startOrientation": "in"
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "turns": 0.5,
             "handPath": null,
@@ -179,7 +179,7 @@ export const SHOWCASE_MANDALAS = [
             "startOrientation": "out"
           }
         },
-        "blueReversal": false
+        "leftReversal": false
       },
       {
         "isBlank": false,
@@ -189,7 +189,7 @@ export const SHOWCASE_MANDALAS = [
         "letter": "O",
         "stepNumber": 3,
         "motions": {
-          "blue": {
+          "left": {
             "skewDir": null,
             "propType": "staff",
             "skewSteps": null,
@@ -223,7 +223,7 @@ export const SHOWCASE_MANDALAS = [
               "positionY": 0
             }
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "turns": "fl",
             "rotationDirection": "noRotation",
@@ -260,17 +260,17 @@ export const SHOWCASE_MANDALAS = [
             }
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
         "id": "step-3-1784271464863",
-        "redReversal": false
+        "rightReversal": false
       },
       {
         "gridMode": "diamond",
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-4-1784271464863",
         "motions": {
-          "red": {
+          "right": {
             "handPath": null,
             "rotationDirection": "noRotation",
             "motionType": "float",
@@ -306,7 +306,7 @@ export const SHOWCASE_MANDALAS = [
               "coordinates": null
             }
           },
-          "blue": {
+          "left": {
             "turns": 0.5,
             "motionType": "anti",
             "rotationDirection": "cw",
@@ -341,7 +341,7 @@ export const SHOWCASE_MANDALAS = [
             "color": "blue"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "duration": 1,
         "endPosition": "gamma5",
         "startPosition": "gamma11",
@@ -350,9 +350,9 @@ export const SHOWCASE_MANDALAS = [
         "isBlank": false
       },
       {
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "isVisible": true,
             "arrowPlacementData": {
               "positionX": 0,
@@ -386,7 +386,7 @@ export const SHOWCASE_MANDALAS = [
             "endOrientation": "counter",
             "skewSteps": null
           },
-          "red": {
+          "right": {
             "skewDir": null,
             "propType": "staff",
             "endOrientation": "counter",
@@ -422,7 +422,7 @@ export const SHOWCASE_MANDALAS = [
           }
         },
         "id": "step-5-1784271464863",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
         "isBlank": false,
         "letter": "Λ",
@@ -432,12 +432,12 @@ export const SHOWCASE_MANDALAS = [
         "duration": 1
       },
       {
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-6-1784271464863",
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "skewDir": null,
             "propType": "staff",
             "endOrientation": "counter",
@@ -471,7 +471,7 @@ export const SHOWCASE_MANDALAS = [
             },
             "endLocation": "s"
           },
-          "red": {
+          "right": {
             "isVisible": true,
             "endLocation": "w",
             "arrowPlacementData": {
@@ -521,11 +521,11 @@ export const SHOWCASE_MANDALAS = [
         "duration": 1,
         "isBlank": false,
         "id": "step-7-1784271464863",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "gridMode": "diamond",
             "arrowLocation": "n",
             "startLocation": "w",
@@ -561,7 +561,7 @@ export const SHOWCASE_MANDALAS = [
             "rotationDirection": "noRotation",
             "handPath": null
           },
-          "blue": {
+          "left": {
             "startLocation": "s",
             "startOrientation": "counter",
             "gridMode": "diamond",
@@ -598,9 +598,9 @@ export const SHOWCASE_MANDALAS = [
         }
       },
       {
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "prefloatRotationDirection": "cw",
             "skewDir": null,
             "propType": "staff",
@@ -636,7 +636,7 @@ export const SHOWCASE_MANDALAS = [
               "svgMirrored": false
             }
           },
-          "blue": {
+          "left": {
             "propType": "staff",
             "skewDir": null,
             "endOrientation": "out",
@@ -671,7 +671,7 @@ export const SHOWCASE_MANDALAS = [
             }
           }
         },
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-8-1784271464863",
         "gridMode": "diamond",
         "isBlank": false,
@@ -683,10 +683,10 @@ export const SHOWCASE_MANDALAS = [
       },
       {
         "gridMode": "diamond",
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-9-1784271464863",
         "motions": {
-          "blue": {
+          "left": {
             "skewDir": null,
             "propType": "staff",
             "endOrientation": "out",
@@ -720,7 +720,7 @@ export const SHOWCASE_MANDALAS = [
             },
             "endLocation": "n"
           },
-          "red": {
+          "right": {
             "turns": 0,
             "motionType": "dash",
             "rotationDirection": "noRotation",
@@ -755,7 +755,7 @@ export const SHOWCASE_MANDALAS = [
             "startOrientation": "out"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "duration": 1,
         "endPosition": "gamma15",
         "startPosition": "gamma3",
@@ -764,9 +764,9 @@ export const SHOWCASE_MANDALAS = [
         "isBlank": false
       },
       {
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "turns": 0,
             "motionType": "pro",
             "handPath": null,
@@ -800,7 +800,7 @@ export const SHOWCASE_MANDALAS = [
             },
             "color": "blue"
           },
-          "red": {
+          "right": {
             "arrowLocation": "n",
             "gridMode": "diamond",
             "startOrientation": "in",
@@ -836,7 +836,7 @@ export const SHOWCASE_MANDALAS = [
           }
         },
         "id": "step-10-1784271464863",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
         "isBlank": false,
         "stepNumber": 10,
@@ -847,10 +847,10 @@ export const SHOWCASE_MANDALAS = [
       },
       {
         "gridMode": "diamond",
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-11-1784271464863",
         "motions": {
-          "blue": {
+          "left": {
             "propType": "staff",
             "skewDir": null,
             "skewSteps": null,
@@ -884,7 +884,7 @@ export const SHOWCASE_MANDALAS = [
             },
             "endLocation": "n"
           },
-          "red": {
+          "right": {
             "arrowPlacementData": {
               "positionX": 0,
               "manualAdjustmentX": 0,
@@ -921,7 +921,7 @@ export const SHOWCASE_MANDALAS = [
             "skewDir": null
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "duration": 1,
         "startPosition": "gamma5",
         "endPosition": "gamma15",
@@ -931,11 +931,11 @@ export const SHOWCASE_MANDALAS = [
       },
       {
         "id": "step-12-1784271464863",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "color": "blue",
             "propPlacementData": {
               "positionX": 0,
@@ -969,7 +969,7 @@ export const SHOWCASE_MANDALAS = [
             "turns": 0.5,
             "motionType": "anti"
           },
-          "red": {
+          "right": {
             "turns": "fl",
             "motionType": "float",
             "rotationDirection": "noRotation",
@@ -1021,7 +1021,7 @@ export const SHOWCASE_MANDALAS = [
         "stepNumber": 13,
         "letter": "Λ",
         "motions": {
-          "red": {
+          "right": {
             "turns": 0,
             "motionType": "dash",
             "handPath": null,
@@ -1055,7 +1055,7 @@ export const SHOWCASE_MANDALAS = [
               "positionY": 0
             }
           },
-          "blue": {
+          "left": {
             "isVisible": true,
             "endLocation": "w",
             "arrowPlacementData": {
@@ -1090,10 +1090,10 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
         "id": "step-13-1784271464863",
-        "redReversal": false
+        "rightReversal": false
       },
       {
         "isBlank": false,
@@ -1103,7 +1103,7 @@ export const SHOWCASE_MANDALAS = [
         "letter": "O",
         "stepNumber": 14,
         "motions": {
-          "red": {
+          "right": {
             "handPath": null,
             "rotationDirection": "cw",
             "turns": 0.5,
@@ -1137,7 +1137,7 @@ export const SHOWCASE_MANDALAS = [
             "startOrientation": "clock",
             "startLocation": "s"
           },
-          "blue": {
+          "left": {
             "endLocation": "n",
             "arrowPlacementData": {
               "svgMirrored": false,
@@ -1172,9 +1172,9 @@ export const SHOWCASE_MANDALAS = [
             "propType": "staff"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-14-1784271464863"
       },
       {
@@ -1185,7 +1185,7 @@ export const SHOWCASE_MANDALAS = [
         "stepNumber": 15,
         "letter": "O",
         "motions": {
-          "blue": {
+          "left": {
             "turns": 0,
             "motionType": "anti",
             "handPath": null,
@@ -1219,7 +1219,7 @@ export const SHOWCASE_MANDALAS = [
             },
             "color": "blue"
           },
-          "red": {
+          "right": {
             "skewSteps": null,
             "endOrientation": "counter",
             "prefloatRotationDirection": "cw",
@@ -1256,15 +1256,15 @@ export const SHOWCASE_MANDALAS = [
             "isVisible": true
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
         "id": "step-15-1784271464863",
-        "redReversal": false
+        "rightReversal": false
       },
       {
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "endOrientation": "in",
             "skewSteps": null,
             "skewDir": null,
@@ -1298,7 +1298,7 @@ export const SHOWCASE_MANDALAS = [
             },
             "isVisible": true
           },
-          "red": {
+          "right": {
             "handPath": null,
             "rotationDirection": "noRotation",
             "motionType": "float",
@@ -1335,7 +1335,7 @@ export const SHOWCASE_MANDALAS = [
             }
           }
         },
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-16-1784271464863",
         "gridMode": "diamond",
         "isBlank": false,
@@ -1347,8 +1347,8 @@ export const SHOWCASE_MANDALAS = [
       }
     ],
     "variant": "right",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "c99e8438-9758-4956-9645-b4b383c6c433",
@@ -1356,11 +1356,11 @@ export const SHOWCASE_MANDALAS = [
     "steps": [
       {
         "id": "step-1-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "color": "blue",
             "propPlacementData": {
               "positionX": 0,
@@ -1394,7 +1394,7 @@ export const SHOWCASE_MANDALAS = [
             "rotationDirection": "ccw",
             "handPath": null
           },
-          "red": {
+          "right": {
             "arrowLocation": "n",
             "gridMode": "diamond",
             "startOrientation": "in",
@@ -1438,11 +1438,11 @@ export const SHOWCASE_MANDALAS = [
       },
       {
         "id": "step-2-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "propPlacementData": {
               "rotationAngle": 0,
               "svgCenter": null,
@@ -1478,7 +1478,7 @@ export const SHOWCASE_MANDALAS = [
             "turns": "fl",
             "motionType": "float"
           },
-          "red": {
+          "right": {
             "endOrientation": "in",
             "skewSteps": null,
             "propType": "staff",
@@ -1522,10 +1522,10 @@ export const SHOWCASE_MANDALAS = [
       },
       {
         "gridMode": "diamond",
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-3-1784271460511",
         "motions": {
-          "red": {
+          "right": {
             "propType": "staff",
             "skewDir": null,
             "skewSteps": null,
@@ -1559,7 +1559,7 @@ export const SHOWCASE_MANDALAS = [
               "manualAdjustmentY": 0
             }
           },
-          "blue": {
+          "left": {
             "arrowLocation": "n",
             "gridMode": "diamond",
             "startOrientation": "in",
@@ -1594,7 +1594,7 @@ export const SHOWCASE_MANDALAS = [
             "turns": 0.5
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "startPosition": "beta1",
         "endPosition": "gamma5",
         "duration": 1,
@@ -1604,7 +1604,7 @@ export const SHOWCASE_MANDALAS = [
       },
       {
         "motions": {
-          "blue": {
+          "left": {
             "propPlacementData": {
               "positionY": 0,
               "svgCenter": null,
@@ -1638,7 +1638,7 @@ export const SHOWCASE_MANDALAS = [
             "handPath": null,
             "rotationDirection": "noRotation"
           },
-          "red": {
+          "right": {
             "endLocation": "n",
             "arrowPlacementData": {
               "svgMirrored": false,
@@ -1673,10 +1673,10 @@ export const SHOWCASE_MANDALAS = [
             "propType": "staff"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
         "id": "step-4-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "duration": 1,
         "startPosition": "gamma5",
@@ -1691,9 +1691,9 @@ export const SHOWCASE_MANDALAS = [
         "endPosition": "gamma11",
         "startPosition": "gamma9",
         "duration": 1,
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "startLocation": "n",
             "startOrientation": "counter",
             "gridMode": "diamond",
@@ -1727,7 +1727,7 @@ export const SHOWCASE_MANDALAS = [
             "rotationDirection": "cw",
             "handPath": null
           },
-          "blue": {
+          "left": {
             "propType": "staff",
             "skewDir": null,
             "endOrientation": "out",
@@ -1762,7 +1762,7 @@ export const SHOWCASE_MANDALAS = [
             }
           }
         },
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-5-1784271460511",
         "gridMode": "diamond"
       },
@@ -1773,9 +1773,9 @@ export const SHOWCASE_MANDALAS = [
         "duration": 1,
         "startPosition": "gamma11",
         "endPosition": "beta7",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "propType": "staff",
             "skewDir": null,
             "prefloatRotationDirection": "ccw",
@@ -1811,7 +1811,7 @@ export const SHOWCASE_MANDALAS = [
             },
             "endLocation": "w"
           },
-          "red": {
+          "right": {
             "propPlacementData": {
               "positionY": 0,
               "coordinates": null,
@@ -1847,13 +1847,13 @@ export const SHOWCASE_MANDALAS = [
           }
         },
         "id": "step-6-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond"
       },
       {
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "isVisible": true,
             "endLocation": "n",
             "arrowPlacementData": {
@@ -1887,7 +1887,7 @@ export const SHOWCASE_MANDALAS = [
             "endOrientation": "out",
             "skewSteps": null
           },
-          "red": {
+          "right": {
             "endOrientation": "clock",
             "skewSteps": null,
             "propType": "staff",
@@ -1923,7 +1923,7 @@ export const SHOWCASE_MANDALAS = [
           }
         },
         "id": "step-7-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
         "isBlank": false,
         "stepNumber": 7,
@@ -1939,9 +1939,9 @@ export const SHOWCASE_MANDALAS = [
         "endPosition": "gamma15",
         "startPosition": "gamma3",
         "duration": 1,
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "propPlacementData": {
               "positionX": 0,
               "svgCenter": null,
@@ -1975,7 +1975,7 @@ export const SHOWCASE_MANDALAS = [
             "handPath": null,
             "rotationDirection": "cw"
           },
-          "blue": {
+          "left": {
             "isVisible": true,
             "endLocation": "n",
             "arrowPlacementData": {
@@ -2010,7 +2010,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null
           }
         },
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-8-1784271460511",
         "gridMode": "diamond"
       },
@@ -2022,11 +2022,11 @@ export const SHOWCASE_MANDALAS = [
         "duration": 1,
         "isBlank": false,
         "id": "step-9-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "isVisible": true,
             "arrowPlacementData": {
               "positionX": 0,
@@ -2060,7 +2060,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "endOrientation": "clock"
           },
-          "blue": {
+          "left": {
             "startLocation": "n",
             "startOrientation": "out",
             "gridMode": "diamond",
@@ -2104,7 +2104,7 @@ export const SHOWCASE_MANDALAS = [
         "letter": "Z-",
         "stepNumber": 10,
         "motions": {
-          "red": {
+          "right": {
             "propType": "staff",
             "skewDir": null,
             "endOrientation": "out",
@@ -2138,7 +2138,7 @@ export const SHOWCASE_MANDALAS = [
               "positionY": 0
             }
           },
-          "blue": {
+          "left": {
             "turns": "fl",
             "motionType": "float",
             "handPath": null,
@@ -2175,15 +2175,15 @@ export const SHOWCASE_MANDALAS = [
             "arrowLocation": "n"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
         "id": "step-10-1784271460511",
-        "redReversal": false
+        "rightReversal": false
       },
       {
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "rotationDirection": "noRotation",
             "handPath": null,
             "turns": 0,
@@ -2217,7 +2217,7 @@ export const SHOWCASE_MANDALAS = [
             "startOrientation": "out",
             "startLocation": "s"
           },
-          "blue": {
+          "left": {
             "motionType": "anti",
             "turns": 0.5,
             "rotationDirection": "ccw",
@@ -2253,7 +2253,7 @@ export const SHOWCASE_MANDALAS = [
           }
         },
         "id": "step-11-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
         "isBlank": false,
         "stepNumber": 11,
@@ -2264,7 +2264,7 @@ export const SHOWCASE_MANDALAS = [
       },
       {
         "motions": {
-          "blue": {
+          "left": {
             "skewSteps": null,
             "endOrientation": "clock",
             "propType": "staff",
@@ -2298,7 +2298,7 @@ export const SHOWCASE_MANDALAS = [
             },
             "isVisible": true
           },
-          "red": {
+          "right": {
             "color": "red",
             "propPlacementData": {
               "rotationAngle": 0,
@@ -2333,9 +2333,9 @@ export const SHOWCASE_MANDALAS = [
             "rotationDirection": "cw"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-12-1784271460511",
         "isBlank": false,
         "startPosition": "gamma1",
@@ -2352,11 +2352,11 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "isBlank": false,
         "id": "step-13-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "turns": 0.5,
             "rotationDirection": "ccw",
@@ -2390,7 +2390,7 @@ export const SHOWCASE_MANDALAS = [
               "rotationAngle": 0
             }
           },
-          "red": {
+          "right": {
             "endOrientation": "in",
             "skewSteps": null,
             "skewDir": null,
@@ -2433,12 +2433,12 @@ export const SHOWCASE_MANDALAS = [
         "endPosition": "beta3",
         "duration": 1,
         "isBlank": false,
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-14-1784271460511",
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "gridMode": "diamond",
             "arrowLocation": "n",
             "startLocation": "n",
@@ -2474,7 +2474,7 @@ export const SHOWCASE_MANDALAS = [
             "handPath": null,
             "rotationDirection": "noRotation"
           },
-          "red": {
+          "right": {
             "endLocation": "e",
             "arrowPlacementData": {
               "positionX": 0,
@@ -2512,11 +2512,11 @@ export const SHOWCASE_MANDALAS = [
       },
       {
         "id": "step-15-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "propPlacementData": {
               "rotationAngle": 0,
               "coordinates": null,
@@ -2550,7 +2550,7 @@ export const SHOWCASE_MANDALAS = [
             "handPath": null,
             "rotationDirection": "ccw"
           },
-          "red": {
+          "right": {
             "endLocation": "w",
             "arrowPlacementData": {
               "positionY": 0,
@@ -2594,7 +2594,7 @@ export const SHOWCASE_MANDALAS = [
       },
       {
         "motions": {
-          "red": {
+          "right": {
             "propPlacementData": {
               "positionY": 0,
               "rotationAngle": 0,
@@ -2628,7 +2628,7 @@ export const SHOWCASE_MANDALAS = [
             "rotationDirection": "cw",
             "handPath": null
           },
-          "blue": {
+          "left": {
             "handPath": null,
             "rotationDirection": "noRotation",
             "turns": 0,
@@ -2663,10 +2663,10 @@ export const SHOWCASE_MANDALAS = [
             "startLocation": "s"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
         "id": "step-16-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "endPosition": "gamma11",
         "startPosition": "gamma7",
@@ -2676,8 +2676,8 @@ export const SHOWCASE_MANDALAS = [
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "19160c61-697f-4acb-ae36-48ce4ff8e50a",
@@ -2685,7 +2685,7 @@ export const SHOWCASE_MANDALAS = [
     "steps": [
       {
         "motions": {
-          "red": {
+          "right": {
             "isVisible": true,
             "endLocation": "e",
             "arrowPlacementData": {
@@ -2719,7 +2719,7 @@ export const SHOWCASE_MANDALAS = [
             "endOrientation": "in",
             "skewSteps": null
           },
-          "blue": {
+          "left": {
             "color": "blue",
             "propPlacementData": {
               "coordinates": null,
@@ -2756,10 +2756,10 @@ export const SHOWCASE_MANDALAS = [
             "prefloatMotionType": "anti"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
         "id": "step-1-1784271453329",
-        "redReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "endPosition": "beta3",
         "startPosition": "gamma11",
@@ -2770,9 +2770,9 @@ export const SHOWCASE_MANDALAS = [
       {
         "gridMode": "diamond",
         "id": "step-2-1784271453329",
-        "redReversal": false,
+        "rightReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "turns": 0,
             "motionType": "pro",
             "rotationDirection": "ccw",
@@ -2806,7 +2806,7 @@ export const SHOWCASE_MANDALAS = [
             "gridMode": "diamond",
             "arrowLocation": "n"
           },
-          "blue": {
+          "left": {
             "propType": "staff",
             "skewDir": null,
             "skewSteps": null,
@@ -2841,7 +2841,7 @@ export const SHOWCASE_MANDALAS = [
             "endLocation": "s"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "duration": 1,
         "endPosition": "alpha1",
         "startPosition": "beta3",
@@ -2850,9 +2850,9 @@ export const SHOWCASE_MANDALAS = [
         "isBlank": false
       },
       {
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "endOrientation": "out",
             "skewSteps": null,
             "skewDir": null,
@@ -2886,7 +2886,7 @@ export const SHOWCASE_MANDALAS = [
             },
             "isVisible": true
           },
-          "red": {
+          "right": {
             "handPath": null,
             "rotationDirection": "ccw",
             "motionType": "anti",
@@ -2922,7 +2922,7 @@ export const SHOWCASE_MANDALAS = [
           }
         },
         "id": "step-3-1784271453329",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
         "isBlank": false,
         "stepNumber": 3,
@@ -2932,9 +2932,9 @@ export const SHOWCASE_MANDALAS = [
         "duration": 1
       },
       {
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "endLocation": "e",
             "arrowPlacementData": {
               "svgMirrored": false,
@@ -2968,7 +2968,7 @@ export const SHOWCASE_MANDALAS = [
             "skewDir": null,
             "propType": "staff"
           },
-          "red": {
+          "right": {
             "color": "red",
             "propPlacementData": {
               "positionX": 0,
@@ -3005,7 +3005,7 @@ export const SHOWCASE_MANDALAS = [
             "prefloatMotionType": "pro"
           }
         },
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-4-1784271453329",
         "gridMode": "diamond",
         "isBlank": false,
@@ -3022,12 +3022,12 @@ export const SHOWCASE_MANDALAS = [
         "endPosition": "beta1",
         "duration": 1,
         "isBlank": false,
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-5-1784271453329",
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "startLocation": "n",
             "startOrientation": "out",
             "gridMode": "diamond",
@@ -3061,7 +3061,7 @@ export const SHOWCASE_MANDALAS = [
             "handPath": null,
             "rotationDirection": "noRotation"
           },
-          "blue": {
+          "left": {
             "propPlacementData": {
               "positionX": 0,
               "rotationAngle": 0,
@@ -3101,7 +3101,7 @@ export const SHOWCASE_MANDALAS = [
       },
       {
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "turns": 0,
             "handPath": null,
@@ -3135,7 +3135,7 @@ export const SHOWCASE_MANDALAS = [
             "gridMode": "diamond",
             "arrowLocation": "n"
           },
-          "red": {
+          "right": {
             "arrowLocation": "n",
             "gridMode": "diamond",
             "startOrientation": "out",
@@ -3170,9 +3170,9 @@ export const SHOWCASE_MANDALAS = [
             "motionType": "pro"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-6-1784271453329",
         "isBlank": false,
         "startPosition": "beta1",
@@ -3182,12 +3182,12 @@ export const SHOWCASE_MANDALAS = [
         "stepNumber": 6
       },
       {
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-7-1784271453329",
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "skewSteps": null,
             "endOrientation": "clock",
             "propType": "staff",
@@ -3221,7 +3221,7 @@ export const SHOWCASE_MANDALAS = [
             },
             "isVisible": true
           },
-          "red": {
+          "right": {
             "isVisible": true,
             "arrowPlacementData": {
               "positionX": 0,
@@ -3270,12 +3270,12 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "gamma15",
         "isBlank": false,
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-8-1784271453329",
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "isVisible": true,
             "arrowPlacementData": {
               "positionY": 0,
@@ -3309,7 +3309,7 @@ export const SHOWCASE_MANDALAS = [
             "endOrientation": "out",
             "skewSteps": null
           },
-          "red": {
+          "right": {
             "startLocation": "n",
             "startOrientation": "clock",
             "gridMode": "diamond",
@@ -3349,11 +3349,11 @@ export const SHOWCASE_MANDALAS = [
       },
       {
         "id": "step-9-1784271453329",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "endOrientation": "in",
             "skewSteps": null,
             "skewDir": null,
@@ -3387,7 +3387,7 @@ export const SHOWCASE_MANDALAS = [
             },
             "isVisible": true
           },
-          "blue": {
+          "left": {
             "endLocation": "w",
             "arrowPlacementData": {
               "svgMirrored": false,
@@ -3433,7 +3433,7 @@ export const SHOWCASE_MANDALAS = [
       },
       {
         "motions": {
-          "red": {
+          "right": {
             "propPlacementData": {
               "coordinates": null,
               "svgCenter": null,
@@ -3467,7 +3467,7 @@ export const SHOWCASE_MANDALAS = [
             "turns": 0,
             "motionType": "pro"
           },
-          "blue": {
+          "left": {
             "isVisible": true,
             "endLocation": "n",
             "arrowPlacementData": {
@@ -3502,10 +3502,10 @@ export const SHOWCASE_MANDALAS = [
             "endOrientation": "clock"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
         "id": "step-10-1784271453329",
-        "redReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "duration": 1,
         "startPosition": "beta7",
@@ -3515,10 +3515,10 @@ export const SHOWCASE_MANDALAS = [
       },
       {
         "gridMode": "diamond",
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-11-1784271453329",
         "motions": {
-          "red": {
+          "right": {
             "propType": "staff",
             "skewDir": null,
             "endOrientation": "counter",
@@ -3552,7 +3552,7 @@ export const SHOWCASE_MANDALAS = [
             },
             "endLocation": "w"
           },
-          "blue": {
+          "left": {
             "turns": 0.5,
             "motionType": "static",
             "rotationDirection": "cw",
@@ -3587,7 +3587,7 @@ export const SHOWCASE_MANDALAS = [
             "color": "blue"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "endPosition": "gamma15",
         "startPosition": "alpha5",
         "duration": 1,
@@ -3602,9 +3602,9 @@ export const SHOWCASE_MANDALAS = [
         "endPosition": "gamma13",
         "startPosition": "gamma15",
         "duration": 1,
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "turns": 0.5,
             "rotationDirection": "cw",
@@ -3638,7 +3638,7 @@ export const SHOWCASE_MANDALAS = [
             "gridMode": "diamond",
             "arrowLocation": "n"
           },
-          "red": {
+          "right": {
             "isVisible": true,
             "arrowPlacementData": {
               "svgMirrored": false,
@@ -3676,16 +3676,16 @@ export const SHOWCASE_MANDALAS = [
           }
         },
         "id": "step-12-1784271453329",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond"
       },
       {
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-13-1784271453329",
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "color": "blue",
             "propPlacementData": {
               "positionX": 0,
@@ -3721,7 +3721,7 @@ export const SHOWCASE_MANDALAS = [
             "motionType": "float",
             "prefloatMotionType": "anti"
           },
-          "red": {
+          "right": {
             "color": "red",
             "propPlacementData": {
               "rotationAngle": 0,
@@ -3765,7 +3765,7 @@ export const SHOWCASE_MANDALAS = [
       },
       {
         "motions": {
-          "red": {
+          "right": {
             "isVisible": true,
             "endLocation": "e",
             "arrowPlacementData": {
@@ -3799,7 +3799,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "endOrientation": "out"
           },
-          "blue": {
+          "left": {
             "rotationDirection": "cw",
             "handPath": null,
             "turns": 0,
@@ -3834,10 +3834,10 @@ export const SHOWCASE_MANDALAS = [
             "gridMode": "diamond"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
         "id": "step-14-1784271453329",
-        "redReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "duration": 1,
         "startPosition": "beta5",
@@ -3846,12 +3846,12 @@ export const SHOWCASE_MANDALAS = [
         "stepNumber": 14
       },
       {
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-15-1784271453329",
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "propType": "staff",
             "skewDir": null,
             "endOrientation": "clock",
@@ -3885,7 +3885,7 @@ export const SHOWCASE_MANDALAS = [
               "svgMirrored": false
             }
           },
-          "blue": {
+          "left": {
             "startLocation": "w",
             "startOrientation": "in",
             "gridMode": "diamond",
@@ -3934,9 +3934,9 @@ export const SHOWCASE_MANDALAS = [
         "duration": 1,
         "endPosition": "gamma11",
         "startPosition": "gamma13",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "isVisible": true,
             "arrowPlacementData": {
               "coordinates": null,
@@ -3972,7 +3972,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "endOrientation": "in"
           },
-          "blue": {
+          "left": {
             "gridMode": "diamond",
             "arrowLocation": "n",
             "startLocation": "w",
@@ -4007,14 +4007,14 @@ export const SHOWCASE_MANDALAS = [
             "handPath": null
           }
         },
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-16-1784271453329",
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "152635e8-327a-4c01-98cf-128b5eeef36c",
@@ -4026,7 +4026,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -4060,7 +4060,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -4097,8 +4097,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4108,7 +4108,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -4142,7 +4142,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -4179,8 +4179,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4190,7 +4190,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -4224,7 +4224,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -4261,8 +4261,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4272,7 +4272,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -4306,7 +4306,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -4343,8 +4343,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4354,7 +4354,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -4388,7 +4388,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -4425,8 +4425,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4436,7 +4436,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -4470,7 +4470,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -4507,8 +4507,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4518,7 +4518,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -4552,7 +4552,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -4589,8 +4589,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4600,7 +4600,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -4634,7 +4634,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -4671,15 +4671,15 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "a962bbd7-c0ad-4b55-865d-b398bddcaee9",
@@ -4691,7 +4691,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -4725,7 +4725,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -4762,8 +4762,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4773,7 +4773,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -4807,7 +4807,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -4844,8 +4844,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4855,7 +4855,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -4889,7 +4889,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -4926,8 +4926,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4937,7 +4937,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -4971,7 +4971,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -5008,8 +5008,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5019,7 +5019,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -5053,7 +5053,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -5090,8 +5090,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5101,7 +5101,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -5135,7 +5135,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -5172,8 +5172,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5183,7 +5183,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -5217,7 +5217,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -5254,8 +5254,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5265,7 +5265,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -5299,7 +5299,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -5336,15 +5336,15 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "fan",
-    "redPropType": "fan"
+    "leftPropType": "fan",
+    "rightPropType": "fan"
   },
   {
     "id": "4e37f534-bfba-4629-b644-964deba55f7c",
@@ -5357,7 +5357,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -5391,7 +5391,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -5428,8 +5428,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5440,7 +5440,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -5474,7 +5474,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -5511,8 +5511,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5523,7 +5523,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -5557,7 +5557,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -5594,8 +5594,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5606,7 +5606,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -5640,7 +5640,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -5677,8 +5677,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5689,7 +5689,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -5723,7 +5723,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -5760,8 +5760,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5772,7 +5772,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -5806,7 +5806,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -5843,8 +5843,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5855,7 +5855,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -5889,7 +5889,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -5926,8 +5926,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5938,7 +5938,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -5972,7 +5972,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -6009,15 +6009,15 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "triad",
-    "redPropType": "triad"
+    "leftPropType": "triad",
+    "rightPropType": "triad"
   },
   {
     "id": "e4c772df-a7af-4c74-bc76-5ea2cd68d8e3",
@@ -6030,7 +6030,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -6064,7 +6064,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -6101,8 +6101,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6113,7 +6113,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -6147,7 +6147,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -6184,8 +6184,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6196,7 +6196,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -6230,7 +6230,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -6267,8 +6267,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6279,7 +6279,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -6313,7 +6313,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -6350,8 +6350,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6362,7 +6362,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -6396,7 +6396,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -6433,8 +6433,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6445,7 +6445,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -6479,7 +6479,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -6516,8 +6516,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6528,7 +6528,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -6562,7 +6562,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -6599,8 +6599,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6611,7 +6611,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -6645,7 +6645,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -6682,8 +6682,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6694,7 +6694,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -6728,7 +6728,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -6765,8 +6765,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6777,7 +6777,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -6811,7 +6811,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -6848,8 +6848,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6860,7 +6860,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -6894,7 +6894,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -6931,8 +6931,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6943,7 +6943,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -6977,7 +6977,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -7014,8 +7014,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -7026,7 +7026,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -7060,7 +7060,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -7097,8 +7097,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -7109,7 +7109,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -7143,7 +7143,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -7180,8 +7180,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -7192,7 +7192,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -7226,7 +7226,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -7263,8 +7263,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -7275,7 +7275,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -7309,7 +7309,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -7346,15 +7346,15 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "club",
-    "redPropType": "club"
+    "leftPropType": "club",
+    "rightPropType": "club"
   },
   {
     "id": "b9318fe2-5cb2-4437-8abe-3a7683ed96c9",
@@ -7367,7 +7367,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -7401,7 +7401,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -7438,8 +7438,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -7450,7 +7450,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -7484,7 +7484,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -7521,8 +7521,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -7533,7 +7533,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -7567,7 +7567,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -7604,8 +7604,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -7616,7 +7616,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -7650,7 +7650,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -7687,8 +7687,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -7699,7 +7699,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -7733,7 +7733,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -7770,8 +7770,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -7782,7 +7782,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -7816,7 +7816,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -7853,8 +7853,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -7865,7 +7865,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -7899,7 +7899,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -7936,8 +7936,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -7948,7 +7948,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -7982,7 +7982,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -8019,8 +8019,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -8031,7 +8031,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -8065,7 +8065,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -8102,8 +8102,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -8114,7 +8114,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -8148,7 +8148,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -8185,8 +8185,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -8197,7 +8197,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -8231,7 +8231,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -8268,8 +8268,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -8280,7 +8280,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -8314,7 +8314,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -8351,8 +8351,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -8363,7 +8363,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -8397,7 +8397,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -8434,8 +8434,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -8446,7 +8446,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -8480,7 +8480,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -8517,8 +8517,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -8529,7 +8529,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -8563,7 +8563,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -8600,8 +8600,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -8612,7 +8612,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -8646,7 +8646,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -8683,15 +8683,15 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "club",
-    "redPropType": "club"
+    "leftPropType": "club",
+    "rightPropType": "club"
   },
   {
     "id": "044d0963-aba5-4e4b-ac4a-fd51e10b9743",
@@ -8704,7 +8704,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -8738,7 +8738,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -8775,8 +8775,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -8787,7 +8787,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -8821,7 +8821,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -8858,8 +8858,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -8870,7 +8870,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -8904,7 +8904,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -8941,8 +8941,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -8953,7 +8953,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -8987,7 +8987,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -9024,8 +9024,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -9036,7 +9036,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -9070,7 +9070,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -9107,8 +9107,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -9119,7 +9119,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -9153,7 +9153,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -9190,8 +9190,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -9202,7 +9202,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -9236,7 +9236,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -9273,8 +9273,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -9285,7 +9285,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -9319,7 +9319,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -9356,15 +9356,15 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "club",
-    "redPropType": "club"
+    "leftPropType": "club",
+    "rightPropType": "club"
   },
   {
     "id": "df25ed20-bac4-4af5-a2d3-fcc80f381083",
@@ -9377,7 +9377,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -9411,7 +9411,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -9448,8 +9448,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -9460,7 +9460,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -9494,7 +9494,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -9531,8 +9531,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -9543,7 +9543,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -9577,7 +9577,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -9614,8 +9614,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -9626,7 +9626,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -9660,7 +9660,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -9697,8 +9697,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -9709,7 +9709,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -9743,7 +9743,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -9780,8 +9780,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -9792,7 +9792,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -9826,7 +9826,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -9863,8 +9863,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -9875,7 +9875,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -9909,7 +9909,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -9946,8 +9946,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -9958,7 +9958,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -9992,7 +9992,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -10029,8 +10029,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -10041,7 +10041,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -10075,7 +10075,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -10112,8 +10112,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -10124,7 +10124,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -10158,7 +10158,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -10195,8 +10195,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -10207,7 +10207,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -10241,7 +10241,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -10278,8 +10278,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -10290,7 +10290,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -10324,7 +10324,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -10361,8 +10361,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -10373,7 +10373,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -10407,7 +10407,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -10444,8 +10444,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -10456,7 +10456,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -10490,7 +10490,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -10527,8 +10527,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -10539,7 +10539,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -10573,7 +10573,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -10610,8 +10610,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -10622,7 +10622,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -10656,7 +10656,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -10693,15 +10693,15 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "fan",
-    "redPropType": "fan"
+    "leftPropType": "fan",
+    "rightPropType": "fan"
   },
   {
     "id": "ca59a5a7-7adb-48ed-aba7-a939e9756206",
@@ -10714,7 +10714,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -10748,7 +10748,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -10785,8 +10785,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -10797,7 +10797,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -10831,7 +10831,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -10868,8 +10868,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -10880,7 +10880,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -10914,7 +10914,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -10951,8 +10951,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -10963,7 +10963,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -10997,7 +10997,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -11034,8 +11034,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -11046,7 +11046,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -11080,7 +11080,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -11117,8 +11117,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -11129,7 +11129,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -11163,7 +11163,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -11200,8 +11200,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -11212,7 +11212,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -11246,7 +11246,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -11283,8 +11283,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -11295,7 +11295,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -11329,7 +11329,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -11366,8 +11366,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -11378,7 +11378,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -11412,7 +11412,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -11449,8 +11449,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -11461,7 +11461,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -11495,7 +11495,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -11532,8 +11532,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -11544,7 +11544,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -11578,7 +11578,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -11615,8 +11615,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -11627,7 +11627,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -11661,7 +11661,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -11698,8 +11698,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -11710,7 +11710,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -11744,7 +11744,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -11781,8 +11781,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -11793,7 +11793,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -11827,7 +11827,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -11864,8 +11864,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -11876,7 +11876,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -11910,7 +11910,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -11947,8 +11947,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -11959,7 +11959,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -11993,7 +11993,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -12030,15 +12030,15 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "2f731561-ec16-495f-a893-5424115ad51c",
@@ -12051,7 +12051,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -12085,7 +12085,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -12122,8 +12122,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -12134,7 +12134,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -12168,7 +12168,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -12205,8 +12205,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -12217,7 +12217,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -12251,7 +12251,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -12288,8 +12288,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -12300,7 +12300,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -12334,7 +12334,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -12371,8 +12371,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -12383,7 +12383,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -12417,7 +12417,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -12454,8 +12454,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -12466,7 +12466,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -12500,7 +12500,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -12537,8 +12537,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -12549,7 +12549,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -12583,7 +12583,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -12620,8 +12620,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -12632,7 +12632,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -12666,7 +12666,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -12703,15 +12703,15 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "club",
-    "redPropType": "club"
+    "leftPropType": "club",
+    "rightPropType": "club"
   },
   {
     "id": "1c2e451f-61cb-4fd3-a784-116a2bc82a28",
@@ -12724,7 +12724,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -12758,7 +12758,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -12795,8 +12795,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -12807,7 +12807,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -12841,7 +12841,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -12878,8 +12878,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -12890,7 +12890,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -12924,7 +12924,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -12961,8 +12961,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -12973,7 +12973,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -13007,7 +13007,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -13044,8 +13044,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -13056,7 +13056,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -13090,7 +13090,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -13127,8 +13127,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -13139,7 +13139,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -13173,7 +13173,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -13210,8 +13210,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -13222,7 +13222,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -13256,7 +13256,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -13293,8 +13293,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -13305,7 +13305,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -13339,7 +13339,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -13376,15 +13376,15 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "bigchicken",
-    "redPropType": "bigchicken"
+    "leftPropType": "bigchicken",
+    "rightPropType": "bigchicken"
   },
   {
     "id": "1e6db0ff-52c5-4d16-bf0a-82b6b7d31cd0",
@@ -13397,7 +13397,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -13431,7 +13431,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -13468,8 +13468,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -13480,7 +13480,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -13514,7 +13514,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -13551,8 +13551,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -13563,7 +13563,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -13597,7 +13597,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -13634,8 +13634,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -13646,7 +13646,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -13680,7 +13680,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -13717,8 +13717,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -13729,7 +13729,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -13763,7 +13763,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -13800,8 +13800,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -13812,7 +13812,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -13846,7 +13846,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -13883,8 +13883,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -13895,7 +13895,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -13929,7 +13929,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -13966,8 +13966,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -13978,7 +13978,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -14012,7 +14012,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -14049,8 +14049,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -14061,7 +14061,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -14095,7 +14095,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -14132,8 +14132,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -14144,7 +14144,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -14178,7 +14178,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -14215,8 +14215,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -14227,7 +14227,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -14261,7 +14261,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -14298,8 +14298,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -14310,7 +14310,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -14344,7 +14344,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -14381,8 +14381,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -14393,7 +14393,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -14427,7 +14427,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -14464,8 +14464,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -14476,7 +14476,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -14510,7 +14510,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -14547,8 +14547,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -14559,7 +14559,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -14593,7 +14593,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -14630,8 +14630,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -14642,7 +14642,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -14676,7 +14676,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -14713,15 +14713,15 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "f4a928f1-3ca0-47cb-be8a-f055f782b58f",
@@ -14734,7 +14734,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -14768,7 +14768,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -14805,8 +14805,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -14817,7 +14817,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -14851,7 +14851,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -14888,8 +14888,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -14900,7 +14900,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -14934,7 +14934,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -14971,8 +14971,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -14983,7 +14983,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -15017,7 +15017,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -15054,8 +15054,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -15066,7 +15066,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -15100,7 +15100,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -15137,8 +15137,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": true,
-        "redReversal": false,
+        "leftReversal": true,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -15149,7 +15149,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -15183,7 +15183,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -15220,8 +15220,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": true,
-        "redReversal": false,
+        "leftReversal": true,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -15232,7 +15232,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -15266,7 +15266,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -15303,8 +15303,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -15315,7 +15315,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -15349,7 +15349,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -15386,15 +15386,15 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "665deae2-dcd1-4fb6-9622-a550c6fbf63a",
@@ -15407,7 +15407,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -15441,7 +15441,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -15478,8 +15478,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -15490,7 +15490,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -15524,7 +15524,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -15561,8 +15561,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -15573,7 +15573,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -15607,7 +15607,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -15644,8 +15644,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -15656,7 +15656,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -15690,7 +15690,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -15727,8 +15727,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -15739,7 +15739,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -15773,7 +15773,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -15810,8 +15810,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -15822,7 +15822,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -15856,7 +15856,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -15893,8 +15893,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -15905,7 +15905,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -15939,7 +15939,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -15976,8 +15976,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -15988,7 +15988,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -16022,7 +16022,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -16059,8 +16059,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -16071,7 +16071,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -16105,7 +16105,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -16142,8 +16142,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -16154,7 +16154,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -16188,7 +16188,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -16225,8 +16225,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -16237,7 +16237,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -16271,7 +16271,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -16308,8 +16308,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -16320,7 +16320,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -16354,7 +16354,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -16391,8 +16391,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -16403,7 +16403,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -16437,7 +16437,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -16474,8 +16474,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -16486,7 +16486,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -16520,7 +16520,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -16557,8 +16557,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -16569,7 +16569,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -16603,7 +16603,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -16640,8 +16640,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -16652,7 +16652,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -16686,7 +16686,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -16723,15 +16723,15 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "left",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "4a8feb33-2e62-403b-af8e-7c8e5daf6969",
@@ -16744,7 +16744,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -16778,7 +16778,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -16815,8 +16815,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": true,
-        "redReversal": true,
+        "leftReversal": true,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -16826,7 +16826,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -16860,7 +16860,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -16897,8 +16897,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": true,
-        "redReversal": true,
+        "leftReversal": true,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -16908,7 +16908,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -16944,7 +16944,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -16983,8 +16983,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -16994,7 +16994,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -17028,7 +17028,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -17065,8 +17065,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17076,7 +17076,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -17110,7 +17110,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -17147,8 +17147,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": true,
-        "redReversal": true,
+        "leftReversal": true,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -17158,7 +17158,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -17192,7 +17192,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -17229,8 +17229,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": true,
-        "redReversal": true,
+        "leftReversal": true,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -17240,7 +17240,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -17276,7 +17276,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -17315,8 +17315,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17326,7 +17326,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -17360,7 +17360,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -17397,8 +17397,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17408,7 +17408,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -17442,7 +17442,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -17479,8 +17479,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": true,
-        "redReversal": true,
+        "leftReversal": true,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -17490,7 +17490,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -17524,7 +17524,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -17561,8 +17561,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": true,
-        "redReversal": true,
+        "leftReversal": true,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -17572,7 +17572,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -17608,7 +17608,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -17647,8 +17647,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17658,7 +17658,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -17692,7 +17692,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -17729,8 +17729,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17740,7 +17740,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -17774,7 +17774,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -17811,8 +17811,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": true,
-        "redReversal": true,
+        "leftReversal": true,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -17822,7 +17822,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -17856,7 +17856,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -17893,8 +17893,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": true,
-        "redReversal": true,
+        "leftReversal": true,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -17904,7 +17904,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -17940,7 +17940,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -17979,8 +17979,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17990,7 +17990,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -18024,7 +18024,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -18061,14 +18061,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "right",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "3d95bc33-bdcb-479b-b49c-44a15a60fde3",
@@ -18081,7 +18081,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -18115,7 +18115,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -18152,8 +18152,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18163,7 +18163,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -18197,7 +18197,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -18234,8 +18234,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18245,7 +18245,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -18279,7 +18279,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -18316,8 +18316,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18327,7 +18327,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -18361,7 +18361,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -18398,8 +18398,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18409,7 +18409,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -18443,7 +18443,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -18480,8 +18480,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18491,7 +18491,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -18525,7 +18525,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -18562,8 +18562,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18573,7 +18573,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -18607,7 +18607,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -18644,8 +18644,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18655,7 +18655,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -18689,7 +18689,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -18726,8 +18726,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18737,7 +18737,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -18771,7 +18771,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -18808,8 +18808,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18819,7 +18819,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -18853,7 +18853,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -18890,8 +18890,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18901,7 +18901,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -18935,7 +18935,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -18972,8 +18972,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18983,7 +18983,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -19017,7 +19017,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -19054,8 +19054,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19065,7 +19065,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -19099,7 +19099,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -19136,8 +19136,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19147,7 +19147,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -19181,7 +19181,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -19218,8 +19218,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19229,7 +19229,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -19263,7 +19263,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -19300,8 +19300,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19311,7 +19311,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -19345,7 +19345,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -19382,14 +19382,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "80c5b84c-7896-44de-90c3-95ffba04c9c4",
@@ -19402,7 +19402,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -19436,7 +19436,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -19473,8 +19473,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19484,7 +19484,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -19518,7 +19518,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -19555,8 +19555,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19566,7 +19566,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -19600,7 +19600,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -19637,8 +19637,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19648,7 +19648,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -19682,7 +19682,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -19719,8 +19719,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19730,7 +19730,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -19764,7 +19764,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -19801,8 +19801,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19812,7 +19812,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -19846,7 +19846,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -19883,8 +19883,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19894,7 +19894,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -19928,7 +19928,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -19965,8 +19965,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19976,7 +19976,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -20010,7 +20010,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -20047,8 +20047,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -20058,7 +20058,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -20092,7 +20092,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -20129,8 +20129,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -20140,7 +20140,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -20174,7 +20174,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -20211,8 +20211,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -20222,7 +20222,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -20256,7 +20256,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -20293,8 +20293,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -20304,7 +20304,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -20338,7 +20338,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -20375,8 +20375,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -20386,7 +20386,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -20420,7 +20420,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -20457,8 +20457,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -20468,7 +20468,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -20502,7 +20502,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -20539,8 +20539,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -20550,7 +20550,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -20584,7 +20584,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -20621,8 +20621,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -20632,7 +20632,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -20666,7 +20666,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -20703,14 +20703,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "fan",
-    "redPropType": "fan"
+    "leftPropType": "fan",
+    "rightPropType": "fan"
   },
   {
     "id": "68018bdd-d774-43ca-94bc-577f753789bb",
@@ -20723,7 +20723,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -20757,7 +20757,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -20794,8 +20794,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -20805,7 +20805,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -20839,7 +20839,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -20876,8 +20876,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -20887,7 +20887,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -20921,7 +20921,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -20958,8 +20958,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -20969,7 +20969,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -21003,7 +21003,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -21040,8 +21040,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -21051,7 +21051,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -21085,7 +21085,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -21122,8 +21122,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -21133,7 +21133,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -21167,7 +21167,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -21204,8 +21204,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -21215,7 +21215,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -21249,7 +21249,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -21286,8 +21286,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -21297,7 +21297,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -21331,7 +21331,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -21368,8 +21368,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -21379,7 +21379,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -21413,7 +21413,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -21450,8 +21450,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -21461,7 +21461,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -21495,7 +21495,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -21532,8 +21532,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -21543,7 +21543,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -21577,7 +21577,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -21614,8 +21614,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -21625,7 +21625,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -21659,7 +21659,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -21696,8 +21696,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -21707,7 +21707,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -21741,7 +21741,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -21778,8 +21778,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -21789,7 +21789,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -21823,7 +21823,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -21860,8 +21860,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -21871,7 +21871,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -21905,7 +21905,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -21942,8 +21942,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -21953,7 +21953,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -21987,7 +21987,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -22024,14 +22024,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "5907ddb9-2674-43e2-8230-ac0e859b82f8",
@@ -22044,7 +22044,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -22078,7 +22078,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -22115,8 +22115,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -22126,7 +22126,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -22160,7 +22160,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -22197,8 +22197,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -22208,7 +22208,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -22242,7 +22242,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -22279,8 +22279,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -22290,7 +22290,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -22324,7 +22324,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -22361,8 +22361,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -22372,7 +22372,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -22406,7 +22406,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -22443,8 +22443,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -22454,7 +22454,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -22488,7 +22488,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -22525,8 +22525,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -22536,7 +22536,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -22570,7 +22570,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -22607,8 +22607,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -22618,7 +22618,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -22652,7 +22652,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -22689,8 +22689,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -22700,7 +22700,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -22734,7 +22734,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -22771,8 +22771,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -22782,7 +22782,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -22816,7 +22816,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -22853,8 +22853,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -22864,7 +22864,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -22898,7 +22898,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -22935,8 +22935,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -22946,7 +22946,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -22980,7 +22980,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -23017,8 +23017,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -23028,7 +23028,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -23062,7 +23062,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -23099,8 +23099,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -23110,7 +23110,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -23144,7 +23144,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -23181,8 +23181,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -23192,7 +23192,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -23226,7 +23226,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -23263,8 +23263,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -23274,7 +23274,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -23308,7 +23308,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -23345,14 +23345,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "fb00bc8c-3123-44be-ab34-0fd6ec7b160c",
@@ -23365,7 +23365,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -23399,7 +23399,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -23436,8 +23436,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -23447,7 +23447,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -23481,7 +23481,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -23518,8 +23518,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -23529,7 +23529,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -23563,7 +23563,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -23600,8 +23600,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -23611,7 +23611,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -23645,7 +23645,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -23682,8 +23682,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -23693,7 +23693,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -23727,7 +23727,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -23764,8 +23764,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -23775,7 +23775,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -23809,7 +23809,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -23846,8 +23846,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -23857,7 +23857,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -23891,7 +23891,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -23928,8 +23928,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -23939,7 +23939,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -23973,7 +23973,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -24010,8 +24010,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -24021,7 +24021,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -24055,7 +24055,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -24092,8 +24092,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -24103,7 +24103,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -24137,7 +24137,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -24174,8 +24174,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -24185,7 +24185,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -24219,7 +24219,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -24256,8 +24256,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -24267,7 +24267,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -24301,7 +24301,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -24338,8 +24338,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -24349,7 +24349,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -24383,7 +24383,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -24420,8 +24420,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -24431,7 +24431,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -24465,7 +24465,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -24502,8 +24502,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -24513,7 +24513,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -24547,7 +24547,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -24584,8 +24584,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -24595,7 +24595,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -24629,7 +24629,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -24666,14 +24666,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "fan",
-    "redPropType": "fan"
+    "leftPropType": "fan",
+    "rightPropType": "fan"
   },
   {
     "id": "a4f4928f-e7c9-460d-b71e-52f2cda11b3b",
@@ -24686,7 +24686,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -24720,7 +24720,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -24757,8 +24757,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -24768,7 +24768,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -24802,7 +24802,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -24839,8 +24839,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -24850,7 +24850,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -24884,7 +24884,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -24921,8 +24921,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -24932,7 +24932,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -24966,7 +24966,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -25003,8 +25003,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -25014,7 +25014,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -25048,7 +25048,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -25085,8 +25085,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -25096,7 +25096,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -25130,7 +25130,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -25167,8 +25167,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -25178,7 +25178,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -25212,7 +25212,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -25249,8 +25249,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -25260,7 +25260,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -25294,7 +25294,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -25331,8 +25331,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -25342,7 +25342,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -25376,7 +25376,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -25413,8 +25413,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -25424,7 +25424,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -25458,7 +25458,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -25495,8 +25495,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -25506,7 +25506,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -25540,7 +25540,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -25577,8 +25577,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -25588,7 +25588,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -25622,7 +25622,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -25659,8 +25659,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -25670,7 +25670,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -25704,7 +25704,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -25741,8 +25741,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -25752,7 +25752,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -25786,7 +25786,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -25823,8 +25823,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -25834,7 +25834,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -25868,7 +25868,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -25905,8 +25905,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -25916,7 +25916,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -25950,7 +25950,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -25987,14 +25987,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "fan",
-    "redPropType": "fan"
+    "leftPropType": "fan",
+    "rightPropType": "fan"
   },
   {
     "id": "cebec8bb-b348-45fd-a96b-9437aae3b995",
@@ -26007,7 +26007,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -26041,7 +26041,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -26078,8 +26078,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -26089,7 +26089,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -26123,7 +26123,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -26160,8 +26160,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -26171,7 +26171,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -26205,7 +26205,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -26242,8 +26242,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -26253,7 +26253,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -26287,7 +26287,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -26324,8 +26324,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -26335,7 +26335,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -26369,7 +26369,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -26406,8 +26406,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -26417,7 +26417,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -26451,7 +26451,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -26488,8 +26488,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -26499,7 +26499,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -26533,7 +26533,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -26570,8 +26570,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -26581,7 +26581,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -26615,7 +26615,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -26652,8 +26652,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -26663,7 +26663,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -26697,7 +26697,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -26734,8 +26734,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -26745,7 +26745,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -26779,7 +26779,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -26816,8 +26816,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -26827,7 +26827,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -26861,7 +26861,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -26898,8 +26898,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -26909,7 +26909,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -26943,7 +26943,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -26980,8 +26980,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -26991,7 +26991,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -27025,7 +27025,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -27062,8 +27062,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -27073,7 +27073,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -27107,7 +27107,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -27144,8 +27144,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -27155,7 +27155,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -27189,7 +27189,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -27226,8 +27226,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -27237,7 +27237,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -27271,7 +27271,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -27308,14 +27308,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "fan",
-    "redPropType": "fan"
+    "leftPropType": "fan",
+    "rightPropType": "fan"
   },
   {
     "id": "8074e3b0-e7cc-4f0f-8b57-97ee44afabe6",
@@ -27328,7 +27328,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -27362,7 +27362,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -27399,8 +27399,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -27410,7 +27410,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -27444,7 +27444,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -27481,8 +27481,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -27492,7 +27492,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -27526,7 +27526,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -27563,8 +27563,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -27574,7 +27574,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -27608,7 +27608,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -27645,8 +27645,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -27656,7 +27656,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -27690,7 +27690,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -27727,8 +27727,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -27738,7 +27738,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -27772,7 +27772,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -27809,8 +27809,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -27820,7 +27820,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -27854,7 +27854,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -27891,8 +27891,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -27902,7 +27902,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -27936,7 +27936,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -27973,8 +27973,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -27984,7 +27984,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -28018,7 +28018,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -28055,8 +28055,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -28066,7 +28066,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -28100,7 +28100,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -28137,8 +28137,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -28148,7 +28148,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -28182,7 +28182,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -28219,8 +28219,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -28230,7 +28230,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -28264,7 +28264,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -28301,8 +28301,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -28312,7 +28312,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -28346,7 +28346,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -28383,8 +28383,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -28394,7 +28394,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -28428,7 +28428,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -28465,8 +28465,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -28476,7 +28476,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -28510,7 +28510,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -28547,8 +28547,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -28558,7 +28558,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -28592,7 +28592,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -28629,14 +28629,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "left",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "75ebfd20-c10d-49f7-a76b-0dd451d681be",
@@ -28649,7 +28649,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -28683,7 +28683,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -28720,8 +28720,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -28731,7 +28731,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -28765,7 +28765,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -28802,8 +28802,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -28813,7 +28813,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -28847,7 +28847,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -28884,8 +28884,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -28895,7 +28895,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -28929,7 +28929,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -28966,8 +28966,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -28977,7 +28977,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -29011,7 +29011,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -29048,8 +29048,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -29059,7 +29059,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -29093,7 +29093,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -29132,8 +29132,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -29143,7 +29143,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -29177,7 +29177,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -29214,8 +29214,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -29225,7 +29225,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -29259,7 +29259,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -29296,8 +29296,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -29307,7 +29307,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -29341,7 +29341,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -29378,8 +29378,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -29389,7 +29389,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -29423,7 +29423,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -29460,8 +29460,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -29471,7 +29471,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -29505,7 +29505,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -29542,8 +29542,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -29553,7 +29553,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -29587,7 +29587,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -29624,8 +29624,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -29635,7 +29635,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -29669,7 +29669,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -29708,8 +29708,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -29719,7 +29719,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -29753,7 +29753,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -29790,8 +29790,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -29801,7 +29801,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -29835,7 +29835,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -29872,8 +29872,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -29883,7 +29883,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -29917,7 +29917,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -29954,8 +29954,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -29965,7 +29965,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -29999,7 +29999,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -30036,8 +30036,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 17,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -30047,7 +30047,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -30081,7 +30081,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -30118,8 +30118,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 18,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -30129,7 +30129,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -30163,7 +30163,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -30200,8 +30200,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 19,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -30211,7 +30211,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -30245,7 +30245,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -30284,8 +30284,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 20,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -30295,7 +30295,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -30329,7 +30329,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -30366,8 +30366,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 21,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -30377,7 +30377,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -30411,7 +30411,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -30448,8 +30448,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 22,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -30459,7 +30459,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -30493,7 +30493,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -30530,8 +30530,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 23,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -30541,7 +30541,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -30575,7 +30575,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -30612,8 +30612,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 24,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -30623,7 +30623,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -30657,7 +30657,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -30694,8 +30694,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 25,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -30705,7 +30705,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -30739,7 +30739,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -30776,8 +30776,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 26,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -30787,7 +30787,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -30821,7 +30821,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -30860,8 +30860,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 27,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -30871,7 +30871,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -30905,7 +30905,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -30942,14 +30942,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 28,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "1c5579ea-5717-487d-af98-7e2f0dc94371",
@@ -30962,7 +30962,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -30996,7 +30996,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -31033,8 +31033,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -31044,7 +31044,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -31078,7 +31078,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -31115,8 +31115,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -31126,7 +31126,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -31160,7 +31160,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -31199,8 +31199,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -31210,7 +31210,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -31244,7 +31244,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -31281,8 +31281,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -31292,7 +31292,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -31326,7 +31326,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -31363,8 +31363,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -31374,7 +31374,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -31408,7 +31408,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -31445,8 +31445,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -31456,7 +31456,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -31490,7 +31490,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -31529,8 +31529,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -31540,7 +31540,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -31574,7 +31574,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -31611,8 +31611,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -31622,7 +31622,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -31656,7 +31656,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -31693,8 +31693,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -31704,7 +31704,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -31738,7 +31738,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -31775,8 +31775,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -31786,7 +31786,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -31820,7 +31820,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -31859,8 +31859,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -31870,7 +31870,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -31904,7 +31904,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -31941,8 +31941,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -31952,7 +31952,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -31986,7 +31986,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -32023,8 +32023,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -32034,7 +32034,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -32068,7 +32068,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -32105,8 +32105,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -32116,7 +32116,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -32150,7 +32150,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -32189,8 +32189,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -32200,7 +32200,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -32234,7 +32234,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -32271,14 +32271,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "left",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "f7a59ad3-eced-489b-9b01-57ec190d8574",
@@ -32291,7 +32291,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -32325,7 +32325,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -32362,8 +32362,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -32373,7 +32373,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -32407,7 +32407,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -32444,8 +32444,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -32455,7 +32455,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -32489,7 +32489,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -32526,8 +32526,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -32537,7 +32537,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -32571,7 +32571,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -32608,8 +32608,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -32619,7 +32619,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -32653,7 +32653,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -32690,8 +32690,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -32701,7 +32701,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -32735,7 +32735,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -32772,8 +32772,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -32783,7 +32783,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -32817,7 +32817,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -32854,8 +32854,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -32865,7 +32865,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -32899,7 +32899,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -32936,8 +32936,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -32947,7 +32947,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -32981,7 +32981,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -33018,8 +33018,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -33029,7 +33029,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -33063,7 +33063,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -33100,8 +33100,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -33111,7 +33111,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -33145,7 +33145,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -33182,8 +33182,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -33193,7 +33193,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -33227,7 +33227,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -33264,8 +33264,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -33275,7 +33275,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -33309,7 +33309,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -33346,8 +33346,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -33357,7 +33357,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -33391,7 +33391,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -33428,8 +33428,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -33439,7 +33439,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -33473,7 +33473,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -33510,8 +33510,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -33521,7 +33521,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -33555,7 +33555,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -33592,14 +33592,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "2cb49306-4294-44d2-b339-2373521a3c26",
@@ -33612,7 +33612,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -33648,7 +33648,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -33687,8 +33687,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -33698,7 +33698,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -33732,7 +33732,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -33769,8 +33769,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -33780,7 +33780,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -33814,7 +33814,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -33851,8 +33851,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -33862,7 +33862,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -33896,7 +33896,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -33933,8 +33933,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -33944,7 +33944,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -33980,7 +33980,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -34019,8 +34019,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -34030,7 +34030,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -34064,7 +34064,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -34101,8 +34101,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -34112,7 +34112,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -34146,7 +34146,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -34183,8 +34183,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -34194,7 +34194,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -34228,7 +34228,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -34265,8 +34265,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -34276,7 +34276,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -34312,7 +34312,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -34351,8 +34351,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -34362,7 +34362,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -34396,7 +34396,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -34433,8 +34433,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -34444,7 +34444,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -34478,7 +34478,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -34515,8 +34515,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -34526,7 +34526,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -34560,7 +34560,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -34597,8 +34597,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -34608,7 +34608,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -34644,7 +34644,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -34683,8 +34683,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -34694,7 +34694,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -34728,7 +34728,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -34765,8 +34765,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -34776,7 +34776,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -34810,7 +34810,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -34847,8 +34847,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -34858,7 +34858,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -34892,7 +34892,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -34929,14 +34929,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "789f3248-403e-4c9f-a293-42302767ecfa",
@@ -34949,7 +34949,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -34983,7 +34983,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -35020,8 +35020,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -35031,7 +35031,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -35065,7 +35065,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -35102,8 +35102,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -35113,7 +35113,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -35147,7 +35147,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -35184,8 +35184,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -35195,7 +35195,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -35231,7 +35231,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -35268,8 +35268,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -35279,7 +35279,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -35313,7 +35313,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -35350,8 +35350,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -35361,7 +35361,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -35395,7 +35395,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -35432,8 +35432,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -35443,7 +35443,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -35477,7 +35477,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -35514,8 +35514,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -35525,7 +35525,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -35561,7 +35561,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -35598,8 +35598,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -35609,7 +35609,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -35643,7 +35643,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -35680,8 +35680,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -35691,7 +35691,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -35725,7 +35725,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -35762,8 +35762,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -35773,7 +35773,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -35807,7 +35807,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -35844,8 +35844,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -35855,7 +35855,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -35891,7 +35891,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -35928,8 +35928,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -35939,7 +35939,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -35973,7 +35973,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -36010,8 +36010,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -36021,7 +36021,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -36055,7 +36055,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -36092,8 +36092,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -36103,7 +36103,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -36137,7 +36137,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -36174,8 +36174,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -36185,7 +36185,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -36221,7 +36221,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -36258,14 +36258,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "left",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "2957c6bd-ec4e-4c4e-8cfd-abec5c8f2a5b",
@@ -36278,7 +36278,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -36312,7 +36312,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -36349,8 +36349,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -36360,7 +36360,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -36396,7 +36396,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -36435,8 +36435,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -36446,7 +36446,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -36480,7 +36480,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -36517,8 +36517,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -36528,7 +36528,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -36562,7 +36562,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -36599,8 +36599,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -36610,7 +36610,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -36644,7 +36644,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -36681,8 +36681,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -36692,7 +36692,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -36728,7 +36728,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -36767,8 +36767,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -36778,7 +36778,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -36812,7 +36812,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -36849,8 +36849,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -36860,7 +36860,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -36894,7 +36894,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -36931,8 +36931,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -36942,7 +36942,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -36976,7 +36976,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -37013,8 +37013,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -37024,7 +37024,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -37060,7 +37060,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -37099,8 +37099,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -37110,7 +37110,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -37144,7 +37144,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -37181,8 +37181,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -37192,7 +37192,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -37226,7 +37226,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -37263,8 +37263,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -37274,7 +37274,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -37308,7 +37308,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -37345,8 +37345,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -37356,7 +37356,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -37392,7 +37392,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -37431,8 +37431,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -37442,7 +37442,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -37476,7 +37476,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -37513,8 +37513,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -37524,7 +37524,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -37558,7 +37558,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -37595,14 +37595,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "right",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "4fb9d3b4-4fde-4b76-a144-e415a2f8dcfc",
@@ -37615,7 +37615,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma6",
         "endPosition": "gamma8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -37649,7 +37649,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -37686,8 +37686,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -37697,7 +37697,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma8",
         "endPosition": "gamma16",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -37731,7 +37731,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "nw",
@@ -37768,8 +37768,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -37779,7 +37779,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma16",
         "endPosition": "gamma2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -37813,7 +37813,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -37850,8 +37850,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -37861,7 +37861,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma2",
         "endPosition": "gamma8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -37895,7 +37895,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -37932,8 +37932,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -37943,7 +37943,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma8",
         "endPosition": "gamma2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -37977,7 +37977,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -38014,8 +38014,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -38025,7 +38025,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma2",
         "endPosition": "gamma10",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -38059,7 +38059,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "ne",
@@ -38096,8 +38096,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -38107,7 +38107,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma10",
         "endPosition": "gamma4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -38141,7 +38141,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -38178,8 +38178,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -38189,7 +38189,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma4",
         "endPosition": "gamma2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -38223,7 +38223,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -38260,8 +38260,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -38271,7 +38271,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma2",
         "endPosition": "gamma4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -38305,7 +38305,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -38342,8 +38342,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -38353,7 +38353,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma4",
         "endPosition": "gamma12",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -38387,7 +38387,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "se",
@@ -38424,8 +38424,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -38435,7 +38435,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma12",
         "endPosition": "gamma6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -38469,7 +38469,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -38506,8 +38506,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -38517,7 +38517,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma6",
         "endPosition": "gamma4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -38551,7 +38551,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -38588,8 +38588,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -38599,7 +38599,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma4",
         "endPosition": "gamma6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -38633,7 +38633,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -38670,8 +38670,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -38681,7 +38681,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma6",
         "endPosition": "gamma14",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -38715,7 +38715,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "sw",
@@ -38752,8 +38752,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -38763,7 +38763,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma14",
         "endPosition": "gamma8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -38797,7 +38797,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -38834,8 +38834,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -38845,7 +38845,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma8",
         "endPosition": "gamma6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -38879,7 +38879,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -38916,14 +38916,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "b8faf236-6e62-4f43-ba4c-34c71f1e5db0",
@@ -38936,7 +38936,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma2",
         "endPosition": "alpha2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "nw",
@@ -38970,7 +38970,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -39007,8 +39007,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -39018,7 +39018,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha2",
         "endPosition": "gamma14",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "sw",
@@ -39052,7 +39052,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "ne",
@@ -39089,8 +39089,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -39100,7 +39100,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma14",
         "endPosition": "beta6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "nw",
@@ -39134,7 +39134,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "sw",
@@ -39171,8 +39171,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -39182,7 +39182,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta6",
         "endPosition": "gamma4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "sw",
@@ -39216,7 +39216,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -39253,8 +39253,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -39264,7 +39264,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma4",
         "endPosition": "alpha4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "ne",
@@ -39298,7 +39298,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -39335,8 +39335,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -39346,7 +39346,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha4",
         "endPosition": "gamma16",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "nw",
@@ -39380,7 +39380,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "se",
@@ -39417,8 +39417,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -39428,7 +39428,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma16",
         "endPosition": "beta8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "ne",
@@ -39462,7 +39462,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "nw",
@@ -39499,8 +39499,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -39510,7 +39510,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta8",
         "endPosition": "gamma6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "nw",
@@ -39544,7 +39544,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -39581,8 +39581,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -39592,7 +39592,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma6",
         "endPosition": "alpha6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "se",
@@ -39626,7 +39626,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -39663,8 +39663,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -39674,7 +39674,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha6",
         "endPosition": "gamma10",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "ne",
@@ -39708,7 +39708,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "sw",
@@ -39745,8 +39745,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -39756,7 +39756,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma10",
         "endPosition": "beta2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "se",
@@ -39790,7 +39790,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "ne",
@@ -39827,8 +39827,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -39838,7 +39838,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta2",
         "endPosition": "gamma8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "ne",
@@ -39872,7 +39872,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -39909,8 +39909,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -39920,7 +39920,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma8",
         "endPosition": "alpha8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "sw",
@@ -39954,7 +39954,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -39991,8 +39991,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -40002,7 +40002,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha8",
         "endPosition": "gamma12",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "se",
@@ -40036,7 +40036,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "nw",
@@ -40073,8 +40073,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -40084,7 +40084,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma12",
         "endPosition": "beta4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "sw",
@@ -40118,7 +40118,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "se",
@@ -40155,8 +40155,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -40166,7 +40166,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta4",
         "endPosition": "gamma2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "se",
@@ -40200,7 +40200,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -40237,14 +40237,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "49eaec6b-b2b9-4f05-89f0-7c442f99fca6",
@@ -40257,7 +40257,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha8",
         "endPosition": "beta2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -40291,7 +40291,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -40328,8 +40328,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -40339,7 +40339,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta2",
         "endPosition": "beta4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -40373,7 +40373,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -40410,8 +40410,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -40421,7 +40421,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta4",
         "endPosition": "beta2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -40455,7 +40455,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -40492,8 +40492,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -40503,7 +40503,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta2",
         "endPosition": "alpha6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -40537,7 +40537,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -40574,8 +40574,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -40585,7 +40585,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha6",
         "endPosition": "beta8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -40619,7 +40619,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -40656,8 +40656,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -40667,7 +40667,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta8",
         "endPosition": "beta2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -40701,7 +40701,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -40738,8 +40738,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -40749,7 +40749,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta2",
         "endPosition": "beta8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -40783,7 +40783,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -40820,8 +40820,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -40831,7 +40831,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta8",
         "endPosition": "alpha4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -40865,7 +40865,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -40902,8 +40902,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -40913,7 +40913,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha4",
         "endPosition": "beta6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -40947,7 +40947,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -40984,8 +40984,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -40995,7 +40995,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta6",
         "endPosition": "beta8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -41029,7 +41029,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -41066,8 +41066,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -41077,7 +41077,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta8",
         "endPosition": "beta6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -41111,7 +41111,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -41148,8 +41148,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -41159,7 +41159,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta6",
         "endPosition": "alpha2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -41193,7 +41193,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -41230,8 +41230,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -41241,7 +41241,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha2",
         "endPosition": "beta4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -41275,7 +41275,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -41312,8 +41312,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -41323,7 +41323,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta4",
         "endPosition": "beta6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -41357,7 +41357,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -41394,8 +41394,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -41405,7 +41405,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta6",
         "endPosition": "beta4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -41439,7 +41439,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -41476,8 +41476,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -41487,7 +41487,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta4",
         "endPosition": "alpha8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -41521,7 +41521,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -41558,14 +41558,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "left",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "737a29ea-663d-4bd5-ba6e-39f5c857e4f3",
@@ -41578,7 +41578,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma2",
         "endPosition": "gamma8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -41612,7 +41612,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "ne",
@@ -41649,8 +41649,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -41660,7 +41660,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma8",
         "endPosition": "beta6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "sw",
@@ -41694,7 +41694,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "nw",
@@ -41731,8 +41731,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -41742,7 +41742,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta6",
         "endPosition": "alpha4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -41776,7 +41776,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "sw",
@@ -41813,8 +41813,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -41824,7 +41824,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha4",
         "endPosition": "gamma8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -41858,7 +41858,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "se",
@@ -41895,8 +41895,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -41906,7 +41906,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma8",
         "endPosition": "gamma6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -41940,7 +41940,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "nw",
@@ -41977,8 +41977,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -41988,7 +41988,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma6",
         "endPosition": "beta4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "se",
@@ -42022,7 +42022,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "sw",
@@ -42059,8 +42059,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -42070,7 +42070,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta4",
         "endPosition": "alpha2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -42104,7 +42104,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "se",
@@ -42141,8 +42141,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -42152,7 +42152,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha2",
         "endPosition": "gamma6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -42186,7 +42186,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "ne",
@@ -42223,8 +42223,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -42234,7 +42234,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma6",
         "endPosition": "gamma4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -42268,7 +42268,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "sw",
@@ -42305,8 +42305,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -42316,7 +42316,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma4",
         "endPosition": "beta2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "ne",
@@ -42350,7 +42350,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "se",
@@ -42387,8 +42387,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -42398,7 +42398,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta2",
         "endPosition": "alpha8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -42432,7 +42432,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "ne",
@@ -42469,8 +42469,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -42480,7 +42480,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha8",
         "endPosition": "gamma4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -42514,7 +42514,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "nw",
@@ -42551,8 +42551,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -42562,7 +42562,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma4",
         "endPosition": "gamma2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -42596,7 +42596,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "se",
@@ -42633,8 +42633,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -42644,7 +42644,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma2",
         "endPosition": "beta8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "nw",
@@ -42678,7 +42678,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "ne",
@@ -42715,8 +42715,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -42726,7 +42726,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta8",
         "endPosition": "alpha6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -42760,7 +42760,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "nw",
@@ -42797,8 +42797,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -42808,7 +42808,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha6",
         "endPosition": "gamma2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -42842,7 +42842,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "sw",
@@ -42879,14 +42879,14 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "22288e8a-ace1-4a9a-8b12-7dcdc334a563",
@@ -42899,7 +42899,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha2",
         "endPosition": "beta4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -42933,7 +42933,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "ne",
@@ -42970,8 +42970,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -42981,7 +42981,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta4",
         "endPosition": "gamma16",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -43015,7 +43015,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "se",
@@ -43052,8 +43052,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -43063,7 +43063,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma16",
         "endPosition": "alpha4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -43097,7 +43097,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "nw",
@@ -43134,8 +43134,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -43145,7 +43145,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha4",
         "endPosition": "alpha8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -43179,7 +43179,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "se",
@@ -43216,8 +43216,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -43227,7 +43227,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha8",
         "endPosition": "beta2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -43261,7 +43261,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "nw",
@@ -43298,8 +43298,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -43309,7 +43309,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta2",
         "endPosition": "gamma14",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -43343,7 +43343,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "ne",
@@ -43380,8 +43380,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -43391,7 +43391,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma14",
         "endPosition": "alpha2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -43425,7 +43425,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "sw",
@@ -43462,8 +43462,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -43473,7 +43473,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha2",
         "endPosition": "alpha6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -43507,7 +43507,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "ne",
@@ -43544,8 +43544,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -43555,7 +43555,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha6",
         "endPosition": "beta8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -43589,7 +43589,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "sw",
@@ -43626,8 +43626,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -43637,7 +43637,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta8",
         "endPosition": "gamma12",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -43671,7 +43671,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "nw",
@@ -43708,8 +43708,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -43719,7 +43719,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma12",
         "endPosition": "alpha8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -43753,7 +43753,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "se",
@@ -43790,8 +43790,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -43801,7 +43801,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha8",
         "endPosition": "alpha4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -43835,7 +43835,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "nw",
@@ -43872,8 +43872,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -43883,7 +43883,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha4",
         "endPosition": "beta6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -43917,7 +43917,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "se",
@@ -43954,8 +43954,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -43965,7 +43965,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "beta6",
         "endPosition": "gamma10",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -43999,7 +43999,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "sw",
@@ -44036,8 +44036,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -44047,7 +44047,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma10",
         "endPosition": "alpha6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -44081,7 +44081,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "ne",
@@ -44118,8 +44118,8 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -44129,7 +44129,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "alpha6",
         "endPosition": "alpha2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -44163,7 +44163,7 @@ export const SHOWCASE_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "sw",
@@ -44200,13 +44200,13 @@ export const SHOWCASE_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   }
 ] as unknown as ShowcaseMandala[];

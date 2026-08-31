@@ -357,7 +357,7 @@
       props: s.props,
       wordHeader: s.wordHeader,
       mandala: s.mandala,
-      pathLines: s.bluePathLines || s.redPathLines,
+      pathLines: s.leftPathLines || s.rightPathLines,
       grid: vm.isGridVisible(),
     });
   });

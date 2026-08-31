@@ -27,7 +27,7 @@
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   RotationDirection,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type {
   GridPosition,
@@ -129,13 +129,13 @@ export class StrictMirroredLOOPExecutor {
       startPosition: previousStep.endPosition ?? null,
       endPosition: newEndPosition,
       motions: {
-        [MotionColor.BLUE]: this._createMirroredMotion(
-          MotionColor.BLUE,
+        [HandSide.LEFT]: this._createMirroredMotion(
+          HandSide.LEFT,
           previousStep,
           sourceStep
         ),
-        [MotionColor.RED]: this._createMirroredMotion(
-          MotionColor.RED,
+        [HandSide.RIGHT]: this._createMirroredMotion(
+          HandSide.RIGHT,
           previousStep,
           sourceStep
         ),
@@ -159,9 +159,9 @@ export class StrictMirroredLOOPExecutor {
     previousStep: StepData,
     stepNumber: number
   ): StepData {
-    const sourceBlue = sourceStep.motions[MotionColor.BLUE];
-    const sourceRed = sourceStep.motions[MotionColor.RED];
-    if (!sourceBlue || !sourceRed) {
+    const sourceLeft = sourceStep.motions[HandSide.LEFT];
+    const sourceRight = sourceStep.motions[HandSide.RIGHT];
+    if (!sourceLeft || !sourceRight) {
       throw new Error(`Source step ${sourceStep.stepNumber} is missing motion data`);
     }
 
@@ -172,13 +172,13 @@ export class StrictMirroredLOOPExecutor {
       startPosition: previousStep.endPosition ?? null,
       endPosition: sourceStep.endPosition,
       motions: {
-        [MotionColor.BLUE]: {
-          ...sourceBlue,
-          startLocation: previousStep.motions[MotionColor.BLUE]?.endLocation ?? sourceBlue.startLocation,
+        [HandSide.LEFT]: {
+          ...sourceLeft,
+          startLocation: previousStep.motions[HandSide.LEFT]?.endLocation ?? sourceLeft.startLocation,
         },
-        [MotionColor.RED]: {
-          ...sourceRed,
-          startLocation: previousStep.motions[MotionColor.RED]?.endLocation ?? sourceRed.startLocation,
+        [HandSide.RIGHT]: {
+          ...sourceRight,
+          startLocation: previousStep.motions[HandSide.RIGHT]?.endLocation ?? sourceRight.startLocation,
         },
       },
     };
@@ -199,7 +199,7 @@ export class StrictMirroredLOOPExecutor {
   }
 
   private _createMirroredMotion(
-    color: MotionColor,
+    color: HandSide,
     previousStep: StepData,
     sourceStep: StepData
   ): MotionData {

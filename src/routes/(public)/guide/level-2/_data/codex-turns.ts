@@ -23,7 +23,7 @@
 import { codexData } from "../../codex/_data/codex-groups";
 import { applyPendingTurnsToOption } from "$lib/shared/create/services/apply-turns-to-motion";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-import { MotionType, MotionColor, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { MotionType, HandSide, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 const CW = RotationDirection.CLOCKWISE;
 
@@ -31,16 +31,16 @@ const CW = RotationDirection.CLOCKWISE;
 const PADS: MotionType[] = [MotionType.PRO, MotionType.ANTI, MotionType.DASH, MotionType.STATIC];
 
 /** Which hand owns the high slot for this pictograph (PADS; else left/blue). */
-function highSlotColor(base: PictographData): MotionColor {
-  const b = base.motions?.blue?.motionType;
-  const r = base.motions?.red?.motionType;
+function highSlotColor(base: PictographData): HandSide {
+  const b = base.motions?.left?.motionType;
+  const r = base.motions?.right?.motionType;
   if (b && r && b !== r) {
-    return PADS.indexOf(b) < PADS.indexOf(r) ? MotionColor.BLUE : MotionColor.RED;
+    return PADS.indexOf(b) < PADS.indexOf(r) ? HandSide.LEFT : HandSide.RIGHT;
   }
-  return MotionColor.BLUE; // matching-type: left/blue high (S/T leader exception - see header)
+  return HandSide.LEFT; // matching-type: left/blue high (S/T leader exception - see header)
 }
 
-const otherColor = (c: MotionColor) => (c === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE);
+const otherColor = (c: HandSide) => (c === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT);
 
 export type Slot = "high" | "low";
 
@@ -54,10 +54,10 @@ export function codexTurnData(letter: string, highTurns: number, lowTurns: numbe
   const base = codexData(`${letter}-0`);
   if (!base) return null;
   const high = highSlotColor(base);
-  const highIsBlue = high === MotionColor.BLUE;
-  const blueTurns = highIsBlue ? highTurns : lowTurns;
-  const redTurns = highIsBlue ? lowTurns : highTurns;
-  return applyPendingTurnsToOption(base, blueTurns, redTurns, CW, CW);
+  const highIsBlue = high === HandSide.LEFT;
+  const leftTurns = highIsBlue ? highTurns : lowTurns;
+  const rightTurns = highIsBlue ? lowTurns : highTurns;
+  return applyPendingTurnsToOption(base, leftTurns, rightTurns, CW, CW);
 }
 
 /** Single-slot convenience for the 1|0-style pages: turn on high (`¹`) or low (`₁`). */
@@ -89,15 +89,15 @@ export function codexRelData(
   const base = codexData(`${letter}-0`);
   if (!base) return null;
   const high = highSlotColor(base);
-  const highIsBlue = high === MotionColor.BLUE;
-  const highMotion = highIsBlue ? base.motions?.blue : base.motions?.red;
+  const highIsBlue = high === HandSide.LEFT;
+  const highMotion = highIsBlue ? base.motions?.left : base.motions?.right;
   const highDir = highMotion?.rotationDirection ?? CW;
   const lowDir = rel === "opp" ? flipDir(highDir) : highDir;
-  const blueTurns = highIsBlue ? highTurns : lowTurns;
-  const redTurns = highIsBlue ? lowTurns : highTurns;
-  const blueDir = highIsBlue ? highDir : lowDir;
-  const redDir = highIsBlue ? lowDir : highDir;
-  return applyPendingTurnsToOption(base, blueTurns, redTurns, blueDir, redDir);
+  const leftTurns = highIsBlue ? highTurns : lowTurns;
+  const rightTurns = highIsBlue ? lowTurns : highTurns;
+  const leftDir = highIsBlue ? highDir : lowDir;
+  const rightDir = highIsBlue ? lowDir : highDir;
+  return applyPendingTurnsToOption(base, leftTurns, rightTurns, leftDir, rightDir);
 }
 
 export type OpenClose = "open" | "close";
@@ -122,12 +122,12 @@ export function codexOpenCloseData(
   const base = codexData(`${letter}-0`);
   if (!base) return null;
   const high = highSlotColor(base);
-  const highIsBlue = high === MotionColor.BLUE;
+  const highIsBlue = high === HandSide.LEFT;
   const turnColor = highTurns > 0 ? high : otherColor(high);
   const dir = oc === "open" ? CW : RotationDirection.COUNTER_CLOCKWISE;
-  const blueTurns = highIsBlue ? highTurns : lowTurns;
-  const redTurns = highIsBlue ? lowTurns : highTurns;
-  const blueDir = turnColor === MotionColor.BLUE ? dir : CW;
-  const redDir = turnColor === MotionColor.RED ? dir : CW;
-  return applyPendingTurnsToOption(base, blueTurns, redTurns, blueDir, redDir);
+  const leftTurns = highIsBlue ? highTurns : lowTurns;
+  const rightTurns = highIsBlue ? lowTurns : highTurns;
+  const leftDir = turnColor === HandSide.LEFT ? dir : CW;
+  const rightDir = turnColor === HandSide.RIGHT ? dir : CW;
+  return applyPendingTurnsToOption(base, leftTurns, rightTurns, leftDir, rightDir);
 }

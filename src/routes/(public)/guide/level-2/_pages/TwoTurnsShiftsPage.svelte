@@ -36,7 +36,7 @@
   import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -74,7 +74,7 @@
     letter: null,
     gridMode: GridMode.DIAMOND,
     motions: {
-      red: createMotionData({
+      right: createMotionData({
         motionType: type,
         rotationDirection: rot,
         startLocation: from,
@@ -82,7 +82,7 @@
         startOrientation: startOri,
         endOrientation: endOri,
         turns,
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
@@ -91,7 +91,7 @@
   const stat = (id: string, loc: GridLocation, ori: Orientation) =>
     redStaff(id, MotionType.STATIC, loc, loc, ori, ori, NOROT);
   /** Motion → the HalfwayMotion shape poseAt/poseArrow (PoseFrame) expect. */
-  const toHM = (m: ReturnType<typeof redStaff>["motions"]["red"]): HalfwayMotion => ({
+  const toHM = (m: ReturnType<typeof redStaff>["motions"]["right"]): HalfwayMotion => ({
     type: m.motionType,
     from: m.startLocation,
     to: m.endLocation,
@@ -119,8 +119,8 @@
       id: `${data.id}-anim-${stepNumber}`,
       stepNumber,
       motions: {
-        blue: createPlaceholderMotion(MotionColor.BLUE, { location: startLoc, orientation: IN }),
-        red: data.motions.red,
+        left: createPlaceholderMotion(HandSide.LEFT, { location: startLoc, orientation: IN }),
+        right: data.motions.right,
       },
     }) as unknown as StepData;
   const animKeyStat = (key: string): ReturnType<typeof redStaff> =>
@@ -153,7 +153,7 @@
     frames: [
       { left: 95, render: { kind: "start", loc: E, ori: IN } },
       { left: 215, render: { kind: "half", combined: proCombined, half: halfOf(proCombined, E) } },
-      { left: 335, render: { kind: "end", loc: SO_, ori: proCombined.motions.red.endOrientation } },
+      { left: 335, render: { kind: "end", loc: SO_, ori: proCombined.motions.right.endOrientation } },
       { left: 455, render: { kind: "combined", animKey: "l2ts-pro" } },
     ],
   };
@@ -162,9 +162,9 @@
     size: 88,
     frames: [
       { left: 30, render: { kind: "start", loc: E, ori: IN } },
-      { left: 148, render: { kind: "pose", motion: toHM(antiCombined.motions.red), t: 1 / 3, arrowStart: 0 } },
-      { left: 266, render: { kind: "pose", motion: toHM(antiCombined.motions.red), t: 2 / 3, arrowStart: 1 / 3 } },
-      { left: 384, render: { kind: "end", loc: SO_, ori: antiCombined.motions.red.endOrientation } },
+      { left: 148, render: { kind: "pose", motion: toHM(antiCombined.motions.right), t: 1 / 3, arrowStart: 0 } },
+      { left: 266, render: { kind: "pose", motion: toHM(antiCombined.motions.right), t: 2 / 3, arrowStart: 1 / 3 } },
+      { left: 384, render: { kind: "end", loc: SO_, ori: antiCombined.motions.right.endOrientation } },
       { left: 508, render: { kind: "combined", animKey: "l2ts-anti" } },
     ],
   };
@@ -174,7 +174,7 @@
     frames: [
       { left: 95, render: { kind: "start", loc: E, ori: IN } },
       { left: 215, render: { kind: "half", combined: antiHalfCombined, half: halfOf(antiHalfCombined, E) } },
-      { left: 335, render: { kind: "end", loc: SO_, ori: antiHalfCombined.motions.red.endOrientation } },
+      { left: 335, render: { kind: "end", loc: SO_, ori: antiHalfCombined.motions.right.endOrientation } },
       { left: 455, render: { kind: "combined", animKey: "l2ts-antih" } },
     ],
   };
@@ -277,8 +277,8 @@
   // Corner mandala forms (facelift, divider family) - iso left, anti right.
   const m = (mt: string, rd: string, sl: string, el: string, so: string, eo: string) =>
     ({ motionType: mt, rotationDirection: rd, startLocation: sl, endLocation: el, startOrientation: so, endOrientation: eo });
-  const mstep = (blue: unknown, red: unknown) => ({ motions: { blue, red } });
-  const mseq = (steps: unknown[]) => ({ bluePropType: "staff", redPropType: "staff", steps });
+  const mstep = (left, right) => ({ motions: { left, right } });
+  const mseq = (steps: unknown[]) => ({ leftPropType: "staff", rightPropType: "staff", steps });
   const ISO = mseq([
     mstep(m("pro", "cw", "n", "e", "in", "in"), m("pro", "cw", "s", "w", "in", "in")),
     mstep(m("pro", "cw", "e", "s", "in", "in"), m("pro", "cw", "w", "n", "in", "in")),
@@ -295,10 +295,10 @@
 
 <div class="tt-page">
   <div class="corner" style="left:{40 * S}px; top:{16 * S}px; width:{58 * S}px; height:{58 * S}px">
-    <SequenceMandala sequence={ISO} size={58 * S} darkMode={false} bluePropType="staff" redPropType="staff" pathShape="arc" strokeWidth={2.5} />
+    <SequenceMandala sequence={ISO} size={58 * S} darkMode={false} leftPropType="staff" rightPropType="staff" pathShape="arc" strokeWidth={2.5} />
   </div>
   <div class="corner" style="left:{514 * S}px; top:{16 * S}px; width:{58 * S}px; height:{58 * S}px">
-    <SequenceMandala sequence={ANTIM} size={58 * S} darkMode={false} bluePropType="staff" redPropType="staff" pathShape="arc" strokeWidth={2.5} />
+    <SequenceMandala sequence={ANTIM} size={58 * S} darkMode={false} leftPropType="staff" rightPropType="staff" pathShape="arc" strokeWidth={2.5} />
   </div>
   <div class="rule heavy" style="left:{20 * S}px; top:{89 * S}px; width:{572 * S}px"></div>
   <div class="rule heavy" style="left:{26 * S}px; top:{353 * S}px; width:{570 * S}px"></div>
@@ -318,8 +318,8 @@
           <PictographContainer
             pictographData={{ ...animStep(ANIM[animKey].data, 1, ANIM[animKey].startLoc), stepNumber: undefined } as unknown as StepData}
             gridMode={GridMode.DIAMOND}
-            redPropTypeOverride={PropType.STAFF}
-            bluePropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
+            leftPropTypeOverride={PropType.STAFF}
             {...PICTO_FLAGS}
           />
           <SelectionHit
@@ -332,9 +332,9 @@
       {:else if r.kind === "half"}
         <div class="mini" style="left:{frame.left * S}px; top:{strip.y * S}px; width:{strip.size * S}px; height:{strip.size * S}px">
           {#if r.half}
-            <PictographContainer pictographData={r.half} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} bluePropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+            <PictographContainer pictographData={r.half} gridMode={GridMode.DIAMOND} rightPropTypeOverride={PropType.STAFF} leftPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
           {:else}
-            <PoseFrame motion={toHM(r.combined.motions.red)} t={0.5} arrow={{ tStart: 0, tEnd: 0.5 }} />
+            <PoseFrame motion={toHM(r.combined.motions.right)} t={0.5} arrow={{ tStart: 0, tEnd: 0.5 }} />
           {/if}
         </div>
       {:else if r.kind === "pose"}
@@ -343,7 +343,7 @@
         </div>
       {:else}
         <div class="mini" style="left:{frame.left * S}px; top:{strip.y * S}px; width:{strip.size * S}px; height:{strip.size * S}px">
-          <PictographContainer pictographData={stat(`p22-${si}-${fi}`, r.loc, r.ori)} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} showArrow={false} {...PICTO_FLAGS} />
+          <PictographContainer pictographData={stat(`p22-${si}-${fi}`, r.loc, r.ori)} gridMode={GridMode.DIAMOND} rightPropTypeOverride={PropType.STAFF} showArrow={false} {...PICTO_FLAGS} />
         </div>
       {/if}
     {/each}

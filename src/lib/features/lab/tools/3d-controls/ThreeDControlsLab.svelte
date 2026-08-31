@@ -21,26 +21,26 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
 
 
   // Grid locations
-  let blueLocation: GridLocation = $state(GridLocation.NORTH);
-  let redLocation: GridLocation = $state(GridLocation.EAST);
+  let leftLocation: GridLocation = $state(GridLocation.NORTH);
+  let rightLocation: GridLocation = $state(GridLocation.EAST);
 
   // Turns (controls staff rotation angle)
-  let blueTurns = $state(1);
-  let redTurns = $state(0.5);
+  let leftTurns = $state(1);
+  let rightTurns = $state(0.5);
 
   // Plane
   let activePlane: Plane = $state(Plane.WALL);
 
   // Visibility
-  let blueVisible = $state(true);
-  let redVisible = $state(true);
+  let leftVisible = $state(true);
+  let rightVisible = $state(true);
   let showFigure = $state(true);
 
   // Motion type (visual label only for now)
-  let blueMotionType = $state("pro");
-  let redMotionType = $state("anti");
-  let blueDirection = $state("cw");
-  let redDirection = $state("ccw");
+  let leftMotionType = $state("pro");
+  let rightMotionType = $state("anti");
+  let leftDirection = $state("cw");
+  let rightDirection = $state("ccw");
 
   // ── Derived 3D prop states ───────────────────────────────────────────
 
@@ -56,8 +56,8 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
     };
   }
 
-  const bluePropState = $derived(blueVisible ? makePropState(blueLocation, blueTurns, activePlane) : null);
-  const redPropState = $derived(redVisible ? makePropState(redLocation, redTurns, activePlane) : null);
+  const leftPropState = $derived(leftVisible ? makePropState(leftLocation, leftTurns, activePlane) : null);
+  const rightPropState = $derived(rightVisible ? makePropState(rightLocation, rightTurns, activePlane) : null);
 
 
   const points: Array<{ loc: GridLocation; x: number; y: number; label: string }> = [
@@ -88,22 +88,22 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
     return map[loc] || loc;
   }
 
-  function handlePreset(preset: string, color: "blue" | "red") {
+  function handlePreset(preset: string, hand: "left" | "right") {
     if (preset === "Reversal") {
-      if (color === "blue") { blueTurns = 1; blueMotionType = "anti"; }
-      else { redTurns = 1; redMotionType = "anti"; }
+      if (hand === "left") { leftTurns = 1; leftMotionType = "anti"; }
+      else { rightTurns = 1; rightMotionType = "anti"; }
     } else if (preset === "Float") {
-      if (color === "blue") { blueTurns = 0.5; blueMotionType = "float"; }
-      else { redTurns = 0.5; redMotionType = "float"; }
+      if (hand === "left") { leftTurns = 0.5; leftMotionType = "float"; }
+      else { rightTurns = 0.5; rightMotionType = "float"; }
     } else if (preset === "Static") {
-      if (color === "blue") { blueTurns = 0; blueMotionType = "static"; }
-      else { redTurns = 0; redMotionType = "static"; }
+      if (hand === "left") { leftTurns = 0; leftMotionType = "static"; }
+      else { rightTurns = 0; rightMotionType = "static"; }
     } else if (preset === "Dash") {
-      if (color === "blue") { blueTurns = 0; blueMotionType = "dash"; }
-      else { redTurns = 0; redMotionType = "dash"; }
+      if (hand === "left") { leftTurns = 0; leftMotionType = "dash"; }
+      else { rightTurns = 0; rightMotionType = "dash"; }
     } else {
-      if (color === "blue") { blueTurns = 1; blueMotionType = "pro"; blueDirection = "cw"; }
-      else { redTurns = 1; redMotionType = "pro"; redDirection = "cw"; }
+      if (hand === "left") { leftTurns = 1; leftMotionType = "pro"; leftDirection = "cw"; }
+      else { rightTurns = 1; rightMotionType = "pro"; rightDirection = "cw"; }
     }
   }
 </script>
@@ -118,22 +118,22 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
       visiblePlanes={new Set([activePlane])}
     >
       {#snippet children()}
-        {#if bluePropState && blueVisible}
+        {#if leftPropState && leftVisible}
           <Prop3D propType={toScenePropType(PropType.STAFF)}
-            propState={bluePropState}
+            propState={leftPropState}
             color="blue"
           />
         {/if}
-        {#if redPropState && redVisible}
+        {#if rightPropState && rightVisible}
           <Prop3D propType={toScenePropType(PropType.STAFF)}
-            propState={redPropState}
+            propState={rightPropState}
             color="red"
           />
         {/if}
         {#if showFigure}
           <Avatar3D
-            bluePropState={bluePropState}
-            redPropState={redPropState}
+            leftPropState={leftPropState}
+            rightPropState={rightPropState}
             position={{ x: 0, y: 0, z: 0 }}
             facingAngle={0}
           />
@@ -180,12 +180,12 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
         <div class="card-header">
           <span class="dot blue-dot"></span>
           <span>Blue</span>
-          <button class="vis-btn" onclick={() => blueVisible = !blueVisible} aria-label={blueVisible ? "Hide blue prop" : "Show blue prop"}>
-            <i class="fas {blueVisible ? 'fa-eye' : 'fa-eye-slash'}" aria-hidden="true"></i>
+          <button class="vis-btn" onclick={() => leftVisible = !leftVisible} aria-label={leftVisible ? "Hide blue prop" : "Show blue prop"}>
+            <i class="fas {leftVisible ? 'fa-eye' : 'fa-eye-slash'}" aria-hidden="true"></i>
           </button>
         </div>
 
-        <div class="card-body" class:dimmed={!blueVisible}>
+        <div class="card-body" class:dimmed={!leftVisible}>
           <!-- Position pair -->
           <div class="position-pair">
             <div class="grid-selector">
@@ -197,13 +197,13 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <g
                     class="point-group"
-                    class:selected={blueLocation === point.loc}
-                    onclick={() => blueLocation = point.loc}
+                    class:selected={leftLocation === point.loc}
+                    onclick={() => leftLocation = point.loc}
                     role="button"
                     tabindex="0"
                   >
                     <circle cx={point.x} cy={point.y} r="12" class="point-hitarea" />
-                    <circle cx={point.x} cy={point.y} r={blueLocation === point.loc ? 9 : 6} class="point-dot blue-sel" />
+                    <circle cx={point.x} cy={point.y} r={leftLocation === point.loc ? 9 : 6} class="point-dot blue-sel" />
                     <text x={point.x} y={point.y} class="point-text">{point.label}</text>
                   </g>
                 {/each}
@@ -216,7 +216,7 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
             <span class="field-label">Motion</span>
             <div class="segmented-row">
               {#each motionTypeOptions as opt}
-                <button class="seg-btn" class:seg-active={blueMotionType === opt} class:blue-accent={blueMotionType === opt} onclick={() => blueMotionType = opt}>{opt}</button>
+                <button class="seg-btn" class:seg-active={leftMotionType === opt} class:blue-accent={leftMotionType === opt} onclick={() => leftMotionType = opt}>{opt}</button>
               {/each}
             </div>
           </div>
@@ -227,7 +227,7 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
               <span class="field-label">Direction</span>
               <div class="segmented-row">
                 {#each directionOptions as opt}
-                  <button class="seg-btn" class:seg-active={blueDirection === opt} class:blue-accent={blueDirection === opt} onclick={() => blueDirection = opt}>{opt}</button>
+                  <button class="seg-btn" class:seg-active={leftDirection === opt} class:blue-accent={leftDirection === opt} onclick={() => leftDirection = opt}>{opt}</button>
                 {/each}
               </div>
             </div>
@@ -235,11 +235,11 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
             <div class="stepper">
               <span class="field-label">Turns</span>
               <div class="stepper-controls">
-                <button class="step-btn blue-hover" onclick={() => blueTurns = Math.max(0, blueTurns - 0.5)} disabled={blueTurns <= 0} aria-label="Decrease blue turns">
+                <button class="step-btn blue-hover" onclick={() => leftTurns = Math.max(0, leftTurns - 0.5)} disabled={leftTurns <= 0} aria-label="Decrease blue turns">
                   <i class="fas fa-minus" aria-hidden="true"></i>
                 </button>
-                <span class="step-value">{formatTurns(blueTurns)}</span>
-                <button class="step-btn blue-hover" onclick={() => blueTurns = Math.min(4, blueTurns + 0.5)} disabled={blueTurns >= 4} aria-label="Increase blue turns">
+                <span class="step-value">{formatTurns(leftTurns)}</span>
+                <button class="step-btn blue-hover" onclick={() => leftTurns = Math.min(4, leftTurns + 0.5)} disabled={leftTurns >= 4} aria-label="Increase blue turns">
                   <i class="fas fa-plus" aria-hidden="true"></i>
                 </button>
               </div>
@@ -249,7 +249,7 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
           <!-- Presets -->
           <div class="preset-group">
             {#each motionPresets as preset}
-              <button class="preset-btn blue-preset" onclick={() => handlePreset(preset, "blue")}>{preset}</button>
+              <button class="preset-btn blue-preset" onclick={() => handlePreset(preset, "left")}>{preset}</button>
             {/each}
           </div>
         </div>
@@ -260,12 +260,12 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
         <div class="card-header">
           <span class="dot red-dot"></span>
           <span>Red</span>
-          <button class="vis-btn" onclick={() => redVisible = !redVisible} aria-label={redVisible ? "Hide red prop" : "Show red prop"}>
-            <i class="fas {redVisible ? 'fa-eye' : 'fa-eye-slash'}" aria-hidden="true"></i>
+          <button class="vis-btn" onclick={() => rightVisible = !rightVisible} aria-label={rightVisible ? "Hide red prop" : "Show red prop"}>
+            <i class="fas {rightVisible ? 'fa-eye' : 'fa-eye-slash'}" aria-hidden="true"></i>
           </button>
         </div>
 
-        <div class="card-body" class:dimmed={!redVisible}>
+        <div class="card-body" class:dimmed={!rightVisible}>
           <!-- Position pair -->
           <div class="position-pair">
             <div class="grid-selector">
@@ -277,13 +277,13 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <g
                     class="point-group"
-                    class:selected={redLocation === point.loc}
-                    onclick={() => redLocation = point.loc}
+                    class:selected={rightLocation === point.loc}
+                    onclick={() => rightLocation = point.loc}
                     role="button"
                     tabindex="0"
                   >
                     <circle cx={point.x} cy={point.y} r="12" class="point-hitarea" />
-                    <circle cx={point.x} cy={point.y} r={redLocation === point.loc ? 9 : 6} class="point-dot red-sel" />
+                    <circle cx={point.x} cy={point.y} r={rightLocation === point.loc ? 9 : 6} class="point-dot red-sel" />
                     <text x={point.x} y={point.y} class="point-text">{point.label}</text>
                   </g>
                 {/each}
@@ -296,7 +296,7 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
             <span class="field-label">Motion</span>
             <div class="segmented-row">
               {#each motionTypeOptions as opt}
-                <button class="seg-btn" class:seg-active={redMotionType === opt} class:red-accent={redMotionType === opt} onclick={() => redMotionType = opt}>{opt}</button>
+                <button class="seg-btn" class:seg-active={rightMotionType === opt} class:red-accent={rightMotionType === opt} onclick={() => rightMotionType = opt}>{opt}</button>
               {/each}
             </div>
           </div>
@@ -307,7 +307,7 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
               <span class="field-label">Direction</span>
               <div class="segmented-row">
                 {#each directionOptions as opt}
-                  <button class="seg-btn" class:seg-active={redDirection === opt} class:red-accent={redDirection === opt} onclick={() => redDirection = opt}>{opt}</button>
+                  <button class="seg-btn" class:seg-active={rightDirection === opt} class:red-accent={rightDirection === opt} onclick={() => rightDirection = opt}>{opt}</button>
                 {/each}
               </div>
             </div>
@@ -315,11 +315,11 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
             <div class="stepper">
               <span class="field-label">Turns</span>
               <div class="stepper-controls">
-                <button class="step-btn red-hover" onclick={() => redTurns = Math.max(0, redTurns - 0.5)} disabled={redTurns <= 0} aria-label="Decrease red turns">
+                <button class="step-btn red-hover" onclick={() => rightTurns = Math.max(0, rightTurns - 0.5)} disabled={rightTurns <= 0} aria-label="Decrease red turns">
                   <i class="fas fa-minus" aria-hidden="true"></i>
                 </button>
-                <span class="step-value">{formatTurns(redTurns)}</span>
-                <button class="step-btn red-hover" onclick={() => redTurns = Math.min(4, redTurns + 0.5)} disabled={redTurns >= 4} aria-label="Increase red turns">
+                <span class="step-value">{formatTurns(rightTurns)}</span>
+                <button class="step-btn red-hover" onclick={() => rightTurns = Math.min(4, rightTurns + 0.5)} disabled={rightTurns >= 4} aria-label="Increase red turns">
                   <i class="fas fa-plus" aria-hidden="true"></i>
                 </button>
               </div>
@@ -329,7 +329,7 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
           <!-- Presets -->
           <div class="preset-group">
             {#each motionPresets as preset}
-              <button class="preset-btn red-preset" onclick={() => handlePreset(preset, "red")}>{preset}</button>
+              <button class="preset-btn red-preset" onclick={() => handlePreset(preset, "right")}>{preset}</button>
             {/each}
           </div>
         </div>
@@ -339,16 +339,16 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
       <div class="control-section">
         <span class="section-title">Current State</span>
         <div class="active-configs">
-          {#if blueVisible}
+          {#if leftVisible}
             <div class="summary-chip">
               <span class="dot blue-dot"></span>
-              {locationLabel(blueLocation)} &middot; {blueMotionType} &middot; {formatTurns(blueTurns)}t &middot; {blueDirection}
+              {locationLabel(leftLocation)} &middot; {leftMotionType} &middot; {formatTurns(leftTurns)}t &middot; {leftDirection}
             </div>
           {/if}
-          {#if redVisible}
+          {#if rightVisible}
             <div class="summary-chip">
               <span class="dot red-dot"></span>
-              {locationLabel(redLocation)} &middot; {redMotionType} &middot; {formatTurns(redTurns)}t &middot; {redDirection}
+              {locationLabel(rightLocation)} &middot; {rightMotionType} &middot; {formatTurns(rightTurns)}t &middot; {rightDirection}
             </div>
           {/if}
         </div>

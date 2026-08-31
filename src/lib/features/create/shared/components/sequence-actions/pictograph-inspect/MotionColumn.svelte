@@ -15,11 +15,13 @@
   import PipelineTraceSection from "./PipelineTraceSection.svelte";
   import CollapsibleSection from "$lib/features/admin/components/feature-flags/shared/CollapsibleSection.svelte";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
-
-  type MotionColor = "blue" | "red";
+  import {
+    HandSide,
+    type HandSide as HandSideValue,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   interface Props {
-    color: MotionColor;
+    hand: HandSideValue;
     motion: MotionData | undefined;
     rotationOverride: { hasOverride: boolean } | null;
     copiedSection: string | null;
@@ -30,7 +32,7 @@
   }
 
   let {
-    color,
+    hand,
     motion,
     rotationOverride,
     copiedSection,
@@ -40,10 +42,15 @@
     onToggle,
   }: Props = $props();
 
-  const colorClass = $derived(color === "blue" ? "blue-column" : "red-column");
-  const label = $derived(color === "blue" ? "Blue Motion" : "Red Motion");
+  const color = $derived(hand === HandSide.LEFT ? "blue" : "red");
+  const colorClass = $derived(
+    hand === HandSide.LEFT ? "blue-column" : "red-column"
+  );
+  const label = $derived(
+    hand === HandSide.LEFT ? "Left Motion" : "Right Motion"
+  );
   const isSelected = $derived(
-    selectedArrowState.selectedArrow?.color === color
+    selectedArrowState.selectedArrow?.color === hand
   );
 </script>
 
@@ -61,7 +68,7 @@
     <button
       class="copy-btn"
       onclick={async () =>
-        onCopy(await formatMotionText(motion, color, rotationOverride), color)}
+        onCopy(await formatMotionText(motion, hand, rotationOverride), hand)}
       title="Copy {label}"
     >
       <i class="fas fa-copy" aria-hidden="true"></i>
@@ -110,7 +117,7 @@
         {/if}
       </div>
 
-      <PipelineTraceSection {diagnostics} {color} />
+      <PipelineTraceSection {diagnostics} {hand} />
     {:else}
       <div class="empty-state">No {color} motion</div>
     {/if}

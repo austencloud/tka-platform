@@ -53,7 +53,7 @@ function resolveGridMode(sequence: SequenceData, firstStep: StepData): GridMode 
   return (
     sequence.gridMode ??
     firstStep.gridMode ??
-    firstStep.motions.blue.gridMode ??
+    firstStep.motions.left.gridMode ??
     GridMode.DIAMOND
   );
 }

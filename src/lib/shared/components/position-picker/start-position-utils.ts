@@ -12,7 +12,7 @@ import {
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -180,36 +180,36 @@ export function createStartPositionVariations(
     if (!locations) {
       throw new Error(`No location mapping found for position: ${pos.position}`);
     }
-    const [blueLocation, redLocation] = locations;
+    const [leftLocation, rightLocation] = locations;
 
     // Create proper motion data for both hands
-    const blueMotion = createMotionData({
+    const leftMotion = createMotionData({
       motionType: MotionType.STATIC,
-      startLocation: blueLocation,
-      endLocation: blueLocation,
+      startLocation: leftLocation,
+      endLocation: leftLocation,
       startOrientation: Orientation.IN,
       endOrientation: Orientation.IN,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: MotionColor.BLUE,
+      hand: HandSide.LEFT,
       isVisible: true,
       propType: PropType.STAFF,
-      arrowLocation: blueLocation,
+      arrowLocation: leftLocation,
       gridMode: gridMode,
     });
 
-    const redMotion = createMotionData({
+    const rightMotion = createMotionData({
       motionType: MotionType.STATIC,
-      startLocation: redLocation,
-      endLocation: redLocation,
+      startLocation: rightLocation,
+      endLocation: rightLocation,
       startOrientation: Orientation.IN,
       endOrientation: Orientation.IN,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: MotionColor.RED,
+      hand: HandSide.RIGHT,
       isVisible: true,
       propType: PropType.STAFF,
-      arrowLocation: redLocation,
+      arrowLocation: rightLocation,
       gridMode: gridMode,
     });
 
@@ -219,8 +219,8 @@ export function createStartPositionVariations(
       startPosition: pos.position,
       endPosition: pos.position,
       motions: {
-        [MotionColor.BLUE]: blueMotion,
-        [MotionColor.RED]: redMotion,
+        [HandSide.LEFT]: leftMotion,
+        [HandSide.RIGHT]: rightMotion,
       },
     });
   });

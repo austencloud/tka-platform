@@ -32,16 +32,26 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    GridLocation,
+    GridPosition,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import {
+    pt,
+    ptDrag,
+    editText,
+    guideEdit,
+    registerEditSource,
+  } from "../_data/guide-edit.svelte";
   import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
@@ -61,7 +71,7 @@
   // Pro rides the CW handpath (prop CW, in→in); anti counter-rotates (prop CCW)
   // and flips the thumb every letter, so its legs alternate in→out / out→in.
   type Leg = [GridLocation, GridLocation];
-  const proHand = (color: MotionColor, [from, to]: Leg) =>
+  const proHand = (color: HandSide, [from, to]: Leg) =>
     createMotionData({
       motionType: MotionType.PRO,
       rotationDirection: CW,
@@ -74,7 +84,7 @@
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     });
-  const antiHand = (color: MotionColor, [from, to]: Leg, legIndex: number) =>
+  const antiHand = (color: HandSide, [from, to]: Leg, legIndex: number) =>
     createMotionData({
       motionType: MotionType.ANTI,
       rotationDirection: CCW,
@@ -87,7 +97,7 @@
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     });
-  const staticHand = (color: MotionColor, loc: GridLocation) =>
+  const staticHand = (color: HandSide, loc: GridLocation) =>
     createMotionData({
       motionType: MotionType.STATIC,
       startLocation: loc,
@@ -120,24 +130,72 @@
     letter: Letter;
     y: number;
     block: "alpha" | "beta";
-    blueAnti: boolean;
-    redAnti: boolean;
+    leftAnti: boolean;
+    rightAnti: boolean;
   };
   const WORDS: WordDef[] = [
-    { key: "w-aaaa", word: "AAAA", letter: Letter.A, y: 194.6, block: "alpha", blueAnti: false, redAnti: false },
-    { key: "w-bbbb", word: "BBBB", letter: Letter.B, y: 284.5, block: "alpha", blueAnti: true, redAnti: true },
-    { key: "w-cccc", word: "CCCC", letter: Letter.C, y: 374.5, block: "alpha", blueAnti: true, redAnti: false },
-    { key: "w-gggg", word: "GGGG", letter: Letter.G, y: 504.0, block: "beta", blueAnti: false, redAnti: false },
-    { key: "w-hhhh", word: "HHHH", letter: Letter.H, y: 593.9, block: "beta", blueAnti: true, redAnti: true },
-    { key: "w-iiii", word: "IIII", letter: Letter.I, y: 683.8, block: "beta", blueAnti: true, redAnti: false },
+    {
+      key: "w-aaaa",
+      word: "AAAA",
+      letter: Letter.A,
+      y: 194.6,
+      block: "alpha",
+      leftAnti: false,
+      rightAnti: false,
+    },
+    {
+      key: "w-bbbb",
+      word: "BBBB",
+      letter: Letter.B,
+      y: 284.5,
+      block: "alpha",
+      leftAnti: true,
+      rightAnti: true,
+    },
+    {
+      key: "w-cccc",
+      word: "CCCC",
+      letter: Letter.C,
+      y: 374.5,
+      block: "alpha",
+      leftAnti: true,
+      rightAnti: false,
+    },
+    {
+      key: "w-gggg",
+      word: "GGGG",
+      letter: Letter.G,
+      y: 504.0,
+      block: "beta",
+      leftAnti: false,
+      rightAnti: false,
+    },
+    {
+      key: "w-hhhh",
+      word: "HHHH",
+      letter: Letter.H,
+      y: 593.9,
+      block: "beta",
+      leftAnti: true,
+      rightAnti: true,
+    },
+    {
+      key: "w-iiii",
+      word: "IIII",
+      letter: Letter.I,
+      y: 683.8,
+      block: "beta",
+      leftAnti: true,
+      rightAnti: false,
+    },
   ];
 
-  const legOf = (w: WordDef, color: "blue" | "red", i: number): Leg =>
-    w.block === "alpha" && color === "red" ? CW_LOOP_RED[i]! : CW_LOOP[i]!;
+  const legOf = (w: WordDef, hand: "left" | "right", i: number): Leg =>
+    w.block === "alpha" && hand === "right" ? CW_LOOP_RED[i]! : CW_LOOP[i]!;
 
   const wordStep = (w: WordDef, i: number, forStrip: boolean): StepData => {
-    const bl = legOf(w, "blue", i);
-    const rl = legOf(w, "red", i);
+    const bl = legOf(w, "left", i);
+    const rl = legOf(w, "right", i);
     return {
       id: `${w.key}-${i + 1}`,
       letter: w.letter,
@@ -146,24 +204,34 @@
       endPosition: getGridPositionFromLocations(bl[1], rl[1]),
       stepNumber: forStrip ? i + 1 : null,
       motions: {
-        blue: w.blueAnti ? antiHand(MotionColor.BLUE, bl, i) : proHand(MotionColor.BLUE, bl),
-        red: w.redAnti ? antiHand(MotionColor.RED, rl, i) : proHand(MotionColor.RED, rl),
+        left: w.leftAnti
+          ? antiHand(HandSide.LEFT, bl, i)
+          : proHand(HandSide.LEFT, bl),
+        right: w.rightAnti
+          ? antiHand(HandSide.RIGHT, rl, i)
+          : proHand(HandSide.RIGHT, rl),
       },
     } as unknown as StepData;
   };
 
-  // Block Start boxes: α = blue S / red N (thumbs in); β = both S.
+  // Block Start boxes: α = left S / right N (thumbs in); β = both S.
   const startBox = (block: "alpha" | "beta"): StepData =>
     ({
       id: `w-${block}-start`,
       letter: block === "alpha" ? Letter.ALPHA : Letter.BETA,
       gridMode: GridMode.DIAMOND,
       stepNumber: 0,
-      startPosition: block === "alpha" ? getGridPositionFromLocations(SO_, N) : getGridPositionFromLocations(SO_, SO_),
-      endPosition: block === "alpha" ? getGridPositionFromLocations(SO_, N) : getGridPositionFromLocations(SO_, SO_),
+      startPosition:
+        block === "alpha"
+          ? getGridPositionFromLocations(SO_, N)
+          : getGridPositionFromLocations(SO_, SO_),
+      endPosition:
+        block === "alpha"
+          ? getGridPositionFromLocations(SO_, N)
+          : getGridPositionFromLocations(SO_, SO_),
       motions: {
-        blue: staticHand(MotionColor.BLUE, SO_),
-        red: staticHand(MotionColor.RED, block === "alpha" ? N : SO_),
+        left: staticHand(HandSide.LEFT, SO_),
+        right: staticHand(HandSide.RIGHT, block === "alpha" ? N : SO_),
       },
     }) as unknown as StepData;
 
@@ -206,13 +274,32 @@
   // ── Margin labels: real TKA PositionGlyph over the italic mode name ─────────
   const MARGIN_CX = 64;
   const MARGINS = [
-    { pos: GridPosition.ALPHA1, t: "α→α", mode: "Split-Same", glyphY: 219, modeY: 240.3 },
-    { pos: GridPosition.BETA1, t: "β→β", mode: "Tog-Same", glyphY: 528.5, modeY: 549.8 },
+    {
+      pos: GridPosition.ALPHA1,
+      t: "α→α",
+      mode: "Split-Same",
+      glyphY: 219,
+      modeY: 240.3,
+    },
+    {
+      pos: GridPosition.BETA1,
+      t: "β→β",
+      mode: "Tog-Same",
+      glyphY: 528.5,
+      modeY: 549.8,
+    },
   ];
 
   // ── Text (artboard coords - this proof page has no extracted PROOF_TEXT) ────
   const SUBTITLE_Y = 60;
-  type Para = { x: number; y: number; fs: number; lh: number; bold?: boolean; html: string };
+  type Para = {
+    x: number;
+    y: number;
+    fs: number;
+    lh: number;
+    bold?: boolean;
+    html: string;
+  };
   let PARAS: Para[] = $state([
     {
       x: 0,
@@ -236,30 +323,40 @@
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
     registerEditSource("Alpha/Beta Words (lt1-abc-ghi)", () =>
-      PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n")
+      PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join(
+        "\n"
+      )
     )
   );
 </script>
 
 <div class="ab-words">
   <!-- Subtitle under the manifest-painted title. -->
-  <div class="subtitle" style="top:{SUBTITLE_Y * S}px; font-size:{18 * S}px">Same Direction</div>
+  <div class="subtitle" style="top:{SUBTITLE_Y * S}px; font-size:{18 * S}px">
+    Same Direction
+  </div>
 
   <!-- Heavy divider between the α and β blocks. -->
-  <div class="rule" style="left:{20 * S}px; top:{DIVIDER_Y * S}px; width:{572 * S}px"></div>
+  <div
+    class="rule"
+    style="left:{20 * S}px; top:{DIVIDER_Y * S}px; width:{572 * S}px"
+  ></div>
 
   <!-- Shared Start boxes (ring while any word in their block plays). -->
   {#each BLOCKS as blk (blk.id)}
     <div
       class="mini"
-      class:guide-step-active={activeStep?.key != null && BLOCK_KEYS[blk.id].includes(activeStep.key) && activeStep.ringStep === 0}
-      style="left:{START_X * S}px; top:{blk.startY * S}px; width:{CELL * S}px; height:{CELL * S}px"
+      class:guide-step-active={activeStep?.key != null &&
+        BLOCK_KEYS[blk.id].includes(activeStep.key) &&
+        activeStep.ringStep === 0}
+      style="left:{START_X * S}px; top:{blk.startY * S}px; width:{CELL *
+        S}px; height:{CELL * S}px"
     >
       <PictographContainer
         pictographData={startBox(blk.id)}
         gridMode={GridMode.DIAMOND}
-        bluePropTypeOverride={PropType.STAFF}
-        redPropTypeOverride={PropType.STAFF}
+        leftPropTypeOverride={PropType.STAFF}
+        rightPropTypeOverride={PropType.STAFF}
         showGrid={true}
         showTKA={true}
         showPositions={false}
@@ -282,19 +379,26 @@
       class="strip-wrap tka-seq-cell"
       class:is-hovered={selection?.isHovered(w.key)}
       class:is-selected={selection?.isSelected(w.key)}
-      style="left:{ROW_X * S}px; top:{w.y * S}px; width:{CELL * 4 * S}px; height:{CELL * S}px"
+      style="left:{ROW_X * S}px; top:{w.y * S}px; width:{CELL *
+        4 *
+        S}px; height:{CELL * S}px"
     >
       {#each [0, 1, 2, 3] as i (i)}
         <div
           class="mini cell"
-          class:guide-step-active={activeStep?.key === w.key && activeStep.ringStep === i + 1}
-          style="left:{i * CELL * S}px; top:0; width:{CELL * S}px; height:{CELL * S}px"
+          class:guide-step-active={activeStep?.key === w.key &&
+            activeStep.ringStep === i + 1}
+          style="left:{i * CELL * S}px; top:0; width:{CELL *
+            S}px; height:{CELL * S}px"
         >
           <PictographContainer
-            pictographData={{ ...RESOLVED[w.key]![i + 1], stepNumber: undefined } as unknown as StepData}
+            pictographData={{
+              ...RESOLVED[w.key]![i + 1],
+              stepNumber: undefined,
+            } as unknown as StepData}
             gridMode={GridMode.DIAMOND}
-            bluePropTypeOverride={PropType.STAFF}
-            redPropTypeOverride={PropType.STAFF}
+            leftPropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
             showGrid={true}
             showTKA={true}
             showPositions={false}
@@ -313,19 +417,39 @@
         groupId={w.key}
         isGroupStart
         label={`Animate the word ${w.word}`}
-        onselect={() => emitSequence?.({ strip: wordSteps(w), word: w.word, key: w.key, propType: "staff" })}
+        onselect={() =>
+          emitSequence?.({
+            strip: wordSteps(w),
+            word: w.word,
+            key: w.key,
+            propType: "staff",
+          })}
       />
     </div>
   {/each}
 
   <!-- Margin labels: real TKA PositionGlyph over the italic handpath mode. -->
   {#each MARGINS as m (m.t)}
-    <span class="margin glyph" style="left:{(MARGIN_CX - 40) * S}px; top:{m.glyphY * S}px; width:{80 * S}px">
-      <svg class="pos-glyph" viewBox="360 50 230 75" role="img" aria-label={m.t} style="height:{20 * S}px">
+    <span
+      class="margin glyph"
+      style="left:{(MARGIN_CX - 40) * S}px; top:{m.glyphY * S}px; width:{80 *
+        S}px"
+    >
+      <svg
+        class="pos-glyph"
+        viewBox="360 50 230 75"
+        role="img"
+        aria-label={m.t}
+        style="height:{20 * S}px"
+      >
         <PositionGlyph startPosition={m.pos} endPosition={m.pos} />
       </svg>
     </span>
-    <span class="margin i" style="left:{(MARGIN_CX - 50) * S}px; top:{m.modeY * S}px; width:{100 * S}px; font-size:{16.8 * S}px">{m.mode}</span>
+    <span
+      class="margin i"
+      style="left:{(MARGIN_CX - 50) * S}px; top:{m.modeY * S}px; width:{100 *
+        S}px; font-size:{16.8 * S}px">{m.mode}</span
+    >
   {/each}
 
   <!-- Centred paragraphs. -->
@@ -337,7 +461,12 @@
       class:selected={guideEdit.selectedId === `abw-para-${i}`}
       style="top:{p.y * S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px"
       use:ptDrag={pt(`abw-para-${i}`, "para", p)}
-      use:editText={{ id: `abw-para-${i}`, label: "para", get: () => p.html, set: (h) => (p.html = h) }}
+      use:editText={{
+        id: `abw-para-${i}`,
+        label: "para",
+        get: () => p.html,
+        set: (h) => (p.html = h),
+      }}
     >
       {@html p.html}
     </p>

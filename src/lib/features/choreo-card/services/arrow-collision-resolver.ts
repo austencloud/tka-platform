@@ -18,7 +18,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createArrowPlacementData } from "$lib/shared/pictograph/arrow/positioning/placement/domain/create-arrow-placement-data";
 
 
@@ -66,16 +66,16 @@ export function resolveCollisions(steps: PictographData[]): PictographData[] {
 
 
 function resolveStep(step: PictographData): PictographData {
-  const blue = step.motions[MotionColor.BLUE];
-  const red = step.motions[MotionColor.RED];
+  const left = step.motions[HandSide.LEFT];
+  const right = step.motions[HandSide.RIGHT];
 
   // Nothing to resolve if either motion is missing
-  if (!blue || !red) return step;
+  if (!left || !right) return step;
 
   // No collision if the hands end at different locations
-  if (blue.endLocation !== red.endLocation) return step;
+  if (left.endLocation !== right.endLocation) return step;
 
-  const offset = OUTWARD_OFFSETS[blue.endLocation];
+  const offset = OUTWARD_OFFSETS[left.endLocation];
 
   // CENTER has zero offset - no useful outward direction, skip it
   if (offset.x === 0 && offset.y === 0) return step;
@@ -84,9 +84,9 @@ function resolveStep(step: PictographData): PictographData {
     ...step,
     motions: {
       ...step.motions,
-      [MotionColor.BLUE]: applyOffset(blue, +offset.x, +offset.y),
+      [HandSide.LEFT]: applyOffset(left, +offset.x, +offset.y),
       // Use (0 - n) instead of (-n) to avoid -0 for zero-component axes
-      [MotionColor.RED]:  applyOffset(red,  0 - offset.x, 0 - offset.y),
+      [HandSide.RIGHT]:  applyOffset(right,  0 - offset.x, 0 - offset.y),
     },
   };
 }

@@ -44,7 +44,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -62,8 +62,8 @@ export interface TranscriptionStep {
   startPosition: string;
   endPosition: string;
   swapped: boolean;
-  blueTurns: number;
-  redTurns: number;
+  leftTurns: number;
+  rightTurns: number;
 }
 
 /** One cell of SpiroAnim's VTG / QTR / 8-Step catalogues. */
@@ -130,7 +130,7 @@ function rowKey(letter: string, startPosition: string, endPosition: string): str
   return `${letter}|${startPosition}|${endPosition}`;
 }
 
-function rotationOf(row: IndexedRow, color: MotionColor): RotationDirection | null {
+function rotationOf(row: IndexedRow, color: HandSide): RotationDirection | null {
   return row.pictograph.motions?.[color]?.rotationDirection ?? null;
 }
 
@@ -150,17 +150,17 @@ function chooseRows(
   const buckets = candidates as IndexedRow[][];
 
   const anchor = buckets.find((bucket) => bucket.length === 1)?.[0];
-  const blueDirection = anchor
-    ? rotationOf(anchor, MotionColor.BLUE)
+  const leftDirection = anchor
+    ? rotationOf(anchor, HandSide.LEFT)
     : RotationDirection.CLOCKWISE;
-  const redDirection = anchor ? rotationOf(anchor, MotionColor.RED) : null;
+  const rightDirection = anchor ? rotationOf(anchor, HandSide.RIGHT) : null;
 
   return buckets.map((bucket) => {
     if (bucket.length === 1) return bucket[0]!;
     const matching = bucket.filter(
       (row) =>
-        rotationOf(row, MotionColor.BLUE) === blueDirection &&
-        (redDirection === null || rotationOf(row, MotionColor.RED) === redDirection)
+        rotationOf(row, HandSide.LEFT) === leftDirection &&
+        (rightDirection === null || rotationOf(row, HandSide.RIGHT) === rightDirection)
     );
     // One match is the shipped case for all 8,640 steps of the corpus. The
     // fallback keeps a future cell resolvable rather than throwing; it is
@@ -172,17 +172,17 @@ function chooseRows(
 function buildSteps(entry: TranscriptionEntry, rows: IndexedRow[]): StepData[] {
   const steps = rows.map((row, i) => {
     const transcribed = entry.steps[i]!;
-    const blue = row.pictograph.motions?.[MotionColor.BLUE];
-    const red = row.pictograph.motions?.[MotionColor.RED];
+    const left = row.pictograph.motions?.[HandSide.LEFT];
+    const right = row.pictograph.motions?.[HandSide.RIGHT];
     // Every motion in this corpus is a shift (pro or anti), which carries its
     // own rotation direction; the explicit directions only matter to dash and
     // static hands, which never appear here.
     const withTurns = applyPendingTurnsToOption(
       row.pictograph,
-      transcribed.blueTurns,
-      transcribed.redTurns,
-      blue?.rotationDirection ?? RotationDirection.CLOCKWISE,
-      red?.rotationDirection ?? RotationDirection.CLOCKWISE
+      transcribed.leftTurns,
+      transcribed.rightTurns,
+      left?.rotationDirection ?? RotationDirection.CLOCKWISE,
+      right?.rotationDirection ?? RotationDirection.CLOCKWISE
     );
     // The letter is cleared on purpose: the hydrator re-derives it from the
     // motions, so a wrong row shows up as a wrong word instead of being masked
@@ -192,10 +192,10 @@ function buildSteps(entry: TranscriptionEntry, rows: IndexedRow[]): StepData[] {
 
   const withBlue = propagateOrientationsForColor(
     steps,
-    MotionColor.BLUE,
+    HandSide.LEFT,
     Orientation.IN
   );
-  return propagateOrientationsForColor(withBlue, MotionColor.RED, Orientation.IN);
+  return propagateOrientationsForColor(withBlue, HandSide.RIGHT, Orientation.IN);
 }
 
 function matchesKey(

@@ -82,12 +82,12 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     level?: number;
     gridMode?: GridMode;
     isFreeformMode?: boolean;
-    turnPattern?: { blue: (number | "fl")[]; red: (number | "fl")[] } | null;
+    turnPattern?: { left: (number | "fl")[]; right: (number | "fl")[] } | null;
     turnIntensity?: number;
     sequenceLength?: number;
     loopPeriod?: number;
     onTurnPatternChange?: (
-      lanes: { blue: (number | "fl")[]; red: (number | "fl")[] } | null
+      lanes: { left: (number | "fl")[]; right: (number | "fl")[] } | null
     ) => void;
     styleBaseline?: CustomizeStyleBaseline;
     onConstraintPresetChange: (v: "smooth" | "mixed" | "choppy") => void;
@@ -147,15 +147,15 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   );
 
   // ─── Local state for start orientation (blue + red, default In/In) ───
-  let localBlueOri = $state<Orientation>(
+  let localLeftOri = $state<Orientation>(
     clampStartOrientationToLevel(
-      untrack(() => startEndOptions)?.blueStartOrientation,
+      untrack(() => startEndOptions)?.leftStartOrientation,
       level
     )
   );
-  let localRedOri = $state<Orientation>(
+  let localRightOri = $state<Orientation>(
     clampStartOrientationToLevel(
-      untrack(() => startEndOptions)?.redStartOrientation,
+      untrack(() => startEndOptions)?.rightStartOrientation,
       level
     )
   );
@@ -204,7 +204,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     if (!turnPattern) return `Random, ≤${turnIntensity}`;
     const lane = (values: readonly (number | "fl")[]) =>
       values.length ? values.map(String).join("·") : "0";
-    return `Left ${lane(turnPattern.blue)} · Right ${lane(turnPattern.red)}`;
+    return `Left ${lane(turnPattern.left)} · Right ${lane(turnPattern.right)}`;
   });
 
   // The shared picker speaks blocklist; end positions are an allowlist. Invert
@@ -287,8 +287,8 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     localMotionTypeFilter = GENERATE_DEFAULT_CONFIG.motionTypeFilter;
     localBlockedPositions = [];
     localEndPositions = [];
-    localBlueOri = Orientation.IN;
-    localRedOri = Orientation.IN;
+    localLeftOri = Orientation.IN;
+    localRightOri = Orientation.IN;
   }
 
   // Emit a COMPLETE, internally-consistent options object built from the
@@ -302,8 +302,8 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
       buildStartEndOptions(startEndOptions, {
         blockedStartPositions: localBlockedPositions,
         endPositions: localEndPositions,
-        blueStartOrientation: localBlueOri,
-        redStartOrientation: localRedOri,
+        leftStartOrientation: localLeftOri,
+        rightStartOrientation: localRightOri,
       })
     );
   }
@@ -322,17 +322,17 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
 
   // Start orientation per prop. Feeds the engine's blue/redStartOrientation
   // override so the generated sequence begins from the chosen orientation.
-  function handleBlueOriChange(ori: string) {
+  function handleLeftOriChange(ori: string) {
     if (!startEndOptions || !onStartEndChange) return;
     hapticService?.trigger("selection");
-    localBlueOri = ori as Orientation;
+    localLeftOri = ori as Orientation;
     emitStartEndChange();
   }
 
-  function handleRedOriChange(ori: string) {
+  function handleRightOriChange(ori: string) {
     if (!startEndOptions || !onStartEndChange) return;
     hapticService?.trigger("selection");
-    localRedOri = ori as Orientation;
+    localRightOri = ori as Orientation;
     emitStartEndChange();
   }
 </script>
@@ -399,8 +399,8 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
             <MultiSelectPositionPicker
               blockedPositions={localBlockedPositions}
               onBlockedChange={handleBlockedChange}
-              blueStartOrientation={localBlueOri}
-              redStartOrientation={localRedOri}
+              leftStartOrientation={localLeftOri}
+              rightStartOrientation={localRightOri}
               presets={startPositionPresets}
               {gridMode}
             />
@@ -412,18 +412,18 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
                 <span class="ori-color-label ori-blue">Left</span>
                 <PropOrientationControl
                   color="blue"
-                  orientation={localBlueOri}
+                  orientation={localLeftOri}
                   allowedOrientations={availableStartOrientations}
-                  onOrientationChange={handleBlueOriChange}
+                  onOrientationChange={handleLeftOriChange}
                 />
               </div>
               <div class="ori-row">
                 <span class="ori-color-label ori-red">Right</span>
                 <PropOrientationControl
                   color="red"
-                  orientation={localRedOri}
+                  orientation={localRightOri}
                   allowedOrientations={availableStartOrientations}
-                  onOrientationChange={handleRedOriChange}
+                  onOrientationChange={handleRightOriChange}
                 />
               </div>
             </div>
@@ -433,8 +433,8 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
             <MultiSelectPositionPicker
               blockedPositions={endBlockedPositions}
               onBlockedChange={handleEndBlockedChange}
-              blueStartOrientation={localBlueOri}
-              redStartOrientation={localRedOri}
+              leftStartOrientation={localLeftOri}
+              rightStartOrientation={localRightOri}
               {gridMode}
             />
           </div>
@@ -444,8 +444,8 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
               {turnPattern}
               {level}
               {turnIntensity}
-              blueStartOrientation={localBlueOri}
-              redStartOrientation={localRedOri}
+              leftStartOrientation={localLeftOri}
+              rightStartOrientation={localRightOri}
               {sequenceLength}
               {loopPeriod}
               {onTurnPatternChange}

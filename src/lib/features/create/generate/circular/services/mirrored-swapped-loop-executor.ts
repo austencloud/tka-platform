@@ -19,7 +19,7 @@
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   RotationDirection,
-  MotionColor,
+  HandSide,
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type {
@@ -152,15 +152,15 @@ export class MirroredSwappedLOOPExecutor {
       endPosition: mirroredSwappedEndPosition,
       motions: {
         // SWAP: Blue does what Red did, but with mirrored transformation
-        [MotionColor.BLUE]: this._createMirroredSwappedMotion(
-          MotionColor.BLUE,
+        [HandSide.LEFT]: this._createMirroredSwappedMotion(
+          HandSide.LEFT,
           previousStep,
           previousMatchingStep,
           true // isSwapped = true (use opposite color's data)
         ),
         // SWAP: Red does what Blue did, but with mirrored transformation
-        [MotionColor.RED]: this._createMirroredSwappedMotion(
-          MotionColor.RED,
+        [HandSide.RIGHT]: this._createMirroredSwappedMotion(
+          HandSide.RIGHT,
           previousStep,
           previousMatchingStep,
           true // isSwapped = true (use opposite color's data)
@@ -255,14 +255,14 @@ export class MirroredSwappedLOOPExecutor {
    * - PATTERN is MIRRORED: Locations flip e↔w, rotations flip cw↔ccw
    */
   private _createMirroredSwappedMotion(
-    color: MotionColor,
+    color: HandSide,
     previousStep: StepData,
     previousMatchingStep: StepData,
     _isSwapped: boolean // Kept for interface compatibility, always true for this executor
   ): MotionData {
     // Get the opposite color for pattern swapping
     const oppositeColor =
-      color === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE;
+      color === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
 
     // NORMAL CONTINUITY: Same color continues from where it was
     // (Blue continues from Blue's previous end, Red continues from Red's previous end)

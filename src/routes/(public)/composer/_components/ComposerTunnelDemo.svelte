@@ -96,8 +96,8 @@
         {playback}
         {controller}
         bpm={60}
-        bluePropType="staff"
-        redPropType="staff"
+        leftPropType="staff"
+        rightPropType="staff"
         bind:playing
       />
     </div>

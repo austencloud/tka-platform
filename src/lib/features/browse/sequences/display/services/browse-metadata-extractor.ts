@@ -15,7 +15,7 @@ import {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -165,8 +165,8 @@ export class BrowseMetadataExtractor {
 
     return beatElements.map((step: unknown, index: number) => {
       const stepData = step as Record<string, unknown>;
-      const blueAttrs = stepData["blue_attributes"] as Record<string, unknown>;
-      const redAttrs = stepData["red_attributes"] as Record<string, unknown>;
+      const leftAttrs = stepData["blue_attributes"] as Record<string, unknown>;
+      const rightAttrs = stepData["red_attributes"] as Record<string, unknown>;
 
       return {
         // PictographData properties
@@ -177,42 +177,42 @@ export class BrowseMetadataExtractor {
           this.parseGridPosition(stepData["sequence_start_position"]),
         endPosition: this.parseGridPosition(stepData["end_pos"]),
         motions: {
-          [MotionColor.BLUE]: blueAttrs
+          [HandSide.LEFT]: leftAttrs
             ? createMotionData({
-                color: MotionColor.BLUE,
-                motionType: this.parseMotionType(blueAttrs["motion_type"]),
-                startLocation: this.parseLocation(blueAttrs["start_loc"]),
-                endLocation: this.parseLocation(blueAttrs["end_loc"]),
-                startOrientation: this.parseOrientation(blueAttrs["start_ori"]),
-                endOrientation: this.parseOrientation(blueAttrs["end_ori"]),
+                hand: HandSide.LEFT,
+                motionType: this.parseMotionType(leftAttrs["motion_type"]),
+                startLocation: this.parseLocation(leftAttrs["start_loc"]),
+                endLocation: this.parseLocation(leftAttrs["end_loc"]),
+                startOrientation: this.parseOrientation(leftAttrs["start_ori"]),
+                endOrientation: this.parseOrientation(leftAttrs["end_ori"]),
                 rotationDirection: this.parseRotationDirection(
-                  blueAttrs["prop_rot_dir"]
+                  leftAttrs["prop_rot_dir"]
                 ),
-                turns: this.parseTurns(blueAttrs["turns"]),
+                turns: this.parseTurns(leftAttrs["turns"]),
                 isVisible: true,
                 propType: PropType.STAFF,
                 arrowLocation:
-                  this.parseLocation(blueAttrs["start_loc"]) ||
+                  this.parseLocation(leftAttrs["start_loc"]) ||
                   GridLocation.NORTH,
                 gridMode: GridMode.DIAMOND,
               })
             : undefined,
-          [MotionColor.RED]: redAttrs
+          [HandSide.RIGHT]: rightAttrs
             ? createMotionData({
-                color: MotionColor.RED,
-                motionType: this.parseMotionType(redAttrs["motion_type"]),
-                startLocation: this.parseLocation(redAttrs["start_loc"]),
-                endLocation: this.parseLocation(redAttrs["end_loc"]),
-                startOrientation: this.parseOrientation(redAttrs["start_ori"]),
-                endOrientation: this.parseOrientation(redAttrs["end_ori"]),
+                hand: HandSide.RIGHT,
+                motionType: this.parseMotionType(rightAttrs["motion_type"]),
+                startLocation: this.parseLocation(rightAttrs["start_loc"]),
+                endLocation: this.parseLocation(rightAttrs["end_loc"]),
+                startOrientation: this.parseOrientation(rightAttrs["start_ori"]),
+                endOrientation: this.parseOrientation(rightAttrs["end_ori"]),
                 rotationDirection: this.parseRotationDirection(
-                  redAttrs["prop_rot_dir"]
+                  rightAttrs["prop_rot_dir"]
                 ),
-                turns: this.parseTurns(redAttrs["turns"]),
+                turns: this.parseTurns(rightAttrs["turns"]),
                 isVisible: true,
                 propType: PropType.STAFF,
                 arrowLocation:
-                  this.parseLocation(redAttrs["start_loc"]) ||
+                  this.parseLocation(rightAttrs["start_loc"]) ||
                   GridLocation.SOUTH,
                 gridMode: GridMode.DIAMOND,
               })
@@ -221,8 +221,8 @@ export class BrowseMetadataExtractor {
         // Beat context properties
         stepNumber: Number(stepData["beat"] || index + 1),
         duration: 1.0,
-        blueReversal: false,
-        redReversal: false,
+        leftReversal: false,
+        rightReversal: false,
         isBlank: false,
       } as StepData;
     });
@@ -245,11 +245,11 @@ export class BrowseMetadataExtractor {
       return undefined;
     }
 
-    const blueAttrs = firstElement["blue_attributes"] as Record<
+    const leftAttrs = firstElement["blue_attributes"] as Record<
       string,
       unknown
     >;
-    const redAttrs = firstElement["red_attributes"] as Record<string, unknown>;
+    const rightAttrs = firstElement["red_attributes"] as Record<string, unknown>;
     const gridPosition = this.parseGridPosition(
       firstElement["sequence_start_position"]
     );
@@ -262,42 +262,42 @@ export class BrowseMetadataExtractor {
       startPosition: gridPosition,
       endPosition: null,
       motions: {
-        [MotionColor.BLUE]: blueAttrs
+        [HandSide.LEFT]: leftAttrs
           ? createMotionData({
-              color: MotionColor.BLUE,
-              motionType: this.parseMotionType(blueAttrs["motion_type"]),
-              startLocation: this.parseLocation(blueAttrs["start_loc"]),
-              endLocation: this.parseLocation(blueAttrs["end_loc"]),
-              startOrientation: this.parseOrientation(blueAttrs["start_ori"]),
-              endOrientation: this.parseOrientation(blueAttrs["end_ori"]),
+              hand: HandSide.LEFT,
+              motionType: this.parseMotionType(leftAttrs["motion_type"]),
+              startLocation: this.parseLocation(leftAttrs["start_loc"]),
+              endLocation: this.parseLocation(leftAttrs["end_loc"]),
+              startOrientation: this.parseOrientation(leftAttrs["start_ori"]),
+              endOrientation: this.parseOrientation(leftAttrs["end_ori"]),
               rotationDirection: this.parseRotationDirection(
-                blueAttrs["prop_rot_dir"]
+                leftAttrs["prop_rot_dir"]
               ),
-              turns: this.parseTurns(blueAttrs["turns"]),
+              turns: this.parseTurns(leftAttrs["turns"]),
               isVisible: true,
               propType: PropType.STAFF,
               arrowLocation:
-                this.parseLocation(blueAttrs["start_loc"]) ||
+                this.parseLocation(leftAttrs["start_loc"]) ||
                 GridLocation.NORTH,
               gridMode: GridMode.DIAMOND,
             })
           : undefined,
-        [MotionColor.RED]: redAttrs
+        [HandSide.RIGHT]: rightAttrs
           ? createMotionData({
-              color: MotionColor.RED,
-              motionType: this.parseMotionType(redAttrs["motion_type"]),
-              startLocation: this.parseLocation(redAttrs["start_loc"]),
-              endLocation: this.parseLocation(redAttrs["end_loc"]),
-              startOrientation: this.parseOrientation(redAttrs["start_ori"]),
-              endOrientation: this.parseOrientation(redAttrs["end_ori"]),
+              hand: HandSide.RIGHT,
+              motionType: this.parseMotionType(rightAttrs["motion_type"]),
+              startLocation: this.parseLocation(rightAttrs["start_loc"]),
+              endLocation: this.parseLocation(rightAttrs["end_loc"]),
+              startOrientation: this.parseOrientation(rightAttrs["start_ori"]),
+              endOrientation: this.parseOrientation(rightAttrs["end_ori"]),
               rotationDirection: this.parseRotationDirection(
-                redAttrs["prop_rot_dir"]
+                rightAttrs["prop_rot_dir"]
               ),
-              turns: this.parseTurns(redAttrs["turns"]),
+              turns: this.parseTurns(rightAttrs["turns"]),
               isVisible: true,
               propType: PropType.STAFF,
               arrowLocation:
-                this.parseLocation(redAttrs["start_loc"]) || GridLocation.SOUTH,
+                this.parseLocation(rightAttrs["start_loc"]) || GridLocation.SOUTH,
               gridMode: GridMode.DIAMOND,
             })
           : undefined,

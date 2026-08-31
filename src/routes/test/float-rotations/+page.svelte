@@ -11,7 +11,7 @@
     MotionType,
     RotationDirection,
     Orientation,
-    MotionColor,
+    HandSide,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -174,7 +174,7 @@
       startPosition: null,
       endPosition: null,
       motions: {
-        [MotionColor.RED]: createMotionData({
+        [HandSide.RIGHT]: createMotionData({
           motionType: MotionType.FLOAT,
           turns: "fl",
           rotationDirection: RotationDirection.NO_ROTATION,
@@ -188,10 +188,10 @@
           arrowLocation: c.arrow,
           startOrientation: Orientation.IN,
           endOrientation: Orientation.IN,
-          color: MotionColor.RED,
+          color: HandSide.RIGHT,
           gridMode: c.gridMode,
         }),
-        [MotionColor.BLUE]: createMotionData({
+        [HandSide.LEFT]: createMotionData({
           motionType: MotionType.STATIC,
           rotationDirection: RotationDirection.NO_ROTATION,
           startLocation: c.blueStatic,
@@ -200,7 +200,7 @@
           turns: 0,
           startOrientation: Orientation.IN,
           endOrientation: Orientation.IN,
-          color: MotionColor.BLUE,
+          color: HandSide.LEFT,
           gridMode: c.gridMode,
         }),
       },
@@ -215,7 +215,7 @@
     startPosition: GridPosition.ALPHA3,
     endPosition: GridPosition.ALPHA1,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
+      [HandSide.LEFT]: createMotionData({
         motionType: MotionType.ANTI,
         turns: 0.5,
         rotationDirection: RotationDirection.CLOCKWISE,
@@ -224,10 +224,10 @@
         arrowLocation: GridLocation.SOUTHWEST,
         startOrientation: Orientation.OUT,
         endOrientation: Orientation.COUNTER,
-        color: MotionColor.BLUE,
+        color: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
       }),
-      [MotionColor.RED]: createMotionData({
+      [HandSide.RIGHT]: createMotionData({
         motionType: MotionType.FLOAT,
         turns: "fl",
         rotationDirection: RotationDirection.NO_ROTATION,
@@ -238,7 +238,7 @@
         arrowLocation: GridLocation.NORTHEAST,
         startOrientation: Orientation.OUT,
         endOrientation: Orientation.CLOCK,
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         gridMode: GridMode.DIAMOND,
       }),
     },

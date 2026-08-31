@@ -180,8 +180,8 @@ export class TrailCapturer {
   // Configuration
   private config: TrailCaptureConfig = {
     canvasSize: 500,
-    bluePropDimensions: { width: DEFAULT_PROP_WIDTH, height: DEFAULT_PROP_HEIGHT },
-    redPropDimensions: { width: DEFAULT_PROP_WIDTH, height: DEFAULT_PROP_HEIGHT },
+    leftPropDimensions: { width: DEFAULT_PROP_WIDTH, height: DEFAULT_PROP_HEIGHT },
+    rightPropDimensions: { width: DEFAULT_PROP_WIDTH, height: DEFAULT_PROP_HEIGHT },
     trailSettings: {
       mode: TrailMode.OFF,
       effect: TrailEffect.NONE,
@@ -190,8 +190,8 @@ export class TrailCapturer {
       maxPoints: 1000,
       lineWidth: 2,
       glowBlur: 0,
-      blueColor: "#4A9EFF",
-      redColor: "#FF6B6B",
+      leftColor: "#4A9EFF",
+      rightColor: "#FF6B6B",
       additionalLayerColors: [],
       minOpacity: 0.2,
       maxOpacity: 0.8,
@@ -203,13 +203,13 @@ export class TrailCapturer {
   };
 
   // Trail buffers: primary layer
-  private blueTrailBuffer = new CircularBuffer<TrailPoint>(DEFAULT_BUFFER_CAPACITY);
-  private redTrailBuffer = new CircularBuffer<TrailPoint>(DEFAULT_BUFFER_CAPACITY);
+  private leftTrailBuffer = new CircularBuffer<TrailPoint>(DEFAULT_BUFFER_CAPACITY);
+  private rightTrailBuffer = new CircularBuffer<TrailPoint>(DEFAULT_BUFFER_CAPACITY);
 
   // Trail buffers: additional tunnel layers (lazily created)
   private additionalLayerBuffers: Array<{
-    blue: CircularBuffer<TrailPoint>;
-    red: CircularBuffer<TrailPoint>;
+    left: CircularBuffer<TrailPoint>;
+    right: CircularBuffer<TrailPoint>;
   }> = [];
 
   // Last captured points for distance-based sampling. Keys include the resolved
@@ -234,17 +234,17 @@ export class TrailCapturer {
 
   updateConfig(config: Partial<TrailCaptureConfig>): void {
     const oldCanvasSize = this.config.canvasSize;
-    const oldBluePropType = this.config.bluePropType;
-    const oldRedPropType = this.config.redPropType;
+    const oldLeftPropType = this.config.leftPropType;
+    const oldRightPropType = this.config.rightPropType;
     this.config = { ...this.config, ...config };
 
     // If prop type changed, clear trails so old endpoint positions don't
     // jump to the new prop's differently-sized endpoints
-    const bluePropChanged =
-      config.bluePropType !== undefined && config.bluePropType !== oldBluePropType;
-    const redPropChanged =
-      config.redPropType !== undefined && config.redPropType !== oldRedPropType;
-    if (bluePropChanged || redPropChanged) {
+    const leftPropChanged =
+      config.leftPropType !== undefined && config.leftPropType !== oldLeftPropType;
+    const rightPropChanged =
+      config.rightPropType !== undefined && config.rightPropType !== oldRightPropType;
+    if (leftPropChanged || rightPropChanged) {
       this.clearTrails();
       return;
     }
@@ -270,11 +270,11 @@ export class TrailCapturer {
     const scaleFactor = newSize / oldSize;
 
     // Scale points in all buffers
-    this.scaleBuffer(this.blueTrailBuffer, scaleFactor);
-    this.scaleBuffer(this.redTrailBuffer, scaleFactor);
+    this.scaleBuffer(this.leftTrailBuffer, scaleFactor);
+    this.scaleBuffer(this.rightTrailBuffer, scaleFactor);
     for (const layer of this.additionalLayerBuffers) {
-      this.scaleBuffer(layer.blue, scaleFactor);
-      this.scaleBuffer(layer.red, scaleFactor);
+      this.scaleBuffer(layer.left, scaleFactor);
+      this.scaleBuffer(layer.right, scaleFactor);
     }
 
     // Also scale the last captured points tracking
@@ -357,19 +357,19 @@ export class TrailCapturer {
     }
 
     // Capture trail points for primary layer
-    if (props.blueProp) {
+    if (props.leftProp) {
       this.captureTrailPoint(
-        props.blueProp,
-        this.config.bluePropDimensions,
+        props.leftProp,
+        this.config.leftPropDimensions,
         0,
         animRelativeTime,
         currentBeat
       );
     }
-    if (props.redProp) {
+    if (props.rightProp) {
       this.captureTrailPoint(
-        props.redProp,
-        this.config.redPropDimensions,
+        props.rightProp,
+        this.config.rightPropDimensions,
         1,
         animRelativeTime,
         currentBeat
@@ -381,20 +381,20 @@ export class TrailCapturer {
       this.ensureAdditionalLayerBuffers(props.additionalLayers.length);
       for (let i = 0; i < props.additionalLayers.length; i++) {
         const layer = props.additionalLayers[i]!;
-        if (layer.blueProp) {
+        if (layer.leftProp) {
           this.captureTrailPointForLayer(
-            layer.blueProp,
-            this.config.bluePropDimensions,
+            layer.leftProp,
+            this.config.leftPropDimensions,
             0,
             animRelativeTime,
             currentBeat,
             i
           );
         }
-        if (layer.redProp) {
+        if (layer.rightProp) {
           this.captureTrailPointForLayer(
-            layer.redProp,
-            this.config.redPropDimensions,
+            layer.rightProp,
+            this.config.rightPropDimensions,
             1,
             animRelativeTime,
             currentBeat,
@@ -416,16 +416,16 @@ export class TrailCapturer {
   }
 
   getAllTrailPoints(): {
-    blue: TrailPoint[];
-    red: TrailPoint[];
-    additionalLayers: Array<{ blue: TrailPoint[]; red: TrailPoint[] }>;
+    left: TrailPoint[];
+    right: TrailPoint[];
+    additionalLayers: Array<{ left: TrailPoint[]; right: TrailPoint[] }>;
   } {
     return {
-      blue: this.blueTrailBuffer.toArray(),
-      red: this.redTrailBuffer.toArray(),
+      left: this.leftTrailBuffer.toArray(),
+      right: this.rightTrailBuffer.toArray(),
       additionalLayers: this.additionalLayerBuffers.map((layer) => ({
-        blue: layer.blue.toArray(),
-        red: layer.red.toArray(),
+        left: layer.left.toArray(),
+        right: layer.right.toArray(),
       })),
     };
   }
@@ -435,29 +435,29 @@ export class TrailCapturer {
    * CRITICAL: Use this in hot paths to prevent GC pressure on mobile
    */
   fillTrailPointArrays(
-    blue: TrailPoint[],
-    red: TrailPoint[],
-    additionalLayers: Array<{ blue: TrailPoint[]; red: TrailPoint[] }>
+    left: TrailPoint[],
+    right: TrailPoint[],
+    additionalLayers: Array<{ left: TrailPoint[]; right: TrailPoint[] }>
   ): void {
     // Clear arrays without deallocating
-    blue.length = 0;
-    red.length = 0;
+    left.length = 0;
+    right.length = 0;
 
     // Fill from primary buffers using iterator (no intermediate array)
-    for (const p of this.blueTrailBuffer) blue.push(p);
-    for (const p of this.redTrailBuffer) red.push(p);
+    for (const p of this.leftTrailBuffer) left.push(p);
+    for (const p of this.rightTrailBuffer) right.push(p);
 
     // Fill additional layer arrays
     for (let i = 0; i < this.additionalLayerBuffers.length; i++) {
       // Ensure the output array has an entry for this layer
       if (!additionalLayers[i]) {
-        additionalLayers[i] = { blue: [], red: [] };
+        additionalLayers[i] = { left: [], right: [] };
       }
       const out = additionalLayers[i]!;
-      out.blue.length = 0;
-      out.red.length = 0;
-      for (const p of this.additionalLayerBuffers[i]!.blue) out.blue.push(p);
-      for (const p of this.additionalLayerBuffers[i]!.red) out.red.push(p);
+      out.left.length = 0;
+      out.right.length = 0;
+      for (const p of this.additionalLayerBuffers[i]!.left) out.left.push(p);
+      for (const p of this.additionalLayerBuffers[i]!.right) out.right.push(p);
     }
     // Trim excess entries if fewer layers than before
     additionalLayers.length = this.additionalLayerBuffers.length;
@@ -470,27 +470,27 @@ export class TrailCapturer {
    * trails overlay is active (which short-circuits the base real-time fill).
    */
   fillAdditionalLayerTrails(
-    additionalLayers: Array<{ blue: TrailPoint[]; red: TrailPoint[] }>
+    additionalLayers: Array<{ left: TrailPoint[]; right: TrailPoint[] }>
   ): void {
     for (let i = 0; i < this.additionalLayerBuffers.length; i++) {
       if (!additionalLayers[i]) {
-        additionalLayers[i] = { blue: [], red: [] };
+        additionalLayers[i] = { left: [], right: [] };
       }
       const out = additionalLayers[i]!;
-      out.blue.length = 0;
-      out.red.length = 0;
-      for (const p of this.additionalLayerBuffers[i]!.blue) out.blue.push(p);
-      for (const p of this.additionalLayerBuffers[i]!.red) out.red.push(p);
+      out.left.length = 0;
+      out.right.length = 0;
+      for (const p of this.additionalLayerBuffers[i]!.left) out.left.push(p);
+      for (const p of this.additionalLayerBuffers[i]!.right) out.right.push(p);
     }
     additionalLayers.length = this.additionalLayerBuffers.length;
   }
 
   clearTrails(): void {
-    this.blueTrailBuffer.clear();
-    this.redTrailBuffer.clear();
+    this.leftTrailBuffer.clear();
+    this.rightTrailBuffer.clear();
     for (const layer of this.additionalLayerBuffers) {
-      layer.blue.clear();
-      layer.red.clear();
+      layer.left.clear();
+      layer.right.clear();
     }
     this.lastCapturedPoints.clear();
     this.animationStartTime = null;
@@ -508,12 +508,12 @@ export class TrailCapturer {
     layerIndex: number = 0
   ): CircularBuffer<TrailPoint> {
     if (layerIndex === 0) {
-      return propIndex === 0 ? this.blueTrailBuffer : this.redTrailBuffer;
+      return propIndex === 0 ? this.leftTrailBuffer : this.rightTrailBuffer;
     }
     const additionalIndex = layerIndex - 1;
     this.ensureAdditionalLayerBuffers(additionalIndex + 1);
     const layer = this.additionalLayerBuffers[additionalIndex]!;
-    return propIndex === 0 ? layer.blue : layer.red;
+    return propIndex === 0 ? layer.left : layer.right;
   }
 
   /**
@@ -522,8 +522,8 @@ export class TrailCapturer {
   private ensureAdditionalLayerBuffers(count: number): void {
     while (this.additionalLayerBuffers.length < count) {
       this.additionalLayerBuffers.push({
-        blue: new CircularBuffer<TrailPoint>(DEFAULT_BUFFER_CAPACITY),
-        red: new CircularBuffer<TrailPoint>(DEFAULT_BUFFER_CAPACITY),
+        left: new CircularBuffer<TrailPoint>(DEFAULT_BUFFER_CAPACITY),
+        right: new CircularBuffer<TrailPoint>(DEFAULT_BUFFER_CAPACITY),
       });
     }
   }
@@ -540,12 +540,12 @@ export class TrailCapturer {
     currentStep: number,
     additionalLayerIndex: number
   ): void {
-    const propType = propIndex === 0 ? this.config.bluePropType : this.config.redPropType;
+    const propType = propIndex === 0 ? this.config.leftPropType : this.config.rightPropType;
     const trailSources = this.resolveTrailSources(propType);
 
     this.ensureAdditionalLayerBuffers(additionalLayerIndex + 1);
     const layerBuffers = this.additionalLayerBuffers[additionalLayerIndex]!;
-    const buffer = propIndex === 0 ? layerBuffers.blue : layerBuffers.red;
+    const buffer = propIndex === 0 ? layerBuffers.left : layerBuffers.right;
 
     const endpointConfig: PropEndpointConfig = {
       canvasSize: this.config.canvasSize,
@@ -711,7 +711,7 @@ export class TrailCapturer {
     currentStep: number
   ): void {
     const { trailSettings } = this.config;
-    const propType = propIndex === 0 ? this.config.bluePropType : this.config.redPropType;
+    const propType = propIndex === 0 ? this.config.leftPropType : this.config.rightPropType;
 
     const trailSources = this.resolveTrailSources(propType);
 
@@ -878,17 +878,17 @@ export class TrailCapturer {
   private pruneToReasonableSize(currentTime: number): void {
     const cutoffTime = currentTime - EMERGENCY_PRUNE_KEEP_DURATION_MS;
 
-    this.blueTrailBuffer.filterInPlace((p) => p.timestamp > cutoffTime);
-    this.redTrailBuffer.filterInPlace((p) => p.timestamp > cutoffTime);
+    this.leftTrailBuffer.filterInPlace((p) => p.timestamp > cutoffTime);
+    this.rightTrailBuffer.filterInPlace((p) => p.timestamp > cutoffTime);
     for (const layer of this.additionalLayerBuffers) {
-      layer.blue.filterInPlace((p) => p.timestamp > cutoffTime);
-      layer.red.filterInPlace((p) => p.timestamp > cutoffTime);
+      layer.left.filterInPlace((p) => p.timestamp > cutoffTime);
+      layer.right.filterInPlace((p) => p.timestamp > cutoffTime);
     }
 
     // Reset counter
-    let total = this.blueTrailBuffer.length + this.redTrailBuffer.length;
+    let total = this.leftTrailBuffer.length + this.rightTrailBuffer.length;
     for (const layer of this.additionalLayerBuffers) {
-      total += layer.blue.length + layer.red.length;
+      total += layer.left.length + layer.right.length;
     }
     this.totalPointsCaptured = total;
   }
@@ -923,11 +923,11 @@ export class TrailCapturer {
     const isValidPoint = (p: TrailPoint) =>
       p.timestamp > cutoffTime && p.timestamp <= currentTime;
 
-    this.blueTrailBuffer.filterInPlace(isValidPoint);
-    this.redTrailBuffer.filterInPlace(isValidPoint);
+    this.leftTrailBuffer.filterInPlace(isValidPoint);
+    this.rightTrailBuffer.filterInPlace(isValidPoint);
     for (const layer of this.additionalLayerBuffers) {
-      layer.blue.filterInPlace(isValidPoint);
-      layer.red.filterInPlace(isValidPoint);
+      layer.left.filterInPlace(isValidPoint);
+      layer.right.filterInPlace(isValidPoint);
     }
   }
 }

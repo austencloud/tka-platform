@@ -17,15 +17,15 @@
   let {
     currentEffort,
     currentMap,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     onSetEffort,
     onUpdateMap,
   }: {
     currentEffort: string | undefined;
     currentMap: TipEffortMap;
-    bluePropType: string;
-    redPropType: string;
+    leftPropType: string;
+    rightPropType: string;
     onSetEffort: (effort: string) => void;
     onUpdateMap: (map: TipEffortMap) => void;
   } = $props();
@@ -45,8 +45,8 @@
     localMap = { ...currentMap };
   });
 
-  const blueTipCount = $derived(getTipPoints(bluePropType).points.length);
-  const redTipCount = $derived(getTipPoints(redPropType).points.length);
+  const leftTipCount = $derived(getTipPoints(leftPropType).points.length);
+  const rightTipCount = $derived(getTipPoints(rightPropType).points.length);
 
   const activeEffortMeta = $derived(
     EFFORTS.find((e) => e.id === currentEffort) ??
@@ -71,18 +71,18 @@
       ];
     }
     const rows: ChannelRow[] = [];
-    for (let t = 0; t < blueTipCount; t++) {
+    for (let t = 0; t < leftTipCount; t++) {
       rows.push({
         key: `0-${t}`,
         color: "#3b82f6",
-        label: `Blue ${getTipLabel(bluePropType, t, blueTipCount)}`,
+        label: `Blue ${getTipLabel(leftPropType, t, leftTipCount)}`,
       });
     }
-    for (let t = 0; t < redTipCount; t++) {
+    for (let t = 0; t < rightTipCount; t++) {
       rows.push({
         key: `1-${t}`,
         color: "#ef4444",
-        label: `Red ${getTipLabel(redPropType, t, redTipCount)}`,
+        label: `Red ${getTipLabel(rightPropType, t, rightTipCount)}`,
       });
     }
     return rows;
@@ -123,10 +123,10 @@
       newMap["*"] = { effort: most };
     } else if (newScope === "hand") {
       if (oldScope === "tip") {
-        const blueKeys = Object.keys(localMap).filter((k) => k.startsWith("0-"));
-        const redKeys = Object.keys(localMap).filter((k) => k.startsWith("1-"));
-        newMap["0"] = { effort: mostCommonEffort(blueKeys) };
-        newMap["1"] = { effort: mostCommonEffort(redKeys) };
+        const leftKeys = Object.keys(localMap).filter((k) => k.startsWith("0-"));
+        const rightKeys = Object.keys(localMap).filter((k) => k.startsWith("1-"));
+        newMap["0"] = { effort: mostCommonEffort(leftKeys) };
+        newMap["1"] = { effort: mostCommonEffort(rightKeys) };
       } else {
         const base = localMap["*"]?.effort ?? "linear";
         newMap["0"] = { effort: base };
@@ -135,13 +135,13 @@
     } else {
       if (oldScope === "cell") {
         const base = localMap["*"]?.effort ?? "linear";
-        for (let t = 0; t < blueTipCount; t++) newMap[`0-${t}`] = { effort: base };
-        for (let t = 0; t < redTipCount; t++) newMap[`1-${t}`] = { effort: base };
+        for (let t = 0; t < leftTipCount; t++) newMap[`0-${t}`] = { effort: base };
+        for (let t = 0; t < rightTipCount; t++) newMap[`1-${t}`] = { effort: base };
       } else {
-        const blueEffort = localMap["0"]?.effort ?? "linear";
-        const redEffort = localMap["1"]?.effort ?? "linear";
-        for (let t = 0; t < blueTipCount; t++) newMap[`0-${t}`] = { effort: blueEffort };
-        for (let t = 0; t < redTipCount; t++) newMap[`1-${t}`] = { effort: redEffort };
+        const leftEffort = localMap["0"]?.effort ?? "linear";
+        const rightEffort = localMap["1"]?.effort ?? "linear";
+        for (let t = 0; t < leftTipCount; t++) newMap[`0-${t}`] = { effort: leftEffort };
+        for (let t = 0; t < rightTipCount; t++) newMap[`1-${t}`] = { effort: rightEffort };
       }
     }
 

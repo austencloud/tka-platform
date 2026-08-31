@@ -18,26 +18,26 @@ const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
 function variation(
   letter: "Z-",
-  blueType: MotionType,
-  redType: MotionType
+  leftType: MotionType,
+  rightType: MotionType
 ): PictographData {
   return {
     letter,
     motions: {
-      blue: createMotionData({
-        motionType: blueType,
+      left: createMotionData({
+        motionType: leftType,
         rotationDirection:
-          blueType === MotionType.DASH ? RotationDirection.NO_ROTATION : CW,
+          leftType === MotionType.DASH ? RotationDirection.NO_ROTATION : CW,
         turns: 0,
         startOrientation: "in",
         endOrientation: "in",
         startLocation: "n",
         endLocation: "s",
       }),
-      red: createMotionData({
-        motionType: redType,
+      right: createMotionData({
+        motionType: rightType,
         rotationDirection:
-          redType === MotionType.DASH ? RotationDirection.NO_ROTATION : CCW,
+          rightType === MotionType.DASH ? RotationDirection.NO_ROTATION : CCW,
         turns: 0,
         startOrientation: "out",
         endOrientation: "out",
@@ -58,11 +58,11 @@ describe("applyTurnsToVariations", () => {
     const results = applyTurnsToVariations(inputs, 1, 2, CW, CCW);
 
     expect(results).toHaveLength(2);
-    expect(results.map((result) => result.motions.blue?.turns)).toEqual([1, 1]);
-    expect(results.map((result) => result.motions.red?.turns)).toEqual([2, 2]);
-    expect(results[0]?.motions.blue?.rotationDirection).toBe(CW);
-    expect(results[1]?.motions.red?.rotationDirection).toBe(CCW);
-    expect(inputs[0]?.motions.blue?.turns).toBe(0);
-    expect(inputs[1]?.motions.red?.turns).toBe(0);
+    expect(results.map((result) => result.motions.left?.turns)).toEqual([1, 1]);
+    expect(results.map((result) => result.motions.right?.turns)).toEqual([2, 2]);
+    expect(results[0]?.motions.left?.rotationDirection).toBe(CW);
+    expect(results[1]?.motions.right?.rotationDirection).toBe(CCW);
+    expect(inputs[0]?.motions.left?.turns).toBe(0);
+    expect(inputs[1]?.motions.right?.turns).toBe(0);
   });
 });

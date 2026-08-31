@@ -37,10 +37,10 @@ export interface AnimationExportState {
   stepPlaybackStepSize: StepPlaybackStepSize;
 
   // Visibility
-  blueMotionVisible: boolean;
-  redMotionVisible: boolean;
-  bluePropState: PropState3D | null;
-  redPropState: PropState3D | null;
+  leftMotionVisible: boolean;
+  rightMotionVisible: boolean;
+  leftPropState: PropState3D | null;
+  rightPropState: PropState3D | null;
 
   exportLoopCount: number;
   isExporting: boolean;
@@ -75,8 +75,8 @@ export interface AnimationExportActions {
   onStepFullBeatBackward: () => void;
 
   // Visibility
-  onToggleBlue: () => void;
-  onToggleRed: () => void;
+  onToggleLeft: () => void;
+  onToggleRight: () => void;
 
   onLoopCountChange: (count: number) => void;
   onExportVideo: () => void;
@@ -108,8 +108,8 @@ const defaultActions: AnimationExportActions = {
   onStepHalfBeatBackward: () => {},
   onStepFullBeatForward: () => {},
   onStepFullBeatBackward: () => {},
-  onToggleBlue: () => {},
-  onToggleRed: () => {},
+  onToggleLeft: () => {},
+  onToggleRight: () => {},
   onLoopCountChange: () => {},
   onExportVideo: () => {},
   onCancelExport: () => {},
@@ -129,10 +129,10 @@ const defaultState: AnimationExportState = {
   playbackMode: "continuous",
   stepPlaybackPauseMs: 300,
   stepPlaybackStepSize: 1,
-  blueMotionVisible: true,
-  redMotionVisible: true,
-  bluePropState: null,
-  redPropState: null,
+  leftMotionVisible: true,
+  rightMotionVisible: true,
+  leftPropState: null,
+  rightPropState: null,
   exportLoopCount: 1,
   isExporting: false,
   exportProgress: null,
@@ -185,10 +185,10 @@ export function createAnimationExportContext(props: {
   playbackMode?: PlaybackMode;
   stepPlaybackPauseMs?: number;
   stepPlaybackStepSize?: StepPlaybackStepSize;
-  blueMotionVisible?: boolean;
-  redMotionVisible?: boolean;
-  animationBluePropState?: PropState3D | null;
-  animationRedPropState?: PropState3D | null;
+  leftMotionVisible?: boolean;
+  rightMotionVisible?: boolean;
+  animationLeftPropState?: PropState3D | null;
+  animationRightPropState?: PropState3D | null;
   exportLoopCount?: number;
   isAnimationExporting?: boolean;
   animationExportProgress?: VideoExportProgress | null;
@@ -206,8 +206,8 @@ export function createAnimationExportContext(props: {
   onStepHalfBeatBackward?: () => void;
   onStepFullBeatForward?: () => void;
   onStepFullBeatBackward?: () => void;
-  onToggleBlue?: () => void;
-  onToggleRed?: () => void;
+  onToggleLeft?: () => void;
+  onToggleRight?: () => void;
   onLoopCountChange?: (count: number) => void;
   onExportVideo?: () => void;
   onCancelExport?: () => void;
@@ -224,10 +224,10 @@ export function createAnimationExportContext(props: {
       playbackMode: props.playbackMode ?? "continuous",
       stepPlaybackPauseMs: props.stepPlaybackPauseMs ?? 300,
       stepPlaybackStepSize: props.stepPlaybackStepSize ?? 1,
-      blueMotionVisible: props.blueMotionVisible ?? true,
-      redMotionVisible: props.redMotionVisible ?? true,
-      bluePropState: props.animationBluePropState ?? null,
-      redPropState: props.animationRedPropState ?? null,
+      leftMotionVisible: props.leftMotionVisible ?? true,
+      rightMotionVisible: props.rightMotionVisible ?? true,
+      leftPropState: props.animationLeftPropState ?? null,
+      rightPropState: props.animationRightPropState ?? null,
       exportLoopCount: props.exportLoopCount ?? 1,
       isExporting: props.isAnimationExporting ?? false,
       exportProgress: props.animationExportProgress ?? null,
@@ -248,8 +248,8 @@ export function createAnimationExportContext(props: {
       onStepHalfBeatBackward: props.onStepHalfBeatBackward ?? (() => {}),
       onStepFullBeatForward: props.onStepFullBeatForward ?? (() => {}),
       onStepFullBeatBackward: props.onStepFullBeatBackward ?? (() => {}),
-      onToggleBlue: props.onToggleBlue ?? (() => {}),
-      onToggleRed: props.onToggleRed ?? (() => {}),
+      onToggleLeft: props.onToggleLeft ?? (() => {}),
+      onToggleRight: props.onToggleRight ?? (() => {}),
       onLoopCountChange: props.onLoopCountChange ?? (() => {}),
       onExportVideo: props.onExportVideo ?? (() => {}),
       onCancelExport: props.onCancelExport ?? (() => {}),

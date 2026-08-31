@@ -130,7 +130,7 @@
 		};
 		/**
 		 * Prop ends traced: 2 = staff (both tips), 1 = club (one tip). Optional —
-		 * when omitted, derived from bluePropType/redPropType via pairTipEnds. Set
+		 * when omitted, derived from leftPropType/rightPropType via pairTipEnds. Set
 		 * explicitly only to force a count regardless of prop (labs/explorers).
 		 */
 		tipEnds?: 1 | 2;

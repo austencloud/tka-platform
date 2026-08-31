@@ -34,7 +34,7 @@
   import { HALF_ASSET_TURNS } from "$lib/shared/pictograph/arrow/rendering/services/half-asset-manifest";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -83,11 +83,11 @@
       stepNumber: 1,
       gridMode: GridMode.DIAMOND,
       motions: {
-        blue: createPlaceholderMotion(MotionColor.BLUE, {
+        left: createPlaceholderMotion(HandSide.LEFT, {
           location: E,
           orientation: IN,
         }),
-        red: createMotionData({
+        right: createMotionData({
           motionType: type,
           rotationDirection: rot,
           startLocation: from,
@@ -95,7 +95,7 @@
           startOrientation: startOri,
           endOrientation: endOri,
           turns: turns as number,
-          color: MotionColor.RED,
+          color: HandSide.RIGHT,
           propType: PropType.STAFF,
           gridMode: GridMode.DIAMOND,
         }),
@@ -119,7 +119,7 @@
   type CellMeta = { key: string; R: number; mirrored: boolean };
 
   const metaOf = (half: StepData | null): CellMeta | null => {
-    const m = half?.motions?.red as MotionData | undefined;
+    const m = half?.motions?.right as MotionData | undefined;
     if (!m) return null;
     return {
       key: `${m.motionType}_t${m.turns}`,
@@ -213,15 +213,15 @@
     const ly = meta.mirrored ? -adj.y : adj.y;
     const sx = adj.x * Math.cos(rad) - ly * Math.sin(rad);
     const sy = adj.x * Math.sin(rad) + ly * Math.cos(rad);
-    const red = step.motions.red as MotionData;
+    const right = step.motions.right as MotionData;
     return {
       ...step,
       motions: {
         ...step.motions,
-        red: createMotionData({
-          ...red,
+        right: createMotionData({
+          ...right,
           arrowPlacementData: createArrowPlacementData({
-            ...red.arrowPlacementData,
+            ...right.arrowPlacementData,
             manualAdjustmentX: sx,
             manualAdjustmentY: sy,
           }),
@@ -324,7 +324,7 @@
       turns
     );
     const half = buildHalvedStep(full, 0.5);
-    const mid = half?.motions?.red?.endLocation;
+    const mid = half?.motions?.right?.endLocation;
     return {
       label: `${LOC_SHORT[from]} → ${mid ? LOC_SHORT[mid] : "?"}`,
       sub: `${type} t${turnsLabel(turns)} · half of ${LOC_SHORT[from]}→${LOC_SHORT[to]} · path ${pathCw ? "cw" : "ccw"}, prop ${dirWord(rot)}`,

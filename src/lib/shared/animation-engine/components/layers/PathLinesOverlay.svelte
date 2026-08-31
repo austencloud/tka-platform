@@ -3,7 +3,7 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import { isVisibleMotion, type MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-  import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { MotionType, HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { getPathD } from "$lib/features/hand-paths/hand-path-builder/services/hand-path-animator";
   import {
     getAnimationVisibilityManager,
@@ -19,8 +19,8 @@
     sequenceData = null,
     currentStep = 0,
     stepData = null,
-    showBlue = false,
-    showRed = false,
+    showLeft = false,
+    showRight = false,
     vm = null,
   }: {
     sequenceData?: SequenceData | null;
@@ -30,8 +30,8 @@
      *  with the glyph during step-playback dwells, where the integer boundary
      *  is attributed to the COMPLETED beat rather than the upcoming one. */
     stepData?: StepData | StartPositionData | null;
-    showBlue?: boolean;
-    showRed?: boolean;
+    showLeft?: boolean;
+    showRight?: boolean;
     /** Per-surface visibility manager; falls back to the global singleton. */
     vm?: AnimationVisibilityStateManager | null;
   } = $props();
@@ -73,49 +73,49 @@
     return sequenceData.steps[stepIndex] ?? null;
   });
 
-  const bluePathD = $derived.by(() => {
-    const motion = currentStepData?.motions?.blue;
+  const leftPathD = $derived.by(() => {
+    const motion = currentStepData?.motions?.left;
     return isVisibleMotion(motion) ? buildPathD(motion) : null;
   });
 
-  const redPathD = $derived.by(() => {
-    const motion = currentStepData?.motions?.red;
+  const rightPathD = $derived.by(() => {
+    const motion = currentStepData?.motions?.right;
     return isVisibleMotion(motion) ? buildPathD(motion) : null;
   });
 
-  const blueColor = $derived(getMotionColor(MotionColor.BLUE, "dark"));
-  const redColor = $derived(getMotionColor(MotionColor.RED, "dark"));
-  const drawBlue = $derived(showBlue && bluePathD !== null);
-  const drawRed = $derived(showRed && redPathD !== null);
+  const leftColor = $derived(getMotionColor(HandSide.LEFT, "dark"));
+  const rightColor = $derived(getMotionColor(HandSide.RIGHT, "dark"));
+  const drawLeft = $derived(showLeft && leftPathD !== null);
+  const drawRight = $derived(showRight && rightPathD !== null);
 </script>
 
 <!-- Gate the overlay on the TOGGLE intent (showBlue/showRed), not on whether
      this step happens to have path geometry — so turning Paths on/off fades the
      whole overlay once, while per-step geometry swaps (drawBlue/drawRed) stay
      instant and never trigger a fade mid-playback. -->
-{#if showBlue || showRed}
+{#if showLeft || showRight}
   <svg
     class="path-lines-overlay"
     viewBox="0 0 950 950"
     preserveAspectRatio="xMidYMid meet"
     transition:fade={{ duration: motionDuration(DURATION.normal), easing: cubicOut }}
   >
-    {#if drawBlue}
+    {#if drawLeft}
       <path
-        d={bluePathD}
+        d={leftPathD}
         fill="none"
-        stroke={blueColor}
+        stroke={leftColor}
         stroke-width="3"
         stroke-linecap="round"
         stroke-dasharray="8 6"
         opacity="0.5"
       />
     {/if}
-    {#if drawRed}
+    {#if drawRight}
       <path
-        d={redPathD}
+        d={rightPathD}
         fill="none"
-        stroke={redColor}
+        stroke={rightColor}
         stroke-width="3"
         stroke-linecap="round"
         stroke-dasharray="8 6"

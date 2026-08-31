@@ -282,7 +282,7 @@
       >
         {#each currentQuiz.options as option (option.id)}
           {#if isMotionPatternOption(option)}
-            <button aria-label="Blue {option.blueMotion}, Red {option.redMotion}"
+            <button aria-label="Blue {option.leftMotion}, Red {option.rightMotion}"
               class="quiz-motion-chip {getOptionClass(option)}"
               onclick={() => selectOption(option)}
               onkeydown={(e) => handleKeydown(e, option)}
@@ -292,12 +292,12 @@
             >
               <span class="motion-blue">
                 <span class="motion-dot blue"></span>
-                {option.blueMotion}
+                {option.leftMotion}
               </span>
               <span class="motion-separator">+</span>
               <span class="motion-red">
                 <span class="motion-dot red"></span>
-                {option.redMotion}
+                {option.rightMotion}
               </span>
               {#if quizState !== "unanswered"}
                 <span class="chip-indicator" aria-hidden="true">

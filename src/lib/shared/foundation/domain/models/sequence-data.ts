@@ -174,8 +174,8 @@ export interface SequenceData {
    * Captured silently at save time from the viewer's current prop settings.
    * null = legacy sequence with no intent recorded. */
   readonly intendedProp?: {
-    readonly bluePropType: PropType;
-    readonly redPropType: PropType;
+    readonly leftPropType: PropType;
+    readonly rightPropType: PropType;
     readonly catDogMode: boolean;
   } | null;
   /** Creator's full presentation intent: prop config + effort + future fields.
@@ -189,20 +189,20 @@ export interface SequenceData {
   // may not have them yet. The SequenceHydrator guarantees they're populated
   // at all load/save boundaries - after hydration they're always present.
   /** Solo prop path for the blue performer - persisted to Firestore */
-  readonly blueSoloProp?: SoloPropData;
+  readonly leftSoloProp?: SoloPropData;
   /** Solo prop path for the red performer - persisted to Firestore */
-  readonly redSoloProp?: SoloPropData;
+  readonly rightSoloProp?: SoloPropData;
   /** Per-beat pairings linking each blue motion to its corresponding red motion */
   readonly stepPairings?: readonly StepPairingData[];
 
   /** Hash of the blue performer's combined dual-prop path (for equivalence detection) */
-  readonly bluePathHash?: string;
+  readonly leftPathHash?: string;
   /** Hash of the red performer's combined dual-prop path (for equivalence detection) */
-  readonly redPathHash?: string;
+  readonly rightPathHash?: string;
   /** Hash of the blue performer's solo prop path only */
-  readonly blueSoloHash?: string;
+  readonly leftSoloHash?: string;
   /** Hash of the red performer's solo prop path only */
-  readonly redSoloHash?: string;
+  readonly rightSoloHash?: string;
 
   // === Local-only cloud sync bookkeeping (Dexie record, never Firestore) ===
   /**
@@ -343,14 +343,14 @@ export function createSequenceData(
       creatorIntent: data.creatorIntent,
     }),
     // Compositional structure passthrough
-    ...(data.blueSoloProp !== undefined && { blueSoloProp: data.blueSoloProp }),
-    ...(data.redSoloProp !== undefined && { redSoloProp: data.redSoloProp }),
+    ...(data.leftSoloProp !== undefined && { leftSoloProp: data.leftSoloProp }),
+    ...(data.rightSoloProp !== undefined && { rightSoloProp: data.rightSoloProp }),
     ...(data.stepPairings !== undefined && { stepPairings: data.stepPairings }),
     // Content hash passthrough
-    ...(data.bluePathHash !== undefined && { bluePathHash: data.bluePathHash }),
-    ...(data.redPathHash !== undefined && { redPathHash: data.redPathHash }),
-    ...(data.blueSoloHash !== undefined && { blueSoloHash: data.blueSoloHash }),
-    ...(data.redSoloHash !== undefined && { redSoloHash: data.redSoloHash }),
+    ...(data.leftPathHash !== undefined && { leftPathHash: data.leftPathHash }),
+    ...(data.rightPathHash !== undefined && { rightPathHash: data.rightPathHash }),
+    ...(data.leftSoloHash !== undefined && { leftSoloHash: data.leftSoloHash }),
+    ...(data.rightSoloHash !== undefined && { rightSoloHash: data.rightSoloHash }),
   };
   return result;
 }
@@ -406,9 +406,9 @@ export interface SequenceMetadata {
   author: string;
   totalSteps: number;
   // Optional animation-related properties (viewer preferences, not stored with sequence)
-  bluePropType?: PropType; // Per-color prop type for blue motions
-  redPropType?: PropType; // Per-color prop type for red motions
+  leftPropType?: PropType; // Per-color prop type for blue motions
+  rightPropType?: PropType; // Per-color prop type for red motions
   gridMode?: GridMode;
-  bluePropDimensions?: PropDimensions;
-  redPropDimensions?: PropDimensions;
+  leftPropDimensions?: PropDimensions;
+  rightPropDimensions?: PropDimensions;
 }

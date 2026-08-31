@@ -2,7 +2,7 @@ import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -34,7 +34,7 @@ const redStaff = (
   letter: null,
   gridMode: GridMode.DIAMOND,
   motions: {
-    red: createMotionData({
+    right: createMotionData({
       motionType: type,
       rotationDirection: rot,
       startLocation: from,
@@ -42,7 +42,7 @@ const redStaff = (
       startOrientation: startOri,
       endOrientation: endOri,
       turns: 0,
-      color: MotionColor.RED,
+      hand: HandSide.RIGHT,
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     }),
@@ -89,8 +89,8 @@ const rowItems = (row: RowDef): PictographData[] =>
 // negative-space.content.ts uses for its single-staff sequences.
 const rowSequenceItems = (row: RowDef): PictographData[] =>
   [
-    { ...row.start, stepNumber: 0, motions: { ...row.start.motions, blue: createPlaceholderMotion(MotionColor.BLUE, { location: row.start.motions.red.startLocation }) } },
-    { ...row.combined, stepNumber: 1, motions: { ...row.combined.motions, blue: createPlaceholderMotion(MotionColor.BLUE, { location: row.start.motions.red.startLocation }) } },
+    { ...row.start, stepNumber: 0, motions: { ...row.start.motions, left: createPlaceholderMotion(HandSide.LEFT, { location: row.start.motions.right.startLocation }) } },
+    { ...row.combined, stepNumber: 1, motions: { ...row.combined.motions, left: createPlaceholderMotion(HandSide.LEFT, { location: row.start.motions.right.startLocation }) } },
   ] as unknown as PictographData[];
 
 /** STAFF props, TKA letter glyph off - matching StaffMotionsPage's PICTO_FLAGS (showTKA: false). */

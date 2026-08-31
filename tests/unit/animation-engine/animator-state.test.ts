@@ -22,8 +22,8 @@ describe("AnimatorState", () => {
 
   it("keeps the object-dimension reference stable on an equal-value set", () => {
     const s = createAnimatorState();
-    const before = s.bluePropDimensions;
+    const before = s.leftPropDimensions;
     s.setBluePropDimensions({ ...before }); // new ref, equal w/h
-    expect(s.bluePropDimensions).toBe(before); // guard suppressed the reassignment
+    expect(s.leftPropDimensions).toBe(before); // guard suppressed the reassignment
   });
 });

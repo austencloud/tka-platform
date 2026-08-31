@@ -161,15 +161,15 @@ const TEMPLATE_DEFINITIONS: readonly RotationDirectionTemplateDefinition[] = [
  */
 function generateUniformPattern(
   stepCount: number,
-  blueDir: RotationDirectionValue,
-  redDir: RotationDirectionValue
+  leftDir: RotationDirectionValue,
+  rightDir: RotationDirectionValue
 ): RotationDirectionPatternEntry[] {
   const entries: RotationDirectionPatternEntry[] = [];
   for (let i = 0; i < stepCount; i++) {
     entries.push({
       stepIndex: i,
-      blue: blueDir,
-      red: redDir,
+      left: leftDir,
+      right: rightDir,
     });
   }
   return entries;
@@ -189,8 +189,8 @@ function generateAlternatingPattern(
     const dir = i % 2 === 0 ? startDir : otherDir;
     entries.push({
       stepIndex: i,
-      blue: dir,
-      red: dir,
+      left: dir,
+      right: dir,
     });
   }
   return entries;
@@ -212,8 +212,8 @@ function generateSplitHalfPattern(
     const dir = i < halfPoint ? firstHalfDir : secondHalfDir;
     entries.push({
       stepIndex: i,
-      blue: dir,
-      red: dir,
+      left: dir,
+      right: dir,
     });
   }
   return entries;

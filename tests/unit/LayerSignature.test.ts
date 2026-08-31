@@ -55,8 +55,8 @@ const motion = (
   startOrientation = "in"
 ) => ({ motionType, turns, rotationDirection, startLocation, endLocation, startOrientation });
 
-const step = (blue: ReturnType<typeof motion>, red: ReturnType<typeof motion>): LayerStepInput => ({
-  motions: { blue, red },
+const step = (left: ReturnType<typeof motion>, right: ReturnType<typeof motion>): LayerStepInput => ({
+  motions: { left, right },
 });
 
 describe("layerClassDelta agrees with the end-orientation calculator", () => {
@@ -165,11 +165,11 @@ describe("moving between layers", () => {
     const flipOri = (o: string) => (o === "in" ? "clock" : "in");
 
     for (const layer of [1, 2, 3, 4] as LayerId[]) {
-      const [blue, red] = sample[layer];
-      expect(applyFlip(layer, ".")).toBe(layerOf(blue, red));
-      expect(applyFlip(layer, "B")).toBe(layerOf(flipOri(blue), red));
-      expect(applyFlip(layer, "R")).toBe(layerOf(blue, flipOri(red)));
-      expect(applyFlip(layer, "X")).toBe(layerOf(flipOri(blue), flipOri(red)));
+      const [left, right] = sample[layer];
+      expect(applyFlip(layer, ".")).toBe(layerOf(left, right));
+      expect(applyFlip(layer, "B")).toBe(layerOf(flipOri(left), right));
+      expect(applyFlip(layer, "R")).toBe(layerOf(left, flipOri(right)));
+      expect(applyFlip(layer, "X")).toBe(layerOf(flipOri(left), flipOri(right)));
     }
   });
 
@@ -223,12 +223,12 @@ describe("signatures of real sequences", () => {
   });
 
   it("gives the same reading from any all-radial starting pair", () => {
-    for (const [blue, red] of [["in", "in"], ["in", "out"], ["out", "in"], ["out", "out"]]) {
+    for (const [left, right] of [["in", "in"], ["in", "out"], ["out", "in"], ["out", "out"]]) {
       const started = chainA.map((s, i) =>
         i === 0
           ? step(
-              { ...s.motions!.blue!, startOrientation: blue } as never,
-              { ...s.motions!.red!, startOrientation: red } as never
+              { ...s.motions!.left!, startOrientation: left } as never,
+              { ...s.motions!.right!, startOrientation: right } as never
             )
           : s
       );
@@ -240,8 +240,8 @@ describe("signatures of real sequences", () => {
     const started = chainA.map((s, i) =>
       i === 0
         ? step(
-            { ...s.motions!.blue!, startOrientation: "clock" } as never,
-            { ...s.motions!.red!, startOrientation: "in" } as never
+            { ...s.motions!.left!, startOrientation: "clock" } as never,
+            { ...s.motions!.right!, startOrientation: "in" } as never
           )
         : s
     );

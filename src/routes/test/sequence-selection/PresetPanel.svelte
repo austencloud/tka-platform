@@ -6,7 +6,7 @@
     setSequenceSelection,
   } from "$lib/shared/selection/sequence-selection.svelte";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-  import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { MotionType, HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -41,27 +41,27 @@
       startPosition: gp(b, r),
       endPosition: gp(b, r),
       motions: {
-        blue: createMotionData({
+        left: createMotionData({
           motionType: MotionType.STATIC,
           startLocation: b,
           endLocation: b,
-          color: MotionColor.BLUE,
+          color: HandSide.LEFT,
           propType: PropType.HAND,
           gridMode: GridMode.DIAMOND,
         }),
-        red: createMotionData({
+        right: createMotionData({
           motionType: MotionType.STATIC,
           startLocation: r,
           endLocation: r,
-          color: MotionColor.RED,
+          color: HandSide.RIGHT,
           propType: PropType.HAND,
           gridMode: GridMode.DIAMOND,
         }),
       },
       stepNumber: step,
       duration: 1,
-      blueReversal: false,
-      redReversal: false,
+      leftReversal: false,
+      rightReversal: false,
       isBlank: false,
     } as unknown as StepData;
   }
@@ -91,8 +91,8 @@
             <PictographContainer
               pictographData={staticStep(c)}
               gridMode={GridMode.DIAMOND}
-              bluePropTypeOverride={PropType.HAND}
-              redPropTypeOverride={PropType.HAND}
+              leftPropTypeOverride={PropType.HAND}
+              rightPropTypeOverride={PropType.HAND}
               showGrid={true}
               showTKA={false}
               showPositions={c > 0}
@@ -125,8 +125,8 @@
               <PictographContainer
                 pictographData={staticStep(c)}
                 gridMode={GridMode.DIAMOND}
-                bluePropTypeOverride={PropType.HAND}
-                redPropTypeOverride={PropType.HAND}
+                leftPropTypeOverride={PropType.HAND}
+                rightPropTypeOverride={PropType.HAND}
                 showGrid={true}
                 showTKA={false}
                 showPositions={c > 0}

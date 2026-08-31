@@ -42,8 +42,8 @@ import { DEFAULT_CANVAS_SIZE } from "../canvas-resizer.svelte";
 
 /** Default props sentinel used when lastPropsRef is null */
 const DEFAULT_ENGINE_PROPS: AnimationEngineProps = {
-  blueProp: null,
-  redProp: null,
+  leftProp: null,
+  rightProp: null,
 };
 
 export interface PlaybackSyncDeps {
@@ -159,8 +159,8 @@ export class PlaybackSync {
 
     // Handle settings/trail capturer initialization
     const shouldInitTrailCapturer =
-      this.state.currentBluePropType !== "staff" ||
-      this.state.currentRedPropType !== "staff" ||
+      this.state.currentLeftPropType !== "staff" ||
+      this.state.currentRightPropType !== "staff" ||
       lifecycleManager.settingsService?.currentSettings ||
       props.externalTrailSettings !== undefined;
 
@@ -181,8 +181,8 @@ export class PlaybackSync {
       lifecycleManager.trailSettingsSync?.handleExternalSettingsSync(
         frameSystem.enforceUnilateralConstraint(
           props.externalTrailSettings,
-          this.state.currentBluePropType,
-          this.state.currentRedPropType
+          this.state.currentLeftPropType,
+          this.state.currentRightPropType
         )
       );
     }
@@ -355,8 +355,8 @@ export class PlaybackSync {
     // Update trail capturer with prop type and loopability changes
     if (lifecycleManager.trailCapturer && this.settingsLoaded) {
       lifecycleManager.trailCapturer.updateConfig({
-        bluePropType: this.state.currentBluePropType,
-        redPropType: this.state.currentRedPropType,
+        leftPropType: this.state.currentLeftPropType,
+        rightPropType: this.state.currentRightPropType,
         isSeamlesslyLoopable: props.isSeamlesslyLoopable,
       });
     }
@@ -551,8 +551,8 @@ export class PlaybackSync {
     const propTextureLoader = lifecycleManager.propTextureLoader;
     if (propTextureLoader) {
       const pts = propTextureLoader.state;
-      this.state.setBluePropDimensions(pts.blueDimensions);
-      this.state.setRedPropDimensions(pts.redDimensions);
+      this.state.setLeftPropDimensions(pts.leftDimensions);
+      this.state.setRightPropDimensions(pts.rightDimensions);
     }
 
     // Sync from resize service (delegated to StateSynchronizer)
@@ -582,15 +582,15 @@ export class PlaybackSync {
 
     trailCapturer.initialize({
       canvasSize: getCanvasSize(),
-      bluePropDimensions: this.state.bluePropDimensions,
-      redPropDimensions: this.state.redPropDimensions,
+      leftPropDimensions: this.state.leftPropDimensions,
+      rightPropDimensions: this.state.rightPropDimensions,
       trailSettings: frameSystem.enforceUnilateralConstraint(
         effectiveTrailSettings,
-        this.state.currentBluePropType,
-        this.state.currentRedPropType
+        this.state.currentLeftPropType,
+        this.state.currentRightPropType
       ),
-      bluePropType: this.state.currentBluePropType,
-      redPropType: this.state.currentRedPropType,
+      leftPropType: this.state.currentLeftPropType,
+      rightPropType: this.state.currentRightPropType,
     });
 
     lifecycleManager.trailSettingsSync?.initialize(trailCapturer, () =>
@@ -619,8 +619,8 @@ export class PlaybackSync {
       a.maxPoints !== b.maxPoints ||
       a.lineWidth !== b.lineWidth ||
       a.glowBlur !== b.glowBlur ||
-      a.blueColor !== b.blueColor ||
-      a.redColor !== b.redColor ||
+      a.leftColor !== b.leftColor ||
+      a.rightColor !== b.rightColor ||
       a.minOpacity !== b.minOpacity ||
       a.maxOpacity !== b.maxOpacity ||
       a.trackingMode !== b.trackingMode ||

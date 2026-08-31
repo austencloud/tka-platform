@@ -6,10 +6,10 @@
   import type { DetectedPosition } from "$lib/shared/train/domain/detection-frame";
 
   interface Props {
-    bluePosition: DetectedPosition | null;
-    redPosition: DetectedPosition | null;
-    expectedBlue: GridLocation | null;
-    expectedRed: GridLocation | null;
+    leftPosition: DetectedPosition | null;
+    rightPosition: DetectedPosition | null;
+    expectedLeft: GridLocation | null;
+    expectedRight: GridLocation | null;
     showExpected?: boolean;
     bpm?: number;
     isPerforming?: boolean;
@@ -18,10 +18,10 @@
   }
 
   let {
-    bluePosition = null,
-    redPosition = null,
-    expectedBlue = null,
-    expectedRed = null,
+    leftPosition = null,
+    rightPosition = null,
+    expectedLeft = null,
+    expectedRight = null,
     showExpected = true,
     bpm = 60,
     isPerforming = false,
@@ -65,21 +65,21 @@
   const ANIMATION_RADIUS = 143.1; // Distance from center (475) to hand points
 
   // Animation state for expected position indicators
-  let animatedBluePos = $state<{ x: number; y: number } | null>(null);
-  let animatedRedPos = $state<{ x: number; y: number } | null>(null);
+  let animatedLeftPos = $state<{ x: number; y: number } | null>(null);
+  let animatedRightPos = $state<{ x: number; y: number } | null>(null);
 
   // Animation tracking
-  let blueAnimTarget: GridLocation | null = null;
-  let blueAnimStartAngle: number = 0;
-  let blueAnimTargetAngle: number = 0;
-  let blueAnimStartTime: number = 0;
-  let blueCurrentAngle: number = 0; // Track current angle for continuity
+  let leftAnimTarget: GridLocation | null = null;
+  let leftAnimStartAngle: number = 0;
+  let leftAnimTargetAngle: number = 0;
+  let leftAnimStartTime: number = 0;
+  let leftCurrentAngle: number = 0; // Track current angle for continuity
 
-  let redAnimTarget: GridLocation | null = null;
-  let redAnimStartAngle: number = 0;
-  let redAnimTargetAngle: number = 0;
-  let redAnimStartTime: number = 0;
-  let redCurrentAngle: number = 0; // Track current angle for continuity
+  let rightAnimTarget: GridLocation | null = null;
+  let rightAnimStartAngle: number = 0;
+  let rightAnimTargetAngle: number = 0;
+  let rightAnimStartTime: number = 0;
+  let rightCurrentAngle: number = 0; // Track current angle for continuity
 
   let animationFrameId: number | null = null;
 
@@ -119,41 +119,41 @@
       const duration = getAnimationDuration();
       let stillAnimating = false;
 
-      // Animate blue position
-      if (blueAnimTarget !== null) {
-        const elapsed = now - blueAnimStartTime;
+      // Animate the left-hand position
+      if (leftAnimTarget !== null) {
+        const elapsed = now - leftAnimStartTime;
         const progress = Math.min(elapsed / duration, 1.0);
 
         // Linear interpolation for consistent motion during performance
         const delta = shortestAngleDelta(
-          blueAnimStartAngle,
-          blueAnimTargetAngle
+          leftAnimStartAngle,
+          leftAnimTargetAngle
         );
-        blueCurrentAngle = blueAnimStartAngle + delta * progress;
-        animatedBluePos = angleToCoords(blueCurrentAngle);
+        leftCurrentAngle = leftAnimStartAngle + delta * progress;
+        animatedLeftPos = angleToCoords(leftCurrentAngle);
 
         if (progress >= 1.0) {
-          blueCurrentAngle = blueAnimTargetAngle;
-          animatedBluePos = locationCoords[blueAnimTarget];
-          blueAnimTarget = null;
+          leftCurrentAngle = leftAnimTargetAngle;
+          animatedLeftPos = locationCoords[leftAnimTarget];
+          leftAnimTarget = null;
         } else {
           stillAnimating = true;
         }
       }
 
-      // Animate red position
-      if (redAnimTarget !== null) {
-        const elapsed = now - redAnimStartTime;
+      // Animate the right-hand position
+      if (rightAnimTarget !== null) {
+        const elapsed = now - rightAnimStartTime;
         const progress = Math.min(elapsed / duration, 1.0);
 
-        const delta = shortestAngleDelta(redAnimStartAngle, redAnimTargetAngle);
-        redCurrentAngle = redAnimStartAngle + delta * progress;
-        animatedRedPos = angleToCoords(redCurrentAngle);
+        const delta = shortestAngleDelta(rightAnimStartAngle, rightAnimTargetAngle);
+        rightCurrentAngle = rightAnimStartAngle + delta * progress;
+        animatedRightPos = angleToCoords(rightCurrentAngle);
 
         if (progress >= 1.0) {
-          redCurrentAngle = redAnimTargetAngle;
-          animatedRedPos = locationCoords[redAnimTarget];
-          redAnimTarget = null;
+          rightCurrentAngle = rightAnimTargetAngle;
+          animatedRightPos = locationCoords[rightAnimTarget];
+          rightAnimTarget = null;
         } else {
           stillAnimating = true;
         }
@@ -170,58 +170,58 @@
   }
 
   // Track last expected positions to detect changes
-  let lastExpectedBlue: GridLocation | null = null;
-  let lastExpectedRed: GridLocation | null = null;
+  let lastExpectedLeft: GridLocation | null = null;
+  let lastExpectedRight: GridLocation | null = null;
 
-  // Detect blue position changes and start animation
+  // Detect left-hand position changes and start animation
   $effect(() => {
-    const target = expectedBlue;
+    const target = expectedLeft;
 
-    if (target !== lastExpectedBlue) {
+    if (target !== lastExpectedLeft) {
       if (target !== null) {
         // Use tracked current angle, or initialize from last/target position
-        if (lastExpectedBlue === null) {
+        if (lastExpectedLeft === null) {
           // First position - initialize current angle
-          blueCurrentAngle = locationAngles[target];
+          leftCurrentAngle = locationAngles[target];
         }
 
-        blueAnimStartAngle = blueCurrentAngle;
-        blueAnimTargetAngle = locationAngles[target];
-        blueAnimStartTime = performance.now();
-        blueAnimTarget = target;
+        leftAnimStartAngle = leftCurrentAngle;
+        leftAnimTargetAngle = locationAngles[target];
+        leftAnimStartTime = performance.now();
+        leftAnimTarget = target;
 
         startAnimationLoop();
       } else {
-        animatedBluePos = null;
-        blueAnimTarget = null;
+        animatedLeftPos = null;
+        leftAnimTarget = null;
       }
-      lastExpectedBlue = target;
+      lastExpectedLeft = target;
     }
   });
 
-  // Detect red position changes and start animation
+  // Detect right-hand position changes and start animation
   $effect(() => {
-    const target = expectedRed;
+    const target = expectedRight;
 
-    if (target !== lastExpectedRed) {
+    if (target !== lastExpectedRight) {
       if (target !== null) {
         // Use tracked current angle, or initialize from last/target position
-        if (lastExpectedRed === null) {
+        if (lastExpectedRight === null) {
           // First position - initialize current angle
-          redCurrentAngle = locationAngles[target];
+          rightCurrentAngle = locationAngles[target];
         }
 
-        redAnimStartAngle = redCurrentAngle;
-        redAnimTargetAngle = locationAngles[target];
-        redAnimStartTime = performance.now();
-        redAnimTarget = target;
+        rightAnimStartAngle = rightCurrentAngle;
+        rightAnimTargetAngle = locationAngles[target];
+        rightAnimStartTime = performance.now();
+        rightAnimTarget = target;
 
         startAnimationLoop();
       } else {
-        animatedRedPos = null;
-        redAnimTarget = null;
+        animatedRightPos = null;
+        rightAnimTarget = null;
       }
-      lastExpectedRed = target;
+      lastExpectedRight = target;
     }
   });
 
@@ -263,14 +263,14 @@
   }
 
   // Derived correctness states
-  const blueCorrect = $derived(
-    bluePosition && expectedBlue
-      ? isCorrect(bluePosition.quadrant, expectedBlue)
+  const leftCorrect = $derived(
+    leftPosition && expectedLeft
+      ? isCorrect(leftPosition.quadrant, expectedLeft)
       : null
   );
-  const redCorrect = $derived(
-    redPosition && expectedRed
-      ? isCorrect(redPosition.quadrant, expectedRed)
+  const rightCorrect = $derived(
+    rightPosition && expectedRight
+      ? isCorrect(rightPosition.quadrant, expectedRight)
       : null
   );
 </script>
@@ -283,10 +283,10 @@
   <!-- Debug overlay - matches camera coordinates exactly (0-100%) -->
   <svg class="debug-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
     <!-- Detected blue hand (left hand) debug landmarks -->
-    {#if bluePosition?.debug}
-      {@const wrist = bluePosition.debug.wrist}
-      {@const finger = bluePosition.debug.middleFingerTip}
-      {@const palm = bluePosition.debug.palmCenter}
+    {#if leftPosition?.debug}
+      {@const wrist = leftPosition.debug.wrist}
+      {@const finger = leftPosition.debug.middleFingerTip}
+      {@const palm = leftPosition.debug.palmCenter}
 
       <!-- Line connecting wrist to finger base -->
       <line
@@ -356,10 +356,10 @@
     {/if}
 
     <!-- Detected red hand (right hand) debug landmarks -->
-    {#if redPosition?.debug}
-      {@const wrist = redPosition.debug.wrist}
-      {@const finger = redPosition.debug.middleFingerTip}
-      {@const palm = redPosition.debug.palmCenter}
+    {#if rightPosition?.debug}
+      {@const wrist = rightPosition.debug.wrist}
+      {@const finger = rightPosition.debug.middleFingerTip}
+      {@const palm = rightPosition.debug.palmCenter}
 
       <!-- Line connecting wrist to finger base -->
       <line
@@ -441,53 +441,53 @@
 
     <!-- Expected position indicators (dashed circles) - animated -->
     {#if showExpected}
-      {#if animatedBluePos}
+      {#if animatedLeftPos}
         {@const strokeColor =
-          blueCorrect === true
+          leftCorrect === true
             ? "var(--semantic-success)"
-            : blueCorrect === false
+            : leftCorrect === false
               ? "var(--semantic-error)"
               : "var(--semantic-info)"}
         {@const fillColor =
-          blueCorrect === true ? "rgba(34, 197, 94, 0.2)" : "none"}
+          leftCorrect === true ? "rgba(34, 197, 94, 0.2)" : "none"}
         <circle
-          cx={animatedBluePos.x}
-          cy={animatedBluePos.y}
+          cx={animatedLeftPos.x}
+          cy={animatedLeftPos.y}
           r="40"
           fill={fillColor}
           stroke={strokeColor}
           stroke-width="4"
-          stroke-dasharray={blueCorrect === true ? "0" : "20,10"}
-          opacity={blueCorrect === true ? "1.0" : "0.7"}
+          stroke-dasharray={leftCorrect === true ? "0" : "20,10"}
+          opacity={leftCorrect === true ? "1.0" : "0.7"}
           class="expected-indicator"
         />
       {/if}
-      {#if animatedRedPos}
+      {#if animatedRightPos}
         {@const strokeColor =
-          redCorrect === true
+          rightCorrect === true
             ? "var(--semantic-success)"
-            : redCorrect === false
+            : rightCorrect === false
               ? "var(--semantic-error)"
               : "var(--semantic-error)"}
         {@const fillColor =
-          redCorrect === true ? "rgba(34, 197, 94, 0.2)" : "none"}
+          rightCorrect === true ? "rgba(34, 197, 94, 0.2)" : "none"}
         <circle
-          cx={animatedRedPos.x}
-          cy={animatedRedPos.y}
+          cx={animatedRightPos.x}
+          cy={animatedRightPos.y}
           r="40"
           fill={fillColor}
           stroke={strokeColor}
           stroke-width="4"
-          stroke-dasharray={redCorrect === true ? "0" : "20,10"}
-          opacity={redCorrect === true ? "1.0" : "0.7"}
+          stroke-dasharray={rightCorrect === true ? "0" : "20,10"}
+          opacity={rightCorrect === true ? "1.0" : "0.7"}
           class="expected-indicator"
         />
       {/if}
     {/if}
 
     <!-- Detected blue hand - Quadrant indicator at the hand point -->
-    {#if bluePosition}
-      {@const quadrantPos = locationCoords[bluePosition.quadrant]}
+    {#if leftPosition}
+      {@const quadrantPos = locationCoords[leftPosition.quadrant]}
       <circle
         cx={quadrantPos.x}
         cy={quadrantPos.y}
@@ -510,8 +510,8 @@
     {/if}
 
     <!-- Detected red hand - Quadrant indicator at the hand point -->
-    {#if redPosition}
-      {@const quadrantPos = locationCoords[redPosition.quadrant]}
+    {#if rightPosition}
+      {@const quadrantPos = locationCoords[rightPosition.quadrant]}
       <circle
         cx={quadrantPos.x}
         cy={quadrantPos.y}

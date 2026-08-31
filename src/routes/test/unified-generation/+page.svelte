@@ -110,8 +110,8 @@
   // Grid mode lives here too, so the standalone Grid toggle tile is gone.
   let showPosOri = $state(false);
   let posGridMode = $state<GridMode>(GridMode.DIAMOND);
-  let posBlueOri = $state<Orientation>(Orientation.IN);
-  let posRedOri = $state<Orientation>(Orientation.IN);
+  let posLeftOri = $state<Orientation>(Orientation.IN);
+  let posRightOri = $state<Orientation>(Orientation.IN);
   let posShowAll = $state(false); // false = Classic 3, true = all 16 variations
   let selectedPositions = $state<Set<string>>(new Set());
   const oriShort = (o: Orientation): string =>
@@ -119,8 +119,8 @@
 
   const posList = $derived<PictographData[]>(
     posShowAll
-      ? startPositionManager.getAllStartPositionVariations(posGridMode, posBlueOri, posRedOri)
-      : startPositionManager.getDefaultStartPositions(posGridMode, posBlueOri, posRedOri),
+      ? startPositionManager.getAllStartPositionVariations(posGridMode, posLeftOri, posRightOri)
+      : startPositionManager.getDefaultStartPositions(posGridMode, posLeftOri, posRightOri),
   );
   function togglePosition(id: string) {
     const next = new Set(selectedPositions);
@@ -132,7 +132,7 @@
   function pickClassic3() {
     posShowAll = false;
     selectedPositions = new Set(
-      startPositionManager.getDefaultStartPositions(posGridMode, posBlueOri, posRedOri).map((p) => p.id),
+      startPositionManager.getDefaultStartPositions(posGridMode, posLeftOri, posRightOri).map((p) => p.id),
     );
   }
 
@@ -159,7 +159,7 @@
   const periodLabel = $derived(period === "quartered" ? "Quartered" : "Halved");
   const gridLabel = $derived(posGridMode === GridMode.DIAMOND ? "Diamond" : "Box");
   const posOriSummary = $derived.by(() => {
-    const ori = posBlueOri === posRedOri ? oriShort(posBlueOri) : `${oriShort(posBlueOri)}/${oriShort(posRedOri)}`;
+    const ori = posLeftOri === posRightOri ? oriShort(posLeftOri) : `${oriShort(posLeftOri)}/${oriShort(posRightOri)}`;
     const n = selectedPositions.size;
     const posPart = n === 0 ? "Any pos" : `${n} pos`;
     return `${posPart} · ${gridLabel} · ${ori}`;
@@ -172,7 +172,7 @@
       loopType, stepCount, level, period, prop: propType,
       grid: posGridMode === GridMode.DIAMOND ? "diamond" : "box",
       startPositions: selectedPositions.size === 0 ? "any" : Array.from(selectedPositions),
-      blueOrientation: posBlueOri, redOrientation: posRedOri,
+      leftOrientation: posLeftOri, rightOrientation: posRightOri,
       propReversals: propRev, handReversals: handRev, dashes,
       ...(level > 1 ? { turnIntensity } : {}),
     },
@@ -384,8 +384,8 @@
 
         <!-- Per-hand orientation -->
         <div class="pos-ori-row">
-          <OrientationCycler orientation={posBlueOri} onOrientationChange={(o: Orientation) => (posBlueOri = o)} color="blue" />
-          <OrientationCycler orientation={posRedOri} onOrientationChange={(o: Orientation) => (posRedOri = o)} color="red" />
+          <OrientationCycler orientation={posLeftOri} onOrientationChange={(o: Orientation) => (posLeftOri = o)} color="blue" />
+          <OrientationCycler orientation={posRightOri} onOrientationChange={(o: Orientation) => (posRightOri = o)} color="red" />
         </div>
 
         <button class="po-done" onclick={() => (showPosOri = false)}>

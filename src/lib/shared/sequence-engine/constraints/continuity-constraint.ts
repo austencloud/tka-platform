@@ -22,26 +22,26 @@ export type ContinuityMode = "maximize" | "enforce" | "allow";
 function calculateContinuityScore(
   prev: ConstraintPictographData,
   current: ConstraintPictographData
-): { blueScore: number; redScore: number } {
-  const blueReversal = isReversal(
-    prev.blueMotion.rotationDirection,
-    current.blueMotion.rotationDirection
+): { leftScore: number; rightScore: number } {
+  const leftReversal = isReversal(
+    prev.leftMotion.rotationDirection,
+    current.leftMotion.rotationDirection
   );
-  const redReversal = isReversal(
-    prev.redMotion.rotationDirection,
-    current.redMotion.rotationDirection
+  const rightReversal = isReversal(
+    prev.rightMotion.rotationDirection,
+    current.rightMotion.rotationDirection
   );
 
-  const blueStatic =
-    prev.blueMotion.motionType === "static" ||
-    current.blueMotion.motionType === "static";
-  const redStatic =
-    prev.redMotion.motionType === "static" ||
-    current.redMotion.motionType === "static";
+  const leftStatic =
+    prev.leftMotion.motionType === "static" ||
+    current.leftMotion.motionType === "static";
+  const rightStatic =
+    prev.rightMotion.motionType === "static" ||
+    current.rightMotion.motionType === "static";
 
   return {
-    blueScore: blueStatic ? 0.5 : blueReversal ? 0 : 1,
-    redScore: redStatic ? 0.5 : redReversal ? 0 : 1,
+    leftScore: leftStatic ? 0.5 : leftReversal ? 0 : 1,
+    rightScore: rightStatic ? 0.5 : rightReversal ? 0 : 1,
   };
 }
 
@@ -97,25 +97,25 @@ export class ContinuityConstraint implements IVariationConstraint {
       };
     }
 
-    const { blueScore, redScore } = calculateContinuityScore(
+    const { leftScore, rightScore } = calculateContinuityScore(
       previousStep,
       context.candidate
     );
 
-    const avgScore = (blueScore + redScore) / 2;
+    const avgScore = (leftScore + rightScore) / 2;
 
     const satisfied =
       this.continuityMode !== "enforce" ||
-      (blueScore === 1 && redScore === 1);
+      (leftScore === 1 && rightScore === 1);
 
     let reason: string;
     if (avgScore === 1) {
       reason = "Continuous (no reversals)";
     } else if (avgScore === 0) {
       reason = "Both hands reversed";
-    } else if (blueScore < 1 && redScore === 1) {
+    } else if (leftScore < 1 && rightScore === 1) {
       reason = "Blue hand reversal";
-    } else if (redScore < 1 && blueScore === 1) {
+    } else if (rightScore < 1 && leftScore === 1) {
       reason = "Red hand reversal";
     } else {
       reason = "Partial continuity";

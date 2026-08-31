@@ -101,15 +101,15 @@ function repairMotion(motion) {
 /** Returns a repaired copy of a step-shaped record, or null when clean. */
 function repairStepShape(step) {
   if (!step || typeof step !== "object" || !step.motions) return null;
-  const blue = repairMotion(step.motions.blue);
-  const red = repairMotion(step.motions.red);
-  if (!blue && !red) return null;
+  const left = repairMotion(step.motions.left);
+  const right = repairMotion(step.motions.right);
+  if (!left && !right) return null;
   return {
     ...step,
     motions: {
       ...step.motions,
-      ...(blue && { blue }),
-      ...(red && { red }),
+      ...(left && { left }),
+      ...(right && { right }),
     },
   };
 }

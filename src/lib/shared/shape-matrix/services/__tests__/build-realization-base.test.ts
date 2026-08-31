@@ -20,12 +20,12 @@ vi.mock("$lib/shared/auth/firebase", () => ({
 import { buildBaseIndex, resolveBase } from "../build-realization-sequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
-const seq = (word: string, blue: string, red: string): SequenceData =>
+const seq = (word: string, left: string, right: string): SequenceData =>
   ({
     id: `l1-tnd-${word}`,
     word,
     steps: [
-      { motions: { blue: { motionType: blue }, red: { motionType: red } } },
+      { motions: { left: { motionType: left }, right: { motionType: right } } },
     ],
   }) as unknown as SequenceData;
 
@@ -67,16 +67,16 @@ describe("buildBaseIndex / resolveBase", () => {
     // The color-swapped twin keeps blue on blue's style.
     const r = resolveBase(idx, "TO", "pro", "anti");
     expect(r?.word).toBe("FLFL");
-    expect(r?.steps?.[0]?.motions?.blue?.motionType).toBe("pro");
-    expect(r?.steps?.[0]?.motions?.red?.motionType).toBe("anti");
+    expect(r?.steps?.[0]?.motions?.left?.motionType).toBe("pro");
+    expect(r?.steps?.[0]?.motions?.right?.motionType).toBe("anti");
   });
 
   it("resolves an anti×pro cell whose mode seeds only the pro×anti order", () => {
     const idx = buildBaseIndex(bases);
     const r = resolveBase(idx, "SS", "anti", "pro");
     expect(r?.word).toBe("CCCC");
-    expect(r?.steps?.[0]?.motions?.blue?.motionType).toBe("anti");
-    expect(r?.steps?.[0]?.motions?.red?.motionType).toBe("pro");
+    expect(r?.steps?.[0]?.motions?.left?.motionType).toBe("anti");
+    expect(r?.steps?.[0]?.motions?.right?.motionType).toBe("pro");
   });
 
   it("prefers a seeded word over a synthesized swap when both orders exist", () => {
@@ -86,9 +86,9 @@ describe("buildBaseIndex / resolveBase", () => {
     const proAnti = resolveBase(idx, "QS", "pro", "anti");
     const antiPro = resolveBase(idx, "QS", "anti", "pro");
     expect(proAnti?.word).toBe("UUUU");
-    expect(proAnti?.steps?.[0]?.motions?.blue?.motionType).toBe("pro");
+    expect(proAnti?.steps?.[0]?.motions?.left?.motionType).toBe("pro");
     expect(antiPro?.word).toBe("VVVV");
-    expect(antiPro?.steps?.[0]?.motions?.blue?.motionType).toBe("anti");
+    expect(antiPro?.steps?.[0]?.motions?.left?.motionType).toBe("anti");
   });
 
   it("returns null when a mode has no base word at all", () => {

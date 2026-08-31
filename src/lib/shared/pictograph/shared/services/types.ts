@@ -38,16 +38,16 @@ export interface PrepareOptions {
   /** Theme mode for color selection ("dark" or "light"). If not provided, uses global state. */
   themeMode?: ThemeMode;
   /**
-   * Explicit prop type for blue hand.
+   * Explicit prop type for the performer's left hand.
    * When provided, this value is used directly. When omitted, falls back to global settings.
    * Export/thumbnail rendering always provides this to ensure consistency during async operations.
    */
-  bluePropType?: PropType;
+  leftPropType?: PropType;
   /**
-   * Explicit prop type for red hand.
+   * Explicit prop type for the performer's right hand.
    * When provided, this value is used directly. When omitted, falls back to global settings.
    */
-  redPropType?: PropType;
+  rightPropType?: PropType;
   /**
    * Load grid-centered prop SVGs (from props/animated/) instead of pictograph versions (from props/).
    * Grid versions use the ghost-half centering strategy - designed for the animation canvas.
@@ -61,24 +61,23 @@ export interface PrepareOptions {
    *  pro/anti → float, propType → HAND, orientation → null. */
   handPathMode?: boolean;
 
-  /** When false, the blue prop is hidden at render time - suppresses beta offset
-   *  for the red prop since there is no collision partner to avoid. Undefined/true
+  /** When false, the left prop is hidden at render time - suppresses beta offset
+   *  for the right prop since there is no collision partner to avoid. Undefined/true
    *  means visible (both props rendered, full beta offset applied). */
-  showBlueMotion?: boolean;
-  /** When false, the red prop is hidden at render time - suppresses beta offset
-   *  for the blue prop. Undefined/true means visible. */
-  showRedMotion?: boolean;
+  showLeftMotion?: boolean;
+  /** When false, the right prop is hidden at render time - suppresses beta offset
+   *  for the left prop. Undefined/true means visible. */
+  showRightMotion?: boolean;
 
   /**
-   * Chirality of the blue buugeng-family prop (buugeng / bigbuugeng / trigeng).
+   * Chirality of the left buugeng-family prop (buugeng / bigbuugeng / trigeng).
    * True = the SVG is mirrored (scaleX(-1)) at render time.
    * Beta offset reads this: two buugeng of OPPOSITE chirality nest into an
    * infinity symbol and must stay on the same hand point, so they get no
    * separation offset. Same chirality does not nest, so the two ends are only
    * legible when the props are separated.
    */
-  blueBuugengFlipped?: boolean;
-  /** Chirality of the red buugeng-family prop. See blueBuugengFlipped. */
-  redBuugengFlipped?: boolean;
+  leftBuugengFlipped?: boolean;
+  /** Chirality of the right buugeng-family prop. See leftBuugengFlipped. */
+  rightBuugengFlipped?: boolean;
 }
-

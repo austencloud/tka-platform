@@ -41,12 +41,12 @@ interface RawDoc {
   loopType?: string | null;
   isCircular?: boolean;
   isForked?: boolean;
-  blueSoloProp?: { steps: unknown[] };
-  redSoloProp?: { steps: unknown[] };
+  leftSoloProp?: { steps: unknown[] };
+  rightSoloProp?: { steps: unknown[] };
   stepPairings?: Array<{
     letter: string | null;
-    blueReversal?: boolean;
-    redReversal?: boolean;
+    leftReversal?: boolean;
+    rightReversal?: boolean;
   }>;
 }
 
@@ -60,8 +60,8 @@ function loadCorpus(): RawDoc[] {
   };
   return parsed.documents.filter(
     (d) =>
-      d.blueSoloProp?.steps?.length &&
-      d.redSoloProp?.steps?.length &&
+      d.leftSoloProp?.steps?.length &&
+      d.rightSoloProp?.steps?.length &&
       d.stepPairings?.length
   );
 }
@@ -85,7 +85,7 @@ describe("reversal-derivation parity (diagnostic over the public corpus)", () =>
       const pairings = doc.stepPairings!;
       const isLoop = !!doc.loopType;
       const hasStoredFlag = pairings.some(
-        (p) => p.blueReversal || p.redReversal
+        (p) => p.leftReversal || p.rightReversal
       );
       if (hasStoredFlag) seqWithStoredFlags++;
 
@@ -93,8 +93,8 @@ describe("reversal-derivation parity (diagnostic over the public corpus)", () =>
       try {
         // deriveSteps composes the per-step StepData exactly as hydrate() does.
         derived = deriveSteps(
-          doc.blueSoloProp as never,
-          doc.redSoloProp as never,
+          doc.leftSoloProp as never,
+          doc.rightSoloProp as never,
           pairings as never
         );
       } catch {
@@ -121,11 +121,11 @@ describe("reversal-derivation parity (diagnostic over the public corpus)", () =>
 
       let thisDiffers = false;
       for (let i = 0; i < pairings.length; i++) {
-        const storedB = !!pairings[i].blueReversal;
-        const storedR = !!pairings[i].redReversal;
-        const step = processed.steps[i] as { blueReversal?: boolean; redReversal?: boolean };
-        const derB = !!step?.blueReversal;
-        const derR = !!step?.redReversal;
+        const storedB = !!pairings[i].leftReversal;
+        const storedR = !!pairings[i].rightReversal;
+        const step = processed.steps[i] as { leftReversal?: boolean; rightReversal?: boolean };
+        const derB = !!step?.leftReversal;
+        const derR = !!step?.rightReversal;
         stepTotal++;
         if (derB !== storedB || derR !== storedR) {
           stepDiffer++;

@@ -2,7 +2,7 @@ import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -30,7 +30,7 @@ type M = { t: "pro" | "anti" | "static"; from: GridLocation; to: GridLocation; r
 const m = (t: M["t"], from: GridLocation, to: GridLocation, rot: RotationDirection, so: Orientation, eo: Orientation): M =>
   ({ t, from, to, rot, so, eo });
 
-const motionOf = (color: MotionColor, x: M) =>
+const motionOf = (color: HandSide, x: M) =>
   createMotionData({
     motionType: x.t === "pro" ? MotionType.PRO : x.t === "anti" ? MotionType.ANTI : MotionType.STATIC,
     rotationDirection: x.t === "static" ? NOROT : x.rot,
@@ -39,7 +39,7 @@ const motionOf = (color: MotionColor, x: M) =>
     startOrientation: x.so,
     endOrientation: x.eo,
     turns: 0,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
@@ -65,29 +65,29 @@ const STRIPS: StripDef[] = [
 
 const stepData = (s: StripDef, i: number): StepData => {
   const isRed = s.color === "red";
-  const live = motionOf(isRed ? MotionColor.RED : MotionColor.BLUE, s.steps[i]!);
-  const ghost = createPlaceholderMotion(isRed ? MotionColor.BLUE : MotionColor.RED, { location: SO_, orientation: IN });
+  const live = motionOf(isRed ? HandSide.RIGHT : HandSide.LEFT, s.steps[i]!);
+  const ghost = createPlaceholderMotion(isRed ? HandSide.LEFT : HandSide.RIGHT, { location: SO_, orientation: IN });
   return {
     id: `${s.key}-${i + 1}`,
     letter: null,
     gridMode: GridMode.DIAMOND,
     stepNumber: i + 1,
-    blueReversal: !isRed && s.revStep === i + 1,
-    redReversal: isRed && s.revStep === i + 1,
-    motions: { blue: isRed ? ghost : live, red: isRed ? live : ghost },
+    leftReversal: !isRed && s.revStep === i + 1,
+    rightReversal: isRed && s.revStep === i + 1,
+    motions: { left: isRed ? ghost : live, right: isRed ? live : ghost },
   } as unknown as StepData;
 };
 
 const startBox = (s: StripDef): StepData => {
   const isRed = s.color === "red";
-  const live = motionOf(isRed ? MotionColor.RED : MotionColor.BLUE, m("static", N, N, NOROT, IN, IN));
-  const ghost = createPlaceholderMotion(isRed ? MotionColor.BLUE : MotionColor.RED, { location: SO_, orientation: IN });
+  const live = motionOf(isRed ? HandSide.RIGHT : HandSide.LEFT, m("static", N, N, NOROT, IN, IN));
+  const ghost = createPlaceholderMotion(isRed ? HandSide.LEFT : HandSide.RIGHT, { location: SO_, orientation: IN });
   return {
     id: `${s.key}-0`,
     letter: null,
     gridMode: GridMode.DIAMOND,
     stepNumber: 0,
-    motions: { blue: isRed ? ghost : live, red: isRed ? live : ghost },
+    motions: { left: isRed ? ghost : live, right: isRed ? live : ghost },
   } as unknown as StepData;
 };
 

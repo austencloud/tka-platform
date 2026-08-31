@@ -189,8 +189,8 @@
 	let centerY = $state(0);
 	let radiusPx = $state(0);
 	// Per-staff LED colors (sampled from the video). Defaults are placeholders.
-	let blueColor = $state<ColorTarget>({ r: 0, g: 0, b: 255, tolerance: 60 });
-	let redColor = $state<ColorTarget>({ r: 255, g: 0, b: 0, tolerance: 60 });
+	let leftColor = $state<ColorTarget>({ r: 0, g: 0, b: 255, tolerance: 60 });
+	let rightColor = $state<ColorTarget>({ r: 255, g: 0, b: 0, tolerance: 60 });
 	// Click mode for sampling: null | 'center' | 'radius' | 'blue' | 'red'.
 	let calibMode = $state<null | 'center' | 'radius' | 'blue' | 'red'>(null);
 
@@ -273,8 +273,8 @@
 				extractionCtx.drawImage(videoElement, 0, 0);
 				const d = extractionCtx.getImageData(px, py, 1, 1).data;
 				const c: ColorTarget = { r: d[0]!, g: d[1]!, b: d[2]!, tolerance: 60 };
-				if (calibMode === 'blue') blueColor = c;
-				else redColor = c;
+				if (calibMode === 'blue') leftColor = c;
+				else rightColor = c;
 			}
 		}
 		calibMode = null;
@@ -287,17 +287,17 @@
 		notationBeats = [];
 
 		const cal = new ScreenToGrid({ x: centerX, y: centerY }, radiusPx);
-		const blueTracker = new ColorEndTracker();
-		const redTracker = new ColorEndTracker();
+		const leftTracker = new ColorEndTracker();
+		const rightTracker = new ColorEndTracker();
 
-		const blueFrames: StaffPose3D[] = [];
-		const redFrames: StaffPose3D[] = [];
-		const blueConf: number[] = [];
-		const redConf: number[] = [];
-		const blueDetail: TrackConfidence[] = [];
-		const redDetail: TrackConfidence[] = [];
-		let lastBlue: StaffPose3D | null = null;
-		let lastRed: StaffPose3D | null = null;
+		const leftFrames = [];
+		const rightFrames = [];
+		const leftConf = [];
+		const rightConf = [];
+		const leftDetail = [];
+		const rightDetail = [];
+		let lastLeft = null;
+		let lastRight = null;
 
 		const total = Math.floor((videoDuration / 1000) * fps);
 		const dt = 1000 / fps;
@@ -324,58 +324,58 @@
 				const bPair = swapStaffs ? result.pairs[1] : result.pairs[0];
 				const rPair = swapStaffs ? result.pairs[0] : result.pairs[1];
 				if (bPair) {
-					lastBlue = endpointPairToPose(bPair, cal);
-					blueConf.push(bPair.confidence);
-					blueDetail.push(bPair.detail);
+					lastLeft = endpointPairToPose(bPair, cal);
+					leftConf.push(bPair.confidence);
+					leftDetail.push(bPair.detail);
 				} else {
-					blueConf.push(0);
-					blueDetail.push(zeroTrackConfidence());
+					leftConf.push(0);
+					leftDetail.push(zeroTrackConfidence());
 				}
-				if (lastBlue) blueFrames.push(lastBlue);
+				if (lastLeft) leftFrames.push(lastLeft);
 				if (rPair) {
-					lastRed = endpointPairToPose(rPair, cal);
-					redConf.push(rPair.confidence);
-					redDetail.push(rPair.detail);
+					lastRight = endpointPairToPose(rPair, cal);
+					rightConf.push(rPair.confidence);
+					rightDetail.push(rPair.detail);
 				} else {
-					redConf.push(0);
-					redDetail.push(zeroTrackConfidence());
+					rightConf.push(0);
+					rightDetail.push(zeroTrackConfidence());
 				}
-				if (lastRed) redFrames.push(lastRed);
+				if (lastRight) rightFrames.push(lastRight);
 				continue;
 			}
 
-			const bluePair = blueTracker.track(frame, blueColor);
-			if (bluePair) {
-				lastBlue = endpointPairToPose(bluePair, cal);
-				blueConf.push(bluePair.confidence);
-				blueDetail.push(bluePair.detail);
+			const leftPair = leftTracker.track(frame, leftColor);
+			if (leftPair) {
+				lastLeft = endpointPairToPose(leftPair, cal);
+				leftConf.push(leftPair.confidence);
+				leftDetail.push(leftPair.detail);
 			} else {
-				blueConf.push(0);
-				blueDetail.push(zeroTrackConfidence());
+				leftConf.push(0);
+				leftDetail.push(zeroTrackConfidence());
 			}
-			if (lastBlue) blueFrames.push(lastBlue);
+			if (lastLeft) leftFrames.push(lastLeft);
 
-			const redPair = redTracker.track(frame, redColor);
-			if (redPair) {
-				lastRed = endpointPairToPose(redPair, cal);
-				redConf.push(redPair.confidence);
-				redDetail.push(redPair.detail);
+			const rightPair = rightTracker.track(frame, rightColor);
+			if (rightPair) {
+				lastRight = endpointPairToPose(rightPair, cal);
+				rightConf.push(rightPair.confidence);
+				rightDetail.push(rightPair.detail);
 			} else {
-				redConf.push(0);
-				redDetail.push(zeroTrackConfidence());
+				rightConf.push(0);
+				rightDetail.push(zeroTrackConfidence());
 			}
-			if (lastRed) redFrames.push(lastRed);
+			if (lastRight) rightFrames.push(lastRight);
 		}
 
 		notationBeats = framesToNotation(
-			blueFrames,
-			redFrames,
-			blueConf,
-			redConf,
+			leftFrames,
+			rightFrames,
+			leftConf,
+			rightConf,
 			undefined,
 			undefined,
-			blueDetail,
-			redDetail,
+			leftDetail,
+			rightDetail,
 		);
 		isNotating = false;
 	}

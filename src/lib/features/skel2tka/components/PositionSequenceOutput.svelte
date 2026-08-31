@@ -64,7 +64,7 @@
 
             <div class="hand-positions">
               {#each beat.positions as pos}
-                <span class="hand-label" class:blue={pos.hand === "blue"} class:red={pos.hand === "red"}>
+                <span class="hand-label" class:blue={pos.hand === "left"} class:red={pos.hand === "right"}>
                   {pos.hand}: {pos.location.toUpperCase()}
                   <span class="confidence">({(pos.confidence * 100).toFixed(0)}%)</span>
                 </span>

@@ -23,13 +23,17 @@
   import type { GlobalAdjustmentKey } from "$lib/shared/pictograph/arrow/positioning/global/domain/global-arrow-adjustment";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { isEditableKeyboardTarget } from "$lib/shared/keyboard/domain/shortcut-target-resolution";
+  import {
+    HandSide,
+    type HandSide as HandSideValue,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   const logger = createComponentLogger("ArrowLayerModal");
 
   interface Props {
     open: boolean;
     stepData: StepData;
-    arrowColor: "blue" | "red";
+    arrowColor: HandSideValue;
   }
 
   let { open = $bindable(), stepData, arrowColor }: Props = $props();
@@ -80,16 +84,21 @@
   const thisPropType = $derived.by(() => {
     const settings = getSettings();
     const settingsPropType =
-      arrowColor === "blue" ? settings.bluePropType : settings.redPropType;
+      arrowColor === HandSide.LEFT
+        ? settings.leftPropType
+        : settings.rightPropType;
     const motion = stepData.motions?.[arrowColor];
     return (settingsPropType ?? motion?.propType)?.toLowerCase() || "staff";
   });
 
   const otherPropType = $derived.by(() => {
     const settings = getSettings();
-    const otherColor = arrowColor === "blue" ? "red" : "blue";
+    const otherColor =
+      arrowColor === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
     const settingsPropType =
-      otherColor === "blue" ? settings.bluePropType : settings.redPropType;
+      otherColor === HandSide.LEFT
+        ? settings.leftPropType
+        : settings.rightPropType;
     const otherMotion = stepData.motions?.[otherColor];
     return (
       (settingsPropType ?? otherMotion?.propType)?.toLowerCase() || "staff"
@@ -333,7 +342,7 @@
   }
 
   const modalTitle = $derived(
-    `Adjust ${arrowColor === "blue" ? "Blue" : "Red"} Arrow - ${stepData.letter || "Start"}`
+    `Adjust ${arrowColor === HandSide.LEFT ? "Left" : "Right"} Arrow - ${stepData.letter || "Start"}`
   );
 </script>
 

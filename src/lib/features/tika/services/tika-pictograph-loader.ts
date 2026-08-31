@@ -22,8 +22,8 @@ export interface PictographData {
   endPosition: string;
   timing: string;
   direction: string;
-  blueMotion: MotionData;
-  redMotion: MotionData;
+  leftMotion: MotionData;
+  rightMotion: MotionData;
 }
 export interface PictographDataWithMode extends PictographData {
   gridMode: "diamond" | "box";
@@ -40,8 +40,8 @@ export interface LetterTypeInfo {
   characteristics: string[];
   letters: string[];
   motionPattern: {
-    blueMotion: string;
-    redMotion: string;
+    leftMotion: string;
+    rightMotion: string;
     note?: string;
   };
 }
@@ -183,14 +183,14 @@ export class TikaPictographLoader {
           timing: row["timing"] ?? "",
           direction: row["direction"] ?? "",
           gridMode,
-          blueMotion: {
+          leftMotion: {
             color: "blue",
             startLocation: row["blueStartLocation"] ?? "",
             endLocation: row["blueEndLocation"] ?? "",
             motionType: row["blueMotionType"] ?? "",
             rotationDirection: row["blueRotationDirection"] ?? "",
           },
-          redMotion: {
+          rightMotion: {
             color: "red",
             startLocation: row["redStartLocation"] ?? "",
             endLocation: row["redEndLocation"] ?? "",

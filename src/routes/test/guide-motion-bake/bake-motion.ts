@@ -11,8 +11,8 @@ import { Canvas2DAnimationRenderer } from "$lib/shared/animation-engine/services
 import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/get-sequence-animation-orchestrator";
 import { getVideoExporter } from "$lib/shared/animation-engine/get-video-exporter";
 import {
-  generateBluePropSvg,
-  generateRedPropSvg,
+  generateLeftPropSvg,
+  generateRightPropSvg,
 } from "$lib/shared/animation-engine/services/svg-generator";
 import { DEFAULT_TRAIL_SETTINGS } from "$lib/shared/animation-engine/domain/types/trail-types";
 import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
@@ -75,17 +75,17 @@ export async function bakeGuideMotion(
     ]);
 
     // Prop dimensions come from the same SVG generator used by the live renderer.
-    const [bluePropData, redPropData] = await Promise.all([
-      generateBluePropSvg("hand", true),
-      generateRedPropSvg("hand", true),
+    const [leftPropData, rightPropData] = await Promise.all([
+      generateLeftPropSvg("hand", true),
+      generateRightPropSvg("hand", true),
     ]);
-    const bluePropDimensions = {
-      width: bluePropData.width,
-      height: bluePropData.height,
+    const leftPropDimensions = {
+      width: leftPropData.width,
+      height: leftPropData.height,
     };
-    const redPropDimensions = {
-      width: redPropData.width,
-      height: redPropData.height,
+    const rightPropDimensions = {
+      width: rightPropData.width,
+      height: rightPropData.height,
     };
 
     // ── Orchestrator ──────────────────────────────────────────────────────
@@ -153,16 +153,16 @@ export async function bakeGuideMotion(
       orchestrator.calculateStateDurationAware(timePosition);
 
       renderer.renderScene({
-        blueProp: orchestrator.getBluePropState(),
-        redProp: orchestrator.getRedPropState(),
+        leftProp: orchestrator.getLeftPropState(),
+        rightProp: orchestrator.getRightPropState(),
         gridVisible: true,
         gridMode: "diamond",
         letter: null,
         turnsTuple: null,
-        bluePropDimensions,
-        redPropDimensions,
-        blueTrailPoints: [],
-        redTrailPoints: [],
+        leftPropDimensions,
+        rightPropDimensions,
+        leftTrailPoints: [],
+        rightTrailPoints: [],
         trailSettings,
         // Baked frames must show fully-settled visibility, never a transitional
         // fade. The renderer's Canvas2DVisibilityFadeManager initializes visible
@@ -176,17 +176,17 @@ export async function bakeGuideMotion(
           gridVisible: true,
           propsVisible: true,
           trailsVisible: false,
-          blueMotionVisible: config.showBlue,
-          redMotionVisible: true,
+          leftMotionVisible: config.showBlue,
+          rightMotionVisible: true,
         },
         // Mirror the canonical FrameParameterBuilder: the red hand is the right
         // hand and is always anatomically mirrored; the blue (left) hand never is.
         // The live demo delegates this to the engine; the bake drives the renderer
         // directly, so it must replicate the flip here or the red hand renders unmirrored.
-        bluePropFlipped: false,
-        redPropFlipped: true,
-        bluePropType: "hand",
-        redPropType: "hand",
+        leftPropFlipped: false,
+        rightPropFlipped: true,
+        leftPropType: "hand",
+        rightPropType: "hand",
       });
 
       // Double rAF: let the canvas paint before the frame is captured.

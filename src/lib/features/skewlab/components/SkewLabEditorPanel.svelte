@@ -22,7 +22,7 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
-    MotionColor,
+    HandSide,
     MotionType,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -60,14 +60,14 @@
   });
 
   // Get prop types from settings
-  const bluePropType = $derived.by(() => {
+  const leftPropType = $derived.by(() => {
     const settings = getSettings();
-    return (settings.bluePropType ?? settings.propType ?? PropType.STAFF) as PropType;
+    return (settings.leftPropType ?? settings.propType ?? PropType.STAFF) as PropType;
   });
 
-  const redPropType = $derived.by(() => {
+  const rightPropType = $derived.by(() => {
     const settings = getSettings();
-    return (settings.redPropType ?? settings.propType ?? PropType.STAFF) as PropType;
+    return (settings.rightPropType ?? settings.propType ?? PropType.STAFF) as PropType;
   });
 
   // Convert PictographData to StepData format for ArrowAdjustmentPanel
@@ -82,53 +82,53 @@
   });
 
   // Motion data
-  const blueMotion = $derived(pictographData?.motions?.[MotionColor.BLUE]);
-  const redMotion = $derived(pictographData?.motions?.[MotionColor.RED]);
+  const leftMotion = $derived(pictographData?.motions?.[HandSide.LEFT]);
+  const rightMotion = $derived(pictographData?.motions?.[HandSide.RIGHT]);
 
   // Turns handling
   const normalizeTurns = (turns: number | string | undefined): number =>
     turns === "fl" ? -0.5 : Number(turns) || 0;
 
-  const currentBlueTurns = $derived(normalizeTurns(blueMotion?.turns));
-  const currentRedTurns = $derived(normalizeTurns(redMotion?.turns));
+  const currentLeftTurns = $derived(normalizeTurns(leftMotion?.turns));
+  const currentRightTurns = $derived(normalizeTurns(rightMotion?.turns));
 
-  const displayBlueTurns = $derived(
-    blueMotion?.turns === "fl" ? "fl" : currentBlueTurns
+  const displayLeftTurns = $derived(
+    leftMotion?.turns === "fl" ? "fl" : currentLeftTurns
   );
-  const displayRedTurns = $derived(
-    redMotion?.turns === "fl" ? "fl" : currentRedTurns
+  const displayRightTurns = $derived(
+    rightMotion?.turns === "fl" ? "fl" : currentRightTurns
   );
 
   // Rotation visibility
-  const showBlueRotation = $derived.by(() => {
-    if (currentBlueTurns < 0) return false;
+  const showLeftRotation = $derived.by(() => {
+    if (currentLeftTurns < 0) return false;
     if (
-      (blueMotion?.motionType === MotionType.STATIC ||
-        blueMotion?.motionType === MotionType.DASH) &&
-      currentBlueTurns === 0
+      (leftMotion?.motionType === MotionType.STATIC ||
+        leftMotion?.motionType === MotionType.DASH) &&
+      currentLeftTurns === 0
     ) {
       return false;
     }
     return true;
   });
 
-  const showRedRotation = $derived.by(() => {
-    if (currentRedTurns < 0) return false;
+  const showRightRotation = $derived.by(() => {
+    if (currentRightTurns < 0) return false;
     if (
-      (redMotion?.motionType === MotionType.STATIC ||
-        redMotion?.motionType === MotionType.DASH) &&
-      currentRedTurns === 0
+      (rightMotion?.motionType === MotionType.STATIC ||
+        rightMotion?.motionType === MotionType.DASH) &&
+      currentRightTurns === 0
     ) {
       return false;
     }
     return true;
   });
 
-  const blueRotation = $derived(
-    blueMotion?.rotationDirection ?? RotationDirection.NO_ROTATION
+  const leftRotation = $derived(
+    leftMotion?.rotationDirection ?? RotationDirection.NO_ROTATION
   );
-  const redRotation = $derived(
-    redMotion?.rotationDirection ?? RotationDirection.NO_ROTATION
+  const rightRotation = $derived(
+    rightMotion?.rotationDirection ?? RotationDirection.NO_ROTATION
   );
 
   // Position label
@@ -180,11 +180,11 @@
   });
 
   // Turns change handler (placeholder - skewed pictographs don't persist turns changes yet)
-  function handleTurnsChange(_color: MotionColor, _delta: number) {
+  function handleTurnsChange(_color: HandSide, _delta: number) {
     // TODO: Implement turns modification for skewed pictographs
   }
 
-  function handleRotationChange(_color: MotionColor, _direction: RotationDirection) {
+  function handleRotationChange(_color: HandSide, _direction: RotationDirection) {
     // TODO: Implement rotation modification for skewed pictographs
   }
 
@@ -262,8 +262,8 @@
           <PictographContainer
             {pictographData}
             gridMode={GridMode.SKEWED}
-            bluePropTypeOverride={bluePropType}
-            redPropTypeOverride={redPropType}
+            leftPropTypeOverride={leftPropType}
+            rightPropTypeOverride={rightPropType}
             arrowsClickable={isAdmin()}
             disableTransitions={true}
           />
@@ -288,12 +288,12 @@
       <div class="controls-section">
         <TurnsEditMode
           hasSelection={true}
-          blueTurns={displayBlueTurns}
-          redTurns={displayRedTurns}
-          {blueRotation}
-          {redRotation}
-          {showBlueRotation}
-          {showRedRotation}
+          leftTurns={displayLeftTurns}
+          rightTurns={displayRightTurns}
+          {leftRotation}
+          {rightRotation}
+          {showLeftRotation}
+          {showRightRotation}
           stacked={false}
           compact={true}
           onTurnsChange={handleTurnsChange}

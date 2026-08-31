@@ -64,17 +64,17 @@ function calculateCycleConfidence(
 }
 
 function calculateConfidence(
-  blueCycle: HandPathCycle | null,
-  redCycle: HandPathCycle | null
+  leftCycle: HandPathCycle | null,
+  rightCycle: HandPathCycle | null
 ): number {
-  if (!blueCycle && !redCycle) return 0;
+  if (!leftCycle && !rightCycle) return 0;
 
-  const blueConf = blueCycle?.confidence || 0;
-  const redConf = redCycle?.confidence || 0;
+  const leftConf = leftCycle?.confidence || 0;
+  const rightConf = rightCycle?.confidence || 0;
 
-  let confidence = (blueConf + redConf) / (blueCycle && redCycle ? 2 : 1);
+  let confidence = (leftConf + rightConf) / (leftCycle && rightCycle ? 2 : 1);
 
-  if (blueCycle && redCycle) {
+  if (leftCycle && rightCycle) {
     confidence += 0.1;
   }
 
@@ -82,8 +82,8 @@ function calculateConfidence(
 }
 
 function buildDescription(
-  blueCycle: HandPathCycle | null,
-  redCycle: HandPathCycle | null,
+  leftCycle: HandPathCycle | null,
+  rightCycle: HandPathCycle | null,
   rhythmType: "isorhythmic" | "polyrhythmic" | null,
   polyrhythmRatio: string | null,
   zoneCoverage: ZoneCoverageAnalysis | null
@@ -93,18 +93,18 @@ function buildDescription(
   if (rhythmType === "polyrhythmic" && polyrhythmRatio) {
     parts.push(`Polyrhythmic ${polyrhythmRatio}`);
   } else if (rhythmType === "isorhythmic") {
-    const cycleLen = blueCycle?.cycleLength || redCycle?.cycleLength;
+    const cycleLen = leftCycle?.cycleLength || rightCycle?.cycleLength;
     parts.push(`Isorhythmic (${cycleLen}:${cycleLen})`);
   }
 
-  if (blueCycle) {
+  if (leftCycle) {
     parts.push(
-      `Blue: ${blueCycle.cycleLength}-beat cycle × ${blueCycle.repeatCount}`
+      `Blue: ${leftCycle.cycleLength}-beat cycle × ${leftCycle.repeatCount}`
     );
   }
-  if (redCycle) {
+  if (rightCycle) {
     parts.push(
-      `Red: ${redCycle.cycleLength}-beat cycle × ${redCycle.repeatCount}`
+      `Red: ${rightCycle.cycleLength}-beat cycle × ${rightCycle.repeatCount}`
     );
   }
 
@@ -120,8 +120,8 @@ function buildDescription(
 function noLayeredPathResult(reason: string): LayeredPathResult {
   return {
     isLayeredPath: false,
-    blueCycle: null,
-    redCycle: null,
+    leftCycle: null,
+    rightCycle: null,
     rhythmType: null,
     polyrhythmRatio: null,
     zoneCoverage: null,
@@ -143,45 +143,45 @@ export function detectLayeredPath(rawSequence: Record<string, unknown>[]): Layer
     );
   }
 
-  const blueCycle = analyzeHandPath(rawSequence, "blue");
-  const redCycle = analyzeHandPath(rawSequence, "red");
+  const leftCycle = analyzeHandPath(rawSequence, "left");
+  const rightCycle = analyzeHandPath(rawSequence, "right");
 
-  if (!blueCycle && !redCycle) {
+  if (!leftCycle && !rightCycle) {
     return noLayeredPathResult("No hand path cycles detected");
   }
 
   let rhythmType: "isorhythmic" | "polyrhythmic" | null = null;
   let polyrhythmRatio: string | null = null;
 
-  if (blueCycle && redCycle) {
-    if (blueCycle.cycleLength === redCycle.cycleLength) {
+  if (leftCycle && rightCycle) {
+    if (leftCycle.cycleLength === rightCycle.cycleLength) {
       rhythmType = "isorhythmic";
     } else {
       rhythmType = "polyrhythmic";
-      const smaller = Math.min(blueCycle.cycleLength, redCycle.cycleLength);
-      const larger = Math.max(blueCycle.cycleLength, redCycle.cycleLength);
+      const smaller = Math.min(leftCycle.cycleLength, rightCycle.cycleLength);
+      const larger = Math.max(leftCycle.cycleLength, rightCycle.cycleLength);
       polyrhythmRatio = `${smaller}:${larger}`;
     }
-  } else if (blueCycle || redCycle) {
+  } else if (leftCycle || rightCycle) {
     rhythmType = "isorhythmic";
   }
 
   const zoneCoverage = analyzeZoneCoverage(rawSequence);
 
   const description = buildDescription(
-    blueCycle,
-    redCycle,
+    leftCycle,
+    rightCycle,
     rhythmType,
     polyrhythmRatio,
     zoneCoverage
   );
 
-  const confidence = calculateConfidence(blueCycle, redCycle);
+  const confidence = calculateConfidence(leftCycle, rightCycle);
 
   return {
     isLayeredPath: true,
-    blueCycle,
-    redCycle,
+    leftCycle,
+    rightCycle,
     rhythmType,
     polyrhythmRatio,
     zoneCoverage,
@@ -192,7 +192,7 @@ export function detectLayeredPath(rawSequence: Record<string, unknown>[]): Layer
 
 export function analyzeHandPath(
   rawSequence: Record<string, unknown>[],
-  hand: "blue" | "red"
+  hand: "left" | "right"
 ): HandPathCycle | null {
   const stepRecords = rawSequence.filter(
     (item) => typeof item.beat === "number" && item.beat > 0
@@ -200,7 +200,8 @@ export function analyzeHandPath(
 
   if (stepRecords.length < 4) return null;
 
-  const attrKey = hand === "blue" ? "blueAttributes" : "redAttributes";
+  // Raw labeler imports still use the historical attribute keys.
+  const attrKey = hand === "left" ? "blueAttributes" : "redAttributes";
 
   const pathData = stepRecords.map((step) => {
     const attrs = (step[attrKey] as Record<string, unknown>) || {};

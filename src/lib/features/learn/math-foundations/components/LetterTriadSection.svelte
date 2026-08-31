@@ -50,11 +50,11 @@
           <div class="motion-breakdown">
             <div class="motion blue">
               <span class="hand">Blue:</span>
-              <span class="type">{item.blueMotion}</span>
+              <span class="type">{item.leftMotion}</span>
             </div>
             <div class="motion red">
               <span class="hand">Red:</span>
-              <span class="type">{item.redMotion}</span>
+              <span class="type">{item.rightMotion}</span>
             </div>
           </div>
 

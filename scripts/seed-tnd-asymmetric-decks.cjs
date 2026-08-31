@@ -73,25 +73,25 @@ function turnsToRatioSlug(turns) {
 
 function buildAsymmetricVariants() {
   const variants = [];
-  for (const blueTurns of TURN_VALUES) {
-    for (const redTurns of TURN_VALUES) {
-      if (blueTurns === redTurns) continue; // symmetric already exists
-      if (ONLY_PAIR && (blueTurns !== ONLY_PAIR[0] || redTurns !== ONLY_PAIR[1])) continue;
+  for (const leftTurns of TURN_VALUES) {
+    for (const rightTurns of TURN_VALUES) {
+      if (leftTurns === rightTurns) continue; // symmetric already exists
+      if (ONLY_PAIR && (leftTurns !== ONLY_PAIR[0] || rightTurns !== ONLY_PAIR[1])) continue;
 
-      const blueRatio = turnsToRatio(blueTurns);
-      const redRatio = turnsToRatio(redTurns);
-      const blueSlug = turnsToRatioSlug(blueTurns);
-      const redSlug = turnsToRatioSlug(redTurns);
+      const leftRatio = turnsToRatio(leftTurns);
+      const rightRatio = turnsToRatio(rightTurns);
+      const leftSlug = turnsToRatioSlug(leftTurns);
+      const rightSlug = turnsToRatioSlug(rightTurns);
 
       variants.push({
-        blueTurns,
-        redTurns,
-        blueRatio,
-        redRatio,
-        pipeRatio: `${blueRatio}|${redRatio}`,
-        tkaPipe: `${blueTurns}|${redTurns}`,
-        deckId: `tnd-${blueSlug}v${redSlug}-motions`,
-        name: `TnD Motions (${blueRatio}|${redRatio})`,
+        leftTurns,
+        rightTurns,
+        leftRatio,
+        rightRatio,
+        pipeRatio: `${leftRatio}|${rightRatio}`,
+        tkaPipe: `${leftTurns}|${rightTurns}`,
+        deckId: `tnd-${leftSlug}v${rightSlug}-motions`,
+        name: `TnD Motions (${leftRatio}|${rightRatio})`,
       });
     }
   }
@@ -102,8 +102,8 @@ function buildAsymmetricVariants() {
 // ROTATION DIRECTION RESOLUTION (per-hand aware)
 // ============================================================================
 
-function resolveRotationDirectionsAsymmetric(steps, blueTurns, redTurns) {
-  for (const [color, turnVal] of [["blue", blueTurns], ["red", redTurns]]) {
+function resolveRotationDirectionsAsymmetric(steps, leftTurns, rightTurns) {
+  for (const [color, turnVal] of [["blue", leftTurns], ["red", rightTurns]]) {
     if (turnVal === 0) continue;
 
     const dirs = steps
@@ -135,50 +135,50 @@ function mostCommon(arr) {
 // ORIENTATION RECALCULATION (asymmetric per-hand)
 // ============================================================================
 
-function applyAsymmetricTurns(steps, blueTurns, redTurns) {
+function applyAsymmetricTurns(steps, leftTurns, rightTurns) {
   if (!steps || steps.length === 0) return steps;
 
-  let blueOri = "in";
-  let redOri = "in";
+  let leftOri = "in";
+  let rightOri = "in";
 
   const cloned = steps.map((step) => ({
     ...step,
     id: randomUUID(),
     motions: {
-      blue: { ...step.motions.blue, turns: blueTurns },
-      red: { ...step.motions.red, turns: redTurns },
+      left: { ...step.motions.left, turns: leftTurns },
+      right: { ...step.motions.right, turns: rightTurns },
     },
   }));
 
-  resolveRotationDirectionsAsymmetric(cloned, blueTurns, redTurns);
+  resolveRotationDirectionsAsymmetric(cloned, leftTurns, rightTurns);
 
   return cloned.map((step) => {
-    const blue = step.motions.blue;
-    const red = step.motions.red;
+    const left = step.motions.left;
+    const right = step.motions.right;
 
-    blue.startOrientation = blueOri;
-    red.startOrientation = redOri;
+    left.startOrientation = leftOri;
+    right.startOrientation = rightOri;
 
-    blue.endOrientation = calculateEndOrientation({
-      motionType: blue.motionType,
-      turns: blueTurns,
-      rotationDirection: blue.rotationDirection,
-      startLocation: blue.startLocation,
-      endLocation: blue.endLocation,
-      startOrientation: blueOri,
+    left.endOrientation = calculateEndOrientation({
+      motionType: left.motionType,
+      turns: leftTurns,
+      rotationDirection: left.rotationDirection,
+      startLocation: left.startLocation,
+      endLocation: left.endLocation,
+      startOrientation: leftOri,
     });
 
-    red.endOrientation = calculateEndOrientation({
-      motionType: red.motionType,
-      turns: redTurns,
-      rotationDirection: red.rotationDirection,
-      startLocation: red.startLocation,
-      endLocation: red.endLocation,
-      startOrientation: redOri,
+    right.endOrientation = calculateEndOrientation({
+      motionType: right.motionType,
+      turns: rightTurns,
+      rotationDirection: right.rotationDirection,
+      startLocation: right.startLocation,
+      endLocation: right.endLocation,
+      startOrientation: rightOri,
     });
 
-    blueOri = blue.endOrientation;
-    redOri = red.endOrientation;
+    leftOri = left.endOrientation;
+    rightOri = right.endOrientation;
 
     return step;
   });
@@ -190,8 +190,8 @@ function cloneStartPosition(startPosition) {
     ...startPosition,
     id: randomUUID(),
     motions: {
-      blue: { ...startPosition.motions.blue, startOrientation: "in", endOrientation: "in", turns: 0 },
-      red: { ...startPosition.motions.red, startOrientation: "in", endOrientation: "in", turns: 0 },
+      left: { ...startPosition.motions.left, startOrientation: "in", endOrientation: "in", turns: 0 },
+      right: { ...startPosition.motions.right, startOrientation: "in", endOrientation: "in", turns: 0 },
     },
   };
 }
@@ -215,7 +215,7 @@ async function loadSourceDeckMeta() {
 }
 
 async function writeDeck(variant, sourceSequences, sourceMeta) {
-  const { deckId, blueTurns, redTurns, pipeRatio, tkaPipe, name } = variant;
+  const { deckId, leftTurns, rightTurns, pipeRatio, tkaPipe, name } = variant;
   const deckPath = `catalogs/${deckId}`;
 
   // Delete existing
@@ -231,7 +231,7 @@ async function writeDeck(variant, sourceSequences, sourceMeta) {
   let count = 0;
 
   for (const srcSeq of sourceSequences) {
-    const newSteps = applyAsymmetricTurns(srcSeq.steps, blueTurns, redTurns);
+    const newSteps = applyAsymmetricTurns(srcSeq.steps, leftTurns, rightTurns);
     const newStartPos = cloneStartPosition(srcSeq.startPosition);
 
     const ratioSlug = pipeRatio.replace(/:/g, "to").replace("|", "v");
@@ -243,15 +243,15 @@ async function writeDeck(variant, sourceSequences, sourceMeta) {
       id: newSeqId,
       steps: newSteps,
       startPosition: newStartPos,
-      tags: ["tnd-deck", "tnd-asymmetric", `vtg-blue-${blueTurns}`, `vtg-red-${redTurns}`, ...(srcSeq.tags || []).filter(t => !t.startsWith("vtg-") && !t.startsWith("tnd-"))],
+      tags: ["tnd-deck", "tnd-asymmetric", `vtg-blue-${leftTurns}`, `vtg-red-${rightTurns}`, ...(srcSeq.tags || []).filter(t => !t.startsWith("vtg-") && !t.startsWith("tnd-"))],
       notes: `TnD ${srcSeq.metadata?.vtgCategory || ""} (${pipeRatio}): ${srcSeq.word}`,
       metadata: {
         ...srcSeq.metadata,
         deckId,
         vtgRatio: pipeRatio,
         tkaTurns: tkaPipe,
-        blueTurns,
-        redTurns,
+        leftTurns,
+        rightTurns,
         asymmetric: true,
       },
     });
@@ -270,11 +270,11 @@ async function writeDeck(variant, sourceSequences, sourceMeta) {
     id: deckId,
     name,
     canonicalName: name,
-    description: `TnD motions with asymmetric turns: blue=${blueTurns} (${variant.blueRatio}), red=${redTurns} (${variant.redRatio}).`,
+    description: `TnD motions with asymmetric turns: blue=${leftTurns} (${variant.leftRatio}), red=${rightTurns} (${variant.rightRatio}).`,
     vtgRatio: pipeRatio,
     tkaTurns: tkaPipe,
-    blueTurns,
-    redTurns,
+    leftTurns,
+    rightTurns,
     asymmetric: true,
     sourceCatalog: SOURCE_DECK_ID,
     collection: "TnD",
@@ -315,18 +315,18 @@ async function main() {
   const preview = variants[0];
   console.log(`Preview: ${preview.name}`);
   console.log(`  Deck ID: ${preview.deckId}`);
-  console.log(`  Blue: ${preview.blueTurns} turns (${preview.blueRatio})`);
-  console.log(`  Red:  ${preview.redTurns} turns (${preview.redRatio})`);
+  console.log(`  Blue: ${preview.leftTurns} turns (${preview.leftRatio})`);
+  console.log(`  Red:  ${preview.rightTurns} turns (${preview.rightRatio})`);
   console.log(`  Card footer: VTG ${preview.pipeRatio} | TKA ${preview.tkaPipe}\n`);
 
   if (sourceSequences.length > 0) {
     const sample = sourceSequences[0];
-    const transformed = applyAsymmetricTurns(sample.steps, preview.blueTurns, preview.redTurns);
+    const transformed = applyAsymmetricTurns(sample.steps, preview.leftTurns, preview.rightTurns);
     if (transformed.length > 0) {
       const step = transformed[0];
       console.log(`  Sample beat 1 (${sample.word}):`);
-      console.log(`    blue: ${step.motions.blue.motionType} ${step.motions.blue.rotationDirection} ${step.motions.blue.startOrientation}->${step.motions.blue.endOrientation} [${preview.blueTurns} turns]`);
-      console.log(`    red:  ${step.motions.red.motionType} ${step.motions.red.rotationDirection} ${step.motions.red.startOrientation}->${step.motions.red.endOrientation} [${preview.redTurns} turns]`);
+      console.log(`    blue: ${step.motions.left.motionType} ${step.motions.left.rotationDirection} ${step.motions.left.startOrientation}->${step.motions.left.endOrientation} [${preview.leftTurns} turns]`);
+      console.log(`    red:  ${step.motions.right.motionType} ${step.motions.right.rotationDirection} ${step.motions.right.startOrientation}->${step.motions.right.endOrientation} [${preview.rightTurns} turns]`);
     }
     console.log("");
   }

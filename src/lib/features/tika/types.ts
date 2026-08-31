@@ -44,8 +44,8 @@ export interface LetterContext {
   typeName: string;
   startPosition: string;
   endPosition: string;
-  blueMotion: MotionData;
-  redMotion: MotionData;
+  leftMotion: MotionData;
+  rightMotion: MotionData;
 }
 
 /**
@@ -68,15 +68,15 @@ export interface ComparisonContext {
     letter: string;
     type: number;
     typeName: string;
-    blueMotion: string;
-    redMotion: string;
+    leftMotion: string;
+    rightMotion: string;
   };
   letter2Data: {
     letter: string;
     type: number;
     typeName: string;
-    blueMotion: string;
-    redMotion: string;
+    leftMotion: string;
+    rightMotion: string;
   };
 }
 
@@ -90,8 +90,8 @@ export interface TypeListContext {
   exampleLetters: string[];
   allLetters: string[];
   motionPattern: {
-    blueMotion: string;
-    redMotion: string;
+    leftMotion: string;
+    rightMotion: string;
   };
   rotationPattern?: {
     description: string;
@@ -127,8 +127,8 @@ export interface MotionExamplesContext {
   examples: Array<{
     letter: string;
     variation: number;
-    blueMotion: string;
-    redMotion: string;
+    leftMotion: string;
+    rightMotion: string;
   }>;
 }
 
@@ -304,8 +304,8 @@ export interface PictographQuizOption {
 export interface MotionPatternQuizOption {
   id: string;
   type: "motion-pattern";
-  blueMotion: string;
-  redMotion: string;
+  leftMotion: string;
+  rightMotion: string;
   correct: boolean;
 }
 

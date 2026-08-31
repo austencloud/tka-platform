@@ -94,10 +94,10 @@ describe("one-hand scoring carries no hidden synchrony penalty", () => {
 
   it("matches end to end: a real solo trace and a real synchronized duo trace", () => {
     const soloRound: TraceRoundGeometry = {
-      beats: [beat(0, { blue: move(N, E) })],
+      beats: [beat(0, { left: move(N, E) })],
     };
     const duoRound: TraceRoundGeometry = {
-      beats: [beat(0, { blue: move(N, E), red: move(S, W) })],
+      beats: [beat(0, { left: move(N, E), right: move(S, W) })],
     };
 
     const solo = createTraceEvaluator(soloRound);
@@ -131,7 +131,7 @@ describe("completion is a gate, not a weight", () => {
 
   it("holds end to end: cutting the chord across an arc scores zero", () => {
     const round: TraceRoundGeometry = {
-      beats: [beat(0, { blue: move(N, E) })],
+      beats: [beat(0, { left: move(N, E) })],
     };
     const path = sampleSegmentPath(N, E);
     const first = path[0]!;

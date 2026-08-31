@@ -28,7 +28,7 @@
   } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -71,8 +71,8 @@
     gridMode: GridMode.DIAMOND,
     stepNumber: c.step,
     motions: {
-      blue: createPlaceholderMotion(MotionColor.BLUE, { location: SO_, orientation: IN }),
-      red: createMotionData({
+      left: createPlaceholderMotion(HandSide.LEFT, { location: SO_, orientation: IN }),
+      right: createMotionData({
         motionType: c.type,
         rotationDirection: c.rot,
         startLocation: c.from,
@@ -80,7 +80,7 @@
         startOrientation: c.so,
         endOrientation: c.eo,
         turns: 0,
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),

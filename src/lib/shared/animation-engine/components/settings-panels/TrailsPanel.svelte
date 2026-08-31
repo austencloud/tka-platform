@@ -11,17 +11,17 @@
 	} from "../../domain/types/trail-types";
 	import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
 	import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
-	import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+	import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 	const settingsState = settingsService;
 	const effectsConfig = getEffectsConfigContext();
 
 	const hasBilateralProp = $derived.by(() => {
-		const blue = settingsState.settings.bluePropType;
-		const red = settingsState.settings.redPropType;
-		const blueIsBilateral = blue != null && isBilateralProp(blue);
-		const redIsBilateral = red != null && isBilateralProp(red);
-		return blueIsBilateral || redIsBilateral;
+		const left = settingsState.settings.leftPropType;
+		const right = settingsState.settings.rightPropType;
+		const leftIsBilateral = left != null && isBilateralProp(left);
+		const rightIsBilateral = right != null && isBilateralProp(right);
+		return leftIsBilateral || rightIsBilateral;
 	});
 
 	const trackingOptions = $derived.by(() => {
@@ -60,14 +60,14 @@
 	// Visual props — owned by EffectsConfigState
 	const lineWidth = $derived(effectsConfig?.trails.thickness ?? DEFAULT_EFFECTS_CONFIG.trails.thickness);
 	const maxOpacity = $derived(effectsConfig?.trails.brightness ?? DEFAULT_EFFECTS_CONFIG.trails.brightness);
-	const blueColor = $derived(effectsConfig?.trails.blueColor ?? DEFAULT_EFFECTS_CONFIG.trails.blueColor);
-	const redColor = $derived(effectsConfig?.trails.redColor ?? DEFAULT_EFFECTS_CONFIG.trails.redColor);
+	const leftColor = $derived(effectsConfig?.trails.leftColor ?? DEFAULT_EFFECTS_CONFIG.trails.leftColor);
+	const rightColor = $derived(effectsConfig?.trails.rightColor ?? DEFAULT_EFFECTS_CONFIG.trails.rightColor);
 
 	// Rendering params — stay in animationSettings
 	const tailLength = $derived(animationSettings.trail.tailLength);
 
-	const defaultBlue = getMotionColor(MotionColor.BLUE, "dark");
-	const defaultRed = getMotionColor(MotionColor.RED, "dark");
+	const defaultLeft = getMotionColor(HandSide.LEFT, "dark");
+	const defaultRight = getMotionColor(HandSide.RIGHT, "dark");
 
 	function formatWidth(v: number): string {
 		return v.toFixed(1);
@@ -82,16 +82,16 @@
 		Math.abs(maxOpacity - DEFAULT_EFFECTS_CONFIG.trails.brightness) < 0.03 &&
 		tailLength === DEFAULT_TRAIL_SETTINGS.tailLength &&
 		trackingMode === DEFAULT_TRAIL_SETTINGS.trackingMode &&
-		blueColor === defaultBlue &&
-		redColor === defaultRed
+		leftColor === defaultLeft &&
+		rightColor === defaultRight
 	);
 
 	function resetDefaults(): void {
 		effectsConfig?.updateEffect("trails", {
 			thickness: DEFAULT_EFFECTS_CONFIG.trails.thickness,
 			brightness: DEFAULT_EFFECTS_CONFIG.trails.brightness,
-			blueColor: defaultBlue,
-			redColor: defaultRed,
+			leftColor: defaultLeft,
+			rightColor: defaultRight,
 		});
 		animationSettings.setTailLength(DEFAULT_TRAIL_SETTINGS.tailLength);
 		animationSettings.setTrackingMode(DEFAULT_TRAIL_SETTINGS.trackingMode);
@@ -174,16 +174,16 @@
 			<label class="color-picker">
 				<input
 					type="color"
-					value={blueColor}
-					oninput={(e) => effectsConfig?.updateEffect("trails", { blueColor: (e.target as HTMLInputElement).value })}
+					value={leftColor}
+					oninput={(e) => effectsConfig?.updateEffect("trails", { leftColor: (e.target as HTMLInputElement).value })}
 				/>
 				<span class="color-hand blue">Blue</span>
 			</label>
 			<label class="color-picker">
 				<input
 					type="color"
-					value={redColor}
-					oninput={(e) => effectsConfig?.updateEffect("trails", { redColor: (e.target as HTMLInputElement).value })}
+					value={rightColor}
+					oninput={(e) => effectsConfig?.updateEffect("trails", { rightColor: (e.target as HTMLInputElement).value })}
 				/>
 				<span class="color-hand red">Red</span>
 			</label>

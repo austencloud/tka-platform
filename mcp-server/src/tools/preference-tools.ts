@@ -97,8 +97,8 @@ export function registerPreferenceTools(server: McpServer): void {
           `pos:${prefs.showPositions}`,
           `rev:${prefs.showReversals}`,
           `grid:${prefs.showGrid}`,
-          `blue:${prefs.showLeftMotion}`,
-          `red:${prefs.showRightMotion}`,
+          `left:${prefs.showLeftMotion}`,
+          `right:${prefs.showRightMotion}`,
         ];
         return {
           content: [{ type: "text" as const, text: pairs.join(" ") }],
@@ -123,12 +123,12 @@ Grid:
   • handPointVisibility: ${prefs.handPointVisibility}
 
 Motions:
-  • showBlueMotion: ${prefs.showLeftMotion}
-  • showRedMotion: ${prefs.showRightMotion}
+  • showLeftMotion: ${prefs.showLeftMotion}
+  • showRightMotion: ${prefs.showRightMotion}
 
 Props:
-  • bluePropType: ${prefs.leftPropType ?? "staff (default)"}
-  • redPropType: ${prefs.rightPropType ?? "staff (default)"}`;
+  • leftPropType: ${prefs.leftPropType ?? "staff (default)"}
+  • rightPropType: ${prefs.rightPropType ?? "staff (default)"}`;
 
       return {
         content: [

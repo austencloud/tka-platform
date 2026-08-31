@@ -9,7 +9,7 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/mot
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   VERTICAL_MIRROR_LOCATION_MAP,
   HORIZONTAL_MIRROR_LOCATION_MAP,
@@ -74,11 +74,11 @@ export function rotateMotion(
 
 export function swapMotionColor(
   motion: MotionData,
-  targetColor: MotionColor
+  targetColor: HandSide
 ): MotionData {
   return createMotionData({
     ...motion,
-    color: targetColor,
+    hand: targetColor,
   });
 }
 

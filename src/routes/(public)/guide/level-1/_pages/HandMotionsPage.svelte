@@ -12,7 +12,7 @@
    *            FLOAT so the arrow pipeline places the canonical float arrows
    *   dash   → DASH W→E; the system dash arrow
    *   static → STATIC at W; no arrow (matching the proof)
-   * The blue hand shows the end position (visibleHand="blue").
+   * The left hand shows the end position (visibleHand="left").
    *
    * The flowchart is the proof's: one thick line leaves the Start box, runs
    * straight through to the dash row (same height), with a spine splitting up
@@ -34,7 +34,7 @@
   } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -64,11 +64,11 @@
     letter: null,
     gridMode: GridMode.DIAMOND,
     motions: {
-      blue: createMotionData({
+      left: createMotionData({
         motionType: type,
         startLocation: from,
         endLocation: to,
-        color: MotionColor.BLUE,
+        color: HandSide.LEFT,
         propType: PropType.HAND,
         gridMode: GridMode.DIAMOND,
       }),
@@ -98,15 +98,15 @@
       gridMode: GridMode.DIAMOND,
       stepNumber,
       motions: {
-        blue: createMotionData({
+        left: createMotionData({
           motionType: type,
           startLocation: from,
           endLocation: to,
-          color: MotionColor.BLUE,
+          color: HandSide.LEFT,
           propType: PropType.HAND,
           gridMode: GridMode.DIAMOND,
         }),
-        red: createPlaceholderMotion(MotionColor.RED, { location: E, orientation: Orientation.IN }),
+        right: createPlaceholderMotion(HandSide.RIGHT, { location: E, orientation: Orientation.IN }),
       },
     }) as unknown as StepData;
 
@@ -130,7 +130,7 @@
       boxes
         .filter((b) => !!b.word)
         .map((b) => {
-          const m = b.data.motions.blue!;
+          const m = b.data.motions.left!;
           return [b.data.id, resolvedDemoStrip(b.data.id, m.motionType, m.startLocation, m.endLocation)];
         })
     )
@@ -140,18 +140,18 @@
   // Two-hand combination examples - one per named cell, blue does the first
   // motion of the description, red the second. Locations keep the ends distinct.
   type ComboHand = { type: MotionType; from: GridLocation; to: GridLocation };
-  type ComboDemo = { word: string; blue: ComboHand; red: ComboHand };
+  type ComboDemo = { word: string; left: ComboHand; right: ComboHand };
   const move = (type: MotionType, from: GridLocation, to: GridLocation): ComboHand => ({ type, from, to });
   const COMBO_DEMOS: ComboDemo[] = [
-    { word: "Dual-Shift", blue: move(MotionType.PRO, W, N), red: move(MotionType.PRO, E, SO_) },
-    { word: "Shift", blue: move(MotionType.PRO, W, N), red: move(MotionType.STATIC, E, E) },
-    { word: "Cross-Shift", blue: move(MotionType.PRO, W, N), red: move(MotionType.DASH, E, W) },
-    { word: "Dash", blue: move(MotionType.DASH, W, E), red: move(MotionType.STATIC, N, N) },
-    { word: "Dual-Dash", blue: move(MotionType.DASH, W, E), red: move(MotionType.DASH, E, W) },
-    { word: "Static", blue: move(MotionType.STATIC, W, W), red: move(MotionType.STATIC, E, E) },
+    { word: "Dual-Shift", left: move(MotionType.PRO, W, N), right: move(MotionType.PRO, E, SO_) },
+    { word: "Shift", left: move(MotionType.PRO, W, N), right: move(MotionType.STATIC, E, E) },
+    { word: "Cross-Shift", left: move(MotionType.PRO, W, N), right: move(MotionType.DASH, E, W) },
+    { word: "Dash", left: move(MotionType.DASH, W, E), right: move(MotionType.STATIC, N, N) },
+    { word: "Dual-Dash", left: move(MotionType.DASH, W, E), right: move(MotionType.DASH, E, W) },
+    { word: "Static", left: move(MotionType.STATIC, W, W), right: move(MotionType.STATIC, E, E) },
   ];
 
-  const comboHand = (color: MotionColor, h: ComboHand) =>
+  const comboHand = (color: HandSide, h: ComboHand) =>
     createMotionData({
       motionType: h.type,
       startLocation: h.from,
@@ -168,8 +168,8 @@
       gridMode: GridMode.DIAMOND,
       stepNumber: asStart ? 0 : 1,
       motions: {
-        blue: comboHand(MotionColor.BLUE, asStart ? move(MotionType.STATIC, d.blue.from, d.blue.from) : d.blue),
-        red: comboHand(MotionColor.RED, asStart ? move(MotionType.STATIC, d.red.from, d.red.from) : d.red),
+        left: comboHand(HandSide.LEFT, asStart ? move(MotionType.STATIC, d.left.from, d.left.from) : d.left),
+        right: comboHand(HandSide.RIGHT, asStart ? move(MotionType.STATIC, d.right.from, d.right.from) : d.right),
       },
     }) as unknown as StepData;
 
@@ -343,9 +343,9 @@
       <PictographContainer
         pictographData={box.word ? ({ ...RESOLVED_DEMOS[key]![1], stepNumber: undefined } as unknown as StepData) : box.data}
         gridMode={GridMode.DIAMOND}
-        bluePropTypeOverride={PropType.HAND}
-        redPropTypeOverride={PropType.HAND}
-        visibleHand="blue"
+        leftPropTypeOverride={PropType.HAND}
+        rightPropTypeOverride={PropType.HAND}
+        visibleHand="left"
         showGrid={true}
         showTKA={false}
         showPositions={false}

@@ -15,8 +15,8 @@
     showMandala = false,
     highlightedStepIndex = null,
     onStepClick,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
   }: {
     sequence: SequenceData;
     side: FuseSide;
@@ -26,8 +26,8 @@
     showMandala?: boolean;
     highlightedStepIndex?: number | null;
     onStepClick?: (stepIndex: number) => void;
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
   } = $props();
 
   const safeColumns = $derived(Math.max(1, columns));
@@ -74,8 +74,8 @@
     showHandPoints={true}
     visibleHand={side}
     darkMode={true}
-    bluePropTypeOverride={bluePropType}
-    redPropTypeOverride={redPropType}
+    leftPropTypeOverride={leftPropType}
+    rightPropTypeOverride={rightPropType}
     stepNumberOverride={true}
     cellIndex={index}
     transitionKey={`fuse-${side}-step-${index}`}
@@ -87,7 +87,7 @@
   style:--live-grid-columns={gridColumns}
   style:--live-grid-rows={gridRows}
   style:--live-cell-size={`${Math.max(72, cellSize)}px`}
-  aria-label="{side === 'blue' ? 'Blue' : 'Red'} one-hand LOOP notation"
+  aria-label="{side === 'left' ? 'Left' : 'Right'} one-hand LOOP notation"
 >
   {#if includeStart && startPosition}
     <div class="live-cell start-cell" style="grid-column:1;grid-row:1;">
@@ -105,8 +105,8 @@
         showHandPoints={true}
         visibleHand={side}
         darkMode={true}
-        bluePropTypeOverride={bluePropType}
-        redPropTypeOverride={redPropType}
+        leftPropTypeOverride={leftPropType}
+        rightPropTypeOverride={rightPropType}
         stepNumberOverride={false}
         transitionKey={`fuse-${side}-start`}
       />
@@ -119,17 +119,17 @@
       class="live-cell mandala-cell"
       style="grid-column:1;grid-row:{gridRows};"
       role="img"
-      aria-label="{side === 'blue' ? 'Blue' : 'Red'} path mandala"
+      aria-label="{side === 'left' ? 'Left' : 'Right'} path mandala"
     >
       <SequenceMandala
         {sequence}
         mode="card-back"
         style={"stroke"}
-        show={side}
+        show={side === "left" ? "blue" : "red"}
         size={mandalaSize}
         darkMode={true}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         morphChanges={true}
       />
     </div>

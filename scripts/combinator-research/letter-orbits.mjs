@@ -23,8 +23,8 @@ for (const file of ["DiamondPictographDataframe.csv", "BoxPictographDataframe.cs
     const r = Object.fromEntries(cols.map((c, i) => [c, v[i]]));
     r._grid = file.startsWith("Diamond") ? "diamond" : "box";
     rows.push(r);
-    const key = [r.blueMotionType, r.blueRotationDirection, r.blueStartLocation, r.blueEndLocation,
-                 r.redMotionType, r.redRotationDirection, r.redStartLocation, r.redEndLocation].join("|");
+    const key = [r.leftMotionType, r.leftRotationDirection, r.leftStartLocation, r.leftEndLocation,
+                 r.rightMotionType, r.rightRotationDirection, r.rightStartLocation, r.rightEndLocation].join("|");
     if (!table.has(key)) table.set(key, r);
   }
 }
@@ -36,10 +36,10 @@ function mapAt(steps, hand) {
   const out = new Map();
   for (const r of rows) {
     const moved = hand === "red"
-      ? [r.blueMotionType, r.blueRotationDirection, r.blueStartLocation, r.blueEndLocation,
-         r.redMotionType, r.redRotationDirection, rot(r.redStartLocation, steps), rot(r.redEndLocation, steps)]
-      : [r.blueMotionType, r.blueRotationDirection, rot(r.blueStartLocation, steps), rot(r.blueEndLocation, steps),
-         r.redMotionType, r.redRotationDirection, r.redStartLocation, r.redEndLocation];
+      ? [r.leftMotionType, r.leftRotationDirection, r.leftStartLocation, r.leftEndLocation,
+         r.rightMotionType, r.rightRotationDirection, rot(r.rightStartLocation, steps), rot(r.rightEndLocation, steps)]
+      : [r.leftMotionType, r.leftRotationDirection, rot(r.leftStartLocation, steps), rot(r.leftEndLocation, steps),
+         r.rightMotionType, r.rightRotationDirection, r.rightStartLocation, r.rightEndLocation];
     const hit = table.get(moved.join("|"));
     if (!out.has(r.letter)) out.set(r.letter, { to: new Map(), miss: 0, n: 0 });
     const e = out.get(r.letter);

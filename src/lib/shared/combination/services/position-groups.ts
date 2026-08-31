@@ -1,7 +1,7 @@
 import { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { SeamState } from "../domain/types";
 
 const GROUPS = new Set<string>(Object.values(GridPositionGroup));
@@ -62,15 +62,15 @@ export function seamEndOf(step: StepData): SeamState | null {
  * (576 diamond + 576 box), zero disagreements.
  */
 export function positionLabelsMatchLocations(step: StepData): boolean {
-  const blue = step.motions[MotionColor.BLUE];
-  const red = step.motions[MotionColor.RED];
-  if (!blue || !red) return false;
+  const left = step.motions[HandSide.LEFT];
+  const right = step.motions[HandSide.RIGHT];
+  if (!left || !right) return false;
 
   try {
     return (
-      getGridPositionFromLocations(blue.startLocation, red.startLocation) ===
+      getGridPositionFromLocations(left.startLocation, right.startLocation) ===
         step.startPosition &&
-      getGridPositionFromLocations(blue.endLocation, red.endLocation) ===
+      getGridPositionFromLocations(left.endLocation, right.endLocation) ===
         step.endPosition
     );
   } catch {

@@ -1,5 +1,6 @@
 import { createSoloProp } from "./solo-prop-factory";
 import type { SequenceData } from "../domain/models/sequence-data";
+import { HandSide, type HandSide as HandSideValue } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { SoloPropData } from "../domain/models/solo-prop-data";
 import type { SoloPropStepData } from "../domain/models/solo-prop-step-data";
 import type { StepPairingData } from "../domain/models/step-pairing-data";
@@ -71,19 +72,19 @@ function makePlaceholderStep(
   };
 }
 
-export function extractBlueSoloProp(sequence: SequenceData): SoloPropData {
-  return extractSoloProp(sequence, "blue");
+export function extractLeftSoloProp(sequence: SequenceData): SoloPropData {
+  return extractSoloProp(sequence, HandSide.LEFT);
 }
 
-export function extractRedSoloProp(sequence: SequenceData): SoloPropData {
-  return extractSoloProp(sequence, "red");
+export function extractRightSoloProp(sequence: SequenceData): SoloPropData {
+  return extractSoloProp(sequence, HandSide.RIGHT);
 }
 
 export function extractStepPairings(sequence: SequenceData): readonly StepPairingData[] {
   return sequence.steps.map((step) => ({
     letter: step.letter ?? null,
-    blueReversal: step.blueReversal,
-    redReversal: step.redReversal,
+    leftReversal: step.leftReversal,
+    rightReversal: step.rightReversal,
     startPosition: step.startPosition ?? null,
     endPosition: step.endPosition ?? null,
   }));
@@ -93,7 +94,7 @@ export function extractStepPairings(sequence: SequenceData): readonly StepPairin
 
 function extractSoloProp(
   sequence: SequenceData,
-  color: "blue" | "red"
+  color: HandSideValue
 ): SoloPropData {
     // Resolve the authoritative start location and orientation.
     //

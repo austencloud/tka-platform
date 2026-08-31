@@ -12,10 +12,10 @@ export interface LetterExplorerRouteState {
   letter: string;
   gridMode: GridModeValue;
   variation: number;
-  blueTurns: TurnValue;
-  redTurns: TurnValue;
-  blueRotation: RotationDirectionValue;
-  redRotation: RotationDirectionValue;
+  leftTurns: TurnValue;
+  rightTurns: TurnValue;
+  leftRotation: RotationDirectionValue;
+  rightRotation: RotationDirectionValue;
 }
 
 const CANONICAL_LETTER_EXPLORER_PATH = "/glossary";
@@ -69,10 +69,10 @@ export function parseLetterExplorerRoute(
         ? GridMode.BOX
         : GridMode.DIAMOND,
     variation,
-    blueTurns: parseTurn(searchParams.get("blueTurns")),
-    redTurns: parseTurn(searchParams.get("redTurns")),
-    blueRotation: parseRotation(searchParams.get("blueRotation")),
-    redRotation: parseRotation(searchParams.get("redRotation")),
+    leftTurns: parseTurn(searchParams.get("blueTurns")),
+    rightTurns: parseTurn(searchParams.get("redTurns")),
+    leftRotation: parseRotation(searchParams.get("blueRotation")),
+    rightRotation: parseRotation(searchParams.get("redRotation")),
   };
 }
 
@@ -89,13 +89,13 @@ export function writeLetterExplorerRoute(
   url.searchParams.set("letter", state.letter);
   url.searchParams.set("grid", state.gridMode);
   url.searchParams.set("variation", String(state.variation));
-  if (state.blueTurns !== 0) {
-    url.searchParams.set("blueTurns", String(state.blueTurns));
-    url.searchParams.set("blueRotation", state.blueRotation);
+  if (state.leftTurns !== 0) {
+    url.searchParams.set("blueTurns", String(state.leftTurns));
+    url.searchParams.set("blueRotation", state.leftRotation);
   }
-  if (state.redTurns !== 0) {
-    url.searchParams.set("redTurns", String(state.redTurns));
-    url.searchParams.set("redRotation", state.redRotation);
+  if (state.rightTurns !== 0) {
+    url.searchParams.set("redTurns", String(state.rightTurns));
+    url.searchParams.set("redRotation", state.rightRotation);
   }
   url.hash = "cat-letter";
 }
@@ -115,10 +115,10 @@ export function buildCanonicalLetterExplorerHref(letter: string): string {
     letter,
     gridMode: GridMode.DIAMOND,
     variation: 0,
-    blueTurns: 0,
-    redTurns: 0,
-    blueRotation: RotationDirection.CLOCKWISE,
-    redRotation: RotationDirection.CLOCKWISE,
+    leftTurns: 0,
+    rightTurns: 0,
+    leftRotation: RotationDirection.CLOCKWISE,
+    rightRotation: RotationDirection.CLOCKWISE,
   });
   return `${url.pathname}${url.search}${url.hash}`;
 }
@@ -126,5 +126,5 @@ export function buildCanonicalLetterExplorerHref(letter: string): string {
 export function hasLetterExplorerEdits(
   state: LetterExplorerRouteState
 ): boolean {
-  return state.blueTurns !== 0 || state.redTurns !== 0;
+  return state.leftTurns !== 0 || state.rightTurns !== 0;
 }

@@ -15,8 +15,8 @@ import {
 
 export type RotationGridMode = "diamond" | "box";
 export type StartOrientationPair = {
-  blue?: Orientation;
-  red?: Orientation;
+  left?: Orientation;
+  right?: Orientation;
 };
 
 export interface ClassifiedRotationStyleMember {

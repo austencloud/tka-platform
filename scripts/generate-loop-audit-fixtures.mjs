@@ -52,7 +52,7 @@ function loadVariations(csvPath) {
       endPosition: c[2],
       timing: c[3],
       direction: c[4],
-      blueMotion: {
+      leftMotion: {
         color: "blue",
         motionType: c[5],
         rotationDirection: c[6],
@@ -61,7 +61,7 @@ function loadVariations(csvPath) {
         startOrientation: "in",
         endOrientation: "in",
       },
-      redMotion: {
+      rightMotion: {
         color: "red",
         motionType: c[9],
         rotationDirection: c[10],
@@ -128,8 +128,8 @@ function hasOppositeTypedStep(steps) {
   return steps.some(
     (s) =>
       (s.stepNumber ?? 0) > 0 &&
-      ((s.motions.blue.motionType === "pro" && s.motions.red.motionType === "anti") ||
-        (s.motions.blue.motionType === "anti" && s.motions.red.motionType === "pro")),
+      ((s.motions.left.motionType === "pro" && s.motions.right.motionType === "anti") ||
+        (s.motions.left.motionType === "anti" && s.motions.right.motionType === "pro")),
   );
 }
 

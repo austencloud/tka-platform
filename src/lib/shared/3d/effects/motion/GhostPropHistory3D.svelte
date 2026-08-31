@@ -23,7 +23,7 @@
   interface Props {
     propState: PropState3D | null;
     propType: PropType;
-    propColor: "blue" | "red";
+    propHand: "left" | "right";
     params: Ghost3DParams;
     enabled: boolean;
     propLength: number;
@@ -37,7 +37,7 @@
   let {
     propState,
     propType,
-    propColor,
+    propHand,
     params,
     enabled,
     propLength,
@@ -130,8 +130,8 @@
       sample={visibleSamples[slotIndex] ?? null}
       {fallbackState}
       {propType}
-      {propColor}
-      color={propColor === "blue" ? params.blueColor : params.redColor}
+      {propHand}
+      color={propHand === "left" ? params.leftColor : params.rightColor}
       intensity={params.intensity}
       lifetimeSeconds={params.lifetimeSeconds}
       rimPower={params.rimPower}

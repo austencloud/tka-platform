@@ -19,10 +19,10 @@ describe("letter explorer URL state", () => {
       letter: "B",
       gridMode: GridMode.BOX,
       variation: 7,
-      blueTurns: 1.5,
-      redTurns: "fl",
-      blueRotation: RotationDirection.COUNTER_CLOCKWISE,
-      redRotation: RotationDirection.CLOCKWISE,
+      leftTurns: 1.5,
+      rightTurns: "fl",
+      leftRotation: RotationDirection.COUNTER_CLOCKWISE,
+      rightRotation: RotationDirection.CLOCKWISE,
     });
 
     expect(url.hash).toBe("#cat-letter");
@@ -31,10 +31,10 @@ describe("letter explorer URL state", () => {
       letter: "B",
       gridMode: GridMode.BOX,
       variation: 7,
-      blueTurns: 1.5,
-      redTurns: "fl",
-      blueRotation: RotationDirection.COUNTER_CLOCKWISE,
-      redRotation: RotationDirection.CLOCKWISE,
+      leftTurns: 1.5,
+      rightTurns: "fl",
+      leftRotation: RotationDirection.COUNTER_CLOCKWISE,
+      rightRotation: RotationDirection.CLOCKWISE,
     });
   });
 
@@ -45,10 +45,10 @@ describe("letter explorer URL state", () => {
       letter: "W-",
       gridMode: GridMode.DIAMOND,
       variation: 2,
-      blueTurns: 0,
-      redTurns: 0,
-      blueRotation: RotationDirection.CLOCKWISE,
-      redRotation: RotationDirection.COUNTER_CLOCKWISE,
+      leftTurns: 0,
+      rightTurns: 0,
+      leftRotation: RotationDirection.CLOCKWISE,
+      rightRotation: RotationDirection.COUNTER_CLOCKWISE,
     });
 
     expect(url.searchParams.toString()).toBe(
@@ -67,8 +67,8 @@ describe("letter explorer URL state", () => {
       letter: "A",
       gridMode: GridMode.DIAMOND,
       variation: 0,
-      blueTurns: 0,
-      redTurns: 0,
+      leftTurns: 0,
+      rightTurns: 0,
     });
   });
 

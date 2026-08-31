@@ -5,8 +5,8 @@ import { TkaPoseClassifier, DEFAULT_CLASSIFIER_CONFIG } from './tka-pose-classif
 import type { ClassifierConfig } from './tka-pose-classifier';
 
 export interface BeatNotation {
-  blue: StaffMotionNotation;
-  red: StaffMotionNotation;
+  left: StaffMotionNotation;
+  right: StaffMotionNotation;
 }
 
 /**
@@ -20,19 +20,19 @@ export interface BeatNotation {
  * UI can name the weakest link, not just the weakest number.
  */
 export function framesToNotation(
-  blueFrames: StaffPose3D[],
-  redFrames: StaffPose3D[],
-  blueConfidence: number[],
-  redConfidence: number[],
+  leftFrames: StaffPose3D[],
+  rightFrames: StaffPose3D[],
+  leftConfidence: number[],
+  rightConfidence: number[],
   segConfig: SegmentConfig = DEFAULT_SEGMENT_CONFIG,
   classConfig: ClassifierConfig = DEFAULT_CLASSIFIER_CONFIG,
-  blueDetail?: TrackConfidence[],
-  redDetail?: TrackConfidence[],
+  leftDetail?: TrackConfidence[],
+  rightDetail?: TrackConfidence[],
 ): BeatNotation[] {
   const classifier = new TkaPoseClassifier(classConfig);
   // Segment on the blue (leader) stream, gated by its confidence so dropout
   // frames (which hold the last pose upstream) can't fabricate a hold.
-  const beatIndices = segmentBeatIndices3D(blueFrames, segConfig, blueConfidence);
+  const beatIndices = segmentBeatIndices3D(leftFrames, segConfig, leftConfidence);
 
   const classify = (
     staff: 'blue' | 'red',
@@ -60,16 +60,16 @@ export function framesToNotation(
     const from = beatIndices[i]!;
     const to = beatIndices[i + 1]!;
     out.push({
-      blue: classify('blue', blueFrames, blueConfidence, blueDetail, from, to),
-      red: classify('red', redFrames, redConfidence, redDetail, from, to),
+      left: classify('blue', leftFrames, leftConfidence, leftDetail, from, to),
+      right: classify('red', rightFrames, rightConfidence, rightDetail, from, to),
     });
   }
 
   if (out.length === 0 && beatIndices.length === 1) {
     const idx = beatIndices[0]!;
     out.push({
-      blue: classify('blue', blueFrames, blueConfidence, blueDetail, idx, idx),
-      red: classify('red', redFrames, redConfidence, redDetail, idx, idx),
+      left: classify('blue', leftFrames, leftConfidence, leftDetail, idx, idx),
+      right: classify('red', rightFrames, rightConfidence, rightDetail, idx, idx),
     });
   }
   return out;

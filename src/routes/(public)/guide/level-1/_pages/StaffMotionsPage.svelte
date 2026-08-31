@@ -36,7 +36,7 @@
   import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -71,7 +71,7 @@
     letter: null,
     gridMode: GridMode.DIAMOND,
     motions: {
-      red: createMotionData({
+      right: createMotionData({
         motionType: type,
         rotationDirection: rot,
         startLocation: from,
@@ -79,7 +79,7 @@
         startOrientation: startOri,
         endOrientation: endOri,
         turns: 0,
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
@@ -92,8 +92,8 @@
     letter: null,
     gridMode: GridMode.DIAMOND,
     motions: {
-      blue: createPlaceholderMotion(MotionColor.BLUE),
-      red: createPlaceholderMotion(MotionColor.RED),
+      left: createPlaceholderMotion(HandSide.LEFT),
+      right: createPlaceholderMotion(HandSide.RIGHT),
     },
   });
 
@@ -166,8 +166,8 @@
       id: `${data.id}-anim-${stepNumber}`,
       stepNumber,
       motions: {
-        blue: createPlaceholderMotion(MotionColor.BLUE, { location: SO_, orientation: IN }),
-        red: data.motions.red,
+        left: createPlaceholderMotion(HandSide.LEFT, { location: SO_, orientation: IN }),
+        right: data.motions.right,
       },
     }) as unknown as StepData;
   const authoredRowSteps = (row: RowDef): StepData[] => [animStep(row.start, 0), animStep(row.combined, 1)];

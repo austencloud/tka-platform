@@ -23,22 +23,22 @@ export function derivePropGeometryKey(
   );
   pictographData = canonicalContext.pictographData;
   motionData = canonicalContext.motionData;
-  const blueMotion = pictographData.motions.blue;
-  const redMotion = pictographData.motions.red;
-  if (!blueMotion || !redMotion) return null;
+  const leftMotion = pictographData.motions.left;
+  const rightMotion = pictographData.motions.right;
+  if (!leftMotion || !rightMotion) return null;
 
   const placementFrame = placementFrameForGridMode(
-    _deriveGridMode(blueMotion, redMotion)
+    _deriveGridMode(leftMotion, rightMotion)
   );
 
   const endPosition = pictographData.endPosition;
   if (!endPosition) return null;
   const positionType = endPosition.replace(/\d+$/, "");
 
-  const color = arrowColor || motionData.color || "blue";
+  const color = arrowColor || motionData.hand || "blue";
   const isBlue = color === "blue";
-  const thisMotion = isBlue ? blueMotion : redMotion;
-  const otherMotion = isBlue ? redMotion : blueMotion;
+  const thisMotion = isBlue ? leftMotion : rightMotion;
+  const otherMotion = isBlue ? rightMotion : leftMotion;
 
   return {
     placementFrame,

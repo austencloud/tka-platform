@@ -33,7 +33,7 @@ import {
 } from "../sequence-content-hasher";
 import { IncompleteWordError } from "$lib/shared/foundation/services/word-deriver";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -51,7 +51,7 @@ const CYCLE: readonly GridLocation[] = [
   GridLocation.WEST,
 ];
 
-function motionAt(from: GridLocation, to: GridLocation, color: MotionColor) {
+function motionAt(from: GridLocation, to: GridLocation, color: HandSide) {
   return createMotionData({
     motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
@@ -61,22 +61,22 @@ function motionAt(from: GridLocation, to: GridLocation, color: MotionColor) {
     endOrientation: Orientation.IN,
     turns: 0,
     propType: PropType.STAFF,
-    color,
+    hand: color,
   });
 }
 
 function makeStep(index: number, letter: string | null): StepData {
-  const blueFrom = CYCLE[index % 4] as GridLocation;
-  const blueTo = CYCLE[(index + 1) % 4] as GridLocation;
-  const redFrom = CYCLE[(index + 2) % 4] as GridLocation;
-  const redTo = CYCLE[(index + 3) % 4] as GridLocation;
+  const leftFrom = CYCLE[index % 4] as GridLocation;
+  const leftTo = CYCLE[(index + 1) % 4] as GridLocation;
+  const rightFrom = CYCLE[(index + 2) % 4] as GridLocation;
+  const rightTo = CYCLE[(index + 3) % 4] as GridLocation;
 
   return {
     id: `step-${index + 1}`,
     stepNumber: index + 1,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     // `letter: null` models a beat whose lookup never resolved. The cast lets a
     // fixture spell arbitrary glyph strings without importing the Letter union.
@@ -84,8 +84,8 @@ function makeStep(index: number, letter: string | null): StepData {
     startPosition: null,
     endPosition: null,
     motions: {
-      blue: motionAt(blueFrom, blueTo, MotionColor.BLUE),
-      red: motionAt(redFrom, redTo, MotionColor.RED),
+      left: motionAt(leftFrom, leftTo, HandSide.LEFT),
+      right: motionAt(rightFrom, rightTo, HandSide.RIGHT),
     },
   };
 }
@@ -101,15 +101,15 @@ function makeStartEntry(): StepData {
     id: "start-0",
     stepNumber: 0,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     letter: null as StepData["letter"],
     startPosition: null,
     endPosition: null,
     motions: {
-      blue: motionAt(GridLocation.NORTH, GridLocation.NORTH, MotionColor.BLUE),
-      red: motionAt(GridLocation.SOUTH, GridLocation.SOUTH, MotionColor.RED),
+      left: motionAt(GridLocation.NORTH, GridLocation.NORTH, HandSide.LEFT),
+      right: motionAt(GridLocation.SOUTH, GridLocation.SOUTH, HandSide.RIGHT),
     },
   };
 }
@@ -178,12 +178,12 @@ describe("normalizeSequenceForPersistence — composition-only source", () => {
     // prop paths, and all four cross-tier hashes.
     expect(result.hydrated.steps).toHaveLength(4);
     expect(result.ownerData.stepPairings).toHaveLength(4);
-    expect(result.ownerData.blueSoloProp).toBeTruthy();
-    expect(result.ownerData.redSoloProp).toBeTruthy();
-    expect(result.ownerData.bluePathHash).toBeTruthy();
-    expect(result.ownerData.redPathHash).toBeTruthy();
-    expect(result.ownerData.blueSoloHash).toBeTruthy();
-    expect(result.ownerData.redSoloHash).toBeTruthy();
+    expect(result.ownerData.leftSoloProp).toBeTruthy();
+    expect(result.ownerData.rightSoloProp).toBeTruthy();
+    expect(result.ownerData.leftPathHash).toBeTruthy();
+    expect(result.ownerData.rightPathHash).toBeTruthy();
+    expect(result.ownerData.leftSoloHash).toBeTruthy();
+    expect(result.ownerData.rightSoloHash).toBeTruthy();
     // The start cell survives — it is not derivable from the compositional
     // fields, so losing it is what emptied start cells in the 2026-06 corpus.
     expect(result.ownerData.startPosition).toBeTruthy();
@@ -635,8 +635,8 @@ describe("normalizeSequenceForPersistence — refusals", () => {
     const source = {
       ...composed,
       steps: [],
-      blueSoloProp: undefined,
-      redSoloProp: undefined,
+      leftSoloProp: undefined,
+      rightSoloProp: undefined,
     } as SequenceData;
 
     const outcome = await trySequenceNormalization(source);
@@ -681,10 +681,10 @@ describe("normalizeSequenceForPersistence — idempotence", () => {
     expect(second.contentHash).toBe(first.contentHash);
     expect(second.contentHashVersion).toBe(first.contentHashVersion);
     // Every cross-tier hash is content-derived and must not move either.
-    expect(second.ownerData.blueSoloHash).toBe(first.ownerData.blueSoloHash);
-    expect(second.ownerData.redSoloHash).toBe(first.ownerData.redSoloHash);
-    expect(second.ownerData.bluePathHash).toBe(first.ownerData.bluePathHash);
-    expect(second.ownerData.redPathHash).toBe(first.ownerData.redPathHash);
+    expect(second.ownerData.leftSoloHash).toBe(first.ownerData.leftSoloHash);
+    expect(second.ownerData.rightSoloHash).toBe(first.ownerData.rightSoloHash);
+    expect(second.ownerData.leftPathHash).toBe(first.ownerData.leftPathHash);
+    expect(second.ownerData.rightPathHash).toBe(first.ownerData.rightPathHash);
     // The document id is stable; only the nested factory-minted ids are not.
     expect(second.ownerData.id).toBe(first.ownerData.id);
     expect(withoutGeneratedIds(second.ownerData)).toEqual(
@@ -718,11 +718,11 @@ describe("normalizeSequenceForPersistence — idempotence", () => {
     );
     const second = await normalizeSequenceForPersistence(first.hydrated);
 
-    expect(second.ownerData.blueSoloProp?.id).not.toBe(
-      first.ownerData.blueSoloProp?.id
+    expect(second.ownerData.leftSoloProp?.id).not.toBe(
+      first.ownerData.leftSoloProp?.id
     );
-    expect(second.ownerData.blueSoloProp?.contentHash).toBe(
-      first.ownerData.blueSoloProp?.contentHash
+    expect(second.ownerData.leftSoloProp?.contentHash).toBe(
+      first.ownerData.leftSoloProp?.contentHash
     );
   });
 

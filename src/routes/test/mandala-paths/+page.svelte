@@ -21,10 +21,10 @@
 	import type { MandalaPathOptions } from "$lib/shared/mandala/services/types";
 
 	const PALETTE: MandalaPalette = {
-		blueStroke: DARK_MOTION_BLUE_STROKE,
-		blueFill: DARK_MOTION_BLUE_FILL,
-		redStroke: DARK_MOTION_RED_STROKE,
-		redFill: DARK_MOTION_RED_FILL,
+		leftStroke: DARK_MOTION_BLUE_STROKE,
+		leftFill: DARK_MOTION_BLUE_FILL,
+		rightStroke: DARK_MOTION_RED_STROKE,
+		rightFill: DARK_MOTION_RED_FILL,
 		purpleStroke: DARK_MOTION_PURPLE_STROKE,
 		purpleFill: DARK_MOTION_PURPLE_FILL,
 	};
@@ -59,8 +59,8 @@
 			id: m.id,
 			word: m.name,
 			steps: m.steps,
-			bluePropType: m.bluePropType,
-			redPropType: m.redPropType,
+			leftPropType: m.leftPropType,
+			rightPropType: m.rightPropType,
 			variant: m.variant,
 		}))
 	);
@@ -70,12 +70,12 @@
 
 	const comparePaths = $derived.by((): { mode: PathMode; label: string; paths: MandalaPaths | null }[] => {
 		if (!calcReady || !currentSeq?.steps) return [];
-		const blueProp = currentSeq.bluePropType ?? "staff";
-		const redProp = currentSeq.redPropType ?? "staff";
+		const leftProp = currentSeq.leftPropType ?? "staff";
+		const rightProp = currentSeq.rightPropType ?? "staff";
 		return PATH_MODES.map((m) => ({
 			mode: m.key,
 			label: m.label,
-			paths: calculateMandalaGeometry(currentSeq.steps, blueProp, redProp, m.options),
+			paths: calculateMandalaGeometry(currentSeq.steps, leftProp, rightProp, m.options),
 		}));
 	});
 
@@ -101,8 +101,8 @@
 			svg: renderMandalaSVG(
 				calculateMandalaGeometry(
 					seq.steps,
-					seq.bluePropType ?? "staff",
-					seq.redPropType ?? "staff",
+					seq.leftPropType ?? "staff",
+					seq.rightPropType ?? "staff",
 					mode.options
 				),
 				opts

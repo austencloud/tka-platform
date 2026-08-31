@@ -28,8 +28,8 @@ import { enumerateVariationArrows } from "../../../src/lib/features/admin/overri
 const diamondP = {
   letter: "P",
   motions: {
-    blue: { motionType: "pro" },
-    red: { motionType: "anti" },
+    left: { motionType: "pro" },
+    right: { motionType: "anti" },
   },
 } as unknown as PictographData;
 
@@ -37,7 +37,7 @@ const diamondP = {
 const boxI = {
   letter: "I",
   motions: {
-    blue: { motionType: "pro" },
+    left: { motionType: "pro" },
   },
 } as unknown as PictographData;
 
@@ -123,21 +123,21 @@ async function loadEngine(): Promise<
         {
           pictographData: {
             letter: "A",
-            motions: { blue: { propType: "staff", color: "blue" } },
+            motions: { left: { propType: "staff", color: "blue" } },
           },
           arrowColor: "blue",
         },
         {
           pictographData: {
             letter: "B",
-            motions: { red: { propType: "staff", color: "red" } },
+            motions: { right: { propType: "staff", color: "red" } },
           },
           arrowColor: "red",
         },
         {
           pictographData: {
             letter: "C",
-            motions: { blue: { propType: "staff", color: "blue" } },
+            motions: { left: { propType: "staff", color: "blue" } },
           },
           arrowColor: "blue",
         },

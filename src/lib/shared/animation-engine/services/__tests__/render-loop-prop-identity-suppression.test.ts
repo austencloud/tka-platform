@@ -26,23 +26,23 @@ function frameParams(propType: string): RenderFrameParams {
     gridMode: null,
     letter: null,
     props: {
-      blueProp: { centerPathAngle: 0, staffRotationAngle: 0 },
-      redProp: null,
+      leftProp: { centerPathAngle: 0, staffRotationAngle: 0 },
+      rightProp: null,
       additionalLayers: [],
-      bluePropDimensions: { width: 252.8, height: 77.8 },
-      redPropDimensions: { width: 252.8, height: 77.8 },
+      leftPropDimensions: { width: 252.8, height: 77.8 },
+      rightPropDimensions: { width: 252.8, height: 77.8 },
       tunnelSpectrum: false,
     },
     visibility: {
       gridVisible: false,
       propsVisible: true,
       trailsVisible: true,
-      blueMotionVisible: true,
-      redMotionVisible: false,
+      leftMotionVisible: true,
+      rightMotionVisible: false,
     },
     isPlaying: true,
-    bluePropType: propType,
-    redPropType: "staff",
+    leftPropType: propType,
+    rightPropType: "staff",
     tipEffectMap: { "*": { effect: "trails" } },
   };
 }
@@ -62,8 +62,8 @@ describe("AnimationRenderLoop prop identity trail barrier", () => {
     } as unknown as ITrailOverlayCanvas;
     const renderer = {
       renderScene: vi.fn(),
-      isBluePropCrossfadeInProgress: () => false,
-      isRedPropCrossfadeInProgress: () => false,
+      isLeftPropCrossfadeInProgress: () => false,
+      isRightPropCrossfadeInProgress: () => false,
     } as unknown as IAnimationRenderer;
 
     const loop = new AnimationRenderLoop();
@@ -80,9 +80,9 @@ describe("AnimationRenderLoop prop identity trail barrier", () => {
     loop.renderSync(frameParams("fan"), 132, 1 / 60);
 
     expect(trailFrames).toHaveLength(3);
-    expect(trailFrames[0]?.bluePropSwapSuppressed).toBe(false);
-    expect(trailFrames[1]?.bluePropSwapSuppressed).toBe(true);
-    expect(trailFrames[1]?.redPropSwapSuppressed).toBe(false);
-    expect(trailFrames[2]?.bluePropSwapSuppressed).toBe(false);
+    expect(trailFrames[0]?.leftPropSwapSuppressed).toBe(false);
+    expect(trailFrames[1]?.leftPropSwapSuppressed).toBe(true);
+    expect(trailFrames[1]?.rightPropSwapSuppressed).toBe(false);
+    expect(trailFrames[2]?.leftPropSwapSuppressed).toBe(false);
   });
 });

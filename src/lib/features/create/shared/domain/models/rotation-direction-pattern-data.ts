@@ -28,9 +28,9 @@ export interface RotationDirectionPatternEntry {
   /** 0-based index into the sequence steps array */
   readonly stepIndex: number;
   /** Blue motion rotation direction, or null if no blue motion on this beat */
-  readonly blue: RotationDirectionValue | null;
+  readonly left: RotationDirectionValue | null;
   /** Red motion rotation direction, or null if no red motion on this beat */
-  readonly red: RotationDirectionValue | null;
+  readonly right: RotationDirectionValue | null;
 }
 
 /**
@@ -80,8 +80,8 @@ export function isRotationDirectionPatternEntry(
   const entry = obj as Record<string, unknown>;
   return (
     typeof entry.stepIndex === "number" &&
-    (entry.blue === null || isRotationDirectionValue(entry.blue)) &&
-    (entry.red === null || isRotationDirectionValue(entry.red))
+    (entry.left === null || isRotationDirectionValue(entry.left)) &&
+    (entry.right === null || isRotationDirectionValue(entry.right))
   );
 }
 

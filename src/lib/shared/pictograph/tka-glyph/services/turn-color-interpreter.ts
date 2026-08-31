@@ -14,7 +14,7 @@
 import type { PictographData } from "../../shared/domain/models/pictograph-data";
 import type { MotionData } from "../../shared/domain/models/motion-data";
 import { getMotionColor } from "../../../utils/svg-color-utils";
-import { MotionColor } from "../../shared/domain/enums/pictograph-enums";
+import { HandSide } from "../../shared/domain/enums/pictograph-enums";
 
 export type TurnNumberColor = string; // Color hex string from getMotionColor
 
@@ -32,8 +32,8 @@ type LetterType =
   | "TYPE5"
   | "TYPE6";
 
-export const BLUE_HEX: TurnNumberColor = getMotionColor(MotionColor.BLUE, "dark");
-export const RED_HEX: TurnNumberColor = getMotionColor(MotionColor.RED, "dark");
+export const BLUE_HEX: TurnNumberColor = getMotionColor(HandSide.LEFT, "dark");
+export const RED_HEX: TurnNumberColor = getMotionColor(HandSide.RIGHT, "dark");
 
 function determineLetterType(letter: string): LetterType {
   if (["Φ-", "Ψ-", "Λ-"].includes(letter)) return "TYPE5";
@@ -80,20 +80,20 @@ export function interpretTurnColors(
   }
 
   const letterType = determineLetterType(letter);
-  const blueMotion = pictographData.motions.blue;
-  const redMotion = pictographData.motions.red;
+  const leftMotion = pictographData.motions.left;
+  const rightMotion = pictographData.motions.right;
 
-  if (!blueMotion || !redMotion) {
+  if (!leftMotion || !rightMotion) {
     return { top: BLUE_HEX, bottom: RED_HEX };
   }
 
   const colorOf = (motion: MotionData): TurnNumberColor =>
-    motion === blueMotion ? BLUE_HEX : RED_HEX;
+    motion === leftMotion ? BLUE_HEX : RED_HEX;
 
   switch (letterType) {
     case "TYPE2": {
-      const shiftMotion = isShiftMotion(blueMotion) ? blueMotion : redMotion;
-      const staticMotion = isShiftMotion(blueMotion) ? redMotion : blueMotion;
+      const shiftMotion = isShiftMotion(leftMotion) ? leftMotion : rightMotion;
+      const staticMotion = isShiftMotion(leftMotion) ? rightMotion : leftMotion;
       return {
         top: colorOf(shiftMotion),
         bottom: colorOf(staticMotion),
@@ -101,9 +101,9 @@ export function interpretTurnColors(
     }
 
     case "TYPE1_HYBRID": {
-      const blueActualType = getActualMotionType(blueMotion);
-      const proMotion = blueActualType === "pro" ? blueMotion : redMotion;
-      const antiMotion = blueActualType === "anti" ? blueMotion : redMotion;
+      const blueActualType = getActualMotionType(leftMotion);
+      const proMotion = blueActualType === "pro" ? leftMotion : rightMotion;
+      const antiMotion = blueActualType === "anti" ? leftMotion : rightMotion;
       return {
         top: colorOf(proMotion),
         bottom: colorOf(antiMotion),
@@ -111,9 +111,9 @@ export function interpretTurnColors(
     }
 
     case "TYPE3": {
-      const isDashBlue = blueMotion.motionType.toLowerCase() === "dash";
-      const shiftMotion = isDashBlue ? redMotion : blueMotion;
-      const dashMotion = isDashBlue ? blueMotion : redMotion;
+      const isDashBlue = leftMotion.motionType.toLowerCase() === "dash";
+      const shiftMotion = isDashBlue ? rightMotion : leftMotion;
+      const dashMotion = isDashBlue ? leftMotion : rightMotion;
       return {
         top: colorOf(shiftMotion),
         bottom: colorOf(dashMotion),
@@ -121,9 +121,9 @@ export function interpretTurnColors(
     }
 
     case "TYPE4": {
-      const isDashBlue = blueMotion.motionType.toLowerCase() === "dash";
-      const dashMotion = isDashBlue ? blueMotion : redMotion;
-      const staticMotion = isDashBlue ? redMotion : blueMotion;
+      const isDashBlue = leftMotion.motionType.toLowerCase() === "dash";
+      const dashMotion = isDashBlue ? leftMotion : rightMotion;
+      const staticMotion = isDashBlue ? rightMotion : leftMotion;
       return {
         top: colorOf(dashMotion),
         bottom: colorOf(staticMotion),

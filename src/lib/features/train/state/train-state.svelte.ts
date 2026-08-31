@@ -113,8 +113,8 @@ export function createTrainState(config: Partial<TrainStateConfig> = {}) {
     if (!beat?.motions) return null;
 
     return {
-      blue: beat.motions.blue?.endLocation ?? null,
-      red: beat.motions.red?.endLocation ?? null,
+      left: beat.motions.left?.endLocation ?? null,
+      right: beat.motions.right?.endLocation ?? null,
     };
   });
 
@@ -156,9 +156,9 @@ export function createTrainState(config: Partial<TrainStateConfig> = {}) {
   function updateDetectionFrame(frame: DetectionFrame) {
     currentFrame = frame;
     // Calculate average confidence
-    const blueConf = frame.blue?.confidence ?? 0;
-    const redConf = frame.red?.confidence ?? 0;
-    detectionConfidence = (blueConf + redConf) / 2;
+    const leftConf = frame.left?.confidence ?? 0;
+    const rightConf = frame.right?.confidence ?? 0;
+    detectionConfidence = (leftConf + rightConf) / 2;
   }
 
   function startCountdown() {

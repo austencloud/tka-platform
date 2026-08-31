@@ -58,10 +58,10 @@ export class MediaPipeDetector {
   private _currentFps = 0;
 
   // Persistence tracking
-  private _lastBluePosition: DetectedPosition | null = null;
-  private _lastRedPosition: DetectedPosition | null = null;
-  private _blueFramesMissing = 0;
-  private _redFramesMissing = 0;
+  private _lastLeftPosition: DetectedPosition | null = null;
+  private _lastRightPosition: DetectedPosition | null = null;
+  private _leftFramesMissing = 0;
+  private _rightFramesMissing = 0;
 
   constructor(
     landmarker: HandLandmarker,
@@ -160,8 +160,8 @@ export class MediaPipeDetector {
     },
     timestamp: number
   ): DetectionFrame {
-    let bluePosition: DetectedPosition | null = null;
-    let redPosition: DetectedPosition | null = null;
+    let leftPosition: DetectedPosition | null = null;
+    let rightPosition: DetectedPosition | null = null;
 
     if (result.landmarks && result.landmarks.length > 0) {
       // Extract hand data using sub-services
@@ -260,26 +260,26 @@ export class MediaPipeDetector {
 
       // Assign hands to blue/red slots
       const assignment = this._assignHands(detectedHands, timestamp);
-      bluePosition = assignment.blue;
-      redPosition = assignment.red;
+      leftPosition = assignment.left;
+      rightPosition = assignment.right;
     }
 
     // Clear history for undetected hands
-    if (!bluePosition) {
-      this._stabilizer.clearHistory("blue");
+    if (!leftPosition) {
+      this._stabilizer.clearHistory("left");
     }
-    if (!redPosition) {
-      this._stabilizer.clearHistory("red");
+    if (!rightPosition) {
+      this._stabilizer.clearHistory("right");
     }
 
-    const persisted = this._applyPersistence(bluePosition, redPosition);
-    bluePosition = persisted.blue;
-    redPosition = persisted.red;
+    const persisted = this._applyPersistence(leftPosition, rightPosition);
+    leftPosition = persisted.left;
+    rightPosition = persisted.right;
 
     return {
       timestamp,
-      blue: bluePosition,
-      red: redPosition,
+      left: leftPosition,
+      right: rightPosition,
       source: "mediapipe",
     };
   }
@@ -290,9 +290,9 @@ export class MediaPipeDetector {
   private _assignHands(
     detectedHands: DetectedHandData[],
     timestamp: number
-  ): { blue: DetectedPosition | null; red: DetectedPosition | null } {
-    let bluePosition: DetectedPosition | null = null;
-    let redPosition: DetectedPosition | null = null;
+  ): { left: DetectedPosition | null; right: DetectedPosition | null } {
+    let leftPosition: DetectedPosition | null = null;
+    let rightPosition: DetectedPosition | null = null;
 
     if (detectedHands.length === 2) {
       // Two hands - use position to disambiguate
@@ -302,25 +302,25 @@ export class MediaPipeDetector {
 
       if (hand0 && hand1) {
         if (this._isMirrored) {
-          redPosition = hand0.position;
-          bluePosition = hand1.position;
+          rightPosition = hand0.position;
+          leftPosition = hand1.position;
         } else {
-          bluePosition = hand0.position;
-          redPosition = hand1.position;
+          leftPosition = hand0.position;
+          rightPosition = hand1.position;
         }
       }
 
-      if (bluePosition) {
-        bluePosition = this._applySmoothingToPosition(
-          bluePosition,
-          "blue",
+      if (leftPosition) {
+        leftPosition = this._applySmoothingToPosition(
+          leftPosition,
+          "left",
           timestamp
         );
       }
-      if (redPosition) {
-        redPosition = this._applySmoothingToPosition(
-          redPosition,
-          "red",
+      if (rightPosition) {
+        rightPosition = this._applySmoothingToPosition(
+          rightPosition,
+          "right",
           timestamp
         );
       }
@@ -328,12 +328,12 @@ export class MediaPipeDetector {
       const hand = detectedHands[0];
       if (hand) {
         const assigned = this._assignSingleHand(hand, timestamp);
-        bluePosition = assigned.blue;
-        redPosition = assigned.red;
+        leftPosition = assigned.left;
+        rightPosition = assigned.right;
       }
     }
 
-    return { blue: bluePosition, red: redPosition };
+    return { left: leftPosition, right: rightPosition };
   }
 
   /**
@@ -342,55 +342,55 @@ export class MediaPipeDetector {
   private _assignSingleHand(
     hand: DetectedHandData,
     timestamp: number
-  ): { blue: DetectedPosition | null; red: DetectedPosition | null } {
+  ): { left: DetectedPosition | null; right: DetectedPosition | null } {
     const handX = hand.position.rawPosition.x;
     const handY = hand.position.rawPosition.y;
 
     let assignToBlue = false;
 
-    const hasBlueHistory = this._stabilizer.hasHistory("blue");
-    const hasRedHistory = this._stabilizer.hasHistory("red");
+    const hasLeftHistory = this._stabilizer.hasHistory("left");
+    const hasRightHistory = this._stabilizer.hasHistory("right");
 
-    if (hasBlueHistory && hasRedHistory) {
-      const lastBlue = this._stabilizer.getLastPosition("blue");
-      const lastRed = this._stabilizer.getLastPosition("red");
+    if (hasLeftHistory && hasRightHistory) {
+      const lastLeft = this._stabilizer.getLastPosition("left");
+      const lastRight = this._stabilizer.getLastPosition("right");
 
-      if (lastBlue && lastRed) {
-        const distToBlue = this._stabilizer.calculateDistance(
+      if (lastLeft && lastRight) {
+        const distToLeft = this._stabilizer.calculateDistance(
           handX,
           handY,
-          lastBlue.x,
-          lastBlue.y
+          lastLeft.x,
+          lastLeft.y
         );
-        const distToRed = this._stabilizer.calculateDistance(
+        const distToRight = this._stabilizer.calculateDistance(
           handX,
           handY,
-          lastRed.x,
-          lastRed.y
+          lastRight.x,
+          lastRight.y
         );
-        assignToBlue = distToBlue < distToRed;
+        assignToBlue = distToLeft < distToRight;
       }
-    } else if (hasBlueHistory) {
-      const lastBlue = this._stabilizer.getLastPosition("blue");
-      if (lastBlue) {
-        const distToBlue = this._stabilizer.calculateDistance(
+    } else if (hasLeftHistory) {
+      const lastLeft = this._stabilizer.getLastPosition("left");
+      if (lastLeft) {
+        const distToLeft = this._stabilizer.calculateDistance(
           handX,
           handY,
-          lastBlue.x,
-          lastBlue.y
+          lastLeft.x,
+          lastLeft.y
         );
-        assignToBlue = distToBlue < 0.3;
+        assignToBlue = distToLeft < 0.3;
       }
-    } else if (hasRedHistory) {
-      const lastRed = this._stabilizer.getLastPosition("red");
-      if (lastRed) {
-        const distToRed = this._stabilizer.calculateDistance(
+    } else if (hasRightHistory) {
+      const lastRight = this._stabilizer.getLastPosition("right");
+      if (lastRight) {
+        const distToRight = this._stabilizer.calculateDistance(
           handX,
           handY,
-          lastRed.x,
-          lastRed.y
+          lastRight.x,
+          lastRight.y
         );
-        assignToBlue = distToRed >= 0.3;
+        assignToBlue = distToRight >= 0.3;
       }
     } else {
       assignToBlue = handX > 0.5;
@@ -399,19 +399,19 @@ export class MediaPipeDetector {
     if (assignToBlue) {
       const smoothedPosition = this._applySmoothingToPosition(
         hand.position,
-        "blue",
+        "left",
         timestamp
       );
-      this._stabilizer.setAssignedHand("blue", "left");
-      return { blue: smoothedPosition, red: null };
+      this._stabilizer.setAssignedHand("left", "left");
+      return { left: smoothedPosition, right: null };
     } else {
       const smoothedPosition = this._applySmoothingToPosition(
         hand.position,
-        "red",
+        "right",
         timestamp
       );
-      this._stabilizer.setAssignedHand("red", "right");
-      return { blue: null, red: smoothedPosition };
+      this._stabilizer.setAssignedHand("right", "right");
+      return { left: null, right: smoothedPosition };
     }
   }
 
@@ -420,7 +420,7 @@ export class MediaPipeDetector {
    */
   private _applySmoothingToPosition(
     position: DetectedPosition,
-    handId: "blue" | "red",
+    handId: "left" | "right",
     timestamp: number
   ): DetectedPosition {
     const smoothed = this._stabilizer.addPosition(
@@ -441,41 +441,41 @@ export class MediaPipeDetector {
    * Apply hand persistence (show hands briefly after they disappear)
    */
   private _applyPersistence(
-    currentBlue: DetectedPosition | null,
-    currentRed: DetectedPosition | null
-  ): { blue: DetectedPosition | null; red: DetectedPosition | null } {
-    let blue = currentBlue;
-    let red = currentRed;
+    currentLeft: DetectedPosition | null,
+    currentRight: DetectedPosition | null
+  ): { left: DetectedPosition | null; right: DetectedPosition | null } {
+    let left = currentLeft;
+    let right = currentRight;
 
     // Blue hand persistence
-    if (blue) {
-      this._lastBluePosition = blue;
-      this._blueFramesMissing = 0;
+    if (left) {
+      this._lastLeftPosition = left;
+      this._leftFramesMissing = 0;
     } else if (
-      this._lastBluePosition &&
-      this._blueFramesMissing < HAND_PERSISTENCE_FRAMES
+      this._lastLeftPosition &&
+      this._leftFramesMissing < HAND_PERSISTENCE_FRAMES
     ) {
-      blue = this._lastBluePosition;
-      this._blueFramesMissing++;
+      left = this._lastLeftPosition;
+      this._leftFramesMissing++;
     } else {
-      this._lastBluePosition = null;
+      this._lastLeftPosition = null;
     }
 
     // Red hand persistence
-    if (red) {
-      this._lastRedPosition = red;
-      this._redFramesMissing = 0;
+    if (right) {
+      this._lastRightPosition = right;
+      this._rightFramesMissing = 0;
     } else if (
-      this._lastRedPosition &&
-      this._redFramesMissing < HAND_PERSISTENCE_FRAMES
+      this._lastRightPosition &&
+      this._rightFramesMissing < HAND_PERSISTENCE_FRAMES
     ) {
-      red = this._lastRedPosition;
-      this._redFramesMissing++;
+      right = this._lastRightPosition;
+      this._rightFramesMissing++;
     } else {
-      this._lastRedPosition = null;
+      this._lastRightPosition = null;
     }
 
-    return { blue, red };
+    return { left, right };
   }
 
   /**
@@ -602,10 +602,10 @@ export class MediaPipeDetector {
     this._videoElement = null;
 
     // Reset persistence state
-    this._lastBluePosition = null;
-    this._lastRedPosition = null;
-    this._blueFramesMissing = 0;
-    this._redFramesMissing = 0;
+    this._lastLeftPosition = null;
+    this._lastRightPosition = null;
+    this._leftFramesMissing = 0;
+    this._rightFramesMissing = 0;
 
     // Reset stabilizer
     this._stabilizer.resetAll();

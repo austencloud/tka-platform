@@ -10,7 +10,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   Orientation,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export type DifficultyTrigger = "none" | "turns" | "nonRadial";
@@ -34,15 +34,15 @@ export function analyzeDifficulty(steps: StepData[]): DifficultyAnalysis {
     // 2026-07-02 both-required flip) must not contribute — a decode-path
     // placeholder carrying a non-radial last-known orientation would
     // silently inflate the difficulty badge (Wave 0 straggler fix).
-    const blueRaw = step.motions[MotionColor.BLUE];
-    const redRaw = step.motions[MotionColor.RED];
-    const blueMotion = isVisibleMotion(blueRaw) ? blueRaw : undefined;
-    const redMotion = isVisibleMotion(redRaw) ? redRaw : undefined;
+    const leftRaw = step.motions[HandSide.LEFT];
+    const rightRaw = step.motions[HandSide.RIGHT];
+    const leftMotion = isVisibleMotion(leftRaw) ? leftRaw : undefined;
+    const rightMotion = isVisibleMotion(rightRaw) ? rightRaw : undefined;
 
-    if (hasNonRadialOrientation(blueMotion, redMotion)) {
+    if (hasNonRadialOrientation(leftMotion, rightMotion)) {
       hasNonRadial = true;
     }
-    if (checkHasTurns(blueMotion, redMotion)) {
+    if (checkHasTurns(leftMotion, rightMotion)) {
       hasTurns = true;
     }
   }
@@ -70,17 +70,17 @@ export function levelToString(level: number): string {
 }
 
 function hasNonRadialOrientation(
-  blueMotion: unknown,
-  redMotion: unknown
+  leftMotion: unknown,
+  rightMotion: unknown
 ): boolean {
-  const blueObj = blueMotion as Record<string, unknown> | undefined;
-  const redObj = redMotion as Record<string, unknown> | undefined;
+  const leftObj = leftMotion as Record<string, unknown> | undefined;
+  const rightObj = rightMotion as Record<string, unknown> | undefined;
 
   const orientationsToCheck = [
-    blueObj?.startOrientation,
-    blueObj?.endOrientation,
-    redObj?.startOrientation,
-    redObj?.endOrientation,
+    leftObj?.startOrientation,
+    leftObj?.endOrientation,
+    rightObj?.startOrientation,
+    rightObj?.endOrientation,
   ];
 
   return orientationsToCheck.some(
@@ -89,8 +89,8 @@ function hasNonRadialOrientation(
   );
 }
 
-function checkHasTurns(blueMotion: unknown, redMotion: unknown): boolean {
-  return motionHasTurns(blueMotion) || motionHasTurns(redMotion);
+function checkHasTurns(leftMotion: unknown, rightMotion: unknown): boolean {
+  return motionHasTurns(leftMotion) || motionHasTurns(rightMotion);
 }
 
 function motionHasTurns(motion: unknown): boolean {

@@ -22,14 +22,14 @@
 
   interface Props {
     // AnimatorCanvas rendering props
-    blueProp: PropState | null;
-    redProp: PropState | null;
+    leftProp: PropState | null;
+    rightProp: PropState | null;
     gridMode?: GridMode;
     gridVisible?: boolean;
     stepData?: StartPositionData | StepData | null;
     backgroundAlpha?: number;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     // InteractiveCanvas-specific props
     interactive?: boolean;
     activePhaseColor?: "blue" | "red" | null;
@@ -43,14 +43,14 @@
 
   let {
     // AnimatorCanvas props
-    blueProp,
-    redProp,
+    leftProp,
+    rightProp,
     gridMode = GridMode.DIAMOND,
     gridVisible = true,
     stepData = null,
     backgroundAlpha = 1,
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     // InteractiveCanvas props
     interactive = true,
     activePhaseColor = null,
@@ -65,14 +65,14 @@
 
 <div class="interactive-canvas-wrapper">
   <AnimatorCanvas
-    {blueProp}
-    {redProp}
+    {leftProp}
+    {rightProp}
     {gridMode}
     {gridVisible}
     {stepData}
     {backgroundAlpha}
-    {bluePropType}
-    {redPropType}
+    {leftPropType}
+    {rightPropType}
     fillContainer={true}
     hideProgressBar={true}
     {...restProps}

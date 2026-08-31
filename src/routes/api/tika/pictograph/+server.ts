@@ -36,8 +36,8 @@ interface PictographData {
 	endPosition: string
 	timing: string
 	direction: string
-	blueMotion: MotionData
-	redMotion: MotionData
+	leftMotion: MotionData
+	rightMotion: MotionData
 }
 
 // Cache for loaded pictograph data by grid mode
@@ -70,14 +70,14 @@ function loadCsvFile(csvPath: string): PictographData[] {
 				endPosition: row['endPosition'] ?? '',
 				timing: row['timing'] ?? '',
 				direction: row['direction'] ?? '',
-				blueMotion: {
+				leftMotion: {
 					color: 'blue',
 					startLocation: row['blueStartLocation'] ?? '',
 					endLocation: row['blueEndLocation'] ?? '',
 					motionType: row['blueMotionType'] ?? '',
 					rotationDirection: row['blueRotationDirection'] ?? ''
 				},
-				redMotion: {
+				rightMotion: {
 					color: 'red',
 					startLocation: row['redStartLocation'] ?? '',
 					endLocation: row['redEndLocation'] ?? '',
@@ -164,20 +164,20 @@ export const POST: RequestHandler = async (event) => {
 			startPosition: csvRow.startPosition,
 			endPosition: csvRow.endPosition,
 			gridMode,
-			blueMotion: {
-				motionType: csvRow.blueMotion.motionType,
-				rotationDirection: csvRow.blueMotion.rotationDirection || 'no_rotation',
-				startLocation: csvRow.blueMotion.startLocation,
-				endLocation: csvRow.blueMotion.endLocation,
+			leftMotion: {
+				motionType: csvRow.leftMotion.motionType,
+				rotationDirection: csvRow.leftMotion.rotationDirection || 'no_rotation',
+				startLocation: csvRow.leftMotion.startLocation,
+				endLocation: csvRow.leftMotion.endLocation,
 				color: 'blue',
 				turns: 0,
 				startOrientation: 'in'
 			},
-			redMotion: {
-				motionType: csvRow.redMotion.motionType,
-				rotationDirection: csvRow.redMotion.rotationDirection || 'no_rotation',
-				startLocation: csvRow.redMotion.startLocation,
-				endLocation: csvRow.redMotion.endLocation,
+			rightMotion: {
+				motionType: csvRow.rightMotion.motionType,
+				rotationDirection: csvRow.rightMotion.rotationDirection || 'no_rotation',
+				startLocation: csvRow.rightMotion.startLocation,
+				endLocation: csvRow.rightMotion.endLocation,
 				color: 'red',
 				turns: 0,
 				startOrientation: 'in'
@@ -195,28 +195,28 @@ export const POST: RequestHandler = async (event) => {
 			showReversals: options.showReversals ?? false,
 			showGrid: options.showGrid ?? true,
 			showNonRadialPoints: options.showNonRadialPoints ?? false,
-			showBlueMotion: options.showBlueMotion ?? true,
-			showRedMotion: options.showRedMotion ?? true,
+			showLeftMotion: options.showLeftMotion ?? true,
+			showRightMotion: options.showRightMotion ?? true,
 			// Prop type options for position-first teaching (hand props instead of staffs)
-			bluePropType: options.bluePropType ?? null,
-			redPropType: options.redPropType ?? null
+			leftPropType: options.leftPropType ?? null,
+			rightPropType: options.rightPropType ?? null
 		}
 
 		const motionData = {
 			letter: csvRow.letter,
 			startPosition: csvRow.startPosition,
 			endPosition: csvRow.endPosition,
-			blueMotion: {
-				motionType: csvRow.blueMotion.motionType,
-				startLocation: csvRow.blueMotion.startLocation,
-				endLocation: csvRow.blueMotion.endLocation,
-				rotationDirection: csvRow.blueMotion.rotationDirection
+			leftMotion: {
+				motionType: csvRow.leftMotion.motionType,
+				startLocation: csvRow.leftMotion.startLocation,
+				endLocation: csvRow.leftMotion.endLocation,
+				rotationDirection: csvRow.leftMotion.rotationDirection
 			},
-			redMotion: {
-				motionType: csvRow.redMotion.motionType,
-				startLocation: csvRow.redMotion.startLocation,
-				endLocation: csvRow.redMotion.endLocation,
-				rotationDirection: csvRow.redMotion.rotationDirection
+			rightMotion: {
+				motionType: csvRow.rightMotion.motionType,
+				startLocation: csvRow.rightMotion.startLocation,
+				endLocation: csvRow.rightMotion.endLocation,
+				rotationDirection: csvRow.rightMotion.rotationDirection
 			}
 		}
 
@@ -308,20 +308,20 @@ export const GET: RequestHandler = async (event) => {
 			startPosition: csvRow.startPosition,
 			endPosition: csvRow.endPosition,
 			gridMode,
-			blueMotion: {
-				motionType: csvRow.blueMotion.motionType,
-				rotationDirection: csvRow.blueMotion.rotationDirection || 'no_rotation',
-				startLocation: csvRow.blueMotion.startLocation,
-				endLocation: csvRow.blueMotion.endLocation,
+			leftMotion: {
+				motionType: csvRow.leftMotion.motionType,
+				rotationDirection: csvRow.leftMotion.rotationDirection || 'no_rotation',
+				startLocation: csvRow.leftMotion.startLocation,
+				endLocation: csvRow.leftMotion.endLocation,
 				color: 'blue',
 				turns: 0,
 				startOrientation: 'in'
 			},
-			redMotion: {
-				motionType: csvRow.redMotion.motionType,
-				rotationDirection: csvRow.redMotion.rotationDirection || 'no_rotation',
-				startLocation: csvRow.redMotion.startLocation,
-				endLocation: csvRow.redMotion.endLocation,
+			rightMotion: {
+				motionType: csvRow.rightMotion.motionType,
+				rotationDirection: csvRow.rightMotion.rotationDirection || 'no_rotation',
+				startLocation: csvRow.rightMotion.startLocation,
+				endLocation: csvRow.rightMotion.endLocation,
 				color: 'red',
 				turns: 0,
 				startOrientation: 'in'

@@ -245,8 +245,8 @@
         {currentStep}
         isPlaying={playing}
         {bpm}
-        bluePropType="staff"
-        redPropType="staff"
+        leftPropType="staff"
+        rightPropType="staff"
         hideOverlays
         hideSceneMarkers
         onSceneReadyChange={handleSceneReady}
@@ -271,8 +271,8 @@
             fill
             showWordHeader={false}
             externalBpm={bpm}
-            bluePropType="staff"
-            redPropType="staff"
+            leftPropType="staff"
+            rightPropType="staff"
             tipEffectMap={SMOKE_TIP_EFFECT_MAP}
             effectsConfigState={effectsConfig}
             gridVisible={false}

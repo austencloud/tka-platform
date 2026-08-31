@@ -98,13 +98,13 @@ export interface ShareURLMetadata {
   /** BPM value */
   bpm?: number;
   /** Blue prop type (encoded as short string) */
-  bluePropType?: string;
+  leftPropType?: string;
   /** Red prop type (encoded as short string) */
-  redPropType?: string;
+  rightPropType?: string;
 }
 export interface URLPropOptions {
-  bluePropType?: string;
-  redPropType?: string;
+  leftPropType?: string;
+  rightPropType?: string;
   catDogMode?: boolean;
 }
 export interface SequenceRouteIdParseResult {

@@ -32,8 +32,8 @@ export type EasingType = "linear" | "ease-in" | "ease-out" | "ease-in-out";
 export interface AnimationSequenceSlot {
   sequence: SequenceData | null;
   visible: boolean;
-  blueVisible: boolean;
-  redVisible: boolean;
+  leftVisible: boolean;
+  rightVisible: boolean;
 }
 
 /**
@@ -296,14 +296,14 @@ export function createPlaybackState(): PlaybackState {
           sequence:
             slot.sequence !== undefined ? slot.sequence : existing.sequence,
           visible: slot.visible !== undefined ? slot.visible : existing.visible,
-          blueVisible:
-            slot.blueVisible !== undefined
-              ? slot.blueVisible
-              : existing.blueVisible,
-          redVisible:
-            slot.redVisible !== undefined
-              ? slot.redVisible
-              : existing.redVisible,
+          leftVisible:
+            slot.leftVisible !== undefined
+              ? slot.leftVisible
+              : existing.leftVisible,
+          rightVisible:
+            slot.rightVisible !== undefined
+              ? slot.rightVisible
+              : existing.rightVisible,
         };
       }
     },

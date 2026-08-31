@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { withEffectivePropTypes } from "../with-effective-prop-types";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
@@ -10,12 +10,12 @@ function makeStep(): StepData {
     letter: "A",
     stepNumber: 1,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     motions: {
-      [MotionColor.BLUE]: { motionType: "pro", rotationDirection: "cw", propType: "staff" } as never,
-      [MotionColor.RED]: { motionType: "anti", rotationDirection: "ccw", propType: "staff" } as never,
+      [HandSide.LEFT]: { motionType: "pro", rotationDirection: "cw", propType: "staff" } as never,
+      [HandSide.RIGHT]: { motionType: "anti", rotationDirection: "ccw", propType: "staff" } as never,
     },
   } as unknown as StepData;
 }
@@ -23,14 +23,14 @@ function makeStep(): StepData {
 describe("withEffectivePropTypes", () => {
   it("sets blue and red motion propType to the effective prop types", () => {
     const out = withEffectivePropTypes(makeStep(), PropType.FAN, PropType.CLUB);
-    expect(out.motions?.[MotionColor.BLUE]?.propType).toBe(PropType.FAN);
-    expect(out.motions?.[MotionColor.RED]?.propType).toBe(PropType.CLUB);
+    expect(out.motions?.[HandSide.LEFT]?.propType).toBe(PropType.FAN);
+    expect(out.motions?.[HandSide.RIGHT]?.propType).toBe(PropType.CLUB);
   });
 
   it("does not mutate the input step", () => {
     const input = makeStep();
     withEffectivePropTypes(input, PropType.FAN, PropType.FAN);
-    expect(input.motions?.[MotionColor.BLUE]?.propType).toBe("staff");
+    expect(input.motions?.[HandSide.LEFT]?.propType).toBe("staff");
   });
 
   it("returns the step unchanged when a motion is missing", () => {

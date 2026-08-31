@@ -65,10 +65,10 @@ function convertMotionAttrs(motion: Record<string, unknown> | undefined) {
 
 function deriveGridPosition(motions: Record<string, Record<string, unknown>> | undefined, locKey: "startLocation" | "endLocation"): string {
   if (!motions) return "";
-  const blue = (motions["blue"]?.[locKey] as string) || "";
-  const red = (motions["red"]?.[locKey] as string) || "";
-  if (!blue || !red) return "";
-  return `${blue}_${red}`;
+  const left = (motions["blue"]?.[locKey] as string) || "";
+  const right = (motions["red"]?.[locKey] as string) || "";
+  if (!left || !right) return "";
+  return `${left}_${right}`;
 }
 
 function convertToRawSequence(data: Record<string, unknown>): RawStepData[] {
@@ -108,8 +108,8 @@ function convertToRawSequence(data: Record<string, unknown>): RawStepData[] {
           sequenceStartPosition: gridPos,
           endPos: gridPos,
           letter: (startPos["letter"] as string) || undefined,
-          blueAttributes: sMotions ? convertMotionAttrs(sMotions["blue"]) : undefined,
-          redAttributes: sMotions ? convertMotionAttrs(sMotions["red"]) : undefined,
+          leftAttributes: sMotions ? convertMotionAttrs(sMotions["blue"]) : undefined,
+          rightAttributes: sMotions ? convertMotionAttrs(sMotions["red"]) : undefined,
         });
       }
 
@@ -122,8 +122,8 @@ function convertToRawSequence(data: Record<string, unknown>): RawStepData[] {
           letter: (step["letter"] as string) || undefined,
           startPos: deriveGridPosition(motions, "startLocation") || undefined,
           endPos: deriveGridPosition(motions, "endLocation") || undefined,
-          blueAttributes: motions ? convertMotionAttrs(motions["blue"]) : undefined,
-          redAttributes: motions ? convertMotionAttrs(motions["red"]) : undefined,
+          leftAttributes: motions ? convertMotionAttrs(motions["blue"]) : undefined,
+          rightAttributes: motions ? convertMotionAttrs(motions["red"]) : undefined,
         });
       }
       return result;
@@ -150,8 +150,8 @@ function convertToRawSequence(data: Record<string, unknown>): RawStepData[] {
       sequenceStartPosition: gridPos,
       endPos: gridPos,
       letter: (startPos["letter"] as string) || undefined,
-      blueAttributes: motions ? convertMotionAttrs(motions["blue"]) : undefined,
-      redAttributes: motions ? convertMotionAttrs(motions["red"]) : undefined,
+      leftAttributes: motions ? convertMotionAttrs(motions["blue"]) : undefined,
+      rightAttributes: motions ? convertMotionAttrs(motions["red"]) : undefined,
     });
   }
 
@@ -171,8 +171,8 @@ function convertToRawSequence(data: Record<string, unknown>): RawStepData[] {
       letter: (step["letter"] as string) || undefined,
       startPos: (step["startPosition"] as string) || deriveGridPosition(motions, "startLocation") || undefined,
       endPos: (step["endPosition"] as string) || deriveGridPosition(motions, "endLocation") || undefined,
-      blueAttributes: motions ? convertMotionAttrs(motions["blue"]) : undefined,
-      redAttributes: motions ? convertMotionAttrs(motions["red"]) : undefined,
+      leftAttributes: motions ? convertMotionAttrs(motions["blue"]) : undefined,
+      rightAttributes: motions ? convertMotionAttrs(motions["red"]) : undefined,
     });
   }
 

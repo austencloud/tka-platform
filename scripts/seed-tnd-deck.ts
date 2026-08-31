@@ -70,8 +70,8 @@ interface CsvRow {
   endPosition: string;
   timing: string;
   direction: string;
-  blue: CsvMotion;
-  red: CsvMotion;
+  left: CsvMotion;
+  right: CsvMotion;
 }
 
 /**
@@ -95,8 +95,8 @@ function loadCsv(): CsvRow[] {
       endPosition: v[2],
       timing: v[3],
       direction: v[4],
-      blue: { motionType: v[5], rotationDirection: v[6], startLocation: v[7], endLocation: v[8] },
-      red: { motionType: v[9], rotationDirection: v[10], startLocation: v[11], endLocation: v[12] },
+      left: { motionType: v[5], rotationDirection: v[6], startLocation: v[7], endLocation: v[8] },
+      right: { motionType: v[9], rotationDirection: v[10], startLocation: v[11], endLocation: v[12] },
     });
   }
   return rows;
@@ -398,7 +398,7 @@ function findRow(rows: CsvRow[], b: BeatRef): CsvRow {
       r.letter === b.letter &&
       r.startPosition === b.startPos &&
       r.endPosition === b.endPos &&
-      (b.blueDir === undefined || r.blue.rotationDirection === b.blueDir)
+      (b.blueDir === undefined || r.left.rotationDirection === b.blueDir)
   );
   if (matches.length === 0) {
     const dir = b.blueDir ? ` blueDir=${b.blueDir}` : "";
@@ -420,8 +420,8 @@ interface BuiltBeat {
   letter: string;
   startPosition: string;
   endPosition: string;
-  blue: BuiltMotion;
-  red: BuiltMotion;
+  left: BuiltMotion;
+  right: BuiltMotion;
 }
 
 /**
@@ -431,35 +431,35 @@ interface BuiltBeat {
  * "cw" when a row leaves it blank).
  */
 function chainOrientations(rows: CsvRow[]): BuiltBeat[] {
-  let blueOri = "in";
-  let redOri = "in";
+  let leftOri = "in";
+  let rightOri = "in";
   return rows.map((r) => {
-    const blueStart = blueOri;
-    const redStart = redOri;
-    const blueEnd = calculateEndOrientation({
-      motionType: r.blue.motionType,
+    const leftStart = leftOri;
+    const rightStart = rightOri;
+    const leftEnd = calculateEndOrientation({
+      motionType: r.left.motionType,
       turns: 0,
-      rotationDirection: r.blue.rotationDirection || "cw",
-      startLocation: r.blue.startLocation,
-      endLocation: r.blue.endLocation,
-      startOrientation: blueStart,
+      rotationDirection: r.left.rotationDirection || "cw",
+      startLocation: r.left.startLocation,
+      endLocation: r.left.endLocation,
+      startOrientation: leftStart,
     });
-    const redEnd = calculateEndOrientation({
-      motionType: r.red.motionType,
+    const rightEnd = calculateEndOrientation({
+      motionType: r.right.motionType,
       turns: 0,
-      rotationDirection: r.red.rotationDirection || "cw",
-      startLocation: r.red.startLocation,
-      endLocation: r.red.endLocation,
-      startOrientation: redStart,
+      rotationDirection: r.right.rotationDirection || "cw",
+      startLocation: r.right.startLocation,
+      endLocation: r.right.endLocation,
+      startOrientation: rightStart,
     });
-    blueOri = blueEnd;
-    redOri = redEnd;
+    leftOri = leftEnd;
+    rightOri = rightEnd;
     return {
       letter: r.letter,
       startPosition: r.startPosition,
       endPosition: r.endPosition,
-      blue: { ...r.blue, startOrientation: blueStart, endOrientation: blueEnd },
-      red: { ...r.red, startOrientation: redStart, endOrientation: redEnd },
+      left: { ...r.left, startOrientation: leftStart, endOrientation: leftEnd },
+      right: { ...r.right, startOrientation: rightStart, endOrientation: rightEnd },
     };
   });
 }
@@ -469,15 +469,15 @@ function chainOrientations(rows: CsvRow[]): BuiltBeat[] {
 // ============================================================================
 
 function computeHandPathId(beats: BuiltBeat[]): string {
-  const blue = [beats[0].blue.startLocation, ...beats.map((b) => b.blue.endLocation)].join("→");
-  const red = [beats[0].red.startLocation, ...beats.map((b) => b.red.endLocation)].join("→");
-  return [blue, red].sort().join("|");
+  const left = [beats[0].left.startLocation, ...beats.map((b) => b.left.endLocation)].join("→");
+  const right = [beats[0].right.startLocation, ...beats.map((b) => b.right.endLocation)].join("→");
+  return [left, right].sort().join("|");
 }
 
-function traceHandPath(beats: BuiltBeat[]): { blue: string; red: string } {
+function traceHandPath(beats: BuiltBeat[]): { left: string; right: string } {
   return {
-    blue: [beats[0].blue.startLocation, ...beats.map((b) => b.blue.endLocation)].join("→"),
-    red: [beats[0].red.startLocation, ...beats.map((b) => b.red.endLocation)].join("→"),
+    left: [beats[0].left.startLocation, ...beats.map((b) => b.left.endLocation)].join("→"),
+    right: [beats[0].right.startLocation, ...beats.map((b) => b.right.endLocation)].join("→"),
   };
 }
 
@@ -546,12 +546,12 @@ function buildFirestoreStep(beat: BuiltBeat, stepNumber: number) {
     endPosition: beat.endPosition,
     gridMode: "diamond",
     duration: 1.0,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     motions: {
-      blue: buildFirestoreMotion(beat.blue, "blue"),
-      red: buildFirestoreMotion(beat.red, "red"),
+      left: buildFirestoreMotion(beat.left, "blue"),
+      right: buildFirestoreMotion(beat.right, "red"),
     },
   };
 }
@@ -580,8 +580,8 @@ function buildFirestoreStartPosition(seq: TnDSequence) {
     gridPosition: first.startPosition,
     gridMode: "diamond",
     motions: {
-      blue: staticMotion(first.blue.startLocation, "blue"),
-      red: staticMotion(first.red.startLocation, "red"),
+      left: staticMotion(first.left.startLocation, "blue"),
+      right: staticMotion(first.right.startLocation, "red"),
     },
   };
 }
@@ -726,8 +726,8 @@ async function main(): Promise<void> {
     const trace = traceHandPath(seqs[0].beats);
     const words = seqs.map((s) => s.word).join(", ");
     console.log(`  #${hpNum} [${seqs[0].vtg}] — ${seqs.length} sequence(s): ${words}`);
-    console.log(`    Hand A: ${trace.blue}`);
-    console.log(`    Hand B: ${trace.red}`);
+    console.log(`    Hand A: ${trace.left}`);
+    console.log(`    Hand B: ${trace.right}`);
     hpNum++;
   }
 
@@ -738,10 +738,10 @@ async function main(): Promise<void> {
     sample.beats.forEach((b, i) => {
       console.log(
         `    Beat ${i + 1}: ${b.letter} ` +
-          `blue=${b.blue.motionType}[${b.blue.startLocation}→${b.blue.endLocation}] ` +
-          `ori=${b.blue.startOrientation}→${b.blue.endOrientation} | ` +
-          `red=${b.red.motionType}[${b.red.startLocation}→${b.red.endLocation}] ` +
-          `ori=${b.red.startOrientation}→${b.red.endOrientation}`
+          `blue=${b.left.motionType}[${b.left.startLocation}→${b.left.endLocation}] ` +
+          `ori=${b.left.startOrientation}→${b.left.endOrientation} | ` +
+          `red=${b.right.motionType}[${b.right.startLocation}→${b.right.endLocation}] ` +
+          `ori=${b.right.startOrientation}→${b.right.endOrientation}`
       );
     });
   }

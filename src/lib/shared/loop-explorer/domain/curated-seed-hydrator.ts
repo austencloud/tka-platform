@@ -14,7 +14,7 @@ import {
 } from "$lib/shared/foundation/services/data/enum-mapper";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   createMotionData,
   type MotionData,
@@ -40,8 +40,8 @@ export interface CuratedStepWire {
   readonly startPosition: string;
   readonly endPosition: string;
   readonly stepNumber: number;
-  readonly blueMotion: CuratedMotionWire;
-  readonly redMotion: CuratedMotionWire;
+  readonly leftMotion: CuratedMotionWire;
+  readonly rightMotion: CuratedMotionWire;
 }
 
 export interface CuratedSequenceWire {
@@ -52,7 +52,7 @@ export interface CuratedSequenceWire {
 
 function hydrateMotion(
   wire: CuratedMotionWire,
-  color: MotionColor
+  color: HandSide
 ): MotionData {
   const startLocation = mapLocation(wire.startLocation);
 
@@ -73,7 +73,7 @@ function hydrateMotion(
         wire.prefloatRotationDirection
       ),
     }),
-    color,
+    hand: color,
     isVisible: true,
     propType: PropType.STAFF,
     // The compact harness format does not persist placement data. This is the
@@ -117,8 +117,8 @@ export function hydrateCuratedSequence(
       stepNumber: step.stepNumber,
       duration: 1,
       motions: {
-        [MotionColor.BLUE]: hydrateMotion(step.blueMotion, MotionColor.BLUE),
-        [MotionColor.RED]: hydrateMotion(step.redMotion, MotionColor.RED),
+        [HandSide.LEFT]: hydrateMotion(step.leftMotion, HandSide.LEFT),
+        [HandSide.RIGHT]: hydrateMotion(step.rightMotion, HandSide.RIGHT),
       },
     });
   });

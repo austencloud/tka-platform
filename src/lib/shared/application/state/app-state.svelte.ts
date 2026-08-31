@@ -39,16 +39,16 @@ import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
 
 // Default prop presets for new users (10 commonly-used configurations)
 const DEFAULT_PROP_PRESETS: PropPreset[] = [
-  { bluePropType: PropType.STAFF, redPropType: PropType.STAFF, catDogMode: false },
-  { bluePropType: PropType.FAN, redPropType: PropType.FAN, catDogMode: false },
-  { bluePropType: PropType.CLUB, redPropType: PropType.CLUB, catDogMode: false },
-  { bluePropType: PropType.BUUGENG, redPropType: PropType.BUUGENG, catDogMode: false },
-  { bluePropType: PropType.MINIHOOP, redPropType: PropType.MINIHOOP, catDogMode: false },
-  { bluePropType: PropType.TRIAD, redPropType: PropType.TRIAD, catDogMode: false },
-  { bluePropType: PropType.DOUBLESTAR, redPropType: PropType.DOUBLESTAR, catDogMode: false },
-  { bluePropType: PropType.BIGDOUBLESTAR, redPropType: PropType.BIGDOUBLESTAR, catDogMode: false },
-  { bluePropType: PropType.QUIAD, redPropType: PropType.QUIAD, catDogMode: false },
-  { bluePropType: PropType.STAFF, redPropType: PropType.FAN, catDogMode: true },
+  { leftPropType: PropType.STAFF, rightPropType: PropType.STAFF, catDogMode: false },
+  { leftPropType: PropType.FAN, rightPropType: PropType.FAN, catDogMode: false },
+  { leftPropType: PropType.CLUB, rightPropType: PropType.CLUB, catDogMode: false },
+  { leftPropType: PropType.BUUGENG, rightPropType: PropType.BUUGENG, catDogMode: false },
+  { leftPropType: PropType.MINIHOOP, rightPropType: PropType.MINIHOOP, catDogMode: false },
+  { leftPropType: PropType.TRIAD, rightPropType: PropType.TRIAD, catDogMode: false },
+  { leftPropType: PropType.DOUBLESTAR, rightPropType: PropType.DOUBLESTAR, catDogMode: false },
+  { leftPropType: PropType.BIGDOUBLESTAR, rightPropType: PropType.BIGDOUBLESTAR, catDogMode: false },
+  { leftPropType: PropType.QUIAD, rightPropType: PropType.QUIAD, catDogMode: false },
+  { leftPropType: PropType.STAFF, rightPropType: PropType.FAN, catDogMode: true },
 ];
 
 // Default settings returned when services aren't initialized
@@ -59,8 +59,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   backgroundEnabled: true,
   backgroundColor: "#000000",
   propPresets: DEFAULT_PROP_PRESETS,
-  bluePropType: PropType.STAFF,
-  redPropType: PropType.STAFF,
+  leftPropType: PropType.STAFF,
+  rightPropType: PropType.STAFF,
   selectedPresetIndex: 0,
 };
 

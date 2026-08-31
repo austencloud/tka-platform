@@ -29,7 +29,7 @@
   import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -69,7 +69,7 @@
     letter: null,
     gridMode: GridMode.DIAMOND,
     motions: {
-      red: createMotionData({
+      right: createMotionData({
         motionType: type,
         rotationDirection: rot,
         startLocation: from,
@@ -77,7 +77,7 @@
         startOrientation: startOri,
         endOrientation: endOri,
         turns,
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
@@ -86,7 +86,7 @@
   const stat = (id: string, loc: GridLocation, ori: Orientation) =>
     redStaff(id, MotionType.STATIC, loc, loc, ori, ori, NOROT);
   /** Motion → the HalfwayMotion shape poseAt/poseArrow (PoseFrame) expect. */
-  const toHM = (m: ReturnType<typeof redStaff>["motions"]["red"]): HalfwayMotion => ({
+  const toHM = (m: ReturnType<typeof redStaff>["motions"]["right"]): HalfwayMotion => ({
     type: m.motionType,
     from: m.startLocation,
     to: m.endLocation,
@@ -105,7 +105,7 @@
     word: string;
   };
   const endOf = (combined: ReturnType<typeof redStaff>) => {
-    const m = combined.motions.red;
+    const m = combined.motions.right;
     return stat(`${combined.id}-end`, m.endLocation, m.endOrientation);
   };
   const rowDef = (opts: {
@@ -141,8 +141,8 @@
       id: `${data.id}-anim-${stepNumber}`,
       stepNumber,
       motions: {
-        blue: createPlaceholderMotion(MotionColor.BLUE, { location: E, orientation: IN }),
-        red: data.motions.red,
+        left: createPlaceholderMotion(HandSide.LEFT, { location: E, orientation: IN }),
+        right: data.motions.right,
       },
     }) as unknown as StepData;
   const rowSteps = (row: RowDef): StepData[] => {
@@ -188,8 +188,8 @@
   // Corner mandala forms (facelift, divider family).
   const m = (mt: string, rd: string, sl: string, el: string, so: string, eo: string) =>
     ({ motionType: mt, rotationDirection: rd, startLocation: sl, endLocation: el, startOrientation: so, endOrientation: eo });
-  const mstep = (blue: unknown, red: unknown) => ({ motions: { blue, red } });
-  const mseq = (steps: unknown[]) => ({ bluePropType: "staff", redPropType: "staff", steps });
+  const mstep = (left, right) => ({ motions: { left, right } });
+  const mseq = (steps: unknown[]) => ({ leftPropType: "staff", rightPropType: "staff", steps });
   const ISO = mseq([
     mstep(m("pro", "cw", "n", "e", "in", "in"), m("pro", "cw", "s", "w", "in", "in")),
     mstep(m("pro", "cw", "e", "s", "in", "in"), m("pro", "cw", "w", "n", "in", "in")),
@@ -264,10 +264,10 @@
 <div class="turns-page">
   <!-- Header corner art (facelift mandalas) + heavy rule under the header. -->
   <div class="corner" style="left:{40 * S}px; top:{18 * S}px; width:{62 * S}px; height:{62 * S}px">
-    <SequenceMandala sequence={ISO} size={62 * S} darkMode={false} bluePropType="staff" redPropType="staff" pathShape="arc" strokeWidth={2.5} />
+    <SequenceMandala sequence={ISO} size={62 * S} darkMode={false} leftPropType="staff" rightPropType="staff" pathShape="arc" strokeWidth={2.5} />
   </div>
   <div class="corner" style="left:{510 * S}px; top:{18 * S}px; width:{62 * S}px; height:{62 * S}px">
-    <SequenceMandala sequence={ANTIM} size={62 * S} darkMode={false} bluePropType="staff" redPropType="staff" pathShape="arc" strokeWidth={2.5} />
+    <SequenceMandala sequence={ANTIM} size={62 * S} darkMode={false} leftPropType="staff" rightPropType="staff" pathShape="arc" strokeWidth={2.5} />
   </div>
   <div class="rule heavy" style="left:0; top:{HEAVY_RULE * S}px; width:{612 * S}px"></div>
   <div class="rule hair" style="left:{20 * S}px; top:{HAIRLINE * S}px; width:{572 * S}px"></div>
@@ -276,19 +276,19 @@
     {@const halfPic = halvedOf(row)}
     <!-- start: real pose, no arrow -->
     <div class="mini" style="left:{COLS[0]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={row.start} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} showArrow={false} {...PICTO_FLAGS} />
+      <PictographContainer pictographData={row.start} gridMode={GridMode.DIAMOND} rightPropTypeOverride={PropType.STAFF} showArrow={false} {...PICTO_FLAGS} />
     </div>
     <!-- halfway: real pictograph via buildHalvedStep, PoseFrame fallback -->
     <div class="mini" style="left:{COLS[1]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
       {#if halfPic}
-        <PictographContainer pictographData={halfPic} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} bluePropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+        <PictographContainer pictographData={halfPic} gridMode={GridMode.DIAMOND} rightPropTypeOverride={PropType.STAFF} leftPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
       {:else}
-        <PoseFrame motion={toHM(row.combined.motions.red)} t={0.5} arrow={{ tStart: 0, tEnd: 0.5 }} />
+        <PoseFrame motion={toHM(row.combined.motions.right)} t={0.5} arrow={{ tStart: 0, tEnd: 0.5 }} />
       {/if}
     </div>
     <!-- end: real pose, no arrow -->
     <div class="mini" style="left:{COLS[2]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={row.end} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} showArrow={false} {...PICTO_FLAGS} />
+      <PictographContainer pictographData={row.end} gridMode={GridMode.DIAMOND} rightPropTypeOverride={PropType.STAFF} showArrow={false} {...PICTO_FLAGS} />
     </div>
     <!-- combined: real full-motion pictograph, click-to-animate -->
     <div
@@ -301,8 +301,8 @@
       <PictographContainer
         pictographData={{ ...animStep(row.combined, 1), stepNumber: undefined } as unknown as StepData}
         gridMode={GridMode.DIAMOND}
-        redPropTypeOverride={PropType.STAFF}
-        bluePropTypeOverride={PropType.STAFF}
+        rightPropTypeOverride={PropType.STAFF}
+        leftPropTypeOverride={PropType.STAFF}
         {...PICTO_FLAGS}
       />
       <SelectionHit

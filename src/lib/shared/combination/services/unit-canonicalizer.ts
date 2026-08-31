@@ -88,10 +88,10 @@ function handFields(motion: MotionData): readonly [string, string] {
  * perform.
  */
 function stepKey(step: StepData, op: SymmetryOp): string {
-  const blue = step.motions.blue;
-  const red = step.motions.red;
-  const first = op.swap ? red : blue;
-  const second = op.swap ? blue : red;
+  const left = step.motions.left;
+  const right = step.motions.right;
+  const first = op.swap ? right : left;
+  const second = op.swap ? left : right;
   return [
     ...handFields(first),
     transformLocation(String(first.startLocation), op),
@@ -114,15 +114,15 @@ function necklace(keys: readonly string[]): string {
 
 /** The untransformed eight-field tuple — the index key into the dataframe. */
 export function motionTupleKey(step: StepData): string {
-  const blue = step.motions.blue;
-  const red = step.motions.red;
+  const left = step.motions.left;
+  const right = step.motions.right;
   return [
-    ...handFields(blue),
-    String(blue.startLocation),
-    String(blue.endLocation),
-    ...handFields(red),
-    String(red.startLocation),
-    String(red.endLocation),
+    ...handFields(left),
+    String(left.startLocation),
+    String(left.endLocation),
+    ...handFields(right),
+    String(right.startLocation),
+    String(right.endLocation),
   ].join("|");
 }
 
@@ -170,15 +170,15 @@ export function createUnitCanonicalizer(
         const rotated: StepData[] = [];
         let complete = true;
         for (const step of steps) {
-          const blue = step.motions.blue;
-          const red = step.motions.red;
+          const left = step.motions.left;
+          const right = step.motions.right;
           const key = [
-            ...handFields(blue),
-            String(blue.startLocation),
-            String(blue.endLocation),
-            ...handFields(red),
-            rotateLocation(String(red.startLocation), eighths),
-            rotateLocation(String(red.endLocation), eighths),
+            ...handFields(left),
+            String(left.startLocation),
+            String(left.endLocation),
+            ...handFields(right),
+            rotateLocation(String(right.startLocation), eighths),
+            rotateLocation(String(right.endLocation), eighths),
           ].join("|");
           const hit = byTuple.get(key);
           if (!hit) {

@@ -9,12 +9,12 @@ import type { PictographData } from "../../../../shared/domain/models/pictograph
 
 function hasHybridMotions(pictographData: PictographData): boolean {
   try {
-    const blueMotion = pictographData.motions.blue;
-    const redMotion = pictographData.motions.red;
-    if (!blueMotion || !redMotion) return false;
-    const blueType = blueMotion.motionType || "";
-    const redType = redMotion.motionType || "";
-    return blueType !== redType;
+    const leftMotion = pictographData.motions.left;
+    const rightMotion = pictographData.motions.right;
+    if (!leftMotion || !rightMotion) return false;
+    const leftType = leftMotion.motionType || "";
+    const rightType = rightMotion.motionType || "";
+    return leftType !== rightType;
   } catch {
     return false;
   }
@@ -24,14 +24,14 @@ function startsFromMixedOrientation(pictographData: PictographData): boolean {
   try {
     const IN = "in";
     const OUT = "out";
-    const blueMotion = pictographData.motions.blue;
-    const redMotion = pictographData.motions.red;
-    if (!blueMotion || !redMotion) return false;
-    const blueStart = blueMotion.startOrientation || "";
-    const redStart = redMotion.startOrientation || "";
-    const blueLayer1 = [IN, OUT].includes(blueStart);
-    const redLayer1 = [IN, OUT].includes(redStart);
-    return blueLayer1 !== redLayer1;
+    const leftMotion = pictographData.motions.left;
+    const rightMotion = pictographData.motions.right;
+    if (!leftMotion || !rightMotion) return false;
+    const leftStart = leftMotion.startOrientation || "";
+    const rightStart = rightMotion.startOrientation || "";
+    const leftLayer1 = [IN, OUT].includes(leftStart);
+    const rightLayer1 = [IN, OUT].includes(rightStart);
+    return leftLayer1 !== rightLayer1;
   } catch {
     return false;
   }

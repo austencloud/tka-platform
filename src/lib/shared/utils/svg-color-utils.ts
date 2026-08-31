@@ -6,7 +6,7 @@
  */
 export {
   ACCENT_COLORS_TO_PRESERVE,
-  MOTION_COLOR_MAP,
+  HAND_COLOR_MAP,
   SELECTIVE_COLOR_PROP_TYPES,
   getMotionColor,
   shouldPreserveColor,

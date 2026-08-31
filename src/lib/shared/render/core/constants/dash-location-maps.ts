@@ -1,22 +1,22 @@
 import type { GridLocation } from "../types.js";
 
 export const PHI_DASH_PSI_DASH_LOCATION_MAP: Record<string, GridLocation> = {
-  "red,n,s": "e",
-  "red,e,w": "n",
-  "red,s,n": "e",
-  "red,w,e": "n",
-  "blue,n,s": "w",
-  "blue,e,w": "s",
-  "blue,s,n": "w",
-  "blue,w,e": "s",
-  "red,nw,se": "ne",
-  "red,ne,sw": "se",
-  "red,sw,ne": "se",
-  "red,se,nw": "ne",
-  "blue,nw,se": "sw",
-  "blue,ne,sw": "nw",
-  "blue,sw,ne": "nw",
-  "blue,se,nw": "sw",
+  "right,n,s": "e",
+  "right,e,w": "n",
+  "right,s,n": "e",
+  "right,w,e": "n",
+  "left,n,s": "w",
+  "left,e,w": "s",
+  "left,s,n": "w",
+  "left,w,e": "s",
+  "right,nw,se": "ne",
+  "right,ne,sw": "se",
+  "right,sw,ne": "se",
+  "right,se,nw": "ne",
+  "left,nw,se": "sw",
+  "left,ne,sw": "nw",
+  "left,sw,ne": "nw",
+  "left,se,nw": "sw",
 };
 
 export const LAMBDA_ZERO_TURNS_LOCATION_MAP: Record<string, GridLocation> = {

@@ -57,8 +57,8 @@
     onSetTrailMode?: (mode: TrailMode) => void;
     onSetEffort?: (effort: string) => void;
     onSetColors?: (colors: PropColors) => void;
-    onSetBlueVisible?: (visible: boolean) => void;
-    onSetRedVisible?: (visible: boolean) => void;
+    onSetLeftVisible?: (visible: boolean) => void;
+    onSetRightVisible?: (visible: boolean) => void;
     onSetOffset?: (offset: number) => void;
     onSetTipEffectMap?: (map: TipEffectMap) => void;
     onSetTipEffortMap?: (map: TipEffortMap) => void;
@@ -178,18 +178,18 @@
     p.onTransformLayer?.(0, type);
   }
 
-  function handleToggleBlueVisibility() {
+  function handleToggleLeftVisibility() {
     if (!cell) return;
-    p.onSetBlueVisible?.(cell.blueMotionVisible === false);
+    p.onSetLeftVisible?.(cell.leftMotionVisible === false);
   }
 
-  function handleToggleRedVisibility() {
+  function handleToggleRightVisibility() {
     if (!cell) return;
-    p.onSetRedVisible?.(cell.redMotionVisible === false);
+    p.onSetRightVisible?.(cell.rightMotionVisible === false);
   }
 
-  const blueVisible = $derived(cell ? cell.blueMotionVisible !== false : true);
-  const redVisible = $derived(cell ? cell.redMotionVisible !== false : true);
+  const leftVisible = $derived(cell ? cell.leftMotionVisible !== false : true);
+  const rightVisible = $derived(cell ? cell.rightMotionVisible !== false : true);
 
   function handleKeydown(e: KeyboardEvent) {
     if (!cell) return;
@@ -260,8 +260,8 @@
               currentEffect={cell.effect ?? "none"}
               currentTrailMode={cell.trailMode}
               currentMap={cell.tipEffectMap ?? {}}
-              bluePropType="staff"
-              redPropType="staff"
+              leftPropType="staff"
+              rightPropType="staff"
               onSetEffect={(effect) => p.onSetEffect?.(effect)}
               onSetTrailMode={(mode) => p.onSetTrailMode?.(mode)}
               onUpdateMap={(map) => p.onSetTipEffectMap?.(map)}
@@ -277,8 +277,8 @@
               <UnifiedEffortSection
                 currentEffort={cell.effort}
                 currentMap={cell.tipEffortMap ?? {}}
-                bluePropType="staff"
-                redPropType="staff"
+                leftPropType="staff"
+                rightPropType="staff"
                 onSetEffort={(effort) => p.onSetEffort?.(effort)}
                 onUpdateMap={(map) => p.onSetTipEffortMap?.(map)}
               />
@@ -288,20 +288,20 @@
                   <button
                     type="button"
                     class="vis-btn"
-                    class:active={blueVisible}
+                    class:active={leftVisible}
                     style:--vis-color="var(--semantic-info, #60a5fa)"
-                    aria-pressed={blueVisible}
-                    onclick={handleToggleBlueVisibility}
+                    aria-pressed={leftVisible}
+                    onclick={handleToggleLeftVisibility}
                   >
                     <i class="fas fa-eye" aria-hidden="true"></i> Blue
                   </button>
                   <button
                     type="button"
                     class="vis-btn"
-                    class:active={redVisible}
+                    class:active={rightVisible}
                     style:--vis-color="var(--semantic-error, #dc2626)"
-                    aria-pressed={redVisible}
-                    onclick={handleToggleRedVisibility}
+                    aria-pressed={rightVisible}
+                    onclick={handleToggleRightVisibility}
                   >
                     <i class="fas fa-eye" aria-hidden="true"></i> Red
                   </button>

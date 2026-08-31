@@ -19,18 +19,18 @@
     colAxis: Flower[];
     /** Upper bound on a cell's edge; the actual size shrinks to fit the viewport. */
     maxCellPx?: number;
-    onselect: (pair: { blue: Flower; red: Flower }) => void;
+    onselect: (pair: { left: Flower; right: Flower }) => void;
     /** Optional externally-owned selection for restored/shared app state. */
-    selectedPair?: { blue: Flower; red: Flower } | null;
+    selectedPair?: { left: Flower; right: Flower } | null;
     /** Alternative cell/header painter (e.g. the poi trail painter). Defaults to the club-style painter. */
     painter?: {
       cell: typeof renderCell;
       header: typeof renderHeader;
     };
     /** Per-cell verdict tint (poi-legality curation). Null/undefined = no tint. */
-    overlayFor?: (blue: Flower, red: Flower) => CellVerdict | null | undefined;
+    overlayFor?: (left, right) => CellVerdict | null | undefined;
     /** Cells to de-emphasize (e.g. already-judged cells in a curation focus view). */
-    dimFor?: (blue: Flower, red: Flower) => boolean;
+    dimFor?: (left, right) => boolean;
   }
   let {
     data,
@@ -65,9 +65,9 @@
   // resizing never triggers a re-render and the image stays crisp.
   const RENDER_PX = 128;
 
-  const headerSrc = (f: Flower, hand: "blue" | "red") =>
+  const headerSrc = (f: Flower, hand: "left" | "right") =>
     paintHeader(
-      (hand === "blue" ? data.blue : data.red).get(flowerKey(f))!,
+      (hand === "left" ? data.left : data.right).get(flowerKey(f))!,
       hand,
       RENDER_PX,
       data.clubTipDx
@@ -79,8 +79,8 @@
     let url = cellCache.get(k);
     if (!url) {
       url = paintCell(
-        data.blue.get(flowerKey(b))!,
-        data.red.get(flowerKey(r))!,
+        data.left.get(flowerKey(b))!,
+        data.right.get(flowerKey(r))!,
         RENDER_PX,
         data.clubTipDx
       );
@@ -110,7 +110,7 @@
     selectedPair === undefined
       ? sel
       : selectedPair
-        ? `${flowerKey(selectedPair.blue)}__${flowerKey(selectedPair.red)}`
+        ? `${flowerKey(selectedPair.left)}__${flowerKey(selectedPair.right)}`
         : null
   );
 </script>
@@ -133,7 +133,7 @@
           <th class="corner" scope="col" aria-label="blue rows by red columns"
           ></th>
           {#each colAxis as rf, colIndex (colIndex)}
-            {@const source = headerSrc(rf, "red")}
+            {@const source = headerSrc(rf, "right")}
             <th class="colhead" scope="col" title={flowerLabel(rf)}>
               <Crossfade
                 key={source}
@@ -149,7 +149,7 @@
       </thead>
       <tbody>
         {#each rowAxis as bf, rowIndex (rowIndex)}
-          {@const rowSource = headerSrc(bf, "blue")}
+          {@const rowSource = headerSrc(bf, "left")}
           <tr>
             <th class="rowhead" scope="row" title={flowerLabel(bf)}>
               <Crossfade
@@ -178,7 +178,7 @@
                   aria-label={`blue ${flowerLabel(bf)} over red ${flowerLabel(rf)}`}
                   onclick={() => {
                     sel = key;
-                    onselect({ blue: bf, red: rf });
+                    onselect({ left: bf, right: rf });
                   }}
                 >
                   {#if observed.has(slotKey)}

@@ -23,10 +23,10 @@
 
   // Lab state
   let mode = $state<TriGridMode>("upright");
-  let blueLocation = $state<GridLocation>(GridLocation.NORTH);
-  let redLocation = $state<GridLocation>(GridLocation.SOUTHEAST);
-  let blueOrientation = $state<Orientation>(Orientation.IN);
-  let redOrientation = $state<Orientation>(Orientation.IN);
+  let leftLocation = $state<GridLocation>(GridLocation.NORTH);
+  let rightLocation = $state<GridLocation>(GridLocation.SOUTHEAST);
+  let leftOrientation = $state<Orientation>(Orientation.IN);
+  let rightOrientation = $state<Orientation>(Orientation.IN);
   let motionType = $state<TriGridMotionType>("pro");
   let showGrid = $state(true);
 
@@ -34,13 +34,13 @@
   function handleModeChange(newMode: TriGridMode) {
     mode = newMode;
     const locs = getTriGridLocations(newMode);
-    blueLocation = locs[0]!;
-    redLocation = locs[1]!;
+    leftLocation = locs[0]!;
+    rightLocation = locs[1]!;
   }
 
-  function handlePositionChange(blue: GridLocation, red: GridLocation) {
-    blueLocation = blue;
-    redLocation = red;
+  function handlePositionChange(left, right) {
+    leftLocation = left;
+    rightLocation = right;
   }
 </script>
 
@@ -54,10 +54,10 @@
     <div class="canvas-area">
       <TriGridPictograph
         {mode}
-        {blueLocation}
-        {redLocation}
-        {blueOrientation}
-        {redOrientation}
+        {leftLocation}
+        {rightLocation}
+        {leftOrientation}
+        {rightOrientation}
         {showGrid}
       />
     </div>
@@ -65,23 +65,23 @@
     <aside class="controls-sidebar">
       <TriGridControls
         {mode}
-        {blueLocation}
-        {redLocation}
-        {blueOrientation}
-        {redOrientation}
+        {leftLocation}
+        {rightLocation}
+        {leftOrientation}
+        {rightOrientation}
         {motionType}
         {showGrid}
         onModeChange={handleModeChange}
         onPositionChange={handlePositionChange}
-        onBlueOrientationChange={(o) => { blueOrientation = o; }}
-        onRedOrientationChange={(o) => { redOrientation = o; }}
+        onLeftOrientationChange={(o) => { leftOrientation = o; }}
+        onRightOrientationChange={(o) => { rightOrientation = o; }}
         onMotionTypeChange={(t) => { motionType = t; }}
         onToggleGrid={() => { showGrid = !showGrid; }}
       />
 
       <TriGridPositionInfo
-        {blueLocation}
-        {redLocation}
+        {leftLocation}
+        {rightLocation}
         {mode}
       />
     </aside>

@@ -21,7 +21,7 @@
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -160,14 +160,14 @@
           startOrientation: Orientation.IN,
           endOrientation: halfwayOri,
           turns: t.turns,
-          color: MotionColor.RED,
+          color: HandSide.RIGHT,
           segment: { t0: 0, t1: 0.5 },
         });
 
         const picto = {
           letter: null,
           gridMode: motion.gridMode,
-          motions: { red: motion, blue: undefined },
+          motions: { right: motion, left: undefined },
         } as unknown as PictographData;
 
         const [x, y, rotation] = await calculateArrowPoint(picto, motion);

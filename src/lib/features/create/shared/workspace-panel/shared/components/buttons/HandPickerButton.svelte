@@ -6,17 +6,17 @@
   Tapping toggles between blue and red.
 -->
 <script lang="ts">
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   let {
     activeHand,
     onToggle,
   }: {
-    activeHand: MotionColor;
+    activeHand: HandSide;
     onToggle: () => void;
   } = $props();
 
-  const isBlue = $derived(activeHand === MotionColor.BLUE);
+  const isBlue = $derived(activeHand === HandSide.LEFT);
   const ariaLabel = $derived(
     isBlue ? "Building blue hand. Tap to switch to red." : "Building red hand. Tap to switch to blue."
   );

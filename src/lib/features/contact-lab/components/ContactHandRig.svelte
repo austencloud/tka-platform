@@ -126,7 +126,7 @@
     mixer?.stopAllAction();
   });
 
-  const mirror = $derived(pose.id === "blue-left" ? -1 : 1);
+  const mirror = $derived(pose.id === "left" ? -1 : 1);
 </script>
 
 <T.Group

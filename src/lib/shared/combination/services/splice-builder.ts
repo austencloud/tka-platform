@@ -73,14 +73,14 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
 import { deriveWordStatus } from "$lib/shared/foundation/services/word-deriver";
 import {
-  MotionColor,
+  HandSide,
   type Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 
 import type { WalkBlock } from "../domain/types";
 
-const COLORS = [MotionColor.BLUE, MotionColor.RED] as const;
+const COLORS = [HandSide.LEFT, HandSide.RIGHT] as const;
 
 /**
  * Passes to simulate before giving up on orientation closure. The orientation
@@ -92,7 +92,7 @@ const COLORS = [MotionColor.BLUE, MotionColor.RED] as const;
  */
 const MAX_PERIOD = 8;
 
-type OrientationSeed = Partial<Record<MotionColor, Orientation>>;
+type OrientationSeed = Partial<Record<HandSide, Orientation>>;
 
 /** Where each hand stands before the first step: the start hold's end state. */
 function seedOf(sequence: SequenceData): OrientationSeed {
@@ -210,8 +210,8 @@ function withWrapReversals(seq: SequenceData): SequenceData {
   return updateSequenceData(seq, {
     steps: seq.steps.map((step, i) =>
       reversalDetector.applyReversalSymbols(step, {
-        blueReversal: flags[i]?.blue.propReversal ?? false,
-        redReversal: flags[i]?.red.propReversal ?? false,
+        leftReversal: flags[i]?.left.propReversal ?? false,
+        rightReversal: flags[i]?.right.propReversal ?? false,
       })
     ),
   });
@@ -248,8 +248,8 @@ export async function buildResult(
           // Belt and braces: the source flags describe adjacency in the SOURCE
           // ordering, and the splice has a new one. `withWrapReversals` below
           // is authoritative and overwrites both.
-          blueReversal: false,
-          redReversal: false,
+          leftReversal: false,
+          rightReversal: false,
         })
       );
     });

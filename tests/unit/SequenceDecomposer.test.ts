@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
-  extractBlueSoloProp,
-  extractRedSoloProp,
+  extractLeftSoloProp,
+  extractRightSoloProp,
   extractStepPairings,
 } from "$lib/shared/foundation/services/sequence-decomposer";
 import { deriveSteps } from "$lib/shared/foundation/services/step-deriver";
@@ -14,7 +14,7 @@ import {
   Orientation,
   MotionType,
   RotationDirection,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -25,7 +25,7 @@ import type { StartPositionData } from "$lib/shared/foundation/domain/models/sta
 function makeMotion(
   startLocation: GridLocation,
   endLocation: GridLocation,
-  color: MotionColor,
+  color: HandSide,
   overrides: Parameters<typeof createMotionData>[0] = {}
 ) {
   return createMotionData({
@@ -36,7 +36,7 @@ function makeMotion(
     motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
     turns: 1,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     isVisible: true,
     arrowLocation: startLocation,
@@ -45,10 +45,10 @@ function makeMotion(
 }
 
 function makeStep(
-  blueStart: GridLocation,
-  blueEnd: GridLocation,
-  redStart: GridLocation,
-  redEnd: GridLocation,
+  leftStart: GridLocation,
+  leftEnd: GridLocation,
+  rightStart: GridLocation,
+  rightEnd: GridLocation,
   overrides: Partial<StepData> = {}
 ): StepData {
   return {
@@ -57,13 +57,13 @@ function makeStep(
     startPosition: GridPosition.ALPHA1,
     endPosition: GridPosition.BETA1,
     motions: {
-      blue: makeMotion(blueStart, blueEnd, MotionColor.BLUE),
-      red: makeMotion(redStart, redEnd, MotionColor.RED),
+      left: makeMotion(leftStart, leftEnd, HandSide.LEFT),
+      right: makeMotion(rightStart, rightEnd, HandSide.RIGHT),
     },
     stepNumber: 1,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     isStep: true,
     ...overrides,
@@ -71,41 +71,41 @@ function makeStep(
 }
 
 function makeStartPosition(
-  blueLocation: GridLocation,
-  redLocation: GridLocation,
-  blueOrientation: Orientation = Orientation.IN,
-  redOrientation: Orientation = Orientation.OUT
+  leftLocation: GridLocation,
+  rightLocation: GridLocation,
+  leftOrientation: Orientation = Orientation.IN,
+  rightOrientation: Orientation = Orientation.OUT
 ): StartPositionData {
   return {
     id: crypto.randomUUID(),
     isStartPosition: true,
     gridPosition: GridPosition.ALPHA1,
     motions: {
-      blue: createMotionData({
-        startLocation: blueLocation,
-        endLocation: blueLocation,
-        startOrientation: blueOrientation,
-        endOrientation: blueOrientation,
+      left: createMotionData({
+        startLocation: leftLocation,
+        endLocation: leftLocation,
+        startOrientation: leftOrientation,
+        endOrientation: leftOrientation,
         motionType: MotionType.STATIC,
         rotationDirection: RotationDirection.NO_ROTATION,
         turns: 0,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         propType: PropType.STAFF,
         isVisible: true,
-        arrowLocation: blueLocation,
+        arrowLocation: leftLocation,
       }),
-      red: createMotionData({
-        startLocation: redLocation,
-        endLocation: redLocation,
-        startOrientation: redOrientation,
-        endOrientation: redOrientation,
+      right: createMotionData({
+        startLocation: rightLocation,
+        endLocation: rightLocation,
+        startOrientation: rightOrientation,
+        endOrientation: rightOrientation,
         motionType: MotionType.STATIC,
         rotationDirection: RotationDirection.NO_ROTATION,
         turns: 0,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         propType: PropType.STAFF,
         isVisible: true,
-        arrowLocation: redLocation,
+        arrowLocation: rightLocation,
       }),
     },
   };
@@ -134,16 +134,16 @@ function createTestSequence() {
     {
       stepNumber: 2,
       letter: Letter.B,
-      blueReversal: true,
-      redReversal: false,
+      leftReversal: true,
+      rightReversal: false,
       startPosition: GridPosition.BETA1,
       endPosition: GridPosition.GAMMA1,
       motions: {
-        blue: makeMotion(GridLocation.EAST, GridLocation.SOUTH, MotionColor.BLUE, {
+        left: makeMotion(GridLocation.EAST, GridLocation.SOUTH, HandSide.LEFT, {
           motionType: MotionType.ANTI,
           rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
         }),
-        red: makeMotion(GridLocation.WEST, GridLocation.NORTH, MotionColor.RED, {
+        right: makeMotion(GridLocation.WEST, GridLocation.NORTH, HandSide.RIGHT, {
           motionType: MotionType.ANTI,
           rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
         }),
@@ -168,36 +168,36 @@ function createTestSequence() {
 describe("SequenceDecomposer — extractBlueSoloProp", () => {
   it("returns a SoloPropData with one step per sequence step", () => {
     const sequence = createTestSequence();
-    const blue = extractBlueSoloProp(sequence);
-    expect(blue.steps).toHaveLength(sequence.steps.length);
+    const left = extractLeftSoloProp(sequence);
+    expect(left.steps).toHaveLength(sequence.steps.length);
   });
 
   it("preserves blue startLocation from startPosition", () => {
     const sequence = createTestSequence();
-    const blue = extractBlueSoloProp(sequence);
-    expect(blue.startLocation).toBe(GridLocation.NORTH);
+    const left = extractLeftSoloProp(sequence);
+    expect(left.startLocation).toBe(GridLocation.NORTH);
   });
 
   it("preserves blue startOrientation from startPosition", () => {
     const sequence = createTestSequence();
-    const blue = extractBlueSoloProp(sequence);
-    expect(blue.startOrientation).toBe(Orientation.IN);
+    const left = extractLeftSoloProp(sequence);
+    expect(left.startOrientation).toBe(Orientation.IN);
   });
 
   it("captures step motionType correctly", () => {
     const sequence = createTestSequence();
-    const blue = extractBlueSoloProp(sequence);
-    expect(blue.steps[0]?.motionType).toBe(MotionType.PRO);
-    expect(blue.steps[1]?.motionType).toBe(MotionType.ANTI);
+    const left = extractLeftSoloProp(sequence);
+    expect(left.steps[0]?.motionType).toBe(MotionType.PRO);
+    expect(left.steps[1]?.motionType).toBe(MotionType.ANTI);
   });
 
   it("captures step locations correctly", () => {
     const sequence = createTestSequence();
-    const blue = extractBlueSoloProp(sequence);
-    expect(blue.steps[0]?.startLocation).toBe(GridLocation.NORTH);
-    expect(blue.steps[0]?.endLocation).toBe(GridLocation.EAST);
-    expect(blue.steps[1]?.startLocation).toBe(GridLocation.EAST);
-    expect(blue.steps[1]?.endLocation).toBe(GridLocation.SOUTH);
+    const left = extractLeftSoloProp(sequence);
+    expect(left.steps[0]?.startLocation).toBe(GridLocation.NORTH);
+    expect(left.steps[0]?.endLocation).toBe(GridLocation.EAST);
+    expect(left.steps[1]?.startLocation).toBe(GridLocation.EAST);
+    expect(left.steps[1]?.endLocation).toBe(GridLocation.SOUTH);
   });
 
   it("captures step duration from the original StepData", () => {
@@ -209,8 +209,8 @@ describe("SequenceDecomposer — extractBlueSoloProp", () => {
       { duration: 3 }
     );
     const sequence = createSequenceData({ steps: [step], word: "A" });
-    const blue = extractBlueSoloProp(sequence);
-    expect(blue.steps[0]?.duration).toBe(3);
+    const left = extractLeftSoloProp(sequence);
+    expect(left.steps[0]?.duration).toBe(3);
   });
 
   it("falls back to first step motion when startPosition is absent", () => {
@@ -221,38 +221,38 @@ describe("SequenceDecomposer — extractBlueSoloProp", () => {
       GridLocation.NORTH
     );
     const sequence = createSequenceData({ steps: [step], word: "A" });
-    const blue = extractBlueSoloProp(sequence);
+    const left = extractLeftSoloProp(sequence);
     // Falls back to step[0].motions.blue.startLocation
-    expect(blue.startLocation).toBe(GridLocation.EAST);
+    expect(left.startLocation).toBe(GridLocation.EAST);
   });
 });
 
 describe("SequenceDecomposer — extractRedSoloProp", () => {
   it("returns a SoloPropData with one step per sequence step", () => {
     const sequence = createTestSequence();
-    const red = extractRedSoloProp(sequence);
-    expect(red.steps).toHaveLength(sequence.steps.length);
+    const right = extractRightSoloProp(sequence);
+    expect(right.steps).toHaveLength(sequence.steps.length);
   });
 
   it("preserves red startLocation from startPosition", () => {
     const sequence = createTestSequence();
-    const red = extractRedSoloProp(sequence);
-    expect(red.startLocation).toBe(GridLocation.SOUTH);
+    const right = extractRightSoloProp(sequence);
+    expect(right.startLocation).toBe(GridLocation.SOUTH);
   });
 
   it("preserves red startOrientation from startPosition", () => {
     const sequence = createTestSequence();
-    const red = extractRedSoloProp(sequence);
-    expect(red.startOrientation).toBe(Orientation.OUT);
+    const right = extractRightSoloProp(sequence);
+    expect(right.startOrientation).toBe(Orientation.OUT);
   });
 
   it("captures correct step locations for red", () => {
     const sequence = createTestSequence();
-    const red = extractRedSoloProp(sequence);
-    expect(red.steps[0]?.startLocation).toBe(GridLocation.SOUTH);
-    expect(red.steps[0]?.endLocation).toBe(GridLocation.WEST);
-    expect(red.steps[1]?.startLocation).toBe(GridLocation.WEST);
-    expect(red.steps[1]?.endLocation).toBe(GridLocation.NORTH);
+    const right = extractRightSoloProp(sequence);
+    expect(right.steps[0]?.startLocation).toBe(GridLocation.SOUTH);
+    expect(right.steps[0]?.endLocation).toBe(GridLocation.WEST);
+    expect(right.steps[1]?.startLocation).toBe(GridLocation.WEST);
+    expect(right.steps[1]?.endLocation).toBe(GridLocation.NORTH);
   });
 });
 
@@ -274,8 +274,8 @@ describe("SequenceDecomposer — extractStepPairings", () => {
     const sequence = createTestSequence();
     const pairings = extractStepPairings(sequence);
     // Step 2 has blueReversal: true, redReversal: false
-    expect(pairings[1]?.blueReversal).toBe(true);
-    expect(pairings[1]?.redReversal).toBe(false);
+    expect(pairings[1]?.leftReversal).toBe(true);
+    expect(pairings[1]?.rightReversal).toBe(false);
   });
 
   it("preserves startPosition and endPosition", () => {
@@ -303,11 +303,11 @@ describe("SequenceDecomposer — round-trip", () => {
   it("decompose then deriveSteps produces domain-equivalent steps", () => {
     const original = createTestSequence();
 
-    const blue = extractBlueSoloProp(original);
-    const red = extractRedSoloProp(original);
+    const left = extractLeftSoloProp(original);
+    const right = extractRightSoloProp(original);
     const pairings = extractStepPairings(original);
 
-    const derived = deriveSteps(blue, red, pairings);
+    const derived = deriveSteps(left, right, pairings);
 
     expect(derived).toHaveLength(original.steps.length);
 
@@ -317,26 +317,26 @@ describe("SequenceDecomposer — round-trip", () => {
 
       // Pairing fields
       expect(deriv.letter).toBe(orig.letter);
-      expect(deriv.blueReversal).toBe(orig.blueReversal);
-      expect(deriv.redReversal).toBe(orig.redReversal);
+      expect(deriv.leftReversal).toBe(orig.leftReversal);
+      expect(deriv.rightReversal).toBe(orig.rightReversal);
 
       // Blue motion geometry
-      expect(deriv.motions.blue?.startLocation).toBe(orig.motions.blue?.startLocation);
-      expect(deriv.motions.blue?.endLocation).toBe(orig.motions.blue?.endLocation);
-      expect(deriv.motions.blue?.motionType).toBe(orig.motions.blue?.motionType);
-      expect(deriv.motions.blue?.rotationDirection).toBe(orig.motions.blue?.rotationDirection);
-      expect(deriv.motions.blue?.turns).toBe(orig.motions.blue?.turns);
-      expect(deriv.motions.blue?.startOrientation).toBe(orig.motions.blue?.startOrientation);
-      expect(deriv.motions.blue?.endOrientation).toBe(orig.motions.blue?.endOrientation);
+      expect(deriv.motions.left?.startLocation).toBe(orig.motions.left?.startLocation);
+      expect(deriv.motions.left?.endLocation).toBe(orig.motions.left?.endLocation);
+      expect(deriv.motions.left?.motionType).toBe(orig.motions.left?.motionType);
+      expect(deriv.motions.left?.rotationDirection).toBe(orig.motions.left?.rotationDirection);
+      expect(deriv.motions.left?.turns).toBe(orig.motions.left?.turns);
+      expect(deriv.motions.left?.startOrientation).toBe(orig.motions.left?.startOrientation);
+      expect(deriv.motions.left?.endOrientation).toBe(orig.motions.left?.endOrientation);
 
       // Red motion geometry
-      expect(deriv.motions.red?.startLocation).toBe(orig.motions.red?.startLocation);
-      expect(deriv.motions.red?.endLocation).toBe(orig.motions.red?.endLocation);
-      expect(deriv.motions.red?.motionType).toBe(orig.motions.red?.motionType);
-      expect(deriv.motions.red?.rotationDirection).toBe(orig.motions.red?.rotationDirection);
-      expect(deriv.motions.red?.turns).toBe(orig.motions.red?.turns);
-      expect(deriv.motions.red?.startOrientation).toBe(orig.motions.red?.startOrientation);
-      expect(deriv.motions.red?.endOrientation).toBe(orig.motions.red?.endOrientation);
+      expect(deriv.motions.right?.startLocation).toBe(orig.motions.right?.startLocation);
+      expect(deriv.motions.right?.endLocation).toBe(orig.motions.right?.endLocation);
+      expect(deriv.motions.right?.motionType).toBe(orig.motions.right?.motionType);
+      expect(deriv.motions.right?.rotationDirection).toBe(orig.motions.right?.rotationDirection);
+      expect(deriv.motions.right?.turns).toBe(orig.motions.right?.turns);
+      expect(deriv.motions.right?.startOrientation).toBe(orig.motions.right?.startOrientation);
+      expect(deriv.motions.right?.endOrientation).toBe(orig.motions.right?.endOrientation);
     }
   });
 
@@ -358,10 +358,10 @@ describe("SequenceDecomposer — round-trip", () => {
 
     const sequence = createSequenceData({ steps: [step1, step2], word: "AB" });
 
-    const blue = extractBlueSoloProp(sequence);
-    const red = extractRedSoloProp(sequence);
+    const left = extractLeftSoloProp(sequence);
+    const right = extractRightSoloProp(sequence);
     const pairings = extractStepPairings(sequence);
-    const derived = deriveSteps(blue, red, pairings);
+    const derived = deriveSteps(left, right, pairings);
 
     expect(derived[0]?.duration).toBe(2);
     expect(derived[1]?.duration).toBe(4);
@@ -375,12 +375,12 @@ describe("SequenceDecomposer — round-trip", () => {
       GridLocation.SOUTH,
       {
         motions: {
-          blue: makeMotion(GridLocation.NORTH, GridLocation.NORTH, MotionColor.BLUE, {
+          left: makeMotion(GridLocation.NORTH, GridLocation.NORTH, HandSide.LEFT, {
             motionType: MotionType.STATIC,
             rotationDirection: RotationDirection.NO_ROTATION,
             turns: 0,
           }),
-          red: makeMotion(GridLocation.SOUTH, GridLocation.SOUTH, MotionColor.RED, {
+          right: makeMotion(GridLocation.SOUTH, GridLocation.SOUTH, HandSide.RIGHT, {
             motionType: MotionType.STATIC,
             rotationDirection: RotationDirection.NO_ROTATION,
             turns: 0,
@@ -391,14 +391,14 @@ describe("SequenceDecomposer — round-trip", () => {
 
     const sequence = createSequenceData({ steps: [step], word: "S" });
 
-    const blue = extractBlueSoloProp(sequence);
-    const red = extractRedSoloProp(sequence);
+    const left = extractLeftSoloProp(sequence);
+    const right = extractRightSoloProp(sequence);
     const pairings = extractStepPairings(sequence);
-    const derived = deriveSteps(blue, red, pairings);
+    const derived = deriveSteps(left, right, pairings);
 
-    expect(derived[0]?.motions.blue?.motionType).toBe(MotionType.STATIC);
-    expect(derived[0]?.motions.blue?.turns).toBe(0);
-    expect(derived[0]?.motions.red?.motionType).toBe(MotionType.STATIC);
-    expect(derived[0]?.motions.red?.turns).toBe(0);
+    expect(derived[0]?.motions.left?.motionType).toBe(MotionType.STATIC);
+    expect(derived[0]?.motions.left?.turns).toBe(0);
+    expect(derived[0]?.motions.right?.motionType).toBe(MotionType.STATIC);
+    expect(derived[0]?.motions.right?.turns).toBe(0);
   });
 });

@@ -25,10 +25,10 @@ function motion(over: Record<string, unknown> = {}) {
   } as never;
 }
 
-function step(stepNumber: number, blue: unknown, red: unknown) {
+function step(stepNumber: number, left: unknown, right: unknown) {
   return {
-    stepNumber, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
-    motions: { blue, red },
+    stepNumber, duration: 1, leftReversal: false, rightReversal: false, isBlank: false,
+    motions: { left, right },
     id: `s${stepNumber}`, letter: null, startPosition: null, endPosition: null,
   };
 }
@@ -36,17 +36,17 @@ function step(stepNumber: number, blue: unknown, red: unknown) {
 describe("QR round-trip preserves derived endOrientation", () => {
   it("encodeSequenceForQR -> decodeSequenceFromQR preserves derived endOrientation", async () => {
     // Consistent chain: STATIC start position (in/in), then one step.
-    const spBlue = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.NORTH, endLocation: GridLocation.NORTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
-    const spRed = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.SOUTH, endLocation: GridLocation.SOUTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
+    const spLeft = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.NORTH, endLocation: GridLocation.NORTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
+    const spRight = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.SOUTH, endLocation: GridLocation.SOUTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
     // blue: n->e cw orbit + ccw rot => anti, anti 0 switches in->out
-    const s1Blue = motion({ turns: 0, rotationDirection: RotationDirection.COUNTER_CLOCKWISE, startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, startOrientation: Orientation.IN, endOrientation: Orientation.OUT });
+    const s1Left = motion({ turns: 0, rotationDirection: RotationDirection.COUNTER_CLOCKWISE, startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, startOrientation: Orientation.IN, endOrientation: Orientation.OUT });
     // red: s->w cw orbit + cw rot => pro, pro 0 preserves in->in
-    const s1Red = motion({ turns: 0, rotationDirection: RotationDirection.CLOCKWISE, startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
+    const s1Right = motion({ turns: 0, rotationDirection: RotationDirection.CLOCKWISE, startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
 
     const original = {
       id: "x", name: "", word: "", steps: [
-        step(0, spBlue, spRed),
-        step(1, s1Blue, s1Red),
+        step(0, spLeft, spRight),
+        step(1, s1Left, s1Right),
       ],
       thumbnails: [], isFavorite: false, isCircular: false, tags: [], metadata: {}, sequenceLength: 1,
     } as never;
@@ -57,7 +57,7 @@ describe("QR round-trip preserves derived endOrientation", () => {
     const back = await decodeSequenceFromQR(qr);
     // Start position (stepNumber 0) lands on startPosition; the lone real step at steps[0].
     expect(back.steps.length).toBe(1);
-    expect(back.steps[0]!.motions.blue!.endOrientation).toBe(Orientation.OUT); // anti 0 switches
-    expect(back.steps[0]!.motions.red!.endOrientation).toBe(Orientation.IN); // pro 0 preserves
+    expect(back.steps[0]!.motions.left!.endOrientation).toBe(Orientation.OUT); // anti 0 switches
+    expect(back.steps[0]!.motions.right!.endOrientation).toBe(Orientation.IN); // pro 0 preserves
   });
 });

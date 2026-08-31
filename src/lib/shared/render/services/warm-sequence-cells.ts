@@ -22,12 +22,12 @@ import { getSequenceMotionVisibility } from "$lib/shared/foundation/services/seq
 export interface WarmOptions {
   /** Scan cards render dark by default. */
   isDark?: boolean;
-  bluePropType?: PropType;
-  redPropType?: PropType;
+  leftPropType?: PropType;
+  rightPropType?: PropType;
   catDogMode?: boolean;
   /** Participating-hand visibility. Defaults to the sequence's motion profile. */
-  showBlueMotion?: boolean;
-  showRedMotion?: boolean;
+  showLeftMotion?: boolean;
+  showRightMotion?: boolean;
   /** Throw unless every canonical object already exists or uploads successfully. */
   requireComplete?: boolean;
   /** Stop starting more cell work when the requesting render is obsolete. */
@@ -158,17 +158,17 @@ export async function warmSequenceCells(
   opts: WarmOptions = {}
 ): Promise<WarmSequenceCellsResult> {
   throwIfAborted(opts.signal);
-  const blueProp = opts.bluePropType;
+  const blueProp = opts.leftPropType;
   const motionVisibility = getSequenceMotionVisibility(sequence);
   const renderOptions: PreviewCellRenderOptions = {
     ...CANONICAL_CARD_VISIBILITY,
     size: CANONICAL_CELL_SIZE,
     showStepNumbers: false,
-    bluePropType: blueProp,
-    redPropType: opts.catDogMode ? (opts.redPropType ?? blueProp) : blueProp,
+    leftPropType: blueProp,
+    rightPropType: opts.catDogMode ? (opts.rightPropType ?? blueProp) : blueProp,
     catDogModeEnabled: opts.catDogMode ?? false,
-    showBlueMotion: opts.showBlueMotion ?? motionVisibility.showBlueMotion,
-    showRedMotion: opts.showRedMotion ?? motionVisibility.showRedMotion,
+    showLeftMotion: opts.showLeftMotion ?? motionVisibility.showLeftMotion,
+    showRightMotion: opts.showRightMotion ?? motionVisibility.showRightMotion,
     probeCloud: true,
     uploadCanonical: true,
   };

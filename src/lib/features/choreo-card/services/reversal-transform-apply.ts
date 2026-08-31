@@ -75,46 +75,46 @@ export function transformSequence(
   // which the detector reads back as "continuous" — the bug this replaces.
   const parities = cumulativeParities(pattern.sequence, steps.length);
   const transformedSteps = steps.map((step, stepIndex) => {
-    const { blueReversal: blueToggle, redReversal: redToggle } = getReversalFlagsForBeat(
+    const { leftReversal: leftToggle, rightReversal: rightToggle } = getReversalFlagsForBeat(
       pattern.sequence,
       stepIndex,
     );
-    const blueParity = parities.blue[stepIndex] ?? false;
-    const redParity = parities.red[stepIndex] ?? false;
+    const leftParity = parities.left[stepIndex] ?? false;
+    const rightParity = parities.right[stepIndex] ?? false;
 
     const mutable = step as unknown as {
-      motions?: { blue?: MutableMotion; red?: MutableMotion };
+      motions?: { left?: MutableMotion; right?: MutableMotion };
       startPosition?: string | null;
       endPosition?: string | null;
       letter?: string | null;
-      blueReversal?: boolean;
-      redReversal?: boolean;
+      leftReversal?: boolean;
+      rightReversal?: boolean;
     };
 
-    const blue = mutable.motions?.blue;
-    const red = mutable.motions?.red;
+    const left = mutable.motions?.left;
+    const right = mutable.motions?.right;
 
-    flipMotion(blue, blueParity);
-    flipMotion(red, redParity);
-    mutable.blueReversal = blueToggle;
-    mutable.redReversal = redToggle;
+    flipMotion(left, leftParity);
+    flipMotion(right, rightParity);
+    mutable.leftReversal = leftToggle;
+    mutable.rightReversal = rightToggle;
 
     // Re-derive the letter from the CSV. Match is on positions + motionType +
     // locations only (NOT rotationDirection) — consistent with the reference.
     // Invisible placeholder = hand not really there (both-required Step shape).
-    if (isVisibleMotion(blue) && isVisibleMotion(red)) {
+    if (isVisibleMotion(left) && isVisibleMotion(right)) {
       const letter = lookupLetter(edges, {
         startPosition: String(mutable.startPosition ?? ""),
         endPosition: String(mutable.endPosition ?? ""),
-        blue: {
-          motionType: String(blue.motionType ?? ""),
-          startLocation: String(blue.startLocation ?? ""),
-          endLocation: String(blue.endLocation ?? ""),
+        left: {
+          motionType: String(left.motionType ?? ""),
+          startLocation: String(left.startLocation ?? ""),
+          endLocation: String(left.endLocation ?? ""),
         },
-        red: {
-          motionType: String(red.motionType ?? ""),
-          startLocation: String(red.startLocation ?? ""),
-          endLocation: String(red.endLocation ?? ""),
+        right: {
+          motionType: String(right.motionType ?? ""),
+          startLocation: String(right.startLocation ?? ""),
+          endLocation: String(right.endLocation ?? ""),
         },
       });
       if (letter) mutable.letter = letter;
@@ -211,54 +211,54 @@ export function solveHandFlips(
  */
 export function applyReversalMatrix(
   seq: SequenceData,
-  blueReversals: boolean[],
-  redReversals: boolean[],
+  leftReversals: boolean[],
+  rightReversals: boolean[],
   edges: CsvEdge[],
 ): SequenceData {
   const clone = JSON.parse(JSON.stringify(seq)) as SequenceData;
   const steps = (clone.steps ?? []) as readonly StepData[];
 
-  const blueMotions = steps.map(
-    (s) => (s as unknown as { motions?: { blue?: MutableMotion } }).motions?.blue,
+  const leftMotions = steps.map(
+    (s) => (s as unknown as { motions?: { left?: MutableMotion } }).motions?.left,
   );
-  const redMotions = steps.map(
-    (s) => (s as unknown as { motions?: { red?: MutableMotion } }).motions?.red,
+  const rightMotions = steps.map(
+    (s) => (s as unknown as { motions?: { right?: MutableMotion } }).motions?.right,
   );
 
-  const blueFlips = solveHandFlips(blueMotions, blueReversals);
-  const redFlips = solveHandFlips(redMotions, redReversals);
+  const leftFlips = solveHandFlips(leftMotions, leftReversals);
+  const rightFlips = solveHandFlips(rightMotions, rightReversals);
 
   const transformedSteps = steps.map((step, stepIndex) => {
     const mutable = step as unknown as {
-      motions?: { blue?: MutableMotion; red?: MutableMotion };
+      motions?: { left?: MutableMotion; right?: MutableMotion };
       startPosition?: string | null;
       endPosition?: string | null;
       letter?: string | null;
-      blueReversal?: boolean;
-      redReversal?: boolean;
+      leftReversal?: boolean;
+      rightReversal?: boolean;
     };
 
-    const blue = mutable.motions?.blue;
-    const red = mutable.motions?.red;
+    const left = mutable.motions?.left;
+    const right = mutable.motions?.right;
 
-    flipMotion(blue, blueFlips[stepIndex] ?? false);
-    flipMotion(red, redFlips[stepIndex] ?? false);
-    mutable.blueReversal = blueReversals[stepIndex] ?? false;
-    mutable.redReversal = redReversals[stepIndex] ?? false;
+    flipMotion(left, leftFlips[stepIndex] ?? false);
+    flipMotion(right, rightFlips[stepIndex] ?? false);
+    mutable.leftReversal = leftReversals[stepIndex] ?? false;
+    mutable.rightReversal = rightReversals[stepIndex] ?? false;
 
-    if (blue && red) {
+    if (left && right) {
       const letter = lookupLetter(edges, {
         startPosition: String(mutable.startPosition ?? ""),
         endPosition: String(mutable.endPosition ?? ""),
-        blue: {
-          motionType: String(blue.motionType ?? ""),
-          startLocation: String(blue.startLocation ?? ""),
-          endLocation: String(blue.endLocation ?? ""),
+        left: {
+          motionType: String(left.motionType ?? ""),
+          startLocation: String(left.startLocation ?? ""),
+          endLocation: String(left.endLocation ?? ""),
         },
-        red: {
-          motionType: String(red.motionType ?? ""),
-          startLocation: String(red.startLocation ?? ""),
-          endLocation: String(red.endLocation ?? ""),
+        right: {
+          motionType: String(right.motionType ?? ""),
+          startLocation: String(right.startLocation ?? ""),
+          endLocation: String(right.endLocation ?? ""),
         },
       });
       if (letter) mutable.letter = letter;

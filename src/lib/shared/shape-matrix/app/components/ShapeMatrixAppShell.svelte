@@ -65,7 +65,7 @@
     appState.labelMode === "ratios" ? "VTG ratio" : "TKA turn"
   );
   const turnOptions = $derived([
-    ...(appState.activeAxis === "both" && appState.blueTurn !== appState.redTurn
+    ...(appState.activeAxis === "both" && appState.leftTurn !== appState.rightTurn
       ? [
           {
             value: "mixed",
@@ -100,7 +100,7 @@
     }),
   ]);
   const selectedTurnKey = $derived(
-    appState.activeAxis === "both" && appState.blueTurn !== appState.redTurn
+    appState.activeAxis === "both" && appState.leftTurn !== appState.rightTurn
       ? "mixed"
       : turnValueToKey(appState.activeTurn)
   );

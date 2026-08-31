@@ -36,8 +36,8 @@ export interface SequenceAnatomy {
 
 export interface StartPositionInfo {
   group: string | null;
-  blueLocation: string | null;
-  redLocation: string | null;
+  leftLocation: string | null;
+  rightLocation: string | null;
   gridMode: "box" | "diamond" | "mixed";
 }
 
@@ -51,10 +51,10 @@ export interface LevelBadgeData {
 }
 
 export interface TurnGlyphEntry {
-  readonly blue: number;
-  readonly red: number;
-  readonly blueFloat?: boolean;
-  readonly redFloat?: boolean;
+  readonly left: number;
+  readonly right: number;
+  readonly leftFloat?: boolean;
+  readonly rightFloat?: boolean;
 }
 
 export interface CardBackData {
@@ -265,25 +265,25 @@ function _deriveStartPositionGroup(sequence: SequenceData): string | null {
   //   Beta:  hands same location (S-S, N-N, etc.)
   //   Gamma: hands at right angles (S-E, S-W, N-E, N-W, etc.)
   const step1 = sequence.steps?.[0];
-  const blueLoc = step1?.motions?.blue?.startLocation;
-  const redLoc = step1?.motions?.red?.startLocation;
-  if (blueLoc && redLoc) {
-    return deriveGroupFromLocations(blueLoc, redLoc);
+  const leftLoc = step1?.motions?.left?.startLocation;
+  const rightLoc = step1?.motions?.right?.startLocation;
+  if (leftLoc && rightLoc) {
+    return deriveGroupFromLocations(leftLoc, rightLoc);
   }
 
   return null;
 }
 
 /** Determine position group from two hand compass locations */
-function deriveGroupFromLocations(blue: string, red: string): string {
-  if (blue === red) return "beta";
+function deriveGroupFromLocations(left: string, right: string): string {
+  if (left === right) return "beta";
 
   // Opposite pairs → alpha
   const OPPOSITES: Record<string, string> = {
     n: "s", s: "n", e: "w", w: "e",
     ne: "sw", sw: "ne", nw: "se", se: "nw",
   };
-  if (OPPOSITES[blue] === red) return "alpha";
+  if (OPPOSITES[left] === right) return "alpha";
 
   // Everything else is gamma (hands at non-opposite, non-same positions)
   return "gamma";
@@ -292,34 +292,34 @@ function deriveGroupFromLocations(blue: string, red: string): string {
 const CARDINAL = new Set(["n", "s", "e", "w"]);
 const INTERCARDINAL = new Set(["ne", "se", "sw", "nw"]);
 
-function deriveGridMode(blue: string | null, red: string | null): "box" | "diamond" | "mixed" {
-  if (!blue || !red) return "diamond";
-  const blueIsCardinal = CARDINAL.has(blue);
-  const redIsCardinal = CARDINAL.has(red);
-  const blueIsIntercardinal = INTERCARDINAL.has(blue);
-  const redIsIntercardinal = INTERCARDINAL.has(red);
+function deriveGridMode(left: string | null, right: string | null): "box" | "diamond" | "mixed" {
+  if (!left || !right) return "diamond";
+  const leftIsCardinal = CARDINAL.has(left);
+  const rightIsCardinal = CARDINAL.has(right);
+  const leftIsIntercardinal = INTERCARDINAL.has(left);
+  const rightIsIntercardinal = INTERCARDINAL.has(right);
 
-  if (blueIsCardinal && redIsCardinal) return "diamond";
-  if (blueIsIntercardinal && redIsIntercardinal) return "box";
+  if (leftIsCardinal && rightIsCardinal) return "diamond";
+  if (leftIsIntercardinal && rightIsIntercardinal) return "box";
   return "mixed";
 }
 
 export function deriveStartPositionInfo(locations: {
-  blueLocation: string | null;
-  redLocation: string | null;
+  leftLocation: string | null;
+  rightLocation: string | null;
 }): StartPositionInfo {
-  const { blueLocation, redLocation } = locations;
+  const { leftLocation, rightLocation } = locations;
 
   const group =
-    blueLocation && redLocation
-      ? deriveGroupFromLocations(blueLocation, redLocation)
+    leftLocation && rightLocation
+      ? deriveGroupFromLocations(leftLocation, rightLocation)
       : null;
 
   return {
     group,
-    blueLocation,
-    redLocation,
-    gridMode: deriveGridMode(blueLocation, redLocation),
+    leftLocation,
+    rightLocation,
+    gridMode: deriveGridMode(leftLocation, rightLocation),
   };
 }
 
@@ -330,24 +330,24 @@ export function deriveStartPositionInfo(locations: {
 function deriveStartPosition(sequence: SequenceData): StartPositionInfo | null {
   const explicitGroup = sequence.startingPositionGroup ?? null;
 
-  let blueLocation: string | null = null;
-  let redLocation: string | null = null;
+  let leftLocation: string | null = null;
+  let rightLocation: string | null = null;
 
   const sp = sequence.startPosition ?? sequence.startingPosition;
   if (sp?.motions) {
-    blueLocation = sp.motions.blue?.endLocation ?? null;
-    redLocation = sp.motions.red?.endLocation ?? null;
+    leftLocation = sp.motions.left?.endLocation ?? null;
+    rightLocation = sp.motions.right?.endLocation ?? null;
   }
 
-  if (!blueLocation || !redLocation) {
+  if (!leftLocation || !rightLocation) {
     const step1 = sequence.steps?.[0];
-    blueLocation = blueLocation ?? step1?.motions?.blue?.startLocation ?? null;
-    redLocation = redLocation ?? step1?.motions?.red?.startLocation ?? null;
+    leftLocation = leftLocation ?? step1?.motions?.left?.startLocation ?? null;
+    rightLocation = rightLocation ?? step1?.motions?.right?.startLocation ?? null;
   }
 
-  if (!blueLocation && !redLocation && !explicitGroup) return null;
+  if (!leftLocation && !rightLocation && !explicitGroup) return null;
 
-  const info = deriveStartPositionInfo({ blueLocation, redLocation });
+  const info = deriveStartPositionInfo({ leftLocation, rightLocation });
 
   if (explicitGroup) {
     return { ...info, group: explicitGroup };
@@ -549,14 +549,14 @@ function formatTurnValue(v: number): string {
 }
 
 function deriveTurnLabel(entries: TurnGlyphEntry[]): string {
-  const hasFloat = entries.some(e => e.blueFloat || e.redFloat);
-  const allFloat = entries.every(e => e.blueFloat && e.redFloat);
+  const hasFloat = entries.some(e => e.leftFloat || e.rightFloat);
+  const allFloat = entries.every(e => e.leftFloat && e.rightFloat);
   if (allFloat) return "FL";
 
   const values = new Set<number>();
   for (const e of entries) {
-    if (!e.blueFloat) values.add(e.blue);
-    if (!e.redFloat) values.add(e.red);
+    if (!e.leftFloat) values.add(e.left);
+    if (!e.rightFloat) values.add(e.right);
   }
 
   if (values.size === 0) return "0";
@@ -578,16 +578,16 @@ function deriveTurnLabel(entries: TurnGlyphEntry[]): string {
  */
 function deriveTurnGlyphEntries(sequence: SequenceData): TurnGlyphEntry[] {
   const steps = sequence.steps ?? [];
-  if (steps.length === 0) return [{ blue: 0, red: 0 }];
+  if (steps.length === 0) return [{ left: 0, right: 0 }];
 
   const all: TurnGlyphEntry[] = steps.map((step) => {
-    const blueT = step.motions?.blue?.turns;
-    const redT = step.motions?.red?.turns;
+    const leftT = step.motions?.left?.turns;
+    const rightT = step.motions?.right?.turns;
     return {
-      blue: typeof blueT === "number" ? blueT : 0,
-      red: typeof redT === "number" ? redT : 0,
-      blueFloat: blueT === "fl",
-      redFloat: redT === "fl",
+      left: typeof leftT === "number" ? leftT : 0,
+      right: typeof rightT === "number" ? rightT : 0,
+      leftFloat: leftT === "fl",
+      rightFloat: rightT === "fl",
     };
   });
 
@@ -606,8 +606,8 @@ function detectPeriod(entries: TurnGlyphEntry[]): number {
     for (let i = p; i < n; i++) {
       const ref = entries[i % p]!;
       const cur = entries[i]!;
-      if (ref.blue !== cur.blue || ref.red !== cur.red ||
-          ref.blueFloat !== cur.blueFloat || ref.redFloat !== cur.redFloat) continue outer;
+      if (ref.left !== cur.left || ref.right !== cur.right ||
+          ref.leftFloat !== cur.leftFloat || ref.rightFloat !== cur.rightFloat) continue outer;
     }
     return p;
   }

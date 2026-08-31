@@ -19,32 +19,32 @@ const COMMON = {
 
 describe("shape matrix URL state", () => {
   it("round-trips the selected matrix state without dropping unrelated params", () => {
-    const [blue, red] = buildFlowerAxis();
-    if (!blue || !red) throw new Error("Shape Matrix axis is empty");
+    const [left, right] = buildFlowerAxis();
+    if (!left || !right) throw new Error("Shape Matrix axis is empty");
     const url = new URL(
       "https://tkaflowarts.com/notation/shape-matrix?ref=promo"
     );
 
     writeShapeMatrixRouteState(url, {
       level: 3,
-      blueTurn: 0,
-      redTurn: 0,
+      leftTurn: 0,
+      rightTurn: 0,
       ...COMMON,
       labelMode: "ratios",
-      pair: { blue, red },
+      pair: { left, right },
       mode: "SS",
     });
 
     expect(url.searchParams.get("ref")).toBe("promo");
-    expect(url.searchParams.get("blue")).toBe(flowerKey(blue));
-    expect(url.searchParams.get("red")).toBe(flowerKey(red));
+    expect(url.searchParams.get("blue")).toBe(flowerKey(left));
+    expect(url.searchParams.get("red")).toBe(flowerKey(right));
     expect(readShapeMatrixRouteState(url.search)).toEqual({
       level: 3,
-      blueTurn: 0,
-      redTurn: 0,
+      leftTurn: 0,
+      rightTurn: 0,
       ...COMMON,
       labelMode: "ratios",
-      pair: { blue, red },
+      pair: { left, right },
       mode: "SS",
     });
   });
@@ -56,8 +56,8 @@ describe("shape matrix URL state", () => {
 
     expect(state).toEqual({
       level: 2,
-      blueTurn: 2,
-      redTurn: 2,
+      leftTurn: 2,
+      rightTurn: 2,
       ...COMMON,
       labelMode: "turns",
       pair: null,
@@ -72,8 +72,8 @@ describe("shape matrix URL state", () => {
 
     writeShapeMatrixRouteState(url, {
       level: 1,
-      blueTurn: 0,
-      redTurn: 0,
+      leftTurn: 0,
+      rightTurn: 0,
       ...COMMON,
       labelMode: "turns",
       pair: null,
@@ -89,8 +89,8 @@ describe("shape matrix URL state", () => {
   it("migrates the old cumulative size links onto their outer turn band", () => {
     expect(readShapeMatrixRouteState("?size=large")).toEqual({
       level: 2,
-      blueTurn: 2,
-      redTurn: 2,
+      leftTurn: 2,
+      rightTurn: 2,
       ...COMMON,
       labelMode: "turns",
       pair: null,
@@ -105,8 +105,8 @@ describe("shape matrix URL state", () => {
 
     expect(state).toEqual({
       level: 4,
-      blueTurn: 0.75,
-      redTurn: 1.5,
+      leftTurn: 0.75,
+      rightTurn: 1.5,
       activeAxis: "red",
       labelMode: "ratios",
       propType: PropType.FAN,
@@ -121,20 +121,20 @@ describe("shape matrix URL state", () => {
     const flowers = buildFlowerAxis([0.25]).filter(
       (flower) => flower.grid === "diamond"
     );
-    const blue = flowers[0];
-    const red = flowers[1];
-    if (!blue || !red) throw new Error("Expected quarter-turn flowers");
+    const left = flowers[0];
+    const right = flowers[1];
+    if (!left || !right) throw new Error("Expected quarter-turn flowers");
     const url = new URL("https://tkaflowarts.com/notation/shape-matrix");
 
     writeShapeMatrixRouteState(url, {
       level: 4,
-      blueTurn: 0.25,
-      redTurn: 0.25,
+      leftTurn: 0.25,
+      rightTurn: 0.25,
       activeAxis: "both",
       labelMode: "turns",
       propType: PropType.CLUB,
       relationshipDriver: "props",
-      pair: { blue, red },
+      pair: { left, right },
       mode: "TS",
       propMode: "SS",
     });

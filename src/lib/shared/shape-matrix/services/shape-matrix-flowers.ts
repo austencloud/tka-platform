@@ -19,9 +19,9 @@ import { resolveFlowerArchetype } from "./flower-archetype";
 export interface ShapeMatrixData {
   axis: Flower[];
   /** flowerKey → blue-hand MandalaPaths (its .blue populated). */
-  blue: Map<string, MandalaPaths>;
+  left: Map<string, MandalaPaths>;
   /** flowerKey → red-hand MandalaPaths (its .red populated). */
-  red: Map<string, MandalaPaths>;
+  right: Map<string, MandalaPaths>;
   propType?: PropType;
   /** Canonical single tracked source used by paths, parity, and live trails. */
   tipPoint?: TipPoint;
@@ -119,11 +119,11 @@ async function build(propType: PropType): Promise<ShapeMatrixData> {
   // descriptors here made every cold visit pay for paths the user might never
   // open. These maps retain the same geometry owner while computing a flower
   // on first use and sharing that locus between the blue and red axes.
-  const blue = new LazyPathMap(pathsFor);
-  const red = new LazyPathMap((key) => {
+  const left = new LazyPathMap(pathsFor);
+  const right = new LazyPathMap((key) => {
     const paths = pathsFor(key);
-    return paths ? { blue: [], red: paths.blue, purple: [] } : undefined;
+    return paths ? { left: [], right: paths.left, purple: [] } : undefined;
   });
 
-  return { axis, blue, red, propType, tipPoint: tip, clubTipDx };
+  return { axis, left, right, propType, tipPoint: tip, clubTipDx };
 }

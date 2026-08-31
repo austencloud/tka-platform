@@ -493,8 +493,8 @@
           steps,
           isCircular: true,
           intendedProp: {
-            bluePropType: propType,
-            redPropType: propType,
+            leftPropType: propType,
+            rightPropType: propType,
             catDogMode: false,
           },
         }) satisfies SequenceData,

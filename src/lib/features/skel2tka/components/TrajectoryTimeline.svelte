@@ -62,7 +62,7 @@
   }
 
   /** Build SVG path data for step chart */
-  function buildPath(hand: "blue" | "red"): string {
+  function buildPath(hand: "left" | "right"): string {
     const points: Array<{ x: number; y: number }> = [];
 
     for (const frame of timeline.frames) {
@@ -86,8 +86,8 @@
     return d;
   }
 
-  const bluePath = $derived(buildPath("blue"));
-  const redPath = $derived(buildPath("red"));
+  const leftPath = $derived(buildPath("left"));
+  const rightPath = $derived(buildPath("right"));
 
   /** Y-axis tick labels */
   const yTicks = $derived(
@@ -129,14 +129,14 @@
       <text x={tick.x} y={SVG_HEIGHT - 6} class="x-label">{tick.label}</text>
     {/each}
 
-    <!-- Blue hand path -->
-    {#if bluePath}
-      <path d={bluePath} class="hand-path blue-path" />
+    <!-- Left hand path -->
+    {#if leftPath}
+      <path d={leftPath} class="hand-path blue-path" />
     {/if}
 
-    <!-- Red hand path -->
-    {#if redPath}
-      <path d={redPath} class="hand-path red-path" />
+    <!-- Right hand path -->
+    {#if rightPath}
+      <path d={rightPath} class="hand-path red-path" />
     {/if}
   </svg>
 

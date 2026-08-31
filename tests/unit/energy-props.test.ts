@@ -242,8 +242,8 @@ describe("energy prop physical behavior", () => {
     "%s gets a crossed pair preview, not the generic fallback",
     (prop) => {
       const recipe = getCompositionRecipe(prop);
-      expect(recipe.blue.rotation).toBe(-recipe.red.rotation);
-      expect(recipe.blue.rotation).not.toBe(10);
+      expect(recipe.left.rotation).toBe(-recipe.right.rotation);
+      expect(recipe.left.rotation).not.toBe(10);
     }
   );
 });
@@ -273,15 +273,15 @@ describe("energy prop motion coloring", () => {
 
   it.each(ENERGY_PROPS)("%s blade takes the motion color", (prop) => {
     const svg = readPropSvg(prop);
-    const blue = colorize(svg, "blue", prop);
-    const red = colorize(svg, "red", prop);
+    const left = colorize(svg, "blue", prop);
+    const right = colorize(svg, "red", prop);
 
-    expect(blue).toContain(BLUE);
-    expect(red).toContain(RED);
+    expect(left).toContain(BLUE);
+    expect(right).toContain(RED);
     // The flat neutral grays are gone — every one of them became the motion color.
     for (const gray of ["#E4E4E4", "#DCDCDC", "#D0D0D0"]) {
-      expect(blue).not.toContain(gray);
-      expect(red).not.toContain(gray);
+      expect(left).not.toContain(gray);
+      expect(right).not.toContain(gray);
     }
   });
 

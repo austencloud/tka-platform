@@ -13,11 +13,14 @@ import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  GridMode,
+  GridLocation,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -33,7 +36,7 @@ const CCW = RotationDirection.COUNTER_CLOCKWISE;
 // CW handpath (prop CW, in→in); anti counter-rotates (prop CCW) and flips the
 // thumb every letter, so its legs alternate in→out / out→in.
 type Leg = [GridLocation, GridLocation];
-const proHand = (color: MotionColor, [from, to]: Leg) =>
+const proHand = (color: HandSide, [from, to]: Leg) =>
   createMotionData({
     motionType: MotionType.PRO,
     rotationDirection: CW,
@@ -42,11 +45,11 @@ const proHand = (color: MotionColor, [from, to]: Leg) =>
     startOrientation: IN,
     endOrientation: IN,
     turns: 0,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
-const antiHand = (color: MotionColor, [from, to]: Leg, legIndex: number) =>
+const antiHand = (color: HandSide, [from, to]: Leg, legIndex: number) =>
   createMotionData({
     motionType: MotionType.ANTI,
     rotationDirection: CCW,
@@ -55,18 +58,18 @@ const antiHand = (color: MotionColor, [from, to]: Leg, legIndex: number) =>
     startOrientation: legIndex % 2 === 0 ? IN : OUT,
     endOrientation: legIndex % 2 === 0 ? OUT : IN,
     turns: 0,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
-const staticHand = (color: MotionColor, loc: GridLocation) =>
+const staticHand = (color: HandSide, loc: GridLocation) =>
   createMotionData({
     motionType: MotionType.STATIC,
     startLocation: loc,
     endLocation: loc,
     startOrientation: IN,
     endOrientation: IN,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
@@ -91,24 +94,66 @@ type WordDef = {
   word: string;
   letter: Letter;
   block: "alpha" | "beta";
-  blueAnti: boolean;
-  redAnti: boolean;
+  leftAnti: boolean;
+  rightAnti: boolean;
 };
 const WORDS: WordDef[] = [
-  { key: "w-aaaa", word: "AAAA", letter: Letter.A, block: "alpha", blueAnti: false, redAnti: false },
-  { key: "w-bbbb", word: "BBBB", letter: Letter.B, block: "alpha", blueAnti: true, redAnti: true },
-  { key: "w-cccc", word: "CCCC", letter: Letter.C, block: "alpha", blueAnti: true, redAnti: false },
-  { key: "w-gggg", word: "GGGG", letter: Letter.G, block: "beta", blueAnti: false, redAnti: false },
-  { key: "w-hhhh", word: "HHHH", letter: Letter.H, block: "beta", blueAnti: true, redAnti: true },
-  { key: "w-iiii", word: "IIII", letter: Letter.I, block: "beta", blueAnti: true, redAnti: false },
+  {
+    key: "w-aaaa",
+    word: "AAAA",
+    letter: Letter.A,
+    block: "alpha",
+    leftAnti: false,
+    rightAnti: false,
+  },
+  {
+    key: "w-bbbb",
+    word: "BBBB",
+    letter: Letter.B,
+    block: "alpha",
+    leftAnti: true,
+    rightAnti: true,
+  },
+  {
+    key: "w-cccc",
+    word: "CCCC",
+    letter: Letter.C,
+    block: "alpha",
+    leftAnti: true,
+    rightAnti: false,
+  },
+  {
+    key: "w-gggg",
+    word: "GGGG",
+    letter: Letter.G,
+    block: "beta",
+    leftAnti: false,
+    rightAnti: false,
+  },
+  {
+    key: "w-hhhh",
+    word: "HHHH",
+    letter: Letter.H,
+    block: "beta",
+    leftAnti: true,
+    rightAnti: true,
+  },
+  {
+    key: "w-iiii",
+    word: "IIII",
+    letter: Letter.I,
+    block: "beta",
+    leftAnti: true,
+    rightAnti: false,
+  },
 ];
 
-const legOf = (w: WordDef, color: "blue" | "red", i: number): Leg =>
-  w.block === "alpha" && color === "red" ? CW_LOOP_RED[i]! : CW_LOOP[i]!;
+const legOf = (w: WordDef, hand: "left" | "right", i: number): Leg =>
+  w.block === "alpha" && hand === "right" ? CW_LOOP_RED[i]! : CW_LOOP[i]!;
 
 const wordStep = (w: WordDef, i: number): StepData => {
-  const bl = legOf(w, "blue", i);
-  const rl = legOf(w, "red", i);
+  const bl = legOf(w, "left", i);
+  const rl = legOf(w, "right", i);
   return {
     id: `${w.key}-${i + 1}`,
     letter: w.letter,
@@ -117,31 +162,44 @@ const wordStep = (w: WordDef, i: number): StepData => {
     endPosition: getGridPositionFromLocations(bl[1], rl[1]),
     stepNumber: i + 1,
     motions: {
-      blue: w.blueAnti ? antiHand(MotionColor.BLUE, bl, i) : proHand(MotionColor.BLUE, bl),
-      red: w.redAnti ? antiHand(MotionColor.RED, rl, i) : proHand(MotionColor.RED, rl),
+      left: w.leftAnti
+        ? antiHand(HandSide.LEFT, bl, i)
+        : proHand(HandSide.LEFT, bl),
+      right: w.rightAnti
+        ? antiHand(HandSide.RIGHT, rl, i)
+        : proHand(HandSide.RIGHT, rl),
     },
   } as unknown as StepData;
 };
 
-// Block Start boxes: α = blue S / red N (thumbs in); β = both S.
+// Block Start boxes: α = left S / right N (thumbs in); β = both S.
 const startBox = (block: "alpha" | "beta"): StepData =>
   ({
     id: `w-${block}-start`,
     letter: block === "alpha" ? Letter.ALPHA : Letter.BETA,
     gridMode: GridMode.DIAMOND,
     stepNumber: 0,
-    startPosition: block === "alpha" ? getGridPositionFromLocations(SO_, N) : getGridPositionFromLocations(SO_, SO_),
-    endPosition: block === "alpha" ? getGridPositionFromLocations(SO_, N) : getGridPositionFromLocations(SO_, SO_),
+    startPosition:
+      block === "alpha"
+        ? getGridPositionFromLocations(SO_, N)
+        : getGridPositionFromLocations(SO_, SO_),
+    endPosition:
+      block === "alpha"
+        ? getGridPositionFromLocations(SO_, N)
+        : getGridPositionFromLocations(SO_, SO_),
     motions: {
-      blue: staticHand(MotionColor.BLUE, SO_),
-      red: staticHand(MotionColor.RED, block === "alpha" ? N : SO_),
+      left: staticHand(HandSide.LEFT, SO_),
+      right: staticHand(HandSide.RIGHT, block === "alpha" ? N : SO_),
     },
   }) as unknown as StepData;
 
 // Start + 4 letters - the full playable strip, matching words.content.ts's
 // rowStrip pattern.
 const wordStrip = (w: WordDef): PictographData[] =>
-  [startBox(w.block), ...[0, 1, 2, 3].map((i) => wordStep(w, i))] as unknown as PictographData[];
+  [
+    startBox(w.block),
+    ...[0, 1, 2, 3].map((i) => wordStep(w, i)),
+  ] as unknown as PictographData[];
 
 /** STAFF props, TKA letter glyph on - matching AlphaBetaWordsPage's PictographContainer flags. */
 const RENDER = { propType: PropType.STAFF } as const;

@@ -28,7 +28,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -69,12 +69,12 @@
       startOrientation: so,
       endOrientation: anti ? (so === IN ? OUT : IN) : so,
       turns: 0,
-      color: MotionColor.RED,
+      color: HandSide.RIGHT,
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     });
   };
-  const staticHand = (color: MotionColor, loc: GridLocation) =>
+  const staticHand = (color: HandSide, loc: GridLocation) =>
     createMotionData({
       motionType: MotionType.STATIC,
       startLocation: loc,
@@ -86,32 +86,32 @@
       gridMode: GridMode.DIAMOND,
     });
 
-  type CellDef = { letter: Letter; name: string; blueLoc: GridLocation; from: GridLocation; to: GridLocation; anti: boolean; so?: Orientation };
+  type CellDef = { letter: Letter; name: string; leftLoc: GridLocation; from: GridLocation; to: GridLocation; anti: boolean; so?: Orientation };
   const step = (c: CellDef, id: string, stepNumber: number | null): StepData =>
     ({
       id,
       letter: c.letter,
       gridMode: GridMode.DIAMOND,
-      startPosition: getGridPositionFromLocations(c.blueLoc, c.from),
-      endPosition: getGridPositionFromLocations(c.blueLoc, c.to),
+      startPosition: getGridPositionFromLocations(c.leftLoc, c.from),
+      endPosition: getGridPositionFromLocations(c.leftLoc, c.to),
       stepNumber,
       motions: {
-        blue: staticHand(MotionColor.BLUE, c.blueLoc),
-        red: redShift(c.from, c.to, c.anti, c.so ?? IN),
+        left: staticHand(HandSide.LEFT, c.leftLoc),
+        right: redShift(c.from, c.to, c.anti, c.so ?? IN),
       },
     }) as unknown as StepData;
 
-  const startFor = (blueLoc: GridLocation, redLoc: GridLocation, id: string, letter: Letter | null = null): StepData =>
+  const startFor = (leftLoc, rightLoc, id: string, letter: Letter | null = null): StepData =>
     ({
       id,
       letter,
       gridMode: GridMode.DIAMOND,
       stepNumber: 0,
-      startPosition: getGridPositionFromLocations(blueLoc, redLoc),
-      endPosition: getGridPositionFromLocations(blueLoc, redLoc),
+      startPosition: getGridPositionFromLocations(leftLoc, rightLoc),
+      endPosition: getGridPositionFromLocations(leftLoc, rightLoc),
       motions: {
-        blue: staticHand(MotionColor.BLUE, blueLoc),
-        red: staticHand(MotionColor.RED, redLoc),
+        left: staticHand(HandSide.LEFT, leftLoc),
+        right: staticHand(HandSide.RIGHT, rightLoc),
       },
     }) as unknown as StepData;
 
@@ -122,32 +122,32 @@
       x: 97, y: 193.6,
       label: { start: GridPosition.GAMMA1, end: GridPosition.ALPHA1, t: "γ→α" }, tag: "OPEN",
       cells: [
-        { letter: Letter.W, name: "W", blueLoc: W, from: SO_, to: E, anti: false },
-        { letter: Letter.X, name: "X", blueLoc: W, from: SO_, to: E, anti: true },
+        { letter: Letter.W, name: "W", leftLoc: W, from: SO_, to: E, anti: false },
+        { letter: Letter.X, name: "X", leftLoc: W, from: SO_, to: E, anti: true },
       ],
     },
     {
       x: 334.9, y: 193.6,
       label: { start: GridPosition.GAMMA1, end: GridPosition.BETA1, t: "γ→β" }, tag: "CLOSE",
       cells: [
-        { letter: Letter.Y, name: "Y", blueLoc: SO_, from: W, to: SO_, anti: false },
-        { letter: Letter.Z, name: "Z", blueLoc: SO_, from: W, to: SO_, anti: true },
+        { letter: Letter.Y, name: "Y", leftLoc: SO_, from: W, to: SO_, anti: false },
+        { letter: Letter.Z, name: "Z", leftLoc: SO_, from: W, to: SO_, anti: true },
       ],
     },
     {
       x: 97, y: 325.5,
       label: { start: GridPosition.ALPHA1, end: GridPosition.GAMMA1, t: "α→γ" }, tag: "CLOSE",
       cells: [
-        { letter: Letter.SIGMA, name: "Σ", blueLoc: W, from: E, to: SO_, anti: false },
-        { letter: Letter.DELTA, name: "Δ", blueLoc: W, from: E, to: SO_, anti: true },
+        { letter: Letter.SIGMA, name: "Σ", leftLoc: W, from: E, to: SO_, anti: false },
+        { letter: Letter.DELTA, name: "Δ", leftLoc: W, from: E, to: SO_, anti: true },
       ],
     },
     {
       x: 334.9, y: 325.5,
       label: { start: GridPosition.BETA1, end: GridPosition.GAMMA1, t: "β→γ" }, tag: "OPEN",
       cells: [
-        { letter: Letter.THETA, name: "Θ", blueLoc: SO_, from: SO_, to: E, anti: false },
-        { letter: Letter.OMEGA, name: "Ω", blueLoc: SO_, from: SO_, to: E, anti: true },
+        { letter: Letter.THETA, name: "Θ", leftLoc: SO_, from: SO_, to: E, anti: false },
+        { letter: Letter.OMEGA, name: "Ω", leftLoc: SO_, from: SO_, to: E, anti: true },
       ],
     },
   ];
@@ -168,7 +168,7 @@
   const rowCell = (r: RowDef, i: number): CellDef => ({
     letter: r.letters[i]!,
     name: r.names[i]!,
-    blueLoc: SO_,
+    leftLoc: SO_,
     from: RED_CCW[i]![0],
     to: RED_CCW[i]![1],
     anti: r.anti,
@@ -179,7 +179,7 @@
     ...[0, 1, 2, 3].map((i) => step(rowCell(r, i), `${r.key}-s-${i + 1}`, i + 1)),
   ];
   const boxCellSteps = (c: CellDef, key: string): StepData[] => [
-    startFor(c.blueLoc, c.from, `${key}-start`),
+    startFor(c.leftLoc, c.from, `${key}-start`),
     step(c, `${key}-s-1`, 1),
   ];
 
@@ -298,8 +298,8 @@
         <PictographContainer
           pictographData={RESOLVED_BOX[key]![1]}
           gridMode={GridMode.DIAMOND}
-          bluePropTypeOverride={PropType.STAFF}
-          redPropTypeOverride={PropType.STAFF}
+          leftPropTypeOverride={PropType.STAFF}
+          rightPropTypeOverride={PropType.STAFF}
           {...PICTO_FLAGS}
         />
         <SelectionHit
@@ -326,8 +326,8 @@
     <PictographContainer
       pictographData={startFor(SO_, E, "t2w-startbox", Letter.GAMMA)}
       gridMode={GridMode.DIAMOND}
-      bluePropTypeOverride={PropType.STAFF}
-      redPropTypeOverride={PropType.STAFF}
+      leftPropTypeOverride={PropType.STAFF}
+      rightPropTypeOverride={PropType.STAFF}
       stepNumberOverride={true}
       {...PICTO_FLAGS}
     />
@@ -350,8 +350,8 @@
           <PictographContainer
             pictographData={sd}
             gridMode={GridMode.DIAMOND}
-            bluePropTypeOverride={PropType.STAFF}
-            redPropTypeOverride={PropType.STAFF}
+            leftPropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
             stepNumberOverride={true}
             {...PICTO_FLAGS}
           />

@@ -83,16 +83,16 @@
     const mode = PLANE_MODE_CONFIGS[performer.planeMode];
     const gridOffset = GRID_OFFSETS[performer.planeMode];
     return planUpperBodyStance({
-      blue: performer.bluePropState
+      left: performer.leftPropState
         ? {
-            x: mode.blueLateralOffset + performer.bluePropState.worldPosition.x,
-            z: gridOffset + performer.bluePropState.worldPosition.z,
+            x: mode.blueLateralOffset + performer.leftPropState.worldPosition.x,
+            z: gridOffset + performer.leftPropState.worldPosition.z,
           }
         : null,
-      red: performer.redPropState
+      right: performer.rightPropState
         ? {
-            x: mode.redLateralOffset + performer.redPropState.worldPosition.x,
-            z: gridOffset + performer.redPropState.worldPosition.z,
+            x: mode.redLateralOffset + performer.rightPropState.worldPosition.x,
+            z: gridOffset + performer.rightPropState.worldPosition.z,
           }
         : null,
     });
@@ -108,8 +108,8 @@
      *  creatorIntent.propConfig so the viewer's prop-context choice is
      *  respected in the 3D scene. Accepts string so Viewer3DCanvas can
      *  pass through without needing to import PropType. */
-    bluePropTypeOverride?: string | null;
-    redPropTypeOverride?: string | null;
+    leftPropTypeOverride?: string | null;
+    rightPropTypeOverride?: string | null;
     /** Hide grid references and performer numbers in cinematic review embeds. */
     hideSceneMarkers?: boolean;
     /** Hide performer numbers while leaving grid references available. */
@@ -177,8 +177,8 @@
     currentStep,
     isPlaying,
     characterState,
-    bluePropTypeOverride = null,
-    redPropTypeOverride = null,
+    leftPropTypeOverride = null,
+    rightPropTypeOverride = null,
     hideSceneMarkers = false,
     hidePerformerBadges = false,
     hideOrientationHelpers = false,
@@ -400,7 +400,7 @@
     let mounted = true;
 
     // Prop fallbacks still belong to app settings. Environment choice does not.
-    if (!bluePropTypeOverride || !redPropTypeOverride) {
+    if (!leftPropTypeOverride || !rightPropTypeOverride) {
       void import("$lib/shared/settings/state/settings-state.svelte").then(
         ({ settingsService }) => {
           if (mounted) viewerSettings = settingsService;
@@ -458,35 +458,35 @@
 
   // Resolve prop type: explicit viewer override wins, then sequence's intended
   // prop, then creator config, then global settings.
-  const bluePropType = $derived.by((): PropType => {
-    if (bluePropTypeOverride) return bluePropTypeOverride as PropType;
-    if (sequenceData?.intendedProp?.bluePropType)
-      return sequenceData.intendedProp.bluePropType;
-    if (sequenceData?.creatorIntent?.propConfig?.bluePropType)
-      return sequenceData.creatorIntent.propConfig.bluePropType;
+  const leftPropType = $derived.by((): PropType => {
+    if (leftPropTypeOverride) return leftPropTypeOverride as PropType;
+    if (sequenceData?.intendedProp?.leftPropType)
+      return sequenceData.intendedProp.leftPropType;
+    if (sequenceData?.creatorIntent?.propConfig?.leftPropType)
+      return sequenceData.creatorIntent.propConfig.leftPropType;
     try {
-      return viewerSettings?.settings?.bluePropType ?? PropType.STAFF;
+      return viewerSettings?.settings?.leftPropType ?? PropType.STAFF;
     } catch {
       return PropType.STAFF;
     }
   });
-  const redPropType = $derived.by((): PropType => {
-    if (redPropTypeOverride) return redPropTypeOverride as PropType;
-    if (sequenceData?.intendedProp?.redPropType)
-      return sequenceData.intendedProp.redPropType;
-    if (sequenceData?.creatorIntent?.propConfig?.redPropType)
-      return sequenceData.creatorIntent.propConfig.redPropType;
+  const rightPropType = $derived.by((): PropType => {
+    if (rightPropTypeOverride) return rightPropTypeOverride as PropType;
+    if (sequenceData?.intendedProp?.rightPropType)
+      return sequenceData.intendedProp.rightPropType;
+    if (sequenceData?.creatorIntent?.propConfig?.rightPropType)
+      return sequenceData.creatorIntent.propConfig.rightPropType;
     try {
-      return viewerSettings?.settings?.redPropType ?? PropType.STAFF;
+      return viewerSettings?.settings?.rightPropType ?? PropType.STAFF;
     } catch {
       return PropType.STAFF;
     }
   });
-  const blueBuugengFlipped = $derived(
-    viewerSettings?.settings?.blueBuugengFlipped ?? false
+  const leftBuugengFlipped = $derived(
+    viewerSettings?.settings?.leftBuugengFlipped ?? false
   );
-  const redBuugengFlipped = $derived(
-    viewerSettings?.settings?.redBuugengFlipped ?? false
+  const rightBuugengFlipped = $derived(
+    viewerSettings?.settings?.rightBuugengFlipped ?? false
   );
 
   const explicitPlanes = $derived(viewer3DState.visiblePlanes as Set<Plane>);
@@ -739,15 +739,15 @@
       {@const propLength =
         perfStaffCm != null ? cmToUnits(perfStaffCm) : undefined}
       {@const propBuild = performer.effectivePropBuild}
-      {@const resolvedBlueProp = resolvePerformerProp(
+      {@const resolvedLeftProp = resolvePerformerProp(
         performer,
-        bluePropType,
-        bluePropTypeOverride as PropType | null
+        leftPropType,
+        leftPropTypeOverride as PropType | null
       )}
-      {@const resolvedRedProp = resolvePerformerProp(
+      {@const resolvedRightProp = resolvePerformerProp(
         performer,
-        redPropType,
-        redPropTypeOverride as PropType | null
+        rightPropType,
+        rightPropTypeOverride as PropType | null
       )}
       <!-- Per-performer effect cascade: this performer's override, else the
          global default (effects-config wildcard). This is what makes the
@@ -778,14 +778,14 @@
             avatarId={performer.characterId}
             visiblePlanes={explicitPlanes}
             gridMode={performerGridMode}
-            bluePropType={toScenePropType(resolvedBlueProp)}
-            redPropType={toScenePropType(resolvedRedProp)}
-            bluePropFlipped={isBuugengFamilyProp(resolvedBlueProp) &&
-              blueBuugengFlipped}
-            redPropFlipped={isBuugengFamilyProp(resolvedRedProp) &&
-              redBuugengFlipped}
-            bluePropState={performer.bluePropState}
-            redPropState={performer.redPropState}
+            leftPropType={toScenePropType(resolvedLeftProp)}
+            rightPropType={toScenePropType(resolvedRightProp)}
+            leftPropFlipped={isBuugengFamilyProp(resolvedLeftProp) &&
+              leftBuugengFlipped}
+            rightPropFlipped={isBuugengFamilyProp(resolvedRightProp) &&
+              rightBuugengFlipped}
+            leftPropState={performer.leftPropState}
+            rightPropState={performer.rightPropState}
             tipEffectMap={perfTipMap}
             {propLength}
             {propBuild}
@@ -831,10 +831,10 @@
               {/if}
             {/snippet}
             {#snippet effectsSlot({
-              bluePropState,
-              redPropState,
-              blueHandPos,
-              redHandPos,
+              leftPropState,
+              rightPropState,
+              leftHandPos,
+              rightHandPos,
               isPlaying: rigPlaying,
               staffHalfLength,
               effectsParentRef,
@@ -842,16 +842,16 @@
               {#if sceneEffectsManager && effectOrchestratorModule}
                 {#await effectOrchestratorModule then { default: EffectOrchestrator3D }}
                   <EffectOrchestrator3D
-                    {bluePropState}
-                    {redPropState}
-                    bluePropType={toScenePropType(resolvedBlueProp)}
-                    redPropType={toScenePropType(resolvedRedProp)}
+                    {leftPropState}
+                    {rightPropState}
+                    leftPropType={toScenePropType(resolvedLeftProp)}
+                    rightPropType={toScenePropType(resolvedRightProp)}
                     isPlaying={rigPlaying}
                     {staffHalfLength}
                     {propBuild}
                     tipEffectMap={perfTipMap}
-                    {blueHandPos}
-                    {redHandPos}
+                    {leftHandPos}
+                    {rightHandPos}
                     {effectsParentRef}
                     sceneEffectsManagerOverride={sceneEffectsManager}
                     qualityTierOverride={effectQualityTier}

@@ -47,7 +47,7 @@ import { deriveWordFromBeats } from "$lib/shared/foundation/services/word-derive
 import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-location-calculator";
 import type { HandPath } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
-  MotionColor,
+  HandSide,
   type MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
@@ -64,7 +64,7 @@ import type { VariantDescriptor, WalkSource } from "../domain/types";
 /** Even 45°-steps only — odd amounts toggle diamond<->box. */
 const ROTATIONS: readonly (0 | 2 | 4 | 6)[] = [0, 2, 4, 6];
 
-const COLORS = [MotionColor.BLUE, MotionColor.RED] as const;
+const COLORS = [HandSide.LEFT, HandSide.RIGHT] as const;
 
 export interface VariantLiberties {
   readonly allowMirror: boolean;
@@ -164,17 +164,17 @@ function withArrowLocations(step: StepData): StepData {
   return createStepData({
     ...step,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
-        ...step.motions.blue,
+      [HandSide.LEFT]: createMotionData({
+        ...step.motions.left,
         arrowLocation: arrowLocationCalculator.calculateLocation(
-          step.motions.blue,
+          step.motions.left,
           step
         ),
       }),
-      [MotionColor.RED]: createMotionData({
-        ...step.motions.red,
+      [HandSide.RIGHT]: createMotionData({
+        ...step.motions.right,
         arrowLocation: arrowLocationCalculator.calculateLocation(
-          step.motions.red,
+          step.motions.right,
           step
         ),
       }),
@@ -191,12 +191,12 @@ function normalizeStep(
     createStepData({
       ...step,
       motions: {
-        [MotionColor.BLUE]: normalizeMotionDerivations(
-          step.motions.blue,
+        [HandSide.LEFT]: normalizeMotionDerivations(
+          step.motions.left,
           prefloatRotationDirectionIsTrusted
         ),
-        [MotionColor.RED]: normalizeMotionDerivations(
-          step.motions.red,
+        [HandSide.RIGHT]: normalizeMotionDerivations(
+          step.motions.right,
           prefloatRotationDirectionIsTrusted
         ),
       },
@@ -265,12 +265,12 @@ function reverseStep(step: StepData, stepNumber: number): StepData {
     // derivation means the reversed configuration is not a dataframe row.
     letter: null,
     motions: {
-      [MotionColor.BLUE]: reverseMotion(step.motions.blue),
-      [MotionColor.RED]: reverseMotion(step.motions.red),
+      [HandSide.LEFT]: reverseMotion(step.motions.left),
+      [HandSide.RIGHT]: reverseMotion(step.motions.right),
     },
     // Reversal flags describe adjacency in the OLD ordering.
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
   });
 }
 

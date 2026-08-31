@@ -172,8 +172,8 @@
           fill={true}
           showWordHeader={true}
           externalBpm={60}
-          bluePropType="staff"
-          redPropType="staff"
+          leftPropType="staff"
+          rightPropType="staff"
           {tipEffectMap}
           {tipEffortMap}
           fireConfig={legacyFireConfig}
@@ -218,8 +218,8 @@
           fill={true}
           showWordHeader={true}
           externalBpm={60}
-          bluePropType="staff"
-          redPropType="staff"
+          leftPropType="staff"
+          rightPropType="staff"
           {tipEffectMap}
           {tipEffortMap}
           fireConfig={cinematicFireConfig}

@@ -100,8 +100,8 @@ console.log(`Loaded ${csvEdges.length} CSV edges for ${gridMode} grid\n`);
  * which can vary within a letter family).
  */
 function lookupReversedLetter(motion, color, startPos, endPos) {
-  const blueKey = color === "blue" ? "blueMotionType" : null;
-  const redKey = color === "red" ? "redMotionType" : null;
+  const leftKey = color === "blue" ? "blueMotionType" : null;
+  const rightKey = color === "red" ? "redMotionType" : null;
 
   // We need to match the full step, not individual motions.
   // This function is called per-step with both motions already set.
@@ -112,19 +112,19 @@ function lookupReversedLetter(motion, color, startPos, endPos) {
  * Find the letter from CSV given a step's blue and red motion types + locations.
  */
 function lookupLetterForStep(step) {
-  const blue = step.motions?.blue;
-  const red = step.motions?.red;
-  if (!blue || !red) return null;
+  const left = step.motions?.left;
+  const right = step.motions?.right;
+  if (!left || !right) return null;
 
   const match = csvEdges.find(e =>
     e.startPosition === step.startPosition &&
     e.endPosition === step.endPosition &&
-    e.blueMotionType === blue.motionType &&
-    e.blueStartLocation === blue.startLocation &&
-    e.blueEndLocation === blue.endLocation &&
-    e.redMotionType === red.motionType &&
-    e.redStartLocation === red.startLocation &&
-    e.redEndLocation === red.endLocation
+    e.leftMotionType === left.motionType &&
+    e.leftStartLocation === left.startLocation &&
+    e.leftEndLocation === left.endLocation &&
+    e.rightMotionType === right.motionType &&
+    e.rightStartLocation === right.startLocation &&
+    e.rightEndLocation === right.endLocation
   );
   return match ? match.letter : null;
 }
@@ -149,43 +149,43 @@ function applyReversalToSequence(steps, patternId, startPosition) {
   // a running per-hand parity; the beat's motion is flipped from base whenever that
   // parity is currently true. (Absolute per-beat flipping makes PPPP uniform-anti,
   // which the detector reads back as "continuous" — the bug this replaces.)
-  let blueParity = false;
-  let redParity = false;
+  let leftParity = false;
+  let rightParity = false;
   let beatIndex = 0;
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
     if (step.isStartPosition) continue;
 
-    const blue = step.motions?.blue;
-    const red = step.motions?.red;
+    const left = step.motions?.left;
+    const right = step.motions?.right;
 
     const symbol = seq[beatIndex % seq.length];
-    const blueToggle = symbol === "P" || symbol === "B";
-    const redToggle = symbol === "P" || symbol === "R";
+    const leftToggle = symbol === "P" || symbol === "B";
+    const rightToggle = symbol === "P" || symbol === "R";
 
-    if (blueToggle) blueParity = !blueParity;
-    if (redToggle) redParity = !redParity;
+    if (leftToggle) leftParity = !leftParity;
+    if (rightToggle) rightParity = !rightParity;
 
     // The stored reversal flag marks the spin-change beat (the toggle point),
     // which is exactly what reversal-detector.ts re-derives from rotation deltas.
-    step.blueReversal = blueToggle;
-    step.redReversal = redToggle;
+    step.leftReversal = leftToggle;
+    step.rightReversal = rightToggle;
 
-    if (blue && blueParity) {
-      if (blue.motionType === "pro" || blue.motionType === "anti") {
-        blue.motionType = blue.motionType === "pro" ? "anti" : "pro";
+    if (left && leftParity) {
+      if (left.motionType === "pro" || left.motionType === "anti") {
+        left.motionType = left.motionType === "pro" ? "anti" : "pro";
       }
-      if (blue.rotationDirection === "cw" || blue.rotationDirection === "ccw") {
-        blue.rotationDirection = blue.rotationDirection === "cw" ? "ccw" : "cw";
+      if (left.rotationDirection === "cw" || left.rotationDirection === "ccw") {
+        left.rotationDirection = left.rotationDirection === "cw" ? "ccw" : "cw";
       }
     }
 
-    if (red && redParity) {
-      if (red.motionType === "pro" || red.motionType === "anti") {
-        red.motionType = red.motionType === "pro" ? "anti" : "pro";
+    if (right && rightParity) {
+      if (right.motionType === "pro" || right.motionType === "anti") {
+        right.motionType = right.motionType === "pro" ? "anti" : "pro";
       }
-      if (red.rotationDirection === "cw" || red.rotationDirection === "ccw") {
-        red.rotationDirection = red.rotationDirection === "cw" ? "ccw" : "cw";
+      if (right.rotationDirection === "cw" || right.rotationDirection === "ccw") {
+        right.rotationDirection = right.rotationDirection === "cw" ? "ccw" : "cw";
       }
     }
 
@@ -216,37 +216,37 @@ function applyReversalToSequence(steps, patternId, startPosition) {
 function recalcOrientations(steps, startPosition) {
   const beats = steps.filter((s) => !s.isStartPosition);
 
-  let prevBlueEnd = startPosition?.motions?.blue?.endOrientation ?? "in";
-  let prevRedEnd = startPosition?.motions?.red?.endOrientation ?? "in";
+  let prevLeftEnd = startPosition?.motions?.left?.endOrientation ?? "in";
+  let prevRightEnd = startPosition?.motions?.right?.endOrientation ?? "in";
 
   for (const step of beats) {
-    const blue = step.motions?.blue;
-    const red = step.motions?.red;
+    const left = step.motions?.left;
+    const right = step.motions?.right;
 
-    if (blue) {
-      blue.startOrientation = prevBlueEnd;
-      blue.endOrientation = calculateEndOrientation({
-        motionType: blue.motionType,
-        turns: blue.turns ?? 0,
-        rotationDirection: blue.rotationDirection,
-        startLocation: blue.startLocation,
-        endLocation: blue.endLocation,
-        startOrientation: prevBlueEnd,
+    if (left) {
+      left.startOrientation = prevLeftEnd;
+      left.endOrientation = calculateEndOrientation({
+        motionType: left.motionType,
+        turns: left.turns ?? 0,
+        rotationDirection: left.rotationDirection,
+        startLocation: left.startLocation,
+        endLocation: left.endLocation,
+        startOrientation: prevLeftEnd,
       });
-      prevBlueEnd = blue.endOrientation;
+      prevLeftEnd = left.endOrientation;
     }
 
-    if (red) {
-      red.startOrientation = prevRedEnd;
-      red.endOrientation = calculateEndOrientation({
-        motionType: red.motionType,
-        turns: red.turns ?? 0,
-        rotationDirection: red.rotationDirection,
-        startLocation: red.startLocation,
-        endLocation: red.endLocation,
-        startOrientation: prevRedEnd,
+    if (right) {
+      right.startOrientation = prevRightEnd;
+      right.endOrientation = calculateEndOrientation({
+        motionType: right.motionType,
+        turns: right.turns ?? 0,
+        rotationDirection: right.rotationDirection,
+        startLocation: right.startLocation,
+        endLocation: right.endLocation,
+        startOrientation: prevRightEnd,
       });
-      prevRedEnd = red.endOrientation;
+      prevRightEnd = right.endOrientation;
     }
   }
 }

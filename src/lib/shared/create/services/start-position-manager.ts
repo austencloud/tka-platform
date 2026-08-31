@@ -8,7 +8,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -21,33 +21,33 @@ import {
 } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 
 export interface StartPositionPlacement {
-  blueLocation: GridLocation;
-  redLocation: GridLocation;
+  leftLocation: GridLocation;
+  rightLocation: GridLocation;
   gridMode: GridMode;
-  blueOrientation?: Orientation;
-  redOrientation?: Orientation;
-  bluePropType?: PropType;
-  redPropType?: PropType;
+  leftOrientation?: Orientation;
+  rightOrientation?: Orientation;
+  leftPropType?: PropType;
+  rightPropType?: PropType;
   id?: string;
 }
 
 export class StartPositionManager {
   async getStartPositions(
     gridMode: GridMode,
-    blueOrientation?: Orientation,
-    redOrientation?: Orientation
+    leftOrientation?: Orientation,
+    rightOrientation?: Orientation
   ): Promise<PictographData[]> {
     return this.getDefaultStartPositions(
       gridMode,
-      blueOrientation,
-      redOrientation
+      leftOrientation,
+      rightOrientation
     );
   }
 
   getDefaultStartPositions(
     gridMode: GridMode,
-    blueOrientation?: Orientation,
-    redOrientation?: Orientation
+    leftOrientation?: Orientation,
+    rightOrientation?: Orientation
   ): PictographData[] {
     // Define start position locations based on grid mode
     const startPositionKeys =
@@ -66,15 +66,15 @@ export class StartPositionManager {
     return this.createPictographsFromPositions(
       startPositionKeys,
       gridMode,
-      blueOrientation,
-      redOrientation
+      leftOrientation,
+      rightOrientation
     );
   }
 
   getAllStartPositionVariations(
     gridMode: GridMode,
-    blueOrientation?: Orientation,
-    redOrientation?: Orientation
+    leftOrientation?: Orientation,
+    rightOrientation?: Orientation
   ): PictographData[] {
     // Get all 16 start position variations for the specified grid mode
     // Based on legacy advanced start position picker
@@ -122,24 +122,24 @@ export class StartPositionManager {
     return this.createPictographsFromPositions(
       allVariations,
       gridMode,
-      blueOrientation,
-      redOrientation
+      leftOrientation,
+      rightOrientation
     );
   }
 
   private createPictographsFromPositions(
     positions: Array<{ position: GridPosition; letter: Letter }>,
     gridMode: GridMode,
-    blueOrientation: Orientation = Orientation.IN,
-    redOrientation: Orientation = Orientation.IN
+    leftOrientation: Orientation = Orientation.IN,
+    rightOrientation: Orientation = Orientation.IN
   ): PictographData[] {
     return positions.map((pos, index) =>
       this.createStartPosition({
         position: pos.position,
         letter: pos.letter,
         gridMode,
-        blueOrientation,
-        redOrientation,
+        leftOrientation,
+        rightOrientation,
         id: `start-pos-${index}`,
       })
     );
@@ -153,18 +153,18 @@ export class StartPositionManager {
     placement: StartPositionPlacement
   ): PictographData {
     const position = getGridPositionFromLocations(
-      placement.blueLocation,
-      placement.redLocation
+      placement.leftLocation,
+      placement.rightLocation
     );
 
     return this.createStartPosition({
       position,
       letter: this.getStaticLetterForPosition(position),
       gridMode: placement.gridMode,
-      blueOrientation: placement.blueOrientation,
-      redOrientation: placement.redOrientation,
-      bluePropType: placement.bluePropType,
-      redPropType: placement.redPropType,
+      leftOrientation: placement.leftOrientation,
+      rightOrientation: placement.rightOrientation,
+      leftPropType: placement.leftPropType,
+      rightPropType: placement.rightPropType,
       id: placement.id ?? "start-built-pose",
     });
   }
@@ -173,51 +173,51 @@ export class StartPositionManager {
     position,
     letter,
     gridMode,
-    blueOrientation = Orientation.IN,
-    redOrientation = Orientation.IN,
-    bluePropType = PropType.STAFF,
-    redPropType = PropType.STAFF,
+    leftOrientation = Orientation.IN,
+    rightOrientation = Orientation.IN,
+    leftPropType = PropType.STAFF,
+    rightPropType = PropType.STAFF,
     id = crypto.randomUUID(),
   }: {
     position: GridPosition;
     letter: Letter;
     gridMode: GridMode;
-    blueOrientation?: Orientation;
-    redOrientation?: Orientation;
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftOrientation?: Orientation;
+    rightOrientation?: Orientation;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
     id?: string;
   }): PictographData {
-    const [blueLocation, redLocation] =
+    const [leftLocation, rightLocation] =
       this.getHandLocationsForPosition(position);
 
-    const blueMotion = createMotionData({
+    const leftMotion = createMotionData({
       motionType: MotionType.STATIC,
-      startLocation: blueLocation,
-      endLocation: blueLocation,
-      startOrientation: blueOrientation,
-      endOrientation: blueOrientation,
+      startLocation: leftLocation,
+      endLocation: leftLocation,
+      startOrientation: leftOrientation,
+      endOrientation: leftOrientation,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: MotionColor.BLUE,
+      hand: HandSide.LEFT,
       isVisible: true,
-      propType: bluePropType,
-      arrowLocation: blueLocation,
+      propType: leftPropType,
+      arrowLocation: leftLocation,
       gridMode,
     });
 
-    const redMotion = createMotionData({
+    const rightMotion = createMotionData({
       motionType: MotionType.STATIC,
-      startLocation: redLocation,
-      endLocation: redLocation,
-      startOrientation: redOrientation,
-      endOrientation: redOrientation,
+      startLocation: rightLocation,
+      endLocation: rightLocation,
+      startOrientation: rightOrientation,
+      endOrientation: rightOrientation,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: MotionColor.RED,
+      hand: HandSide.RIGHT,
       isVisible: true,
-      propType: redPropType,
-      arrowLocation: redLocation,
+      propType: rightPropType,
+      arrowLocation: rightLocation,
       gridMode,
     });
 
@@ -227,8 +227,8 @@ export class StartPositionManager {
       startPosition: position,
       endPosition: position,
       motions: {
-        [MotionColor.BLUE]: blueMotion,
-        [MotionColor.RED]: redMotion,
+        [HandSide.LEFT]: leftMotion,
+        [HandSide.RIGHT]: rightMotion,
       },
     });
   }

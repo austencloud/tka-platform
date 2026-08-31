@@ -8,7 +8,7 @@ import { checkAndApplyOverride } from "$lib/shared/pictograph/arrow/positioning/
 import type { IRotationAngleOverrideKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/rotation-angle-override-key-generator";
 import type { SpecialPlacer } from "$lib/shared/pictograph/arrow/positioning/placement/services/special-placer";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -58,7 +58,7 @@ describe("DASH rotation override maps", () => {
 
   it("keeps the OG straight-line angle when the DASH has no prop rotation", async () => {
     const motion = createMotionData({
-      color: MotionColor.BLUE,
+      hand: HandSide.LEFT,
       motionType: MotionType.DASH,
       turns: 0,
       rotationDirection: RotationDirection.NO_ROTATION,

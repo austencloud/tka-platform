@@ -319,8 +319,8 @@
           <PictographContainer
             pictographData={box}
             gridMode={editGridMode}
-            bluePropTypeOverride={editPropTypeOverride}
-            redPropTypeOverride={editPropTypeOverride}
+            leftPropTypeOverride={editPropTypeOverride}
+            rightPropTypeOverride={editPropTypeOverride}
             stepNumberOverride={true}
           />
         </button>
@@ -510,8 +510,8 @@
         chrome="minimal"
         fill={true}
         externalBpm={bpm}
-        bluePropType={propType}
-        redPropType={propType}
+        leftPropType={propType}
+        rightPropType={propType}
         {showPositionGlyph}
         onStepChange={onStep}
       />

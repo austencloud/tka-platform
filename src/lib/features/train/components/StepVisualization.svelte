@@ -52,12 +52,12 @@
   <!-- Step details (optional) -->
   {#if showDetails && step}
     <div class="step-details">
-      {#if step.blueReversal || step.redReversal}
+      {#if step.leftReversal || step.rightReversal}
         <div class="reversals">
-          {#if step.blueReversal}
+          {#if step.leftReversal}
             <span class="reversal blue">{t('train_blue_reversal')}</span>
           {/if}
-          {#if step.redReversal}
+          {#if step.rightReversal}
             <span class="reversal red">{t('train_red_reversal')}</span>
           {/if}
         </div>
@@ -65,16 +65,16 @@
 
       {#if step.motions}
         <div class="positions">
-          {#if step.motions.blue}
+          {#if step.motions.left}
             <div class="position-info">
               <span class="label blue">{t('train_blue_label')}</span>
-              <span class="location">{step.motions.blue.endLocation}</span>
+              <span class="location">{step.motions.left.endLocation}</span>
             </div>
           {/if}
-          {#if step.motions.red}
+          {#if step.motions.right}
             <div class="position-info">
               <span class="label red">{t('train_red_label')}</span>
-              <span class="location">{step.motions.red.endLocation}</span>
+              <span class="location">{step.motions.right.endLocation}</span>
             </div>
           {/if}
         </div>

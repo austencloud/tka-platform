@@ -20,8 +20,8 @@
     cards: DeckReleaseCard[];
     sequences: SequenceData[];
     theme: string;
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
     nextDeckNumber: number;
     /** The deck's own number (reference # for generated, release # for released).
      *  Titles an unnamed deck so it reads "Deck #007", never a stale name. */
@@ -100,8 +100,8 @@
     cards,
     sequences,
     theme,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     nextDeckNumber,
     refNumber = 0,
     deckName = "",
@@ -358,8 +358,8 @@
       {cardSize}
       {paperSize}
       {theme}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
       {rerenderKey}
       {copies}
       {groupByElement}
@@ -389,8 +389,8 @@
   <CardInspectModal
     sequence={inspectedSequence}
     frontImageUrl={inspectedFrontImageUrl}
-    {bluePropType}
-    {redPropType}
+    {leftPropType}
+    {rightPropType}
     includeStartPosition={true}
     onContextMenu={onContextMenu
       ? (x, y, _rerender) => {

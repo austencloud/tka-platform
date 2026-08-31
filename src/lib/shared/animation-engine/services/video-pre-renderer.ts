@@ -65,7 +65,7 @@ export interface VideoRenderOptions {
   quality?: number;
 }
 import { Canvas2DAnimationRenderer } from "$lib/shared/animation-engine/services/canvas-2d-animation-renderer";
-import { generateBluePropSvg, generateRedPropSvg } from "$lib/shared/animation-engine/services/svg-generator";
+import { generateLeftPropSvg, generateRightPropSvg } from "$lib/shared/animation-engine/services/svg-generator";
 import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/get-sequence-animation-orchestrator";
 
 import {
@@ -223,18 +223,18 @@ export class VideoPreRenderer {
       ]);
 
       // Get prop dimensions from SVG generator
-      const [bluePropData, redPropData] = await Promise.all([
-        generateBluePropSvg("staff"),
-        generateRedPropSvg("staff"),
+      const [leftPropData, rightPropData] = await Promise.all([
+        generateLeftPropSvg("staff"),
+        generateRightPropSvg("staff"),
       ]);
 
-      const bluePropDimensions = {
-        width: bluePropData.width,
-        height: bluePropData.height,
+      const leftPropDimensions = {
+        width: leftPropData.width,
+        height: leftPropData.height,
       };
-      const redPropDimensions = {
-        width: redPropData.width,
-        height: redPropData.height,
+      const rightPropDimensions = {
+        width: rightPropData.width,
+        height: rightPropData.height,
       };
 
       // Get orchestrator for calculating prop states
@@ -293,29 +293,29 @@ export class VideoPreRenderer {
       };
 
       // Get settings for Buugeng flip and prop types
-      let bluePropFlipped = false;
-      let redPropFlipped = false;
-      let bluePropType = "staff";
-      let redPropType = "staff";
+      let leftPropFlipped = false;
+      let rightPropFlipped = false;
+      let leftPropType = "staff";
+      let rightPropType = "staff";
       try {
         const settingsState = settingsService;
         const settings = settingsState.currentSettings;
         const buugengFamily = ["buugeng", "bigbuugeng"];
-        bluePropType = (
-          settings?.bluePropType ||
+        leftPropType = (
+          settings?.leftPropType ||
           settings?.propType ||
           "staff"
         ).toLowerCase();
-        redPropType = (
-          settings?.redPropType ||
+        rightPropType = (
+          settings?.rightPropType ||
           settings?.propType ||
           "staff"
         ).toLowerCase();
-        bluePropFlipped = buugengFamily.includes(bluePropType)
-          ? (settings?.blueBuugengFlipped ?? false)
+        leftPropFlipped = buugengFamily.includes(leftPropType)
+          ? (settings?.leftBuugengFlipped ?? false)
           : false;
-        redPropFlipped = buugengFamily.includes(redPropType)
-          ? (settings?.redBuugengFlipped ?? false)
+        rightPropFlipped = buugengFamily.includes(rightPropType)
+          ? (settings?.rightBuugengFlipped ?? false)
           : false;
       } catch {
         // Settings not available, use defaults
@@ -360,34 +360,34 @@ export class VideoPreRenderer {
 
         // Get prop states from orchestrator
         orchestrator.calculateState(playbackPosition);
-        const blueProp = orchestrator.getBluePropState();
-        const redProp = orchestrator.getRedPropState();
+        const leftProp = orchestrator.getLeftPropState();
+        const rightProp = orchestrator.getRightPropState();
 
         // Render the scene using REAL PixiJS (with actual SVGs!)
         canvasRenderer.renderScene({
-          blueProp,
-          redProp,
+          leftProp,
+          rightProp,
           gridVisible: true,
           gridMode: "diamond",
           letter: null,
           turnsTuple: null,
-          bluePropDimensions,
-          redPropDimensions,
-          blueTrailPoints: [], // TODO: Add trail points from TrailPathGenerator
-          redTrailPoints: [],
+          leftPropDimensions,
+          rightPropDimensions,
+          leftTrailPoints: [], // TODO: Add trail points from TrailPathGenerator
+          rightTrailPoints: [],
           trailSettings,
           currentTime: performance.now(),
           visibility: {
             gridVisible: true,
             propsVisible: true,
             trailsVisible: true,
-            blueMotionVisible: true,
-            redMotionVisible: true,
+            leftMotionVisible: true,
+            rightMotionVisible: true,
           },
-          bluePropFlipped,
-          redPropFlipped,
-          bluePropType,
-          redPropType,
+          leftPropFlipped,
+          rightPropFlipped,
+          leftPropType,
+          rightPropType,
         });
 
         // Capture this frame

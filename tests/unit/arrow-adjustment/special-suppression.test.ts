@@ -30,7 +30,7 @@ import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positionin
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -40,7 +40,7 @@ const SPECIAL_VALUE = { x: 70, y: -45 };
 const DEFAULT_VALUE = { x: 0, y: -50 };
 
 function letteredPictograph() {
-  const blue = createMotionData({
+  const left = createMotionData({
     motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
     startLocation: GridLocation.SOUTH,
@@ -48,9 +48,9 @@ function letteredPictograph() {
     startOrientation: Orientation.IN,
     endOrientation: Orientation.IN,
     turns: 0,
-    color: MotionColor.BLUE,
+    hand: HandSide.LEFT,
   });
-  const red = createMotionData({
+  const right = createMotionData({
     motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
     startLocation: GridLocation.NORTH,
@@ -58,14 +58,14 @@ function letteredPictograph() {
     startOrientation: Orientation.IN,
     endOrientation: Orientation.IN,
     turns: 0,
-    color: MotionColor.RED,
+    hand: HandSide.RIGHT,
   });
   const picto = {
     letter: "A",
-    placementFrame: red.placementFrame,
-    motions: { blue, red },
+    placementFrame: right.placementFrame,
+    motions: { left, right },
   } as unknown as PictographData;
-  return { picto, red };
+  return { picto, right };
 }
 
 /** Stub placers: the static special entry and the default entry are both present,
@@ -125,11 +125,11 @@ describe("special suppression — render path", () => {
       getOverride: (k) => state.getOverride(k),
       getFullOverride: (k) => state.getFullOverride(k),
     });
-    const { picto, red } = letteredPictograph();
-    const location = arrowLocationCalculator.calculateLocation(red, picto);
+    const { picto, right } = letteredPictograph();
+    const location = arrowLocationCalculator.calculateLocation(right, picto);
     const result = await buildCalculator().calculateAdjustmentResult(
       picto,
-      red,
+      right,
       "A",
       location,
       "red"
@@ -139,16 +139,16 @@ describe("special suppression — render path", () => {
 
   it("falls through to Default once the key is suppressed", async () => {
     const state = createSpecialArrowPlacementState();
-    const { picto, red } = letteredPictograph();
-    state.setOverride(tombstone(computeSpecialOverrideKey(picto, red, "red")));
+    const { picto, right } = letteredPictograph();
+    state.setOverride(tombstone(computeSpecialOverrideKey(picto, right, "red")));
     setSpecialOverrideResolver({
       getOverride: (k) => state.getOverride(k),
       getFullOverride: (k) => state.getFullOverride(k),
     });
-    const location = arrowLocationCalculator.calculateLocation(red, picto);
+    const location = arrowLocationCalculator.calculateLocation(right, picto);
     const result = await buildCalculator().calculateAdjustmentResult(
       picto,
-      red,
+      right,
       "A",
       location,
       "red"
@@ -158,16 +158,16 @@ describe("special suppression — render path", () => {
 
   it("reports the suppressed tier in diagnostics and hands ★ to Default", async () => {
     const state = createSpecialArrowPlacementState();
-    const { picto, red } = letteredPictograph();
-    state.setOverride(tombstone(computeSpecialOverrideKey(picto, red, "red")));
+    const { picto, right } = letteredPictograph();
+    state.setOverride(tombstone(computeSpecialOverrideKey(picto, right, "red")));
     setSpecialOverrideResolver({
       getOverride: (k) => state.getOverride(k),
       getFullOverride: (k) => state.getFullOverride(k),
     });
-    const location = arrowLocationCalculator.calculateLocation(red, picto);
+    const location = arrowLocationCalculator.calculateLocation(right, picto);
     const diagnostics = await buildCalculator().getDiagnostics(
       picto,
-      red,
+      right,
       "A",
       location,
       "red"

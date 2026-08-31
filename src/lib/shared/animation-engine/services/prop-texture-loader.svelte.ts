@@ -18,8 +18,8 @@ import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tun
 export class PropTextureLoader {
   // Reactive state - owned by service, read by component via $derived
   state = $state<PropTextureState>({
-    blueDimensions: { ...DEFAULT_PROP_DIMENSIONS },
-    redDimensions: { ...DEFAULT_PROP_DIMENSIONS },
+    leftDimensions: { ...DEFAULT_PROP_DIMENSIONS },
+    rightDimensions: { ...DEFAULT_PROP_DIMENSIONS },
     isLoaded: false,
     isLoading: false,
     error: null,
@@ -40,8 +40,8 @@ export class PropTextureLoader {
   }
 
   async loadPropTextures(
-    bluePropType: string,
-    redPropType: string,
+    leftPropType: string,
+    rightPropType: string,
     darkMode?: boolean,
     colors?: TunnelPropColorPair | null
   ): Promise<void> {
@@ -60,8 +60,8 @@ export class PropTextureLoader {
     // texture with new dimensions (causes jank/squishing).
     const isInitialLoad = !this.state.isLoaded;
     if (isInitialLoad) {
-      this.state.blueDimensions = getPropDimensions(bluePropType);
-      this.state.redDimensions = getPropDimensions(redPropType);
+      this.state.leftDimensions = getPropDimensions(leftPropType);
+      this.state.rightDimensions = getPropDimensions(rightPropType);
     }
 
     this.state.isLoading = true;
@@ -71,8 +71,8 @@ export class PropTextureLoader {
       // Load textures for both prop colors
       // Pass darkMode to use local preview state instead of global
       await this.renderer.loadPerColorPropTextures(
-        bluePropType,
-        redPropType,
+        leftPropType,
+        rightPropType,
         darkMode,
         colors
       );
@@ -83,40 +83,40 @@ export class PropTextureLoader {
 
       // Get prop dimensions for each color (may be different types!)
       // Pass darkMode for consistent color generation
-      const [bluePropData, redPropData] = await Promise.all([
+      const [leftPropData, rightPropData] = await Promise.all([
         colors
           ? this.svgGenerator.generatePropSvg(
-              bluePropType,
-              colors.blue,
+              leftPropType,
+              colors.left,
               darkMode === undefined ? undefined : darkMode ? "dark" : "light"
             )
-          : this.svgGenerator.generateBluePropSvg(bluePropType, darkMode),
+          : this.svgGenerator.generateLeftPropSvg(leftPropType, darkMode),
         colors
           ? this.svgGenerator.generatePropSvg(
-              redPropType,
-              colors.red,
+              rightPropType,
+              colors.right,
               darkMode === undefined ? undefined : darkMode ? "dark" : "light"
             )
-          : this.svgGenerator.generateRedPropSvg(redPropType, darkMode),
+          : this.svgGenerator.generateRightPropSvg(rightPropType, darkMode),
       ]);
 
       // Update dimensions AFTER textures are loaded - this ensures texture and
       // dimensions are updated atomically, preventing jank on prop switches
-      this.state.blueDimensions = {
-        width: bluePropData.width,
-        height: bluePropData.height,
+      this.state.leftDimensions = {
+        width: leftPropData.width,
+        height: leftPropData.height,
       };
-      this.state.redDimensions = {
-        width: redPropData.width,
-        height: redPropData.height,
+      this.state.rightDimensions = {
+        width: rightPropData.width,
+        height: rightPropData.height,
       };
 
       this.state.isLoaded = true;
 
       // Direct service-to-service communication (no component middleman)
       this.TrailCapturer?.updateConfig({
-        bluePropDimensions: this.state.blueDimensions,
-        redPropDimensions: this.state.redDimensions,
+        leftPropDimensions: this.state.leftDimensions,
+        rightPropDimensions: this.state.rightDimensions,
       });
     } catch (err) {
       console.error("[PropTextureLoader] Failed to load prop textures:", err);

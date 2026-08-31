@@ -57,7 +57,7 @@ export interface ModularAnalysisResult {
 
 export interface HandPathCycle {
   /** Which hand this cycle describes */
-  hand: "blue" | "red";
+  hand: "left" | "right";
 
   /** Number of steps in one complete cycle */
   cycleLength: number;
@@ -102,10 +102,10 @@ export interface LayeredPathResult {
   isLayeredPath: boolean;
 
   /** Blue hand's detected cycle */
-  blueCycle: HandPathCycle | null;
+  leftCycle: HandPathCycle | null;
 
   /** Red hand's detected cycle */
-  redCycle: HandPathCycle | null;
+  rightCycle: HandPathCycle | null;
 
   /** Rhythm type classification */
   rhythmType: "isorhythmic" | "polyrhythmic" | null;
@@ -130,8 +130,8 @@ export interface RawStepData {
   startPos?: string;
   endPos?: string;
   sequenceStartPosition?: string;
-  blueAttributes?: RawMotionAttributes;
-  redAttributes?: RawMotionAttributes;
+  leftAttributes?: RawMotionAttributes;
+  rightAttributes?: RawMotionAttributes;
   // Metadata object (first item in sequence array) fields
   word?: string;
   author?: string;

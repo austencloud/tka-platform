@@ -22,7 +22,7 @@ import {
 	MotionType,
 	RotationDirection,
 	Orientation,
-	MotionColor,
+	HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
@@ -49,13 +49,13 @@ export interface ChainDef {
 	/** Letters in the cycle - 1 for same-position, 2 for compounds (alternating) */
 	letters: [Letter] | [Letter, Letter];
 	/** Blue hand motion properties (constant across all 4 beats) */
-	blue: { motion: MotionType; rotation: RotationDirection };
+	left: { motion: MotionType; rotation: RotationDirection };
 	/** Red hand motion properties (constant across all 4 beats) */
-	red: { motion: MotionType; rotation: RotationDirection };
+	right: { motion: MotionType; rotation: RotationDirection };
 	/** 5 blue hand waypoints defining 4 beats (beat N: bluePath[N] → bluePath[N+1]) */
-	bluePath: FivePoints;
+	leftPath: FivePoints;
 	/** 5 red hand waypoints defining 4 beats */
-	redPath: FivePoints;
+	rightPath: FivePoints;
 }
 
 /**
@@ -85,10 +85,10 @@ const LOCATION_TO_POSITION: Record<string, GridPosition> = {
 	[`${L.NORTH},${L.WEST}`]: P.GAMMA15,
 };
 
-function positionAt(blueLoc: GridLocation, redLoc: GridLocation): GridPosition {
-	const key = `${blueLoc},${redLoc}`;
+function positionAt(leftLoc: GridLocation, rightLoc: GridLocation): GridPosition {
+	const key = `${leftLoc},${rightLoc}`;
 	const pos = LOCATION_TO_POSITION[key];
-	if (!pos) throw new Error(`No position for blue=${blueLoc}, red=${redLoc}`);
+	if (!pos) throw new Error(`No position for blue=${leftLoc}, red=${rightLoc}`);
 	return pos;
 }
 
@@ -128,42 +128,42 @@ const QO_RED: FivePoints = [L.EAST, L.SOUTH, L.WEST, L.NORTH, L.EAST];
 const SS_CHAINS: ChainDef[] = [
 	{
 		label: "A", rotationStyle: "pro/pro", letters: [Letter.A],
-		blue: { motion: M.PRO, rotation: R.CLOCKWISE },
-		red: { motion: M.PRO, rotation: R.CLOCKWISE },
-		bluePath: SS_BLUE, redPath: SS_RED,
+		left: { motion: M.PRO, rotation: R.CLOCKWISE },
+		right: { motion: M.PRO, rotation: R.CLOCKWISE },
+		leftPath: SS_BLUE, rightPath: SS_RED,
 	},
 	{
 		label: "B", rotationStyle: "anti/anti", letters: [Letter.B],
-		blue: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
-		red: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
-		bluePath: SS_BLUE, redPath: SS_RED,
+		left: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
+		right: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
+		leftPath: SS_BLUE, rightPath: SS_RED,
 	},
 	{
 		label: "C", rotationStyle: "hybrid", letters: [Letter.C],
-		blue: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
-		red: { motion: M.PRO, rotation: R.CLOCKWISE },
-		bluePath: SS_BLUE, redPath: SS_RED,
+		left: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
+		right: { motion: M.PRO, rotation: R.CLOCKWISE },
+		leftPath: SS_BLUE, rightPath: SS_RED,
 	},
 ];
 
 const TS_CHAINS: ChainDef[] = [
 	{
 		label: "G", rotationStyle: "pro/pro", letters: [Letter.G],
-		blue: { motion: M.PRO, rotation: R.CLOCKWISE },
-		red: { motion: M.PRO, rotation: R.CLOCKWISE },
-		bluePath: TS_BLUE, redPath: TS_RED,
+		left: { motion: M.PRO, rotation: R.CLOCKWISE },
+		right: { motion: M.PRO, rotation: R.CLOCKWISE },
+		leftPath: TS_BLUE, rightPath: TS_RED,
 	},
 	{
 		label: "H", rotationStyle: "anti/anti", letters: [Letter.H],
-		blue: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
-		red: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
-		bluePath: TS_BLUE, redPath: TS_RED,
+		left: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
+		right: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
+		leftPath: TS_BLUE, rightPath: TS_RED,
 	},
 	{
 		label: "I", rotationStyle: "hybrid", letters: [Letter.I],
-		blue: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
-		red: { motion: M.PRO, rotation: R.CLOCKWISE },
-		bluePath: TS_BLUE, redPath: TS_RED,
+		left: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
+		right: { motion: M.PRO, rotation: R.CLOCKWISE },
+		leftPath: TS_BLUE, rightPath: TS_RED,
 	},
 ];
 
@@ -171,23 +171,23 @@ const TO_CHAINS: ChainDef[] = [
 	{
 		label: "DJ", mnemonic: "Disco Jam", rotationStyle: "pro/pro",
 		letters: [Letter.D, Letter.J],
-		blue: { motion: M.PRO, rotation: R.COUNTER_CLOCKWISE },
-		red: { motion: M.PRO, rotation: R.CLOCKWISE },
-		bluePath: TO_BLUE, redPath: TO_RED,
+		left: { motion: M.PRO, rotation: R.COUNTER_CLOCKWISE },
+		right: { motion: M.PRO, rotation: R.CLOCKWISE },
+		leftPath: TO_BLUE, rightPath: TO_RED,
 	},
 	{
 		label: "EK", mnemonic: "Exploding Kitten", rotationStyle: "anti/anti",
 		letters: [Letter.E, Letter.K],
-		blue: { motion: M.ANTI, rotation: R.CLOCKWISE },
-		red: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
-		bluePath: TO_BLUE, redPath: TO_RED,
+		left: { motion: M.ANTI, rotation: R.CLOCKWISE },
+		right: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
+		leftPath: TO_BLUE, rightPath: TO_RED,
 	},
 	{
 		label: "FL", mnemonic: "Fruity Loops", rotationStyle: "hybrid",
 		letters: [Letter.F, Letter.L],
-		blue: { motion: M.ANTI, rotation: R.CLOCKWISE },
-		red: { motion: M.PRO, rotation: R.CLOCKWISE },
-		bluePath: TO_BLUE, redPath: TO_RED,
+		left: { motion: M.ANTI, rotation: R.CLOCKWISE },
+		right: { motion: M.PRO, rotation: R.CLOCKWISE },
+		leftPath: TO_BLUE, rightPath: TO_RED,
 	},
 ];
 
@@ -195,50 +195,50 @@ const SO_CHAINS: ChainDef[] = [
 	{
 		label: "JD", mnemonic: "Disco Jam", rotationStyle: "pro/pro",
 		letters: [Letter.J, Letter.D],
-		blue: { motion: M.PRO, rotation: R.COUNTER_CLOCKWISE },
-		red: { motion: M.PRO, rotation: R.CLOCKWISE },
-		bluePath: SO_BLUE, redPath: SO_RED,
+		left: { motion: M.PRO, rotation: R.COUNTER_CLOCKWISE },
+		right: { motion: M.PRO, rotation: R.CLOCKWISE },
+		leftPath: SO_BLUE, rightPath: SO_RED,
 	},
 	{
 		label: "KE", mnemonic: "Exploding Kitten", rotationStyle: "anti/anti",
 		letters: [Letter.K, Letter.E],
-		blue: { motion: M.ANTI, rotation: R.CLOCKWISE },
-		red: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
-		bluePath: SO_BLUE, redPath: SO_RED,
+		left: { motion: M.ANTI, rotation: R.CLOCKWISE },
+		right: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
+		leftPath: SO_BLUE, rightPath: SO_RED,
 	},
 	{
 		label: "LF", mnemonic: "Fruity Loops", rotationStyle: "hybrid",
 		letters: [Letter.L, Letter.F],
-		blue: { motion: M.ANTI, rotation: R.CLOCKWISE },
-		red: { motion: M.PRO, rotation: R.CLOCKWISE },
-		bluePath: SO_BLUE, redPath: SO_RED,
+		left: { motion: M.ANTI, rotation: R.CLOCKWISE },
+		right: { motion: M.PRO, rotation: R.CLOCKWISE },
+		leftPath: SO_BLUE, rightPath: SO_RED,
 	},
 ];
 
 const QS_CHAINS: ChainDef[] = [
 	{
 		label: "S", rotationStyle: "pro/pro", letters: [Letter.S],
-		blue: { motion: M.PRO, rotation: R.CLOCKWISE },
-		red: { motion: M.PRO, rotation: R.CLOCKWISE },
-		bluePath: QS1_BLUE, redPath: QS1_RED,
+		left: { motion: M.PRO, rotation: R.CLOCKWISE },
+		right: { motion: M.PRO, rotation: R.CLOCKWISE },
+		leftPath: QS1_BLUE, rightPath: QS1_RED,
 	},
 	{
 		label: "T", rotationStyle: "anti/anti", letters: [Letter.T],
-		blue: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
-		red: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
-		bluePath: QS1_BLUE, redPath: QS1_RED,
+		left: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
+		right: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
+		leftPath: QS1_BLUE, rightPath: QS1_RED,
 	},
 	{
 		label: "U", rotationStyle: "hybrid", letters: [Letter.U],
-		blue: { motion: M.PRO, rotation: R.CLOCKWISE },
-		red: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
-		bluePath: QS2_BLUE, redPath: QS2_RED,
+		left: { motion: M.PRO, rotation: R.CLOCKWISE },
+		right: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
+		leftPath: QS2_BLUE, rightPath: QS2_RED,
 	},
 	{
 		label: "V", rotationStyle: "hybrid", letters: [Letter.V],
-		blue: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
-		red: { motion: M.PRO, rotation: R.CLOCKWISE },
-		bluePath: QS2_BLUE, redPath: QS2_RED,
+		left: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
+		right: { motion: M.PRO, rotation: R.CLOCKWISE },
+		leftPath: QS2_BLUE, rightPath: QS2_RED,
 	},
 ];
 
@@ -246,23 +246,23 @@ const QO_CHAINS: ChainDef[] = [
 	{
 		label: "MP", mnemonic: "Magic Potion", rotationStyle: "pro/pro",
 		letters: [Letter.M, Letter.P],
-		blue: { motion: M.PRO, rotation: R.COUNTER_CLOCKWISE },
-		red: { motion: M.PRO, rotation: R.CLOCKWISE },
-		bluePath: QO_BLUE, redPath: QO_RED,
+		left: { motion: M.PRO, rotation: R.COUNTER_CLOCKWISE },
+		right: { motion: M.PRO, rotation: R.CLOCKWISE },
+		leftPath: QO_BLUE, rightPath: QO_RED,
 	},
 	{
 		label: "NQ", mnemonic: "Never Quit", rotationStyle: "anti/anti",
 		letters: [Letter.N, Letter.Q],
-		blue: { motion: M.ANTI, rotation: R.CLOCKWISE },
-		red: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
-		bluePath: QO_BLUE, redPath: QO_RED,
+		left: { motion: M.ANTI, rotation: R.CLOCKWISE },
+		right: { motion: M.ANTI, rotation: R.COUNTER_CLOCKWISE },
+		leftPath: QO_BLUE, rightPath: QO_RED,
 	},
 	{
 		label: "OR", mnemonic: "Open Road", rotationStyle: "hybrid",
 		letters: [Letter.O, Letter.R],
-		blue: { motion: M.ANTI, rotation: R.CLOCKWISE },
-		red: { motion: M.PRO, rotation: R.CLOCKWISE },
-		bluePath: QO_BLUE, redPath: QO_RED,
+		left: { motion: M.ANTI, rotation: R.CLOCKWISE },
+		right: { motion: M.PRO, rotation: R.CLOCKWISE },
+		leftPath: QO_BLUE, rightPath: QO_RED,
 	},
 ];
 
@@ -283,49 +283,49 @@ export function getModeChains(mode: VTGMode): ChainDef[] {
 /** Expand a compact chain definition into 4 renderable PictographData objects */
 export function expandChain(
 	chain: ChainDef,
-	bluePropType: PropType = PropType.STAFF,
-	redPropType: PropType = PropType.STAFF,
+	leftPropType: PropType = PropType.STAFF,
+	rightPropType: PropType = PropType.STAFF,
 ): PictographData[] {
 	return [0, 1, 2, 3].map((i) => {
 		const letter = chain.letters.length === 1
 			? chain.letters[0]
 			: chain.letters[i % 2];
 
-		const blueStart = chain.bluePath[i]!;
-		const blueEnd = chain.bluePath[i + 1]!;
-		const redStart = chain.redPath[i]!;
-		const redEnd = chain.redPath[i + 1]!;
+		const leftStart = chain.leftPath[i]!;
+		const leftEnd = chain.leftPath[i + 1]!;
+		const rightStart = chain.rightPath[i]!;
+		const rightEnd = chain.rightPath[i + 1]!;
 
-		const startPos = positionAt(blueStart, redStart);
-		const endPos = positionAt(blueEnd, redEnd);
+		const startPos = positionAt(leftStart, rightStart);
+		const endPos = positionAt(leftEnd, rightEnd);
 
-		const blueMotion = createMotionData({
-			motionType: chain.blue.motion,
-			rotationDirection: chain.blue.rotation,
-			startLocation: blueStart,
-			endLocation: blueEnd,
+		const leftMotion = createMotionData({
+			motionType: chain.left.motion,
+			rotationDirection: chain.left.rotation,
+			startLocation: leftStart,
+			endLocation: leftEnd,
 			startOrientation: Orientation.IN,
 			endOrientation: Orientation.IN,
 			turns: 1,
-			color: MotionColor.BLUE,
+			hand: HandSide.LEFT,
 			isVisible: true,
-			propType: bluePropType,
-			arrowLocation: blueStart,
+			propType: leftPropType,
+			arrowLocation: leftStart,
 			gridMode: GridMode.DIAMOND,
 		});
 
-		const redMotion = createMotionData({
-			motionType: chain.red.motion,
-			rotationDirection: chain.red.rotation,
-			startLocation: redStart,
-			endLocation: redEnd,
+		const rightMotion = createMotionData({
+			motionType: chain.right.motion,
+			rotationDirection: chain.right.rotation,
+			startLocation: rightStart,
+			endLocation: rightEnd,
 			startOrientation: Orientation.IN,
 			endOrientation: Orientation.IN,
 			turns: 1,
-			color: MotionColor.RED,
+			hand: HandSide.RIGHT,
 			isVisible: true,
-			propType: redPropType,
-			arrowLocation: redStart,
+			propType: rightPropType,
+			arrowLocation: rightStart,
 			gridMode: GridMode.DIAMOND,
 		});
 
@@ -336,8 +336,8 @@ export function expandChain(
 			endPosition: endPos,
 			gridMode: GridMode.DIAMOND,
 			motions: {
-				[MotionColor.BLUE]: blueMotion,
-				[MotionColor.RED]: redMotion,
+				[HandSide.LEFT]: leftMotion,
+				[HandSide.RIGHT]: rightMotion,
 			},
 		};
 	});

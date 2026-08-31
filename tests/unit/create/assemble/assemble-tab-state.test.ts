@@ -11,7 +11,7 @@ import {
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -33,8 +33,8 @@ const states: ReturnType<typeof createAssembleTabState>[] = [];
 const sequenceRepository = {} as SequenceRepository;
 
 function makeBlueSequence(): SequenceData {
-  const blue = createMotionData({
-    color: MotionColor.BLUE,
+  const left = createMotionData({
+    hand: HandSide.LEFT,
     motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
     startLocation: GridLocation.NORTH,
@@ -46,17 +46,17 @@ function makeBlueSequence(): SequenceData {
     isVisible: true,
   });
   const startBlue = createMotionData({
-    ...blue,
+    ...left,
     motionType: MotionType.STATIC,
     rotationDirection: RotationDirection.NO_ROTATION,
-    endLocation: blue.startLocation,
-    endOrientation: blue.startOrientation,
+    endLocation: left.startLocation,
+    endOrientation: left.startOrientation,
     turns: 0,
   });
   const startPosition = createStartPositionData({
     id: "assemble-start",
     gridMode: GridMode.DIAMOND,
-    motions: { [MotionColor.BLUE]: startBlue },
+    motions: { [HandSide.LEFT]: startBlue },
   });
 
   return {
@@ -66,7 +66,7 @@ function makeBlueSequence(): SequenceData {
     steps: [
       createStepData({
         id: "assemble-step-1",
-        motions: { [MotionColor.BLUE]: blue },
+        motions: { [HandSide.LEFT]: left },
         stepNumber: 1,
         duration: 2,
       }),
@@ -86,10 +86,10 @@ function makeTwoStepBlueSequence(): SequenceData {
   const sequence = makeBlueSequence();
   const first = sequence.steps[0]!;
   const secondBlue = createMotionData({
-    ...first.motions.blue,
+    ...first.motions.left,
     startLocation: GridLocation.EAST,
     endLocation: GridLocation.SOUTH,
-    startOrientation: first.motions.blue.endOrientation,
+    startOrientation: first.motions.left.endOrientation,
     endOrientation: Orientation.OUT,
   });
   return {
@@ -98,7 +98,7 @@ function makeTwoStepBlueSequence(): SequenceData {
       first,
       createStepData({
         id: "assemble-step-2",
-        motions: { [MotionColor.BLUE]: secondBlue },
+        motions: { [HandSide.LEFT]: secondBlue },
         stepNumber: 2,
         duration: 7,
       }),
@@ -124,14 +124,14 @@ describe("Assemble tab document synchronization", () => {
     );
 
     const editedBlue = {
-      ...initial.steps[0]!.motions.blue,
+      ...initial.steps[0]!.motions.left,
       endLocation: GridLocation.SOUTH,
       endOrientation: Orientation.OUT,
     };
     const editedStep = {
       ...initial.steps[0]!,
       duration: 3,
-      motions: { ...initial.steps[0]!.motions, blue: editedBlue },
+      motions: { ...initial.steps[0]!.motions, left: editedBlue },
     };
     sequenceState.setCurrentSequence({ ...initial, steps: [editedStep] });
 
@@ -141,7 +141,7 @@ describe("Assemble tab document synchronization", () => {
     await Promise.resolve();
     expect(sequenceState.currentSequence?.steps[0]?.duration).toBe(3);
     expect(
-      sequenceState.currentSequence?.steps[0]?.motions.blue.pathShape
+      sequenceState.currentSequence?.steps[0]?.motions.left.pathShape
     ).toBe("concave");
     await Promise.resolve();
     expect(tabState.assembleBuilderState.canUndo).toBe(true);
@@ -168,16 +168,16 @@ describe("Assemble tab document synchronization", () => {
     tabState.assembleBuilderState.handlePointClick(GridLocation.SOUTH);
     await vi.waitFor(() => {
       expect(
-        sequenceState.currentSequence?.steps[0]?.motions.red.isVisible
+        sequenceState.currentSequence?.steps[0]?.motions.right.isVisible
       ).toBe(true);
     });
     await vi.waitFor(() => {
       expect(sequenceState.currentSequence?.steps[0]?.letter).toBe(Letter.A);
     });
-    expect(tabState.assembleBuilderState.activeHand).toBe(MotionColor.RED);
+    expect(tabState.assembleBuilderState.activeHand).toBe(HandSide.RIGHT);
     expect(sequenceState.currentSequence?.steps[0]?.duration).toBe(3);
     expect(
-      sequenceState.currentSequence?.steps[0]?.motions.blue.pathShape
+      sequenceState.currentSequence?.steps[0]?.motions.left.pathShape
     ).toBe("concave");
   });
 
@@ -188,7 +188,7 @@ describe("Assemble tab document synchronization", () => {
     const initial = makeBlueSequence();
     const initialStep = initial.steps[0]!;
     const markedBlue = createMotionData({
-      ...initialStep.motions.blue,
+      ...initialStep.motions.left,
       arrowLocation: GridLocation.SOUTHWEST,
       segment: { t0: 0, t1: 0.5 },
       skewSteps: 2,
@@ -196,7 +196,7 @@ describe("Assemble tab document synchronization", () => {
     });
     const markedStep = {
       ...initialStep,
-      motions: { ...initialStep.motions, blue: markedBlue },
+      motions: { ...initialStep.motions, left: markedBlue },
     };
     sequenceState.setCurrentSequence({ ...initial, steps: [markedStep] });
 
@@ -207,7 +207,7 @@ describe("Assemble tab document synchronization", () => {
           ...markedStep,
           motions: {
             ...markedStep.motions,
-            blue: {
+            left: {
               ...markedBlue,
               endLocation: GridLocation.SOUTH,
               endOrientation: Orientation.OUT,
@@ -222,10 +222,10 @@ describe("Assemble tab document synchronization", () => {
 
     await vi.waitFor(() => {
       expect(
-        sequenceState.currentSequence?.steps[0]?.motions.red.isVisible
+        sequenceState.currentSequence?.steps[0]?.motions.right.isVisible
       ).toBe(true);
     });
-    const rebuilt = sequenceState.currentSequence?.steps[0]?.motions.blue;
+    const rebuilt = sequenceState.currentSequence?.steps[0]?.motions.left;
     expect(rebuilt?.arrowLocation).toBe(GridLocation.EAST);
     expect(rebuilt?.segment).toBeUndefined();
     expect(rebuilt?.skewSteps).toBeNull();
@@ -274,10 +274,10 @@ describe("Assemble tab document synchronization", () => {
     tabState.assembleBuilderState.handlePointClick(GridLocation.SOUTH);
     expect(sequenceState.currentSequence?.steps).toHaveLength(1);
     expect(
-      sequenceState.currentSequence?.steps[0]?.motions.blue.startLocation
+      sequenceState.currentSequence?.steps[0]?.motions.left.startLocation
     ).toBe(GridLocation.NORTH);
     expect(
-      sequenceState.currentSequence?.steps[0]?.motions.blue.endLocation
+      sequenceState.currentSequence?.steps[0]?.motions.left.endLocation
     ).toBe(GridLocation.SOUTH);
   });
 
@@ -316,7 +316,7 @@ describe("Assemble tab document synchronization", () => {
     });
     await Promise.resolve();
 
-    expect(tabState.assembleBuilderState.activeHand).toBe(MotionColor.RED);
+    expect(tabState.assembleBuilderState.activeHand).toBe(HandSide.RIGHT);
     expect(tabState.assembleBuilderState.selectedStepIndex).toBe(0);
     expect(tabState.assembleBuilderState.phase).toBe("idle");
     expect(tabState.assembleBuilderState.undoLabel).toBe("Edit sequence");

@@ -88,8 +88,8 @@
       {#if previewSequence}
         <PropAwareThumbnail
           sequence={previewSequence}
-          bluePropType={previewProps.bluePropType}
-          redPropType={previewProps.redPropType}
+          leftPropType={previewProps.leftPropType}
+          rightPropType={previewProps.rightPropType}
           catDogModeEnabled={previewProps.catDogMode}
           eager
           allowQR={false}

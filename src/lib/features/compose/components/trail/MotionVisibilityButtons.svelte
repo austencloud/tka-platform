@@ -6,29 +6,29 @@
 -->
 <script lang="ts">
   let {
-    blueMotionVisible = true,
-    redMotionVisible = true,
-    onToggleBlue = () => {},
-    onToggleRed = () => {},
+    leftMotionVisible = true,
+    rightMotionVisible = true,
+    onToggleLeft = () => {},
+    onToggleRight = () => {},
   }: {
-    blueMotionVisible?: boolean;
-    redMotionVisible?: boolean;
-    onToggleBlue?: () => void;
-    onToggleRed?: () => void;
+    leftMotionVisible?: boolean;
+    rightMotionVisible?: boolean;
+    onToggleLeft?: () => void;
+    onToggleRight?: () => void;
   } = $props();
 </script>
 
 <!-- Blue Motion Visibility Button -->
 <button
   class="vis-btn blue-vis-btn"
-  class:active={blueMotionVisible}
-  onclick={onToggleBlue}
+  class:active={leftMotionVisible}
+  onclick={onToggleLeft}
   type="button"
-  title={blueMotionVisible ? "Hide blue motion" : "Show blue motion"}
-  aria-label={blueMotionVisible ? "Hide blue motion" : "Show blue motion"}
+  title={leftMotionVisible ? "Hide blue motion" : "Show blue motion"}
+  aria-label={leftMotionVisible ? "Hide blue motion" : "Show blue motion"}
 >
   <i
-    class="fas {blueMotionVisible ? 'fa-eye' : 'fa-eye-slash'}"
+    class="fas {leftMotionVisible ? 'fa-eye' : 'fa-eye-slash'}"
     aria-hidden="true"
   ></i>
 </button>
@@ -36,14 +36,14 @@
 <!-- Red Motion Visibility Button -->
 <button
   class="vis-btn red-vis-btn"
-  class:active={redMotionVisible}
-  onclick={onToggleRed}
+  class:active={rightMotionVisible}
+  onclick={onToggleRight}
   type="button"
-  title={redMotionVisible ? "Hide red motion" : "Show red motion"}
-  aria-label={redMotionVisible ? "Hide red motion" : "Show red motion"}
+  title={rightMotionVisible ? "Hide red motion" : "Show red motion"}
+  aria-label={rightMotionVisible ? "Hide red motion" : "Show red motion"}
 >
   <i
-    class="fas {redMotionVisible ? 'fa-eye' : 'fa-eye-slash'}"
+    class="fas {rightMotionVisible ? 'fa-eye' : 'fa-eye-slash'}"
     aria-hidden="true"
   ></i>
 </button>

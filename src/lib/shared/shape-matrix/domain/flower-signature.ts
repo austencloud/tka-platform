@@ -122,10 +122,10 @@ export function ratioLabel(turns: number): string {
  * each prop:hand ratio, but not the community-looking `3::1` contraction.
  * Keeping both ratios explicit makes the axes and the convention unambiguous.
  */
-export function hybridRatioLabel(blueTurns: number, redTurns: number): string {
-  return blueTurns === redTurns
-    ? ratioLabel(blueTurns)
-    : `Blue ${ratioLabel(blueTurns)} × Red ${ratioLabel(redTurns)}`;
+export function hybridRatioLabel(leftTurns: number, rightTurns: number): string {
+  return leftTurns === rightTurns
+    ? ratioLabel(leftTurns)
+    : `Blue ${ratioLabel(leftTurns)} × Red ${ratioLabel(rightTurns)}`;
 }
 
 export function flowerLabel(f: Flower): string {

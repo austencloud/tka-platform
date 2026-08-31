@@ -25,8 +25,8 @@ export interface CodeEntry {
   lastScannedAt: string | null;
   lastCity: string | null;
   lastCountry: string | null;
-  bluePropType: PropType | null;
-  redPropType: PropType | null;
+  leftPropType: PropType | null;
+  rightPropType: PropType | null;
   catDogMode: boolean | null;
   metadataAvailable: boolean;
   embeddedFallback: SequenceData | null;
@@ -260,8 +260,8 @@ function entryFromDocument(document: ScanActivityCardDocument): CodeEntry {
     lastScannedAt: toISOString(data.lastScannedAt),
     lastCity: nullableText(data.lastCity),
     lastCountry: nullableText(data.lastCountry),
-    bluePropType: parsePropTypeFromURLValue(text(data.bluePropType)) ?? null,
-    redPropType: parsePropTypeFromURLValue(text(data.redPropType)) ?? null,
+    leftPropType: parsePropTypeFromURLValue(text(data.leftPropType)) ?? null,
+    rightPropType: parsePropTypeFromURLValue(text(data.rightPropType)) ?? null,
     catDogMode: typeof data.catDogMode === "boolean" ? data.catDogMode : null,
     metadataAvailable: true,
     embeddedFallback: embeddedSequence,
@@ -286,8 +286,8 @@ function unavailableEntry(code: string): CodeEntry {
     lastScannedAt: null,
     lastCity: null,
     lastCountry: null,
-    bluePropType: null,
-    redPropType: null,
+    leftPropType: null,
+    rightPropType: null,
     catDogMode: null,
     metadataAvailable: false,
     embeddedFallback: null,

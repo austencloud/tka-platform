@@ -33,7 +33,7 @@ const ROLLABLE_EFFECTS = [
 ];
 
 export const chanceSuiteFilm: FilmDirectorInput = {
-  version: 4,
+  version: 5,
   id: "chance-suite-r1",
   title: "Chance Suite",
   brief:
@@ -59,8 +59,8 @@ export const chanceSuiteFilm: FilmDirectorInput = {
             prop: { pick: "any", from: ROLLABLE_PROPS },
             effect: { pick: "any", from: ROLLABLE_EFFECTS },
             effort: { pick: "any" },
-            bluePlane: { pick: "any" },
-            redPlane: { pick: "any" },
+            leftPlane: { pick: "any" },
+            rightPlane: { pick: "any" },
           },
         },
       },
@@ -96,8 +96,8 @@ export const chanceSuiteFilm: FilmDirectorInput = {
             prop: { pick: "distinct", from: ROLLABLE_PROPS },
             effect: { pick: "distinct", from: ROLLABLE_EFFECTS },
             effort: { pick: "distinct" },
-            bluePlane: { pick: "distinct" },
-            redPlane: "wall",
+            leftPlane: { pick: "distinct" },
+            rightPlane: "wall",
           },
         },
       },
@@ -138,8 +138,8 @@ export const chanceSuiteFilm: FilmDirectorInput = {
             effect: { oneOf: ["fire", "led", "trails"] },
             effort: { pick: "any", from: ["glide", "press", "elastic"] },
             stepPlanes: [
-              { step: 4, hand: "blue", plane: { oneOf: ["wheel", "floor"] } },
-              { step: 4, hand: "red", plane: { not: "wall" } },
+              { step: 4, hand: "left", plane: { oneOf: ["wheel", "floor"] } },
+              { step: 4, hand: "right", plane: { not: "wall" } },
             ],
           },
           // Id-less overrides fill cast slots in order: a one-count canon
@@ -187,8 +187,8 @@ export const chanceSuiteFilm: FilmDirectorInput = {
             prop: { pick: "any", from: ROLLABLE_PROPS },
             effect: { pick: "any", from: ROLLABLE_EFFECTS },
             effort: { pick: "any" },
-            bluePlane: { pick: "any" },
-            redPlane: { pick: "any" },
+            leftPlane: { pick: "any" },
+            rightPlane: { pick: "any" },
           },
         },
       },

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildActSequence } from "$lib/features/write/services/sheet-act-sequence";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 type FakeStep = { letter: string; start: string; end: string };
@@ -19,8 +19,8 @@ function seq(
       startPosition: s.start,
       endPosition: s.end,
       motions: {
-        [MotionColor.BLUE]: { startOrientation: "in", endOrientation: "in" },
-        [MotionColor.RED]: { startOrientation: "in", endOrientation: "in" },
+        [HandSide.LEFT]: { startOrientation: "in", endOrientation: "in" },
+        [HandSide.RIGHT]: { startOrientation: "in", endOrientation: "in" },
       },
     })),
   } as unknown as SequenceData;

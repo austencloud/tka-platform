@@ -43,11 +43,11 @@ const WORD_MODE: Record<string, VtgMode> = {
 };
 
 /** Per-hand style pair of a base word's first step. null if unreadable. */
-function stylePairOf(seq: SequenceData): { blue: string; red: string } | null {
+function stylePairOf(seq: SequenceData): { left: string; right: string } | null {
   const m = seq.steps?.[0]?.motions;
-  const b = m?.blue?.motionType;
-  const r = m?.red?.motionType;
-  return b && r ? { blue: b, red: r } : null;
+  const b = m?.left?.motionType;
+  const r = m?.right?.motionType;
+  return b && r ? { left: b, right: r } : null;
 }
 
 /**
@@ -69,7 +69,7 @@ export function buildBaseIndex(
 ): Map<string, SequenceData> {
   const keyed: {
     mode: VtgMode;
-    pair: { blue: string; red: string };
+    pair: { left: string; right: string };
     seq: SequenceData;
   }[] = [];
   for (const s of seqs) {
@@ -81,12 +81,12 @@ export function buildBaseIndex(
   }
   const idx = new Map<string, SequenceData>();
   for (const k of keyed) {
-    const key = `${k.mode}|${k.pair.blue}|${k.pair.red}`;
+    const key = `${k.mode}|${k.pair.left}|${k.pair.right}`;
     if (!idx.has(key)) idx.set(key, k.seq);
   }
   for (const k of keyed) {
-    if (k.pair.blue === k.pair.red) continue; // symmetric pair swaps onto its own key
-    const key = `${k.mode}|${k.pair.red}|${k.pair.blue}`;
+    if (k.pair.left === k.pair.right) continue; // symmetric pair swaps onto its own key
+    const key = `${k.mode}|${k.pair.right}|${k.pair.left}`;
     if (!idx.has(key)) idx.set(key, colorSwapSequence(k.seq));
   }
   return idx;
@@ -101,8 +101,8 @@ export function buildBaseIndex(
 export function resolveBase(
   idx: Map<string, SequenceData>,
   mode: VtgMode,
-  blueStyle: string,
-  redStyle: string
+  leftStyle: string,
+  rightStyle: string
 ): SequenceData | null {
-  return idx.get(`${mode}|${blueStyle}|${redStyle}`) ?? null;
+  return idx.get(`${mode}|${leftStyle}|${rightStyle}`) ?? null;
 }

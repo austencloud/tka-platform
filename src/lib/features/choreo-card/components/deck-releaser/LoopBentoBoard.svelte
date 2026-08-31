@@ -205,7 +205,7 @@
 
   // Deck prop. Shows the effective prop (chosen, else the global default).
   const propLabel = $derived(
-    String(rs.bluePropType)
+    String(rs.leftPropType)
       .replace(/_/g, " ")
       .replace(/\b\w/g, (m) => m.toUpperCase())
   );
@@ -222,13 +222,13 @@
     posShowAll
       ? startPositionManager.getAllStartPositionVariations(
           posGridMode,
-          rs.startOriBlue as Orientation,
-          rs.startOriRed as Orientation
+          rs.startOriLeft as Orientation,
+          rs.startOriRight as Orientation
         )
       : startPositionManager.getDefaultStartPositions(
           posGridMode,
-          rs.startOriBlue as Orientation,
-          rs.startOriRed as Orientation
+          rs.startOriLeft as Orientation,
+          rs.startOriRight as Orientation
         )
   );
   function togglePos(pos: string) {
@@ -256,7 +256,7 @@
   };
   const oriLabel = (o: string) => ORI_SHORT[o] ?? o;
   const posSummary = $derived(
-    `${rs.selectedStartPositionIds.size === 0 ? "Any" : `${rs.selectedStartPositionIds.size} pos`} · ${oriLabel(rs.startOriBlue)}/${oriLabel(rs.startOriRed)}`
+    `${rs.selectedStartPositionIds.size === 0 ? "Any" : `${rs.selectedStartPositionIds.size} pos`} · ${oriLabel(rs.startOriLeft)}/${oriLabel(rs.startOriRight)}`
   );
 
   // ── actions ────────────────────────────────────────────────────────────────
@@ -617,7 +617,7 @@
   {/snippet}
   <div class="picker-body">
     <BentoPropGrid
-      selectedPropType={rs.bluePropType}
+      selectedPropType={rs.leftPropType}
       variant="inline"
       title="Select Prop"
       onSelect={(p: PropType) => {
@@ -681,17 +681,17 @@
     </div>
     <div class="pos-ori-row">
       <OrientationCycler
-        orientation={rs.startOriBlue as Orientation}
+        orientation={rs.startOriLeft as Orientation}
         onOrientationChange={(o: Orientation) => {
-          rs.startOriBlue = o;
+          rs.startOriLeft = o;
           rs.persist();
         }}
         color="blue"
       />
       <OrientationCycler
-        orientation={rs.startOriRed as Orientation}
+        orientation={rs.startOriRight as Orientation}
         onOrientationChange={(o: Orientation) => {
-          rs.startOriRed = o;
+          rs.startOriRight = o;
           rs.persist();
         }}
         color="red"

@@ -46,7 +46,7 @@ diagnostic here and are not persisted or transmitted, same as in the game.
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { createHandPath } from "$lib/shared/foundation/services/hand-path-factory";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
@@ -137,7 +137,7 @@ diagnostic here and are not persisted or transmitted, same as in the game.
         trace.loadRound(
           handPathToTraceRound(
             createHandPath([N, E, S, W, N]),
-            MotionColor.BLUE
+            HandSide.LEFT
           )
         );
         return;

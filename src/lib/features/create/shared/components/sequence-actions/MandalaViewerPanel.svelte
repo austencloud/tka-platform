@@ -16,8 +16,8 @@
     sequence: SequenceData;
     variant: MandalaRenderOptions["show"];
     pathShape: MandalaPathShape;
-    bluePropType: string;
-    redPropType: string;
+    leftPropType: string;
+    rightPropType: string;
     isMobile?: boolean;
     onClose: () => void;
   }
@@ -26,8 +26,8 @@
     sequence,
     variant,
     pathShape,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     isMobile = false,
     onClose,
   }: Props = $props();
@@ -37,8 +37,8 @@
   const ctrl = new MandalaViewerController(
     {
       getSequence: () => sequence,
-      getBluePropType: () => bluePropType,
-      getRedPropType: () => redPropType,
+      getLeftPropType: () => leftPropType,
+      getRightPropType: () => rightPropType,
       pathPolicy: getAnimationVisibilityManager(),
     },
     {
@@ -65,8 +65,8 @@
       const name = await saveMandalaToCollection({
         steps: sequence.steps ?? [],
         variant: ctrl.show,
-        bluePropType,
-        redPropType,
+        leftPropType,
+        rightPropType,
         pathShape: ctrl.pathShape,
         sequenceWord: sequence.word ?? "",
       });
@@ -91,8 +91,8 @@
   <div class="mandala-stage">
     <MandalaPane
       {sequence}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
       {ctrl}
       showDownload={false}
       dockAction={saveAction}

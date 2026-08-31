@@ -19,7 +19,7 @@
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
     Orientation,
-    MotionColor,
+    HandSide,
     MotionType,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -95,7 +95,7 @@
   // prop SVG loading, positioning, rotation, colors.
   const demoPictograph = $derived.by<PictographData>(() => {
     const motion = createMotionData({
-      color: MotionColor.BLUE,
+      color: HandSide.LEFT,
       startLocation: selectedLocation,
       endLocation: selectedLocation,
       motionType: MotionType.STATIC,
@@ -110,7 +110,7 @@
 
     return {
       id: `explainer-${gridMode}`,
-      motions: { [MotionColor.BLUE]: motion },
+      motions: { [HandSide.LEFT]: motion },
       gridMode: gridMode,
     };
   });
@@ -173,7 +173,7 @@
           showReversals={false}
           disableTransitions={true}
           disableContentTransitions={true}
-          visibleHand="blue"
+          visibleHand="left"
         />
       </div>
 

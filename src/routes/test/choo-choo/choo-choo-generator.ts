@@ -23,7 +23,7 @@ import {
   MotionType,
   RotationDirection,
   Orientation,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -79,7 +79,7 @@ const CCW_FLOAT_ORIENTATION_CYCLE: Orientation[] = [
 
 export interface ChooChooConfig {
   /** Which prop is static (rotates in place) */
-  staticProp: "blue" | "red";
+  staticProp: "left" | "right";
   /** Rotation direction of the static prop */
   rotationDirection: "cw" | "ccw";
   /** Orbit direction of the floating prop */
@@ -95,7 +95,7 @@ export interface ChooChooConfig {
 }
 
 export const DEFAULT_CONFIG: ChooChooConfig = {
-  staticProp: "blue",
+  staticProp: "left",
   rotationDirection: "cw",
   orbitDirection: "cw",
   steps: 4,
@@ -186,7 +186,7 @@ function createStartPosition(
     turns: 0,
     startOrientation: Orientation.IN,
     endOrientation: Orientation.IN,
-    color: config.staticProp === "blue" ? MotionColor.BLUE : MotionColor.RED,
+    hand: config.staticProp === "left" ? HandSide.LEFT : HandSide.RIGHT,
     gridMode: GridMode.DIAMOND,
     propType: PropType.STAFF,
     isVisible: true,
@@ -200,7 +200,7 @@ function createStartPosition(
     turns: 0,
     startOrientation: Orientation.IN,
     endOrientation: Orientation.IN,
-    color: config.staticProp === "blue" ? MotionColor.RED : MotionColor.BLUE,
+    hand: config.staticProp === "left" ? HandSide.RIGHT : HandSide.LEFT,
     gridMode: GridMode.DIAMOND,
     propType: PropType.STAFF,
     isVisible: true,
@@ -213,10 +213,10 @@ function createStartPosition(
     startPosition: GridPosition.BETA5,
     endPosition: GridPosition.BETA5,
     motions: {
-      [MotionColor.BLUE]:
-        config.staticProp === "blue" ? staticMotion : floatMotion,
-      [MotionColor.RED]:
-        config.staticProp === "red" ? staticMotion : floatMotion,
+      [HandSide.LEFT]:
+        config.staticProp === "left" ? staticMotion : floatMotion,
+      [HandSide.RIGHT]:
+        config.staticProp === "right" ? staticMotion : floatMotion,
     },
   };
 }
@@ -261,7 +261,7 @@ async function createStep(
     turns: config.turnsPerBeat,
     startOrientation: staticStartOri,
     endOrientation: staticEndOri,
-    color: config.staticProp === "blue" ? MotionColor.BLUE : MotionColor.RED,
+    hand: config.staticProp === "left" ? HandSide.LEFT : HandSide.RIGHT,
     gridMode: GridMode.DIAMOND,
     propType: PropType.STAFF,
     isVisible: true,
@@ -276,7 +276,7 @@ async function createStep(
     turns: "fl" as unknown as number, // Float marker
     startOrientation: floatStartOri,
     endOrientation: floatEndOri,
-    color: config.staticProp === "blue" ? MotionColor.RED : MotionColor.BLUE,
+    hand: config.staticProp === "left" ? HandSide.RIGHT : HandSide.LEFT,
     gridMode: GridMode.DIAMOND,
     propType: PropType.STAFF,
     isVisible: true,
@@ -285,8 +285,8 @@ async function createStep(
   });
 
   // Assign motions based on config
-  const blueMotion = config.staticProp === "blue" ? staticMotion : floatMotion;
-  const redMotion = config.staticProp === "red" ? staticMotion : floatMotion;
+  const leftMotion = config.staticProp === "left" ? staticMotion : floatMotion;
+  const rightMotion = config.staticProp === "right" ? staticMotion : floatMotion;
 
   // Derive letter using the motion query handler (if available)
   let letter: Letter = Letter.THETA; // Fallback
@@ -294,8 +294,8 @@ async function createStep(
     try {
       const derivedLetter =
         await motionQueryHandler.findLetterByMotionConfiguration(
-          blueMotion,
-          redMotion,
+          leftMotion,
+          rightMotion,
           GridMode.DIAMOND
         );
       if (derivedLetter) {
@@ -319,15 +319,15 @@ async function createStep(
     id: crypto.randomUUID(),
     stepNumber,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     letter,
     startPosition: startGridPos,
     endPosition: endGridPos,
     motions: {
-      [MotionColor.BLUE]: blueMotion,
-      [MotionColor.RED]: redMotion,
+      [HandSide.LEFT]: leftMotion,
+      [HandSide.RIGHT]: rightMotion,
     },
   };
 }
@@ -363,7 +363,7 @@ export async function generateChooChooVariations(
   variations.push(
     await generateChooChoo(
       {
-        staticProp: "blue",
+        staticProp: "left",
         rotationDirection: "cw",
         orbitDirection: "cw",
         steps: 4,
@@ -376,7 +376,7 @@ export async function generateChooChooVariations(
   variations.push(
     await generateChooChoo(
       {
-        staticProp: "red",
+        staticProp: "right",
         rotationDirection: "cw",
         orbitDirection: "cw",
         steps: 4,
@@ -389,7 +389,7 @@ export async function generateChooChooVariations(
   variations.push(
     await generateChooChoo(
       {
-        staticProp: "blue",
+        staticProp: "left",
         rotationDirection: "ccw",
         orbitDirection: "ccw",
         steps: 4,
@@ -402,7 +402,7 @@ export async function generateChooChooVariations(
   variations.push(
     await generateChooChoo(
       {
-        staticProp: "blue",
+        staticProp: "left",
         rotationDirection: "cw",
         orbitDirection: "cw",
         steps: 2,
@@ -415,7 +415,7 @@ export async function generateChooChooVariations(
   variations.push(
     await generateChooChoo(
       {
-        staticProp: "red",
+        staticProp: "right",
         rotationDirection: "ccw",
         orbitDirection: "cw",
         steps: 2,
@@ -428,7 +428,7 @@ export async function generateChooChooVariations(
   variations.push(
     await generateChooChoo(
       {
-        staticProp: "blue",
+        staticProp: "left",
         rotationDirection: "cw",
         orbitDirection: "cw",
         steps: 4,
@@ -449,7 +449,7 @@ export function detectChooChoo(sequence: SequenceData): {
   type: "full" | "half" | "none";
   startStep?: number;
   endStep?: number;
-  staticProp?: "blue" | "red";
+  staticProp?: "left" | "right";
 } {
   if (!sequence.steps || sequence.steps.length < 2) {
     return { hasChooChoo: false, type: "none" };
@@ -474,7 +474,7 @@ function checkChooChooStartingAt(
   type: "full" | "half" | "none";
   startStep?: number;
   endStep?: number;
-  staticProp?: "blue" | "red";
+  staticProp?: "left" | "right";
 } {
   // Need at least 2 steps for a half Choo Choo
   if (startIndex + 2 > steps.length) {
@@ -485,30 +485,30 @@ function checkChooChooStartingAt(
   if (!firstStep) {
     return { hasChooChoo: false, type: "none" };
   }
-  const blueMotion = firstStep.motions?.[MotionColor.BLUE];
-  const redMotion = firstStep.motions?.[MotionColor.RED];
+  const leftMotion = firstStep.motions?.[HandSide.LEFT];
+  const rightMotion = firstStep.motions?.[HandSide.RIGHT];
 
-  if (!blueMotion || !redMotion) {
+  if (!leftMotion || !rightMotion) {
     return { hasChooChoo: false, type: "none" };
   }
 
   // Determine which prop is static (with rotation) and which is float
-  let staticProp: "blue" | "red" | null = null;
+  let staticProp: "left" | "right" | null = null;
 
   if (
-    blueMotion.motionType === MotionType.STATIC &&
-    typeof blueMotion.turns === "number" &&
-    blueMotion.turns > 0 &&
-    redMotion.motionType === MotionType.FLOAT
+    leftMotion.motionType === MotionType.STATIC &&
+    typeof leftMotion.turns === "number" &&
+    leftMotion.turns > 0 &&
+    rightMotion.motionType === MotionType.FLOAT
   ) {
-    staticProp = "blue";
+    staticProp = "left";
   } else if (
-    redMotion.motionType === MotionType.STATIC &&
-    typeof redMotion.turns === "number" &&
-    redMotion.turns > 0 &&
-    blueMotion.motionType === MotionType.FLOAT
+    rightMotion.motionType === MotionType.STATIC &&
+    typeof rightMotion.turns === "number" &&
+    rightMotion.turns > 0 &&
+    leftMotion.motionType === MotionType.FLOAT
   ) {
-    staticProp = "red";
+    staticProp = "right";
   }
 
   if (!staticProp) {
@@ -518,20 +518,20 @@ function checkChooChooStartingAt(
   // Check subsequent steps maintain the pattern
   let consecutiveBeats = 1;
   const floatLocations: GridLocation[] = [
-    staticProp === "blue" ? redMotion.startLocation : blueMotion.startLocation,
+    staticProp === "left" ? rightMotion.startLocation : leftMotion.startLocation,
   ];
 
   for (let i = startIndex + 1; i < steps.length && i < startIndex + 4; i++) {
     const beat = steps[i];
     if (!beat) break;
 
-    const bMotion = beat.motions?.[MotionColor.BLUE];
-    const rMotion = beat.motions?.[MotionColor.RED];
+    const bMotion = beat.motions?.[HandSide.LEFT];
+    const rMotion = beat.motions?.[HandSide.RIGHT];
 
     if (!bMotion || !rMotion) break;
 
-    const staticM = staticProp === "blue" ? bMotion : rMotion;
-    const floatM = staticProp === "blue" ? rMotion : bMotion;
+    const staticM = staticProp === "left" ? bMotion : rMotion;
+    const floatM = staticProp === "left" ? rMotion : bMotion;
 
     // Verify static prop stays static with rotation
     if (

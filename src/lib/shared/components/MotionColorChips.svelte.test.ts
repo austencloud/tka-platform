@@ -6,43 +6,43 @@ import { expectNoA11yViolations } from "$test-helpers/component-a11y";
 
 describe("MotionColorChips", () => {
   it("clicking the blue chip calls onToggleBlue and leaves onToggleRed untouched", async () => {
-    const onToggleBlue = vi.fn();
-    const onToggleRed = vi.fn();
+    const onToggleLeft = vi.fn();
+    const onToggleRight = vi.fn();
     render(MotionColorChips, {
-      showBlue: true,
-      showRed: true,
-      onToggleBlue,
-      onToggleRed,
+      showLeft: true,
+      showRight: true,
+      onToggleLeft,
+      onToggleRight,
     });
 
     // Label when showBlue=true is "Hide left motion"
     await page.getByRole("button", { name: "Hide left motion" }).click();
-    expect(onToggleBlue).toHaveBeenCalledTimes(1);
-    expect(onToggleRed).not.toHaveBeenCalled();
+    expect(onToggleLeft).toHaveBeenCalledTimes(1);
+    expect(onToggleRight).not.toHaveBeenCalled();
   });
 
   it("clicking the red chip calls onToggleRed and leaves onToggleBlue untouched", async () => {
-    const onToggleBlue = vi.fn();
-    const onToggleRed = vi.fn();
+    const onToggleLeft = vi.fn();
+    const onToggleRight = vi.fn();
     render(MotionColorChips, {
-      showBlue: true,
-      showRed: true,
-      onToggleBlue,
-      onToggleRed,
+      showLeft: true,
+      showRight: true,
+      onToggleLeft,
+      onToggleRight,
     });
 
     // Label when showRed=true is "Hide right motion"
     await page.getByRole("button", { name: "Hide right motion" }).click();
-    expect(onToggleRed).toHaveBeenCalledTimes(1);
-    expect(onToggleBlue).not.toHaveBeenCalled();
+    expect(onToggleRight).toHaveBeenCalledTimes(1);
+    expect(onToggleLeft).not.toHaveBeenCalled();
   });
 
   it("aria-pressed reflects showBlue/showRed and updates on rerender", async () => {
     const screen = render(MotionColorChips, {
-      showBlue: true,
-      showRed: false,
-      onToggleBlue: vi.fn(),
-      onToggleRed: vi.fn(),
+      showLeft: true,
+      showRight: false,
+      onToggleLeft: vi.fn(),
+      onToggleRight: vi.fn(),
     });
 
     // showBlue=true → aria-pressed="true" (label="Hide left motion")
@@ -56,10 +56,10 @@ describe("MotionColorChips", () => {
 
     // Flip showBlue to false — aria-pressed and label must update
     await screen.rerender({
-      showBlue: false,
-      showRed: false,
-      onToggleBlue: vi.fn(),
-      onToggleRed: vi.fn(),
+      showLeft: false,
+      showRight: false,
+      onToggleLeft: vi.fn(),
+      onToggleRight: vi.fn(),
     });
     await expect
       .element(page.getByRole("button", { name: "Show left motion" }))
@@ -68,12 +68,12 @@ describe("MotionColorChips", () => {
 
   it("supports Blue/Red labels in a stacked control without losing accessible names", async () => {
     render(MotionColorChips, {
-      showBlue: true,
-      showRed: false,
-      onToggleBlue: vi.fn(),
-      onToggleRed: vi.fn(),
-      blueLabel: "Blue",
-      redLabel: "Red",
+      showLeft: true,
+      showRight: false,
+      onToggleLeft: vi.fn(),
+      onToggleRight: vi.fn(),
+      leftLabel: "Blue",
+      rightLabel: "Red",
       layout: "column",
       showVisibilityIcons: true,
     });
@@ -92,10 +92,10 @@ describe("MotionColorChips", () => {
 
   it("has no AAA a11y violations", async () => {
     render(MotionColorChips, {
-      showBlue: true,
-      showRed: true,
-      onToggleBlue: vi.fn(),
-      onToggleRed: vi.fn(),
+      showLeft: true,
+      showRight: true,
+      onToggleLeft: vi.fn(),
+      onToggleRight: vi.fn(),
     });
     await expectNoA11yViolations();
   });

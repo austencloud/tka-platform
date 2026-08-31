@@ -36,20 +36,20 @@ export interface PictographVisibilityOptions {
    * When provided, passed through to PictographPreparer to ensure consistency
    * during async rendering. Export/thumbnail rendering always provides this.
    */
-  bluePropType?: PropType;
+  leftPropType?: PropType;
   /**
    * Explicit prop type for red hand.
    * When provided, passed through to PictographPreparer for consistency.
    */
-  redPropType?: PropType;
+  rightPropType?: PropType;
   /**
    * Buugeng chirality for the blue prop. An S-shaped prop is rotation-invariant,
    * so only a mirror changes its handedness — the raster path applies the same
    * scaleX(-1) that PropSvg applies in the live DOM. Ignored for other props.
    */
-  blueBuugengFlipped?: boolean;
+  leftBuugengFlipped?: boolean;
   /** Buugeng chirality for the red prop. See blueBuugengFlipped. */
-  redBuugengFlipped?: boolean;
+  rightBuugengFlipped?: boolean;
   /**
    * Hand point visibility setting for grid rendering.
    * "all" shows all hand positions, "active" shows only active ones, "none" hides all.
@@ -69,9 +69,9 @@ export interface PictographVisibilityOptions {
   /** Render as hand path visualization (HAND props, float arrows, no TKA) */
   handPathMode?: boolean;
   /** Show blue motion (prop + arrow). When false, renderer skips blue entirely. Default: true. */
-  showBlueMotion?: boolean;
+  showLeftMotion?: boolean;
   /** Show red motion (prop + arrow). When false, renderer skips red entirely. Default: true. */
-  showRedMotion?: boolean;
+  showRightMotion?: boolean;
 }
 
 /**
@@ -131,13 +131,13 @@ export async function renderPictographToSVG(
       componentProps.darkMode = visibilityOptions.darkMode; // Dark Mode controls background/grid
       componentProps.printMode = visibilityOptions.printMode; // Print Mode: pure white background
       // Pass explicit prop types through to PictographPreparer for consistency during async rendering
-      componentProps.bluePropTypeOverride = visibilityOptions.bluePropType;
-      componentProps.redPropTypeOverride = visibilityOptions.redPropType;
-      if (visibilityOptions.showBlueMotion !== undefined) {
-        componentProps.showBlueMotion = visibilityOptions.showBlueMotion;
+      componentProps.leftPropTypeOverride = visibilityOptions.leftPropType;
+      componentProps.rightPropTypeOverride = visibilityOptions.rightPropType;
+      if (visibilityOptions.showLeftMotion !== undefined) {
+        componentProps.showLeftMotion = visibilityOptions.showLeftMotion;
       }
-      if (visibilityOptions.showRedMotion !== undefined) {
-        componentProps.showRedMotion = visibilityOptions.showRedMotion;
+      if (visibilityOptions.showRightMotion !== undefined) {
+        componentProps.showRightMotion = visibilityOptions.showRightMotion;
       }
     }
 

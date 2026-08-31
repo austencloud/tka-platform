@@ -29,8 +29,8 @@ interface PictographData {
   endPosition: string;
   timing: string;
   direction: string;
-  blueMotion: MotionData;
-  redMotion: MotionData;
+  leftMotion: MotionData;
+  rightMotion: MotionData;
 }
 
 interface SequenceStep {
@@ -38,8 +38,8 @@ interface SequenceStep {
   variation: number;
   startPosition: string;
   endPosition: string;
-  blueMotion: MotionData;
-  redMotion: MotionData;
+  leftMotion: MotionData;
+  rightMotion: MotionData;
   stepNumber: number;
 }
 
@@ -91,14 +91,14 @@ function loadDataframe(): PictographData[] {
         endPosition: row["endPosition"] ?? "",
         timing: row["timing"] ?? "",
         direction: row["direction"] ?? "",
-        blueMotion: {
+        leftMotion: {
           color: "blue",
           startLocation: row["blueStartLocation"] ?? "",
           endLocation: row["blueEndLocation"] ?? "",
           motionType: row["blueMotionType"] ?? "",
           rotationDirection: row["blueRotationDirection"] ?? "",
         },
-        redMotion: {
+        rightMotion: {
           color: "red",
           startLocation: row["redStartLocation"] ?? "",
           endLocation: row["redEndLocation"] ?? "",
@@ -278,8 +278,8 @@ function attemptSequenceBuild(letters: string[]): SequenceResult {
     variation: 0,
     startPosition: startPictograph.startPosition,
     endPosition: startPictograph.endPosition,
-    blueMotion: startPictograph.blueMotion,
-    redMotion: startPictograph.redMotion,
+    leftMotion: startPictograph.leftMotion,
+    rightMotion: startPictograph.rightMotion,
     stepNumber: 0,
   });
 
@@ -289,8 +289,8 @@ function attemptSequenceBuild(letters: string[]): SequenceResult {
     variation: firstVariationIndex,
     startPosition: firstVariation.startPosition,
     endPosition: firstVariation.endPosition,
-    blueMotion: firstVariation.blueMotion,
-    redMotion: firstVariation.redMotion,
+    leftMotion: firstVariation.leftMotion,
+    rightMotion: firstVariation.rightMotion,
     stepNumber: 1,
   });
 
@@ -338,8 +338,8 @@ function attemptSequenceBuild(letters: string[]): SequenceResult {
       variation: variationIndex >= 0 ? variationIndex : 0,
       startPosition: chosenVariation.startPosition,
       endPosition: chosenVariation.endPosition,
-      blueMotion: chosenVariation.blueMotion,
-      redMotion: chosenVariation.redMotion,
+      leftMotion: chosenVariation.leftMotion,
+      rightMotion: chosenVariation.rightMotion,
       stepNumber: i + 1,
     });
 

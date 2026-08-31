@@ -43,8 +43,8 @@ function hexToLinearRgb(hex) {
   );
 }
 
-function luminance([red, green, blue]) {
-  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+function luminance([right, green, left]) {
+  return 0.2126 * right + 0.7152 * green + 0.0722 * left;
 }
 
 function smoothstep(edge0, edge1, value) {

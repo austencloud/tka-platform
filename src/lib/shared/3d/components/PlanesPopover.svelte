@@ -42,33 +42,33 @@
     return PLANE_LABELS[plane].replace(/ Plane$/, "");
   }
 
-  function sharedPlane(hand: "blue" | "red"): Plane | null {
+  function sharedPlane(hand: "left" | "right"): Plane | null {
     const defaultPlane =
-      hand === "blue"
-        ? viewer.defaultSettings.customBluePlane
-        : viewer.defaultSettings.customRedPlane;
+      hand === "left"
+        ? viewer.defaultSettings.customLeftPlane
+        : viewer.defaultSettings.customRightPlane;
     const first =
-      hand === "blue"
-        ? allPerformers[0]?.effectiveBluePlane
-        : allPerformers[0]?.effectiveRedPlane;
+      hand === "left"
+        ? allPerformers[0]?.effectiveLeftPlane
+        : allPerformers[0]?.effectiveRightPlane;
     if (!first) return defaultPlane;
 
     const everyoneMatches = allPerformers.every((performer) =>
-      hand === "blue"
-        ? performer.effectiveBluePlane === first
-        : performer.effectiveRedPlane === first
+      hand === "left"
+        ? performer.effectiveLeftPlane === first
+        : performer.effectiveRightPlane === first
     );
     return everyoneMatches ? first : null;
   }
 
-  const bluePlane = $derived(
+  const leftPlane = $derived(
     isAllMode
-      ? sharedPlane("blue")
-      : (selected?.effectiveBluePlane ?? Plane.WALL)
+      ? sharedPlane("left")
+      : (selected?.effectiveLeftPlane ?? Plane.WALL)
   );
 
-  const redPlane = $derived(
-    isAllMode ? sharedPlane("red") : (selected?.effectiveRedPlane ?? Plane.WALL)
+  const rightPlane = $derived(
+    isAllMode ? sharedPlane("right") : (selected?.effectiveRightPlane ?? Plane.WALL)
   );
 
   const isOverridden = $derived(
@@ -79,7 +79,7 @@
   );
 
   function hasHandOnPlane(plane: Plane): boolean {
-    return bluePlane === plane || redPlane === plane;
+    return leftPlane === plane || rightPlane === plane;
   }
 
   function isVisible(plane: Plane): boolean {
@@ -100,8 +100,8 @@
   // scene), so it must not count there either - otherwise Reset can never
   // reach a state where it disappears again.
   const isPlaneStateNonDefault = $derived(
-    bluePlane !== Plane.WALL ||
-      redPlane !== Plane.WALL ||
+    leftPlane !== Plane.WALL ||
+      rightPlane !== Plane.WALL ||
       hasStepOverrides ||
       (isAllMode && viewer.visiblePlanes.size > 0)
   );
@@ -121,11 +121,11 @@
 
   function handleHandSlotClick(
     e: MouseEvent,
-    hand: "blue" | "red",
+    hand: "left" | "right",
     plane: Plane
   ) {
     e.stopPropagation();
-    const currentPlane = hand === "blue" ? bluePlane : redPlane;
+    const currentPlane = hand === "left" ? leftPlane : rightPlane;
     if (currentPlane === plane) return;
 
     viewer.setHandPlaneScoped(hand, plane);
@@ -141,8 +141,8 @@
   function handleResetPlanesClick(e: MouseEvent) {
     e.stopPropagation();
     if (isAllMode) {
-      viewer.setDefaultHandPlane("blue", Plane.WALL);
-      viewer.setDefaultHandPlane("red", Plane.WALL);
+      viewer.setDefaultHandPlane("left", Plane.WALL);
+      viewer.setDefaultHandPlane("right", Plane.WALL);
       viewer.resetAllPerformersPlanes();
       for (const performer of allPerformers) {
         performer.clearBeatPlaneOverrides();
@@ -255,8 +255,8 @@
 
   <div class="planes-body">
     <PlanesDiagram
-      {bluePlane}
-      {redPlane}
+      {leftPlane}
+      {rightPlane}
       visiblePlanes={viewer.visiblePlanes}
     />
 
@@ -311,18 +311,18 @@
         <div class="plane-right">
           <button
             class="hand-chip blue"
-            class:filled={bluePlane === plane}
-            onclick={(e) => handleHandSlotClick(e, "blue", plane)}
-            aria-pressed={bluePlane === plane}
+            class:filled={leftPlane === plane}
+            onclick={(e) => handleHandSlotClick(e, "left", plane)}
+            aria-pressed={leftPlane === plane}
             aria-label={`Blue hand on ${label}`}
           >
             Blue
           </button>
           <button
             class="hand-chip red"
-            class:filled={redPlane === plane}
-            onclick={(e) => handleHandSlotClick(e, "red", plane)}
-            aria-pressed={redPlane === plane}
+            class:filled={rightPlane === plane}
+            onclick={(e) => handleHandSlotClick(e, "right", plane)}
+            aria-pressed={rightPlane === plane}
             aria-label={`Red hand on ${label}`}
           >
             Red

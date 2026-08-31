@@ -5,13 +5,13 @@ import type { TipEffectMap } from "../domain/types/tip-effect-types";
 import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 export interface TrailOverlayRenderParams {
-  blueTrailPoints: TrailPoint[];
-  redTrailPoints: TrailPoint[];
+  leftTrailPoints: TrailPoint[];
+  rightTrailPoints: TrailPoint[];
   trailSettings: TrailSettings;
   deltaTime: number;
   canvasSize: number;
-  hasBlue: boolean;
-  hasRed: boolean;
+  hasLeft: boolean;
+  hasRight: boolean;
   additionalLayers?: AdditionalLayerRenderData[];
   /** Tunnel rainbow spectrum. When false, overlaid layer trails inherit the base
    *  blue/red trail color instead of a per-layer spectrum hue. Default true. */
@@ -21,11 +21,11 @@ export interface TrailOverlayRenderParams {
    *  When set, every other layer's trail dims. Default null (no spotlight). */
   tunnelSelectedLayer?: number | readonly number[] | null;
   /** Raw prop states - overlay reads positions directly (fire-renderer pattern) */
-  blueProp?: PropState | null;
-  redProp?: PropState | null;
+  leftProp?: PropState | null;
+  rightProp?: PropState | null;
   /** Prop type names for correct trail endpoint resolution */
-  bluePropType?: string | null;
-  redPropType?: string | null;
+  leftPropType?: string | null;
+  rightPropType?: string | null;
   /** Current animation time in ms (performance.now() or virtualTime) */
   currentTime: number;
   /** Per-tip effect assignments — gates which tips capture trail points */
@@ -59,9 +59,9 @@ export interface TrailOverlayRenderParams {
    * is exactly to let the old trail keep fading, not wipe it). Default false
    * — zero behavior change for callers that don't pass it.
    */
-  bluePropSwapSuppressed?: boolean;
+  leftPropSwapSuppressed?: boolean;
   /** Red-hand counterpart of bluePropSwapSuppressed. */
-  redPropSwapSuppressed?: boolean;
+  rightPropSwapSuppressed?: boolean;
 }
 
 export interface ITrailOverlayCanvas {

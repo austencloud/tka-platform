@@ -68,34 +68,34 @@
   let sculptureScale = $state(1);
 
   const activeBeat = $derived(beats[activeBeatIndex] ?? null);
-  const activeColor = $derived(activeHand === "blue" ? "#38a9ff" : "#ff516a");
+  const activeColor = $derived(activeHand === "left" ? "#38a9ff" : "#ff516a");
   const activeLocation = $derived(
     activeBeat
-      ? activeHand === "blue"
-        ? activeBeat.blueLocation
-        : activeBeat.redLocation
+      ? activeHand === "left"
+        ? activeBeat.leftLocation
+        : activeBeat.rightLocation
       : null
   );
 
-  const bluePoints = $derived(
+  const leftPoints = $derived(
     beats.map((beat) =>
-      gridLocationToPosition3D(beat.plane, beat.blueLocation, PATH_RADIUS)
+      gridLocationToPosition3D(beat.plane, beat.leftLocation, PATH_RADIUS)
     )
   );
-  const redPoints = $derived(
+  const rightPoints = $derived(
     beats.map((beat) =>
-      gridLocationToPosition3D(beat.plane, beat.redLocation, PATH_RADIUS)
+      gridLocationToPosition3D(beat.plane, beat.rightLocation, PATH_RADIUS)
     )
   );
 
-  const blueCurve = $derived(
-    bluePoints.length > 1
-      ? new CatmullRomCurve3(bluePoints, true, "centripetal", 0.5)
+  const leftCurve = $derived(
+    leftPoints.length > 1
+      ? new CatmullRomCurve3(leftPoints, true, "centripetal", 0.5)
       : null
   );
-  const redCurve = $derived(
-    redPoints.length > 1
-      ? new CatmullRomCurve3(redPoints, true, "centripetal", 0.5)
+  const rightCurve = $derived(
+    rightPoints.length > 1
+      ? new CatmullRomCurve3(rightPoints, true, "centripetal", 0.5)
       : null
   );
 
@@ -171,13 +171,13 @@
           />
         {/if}
 
-        {#if blueCurve && redCurve}
+        {#if leftCurve && rightCurve}
           <T.Group scale={[sculptureScale, sculptureScale, sculptureScale]}>
             {#if showTrails}
               {#each copyTransforms as copy, index (`${preset}-${index}`)}
                 <T.Group rotation={[0, copy.rotationY, 0]} scale={copy.scale}>
                   <T.Mesh>
-                    <T.TubeGeometry args={[blueCurve, 128, 0.018, 10, true]} />
+                    <T.TubeGeometry args={[leftCurve, 128, 0.018, 10, true]} />
                     <T.MeshStandardMaterial
                       color="#38a9ff"
                       emissive="#0d3a78"
@@ -191,7 +191,7 @@
                     />
                   </T.Mesh>
                   <T.Mesh>
-                    <T.TubeGeometry args={[redCurve, 128, 0.018, 10, true]} />
+                    <T.TubeGeometry args={[rightCurve, 128, 0.018, 10, true]} />
                     <T.MeshStandardMaterial
                       color="#ff516a"
                       emissive="#74162b"
@@ -210,12 +210,12 @@
 
             {#if showNodes}
               {#each beats as beat, index (beat.id)}
-                {@const bluePoint = bluePoints[index]}
-                {@const redPoint = redPoints[index]}
-                {#if bluePoint && redPoint}
+                {@const leftPoint = leftPoints[index]}
+                {@const rightPoint = rightPoints[index]}
+                {#if leftPoint && rightPoint}
                   <T.Mesh
                     name={`spatial-beat-${index}`}
-                    position={positionTuple(bluePoint)}
+                    position={positionTuple(leftPoint)}
                     renderOrder={6}
                   >
                     <T.SphereGeometry
@@ -230,7 +230,7 @@
                   </T.Mesh>
                   <T.Mesh
                     name={`spatial-beat-${index}`}
-                    position={positionTuple(redPoint)}
+                    position={positionTuple(rightPoint)}
                     renderOrder={6}
                   >
                     <T.SphereGeometry
@@ -272,8 +272,8 @@
           </T.Group>
 
           <SpatialSculptureTracer
-            {blueCurve}
-            {redCurve}
+            {leftCurve}
+            {rightCurve}
             {beats}
             {activeBeatIndex}
             {activeHand}
@@ -286,12 +286,12 @@
           />
         {:else if showNodes}
           {#each beats as beat, index (beat.id)}
-            {@const bluePoint = bluePoints[index]}
-            {@const redPoint = redPoints[index]}
-            {#if bluePoint && redPoint}
+            {@const leftPoint = leftPoints[index]}
+            {@const rightPoint = rightPoints[index]}
+            {#if leftPoint && rightPoint}
               <T.Mesh
                 name={`spatial-beat-${index}`}
-                position={positionTuple(bluePoint)}
+                position={positionTuple(leftPoint)}
                 renderOrder={6}
               >
                 <T.SphereGeometry
@@ -306,7 +306,7 @@
               </T.Mesh>
               <T.Mesh
                 name={`spatial-beat-${index}`}
-                position={positionTuple(redPoint)}
+                position={positionTuple(rightPoint)}
                 renderOrder={6}
               >
                 <T.SphereGeometry
@@ -339,10 +339,10 @@
     </div>
     {#if activeBeat}
       <span class="hud-detail">
-        {PLANE_LABELS[activeBeat.plane]} · {activeHand === "blue"
+        {PLANE_LABELS[activeBeat.plane]} · {activeHand === "left"
           ? "Blue"
           : "Red"}
-        · {LOCATION_LABELS[activeLocation ?? activeBeat.blueLocation]}
+        · {LOCATION_LABELS[activeLocation ?? activeBeat.leftLocation]}
       </span>
     {/if}
   </div>

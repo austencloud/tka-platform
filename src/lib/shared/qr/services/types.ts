@@ -94,15 +94,15 @@ export interface QRCodeOptions {
    */
   darkMode?: boolean;
   /**
-   * Blue prop type to include in the URL.
+   * Left-hand prop type to include in the URL.
    * When set, the scanned viewer will use this prop type instead of user's default.
    */
-  bluePropType?: string;
+  leftPropType?: string;
   /**
-   * Red prop type to include in the URL.
+   * Right-hand prop type to include in the URL.
    * When set, the scanned viewer will use this prop type instead of user's default.
    */
-  redPropType?: string;
+  rightPropType?: string;
   /** Encoded BrowseViewMode string (e.g., "hsb" = hands-solo-blue). */
   viewMode?: string;
   /** Deck ID for attribution tracking */
@@ -179,8 +179,8 @@ export interface ShortCodeData {
   encoded?: string;
   deckId?: string;
   deckName?: string;
-  bluePropType?: string;
-  redPropType?: string;
+  leftPropType?: string;
+  rightPropType?: string;
   catDogMode?: boolean;
   thumbnailUrl?: string;
   ownerDisplayName?: string;
@@ -229,9 +229,9 @@ export interface ImportResolution {
  */
 export interface ShortCodeURLOptions {
   /** Blue prop type to append to URL (encoded as single char) */
-  bluePropType?: string;
+  leftPropType?: string;
   /** Red prop type to append to URL (encoded as single char) */
-  redPropType?: string;
+  rightPropType?: string;
   /** Whether blue/red prop overrides are intentionally different. */
   catDogMode?: boolean;
   /** View mode to encode in URL (e.g., "hsb" = hands-solo-blue) */

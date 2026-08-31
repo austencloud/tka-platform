@@ -11,7 +11,7 @@ import {
 } from "../services/prop-placement-view-model";
 import type { PropType } from "../../prop/domain/enums/prop-type";
 import {
-  MotionColor,
+  HandSide,
   type Orientation,
 } from "../../shared/domain/enums/pictograph-enums";
 import type { PropPlacementState } from "./prop-placement-state.svelte";
@@ -21,20 +21,20 @@ interface PropPlacementAimInputs {
   getActivePoints: () => PlacementGridPoint[];
   getCanAim: () => boolean;
   getEditAfterCompletion: () => boolean;
-  getBlueOrientation: () => Orientation;
-  getRedOrientation: () => Orientation;
-  getBluePropType: () => PropType;
-  getRedPropType: () => PropType;
+  getLeftOrientation: () => Orientation;
+  getRightOrientation: () => Orientation;
+  getLeftPropType: () => PropType;
+  getRightPropType: () => PropType;
   getBetaSwapped: () => boolean;
 }
 
 interface PropPlacementAimDependencies {
   triggerHaptic: () => void;
-  onOrientationChange: (color: MotionColor, orientation: Orientation) => void;
+  onOrientationChange: (color: HandSide, orientation: Orientation) => void;
 }
 
 interface PendingOrientation {
-  color: MotionColor;
+  color: HandSide;
   orientation: Orientation;
 }
 
@@ -50,29 +50,29 @@ export function createPropPlacementAimState(
   let overlayElement: SVGSVGElement | null = null;
   let gridWrapper: HTMLDivElement | null = null;
   let dragPointerId: number | null = null;
-  let dragColor = $state<MotionColor | null>(null);
+  let dragColor = $state<HandSide | null>(null);
   let dragLocation = $state<GridLocation | null>(null);
   let dragAim = $state<Orientation | null>(null);
   let pendingOrientation = $state<PendingOrientation | null>(null);
   let pointerHandledPress = false;
-  let hoverColor = $state<MotionColor | null>(null);
+  let hoverColor = $state<HandSide | null>(null);
   let hoverOutline = $state<string | null>(null);
 
-  function committedOrientationFor(color: MotionColor): Orientation {
-    return color === MotionColor.BLUE
-      ? inputs.getBlueOrientation()
-      : inputs.getRedOrientation();
+  function committedOrientationFor(color: HandSide): Orientation {
+    return color === HandSide.LEFT
+      ? inputs.getLeftOrientation()
+      : inputs.getRightOrientation();
   }
 
-  function shownOrientationFor(color: MotionColor): Orientation {
+  function shownOrientationFor(color: HandSide): Orientation {
     if (pendingOrientation?.color === color) {
       return pendingOrientation.orientation;
     }
 
     const location =
-      color === MotionColor.BLUE
-        ? placement.blueLocation
-        : placement.redLocation;
+      color === HandSide.LEFT
+        ? placement.leftLocation
+        : placement.rightLocation;
     const orientation = committedOrientationFor(color);
     return location
       ? normalizeOrientationForLocation(orientation, location)
@@ -82,21 +82,21 @@ export function createPropPlacementAimState(
   function betaOffsets(): PlacementBetaOffsets {
     return calculatePlacementBetaOffsets({
       gridMode: inputs.getGridMode(),
-      blueLocation: placement.blueLocation,
-      redLocation: placement.redLocation,
-      blueOrientation: shownOrientationFor(MotionColor.BLUE),
-      redOrientation: shownOrientationFor(MotionColor.RED),
-      bluePropType: inputs.getBluePropType(),
-      redPropType: inputs.getRedPropType(),
+      leftLocation: placement.leftLocation,
+      rightLocation: placement.rightLocation,
+      leftOrientation: shownOrientationFor(HandSide.LEFT),
+      rightOrientation: shownOrientationFor(HandSide.RIGHT),
+      leftPropType: inputs.getLeftPropType(),
+      rightPropType: inputs.getRightPropType(),
       betaSwapped: inputs.getBetaSwapped(),
     });
   }
 
-  function propCenter(color: MotionColor): { x: number; y: number } | null {
+  function propCenter(color: HandSide): { x: number; y: number } | null {
     const location =
-      color === MotionColor.BLUE
-        ? placement.blueLocation
-        : placement.redLocation;
+      color === HandSide.LEFT
+        ? placement.leftLocation
+        : placement.rightLocation;
     if (location === null) return null;
 
     const point = inputs
@@ -105,19 +105,19 @@ export function createPropPlacementAimState(
     if (!point) return null;
 
     const offsets = betaOffsets();
-    const offset = color === MotionColor.BLUE ? offsets.blue : offsets.red;
+    const offset = color === HandSide.LEFT ? offsets.left : offsets.right;
     return { x: point.x + offset.x, y: point.y + offset.y };
   }
 
-  function propElement(color: MotionColor): SVGGraphicsElement | null {
+  function propElement(color: HandSide): SVGGraphicsElement | null {
     const selector =
-      color === MotionColor.BLUE ? ".blue-prop-svg" : ".red-prop-svg";
+      color === HandSide.LEFT ? ".blue-prop-svg" : ".red-prop-svg";
     return gridWrapper?.querySelector<SVGGraphicsElement>(selector) ?? null;
   }
 
   const SHAPE_TOLERANCE = 26;
 
-  function shapeDepth(color: MotionColor, event: PointerEvent): number | null {
+  function shapeDepth(color: HandSide, event: PointerEvent): number | null {
     const element = propElement(color);
     if (!element) return null;
 
@@ -137,7 +137,7 @@ export function createPropPlacementAimState(
     }
   }
 
-  function propOutline(color: MotionColor): string | null {
+  function propOutline(color: HandSide): string | null {
     const element = propElement(color);
     if (!element || !overlayElement) return null;
 
@@ -168,19 +168,19 @@ export function createPropPlacementAimState(
     }
   }
 
-  function colorUnderPointer(event: PointerEvent): MotionColor | null {
-    const blue = shapeDepth(MotionColor.BLUE, event);
-    const red = shapeDepth(MotionColor.RED, event);
-    const blueHit = blue !== null && blue > 0;
-    const redHit = red !== null && red > 0;
+  function colorUnderPointer(event: PointerEvent): HandSide | null {
+    const left = shapeDepth(HandSide.LEFT, event);
+    const right = shapeDepth(HandSide.RIGHT, event);
+    const leftHit = left !== null && left > 0;
+    const rightHit = right !== null && right > 0;
 
-    if (blueHit && redHit) {
-      return (red as number) > (blue as number)
-        ? MotionColor.RED
-        : MotionColor.BLUE;
+    if (leftHit && rightHit) {
+      return (right as number) > (left as number)
+        ? HandSide.RIGHT
+        : HandSide.LEFT;
     }
-    if (blueHit) return MotionColor.BLUE;
-    if (redHit) return MotionColor.RED;
+    if (leftHit) return HandSide.LEFT;
+    if (rightHit) return HandSide.RIGHT;
     return null;
   }
 
@@ -196,29 +196,29 @@ export function createPropPlacementAimState(
   function resolvePressColor(
     location: GridLocation,
     event: PointerEvent | null = null
-  ): MotionColor | null {
+  ): HandSide | null {
     if (placement.activeColor !== null) return placement.activeColor;
     if (!inputs.getEditAfterCompletion()) return null;
 
-    const blueHere = placement.blueLocation === location;
-    const redHere = placement.redLocation === location;
+    const leftHere = placement.leftLocation === location;
+    const rightHere = placement.rightLocation === location;
 
-    if (blueHere && redHere && event) {
+    if (leftHere && rightHere && event) {
       const onProp = colorUnderPointer(event);
       if (onProp !== null) return onProp;
 
       const pointer = toSvgPoint(event);
-      const blue = propCenter(MotionColor.BLUE);
-      const red = propCenter(MotionColor.RED);
-      if (pointer && blue && red) {
-        const toBlue = (pointer.x - blue.x) ** 2 + (pointer.y - blue.y) ** 2;
-        const toRed = (pointer.x - red.x) ** 2 + (pointer.y - red.y) ** 2;
-        return toRed < toBlue ? MotionColor.RED : MotionColor.BLUE;
+      const left = propCenter(HandSide.LEFT);
+      const right = propCenter(HandSide.RIGHT);
+      if (pointer && left && right) {
+        const toLeft = (pointer.x - left.x) ** 2 + (pointer.y - left.y) ** 2;
+        const toRight = (pointer.x - right.x) ** 2 + (pointer.y - right.y) ** 2;
+        return toRight < toLeft ? HandSide.RIGHT : HandSide.LEFT;
       }
     }
 
-    if (blueHere) return MotionColor.BLUE;
-    if (redHere) return MotionColor.RED;
+    if (leftHere) return HandSide.LEFT;
+    if (rightHere) return HandSide.RIGHT;
     return null;
   }
 
@@ -364,16 +364,16 @@ export function createPropPlacementAimState(
     get pendingOrientation() {
       return pendingOrientation;
     },
-    get shownBlueOrientation() {
-      return shownOrientationFor(MotionColor.BLUE);
+    get shownLeftOrientation() {
+      return shownOrientationFor(HandSide.LEFT);
     },
-    get shownRedOrientation() {
-      return shownOrientationFor(MotionColor.RED);
+    get shownRightOrientation() {
+      return shownOrientationFor(HandSide.RIGHT);
     },
     get isBeta() {
       return (
-        placement.blueLocation !== null &&
-        placement.blueLocation === placement.redLocation
+        placement.leftLocation !== null &&
+        placement.leftLocation === placement.rightLocation
       );
     },
     get highlightColor() {
@@ -384,7 +384,7 @@ export function createPropPlacementAimState(
       return color === null ? null : propCenter(color);
     },
     get highlightStroke() {
-      return (dragColor ?? hoverColor) === MotionColor.RED
+      return (dragColor ?? hoverColor) === HandSide.RIGHT
         ? "var(--prop-red, #ef4444)"
         : "var(--prop-blue, #3b82f6)";
     },

@@ -14,7 +14,7 @@ import {
 import { buildPlacementTransition } from "../../src/lib/shared/pictograph/grid/services/prop-placement-view-model";
 import { PropType } from "../../src/lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -22,10 +22,10 @@ import {
 
 const baseInput = {
   gridMode: GridMode.DIAMOND,
-  blueOrientation: Orientation.IN,
-  redOrientation: Orientation.IN,
-  bluePropType: PropType.STAFF,
-  redPropType: PropType.STAFF,
+  leftOrientation: Orientation.IN,
+  rightOrientation: Orientation.IN,
+  leftPropType: PropType.STAFF,
+  rightPropType: PropType.STAFF,
   betaSwapped: false,
   previewPictographData: null,
 };
@@ -34,15 +34,15 @@ describe("buildPlacementTransition", () => {
   it("gives the moving prop a pro-zero-turns arc and holds the partner static", () => {
     const { startData, transitionStep } = buildPlacementTransition({
       ...baseInput,
-      movingColor: MotionColor.BLUE,
+      movingColor: HandSide.LEFT,
       fromLocation: GridLocation.SOUTH,
       toLocation: GridLocation.WEST,
       direction: "clockwise",
-      blueLocation: GridLocation.WEST,
-      redLocation: GridLocation.NORTH,
+      leftLocation: GridLocation.WEST,
+      rightLocation: GridLocation.NORTH,
     });
 
-    const moving = transitionStep.motions.blue;
+    const moving = transitionStep.motions.left;
     expect(moving.motionType).toBe(MotionType.PRO);
     expect(moving.turns).toBe(0);
     expect(moving.rotationDirection).toBe(RotationDirection.CLOCKWISE);
@@ -50,14 +50,14 @@ describe("buildPlacementTransition", () => {
     expect(moving.endLocation).toBe(GridLocation.WEST);
     expect(moving.pathShape).toBe("arc");
 
-    const partner = transitionStep.motions.red;
+    const partner = transitionStep.motions.right;
     expect(partner.motionType).toBe(MotionType.STATIC);
     expect(partner.startLocation).toBe(GridLocation.NORTH);
     expect(partner.endLocation).toBe(GridLocation.NORTH);
 
     // The start pose has the moving prop at its pre-move location.
-    expect(startData.motions.blue?.startLocation).toBe(GridLocation.SOUTH);
-    expect(startData.motions.red?.startLocation).toBe(GridLocation.NORTH);
+    expect(startData.motions.left?.startLocation).toBe(GridLocation.SOUTH);
+    expect(startData.motions.right?.startLocation).toBe(GridLocation.NORTH);
 
     // PictographContainer only computes motion overrides for StepData, which
     // it detects via the stepNumber field.
@@ -67,23 +67,23 @@ describe("buildPlacementTransition", () => {
   it("keeps the partner at the shared location when the move departs a beta", () => {
     const { startData, transitionStep } = buildPlacementTransition({
       ...baseInput,
-      movingColor: MotionColor.RED,
+      movingColor: HandSide.RIGHT,
       fromLocation: GridLocation.NORTH,
       toLocation: GridLocation.EAST,
       direction: "counterclockwise",
-      blueLocation: GridLocation.NORTH,
-      redLocation: GridLocation.EAST,
+      leftLocation: GridLocation.NORTH,
+      rightLocation: GridLocation.EAST,
     });
 
-    expect(transitionStep.motions.red.motionType).toBe(MotionType.PRO);
-    expect(transitionStep.motions.red.rotationDirection).toBe(
+    expect(transitionStep.motions.right.motionType).toBe(MotionType.PRO);
+    expect(transitionStep.motions.right.rotationDirection).toBe(
       RotationDirection.COUNTER_CLOCKWISE
     );
-    expect(transitionStep.motions.blue.startLocation).toBe(GridLocation.NORTH);
+    expect(transitionStep.motions.left.startLocation).toBe(GridLocation.NORTH);
 
     // Both props share north at the start — the beta pose the partner
     // animates out of.
-    expect(startData.motions.red?.startLocation).toBe(GridLocation.NORTH);
-    expect(startData.motions.blue?.startLocation).toBe(GridLocation.NORTH);
+    expect(startData.motions.right?.startLocation).toBe(GridLocation.NORTH);
+    expect(startData.motions.left?.startLocation).toBe(GridLocation.NORTH);
   });
 });

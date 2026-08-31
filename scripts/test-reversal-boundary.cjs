@@ -19,8 +19,8 @@ function makeSequence(stepCount, startMotion) {
   for (let i = 0; i < stepCount; i++) {
     steps.push({
       step: i,
-      blue: { motionType: mt, rotDir: rd },
-      red: { motionType: mt, rotDir: rd },
+      left: { motionType: mt, rotDir: rd },
+      right: { motionType: mt, rotDir: rd },
     });
   }
   return steps;
@@ -34,16 +34,16 @@ function flipMotion(m) {
 }
 
 // Apply reversal: flip each step's motion from its ORIGINAL value (per-beat, not cumulative)
-function applyReversal(steps, bluePattern, redPattern) {
+function applyReversal(steps, leftPattern, rightPattern) {
   const result = steps.map((s, i) => {
-    const bRev = bluePattern[i % bluePattern.length] === "X";
-    const rRev = redPattern[i % redPattern.length] === "X";
+    const bRev = leftPattern[i % leftPattern.length] === "X";
+    const rRev = rightPattern[i % rightPattern.length] === "X";
     return {
       step: s.step,
-      blue: bRev ? flipMotion(s.blue) : { ...s.blue },
-      red: rRev ? flipMotion(s.red) : { ...s.red },
-      blueReversed: bRev,
-      redReversed: rRev,
+      left: bRev ? flipMotion(s.left) : { ...s.left },
+      right: rRev ? flipMotion(s.right) : { ...s.right },
+      leftReversed: bRev,
+      rightReversed: rRev,
     };
   });
   return result;
@@ -58,11 +58,11 @@ function countReversals(steps, hand) {
 function checkBoundary(steps) {
   const first = steps[0];
   const last = steps[steps.length - 1];
-  const blueMatch = last.blue.motionType === first.blue.motionType &&
-                    last.blue.rotDir === first.blue.rotDir;
-  const redMatch = last.red.motionType === first.red.motionType &&
-                   last.red.rotDir === first.red.rotDir;
-  return { blueMatch, redMatch, bothMatch: blueMatch && redMatch };
+  const leftMatch = last.left.motionType === first.left.motionType &&
+                    last.left.rotDir === first.left.rotDir;
+  const rightMatch = last.right.motionType === first.right.motionType &&
+                   last.right.rotDir === first.right.rotDir;
+  return { leftMatch, rightMatch, bothMatch: leftMatch && rightMatch };
 }
 
 // Exhaustive test: try ALL possible blue/red reversal combinations for a step count
@@ -77,28 +77,28 @@ function exhaustiveTest(stepCount) {
 
   for (let bMask = 0; bMask < totalCombos; bMask++) {
     for (let rMask = 0; rMask < totalCombos; rMask++) {
-      const bluePattern = [];
-      const redPattern = [];
+      const leftPattern = [];
+      const rightPattern = [];
       for (let i = 0; i < stepCount; i++) {
-        bluePattern.push((bMask >> i) & 1 ? "X" : "-");
-        redPattern.push((rMask >> i) & 1 ? "X" : "-");
+        leftPattern.push((bMask >> i) & 1 ? "X" : "-");
+        rightPattern.push((rMask >> i) & 1 ? "X" : "-");
       }
 
       const seq = makeSequence(stepCount, "pro");
-      const reversed = applyReversal(seq, bluePattern, redPattern);
+      const reversed = applyReversal(seq, leftPattern, rightPattern);
       const boundary = checkBoundary(reversed);
-      const blueCount = countReversals(reversed, "blue");
-      const redCount = countReversals(reversed, "red");
-      const blueEven = blueCount % 2 === 0;
-      const redEven = redCount % 2 === 0;
+      const leftCount = countReversals(reversed, "blue");
+      const rightCount = countReversals(reversed, "red");
+      const leftEven = leftCount % 2 === 0;
+      const rightEven = rightCount % 2 === 0;
 
       if (boundary.bothMatch) {
         cleanBoundary++;
-        if (blueEven && redEven) evenEvenClean++;
+        if (leftEven && rightEven) evenEvenClean++;
         else oddClean++;
       } else {
         boundaryReversal++;
-        if (blueEven && redEven) evenEvenDirty++;
+        if (leftEven && rightEven) evenEvenDirty++;
         else oddDirty++;
       }
     }
@@ -111,32 +111,32 @@ function exhaustiveTest(stepCount) {
 console.log("═══ Named Pattern Boundary Tests ═══\n");
 
 const PATTERNS = [
-  { name: "Continuous",  blue: "----", red: "----" },
-  { name: "Book",        blue: "XXXX", red: "XXXX" },
-  { name: "Red Book",    blue: "----", red: "XXXX" },
-  { name: "Blue Book",   blue: "XXXX", red: "----" },
-  { name: "Long Book",   blue: "X-X-", red: "X-X-" },
-  { name: "Alternating", blue: "-X-X", red: "X-X-" },
+  { name: "Continuous",  left: "----", right: "----" },
+  { name: "Book",        left: "XXXX", right: "XXXX" },
+  { name: "Red Book",    left: "----", right: "XXXX" },
+  { name: "Blue Book",   left: "XXXX", right: "----" },
+  { name: "Long Book",   left: "X-X-", right: "X-X-" },
+  { name: "Alternating", left: "-X-X", right: "X-X-" },
 ];
 
 for (const stepCount of [4, 6, 8]) {
   console.log(`── ${stepCount}-step sequences ──`);
   for (const pat of PATTERNS) {
     const seq = makeSequence(stepCount, "pro");
-    const reversed = applyReversal(seq, pat.blue.split(""), pat.red.split(""));
-    const blueCount = countReversals(reversed, "blue");
-    const redCount = countReversals(reversed, "red");
+    const reversed = applyReversal(seq, pat.left.split(""), pat.right.split(""));
+    const leftCount = countReversals(reversed, "blue");
+    const rightCount = countReversals(reversed, "red");
     const boundary = checkBoundary(reversed);
-    const blueEven = blueCount % 2 === 0 ? "even" : "ODD";
-    const redEven = redCount % 2 === 0 ? "even" : "ODD";
+    const leftEven = leftCount % 2 === 0 ? "even" : "ODD";
+    const rightEven = rightCount % 2 === 0 ? "even" : "ODD";
     const boundaryOk = boundary.bothMatch ? "✓ CLEAN" : "✗ MISMATCH";
 
-    console.log(`  ${pat.name.padEnd(14)} blue=${blueCount}(${blueEven}) red=${redCount}(${redEven})  boundary: ${boundaryOk}`);
+    console.log(`  ${pat.name.padEnd(14)} blue=${leftCount}(${leftEven}) red=${rightCount}(${rightEven})  boundary: ${boundaryOk}`);
     if (!boundary.bothMatch) {
       const first = reversed[0];
       const last = reversed[reversed.length - 1];
-      console.log(`    last: blue=${last.blue.motionType}/${last.blue.rotDir} red=${last.red.motionType}/${last.red.rotDir}`);
-      console.log(`    first: blue=${first.blue.motionType}/${first.blue.rotDir} red=${first.red.motionType}/${first.red.rotDir}`);
+      console.log(`    last: blue=${last.left.motionType}/${last.left.rotDir} red=${last.right.motionType}/${last.right.rotDir}`);
+      console.log(`    first: blue=${first.left.motionType}/${first.left.rotDir} red=${first.right.motionType}/${first.right.rotDir}`);
     }
   }
   console.log();

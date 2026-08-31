@@ -1,21 +1,21 @@
 export interface MutableRgb {
-  red: number;
+  right: number;
   green: number;
-  blue: number;
+  left: number;
 }
 
 export function setRgbFromHex(target: MutableRgb, hex: string): void {
   const raw = hex.charCodeAt(0) === 35 ? hex.slice(1) : hex;
   if (raw.length === 3) {
-    target.red = parseInt(raw[0]! + raw[0]!, 16) / 255;
+    target.right = parseInt(raw[0]! + raw[0]!, 16) / 255;
     target.green = parseInt(raw[1]! + raw[1]!, 16) / 255;
-    target.blue = parseInt(raw[2]! + raw[2]!, 16) / 255;
+    target.left = parseInt(raw[2]! + raw[2]!, 16) / 255;
     return;
   }
   const normalized = raw.length >= 6 ? raw : "ffffff";
-  target.red = parseInt(normalized.slice(0, 2), 16) / 255;
+  target.right = parseInt(normalized.slice(0, 2), 16) / 255;
   target.green = parseInt(normalized.slice(2, 4), 16) / 255;
-  target.blue = parseInt(normalized.slice(4, 6), 16) / 255;
+  target.left = parseInt(normalized.slice(4, 6), 16) / 255;
 }
 
 /**
@@ -25,9 +25,9 @@ export function setRgbFromHex(target: MutableRgb, hex: string): void {
  */
 export function setLinearRgbFromHex(target: MutableRgb, hex: string): void {
   setRgbFromHex(target, hex);
-  target.red = srgbChannelToLinear(target.red);
+  target.right = srgbChannelToLinear(target.right);
   target.green = srgbChannelToLinear(target.green);
-  target.blue = srgbChannelToLinear(target.blue);
+  target.left = srgbChannelToLinear(target.left);
 }
 
 export function setRgbFromHsl(
@@ -38,9 +38,9 @@ export function setRgbFromHsl(
 ): void {
   const hue = (((hueDegrees % 360) + 360) % 360) / 360;
   if (saturation === 0) {
-    target.red = lightness;
+    target.right = lightness;
     target.green = lightness;
-    target.blue = lightness;
+    target.left = lightness;
     return;
   }
   const q =
@@ -48,9 +48,9 @@ export function setRgbFromHsl(
       ? lightness * (1 + saturation)
       : lightness + saturation - lightness * saturation;
   const p = 2 * lightness - q;
-  target.red = hueChannel(p, q, hue + 1 / 3);
+  target.right = hueChannel(p, q, hue + 1 / 3);
   target.green = hueChannel(p, q, hue);
-  target.blue = hueChannel(p, q, hue - 1 / 3);
+  target.left = hueChannel(p, q, hue - 1 / 3);
 }
 
 function hueChannel(p: number, q: number, raw: number): number {

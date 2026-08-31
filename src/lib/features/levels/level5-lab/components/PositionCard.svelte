@@ -10,7 +10,7 @@
     MotionType,
     RotationDirection,
     Orientation,
-    MotionColor,
+    HandSide,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -29,74 +29,74 @@
     position,
     orientations,
     onOrientationChange,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
   } = $props<{
     position: GridPosition;
     orientations: CardOrientations;
-    onOrientationChange: (position: GridPosition, hand: "blue" | "red", value: Orientation) => void;
-    bluePropType: PropType;
-    redPropType: PropType;
+    onOrientationChange: (position: GridPosition, hand: "left" | "right", value: Orientation) => void;
+    leftPropType: PropType;
+    rightPropType: PropType;
   }>();
 
   // Derive hand locations and center status from position data
   const positionLocations = $derived(
     POSITION_LOCATIONS[position as keyof typeof POSITION_LOCATIONS]
   );
-  const blueLoc = $derived(positionLocations?.[0] ?? GridLocation.CENTER);
-  const redLoc = $derived(positionLocations?.[1] ?? GridLocation.NORTH);
-  const blueAtCenter = $derived(isHandAtCenter(position, "blue"));
-  const redAtCenter = $derived(isHandAtCenter(position, "red"));
+  const leftLoc = $derived(positionLocations?.[0] ?? GridLocation.CENTER);
+  const rightLoc = $derived(positionLocations?.[1] ?? GridLocation.NORTH);
+  const leftAtCenter = $derived(isHandAtCenter(position, "left"));
+  const rightAtCenter = $derived(isHandAtCenter(position, "right"));
   const gridMode = $derived(getGridModeForPosition(position));
 
   // Which orientation options each hand gets
-  const blueOptions = $derived<readonly OrientationOption[]>(
-    blueAtCenter ? COMPASS_ORIENTATIONS : RADIAL_ORIENTATIONS
+  const leftOptions = $derived<readonly OrientationOption[]>(
+    leftAtCenter ? COMPASS_ORIENTATIONS : RADIAL_ORIENTATIONS
   );
-  const redOptions = $derived<readonly OrientationOption[]>(
-    redAtCenter ? COMPASS_ORIENTATIONS : RADIAL_ORIENTATIONS
+  const rightOptions = $derived<readonly OrientationOption[]>(
+    rightAtCenter ? COMPASS_ORIENTATIONS : RADIAL_ORIENTATIONS
   );
 
   // Build pictograph data reactively when orientations change
   const pictograph = $derived.by((): PictographData => {
-    const effectiveBlueOri = blueAtCenter
-      ? orientations.blue
-      : isCenterOrientation(orientations.blue)
+    const effectiveLeftOri = leftAtCenter
+      ? orientations.left
+      : isCenterOrientation(orientations.left)
         ? Orientation.IN
-        : orientations.blue;
-    const effectiveRedOri = redAtCenter
-      ? orientations.red
-      : isCenterOrientation(orientations.red)
+        : orientations.left;
+    const effectiveRightOri = rightAtCenter
+      ? orientations.right
+      : isCenterOrientation(orientations.right)
         ? Orientation.IN
-        : orientations.red;
+        : orientations.right;
 
-    const blueMotion = createMotionData({
+    const leftMotion = createMotionData({
       motionType: MotionType.STATIC,
-      startLocation: blueLoc,
-      endLocation: blueLoc,
-      startOrientation: effectiveBlueOri,
-      endOrientation: effectiveBlueOri,
+      startLocation: leftLoc,
+      endLocation: leftLoc,
+      startOrientation: effectiveLeftOri,
+      endOrientation: effectiveLeftOri,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: MotionColor.BLUE,
+      color: HandSide.LEFT,
       isVisible: true,
-      propType: bluePropType,
-      arrowLocation: blueLoc,
+      propType: leftPropType,
+      arrowLocation: leftLoc,
       gridMode,
     });
 
-    const redMotion = createMotionData({
+    const rightMotion = createMotionData({
       motionType: MotionType.STATIC,
-      startLocation: redLoc,
-      endLocation: redLoc,
-      startOrientation: effectiveRedOri,
-      endOrientation: effectiveRedOri,
+      startLocation: rightLoc,
+      endLocation: rightLoc,
+      startOrientation: effectiveRightOri,
+      endOrientation: effectiveRightOri,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: MotionColor.RED,
+      color: HandSide.RIGHT,
       isVisible: true,
-      propType: redPropType,
-      arrowLocation: redLoc,
+      propType: rightPropType,
+      arrowLocation: rightLoc,
       gridMode,
     });
 
@@ -105,8 +105,8 @@
       startPosition: position,
       endPosition: position,
       motions: {
-        [MotionColor.BLUE]: blueMotion,
-        [MotionColor.RED]: redMotion,
+        [HandSide.LEFT]: leftMotion,
+        [HandSide.RIGHT]: rightMotion,
       },
     };
   });
@@ -125,14 +125,14 @@
   <div class="orientation-row">
     <div class="hand-ori blue">
       <span class="hand-label">B</span>
-      <div class="ori-chips" class:compass={blueAtCenter}>
-        {#each blueOptions as ori (ori.value)}
+      <div class="ori-chips" class:compass={leftAtCenter}>
+        {#each leftOptions as ori (ori.value)}
           <button
             class="ori-chip"
-            class:active={orientations.blue === ori.value}
-            aria-pressed={orientations.blue === ori.value}
+            class:active={orientations.left === ori.value}
+            aria-pressed={orientations.left === ori.value}
             aria-label={ori.label}
-            onclick={() => onOrientationChange(position, "blue", ori.value)}
+            onclick={() => onOrientationChange(position, "left", ori.value)}
             title={ori.label}
           >
             <i
@@ -146,14 +146,14 @@
     </div>
     <div class="hand-ori red">
       <span class="hand-label">R</span>
-      <div class="ori-chips" class:compass={redAtCenter}>
-        {#each redOptions as ori (ori.value)}
+      <div class="ori-chips" class:compass={rightAtCenter}>
+        {#each rightOptions as ori (ori.value)}
           <button
             class="ori-chip"
-            class:active={orientations.red === ori.value}
-            aria-pressed={orientations.red === ori.value}
+            class:active={orientations.right === ori.value}
+            aria-pressed={orientations.right === ori.value}
             aria-label={ori.label}
-            onclick={() => onOrientationChange(position, "red", ori.value)}
+            onclick={() => onOrientationChange(position, "right", ori.value)}
             title={ori.label}
           >
             <i
@@ -170,8 +170,8 @@
   <footer class="card-footer">
     <span class="position-name">{formatPosition(position)}</span>
     <div class="locations">
-      <span class="loc blue">{formatLoc(blueLoc)}</span>
-      <span class="loc red">{formatLoc(redLoc)}</span>
+      <span class="loc blue">{formatLoc(leftLoc)}</span>
+      <span class="loc red">{formatLoc(rightLoc)}</span>
     </div>
   </footer>
 </article>

@@ -236,8 +236,8 @@ export class Sharer {
       stepSize: shareOptions.stepSize,
       margin: shareOptions.margin,
 
-      redVisible: true,
-      blueVisible: true,
+      rightVisible: true,
+      leftVisible: true,
       visibilityOverrides: {
         darkMode: shareOptions.darkMode,
       },
@@ -272,8 +272,8 @@ export class Sharer {
       stepSize: shareOptions.stepSize,
       margin: shareOptions.margin,
 
-      redVisible: true,
-      blueVisible: true,
+      rightVisible: true,
+      leftVisible: true,
       visibilityOverrides: {
         darkMode: shareOptions.darkMode,
       },

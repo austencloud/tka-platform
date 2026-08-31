@@ -94,11 +94,11 @@
     if (!preset) return;
     settingsState.updateSettings({
       selectedPresetIndex: index,
-      bluePropType: preset.bluePropType,
-      redPropType: preset.redPropType,
+      leftPropType: preset.leftPropType,
+      rightPropType: preset.rightPropType,
       catDogMode: preset.catDogMode,
-      blueBuugengFlipped: preset.blueBuugengFlipped ?? false,
-      redBuugengFlipped: preset.redBuugengFlipped ?? false,
+      leftBuugengFlipped: preset.leftBuugengFlipped ?? false,
+      rightBuugengFlipped: preset.rightBuugengFlipped ?? false,
     });
   }
 
@@ -295,24 +295,24 @@
             class:selected={isSelected}
             class:cat-dog={preset?.catDogMode}
             onclick={() => applyPreset(i)}
-            title={preset ? `${getPropTypeDisplayInfo(preset.bluePropType).label} (Alt+${displayKey})` : `Empty slot (Alt+${displayKey})`}
+            title={preset ? `${getPropTypeDisplayInfo(preset.leftPropType).label} (Alt+${displayKey})` : `Empty slot (Alt+${displayKey})`}
           >
             {#if preset}
-              <div class="preset-icon" class:no-rotate={!needsRotation(preset.bluePropType)}>
+              <div class="preset-icon" class:no-rotate={!needsRotation(preset.leftPropType)}>
                 {#if preset.catDogMode}
                   <img
-                    src={getPropTypeDisplayInfo(preset.bluePropType).image}
+                    src={getPropTypeDisplayInfo(preset.leftPropType).image}
                     alt=""
                     class="prop-svg blue-prop"
                   />
                   <img
-                    src={getPropTypeDisplayInfo(preset.redPropType).image}
+                    src={getPropTypeDisplayInfo(preset.rightPropType).image}
                     alt=""
                     class="prop-svg red-prop"
                   />
                 {:else}
                   <img
-                    src={getPropTypeDisplayInfo(preset.bluePropType).image}
+                    src={getPropTypeDisplayInfo(preset.leftPropType).image}
                     alt=""
                     class="prop-svg"
                   />

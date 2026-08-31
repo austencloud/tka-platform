@@ -26,7 +26,7 @@ import {
 import type {
   Orientation} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   GenerationMode,
@@ -66,23 +66,23 @@ function validateMotionData(
 
   // Check start position
   if (sequence.startPosition?.motions) {
-    const blue = sequence.startPosition.motions[MotionColor.BLUE];
-    const red = sequence.startPosition.motions[MotionColor.RED];
+    const left = sequence.startPosition.motions[HandSide.LEFT];
+    const right = sequence.startPosition.motions[HandSide.RIGHT];
 
-    if (blue) {
-      if (blue.gridMode !== seqGridMode) {
-        warnings.push(`StartPos blue motion gridMode (${blue.gridMode}) != sequence (${seqGridMode})`);
+    if (left) {
+      if (left.gridMode !== seqGridMode) {
+        warnings.push(`StartPos blue motion gridMode (${left.gridMode}) != sequence (${seqGridMode})`);
       }
-      if (seqGridMode === GridMode.DIAMOND && blue.endLocation && INTERCARDINAL_LOCATIONS.has(blue.endLocation)) {
-        warnings.push(`StartPos blue has intercardinal location ${blue.endLocation} in DIAMOND mode`);
+      if (seqGridMode === GridMode.DIAMOND && left.endLocation && INTERCARDINAL_LOCATIONS.has(left.endLocation)) {
+        warnings.push(`StartPos blue has intercardinal location ${left.endLocation} in DIAMOND mode`);
       }
-      if (seqGridMode === GridMode.BOX && blue.endLocation && CARDINAL_LOCATIONS.has(blue.endLocation)) {
-        warnings.push(`StartPos blue has cardinal location ${blue.endLocation} in BOX mode`);
+      if (seqGridMode === GridMode.BOX && left.endLocation && CARDINAL_LOCATIONS.has(left.endLocation)) {
+        warnings.push(`StartPos blue has cardinal location ${left.endLocation} in BOX mode`);
       }
     }
-    if (red) {
-      if (red.gridMode !== seqGridMode) {
-        warnings.push(`StartPos red motion gridMode (${red.gridMode}) != sequence (${seqGridMode})`);
+    if (right) {
+      if (right.gridMode !== seqGridMode) {
+        warnings.push(`StartPos red motion gridMode (${right.gridMode}) != sequence (${seqGridMode})`);
       }
     }
   }
@@ -90,23 +90,23 @@ function validateMotionData(
   // Check each beat
   sequence.steps?.forEach((step, idx) => {
     const stepNum = idx + 1;
-    const blue = step.motions?.[MotionColor.BLUE];
-    const red = step.motions?.[MotionColor.RED];
+    const left = step.motions?.[HandSide.LEFT];
+    const right = step.motions?.[HandSide.RIGHT];
 
-    if (blue) {
-      if (blue.gridMode !== seqGridMode) {
-        warnings.push(`Beat ${stepNum} blue gridMode (${blue.gridMode}) != sequence (${seqGridMode})`);
+    if (left) {
+      if (left.gridMode !== seqGridMode) {
+        warnings.push(`Beat ${stepNum} blue gridMode (${left.gridMode}) != sequence (${seqGridMode})`);
       }
-      if (!blue.endOrientation) {
+      if (!left.endOrientation) {
         warnings.push(`Beat ${stepNum} blue missing endOrientation`);
       }
-      if (!blue.endLocation) {
+      if (!left.endLocation) {
         warnings.push(`Beat ${stepNum} blue missing endLocation`);
       }
     }
-    if (red) {
-      if (red.gridMode !== seqGridMode) {
-        warnings.push(`Beat ${stepNum} red gridMode (${red.gridMode}) != sequence (${seqGridMode})`);
+    if (right) {
+      if (right.gridMode !== seqGridMode) {
+        warnings.push(`Beat ${stepNum} red gridMode (${right.gridMode}) != sequence (${seqGridMode})`);
       }
     }
   });
@@ -149,10 +149,10 @@ interface RotatableMatch {
  */
 function createStartStateKey(
   position: GridPosition | string | null,
-  blueOrientation: Orientation | null,
-  redOrientation: Orientation | null
+  leftOrientation: Orientation | null,
+  rightOrientation: Orientation | null
 ): string {
-  return `${position ?? "null"}_${blueOrientation ?? "null"}_${redOrientation ?? "null"}`;
+  return `${position ?? "null"}_${leftOrientation ?? "null"}_${rightOrientation ?? "null"}`;
 }
 
 /**
@@ -354,10 +354,10 @@ export class EndlessSpinnerOrchestrator {
 
       // Extract start state
       const position = startPos.gridPosition ?? startPos.startPosition ?? null;
-      const blueOri = startPos.motions?.blue?.startOrientation ?? null;
-      const redOri = startPos.motions?.red?.startOrientation ?? null;
+      const leftOri = startPos.motions?.left?.startOrientation ?? null;
+      const rightOri = startPos.motions?.right?.startOrientation ?? null;
 
-      const key = createStartStateKey(position, blueOri, redOri);
+      const key = createStartStateKey(position, leftOri, rightOri);
 
       // Add to index
       if (!this.sequenceIndex.has(key)) {
@@ -403,20 +403,20 @@ export class EndlessSpinnerOrchestrator {
    * Derive the grid position from a beat's end state using motion end locations.
    */
   private deriveBeatEndPosition(beat: StepData): GridPosition | null {
-    const blueMotion = beat.motions?.[MotionColor.BLUE];
-    const redMotion = beat.motions?.[MotionColor.RED];
+    const leftMotion = beat.motions?.[HandSide.LEFT];
+    const rightMotion = beat.motions?.[HandSide.RIGHT];
 
     // Invisible placeholder = hand not really there (both-required Step shape).
     if (
-      isVisibleMotion(blueMotion) &&
-      isVisibleMotion(redMotion) &&
-      blueMotion.endLocation &&
-      redMotion.endLocation
+      isVisibleMotion(leftMotion) &&
+      isVisibleMotion(rightMotion) &&
+      leftMotion.endLocation &&
+      rightMotion.endLocation
     ) {
       try {
         return getGridPositionFromLocations(
-          blueMotion.endLocation,
-          redMotion.endLocation
+          leftMotion.endLocation,
+          rightMotion.endLocation
         );
       } catch {
         return null;
@@ -526,35 +526,35 @@ export class EndlessSpinnerOrchestrator {
 
       if (
         startPos &&
-        targetEndState.blueOrientation &&
-        targetEndState.redOrientation
+        targetEndState.leftOrientation &&
+        targetEndState.rightOrientation
       ) {
         // Check if orientations already match
-        const currentBlueOri = startPos.motions?.[MotionColor.BLUE]?.startOrientation;
-        const currentRedOri = startPos.motions?.[MotionColor.RED]?.startOrientation;
+        const currentLeftOri = startPos.motions?.[HandSide.LEFT]?.startOrientation;
+        const currentRightOri = startPos.motions?.[HandSide.RIGHT]?.startOrientation;
 
         if (
-          currentBlueOri !== targetEndState.blueOrientation ||
-          currentRedOri !== targetEndState.redOrientation
+          currentLeftOri !== targetEndState.leftOrientation ||
+          currentRightOri !== targetEndState.rightOrientation
         ) {
           // Modify start position to have target orientations
-          const startBlueMotion = startPos.motions?.[MotionColor.BLUE];
-          const startRedMotion = startPos.motions?.[MotionColor.RED];
+          const startLeftMotion = startPos.motions?.[HandSide.LEFT];
+          const startRightMotion = startPos.motions?.[HandSide.RIGHT];
           const adjustedStartPos: StartPositionData = {
             ...startPos,
             motions: {
-              [MotionColor.BLUE]: startBlueMotion
+              [HandSide.LEFT]: startLeftMotion
                 ? {
-                    ...startBlueMotion,
-                    startOrientation: targetEndState.blueOrientation,
-                    endOrientation: targetEndState.blueOrientation,
+                    ...startLeftMotion,
+                    startOrientation: targetEndState.leftOrientation,
+                    endOrientation: targetEndState.leftOrientation,
                   }
                 : undefined,
-              [MotionColor.RED]: startRedMotion
+              [HandSide.RIGHT]: startRightMotion
                 ? {
-                    ...startRedMotion,
-                    startOrientation: targetEndState.redOrientation,
-                    endOrientation: targetEndState.redOrientation,
+                    ...startRightMotion,
+                    startOrientation: targetEndState.rightOrientation,
+                    endOrientation: targetEndState.rightOrientation,
                   }
                 : undefined,
             },
@@ -605,33 +605,33 @@ export class EndlessSpinnerOrchestrator {
 
     for (const candidate of candidates) {
       if (!candidate) continue;
-      const blue = candidate.motions?.[MotionColor.BLUE];
-      const red = candidate.motions?.[MotionColor.RED];
-      if (!isVisibleMotion(blue) || !isVisibleMotion(red)) continue;
+      const left = candidate.motions?.[HandSide.LEFT];
+      const right = candidate.motions?.[HandSide.RIGHT];
+      if (!isVisibleMotion(left) || !isVisibleMotion(right)) continue;
 
       // Both motions need start+end locations for reliable detection
       if (
-        !blue.startLocation ||
-        !blue.endLocation ||
-        !red.startLocation ||
-        !red.endLocation
+        !left.startLocation ||
+        !left.endLocation ||
+        !right.startLocation ||
+        !right.endLocation
       ) continue;
 
-      const blueIsDiamond =
-        CARDINAL_LOCATIONS.has(blue.startLocation) &&
-        CARDINAL_LOCATIONS.has(blue.endLocation);
-      const redIsDiamond =
-        CARDINAL_LOCATIONS.has(red.startLocation) &&
-        CARDINAL_LOCATIONS.has(red.endLocation);
-      const blueIsBox =
-        INTERCARDINAL_LOCATIONS.has(blue.startLocation) &&
-        INTERCARDINAL_LOCATIONS.has(blue.endLocation);
-      const redIsBox =
-        INTERCARDINAL_LOCATIONS.has(red.startLocation) &&
-        INTERCARDINAL_LOCATIONS.has(red.endLocation);
+      const leftIsDiamond =
+        CARDINAL_LOCATIONS.has(left.startLocation) &&
+        CARDINAL_LOCATIONS.has(left.endLocation);
+      const rightIsDiamond =
+        CARDINAL_LOCATIONS.has(right.startLocation) &&
+        CARDINAL_LOCATIONS.has(right.endLocation);
+      const leftIsBox =
+        INTERCARDINAL_LOCATIONS.has(left.startLocation) &&
+        INTERCARDINAL_LOCATIONS.has(left.endLocation);
+      const rightIsBox =
+        INTERCARDINAL_LOCATIONS.has(right.startLocation) &&
+        INTERCARDINAL_LOCATIONS.has(right.endLocation);
 
-      if (blueIsDiamond && redIsDiamond) return GridMode.DIAMOND;
-      if (blueIsBox && redIsBox) return GridMode.BOX;
+      if (leftIsDiamond && rightIsDiamond) return GridMode.DIAMOND;
+      if (leftIsBox && rightIsBox) return GridMode.BOX;
       // Mixed/skewed - use DIAMOND as safe default
       return GridMode.DIAMOND;
     }
@@ -657,14 +657,14 @@ export class EndlessSpinnerOrchestrator {
     // Update grid mode on all steps AND their motions
     if (updatedSequence.steps?.length) {
       updatedSequence.steps = updatedSequence.steps.map((step) => {
-        const blueMotion = step.motions?.[MotionColor.BLUE];
-        const redMotion = step.motions?.[MotionColor.RED];
+        const leftMotion = step.motions?.[HandSide.LEFT];
+        const rightMotion = step.motions?.[HandSide.RIGHT];
         return {
           ...step,
           gridMode,
           motions: {
-            blue: { ...blueMotion, gridMode },
-            red: { ...redMotion, gridMode },
+            left: { ...leftMotion, gridMode },
+            right: { ...rightMotion, gridMode },
           },
         };
       });
@@ -673,18 +673,18 @@ export class EndlessSpinnerOrchestrator {
     // Update grid mode on start position and its motions if present
     if (updatedSequence.startPosition) {
       const sp = updatedSequence.startPosition;
-      const blueMotion = sp.motions?.[MotionColor.BLUE];
-      const redMotion = sp.motions?.[MotionColor.RED];
+      const leftMotion = sp.motions?.[HandSide.LEFT];
+      const rightMotion = sp.motions?.[HandSide.RIGHT];
       updatedSequence.startPosition = {
         ...sp,
         gridMode,
         motions: {
           ...sp.motions,
-          [MotionColor.BLUE]: blueMotion
-            ? { ...blueMotion, gridMode }
+          [HandSide.LEFT]: leftMotion
+            ? { ...leftMotion, gridMode }
             : undefined,
-          [MotionColor.RED]: redMotion
-            ? { ...redMotion, gridMode }
+          [HandSide.RIGHT]: rightMotion
+            ? { ...rightMotion, gridMode }
             : undefined,
         },
       };
@@ -829,8 +829,8 @@ export class EndlessSpinnerOrchestrator {
   private async findDirectMatch(endState: EndState): Promise<SequenceData | null> {
     const key = createStartStateKey(
       endState.position,
-      endState.blueOrientation,
-      endState.redOrientation
+      endState.leftOrientation,
+      endState.rightOrientation
     );
 
     const matches = this.sequenceIndex.get(key);
@@ -865,13 +865,13 @@ export class EndlessSpinnerOrchestrator {
 
         // Check if this beat's END state matches our target
         const beatEndPos = beat.endPosition;
-        const blueEndOri = beat.motions?.blue?.endOrientation ?? null;
-        const redEndOri = beat.motions?.red?.endOrientation ?? null;
+        const leftEndOri = beat.motions?.left?.endOrientation ?? null;
+        const rightEndOri = beat.motions?.right?.endOrientation ?? null;
 
         if (
           beatEndPos === endState.position &&
-          blueEndOri === endState.blueOrientation &&
-          redEndOri === endState.redOrientation
+          leftEndOri === endState.leftOrientation &&
+          rightEndOri === endState.rightOrientation
         ) {
           // Beat i+1 should become the new beat 1 (rotating past this beat)
           matches.push({
@@ -947,11 +947,11 @@ export class EndlessSpinnerOrchestrator {
       id: `spinner-start-${Date.now()}`,
       startPosition: endState.position,
       motions: {
-        blue: endState.blueOrientation
-          ? { startOrientation: endState.blueOrientation }
+        left: endState.leftOrientation
+          ? { startOrientation: endState.leftOrientation }
           : undefined,
-        red: endState.redOrientation
-          ? { startOrientation: endState.redOrientation }
+        right: endState.rightOrientation
+          ? { startOrientation: endState.rightOrientation }
           : undefined,
       },
     };

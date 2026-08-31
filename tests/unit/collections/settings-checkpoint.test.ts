@@ -105,14 +105,14 @@ describe("settings checkpoint capture/revert symmetry", () => {
     vm.setEffortPreset("linear");
     vm.setPathShape("arc");
     vm.setMotionAwarePaths(false);
-    vm.setVisibility("bluePathLines", false);
-    vm.setVisibility("redPathLines", true);
+    vm.setVisibility("leftPathLines", false);
+    vm.setVisibility("rightPathLines", true);
     animationSettings.updateSettings({
       trail: { ...animationSettings.trail, mode: TrailMode.PERSISTENT, lineWidth: 7 },
     });
     void settingsService.updateSettings({
-      bluePropType: PropType.STAFF,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.STAFF,
+      rightPropType: PropType.FAN,
       backgroundType: BackgroundType.COSMIC,
     });
 
@@ -123,14 +123,14 @@ describe("settings checkpoint capture/revert symmetry", () => {
     vm.setEffortPreset("bounce");
     vm.setPathShape("concave");
     vm.setMotionAwarePaths(true);
-    vm.setVisibility("bluePathLines", true);
-    vm.setVisibility("redPathLines", false);
+    vm.setVisibility("leftPathLines", true);
+    vm.setVisibility("rightPathLines", false);
     animationSettings.updateSettings({
       trail: { ...animationSettings.trail, mode: TrailMode.FADE, lineWidth: 2 },
     });
     void settingsService.updateSettings({
-      bluePropType: PropType.CLUB,
-      redPropType: PropType.CLUB,
+      leftPropType: PropType.CLUB,
+      rightPropType: PropType.CLUB,
       backgroundType: BackgroundType.OCEAN,
     });
 
@@ -140,12 +140,12 @@ describe("settings checkpoint capture/revert symmetry", () => {
     expect(vm.getEffortPreset()).toBe("linear");
     expect(vm.getPathShape()).toBe("arc");
     expect(vm.getMotionAwarePaths()).toBe(false);
-    expect(vm.getVisibility("bluePathLines")).toBe(false);
-    expect(vm.getVisibility("redPathLines")).toBe(true);
+    expect(vm.getVisibility("leftPathLines")).toBe(false);
+    expect(vm.getVisibility("rightPathLines")).toBe(true);
     expect(animationSettings.trail.mode).toBe(TrailMode.PERSISTENT);
     expect(animationSettings.trail.lineWidth).toBe(7);
-    expect(settingsService.settings.bluePropType).toBe(PropType.STAFF);
-    expect(settingsService.settings.redPropType).toBe(PropType.FAN);
+    expect(settingsService.settings.leftPropType).toBe(PropType.STAFF);
+    expect(settingsService.settings.rightPropType).toBe(PropType.FAN);
     expect(settingsService.settings.backgroundType).toBe(BackgroundType.COSMIC);
   });
 });

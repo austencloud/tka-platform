@@ -13,7 +13,7 @@
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
@@ -54,14 +54,14 @@ function deriveLetterFromGridPosition(
 function deriveGridPositionFromMotions(
   startPos: StartPositionData
 ): GridPosition | null {
-  const blueMotion = startPos.motions[MotionColor.BLUE];
-  const redMotion = startPos.motions[MotionColor.RED];
+  const leftMotion = startPos.motions[HandSide.LEFT];
+  const rightMotion = startPos.motions[HandSide.RIGHT];
 
   // Invisible placeholder = hand not really there (both-required Step shape).
-  if (isVisibleMotion(blueMotion) && isVisibleMotion(redMotion)) {
+  if (isVisibleMotion(leftMotion) && isVisibleMotion(rightMotion)) {
     return getGridPositionFromLocations(
-      blueMotion.startLocation,
-      redMotion.startLocation
+      leftMotion.startLocation,
+      rightMotion.startLocation
     );
   }
   return startPos.gridPosition ?? null;
@@ -76,15 +76,15 @@ export function mirrorStartPosition(
   targetHand: TargetHand = "both"
 ): StartPositionData {
   const mirroredMotions = { ...startPos.motions };
-  const blueMotion = startPos.motions[MotionColor.BLUE];
-  const redMotion = startPos.motions[MotionColor.RED];
+  const leftMotion = startPos.motions[HandSide.LEFT];
+  const rightMotion = startPos.motions[HandSide.RIGHT];
 
   // Transform specified hand(s)
-  if ((targetHand === "blue" || targetHand === "both") && blueMotion) {
-    mirroredMotions[MotionColor.BLUE] = mirrorMotion(blueMotion);
+  if ((targetHand === "left" || targetHand === "both") && leftMotion) {
+    mirroredMotions[HandSide.LEFT] = mirrorMotion(leftMotion);
   }
-  if ((targetHand === "red" || targetHand === "both") && redMotion) {
-    mirroredMotions[MotionColor.RED] = mirrorMotion(redMotion);
+  if ((targetHand === "right" || targetHand === "both") && rightMotion) {
+    mirroredMotions[HandSide.RIGHT] = mirrorMotion(rightMotion);
   }
 
   // For single-hand transforms, derive new grid position from motion locations
@@ -120,15 +120,15 @@ export function flipStartPosition(
   targetHand: TargetHand = "both"
 ): StartPositionData {
   const flippedMotions = { ...startPos.motions };
-  const blueMotion = startPos.motions[MotionColor.BLUE];
-  const redMotion = startPos.motions[MotionColor.RED];
+  const leftMotion = startPos.motions[HandSide.LEFT];
+  const rightMotion = startPos.motions[HandSide.RIGHT];
 
   // Transform specified hand(s)
-  if ((targetHand === "blue" || targetHand === "both") && blueMotion) {
-    flippedMotions[MotionColor.BLUE] = flipMotion(blueMotion);
+  if ((targetHand === "left" || targetHand === "both") && leftMotion) {
+    flippedMotions[HandSide.LEFT] = flipMotion(leftMotion);
   }
-  if ((targetHand === "red" || targetHand === "both") && redMotion) {
-    flippedMotions[MotionColor.RED] = flipMotion(redMotion);
+  if ((targetHand === "right" || targetHand === "both") && rightMotion) {
+    flippedMotions[HandSide.RIGHT] = flipMotion(rightMotion);
   }
 
   // For single-hand transforms, derive new grid position from motion locations
@@ -166,19 +166,19 @@ export function rotateStartPosition(
   targetHand: TargetHand = "both"
 ): StartPositionData {
   const rotatedMotions = { ...startPos.motions };
-  const origBlueMotion = startPos.motions[MotionColor.BLUE];
-  const origRedMotion = startPos.motions[MotionColor.RED];
+  const origLeftMotion = startPos.motions[HandSide.LEFT];
+  const origRightMotion = startPos.motions[HandSide.RIGHT];
 
   // Transform specified hand(s)
-  if ((targetHand === "blue" || targetHand === "both") && origBlueMotion) {
-    rotatedMotions[MotionColor.BLUE] = rotateMotion(
-      origBlueMotion,
+  if ((targetHand === "left" || targetHand === "both") && origLeftMotion) {
+    rotatedMotions[HandSide.LEFT] = rotateMotion(
+      origLeftMotion,
       rotationAmount
     );
   }
-  if ((targetHand === "red" || targetHand === "both") && origRedMotion) {
-    rotatedMotions[MotionColor.RED] = rotateMotion(
-      origRedMotion,
+  if ((targetHand === "right" || targetHand === "both") && origRightMotion) {
+    rotatedMotions[HandSide.RIGHT] = rotateMotion(
+      origRightMotion,
       rotationAmount
     );
   }
@@ -186,13 +186,13 @@ export function rotateStartPosition(
   // Derive new gridPosition from rotated motion locations
   // This correctly handles the DIAMOND ↔ BOX mode transitions
   let rotatedGridPosition: GridPosition | null = startPos.gridPosition ?? null;
-  const blueMotion = rotatedMotions[MotionColor.BLUE];
-  const redMotion = rotatedMotions[MotionColor.RED];
+  const leftMotion = rotatedMotions[HandSide.LEFT];
+  const rightMotion = rotatedMotions[HandSide.RIGHT];
 
-  if (isVisibleMotion(blueMotion) && isVisibleMotion(redMotion)) {
+  if (isVisibleMotion(leftMotion) && isVisibleMotion(rightMotion)) {
     rotatedGridPosition = getGridPositionFromLocations(
-      blueMotion.startLocation,
-      redMotion.startLocation
+      leftMotion.startLocation,
+      rightMotion.startLocation
     );
   }
 
@@ -214,14 +214,14 @@ export function rotateStartPosition(
 export function colorSwapStartPosition(
   startPos: StartPositionData
 ): StartPositionData {
-  const origBlue = startPos.motions[MotionColor.BLUE];
-  const origRed = startPos.motions[MotionColor.RED];
+  const origLeft = startPos.motions[HandSide.LEFT];
+  const origRight = startPos.motions[HandSide.RIGHT];
   const swappedMotions = {
-    [MotionColor.BLUE]: origRed
-      ? swapMotionColor(origRed, MotionColor.BLUE)
+    [HandSide.LEFT]: origRight
+      ? swapMotionColor(origRight, HandSide.LEFT)
       : undefined,
-    [MotionColor.RED]: origBlue
-      ? swapMotionColor(origBlue, MotionColor.RED)
+    [HandSide.RIGHT]: origLeft
+      ? swapMotionColor(origLeft, HandSide.RIGHT)
       : undefined,
   };
 
@@ -247,40 +247,40 @@ export function invertStartPosition(
   targetHand: TargetHand = "both"
 ): StartPositionData {
   const invertedMotions = { ...startPos.motions };
-  const startBlueMotion = startPos.motions[MotionColor.BLUE];
-  const startRedMotion = startPos.motions[MotionColor.RED];
+  const startLeftMotion = startPos.motions[HandSide.LEFT];
+  const startRightMotion = startPos.motions[HandSide.RIGHT];
 
   // Transform specified hand(s)
-  if ((targetHand === "blue" || targetHand === "both") && startBlueMotion) {
-    const blueMotion = startBlueMotion;
-    const invertedBlueMotion = createMotionData({
-      ...blueMotion,
-      motionType: invertMotionType(blueMotion.motionType),
-      rotationDirection: reverseRotationDirection(blueMotion.rotationDirection),
+  if ((targetHand === "left" || targetHand === "both") && startLeftMotion) {
+    const leftMotion = startLeftMotion;
+    const invertedLeftMotion = createMotionData({
+      ...leftMotion,
+      motionType: invertMotionType(leftMotion.motionType),
+      rotationDirection: reverseRotationDirection(leftMotion.rotationDirection),
     });
     const newEndOrientation = calculateEndOrientation(
-      invertedBlueMotion,
-      MotionColor.BLUE
+      invertedLeftMotion,
+      HandSide.LEFT
     );
-    invertedMotions[MotionColor.BLUE] = {
-      ...invertedBlueMotion,
+    invertedMotions[HandSide.LEFT] = {
+      ...invertedLeftMotion,
       endOrientation: newEndOrientation,
     };
   }
 
-  if ((targetHand === "red" || targetHand === "both") && startRedMotion) {
-    const redMotion = startRedMotion;
-    const invertedRedMotion = createMotionData({
-      ...redMotion,
-      motionType: invertMotionType(redMotion.motionType),
-      rotationDirection: reverseRotationDirection(redMotion.rotationDirection),
+  if ((targetHand === "right" || targetHand === "both") && startRightMotion) {
+    const rightMotion = startRightMotion;
+    const invertedRightMotion = createMotionData({
+      ...rightMotion,
+      motionType: invertMotionType(rightMotion.motionType),
+      rotationDirection: reverseRotationDirection(rightMotion.rotationDirection),
     });
     const newEndOrientation = calculateEndOrientation(
-      invertedRedMotion,
-      MotionColor.RED
+      invertedRightMotion,
+      HandSide.RIGHT
     );
-    invertedMotions[MotionColor.RED] = {
-      ...invertedRedMotion,
+    invertedMotions[HandSide.RIGHT] = {
+      ...invertedRightMotion,
       endOrientation: newEndOrientation,
     };
   }

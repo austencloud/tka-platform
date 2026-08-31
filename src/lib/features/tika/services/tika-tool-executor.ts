@@ -28,8 +28,15 @@ export interface PictographExample {
   variation: number;
   startPosition: string;
   endPosition: string;
-  blueMotion?: string;
-  redMotion?: string;
+  leftMotion?: string;
+  rightMotion?: string;
+}
+
+export type MotionExampleHand = "left" | "right" | "both";
+export type MotionExampleHandInput = MotionExampleHand | "blue" | "red";
+
+function normalizeMotionExampleHand(hand: MotionExampleHandInput): MotionExampleHand {
+  return hand === "blue" ? "left" : hand === "red" ? "right" : hand;
 }
 export interface LetterExplanationResult {
   explanation: string;
@@ -41,13 +48,13 @@ export interface LetterExplanationResult {
     typeName: string;
     startPosition: string;
     endPosition: string;
-    blueMotion: {
+    leftMotion: {
       motionType: string;
       startLoc: string;
       endLoc: string;
       propRotDir: string;
     };
-    redMotion: {
+    rightMotion: {
       motionType: string;
       startLoc: string;
       endLoc: string;
@@ -66,15 +73,15 @@ export interface ComparisonResult {
       letter: string;
       type: number;
       typeName: string;
-      blueMotion: string;
-      redMotion: string;
+      leftMotion: string;
+      rightMotion: string;
     };
     letter2Data: {
       letter: string;
       type: number;
       typeName: string;
-      blueMotion: string;
-      redMotion: string;
+      leftMotion: string;
+      rightMotion: string;
     };
   };
 }
@@ -89,8 +96,8 @@ export interface TypeListResult {
     exampleLetters: string[];
     allLetters: string[];
     motionPattern: {
-      blueMotion: string;
-      redMotion: string;
+      leftMotion: string;
+      rightMotion: string;
     };
     rotationPattern?: unknown;
   };
@@ -160,20 +167,20 @@ export class TikaToolExecutor {
       return `Letter "${letter}" variation data not available.`;
     }
 
-    const blueRot =
-      varData.blueMotion.rotationDirection !== "noRotation"
-        ? ` (${varData.blueMotion.rotationDirection})`
+    const leftRot =
+      varData.leftMotion.rotationDirection !== "noRotation"
+        ? ` (${varData.leftMotion.rotationDirection})`
         : "";
-    const redRot =
-      varData.redMotion.rotationDirection !== "noRotation"
-        ? ` (${varData.redMotion.rotationDirection})`
+    const rightRot =
+      varData.rightMotion.rotationDirection !== "noRotation"
+        ? ` (${varData.rightMotion.rotationDirection})`
         : "";
 
     const explanation = `**${letter}** is a Type ${typeNum} (${
       fullTypeInfo?.name || typeInfo?.name
-    }) letter. Blue hand ${varData.blueMotion.motionType}${blueRot}, red hand ${
-      varData.redMotion.motionType
-    }${redRot}. Moves from ${varData.startPosition} to ${varData.endPosition}.`;
+    }) letter. Blue hand ${varData.leftMotion.motionType}${leftRot}, red hand ${
+      varData.rightMotion.motionType
+    }${rightRot}. Moves from ${varData.startPosition} to ${varData.endPosition}.`;
 
     return {
       explanation,
@@ -190,17 +197,17 @@ export class TikaToolExecutor {
         typeName: fullTypeInfo?.name || typeInfo?.name || "Unknown",
         startPosition: varData.startPosition,
         endPosition: varData.endPosition,
-        blueMotion: {
-          motionType: varData.blueMotion.motionType,
-          startLoc: varData.blueMotion.startLocation,
-          endLoc: varData.blueMotion.endLocation,
-          propRotDir: varData.blueMotion.rotationDirection,
+        leftMotion: {
+          motionType: varData.leftMotion.motionType,
+          startLoc: varData.leftMotion.startLocation,
+          endLoc: varData.leftMotion.endLocation,
+          propRotDir: varData.leftMotion.rotationDirection,
         },
-        redMotion: {
-          motionType: varData.redMotion.motionType,
-          startLoc: varData.redMotion.startLocation,
-          endLoc: varData.redMotion.endLocation,
-          propRotDir: varData.redMotion.rotationDirection,
+        rightMotion: {
+          motionType: varData.rightMotion.motionType,
+          startLoc: varData.rightMotion.startLocation,
+          endLoc: varData.rightMotion.endLocation,
+          propRotDir: varData.rightMotion.rotationDirection,
         },
       },
     };
@@ -287,10 +294,10 @@ ${entry.examples.map((e) => `- ${e}`).join("\n")}
 
     let explanation = `**${letter1}** (Type ${typeNum1} - ${
       typeDef1?.name || "?"
-    }): blue ${rep1.blueMotion.motionType}, red ${rep1.redMotion.motionType}.
+    }): blue ${rep1.leftMotion.motionType}, red ${rep1.rightMotion.motionType}.
 **${letter2}** (Type ${typeNum2} - ${typeDef2?.name || "?"}): blue ${
-      rep2.blueMotion.motionType
-    }, red ${rep2.redMotion.motionType}.`;
+      rep2.leftMotion.motionType
+    }, red ${rep2.rightMotion.motionType}.`;
 
     if (typeNum1 !== typeNum2) {
       explanation += ` Key difference: ${typeDef1?.description || ""} vs ${
@@ -317,15 +324,15 @@ ${entry.examples.map((e) => `- ${e}`).join("\n")}
           letter: letter1,
           type: typeNum1,
           typeName: typeDef1?.name || "Unknown",
-          blueMotion: rep1.blueMotion.motionType,
-          redMotion: rep1.redMotion.motionType,
+          leftMotion: rep1.leftMotion.motionType,
+          rightMotion: rep1.rightMotion.motionType,
         },
         letter2Data: {
           letter: letter2,
           type: typeNum2,
           typeName: typeDef2?.name || "Unknown",
-          blueMotion: rep2.blueMotion.motionType,
-          redMotion: rep2.redMotion.motionType,
+          leftMotion: rep2.leftMotion.motionType,
+          rightMotion: rep2.rightMotion.motionType,
         },
       },
     };
@@ -352,7 +359,7 @@ ${entry.examples.map((e) => `- ${e}`).join("\n")}
       );
     const exampleLetters: string[] = (typeInfo?.letters as string[]) || letters;
 
-    const explanation = `**Type ${type} (${canonicalDef.name})**: ${canonicalDef.description}. Blue hand ${canonicalDef.motionPattern.blue}, red hand ${canonicalDef.motionPattern.red}.`;
+    const explanation = `**Type ${type} (${canonicalDef.name})**: ${canonicalDef.description}. Blue hand ${canonicalDef.motionPattern.left}, red hand ${canonicalDef.motionPattern.right}.`;
 
     let galleryItems: Array<{
       letter: string;
@@ -394,8 +401,8 @@ ${entry.examples.map((e) => `- ${e}`).join("\n")}
         exampleLetters,
         allLetters: exampleLetters,
         motionPattern: {
-          blueMotion: canonicalDef.motionPattern.blue,
-          redMotion: canonicalDef.motionPattern.red,
+          leftMotion: canonicalDef.motionPattern.left,
+          rightMotion: canonicalDef.motionPattern.right,
         },
         ...(canonicalDef.rotationPattern && {
           rotationPattern: canonicalDef.rotationPattern,
@@ -513,14 +520,14 @@ In TKA, **position** describes where your two hands are relative to each other o
 
   showMotionExamples(
     motionType: string,
-    hand: "blue" | "red" | "both" = "both"
+    handInput: MotionExampleHandInput = "both"
   ): MotionExamplesResult | string {
     const motionDef = MOTION_TYPE_DEFINITIONS[motionType.toLowerCase()];
     if (!motionDef) {
       return `Motion type "${motionType}" not recognized. Valid types: shift, dash, static`;
     }
 
-    const examples = this.getMotionExamples(motionType, hand);
+    const examples = this.getMotionExamples(motionType, handInput);
 
     return {
       explanation: `**${motionDef.name}:** ${motionDef.description}`,
@@ -678,24 +685,25 @@ In TKA, **position** describes where your two hands are relative to each other o
 
   getMotionExamples(
     motionType: string,
-    hand: "blue" | "red" | "both" = "both"
+    handInput: MotionExampleHandInput = "both"
   ): PictographExample[] {
     this.pictographLoader.ensureLoaded();
 
     const normalizedMotion = motionType.toLowerCase().trim();
+    const hand = normalizeMotionExampleHand(handInput);
     const allPictographs = this.pictographLoader.getAllPictographs();
 
     let matches: PictographData[] = [];
 
-    if (hand === "blue" || hand === "both") {
+    if (hand === "left" || hand === "both") {
       matches = allPictographs.filter(
-        (p) => p.blueMotion.motionType.toLowerCase() === normalizedMotion
+        (p) => p.leftMotion.motionType.toLowerCase() === normalizedMotion
       );
     }
 
-    if (hand === "red" || hand === "both") {
+    if (hand === "right" || hand === "both") {
       const redMatches = allPictographs.filter(
-        (p) => p.redMotion.motionType.toLowerCase() === normalizedMotion
+        (p) => p.rightMotion.motionType.toLowerCase() === normalizedMotion
       );
       matches = hand === "both" ? [...matches, ...redMatches] : redMatches;
     }
@@ -712,8 +720,8 @@ In TKA, **position** describes where your two hands are relative to each other o
         variation: 0,
         startPosition: match.startPosition,
         endPosition: match.endPosition,
-        blueMotion: match.blueMotion.motionType,
-        redMotion: match.redMotion.motionType,
+        leftMotion: match.leftMotion.motionType,
+        rightMotion: match.rightMotion.motionType,
       });
       seenLetters.add(match.letter);
     }

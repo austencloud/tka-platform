@@ -5,7 +5,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
-    MotionColor,
+    HandSide,
     type RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -100,8 +100,8 @@
     pictographs.filter(
       (pictograph) =>
         Boolean(pictograph.letter) &&
-        isVisibleMotion(pictograph.motions.blue) &&
-        isVisibleMotion(pictograph.motions.red)
+        isVisibleMotion(pictograph.motions.left) &&
+        isVisibleMotion(pictograph.motions.right)
     )
   );
   const letterOptions = $derived([
@@ -283,10 +283,10 @@
   }
 
   function variationLabel(pictograph: PictographData, index: number): string {
-    const blue = pictograph.motions.blue;
-    const red = pictograph.motions.red;
+    const left = pictograph.motions.left;
+    const right = pictograph.motions.right;
     const position = `${pictograph.startPosition ?? "?"} → ${pictograph.endPosition ?? "?"}`;
-    const paths = `${blue?.startLocation ?? "?"}→${blue?.endLocation ?? "?"} / ${red?.startLocation ?? "?"}→${red?.endLocation ?? "?"}`;
+    const paths = `${left?.startLocation ?? "?"}→${left?.endLocation ?? "?"} / ${right?.startLocation ?? "?"}→${right?.endLocation ?? "?"}`;
     return `${index + 1}. ${position} · ${paths}`;
   }
 
@@ -412,7 +412,7 @@
         motion,
         pictograph.letter || "A",
         location,
-        MotionColor.BLUE
+        HandSide.LEFT
       ),
     ]);
     const anchor = getInitialPosition(motion, location, gridMode);
@@ -598,13 +598,13 @@
           <span>Loading pictographs</span>
         {:else if selectedPictograph}
           <span>
-            Blue {selectedPictograph.motions.blue?.motionType},
+            Blue {selectedPictograph.motions.left?.motionType},
             {formatDirection(
-              selectedPictograph.motions.blue
+              selectedPictograph.motions.left
                 ?.rotationDirection as RotationDirection
-            )}. Red {selectedPictograph.motions.red?.motionType},
+            )}. Red {selectedPictograph.motions.right?.motionType},
             {formatDirection(
-              selectedPictograph.motions.red
+              selectedPictograph.motions.right
                 ?.rotationDirection as RotationDirection
             )}.
           </span>
@@ -670,12 +670,12 @@
         <div class="pictograph-stage">
           <PictographContainer
             pictographData={fixture.diamond}
-            showRedMotion={false}
-            showBlueMotion
+            showRightMotion={false}
+            showLeftMotion
             showTKA={false}
             disableTransitions
-            bluePropTypeOverride={PropType.STAFF}
-            redPropTypeOverride={PropType.STAFF}
+            leftPropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
           />
           {#if comparison}
             <span
@@ -729,12 +729,12 @@
         <div class="pictograph-stage">
           <PictographContainer
             pictographData={fixture.box}
-            showRedMotion={false}
-            showBlueMotion
+            showRightMotion={false}
+            showLeftMotion
             showTKA={false}
             disableTransitions
-            bluePropTypeOverride={PropType.STAFF}
-            redPropTypeOverride={PropType.STAFF}
+            leftPropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
           />
           {#if comparison}
             <span

@@ -22,22 +22,22 @@ export class PoiSequenceValidator {
       const pictograph = sequence[i];
       if (!pictograph) continue;
 
-      const blueMotion = pictograph.motions?.blue;
-      const redMotion = pictograph.motions?.red;
+      const leftMotion = pictograph.motions?.left;
+      const rightMotion = pictograph.motions?.right;
 
       // Validate blue motion if it's poi
-      if (blueMotion?.propType === PropType.POI) {
-        const blueResult = validateMotion(blueMotion);
-        violations.push(...blueResult.violations);
+      if (leftMotion?.propType === PropType.POI) {
+        const leftResult = validateMotion(leftMotion);
+        violations.push(...leftResult.violations);
 
         // Check transition from previous beat
         if (i > 0) {
           const prevPictograph = sequence[i - 1];
-          const prevBlue = prevPictograph?.motions?.blue;
-          if (prevBlue?.propType === PropType.POI) {
+          const prevLeft = prevPictograph?.motions?.left;
+          if (prevLeft?.propType === PropType.POI) {
             const transitionResult = validateTransition(
-              prevBlue,
-              blueMotion
+              prevLeft,
+              leftMotion
             );
             violations.push(...transitionResult.violations);
           }
@@ -45,18 +45,18 @@ export class PoiSequenceValidator {
       }
 
       // Validate red motion if it's poi
-      if (redMotion?.propType === PropType.POI) {
-        const redResult = validateMotion(redMotion);
-        violations.push(...redResult.violations);
+      if (rightMotion?.propType === PropType.POI) {
+        const rightResult = validateMotion(rightMotion);
+        violations.push(...rightResult.violations);
 
         // Check transition from previous beat
         if (i > 0) {
           const prevPictograph = sequence[i - 1];
-          const prevRed = prevPictograph?.motions?.red;
-          if (prevRed?.propType === PropType.POI) {
+          const prevRight = prevPictograph?.motions?.right;
+          if (prevRight?.propType === PropType.POI) {
             const transitionResult = validateTransition(
-              prevRed,
-              redMotion
+              prevRight,
+              rightMotion
             );
             violations.push(...transitionResult.violations);
           }

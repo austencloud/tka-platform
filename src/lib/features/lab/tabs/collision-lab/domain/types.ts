@@ -25,8 +25,8 @@ export interface PoseDefinition {
    * Example: `wNi-hEo` = blue on wall at N (in), red on wheel at E (out).
    */
   id: string;
-  blueHand: HandState;
-  redHand: HandState;
+  leftHand: HandState;
+  rightHand: HandState;
 }
 
 export type LabelStatus =

@@ -25,7 +25,7 @@ const snapshot = {
     gridVisible: false,
     colors: {
       mode: "custom",
-      custom: { blue: "#123456", red: "#abcdef" },
+      custom: { left: "#123456", right: "#abcdef" },
     },
     section: "tunnel",
   },
@@ -34,11 +34,11 @@ const snapshot = {
   paths: {
     pathShape: "arc",
     motionAwarePaths: false,
-    bluePathLines: false,
-    redPathLines: false,
+    leftPathLines: false,
+    rightPathLines: false,
   },
   playback: { bpm: 60, playbackMode: "continuous" },
-  props: { bluePropType: "staff", redPropType: "staff" },
+  props: { leftPropType: "staff", rightPropType: "staff" },
   trailRender: { mode: "none" },
 } as CollectedTunnel["snapshot"];
 
@@ -183,7 +183,7 @@ describe("tunnelPublicPayload", () => {
     const payload = tunnelPublicPayload(tunnelFixture());
     expect(payload.snapshot.tunnel.colors).toEqual({
       mode: "custom",
-      custom: { blue: "#123456", red: "#abcdef" },
+      custom: { left: "#123456", right: "#abcdef" },
     });
   });
 });

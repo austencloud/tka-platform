@@ -213,9 +213,9 @@ export class SpecialPlacementLookup {
 
     if (arrowColor) {
       colorKey = arrowColor;
-    } else if (pictographData.motions.blue === motionData) {
+    } else if (pictographData.motions.left === motionData) {
       colorKey = "blue";
-    } else if (pictographData.motions.red === motionData) {
+    } else if (pictographData.motions.right === motionData) {
       colorKey = "red";
     } else {
       colorKey = "blue";

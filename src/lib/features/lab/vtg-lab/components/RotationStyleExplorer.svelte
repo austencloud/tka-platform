@@ -51,9 +51,9 @@
   const initialProp = getInitialProp();
   // If the restored prop is a staff, collapse a persisted club orientation
   // (out/counter) back into the staff 2-option set so it stays selectable.
-  const initialBlueOri =
+  const initialLeftOri =
     initialProp === "staff" ? radialize(getStoredOri(BLUE_ORI_STORAGE_KEY)) : getStoredOri(BLUE_ORI_STORAGE_KEY);
-  const initialRedOri =
+  const initialRightOri =
     initialProp === "staff" ? radialize(getStoredOri(RED_ORI_STORAGE_KEY)) : getStoredOri(RED_ORI_STORAGE_KEY);
 
   let matrices = $state<RotationStyleMatrix[]>([]);
@@ -79,8 +79,8 @@
   const tipEnds = $derived(prop === "club" ? (1 as const) : (2 as const));
 
   // Independent per-hand start orientation — reshapes each hand's rosette.
-  let blueOri = $state<Orientation>(initialBlueOri);
-  let redOri = $state<Orientation>(initialRedOri);
+  let leftOri = $state<Orientation>(initialLeftOri);
+  let rightOri = $state<Orientation>(initialRightOri);
 
   // A two-ended staff is symmetric: in/out land the same tip union, as do
   // clock/counter — so it only distinguishes Radial vs Nonradial. A one-ended
@@ -110,12 +110,12 @@
     prop = v;
     if (v === "staff") {
       // Keep the pickers' value inside the 2-option staff set.
-      blueOri = radialize(blueOri);
-      redOri = radialize(redOri);
+      leftOri = radialize(leftOri);
+      rightOri = radialize(rightOri);
     }
   }
 
-  const startOri: StartOriPair = $derived({ blue: blueOri, red: redOri });
+  const startOri: StartOriPair = $derived({ left: leftOri, right: rightOri });
 
   // VTG ratio per turn value (1:1 … 7:1) — the axis numbering for this lab.
   const vtgRatios = TURN_VALUES.map((t) => TND_TURNS_RATIO_MAP[t] ?? String(t));
@@ -150,13 +150,13 @@
     if (!browser) return;
     sessionStorage.setItem(GRID_STORAGE_KEY, grid);
     sessionStorage.setItem(PROP_STORAGE_KEY, prop);
-    sessionStorage.setItem(BLUE_ORI_STORAGE_KEY, blueOri);
-    sessionStorage.setItem(RED_ORI_STORAGE_KEY, redOri);
+    sessionStorage.setItem(BLUE_ORI_STORAGE_KEY, leftOri);
+    sessionStorage.setItem(RED_ORI_STORAGE_KEY, rightOri);
   });
 
-  function turnKey(blue: number, red: number): string {
+  function turnKey(left, right): string {
     const f = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
-    return `${f(blue)}|${f(red)}`;
+    return `${f(left)}|${f(right)}`;
   }
 </script>
 
@@ -178,11 +178,11 @@
       </div>
       <div class="ctl ctl-wide">
         <span class="ctl-label">Blue start</span>
-        <SegmentedControl options={oriOptions} value={blueOri} onchange={(v) => (blueOri = v)} color="blue" size="sm" />
+        <SegmentedControl options={oriOptions} value={leftOri} onchange={(v) => (leftOri = v)} color="blue" size="sm" />
       </div>
       <div class="ctl ctl-wide">
         <span class="ctl-label">Red start</span>
-        <SegmentedControl options={oriOptions} value={redOri} onchange={(v) => (redOri = v)} color="red" size="sm" />
+        <SegmentedControl options={oriOptions} value={rightOri} onchange={(v) => (rightOri = v)} color="red" size="sm" />
       </div>
     </div>
   </div>
@@ -202,21 +202,21 @@
         <section class="panel" style="--accent: {m.accent};">
           <h3><span class="dot"></span>{m.label}</h3>
           <TurnMatrixGrid ariaLabel="{m.label} turn matrix" showAxes={false}>
-            {#snippet cell(blue: number, red: number)}
-              {@const seq = m.byTurn.get(turnKey(blue, red))}
+            {#snippet cell(left, right)}
+              {@const seq = m.byTurn.get(turnKey(left, right))}
               {#if seq}
                 <button
                   type="button"
                   class="cell"
-                  class:diag={blue === red}
-                  style="--bloom: {(blue + red) / 6};"
-                  aria-label="{m.label} blue {blue} red {red} — pick a letter"
-                  onclick={() => (picker = { variations: m.variations, turnPattern: turnKey(blue, red), accent: m.accent })}
+                  class:diag={left === right}
+                  style="--bloom: {(left + right) / 6};"
+                  aria-label="{m.label} blue {left} red {right} — pick a letter"
+                  onclick={() => (picker = { variations: m.variations, turnPattern: turnKey(left, right), accent: m.accent })}
                 >
                   <SequenceMandala sequence={seq} mode="gallery" show="both" size={120} {tipEnds} darkMode />
                 </button>
               {:else}
-                <div class="empty" aria-label="No sequence for {blue}|{red}"></div>
+                <div class="empty" aria-label="No sequence for {left}|{right}"></div>
               {/if}
             {/snippet}
           </TurnMatrixGrid>

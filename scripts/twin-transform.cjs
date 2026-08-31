@@ -28,8 +28,8 @@
 function buildLocationToPositionMap(edges) {
   const map = {};
   for (const e of edges) {
-    map[`${e.blueStartLoc}|${e.redStartLoc}`] = e.startPos;
-    map[`${e.blueEndLoc}|${e.redEndLoc}`] = e.endPos;
+    map[`${e.leftStartLoc}|${e.rightStartLoc}`] = e.startPos;
+    map[`${e.leftEndLoc}|${e.rightEndLoc}`] = e.endPos;
   }
   return map;
 }
@@ -52,28 +52,28 @@ function mirrorMotion(motion, mirrorLocationMap, mirrorRotation) {
  */
 function twinStep(step, { mirrorLocationMap, mirrorRotation, locToPos }) {
   // Color swap: blue takes old red's motion, red takes old blue's motion.
-  const swappedBlueSrc = step.motions.red;
-  const swappedRedSrc = step.motions.blue;
+  const swappedLeftSrc = step.motions.right;
+  const swappedRightSrc = step.motions.left;
 
-  const blue = {
-    ...mirrorMotion(swappedBlueSrc, mirrorLocationMap, mirrorRotation),
+  const left = {
+    ...mirrorMotion(swappedLeftSrc, mirrorLocationMap, mirrorRotation),
     color: "blue",
   };
-  const red = {
-    ...mirrorMotion(swappedRedSrc, mirrorLocationMap, mirrorRotation),
+  const right = {
+    ...mirrorMotion(swappedRightSrc, mirrorLocationMap, mirrorRotation),
     color: "red",
   };
 
   const startPosition =
-    locToPos[`${blue.startLocation}|${red.startLocation}`] ?? null;
+    locToPos[`${left.startLocation}|${right.startLocation}`] ?? null;
   const endPosition =
-    locToPos[`${blue.endLocation}|${red.endLocation}`] ?? null;
+    locToPos[`${left.endLocation}|${right.endLocation}`] ?? null;
 
   return {
     ...step,
     startPosition,
     endPosition,
-    motions: { blue, red },
+    motions: { left, right },
   };
 }
 

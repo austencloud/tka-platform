@@ -307,9 +307,9 @@ function derivationOf(
  * produce different keys; letter-plus-seams would collapse them into one.
  */
 export function stepContentKey(step: StepData): string {
-  const hands = (["blue", "red"] as const)
-    .map((color) => {
-      const motion = step.motions[color];
+  const hands = (["left", "right"] as const)
+    .map((hand) => {
+      const motion = step.motions[hand];
       return [
         motion?.motionType,
         motion?.rotationDirection,

@@ -25,7 +25,7 @@ import { staffAngleToOrientation } from "$lib/shared/render/core/calculations/or
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -62,7 +62,7 @@ function pathShapeFor(type: MotionType): "arc" | "linear" {
 export function calculateOrientationAt(
   m: OrientationAtInput,
   t: number,
-  color: MotionColor = MotionColor.RED
+  color: HandSide = HandSide.RIGHT
 ): Orientation | null {
   if (isCenterOrientation(m.startOrientation)) return null; // center-family deferred
 
@@ -87,7 +87,7 @@ export function calculateOrientationAt(
 export function calculateStaffAngleAt(
   m: OrientationAtInput,
   t: number,
-  color: MotionColor = MotionColor.RED
+  color: HandSide = HandSide.RIGHT
 ): number | null {
   if (isCenterOrientation(m.startOrientation)) return null; // center-family deferred
   return sampleAnglesAt(m, t, color)?.staffRotationAngle ?? null;
@@ -97,7 +97,7 @@ export function calculateStaffAngleAt(
 function sampleAnglesAt(
   m: OrientationAtInput,
   t: number,
-  color: MotionColor
+  color: HandSide
 ): { staffRotationAngle: number; centerPathAngle: number } | null {
   const motion = createMotionData({
     motionType: m.motionType,
@@ -107,7 +107,7 @@ function sampleAnglesAt(
     startOrientation: m.startOrientation,
     endOrientation: m.endOrientation,
     turns: m.turns ?? 0,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
     pathShape: pathShapeFor(m.motionType),
@@ -116,9 +116,9 @@ function sampleAnglesAt(
     id: "orientation-at",
     letter: null,
     gridMode: GridMode.DIAMOND,
-    motions: { [color === MotionColor.BLUE ? "blue" : "red"]: motion },
+    motions: { [color === HandSide.LEFT ? "blue" : "red"]: motion },
   } as unknown as StepData;
 
   const result = interpolatePropAngles(step, t);
-  return (color === MotionColor.BLUE ? result.blueAngles : result.redAngles) ?? null;
+  return (color === HandSide.LEFT ? result.leftAngles : result.rightAngles) ?? null;
 }

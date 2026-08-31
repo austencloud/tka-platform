@@ -69,7 +69,7 @@ function classifyPath(d: string): PathType {
 
 function fingerprint(paths: MandalaPaths): string {
   let nD = 0, nA = 0, nP = 0, nT = 0;
-  for (const group of [paths.blue, paths.red, paths.purple]) {
+  for (const group of [paths.left, paths.right, paths.purple]) {
     for (const p of group) {
       const t = classifyPath(p.d);
       if (t === "DASH") nD++;
@@ -146,7 +146,7 @@ async function main() {
 
         const pathTypes: string[] = [];
         const pathDetails: string[] = [];
-        for (const [label, group] of [["B", paths.blue], ["R", paths.red], ["P", paths.purple]] as const) {
+        for (const [label, group] of [["B", paths.left], ["R", paths.right], ["P", paths.purple]] as const) {
           for (const p of group) {
             const t = classifyPath(p.d);
             pathTypes.push(`${label}:${t}`);

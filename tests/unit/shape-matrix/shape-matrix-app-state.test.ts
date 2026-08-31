@@ -46,8 +46,8 @@ function createState(compact: boolean) {
     },
     {
       level: 2,
-      blueTurn: 0,
-      redTurn: 0,
+      leftTurn: 0,
+      rightTurn: 0,
       activeAxis: "both",
       labelMode: "turns",
       propType: PropType.STAFF,
@@ -70,74 +70,74 @@ describe("shape matrix app state", () => {
     state.setTurn(0.75);
 
     expect(state.selectedPair).toBeNull();
-    expect(state.blueTurn).toBe(0.75);
-    expect(state.redTurn).toBe(0.75);
+    expect(state.leftTurn).toBe(0.75);
+    expect(state.rightTurn).toBe(0.75);
     expect(requestShapeMatrixTransition).not.toHaveBeenCalled();
     expect(syncState).toHaveBeenLastCalledWith(
-      expect.objectContaining({ blueTurn: 0.75, redTurn: 0.75, pair: null })
+      expect.objectContaining({ leftTurn: 0.75, rightTurn: 0.75, pair: null })
     );
   });
 
   it("opens a selected cell in the compact detail view with an active mode", () => {
     const { state, syncState } = createState(true);
-    const [blue, red] = buildFlowerAxis();
-    if (!blue || !red) throw new Error("Shape Matrix axis is empty");
+    const [left, right] = buildFlowerAxis();
+    if (!left || !right) throw new Error("Shape Matrix axis is empty");
 
-    state.selectPair({ blue, red });
+    state.selectPair({ left, right });
 
     expect(state.activeView).toBe("detail");
     expect(state.selectedMode).not.toBeNull();
     expect(syncState).toHaveBeenCalledWith(
-      expect.objectContaining({ pair: { blue, red } })
+      expect.objectContaining({ pair: { left, right } })
     );
   });
 
   it("returns to the matrix without clearing the selected cell", () => {
     const { state } = createState(true);
-    const [blue, red] = buildFlowerAxis();
-    if (!blue || !red) throw new Error("Shape Matrix axis is empty");
-    state.selectPair({ blue, red });
+    const [left, right] = buildFlowerAxis();
+    if (!left || !right) throw new Error("Shape Matrix axis is empty");
+    state.selectPair({ left, right });
 
     state.showMatrix();
 
     expect(state.activeView).toBe("matrix");
-    expect(state.selectedPair).toEqual({ blue, red });
+    expect(state.selectedPair).toEqual({ left, right });
   });
 
   it("keeps both-pane selection state when responsive mode changes", () => {
     const { state } = createState(false);
-    const [blue, red] = buildFlowerAxis();
-    if (!blue || !red) throw new Error("Shape Matrix axis is empty");
-    state.selectPair({ blue, red });
+    const [left, right] = buildFlowerAxis();
+    if (!left || !right) throw new Error("Shape Matrix axis is empty");
+    state.selectPair({ left, right });
 
     state.setCompact(true);
     state.showDetail();
     state.setCompact(false);
 
-    expect(state.selectedPair).toEqual({ blue, red });
+    expect(state.selectedPair).toEqual({ left, right });
     expect(state.activeView).toBe("detail");
   });
 
   it("returns to the matrix when a compact visitor changes its turn band", () => {
     const { state } = createState(true);
-    const [blue, red] = buildFlowerAxis();
-    if (!blue || !red) throw new Error("Shape Matrix axis is empty");
-    state.selectPair({ blue, red });
+    const [left, right] = buildFlowerAxis();
+    if (!left || !right) throw new Error("Shape Matrix axis is empty");
+    state.selectPair({ left, right });
 
     state.setTurn(1);
 
     expect(state.activeView).toBe("matrix");
-    expect(state.selectedPair?.blue.turns).toBe(1);
-    expect(state.selectedPair?.red.turns).toBe(1);
-    expect(state.selectedPair?.blue.style).toBe(blue.style);
-    expect(state.selectedPair?.red.style).toBe(red.style);
+    expect(state.selectedPair?.left.turns).toBe(1);
+    expect(state.selectedPair?.right.turns).toBe(1);
+    expect(state.selectedPair?.left.style).toBe(left.style);
+    expect(state.selectedPair?.right.style).toBe(right.style);
   });
 
   it("keeps one realization active after a cell is selected", () => {
     const { state, syncState } = createState(false);
-    const [blue, red] = buildFlowerAxis();
-    if (!blue || !red) throw new Error("Shape Matrix axis is empty");
-    state.selectPair({ blue, red });
+    const [left, right] = buildFlowerAxis();
+    if (!left || !right) throw new Error("Shape Matrix axis is empty");
+    state.selectPair({ left, right });
     const activeMode = state.selectedMode;
 
     state.setMode(null);
@@ -150,30 +150,30 @@ describe("shape matrix app state", () => {
 
   it("restores a shared route without writing it back", () => {
     const { state, syncState } = createState(false);
-    const [blue, red] = buildFlowerAxis();
-    if (!blue || !red) throw new Error("Shape Matrix axis is empty");
+    const [left, right] = buildFlowerAxis();
+    if (!left || !right) throw new Error("Shape Matrix axis is empty");
 
     state.restoreState({
       level: 3,
-      blueTurn: 0.5,
-      redTurn: 0.5,
+      leftTurn: 0.5,
+      rightTurn: 0.5,
       activeAxis: "both",
       labelMode: "ratios",
       propType: PropType.STAFF,
       relationshipDriver: "props",
-      pair: { blue, red },
+      pair: { left, right },
       mode: "QS",
       propMode: "SO",
     });
 
     expect(state.level).toBe(3);
-    expect(state.blueTurn).toBe(0.5);
-    expect(state.redTurn).toBe(0.5);
+    expect(state.leftTurn).toBe(0.5);
+    expect(state.rightTurn).toBe(0.5);
     expect(state.labelMode).toBe("ratios");
-    expect(state.selectedPair?.blue.turns).toBe(0.5);
-    expect(state.selectedPair?.red.turns).toBe(0.5);
-    expect(state.selectedPair?.blue.style).toBe(blue.style);
-    expect(state.selectedPair?.red.style).toBe(red.style);
+    expect(state.selectedPair?.left.turns).toBe(0.5);
+    expect(state.selectedPair?.right.turns).toBe(0.5);
+    expect(state.selectedPair?.left.style).toBe(left.style);
+    expect(state.selectedPair?.right.style).toBe(right.style);
     expect(state.selectedMode).toBe("QS");
     expect(state.selectedPropMode).toBe("SO");
     expect(syncState).not.toHaveBeenCalled();
@@ -184,10 +184,10 @@ describe("shape matrix app state", () => {
     const flowers = buildFlowerAxis([0]).filter(
       (flower) => flower.grid === "diamond"
     );
-    const blue = flowers[0];
-    const red = flowers[1];
-    if (!blue || !red) throw new Error("Expected numeric flowers");
-    state.selectPair({ blue, red });
+    const left = flowers[0];
+    const right = flowers[1];
+    if (!left || !right) throw new Error("Expected numeric flowers");
+    state.selectPair({ left, right });
     state.setRelationshipDriver("props");
     state.setPropMode("SS");
     expect(state.selectedPropMode).toBe("SS");
@@ -200,37 +200,37 @@ describe("shape matrix app state", () => {
 
   it("treats float as a four-orientation matrix and restores rotating styles", () => {
     const { state } = createState(false);
-    const blue = buildFlowerAxis().find(
+    const left = buildFlowerAxis().find(
       (flower) => flower.style === "anti" && flower.ori === "in"
     )!;
-    const red = buildFlowerAxis().find(
+    const right = buildFlowerAxis().find(
       (flower) => flower.style === "pro" && flower.ori === "out"
     )!;
-    state.selectPair({ blue, red });
+    state.selectPair({ left, right });
 
     state.setLevel(3);
     state.setTurn("fl");
-    expect(state.selectedPair?.blue.style).toBe("float");
-    expect(state.selectedPair?.red.style).toBe("float");
+    expect(state.selectedPair?.left.style).toBe("float");
+    expect(state.selectedPair?.right.style).toBe("float");
 
     state.setTurn(0.5);
-    expect(state.selectedPair?.blue.style).toBe("anti");
-    expect(state.selectedPair?.red.style).toBe("pro");
+    expect(state.selectedPair?.left.style).toBe("anti");
+    expect(state.selectedPair?.right.style).toBe("pro");
   });
 
   it("edits one axis without changing the other", () => {
     const { state } = createState(false);
-    const [blue, red] = buildFlowerAxis();
-    if (!blue || !red) throw new Error("Shape Matrix axis is empty");
-    state.selectPair({ blue, red });
+    const [left, right] = buildFlowerAxis();
+    if (!left || !right) throw new Error("Shape Matrix axis is empty");
+    state.selectPair({ left, right });
     state.setLevel(4);
     state.setActiveAxis("blue");
     state.setTurn(0.75);
 
-    expect(state.blueTurn).toBe(0.75);
-    expect(state.redTurn).toBe(0);
-    expect(state.selectedPair?.blue.turns).toBe(0.75);
-    expect(state.selectedPair?.red.turns).toBe(0);
+    expect(state.leftTurn).toBe(0.75);
+    expect(state.rightTurn).toBe(0);
+    expect(state.selectedPair?.left.turns).toBe(0.75);
+    expect(state.selectedPair?.right.turns).toBe(0);
   });
 
   it("preserves each semantic row and column through every L4 turn and ratio band", () => {
@@ -239,33 +239,33 @@ describe("shape matrix app state", () => {
     );
 
     for (let variant = 0; variant < 4; variant += 1) {
-      const blue = axis[variant];
-      const red = axis[3 - variant];
-      if (!blue || !red) throw new Error("Expected four semantic variants");
+      const left = axis[variant];
+      const right = axis[3 - variant];
+      if (!left || !right) throw new Error("Expected four semantic variants");
       const { state, syncState } = createState(false);
       state.setLevel(4);
       state.setLabelMode("ratios");
-      state.selectPair({ blue, red });
+      state.selectPair({ left, right });
 
       state.setActiveAxis("blue");
       for (const turn of LEVEL_FOUR_TURNS) {
         state.setTurn(turn);
-        expect(semanticVariant(state.selectedPair!.blue)).toBe(variant);
-        expect(semanticVariant(state.selectedPair!.red)).toBe(3 - variant);
-        expect(state.redTurn).toBe(0);
+        expect(semanticVariant(state.selectedPair!.left)).toBe(variant);
+        expect(semanticVariant(state.selectedPair!.right)).toBe(3 - variant);
+        expect(state.rightTurn).toBe(0);
       }
 
       state.setActiveAxis("red");
       for (const turn of LEVEL_FOUR_TURNS) {
         state.setTurn(turn);
-        expect(semanticVariant(state.selectedPair!.blue)).toBe(variant);
-        expect(semanticVariant(state.selectedPair!.red)).toBe(3 - variant);
+        expect(semanticVariant(state.selectedPair!.left)).toBe(variant);
+        expect(semanticVariant(state.selectedPair!.right)).toBe(3 - variant);
       }
 
       expect(syncState).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          blueTurn: 3,
-          redTurn: 3,
+          leftTurn: 3,
+          rightTurn: 3,
           pair: state.selectedPair,
         })
       );

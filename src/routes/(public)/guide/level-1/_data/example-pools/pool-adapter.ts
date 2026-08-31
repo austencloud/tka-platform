@@ -26,7 +26,7 @@ import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/mo
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -53,7 +53,7 @@ export type { PoolEntry };
 // (only `gridMode` is read today; the rest is provenance for humans, not the
 // adapter).
 type RawHand = { type: string; dir: string; turns?: number; ori: string };
-type RawStep = { step: number; letter: string; pos: string; blue: RawHand; red: RawHand };
+type RawStep = { step: number; letter: string; pos: string; left: RawHand; right: RawHand };
 export type RawEntry = {
   word: string;
   loopType: string;
@@ -134,15 +134,15 @@ function resolveGridMode(raw: string | undefined): GridMode {
 function assertPositionInverseIsUnique(): void {
   const producedBy = new Map<GridPosition, string>();
   const locations = Object.values(GridLocation);
-  for (const blue of locations) {
-    for (const red of locations) {
+  for (const left of locations) {
+    for (const right of locations) {
       let pos: GridPosition;
       try {
-        pos = getGridPositionFromLocations(blue as GridLocation, red as GridLocation);
+        pos = getGridPositionFromLocations(left as GridLocation, right as GridLocation);
       } catch {
         continue; // not a valid position pair - skip
       }
-      const key = `${blue},${red}`;
+      const key = `${left},${right}`;
       const prior = producedBy.get(pos);
       if (prior && prior !== key) {
         throw new Error(
@@ -164,9 +164,9 @@ function assertPositionInverseIsUnique(): void {
 }
 assertPositionInverseIsUnique();
 
-function locationsOf(posName: string): { blue: GridLocation; red: GridLocation } {
-  const [blue, red] = getGridLocationsFromPosition(toPosition(posName));
-  return { blue, red };
+function locationsOf(posName: string): { left: GridLocation; right: GridLocation } {
+  const [left, right] = getGridLocationsFromPosition(toPosition(posName));
+  return { left, right };
 }
 
 /** "beta7→beta1" → { start: "beta7", end: "beta1" }. */
@@ -179,7 +179,7 @@ function parsePair(raw: string, label: string): { start: string; end: string } {
 /** One hand's motion, values taken straight from the JSON (they are exact - no
  *  HP_CW inference). Locations come from the inverted start/end positions. */
 function handMotion(
-  color: MotionColor,
+  color: HandSide,
   h: RawHand,
   from: GridLocation,
   to: GridLocation,
@@ -194,7 +194,7 @@ function handMotion(
     startOrientation: req(ORI[so], `unknown orientation "${so}"`),
     endOrientation: req(ORI[eo], `unknown orientation "${eo}"`),
     turns: h.turns ?? 0,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode,
   });
@@ -220,11 +220,11 @@ export function entryToStrip(entry: RawEntry, gridMode: GridMode = GridMode.DIAM
     letter: toLetter(s0.letter),
     gridMode,
     stepNumber: 0,
-    startPosition: getGridPositionFromLocations(startLoc.blue, startLoc.red),
-    endPosition: getGridPositionFromLocations(startLoc.blue, startLoc.red),
+    startPosition: getGridPositionFromLocations(startLoc.left, startLoc.right),
+    endPosition: getGridPositionFromLocations(startLoc.left, startLoc.right),
     motions: {
-      blue: handMotion(MotionColor.BLUE, s0.blue, startLoc.blue, startLoc.blue, gridMode),
-      red: handMotion(MotionColor.RED, s0.red, startLoc.red, startLoc.red, gridMode),
+      left: handMotion(HandSide.LEFT, s0.left, startLoc.left, startLoc.left, gridMode),
+      right: handMotion(HandSide.RIGHT, s0.right, startLoc.right, startLoc.right, gridMode),
     },
   } as unknown as StepData;
 
@@ -239,11 +239,11 @@ export function entryToStrip(entry: RawEntry, gridMode: GridMode = GridMode.DIAM
         letter: toLetter(s.letter),
         gridMode,
         stepNumber: s.step,
-        startPosition: getGridPositionFromLocations(from.blue, from.red),
-        endPosition: getGridPositionFromLocations(to.blue, to.red),
+        startPosition: getGridPositionFromLocations(from.left, from.right),
+        endPosition: getGridPositionFromLocations(to.left, to.right),
         motions: {
-          blue: handMotion(MotionColor.BLUE, s.blue, from.blue, to.blue, gridMode),
-          red: handMotion(MotionColor.RED, s.red, from.red, to.red, gridMode),
+          left: handMotion(HandSide.LEFT, s.left, from.left, to.left, gridMode),
+          right: handMotion(HandSide.RIGHT, s.right, from.right, to.right, gridMode),
         },
       } as unknown as StepData;
     });

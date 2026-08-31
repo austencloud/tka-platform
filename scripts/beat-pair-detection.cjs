@@ -48,19 +48,19 @@ function extractBeats(sequence) {
       letter: b.letter,
       startPos: b.startPos,
       endPos: b.endPos,
-      blue: {
-        startLoc: b.blueAttributes?.startLoc?.toLowerCase(),
-        endLoc: b.blueAttributes?.endLoc?.toLowerCase(),
-        startOri: b.blueAttributes?.startOri?.toLowerCase(),
-        endOri: b.blueAttributes?.endOri?.toLowerCase(),
-        motionType: b.blueAttributes?.motionType?.toLowerCase(),
+      left: {
+        startLoc: b.leftAttributes?.startLoc?.toLowerCase(),
+        endLoc: b.leftAttributes?.endLoc?.toLowerCase(),
+        startOri: b.leftAttributes?.startOri?.toLowerCase(),
+        endOri: b.leftAttributes?.endOri?.toLowerCase(),
+        motionType: b.leftAttributes?.motionType?.toLowerCase(),
       },
-      red: {
-        startLoc: b.redAttributes?.startLoc?.toLowerCase(),
-        endLoc: b.redAttributes?.endLoc?.toLowerCase(),
-        startOri: b.redAttributes?.startOri?.toLowerCase(),
-        endOri: b.redAttributes?.endOri?.toLowerCase(),
-        motionType: b.redAttributes?.motionType?.toLowerCase(),
+      right: {
+        startLoc: b.rightAttributes?.startLoc?.toLowerCase(),
+        endLoc: b.rightAttributes?.endLoc?.toLowerCase(),
+        startOri: b.rightAttributes?.startOri?.toLowerCase(),
+        endOri: b.rightAttributes?.endOri?.toLowerCase(),
+        motionType: b.rightAttributes?.motionType?.toLowerCase(),
       },
     }));
 }
@@ -70,16 +70,16 @@ function extractBeats(sequence) {
  * Returns array of transformation types
  */
 function compareBeatPair(beat1, beat2) {
-  const b1Blue = beat1.blue,
-    b1Red = beat1.red;
-  const b2Blue = beat2.blue,
-    b2Red = beat2.red;
+  const b1Left = beat1.left,
+    b1Right = beat1.right;
+  const b2Left = beat2.left,
+    b2Right = beat2.right;
 
   if (
-    !b1Blue?.startLoc ||
-    !b2Blue?.startLoc ||
-    !b1Red?.startLoc ||
-    !b2Red?.startLoc
+    !b1Left?.startLoc ||
+    !b2Left?.startLoc ||
+    !b1Right?.startLoc ||
+    !b2Right?.startLoc
   ) {
     return [];
   }
@@ -88,12 +88,12 @@ function compareBeatPair(beat1, beat2) {
 
   // Check if beats are identical (repeated)
   if (
-    b1Blue.startLoc === b2Blue.startLoc &&
-    b1Blue.endLoc === b2Blue.endLoc &&
-    b1Blue.motionType === b2Blue.motionType &&
-    b1Red.startLoc === b2Red.startLoc &&
-    b1Red.endLoc === b2Red.endLoc &&
-    b1Red.motionType === b2Red.motionType
+    b1Left.startLoc === b2Left.startLoc &&
+    b1Left.endLoc === b2Left.endLoc &&
+    b1Left.motionType === b2Left.motionType &&
+    b1Right.startLoc === b2Right.startLoc &&
+    b1Right.endLoc === b2Right.endLoc &&
+    b1Right.motionType === b2Right.motionType
   ) {
     transformations.push("repeated");
     return transformations; // Early return - if repeated, no other transformations apply
@@ -104,61 +104,61 @@ function compareBeatPair(beat1, beat2) {
 
   // 90° rotation
   if (
-    ROTATE_90_CCW[b1Blue.startLoc] === b2Blue.startLoc &&
-    ROTATE_90_CCW[b1Blue.endLoc] === b2Blue.endLoc &&
-    ROTATE_90_CCW[b1Red.startLoc] === b2Red.startLoc &&
-    ROTATE_90_CCW[b1Red.endLoc] === b2Red.endLoc
+    ROTATE_90_CCW[b1Left.startLoc] === b2Left.startLoc &&
+    ROTATE_90_CCW[b1Left.endLoc] === b2Left.endLoc &&
+    ROTATE_90_CCW[b1Right.startLoc] === b2Right.startLoc &&
+    ROTATE_90_CCW[b1Right.endLoc] === b2Right.endLoc
   ) {
     positionTransform = "rotated_90";
   }
   // 180° rotation
   else if (
-    ROTATE_180[b1Blue.startLoc] === b2Blue.startLoc &&
-    ROTATE_180[b1Blue.endLoc] === b2Blue.endLoc &&
-    ROTATE_180[b1Red.startLoc] === b2Red.startLoc &&
-    ROTATE_180[b1Red.endLoc] === b2Red.endLoc
+    ROTATE_180[b1Left.startLoc] === b2Left.startLoc &&
+    ROTATE_180[b1Left.endLoc] === b2Left.endLoc &&
+    ROTATE_180[b1Right.startLoc] === b2Right.startLoc &&
+    ROTATE_180[b1Right.endLoc] === b2Right.endLoc
   ) {
     positionTransform = "rotated_180";
   }
   // 270° rotation
   else if (
-    ROTATE_270_CCW[b1Blue.startLoc] === b2Blue.startLoc &&
-    ROTATE_270_CCW[b1Blue.endLoc] === b2Blue.endLoc &&
-    ROTATE_270_CCW[b1Red.startLoc] === b2Red.startLoc &&
-    ROTATE_270_CCW[b1Red.endLoc] === b2Red.endLoc
+    ROTATE_270_CCW[b1Left.startLoc] === b2Left.startLoc &&
+    ROTATE_270_CCW[b1Left.endLoc] === b2Left.endLoc &&
+    ROTATE_270_CCW[b1Right.startLoc] === b2Right.startLoc &&
+    ROTATE_270_CCW[b1Right.endLoc] === b2Right.endLoc
   ) {
     positionTransform = "rotated_270";
   }
   // Vertical mirror
   else if (
-    MIRROR_VERTICAL[b1Blue.startLoc] === b2Blue.startLoc &&
-    MIRROR_VERTICAL[b1Blue.endLoc] === b2Blue.endLoc &&
-    MIRROR_VERTICAL[b1Red.startLoc] === b2Red.startLoc &&
-    MIRROR_VERTICAL[b1Red.endLoc] === b2Red.endLoc
+    MIRROR_VERTICAL[b1Left.startLoc] === b2Left.startLoc &&
+    MIRROR_VERTICAL[b1Left.endLoc] === b2Left.endLoc &&
+    MIRROR_VERTICAL[b1Right.startLoc] === b2Right.startLoc &&
+    MIRROR_VERTICAL[b1Right.endLoc] === b2Right.endLoc
   ) {
     positionTransform = "mirrored";
   }
   // Horizontal flip
   else if (
-    FLIP_HORIZONTAL[b1Blue.startLoc] === b2Blue.startLoc &&
-    FLIP_HORIZONTAL[b1Blue.endLoc] === b2Blue.endLoc &&
-    FLIP_HORIZONTAL[b1Red.startLoc] === b2Red.startLoc &&
-    FLIP_HORIZONTAL[b1Red.endLoc] === b2Red.endLoc
+    FLIP_HORIZONTAL[b1Left.startLoc] === b2Left.startLoc &&
+    FLIP_HORIZONTAL[b1Left.endLoc] === b2Left.endLoc &&
+    FLIP_HORIZONTAL[b1Right.startLoc] === b2Right.startLoc &&
+    FLIP_HORIZONTAL[b1Right.endLoc] === b2Right.endLoc
   ) {
     positionTransform = "flipped";
   }
 
   // Check if colors are swapped
   const colorsSwapped =
-    b1Blue.startLoc === b2Red.startLoc &&
-    b1Blue.endLoc === b2Red.endLoc &&
-    b1Red.startLoc === b2Blue.startLoc &&
-    b1Red.endLoc === b2Blue.endLoc;
+    b1Left.startLoc === b2Right.startLoc &&
+    b1Left.endLoc === b2Right.endLoc &&
+    b1Right.startLoc === b2Left.startLoc &&
+    b1Right.endLoc === b2Left.endLoc;
 
   // Check if motion types are inverted
   const motionInverted =
-    invertMotionType(b1Blue.motionType) === b2Blue.motionType &&
-    invertMotionType(b1Red.motionType) === b2Red.motionType;
+    invertMotionType(b1Left.motionType) === b2Left.motionType &&
+    invertMotionType(b1Right.motionType) === b2Right.motionType;
 
   // Build transformation description
   if (positionTransform) {

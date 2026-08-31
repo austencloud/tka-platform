@@ -30,11 +30,12 @@
  *
  * Dependency policy
  * -----------------
- * Runtime dependencies: `zod` and nothing else. Every domain import is
- * type-only. That is deliberate — the offline cache, the Browse loader, the
- * hash matcher, AND the Admin migration tooling
- * (`scripts/migrations/reconcile-sequence-public-projections.ts`) must all be
- * able to import this. The existing `SoloPropDataSchema`
+ * Runtime dependencies: `zod` plus the pure `@tka/tka-types` legacy normalizer.
+ * Every application-domain import remains type-only. That keeps the offline
+ * cache, Browse loader, hash matcher, and Admin migration tooling free of
+ * Firebase and Svelte runtime dependencies while giving every ingress path the
+ * same blue/red-to-left/right compatibility behavior. The existing
+ * `SoloPropDataSchema`
  * (`./solo-prop-schemas.ts`) is NOT reused for `blueSoloProp`/`redSoloProp`
  * because it imports the `$lib/shared/firestore` barrel, which pulls
  * `firestore-crud` → the Firebase client SDK → `authState` → `$app/navigation`.
@@ -47,6 +48,7 @@
  */
 
 import { z } from "zod";
+import { normalizeLegacySequence } from "@tka/tka-types";
 
 import type { PublicSequenceIndex } from "./public-sequence-index";
 import type { SequenceData } from "./sequence-data";
@@ -221,8 +223,8 @@ const SoloPropWireSchema = z
 const StepPairingWireSchema = z
   .object({
     letter: z.string().nullable().optional(),
-    blueReversal: z.boolean().optional(),
-    redReversal: z.boolean().optional(),
+    leftReversal: z.boolean().optional(),
+    rightReversal: z.boolean().optional(),
     startPosition: z.string().nullable().optional(),
     endPosition: z.string().nullable().optional(),
   })
@@ -249,7 +251,7 @@ const StepPairingWireSchema = z
  *   `displayName`, `components`, `componentDomains`, `isCircular`
  * - new in schema 2: the three `publicProjection*` stamps
  */
-export const PublicSequenceWireSchema = z
+const PublicSequenceWireObjectSchema = z
   .object({
     id: z.string().min(1),
     /** `users/{ownerId}/sequences/{id}` — attribution, NOT a render dependency. */
@@ -299,14 +301,14 @@ export const PublicSequenceWireSchema = z
     contentHash: z.string().optional(),
     contentHashVersion: z.number().optional(),
     encoderHash: z.string().optional(),
-    bluePathHash: z.string().optional(),
-    redPathHash: z.string().optional(),
-    blueSoloHash: z.string().optional(),
-    redSoloHash: z.string().optional(),
+    leftPathHash: z.string().optional(),
+    rightPathHash: z.string().optional(),
+    leftSoloHash: z.string().optional(),
+    rightSoloHash: z.string().optional(),
 
     // --- compositional payload (what makes the document self-contained) -----
-    blueSoloProp: SoloPropWireSchema.optional(),
-    redSoloProp: SoloPropWireSchema.optional(),
+    leftSoloProp: SoloPropWireSchema.optional(),
+    rightSoloProp: SoloPropWireSchema.optional(),
     stepPairings: z.array(StepPairingWireSchema).optional(),
     /** Not derivable from composition; drives beat-0 avatar orientation. */
     startPosition: looseObject().optional(),
@@ -333,6 +335,11 @@ export const PublicSequenceWireSchema = z
     publicProjectionDigest: z.string().optional(),
   })
   .passthrough();
+
+export const PublicSequenceWireSchema = z.preprocess(
+  normalizeLegacySequence,
+  PublicSequenceWireObjectSchema
+);
 
 /** The validated wire document. Date fields are still WIRE values here. */
 export type PublicSequenceWireDocument = z.infer<
@@ -475,16 +482,16 @@ export function toPublicSequenceProjection(
       contentHashVersion: wire.contentHashVersion,
     }),
     ...(wire.encoderHash !== undefined && { encoderHash: wire.encoderHash }),
-    ...(wire.bluePathHash !== undefined && { bluePathHash: wire.bluePathHash }),
-    ...(wire.redPathHash !== undefined && { redPathHash: wire.redPathHash }),
-    ...(wire.blueSoloHash !== undefined && { blueSoloHash: wire.blueSoloHash }),
-    ...(wire.redSoloHash !== undefined && { redSoloHash: wire.redSoloHash }),
+    ...(wire.leftPathHash !== undefined && { leftPathHash: wire.leftPathHash }),
+    ...(wire.rightPathHash !== undefined && { rightPathHash: wire.rightPathHash }),
+    ...(wire.leftSoloHash !== undefined && { leftSoloHash: wire.leftSoloHash }),
+    ...(wire.rightSoloHash !== undefined && { rightSoloHash: wire.rightSoloHash }),
 
-    ...(wire.blueSoloProp !== undefined && {
-      blueSoloProp: wire.blueSoloProp as unknown as SoloPropData,
+    ...(wire.leftSoloProp !== undefined && {
+      leftSoloProp: wire.leftSoloProp as unknown as SoloPropData,
     }),
-    ...(wire.redSoloProp !== undefined && {
-      redSoloProp: wire.redSoloProp as unknown as SoloPropData,
+    ...(wire.rightSoloProp !== undefined && {
+      rightSoloProp: wire.rightSoloProp as unknown as SoloPropData,
     }),
     ...(wire.stepPairings !== undefined && {
       stepPairings: wire.stepPairings as unknown as readonly StepPairingData[],
@@ -560,12 +567,12 @@ export function parsePublicSequenceWireDocument(
 // ---------------------------------------------------------------------------
 
 export type PublicProjectionIssueCode =
-  | "MISSING_BLUE_SOLO_PROP"
-  | "MISSING_RED_SOLO_PROP"
+  | "MISSING_LEFT_SOLO_PROP"
+  | "MISSING_RIGHT_SOLO_PROP"
   | "MISSING_STEP_PAIRINGS"
   | "EMPTY_STEP_PAIRINGS"
-  | "EMPTY_BLUE_SOLO_PROP_STEPS"
-  | "EMPTY_RED_SOLO_PROP_STEPS"
+  | "EMPTY_LEFT_SOLO_PROP_STEPS"
+  | "EMPTY_RIGHT_SOLO_PROP_STEPS"
   | "EMPTY_WORD"
   | "MISSING_SEQUENCE_LENGTH"
   | "SEQUENCE_LENGTH_MISMATCH"
@@ -592,8 +599,8 @@ export interface PublicProjectionSelfContainmentReport {
 export interface SelfContainmentCandidate {
   readonly word?: string;
   readonly sequenceLength?: number;
-  readonly blueSoloProp?: unknown;
-  readonly redSoloProp?: unknown;
+  readonly leftSoloProp?: unknown;
+  readonly rightSoloProp?: unknown;
   readonly stepPairings?: readonly unknown[];
   readonly publishedAt?: unknown;
 }
@@ -608,7 +615,7 @@ function stepCountOf(soloProp: unknown): number | undefined {
  * Answers "can this document render without fetching `sourceRef`?"
  *
  * The bar is the one `mapPublicIndexToSequenceData` already applies before it
- * hydrates (public-sequences-loader.ts:355): blue solo prop, red solo prop, and
+ * hydrates (public-sequences-loader.ts:355): left solo prop, right solo prop, and
  * step pairings all present. This adds the emptiness checks that the `&&` guard
  * silently passes, plus a non-empty word, because a projection with a blank word
  * renders as an unnamed tile and sorts wrongly under `orderBy("word","asc")`.
@@ -623,16 +630,16 @@ export function checkPublicProjectionSelfContainment(
   const blocking: PublicProjectionIssueCode[] = [];
   const advisory: PublicProjectionIssueCode[] = [];
 
-  if (!candidate.blueSoloProp) {
-    blocking.push("MISSING_BLUE_SOLO_PROP");
-  } else if (stepCountOf(candidate.blueSoloProp) === 0) {
-    blocking.push("EMPTY_BLUE_SOLO_PROP_STEPS");
+  if (!candidate.leftSoloProp) {
+    blocking.push("MISSING_LEFT_SOLO_PROP");
+  } else if (stepCountOf(candidate.leftSoloProp) === 0) {
+    blocking.push("EMPTY_LEFT_SOLO_PROP_STEPS");
   }
 
-  if (!candidate.redSoloProp) {
-    blocking.push("MISSING_RED_SOLO_PROP");
-  } else if (stepCountOf(candidate.redSoloProp) === 0) {
-    blocking.push("EMPTY_RED_SOLO_PROP_STEPS");
+  if (!candidate.rightSoloProp) {
+    blocking.push("MISSING_RIGHT_SOLO_PROP");
+  } else if (stepCountOf(candidate.rightSoloProp) === 0) {
+    blocking.push("EMPTY_RIGHT_SOLO_PROP_STEPS");
   }
 
   if (!candidate.stepPairings) {

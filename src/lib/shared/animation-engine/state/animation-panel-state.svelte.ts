@@ -87,8 +87,8 @@ export type AnimationPanelState = {
   readonly sequenceAuthor: string;
 
   // Prop rendering states
-  readonly bluePropState: PropState;
-  readonly redPropState: PropState;
+  readonly leftPropState: PropState;
+  readonly rightPropState: PropState;
 
   // Loading state
   readonly loading: boolean;
@@ -109,9 +109,9 @@ export type AnimationPanelState = {
   setExportLoopCount: (count: number) => void;
   setTotalSteps: (steps: number) => void;
   setSequenceMetadata: (word: string, author: string) => void;
-  setBluePropState: (state: PropState) => void;
-  setRedPropState: (state: PropState) => void;
-  setPropStates: (blue: PropState, red: PropState) => void;
+  setLeftPropState: (state: PropState) => void;
+  setRightPropState: (state: PropState) => void;
+  setPropStates: (left: PropState, right: PropState) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setSequenceData: (data: SequenceData | null) => void;
@@ -214,8 +214,8 @@ export function createAnimationPanelState(
   let sequenceAuthor = $state("");
 
   // Prop states
-  let bluePropState = $state<PropState>({ ...DEFAULT_PROP_STATE });
-  let redPropState = $state<PropState>({ ...DEFAULT_PROP_STATE });
+  let leftPropState = $state<PropState>({ ...DEFAULT_PROP_STATE });
+  let rightPropState = $state<PropState>({ ...DEFAULT_PROP_STATE });
 
   // Loading state
   let loading = $state(false);
@@ -258,11 +258,11 @@ export function createAnimationPanelState(
     get sequenceAuthor() {
       return sequenceAuthor;
     },
-    get bluePropState() {
-      return bluePropState;
+    get leftPropState() {
+      return leftPropState;
     },
-    get redPropState() {
-      return redPropState;
+    get rightPropState() {
+      return rightPropState;
     },
     get loading() {
       return loading;
@@ -328,17 +328,17 @@ export function createAnimationPanelState(
       sequenceAuthor = author;
     },
 
-    setBluePropState: (state: PropState) => {
-      bluePropState = { ...state };
+    setLeftPropState: (state: PropState) => {
+      leftPropState = { ...state };
     },
 
-    setRedPropState: (state: PropState) => {
-      redPropState = { ...state };
+    setRightPropState: (state: PropState) => {
+      rightPropState = { ...state };
     },
 
-    setPropStates: (blue: PropState, red: PropState) => {
-      bluePropState = { ...blue };
-      redPropState = { ...red };
+    setPropStates: (left: PropState, right: PropState) => {
+      leftPropState = { ...left };
+      rightPropState = { ...right };
     },
 
     setLoading: (isLoading: boolean) => {
@@ -369,8 +369,8 @@ export function createAnimationPanelState(
       totalSteps = 0;
       sequenceWord = "";
       sequenceAuthor = "";
-      bluePropState = { ...DEFAULT_PROP_STATE };
-      redPropState = { ...DEFAULT_PROP_STATE };
+      leftPropState = { ...DEFAULT_PROP_STATE };
+      rightPropState = { ...DEFAULT_PROP_STATE };
       loading = false;
       error = null;
       sequenceData = null;

@@ -673,7 +673,7 @@ export function getSequenceMaxTurn(seq: SequenceData): number {
   let max = 0;
   for (const step of seq.steps ?? []) {
     if (step.isBlank) continue;
-    for (const motion of [step.motions?.blue, step.motions?.red]) {
+    for (const motion of [step.motions?.left, step.motions?.right]) {
       const t = motion?.turns;
       if (typeof t === "number" && t > max) max = t;
     }

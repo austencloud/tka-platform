@@ -3,7 +3,7 @@ import { interpolatePropAngles } from "$lib/shared/animation-engine/services/pro
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -34,7 +34,7 @@ function expectedReflectedPoint(progress: number): Point {
 function propPointAt(turns: number, progress: number): Point {
   const step = createStepData({
     motions: {
-      [MotionColor.BLUE]: createMotionData({
+      [HandSide.LEFT]: createMotionData({
         motionType: MotionType.ANTI,
         rotationDirection: RotationDirection.CLOCKWISE,
         startLocation: GridLocation.NORTH,

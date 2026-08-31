@@ -24,9 +24,9 @@ export interface BubbleFilmInstance3D {
   scaleX: number;
   scaleY: number;
   scaleZ: number;
-  red: number;
+  right: number;
   green: number;
-  blue: number;
+  left: number;
   alpha: number;
   filmSeed: number;
   filmStrength: number;
@@ -175,9 +175,9 @@ export class BubbleFilmPool3D {
     this.scales[i3] = instance.scaleX;
     this.scales[i3 + 1] = instance.scaleY;
     this.scales[i3 + 2] = instance.scaleZ;
-    this.colors[i3] = instance.red;
+    this.colors[i3] = instance.right;
     this.colors[i3 + 1] = instance.green;
-    this.colors[i3 + 2] = instance.blue;
+    this.colors[i3 + 2] = instance.left;
     this.alphas[index] = instance.alpha;
     this.film[i3] = instance.filmSeed;
     this.film[i3 + 1] = instance.filmStrength;

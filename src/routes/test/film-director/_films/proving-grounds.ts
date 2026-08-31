@@ -21,7 +21,7 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
  * supplied.
  */
 export const provingGroundsFilm: FilmDirectorInput = {
-  version: 4,
+  version: 5,
   id: "proving-grounds-r1",
   title: "Proving Grounds",
   brief:
@@ -32,7 +32,7 @@ export const provingGroundsFilm: FilmDirectorInput = {
   // reds may still overlap each other. This red-stream seed lands a draw with
   // zero cross-axis repeats, so the proving frame shows six visibly different
   // planes — film-library.test.ts asserts the union size to keep it honest.
-  seed: { axes: { redPlane: 5 } },
+  seed: { axes: { rightPlane: 5 } },
   scenes: [
     {
       id: "combined-draw",
@@ -63,8 +63,8 @@ export const provingGroundsFilm: FilmDirectorInput = {
           defaults: {
             // The wave-1 spelling. Each half of it was already sayable; saying
             // both on one axis is what this scene exists to show.
-            bluePlane: { pick: "distinct", not: "wall" },
-            redPlane: { pick: "distinct", not: "wall" },
+            leftPlane: { pick: "distinct", not: "wall" },
+            rightPlane: { pick: "distinct", not: "wall" },
             effect: "none",
           },
         },

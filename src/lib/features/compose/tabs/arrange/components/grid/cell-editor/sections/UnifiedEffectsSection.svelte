@@ -27,8 +27,8 @@
     currentEffect,
     currentTrailMode,
     currentMap,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     onSetEffect,
     onSetTrailMode,
     onUpdateMap,
@@ -36,8 +36,8 @@
     currentEffect: CellEffect;
     currentTrailMode: TrailMode | undefined;
     currentMap: TipEffectMap;
-    bluePropType: string;
-    redPropType: string;
+    leftPropType: string;
+    rightPropType: string;
     onSetEffect: (effect: CellEffect) => void;
     onSetTrailMode: (mode: TrailMode) => void;
     onUpdateMap: (map: TipEffectMap) => void;
@@ -79,8 +79,8 @@
     localMap = { ...currentMap };
   });
 
-  const blueTipCount = $derived(getTipPoints(bluePropType).points.length);
-  const redTipCount = $derived(getTipPoints(redPropType).points.length);
+  const leftTipCount = $derived(getTipPoints(leftPropType).points.length);
+  const rightTipCount = $derived(getTipPoints(rightPropType).points.length);
 
   interface ChannelRow {
     key: string;
@@ -97,18 +97,18 @@
     }
     if (scope === "tip") {
       const rows: ChannelRow[] = [];
-      for (let t = 0; t < blueTipCount; t++) {
+      for (let t = 0; t < leftTipCount; t++) {
         rows.push({
           key: `0-${t}`,
           color: "#3b82f6",
-          label: `Blue ${getTipLabel(bluePropType, t, blueTipCount)}`,
+          label: `Blue ${getTipLabel(leftPropType, t, leftTipCount)}`,
         });
       }
-      for (let t = 0; t < redTipCount; t++) {
+      for (let t = 0; t < rightTipCount; t++) {
         rows.push({
           key: `1-${t}`,
           color: "#ef4444",
-          label: `Red ${getTipLabel(redPropType, t, redTipCount)}`,
+          label: `Red ${getTipLabel(rightPropType, t, rightTipCount)}`,
         });
       }
       return rows;
@@ -169,10 +169,10 @@
       targetKey = "*";
     } else if (newScope === "hand") {
       if (oldScope === "tip") {
-        const blueKeys = Object.keys(localMap).filter((k) => k.startsWith("0-"));
-        const redKeys = Object.keys(localMap).filter((k) => k.startsWith("1-"));
-        newMap["0"] = { effect: mostCommonEffect(blueKeys) };
-        newMap["1"] = { effect: mostCommonEffect(redKeys) };
+        const leftKeys = Object.keys(localMap).filter((k) => k.startsWith("0-"));
+        const rightKeys = Object.keys(localMap).filter((k) => k.startsWith("1-"));
+        newMap["0"] = { effect: mostCommonEffect(leftKeys) };
+        newMap["1"] = { effect: mostCommonEffect(rightKeys) };
       } else {
         const base = currentEffect as EffectType;
         newMap["0"] = { effect: base };
@@ -186,8 +186,8 @@
       const redBase = oldScope === "hand"
         ? (localMap["1"]?.effect ?? "none")
         : base;
-      for (let t = 0; t < blueTipCount; t++) newMap[`0-${t}`] = { effect: base };
-      for (let t = 0; t < redTipCount; t++) newMap[`1-${t}`] = { effect: redBase };
+      for (let t = 0; t < leftTipCount; t++) newMap[`0-${t}`] = { effect: base };
+      for (let t = 0; t < rightTipCount; t++) newMap[`1-${t}`] = { effect: redBase };
       targetKey = "0-0";
     }
 

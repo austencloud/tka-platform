@@ -3,33 +3,33 @@ import type { GridLocation, GridMode } from "../domain/enums/grid-enums";
 import type { PropPlacementChange } from "../domain/prop-placement";
 import type { PlacementGridPoint } from "../services/placement-grid-points";
 import {
-  MotionColor,
+  HandSide,
   type Orientation,
 } from "../../shared/domain/enums/pictograph-enums";
 import { normalizeOrientationForLocation } from "../domain/orientation-from-drag";
 
 interface PlacementSnapshot {
-  blueLocation: GridLocation | null;
-  redLocation: GridLocation | null;
-  activeColor: MotionColor | null;
-  blueOrientation: Orientation;
-  redOrientation: Orientation;
+  leftLocation: GridLocation | null;
+  rightLocation: GridLocation | null;
+  activeColor: HandSide | null;
+  leftOrientation: Orientation;
+  rightOrientation: Orientation;
 }
 
 interface PropPlacementStateInputs {
   getGridMode: () => GridMode;
   getShowCenter: () => boolean;
-  getInitialBlueLocation: () => GridLocation | null;
-  getInitialRedLocation: () => GridLocation | null;
+  getInitialLeftLocation: () => GridLocation | null;
+  getInitialRightLocation: () => GridLocation | null;
   getResetEpoch: () => number;
   getDisabled: () => boolean;
   getEditAfterCompletion: () => boolean;
   getShowUndo: () => boolean;
   getAllowUndoAfterComplete: () => boolean;
-  getBlueOrientation: () => Orientation;
-  getRedOrientation: () => Orientation;
-  getBlueNoun: () => string;
-  getRedNoun: () => string;
+  getLeftOrientation: () => Orientation;
+  getRightOrientation: () => Orientation;
+  getLeftNoun: () => string;
+  getRightNoun: () => string;
   getActivePoints: () => PlacementGridPoint[];
 }
 
@@ -37,14 +37,14 @@ interface PropPlacementStateDependencies {
   triggerHaptic: () => void;
   onChange: (change: PropPlacementChange) => void;
   onPlacementComplete: (
-    blueLocation: GridLocation,
-    redLocation: GridLocation
+    leftLocation: GridLocation,
+    rightLocation: GridLocation
   ) => void;
-  onOrientationChange: (color: MotionColor, orientation: Orientation) => void;
+  onOrientationChange: (color: HandSide, orientation: Orientation) => void;
 }
 
 function buildInitializationKey(inputs: PropPlacementStateInputs): string {
-  return `${inputs.getGridMode()}:${inputs.getShowCenter()}:${inputs.getInitialBlueLocation() ?? ""}:${inputs.getInitialRedLocation() ?? ""}:${inputs.getResetEpoch()}`;
+  return `${inputs.getGridMode()}:${inputs.getShowCenter()}:${inputs.getInitialLeftLocation() ?? ""}:${inputs.getInitialRightLocation() ?? ""}:${inputs.getResetEpoch()}`;
 }
 
 export type PropPlacementState = ReturnType<typeof createPropPlacementState>;
@@ -53,23 +53,23 @@ export function createPropPlacementState(
   inputs: PropPlacementStateInputs,
   dependencies: PropPlacementStateDependencies
 ) {
-  let blueLocation = $state<GridLocation | null>(
-    inputs.getInitialBlueLocation()
+  let leftLocation = $state<GridLocation | null>(
+    inputs.getInitialLeftLocation()
   );
-  let redLocation = $state<GridLocation | null>(inputs.getInitialRedLocation());
-  let activeColor = $state<MotionColor | null>(
-    inputs.getInitialBlueLocation()
-      ? inputs.getInitialRedLocation()
+  let rightLocation = $state<GridLocation | null>(inputs.getInitialRightLocation());
+  let activeColor = $state<HandSide | null>(
+    inputs.getInitialLeftLocation()
+      ? inputs.getInitialRightLocation()
         ? null
-        : MotionColor.RED
-      : MotionColor.BLUE
+        : HandSide.RIGHT
+      : HandSide.LEFT
   );
   let history = $state<PlacementSnapshot[]>([]);
   let liveAnnouncement = $state("");
   let initializationKey = buildInitializationKey(inputs);
 
   function isComplete(): boolean {
-    return blueLocation !== null && redLocation !== null;
+    return leftLocation !== null && rightLocation !== null;
   }
 
   function changeCanUndo(): boolean {
@@ -82,49 +82,49 @@ export function createPropPlacementState(
 
   function publishChange(): void {
     dependencies.onChange({
-      blueLocation,
-      redLocation,
+      leftLocation,
+      rightLocation,
       activeColor,
       complete: isComplete(),
       canUndo: changeCanUndo(),
     });
 
-    if (blueLocation && redLocation) {
-      dependencies.onPlacementComplete(blueLocation, redLocation);
+    if (leftLocation && rightLocation) {
+      dependencies.onPlacementComplete(leftLocation, rightLocation);
     }
   }
 
-  function committedOrientationFor(color: MotionColor): Orientation {
-    return color === MotionColor.BLUE
-      ? inputs.getBlueOrientation()
-      : inputs.getRedOrientation();
+  function committedOrientationFor(color: HandSide): Orientation {
+    return color === HandSide.LEFT
+      ? inputs.getLeftOrientation()
+      : inputs.getRightOrientation();
   }
 
   function pushHistory(): void {
     history = [
       ...history,
       {
-        blueLocation,
-        redLocation,
+        leftLocation,
+        rightLocation,
         activeColor,
-        blueOrientation: blueLocation
+        leftOrientation: leftLocation
           ? normalizeOrientationForLocation(
-              inputs.getBlueOrientation(),
-              blueLocation
+              inputs.getLeftOrientation(),
+              leftLocation
             )
-          : inputs.getBlueOrientation(),
-        redOrientation: redLocation
+          : inputs.getLeftOrientation(),
+        rightOrientation: rightLocation
           ? normalizeOrientationForLocation(
-              inputs.getRedOrientation(),
-              redLocation
+              inputs.getRightOrientation(),
+              rightLocation
             )
-          : inputs.getRedOrientation(),
+          : inputs.getRightOrientation(),
       },
     ];
   }
 
   function normalizePlacedOrientation(
-    color: MotionColor,
+    color: HandSide,
     location: GridLocation
   ): void {
     const current = committedOrientationFor(color);
@@ -143,7 +143,7 @@ export function createPropPlacementState(
 
   function selectPoint(
     location: GridLocation,
-    color: MotionColor | null = activeColor
+    color: HandSide | null = activeColor
   ): void {
     if (inputs.getDisabled() || color === null) return;
 
@@ -151,32 +151,32 @@ export function createPropPlacementState(
     pushHistory();
     normalizePlacedOrientation(color, location);
 
-    if (color === MotionColor.BLUE) {
-      blueLocation = location;
-      activeColor = redLocation === null ? MotionColor.RED : null;
+    if (color === HandSide.LEFT) {
+      leftLocation = location;
+      activeColor = rightLocation === null ? HandSide.RIGHT : null;
       dependencies.triggerHaptic();
       liveAnnouncement =
-        redLocation === null
-          ? `${inputs.getBlueNoun()} placed at ${label}. Place the ${inputs.getRedNoun()}.`
-          : `${inputs.getBlueNoun()} moved to ${label}. Position ready.`;
+        rightLocation === null
+          ? `${inputs.getLeftNoun()} placed at ${label}. Place the ${inputs.getRightNoun()}.`
+          : `${inputs.getLeftNoun()} moved to ${label}. Position ready.`;
     } else {
-      redLocation = location;
-      activeColor = blueLocation === null ? MotionColor.BLUE : null;
+      rightLocation = location;
+      activeColor = leftLocation === null ? HandSide.LEFT : null;
       dependencies.triggerHaptic();
       liveAnnouncement =
-        blueLocation === null
-          ? `${inputs.getRedNoun()} placed at ${label}. Place the ${inputs.getBlueNoun()}.`
-          : `${inputs.getRedNoun()} placed at ${label}. ${inputs.getBlueNoun()} at ${labelForLocation(blueLocation)}, ${inputs.getRedNoun()} at ${label}. Position ready.`;
+        leftLocation === null
+          ? `${inputs.getRightNoun()} placed at ${label}. Place the ${inputs.getLeftNoun()}.`
+          : `${inputs.getRightNoun()} placed at ${label}. ${inputs.getLeftNoun()} at ${labelForLocation(leftLocation)}, ${inputs.getRightNoun()} at ${label}. Position ready.`;
     }
 
     publishChange();
   }
 
-  function edit(color: MotionColor): void {
+  function edit(color: HandSide): void {
     if (inputs.getDisabled() || !inputs.getEditAfterCompletion()) return;
     activeColor = color;
     const noun =
-      color === MotionColor.BLUE ? inputs.getBlueNoun() : inputs.getRedNoun();
+      color === HandSide.LEFT ? inputs.getLeftNoun() : inputs.getRightNoun();
     liveAnnouncement = `Choose a new location for the ${noun}.`;
     dependencies.triggerHaptic();
     publishChange();
@@ -186,36 +186,36 @@ export function createPropPlacementState(
     const previous = history.at(-1);
     if (!previous) return;
 
-    blueLocation = previous.blueLocation;
-    redLocation = previous.redLocation;
+    leftLocation = previous.leftLocation;
+    rightLocation = previous.rightLocation;
     activeColor = previous.activeColor;
     history = history.slice(0, -1);
-    if (inputs.getBlueOrientation() !== previous.blueOrientation) {
+    if (inputs.getLeftOrientation() !== previous.leftOrientation) {
       dependencies.onOrientationChange(
-        MotionColor.BLUE,
-        previous.blueOrientation
+        HandSide.LEFT,
+        previous.leftOrientation
       );
     }
-    if (inputs.getRedOrientation() !== previous.redOrientation) {
+    if (inputs.getRightOrientation() !== previous.rightOrientation) {
       dependencies.onOrientationChange(
-        MotionColor.RED,
-        previous.redOrientation
+        HandSide.RIGHT,
+        previous.rightOrientation
       );
     }
     dependencies.triggerHaptic();
     liveAnnouncement =
-      activeColor === MotionColor.RED
-        ? `${inputs.getBlueNoun()} placement restored. Place the ${inputs.getRedNoun()}.`
-        : activeColor === MotionColor.BLUE
-          ? `Place the ${inputs.getBlueNoun()}.`
+      activeColor === HandSide.RIGHT
+        ? `${inputs.getLeftNoun()} placement restored. Place the ${inputs.getRightNoun()}.`
+        : activeColor === HandSide.LEFT
+          ? `Place the ${inputs.getLeftNoun()}.`
           : "Previous position restored.";
     publishChange();
   }
 
   function reset(): void {
-    blueLocation = null;
-    redLocation = null;
-    activeColor = MotionColor.BLUE;
+    leftLocation = null;
+    rightLocation = null;
+    activeColor = HandSide.LEFT;
     history = [];
     liveAnnouncement = "";
     publishChange();
@@ -227,24 +227,24 @@ export function createPropPlacementState(
 
     untrack(() => {
       initializationKey = nextInitializationKey;
-      blueLocation = inputs.getInitialBlueLocation();
-      redLocation = inputs.getInitialRedLocation();
-      activeColor = inputs.getInitialBlueLocation()
-        ? inputs.getInitialRedLocation()
+      leftLocation = inputs.getInitialLeftLocation();
+      rightLocation = inputs.getInitialRightLocation();
+      activeColor = inputs.getInitialLeftLocation()
+        ? inputs.getInitialRightLocation()
           ? null
-          : MotionColor.RED
-        : MotionColor.BLUE;
+          : HandSide.RIGHT
+        : HandSide.LEFT;
       history = [];
       liveAnnouncement = "";
     });
   }
 
   return {
-    get blueLocation() {
-      return blueLocation;
+    get leftLocation() {
+      return leftLocation;
     },
-    get redLocation() {
-      return redLocation;
+    get rightLocation() {
+      return rightLocation;
     },
     get activeColor() {
       return activeColor;

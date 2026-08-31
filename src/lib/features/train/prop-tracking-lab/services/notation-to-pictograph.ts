@@ -1,6 +1,6 @@
 import type { PictographData } from '$lib/shared/pictograph/shared/domain/models/pictograph-data';
 import { createMotionData } from '$lib/shared/pictograph/shared/domain/models/motion-data';
-import { MotionType, MotionColor } from '$lib/shared/pictograph/shared/domain/enums/pictograph-enums';
+import { MotionType, HandSide } from '$lib/shared/pictograph/shared/domain/enums/pictograph-enums';
 import { GridLocation, GridMode } from '$lib/shared/pictograph/grid/domain/enums/grid-enums';
 import type { StaffMotionNotation } from '../domain/notation-3d';
 
@@ -18,7 +18,7 @@ const LOCATION_MAP: Record<string, GridLocation> = {
 
 const CARDINAL = new Set(['n', 'e', 's', 'w']);
 
-function toMotion(n: StaffMotionNotation, color: MotionColor, gridMode: GridMode) {
+function toMotion(n: StaffMotionNotation, color: HandSide, gridMode: GridMode) {
   return createMotionData({
     motionType: n.motionType,
     rotationDirection: n.rotationDirection,
@@ -27,18 +27,18 @@ function toMotion(n: StaffMotionNotation, color: MotionColor, gridMode: GridMode
     turns: n.motionType === MotionType.FLOAT ? 'fl' : n.turns,
     startOrientation: n.startOrientation,
     endOrientation: n.endOrientation,
-    color,
+    hand: color,
     gridMode,
   });
 }
 
 /** Build a renderable PictographData from a blue+red notation pair. */
 export function notationToPictographData(
-  blue: StaffMotionNotation,
-  red: StaffMotionNotation,
+  left: StaffMotionNotation,
+  right: StaffMotionNotation,
   id: string,
 ): PictographData {
-  const allCardinal = [blue.startLocation, blue.endLocation, red.startLocation, red.endLocation]
+  const allCardinal = [left.startLocation, left.endLocation, right.startLocation, right.endLocation]
     .every((l) => CARDINAL.has(l));
   const gridMode = allCardinal ? GridMode.DIAMOND : GridMode.BOX;
 
@@ -46,8 +46,8 @@ export function notationToPictographData(
     id,
     letter: null,
     motions: {
-      blue: toMotion(blue, MotionColor.BLUE, gridMode),
-      red: toMotion(red, MotionColor.RED, gridMode),
+      left: toMotion(left, HandSide.LEFT, gridMode),
+      right: toMotion(right, HandSide.RIGHT, gridMode),
     },
     gridMode,
   };

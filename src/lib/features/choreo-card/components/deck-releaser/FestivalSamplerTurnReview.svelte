@@ -78,17 +78,17 @@
         label: value === 1 ? "1-step" : `${value}-step`,
       }));
   });
-  const assignedBlueTotal = $derived(
-    review.assignedEntries.reduce((total, entry) => total + entry.blue, 0)
+  const assignedLeftTotal = $derived(
+    review.assignedEntries.reduce((total, entry) => total + entry.left, 0)
   );
-  const assignedRedTotal = $derived(
-    review.assignedEntries.reduce((total, entry) => total + entry.red, 0)
+  const assignedRightTotal = $derived(
+    review.assignedEntries.reduce((total, entry) => total + entry.right, 0)
   );
-  const effectiveBlueTotal = $derived(
-    review.effectiveEntries.reduce((total, entry) => total + entry.blue, 0)
+  const effectiveLeftTotal = $derived(
+    review.effectiveEntries.reduce((total, entry) => total + entry.left, 0)
   );
-  const effectiveRedTotal = $derived(
-    review.effectiveEntries.reduce((total, entry) => total + entry.red, 0)
+  const effectiveRightTotal = $derived(
+    review.effectiveEntries.reduce((total, entry) => total + entry.right, 0)
   );
   let reviewElement: HTMLElement;
   let patternListElement: HTMLElement;
@@ -405,9 +405,9 @@
                     </span>
                     <span class="actual-turns">
                       <span class="blue-dot" aria-hidden="true"
-                      ></span>{turnValue(step.motions?.blue?.turns)}
+                      ></span>{turnValue(step.motions?.left?.turns)}
                       <span class="red-dot" aria-hidden="true"
-                      ></span>{turnValue(step.motions?.red?.turns)}
+                      ></span>{turnValue(step.motions?.right?.turns)}
                     </span>
                   </header>
                   <div class="pictograph">
@@ -469,38 +469,38 @@
               <div
                 class="balance"
                 aria-label={"Assigned blue total " +
-                  assignedBlueTotal +
+                  assignedLeftTotal +
                   "; assigned red total " +
-                  assignedRedTotal}
+                  assignedRightTotal}
               >
                 <span class="balance-label">Assigned</span>
                 <span class="blue-balance"
                   ><i aria-hidden="true"></i>B {turnValue(
-                    assignedBlueTotal
+                    assignedLeftTotal
                   )}</span
                 >
                 <span class="red-balance"
                   ><i aria-hidden="true"></i>R {turnValue(
-                    assignedRedTotal
+                    assignedRightTotal
                   )}</span
                 >
               </div>
               <div
                 class="balance effective"
                 aria-label={"Effective blue-track total " +
-                  effectiveBlueTotal +
+                  effectiveLeftTotal +
                   "; effective red-track total " +
-                  effectiveRedTotal}
+                  effectiveRightTotal}
               >
                 <span class="balance-label">Effective</span>
                 <span class="blue-balance"
                   ><i aria-hidden="true"></i>B {turnValue(
-                    effectiveBlueTotal
+                    effectiveLeftTotal
                   )}</span
                 >
                 <span class="red-balance"
                   ><i aria-hidden="true"></i>R {turnValue(
-                    effectiveRedTotal
+                    effectiveRightTotal
                   )}</span
                 >
               </div>
@@ -521,29 +521,29 @@
                 <button
                   type="button"
                   class="hand-turn blue"
-                  class:active={entry.blue ===
+                  class:active={entry.left ===
                     review.selectedExample.turnIntensity}
-                  aria-pressed={entry.blue ===
+                  aria-pressed={entry.left ===
                     review.selectedExample.turnIntensity}
-                  onclick={() => void review.toggleTurn(index, "blue")}
+                  onclick={() => void review.toggleTurn(index, "left")}
                 >
-                  <span>B</span><strong>{turnValue(entry.blue)}</strong>
+                  <span>B</span><strong>{turnValue(entry.left)}</strong>
                   <span class="sr-only"
-                    >. Step {index + 1}, blue hand, {turnValue(entry.blue)} turns.</span
+                    >. Step {index + 1}, blue hand, {turnValue(entry.left)} turns.</span
                   >
                 </button>
                 <button
                   type="button"
                   class="hand-turn red"
-                  class:active={entry.red ===
+                  class:active={entry.right ===
                     review.selectedExample.turnIntensity}
-                  aria-pressed={entry.red ===
+                  aria-pressed={entry.right ===
                     review.selectedExample.turnIntensity}
-                  onclick={() => void review.toggleTurn(index, "red")}
+                  onclick={() => void review.toggleTurn(index, "right")}
                 >
-                  <span>R</span><strong>{turnValue(entry.red)}</strong>
+                  <span>R</span><strong>{turnValue(entry.right)}</strong>
                   <span class="sr-only"
-                    >. Step {index + 1}, red hand, {turnValue(entry.red)} turns.</span
+                    >. Step {index + 1}, red hand, {turnValue(entry.right)} turns.</span
                   >
                 </button>
               </div>

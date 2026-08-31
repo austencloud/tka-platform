@@ -13,23 +13,23 @@
 -->
 <script lang="ts">
   interface Props {
-    showBlue: boolean;
-    showRed: boolean;
-    onToggleBlue: () => void;
-    onToggleRed: () => void;
-    blueLabel?: string;
-    redLabel?: string;
+    showLeft: boolean;
+    showRight: boolean;
+    onToggleLeft: () => void;
+    onToggleRight: () => void;
+    leftLabel?: string;
+    rightLabel?: string;
     layout?: "row" | "column";
     showVisibilityIcons?: boolean;
   }
 
   let {
-    showBlue,
-    showRed,
-    onToggleBlue,
-    onToggleRed,
-    blueLabel = "Left",
-    redLabel = "Right",
+    showLeft,
+    showRight,
+    onToggleLeft,
+    onToggleRight,
+    leftLabel = "Left",
+    rightLabel = "Right",
     layout = "row",
     showVisibilityIcons = false,
   }: Props = $props();
@@ -44,34 +44,34 @@
   <button
     type="button"
     class="chip blue"
-    class:active={showBlue}
-    onclick={() => onToggleBlue()}
-    aria-pressed={showBlue}
-    aria-label={`${showBlue ? "Hide" : "Show"} ${blueLabel.toLowerCase()} motion`}
+    class:active={showLeft}
+    onclick={() => onToggleLeft()}
+    aria-pressed={showLeft}
+    aria-label={`${showLeft ? "Hide" : "Show"} ${leftLabel.toLowerCase()} motion`}
   >
     {#if showVisibilityIcons}
       <i
-        class="fas {showBlue ? 'fa-eye' : 'fa-eye-slash'}"
+        class="fas {showLeft ? 'fa-eye' : 'fa-eye-slash'}"
         aria-hidden="true"
       ></i>
     {/if}
-    {blueLabel}
+    {leftLabel}
   </button>
   <button
     type="button"
     class="chip red"
-    class:active={showRed}
-    onclick={() => onToggleRed()}
-    aria-pressed={showRed}
-    aria-label={`${showRed ? "Hide" : "Show"} ${redLabel.toLowerCase()} motion`}
+    class:active={showRight}
+    onclick={() => onToggleRight()}
+    aria-pressed={showRight}
+    aria-label={`${showRight ? "Hide" : "Show"} ${rightLabel.toLowerCase()} motion`}
   >
     {#if showVisibilityIcons}
       <i
-        class="fas {showRed ? 'fa-eye' : 'fa-eye-slash'}"
+        class="fas {showRight ? 'fa-eye' : 'fa-eye-slash'}"
         aria-hidden="true"
       ></i>
     {/if}
-    {redLabel}
+    {rightLabel}
   </button>
 </div>
 

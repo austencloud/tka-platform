@@ -15,7 +15,7 @@
     MotionType,
     RotationDirection,
     Orientation,
-    MotionColor,
+    HandSide,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -81,7 +81,7 @@
     startPosition: GridPosition.GAMMA11,
     endPosition: GridPosition.ALPHA3,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
+      [HandSide.LEFT]: createMotionData({
         motionType: MotionType.ANTI,
         startOrientation: Orientation.OUT,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
@@ -89,11 +89,11 @@
         endLocation: GridLocation.WEST,
         turns: 0,
         endOrientation: Orientation.IN,
-        color: MotionColor.BLUE,
+        color: HandSide.LEFT,
         arrowLocation: GridLocation.SOUTHWEST,
         gridMode: GridMode.DIAMOND,
       }),
-      [MotionColor.RED]: createMotionData({
+      [HandSide.RIGHT]: createMotionData({
         motionType: MotionType.STATIC,
         startOrientation: Orientation.IN,
         rotationDirection: RotationDirection.CLOCKWISE,
@@ -101,7 +101,7 @@
         endLocation: GridLocation.EAST,
         turns: 1,
         endOrientation: Orientation.OUT,
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         arrowLocation: GridLocation.EAST,
         gridMode: GridMode.DIAMOND,
       }),
@@ -115,7 +115,7 @@
     startPosition: GridPosition.GAMMA15,
     endPosition: GridPosition.ALPHA7,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
+      [HandSide.LEFT]: createMotionData({
         motionType: MotionType.ANTI,
         startOrientation: Orientation.OUT,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
@@ -123,11 +123,11 @@
         endLocation: GridLocation.EAST,
         turns: 0,
         endOrientation: Orientation.IN,
-        color: MotionColor.BLUE,
+        color: HandSide.LEFT,
         arrowLocation: GridLocation.NORTHEAST,
         gridMode: GridMode.DIAMOND,
       }),
-      [MotionColor.RED]: createMotionData({
+      [HandSide.RIGHT]: createMotionData({
         motionType: MotionType.STATIC,
         startOrientation: Orientation.IN,
         rotationDirection: RotationDirection.CLOCKWISE,
@@ -135,7 +135,7 @@
         endLocation: GridLocation.WEST,
         turns: 1,
         endOrientation: Orientation.OUT,
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         arrowLocation: GridLocation.WEST,
         gridMode: GridMode.DIAMOND,
       }),
@@ -149,7 +149,7 @@
     startPosition: GridPosition.GAMMA9,
     endPosition: GridPosition.ALPHA1,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
+      [HandSide.LEFT]: createMotionData({
         motionType: MotionType.ANTI,
         startOrientation: Orientation.OUT,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
@@ -157,11 +157,11 @@
         endLocation: GridLocation.SOUTH,
         turns: 0,
         endOrientation: Orientation.IN,
-        color: MotionColor.BLUE,
+        color: HandSide.LEFT,
         arrowLocation: GridLocation.SOUTHEAST,
         gridMode: GridMode.DIAMOND,
       }),
-      [MotionColor.RED]: createMotionData({
+      [HandSide.RIGHT]: createMotionData({
         motionType: MotionType.STATIC,
         startOrientation: Orientation.OUT,
         rotationDirection: RotationDirection.CLOCKWISE,
@@ -169,7 +169,7 @@
         endLocation: GridLocation.NORTH,
         turns: 1,
         endOrientation: Orientation.IN,
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         arrowLocation: GridLocation.NORTH,
         gridMode: GridMode.DIAMOND,
       }),
@@ -186,7 +186,7 @@
     startPosition: GridPosition.BETA4,
     endPosition: GridPosition.GAMMA10,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
+      [HandSide.LEFT]: createMotionData({
         motionType: MotionType.STATIC,
         startOrientation: Orientation.IN,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
@@ -194,11 +194,11 @@
         endLocation: GridLocation.SOUTHEAST,
         turns: 1,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        color: HandSide.LEFT,
         arrowLocation: GridLocation.SOUTHEAST,
         gridMode: GridMode.BOX,
       }),
-      [MotionColor.RED]: createMotionData({
+      [HandSide.RIGHT]: createMotionData({
         motionType: MotionType.PRO,
         startOrientation: Orientation.IN,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
@@ -206,7 +206,7 @@
         endLocation: GridLocation.NORTHEAST,
         turns: 0,
         endOrientation: Orientation.IN,
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         arrowLocation: GridLocation.EAST,
         gridMode: GridMode.BOX,
       }),
@@ -220,7 +220,7 @@
     startPosition: GridPosition.BETA6,
     endPosition: GridPosition.GAMMA12,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
+      [HandSide.LEFT]: createMotionData({
         motionType: MotionType.STATIC,
         startOrientation: Orientation.IN,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
@@ -228,11 +228,11 @@
         endLocation: GridLocation.SOUTHWEST,
         turns: 1,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        color: HandSide.LEFT,
         arrowLocation: GridLocation.SOUTHWEST,
         gridMode: GridMode.BOX,
       }),
-      [MotionColor.RED]: createMotionData({
+      [HandSide.RIGHT]: createMotionData({
         motionType: MotionType.PRO,
         startOrientation: Orientation.IN,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
@@ -240,7 +240,7 @@
         endLocation: GridLocation.SOUTHEAST,
         turns: 0,
         endOrientation: Orientation.IN,
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         arrowLocation: GridLocation.SOUTH,
         gridMode: GridMode.BOX,
       }),
@@ -254,7 +254,7 @@
     startPosition: GridPosition.BETA2,
     endPosition: GridPosition.GAMMA4,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
+      [HandSide.LEFT]: createMotionData({
         motionType: MotionType.STATIC,
         startOrientation: Orientation.IN,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
@@ -262,11 +262,11 @@
         endLocation: GridLocation.NORTHEAST,
         turns: 1,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        color: HandSide.LEFT,
         arrowLocation: GridLocation.NORTHEAST,
         gridMode: GridMode.BOX,
       }),
-      [MotionColor.RED]: createMotionData({
+      [HandSide.RIGHT]: createMotionData({
         motionType: MotionType.PRO,
         startOrientation: Orientation.IN,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
@@ -274,7 +274,7 @@
         endLocation: GridLocation.NORTHWEST,
         turns: 0,
         endOrientation: Orientation.IN,
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         arrowLocation: GridLocation.NORTH,
         gridMode: GridMode.BOX,
       }),
@@ -288,7 +288,7 @@
     startPosition: GridPosition.BETA8,
     endPosition: GridPosition.GAMMA16,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
+      [HandSide.LEFT]: createMotionData({
         motionType: MotionType.STATIC,
         startOrientation: Orientation.IN,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
@@ -296,11 +296,11 @@
         endLocation: GridLocation.NORTHWEST,
         turns: 1,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        color: HandSide.LEFT,
         arrowLocation: GridLocation.NORTHWEST,
         gridMode: GridMode.BOX,
       }),
-      [MotionColor.RED]: createMotionData({
+      [HandSide.RIGHT]: createMotionData({
         motionType: MotionType.PRO,
         startOrientation: Orientation.IN,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
@@ -308,7 +308,7 @@
         endLocation: GridLocation.SOUTHWEST,
         turns: 0,
         endOrientation: Orientation.IN,
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         arrowLocation: GridLocation.WEST,
         gridMode: GridMode.BOX,
       }),

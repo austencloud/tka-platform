@@ -179,10 +179,19 @@ export function loopSpecToWire(spec: LOOPSpec): LOOPSpecWire {
 /**
  * Deserialize a LOOPSpec from its wire form.
  */
-export function loopSpecFromWire(wire: LOOPSpecWire): LOOPSpec {
+export function loopSpecFromWire(
+  wire: LOOPSpecWire & {
+    /** @deprecated Legacy display-color key for the left hand. */
+    blue?: PropLOOPSpecWire;
+    /** @deprecated Legacy display-color key for the right hand. */
+    red?: PropLOOPSpecWire;
+  }
+): LOOPSpec {
+  const left = wire.left ?? wire.blue;
+  const right = wire.right ?? wire.red;
   return {
-    ...(wire.left !== undefined ? { left: propSpecFromWire(wire.left) } : {}),
-    ...(wire.right !== undefined ? { right: propSpecFromWire(wire.right) } : {}),
+    ...(left !== undefined ? { left: propSpecFromWire(left) } : {}),
+    ...(right !== undefined ? { right: propSpecFromWire(right) } : {}),
   };
 }
 

@@ -258,8 +258,8 @@ function executeTool(name: string, input: Record<string, unknown>): string {
 
 			const v = variations[0];
 			return `Letter ${letter}: Type ${typeNum} (${typeName})
-Blue motion: ${v.blueMotionType} (${v.blueStartLocation} → ${v.blueEndLocation})
-Red motion: ${v.redMotionType} (${v.redStartLocation} → ${v.redEndLocation})
+Blue motion: ${v.leftMotionType} (${v.leftStartLocation} → ${v.leftEndLocation})
+Red motion: ${v.rightMotionType} (${v.rightStartLocation} → ${v.rightEndLocation})
 Start position: ${v.startPosition}, End position: ${v.endPosition}
 Total variations: ${variations.length}`;
 		}

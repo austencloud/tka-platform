@@ -16,8 +16,8 @@
 
   const allProps: {
     currentMap: TipEffectMap;
-    bluePropType: string;
-    redPropType: string;
+    leftPropType: string;
+    rightPropType: string;
     onUpdateMap: (map: TipEffectMap) => void;
     onClose: () => void;
   } = $props();
@@ -67,8 +67,8 @@
     label: string;
   }
 
-  const blueTipCount = $derived(getTipPoints(allProps.bluePropType).points.length);
-  const redTipCount = $derived(getTipPoints(allProps.redPropType).points.length);
+  const leftTipCount = $derived(getTipPoints(allProps.leftPropType).points.length);
+  const rightTipCount = $derived(getTipPoints(allProps.rightPropType).points.length);
 
   const channels: ChannelRow[] = $derived.by(() => {
     if (scope === "cell") {
@@ -84,18 +84,18 @@
 
     // Per-tip scope
     const rows: ChannelRow[] = [];
-    for (let t = 0; t < blueTipCount; t++) {
+    for (let t = 0; t < leftTipCount; t++) {
       rows.push({
         key: `0-${t}`,
         color: "#3b82f6",
-        label: `Blue ${getTipLabel(allProps.bluePropType, t, blueTipCount)}`,
+        label: `Blue ${getTipLabel(allProps.leftPropType, t, leftTipCount)}`,
       });
     }
-    for (let t = 0; t < redTipCount; t++) {
+    for (let t = 0; t < rightTipCount; t++) {
       rows.push({
         key: `1-${t}`,
         color: "#ef4444",
-        label: `Red ${getTipLabel(allProps.redPropType, t, redTipCount)}`,
+        label: `Red ${getTipLabel(allProps.rightPropType, t, rightTipCount)}`,
       });
     }
     return rows;
@@ -142,10 +142,10 @@
     } else if (newScope === "hand") {
       if (oldScope === "tip") {
         // Collapse per-tip to per-hand: most common per prop
-        const blueKeys = Object.keys(localMap).filter((k) => k.startsWith("0-"));
-        const redKeys = Object.keys(localMap).filter((k) => k.startsWith("1-"));
-        newMap["0"] = { effect: mostCommonEffect(blueKeys) };
-        newMap["1"] = { effect: mostCommonEffect(redKeys) };
+        const leftKeys = Object.keys(localMap).filter((k) => k.startsWith("0-"));
+        const rightKeys = Object.keys(localMap).filter((k) => k.startsWith("1-"));
+        newMap["0"] = { effect: mostCommonEffect(leftKeys) };
+        newMap["1"] = { effect: mostCommonEffect(rightKeys) };
       } else {
         // Expand cell to per-hand
         const base = localMap["*"]?.effect ?? "none";
@@ -156,18 +156,18 @@
       // Per-tip: expand from parent
       if (oldScope === "cell") {
         const base = localMap["*"]?.effect ?? "none";
-        for (let t = 0; t < blueTipCount; t++)
+        for (let t = 0; t < leftTipCount; t++)
           newMap[`0-${t}`] = { effect: base };
-        for (let t = 0; t < redTipCount; t++)
+        for (let t = 0; t < rightTipCount; t++)
           newMap[`1-${t}`] = { effect: base };
       } else {
         // From per-hand
-        const blueEffect = localMap["0"]?.effect ?? "none";
-        const redEffect = localMap["1"]?.effect ?? "none";
-        for (let t = 0; t < blueTipCount; t++)
-          newMap[`0-${t}`] = { effect: blueEffect };
-        for (let t = 0; t < redTipCount; t++)
-          newMap[`1-${t}`] = { effect: redEffect };
+        const leftEffect = localMap["0"]?.effect ?? "none";
+        const rightEffect = localMap["1"]?.effect ?? "none";
+        for (let t = 0; t < leftTipCount; t++)
+          newMap[`0-${t}`] = { effect: leftEffect };
+        for (let t = 0; t < rightTipCount; t++)
+          newMap[`1-${t}`] = { effect: rightEffect };
       }
     }
 

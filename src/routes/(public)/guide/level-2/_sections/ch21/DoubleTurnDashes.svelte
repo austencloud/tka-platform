@@ -12,7 +12,7 @@
   import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -39,7 +39,7 @@
     letter: null,
     gridMode: GridMode.DIAMOND,
     motions: {
-      red: createMotionData({
+      right: createMotionData({
         motionType: type,
         rotationDirection: rot,
         startLocation: from,
@@ -47,7 +47,7 @@
         startOrientation: startOri,
         endOrientation: endOri,
         turns,
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
@@ -55,7 +55,7 @@
   });
   const stat = (id: string, loc: GridLocation, ori: Orientation) =>
     redStaff(id, MotionType.STATIC, loc, loc, ori, ori, RotationDirection.NO_ROTATION);
-  const toHM = (m: ReturnType<typeof redStaff>["motions"]["red"]) => ({
+  const toHM = (m: ReturnType<typeof redStaff>["motions"]["right"]) => ({
     type: m.motionType,
     from: m.startLocation,
     to: m.endLocation,
@@ -80,8 +80,8 @@
       id: `${data.id}-anim-${stepNumber}`,
       stepNumber,
       motions: {
-        blue: createPlaceholderMotion(MotionColor.BLUE, { location: startLoc, orientation: IN }),
-        red: data.motions.red,
+        left: createPlaceholderMotion(HandSide.LEFT, { location: startLoc, orientation: IN }),
+        right: data.motions.right,
       },
     }) as unknown as StepData;
   const rowSteps = (key: keyof typeof ANIM): StepData[] => {
@@ -93,7 +93,7 @@
   const halfOf = (combined: ReturnType<typeof redStaff>, startLoc: GridLocation) =>
     buildHalvedStep(animStep(combined, 1, startLoc), 0.5);
 
-  const dashQHM = toHM(dashQCombined.motions.red);
+  const dashQHM = toHM(dashQCombined.motions.right);
   const quartersFrames: TurnStripFrame[] = [
     { kind: "start", step: animStep(stat("q-start", SO_, IN), 0, SO_), frameLabel: "start", thumbLabel: "in" },
     { kind: "pose", motion: dashQHM, t: 0.25, arrowStart: 0 },
@@ -106,7 +106,7 @@
     { kind: "pose", motion: dashQHM, t: 0.75, arrowStart: 0.5 },
     {
       kind: "end",
-      step: animStep(stat("q-end", N, dashQCombined.motions.red.endOrientation), 0, N),
+      step: animStep(stat("q-end", N, dashQCombined.motions.right.endOrientation), 0, N),
       frameLabel: "end",
       thumbLabel: "out",
     },
@@ -128,12 +128,12 @@
     {
       kind: "half",
       step: halfOf(dashHCombined, SO_),
-      fallbackMotion: toHM(dashHCombined.motions.red),
+      fallbackMotion: toHM(dashHCombined.motions.right),
       frameLabel: "halfway",
     },
     {
       kind: "end",
-      step: animStep(stat("h-end", N, dashHCombined.motions.red.endOrientation), 0, N),
+      step: animStep(stat("h-end", N, dashHCombined.motions.right.endOrientation), 0, N),
       frameLabel: "end",
       thumbLabel: "out",
     },

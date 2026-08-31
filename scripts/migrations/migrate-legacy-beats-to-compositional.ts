@@ -94,8 +94,8 @@ function legacyToSequenceData(docId: string, data: AnyRec): SequenceData {
     isStep: true,
     stepNumber: typeof b["beatNumber"] === "number" ? (b["beatNumber"] as number) : i + 1,
     duration: typeof b["duration"] === "number" ? (b["duration"] as number) : 1,
-    blueReversal: Boolean(b["blueReversal"]),
-    redReversal: Boolean(b["redReversal"]),
+    leftReversal: Boolean(b["blueReversal"]),
+    rightReversal: Boolean(b["redReversal"]),
     isBlank: Boolean(b["isBlank"]),
   }));
 
@@ -181,8 +181,8 @@ async function main(): Promise<void> {
       console.log(`   word:            "${originalWord}"`);
       console.log(`   beats → steps:   ${beatsCount}`);
       console.log(`   stepPairings:    ${pairings.length}  (derived word "${derivedWord}", match=${wordMatch})`);
-      console.log(`   blueSoloHash:    ${composed.blueSoloHash}`);
-      console.log(`   redSoloHash:     ${composed.redSoloHash}`);
+      console.log(`   blueSoloHash:    ${composed.leftSoloHash}`);
+      console.log(`   redSoloHash:     ${composed.rightSoloHash}`);
       console.log(`   sequenceLength:  ${beatsCount}`);
       console.log(`   contentHash:     ${contentHash}`);
 
@@ -200,12 +200,12 @@ async function main(): Promise<void> {
         gridMode: seq.gridMode,
         startPosition: seq.startPosition as unknown as AnyRec,
         stepPairings: composed.stepPairings as unknown as AnyRec,
-        blueSoloProp: composed.blueSoloProp as unknown as AnyRec,
-        redSoloProp: composed.redSoloProp as unknown as AnyRec,
-        bluePathHash: composed.bluePathHash,
-        redPathHash: composed.redPathHash,
-        blueSoloHash: composed.blueSoloHash,
-        redSoloHash: composed.redSoloHash,
+        leftSoloProp: composed.leftSoloProp as unknown as AnyRec,
+        rightSoloProp: composed.rightSoloProp as unknown as AnyRec,
+        leftPathHash: composed.leftPathHash,
+        rightPathHash: composed.rightPathHash,
+        leftSoloHash: composed.leftSoloHash,
+        rightSoloHash: composed.rightSoloHash,
         sequenceLength: beatsCount,
         contentHash,
         contentHashVersion: CONTENT_HASH_VERSION,

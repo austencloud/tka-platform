@@ -21,8 +21,8 @@
     state.loadPictographs();
   });
 
-  const blueRef = $derived(state.currentPlacement?.blue ?? null);
-  const redRef = $derived(state.currentPlacement?.red ?? null);
+  const leftRef = $derived(state.currentPlacement?.left ?? null);
+  const rightRef = $derived(state.currentPlacement?.right ?? null);
 
   const clickTargetsEnabled = $derived(
     state.activeMode === "explore" && state.manualPlacement,
@@ -38,15 +38,15 @@
       showLabels={true}
       showJunctions={true}
       showProps={true}
-      {blueRef}
-      {redRef}
+      {leftRef}
+      {rightRef}
       {clickTargetsEnabled}
       onPointClick={(ref) => {
         // In manual placement mode, place blue first, then red
-        if (!state.manualBlueRef) {
-          state.placeBlue(ref);
+        if (!state.manualLeftRef) {
+          state.placeLeft(ref);
         } else {
-          state.placeRed(ref);
+          state.placeRight(ref);
         }
       }}
     />

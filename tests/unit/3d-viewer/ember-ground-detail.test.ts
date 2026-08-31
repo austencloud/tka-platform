@@ -209,13 +209,13 @@ describe("Ember Fresh Rift ground detail", () => {
     expect(material.color.getHexString()).toBe("ffffff");
     material.onBeforeCompile(shader, {} as never);
 
-    expect(shader.uniforms.uMaskedGroundRedMap.value).toBe(
+    expect(shader.uniforms.uMaskedGroundRightMap.value).toBe(
       detailMaps.youngLava
     );
     expect(shader.uniforms.uMaskedGroundGreenMap.value).toBe(
       detailMaps.ironContact
     );
-    expect(shader.uniforms.uMaskedGroundBlueMap.value).toBe(
+    expect(shader.uniforms.uMaskedGroundLeftMap.value).toBe(
       detailMaps.fracturedBasalt
     );
     expect(shader.uniforms.uMaskedGroundFourthMap.value).toBe(
@@ -332,9 +332,9 @@ describe("Ember Fresh Rift ground detail", () => {
     patchMaskedGroundDetailMaterial(
       material,
       {
-        red: new Texture(),
+        right: new Texture(),
         green: new Texture(),
-        blue: new Texture(),
+        left: new Texture(),
         fourth: new Texture(),
       },
       new Texture(),

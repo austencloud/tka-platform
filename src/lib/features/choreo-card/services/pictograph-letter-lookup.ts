@@ -4,22 +4,22 @@ export interface CsvEdge {
   endPosition: string;
   timing: string;
   direction: string;
-  blueMotionType: string;
-  blueRotationDirection: string;
-  blueStartLocation: string;
-  blueEndLocation: string;
-  redMotionType: string;
-  redRotationDirection: string;
-  redStartLocation: string;
-  redEndLocation: string;
+  leftMotionType: string;
+  leftRotationDirection: string;
+  leftStartLocation: string;
+  leftEndLocation: string;
+  rightMotionType: string;
+  rightRotationDirection: string;
+  rightStartLocation: string;
+  rightEndLocation: string;
   [key: string]: string;
 }
 
 export interface StepMotionQuery {
   startPosition: string;
   endPosition: string;
-  blue: { motionType: string; startLocation: string; endLocation: string };
-  red: { motionType: string; startLocation: string; endLocation: string };
+  left: { motionType: string; startLocation: string; endLocation: string };
+  right: { motionType: string; startLocation: string; endLocation: string };
 }
 
 /** Parse the pictograph dataframe CSV text into edge rows. */
@@ -45,12 +45,12 @@ export function lookupLetter(
     (e) =>
       e.startPosition === q.startPosition &&
       e.endPosition === q.endPosition &&
-      e.blueMotionType === q.blue.motionType &&
-      e.blueStartLocation === q.blue.startLocation &&
-      e.blueEndLocation === q.blue.endLocation &&
-      e.redMotionType === q.red.motionType &&
-      e.redStartLocation === q.red.startLocation &&
-      e.redEndLocation === q.red.endLocation,
+      e.leftMotionType === q.left.motionType &&
+      e.leftStartLocation === q.left.startLocation &&
+      e.leftEndLocation === q.left.endLocation &&
+      e.rightMotionType === q.right.motionType &&
+      e.rightStartLocation === q.right.startLocation &&
+      e.rightEndLocation === q.right.endLocation,
   );
   return match ? match.letter : null;
 }

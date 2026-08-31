@@ -22,8 +22,8 @@
   });
 
   const settings = $derived(getSettings());
-  const bluePropType = $derived(settings.bluePropType ?? PropType.STAFF);
-  const displayInfo = $derived(getPropTypeDisplayInfo(bluePropType));
+  const leftPropType = $derived(settings.leftPropType ?? PropType.STAFF);
+  const displayInfo = $derived(getPropTypeDisplayInfo(leftPropType));
 
   const iconHtml = $derived(
     `<img src="${displayInfo.image}" alt="${displayInfo.label}" style="width: 26px; height: 26px; object-fit: contain; filter: brightness(1.3) saturate(1.3);" />`

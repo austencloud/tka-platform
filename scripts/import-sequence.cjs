@@ -120,32 +120,32 @@ const COMPONENT_TO_LOOP_TYPE = {
  * SequenceStep format expected by the sequence-engine's LOOP detector.
  */
 function convertToEngineStep(step, index) {
-  const blue = step.motions?.blue || {};
-  const red = step.motions?.red || {};
+  const left = step.motions?.left || {};
+  const right = step.motions?.right || {};
   return {
     letter: step.letter,
     startPosition: step.startPosition,
     endPosition: step.endPosition,
     // The detector's sameLOOPSignal reads `motions.{blue,red}`; the transform
     // comparators read `blueMotion`/`redMotion`. Emit both.
-    motions: { blue, red },
-    blueMotion: {
-      motionType: blue.motionType,
-      startLocation: blue.startLocation,
-      endLocation: blue.endLocation,
-      rotationDirection: blue.rotationDirection,
-      startOrientation: blue.startOrientation,
-      endOrientation: blue.endOrientation,
-      turns: blue.turns,
+    motions: { left, right },
+    leftMotion: {
+      motionType: left.motionType,
+      startLocation: left.startLocation,
+      endLocation: left.endLocation,
+      rotationDirection: left.rotationDirection,
+      startOrientation: left.startOrientation,
+      endOrientation: left.endOrientation,
+      turns: left.turns,
     },
-    redMotion: {
-      motionType: red.motionType,
-      startLocation: red.startLocation,
-      endLocation: red.endLocation,
-      rotationDirection: red.rotationDirection,
-      startOrientation: red.startOrientation,
-      endOrientation: red.endOrientation,
-      turns: red.turns,
+    rightMotion: {
+      motionType: right.motionType,
+      startLocation: right.startLocation,
+      endLocation: right.endLocation,
+      rotationDirection: right.rotationDirection,
+      startOrientation: right.startOrientation,
+      endOrientation: right.endOrientation,
+      turns: right.turns,
     },
     beatIndex: index,
     stepNumber: index,
@@ -165,17 +165,17 @@ function detectLoop(raw) {
     const startGridPos = startPos?.startPosition || startPos?.gridPosition;
 
     // Build engine-format steps with start position as step 0
-    const startBlue = {
+    const startLeft = {
       motionType: "static",
-      startLocation: startPos?.motions?.blue?.startLocation || "n",
-      endLocation: startPos?.motions?.blue?.endLocation || "n",
+      startLocation: startPos?.motions?.left?.startLocation || "n",
+      endLocation: startPos?.motions?.left?.endLocation || "n",
       rotationDirection: "noRotation",
       turns: 0,
     };
-    const startRed = {
+    const startRight = {
       motionType: "static",
-      startLocation: startPos?.motions?.red?.startLocation || "n",
-      endLocation: startPos?.motions?.red?.endLocation || "n",
+      startLocation: startPos?.motions?.right?.startLocation || "n",
+      endLocation: startPos?.motions?.right?.endLocation || "n",
       rotationDirection: "noRotation",
       turns: 0,
     };
@@ -185,18 +185,18 @@ function detectLoop(raw) {
         letter: startPos?.letter || "β",
         startPosition: startGridPos || "beta1",
         endPosition: startPos?.endPosition || startGridPos || "beta1",
-        motions: { blue: startBlue, red: startRed },
-        blueMotion: {
+        motions: { left: startLeft, right: startRight },
+        leftMotion: {
           motionType: "static",
-          startLocation: startPos?.motions?.blue?.startLocation || "n",
-          endLocation: startPos?.motions?.blue?.endLocation || "n",
+          startLocation: startPos?.motions?.left?.startLocation || "n",
+          endLocation: startPos?.motions?.left?.endLocation || "n",
           rotationDirection: "noRotation",
           turns: 0,
         },
-        redMotion: {
+        rightMotion: {
           motionType: "static",
-          startLocation: startPos?.motions?.red?.startLocation || "n",
-          endLocation: startPos?.motions?.red?.endLocation || "n",
+          startLocation: startPos?.motions?.right?.startLocation || "n",
+          endLocation: startPos?.motions?.right?.endLocation || "n",
           rotationDirection: "noRotation",
           turns: 0,
         },
@@ -261,8 +261,8 @@ function buildStartPositionObject(startPosInput, steps, sequenceId) {
   if (
     startPosInput &&
     typeof startPosInput === "object" &&
-    startPosInput.motions?.blue &&
-    startPosInput.motions?.red
+    startPosInput.motions?.left &&
+    startPosInput.motions?.right
   ) {
     const gridPos =
       startPosInput.gridPosition ||
@@ -281,9 +281,9 @@ function buildStartPositionObject(startPosInput, steps, sequenceId) {
   }
 
   const firstStep = steps?.[0];
-  const blueMotion = firstStep?.motions?.blue;
-  const redMotion = firstStep?.motions?.red;
-  if (!blueMotion || !redMotion) return null;
+  const leftMotion = firstStep?.motions?.left;
+  const rightMotion = firstStep?.motions?.right;
+  if (!leftMotion || !rightMotion) return null;
 
   const gridPos =
     (typeof startPosInput === "string" ? startPosInput : null) ||
@@ -305,27 +305,27 @@ function buildStartPositionObject(startPosInput, steps, sequenceId) {
     startPosition: gridPos,
     endPosition: gridPos,
     motions: {
-      blue: {
+      left: {
         color: "blue",
         motionType: "static",
-        startLocation: blueMotion.startLocation,
-        endLocation: blueMotion.startLocation,
-        startOrientation: blueMotion.startOrientation,
-        endOrientation: blueMotion.startOrientation,
+        startLocation: leftMotion.startLocation,
+        endLocation: leftMotion.startLocation,
+        startOrientation: leftMotion.startOrientation,
+        endOrientation: leftMotion.startOrientation,
         rotationDirection: "no_rotation",
         turns: 0,
-        isVisible: blueMotion.isVisible !== false,
+        isVisible: leftMotion.isVisible !== false,
       },
-      red: {
+      right: {
         color: "red",
         motionType: "static",
-        startLocation: redMotion.startLocation,
-        endLocation: redMotion.startLocation,
-        startOrientation: redMotion.startOrientation,
-        endOrientation: redMotion.startOrientation,
+        startLocation: rightMotion.startLocation,
+        endLocation: rightMotion.startLocation,
+        startOrientation: rightMotion.startOrientation,
+        endOrientation: rightMotion.startOrientation,
         rotationDirection: "no_rotation",
         turns: 0,
-        isVisible: redMotion.isVisible !== false,
+        isVisible: rightMotion.isVisible !== false,
       },
     },
   };

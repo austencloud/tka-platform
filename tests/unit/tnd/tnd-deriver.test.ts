@@ -10,7 +10,7 @@ import {
   ElementalType,
   RotationDirection,
   MotionType,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   GridLocation,
@@ -100,14 +100,14 @@ describe("deriveTnD — non-shift → null", () => {
 // deriveTnDFromPictograph reads blue/red start+end, only for pro/anti shifts.
 describe("deriveTnDFromPictograph", () => {
   function pictograph(
-    blue: Partial<Parameters<typeof createMotionData>[0]>,
-    red: Partial<Parameters<typeof createMotionData>[0]>
+    left: Partial<Parameters<typeof createMotionData>[0]>,
+    right: Partial<Parameters<typeof createMotionData>[0]>
   ): PictographData {
     return {
       id: "test",
       motions: {
-        [MotionColor.BLUE]: createMotionData({ color: MotionColor.BLUE, ...blue }),
-        [MotionColor.RED]: createMotionData({ color: MotionColor.RED, ...red }),
+        [HandSide.LEFT]: createMotionData({ hand: HandSide.LEFT, ...left }),
+        [HandSide.RIGHT]: createMotionData({ hand: HandSide.RIGHT, ...right }),
       },
     };
   }
@@ -177,8 +177,8 @@ describe("golden snapshot: deriveTnD reproduces the calculateTnD table", () => {
       for (const row of rows) {
         // Type-1 (shift + shift) rows only: both hands arc.
         if (
-          !SHIFTS.has(row.blueMotionType as MotionType) ||
-          !SHIFTS.has(row.redMotionType as MotionType)
+          !SHIFTS.has(row.leftMotionType as MotionType) ||
+          !SHIFTS.has(row.rightMotionType as MotionType)
         )
           continue;
         const expected = calculateTnD(
@@ -189,15 +189,15 @@ describe("golden snapshot: deriveTnD reproduces the calculateTnD table", () => {
         if (!expected) continue; // not a TnD letter
         checked++;
         const got = deriveTnD(
-          row.blueStartLocation as GridLocation,
-          row.blueEndLocation as GridLocation,
-          row.redStartLocation as GridLocation,
-          row.redEndLocation as GridLocation
+          row.leftStartLocation as GridLocation,
+          row.leftEndLocation as GridLocation,
+          row.rightStartLocation as GridLocation,
+          row.rightEndLocation as GridLocation
         );
         if (got.tndMode !== expected) {
           mismatches.push(
-            `${row.letter} ${row.startPosition}: blue ${row.blueStartLocation}→${row.blueEndLocation} ` +
-              `red ${row.redStartLocation}→${row.redEndLocation} table=${expected} derived=${got.tndMode}`
+            `${row.letter} ${row.startPosition}: blue ${row.leftStartLocation}→${row.leftEndLocation} ` +
+              `red ${row.rightStartLocation}→${row.rightEndLocation} table=${expected} derived=${got.tndMode}`
           );
         }
       }

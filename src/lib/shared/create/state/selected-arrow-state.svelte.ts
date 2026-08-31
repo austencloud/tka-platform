@@ -7,10 +7,11 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 interface SelectedArrow {
   motionData: MotionData;
-  color: string;
+  color: HandSide;
   pictographData: PictographData;
 }
 
@@ -32,7 +33,7 @@ export const selectedArrowState = {
 
   selectArrow(
     motionData: MotionData,
-    color: string,
+    color: HandSide,
     pictographData: PictographData
   ) {
     _selectedArrow = { motionData, color, pictographData };
@@ -44,7 +45,7 @@ export const selectedArrowState = {
     notifyObservers();
   },
 
-  isSelected(motionData: MotionData, color: string): boolean {
+  isSelected(motionData: MotionData, color: HandSide): boolean {
     if (!_selectedArrow) return false;
     return (
       _selectedArrow.color === color &&

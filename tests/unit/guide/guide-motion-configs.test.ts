@@ -29,40 +29,40 @@ describe("buildGuideMotionSequence", () => {
     const seq = buildGuideMotionSequence(config);
     expect(seq.steps).toHaveLength(1);
     expect(seq.gridMode).toBe(GridMode.DIAMOND);
-    const red = seq.steps[0].motions.red;
-    expect(red.startLocation).toBe(GridLocation.WEST);
-    expect(red.endLocation).toBe(GridLocation.NORTH);
-    expect(red.motionType).toBe(MotionType.PRO);
-    expect(red.propType).toBe(PropType.HAND);
+    const right = seq.steps[0].motions.right;
+    expect(right.startLocation).toBe(GridLocation.WEST);
+    expect(right.endLocation).toBe(GridLocation.NORTH);
+    expect(right.motionType).toBe(MotionType.PRO);
+    expect(right.propType).toBe(PropType.HAND);
     // Guide demos hard-code "linear" for every hand motion (teaches grid points, not arcs).
     // Canonical source: src/routes/(public)/guide/level-1/_components/guide-motion-configs.ts:215.
-    expect(red.pathShape).toBe("linear");
+    expect(right.pathShape).toBe("linear");
   });
   it("uses linear pathShape for dashes", () => {
     const config = GUIDE_MOTION_CONFIGS.find((c) => c.id === "hm-dash-we")!;
-    const red = buildGuideMotionSequence(config).steps[0].motions.red;
-    expect(red.motionType).toBe(MotionType.DASH);
-    expect(red.pathShape).toBe("linear");
+    const right = buildGuideMotionSequence(config).steps[0].motions.right;
+    expect(right.motionType).toBe(MotionType.DASH);
+    expect(right.pathShape).toBe("linear");
   });
   it("defaults blue to a static hold at red's start when config.blue is absent", () => {
     const config = GUIDE_MOTION_CONFIGS.find((c) => c.id === "hm-start")!;
-    const blue = buildGuideMotionSequence(config).steps[0].motions.blue;
-    expect(blue.motionType).toBe(MotionType.STATIC);
-    expect(blue.startLocation).toBe(config.red.start);
-    expect(blue.endLocation).toBe(config.red.start);
+    const left = buildGuideMotionSequence(config).steps[0].motions.left;
+    expect(left.motionType).toBe(MotionType.STATIC);
+    expect(left.startLocation).toBe(config.right.start);
+    expect(left.endLocation).toBe(config.right.start);
   });
   it("builds explicit blue motion when config.blue is present", () => {
     const config = GUIDE_MOTION_CONFIGS.find((c) => c.id === "t1-split-same")!;
-    const blue = buildGuideMotionSequence(config).steps[0].motions.blue;
-    expect(blue.startLocation).toBe(GridLocation.WEST);
-    expect(blue.endLocation).toBe(GridLocation.SOUTH);
-    expect(blue.motionType).toBe(MotionType.PRO);
+    const left = buildGuideMotionSequence(config).steps[0].motions.left;
+    expect(left.startLocation).toBe(GridLocation.WEST);
+    expect(left.endLocation).toBe(GridLocation.SOUTH);
+    expect(left.motionType).toBe(MotionType.PRO);
   });
   it("start position holds both hands static", () => {
     const config = GUIDE_MOTION_CONFIGS.find((c) => c.id === "t1-split-same")!;
     const sp = buildGuideMotionSequence(config).startPosition!;
-    expect(sp.motions.red.motionType).toBe(MotionType.STATIC);
-    expect(sp.motions.blue.motionType).toBe(MotionType.STATIC);
+    expect(sp.motions.right.motionType).toBe(MotionType.STATIC);
+    expect(sp.motions.left.motionType).toBe(MotionType.STATIC);
   });
 });
 

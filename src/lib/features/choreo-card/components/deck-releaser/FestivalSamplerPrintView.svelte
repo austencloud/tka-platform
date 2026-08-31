@@ -532,8 +532,8 @@
     sequence={inspectedPair.renderMeta?.sequence ?? null}
     frontImageUrl={inspectedFrontImageUrl}
     backImageUrl={inspectedBackImageUrl}
-    bluePropType={inspectedPair.renderMeta?.options.bluePropType}
-    redPropType={inspectedPair.renderMeta?.options.redPropType}
+    leftPropType={inspectedPair.renderMeta?.options.leftPropType}
+    rightPropType={inspectedPair.renderMeta?.options.rightPropType}
     includeStartPosition={true}
     onClose={closeInspector}
   />

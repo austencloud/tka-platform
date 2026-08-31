@@ -75,12 +75,12 @@
             <div class="pictograph-stage">
               <PictographContainer
                 pictographData={item.legacyPictograph}
-                showRedMotion={false}
-                showBlueMotion
+                showRightMotion={false}
+                showLeftMotion
                 showTKA={false}
                 disableTransitions
-                bluePropTypeOverride={PropType.STAFF}
-                redPropTypeOverride={PropType.STAFF}
+                leftPropTypeOverride={PropType.STAFF}
+                rightPropTypeOverride={PropType.STAFF}
               />
               <span
                 class="point-ring legacy-ring"
@@ -110,12 +110,12 @@
             <div class="pictograph-stage">
               <PictographContainer
                 pictographData={item.canonicalPictograph}
-                showRedMotion={false}
-                showBlueMotion
+                showRightMotion={false}
+                showLeftMotion
                 showTKA={false}
                 disableTransitions
-                bluePropTypeOverride={PropType.STAFF}
-                redPropTypeOverride={PropType.STAFF}
+                leftPropTypeOverride={PropType.STAFF}
+                rightPropTypeOverride={PropType.STAFF}
               />
               <span
                 class="point-ring canonical-ring"

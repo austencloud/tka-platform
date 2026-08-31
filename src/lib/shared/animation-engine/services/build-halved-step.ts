@@ -56,7 +56,7 @@ import {
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  type MotionColor,
+  type HandSide,
   type Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -90,7 +90,7 @@ function pairKey(a: GridLocation, b: GridLocation): string {
 function centerOrientationAt(
   input: OrientationAtInput,
   t: number,
-  color: MotionColor
+  color: HandSide
 ): Orientation | null {
   const staffAngle = calculateStaffAngleAt(input, t, color);
   if (staffAngle === null) return null;
@@ -166,8 +166,8 @@ function halveMotion(motion: MotionData, t: number): MotionData | null {
   // segment-rotation branch both render them by compass angle directly.
   const halfwayOrientation =
     halfwayLocation === GridLocation.CENTER
-      ? centerOrientationAt(orientationInput, t, motion.color)
-      : calculateOrientationAt(orientationInput, t, motion.color);
+      ? centerOrientationAt(orientationInput, t, motion.hand)
+      : calculateOrientationAt(orientationInput, t, motion.hand);
   if (halfwayOrientation === null) return null;
 
   return createMotionData({
@@ -191,16 +191,16 @@ export function buildHalvedStep(step: StepData, t = 0.5): StepData | null {
   // orientations but no legal location, so they stay off this path.
   if (t !== 0.5) return null;
 
-  const blueMotion = step.motions.blue;
-  const redMotion = step.motions.red;
+  const leftMotion = step.motions.left;
+  const rightMotion = step.motions.right;
 
-  const halvedBlue = isVisibleMotion(blueMotion) ? halveMotion(blueMotion, t) : blueMotion;
-  if (halvedBlue === null) return null;
+  const halvedLeft = isVisibleMotion(leftMotion) ? halveMotion(leftMotion, t) : leftMotion;
+  if (halvedLeft === null) return null;
 
-  const halvedRed = isVisibleMotion(redMotion) ? halveMotion(redMotion, t) : redMotion;
-  if (halvedRed === null) return null;
+  const halvedRight = isVisibleMotion(rightMotion) ? halveMotion(rightMotion, t) : rightMotion;
+  if (halvedRight === null) return null;
 
-  const motions: StepMotions = { blue: halvedBlue, red: halvedRed };
+  const motions: StepMotions = { left: halvedLeft, right: halvedRight };
 
   return {
     id: step.id,
@@ -214,8 +214,8 @@ export function buildHalvedStep(step: StepData, t = 0.5): StepData | null {
     motions,
     stepNumber: step.stepNumber,
     duration: step.duration,
-    blueReversal: step.blueReversal,
-    redReversal: step.redReversal,
+    leftReversal: step.leftReversal,
+    rightReversal: step.rightReversal,
     isBlank: step.isBlank,
     ...(step.betaSwapped !== undefined ? { betaSwapped: step.betaSwapped } : {}),
     ...(step.category !== undefined ? { category: step.category } : {}),

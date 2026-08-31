@@ -32,8 +32,8 @@ export const CANONICAL_CARD_VISIBILITY = {
   showTnD: false,
   showElemental: false,
   showPositions: false,
-  showBlueMotion: true,
-  showRedMotion: true,
+  showLeftMotion: true,
+  showRightMotion: true,
   handPathMode: false,
   browseViewMode: undefined,
 } satisfies Partial<PreviewCellRenderOptions>;
@@ -49,8 +49,8 @@ export function canonicalCellKeyString(
     ...CANONICAL_CARD_VISIBILITY,
     // Solo cards have their own canonical visibility. Preserve only the
     // participating-hand decision while pinning every other display option.
-    showBlueMotion: options.showBlueMotion ?? true,
-    showRedMotion: options.showRedMotion ?? true,
+    showLeftMotion: options.showLeftMotion ?? true,
+    showRightMotion: options.showRightMotion ?? true,
     size: CANONICAL_CELL_SIZE,
     showStepNumbers: false,
   });

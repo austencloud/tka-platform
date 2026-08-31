@@ -32,6 +32,7 @@
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { isEditableKeyboardTarget } from "$lib/shared/keyboard/domain/shortcut-target-resolution";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   const logger = createComponentLogger("ArrowAdjustmentPanel");
 
@@ -81,9 +82,9 @@
     if (!selectedArrow) return "staff";
     const settings = getSettings();
     const settingsPropType =
-      selectedArrow.color === "blue"
-        ? settings.bluePropType
-        : settings.redPropType;
+      selectedArrow.color === HandSide.LEFT
+        ? settings.leftPropType
+        : settings.rightPropType;
     return (
       (settingsPropType ?? selectedArrow.motionData?.propType)?.toLowerCase() ||
       "staff"
@@ -92,9 +93,12 @@
   const otherPropType = $derived.by(() => {
     if (!selectedArrow) return "staff";
     const settings = getSettings();
-    const otherColor = selectedArrow.color === "blue" ? "red" : "blue";
+    const otherColor =
+      selectedArrow.color === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
     const settingsPropType =
-      otherColor === "blue" ? settings.bluePropType : settings.redPropType;
+      otherColor === HandSide.LEFT
+        ? settings.leftPropType
+        : settings.rightPropType;
     const otherMotion = selectedArrow.pictographData?.motions?.[otherColor];
     return (
       (settingsPropType ?? otherMotion?.propType)?.toLowerCase() || "staff"
@@ -411,8 +415,8 @@
   <!-- Arrow color indicator -->
   <span
     class="arrow-badge"
-    class:blue={selectedArrow?.color === "blue"}
-    class:red={selectedArrow?.color === "red"}
+    class:blue={selectedArrow?.color === HandSide.LEFT}
+    class:red={selectedArrow?.color === HandSide.RIGHT}
   >
     {selectedArrow?.color?.toUpperCase()}
   </span>

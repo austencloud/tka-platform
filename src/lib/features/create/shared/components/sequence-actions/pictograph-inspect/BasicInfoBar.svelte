@@ -15,14 +15,14 @@
     gridMode: string;
     oriKey: string;
     turnsTuple: string;
-    blueRotationOverrideKey: string | null;
-    redRotationOverrideKey: string | null;
+    leftRotationOverrideKey: string | null;
+    rightRotationOverrideKey: string | null;
   }
 
   interface Props {
     displayData: StepData | null;
-    blueMotion: MotionData | undefined;
-    redMotion: MotionData | undefined;
+    leftMotion: MotionData | undefined;
+    rightMotion: MotionData | undefined;
     lookupKeys: LookupKeys | null;
     copiedSection: string | null;
     onCopy: (text: string, section: string) => void;
@@ -30,8 +30,8 @@
 
   let {
     displayData,
-    blueMotion,
-    redMotion,
+    leftMotion,
+    rightMotion,
     lookupKeys,
     copiedSection,
     onCopy,
@@ -42,10 +42,10 @@
   const activePropType = $derived.by(() => {
     const s = getSettings();
     return (
-      s.bluePropType ??
-      blueMotion?.propType ??
-      s.redPropType ??
-      redMotion?.propType ??
+      s.leftPropType ??
+      leftMotion?.propType ??
+      s.rightPropType ??
+      rightMotion?.propType ??
       "staff"
     );
   });
@@ -53,7 +53,7 @@
   // The prop type baked into the saved motion data. When it diverges from the
   // active (rendered) prop, surface it — stale stored props explain odd placement.
   const storedPropType = $derived(
-    blueMotion?.propType ?? redMotion?.propType ?? null
+    leftMotion?.propType ?? rightMotion?.propType ?? null
   );
   const propDiffers = $derived(
     storedPropType != null &&
@@ -65,7 +65,7 @@
   <div class="basic-line">
     {#if displayData?.letter}<span class="bl letter">{displayData.letter}</span
       ><span class="sep">·</span>{/if}
-    <span class="bl">{blueMotion?.gridMode ?? redMotion?.gridMode ?? "—"}</span>
+    <span class="bl">{leftMotion?.gridMode ?? rightMotion?.gridMode ?? "—"}</span>
     <span class="sep">·</span>
     <span class="bl">{activePropType}</span>
     {#if propDiffers}<span
@@ -83,25 +83,25 @@
     {#if lookupKeys}
       <span class="lk">ori_key <b>{lookupKeys.oriKey}</b></span>
       <span class="lk">turns <b>{lookupKeys.turnsTuple}</b></span>
-      {#if lookupKeys.blueRotationOverrideKey}<span
+      {#if lookupKeys.leftRotationOverrideKey}<span
           class="lk"
-          title="blue rotation override key: {lookupKeys.blueRotationOverrideKey}"
+          title="blue rotation override key: {lookupKeys.leftRotationOverrideKey}"
           >blue rot <b
-            >{formatRotationOverrideKey(lookupKeys.blueRotationOverrideKey)}</b
+            >{formatRotationOverrideKey(lookupKeys.leftRotationOverrideKey)}</b
           ></span
         >{/if}
-      {#if lookupKeys.redRotationOverrideKey}<span
+      {#if lookupKeys.rightRotationOverrideKey}<span
           class="lk"
-          title="red rotation override key: {lookupKeys.redRotationOverrideKey}"
+          title="red rotation override key: {lookupKeys.rightRotationOverrideKey}"
           >red rot <b
-            >{formatRotationOverrideKey(lookupKeys.redRotationOverrideKey)}</b
+            >{formatRotationOverrideKey(lookupKeys.rightRotationOverrideKey)}</b
           ></span
         >{/if}
     {/if}
     <button
       class="copy-btn"
       onclick={() =>
-        onCopy(formatBasicInfo(displayData, blueMotion, redMotion), "basic")}
+        onCopy(formatBasicInfo(displayData, leftMotion, rightMotion), "basic")}
       title="Copy Basic Info"
       aria-label="Copy Basic Info"
     >

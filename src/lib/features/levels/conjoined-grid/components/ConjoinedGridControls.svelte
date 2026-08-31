@@ -213,16 +213,16 @@
           <div class="placement-row">
             <span class="placement-dot blue-dot"></span>
             <span class="placement-text">
-              Blue: {state.manualBlueRef
-                ? `${state.manualBlueRef.gridId}:${state.manualBlueRef.location}`
+              Blue: {state.manualLeftRef
+                ? `${state.manualLeftRef.gridId}:${state.manualLeftRef.location}`
                 : "Click to place"}
             </span>
           </div>
           <div class="placement-row">
             <span class="placement-dot red-dot"></span>
             <span class="placement-text">
-              Red: {state.manualRedRef
-                ? `${state.manualRedRef.gridId}:${state.manualRedRef.location}`
+              Red: {state.manualRightRef
+                ? `${state.manualRightRef.gridId}:${state.manualRightRef.location}`
                 : "Click to place"}
             </span>
           </div>

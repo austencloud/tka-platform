@@ -15,7 +15,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
  * SequenceState interface covering what shared/ consumers access.
  * Includes methods used by clearSequenceWorkflow and register-create-shortcuts.
  */
-export type TargetHand = "blue" | "red" | "both";
+export type TargetHand = "left" | "right" | "both";
 
 export interface SequenceStateMinimal {
   readonly currentSequence: SequenceData | null;

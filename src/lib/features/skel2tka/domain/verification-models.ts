@@ -35,7 +35,7 @@ export interface UserCorrection {
   field: CorrectionField;
 
   /** Which hand, if applicable */
-  hand?: "blue" | "red";
+  hand?: "left" | "right";
 
   /** What the pipeline detected */
   detectedValue: string;
@@ -52,7 +52,7 @@ export interface HandPositionCorrection extends UserCorrection {
   field: "hand_position";
   detectedValue: GridLocation;
   correctedValue: GridLocation;
-  hand: "blue" | "red";
+  hand: "left" | "right";
 }
 
 /** Complete result of a phase verification */

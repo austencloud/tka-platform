@@ -65,7 +65,7 @@
   let wordHeader = $state(vm.getVisibility("wordHeader"));
   let mandala = $state(vm.getVisibility("mandala"));
   let pathLines = $state(
-    vm.getVisibility("bluePathLines") || vm.getVisibility("redPathLines")
+    vm.getVisibility("leftPathLines") || vm.getVisibility("rightPathLines")
   );
   // Read for the previews, not toggled here: each tile draws the layer as the
   // canvas is currently configured to draw it.
@@ -83,7 +83,7 @@
     wordHeader = vm.getVisibility("wordHeader");
     mandala = vm.getVisibility("mandala");
     pathLines =
-      vm.getVisibility("bluePathLines") || vm.getVisibility("redPathLines");
+      vm.getVisibility("leftPathLines") || vm.getVisibility("rightPathLines");
     gridMode = vm.getGridMode();
     pathShape = vm.getPathShape();
     motionAware = vm.getMotionAwarePaths();
@@ -97,8 +97,8 @@
   // visibility — that lives in PathShapePanel.
   function togglePathLines(): void {
     const next = !pathLines;
-    vm.setVisibility("bluePathLines", next);
-    vm.setVisibility("redPathLines", next);
+    vm.setVisibility("leftPathLines", next);
+    vm.setVisibility("rightPathLines", next);
   }
 
   vm.registerObserver(handleVisibilityChange);
@@ -138,16 +138,16 @@
       label: "Left",
       accent: "var(--prop-blue, #2196f3)",
       tone: "blue",
-      active: () => viewerVis!.blueMotion,
-      toggle: () => viewerVis!.toggleBlue(),
+      active: () => viewerVis!.leftMotion,
+      toggle: () => viewerVis!.toggleLeft(),
     },
     {
       id: "right",
       label: "Right",
       accent: "var(--prop-red, #f44336)",
       tone: "red",
-      active: () => viewerVis!.redMotion,
-      toggle: () => viewerVis!.toggleRed(),
+      active: () => viewerVis!.rightMotion,
+      toggle: () => viewerVis!.toggleRight(),
     },
   ];
 

@@ -1,6 +1,6 @@
 import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { MotionType, HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -23,12 +23,12 @@ const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 // from the locations) and the arrow pipeline renders the system float arrow
 // along the path - the same route the app itself takes for hand pictographs.
 // A hand that stays is STATIC (no arrow).
-const motion = (color: MotionColor, from: GridLocation, to: GridLocation) =>
+const motion = (color: HandSide, from: GridLocation, to: GridLocation) =>
   createMotionData({
     motionType: from === to ? MotionType.STATIC : MotionType.PRO,
     startLocation: from,
     endLocation: to,
-    color,
+    hand: color,
     propType: PropType.HAND,
     gridMode: GridMode.DIAMOND,
   });
@@ -44,13 +44,13 @@ const box = (m: Move, stepNumber: number, letter: Letter | null): StepData =>
     startPosition: getGridPositionFromLocations(m[0], m[2]),
     endPosition: getGridPositionFromLocations(m[1], m[3]),
     motions: {
-      blue: motion(MotionColor.BLUE, m[0], m[1]),
-      red: motion(MotionColor.RED, m[2], m[3]),
+      left: motion(HandSide.LEFT, m[0], m[1]),
+      right: motion(HandSide.RIGHT, m[2], m[3]),
     },
     stepNumber,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
   }) as unknown as StepData;
 

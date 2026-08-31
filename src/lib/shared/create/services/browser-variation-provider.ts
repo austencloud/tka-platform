@@ -15,7 +15,7 @@ import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/d
 import type { PictographData as AppPictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { Motion as AppMotion } from "@tka/tka-types";
 import type { MotionData as EngineMotionData } from "@tka/sequence-engine/generation";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 export class BrowserVariationProvider {
@@ -86,11 +86,11 @@ export class BrowserVariationProvider {
   private mapToEngineType(
     appPicto: AppPictographData
   ): EnginePictographData | null {
-    const blueMotion = appPicto.motions[MotionColor.BLUE];
-    const redMotion = appPicto.motions[MotionColor.RED];
+    const leftMotion = appPicto.motions[HandSide.LEFT];
+    const rightMotion = appPicto.motions[HandSide.RIGHT];
 
     // Both motions are required for the engine's sequence generation
-    if (!blueMotion || !redMotion) return null;
+    if (!leftMotion || !rightMotion) return null;
 
     return {
       letter: appPicto.letter?.toString() ?? "",
@@ -98,8 +98,8 @@ export class BrowserVariationProvider {
       endPosition: appPicto.endPosition?.toString() ?? "",
       timing: "together",
       direction: "together",
-      blueMotion: this.mapMotion(blueMotion, "blue"),
-      redMotion: this.mapMotion(redMotion, "red"),
+      leftMotion: this.mapMotion(leftMotion, "blue"),
+      rightMotion: this.mapMotion(rightMotion, "red"),
     };
   }
 

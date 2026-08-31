@@ -22,7 +22,7 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { TargetHand } from "$lib/shared/create/domain/panel-types";
   import {
-    MotionColor,
+    HandSide,
     MotionType,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -40,8 +40,8 @@
     label: string;
     shortLabel: string;
   }[] = [
-    { hand: "blue", label: "Blue", shortLabel: "Blue" },
-    { hand: "red", label: "Red", shortLabel: "Red" },
+    { hand: "left", label: "Left", shortLabel: "Left" },
+    { hand: "right", label: "Right", shortLabel: "Right" },
   ];
 
   interface Props {
@@ -50,18 +50,18 @@
     compact?: boolean;
     // Single-select: the displayed regular step (null when none / start position)
     stepData: StepData | null;
-    onTurnsChange: (color: MotionColor, delta: number) => void;
+    onTurnsChange: (color: HandSide, delta: number) => void;
     onRotationChange: (
-      color: MotionColor,
+      color: HandSide,
       direction: RotationDirection
     ) => void;
-    onOpenPropSheet?: (color: "blue" | "red") => void;
-    onPathShapeChange?: (color: MotionColor, shape: PathShapeValue) => void;
-    onPathShapeClear?: (color: MotionColor) => void;
+    onOpenPropSheet?: (hand: "left" | "right") => void;
+    onPathShapeChange?: (color: HandSide, shape: PathShapeValue) => void;
+    onPathShapeClear?: (color: HandSide) => void;
     // Multi-select: every selected step + the batch turns writer
     batchSteps: StepData[];
     onBatchTurnsChange: (
-      color: MotionColor,
+      color: HandSide,
       mode: BatchMode,
       amount: number | "fl"
     ) => void;
@@ -82,73 +82,73 @@
   }: Props = $props();
 
   // ---- Single-select display turns (mirrors StepEditorPanel's derivations) ----
-  const blueMotion = $derived(stepData?.motions?.[MotionColor.BLUE]);
-  const redMotion = $derived(stepData?.motions?.[MotionColor.RED]);
+  const leftMotion = $derived(stepData?.motions?.[HandSide.LEFT]);
+  const rightMotion = $derived(stepData?.motions?.[HandSide.RIGHT]);
 
   const normalizeTurns = (turns: number | string | undefined): number =>
     turns === "fl" ? -0.5 : Number(turns) || 0;
 
-  const currentBlueTurns = $derived(normalizeTurns(blueMotion?.turns));
-  const currentRedTurns = $derived(normalizeTurns(redMotion?.turns));
+  const currentLeftTurns = $derived(normalizeTurns(leftMotion?.turns));
+  const currentRightTurns = $derived(normalizeTurns(rightMotion?.turns));
 
-  const displayBlueTurns = $derived(
-    blueMotion?.turns === "fl" ? "fl" : currentBlueTurns
+  const displayLeftTurns = $derived(
+    leftMotion?.turns === "fl" ? "fl" : currentLeftTurns
   );
-  const displayRedTurns = $derived(
-    redMotion?.turns === "fl" ? "fl" : currentRedTurns
+  const displayRightTurns = $derived(
+    rightMotion?.turns === "fl" ? "fl" : currentRightTurns
   );
 
-  const showBlueRotation = $derived.by(() => {
-    if (currentBlueTurns < 0) return false;
+  const showLeftRotation = $derived.by(() => {
+    if (currentLeftTurns < 0) return false;
     if (
-      (blueMotion?.motionType === MotionType.STATIC ||
-        blueMotion?.motionType === MotionType.DASH) &&
-      currentBlueTurns === 0
+      (leftMotion?.motionType === MotionType.STATIC ||
+        leftMotion?.motionType === MotionType.DASH) &&
+      currentLeftTurns === 0
     ) {
       return false;
     }
     return true;
   });
-  const showRedRotation = $derived.by(() => {
-    if (currentRedTurns < 0) return false;
+  const showRightRotation = $derived.by(() => {
+    if (currentRightTurns < 0) return false;
     if (
-      (redMotion?.motionType === MotionType.STATIC ||
-        redMotion?.motionType === MotionType.DASH) &&
-      currentRedTurns === 0
+      (rightMotion?.motionType === MotionType.STATIC ||
+        rightMotion?.motionType === MotionType.DASH) &&
+      currentRightTurns === 0
     ) {
       return false;
     }
     return true;
   });
 
-  const blueRotation = $derived(
-    blueMotion?.rotationDirection ?? RotationDirection.NO_ROTATION
+  const leftRotation = $derived(
+    leftMotion?.rotationDirection ?? RotationDirection.NO_ROTATION
   );
-  const redRotation = $derived(
-    redMotion?.rotationDirection ?? RotationDirection.NO_ROTATION
+  const rightRotation = $derived(
+    rightMotion?.rotationDirection ?? RotationDirection.NO_ROTATION
   );
 
-  const bluePathShape = $derived(blueMotion?.pathShape);
-  const redPathShape = $derived(redMotion?.pathShape);
-  const blueIsShift = $derived(
-    blueMotion ? blueMotion.startLocation !== blueMotion.endLocation : false
+  const leftPathShape = $derived(leftMotion?.pathShape);
+  const rightPathShape = $derived(rightMotion?.pathShape);
+  const leftIsShift = $derived(
+    leftMotion ? leftMotion.startLocation !== leftMotion.endLocation : false
   );
-  const redIsShift = $derived(
-    redMotion ? redMotion.startLocation !== redMotion.endLocation : false
+  const rightIsShift = $derived(
+    rightMotion ? rightMotion.startLocation !== rightMotion.endLocation : false
   );
 
   // ---- Multi-select aggregates (mirrors BatchStepEditor) ----
-  const blueAgg = $derived(
-    aggregateTurns(batchSteps.map((s) => s.motions?.[MotionColor.BLUE]?.turns))
+  const leftAgg = $derived(
+    aggregateTurns(batchSteps.map((s) => s.motions?.[HandSide.LEFT]?.turns))
   );
-  const redAgg = $derived(
-    aggregateTurns(batchSteps.map((s) => s.motions?.[MotionColor.RED]?.turns))
+  const rightAgg = $derived(
+    aggregateTurns(batchSteps.map((s) => s.motions?.[HandSide.RIGHT]?.turns))
   );
 
   // Per-hand batch mode. Defaults to "Set all" — the palette shows the spread.
-  let blueMode = $state<BatchMode>("set");
-  let redMode = $state<BatchMode>("set");
-  let mobileHand = $state<TargetHand>("blue");
+  let leftMode = $state<BatchMode>("set");
+  let rightMode = $state<BatchMode>("set");
+  let mobileHand = $state<TargetHand>("left");
 
   const MODE_OPTIONS: { value: BatchMode; label: string }[] = [
     { value: "set", label: "Set all" },
@@ -195,48 +195,48 @@
       {compact}
       visibleHand={stacked ? mobileHand : "both"}
     >
-      {#snippet blueContent()}
+      {#snippet leftContent()}
         <Crossfade key={selectionMode} duration={DURATION.fast}>
           {#if selectionMode === "multi"}
             {@render batchHand(
               "blue",
-              MotionColor.BLUE,
-              blueAgg,
-              blueMode,
-              (m) => (blueMode = m)
+              HandSide.LEFT,
+              leftAgg,
+              leftMode,
+              (m) => (leftMode = m)
             )}
           {:else}
             {@render singleHand(
               "blue",
-              MotionColor.BLUE,
-              displayBlueTurns,
-              blueRotation,
-              showBlueRotation,
-              bluePathShape,
-              blueIsShift
+              HandSide.LEFT,
+              displayLeftTurns,
+              leftRotation,
+              showLeftRotation,
+              leftPathShape,
+              leftIsShift
             )}
           {/if}
         </Crossfade>
       {/snippet}
-      {#snippet redContent()}
+      {#snippet rightContent()}
         <Crossfade key={selectionMode} duration={DURATION.fast}>
           {#if selectionMode === "multi"}
             {@render batchHand(
               "red",
-              MotionColor.RED,
-              redAgg,
-              redMode,
-              (m) => (redMode = m)
+              HandSide.RIGHT,
+              rightAgg,
+              rightMode,
+              (m) => (rightMode = m)
             )}
           {:else}
             {@render singleHand(
               "red",
-              MotionColor.RED,
-              displayRedTurns,
-              redRotation,
-              showRedRotation,
-              redPathShape,
-              redIsShift
+              HandSide.RIGHT,
+              displayRightTurns,
+              rightRotation,
+              showRightRotation,
+              rightPathShape,
+              rightIsShift
             )}
           {/if}
         </Crossfade>
@@ -247,7 +247,7 @@
 
 {#snippet singleHand(
   colorName: "blue" | "red",
-  color: MotionColor,
+  color: HandSide,
   turns: number | "fl",
   rotation: RotationDirection,
   showRotation: boolean,
@@ -256,7 +256,7 @@
 )}
   <div class="hand-inner">
     <PropTurnsControl
-      color={colorName}
+      hand={color === HandSide.LEFT ? "left" : "right"}
       {turns}
       rotationDirection={rotation}
       {showRotation}
@@ -273,7 +273,7 @@
         : undefined}
     >
       {#snippet trailingControl()}
-        <PropTypeRow color={colorName} {compact} {onOpenPropSheet} />
+        <PropTypeRow hand={color === HandSide.LEFT ? "left" : "right"} {compact} {onOpenPropSheet} />
       {/snippet}
     </PropTurnsControl>
   </div>
@@ -281,7 +281,7 @@
 
 {#snippet batchHand(
   colorName: "blue" | "red",
-  color: MotionColor,
+  color: HandSide,
   agg: TurnsAggregate,
   mode: BatchMode,
   setMode: (m: BatchMode) => void

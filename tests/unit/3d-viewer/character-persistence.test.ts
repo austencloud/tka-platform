@@ -39,8 +39,8 @@ describe("3D Studio character persistence", () => {
         {
           position: { x: 2, z: -1 },
           facingAngle: 0.5,
-          customBluePlane: Plane.WALL,
-          customRedPlane: Plane.WALL,
+          customLeftPlane: Plane.WALL,
+          customRightPlane: Plane.WALL,
         },
       ],
     });

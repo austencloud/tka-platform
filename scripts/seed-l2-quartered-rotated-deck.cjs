@@ -50,14 +50,14 @@ for (let i = 1; i < csvLines.length; i++) {
     endPos: cols[2],
     timing: cols[3],
     direction: cols[4],
-    blueMotionType: cols[5],
-    blueRotDir: cols[6],
-    blueStartLoc: cols[7],
-    blueEndLoc: cols[8],
-    redMotionType: cols[9],
-    redRotDir: cols[10],
-    redStartLoc: cols[11],
-    redEndLoc: cols[12],
+    leftMotionType: cols[5],
+    leftRotDir: cols[6],
+    leftStartLoc: cols[7],
+    leftEndLoc: cols[8],
+    rightMotionType: cols[9],
+    rightRotDir: cols[10],
+    rightStartLoc: cols[11],
+    rightEndLoc: cols[12],
   });
 }
 
@@ -222,21 +222,21 @@ function canonicalFingerprint(letterArray) {
       stepNumber: beatIndex,
       duration: 1,
       motions: {
-        blue: {
-          motionType: edge.blueMotionType,
-          rotationDirection: edge.blueRotDir,
-          startLocation: edge.blueStartLoc,
-          endLocation: edge.blueEndLoc,
+        left: {
+          motionType: edge.leftMotionType,
+          rotationDirection: edge.leftRotDir,
+          startLocation: edge.leftStartLoc,
+          endLocation: edge.leftEndLoc,
           startOrientation: "in",
           endOrientation: "in",
           turns: 0,
           color: "blue",
         },
-        red: {
-          motionType: edge.redMotionType,
-          rotationDirection: edge.redRotDir,
-          startLocation: edge.redStartLoc,
-          endLocation: edge.redEndLoc,
+        right: {
+          motionType: edge.rightMotionType,
+          rotationDirection: edge.rightRotDir,
+          startLocation: edge.rightStartLoc,
+          endLocation: edge.rightEndLoc,
           startOrientation: "in",
           endOrientation: "in",
           turns: 0,
@@ -250,23 +250,23 @@ function canonicalFingerprint(letterArray) {
     for (let i = 1; i < steps.length; i++) {
       const prev = steps[i - 1];
       const step = steps[i];
-      step.motions.blue.startOrientation = prev.motions.blue.endOrientation;
-      step.motions.red.startOrientation = prev.motions.red.endOrientation;
-      step.motions.blue.endOrientation = calculateEndOrientation({
-        motionType: step.motions.blue.motionType,
-        turns: step.motions.blue.turns,
-        rotationDirection: step.motions.blue.rotationDirection,
-        startLocation: step.motions.blue.startLocation,
-        endLocation: step.motions.blue.endLocation,
-        startOrientation: step.motions.blue.startOrientation,
+      step.motions.left.startOrientation = prev.motions.left.endOrientation;
+      step.motions.right.startOrientation = prev.motions.right.endOrientation;
+      step.motions.left.endOrientation = calculateEndOrientation({
+        motionType: step.motions.left.motionType,
+        turns: step.motions.left.turns,
+        rotationDirection: step.motions.left.rotationDirection,
+        startLocation: step.motions.left.startLocation,
+        endLocation: step.motions.left.endLocation,
+        startOrientation: step.motions.left.startOrientation,
       });
-      step.motions.red.endOrientation = calculateEndOrientation({
-        motionType: step.motions.red.motionType,
-        turns: step.motions.red.turns,
-        rotationDirection: step.motions.red.rotationDirection,
-        startLocation: step.motions.red.startLocation,
-        endLocation: step.motions.red.endLocation,
-        startOrientation: step.motions.red.startOrientation,
+      step.motions.right.endOrientation = calculateEndOrientation({
+        motionType: step.motions.right.motionType,
+        turns: step.motions.right.turns,
+        rotationDirection: step.motions.right.rotationDirection,
+        startLocation: step.motions.right.startLocation,
+        endLocation: step.motions.right.endLocation,
+        startOrientation: step.motions.right.startOrientation,
       });
     }
     return steps;
@@ -286,14 +286,14 @@ function canonicalFingerprint(letterArray) {
       stepNumber: 0,
       duration: 1,
       motions: {
-        blue: {
+        left: {
           motionType: "static", rotationDirection: "noRotation",
-          startLocation: edge.blueStartLoc, endLocation: edge.blueStartLoc,
+          startLocation: edge.leftStartLoc, endLocation: edge.leftStartLoc,
           startOrientation: "in", endOrientation: "in", turns: 0, color: "blue",
         },
-        red: {
+        right: {
           motionType: "static", rotationDirection: "noRotation",
-          startLocation: edge.redStartLoc, endLocation: edge.redStartLoc,
+          startLocation: edge.rightStartLoc, endLocation: edge.rightStartLoc,
           startOrientation: "in", endOrientation: "in", turns: 0, color: "red",
         },
       },
@@ -387,53 +387,53 @@ function canonicalFingerprint(letterArray) {
     // 2^2 = 4 combinations for 1-step seed (blue, red on one step)
     // Quartered mirrors to all 4 steps
     for (let mask = 0; mask < 4; mask++) {
-      const seedTurns = { blue: (mask >> 0) & 1, red: (mask >> 1) & 1 };
+      const seedTurns = { left: (mask >> 0) & 1, right: (mask >> 1) & 1 };
       const allTurns = [seedTurns, seedTurns, seedTurns, seedTurns];
-      const totalTurns = allTurns.reduce((s, t) => s + t.blue + t.red, 0);
+      const totalTurns = allTurns.reduce((s, t) => s + t.left + t.right, 0);
       if (totalTurns <= bestTotalTurns) continue;
 
       const testSteps = beatSteps.map((step, i) => ({
         ...step,
         motions: {
-          blue: { ...step.motions.blue, turns: allTurns[i].blue },
-          red: { ...step.motions.red, turns: allTurns[i].red },
+          left: { ...step.motions.left, turns: allTurns[i].left },
+          right: { ...step.motions.right, turns: allTurns[i].right },
         },
       }));
 
-      let blueOri = "in";
-      let redOri = "in";
+      let leftOri = "in";
+      let rightOri = "in";
       for (const step of testSteps) {
-        step.motions.blue.startOrientation = blueOri;
-        step.motions.red.startOrientation = redOri;
-        step.motions.blue.endOrientation = calculateEndOrientation({
-          motionType: step.motions.blue.motionType,
-          turns: step.motions.blue.turns,
-          rotationDirection: step.motions.blue.rotationDirection,
-          startLocation: step.motions.blue.startLocation,
-          endLocation: step.motions.blue.endLocation,
-          startOrientation: blueOri,
+        step.motions.left.startOrientation = leftOri;
+        step.motions.right.startOrientation = rightOri;
+        step.motions.left.endOrientation = calculateEndOrientation({
+          motionType: step.motions.left.motionType,
+          turns: step.motions.left.turns,
+          rotationDirection: step.motions.left.rotationDirection,
+          startLocation: step.motions.left.startLocation,
+          endLocation: step.motions.left.endLocation,
+          startOrientation: leftOri,
         });
-        step.motions.red.endOrientation = calculateEndOrientation({
-          motionType: step.motions.red.motionType,
-          turns: step.motions.red.turns,
-          rotationDirection: step.motions.red.rotationDirection,
-          startLocation: step.motions.red.startLocation,
-          endLocation: step.motions.red.endLocation,
-          startOrientation: redOri,
+        step.motions.right.endOrientation = calculateEndOrientation({
+          motionType: step.motions.right.motionType,
+          turns: step.motions.right.turns,
+          rotationDirection: step.motions.right.rotationDirection,
+          startLocation: step.motions.right.startLocation,
+          endLocation: step.motions.right.endLocation,
+          startOrientation: rightOri,
         });
-        blueOri = step.motions.blue.endOrientation;
-        redOri = step.motions.red.endOrientation;
+        leftOri = step.motions.left.endOrientation;
+        rightOri = step.motions.right.endOrientation;
       }
 
-      if (blueOri === "in" && redOri === "in") {
+      if (leftOri === "in" && rightOri === "in") {
         bestAssignment = allTurns;
         bestTotalTurns = totalTurns;
       }
     }
 
     return bestAssignment || [
-      { blue: 0, red: 0 }, { blue: 0, red: 0 },
-      { blue: 0, red: 0 }, { blue: 0, red: 0 },
+      { left: 0, right: 0 }, { left: 0, right: 0 },
+      { left: 0, right: 0 }, { left: 0, right: 0 },
     ];
   }
 
@@ -451,8 +451,8 @@ function canonicalFingerprint(letterArray) {
     const group = canonicals.filter(c => c.typeName === typeName);
     for (const c of group) {
       const turns = findBestTurnAssignment(c);
-      const turnStr = turns.map(t => `${t.blue}${t.red}`).join(" ");
-      const totalTurns = turns.reduce((s, t) => s + t.blue + t.red, 0);
+      const turnStr = turns.map(t => `${t.left}${t.right}`).join(" ");
+      const totalTurns = turns.reduce((s, t) => s + t.left + t.right, 0);
       console.log(`  ${c.representative.seed.seedWord.padEnd(6)} from ${c.representative.seed.startPos.padEnd(9)} turns=[${turnStr}] total=${totalTurns} (${c.memberCount} variant${c.memberCount > 1 ? "s" : ""})`);
     }
     console.log();
@@ -480,7 +480,7 @@ function canonicalFingerprint(letterArray) {
         letterType: c.letterType,
         typeName: c.typeName,
         turns,
-        totalTurns: turns.reduce((s, t) => s + t.blue + t.red, 0),
+        totalTurns: turns.reduce((s, t) => s + t.left + t.right, 0),
         variants: c.memberCount,
       };
     });
@@ -532,34 +532,34 @@ function canonicalFingerprint(letterArray) {
       const stepsWithTurns = beatSteps.map((step, i) => ({
         ...step,
         motions: {
-          blue: { ...step.motions.blue, turns: turns[i].blue },
-          red: { ...step.motions.red, turns: turns[i].red },
+          left: { ...step.motions.left, turns: turns[i].left },
+          right: { ...step.motions.right, turns: turns[i].right },
         },
       }));
 
-      let blueOri = "in";
-      let redOri = "in";
+      let leftOri = "in";
+      let rightOri = "in";
       for (const step of stepsWithTurns) {
-        step.motions.blue.startOrientation = blueOri;
-        step.motions.red.startOrientation = redOri;
-        step.motions.blue.endOrientation = calculateEndOrientation({
-          motionType: step.motions.blue.motionType,
-          turns: step.motions.blue.turns,
-          rotationDirection: step.motions.blue.rotationDirection,
-          startLocation: step.motions.blue.startLocation,
-          endLocation: step.motions.blue.endLocation,
-          startOrientation: blueOri,
+        step.motions.left.startOrientation = leftOri;
+        step.motions.right.startOrientation = rightOri;
+        step.motions.left.endOrientation = calculateEndOrientation({
+          motionType: step.motions.left.motionType,
+          turns: step.motions.left.turns,
+          rotationDirection: step.motions.left.rotationDirection,
+          startLocation: step.motions.left.startLocation,
+          endLocation: step.motions.left.endLocation,
+          startOrientation: leftOri,
         });
-        step.motions.red.endOrientation = calculateEndOrientation({
-          motionType: step.motions.red.motionType,
-          turns: step.motions.red.turns,
-          rotationDirection: step.motions.red.rotationDirection,
-          startLocation: step.motions.red.startLocation,
-          endLocation: step.motions.red.endLocation,
-          startOrientation: redOri,
+        step.motions.right.endOrientation = calculateEndOrientation({
+          motionType: step.motions.right.motionType,
+          turns: step.motions.right.turns,
+          rotationDirection: step.motions.right.rotationDirection,
+          startLocation: step.motions.right.startLocation,
+          endLocation: step.motions.right.endLocation,
+          startOrientation: rightOri,
         });
-        blueOri = step.motions.blue.endOrientation;
-        redOri = step.motions.red.endOrientation;
+        leftOri = step.motions.left.endOrientation;
+        rightOri = step.motions.right.endOrientation;
       }
 
       const sp = rep.fullSteps[0];
@@ -571,27 +571,27 @@ function canonicalFingerprint(letterArray) {
         letter: step.letter,
         startPosition: step.startPosition,
         endPosition: step.endPosition,
-        blueReversal: false,
-        redReversal: false,
+        leftReversal: false,
+        rightReversal: false,
         motions: {
-          blue: {
-            motionType: step.motions.blue.motionType,
-            rotationDirection: step.motions.blue.rotationDirection,
-            startLocation: step.motions.blue.startLocation,
-            endLocation: step.motions.blue.endLocation,
-            turns: step.motions.blue.turns,
-            startOrientation: step.motions.blue.startOrientation,
-            endOrientation: step.motions.blue.endOrientation,
+          left: {
+            motionType: step.motions.left.motionType,
+            rotationDirection: step.motions.left.rotationDirection,
+            startLocation: step.motions.left.startLocation,
+            endLocation: step.motions.left.endLocation,
+            turns: step.motions.left.turns,
+            startOrientation: step.motions.left.startOrientation,
+            endOrientation: step.motions.left.endOrientation,
             isVisible: true, propType: "staff", color: "blue", gridMode: GRID_MODE,
           },
-          red: {
-            motionType: step.motions.red.motionType,
-            rotationDirection: step.motions.red.rotationDirection,
-            startLocation: step.motions.red.startLocation,
-            endLocation: step.motions.red.endLocation,
-            turns: step.motions.red.turns,
-            startOrientation: step.motions.red.startOrientation,
-            endOrientation: step.motions.red.endOrientation,
+          right: {
+            motionType: step.motions.right.motionType,
+            rotationDirection: step.motions.right.rotationDirection,
+            startLocation: step.motions.right.startLocation,
+            endLocation: step.motions.right.endLocation,
+            turns: step.motions.right.turns,
+            startOrientation: step.motions.right.startOrientation,
+            endOrientation: step.motions.right.endOrientation,
             isVisible: true, propType: "staff", color: "red", gridMode: GRID_MODE,
           },
         },
@@ -603,20 +603,20 @@ function canonicalFingerprint(letterArray) {
         gridPosition: sp.startPosition,
         gridMode: GRID_MODE,
         motions: {
-          blue: {
-            motionType: sp.motions.blue.motionType,
-            rotationDirection: sp.motions.blue.rotationDirection,
-            startLocation: sp.motions.blue.startLocation,
-            endLocation: sp.motions.blue.endLocation,
+          left: {
+            motionType: sp.motions.left.motionType,
+            rotationDirection: sp.motions.left.rotationDirection,
+            startLocation: sp.motions.left.startLocation,
+            endLocation: sp.motions.left.endLocation,
             turns: 0,
             startOrientation: "in", endOrientation: "in",
             isVisible: true, propType: "staff", color: "blue", gridMode: GRID_MODE,
           },
-          red: {
-            motionType: sp.motions.red.motionType,
-            rotationDirection: sp.motions.red.rotationDirection,
-            startLocation: sp.motions.red.startLocation,
-            endLocation: sp.motions.red.endLocation,
+          right: {
+            motionType: sp.motions.right.motionType,
+            rotationDirection: sp.motions.right.rotationDirection,
+            startLocation: sp.motions.right.startLocation,
+            endLocation: sp.motions.right.endLocation,
             turns: 0,
             startOrientation: "in", endOrientation: "in",
             isVisible: true, propType: "staff", color: "red", gridMode: GRID_MODE,
@@ -647,7 +647,7 @@ function canonicalFingerprint(letterArray) {
           letterType: canon.letterType,
           typeName: canon.typeName,
           turnAssignment: turns,
-          totalTurns: turns.reduce((s, t) => s + t.blue + t.red, 0),
+          totalTurns: turns.reduce((s, t) => s + t.left + t.right, 0),
           variantCount: canon.memberCount,
         },
         author: "TKA Enumerator",

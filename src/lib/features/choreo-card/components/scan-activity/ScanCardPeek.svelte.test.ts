@@ -31,8 +31,8 @@ const event: ScanEventRow = {
   lng: -87.65,
   deviceId: "device-1",
   userId: null,
-  bluePropType: PropType.POI,
-  redPropType: PropType.FAN,
+  leftPropType: PropType.POI,
+  rightPropType: PropType.FAN,
   catDogMode: true,
 };
 
@@ -47,8 +47,8 @@ function entry(overrides: Partial<CodeEntry> = {}): CodeEntry {
     lastScannedAt: event.timestamp,
     lastCity: event.city,
     lastCountry: event.country,
-    bluePropType: PropType.STAFF,
-    redPropType: PropType.STAFF,
+    leftPropType: PropType.STAFF,
+    rightPropType: PropType.STAFF,
     catDogMode: false,
     metadataAvailable: true,
     embeddedFallback: null,

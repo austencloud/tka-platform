@@ -18,6 +18,7 @@
 	import { MotionType, RotationDirection, Orientation } from '../domain/tka-enums';
 	import SegmentedControl from '$lib/shared/ui/components/SegmentedControl.svelte';
 	import PictographContainer from '$lib/shared/pictograph/shared/components/PictographContainer.svelte';
+	import { HandSide, type HandSide as HandSideValue } from '$lib/shared/pictograph/shared/domain/enums/pictograph-enums';
 
 	interface Props {
 		beats: BeatNotation[];
@@ -38,7 +39,7 @@
 			| 'endLocation'
 		>
 	>;
-	type BeatOverride = { blue?: HandOverride; red?: HandOverride };
+	type BeatOverride = { left?: HandOverride; right?: HandOverride };
 
 	let corrections = $state<Record<number, BeatOverride>>({});
 	let selected = $state<number | null>(null);
@@ -60,8 +61,8 @@
 
 	const correctedBeats = $derived(
 		beats.map((b, i) => ({
-			blue: applyHand(b.blue, corrections[i]?.blue),
-			red: applyHand(b.red, corrections[i]?.red),
+			left: applyHand(b.left, corrections[i]?.left),
+			right: applyHand(b.right, corrections[i]?.right),
 		})),
 	);
 
@@ -70,11 +71,11 @@
 	let revisions = $state<Record<number, number>>({});
 	const pictographs = $derived(
 		correctedBeats.map((b, i) =>
-			notationToPictographData(b.blue, b.red, `beat-${i}-r${revisions[i] ?? 0}`),
+			notationToPictographData(b.left, b.right, `beat-${i}-r${revisions[i] ?? 0}`),
 		),
 	);
 
-	function setField(beatIndex: number, hand: 'blue' | 'red', field: keyof HandOverride, value: unknown) {
+	function setField(beatIndex: number, hand: HandSideValue, field: keyof HandOverride, value: unknown) {
 		const beatOverride: BeatOverride = { ...(corrections[beatIndex] ?? {}) };
 		beatOverride[hand] = { ...(beatOverride[hand] ?? {}), [field]: value };
 		corrections = { ...corrections, [beatIndex]: beatOverride };
@@ -99,7 +100,7 @@
 
 	/** Name the weakest confidence component so the badge says WHY. */
 	function weakestComponent(beat: BeatNotation): string | null {
-		const details = [beat.blue.confidenceDetail, beat.red.confidenceDetail].filter(
+		const details = [beat.left.confidenceDetail, beat.right.confidenceDetail].filter(
 			(d) => d !== undefined,
 		);
 		if (details.length === 0) return null;
@@ -121,7 +122,7 @@
 	}
 
 	function beatConfidence(beat: BeatNotation): number {
-		return Math.min(beat.blue.confidence, beat.red.confidence);
+		return Math.min(beat.left.confidence, beat.right.confidence);
 	}
 
 	/** The selected beat, narrowed for the template (null-safe editor state). */
@@ -131,7 +132,7 @@
 		return beat ? { idx: selected, beat } : null;
 	});
 
-	const HANDS = ['blue', 'red'] as const;
+	const HANDS = [HandSide.LEFT, HandSide.RIGHT] as const;
 
 	// --- Correction control options ---
 	const MOTION_OPTIONS = [
@@ -155,7 +156,7 @@
 	const LOCATIONS: GridLocation[] = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
 	const LOCATION_OPTIONS = LOCATIONS.map((l) => ({ value: l, label: l }));
 
-	function stepTurns(beatIndex: number, hand: 'blue' | 'red', delta: number) {
+	function stepTurns(beatIndex: number, hand: HandSideValue, delta: number) {
 		const current = correctedBeats[beatIndex]![hand].turns;
 		const next = Math.min(3, Math.max(0, current + delta));
 		setField(beatIndex, hand, 'turns', next);
@@ -184,7 +185,7 @@
 		return `#${b.detectedIndex + 1}`;
 	}
 
-	function handSummary(hand: BeatScore['blue']): string {
+	function handSummary(hand: BeatScore['left']): string {
 		if (!hand) return '—';
 		if (hand.scored === 0) return '—';
 		const misses = hand.fields.filter((f) => !f.match);
@@ -241,7 +242,7 @@
 								options={MOTION_OPTIONS}
 								value={motion.motionType}
 								onchange={(v) => setField(idx, hand, 'motionType', v)}
-								color={hand}
+								color={hand === HandSide.LEFT ? 'blue' : 'red'}
 								size="sm"
 							/>
 						</div>
@@ -275,7 +276,7 @@
 								options={ROTATION_OPTIONS}
 								value={motion.rotationDirection}
 								onchange={(v) => setField(idx, hand, 'rotationDirection', v)}
-								color={hand}
+								color={hand === HandSide.LEFT ? 'blue' : 'red'}
 								size="sm"
 							/>
 						</div>
@@ -285,7 +286,7 @@
 								options={ORIENT_OPTIONS}
 								value={motion.startOrientation}
 								onchange={(v) => setField(idx, hand, 'startOrientation', v)}
-								color={hand}
+								color={hand === HandSide.LEFT ? 'blue' : 'red'}
 								size="sm"
 							/>
 						</div>
@@ -295,7 +296,7 @@
 								options={ORIENT_OPTIONS}
 								value={motion.endOrientation}
 								onchange={(v) => setField(idx, hand, 'endOrientation', v)}
-								color={hand}
+								color={hand === HandSide.LEFT ? 'blue' : 'red'}
 								size="sm"
 							/>
 						</div>
@@ -305,7 +306,7 @@
 								options={LOCATION_OPTIONS}
 								value={motion.startLocation}
 								onchange={(v) => setField(idx, hand, 'startLocation', v)}
-								color={hand}
+								color={hand === HandSide.LEFT ? 'blue' : 'red'}
 								size="sm"
 							/>
 						</div>
@@ -315,7 +316,7 @@
 								options={LOCATION_OPTIONS}
 								value={motion.endLocation}
 								onchange={(v) => setField(idx, hand, 'endLocation', v)}
-								color={hand}
+								color={hand === HandSide.LEFT ? 'blue' : 'red'}
 								size="sm"
 							/>
 						</div>
@@ -398,8 +399,8 @@
 											: `${(b.score * 100).toFixed(0)}%`}
 									</td>
 									<td class="num">{b.confidence === null ? '—' : `${(b.confidence * 100).toFixed(0)}%`}</td>
-									<td>{handSummary(b.blue)}</td>
-									<td>{handSummary(b.red)}</td>
+									<td>{handSummary(b.left)}</td>
+									<td>{handSummary(b.right)}</td>
 								</tr>
 							{/each}
 						</tbody>

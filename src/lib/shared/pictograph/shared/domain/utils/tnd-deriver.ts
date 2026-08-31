@@ -24,7 +24,7 @@
  * Design: docs/superpowers/specs/2026-05-30-tnd-downbeat-deriver-and-gamma-split-design.md
  */
 
-import { TnDMode, MotionColor } from "../enums/pictograph-enums";
+import { TnDMode, HandSide } from "../enums/pictograph-enums";
 import { isVisibleMotion } from "../models/motion-data";
 import type { GridLocation } from "../../../grid/domain/enums/grid-enums";
 import type { PictographData } from "../models/pictograph-data";
@@ -80,22 +80,22 @@ const MODE_BY_TIMING_DIR: Readonly<Record<string, TnDMode>> = {
  *   shift (its arc has no orbital sense — static or dash geometry)
  */
 export function deriveTnD(
-  blueStart: GridLocation,
-  blueEnd: GridLocation,
-  redStart: GridLocation,
-  redEnd: GridLocation
+  leftStart: GridLocation,
+  leftEnd: GridLocation,
+  rightStart: GridLocation,
+  rightEnd: GridLocation
 ): TnDCalculationResult {
-  const blueDir = deriveHandOrbitalDirection(blueStart, blueEnd);
-  const redDir = deriveHandOrbitalDirection(redStart, redEnd);
-  if (blueDir === null || redDir === null) return NULL_RESULT;
+  const leftDir = deriveHandOrbitalDirection(leftStart, leftEnd);
+  const rightDir = deriveHandOrbitalDirection(rightStart, rightEnd);
+  if (leftDir === null || rightDir === null) return NULL_RESULT;
 
-  const bluePhase = phaseToSouth(blueStart, blueDir);
-  const redPhase = phaseToSouth(redStart, redDir);
-  if (Number.isNaN(bluePhase) || Number.isNaN(redPhase)) return NULL_RESULT;
+  const leftPhase = phaseToSouth(leftStart, leftDir);
+  const rightPhase = phaseToSouth(rightStart, rightDir);
+  if (Number.isNaN(leftPhase) || Number.isNaN(rightPhase)) return NULL_RESULT;
 
-  const delta = (((bluePhase - redPhase) % 360) + 360) % 360;
+  const delta = (((leftPhase - rightPhase) % 360) + 360) % 360;
   const timing = delta === 0 ? "tog" : delta === 180 ? "split" : "quarter";
-  const direction = blueDir === redDir ? "same" : "opp";
+  const direction = leftDir === rightDir ? "same" : "opp";
 
   const tndMode = MODE_BY_TIMING_DIR[`${timing}-${direction}`]!;
   return { tndMode, elementalType: TND_TO_ELEMENTAL[tndMode] };
@@ -110,15 +110,15 @@ export function deriveTnD(
 export function deriveTnDFromPictograph(
   p: PictographData | null | undefined
 ): TnDCalculationResult {
-  const blue = p?.motions?.[MotionColor.BLUE];
-  const red = p?.motions?.[MotionColor.RED];
+  const left = p?.motions?.[HandSide.LEFT];
+  const right = p?.motions?.[HandSide.RIGHT];
   // Invisible placeholder = hand not really there (both-required Step shape).
-  if (!isVisibleMotion(blue) || !isVisibleMotion(red)) return NULL_RESULT;
+  if (!isVisibleMotion(left) || !isVisibleMotion(right)) return NULL_RESULT;
 
   return deriveTnD(
-    blue.startLocation,
-    blue.endLocation,
-    red.startLocation,
-    red.endLocation
+    left.startLocation,
+    left.endLocation,
+    right.startLocation,
+    right.endLocation
   );
 }

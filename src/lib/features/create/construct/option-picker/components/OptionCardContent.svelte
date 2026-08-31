@@ -12,19 +12,19 @@ Dark mode is handled via CSS-first approach (:root.dark class).
 
   interface Props {
     pictograph: PreparedPictographData;
-    blueReversal?: boolean;
-    redReversal?: boolean;
+    leftReversal?: boolean;
+    rightReversal?: boolean;
   }
 
   const {
     pictograph,
-    blueReversal = false,
-    redReversal = false,
+    leftReversal = false,
+    rightReversal = false,
   }: Props = $props();
 </script>
 
 <div class="option-card-content">
-  <OptionPictograph {pictograph} {blueReversal} {redReversal} />
+  <OptionPictograph {pictograph} {leftReversal} {rightReversal} />
 </div>
 
 <style>

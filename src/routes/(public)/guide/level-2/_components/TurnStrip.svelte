@@ -64,7 +64,7 @@
          * staves draw over one shared 5-dot grid with no layout cost.
          */
         kind: "dual-pose";
-        poses: { motion: HalfwayMotion; color: MotionColor; t: number }[];
+        poses: { motion: HalfwayMotion; color: HandSide; t: number }[];
         frameLabel?: string;
         thumbLabel?: string;
       };
@@ -79,7 +79,7 @@
   import { getGuideSequenceClick } from "../../level-1/_data/guide-data-context";
   import { getGuideActiveStep } from "../../level-1/_data/guide-active-step.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { MotionType, HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   let {
     frames,
@@ -192,9 +192,9 @@
     const where = from === to ? `at ${from}` : `from ${from} to ${to}`;
     return `Staff pose at the ${fractionWord(t)} point of the ${verb} motion ${where}.`;
   };
-  const dualPoseAriaLabel = (poses: { motion: HalfwayMotion; color: MotionColor; t: number }[]): string =>
+  const dualPoseAriaLabel = (poses: { motion: HalfwayMotion; color: HandSide; t: number }[]): string =>
     poses
-      .map((p) => `${p.color === MotionColor.BLUE ? "Blue" : "Red"} ${poseAriaLabel(p.motion, p.t).charAt(0).toLowerCase()}${poseAriaLabel(p.motion, p.t).slice(1)}`)
+      .map((p) => `${p.color === HandSide.LEFT ? "Blue" : "Red"} ${poseAriaLabel(p.motion, p.t).charAt(0).toLowerCase()}${poseAriaLabel(p.motion, p.t).slice(1)}`)
       .join(" ");
 </script>
 

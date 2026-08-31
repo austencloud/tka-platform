@@ -23,8 +23,8 @@ export interface CellContextMenuCallbacks {
   onSetSpeed: (speed: number) => void;
   onSetEffect: (effect: CellEffect) => void;
   onSetTrailMode: (mode: TrailMode) => void;
-  onSetBlueVisible: (visible: boolean) => void;
-  onSetRedVisible: (visible: boolean) => void;
+  onSetLeftVisible: (visible: boolean) => void;
+  onSetRightVisible: (visible: boolean) => void;
   onSetEffort: (effort: string) => void;
   onCopyCell: () => void;
   onClearCell: () => void;
@@ -226,8 +226,8 @@ function buildVisibilityChildren(
   cell: GridCell,
   callbacks: CellContextMenuCallbacks
 ): ContextMenuItem[] {
-  const blueVisible = cell.blueMotionVisible !== false;
-  const redVisible = cell.redMotionVisible !== false;
+  const leftVisible = cell.leftMotionVisible !== false;
+  const rightVisible = cell.rightMotionVisible !== false;
 
   return [
     {
@@ -235,18 +235,18 @@ function buildVisibilityChildren(
       label: "Blue Motion",
       icon: "fa-circle",
       iconColor: "#3b82f6",
-      checked: blueVisible,
+      checked: leftVisible,
       keepOpen: true,
-      action: () => callbacks.onSetBlueVisible(!blueVisible),
+      action: () => callbacks.onSetLeftVisible(!leftVisible),
     },
     {
       id: "vis-red",
       label: "Red Motion",
       icon: "fa-circle",
       iconColor: "#ef4444",
-      checked: redVisible,
+      checked: rightVisible,
       keepOpen: true,
-      action: () => callbacks.onSetRedVisible(!redVisible),
+      action: () => callbacks.onSetRightVisible(!rightVisible),
     },
   ];
 }

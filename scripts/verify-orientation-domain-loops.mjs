@@ -91,8 +91,8 @@ section("B. INVERTED never moves positions/locations (applyOverlayInversion inva
 const mk = (letter, sp, ep, b, r) => ({
   id: letter, letter, startPosition: sp, endPosition: ep, stepNumber: 0, duration: 1,
   motions: {
-    blue: { color: "blue", motionType: b[0], rotationDirection: b[1], startLocation: b[2], endLocation: b[3], startOrientation: "in", endOrientation: "in", turns: b[4] ?? 0 },
-    red:  { color: "red",  motionType: r[0], rotationDirection: r[1], startLocation: r[2], endLocation: r[3], startOrientation: "in", endOrientation: "in", turns: r[4] ?? 0 },
+    left: { color: "blue", motionType: b[0], rotationDirection: b[1], startLocation: b[2], endLocation: b[3], startOrientation: "in", endOrientation: "in", turns: b[4] ?? 0 },
+    right:  { color: "red",  motionType: r[0], rotationDirection: r[1], startLocation: r[2], endLocation: r[3], startOrientation: "in", endOrientation: "in", turns: r[4] ?? 0 },
   },
 });
 const startStep = (pos) => mk("β", pos, pos, ["static","noRotation","n","n"], ["static","noRotation","n","n"]);
@@ -137,10 +137,10 @@ for (const seq of seqs) {
       const a = seq[i], b = out[i];
       const moved =
         a.startPosition !== b.startPosition || a.endPosition !== b.endPosition ||
-        a.motions.blue.startLocation !== b.motions.blue.startLocation ||
-        a.motions.blue.endLocation !== b.motions.blue.endLocation ||
-        a.motions.red.startLocation !== b.motions.red.startLocation ||
-        a.motions.red.endLocation !== b.motions.red.endLocation;
+        a.motions.left.startLocation !== b.motions.left.startLocation ||
+        a.motions.left.endLocation !== b.motions.left.endLocation ||
+        a.motions.right.startLocation !== b.motions.right.startLocation ||
+        a.motions.right.endLocation !== b.motions.right.endLocation;
       if (moved) invViolations++;
     }
   }

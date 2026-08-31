@@ -7,7 +7,7 @@ import { generatePlacementKey } from "$lib/shared/pictograph/arrow/positioning/k
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -69,11 +69,11 @@ export function buildPlacementFixture(
       startOrientation: selectedStartOrientation,
       endOrientation: selectedStartOrientation,
       turns,
-      color: MotionColor.BLUE,
+      hand: HandSide.LEFT,
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     }),
-    MotionColor.BLUE
+    HandSide.LEFT
   );
   const diamondOther = withCalculatedEndOrientation(
     createMotionData({
@@ -85,17 +85,17 @@ export function buildPlacementFixture(
       startOrientation: otherStartOrientation,
       endOrientation: otherStartOrientation,
       turns,
-      color: MotionColor.RED,
+      hand: HandSide.RIGHT,
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     }),
-    MotionColor.RED
+    HandSide.RIGHT
   );
   const diamond: PictographData = {
     id: `diamond-${motionType}-${placementKey}-${turns}-${rotationDirection}`,
     letter: identity.letter as never,
     gridMode: GridMode.DIAMOND,
-    motions: { blue: diamondMotion, red: diamondOther },
+    motions: { left: diamondMotion, right: diamondOther },
   };
   const boxMotion = rotateMotion(diamondMotion, 1);
   const boxOther = rotateMotion(diamondOther, 1);
@@ -103,7 +103,7 @@ export function buildPlacementFixture(
     ...diamond,
     id: `box-${motionType}-${placementKey}-${turns}-${rotationDirection}`,
     gridMode: GridMode.BOX,
-    motions: { blue: boxMotion, red: boxOther },
+    motions: { left: boxMotion, right: boxOther },
   };
 
   return { diamond, box, diamondMotion, boxMotion };
@@ -113,20 +113,20 @@ export function buildPictographPlacementFixture(
   source: PictographData,
   turns: number
 ): PlacementFixture {
-  const sourceBlue = source.motions.blue;
-  const sourceRed = source.motions.red;
-  if (!sourceBlue || !sourceRed) {
+  const sourceLeft = source.motions.left;
+  const sourceRight = source.motions.right;
+  if (!sourceLeft || !sourceRight) {
     throw new Error("The placement lab needs a pictograph with two motions");
   }
 
   const diamondMotion = materializePictographMotion(
-    sourceBlue,
-    MotionColor.BLUE,
+    sourceLeft,
+    HandSide.LEFT,
     turns
   );
   const diamondOther = materializePictographMotion(
-    sourceRed,
-    MotionColor.RED,
+    sourceRight,
+    HandSide.RIGHT,
     turns
   );
   const sourceId = source.id || source.letter || "pictograph";
@@ -136,8 +136,8 @@ export function buildPictographPlacementFixture(
     gridMode: GridMode.DIAMOND,
     motions: {
       ...source.motions,
-      blue: diamondMotion,
-      red: diamondOther,
+      left: diamondMotion,
+      right: diamondOther,
     },
   };
   const boxMotion = rotateMotion(diamondMotion, 1);
@@ -156,8 +156,8 @@ export function buildPictographPlacementFixture(
     ),
     motions: {
       ...diamond.motions,
-      blue: boxMotion,
-      red: boxOther,
+      left: boxMotion,
+      right: boxOther,
     },
   };
 
@@ -166,7 +166,7 @@ export function buildPictographPlacementFixture(
 
 function materializePictographMotion(
   source: MotionData,
-  color: MotionColor,
+  color: HandSide,
   turns: number
 ): MotionData {
   const motion = {
@@ -181,7 +181,7 @@ function materializePictographMotion(
 
 function withCalculatedEndOrientation(
   motion: MotionData,
-  color: MotionColor
+  color: HandSide
 ): MotionData {
   return {
     ...motion,

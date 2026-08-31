@@ -12,7 +12,7 @@ import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -41,19 +41,19 @@ const redShift = (from: GridLocation, to: GridLocation, anti: boolean, so: Orien
     startOrientation: so,
     endOrientation: anti ? (so === IN ? OUT : IN) : so,
     turns: 0,
-    color: MotionColor.RED,
+    hand: HandSide.RIGHT,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
 };
-const staticHand = (color: MotionColor, loc: GridLocation) =>
+const staticHand = (color: HandSide, loc: GridLocation) =>
   createMotionData({
     motionType: MotionType.STATIC,
     startLocation: loc,
     endLocation: loc,
     startOrientation: IN,
     endOrientation: IN,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
@@ -61,7 +61,7 @@ const staticHand = (color: MotionColor, loc: GridLocation) =>
 type CellDef = {
   letter: Letter;
   name: string;
-  blueLoc: GridLocation;
+  leftLoc: GridLocation;
   from: GridLocation;
   to: GridLocation;
   anti: boolean;
@@ -72,26 +72,26 @@ const step = (c: CellDef, id: string, stepNumber: number | null): StepData =>
     id,
     letter: c.letter,
     gridMode: GridMode.DIAMOND,
-    startPosition: getGridPositionFromLocations(c.blueLoc, c.from),
-    endPosition: getGridPositionFromLocations(c.blueLoc, c.to),
+    startPosition: getGridPositionFromLocations(c.leftLoc, c.from),
+    endPosition: getGridPositionFromLocations(c.leftLoc, c.to),
     stepNumber,
     motions: {
-      blue: staticHand(MotionColor.BLUE, c.blueLoc),
-      red: redShift(c.from, c.to, c.anti, c.so ?? IN),
+      left: staticHand(HandSide.LEFT, c.leftLoc),
+      right: redShift(c.from, c.to, c.anti, c.so ?? IN),
     },
   }) as unknown as StepData;
 
-const startFor = (blueLoc: GridLocation, redLoc: GridLocation, id: string, letter: Letter | null = null): StepData =>
+const startFor = (leftLoc: GridLocation, rightLoc: GridLocation, id: string, letter: Letter | null = null): StepData =>
   ({
     id,
     letter,
     gridMode: GridMode.DIAMOND,
     stepNumber: 0,
-    startPosition: getGridPositionFromLocations(blueLoc, redLoc),
-    endPosition: getGridPositionFromLocations(blueLoc, redLoc),
+    startPosition: getGridPositionFromLocations(leftLoc, rightLoc),
+    endPosition: getGridPositionFromLocations(leftLoc, rightLoc),
     motions: {
-      blue: staticHand(MotionColor.BLUE, blueLoc),
-      red: staticHand(MotionColor.RED, redLoc),
+      left: staticHand(HandSide.LEFT, leftLoc),
+      right: staticHand(HandSide.RIGHT, rightLoc),
     },
   }) as unknown as StepData;
 
@@ -102,32 +102,32 @@ const BOXES: BoxDef[] = [
     label: "γ→α",
     tag: "OPEN",
     cells: [
-      { letter: Letter.W, name: "W", blueLoc: W, from: SO_, to: E, anti: false },
-      { letter: Letter.X, name: "X", blueLoc: W, from: SO_, to: E, anti: true },
+      { letter: Letter.W, name: "W", leftLoc: W, from: SO_, to: E, anti: false },
+      { letter: Letter.X, name: "X", leftLoc: W, from: SO_, to: E, anti: true },
     ],
   },
   {
     label: "γ→β",
     tag: "CLOSE",
     cells: [
-      { letter: Letter.Y, name: "Y", blueLoc: SO_, from: W, to: SO_, anti: false },
-      { letter: Letter.Z, name: "Z", blueLoc: SO_, from: W, to: SO_, anti: true },
+      { letter: Letter.Y, name: "Y", leftLoc: SO_, from: W, to: SO_, anti: false },
+      { letter: Letter.Z, name: "Z", leftLoc: SO_, from: W, to: SO_, anti: true },
     ],
   },
   {
     label: "α→γ",
     tag: "CLOSE",
     cells: [
-      { letter: Letter.SIGMA, name: "Σ", blueLoc: W, from: E, to: SO_, anti: false },
-      { letter: Letter.DELTA, name: "Δ", blueLoc: W, from: E, to: SO_, anti: true },
+      { letter: Letter.SIGMA, name: "Σ", leftLoc: W, from: E, to: SO_, anti: false },
+      { letter: Letter.DELTA, name: "Δ", leftLoc: W, from: E, to: SO_, anti: true },
     ],
   },
   {
     label: "β→γ",
     tag: "OPEN",
     cells: [
-      { letter: Letter.THETA, name: "Θ", blueLoc: SO_, from: SO_, to: E, anti: false },
-      { letter: Letter.OMEGA, name: "Ω", blueLoc: SO_, from: SO_, to: E, anti: true },
+      { letter: Letter.THETA, name: "Θ", leftLoc: SO_, from: SO_, to: E, anti: false },
+      { letter: Letter.OMEGA, name: "Ω", leftLoc: SO_, from: SO_, to: E, anti: true },
     ],
   },
 ];
@@ -151,7 +151,7 @@ const ROWS: RowDef[] = [
 const rowCell = (r: RowDef, i: number): CellDef => ({
   letter: r.letters[i]!,
   name: r.names[i]!,
-  blueLoc: SO_,
+  leftLoc: SO_,
   from: RED_CCW[i]![0],
   to: RED_CCW[i]![1],
   anti: r.anti,

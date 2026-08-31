@@ -26,8 +26,8 @@ export interface GroundTruthMotion {
 /** One labeled beat. Either hand may be omitted entirely. */
 export interface GroundTruthBeat {
   letter?: string;
-  blue?: GroundTruthMotion;
-  red?: GroundTruthMotion;
+  left?: GroundTruthMotion;
+  right?: GroundTruthMotion;
 }
 
 export interface GroundTruthSequence {
@@ -170,10 +170,10 @@ function normalizeBeat(raw: unknown, index: number): GroundTruthBeat {
     if (typeof b.letter !== 'string') invalid(index, null, 'letter', b.letter);
     out.letter = b.letter;
   }
-  const blue = normalizeMotion(b.blue, index, 'blue');
-  if (blue) out.blue = blue;
-  const red = normalizeMotion(b.red, index, 'red');
-  if (red) out.red = red;
+  const left = normalizeMotion(b.left, index, 'blue');
+  if (left) out.left = left;
+  const right = normalizeMotion(b.right, index, 'red');
+  if (right) out.right = right;
   return out;
 }
 
@@ -200,7 +200,7 @@ function extractShape(data: unknown): { word?: string; rawBeats: unknown[] } {
         if (step === null || typeof step !== 'object') return step; // beat normalizer reports it
         const s = step as Record<string, unknown>;
         const motions = (s.motions ?? {}) as Record<string, unknown>;
-        return { letter: s.letter, blue: motions.blue, red: motions.red };
+        return { letter: s.letter, left: motions.left, right: motions.right };
       });
       return { word, rawBeats };
     }

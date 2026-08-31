@@ -50,8 +50,8 @@ interface PictographData {
   id: string;
   letter: string;
   motions: {
-    blue: MotionData;
-    red: MotionData;
+    left: MotionData;
+    right: MotionData;
   };
 }
 
@@ -102,30 +102,30 @@ async function loadPictographData(letter: string, startPos?: string, endPos?: st
 
   // CSV already contains abbreviated locations (w, e, n, s, etc.)
   // These match GridLocation enum values and should NOT be expanded
-  const blueEndLocation = row[headers.indexOf('blueEndLocation')];
-  const redEndLocation = row[headers.indexOf('redEndLocation')];
-  const blueStartLocation = row[headers.indexOf('blueStartLocation')];
-  const redStartLocation = row[headers.indexOf('redStartLocation')];
+  const leftEndLocation = row[headers.indexOf('blueEndLocation')];
+  const rightEndLocation = row[headers.indexOf('redEndLocation')];
+  const leftStartLocation = row[headers.indexOf('blueStartLocation')];
+  const rightStartLocation = row[headers.indexOf('redStartLocation')];
 
   // Calculate turns based on rotation direction
-  const blueRotDir = row[headers.indexOf('blueRotationDirection')];
-  const redRotDir = row[headers.indexOf('redRotationDirection')];
-  const blueTurns = blueRotDir === 'noRotation' ? 0 : 1;
-  const redTurns = redRotDir === 'noRotation' ? 0 : 1;
+  const leftRotDir = row[headers.indexOf('blueRotationDirection')];
+  const rightRotDir = row[headers.indexOf('redRotationDirection')];
+  const leftTurns = leftRotDir === 'noRotation' ? 0 : 1;
+  const rightTurns = rightRotDir === 'noRotation' ? 0 : 1;
 
   return {
     id: `pictograph-${letter}`,
     letter: letter,
     motions: {
-      blue: {
+      left: {
         color: 'blue', // CRITICAL: Required for color transformation
         motionType: row[headers.indexOf('blueMotionType')],
-        rotationDirection: blueRotDir,
-        startLocation: blueStartLocation,
-        endLocation: blueEndLocation,
+        rotationDirection: leftRotDir,
+        startLocation: leftStartLocation,
+        endLocation: leftEndLocation,
         startOrientation: 'in',
         endOrientation: 'in',
-        turns: blueTurns,
+        turns: leftTurns,
         propType: 'staff',
         propPlacementData: {
           propType: 'staff',
@@ -143,15 +143,15 @@ async function loadPictographData(letter: string, startPos?: string, endPos?: st
           svgMirrored: false
         }
       },
-      red: {
+      right: {
         color: 'red', // CRITICAL: Required for color transformation
         motionType: row[headers.indexOf('redMotionType')],
-        rotationDirection: redRotDir,
-        startLocation: redStartLocation,
-        endLocation: redEndLocation,
+        rotationDirection: rightRotDir,
+        startLocation: rightStartLocation,
+        endLocation: rightEndLocation,
         startOrientation: 'in',
         endOrientation: 'in',
-        turns: redTurns,
+        turns: rightTurns,
         propType: 'staff',
         propPlacementData: {
           propType: 'staff',
@@ -230,8 +230,8 @@ async function renderPictograph(
       darkMode: isDarkMode,
       handPointVisibility: 'active',
       // Explicitly pass prop types to avoid needing global settings
-      bluePropType: 'staff' as any,
-      redPropType: 'staff' as any,
+      leftPropType: 'staff' as any,
+      rightPropType: 'staff' as any,
     },
     themeMode, // Pass theme mode for prop/arrow color selection
   });
@@ -244,8 +244,8 @@ async function renderPictograph(
     console.log(`  [DEBUG] Has arrowPositions: ${!!asPrepared._prepared.arrowPositions}`);
     console.log(`  [DEBUG] Has arrowAssets: ${!!asPrepared._prepared.arrowAssets}`);
     if (asPrepared._prepared.arrowPositions) {
-      console.log(`  [DEBUG] Blue arrow position:`, asPrepared._prepared.arrowPositions.blue);
-      console.log(`  [DEBUG] Red arrow position:`, asPrepared._prepared.arrowPositions.red);
+      console.log(`  [DEBUG] Blue arrow position:`, asPrepared._prepared.arrowPositions.left);
+      console.log(`  [DEBUG] Red arrow position:`, asPrepared._prepared.arrowPositions.right);
     }
   }
 

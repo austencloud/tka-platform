@@ -45,8 +45,8 @@ export function buildScene3DSeed(
       facingAngle: p.facingAngle,
       // Stored plane strings are the Plane enum's string values; the viewer
       // reads them back through the same untyped JSON path applyScene3DLook uses.
-      customBluePlane: p.customBluePlane as never,
-      customRedPlane: p.customRedPlane as never,
+      customLeftPlane: p.customLeftPlane as never,
+      customRightPlane: p.customRightPlane as never,
       name: p.name ?? null,
       ...(p.settings ? { settings: filterPerformerSettings(p.settings, saved) } : {}),
     }));

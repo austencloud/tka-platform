@@ -46,31 +46,31 @@ interface PictographRow {
   endPosition: string;
   timing: string;
   direction: string;
-  blueMotionType: MotionType;
-  blueRotationDirection: string;
-  blueStartLocation: Location;
-  blueEndLocation: Location;
-  redMotionType: MotionType;
-  redRotationDirection: string;
-  redStartLocation: Location;
-  redEndLocation: Location;
+  leftMotionType: MotionType;
+  leftRotationDirection: string;
+  leftStartLocation: Location;
+  leftEndLocation: Location;
+  rightMotionType: MotionType;
+  rightRotationDirection: string;
+  rightStartLocation: Location;
+  rightEndLocation: Location;
 }
 
 interface SkewedRow extends PictographRow {
-  blueSkewDir: SkewDir;
-  redSkewDir: SkewDir;
-  blueHandPath: HandPath;
-  redHandPath: HandPath;
-  blueSkewSteps: number;
-  redSkewSteps: number;
+  leftSkewDir: SkewDir;
+  rightSkewDir: SkewDir;
+  leftHandPath: HandPath;
+  rightHandPath: HandPath;
+  leftSkewSteps: number;
+  rightSkewSteps: number;
   category: 1 | 2; // 1 = ends skewed (zeta/eta), 2 = both skew but ends normal
 }
 
 // Classify which category a skewed motion belongs to
 function classifyCategory(
   endPosition: string,
-  blueSkewDir: SkewDir,
-  redSkewDir: SkewDir
+  leftSkewDir: SkewDir,
+  rightSkewDir: SkewDir
 ): 1 | 2 {
   const isSkewedEnd =
     endPosition.startsWith("zeta") || endPosition.startsWith("eta");
@@ -238,7 +238,7 @@ function isValidSkewedMotion(
 }
 
 // Derive end position name from hand locations
-function deriveEndPosition(blue: Location, red: Location): string {
+function deriveEndPosition(left: Location, right: Location): string {
   // Map of (blue, red) -> position
   const positionMap: Record<string, string> = {
     // Alpha positions (180°)
@@ -316,7 +316,7 @@ function deriveEndPosition(blue: Location, red: Location): string {
     "n,nw": "eta16",
   };
 
-  const key = `${blue},${red}`;
+  const key = `${left},${right}`;
   return positionMap[key] || `unknown_${key}`;
 }
 
@@ -334,14 +334,14 @@ function parseRow(line: string, header: string[]): PictographRow | null {
     endPosition: row.endPosition,
     timing: row.timing,
     direction: row.direction,
-    blueMotionType: row.blueMotionType as MotionType,
-    blueRotationDirection: row.blueRotationDirection,
-    blueStartLocation: row.blueStartLocation.toLowerCase() as Location,
-    blueEndLocation: row.blueEndLocation.toLowerCase() as Location,
-    redMotionType: row.redMotionType as MotionType,
-    redRotationDirection: row.redRotationDirection,
-    redStartLocation: row.redStartLocation.toLowerCase() as Location,
-    redEndLocation: row.redEndLocation.toLowerCase() as Location,
+    leftMotionType: row.leftMotionType as MotionType,
+    leftRotationDirection: row.leftRotationDirection,
+    leftStartLocation: row.leftStartLocation.toLowerCase() as Location,
+    leftEndLocation: row.leftEndLocation.toLowerCase() as Location,
+    rightMotionType: row.rightMotionType as MotionType,
+    rightRotationDirection: row.rightRotationDirection,
+    rightStartLocation: row.rightStartLocation.toLowerCase() as Location,
+    rightEndLocation: row.rightEndLocation.toLowerCase() as Location,
   };
 }
 
@@ -349,125 +349,125 @@ function parseRow(line: string, header: string[]): PictographRow | null {
 function generateSkewedVariants(base: PictographRow): SkewedRow[] {
   const variants: SkewedRow[] = [];
 
-  const blueCanSkew = isShiftableMotion(base.blueMotionType);
-  const redCanSkew = isShiftableMotion(base.redMotionType);
+  const leftCanSkew = isShiftableMotion(base.leftMotionType);
+  const rightCanSkew = isShiftableMotion(base.rightMotionType);
 
   // If neither hand can skew, no variants possible
-  if (!blueCanSkew && !redCanSkew) return [];
+  if (!leftCanSkew && !rightCanSkew) return [];
 
   // Generate all combinations of skew directions (including no skew for each hand)
-  const blueOptions: SkewDir[] = blueCanSkew ? ["+", "-", ""] : [""];
-  const redOptions: SkewDir[] = redCanSkew ? ["+", "-", ""] : [""];
+  const leftOptions: SkewDir[] = leftCanSkew ? ["+", "-", ""] : [""];
+  const rightOptions: SkewDir[] = rightCanSkew ? ["+", "-", ""] : [""];
 
-  for (const blueSkewDir of blueOptions) {
-    for (const redSkewDir of redOptions) {
+  for (const leftSkewDir of leftOptions) {
+    for (const rightSkewDir of rightOptions) {
       // Skip the case where neither hand skews
-      if (blueSkewDir === "" && redSkewDir === "") continue;
+      if (leftSkewDir === "" && rightSkewDir === "") continue;
 
 
       // Calculate new end locations
-      const newBlueEnd =
-        blueSkewDir !== ""
-          ? applySkew(base.blueEndLocation, blueSkewDir)
-          : base.blueEndLocation;
+      const newLeftEnd =
+        leftSkewDir !== ""
+          ? applySkew(base.leftEndLocation, leftSkewDir)
+          : base.leftEndLocation;
 
-      const newRedEnd =
-        redSkewDir !== ""
-          ? applySkew(base.redEndLocation, redSkewDir)
-          : base.redEndLocation;
+      const newRightEnd =
+        rightSkewDir !== ""
+          ? applySkew(base.rightEndLocation, rightSkewDir)
+          : base.rightEndLocation;
 
       // Verify at least one hand crosses boundary (that's what makes it "skewed")
-      const blueCrosses =
-        blueSkewDir !== "" &&
-        crossesBoundary(base.blueStartLocation, newBlueEnd);
-      const redCrosses =
-        redSkewDir !== "" && crossesBoundary(base.redStartLocation, newRedEnd);
+      const leftCrosses =
+        leftSkewDir !== "" &&
+        crossesBoundary(base.leftStartLocation, newLeftEnd);
+      const rightCrosses =
+        rightSkewDir !== "" && crossesBoundary(base.rightStartLocation, newRightEnd);
 
-      if (!blueCrosses && !redCrosses) continue;
+      if (!leftCrosses && !rightCrosses) continue;
 
       // Derive the new end position
-      const newEndPosition = deriveEndPosition(newBlueEnd, newRedEnd);
+      const newEndPosition = deriveEndPosition(newLeftEnd, newRightEnd);
 
       // Skip if we get an unknown position
       if (newEndPosition.startsWith("unknown_")) {
         console.warn(
-          `Unknown position for ${newBlueEnd},${newRedEnd} from ${base.letter}`
+          `Unknown position for ${newLeftEnd},${newRightEnd} from ${base.letter}`
         );
         continue;
       }
 
-      const category = classifyCategory(newEndPosition, blueSkewDir, redSkewDir);
+      const category = classifyCategory(newEndPosition, leftSkewDir, rightSkewDir);
 
       // Determine if each motion actually crossed the boundary (cardinal <-> intercardinal)
-      const blueActuallyCrossed = crossesBoundary(base.blueStartLocation, newBlueEnd);
-      const redActuallyCrossed = crossesBoundary(base.redStartLocation, newRedEnd);
+      const leftActuallyCrossed = crossesBoundary(base.leftStartLocation, newLeftEnd);
+      const rightActuallyCrossed = crossesBoundary(base.rightStartLocation, newRightEnd);
 
       // Derive the correct rotation direction for the new paths
       // For pro: rotation direction = hand path direction
       // For anti: rotation direction = opposite of hand path direction
-      const blueNaturalDir = deriveNaturalRotationDirection(
-        base.blueStartLocation,
-        newBlueEnd
+      const leftNaturalDir = deriveNaturalRotationDirection(
+        base.leftStartLocation,
+        newLeftEnd
       );
-      const redNaturalDir = deriveNaturalRotationDirection(
-        base.redStartLocation,
-        newRedEnd
+      const rightNaturalDir = deriveNaturalRotationDirection(
+        base.rightStartLocation,
+        newRightEnd
       );
 
       // Determine actual rotation directions based on motion type and natural path
       // Pro motions: prop rotates same direction as hand path
       // Anti motions: prop rotates opposite direction to hand path
-      const blueRotationDir =
-        blueNaturalDir === "no_rotation"
-          ? base.blueRotationDirection
-          : base.blueMotionType === "pro"
-            ? blueNaturalDir
-            : base.blueMotionType === "anti"
-              ? blueNaturalDir === "cw"
+      const leftRotationDir =
+        leftNaturalDir === "no_rotation"
+          ? base.leftRotationDirection
+          : base.leftMotionType === "pro"
+            ? leftNaturalDir
+            : base.leftMotionType === "anti"
+              ? leftNaturalDir === "cw"
                 ? "ccw"
                 : "cw"
-              : base.blueRotationDirection;
+              : base.leftRotationDirection;
 
-      const redRotationDir =
-        redNaturalDir === "no_rotation"
-          ? base.redRotationDirection
-          : base.redMotionType === "pro"
-            ? redNaturalDir
-            : base.redMotionType === "anti"
-              ? redNaturalDir === "cw"
+      const rightRotationDir =
+        rightNaturalDir === "no_rotation"
+          ? base.rightRotationDirection
+          : base.rightMotionType === "pro"
+            ? rightNaturalDir
+            : base.rightMotionType === "anti"
+              ? rightNaturalDir === "cw"
                 ? "ccw"
                 : "cw"
-              : base.redRotationDirection;
+              : base.rightRotationDirection;
 
       // Derive hand paths based on the correct rotation directions
-      const blueHandPath = deriveHandPath(
-        base.blueMotionType,
-        blueRotationDir,
-        blueSkewDir
+      const leftHandPath = deriveHandPath(
+        base.leftMotionType,
+        leftRotationDir,
+        leftSkewDir
       );
-      const redHandPath = deriveHandPath(
-        base.redMotionType,
-        redRotationDir,
-        redSkewDir
+      const rightHandPath = deriveHandPath(
+        base.rightMotionType,
+        rightRotationDir,
+        rightSkewDir
       );
 
       // Skew steps: only 1 if the motion actually crossed the boundary
-      const blueSkewSteps = blueActuallyCrossed ? 1 : 0;
-      const redSkewSteps = redActuallyCrossed ? 1 : 0;
+      const leftSkewSteps = leftActuallyCrossed ? 1 : 0;
+      const rightSkewSteps = rightActuallyCrossed ? 1 : 0;
 
       variants.push({
         ...base,
-        blueEndLocation: newBlueEnd,
-        redEndLocation: newRedEnd,
-        blueRotationDirection: blueRotationDir,
-        redRotationDirection: redRotationDir,
+        leftEndLocation: newLeftEnd,
+        rightEndLocation: newRightEnd,
+        leftRotationDirection: leftRotationDir,
+        rightRotationDirection: rightRotationDir,
         endPosition: newEndPosition,
-        blueSkewDir,
-        redSkewDir,
-        blueHandPath,
-        redHandPath,
-        blueSkewSteps,
-        redSkewSteps,
+        leftSkewDir,
+        rightSkewDir,
+        leftHandPath,
+        rightHandPath,
+        leftSkewSteps,
+        rightSkewSteps,
         category,
       });
     }
@@ -484,20 +484,20 @@ function toCSVLine(row: SkewedRow): string {
     row.endPosition,
     row.timing,
     row.direction,
-    row.blueMotionType,
-    row.blueRotationDirection,
-    row.blueSkewDir,
-    row.blueHandPath,
-    row.blueSkewSteps,
-    row.blueStartLocation,
-    row.blueEndLocation,
-    row.redMotionType,
-    row.redRotationDirection,
-    row.redSkewDir,
-    row.redHandPath,
-    row.redSkewSteps,
-    row.redStartLocation,
-    row.redEndLocation,
+    row.leftMotionType,
+    row.leftRotationDirection,
+    row.leftSkewDir,
+    row.leftHandPath,
+    row.leftSkewSteps,
+    row.leftStartLocation,
+    row.leftEndLocation,
+    row.rightMotionType,
+    row.rightRotationDirection,
+    row.rightSkewDir,
+    row.rightHandPath,
+    row.rightSkewSteps,
+    row.rightStartLocation,
+    row.rightEndLocation,
     row.category,
   ].join(",");
 }

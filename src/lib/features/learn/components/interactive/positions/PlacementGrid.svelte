@@ -56,18 +56,18 @@
   const guideLineLocations = $derived(
     guideLinePoints
       ? {
-          blue: HAND_TO_LOCATION[guideLinePoints.left],
-          red: HAND_TO_LOCATION[guideLinePoints.right],
+          left: HAND_TO_LOCATION[guideLinePoints.left],
+          right: HAND_TO_LOCATION[guideLinePoints.right],
         }
       : null
   );
 
   function handleComplete(
-    blueLocation: GridLocation,
-    redLocation: GridLocation
+    leftLocation: GridLocation,
+    rightLocation: GridLocation
   ) {
-    const left = LOCATION_TO_HAND[blueLocation];
-    const right = LOCATION_TO_HAND[redLocation];
+    const left = LOCATION_TO_HAND[leftLocation];
+    const right = LOCATION_TO_HAND[rightLocation];
     if (left && right) {
       onPlacementComplete(left, right);
     }
@@ -76,10 +76,10 @@
 
 <PropPlacementGrid
   {gridMode}
-  bluePropType={PropType.HAND}
-  redPropType={PropType.HAND}
-  blueNoun="blue hand"
-  redNoun="red hand"
+  leftPropType={PropType.HAND}
+  rightPropType={PropType.HAND}
+  leftNoun="blue hand"
+  rightNoun="red hand"
   editAfterCompletion={false}
   {disabled}
   {showGuideLines}

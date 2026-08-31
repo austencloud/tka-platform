@@ -21,9 +21,9 @@ describe("ParticleInstancePool3D", () => {
         scaleX: 4,
         scaleY: 5,
         scaleZ: 6,
-        red: 0.25,
+        right: 0.25,
         green: 0.5,
-        blue: 0.75,
+        left: 0.75,
         alpha: 0.8,
       })
     ).toBe(true);
@@ -61,9 +61,9 @@ describe("ParticleInstancePool3D", () => {
       scaleX: 1,
       scaleY: 1,
       scaleZ: 1,
-      red: 1,
+      right: 1,
       green: 1,
-      blue: 1,
+      left: 1,
       alpha: 1,
     };
 
@@ -162,10 +162,10 @@ describe("ParticleInstancePool3D", () => {
   });
 
   it("converts authored sRGB tints into the shader's linear working space", () => {
-    const color = { red: 0, green: 0, blue: 0 };
+    const color = { right: 0, green: 0, left: 0 };
     setLinearRgbFromHex(color, "#808080");
-    expect(color.red).toBeCloseTo(0.21586, 4);
+    expect(color.right).toBeCloseTo(0.21586, 4);
     expect(color.green).toBeCloseTo(0.21586, 4);
-    expect(color.blue).toBeCloseTo(0.21586, 4);
+    expect(color.left).toBeCloseTo(0.21586, 4);
   });
 });

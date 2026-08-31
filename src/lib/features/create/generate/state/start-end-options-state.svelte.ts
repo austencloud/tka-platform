@@ -49,8 +49,8 @@ interface SerializedSessionOptions {
   endPositions?: string[];
   mustContainLetters: string[];
   mustNotContainLetters: string[];
-  blueStartOrientation?: string;
-  redStartOrientation?: string;
+  leftStartOrientation?: string;
+  rightStartOrientation?: string;
   timestamp: number;
 }
 
@@ -67,8 +67,8 @@ function saveSessionOptions(options: StartEndOptions): void {
       mustNotContainLetters: options.mustNotContainLetters.map((l) =>
         l.toString()
       ),
-      blueStartOrientation: options.blueStartOrientation,
-      redStartOrientation: options.redStartOrientation,
+      leftStartOrientation: options.leftStartOrientation,
+      rightStartOrientation: options.rightStartOrientation,
       timestamp: Date.now(),
     };
 
@@ -101,10 +101,10 @@ function loadSessionOptions(): Partial<StartEndOptions> | null {
       endPositions: (data.endPositions || []) as GridPosition[],
       mustContainLetters: (data.mustContainLetters || []) as Letter[],
       mustNotContainLetters: (data.mustNotContainLetters || []) as Letter[],
-      blueStartOrientation:
-        (data.blueStartOrientation as Orientation) ?? Orientation.IN,
-      redStartOrientation:
-        (data.redStartOrientation as Orientation) ?? Orientation.IN,
+      leftStartOrientation:
+        (data.leftStartOrientation as Orientation) ?? Orientation.IN,
+      rightStartOrientation:
+        (data.rightStartOrientation as Orientation) ?? Orientation.IN,
     };
   } catch (error) {
     console.warn("⚠️ StartEndOptions: Failed to load session options:", error);
@@ -130,8 +130,8 @@ const DEFAULT_OPTIONS: StartEndOptions = {
   endPositions: [],
   mustContainLetters: [],
   mustNotContainLetters: [],
-  blueStartOrientation: Orientation.IN,
-  redStartOrientation: Orientation.IN,
+  leftStartOrientation: Orientation.IN,
+  rightStartOrientation: Orientation.IN,
 };
 
 
@@ -333,20 +333,20 @@ export function createStartEndOptionsState(
    * Returns whether either prop had to be normalized.
    */
   function normalizeOrientationsForLevel(level: number): boolean {
-    const blueStartOrientation = clampStartOrientationToLevel(
-      options.blueStartOrientation,
+    const leftStartOrientation = clampStartOrientationToLevel(
+      options.leftStartOrientation,
       level
     );
-    const redStartOrientation = clampStartOrientationToLevel(
-      options.redStartOrientation,
+    const rightStartOrientation = clampStartOrientationToLevel(
+      options.rightStartOrientation,
       level
     );
     const changed =
-      blueStartOrientation !== options.blueStartOrientation ||
-      redStartOrientation !== options.redStartOrientation;
+      leftStartOrientation !== options.leftStartOrientation ||
+      rightStartOrientation !== options.rightStartOrientation;
 
     if (changed) {
-      updateOptions({ blueStartOrientation, redStartOrientation });
+      updateOptions({ leftStartOrientation, rightStartOrientation });
     }
 
     return changed;

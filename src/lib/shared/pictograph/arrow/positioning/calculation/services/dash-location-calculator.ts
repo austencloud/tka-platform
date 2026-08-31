@@ -261,7 +261,7 @@ function getPhiDashPsiDashLocation(
   }
 
   if (motion.turns === 0 && otherMotion.turns === 0) {
-    const key = `${motion.color},${motion.startLocation},${motion.endLocation}`;
+    const key = `${motion.hand},${motion.startLocation},${motion.endLocation}`;
     return PHI_DASH_PSI_DASH_LOCATION_MAP[key] || motion.startLocation;
   }
 
@@ -315,24 +315,24 @@ function getGridInfo(pictographData: PictographData): {
   shiftLocation?: GridLocation;
 } {
   const gridMode =
-    pictographData.motions.blue?.gridMode ||
-    pictographData.motions.red?.gridMode ||
+    pictographData.motions.left?.gridMode ||
+    pictographData.motions.right?.gridMode ||
     GridMode.DIAMOND;
 
   const result: { gridMode: GridMode; shiftLocation?: GridLocation } = { gridMode };
 
-  const blue = pictographData.motions.blue;
-  const red = pictographData.motions.red;
+  const left = pictographData.motions.left;
+  const right = pictographData.motions.right;
 
-  if (blue && red) {
-    const blueIsShift = ["pro", "anti", "float"].includes(blue.motionType.toLowerCase() || "");
-    const redIsShift = ["pro", "anti", "float"].includes(red.motionType.toLowerCase() || "");
+  if (left && right) {
+    const leftIsShift = ["pro", "anti", "float"].includes(left.motionType.toLowerCase() || "");
+    const rightIsShift = ["pro", "anti", "float"].includes(right.motionType.toLowerCase() || "");
 
     let shiftMotion: MotionData | undefined;
-    if (blueIsShift && !redIsShift) {
-      shiftMotion = blue;
-    } else if (redIsShift && !blueIsShift) {
-      shiftMotion = red;
+    if (leftIsShift && !rightIsShift) {
+      shiftMotion = left;
+    } else if (rightIsShift && !leftIsShift) {
+      shiftMotion = right;
     }
 
     if (shiftMotion) {
@@ -347,8 +347,8 @@ export function calculateDashLocationFromPictographData(
   pictographData: PictographData,
   isBlueArrow: boolean
 ): GridLocation {
-  const motion = isBlueArrow ? pictographData.motions.blue : pictographData.motions.red;
-  const otherMotion = isBlueArrow ? pictographData.motions.red : pictographData.motions.blue;
+  const motion = isBlueArrow ? pictographData.motions.left : pictographData.motions.right;
+  const otherMotion = isBlueArrow ? pictographData.motions.right : pictographData.motions.left;
 
   if (motion?.motionType.toLowerCase() !== "dash") {
     return motion?.startLocation || GridLocation.NORTH;

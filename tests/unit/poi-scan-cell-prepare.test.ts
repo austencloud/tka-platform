@@ -58,14 +58,14 @@ import {
   MotionType,
   RotationDirection,
   Orientation,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 // Motions shaped like a decoded /q sequence: EMPTY ({}) placement data, as
 // sequence-encoder.ts emits (arrowPlacementData/propPlacementData = {}).
-function decodedMotion(color: MotionColor, over: Record<string, unknown>) {
+function decodedMotion(color: HandSide, over: Record<string, unknown>) {
   return {
     motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
@@ -89,11 +89,11 @@ function normalize(m: Record<string, unknown>) {
 }
 
 function pictograph(normalized: boolean): PictographData {
-  const blue = decodedMotion(MotionColor.BLUE, {
+  const left = decodedMotion(HandSide.LEFT, {
     startLocation: GridLocation.SOUTH,
     endLocation: GridLocation.WEST,
   });
-  const red = decodedMotion(MotionColor.RED, {
+  const right = decodedMotion(HandSide.RIGHT, {
     startLocation: GridLocation.NORTH,
     endLocation: GridLocation.EAST,
   });
@@ -101,8 +101,8 @@ function pictograph(normalized: boolean): PictographData {
     letter: "A",
     gridMode: "diamond",
     motions: {
-      blue: normalized ? normalize(blue) : blue,
-      red: normalized ? normalize(red) : red,
+      left: normalized ? normalize(left) : left,
+      right: normalized ? normalize(right) : right,
     },
   } as unknown as PictographData;
 }
@@ -111,7 +111,7 @@ async function assetsFor(normalized: boolean, prop: PropType) {
   pictographPreparer.clearCache();
   const prepared = await pictographPreparer.prepareSingle(
     pictograph(normalized),
-    { themeMode: "light", bluePropType: prop, redPropType: prop }
+    { themeMode: "light", leftPropType: prop, rightPropType: prop }
   );
   const p = (prepared as unknown as { _prepared: any })._prepared;
   return {

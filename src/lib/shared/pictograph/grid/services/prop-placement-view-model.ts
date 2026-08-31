@@ -4,7 +4,7 @@ import type { PlacementGridPoint } from "./placement-grid-points";
 import { getPlacementGridPoints } from "./placement-grid-points";
 import type { PropType } from "../../prop/domain/enums/prop-type";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -20,7 +20,7 @@ import {
 export interface PlacementPromptParts {
   lead: string;
   noun: string;
-  color: MotionColor;
+  color: HandSide;
   aim: string | null;
 }
 
@@ -28,14 +28,14 @@ interface PlacementPromptInput {
   disabled: boolean;
   isComplete: boolean;
   canAim: boolean;
-  activeColor: MotionColor | null;
-  dragColor: MotionColor | null;
+  activeColor: HandSide | null;
+  dragColor: HandSide | null;
   dragAim: Orientation | null;
-  hoverColor: MotionColor | null;
-  blueLocation: GridLocation | null;
-  redLocation: GridLocation | null;
-  blueNoun: string;
-  redNoun: string;
+  hoverColor: HandSide | null;
+  leftLocation: GridLocation | null;
+  rightLocation: GridLocation | null;
+  leftNoun: string;
+  rightNoun: string;
 }
 
 const AIM_LABELS: Partial<Record<Orientation, string>> = {
@@ -59,7 +59,7 @@ export function buildPlacementPrompt(input: PlacementPromptInput): {
 } {
   const build = (
     noun: string,
-    color: MotionColor,
+    color: HandSide,
     lead: string,
     aim: string | null = null
   ): PlacementPromptParts => ({ lead, noun, color, aim });
@@ -69,7 +69,7 @@ export function buildPlacementPrompt(input: PlacementPromptInput): {
   if (!input.disabled) {
     if (input.dragColor !== null && input.dragAim !== null) {
       const noun =
-        input.dragColor === MotionColor.BLUE ? input.blueNoun : input.redNoun;
+        input.dragColor === HandSide.LEFT ? input.leftNoun : input.rightNoun;
       parts = build(
         noun,
         input.dragColor,
@@ -78,23 +78,23 @@ export function buildPlacementPrompt(input: PlacementPromptInput): {
       );
     } else if (input.activeColor === null && input.hoverColor !== null) {
       const noun =
-        input.hoverColor === MotionColor.BLUE ? input.blueNoun : input.redNoun;
+        input.hoverColor === HandSide.LEFT ? input.leftNoun : input.rightNoun;
       parts = build(noun, input.hoverColor, "Drag to aim the");
-    } else if (input.activeColor === MotionColor.BLUE) {
+    } else if (input.activeColor === HandSide.LEFT) {
       parts = build(
-        input.blueNoun,
-        MotionColor.BLUE,
-        input.blueLocation !== null
+        input.leftNoun,
+        HandSide.LEFT,
+        input.leftLocation !== null
           ? "Choose a new location for the"
           : input.canAim
             ? "Press a point and drag to aim the"
             : "Place the"
       );
-    } else if (input.activeColor === MotionColor.RED) {
+    } else if (input.activeColor === HandSide.RIGHT) {
       parts = build(
-        input.redNoun,
-        MotionColor.RED,
-        input.redLocation !== null
+        input.rightNoun,
+        HandSide.RIGHT,
+        input.rightLocation !== null
           ? "Choose a new location for the"
           : input.canAim
             ? "Press a point and drag to aim the"
@@ -116,19 +116,19 @@ export function buildPlacementPrompt(input: PlacementPromptInput): {
 
 interface PlacementPictographInput {
   gridMode: GridMode;
-  blueLocation: GridLocation | null;
-  redLocation: GridLocation | null;
-  blueOrientation: Orientation;
-  redOrientation: Orientation;
-  bluePropType: PropType;
-  redPropType: PropType;
+  leftLocation: GridLocation | null;
+  rightLocation: GridLocation | null;
+  leftOrientation: Orientation;
+  rightOrientation: Orientation;
+  leftPropType: PropType;
+  rightPropType: PropType;
   betaSwapped: boolean;
   previewPictographData: StepData | PictographData | null;
 }
 
 function buildMotion(
   location: GridLocation,
-  color: MotionColor,
+  color: HandSide,
   orientation: Orientation,
   propType: PropType,
   gridMode: GridMode
@@ -144,7 +144,7 @@ function buildMotion(
     isVisible: true,
     propType,
     arrowLocation: location,
-    color,
+    hand: color,
     gridMode,
   });
 }
@@ -154,21 +154,21 @@ export function buildPlacementPictographData(
 ): PictographData {
   const motions: PictographData["motions"] = {};
 
-  if (input.blueLocation) {
-    motions[MotionColor.BLUE] = buildMotion(
-      input.blueLocation,
-      MotionColor.BLUE,
-      input.blueOrientation,
-      input.bluePropType,
+  if (input.leftLocation) {
+    motions[HandSide.LEFT] = buildMotion(
+      input.leftLocation,
+      HandSide.LEFT,
+      input.leftOrientation,
+      input.leftPropType,
       input.gridMode
     );
   }
-  if (input.redLocation) {
-    motions[MotionColor.RED] = buildMotion(
-      input.redLocation,
-      MotionColor.RED,
-      input.redOrientation,
-      input.redPropType,
+  if (input.rightLocation) {
+    motions[HandSide.RIGHT] = buildMotion(
+      input.rightLocation,
+      HandSide.RIGHT,
+      input.rightOrientation,
+      input.rightPropType,
       input.gridMode
     );
   }
@@ -187,16 +187,16 @@ export function buildPlacementPictographData(
 
 export interface PlacementTransitionInput {
   gridMode: GridMode;
-  movingColor: MotionColor;
+  movingColor: HandSide;
   fromLocation: GridLocation;
   toLocation: GridLocation;
   direction: "clockwise" | "counterclockwise";
-  blueLocation: GridLocation;
-  redLocation: GridLocation;
-  blueOrientation: Orientation;
-  redOrientation: Orientation;
-  bluePropType: PropType;
-  redPropType: PropType;
+  leftLocation: GridLocation;
+  rightLocation: GridLocation;
+  leftOrientation: Orientation;
+  rightOrientation: Orientation;
+  leftPropType: PropType;
+  rightPropType: PropType;
   betaSwapped: boolean;
   previewPictographData: StepData | PictographData | null;
 }
@@ -218,16 +218,16 @@ export interface PlacementTransition {
 export function buildPlacementTransition(
   input: PlacementTransitionInput
 ): PlacementTransition {
-  const isBlueMoving = input.movingColor === MotionColor.BLUE;
+  const isBlueMoving = input.movingColor === HandSide.LEFT;
 
   const startData = buildPlacementPictographData({
     gridMode: input.gridMode,
-    blueLocation: isBlueMoving ? input.fromLocation : input.blueLocation,
-    redLocation: isBlueMoving ? input.redLocation : input.fromLocation,
-    blueOrientation: input.blueOrientation,
-    redOrientation: input.redOrientation,
-    bluePropType: input.bluePropType,
-    redPropType: input.redPropType,
+    leftLocation: isBlueMoving ? input.fromLocation : input.leftLocation,
+    rightLocation: isBlueMoving ? input.rightLocation : input.fromLocation,
+    leftOrientation: input.leftOrientation,
+    rightOrientation: input.rightOrientation,
+    leftPropType: input.leftPropType,
+    rightPropType: input.rightPropType,
     betaSwapped: input.betaSwapped,
     previewPictographData: input.previewPictographData,
   });
@@ -241,22 +241,22 @@ export function buildPlacementTransition(
     startLocation: input.fromLocation,
     endLocation: input.toLocation,
     turns: 0,
-    startOrientation: isBlueMoving ? input.blueOrientation : input.redOrientation,
-    endOrientation: isBlueMoving ? input.blueOrientation : input.redOrientation,
+    startOrientation: isBlueMoving ? input.leftOrientation : input.rightOrientation,
+    endOrientation: isBlueMoving ? input.leftOrientation : input.rightOrientation,
     isVisible: true,
-    propType: isBlueMoving ? input.bluePropType : input.redPropType,
+    propType: isBlueMoving ? input.leftPropType : input.rightPropType,
     arrowLocation: input.toLocation,
-    color: input.movingColor,
+    hand: input.movingColor,
     gridMode: input.gridMode,
     // Force the circular path around the grid center regardless of the global
     // animation path-shape setting — this preview IS the pathway.
     pathShape: "arc",
   });
   const partnerMotion = buildMotion(
-    isBlueMoving ? input.redLocation : input.blueLocation,
-    isBlueMoving ? MotionColor.RED : MotionColor.BLUE,
-    isBlueMoving ? input.redOrientation : input.blueOrientation,
-    isBlueMoving ? input.redPropType : input.bluePropType,
+    isBlueMoving ? input.rightLocation : input.leftLocation,
+    isBlueMoving ? HandSide.RIGHT : HandSide.LEFT,
+    isBlueMoving ? input.rightOrientation : input.leftOrientation,
+    isBlueMoving ? input.rightPropType : input.leftPropType,
     input.gridMode
   );
 
@@ -271,15 +271,15 @@ export function buildPlacementTransition(
     gridMode: input.gridMode,
     betaSwapped: input.betaSwapped,
     motions: {
-      [MotionColor.BLUE]: isBlueMoving ? movingMotion : partnerMotion,
-      [MotionColor.RED]: isBlueMoving ? partnerMotion : movingMotion,
+      [HandSide.LEFT]: isBlueMoving ? movingMotion : partnerMotion,
+      [HandSide.RIGHT]: isBlueMoving ? partnerMotion : movingMotion,
     },
     // The container only computes motion overrides for StepData ("stepNumber"
     // narrowing), so guarantee the beat fields even without a preview step.
     stepNumber: stepBase?.stepNumber ?? 0,
     duration: stepBase?.duration ?? 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: stepBase?.isBlank ?? false,
   } as StepData;
 
@@ -288,22 +288,22 @@ export function buildPlacementTransition(
 
 interface PlacementBetaOffsetInput {
   gridMode: GridMode;
-  blueLocation: GridLocation | null;
-  redLocation: GridLocation | null;
-  blueOrientation: Orientation;
-  redOrientation: Orientation;
-  bluePropType: PropType;
-  redPropType: PropType;
+  leftLocation: GridLocation | null;
+  rightLocation: GridLocation | null;
+  leftOrientation: Orientation;
+  rightOrientation: Orientation;
+  leftPropType: PropType;
+  rightPropType: PropType;
   betaSwapped: boolean;
 }
 
 export interface PlacementBetaOffsets {
-  blue: { x: number; y: number };
-  red: { x: number; y: number };
+  left: { x: number; y: number };
+  right: { x: number; y: number };
 }
 
 function betaMotionFor(
-  color: "blue" | "red",
+  hand: HandSide,
   location: GridLocation,
   orientation: Orientation,
   propType: PropType
@@ -313,7 +313,7 @@ function betaMotionFor(
     endLocation: location,
     endOrientation: orientation,
     motionType: MotionType.STATIC,
-    color,
+    hand,
     propType,
   };
 }
@@ -322,52 +322,52 @@ export function calculatePlacementBetaOffsets(
   input: PlacementBetaOffsetInput
 ): PlacementBetaOffsets {
   if (
-    input.blueLocation === null ||
-    input.redLocation === null ||
-    input.blueLocation !== input.redLocation
+    input.leftLocation === null ||
+    input.rightLocation === null ||
+    input.leftLocation !== input.rightLocation
   ) {
-    return { blue: { x: 0, y: 0 }, red: { x: 0, y: 0 } };
+    return { left: { x: 0, y: 0 }, right: { x: 0, y: 0 } };
   }
 
-  const blueMotion = betaMotionFor(
-    "blue",
-    input.blueLocation,
-    input.blueOrientation,
-    input.bluePropType
+  const leftMotion = betaMotionFor(
+    HandSide.LEFT,
+    input.leftLocation,
+    input.leftOrientation,
+    input.leftPropType
   );
-  const redMotion = betaMotionFor(
-    "red",
-    input.redLocation,
-    input.redOrientation,
-    input.redPropType
+  const rightMotion = betaMotionFor(
+    HandSide.RIGHT,
+    input.rightLocation,
+    input.rightOrientation,
+    input.rightPropType
   );
   const betaInput = {
-    blueMotion,
-    redMotion,
+    leftMotion,
+    rightMotion,
     letter: "",
     gridMode: input.gridMode as unknown as "diamond" | "box" | "skewed",
-    bluePropType: input.bluePropType,
-    redPropType: input.redPropType,
+    leftPropType: input.leftPropType,
+    rightPropType: input.rightPropType,
   };
   const sign = input.betaSwapped ? -1 : 1;
-  const blue = calculateBetaOffset(betaInput, blueMotion);
-  const red = calculateBetaOffset(betaInput, redMotion);
+  const left = calculateBetaOffset(betaInput, leftMotion);
+  const right = calculateBetaOffset(betaInput, rightMotion);
 
   return {
-    blue: { x: blue.x * sign, y: blue.y * sign },
-    red: { x: red.x * sign, y: red.y * sign },
+    left: { x: left.x * sign, y: left.y * sign },
+    right: { x: right.x * sign, y: right.y * sign },
   };
 }
 
 export interface PlacementGuideCoordinates {
-  blue: PlacementGridPoint;
-  red: PlacementGridPoint;
+  left: PlacementGridPoint;
+  right: PlacementGridPoint;
 }
 
 export function getPlacementGuideCoordinates(
   locations: {
-    blue: GridLocation;
-    red: GridLocation;
+    left: GridLocation;
+    right: GridLocation;
   } | null
 ): PlacementGuideCoordinates | null {
   if (!locations) return null;
@@ -376,11 +376,11 @@ export function getPlacementGuideCoordinates(
     ...getPlacementGridPoints(GridMode.DIAMOND),
     ...getPlacementGridPoints(GridMode.BOX),
   ];
-  const blue = allGuidePoints.find(
-    (point) => point.location === locations.blue
+  const left = allGuidePoints.find(
+    (point) => point.location === locations.left
   );
-  const red = allGuidePoints.find((point) => point.location === locations.red);
-  return blue && red ? { blue, red } : null;
+  const right = allGuidePoints.find((point) => point.location === locations.right);
+  return left && right ? { left, right } : null;
 }
 
 export function computeGammaGuideArc(
@@ -391,19 +391,19 @@ export function computeGammaGuideArc(
   const centerX = 475;
   const centerY = 475;
   const radius = 60;
-  const blueAngle = Math.atan2(
-    coordinates.blue.y - centerY,
-    coordinates.blue.x - centerX
+  const leftAngle = Math.atan2(
+    coordinates.left.y - centerY,
+    coordinates.left.x - centerX
   );
-  const redAngle = Math.atan2(
-    coordinates.red.y - centerY,
-    coordinates.red.x - centerX
+  const rightAngle = Math.atan2(
+    coordinates.right.y - centerY,
+    coordinates.right.x - centerX
   );
-  const startX = centerX + radius * Math.cos(blueAngle);
-  const startY = centerY + radius * Math.sin(blueAngle);
-  const endX = centerX + radius * Math.cos(redAngle);
-  const endY = centerY + radius * Math.sin(redAngle);
-  let difference = redAngle - blueAngle;
+  const startX = centerX + radius * Math.cos(leftAngle);
+  const startY = centerY + radius * Math.sin(leftAngle);
+  const endX = centerX + radius * Math.cos(rightAngle);
+  const endY = centerY + radius * Math.sin(rightAngle);
+  let difference = rightAngle - leftAngle;
 
   if (difference < -Math.PI) difference += 2 * Math.PI;
   if (difference > Math.PI) difference -= 2 * Math.PI;

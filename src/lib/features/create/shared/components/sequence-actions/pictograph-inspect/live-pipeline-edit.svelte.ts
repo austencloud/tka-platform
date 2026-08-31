@@ -16,7 +16,7 @@ export type PipelineEditTier =
   | "default";
 
 export interface LivePipelineEdit {
-  color: "blue" | "red";
+  color: HandSide;
   tier: PipelineEditTier;
   x: number;
   y: number;
@@ -35,3 +35,4 @@ export const livePipelineEdit = {
     current = null;
   },
 };
+import type { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";

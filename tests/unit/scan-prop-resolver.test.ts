@@ -10,8 +10,8 @@ import { resolveScanPropConfig } from "$lib/shared/qr/services/scan-prop-resolve
 describe("scan prop resolution", () => {
   it("accepts compact and full-value prop parameters from printed cards", () => {
     expect(parsePropsFromURL(new URLSearchParams("bp=P&rp=fan"))).toEqual({
-      bluePropType: PropType.POI,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.POI,
+      rightPropType: PropType.FAN,
       catDogMode: true,
     });
     expect(parsePropTypeFromURLValue("not-a-prop")).toBeUndefined();
@@ -20,8 +20,8 @@ describe("scan prop resolution", () => {
   it("keeps the highest-priority per-scan values for each hand", () => {
     const sequence = {
       intendedProp: {
-        bluePropType: PropType.STAFF,
-        redPropType: PropType.STAFF,
+        leftPropType: PropType.STAFF,
+        rightPropType: PropType.STAFF,
         catDogMode: false,
       },
     } as SequenceData;
@@ -30,15 +30,15 @@ describe("scan prop resolution", () => {
       resolveScanPropConfig(
         sequence,
         {
-          bluePropType: "P",
-          redPropType: PropType.CLUB,
+          leftPropType: "P",
+          rightPropType: PropType.CLUB,
           catDogMode: true,
         },
-        { bluePropType: PropType.FAN, redPropType: PropType.FAN }
+        { leftPropType: PropType.FAN, rightPropType: PropType.FAN }
       )
     ).toEqual({
-      bluePropType: PropType.POI,
-      redPropType: PropType.CLUB,
+      leftPropType: PropType.POI,
+      rightPropType: PropType.CLUB,
       catDogMode: true,
     });
   });
@@ -48,16 +48,16 @@ describe("scan prop resolution", () => {
       steps: [
         {
           motions: {
-            blue: { propType: PropType.TRIAD },
-            red: { propType: PropType.BUUGENG },
+            left: { propType: PropType.TRIAD },
+            right: { propType: PropType.BUUGENG },
           },
         },
       ],
     } as SequenceData;
 
     expect(resolveScanPropConfig(sequence)).toEqual({
-      bluePropType: PropType.TRIAD,
-      redPropType: PropType.BUUGENG,
+      leftPropType: PropType.TRIAD,
+      rightPropType: PropType.BUUGENG,
       catDogMode: true,
     });
   });

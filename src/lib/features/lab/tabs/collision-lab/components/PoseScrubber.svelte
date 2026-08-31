@@ -54,8 +54,8 @@
         {#each planeOptions as opt}
           <button
             class="chip"
-            class:active={state.bluePlaneFilter === opt.value}
-            onclick={() => state.setBluePlaneFilter(opt.value)}
+            class:active={state.leftPlaneFilter === opt.value}
+            onclick={() => state.setLeftPlaneFilter(opt.value)}
           >{opt.label}</button>
         {/each}
       </div>
@@ -67,8 +67,8 @@
         {#each planeOptions as opt}
           <button
             class="chip"
-            class:active={state.redPlaneFilter === opt.value}
-            onclick={() => state.setRedPlaneFilter(opt.value)}
+            class:active={state.rightPlaneFilter === opt.value}
+            onclick={() => state.setRightPlaneFilter(opt.value)}
           >{opt.label}</button>
         {/each}
       </div>
@@ -80,8 +80,8 @@
         {#each oriOptions as opt}
           <button
             class="chip"
-            class:active={state.blueOrientationFilter === opt.value}
-            onclick={() => state.setBlueOrientationFilter(opt.value)}
+            class:active={state.leftOrientationFilter === opt.value}
+            onclick={() => state.setLeftOrientationFilter(opt.value)}
           >{opt.label}</button>
         {/each}
       </div>
@@ -93,8 +93,8 @@
         {#each oriOptions as opt}
           <button
             class="chip"
-            class:active={state.redOrientationFilter === opt.value}
-            onclick={() => state.setRedOrientationFilter(opt.value)}
+            class:active={state.rightOrientationFilter === opt.value}
+            onclick={() => state.setRightOrientationFilter(opt.value)}
           >{opt.label}</button>
         {/each}
       </div>

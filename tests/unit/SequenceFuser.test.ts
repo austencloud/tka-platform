@@ -44,61 +44,61 @@ function makeHandPath(length: number): HandPathData {
 
 describe("SequenceFuser", () => {
 	it("fuses two equal-length hand paths into correct length", () => {
-		const blue = makeHandPath(8);
-		const red = makeHandPath(8);
+		const left = makeHandPath(8);
+		const right = makeHandPath(8);
 
-		const result = fuseSequences(blue, red);
+		const result = fuseSequences(left, right);
 
 		// LCM(8, 8) = 8, so output should be 8 beats
 		expect(result.stepPairings).toBeDefined();
 		expect(result.stepPairings!.length).toBe(8);
 		expect(result.sequenceLength).toBe(8);
-		expect(result.blueSoloProp).toBeDefined();
-		expect(result.redSoloProp).toBeDefined();
-		expect(result.blueSoloProp!.steps.length).toBe(8);
-		expect(result.redSoloProp!.steps.length).toBe(8);
+		expect(result.leftSoloProp).toBeDefined();
+		expect(result.rightSoloProp).toBeDefined();
+		expect(result.leftSoloProp!.steps.length).toBe(8);
+		expect(result.rightSoloProp!.steps.length).toBe(8);
 	});
 
 	it("tiles mismatched lengths to LCM (3 + 4 = 12)", () => {
-		const blue = makeHandPath(3);
-		const red = makeHandPath(4);
+		const left = makeHandPath(3);
+		const right = makeHandPath(4);
 
-		const result = fuseSequences(blue, red);
+		const result = fuseSequences(left, right);
 
 		// LCM(3, 4) = 12, which is under the default 64-beat cap
 		expect(result.stepPairings!.length).toBe(12);
 		expect(result.sequenceLength).toBe(12);
-		expect(result.blueSoloProp!.steps.length).toBe(12);
-		expect(result.redSoloProp!.steps.length).toBe(12);
+		expect(result.leftSoloProp!.steps.length).toBe(12);
+		expect(result.rightSoloProp!.steps.length).toBe(12);
 	});
 
 	it("truncates when LCM exceeds maxSteps", () => {
-		const blue = makeHandPath(37);
-		const red = makeHandPath(41);
+		const left = makeHandPath(37);
+		const right = makeHandPath(41);
 
 		// LCM(37, 41) = 1517, way over 64. Should truncate to min(37, 41) = 37.
-		const result = fuseSequences(blue, red);
+		const result = fuseSequences(left, right);
 
 		expect(result.stepPairings!.length).toBe(37);
 		expect(result.sequenceLength).toBe(37);
 	});
 
 	it("respects custom maxSteps option", () => {
-		const blue = makeHandPath(5);
-		const red = makeHandPath(7);
+		const left = makeHandPath(5);
+		const right = makeHandPath(7);
 
 		// LCM(5, 7) = 35. With maxSteps=10, should truncate to min(5, 7) = 5.
-		const result = fuseSequences(blue, red, { maxSteps: 10 });
+		const result = fuseSequences(left, right, { maxSteps: 10 });
 
 		expect(result.stepPairings!.length).toBe(5);
 		expect(result.sequenceLength).toBe(5);
 	});
 
 	it("produces a valid SequenceData with required fields", () => {
-		const blue = makeHandPath(4);
-		const red = makeHandPath(4);
+		const left = makeHandPath(4);
+		const right = makeHandPath(4);
 
-		const result = fuseSequences(blue, red);
+		const result = fuseSequences(left, right);
 
 		expect(result.id).toBeDefined();
 		expect(typeof result.id).toBe("string");

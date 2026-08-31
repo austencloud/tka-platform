@@ -45,11 +45,11 @@ async function applyPropPreset(presetIndex: number): Promise<void> {
   // Apply the preset settings
   await updateSettings({
     selectedPresetIndex: presetIndex,
-    bluePropType: preset.bluePropType,
-    redPropType: preset.redPropType,
+    leftPropType: preset.leftPropType,
+    rightPropType: preset.rightPropType,
     catDogMode: preset.catDogMode,
-    blueBuugengFlipped: preset.blueBuugengFlipped ?? false,
-    redBuugengFlipped: preset.redBuugengFlipped ?? false,
+    leftBuugengFlipped: preset.leftBuugengFlipped ?? false,
+    rightBuugengFlipped: preset.rightBuugengFlipped ?? false,
   });
 
   debug.log(`Applied prop preset ${presetIndex}:`, preset);
@@ -697,7 +697,7 @@ export function registerCreateShortcuts(
     priority: "medium",
     action: async () => {
       const settings = getSettings();
-      const currentProp = settings.bluePropType ?? PropType.STAFF;
+      const currentProp = settings.leftPropType ?? PropType.STAFF;
       // Shuffle draws from the whole enum, so paid cosmetics drop out unless
       // the user may actually use them.
       const allProps = filterPremiumCosmeticProps(getAllPropTypes());
@@ -707,7 +707,7 @@ export function registerCreateShortcuts(
       const hapticService = getHapticFeedback();
       hapticService?.trigger("selection");
 
-      await updateSettings({ bluePropType: randomProp, redPropType: randomProp });
+      await updateSettings({ leftPropType: randomProp, rightPropType: randomProp });
       debug.log(`Shuffled prop to: ${randomProp}`);
     },
   });

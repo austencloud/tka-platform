@@ -52,8 +52,8 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
   import { untrack } from "svelte";
 
   let {
-    blueProp,
-    redProp,
+    leftProp,
+    rightProp,
     gridVisible = true,
     gridMode = GridMode.DIAMOND,
     letter = null,
@@ -64,8 +64,8 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     fireConfig = undefined,
     ledConfig = undefined,
     trailSettings = undefined,
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     tipEffectMap = undefined,
     visibilityManagerOverride = undefined,
     showNonRadialPoints = true,
@@ -84,8 +84,8 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     // Fires when the collapse (close) max-height transition finishes.
     onCollapseComplete = () => {},
   }: {
-    blueProp: PropState | null;
-    redProp: PropState | null;
+    leftProp: PropState | null;
+    rightProp: PropState | null;
     gridVisible?: boolean;
     gridMode?: GridMode | null;
     letter?: Letter | null;
@@ -96,8 +96,8 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     fireConfig?: Partial<FireOverlayConfig>;
     ledConfig?: Partial<LedOverlayConfig>;
     trailSettings?: TrailSettings;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     tipEffectMap?: TipEffectMap;
     visibilityManagerOverride?: AnimationVisibilityStateManager;
     showNonRadialPoints?: boolean;
@@ -166,8 +166,8 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
 >
   <div class="split-canvas">
     <CanvasSurface
-      {blueProp}
-      redProp={null}
+      {leftProp}
+      rightProp={null}
       {gridVisible}
       {gridMode}
       backgroundAlpha={1}
@@ -180,8 +180,8 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
       {fireConfig}
       {ledConfig}
       {trailSettings}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
       {tipEffectMap}
       {visibilityManagerOverride}
       {showNonRadialPoints}
@@ -193,8 +193,8 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
   </div>
   <div class="split-canvas">
     <CanvasSurface
-      blueProp={null}
-      {redProp}
+      leftProp={null}
+      {rightProp}
       {gridVisible}
       {gridMode}
       backgroundAlpha={1}
@@ -207,8 +207,8 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
       {fireConfig}
       {ledConfig}
       {trailSettings}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
       {tipEffectMap}
       {visibilityManagerOverride}
       {showNonRadialPoints}

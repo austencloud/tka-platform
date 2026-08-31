@@ -2,10 +2,10 @@ import { describe, it, expect } from "vitest";
 import { buildIndex, type IndexInput } from "$lib/shared/mandala/services/mandala-index-builder";
 import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
 
-function paths(blue: string[], red: string[]): MandalaPaths {
+function paths(left: string[], right: string[]): MandalaPaths {
   return {
-    blue: blue.map((d, i) => ({ d, tipIndex: i })),
-    red: red.map((d, i) => ({ d, tipIndex: i })),
+    left: left.map((d, i) => ({ d, tipIndex: i })),
+    right: right.map((d, i) => ({ d, tipIndex: i })),
     purple: [],
   };
 }

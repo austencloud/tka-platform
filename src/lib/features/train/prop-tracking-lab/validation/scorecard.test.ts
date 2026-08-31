@@ -22,10 +22,10 @@ function staff(over: Partial<StaffMotionNotation> = {}, color: StaffColor = 'blu
 }
 
 function beat(
-  blueOver: Partial<StaffMotionNotation> = {},
-  redOver: Partial<StaffMotionNotation> = {},
+  leftOver: Partial<StaffMotionNotation> = {},
+  rightOver: Partial<StaffMotionNotation> = {},
 ): BeatNotation {
-  return { blue: staff(blueOver, 'blue'), red: staff(redOver, 'red') };
+  return { left: staff(leftOver, 'blue'), right: staff(rightOver, 'red') };
 }
 
 /** Full 7-field ground-truth motion straight off a detected staff. */
@@ -45,8 +45,8 @@ function truthFromDetected(beats: BeatNotation[], letters?: string[]): GroundTru
   return {
     beats: beats.map((b, i) => ({
       ...(letters?.[i] !== undefined ? { letter: letters[i] } : {}),
-      blue: truthMotion(b.blue),
-      red: truthMotion(b.red),
+      left: truthMotion(b.left),
+      right: truthMotion(b.right),
     })),
   };
 }
@@ -90,7 +90,7 @@ describe('scoreNotation', () => {
   it('localizes a single-field mismatch to the right field and hand', () => {
     const detected = [beat()]; // blue endLocation is 'e'
     const truth = truthFromDetected(detected);
-    truth.beats[0]!.blue!.endLocation = 's'; // performer says south
+    truth.beats[0]!.left!.endLocation = 's'; // performer says south
 
     const report = scoreNotation(detected, truth);
 
@@ -99,12 +99,12 @@ describe('scoreNotation', () => {
     expect(report.perField.endLocation).toEqual({ matched: 1, scored: 2 }); // red's still matches
     expect(report.perField.startLocation).toEqual({ matched: 2, scored: 2 });
 
-    const blueEnd = report.beats[0]!.blue!.fields.find((f) => f.field === 'endLocation')!;
-    expect(blueEnd.match).toBe(false);
-    expect(blueEnd.expected).toBe('s');
-    expect(blueEnd.detected).toBe('e');
-    const redEnd = report.beats[0]!.red!.fields.find((f) => f.field === 'endLocation')!;
-    expect(redEnd.match).toBe(true);
+    const leftEnd = report.beats[0]!.left!.fields.find((f) => f.field === 'endLocation')!;
+    expect(leftEnd.match).toBe(false);
+    expect(leftEnd.expected).toBe('s');
+    expect(leftEnd.detected).toBe('e');
+    const rightEnd = report.beats[0]!.right!.fields.find((f) => f.field === 'endLocation')!;
+    expect(rightEnd.match).toBe(true);
   });
 });
 
@@ -125,8 +125,8 @@ describe('scoreNotation alignment', () => {
     expect(report.beats[1]).toMatchObject({
       truthIndex: null,
       detectedIndex: 1,
-      blue: null,
-      red: null,
+      left: null,
+      right: null,
       score: 0,
     });
     expect(report.beats[1]!.confidence).toBe(0.9); // insertions keep the detected confidence
@@ -149,8 +149,8 @@ describe('scoreNotation alignment', () => {
     expect(report.beats[1]).toMatchObject({
       truthIndex: 1,
       detectedIndex: null,
-      blue: null,
-      red: null,
+      left: null,
+      right: null,
       score: 0,
       confidence: null,
       letter: 'M',
@@ -165,26 +165,26 @@ describe('scoreNotation field semantics', () => {
   it("matches ground-truth 'fl' turns against a detected float, and only a float", () => {
     const detected = [beat({ motionType: 'float', turns: 0, rotationDirection: 'noRotation' })];
     const truth: GroundTruthSequence = {
-      beats: [{ blue: { turns: 'fl' }, red: { turns: 'fl' } }],
+      beats: [{ left: { turns: 'fl' }, right: { turns: 'fl' } }],
     };
     const report = scoreNotation(detected, truth);
 
-    const blueTurns = report.beats[0]!.blue!.fields.find((f) => f.field === 'turns')!;
-    expect(blueTurns).toMatchObject({ expected: 'fl', detected: 'fl', match: true });
+    const leftTurns = report.beats[0]!.left!.fields.find((f) => f.field === 'turns')!;
+    expect(leftTurns).toMatchObject({ expected: 'fl', detected: 'fl', match: true });
 
     // Red is still a pro with 1 turn — 'fl' must NOT match it.
-    const redTurns = report.beats[0]!.red!.fields.find((f) => f.field === 'turns')!;
-    expect(redTurns).toMatchObject({ expected: 'fl', detected: 1, match: false });
+    const rightTurns = report.beats[0]!.right!.fields.find((f) => f.field === 'turns')!;
+    expect(rightTurns).toMatchObject({ expected: 'fl', detected: 1, match: false });
   });
 
   it('compares numeric turns on the quarter-turn lattice', () => {
     const detected = [beat({ turns: 1.501 }, { turns: 0.5 })];
     const truth: GroundTruthSequence = {
-      beats: [{ blue: { turns: 1.5 }, red: { turns: 1 } }],
+      beats: [{ left: { turns: 1.5 }, right: { turns: 1 } }],
     };
     const report = scoreNotation(detected, truth);
-    expect(report.beats[0]!.blue!.fields[0]!.match).toBe(true); // 1.501 rounds to 1.5
-    expect(report.beats[0]!.red!.fields[0]!.match).toBe(false); // 0.5 vs 1
+    expect(report.beats[0]!.left!.fields[0]!.match).toBe(true); // 1.501 rounds to 1.5
+    expect(report.beats[0]!.right!.fields[0]!.match).toBe(false); // 0.5 vs 1
   });
 
   it('scores only the fields the ground truth supplies', () => {
@@ -192,8 +192,8 @@ describe('scoreNotation field semantics', () => {
     const truth: GroundTruthSequence = {
       beats: [
         {
-          blue: { startLocation: 'n', endLocation: 'e' },
-          red: { startLocation: 'n', endLocation: 'e' },
+          left: { startLocation: 'n', endLocation: 'e' },
+          right: { startLocation: 'n', endLocation: 'e' },
         },
       ],
     };
@@ -203,7 +203,7 @@ describe('scoreNotation field semantics', () => {
     expect(report.perField.startLocation).toEqual({ matched: 2, scored: 2 });
     expect(report.perField.motionType).toEqual({ matched: 0, scored: 0 });
     expect(report.perField.turns).toEqual({ matched: 0, scored: 0 });
-    expect(report.beats[0]!.blue!.scored).toBe(2);
+    expect(report.beats[0]!.left!.scored).toBe(2);
   });
 
   it('notes low-confidence detected beats', () => {
@@ -240,7 +240,7 @@ describe('mirrorBeatNotation', () => {
     );
     const mirrored = mirrorBeatNotation(original);
 
-    expect(mirrored.blue).toMatchObject({
+    expect(mirrored.left).toMatchObject({
       startLocation: 'w',
       endLocation: 'nw',
       rotationDirection: 'ccw',
@@ -249,7 +249,7 @@ describe('mirrorBeatNotation', () => {
       motionType: 'pro', // mirroring preserves the with/against relationship
       turns: 1.5,
     });
-    expect(mirrored.red).toMatchObject({
+    expect(mirrored.right).toMatchObject({
       startLocation: 'n', // on the mirror axis
       endLocation: 's',
       rotationDirection: 'noRotation',
@@ -259,8 +259,8 @@ describe('mirrorBeatNotation', () => {
     });
 
     // Pure: the input beat is untouched.
-    expect(original.blue.startLocation).toBe('e');
-    expect(original.red.endOrientation).toBe('counter');
+    expect(original.left.startLocation).toBe('e');
+    expect(original.right.endOrientation).toBe('counter');
   });
 });
 

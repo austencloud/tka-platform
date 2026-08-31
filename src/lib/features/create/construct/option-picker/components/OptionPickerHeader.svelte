@@ -44,14 +44,14 @@
     level: TurnLevel;
     onLevelChange: (level: TurnLevel) => void;
     // Turns
-    blueTurns: TurnValue;
-    redTurns: TurnValue;
-    blueRotation: RotationDirection;
-    redRotation: RotationDirection;
-    onBlueChange: (value: TurnValue) => void;
-    onRedChange: (value: TurnValue) => void;
-    onBlueRotationChange: (dir: RotationDirection) => void;
-    onRedRotationChange: (dir: RotationDirection) => void;
+    leftTurns: TurnValue;
+    rightTurns: TurnValue;
+    leftRotation: RotationDirection;
+    rightRotation: RotationDirection;
+    onLeftChange: (value: TurnValue) => void;
+    onRightChange: (value: TurnValue) => void;
+    onLeftRotationChange: (dir: RotationDirection) => void;
+    onRightRotationChange: (dir: RotationDirection) => void;
   }
 
   const {
@@ -62,18 +62,18 @@
     onToggleContinuous,
     level,
     onLevelChange,
-    blueTurns,
-    redTurns,
-    blueRotation,
-    redRotation,
-    onBlueChange,
-    onRedChange,
-    onBlueRotationChange,
-    onRedRotationChange,
+    leftTurns,
+    rightTurns,
+    leftRotation,
+    rightRotation,
+    onLeftChange,
+    onRightChange,
+    onLeftRotationChange,
+    onRightRotationChange,
   }: Props = $props();
 
-  const hasBlueTurns = $derived(blueTurns === "fl" || blueTurns > 0);
-  const hasRedTurns = $derived(redTurns === "fl" || redTurns > 0);
+  const hasLeftTurns = $derived(leftTurns === "fl" || leftTurns > 0);
+  const hasRightTurns = $derived(rightTurns === "fl" || rightTurns > 0);
 
   // Level 1 is base motions — there is nothing to dial, so the row isn't there.
   const turnsAvailable = $derived(level > 1);
@@ -185,7 +185,7 @@
     >
       <div
         class="hand-half blue"
-        class:has-spin={hasBlueTurns}
+        class:has-spin={hasLeftTurns}
         role="group"
         aria-label="Blue turns"
         in:flyFade={{ y: 6 }}
@@ -199,18 +199,18 @@
                dash/static options survive the direction-reversal filter. So the
                toggle shows whenever this hand has turns, not only in All mode. -->
           <span class="spin-slot">
-            {#if hasBlueTurns}
+            {#if hasLeftTurns}
               <button
                 class="spin-inline edge"
                 transition:popIn
                 title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
                 aria-label="Toggle blue dash/static spin (currently {dirLabel(
-                  blueRotation
+                  leftRotation
                 )})"
-                onclick={() => onBlueRotationChange(opposite(blueRotation))}
+                onclick={() => onLeftRotationChange(opposite(leftRotation))}
               >
-                <i class="fas {dirIcon(blueRotation)}" aria-hidden="true"></i>
-                <span class="dir">{dirLabel(blueRotation)}</span>
+                <i class="fas {dirIcon(leftRotation)}" aria-hidden="true"></i>
+                <span class="dir">{dirLabel(leftRotation)}</span>
               </button>
             {/if}
           </span>
@@ -218,11 +218,11 @@
         <div class="turn-seg">
           <SegmentedControl
             options={turnOptions}
-            value={turnValueToKey(blueTurns)}
+            value={turnValueToKey(leftTurns)}
             size="sm"
             color="blue"
             ghostKind="turn"
-            onchange={(v) => onBlueChange(keyToTurnValue(v))}
+            onchange={(v) => onLeftChange(keyToTurnValue(v))}
           />
         </div>
       </div>
@@ -230,25 +230,25 @@
            rather than a single slab dropping in. -->
       <div
         class="hand-half red"
-        class:has-spin={hasRedTurns}
+        class:has-spin={hasRightTurns}
         role="group"
         aria-label="Red turns"
         in:flyFade={{ y: 6, delay: STAGGER.micro }}
       >
         <div class="hand-meta">
           <span class="spin-slot">
-            {#if hasRedTurns}
+            {#if hasRightTurns}
               <button
                 class="spin-inline edge"
                 transition:popIn
                 title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
                 aria-label="Toggle red dash/static spin (currently {dirLabel(
-                  redRotation
+                  rightRotation
                 )})"
-                onclick={() => onRedRotationChange(opposite(redRotation))}
+                onclick={() => onRightRotationChange(opposite(rightRotation))}
               >
-                <i class="fas {dirIcon(redRotation)}" aria-hidden="true"></i>
-                <span class="dir">{dirLabel(redRotation)}</span>
+                <i class="fas {dirIcon(rightRotation)}" aria-hidden="true"></i>
+                <span class="dir">{dirLabel(rightRotation)}</span>
               </button>
             {/if}
           </span>
@@ -256,11 +256,11 @@
         <div class="turn-seg">
           <SegmentedControl
             options={turnOptions}
-            value={turnValueToKey(redTurns)}
+            value={turnValueToKey(rightTurns)}
             size="sm"
             color="red"
             ghostKind="turn"
-            onchange={(v) => onRedChange(keyToTurnValue(v))}
+            onchange={(v) => onRightChange(keyToTurnValue(v))}
           />
         </div>
       </div>

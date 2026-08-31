@@ -28,15 +28,15 @@ export function renderScene(
   canvasSize: number,
   gridVisible: boolean,
   gridImage: HTMLImageElement | ImageBitmap | null,
-  blueStaffImage: HTMLImageElement | ImageBitmap | null,
-  redStaffImage: HTMLImageElement | ImageBitmap | null,
-  blueProp: PropState | null,
-  redProp: PropState | null,
-  bluePropViewBoxDimensions: { width: number; height: number } = {
+  leftStaffImage: HTMLImageElement | ImageBitmap | null,
+  rightStaffImage: HTMLImageElement | ImageBitmap | null,
+  leftProp: PropState | null,
+  rightProp: PropState | null,
+  leftPropViewBoxDimensions: { width: number; height: number } = {
     width: 252.8,
     height: 77.8,
   },
-  redPropViewBoxDimensions: { width: number; height: number } = {
+  rightPropViewBoxDimensions: { width: number; height: number } = {
     width: 252.8,
     height: 77.8,
   }
@@ -52,23 +52,23 @@ export function renderScene(
   drawGrid(ctx, canvasSize, gridVisible, gridImage);
 
   // Draw props with their viewBox dimensions (only if both image and prop state are available)
-  if (blueStaffImage && blueProp) {
+  if (leftStaffImage && leftProp) {
     drawStaff(
       ctx,
       canvasSize,
-      blueProp,
-      blueStaffImage,
-      bluePropViewBoxDimensions
+      leftProp,
+      leftStaffImage,
+      leftPropViewBoxDimensions
     );
   }
 
-  if (redStaffImage && redProp) {
+  if (rightStaffImage && rightProp) {
     drawStaff(
       ctx,
       canvasSize,
-      redProp,
-      redStaffImage,
-      redPropViewBoxDimensions
+      rightProp,
+      rightStaffImage,
+      rightPropViewBoxDimensions
     );
   }
 }

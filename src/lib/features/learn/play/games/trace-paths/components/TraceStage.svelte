@@ -33,7 +33,7 @@ Pointer discipline
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
   import type { TraceHand, TraceSample } from "../domain/trace-types";
@@ -336,12 +336,12 @@ Pointer discipline
       {@const hand = panelHands[0]!}
       <div
         class="panel"
-        class:blue={hand === MotionColor.BLUE}
-        class:red={hand === MotionColor.RED}
+        class:blue={hand === HandSide.LEFT}
+        class:red={hand === HandSide.RIGHT}
       >
-        <div class="panel-label {hand === MotionColor.BLUE ? 'blue' : 'red'}">
+        <div class="panel-label {hand === HandSide.LEFT ? 'blue' : 'red'}">
           <span class="panel-glyph" aria-hidden="true"
-            >{hand === MotionColor.BLUE ? "B" : "R"}</span
+            >{hand === HandSide.LEFT ? "B" : "R"}</span
           >
           <span class="panel-name">{handName(hand)}</span>
         </div>

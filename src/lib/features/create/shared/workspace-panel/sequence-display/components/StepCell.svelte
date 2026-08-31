@@ -10,6 +10,7 @@
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
   import { createStepCellAnimationManager } from "../services/step-cell-animation-manager";
   import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   let {
     step,
@@ -34,10 +35,10 @@
     // Used to reset hasAnimated even when step.id stays the same
     animationEpoch = 0,
     // Prop type overrides for demo/preview rendering (bypasses global settings)
-    bluePropTypeOverride = undefined,
-    redPropTypeOverride = undefined,
-    blueColorOverride = undefined,
-    redColorOverride = undefined,
+    leftPropTypeOverride = undefined,
+    rightPropTypeOverride = undefined,
+    leftColorOverride = undefined,
+    rightColorOverride = undefined,
     transitionKey = null,
     onContentReady = undefined,
   } = $props<{
@@ -62,13 +63,13 @@
     // Animation epoch - increments when a new sequence animation starts
     animationEpoch?: number;
     /** Override prop type for blue hand. Bypasses global settings for demo/preview rendering. */
-    bluePropTypeOverride?: PropType;
+    leftPropTypeOverride?: PropType;
     /** Override prop type for red hand. Bypasses global settings for demo/preview rendering. */
-    redPropTypeOverride?: PropType;
+    rightPropTypeOverride?: PropType;
     /** Display-only color for the blue-hand prop and arrow. */
-    blueColorOverride?: string;
+    leftColorOverride?: string;
     /** Display-only color for the red-hand prop and arrow. */
-    redColorOverride?: string;
+    rightColorOverride?: string;
     /** Stable history identity used to preserve prop and arrow motion through reordering. */
     transitionKey?: string | null;
     /**
@@ -125,14 +126,14 @@
 
   // Arrow layer adjustment modal state
   let arrowModalOpen = $state(false);
-  let arrowModalColor = $state<"blue" | "red">("blue");
+  let arrowModalColor = $state<HandSide>(HandSide.LEFT);
 
   // Show arrow adjustment in context menu for admin users on non-blank beats
   const showArrowAdjustment = $derived(
     isAdmin() && !step.isBlank && step.stepNumber !== 0
   );
 
-  function handleAdjustArrow(color: "blue" | "red") {
+  function handleAdjustArrow(color: HandSide) {
     arrowModalColor = color;
     arrowModalOpen = true;
   }
@@ -346,10 +347,10 @@
     {widthMultiplier}
     cellIndex={index}
     {transitionKey}
-    {bluePropTypeOverride}
-    {redPropTypeOverride}
-    {blueColorOverride}
-    {redColorOverride}
+    {leftPropTypeOverride}
+    {rightPropTypeOverride}
+    {leftColorOverride}
+    {rightColorOverride}
     onReady={onContentReady}
     readyEpoch={animationEpoch}
   />

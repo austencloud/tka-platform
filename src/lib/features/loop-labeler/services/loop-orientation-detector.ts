@@ -87,29 +87,29 @@ export function detectOrientationPass(sequence: SequenceEntry): OrientationDetec
   const firstStep = beats[0]!;
   const lastStep = beats[beats.length - 1]!;
 
-  const blueStartIdx = quarterIndex(firstStep.blueAttributes?.startOri);
-  const redStartIdx = quarterIndex(firstStep.redAttributes?.startOri);
-  const blueEndIdx = quarterIndex(lastStep.blueAttributes?.endOri);
-  const redEndIdx = quarterIndex(lastStep.redAttributes?.endOri);
+  const leftStartIdx = quarterIndex(firstStep.leftAttributes?.startOri);
+  const rightStartIdx = quarterIndex(firstStep.rightAttributes?.startOri);
+  const leftEndIdx = quarterIndex(lastStep.leftAttributes?.endOri);
+  const rightEndIdx = quarterIndex(lastStep.rightAttributes?.endOri);
 
   if (
-    blueStartIdx === null ||
-    redStartIdx === null ||
-    blueEndIdx === null ||
-    redEndIdx === null
+    leftStartIdx === null ||
+    rightStartIdx === null ||
+    leftEndIdx === null ||
+    rightEndIdx === null
   ) {
     // Missing or non-standard orientation values - fall back to closed.
     return { period: 1, components: [] };
   }
 
-  const blueDelta = blueEndIdx - blueStartIdx;
-  const redDelta = redEndIdx - redStartIdx;
+  const leftDelta = leftEndIdx - leftStartIdx;
+  const rightDelta = rightEndIdx - rightStartIdx;
 
-  const bluePeriod = periodFromDelta(blueDelta);
-  const redPeriod = periodFromDelta(redDelta);
+  const leftPeriod = periodFromDelta(leftDelta);
+  const rightPeriod = periodFromDelta(rightDelta);
 
   // Overall period is the LCM; for {1,2,4} LCM is just max.
-  const period = Math.max(bluePeriod, redPeriod);
+  const period = Math.max(leftPeriod, rightPeriod);
 
   if (period === 1) {
     return { period: 1, components: [] };

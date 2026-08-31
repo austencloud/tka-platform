@@ -13,8 +13,8 @@ export interface AnimationShortcutHandlers {
   onStepFullBeatForward: () => void;
   onStepFullBeatBackward: () => void;
   onClose: () => void;
-  onToggleBlue?: () => void;
-  onToggleRed?: () => void;
+  onToggleLeft?: () => void;
+  onToggleRight?: () => void;
   onShowHelp: () => void;
 }
 
@@ -140,7 +140,7 @@ export class AnimationShortcutRegistrar {
         priority: "medium",
         action: (e) => {
           e.preventDefault();
-          handlers.onToggleBlue?.();
+          handlers.onToggleLeft?.();
         },
       })
     );
@@ -157,7 +157,7 @@ export class AnimationShortcutRegistrar {
         priority: "medium",
         action: (e) => {
           e.preventDefault();
-          handlers.onToggleRed?.();
+          handlers.onToggleRight?.();
         },
       })
     );

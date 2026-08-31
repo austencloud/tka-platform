@@ -190,14 +190,14 @@ for (let i = 1; i < csvLines.length; i++) {
     endPos: cols[2],
     timing: cols[3],
     direction: cols[4],
-    blueMotionType: cols[5],
-    blueRotDir: cols[6],
-    blueStartLoc: cols[7],
-    blueEndLoc: cols[8],
-    redMotionType: cols[9],
-    redRotDir: cols[10],
-    redStartLoc: cols[11],
-    redEndLoc: cols[12],
+    leftMotionType: cols[5],
+    leftRotDir: cols[6],
+    leftStartLoc: cols[7],
+    leftEndLoc: cols[8],
+    rightMotionType: cols[9],
+    rightRotDir: cols[10],
+    rightStartLoc: cols[11],
+    rightEndLoc: cols[12],
   };
 
   // Level filtering: L1 = 0 turns only (all CSV rows are 0-turn at base)
@@ -380,18 +380,18 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
    */
   function rotationCompatible(prevEdge, nextEdge) {
     // noRotation is compatible with anything
-    if (prevEdge.blueRotDir === "noRotation" || nextEdge.blueRotDir === "noRotation") {
+    if (prevEdge.leftRotDir === "noRotation" || nextEdge.leftRotDir === "noRotation") {
       // Check red independently
-      if (prevEdge.redRotDir !== "noRotation" && nextEdge.redRotDir !== "noRotation") {
-        return prevEdge.redRotDir === nextEdge.redRotDir;
+      if (prevEdge.rightRotDir !== "noRotation" && nextEdge.rightRotDir !== "noRotation") {
+        return prevEdge.rightRotDir === nextEdge.rightRotDir;
       }
       return true;
     }
-    if (prevEdge.redRotDir === "noRotation" || nextEdge.redRotDir === "noRotation") {
-      return prevEdge.blueRotDir === nextEdge.blueRotDir;
+    if (prevEdge.rightRotDir === "noRotation" || nextEdge.rightRotDir === "noRotation") {
+      return prevEdge.leftRotDir === nextEdge.leftRotDir;
     }
-    return prevEdge.blueRotDir === nextEdge.blueRotDir &&
-           prevEdge.redRotDir === nextEdge.redRotDir;
+    return prevEdge.leftRotDir === nextEdge.leftRotDir &&
+           prevEdge.rightRotDir === nextEdge.rightRotDir;
   }
 
   /**
@@ -541,37 +541,37 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       for (let i = 0; i < entry.edges.length; i++) {
         const e = entry.edges[i];
         const symbol = patternDef.sequence[i % patternDef.sequence.length];
-        const blueReversed = symbol === 'P' || symbol === 'B';
-        const redReversed  = symbol === 'P' || symbol === 'R';
+        const leftReversed = symbol === 'P' || symbol === 'B';
+        const rightReversed  = symbol === 'P' || symbol === 'R';
 
         // Compute the reversed motion types WITHOUT mutating yet
-        const newBlue = blueReversed
-          ? (e.blueMotionType === 'pro' ? 'anti' : e.blueMotionType === 'anti' ? 'pro' : e.blueMotionType)
-          : e.blueMotionType;
-        const newRed = redReversed
-          ? (e.redMotionType === 'pro' ? 'anti' : e.redMotionType === 'anti' ? 'pro' : e.redMotionType)
-          : e.redMotionType;
+        const newLeft = leftReversed
+          ? (e.leftMotionType === 'pro' ? 'anti' : e.leftMotionType === 'anti' ? 'pro' : e.leftMotionType)
+          : e.leftMotionType;
+        const newRight = rightReversed
+          ? (e.rightMotionType === 'pro' ? 'anti' : e.rightMotionType === 'anti' ? 'pro' : e.rightMotionType)
+          : e.rightMotionType;
 
         // Look up the new letter from the UNMODIFIED global edges array
         const match = edges.find(csvEdge =>
           csvEdge.startPos === e.startPos &&
           csvEdge.endPos === e.endPos &&
-          csvEdge.blueMotionType === newBlue &&
-          csvEdge.blueStartLoc === e.blueStartLoc &&
-          csvEdge.blueEndLoc === e.blueEndLoc &&
-          csvEdge.redMotionType === newRed &&
-          csvEdge.redStartLoc === e.redStartLoc &&
-          csvEdge.redEndLoc === e.redEndLoc
+          csvEdge.leftMotionType === newLeft &&
+          csvEdge.leftStartLoc === e.leftStartLoc &&
+          csvEdge.leftEndLoc === e.leftEndLoc &&
+          csvEdge.rightMotionType === newRight &&
+          csvEdge.rightStartLoc === e.rightStartLoc &&
+          csvEdge.rightEndLoc === e.rightEndLoc
         );
 
         // Mutate motion types and rotation directions
-        e.blueMotionType = newBlue;
-        e.redMotionType = newRed;
-        if (blueReversed && (e.blueRotDir === 'cw' || e.blueRotDir === 'ccw')) {
-          e.blueRotDir = e.blueRotDir === 'cw' ? 'ccw' : 'cw';
+        e.leftMotionType = newLeft;
+        e.rightMotionType = newRight;
+        if (leftReversed && (e.leftRotDir === 'cw' || e.leftRotDir === 'ccw')) {
+          e.leftRotDir = e.leftRotDir === 'cw' ? 'ccw' : 'cw';
         }
-        if (redReversed && (e.redRotDir === 'cw' || e.redRotDir === 'ccw')) {
-          e.redRotDir = e.redRotDir === 'cw' ? 'ccw' : 'cw';
+        if (rightReversed && (e.rightRotDir === 'cw' || e.rightRotDir === 'ccw')) {
+          e.rightRotDir = e.rightRotDir === 'cw' ? 'ccw' : 'cw';
         }
         if (match) e.letter = match.letter;
       }
@@ -699,14 +699,14 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
             letter: e.letter,
             startPos: e.startPos,
             endPos: e.endPos,
-            blueMotionType: e.blueMotionType,
-            blueRotDir: e.blueRotDir,
-            blueStartLoc: e.blueStartLoc,
-            blueEndLoc: e.blueEndLoc,
-            redMotionType: e.redMotionType,
-            redRotDir: e.redRotDir,
-            redStartLoc: e.redStartLoc,
-            redEndLoc: e.redEndLoc,
+            leftMotionType: e.leftMotionType,
+            leftRotDir: e.leftRotDir,
+            leftStartLoc: e.leftStartLoc,
+            leftEndLoc: e.leftEndLoc,
+            rightMotionType: e.rightMotionType,
+            rightRotDir: e.rightRotDir,
+            rightStartLoc: e.rightStartLoc,
+            rightEndLoc: e.rightEndLoc,
           })),
         })),
       })),
@@ -817,21 +817,21 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         stepNumber: beatIndex,
         duration: 1,
         motions: {
-          blue: {
-            motionType: edge.blueMotionType,
-            rotationDirection: edge.blueRotDir,
-            startLocation: edge.blueStartLoc,
-            endLocation: edge.blueEndLoc,
+          left: {
+            motionType: edge.leftMotionType,
+            rotationDirection: edge.leftRotDir,
+            startLocation: edge.leftStartLoc,
+            endLocation: edge.leftEndLoc,
             startOrientation: "in",
             endOrientation: "in",
             turns: 0,
             color: "blue",
           },
-          red: {
-            motionType: edge.redMotionType,
-            rotationDirection: edge.redRotDir,
-            startLocation: edge.redStartLoc,
-            endLocation: edge.redEndLoc,
+          right: {
+            motionType: edge.rightMotionType,
+            rotationDirection: edge.rightRotDir,
+            startLocation: edge.rightStartLoc,
+            endLocation: edge.rightEndLoc,
             startOrientation: "in",
             endOrientation: "in",
             turns: 0,
@@ -852,26 +852,26 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         const step = steps[i];
 
         // Chain: previous end → current start
-        step.motions.blue.startOrientation = prev.motions.blue.endOrientation;
-        step.motions.red.startOrientation = prev.motions.red.endOrientation;
+        step.motions.left.startOrientation = prev.motions.left.endOrientation;
+        step.motions.right.startOrientation = prev.motions.right.endOrientation;
 
         // Calculate end orientations
-        step.motions.blue.endOrientation = calculateEndOrientation({
-          motionType: step.motions.blue.motionType,
-          turns: step.motions.blue.turns,
-          rotationDirection: step.motions.blue.rotationDirection,
-          startLocation: step.motions.blue.startLocation,
-          endLocation: step.motions.blue.endLocation,
-          startOrientation: step.motions.blue.startOrientation,
+        step.motions.left.endOrientation = calculateEndOrientation({
+          motionType: step.motions.left.motionType,
+          turns: step.motions.left.turns,
+          rotationDirection: step.motions.left.rotationDirection,
+          startLocation: step.motions.left.startLocation,
+          endLocation: step.motions.left.endLocation,
+          startOrientation: step.motions.left.startOrientation,
         });
 
-        step.motions.red.endOrientation = calculateEndOrientation({
-          motionType: step.motions.red.motionType,
-          turns: step.motions.red.turns,
-          rotationDirection: step.motions.red.rotationDirection,
-          startLocation: step.motions.red.startLocation,
-          endLocation: step.motions.red.endLocation,
-          startOrientation: step.motions.red.startOrientation,
+        step.motions.right.endOrientation = calculateEndOrientation({
+          motionType: step.motions.right.motionType,
+          turns: step.motions.right.turns,
+          rotationDirection: step.motions.right.rotationDirection,
+          startLocation: step.motions.right.startLocation,
+          endLocation: step.motions.right.endLocation,
+          startOrientation: step.motions.right.startOrientation,
         });
       }
       return steps;
@@ -887,30 +887,30 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         letter: step.letter,
         startPosition: step.startPosition,
         endPosition: step.endPosition,
-        blueReversal: step.blueReversal ?? false,
-        redReversal: step.redReversal ?? false,
+        leftReversal: step.leftReversal ?? false,
+        rightReversal: step.rightReversal ?? false,
         motions: {
-          blue: {
-            motionType: step.motions.blue.motionType,
-            rotationDirection: step.motions.blue.rotationDirection,
-            startLocation: step.motions.blue.startLocation,
-            endLocation: step.motions.blue.endLocation,
-            turns: step.motions.blue.turns ?? 0,
-            startOrientation: step.motions.blue.startOrientation ?? "in",
-            endOrientation: step.motions.blue.endOrientation ?? "in",
+          left: {
+            motionType: step.motions.left.motionType,
+            rotationDirection: step.motions.left.rotationDirection,
+            startLocation: step.motions.left.startLocation,
+            endLocation: step.motions.left.endLocation,
+            turns: step.motions.left.turns ?? 0,
+            startOrientation: step.motions.left.startOrientation ?? "in",
+            endOrientation: step.motions.left.endOrientation ?? "in",
             isVisible: true,
             propType: "staff",
             color: "blue",
             gridMode,
           },
-          red: {
-            motionType: step.motions.red.motionType,
-            rotationDirection: step.motions.red.rotationDirection,
-            startLocation: step.motions.red.startLocation,
-            endLocation: step.motions.red.endLocation,
-            turns: step.motions.red.turns ?? 0,
-            startOrientation: step.motions.red.startOrientation ?? "in",
-            endOrientation: step.motions.red.endOrientation ?? "in",
+          right: {
+            motionType: step.motions.right.motionType,
+            rotationDirection: step.motions.right.rotationDirection,
+            startLocation: step.motions.right.startLocation,
+            endLocation: step.motions.right.endLocation,
+            turns: step.motions.right.turns ?? 0,
+            startOrientation: step.motions.right.startOrientation ?? "in",
+            endOrientation: step.motions.right.endOrientation ?? "in",
             isVisible: true,
             propType: "staff",
             color: "red",
@@ -943,12 +943,12 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       const match = edges.find(e =>
         e.startPos === step.startPosition &&
         e.endPos   === step.endPosition &&
-        e.blueMotionType === step.motions.blue.motionType &&
-        e.blueStartLoc   === step.motions.blue.startLocation &&
-        e.blueEndLoc     === step.motions.blue.endLocation &&
-        e.redMotionType  === step.motions.red.motionType &&
-        e.redStartLoc    === step.motions.red.startLocation &&
-        e.redEndLoc      === step.motions.red.endLocation
+        e.leftMotionType === step.motions.left.motionType &&
+        e.leftStartLoc   === step.motions.left.startLocation &&
+        e.leftEndLoc     === step.motions.left.endLocation &&
+        e.rightMotionType  === step.motions.right.motionType &&
+        e.rightStartLoc    === step.motions.right.startLocation &&
+        e.rightEndLoc      === step.motions.right.endLocation
       );
       return match ? match.letter : null;
     }
@@ -983,8 +983,8 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
           stepNumber: 0,
           duration: 1,
           motions: {
-            blue: { motionType: "static", rotationDirection: "noRotation", startLocation: fe.blueStartLoc, endLocation: fe.blueStartLoc, startOrientation: "in", endOrientation: "in", turns: 0, color: "blue" },
-            red: { motionType: "static", rotationDirection: "noRotation", startLocation: fe.redStartLoc, endLocation: fe.redStartLoc, startOrientation: "in", endOrientation: "in", turns: 0, color: "red" },
+            left: { motionType: "static", rotationDirection: "noRotation", startLocation: fe.leftStartLoc, endLocation: fe.leftStartLoc, startOrientation: "in", endOrientation: "in", turns: 0, color: "blue" },
+            right: { motionType: "static", rotationDirection: "noRotation", startLocation: fe.rightStartLoc, endLocation: fe.rightStartLoc, startOrientation: "in", endOrientation: "in", turns: 0, color: "red" },
           },
         };
         const ppSeed = [ppStart, ...item.edges.map((e, i) => edgeToEngineStep(e, i + 1))];
@@ -1052,21 +1052,21 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         stepNumber: 0,
         duration: 1,
         motions: {
-          blue: {
+          left: {
             motionType: "static",
             rotationDirection: "noRotation",
-            startLocation: firstEdge.blueStartLoc,
-            endLocation: firstEdge.blueStartLoc,
+            startLocation: firstEdge.leftStartLoc,
+            endLocation: firstEdge.leftStartLoc,
             startOrientation: "in",
             endOrientation: "in",
             turns: 0,
             color: "blue",
           },
-          red: {
+          right: {
             motionType: "static",
             rotationDirection: "noRotation",
-            startLocation: firstEdge.redStartLoc,
-            endLocation: firstEdge.redStartLoc,
+            startLocation: firstEdge.rightStartLoc,
+            endLocation: firstEdge.rightStartLoc,
             startOrientation: "in",
             endOrientation: "in",
             turns: 0,
@@ -1119,8 +1119,8 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         const revFlags = deriveReversals(fullSteps, { loop: true });
         for (let i = 0; i < beatStepsForReversal.length; i++) {
           const f = revFlags[i + 1];
-          beatStepsForReversal[i].blueReversal = f ? f.blue.propReversal : false;
-          beatStepsForReversal[i].redReversal = f ? f.red.propReversal : false;
+          beatStepsForReversal[i].leftReversal = f ? f.left.propReversal : false;
+          beatStepsForReversal[i].rightReversal = f ? f.right.propReversal : false;
         }
       }
 
@@ -1131,29 +1131,29 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
           const step = beatStepsForReversal[i];
 
           const symbol = patternDef.sequence[i % patternDef.sequence.length];
-          const blueReversed = symbol === 'P' || symbol === 'B';
-          const redReversed  = symbol === 'P' || symbol === 'R';
+          const leftReversed = symbol === 'P' || symbol === 'B';
+          const rightReversed  = symbol === 'P' || symbol === 'R';
 
-          step.blueReversal = blueReversed;
-          step.redReversal  = redReversed;
+          step.leftReversal = leftReversed;
+          step.rightReversal  = rightReversed;
 
           // Apply reversal based on the CURRENT beat's motion type:
           // - pro/anti: flip motion type AND rotation direction
           // - static/dash: only flip rotation direction (type stays)
-          if (blueReversed) {
-            if (step.motions.blue.motionType === 'pro' || step.motions.blue.motionType === 'anti') {
-              step.motions.blue.motionType = step.motions.blue.motionType === 'pro' ? 'anti' : 'pro';
+          if (leftReversed) {
+            if (step.motions.left.motionType === 'pro' || step.motions.left.motionType === 'anti') {
+              step.motions.left.motionType = step.motions.left.motionType === 'pro' ? 'anti' : 'pro';
             }
-            if (step.motions.blue.rotationDirection === 'cw' || step.motions.blue.rotationDirection === 'ccw') {
-              step.motions.blue.rotationDirection = step.motions.blue.rotationDirection === 'cw' ? 'ccw' : 'cw';
+            if (step.motions.left.rotationDirection === 'cw' || step.motions.left.rotationDirection === 'ccw') {
+              step.motions.left.rotationDirection = step.motions.left.rotationDirection === 'cw' ? 'ccw' : 'cw';
             }
           }
-          if (redReversed) {
-            if (step.motions.red.motionType === 'pro' || step.motions.red.motionType === 'anti') {
-              step.motions.red.motionType = step.motions.red.motionType === 'pro' ? 'anti' : 'pro';
+          if (rightReversed) {
+            if (step.motions.right.motionType === 'pro' || step.motions.right.motionType === 'anti') {
+              step.motions.right.motionType = step.motions.right.motionType === 'pro' ? 'anti' : 'pro';
             }
-            if (step.motions.red.rotationDirection === 'cw' || step.motions.red.rotationDirection === 'ccw') {
-              step.motions.red.rotationDirection = step.motions.red.rotationDirection === 'cw' ? 'ccw' : 'cw';
+            if (step.motions.right.rotationDirection === 'cw' || step.motions.right.rotationDirection === 'ccw') {
+              step.motions.right.rotationDirection = step.motions.right.rotationDirection === 'cw' ? 'ccw' : 'cw';
             }
           }
 
@@ -1178,27 +1178,27 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         gridPosition: sp.startPosition,
         gridMode,
         motions: {
-          blue: {
-            motionType: sp.motions.blue.motionType,
-            rotationDirection: sp.motions.blue.rotationDirection,
-            startLocation: sp.motions.blue.startLocation,
-            endLocation: sp.motions.blue.endLocation,
-            turns: sp.motions.blue.turns ?? 0,
-            startOrientation: sp.motions.blue.startOrientation ?? "in",
-            endOrientation: sp.motions.blue.endOrientation ?? "in",
+          left: {
+            motionType: sp.motions.left.motionType,
+            rotationDirection: sp.motions.left.rotationDirection,
+            startLocation: sp.motions.left.startLocation,
+            endLocation: sp.motions.left.endLocation,
+            turns: sp.motions.left.turns ?? 0,
+            startOrientation: sp.motions.left.startOrientation ?? "in",
+            endOrientation: sp.motions.left.endOrientation ?? "in",
             isVisible: true,
             propType: "staff",
             color: "blue",
             gridMode,
           },
-          red: {
-            motionType: sp.motions.red.motionType,
-            rotationDirection: sp.motions.red.rotationDirection,
-            startLocation: sp.motions.red.startLocation,
-            endLocation: sp.motions.red.endLocation,
-            turns: sp.motions.red.turns ?? 0,
-            startOrientation: sp.motions.red.startOrientation ?? "in",
-            endOrientation: sp.motions.red.endOrientation ?? "in",
+          right: {
+            motionType: sp.motions.right.motionType,
+            rotationDirection: sp.motions.right.rotationDirection,
+            startLocation: sp.motions.right.startLocation,
+            endLocation: sp.motions.right.endLocation,
+            turns: sp.motions.right.turns ?? 0,
+            startOrientation: sp.motions.right.startOrientation ?? "in",
+            endOrientation: sp.motions.right.endOrientation ?? "in",
             isVisible: true,
             propType: "staff",
             color: "red",
@@ -1252,10 +1252,10 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         // Re-propagate orientations: the start step is static (in/in); the rest
         // are recomputed from the swapped/mirrored motions.
         const ts0 = twinSteps[0];
-        ts0.motions.blue.startOrientation = "in";
-        ts0.motions.blue.endOrientation = "in";
-        ts0.motions.red.startOrientation = "in";
-        ts0.motions.red.endOrientation = "in";
+        ts0.motions.left.startOrientation = "in";
+        ts0.motions.left.endOrientation = "in";
+        ts0.motions.right.startOrientation = "in";
+        ts0.motions.right.endOrientation = "in";
         propagateOrientations(twinSteps);
 
         // Re-derive letters for the beat steps from the transformed motions.
@@ -1301,27 +1301,27 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
               gridPosition: tsp.startPosition,
               gridMode,
               motions: {
-                blue: {
-                  motionType: tsp.motions.blue.motionType,
-                  rotationDirection: tsp.motions.blue.rotationDirection,
-                  startLocation: tsp.motions.blue.startLocation,
-                  endLocation: tsp.motions.blue.endLocation,
-                  turns: tsp.motions.blue.turns ?? 0,
-                  startOrientation: tsp.motions.blue.startOrientation ?? "in",
-                  endOrientation: tsp.motions.blue.endOrientation ?? "in",
+                left: {
+                  motionType: tsp.motions.left.motionType,
+                  rotationDirection: tsp.motions.left.rotationDirection,
+                  startLocation: tsp.motions.left.startLocation,
+                  endLocation: tsp.motions.left.endLocation,
+                  turns: tsp.motions.left.turns ?? 0,
+                  startOrientation: tsp.motions.left.startOrientation ?? "in",
+                  endOrientation: tsp.motions.left.endOrientation ?? "in",
                   isVisible: true,
                   propType: "staff",
                   color: "blue",
                   gridMode,
                 },
-                red: {
-                  motionType: tsp.motions.red.motionType,
-                  rotationDirection: tsp.motions.red.rotationDirection,
-                  startLocation: tsp.motions.red.startLocation,
-                  endLocation: tsp.motions.red.endLocation,
-                  turns: tsp.motions.red.turns ?? 0,
-                  startOrientation: tsp.motions.red.startOrientation ?? "in",
-                  endOrientation: tsp.motions.red.endOrientation ?? "in",
+                right: {
+                  motionType: tsp.motions.right.motionType,
+                  rotationDirection: tsp.motions.right.rotationDirection,
+                  startLocation: tsp.motions.right.startLocation,
+                  endLocation: tsp.motions.right.endLocation,
+                  turns: tsp.motions.right.turns ?? 0,
+                  startOrientation: tsp.motions.right.startOrientation ?? "in",
+                  endOrientation: tsp.motions.right.endOrientation ?? "in",
                   isVisible: true,
                   propType: "staff",
                   color: "red",

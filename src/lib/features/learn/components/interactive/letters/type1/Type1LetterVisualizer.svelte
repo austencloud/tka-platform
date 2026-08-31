@@ -118,7 +118,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
   }
 
   // Derived: Check if motion is hybrid (different blue/red motions)
-  const isHybrid = $derived(letterData.blueMotion !== letterData.redMotion);
+  const isHybrid = $derived(letterData.leftMotion !== letterData.rightMotion);
 
   // Size configuration
   type SizeKey = "small" | "medium" | "large";
@@ -180,19 +180,19 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
 
   <!-- Motion info labels -->
   {#if showLabels && letterData}
-    {@const blueMotion = letterData.blueMotion as MotionType}
-    {@const redMotion = letterData.redMotion as MotionType}
+    {@const leftMotion = letterData.leftMotion as MotionType}
+    {@const rightMotion = letterData.rightMotion as MotionType}
     <div class="motion-info">
       <div class="hand-info">
         <span class="hand-dot" style="background: {BLUE_COLOR}"></span>
-        <span class="motion-type" style="color: {MOTION_COLORS[blueMotion]}">
-          {getMotionLabel(blueMotion)}
+        <span class="motion-type" style="color: {MOTION_COLORS[leftMotion]}">
+          {getMotionLabel(leftMotion)}
         </span>
       </div>
       <div class="hand-info">
         <span class="hand-dot" style="background: {RED_COLOR}"></span>
-        <span class="motion-type" style="color: {MOTION_COLORS[redMotion]}">
-          {getMotionLabel(redMotion)}
+        <span class="motion-type" style="color: {MOTION_COLORS[rightMotion]}">
+          {getMotionLabel(rightMotion)}
         </span>
       </div>
     </div>
@@ -203,7 +203,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
         <span class="pattern-badge hybrid">Hybrid · leads {letterData.leaderRotation}</span>
       {:else if isHybrid}
         <span class="pattern-badge hybrid">Hybrid</span>
-      {:else if letterData.blueMotion === MotionType.PRO}
+      {:else if letterData.leftMotion === MotionType.PRO}
         <span class="pattern-badge pro">Pro-Pro</span>
       {:else}
         <span class="pattern-badge anti">Anti-Anti</span>

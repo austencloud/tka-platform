@@ -73,8 +73,8 @@ async function backfill() {
         const notes = typeof data.notes === "string" ? data.notes.trim() : "";
         patch.name = notes.length > 0 ? notes : deckLabel(data.deckNumber);
       }
-      if (data.bluePropType === undefined) patch.bluePropType = DEFAULT_PROP;
-      if (data.redPropType === undefined) patch.redPropType = DEFAULT_PROP;
+      if (data.leftPropType === undefined) patch.leftPropType = DEFAULT_PROP;
+      if (data.rightPropType === undefined) patch.rightPropType = DEFAULT_PROP;
 
       if (Object.keys(patch).length === 0) {
         skipped++;

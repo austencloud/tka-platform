@@ -96,20 +96,20 @@ function deriveShiftDirection(motion: Motion): ShiftDirection {
  */
 function scoreCandidate(
   candidate: PictographData,
-  refBlueDir: ShiftDirection,
-  refRedDir: ShiftDirection
+  refLeftDir: ShiftDirection,
+  refRightDir: ShiftDirection
 ): number {
   let score = 0;
 
-  const candBlue = candidate.motions.blue;
-  const candRed = candidate.motions.red;
+  const candLeft = candidate.motions.left;
+  const candRight = candidate.motions.right;
 
   // Score blue hand
-  if (refBlueDir !== null && candBlue) {
-    const candBlueDir = deriveShiftDirection(candBlue);
-    if (candBlueDir === refBlueDir) {
+  if (refLeftDir !== null && candLeft) {
+    const candLeftDir = deriveShiftDirection(candLeft);
+    if (candLeftDir === refLeftDir) {
       score += 1;
-    } else if (candBlueDir !== null) {
+    } else if (candLeftDir !== null) {
       // Shifting in wrong direction -- disqualify
       return 0;
     }
@@ -117,11 +117,11 @@ function scoreCandidate(
   }
 
   // Score red hand
-  if (refRedDir !== null && candRed) {
-    const candRedDir = deriveShiftDirection(candRed);
-    if (candRedDir === refRedDir) {
+  if (refRightDir !== null && candRight) {
+    const candRightDir = deriveShiftDirection(candRight);
+    if (candRightDir === refRightDir) {
       score += 1;
-    } else if (candRedDir !== null) {
+    } else if (candRightDir !== null) {
       // Shifting in wrong direction -- disqualify
       return 0;
     }
@@ -136,21 +136,21 @@ export function identifyContinuation(
 ): PictographData | null {
   if (candidates.length === 0) return null;
 
-  const refBlue = referenceBeat.motions.blue;
-  const refRed = referenceBeat.motions.red;
+  const refLeft = referenceBeat.motions.left;
+  const refRight = referenceBeat.motions.right;
 
   // Determine shift directions from the reference beat
-  const blueDir = refBlue ? deriveShiftDirection(refBlue) : null;
-  const redDir = refRed ? deriveShiftDirection(refRed) : null;
+  const leftDir = refLeft ? deriveShiftDirection(refLeft) : null;
+  const rightDir = refRight ? deriveShiftDirection(refRight) : null;
 
   // If neither hand is shifting, there's no continuation concept
-  if (blueDir === null && redDir === null) return null;
+  if (leftDir === null && rightDir === null) return null;
 
   let bestCandidate: PictographData | null = null;
   let bestScore = 0;
 
   for (const candidate of candidates) {
-    const score = scoreCandidate(candidate, blueDir, redDir);
+    const score = scoreCandidate(candidate, leftDir, rightDir);
     if (score > bestScore) {
       bestScore = score;
       bestCandidate = candidate;

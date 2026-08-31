@@ -17,7 +17,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
@@ -26,7 +26,7 @@ import { getAllLetterVariants } from "../../helpers/real-pictograph-loader";
 import { FALG, GGGG_CW, HHHH_CW, PHI_PSI_LOOP } from "./fixtures";
 import { loadPictographDatasetForTests } from "./pictograph-dataset";
 
-const COLORS = [MotionColor.BLUE, MotionColor.RED] as const;
+const COLORS = [HandSide.LEFT, HandSide.RIGHT] as const;
 
 const ALL: VariantLiberties = {
   allowMirror: true,
@@ -104,14 +104,14 @@ async function assertRealDataframeRows(
     letter: string | null,
     startPosition: string | null,
     endPosition: string | null,
-    blue: MotionData,
-    red: MotionData
+    left: MotionData,
+    right: MotionData
   ): string => {
     const hand = (m: MotionData) =>
       [m.motionType, m.rotationDirection, m.startLocation, m.endLocation].join(
         "/"
       );
-    return [letter, startPosition, endPosition, hand(blue), hand(red)].join(
+    return [letter, startPosition, endPosition, hand(left), hand(right)].join(
       " | "
     );
   };
@@ -127,8 +127,8 @@ async function assertRealDataframeRows(
           v.letter ?? null,
           v.startPosition ?? null,
           v.endPosition ?? null,
-          v.motions.blue!,
-          v.motions.red!
+          v.motions.left!,
+          v.motions.right!
         )
       )
     );
@@ -136,8 +136,8 @@ async function assertRealDataframeRows(
       step.letter,
       step.startPosition,
       step.endPosition,
-      step.motions.blue,
-      step.motions.red
+      step.motions.left,
+      step.motions.right
     );
     expect(
       rows.has(key) ? key : `${key}\n  NOT A DIAMOND DATAFRAME ROW`,
@@ -354,8 +354,8 @@ describe("rotation-faithful twin — ground truth", () => {
     // carries the canon anti chain (in>out, out>in, ...), which a raw swap of
     // GGGG_CW's all-IN chain cannot reproduce. Asserting equality here would
     // pin the wrong layer.
-    expect(twin.steps.map((s) => s.motions.blue.startOrientation)).not.toEqual(
-      HHHH_CW.steps.map((s) => s.motions.blue.startOrientation)
+    expect(twin.steps.map((s) => s.motions.left.startOrientation)).not.toEqual(
+      HHHH_CW.steps.map((s) => s.motions.left.startOrientation)
     );
   });
 

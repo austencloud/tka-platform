@@ -25,10 +25,10 @@ function motion(over: Record<string, unknown> = {}) {
   } as never;
 }
 
-function step(stepNumber: number, blue: unknown, red: unknown) {
+function step(stepNumber: number, left: unknown, right: unknown) {
   return {
-    stepNumber, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
-    motions: { blue, red },
+    stepNumber, duration: 1, leftReversal: false, rightReversal: false, isBlank: false,
+    motions: { left, right },
     id: `s${stepNumber}`, letter: null, startPosition: null, endPosition: null,
   };
 }
@@ -48,21 +48,21 @@ describe("startOrientation chains from the seed, not stored per-motion", () => {
   // every orientation.
   function buildConsistent() {
     // start position: both hands static, in/in (the seed)
-    const spBlue = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.NORTH, endLocation: GridLocation.NORTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
-    const spRed = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.SOUTH, endLocation: GridLocation.SOUTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
+    const spLeft = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.NORTH, endLocation: GridLocation.NORTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
+    const spRight = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.SOUTH, endLocation: GridLocation.SOUTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
 
     // step 1: blue pro 0 (in->in; n->e cw orbit, cw rot), red anti 0 (in->out; s->w cw orbit, ccw rot)
-    const s1Blue = motion({ rotationDirection: RotationDirection.CLOCKWISE, startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
-    const s1Red = motion({ rotationDirection: RotationDirection.COUNTER_CLOCKWISE, startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, startOrientation: Orientation.IN, endOrientation: Orientation.OUT });
+    const s1Left = motion({ rotationDirection: RotationDirection.CLOCKWISE, startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
+    const s1Right = motion({ rotationDirection: RotationDirection.COUNTER_CLOCKWISE, startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, startOrientation: Orientation.IN, endOrientation: Orientation.OUT });
 
     // step 2: blue pro 0 (in->in; e->s cw orbit, cw rot), red anti 0 (out->in; w->n cw orbit, ccw rot)
-    const s2Blue = motion({ rotationDirection: RotationDirection.CLOCKWISE, startLocation: GridLocation.EAST, endLocation: GridLocation.SOUTH, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
-    const s2Red = motion({ rotationDirection: RotationDirection.COUNTER_CLOCKWISE, startLocation: GridLocation.WEST, endLocation: GridLocation.NORTH, startOrientation: Orientation.OUT, endOrientation: Orientation.IN });
+    const s2Left = motion({ rotationDirection: RotationDirection.CLOCKWISE, startLocation: GridLocation.EAST, endLocation: GridLocation.SOUTH, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
+    const s2Right = motion({ rotationDirection: RotationDirection.COUNTER_CLOCKWISE, startLocation: GridLocation.WEST, endLocation: GridLocation.NORTH, startOrientation: Orientation.OUT, endOrientation: Orientation.IN });
 
     return sequence([
-      step(0, spBlue, spRed),
-      step(1, s1Blue, s1Red),
-      step(2, s2Blue, s2Red),
+      step(0, spLeft, spRight),
+      step(1, s1Left, s1Right),
+      step(2, s2Left, s2Right),
     ]);
   }
 
@@ -96,19 +96,19 @@ describe("startOrientation chains from the seed, not stored per-motion", () => {
 
   it("seed carries a non-default (nonradial) start orientation through the chain", () => {
     // blue starts counter (nonradial); chain must preserve it as step-1 startOri.
-    const spBlue = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.NORTH, endLocation: GridLocation.NORTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.COUNTER, endOrientation: Orientation.COUNTER });
-    const spRed = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.SOUTH, endLocation: GridLocation.SOUTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
-    const s1Blue = motion({ motionType: MotionType.PRO, rotationDirection: RotationDirection.CLOCKWISE, startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, startOrientation: Orientation.COUNTER, endOrientation: Orientation.COUNTER });
-    const s1Red = motion({ motionType: MotionType.PRO, rotationDirection: RotationDirection.CLOCKWISE, startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
+    const spLeft = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.NORTH, endLocation: GridLocation.NORTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.COUNTER, endOrientation: Orientation.COUNTER });
+    const spRight = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.SOUTH, endLocation: GridLocation.SOUTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
+    const s1Left = motion({ motionType: MotionType.PRO, rotationDirection: RotationDirection.CLOCKWISE, startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, startOrientation: Orientation.COUNTER, endOrientation: Orientation.COUNTER });
+    const s1Right = motion({ motionType: MotionType.PRO, rotationDirection: RotationDirection.CLOCKWISE, startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
 
     const original = sequence([
-      step(0, spBlue, spRed),
-      step(1, s1Blue, s1Red),
+      step(0, spLeft, spRight),
+      step(1, s1Left, s1Right),
     ]);
     const derived = decodeSequence(encodeSequence(original));
 
-    expect(derived.startPosition!.motions.blue!.startOrientation).toBe(Orientation.COUNTER);
-    expect(derived.steps[0]!.motions.blue!.startOrientation).toBe(Orientation.COUNTER);
-    expect(derived.steps[0]!.motions.red!.startOrientation).toBe(Orientation.IN);
+    expect(derived.startPosition!.motions.left!.startOrientation).toBe(Orientation.COUNTER);
+    expect(derived.steps[0]!.motions.left!.startOrientation).toBe(Orientation.COUNTER);
+    expect(derived.steps[0]!.motions.right!.startOrientation).toBe(Orientation.IN);
   });
 });

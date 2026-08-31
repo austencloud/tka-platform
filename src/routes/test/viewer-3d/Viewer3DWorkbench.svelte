@@ -72,8 +72,8 @@
       {
         position: { x: 0, z: 0 },
         facingAngle: EMBER_VIEWER_FRONT_STAGE_FACING_ANGLE,
-        customBluePlane: Plane.WALL,
-        customRedPlane: Plane.WALL,
+        customLeftPlane: Plane.WALL,
+        customRightPlane: Plane.WALL,
       },
     ];
   }
@@ -147,8 +147,8 @@
     isPlaying={playback.isPlaying}
     {bpm}
     word={null}
-    bluePropType="staff"
-    redPropType="staff"
+    leftPropType="staff"
+    rightPropType="staff"
     initialRevealMode="streaming"
     initialRevealDeferredFeatures={STREAMED_SCENE_FEATURES}
     onClose={() => history.back()}

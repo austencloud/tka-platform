@@ -1,6 +1,6 @@
 import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionType, MotionColor, Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { MotionType, HandSide, Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -17,11 +17,11 @@ const singleHand = (id: string, type: MotionType, from: GridLocation, to: GridLo
   gridMode: GridMode.DIAMOND,
   ...(stepNumber === undefined ? {} : { stepNumber }),
   motions: {
-    blue: createMotionData({
+    left: createMotionData({
       motionType: type,
       startLocation: from,
       endLocation: to,
-      color: MotionColor.BLUE,
+      hand: HandSide.LEFT,
       propType: PropType.HAND,
       gridMode: GridMode.DIAMOND,
     }),
@@ -48,7 +48,7 @@ const DEMOS = [
 const motionDemo = (id: string, type: MotionType, from: GridLocation, to: GridLocation, caption: string) => {
   const withRedPlaceholder = (step: ReturnType<typeof singleHand>) => ({
     ...step,
-    motions: { ...step.motions, red: createPlaceholderMotion(MotionColor.RED, { location: from, orientation: Orientation.IN }) },
+    motions: { ...step.motions, right: createPlaceholderMotion(HandSide.RIGHT, { location: from, orientation: Orientation.IN }) },
   });
   return {
     id,

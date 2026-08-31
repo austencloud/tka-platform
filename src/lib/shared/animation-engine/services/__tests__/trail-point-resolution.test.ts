@@ -229,9 +229,9 @@ describe("legacy trail capture endpoint parity", () => {
     const capturer = new TrailCapturer();
     capturer.initialize({
       canvasSize: 500,
-      bluePropDimensions: { width: 252.8, height: 77.8 },
-      redPropDimensions: { width: 252.8, height: 77.8 },
-      bluePropType: "fan",
+      leftPropDimensions: { width: 252.8, height: 77.8 },
+      rightPropDimensions: { width: 252.8, height: 77.8 },
+      leftPropType: "fan",
       trailSettings: {
         ...DEFAULT_TRAIL_SETTINGS,
         trackingMode: TrackingMode.BOTH_ENDS,
@@ -245,10 +245,10 @@ describe("legacy trail capture endpoint parity", () => {
       staffRotationAngle: 0,
     };
     const movedProp: PropState = { ...initialProp, x: 0.1 };
-    capturer.captureFrame({ blueProp: initialProp, redProp: null }, 0, 1000);
-    capturer.captureFrame({ blueProp: movedProp, redProp: null }, 0.1, 1600);
+    capturer.captureFrame({ leftProp: initialProp, rightProp: null }, 0, 1000);
+    capturer.captureFrame({ leftProp: movedProp, rightProp: null }, 0.1, 1600);
 
-    const points = capturer.getAllTrailPoints().blue;
+    const points = capturer.getAllTrailPoints().left;
     const expected = calculateTrailSourceEndpoint(
       movedProp,
       {
@@ -269,9 +269,9 @@ describe("legacy trail capture endpoint parity", () => {
     const capturer = new TrailCapturer();
     capturer.initialize({
       canvasSize: 500,
-      bluePropDimensions: { width: 252.8, height: 77.8 },
-      redPropDimensions: { width: 252.8, height: 77.8 },
-      bluePropType: "staff",
+      leftPropDimensions: { width: 252.8, height: 77.8 },
+      rightPropDimensions: { width: 252.8, height: 77.8 },
+      leftPropType: "staff",
       trailSettings: {
         ...DEFAULT_TRAIL_SETTINGS,
         trackingMode: TrackingMode.HAND,
@@ -285,10 +285,10 @@ describe("legacy trail capture endpoint parity", () => {
       staffRotationAngle: 0,
     };
     const movedProp: PropState = { ...initialProp, x: 0.1 };
-    capturer.captureFrame({ blueProp: initialProp, redProp: null }, 0, 1000);
-    capturer.captureFrame({ blueProp: movedProp, redProp: null }, 0.1, 1600);
+    capturer.captureFrame({ leftProp: initialProp, rightProp: null }, 0, 1000);
+    capturer.captureFrame({ leftProp: movedProp, rightProp: null }, 0.1, 1600);
 
-    const points = capturer.getAllTrailPoints().blue;
+    const points = capturer.getAllTrailPoints().left;
     // staff is two-ended, but HAND collapses to one prop-center source.
     const expected = calculateTrailSourceEndpoint(
       movedProp,

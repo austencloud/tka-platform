@@ -18,7 +18,7 @@ import {
   mapRotationDirection,
 } from "$lib/shared/foundation/services/implementations/data/enum-mapper";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 import { parseStrict } from "$lib/shared/validation/validation-utils";
@@ -66,38 +66,38 @@ export function convertPngMetadata(
     // Derive beat number from array index if not present in metadata
     const stepNumber = step.beat ?? index + 1;
     // Extract attributes with proper typing
-    const blueAttrs = step.blue_attributes;
-    const redAttrs = step.red_attributes;
+    const leftAttrs = step.left_attributes;
+    const rightAttrs = step.right_attributes;
 
     // Create the pictograph data first
     const pictographData = createPictographData({
       id: `pictograph-${stepNumber}`,
       motions: {
-        blue: createMotionData({
-          color: MotionColor.BLUE,
-          motionType: mapMotionType(blueAttrs?.motion_type ?? ""),
-          startLocation: mapLocation(blueAttrs?.start_loc ?? ""),
-          endLocation: mapLocation(blueAttrs?.end_loc ?? ""),
-          startOrientation: mapOrientation(blueAttrs?.start_ori ?? ""),
-          endOrientation: mapOrientation(blueAttrs?.end_ori ?? ""),
-          rotationDirection: mapRotationDirection(blueAttrs?.prop_rot_dir ?? ""),
-          turns: blueAttrs?.turns ?? 0,
+        left: createMotionData({
+          hand: HandSide.LEFT,
+          motionType: mapMotionType(leftAttrs?.motion_type ?? ""),
+          startLocation: mapLocation(leftAttrs?.start_loc ?? ""),
+          endLocation: mapLocation(leftAttrs?.end_loc ?? ""),
+          startOrientation: mapOrientation(leftAttrs?.start_ori ?? ""),
+          endOrientation: mapOrientation(leftAttrs?.end_ori ?? ""),
+          rotationDirection: mapRotationDirection(leftAttrs?.prop_rot_dir ?? ""),
+          turns: leftAttrs?.turns ?? 0,
           isVisible: true,
           propType: PropType.STAFF,
-          arrowLocation: mapLocation(blueAttrs?.start_loc ?? ""),
+          arrowLocation: mapLocation(leftAttrs?.start_loc ?? ""),
         }),
-        red: createMotionData({
-          color: MotionColor.RED,
-          motionType: mapMotionType(redAttrs?.motion_type ?? ""),
-          startLocation: mapLocation(redAttrs?.start_loc ?? ""),
-          endLocation: mapLocation(redAttrs?.end_loc ?? ""),
-          startOrientation: mapOrientation(redAttrs?.start_ori ?? ""),
-          endOrientation: mapOrientation(redAttrs?.end_ori ?? ""),
-          rotationDirection: mapRotationDirection(redAttrs?.prop_rot_dir ?? ""),
-          turns: redAttrs?.turns ?? 0,
+        right: createMotionData({
+          hand: HandSide.RIGHT,
+          motionType: mapMotionType(rightAttrs?.motion_type ?? ""),
+          startLocation: mapLocation(rightAttrs?.start_loc ?? ""),
+          endLocation: mapLocation(rightAttrs?.end_loc ?? ""),
+          startOrientation: mapOrientation(rightAttrs?.start_ori ?? ""),
+          endOrientation: mapOrientation(rightAttrs?.end_ori ?? ""),
+          rotationDirection: mapRotationDirection(rightAttrs?.prop_rot_dir ?? ""),
+          turns: rightAttrs?.turns ?? 0,
           isVisible: true,
           propType: PropType.STAFF,
-          arrowLocation: mapLocation(redAttrs?.start_loc ?? ""),
+          arrowLocation: mapLocation(rightAttrs?.start_loc ?? ""),
         }),
       },
       letter: step.letter as Letter, // Guaranteed valid string

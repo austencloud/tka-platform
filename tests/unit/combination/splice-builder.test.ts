@@ -29,7 +29,7 @@ import { buildResult } from "$lib/shared/combination/services/splice-builder";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -44,7 +44,7 @@ beforeAll(async () => {
   await loadPictographDatasetForTests();
 }, 60_000);
 
-const COLORS = [MotionColor.BLUE, MotionColor.RED] as const;
+const COLORS = [HandSide.LEFT, HandSide.RIGHT] as const;
 
 /**
  * The hand-assembled 2-block walk: all of GGGG, then all of HHHH_CCW.
@@ -160,8 +160,8 @@ describe("splice builder", () => {
     const result = await buildResult(gThenH(), GGGG_CW);
 
     for (const step of result.steps) {
-      expect(typeof step.blueReversal).toBe("boolean");
-      expect(typeof step.redReversal).toBe("boolean");
+      expect(typeof step.leftReversal).toBe("boolean");
+      expect(typeof step.rightReversal).toBe("boolean");
     }
 
     // A closed walk is cyclic by construction, so the dots are computed WITH
@@ -176,12 +176,12 @@ describe("splice builder", () => {
     //            `loopType` and a combination carries none) would hide a real
     //            reversal a performer has to make.
     const dotted = result.steps
-      .filter((s) => s.blueReversal || s.redReversal)
+      .filter((s) => s.leftReversal || s.rightReversal)
       .map((s) => s.stepNumber);
     expect(dotted).toEqual([1, 5]);
     for (const i of [0, 4]) {
-      expect(result.steps[i]!.blueReversal).toBe(true);
-      expect(result.steps[i]!.redReversal).toBe(true);
+      expect(result.steps[i]!.leftReversal).toBe(true);
+      expect(result.steps[i]!.rightReversal).toBe(true);
     }
   });
 
@@ -276,7 +276,7 @@ describe("splice builder", () => {
     // moves. `deriveSequenceLetters` cannot resolve it and leaves the letter
     // null, so the word silently loses a token — the exact "GI" defect
     // `word-deriver`'s strict API exists to stop.
-    const stuck = (color: MotionColor) =>
+    const stuck = (color: HandSide) =>
       createMotionData({
         motionType: MotionType.PRO,
         rotationDirection: RotationDirection.CLOCKWISE,
@@ -285,7 +285,7 @@ describe("splice builder", () => {
         startOrientation: Orientation.IN,
         endOrientation: Orientation.IN,
         turns: 0,
-        color,
+        hand: color,
         arrowLocation: GridLocation.NORTH,
       });
     const unresolvable = createStepData({
@@ -295,8 +295,8 @@ describe("splice builder", () => {
       startPosition: GGGG_CW.steps[0]!.startPosition,
       endPosition: GGGG_CW.steps[0]!.startPosition,
       motions: {
-        [MotionColor.BLUE]: stuck(MotionColor.BLUE),
-        [MotionColor.RED]: stuck(MotionColor.RED),
+        [HandSide.LEFT]: stuck(HandSide.LEFT),
+        [HandSide.RIGHT]: stuck(HandSide.RIGHT),
       },
     });
 

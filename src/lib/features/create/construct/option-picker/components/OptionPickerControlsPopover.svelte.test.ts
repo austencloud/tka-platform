@@ -11,20 +11,20 @@ import OptionPickerControlsPopover from "./OptionPickerControlsPopover.svelte";
 
 function renderControls({
   level = 2,
-  blueTurns = 1,
-  redTurns = 0,
+  leftTurns = 1,
+  rightTurns = 0,
 }: {
   level?: TurnLevel;
-  blueTurns?: TurnValue;
-  redTurns?: TurnValue;
+  leftTurns?: TurnValue;
+  rightTurns?: TurnValue;
 } = {}) {
   const handlers = {
     onToggleContinuous: vi.fn(),
     onLevelChange: vi.fn(),
-    onBlueChange: vi.fn(),
-    onRedChange: vi.fn(),
-    onBlueRotationChange: vi.fn(),
-    onRedRotationChange: vi.fn(),
+    onLeftChange: vi.fn(),
+    onRightChange: vi.fn(),
+    onLeftRotationChange: vi.fn(),
+    onRightRotationChange: vi.fn(),
   };
 
   render(OptionPickerControlsPopover, {
@@ -32,10 +32,10 @@ function renderControls({
     showTurnControls: true,
     isContinuousOnly: false,
     level,
-    blueTurns,
-    redTurns,
-    blueRotation: RotationDirection.CLOCKWISE,
-    redRotation: RotationDirection.COUNTER_CLOCKWISE,
+    leftTurns,
+    rightTurns,
+    leftRotation: RotationDirection.CLOCKWISE,
+    rightRotation: RotationDirection.COUNTER_CLOCKWISE,
     ...handlers,
   });
 
@@ -94,14 +94,14 @@ describe("OptionPickerControlsPopover", () => {
       .getByRole("group", { name: "Blue turns" })
       .getByRole("button", { name: "2" })
       .click();
-    expect(handlers.onBlueChange).toHaveBeenCalledWith(2);
+    expect(handlers.onLeftChange).toHaveBeenCalledWith(2);
 
     await page
       .getByRole("button", {
         name: "Toggle blue dash/static spin (currently CW)",
       })
       .click();
-    expect(handlers.onBlueRotationChange).toHaveBeenCalledWith(
+    expect(handlers.onLeftRotationChange).toHaveBeenCalledWith(
       RotationDirection.COUNTER_CLOCKWISE
     );
 
@@ -112,12 +112,12 @@ describe("OptionPickerControlsPopover", () => {
   });
 
   it.each([
-    { level: 2 as const, blueTurns: 1 as const, redTurns: 0 as const },
-    { level: 3 as const, blueTurns: 0.5 as const, redTurns: 1.5 as const },
+    { level: 2 as const, leftTurns: 1 as const, rightTurns: 0 as const },
+    { level: 3 as const, leftTurns: 0.5 as const, rightTurns: 1.5 as const },
   ])(
     "fits the complete Level $level controls above the corner button on a 327px phone without scrolling",
-    async ({ level, blueTurns, redTurns }) => {
-      renderControls({ level, blueTurns, redTurns });
+    async ({ level, leftTurns, rightTurns }) => {
+      renderControls({ level, leftTurns, rightTurns });
       const trigger = page.getByRole("button", {
         name: /Option settings\. Showing all/,
       });
@@ -137,16 +137,16 @@ describe("OptionPickerControlsPopover", () => {
       expect(bounds.bottom).toBeLessThanOrEqual(triggerBounds.top);
 
       const expectedTurnButtons = level === 2 ? 4 : 8;
-      const blueTurnButtons = page
+      const leftTurnButtons = page
         .getByRole("group", { name: "Blue turns" })
         .element()
         .querySelectorAll(".turn-seg button");
-      const redTurnButtons = page
+      const rightTurnButtons = page
         .getByRole("group", { name: "Red turns" })
         .element()
         .querySelectorAll(".turn-seg button");
-      expect(blueTurnButtons).toHaveLength(expectedTurnButtons);
-      expect(redTurnButtons).toHaveLength(expectedTurnButtons);
+      expect(leftTurnButtons).toHaveLength(expectedTurnButtons);
+      expect(rightTurnButtons).toHaveLength(expectedTurnButtons);
     }
   );
 

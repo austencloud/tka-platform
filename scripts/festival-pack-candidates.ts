@@ -57,7 +57,7 @@ type TndStep = {
   letter?: string;
   startPosition: string;
   endPosition: string;
-  motions: { blue: TndMotion; red: TndMotion };
+  motions: { left: TndMotion; right: TndMotion };
 };
 type TndEntry = { id: string; steps: TndStep[] };
 
@@ -118,8 +118,8 @@ function toMcpSteps(entry: TndEntry) {
     stepNumber: 0,
     startPosition: startPos,
     endPosition: startPos,
-    blueMotion: hold(first.motions.blue, "blue"),
-    redMotion: hold(first.motions.red, "red"),
+    leftMotion: hold(first.motions.left, "blue"),
+    rightMotion: hold(first.motions.right, "red"),
   };
   const rest = entry.steps.map((s, i) => ({
     letter: s.letter ?? "",
@@ -127,8 +127,8 @@ function toMcpSteps(entry: TndEntry) {
     stepNumber: i + 1,
     startPosition: s.startPosition,
     endPosition: s.endPosition,
-    blueMotion: { ...s.motions.blue, color: "blue" },
-    redMotion: { ...s.motions.red, color: "red" },
+    leftMotion: { ...s.motions.left, color: "blue" },
+    rightMotion: { ...s.motions.right, color: "red" },
   }));
   return [startStep, ...rest];
 }
@@ -312,8 +312,8 @@ async function makeTndCard(
   const level = isTurned ? 2 : 1;
   const turns = isTurned ? 1 : 0;
   const uniform = {
-    blue: Array(counts).fill(turns),
-    red: Array(counts).fill(turns),
+    left: Array(counts).fill(turns),
+    right: Array(counts).fill(turns),
   };
 
   const png = await renderSequenceToImage(steps as never, word, {
@@ -443,8 +443,8 @@ for (const entry of TND_BASE_WORDS) {
       darkMode: false,
       showReversals: true,
       turnAllocation: {
-        blue: Array(counts).fill(turned ? 1 : 0),
-        red: Array(counts).fill(turned ? 1 : 0),
+        left: Array(counts).fill(turned ? 1 : 0),
+        right: Array(counts).fill(turned ? 1 : 0),
       },
     });
     const file = `catalog__${entry.id}__${turned ? "1turn" : "plain"}.png`;

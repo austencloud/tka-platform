@@ -28,7 +28,7 @@ for (const file of ["DiamondPictographDataframe.csv", "BoxPictographDataframe.cs
 		if (!line.trim()) continue; // the dataframes carry blank separator lines
 		const v = line.split(",");
 		const r = Object.fromEntries(cols.map((c, i) => [c, v[i]]));
-		if (!r.blueMotionType) continue;
+		if (!r.leftMotionType) continue;
 		r._grid = file.startsWith("Diamond") ? "diamond" : "box";
 		rows.push(r);
 	}
@@ -36,14 +36,14 @@ for (const file of ["DiamondPictographDataframe.csv", "BoxPictographDataframe.cs
 
 const keyOf = (r) =>
 	[
-		r.blueMotionType,
-		r.blueRotationDirection,
-		r.blueStartLocation,
-		r.blueEndLocation,
-		r.redMotionType,
-		r.redRotationDirection,
-		r.redStartLocation,
-		r.redEndLocation,
+		r.leftMotionType,
+		r.leftRotationDirection,
+		r.leftStartLocation,
+		r.leftEndLocation,
+		r.rightMotionType,
+		r.rightRotationDirection,
+		r.rightStartLocation,
+		r.rightEndLocation,
 	].join("|");
 
 // Index by pictograph signature. Signature determines the pictograph; letter,

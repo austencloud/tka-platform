@@ -23,7 +23,7 @@ import { calculateReversalPositions } from "../core";
 import type { TurnsTupleGenerator } from "../../pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 import type { GridPosition } from "../../pictograph/grid/domain/enums/grid-enums";
 import type { MotionData } from "../../pictograph/shared/domain/models/motion-data";
-import { MotionColor, getElementImagePath } from "../../pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide, getElementImagePath } from "../../pictograph/shared/domain/enums/pictograph-enums";
 import {
   containElementalGlyph,
   getElementalGlyphBox,
@@ -198,7 +198,7 @@ export async function drawTurnsColumn(
   scale: number,
   isDarkMode: boolean,
   turnsTupleGeneratorGetter?: () => TurnsTupleGenerator | undefined,
-  motionVisibility?: { showBlueMotion?: boolean; showRedMotion?: boolean }
+  motionVisibility?: { showLeftMotion?: boolean; showRightMotion?: boolean }
 ): Promise<void> {
   let turnsTuple = "(s, 0, 0)";
   try {
@@ -228,8 +228,8 @@ export async function drawTurnsColumn(
   );
 
   const isColorHidden = (color: string) => {
-    if (color === BLUE_HEX && motionVisibility?.showBlueMotion === false) return true;
-    if (color === RED_HEX && motionVisibility?.showRedMotion === false) return true;
+    if (color === BLUE_HEX && motionVisibility?.showLeftMotion === false) return true;
+    if (color === RED_HEX && motionVisibility?.showRightMotion === false) return true;
     return false;
   };
 
@@ -544,13 +544,13 @@ export function drawSoloMotionGlyph(
   pictograph: PictographData,
   size: number,
   isDarkMode: boolean,
-  showBlueMotion: boolean,
-  showRedMotion: boolean,
+  showLeftMotion: boolean,
+  showRightMotion: boolean,
   isHandPathMode: boolean
 ): void {
   const visibleMotion: MotionData | null =
-    showBlueMotion ? pictograph.motions?.blue ?? null :
-    showRedMotion ? pictograph.motions?.red ?? null :
+    showLeftMotion ? pictograph.motions?.left ?? null :
+    showRightMotion ? pictograph.motions?.right ?? null :
     null;
 
   if (!visibleMotion) return;
@@ -559,7 +559,7 @@ export function drawSoloMotionGlyph(
   const endLoc = LOCATION_LABELS[visibleMotion.endLocation] ?? visibleMotion.endLocation;
   if (!startLoc || !endLoc) return;
 
-  const motionColor = showBlueMotion ? MotionColor.BLUE : MotionColor.RED;
+  const motionColor = showLeftMotion ? HandSide.LEFT : HandSide.RIGHT;
   const colorHex = getMotionColor(motionColor, isDarkMode ? "dark" : "light");
 
   const scale = size / VIEWBOX_SIZE;
@@ -642,17 +642,17 @@ export function drawReversalIndicators(
   pictograph: PictographData | StepData,
   size: number,
   isDarkMode: boolean,
-  motionVisibility?: { showBlueMotion?: boolean; showRedMotion?: boolean }
+  motionVisibility?: { showLeftMotion?: boolean; showRightMotion?: boolean }
 ): void {
-  let blueReversal = false;
-  let redReversal = false;
+  let leftReversal = false;
+  let rightReversal = false;
 
   if (isStepData(pictograph)) {
-    blueReversal = (pictograph.blueReversal ?? false) && (motionVisibility?.showBlueMotion ?? true);
-    redReversal = (pictograph.redReversal ?? false) && (motionVisibility?.showRedMotion ?? true);
+    leftReversal = (pictograph.leftReversal ?? false) && (motionVisibility?.showLeftMotion ?? true);
+    rightReversal = (pictograph.rightReversal ?? false) && (motionVisibility?.showRightMotion ?? true);
   }
 
-  const { dots } = calculateReversalPositions(blueReversal, redReversal, isDarkMode);
+  const { dots } = calculateReversalPositions(leftReversal, rightReversal, isDarkMode);
 
   if (dots.length === 0) return;
 
@@ -667,5 +667,5 @@ export function drawReversalIndicators(
 }
 
 function isStepData(pictograph: PictographData | StepData): pictograph is StepData {
-  return "blueReversal" in pictograph || "redReversal" in pictograph;
+  return "leftReversal" in pictograph || "rightReversal" in pictograph;
 }

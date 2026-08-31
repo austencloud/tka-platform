@@ -45,7 +45,7 @@ import {
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -65,7 +65,7 @@ export interface MotionSpec {
   readonly endOri: Orientation;
 }
 
-function makeMotion(spec: MotionSpec, color: MotionColor): MotionData {
+function makeMotion(spec: MotionSpec, color: HandSide): MotionData {
   return createMotionData({
     motionType: spec.type,
     rotationDirection: spec.rot,
@@ -74,7 +74,7 @@ function makeMotion(spec: MotionSpec, color: MotionColor): MotionData {
     startOrientation: spec.startOri,
     endOrientation: spec.endOri,
     turns: 0,
-    color,
+    hand: color,
     gridMode: GridMode.DIAMOND,
     // Provisional. The real value is computed by withCalculatedArrowLocations
     // below, once BOTH hands exist — a dash's canonical arrow location depends
@@ -88,8 +88,8 @@ export function makeStep(
   letter: Letter,
   startPosition: GridPosition,
   endPosition: GridPosition,
-  blue: MotionSpec,
-  red: MotionSpec
+  left: MotionSpec,
+  right: MotionSpec
 ): StepData {
   const step = createStepData({
     id: `fixture-${letter}-${stepNumber}-${startPosition}-${endPosition}`,
@@ -100,8 +100,8 @@ export function makeStep(
     gridMode: GridMode.DIAMOND,
     duration: 1,
     motions: {
-      [MotionColor.BLUE]: makeMotion(blue, MotionColor.BLUE),
-      [MotionColor.RED]: makeMotion(red, MotionColor.RED),
+      [HandSide.LEFT]: makeMotion(left, HandSide.LEFT),
+      [HandSide.RIGHT]: makeMotion(right, HandSide.RIGHT),
     },
   });
   // Production's documented arrow-location seam — it delegates to
@@ -144,8 +144,8 @@ export function makeLoop(
       endPosition: first.startPosition,
       gridPosition: first.startPosition,
       motions: {
-        [MotionColor.BLUE]: holdOf(first.motions.blue),
-        [MotionColor.RED]: holdOf(first.motions.red),
+        [HandSide.LEFT]: holdOf(first.motions.left),
+        [HandSide.RIGHT]: holdOf(first.motions.right),
       },
     }),
   });

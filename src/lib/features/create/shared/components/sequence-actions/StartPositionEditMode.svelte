@@ -8,7 +8,7 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { TargetHand } from "$lib/shared/create/domain/panel-types";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import PropControlPair from "./PropControlPair.svelte";
   import MobileHandSelector from "./MobileHandSelector.svelte";
   import PropLocationControl from "./PropLocationControl.svelte";
@@ -19,15 +19,15 @@
     stacked?: boolean;
     compact?: boolean;
     focused?: boolean;
-    activeMoveColor?: MotionColor | null;
+    activeMoveColor?: HandSide | null;
     repositionDisabled?: boolean;
     isRepositioning?: boolean;
-    onOrientationChange: (color: MotionColor, orientation: string) => void;
+    onOrientationChange: (color: HandSide, orientation: string) => void;
     onLocationRotate: (
-      color: MotionColor,
+      color: HandSide,
       direction: "clockwise" | "counterclockwise"
     ) => void;
-    onMoveProp: (color: MotionColor) => void;
+    onMoveProp: (color: HandSide) => void;
   }
 
   let {
@@ -43,23 +43,23 @@
     onMoveProp,
   }: Props = $props();
 
-  const blueMotion = $derived(startPositionData?.motions?.[MotionColor.BLUE]);
-  const redMotion = $derived(startPositionData?.motions?.[MotionColor.RED]);
-  const blueLocation = $derived(
-    blueMotion?.startLocation ?? GridLocation.CENTER
+  const leftMotion = $derived(startPositionData?.motions?.[HandSide.LEFT]);
+  const rightMotion = $derived(startPositionData?.motions?.[HandSide.RIGHT]);
+  const leftLocation = $derived(
+    leftMotion?.startLocation ?? GridLocation.CENTER
   );
-  const redLocation = $derived(redMotion?.startLocation ?? GridLocation.CENTER);
-  const blueOrientation = $derived(blueMotion?.startOrientation ?? "in");
-  const redOrientation = $derived(redMotion?.startOrientation ?? "in");
-  let visibleHand = $state<TargetHand>("blue");
+  const rightLocation = $derived(rightMotion?.startLocation ?? GridLocation.CENTER);
+  const leftOrientation = $derived(leftMotion?.startOrientation ?? "in");
+  const rightOrientation = $derived(rightMotion?.startOrientation ?? "in");
+  let visibleHand = $state<TargetHand>("left");
 
   const HAND_OPTIONS: {
     hand: TargetHand;
     label: string;
     shortLabel: string;
   }[] = [
-    { hand: "blue", label: "Blue", shortLabel: "Blue" },
-    { hand: "red", label: "Red", shortLabel: "Red" },
+    { hand: "left", label: "Left", shortLabel: "Left" },
+    { hand: "right", label: "Right", shortLabel: "Right" },
   ];
 
   // Stacked and focused layouts are both too narrow for two cards side by side,
@@ -76,7 +76,7 @@
 </script>
 
 {#snippet propControls(
-  color: MotionColor,
+  color: HandSide,
   location: GridLocation,
   orientation: string
 )}
@@ -84,7 +84,7 @@
     <div class="control-field">
       <span class="field-label">Location</span>
       <PropLocationControl
-        color={color === MotionColor.BLUE ? "blue" : "red"}
+        hand={color === HandSide.LEFT ? "left" : "right"}
         {location}
         active={activeMoveColor === color}
         disabled={repositionDisabled || isRepositioning}
@@ -97,7 +97,7 @@
     <div class="control-field">
       <span class="field-label">Orientation</span>
       <PropOrientationControl
-        color={color === MotionColor.BLUE ? "blue" : "red"}
+        hand={color === HandSide.LEFT ? "left" : "right"}
         {orientation}
         {compact}
         disabled={isRepositioning}
@@ -142,11 +142,11 @@
       prominentLabels
       visibleHand={usesHandPicker ? visibleHand : "both"}
     >
-      {#snippet blueContent()}
-        {@render propControls(MotionColor.BLUE, blueLocation, blueOrientation)}
+      {#snippet leftContent()}
+        {@render propControls(HandSide.LEFT, leftLocation, leftOrientation)}
       {/snippet}
-      {#snippet redContent()}
-        {@render propControls(MotionColor.RED, redLocation, redOrientation)}
+      {#snippet rightContent()}
+        {@render propControls(HandSide.RIGHT, rightLocation, rightOrientation)}
       {/snippet}
     </PropControlPair>
   </section>

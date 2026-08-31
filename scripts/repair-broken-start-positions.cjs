@@ -53,34 +53,34 @@ function letterFromGrid(gridPos) {
 
 function synthesizeMotionsFromSteps(steps) {
   const firstStep = steps?.[0];
-  const blueMotion = firstStep?.motions?.blue;
-  const redMotion = firstStep?.motions?.red;
-  if (!blueMotion || !redMotion) return null;
+  const leftMotion = firstStep?.motions?.left;
+  const rightMotion = firstStep?.motions?.right;
+  if (!leftMotion || !rightMotion) return null;
 
   return {
-    blue: {
+    left: {
       color: "blue",
       motionType: "static",
-      startLocation: blueMotion.startLocation,
-      endLocation: blueMotion.startLocation,
-      startOrientation: blueMotion.startOrientation,
-      endOrientation: blueMotion.startOrientation,
+      startLocation: leftMotion.startLocation,
+      endLocation: leftMotion.startLocation,
+      startOrientation: leftMotion.startOrientation,
+      endOrientation: leftMotion.startOrientation,
       rotationDirection: "noRotation",
       turns: 0,
-      isVisible: blueMotion.isVisible !== false,
-      propType: blueMotion.propType,
+      isVisible: leftMotion.isVisible !== false,
+      propType: leftMotion.propType,
     },
-    red: {
+    right: {
       color: "red",
       motionType: "static",
-      startLocation: redMotion.startLocation,
-      endLocation: redMotion.startLocation,
-      startOrientation: redMotion.startOrientation,
-      endOrientation: redMotion.startOrientation,
+      startLocation: rightMotion.startLocation,
+      endLocation: rightMotion.startLocation,
+      startOrientation: rightMotion.startOrientation,
+      endOrientation: rightMotion.startOrientation,
       rotationDirection: "noRotation",
       turns: 0,
-      isVisible: redMotion.isVisible !== false,
-      propType: redMotion.propType,
+      isVisible: rightMotion.isVisible !== false,
+      propType: rightMotion.propType,
     },
   };
 }
@@ -103,8 +103,8 @@ function repairStartPosition(data, sequenceId) {
     null;
 
   const motionsOk =
-    existing.motions?.blue?.startLocation &&
-    existing.motions?.red?.startLocation;
+    existing.motions?.left?.startLocation &&
+    existing.motions?.right?.startLocation;
   const motions = motionsOk
     ? existing.motions
     : synthesizeMotionsFromSteps(data.steps || data.beats || []);
@@ -125,10 +125,10 @@ function repairStartPosition(data, sequenceId) {
 function isBroken(startPosition) {
   if (!startPosition) return false; // backfill-start-position.cjs handles the missing case
   if (typeof startPosition !== "object") return true;
-  const hasBlueMotion = !!startPosition.motions?.blue?.startLocation;
-  const hasRedMotion = !!startPosition.motions?.red?.startLocation;
+  const hasLeftMotion = !!startPosition.motions?.left?.startLocation;
+  const hasRightMotion = !!startPosition.motions?.right?.startLocation;
   const hasGrid = !!(startPosition.gridPosition || startPosition.startPosition);
-  return !(hasBlueMotion && hasRedMotion && hasGrid);
+  return !(hasLeftMotion && hasRightMotion && hasGrid);
 }
 
 async function processDoc(docSnap, stats) {
@@ -158,7 +158,7 @@ async function processDoc(docSnap, stats) {
   stats.willRepair++;
   console.log(`  [${isCommit ? "REPAIR" : "dry-run"}] ${docSnap.ref.path} (word: ${data.word || data.name || "?"})`);
   console.log(`    old: ${JSON.stringify(data.startPosition).slice(0, 160)}`);
-  console.log(`    new.gridPosition=${repaired.gridPosition} blue=${repaired.motions.blue.startLocation}/${repaired.motions.blue.startOrientation} red=${repaired.motions.red.startLocation}/${repaired.motions.red.startOrientation}`);
+  console.log(`    new.gridPosition=${repaired.gridPosition} blue=${repaired.motions.left.startLocation}/${repaired.motions.left.startOrientation} red=${repaired.motions.right.startLocation}/${repaired.motions.right.startOrientation}`);
 
   if (isCommit) {
     await docSnap.ref.update({ startPosition: repaired });

@@ -59,9 +59,9 @@ export function getPreviewCacheKey(
   // in-memory cache differentiates between e.g. staff and fan when the caller
   // doesn't explicitly pass a prop type override.
   const settings = getSettings();
-  const resolvedBlue = opts.bluePropType ?? settings.bluePropType ?? "staff";
-  const resolvedRed = opts.redPropType ?? settings.redPropType ?? "staff";
-  const mv = `${opts.showBlueMotion === false ? "B0" : "B1"}${opts.showRedMotion === false ? "R0" : "R1"}`;
+  const resolvedLeft = opts.leftPropType ?? settings.leftPropType ?? "staff";
+  const resolvedRight = opts.rightPropType ?? settings.rightPropType ?? "staff";
+  const mv = `${opts.showLeftMotion === false ? "B0" : "B1"}${opts.showRightMotion === false ? "R0" : "R1"}`;
   const gv = `${opts.showTnD ? "V1" : "V0"}${opts.showElemental ? "E1" : "E0"}${opts.showPositions ? "P1" : "P0"}${opts.showGrid === false ? "G0" : "G1"}`;
   // includeStartPosition changes the cell layout (start cell present + reserved
   // row/col vs. tightly-packed steps) AND the row/column counts. It MUST be in
@@ -71,7 +71,7 @@ export function getPreviewCacheKey(
   // probe adopts the other mode's cells while the frame sizes for this mode,
   // reserving a phantom start row that spreads the step rows apart.
   const sp = includeStartPosition ? "sp1" : "sp0";
-  return `${seq.id ?? seq.word ?? "?"}-${sequenceContentKey}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${resolvedBlue}-${resolvedRed}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-spl:${spl}-${sp}-d:${durationFingerprint}-vm:${vmKey}-mv:${mv}-gv:${gv}`;
+  return `${seq.id ?? seq.word ?? "?"}-${sequenceContentKey}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${resolvedLeft}-${resolvedRight}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-spl:${spl}-${sp}-d:${durationFingerprint}-vm:${vmKey}-mv:${mv}-gv:${gv}`;
 }
 
 /**
@@ -185,11 +185,11 @@ export { detectMixedDurations } from "./step-durations";
  */
 export function buildRenderOptions(params: {
   cellSize: number;
-  bluePropType: PropType | undefined;
-  redPropType: PropType | undefined;
+  leftPropType: PropType | undefined;
+  rightPropType: PropType | undefined;
   catDogModeEnabled: boolean;
-  blueBuugengFlipped: boolean;
-  redBuugengFlipped: boolean;
+  leftBuugengFlipped: boolean;
+  rightBuugengFlipped: boolean;
   showNonRadial: boolean;
   showGrid: boolean;
   handPointVis: "all" | "active" | "none";
@@ -201,16 +201,16 @@ export function buildRenderOptions(params: {
   isSoloMode: boolean;
   handPathMode: boolean;
   browseViewMode: BrowseViewMode | undefined;
-  showBlueMotion: boolean;
-  showRedMotion: boolean;
+  showLeftMotion: boolean;
+  showRightMotion: boolean;
 }): PreviewCellRenderOptions {
   return {
     size: params.cellSize,
-    bluePropType: params.bluePropType,
-    redPropType: params.redPropType,
+    leftPropType: params.leftPropType,
+    rightPropType: params.rightPropType,
     catDogModeEnabled: params.catDogModeEnabled,
-    blueBuugengFlipped: params.blueBuugengFlipped,
-    redBuugengFlipped: params.redBuugengFlipped,
+    leftBuugengFlipped: params.leftBuugengFlipped,
+    rightBuugengFlipped: params.rightBuugengFlipped,
     // Never bake step numbers into the rendered blob - identical pictographs
     // at different beats must share the same cached image. Step numbers are
     // rendered as HTML overlays on top of the <img> instead.
@@ -225,7 +225,7 @@ export function buildRenderOptions(params: {
     showPositions: params.isSoloMode ? false : params.showPositions,
     handPathMode: params.handPathMode,
     browseViewMode: params.browseViewMode,
-    showBlueMotion: params.showBlueMotion,
-    showRedMotion: params.showRedMotion,
+    showLeftMotion: params.showLeftMotion,
+    showRightMotion: params.showRightMotion,
   };
 }

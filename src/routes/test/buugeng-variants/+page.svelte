@@ -4,7 +4,7 @@
     applyMotionColorToSvg,
     SELECTIVE_COLOR_PROP_TYPES,
   } from "$lib/shared/utils/svg-color-utils";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   type Variant = { id: string; label: string; note: string; file: string };
 
@@ -52,11 +52,11 @@
     "buugeng"
   );
 
-  type Rendered = { raw: string; blue: string; red: string };
+  type Rendered = { raw: string; left: string; right: string };
   let rendered = $state<Record<string, Rendered>>({});
   let darkBg = $state(true);
 
-  function colorize(raw: string, color: MotionColor): string {
+  function colorize(raw: string, color: HandSide): string {
     return applyMotionColorToSvg(raw, color, {
       makeClassNamesUnique: true,
       themeMode: "dark",
@@ -69,8 +69,8 @@
       const raw = await (await fetch(v.file)).text();
       rendered[v.id] = {
         raw,
-        blue: colorize(raw, MotionColor.BLUE),
-        red: colorize(raw, MotionColor.RED),
+        left: colorize(raw, HandSide.LEFT),
+        right: colorize(raw, HandSide.RIGHT),
       };
     }
   });
@@ -108,13 +108,13 @@
           </figure>
           <figure>
             <div class="stage">
-              {@html r.blue}
+              {@html r.left}
             </div>
             <figcaption>blue prop</figcaption>
           </figure>
           <figure>
             <div class="stage">
-              {@html r.red}
+              {@html r.right}
             </div>
             <figcaption>red prop</figcaption>
           </figure>

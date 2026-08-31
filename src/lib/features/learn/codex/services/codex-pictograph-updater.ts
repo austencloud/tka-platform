@@ -12,7 +12,7 @@
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
-  MotionColor,
+  HandSide,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -76,44 +76,44 @@ export function applyOperation(
  * Rotate a single pictograph 45° clockwise
  */
 function rotatePictograph(pictograph: PictographData): PictographData {
-  const blueMotion = pictograph.motions[MotionColor.BLUE];
-  const redMotion = pictograph.motions[MotionColor.RED];
+  const leftMotion = pictograph.motions[HandSide.LEFT];
+  const rightMotion = pictograph.motions[HandSide.RIGHT];
 
   // Determine new grid mode (toggle DIAMOND ↔ BOX)
-  const currentGridMode = blueMotion?.gridMode ?? GridMode.DIAMOND;
+  const currentGridMode = leftMotion?.gridMode ?? GridMode.DIAMOND;
   const newGridMode =
     currentGridMode === GridMode.DIAMOND ? GridMode.BOX : GridMode.DIAMOND;
 
-  const rotatedMotions: Partial<Record<MotionColor, MotionData | undefined>> = {};
+  const rotatedMotions: Partial<Record<HandSide, MotionData | undefined>> = {};
 
   // Rotate blue motion
-  if (blueMotion) {
+  if (leftMotion) {
     const {
       arrowPlacementData: _arrowPlacementData,
       propPlacementData: _propPlacementData,
       ...motionWithoutPlacement
-    } = blueMotion;
-    rotatedMotions[MotionColor.BLUE] = createMotionData({
+    } = leftMotion;
+    rotatedMotions[HandSide.LEFT] = createMotionData({
       ...motionWithoutPlacement,
-      startLocation: LOCATION_MAP_EIGHTH_CW[blueMotion.startLocation],
-      endLocation: LOCATION_MAP_EIGHTH_CW[blueMotion.endLocation],
-      arrowLocation: LOCATION_MAP_EIGHTH_CW[blueMotion.arrowLocation],
+      startLocation: LOCATION_MAP_EIGHTH_CW[leftMotion.startLocation],
+      endLocation: LOCATION_MAP_EIGHTH_CW[leftMotion.endLocation],
+      arrowLocation: LOCATION_MAP_EIGHTH_CW[leftMotion.arrowLocation],
       gridMode: newGridMode,
     });
   }
 
   // Rotate red motion
-  if (redMotion) {
+  if (rightMotion) {
     const {
       arrowPlacementData: _arrowPlacementData,
       propPlacementData: _propPlacementData,
       ...motionWithoutPlacement
-    } = redMotion;
-    rotatedMotions[MotionColor.RED] = createMotionData({
+    } = rightMotion;
+    rotatedMotions[HandSide.RIGHT] = createMotionData({
       ...motionWithoutPlacement,
-      startLocation: LOCATION_MAP_EIGHTH_CW[redMotion.startLocation],
-      endLocation: LOCATION_MAP_EIGHTH_CW[redMotion.endLocation],
-      arrowLocation: LOCATION_MAP_EIGHTH_CW[redMotion.arrowLocation],
+      startLocation: LOCATION_MAP_EIGHTH_CW[rightMotion.startLocation],
+      endLocation: LOCATION_MAP_EIGHTH_CW[rightMotion.endLocation],
+      arrowLocation: LOCATION_MAP_EIGHTH_CW[rightMotion.arrowLocation],
       gridMode: newGridMode,
     });
   }
@@ -135,30 +135,30 @@ function rotatePictograph(pictograph: PictographData): PictographData {
  * Mirror a single pictograph vertically
  */
 function mirrorPictograph(pictograph: PictographData): PictographData {
-  const blueMotion = pictograph.motions[MotionColor.BLUE];
-  const redMotion = pictograph.motions[MotionColor.RED];
+  const leftMotion = pictograph.motions[HandSide.LEFT];
+  const rightMotion = pictograph.motions[HandSide.RIGHT];
 
-  const mirroredMotions: Partial<Record<MotionColor, MotionData | undefined>> = {};
+  const mirroredMotions: Partial<Record<HandSide, MotionData | undefined>> = {};
 
   // Mirror blue motion
-  if (blueMotion) {
-    mirroredMotions[MotionColor.BLUE] = {
-      ...blueMotion,
-      startLocation: VERTICAL_MIRROR_LOCATION_MAP[blueMotion.startLocation],
-      endLocation: VERTICAL_MIRROR_LOCATION_MAP[blueMotion.endLocation],
-      arrowLocation: VERTICAL_MIRROR_LOCATION_MAP[blueMotion.arrowLocation],
-      rotationDirection: reverseRotationDirection(blueMotion.rotationDirection),
+  if (leftMotion) {
+    mirroredMotions[HandSide.LEFT] = {
+      ...leftMotion,
+      startLocation: VERTICAL_MIRROR_LOCATION_MAP[leftMotion.startLocation],
+      endLocation: VERTICAL_MIRROR_LOCATION_MAP[leftMotion.endLocation],
+      arrowLocation: VERTICAL_MIRROR_LOCATION_MAP[leftMotion.arrowLocation],
+      rotationDirection: reverseRotationDirection(leftMotion.rotationDirection),
     };
   }
 
   // Mirror red motion
-  if (redMotion) {
-    mirroredMotions[MotionColor.RED] = {
-      ...redMotion,
-      startLocation: VERTICAL_MIRROR_LOCATION_MAP[redMotion.startLocation],
-      endLocation: VERTICAL_MIRROR_LOCATION_MAP[redMotion.endLocation],
-      arrowLocation: VERTICAL_MIRROR_LOCATION_MAP[redMotion.arrowLocation],
-      rotationDirection: reverseRotationDirection(redMotion.rotationDirection),
+  if (rightMotion) {
+    mirroredMotions[HandSide.RIGHT] = {
+      ...rightMotion,
+      startLocation: VERTICAL_MIRROR_LOCATION_MAP[rightMotion.startLocation],
+      endLocation: VERTICAL_MIRROR_LOCATION_MAP[rightMotion.endLocation],
+      arrowLocation: VERTICAL_MIRROR_LOCATION_MAP[rightMotion.arrowLocation],
+      rotationDirection: reverseRotationDirection(rightMotion.rotationDirection),
     };
   }
 
@@ -182,23 +182,23 @@ function mirrorPictograph(pictograph: PictographData): PictographData {
  * Swap colors for a single pictograph
  */
 function colorSwapPictograph(pictograph: PictographData): PictographData {
-  const blueMotion = pictograph.motions[MotionColor.BLUE];
-  const redMotion = pictograph.motions[MotionColor.RED];
+  const leftMotion = pictograph.motions[HandSide.LEFT];
+  const rightMotion = pictograph.motions[HandSide.RIGHT];
 
   // Swap the motions
-  const swappedMotions: Partial<Record<MotionColor, MotionData | undefined>> = {};
+  const swappedMotions: Partial<Record<HandSide, MotionData | undefined>> = {};
 
-  if (redMotion) {
-    swappedMotions[MotionColor.BLUE] = {
-      ...redMotion,
-      color: MotionColor.BLUE,
+  if (rightMotion) {
+    swappedMotions[HandSide.LEFT] = {
+      ...rightMotion,
+      hand: HandSide.LEFT,
     };
   }
 
-  if (blueMotion) {
-    swappedMotions[MotionColor.RED] = {
-      ...blueMotion,
-      color: MotionColor.RED,
+  if (leftMotion) {
+    swappedMotions[HandSide.RIGHT] = {
+      ...leftMotion,
+      hand: HandSide.RIGHT,
     };
   }
 

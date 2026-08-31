@@ -23,7 +23,7 @@ import type { LOOPEndPositionResolver } from "./loop-end-position-resolver";
 import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { ConstraintSet, ConstraintStep, ConstraintPictographData } from "$lib/shared/sequence-engine/constraints/types";
-import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { MotionType, HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
 
@@ -563,21 +563,21 @@ export class RandomSequenceGenerator {
     pictograph: PictographData,
     level: DifficultyLevel
   ): boolean {
-    const blueMotion = pictograph.motions[MotionColor.BLUE];
-    const redMotion = pictograph.motions[MotionColor.RED];
+    const leftMotion = pictograph.motions[HandSide.LEFT];
+    const rightMotion = pictograph.motions[HandSide.RIGHT];
 
-    const blueTurns = blueMotion?.turns ?? 0;
-    const redTurns = redMotion?.turns ?? 0;
+    const leftTurns = leftMotion?.turns ?? 0;
+    const rightTurns = rightMotion?.turns ?? 0;
 
     switch (level) {
       case DifficultyLevel.BEGINNER:
         // 0-turn only (no floats)
-        return blueTurns === 0 && redTurns === 0;
+        return leftTurns === 0 && rightTurns === 0;
       case DifficultyLevel.INTERMEDIATE:
         // 0 and 1 turn (no floats, no half-turns)
         return (
-          (blueTurns === 0 || blueTurns === 1) &&
-          (redTurns === 0 || redTurns === 1)
+          (leftTurns === 0 || leftTurns === 1) &&
+          (rightTurns === 0 || rightTurns === 1)
         );
       case DifficultyLevel.ADVANCED:
       case DifficultyLevel.SKEWED:
@@ -632,22 +632,22 @@ export class RandomSequenceGenerator {
    * Floats are treated as 0.25 for scoring purposes (low rotation).
    */
   private getMaxTurns(pictograph: PictographData): number {
-    const blueMotion = pictograph.motions[MotionColor.BLUE];
-    const redMotion = pictograph.motions[MotionColor.RED];
+    const leftMotion = pictograph.motions[HandSide.LEFT];
+    const rightMotion = pictograph.motions[HandSide.RIGHT];
 
-    const blueTurns = blueMotion?.turns === "fl" ? 0.25 : (blueMotion?.turns ?? 0);
-    const redTurns = redMotion?.turns === "fl" ? 0.25 : (redMotion?.turns ?? 0);
+    const leftTurns = leftMotion?.turns === "fl" ? 0.25 : (leftMotion?.turns ?? 0);
+    const rightTurns = rightMotion?.turns === "fl" ? 0.25 : (rightMotion?.turns ?? 0);
 
-    return Math.max(blueTurns, redTurns);
+    return Math.max(leftTurns, rightTurns);
   }
 
   private hasDashMotion(pictograph: PictographData): boolean {
-    const blueMotion = pictograph.motions[MotionColor.BLUE];
-    const redMotion = pictograph.motions[MotionColor.RED];
+    const leftMotion = pictograph.motions[HandSide.LEFT];
+    const rightMotion = pictograph.motions[HandSide.RIGHT];
 
     return (
-      blueMotion?.motionType === MotionType.DASH ||
-      redMotion?.motionType === MotionType.DASH
+      leftMotion?.motionType === MotionType.DASH ||
+      rightMotion?.motionType === MotionType.DASH
     );
   }
 
@@ -655,22 +655,22 @@ export class RandomSequenceGenerator {
    * Convert a pictograph to the ConstraintStep format used for scoring.
    */
   private pictographToConstraintStep(pictograph: PictographData): ConstraintStep {
-    const blueMotion = pictograph.motions[MotionColor.BLUE];
-    const redMotion = pictograph.motions[MotionColor.RED];
+    const leftMotion = pictograph.motions[HandSide.LEFT];
+    const rightMotion = pictograph.motions[HandSide.RIGHT];
 
     return {
       letter: pictograph.letter ?? "",
-      blueMotionType: blueMotion?.motionType ?? "static",
-      redMotionType: redMotion?.motionType ?? "static",
-      bluePropRotation: blueMotion?.rotationDirection ?? "cw",
-      redPropRotation: redMotion?.rotationDirection ?? "cw",
+      leftMotionType: leftMotion?.motionType ?? "static",
+      rightMotionType: rightMotion?.motionType ?? "static",
+      leftPropRotation: leftMotion?.rotationDirection ?? "cw",
+      rightPropRotation: rightMotion?.rotationDirection ?? "cw",
       startPosition: pictograph.startPosition ?? "",
       endPosition: pictograph.endPosition ?? "",
       // Location data for hand path constraint
-      blueStartLocation: blueMotion?.startLocation ?? "",
-      blueEndLocation: blueMotion?.endLocation ?? "",
-      redStartLocation: redMotion?.startLocation ?? "",
-      redEndLocation: redMotion?.endLocation ?? "",
+      leftStartLocation: leftMotion?.startLocation ?? "",
+      leftEndLocation: leftMotion?.endLocation ?? "",
+      rightStartLocation: rightMotion?.startLocation ?? "",
+      rightEndLocation: rightMotion?.endLocation ?? "",
     };
   }
 
@@ -678,8 +678,8 @@ export class RandomSequenceGenerator {
    * Convert a pictograph to the ConstraintPictographData format for constraint evaluation.
    */
   private pictographToConstraintPictograph(pictograph: PictographData): ConstraintPictographData {
-    const blueMotion = pictograph.motions[MotionColor.BLUE];
-    const redMotion = pictograph.motions[MotionColor.RED];
+    const leftMotion = pictograph.motions[HandSide.LEFT];
+    const rightMotion = pictograph.motions[HandSide.RIGHT];
 
     return {
       letter: pictograph.letter ?? "",
@@ -687,23 +687,23 @@ export class RandomSequenceGenerator {
       endPosition: pictograph.endPosition ?? "",
       timing: "", // PictographData doesn't have timing - only available on compound letters
       direction: "", // PictographData doesn't have direction - only available on compound letters
-      blueMotion: {
+      leftMotion: {
         color: "blue",
-        startLocation: blueMotion?.startLocation ?? "",
-        endLocation: blueMotion?.endLocation ?? "",
-        motionType: blueMotion?.motionType ?? "static",
-        rotationDirection: blueMotion?.rotationDirection ?? "cw",
-        startOrientation: blueMotion?.startOrientation ?? "",
-        endOrientation: blueMotion?.endOrientation ?? "",
+        startLocation: leftMotion?.startLocation ?? "",
+        endLocation: leftMotion?.endLocation ?? "",
+        motionType: leftMotion?.motionType ?? "static",
+        rotationDirection: leftMotion?.rotationDirection ?? "cw",
+        startOrientation: leftMotion?.startOrientation ?? "",
+        endOrientation: leftMotion?.endOrientation ?? "",
       },
-      redMotion: {
+      rightMotion: {
         color: "red",
-        startLocation: redMotion?.startLocation ?? "",
-        endLocation: redMotion?.endLocation ?? "",
-        motionType: redMotion?.motionType ?? "static",
-        rotationDirection: redMotion?.rotationDirection ?? "cw",
-        startOrientation: redMotion?.startOrientation ?? "",
-        endOrientation: redMotion?.endOrientation ?? "",
+        startLocation: rightMotion?.startLocation ?? "",
+        endLocation: rightMotion?.endLocation ?? "",
+        motionType: rightMotion?.motionType ?? "static",
+        rotationDirection: rightMotion?.rotationDirection ?? "cw",
+        startOrientation: rightMotion?.startOrientation ?? "",
+        endOrientation: rightMotion?.endOrientation ?? "",
       },
     };
   }
@@ -718,21 +718,21 @@ export class RandomSequenceGenerator {
       endPosition: step.endPosition,
       timing: "",
       direction: "",
-      blueMotion: {
+      leftMotion: {
         color: "blue",
-        startLocation: step.blueStartLocation ?? "",
-        endLocation: step.blueEndLocation ?? "",
-        motionType: step.blueMotionType,
-        rotationDirection: step.bluePropRotation,
+        startLocation: step.leftStartLocation ?? "",
+        endLocation: step.leftEndLocation ?? "",
+        motionType: step.leftMotionType,
+        rotationDirection: step.leftPropRotation,
         startOrientation: "",
         endOrientation: "",
       },
-      redMotion: {
+      rightMotion: {
         color: "red",
-        startLocation: step.redStartLocation ?? "",
-        endLocation: step.redEndLocation ?? "",
-        motionType: step.redMotionType,
-        rotationDirection: step.redPropRotation,
+        startLocation: step.rightStartLocation ?? "",
+        endLocation: step.rightEndLocation ?? "",
+        motionType: step.rightMotionType,
+        rotationDirection: step.rightPropRotation,
         startOrientation: "",
         endOrientation: "",
       },

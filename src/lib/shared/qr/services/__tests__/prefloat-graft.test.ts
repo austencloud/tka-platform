@@ -28,21 +28,21 @@ const staticMotion = (loc: string): LooseMotion => ({
   endLocation: loc,
 });
 
-const seq = (steps: Array<{ blue: LooseMotion; red: LooseMotion }>): SequenceData =>
+const seq = (steps: Array<{ left: LooseMotion; right: LooseMotion }>): SequenceData =>
   ({ id: "t", steps: steps.map((m) => ({ motions: m })) }) as unknown as SequenceData;
 
 const blueOf = (s: SequenceData, i: number): LooseMotion =>
-  (s.steps as unknown as Array<{ motions: { blue: LooseMotion } }>)[i]!.motions.blue;
+  (s.steps as unknown as Array<{ motions: { left: LooseMotion } }>)[i]!.motions.left;
 
 describe("graftPrefloatFromEmbedded", () => {
   it("grafts a real prefloat pair onto a matching prefloat-less float", () => {
-    const decoded = seq([{ blue: float("n", "w"), red: staticMotion("w") }]);
+    const decoded = seq([{ left: float("n", "w"), right: staticMotion("w") }]);
     const embedded = {
       steps: [
         {
           motions: {
-            blue: float("n", "w", { type: MotionType.PRO, rotation: RotationDirection.COUNTER_CLOCKWISE }),
-            red: staticMotion("w"),
+            left: float("n", "w", { type: MotionType.PRO, rotation: RotationDirection.COUNTER_CLOCKWISE }),
+            right: staticMotion("w"),
           },
         },
       ],
@@ -53,13 +53,13 @@ describe("graftPrefloatFromEmbedded", () => {
   });
 
   it("never propagates a fabricated pair (prefloat type + noRotation)", () => {
-    const decoded = seq([{ blue: float("n", "w"), red: staticMotion("w") }]);
+    const decoded = seq([{ left: float("n", "w"), right: staticMotion("w") }]);
     const embedded = {
       steps: [
         {
           motions: {
-            blue: float("n", "w", { type: MotionType.PRO, rotation: RotationDirection.NO_ROTATION }),
-            red: staticMotion("w"),
+            left: float("n", "w", { type: MotionType.PRO, rotation: RotationDirection.NO_ROTATION }),
+            right: staticMotion("w"),
           },
         },
       ],
@@ -70,13 +70,13 @@ describe("graftPrefloatFromEmbedded", () => {
   });
 
   it("skips motions whose start→end path disagrees (misaligned data)", () => {
-    const decoded = seq([{ blue: float("n", "w"), red: staticMotion("w") }]);
+    const decoded = seq([{ left: float("n", "w"), right: staticMotion("w") }]);
     const embedded = {
       steps: [
         {
           motions: {
-            blue: float("w", "s", { type: MotionType.PRO, rotation: RotationDirection.COUNTER_CLOCKWISE }),
-            red: staticMotion("w"),
+            left: float("w", "s", { type: MotionType.PRO, rotation: RotationDirection.COUNTER_CLOCKWISE }),
+            right: staticMotion("w"),
           },
         },
       ],
@@ -86,14 +86,14 @@ describe("graftPrefloatFromEmbedded", () => {
   });
 
   it("aligns content beats from the tail when embedded carries a leading start step", () => {
-    const decoded = seq([{ blue: float("n", "w"), red: staticMotion("w") }]);
+    const decoded = seq([{ left: float("n", "w"), right: staticMotion("w") }]);
     const embedded = {
       steps: [
-        { motions: { blue: staticMotion("n"), red: staticMotion("w") } },
+        { motions: { left: staticMotion("n"), right: staticMotion("w") } },
         {
           motions: {
-            blue: float("n", "w", { type: MotionType.ANTI, rotation: RotationDirection.CLOCKWISE }),
-            red: staticMotion("w"),
+            left: float("n", "w", { type: MotionType.ANTI, rotation: RotationDirection.CLOCKWISE }),
+            right: staticMotion("w"),
           },
         },
       ],
@@ -103,15 +103,15 @@ describe("graftPrefloatFromEmbedded", () => {
   });
 
   it("refuses to graft when step counts are more than one apart", () => {
-    const decoded = seq([{ blue: float("n", "w"), red: staticMotion("w") }]);
+    const decoded = seq([{ left: float("n", "w"), right: staticMotion("w") }]);
     const embedded = {
       steps: [
-        { motions: { blue: staticMotion("n"), red: staticMotion("w") } },
-        { motions: { blue: staticMotion("n"), red: staticMotion("w") } },
+        { motions: { left: staticMotion("n"), right: staticMotion("w") } },
+        { motions: { left: staticMotion("n"), right: staticMotion("w") } },
         {
           motions: {
-            blue: float("n", "w", { type: MotionType.PRO, rotation: RotationDirection.COUNTER_CLOCKWISE }),
-            red: staticMotion("w"),
+            left: float("n", "w", { type: MotionType.PRO, rotation: RotationDirection.COUNTER_CLOCKWISE }),
+            right: staticMotion("w"),
           },
         },
       ],
@@ -121,12 +121,12 @@ describe("graftPrefloatFromEmbedded", () => {
   });
 
   it("grafts the mint letter onto a letterless decoded step when both channels' motion identity matches", () => {
-    const decoded = seq([{ blue: float("n", "w"), red: staticMotion("w") }]);
+    const decoded = seq([{ left: float("n", "w"), right: staticMotion("w") }]);
     const embedded = {
       steps: [
         {
           letter: "Z-",
-          motions: { blue: float("n", "w"), red: staticMotion("w") },
+          motions: { left: float("n", "w"), right: staticMotion("w") },
         },
       ],
     };
@@ -137,13 +137,13 @@ describe("graftPrefloatFromEmbedded", () => {
   });
 
   it("never overwrites a letter the decoded step already carries", () => {
-    const decoded = seq([{ blue: float("n", "w"), red: staticMotion("w") }]);
+    const decoded = seq([{ left: float("n", "w"), right: staticMotion("w") }]);
     (decoded.steps as unknown as Array<{ letter?: unknown }>)[0]!.letter = "Y-";
     const embedded = {
       steps: [
         {
           letter: "Z-",
-          motions: { blue: float("n", "w"), red: staticMotion("w") },
+          motions: { left: float("n", "w"), right: staticMotion("w") },
         },
       ],
     };
@@ -154,12 +154,12 @@ describe("graftPrefloatFromEmbedded", () => {
   });
 
   it("refuses the letter when any channel's motion identity disagrees", () => {
-    const decoded = seq([{ blue: float("n", "w"), red: staticMotion("w") }]);
+    const decoded = seq([{ left: float("n", "w"), right: staticMotion("w") }]);
     const embedded = {
       steps: [
         {
           letter: "Z-",
-          motions: { blue: float("n", "e"), red: staticMotion("w") },
+          motions: { left: float("n", "e"), right: staticMotion("w") },
         },
       ],
     };
@@ -171,13 +171,13 @@ describe("graftPrefloatFromEmbedded", () => {
 
   it("ignores empty or non-string embedded letters", () => {
     const decoded = seq([
-      { blue: float("n", "w"), red: staticMotion("w") },
-      { blue: float("w", "s"), red: staticMotion("w") },
+      { left: float("n", "w"), right: staticMotion("w") },
+      { left: float("w", "s"), right: staticMotion("w") },
     ]);
     const embedded = {
       steps: [
-        { letter: "", motions: { blue: float("n", "w"), red: staticMotion("w") } },
-        { letter: 7, motions: { blue: float("w", "s"), red: staticMotion("w") } },
+        { letter: "", motions: { left: float("n", "w"), right: staticMotion("w") } },
+        { letter: 7, motions: { left: float("w", "s"), right: staticMotion("w") } },
       ],
     };
     const out = graftPrefloatFromEmbedded(decoded, embedded);
@@ -189,16 +189,16 @@ describe("graftPrefloatFromEmbedded", () => {
   it("leaves non-float and already-prefloated motions untouched, and tolerates absent embedded data", () => {
     const decoded = seq([
       {
-        blue: float("n", "w", { type: MotionType.PRO, rotation: RotationDirection.CLOCKWISE }),
-        red: staticMotion("w"),
+        left: float("n", "w", { type: MotionType.PRO, rotation: RotationDirection.CLOCKWISE }),
+        right: staticMotion("w"),
       },
     ]);
     const embedded = {
       steps: [
         {
           motions: {
-            blue: float("n", "w", { type: MotionType.ANTI, rotation: RotationDirection.COUNTER_CLOCKWISE }),
-            red: staticMotion("w"),
+            left: float("n", "w", { type: MotionType.ANTI, rotation: RotationDirection.COUNTER_CLOCKWISE }),
+            right: staticMotion("w"),
           },
         },
       ],

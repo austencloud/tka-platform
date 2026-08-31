@@ -16,9 +16,9 @@ export interface EndState {
   /** Grid position where props end (e.g., BETA3, ALPHA1) */
   position: GridPosition | null;
   /** Blue prop's end orientation (in, out, clock, counter) */
-  blueOrientation: Orientation | null;
+  leftOrientation: Orientation | null;
   /** Red prop's end orientation */
-  redOrientation: Orientation | null;
+  rightOrientation: Orientation | null;
 }
 
 /**

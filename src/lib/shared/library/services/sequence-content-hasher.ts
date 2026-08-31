@@ -33,7 +33,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export const HASH_VERSION_V1 = 1;
 export const HASH_VERSION_V2 = 2;
@@ -136,8 +136,11 @@ function extractStep(
   }
   return {
     letter: step.letter ?? null,
-    blueReversal: step.blueReversal,
-    redReversal: step.redReversal,
+    // V1's serialized property names are immutable. Existing Firestore hashes
+    // were minted from blue/red labels even though the values now come from
+    // performer-relative hand fields.
+    blueReversal: step.leftReversal,
+    redReversal: step.rightReversal,
     isBlank: step.isBlank,
     duration: step.duration,
     motions: extractMotions(step.motions, opts),
@@ -146,20 +149,28 @@ function extractStep(
 }
 
 function extractMotions(
-  motions: Partial<Record<MotionColor, MotionData | undefined>>,
+  motions: Partial<Record<HandSide, MotionData | undefined>>,
   opts: ExtractOptions
 ): unknown {
-  // Sort by color key for determinism (BLUE before RED alphabetically)
-  const sorted = [MotionColor.BLUE, MotionColor.RED]
-    .filter((color) => motions[color])
-    .map((color) => [color, extractMotion(motions[color]!, opts)]);
-  return Object.fromEntries(sorted);
+  // Hash labels and order are a persistence protocol. Keep the original blue
+  // then red preimage while reading from canonical left/right channels.
+  return Object.fromEntries(
+    [
+      ["blue", motions[HandSide.LEFT]],
+      ["red", motions[HandSide.RIGHT]],
+    ]
+      .filter((entry): entry is [string, MotionData] => entry[1] !== undefined)
+      .map(([legacyLabel, motion]) => [
+        legacyLabel,
+        extractMotion(motion, opts),
+      ])
+  );
 }
 
 // Intentionally excluded from hash:
 // - arrowPlacementData, propPlacementData: rendering/layout concerns derived from motion fields
 // - propType: viewer preference, not sequence identity (overridden by global settings)
-// - isVisible, color, arrowLocation: rendering state, not motion definition
+// - isVisible, hand, arrowLocation: rendering state, not motion definition
 function extractMotion(m: MotionData, opts: ExtractOptions): unknown {
   return {
     motionType: m.motionType,

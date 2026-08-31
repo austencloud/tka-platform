@@ -237,10 +237,10 @@ export class ArrowLocationCalculator {
   ): boolean {
     /**Determine if the given motion belongs to the blue arrow.*/
     // Compare the motion with blue and red motions in pictograph data
-    if (pictographData.motions.blue === motion) {
+    if (pictographData.motions.left === motion) {
       return true;
     }
-    if (pictographData.motions.red === motion) {
+    if (pictographData.motions.right === motion) {
       return false;
     }
     // Fallback: if we can't determine, assume blue

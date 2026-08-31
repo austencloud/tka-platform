@@ -63,6 +63,10 @@ describe("legacy hand identity normalization", () => {
       creatorIntent: {
         propConfig: { bluePropType: "club", redPropType: "poi" },
       },
+      loopSpec: {
+        blue: { rotated: { period: 4 } },
+        red: { mirrored: { period: 2 } },
+      },
     };
 
     const normalized = normalizeLegacySequence(source) as Record<string, any>;
@@ -78,6 +82,10 @@ describe("legacy hand identity normalization", () => {
       intendedProp: { leftPropType: "staff", rightPropType: "fan" },
       creatorIntent: {
         propConfig: { leftPropType: "club", rightPropType: "poi" },
+      },
+      loopSpec: {
+        left: { rotated: { period: 4 } },
+        right: { mirrored: { period: 2 } },
       },
     });
     expect(normalized).not.toHaveProperty("blueSoloProp");

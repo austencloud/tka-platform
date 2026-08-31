@@ -8,7 +8,7 @@ import {
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -16,8 +16,8 @@ import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enum
 
 describe("buildHalvedStep — real motion families", () => {
   it("PRO E->S, IN->IN, CW, 1 turn (red real, blue placeholder)", () => {
-    const redMotion = createMotionData({
-      color: MotionColor.RED,
+    const rightMotion = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.PRO,
       startLocation: GridLocation.EAST,
       endLocation: GridLocation.SOUTH,
@@ -27,13 +27,13 @@ describe("buildHalvedStep — real motion families", () => {
       turns: 1,
       isVisible: true,
     });
-    const step = createStepData({ motions: { red: redMotion } });
+    const step = createStepData({ motions: { right: rightMotion } });
 
     const result = buildHalvedStep(step);
 
     expect(result).not.toBeNull();
-    expect(result!.motions.red.endLocation).toBe(GridLocation.SOUTHEAST);
-    expect(result!.motions.red.segment).toEqual({ t0: 0, t1: 0.5 });
+    expect(result!.motions.right.endLocation).toBe(GridLocation.SOUTHEAST);
+    expect(result!.motions.right.segment).toEqual({ t0: 0, t1: 0.5 });
 
     // Derive the expectation from calculateOrientationAt itself — don't hardcode
     // the orientation value.
@@ -48,15 +48,15 @@ describe("buildHalvedStep — real motion families", () => {
         turns: 1,
       },
       0.5,
-      MotionColor.RED
+      HandSide.RIGHT
     );
     expect(expectedOrientation).not.toBeNull();
-    expect(result!.motions.red.endOrientation).toBe(expectedOrientation);
+    expect(result!.motions.right.endOrientation).toBe(expectedOrientation);
   });
 
   it("ANTI E->S, IN->OUT, CCW, 2 turns", () => {
-    const redMotion = createMotionData({
-      color: MotionColor.RED,
+    const rightMotion = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.ANTI,
       startLocation: GridLocation.EAST,
       endLocation: GridLocation.SOUTH,
@@ -66,18 +66,18 @@ describe("buildHalvedStep — real motion families", () => {
       turns: 2,
       isVisible: true,
     });
-    const step = createStepData({ motions: { red: redMotion } });
+    const step = createStepData({ motions: { right: rightMotion } });
 
     const result = buildHalvedStep(step);
 
     expect(result).not.toBeNull();
-    expect(result!.motions.red.endLocation).toBe(GridLocation.SOUTHEAST);
-    expect(result!.motions.red.segment).toEqual({ t0: 0, t1: 0.5 });
+    expect(result!.motions.right.endLocation).toBe(GridLocation.SOUTHEAST);
+    expect(result!.motions.right.segment).toEqual({ t0: 0, t1: 0.5 });
   });
 
   it("DASH S->N, IN->OUT, CCW, 2 turns -> halfway location is CENTER", () => {
-    const redMotion = createMotionData({
-      color: MotionColor.RED,
+    const rightMotion = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.DASH,
       startLocation: GridLocation.SOUTH,
       endLocation: GridLocation.NORTH,
@@ -87,18 +87,18 @@ describe("buildHalvedStep — real motion families", () => {
       turns: 2,
       isVisible: true,
     });
-    const step = createStepData({ motions: { red: redMotion } });
+    const step = createStepData({ motions: { right: rightMotion } });
 
     const result = buildHalvedStep(step);
 
     expect(result).not.toBeNull();
-    expect(result!.motions.red.endLocation).toBe(GridLocation.CENTER);
-    expect(result!.motions.red.segment).toEqual({ t0: 0, t1: 0.5 });
+    expect(result!.motions.right.endLocation).toBe(GridLocation.CENTER);
+    expect(result!.motions.right.segment).toEqual({ t0: 0, t1: 0.5 });
   });
 
   it("hash (center-touching dash) E->C -> null (midpoint is off the named grid)", () => {
-    const redMotion = createMotionData({
-      color: MotionColor.RED,
+    const rightMotion = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.DASH,
       startLocation: GridLocation.EAST,
       endLocation: GridLocation.CENTER,
@@ -108,14 +108,14 @@ describe("buildHalvedStep — real motion families", () => {
       turns: 2,
       isVisible: true,
     });
-    const step = createStepData({ motions: { red: redMotion } });
+    const step = createStepData({ motions: { right: rightMotion } });
 
     expect(buildHalvedStep(step)).toBeNull();
   });
 
   it("STATIC E->E, IN->IN, CCW, 2 turns -> halfway location is the (unchanged) start", () => {
-    const redMotion = createMotionData({
-      color: MotionColor.RED,
+    const rightMotion = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.STATIC,
       startLocation: GridLocation.EAST,
       endLocation: GridLocation.EAST,
@@ -125,18 +125,18 @@ describe("buildHalvedStep — real motion families", () => {
       turns: 2,
       isVisible: true,
     });
-    const step = createStepData({ motions: { red: redMotion } });
+    const step = createStepData({ motions: { right: rightMotion } });
 
     const result = buildHalvedStep(step);
 
     expect(result).not.toBeNull();
-    expect(result!.motions.red.endLocation).toBe(GridLocation.EAST);
-    expect(result!.motions.red.segment).toEqual({ t0: 0, t1: 0.5 });
+    expect(result!.motions.right.endLocation).toBe(GridLocation.EAST);
+    expect(result!.motions.right.segment).toEqual({ t0: 0, t1: 0.5 });
   });
 
   it("blue-hand case: proves the hand's own MotionColor is passed to calculateOrientationAt (not a hardcoded RED)", () => {
-    const blueMotion = createMotionData({
-      color: MotionColor.BLUE,
+    const leftMotion = createMotionData({
+      hand: HandSide.LEFT,
       motionType: MotionType.ANTI,
       startLocation: GridLocation.NORTH,
       endLocation: GridLocation.EAST,
@@ -146,20 +146,20 @@ describe("buildHalvedStep — real motion families", () => {
       turns: 1,
       isVisible: true,
     });
-    const step = createStepData({ motions: { blue: blueMotion } });
+    const step = createStepData({ motions: { left: leftMotion } });
 
     const result = buildHalvedStep(step);
 
     expect(result).not.toBeNull();
-    expect(result!.motions.blue.endOrientation).not.toBeNull();
-    expect(result!.motions.blue.segment).toEqual({ t0: 0, t1: 0.5 });
+    expect(result!.motions.left.endOrientation).not.toBeNull();
+    expect(result!.motions.left.segment).toEqual({ t0: 0, t1: 0.5 });
   });
 });
 
 describe("buildHalvedStep — off-lattice and unsupported-motion guards", () => {
   it("returns null for an off-lattice quarter-turn motion (turns=0.25)", () => {
-    const redMotion = createMotionData({
-      color: MotionColor.RED,
+    const rightMotion = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.PRO,
       startLocation: GridLocation.NORTH,
       endLocation: GridLocation.EAST,
@@ -169,14 +169,14 @@ describe("buildHalvedStep — off-lattice and unsupported-motion guards", () => 
       turns: 0.25,
       isVisible: true,
     });
-    const step = createStepData({ motions: { red: redMotion } });
+    const step = createStepData({ motions: { right: rightMotion } });
 
     expect(buildHalvedStep(step)).toBeNull();
   });
 
   it("returns null for a FLOAT motion (no float_half asset exists)", () => {
-    const redMotion = createMotionData({
-      color: MotionColor.RED,
+    const rightMotion = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.FLOAT,
       startLocation: GridLocation.NORTH,
       endLocation: GridLocation.EAST,
@@ -186,14 +186,14 @@ describe("buildHalvedStep — off-lattice and unsupported-motion guards", () => 
       turns: 1,
       isVisible: true,
     });
-    const step = createStepData({ motions: { red: redMotion } });
+    const step = createStepData({ motions: { right: rightMotion } });
 
     expect(buildHalvedStep(step)).toBeNull();
   });
 
   it("returns null for a skewed motion (skewSteps set)", () => {
-    const redMotion = createMotionData({
-      color: MotionColor.RED,
+    const rightMotion = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.PRO,
       startLocation: GridLocation.EAST,
       endLocation: GridLocation.SOUTH,
@@ -204,14 +204,14 @@ describe("buildHalvedStep — off-lattice and unsupported-motion guards", () => 
       isVisible: true,
       skewSteps: 1,
     });
-    const step = createStepData({ motions: { red: redMotion } });
+    const step = createStepData({ motions: { right: rightMotion } });
 
     expect(buildHalvedStep(step)).toBeNull();
   });
 
   it("returns null for a shift whose start/end aren't a single 45deg-adjacent hop (unknown pair)", () => {
-    const redMotion = createMotionData({
-      color: MotionColor.RED,
+    const rightMotion = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.PRO,
       startLocation: GridLocation.NORTH,
       endLocation: GridLocation.SOUTH, // opposite cardinal — not a single arc segment
@@ -221,14 +221,14 @@ describe("buildHalvedStep — off-lattice and unsupported-motion guards", () => 
       turns: 1,
       isVisible: true,
     });
-    const step = createStepData({ motions: { red: redMotion } });
+    const step = createStepData({ motions: { right: rightMotion } });
 
     expect(buildHalvedStep(step)).toBeNull();
   });
 
   it("returns null for t !== 0.5 (v1 is midpoint-only)", () => {
-    const redMotion = createMotionData({
-      color: MotionColor.RED,
+    const rightMotion = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.PRO,
       startLocation: GridLocation.EAST,
       endLocation: GridLocation.SOUTH,
@@ -238,14 +238,14 @@ describe("buildHalvedStep — off-lattice and unsupported-motion guards", () => 
       turns: 1,
       isVisible: true,
     });
-    const step = createStepData({ motions: { red: redMotion } });
+    const step = createStepData({ motions: { right: rightMotion } });
 
     expect(buildHalvedStep(step, 0.25)).toBeNull();
   });
 
   it("carries a placeholder hand through unchanged", () => {
-    const redMotion = createMotionData({
-      color: MotionColor.RED,
+    const rightMotion = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.PRO,
       startLocation: GridLocation.EAST,
       endLocation: GridLocation.SOUTH,
@@ -255,15 +255,15 @@ describe("buildHalvedStep — off-lattice and unsupported-motion guards", () => 
       turns: 1,
       isVisible: true,
     });
-    const step = createStepData({ motions: { red: redMotion } });
+    const step = createStepData({ motions: { right: rightMotion } });
 
     // createStepData fills the omitted blue hand with an invisible placeholder.
-    expect(isVisibleMotion(step.motions.blue)).toBe(false);
+    expect(isVisibleMotion(step.motions.left)).toBe(false);
 
     const result = buildHalvedStep(step);
 
     expect(result).not.toBeNull();
-    expect(result!.motions.blue).toBe(step.motions.blue);
-    expect(isVisibleMotion(result!.motions.blue)).toBe(false);
+    expect(result!.motions.left).toBe(step.motions.left);
+    expect(isVisibleMotion(result!.motions.left)).toBe(false);
   });
 });

@@ -21,7 +21,7 @@
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { RetroPictographData, RetroHandData } from "$lib/features/retro/shared/domain/pictograph-types";
-  import { MotionColor, MotionType, Orientation, RotationDirection, GridLocation } from "$lib/features/retro/shared/domain/pictograph-types";
+  import { HandSide, MotionType, Orientation, RotationDirection, GridLocation } from "$lib/features/retro/shared/domain/pictograph-types";
   import { getCanvas2DRenderer } from "$lib/shared/render/get-canvas-2d-renderer";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
   import "$lib/features/retro/dos/styles/dos-terminal.css";
@@ -76,32 +76,32 @@
   // ── Convert PictographData → RetroPictographData for the pixel renderer ──
 
   function toRetro(data: PictographData): RetroPictographData {
-    const blue = data.motions?.[MotionColor.BLUE];
-    const red = data.motions?.[MotionColor.RED];
+    const left = data.motions?.[HandSide.LEFT];
+    const right = data.motions?.[HandSide.RIGHT];
 
-    const blueHand: RetroHandData = {
-      color: MotionColor.BLUE,
-      location: blue?.startLocation ?? GridLocation.NORTH,
-      endLocation: blue?.endLocation ?? GridLocation.NORTH,
-      motionType: blue?.motionType ?? MotionType.STATIC,
-      orientation: blue?.endOrientation ?? Orientation.IN,
-      turns: typeof blue?.turns === "number" ? blue.turns : 0,
-      rotationDirection: blue?.rotationDirection ?? RotationDirection.NO_ROTATION,
+    const leftHand = {
+      color: HandSide.LEFT,
+      location: left?.startLocation ?? GridLocation.NORTH,
+      endLocation: left?.endLocation ?? GridLocation.NORTH,
+      motionType: left?.motionType ?? MotionType.STATIC,
+      orientation: left?.endOrientation ?? Orientation.IN,
+      turns: typeof left?.turns === "number" ? left.turns : 0,
+      rotationDirection: left?.rotationDirection ?? RotationDirection.NO_ROTATION,
     };
-    const redHand: RetroHandData = {
-      color: MotionColor.RED,
-      location: red?.startLocation ?? GridLocation.SOUTH,
-      endLocation: red?.endLocation ?? GridLocation.SOUTH,
-      motionType: red?.motionType ?? MotionType.STATIC,
-      orientation: red?.endOrientation ?? Orientation.IN,
-      turns: typeof red?.turns === "number" ? red.turns : 0,
-      rotationDirection: red?.rotationDirection ?? RotationDirection.NO_ROTATION,
+    const rightHand = {
+      color: HandSide.RIGHT,
+      location: right?.startLocation ?? GridLocation.SOUTH,
+      endLocation: right?.endLocation ?? GridLocation.SOUTH,
+      motionType: right?.motionType ?? MotionType.STATIC,
+      orientation: right?.endOrientation ?? Orientation.IN,
+      turns: typeof right?.turns === "number" ? right.turns : 0,
+      rotationDirection: right?.rotationDirection ?? RotationDirection.NO_ROTATION,
     };
 
     return {
       letter: data.letter ?? "",
-      blueHand,
-      redHand,
+      leftHand,
+      rightHand,
       gridMode: data.gridMode ?? GridMode.DIAMOND,
     };
   }

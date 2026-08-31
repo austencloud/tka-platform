@@ -61,8 +61,8 @@ export function readShapeMatrixRouteState(
 ): ShapeMatrixAppSnapshot {
   const params = new URLSearchParams(search);
   const level = readLevel(params);
-  const blueTurn = readTurn(params, level, "blueTurn");
-  const redTurn = readTurn(params, level, "redTurn");
+  const leftTurn = readTurn(params, level, "blueTurn");
+  const rightTurn = readTurn(params, level, "redTurn");
   const requestedLabels = params.get("labels") as MatrixLabelMode | null;
   const labelMode =
     requestedLabels && LABEL_MODES.has(requestedLabels)
@@ -71,13 +71,13 @@ export function readShapeMatrixRouteState(
   const flowersByKey = new Map(
     buildShapeMatrixAxis().map((flower) => [flowerKey(flower), flower])
   );
-  const blue = flowersByKey.get(params.get("blue") ?? "") ?? null;
-  const red = flowersByKey.get(params.get("red") ?? "") ?? null;
+  const left = flowersByKey.get(params.get("blue") ?? "") ?? null;
+  const right = flowersByKey.get(params.get("red") ?? "") ?? null;
   const requestedMode = params.get("mode") as VtgMode | null;
   const requestedPropMode = params.get("propMode") as VtgMode | null;
   const pair =
-    blue && red && blue.turns === blueTurn && red.turns === redTurn
-      ? { blue, red }
+    left && right && left.turns === leftTurn && right.turns === rightTurn
+      ? { left, right }
       : null;
   const requestedAxis = params.get("axis") as ShapeMatrixAxisTarget | null;
   const requestedDriver = params.get(
@@ -91,8 +91,8 @@ export function readShapeMatrixRouteState(
 
   return {
     level,
-    blueTurn,
-    redTurn,
+    leftTurn,
+    rightTurn,
     activeAxis:
       requestedAxis && AXIS_TARGETS.has(requestedAxis) ? requestedAxis : "both",
     labelMode,
@@ -107,8 +107,8 @@ export function readShapeMatrixRouteState(
     propMode:
       pair &&
       relationshipDriver === "props" &&
-      blueTurn !== "fl" &&
-      blueTurn === redTurn &&
+      leftTurn !== "fl" &&
+      leftTurn === rightTurn &&
       requestedPropMode &&
       MODES.has(requestedPropMode)
         ? requestedPropMode
@@ -123,8 +123,8 @@ export function writeShapeMatrixRouteState(
   url.searchParams.delete("size");
   url.searchParams.delete("turn");
   url.searchParams.set("level", String(state.level));
-  url.searchParams.set("blueTurn", turnValueToKey(state.blueTurn));
-  url.searchParams.set("redTurn", turnValueToKey(state.redTurn));
+  url.searchParams.set("blueTurn", turnValueToKey(state.leftTurn));
+  url.searchParams.set("redTurn", turnValueToKey(state.rightTurn));
   url.searchParams.set("axis", state.activeAxis);
   url.searchParams.set("labels", state.labelMode);
   url.searchParams.set("prop", state.propType);
@@ -138,8 +138,8 @@ export function writeShapeMatrixRouteState(
     return;
   }
 
-  url.searchParams.set("blue", flowerKey(state.pair.blue));
-  url.searchParams.set("red", flowerKey(state.pair.red));
+  url.searchParams.set("blue", flowerKey(state.pair.left));
+  url.searchParams.set("red", flowerKey(state.pair.right));
   if (state.mode) url.searchParams.set("mode", state.mode);
   else url.searchParams.delete("mode");
   if (state.propMode) url.searchParams.set("propMode", state.propMode);

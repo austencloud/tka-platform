@@ -415,20 +415,20 @@ export function createEffectsConfigState(
   // Reset that exact leaked pair (live config + personal default) to the factory
   // colours. Idempotent; only the leaked pair is touched, never a real colour pick.
   function healStaleTrailColors(
-    t: { blueColor?: string; redColor?: string } | undefined | null
+    t: { leftColor?: string; rightColor?: string } | undefined | null
   ): boolean {
-    if (t && t.blueColor === "#8b5cf6" && t.redColor === "#ec4899") {
-      t.blueColor = DEFAULT_EFFECTS_CONFIG.trails.blueColor;
-      t.redColor = DEFAULT_EFFECTS_CONFIG.trails.redColor;
+    if (t && t.leftColor === "#8b5cf6" && t.rightColor === "#ec4899") {
+      t.leftColor = DEFAULT_EFFECTS_CONFIG.trails.leftColor;
+      t.rightColor = DEFAULT_EFFECTS_CONFIG.trails.rightColor;
       return true;
     }
     return false;
   }
   const healedConfig = healStaleTrailColors(
-    config.trails as { blueColor?: string; redColor?: string }
+    config.trails as { leftColor?: string; rightColor?: string }
   );
   const healedDefault = healStaleTrailColors(
-    personalDefaults.trails as { blueColor?: string; redColor?: string }
+    personalDefaults.trails as { leftColor?: string; rightColor?: string }
   );
   if (persist && healedConfig) scheduleSave();
   if (persist && healedDefault) persistPersonalDefaults();

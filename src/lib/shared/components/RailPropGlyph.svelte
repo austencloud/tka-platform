@@ -9,7 +9,7 @@
   let { propType, size = 24 }: { propType: PropType; size?: number } = $props();
 
   const propImage = $derived(getPropTypeDisplayInfo(propType).image);
-  const propRotation = $derived(getCompositionRecipe(propType).blue.rotation);
+  const propRotation = $derived(getCompositionRecipe(propType).left.rotation);
   const propScale = $derived(getRailPropOpticalScale(propType));
 </script>
 

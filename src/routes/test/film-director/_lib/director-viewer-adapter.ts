@@ -56,8 +56,8 @@ export function buildDirectorViewerSeed(
       characterId: performer.characterId,
       position: { ...performer.position },
       facingAngle: performer.facingAngle,
-      customBluePlane: performer.bluePlane,
-      customRedPlane: performer.redPlane,
+      customLeftPlane: performer.leftPlane,
+      customRightPlane: performer.rightPlane,
       name: performer.name,
       settings: {
         prop: performer.prop,
@@ -145,8 +145,8 @@ export function applyDirectorSceneToViewer(
         performer.loadSequence(directedSequence);
       }
 
-      performer.setHandPlane("blue", directed.bluePlane);
-      performer.setHandPlane("red", directed.redPlane);
+      performer.setHandPlane("left", directed.leftPlane);
+      performer.setHandPlane("right", directed.rightPlane);
       for (const entry of directed.stepPlanes) {
         performer.setStepHandPlane(entry.step, entry.hand, entry.plane);
       }

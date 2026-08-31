@@ -6,14 +6,14 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 
 export interface StepProperties {
   step: number;
-  blueMotionType: string;
-  redMotionType: string;
-  blueRotDir: string;
-  redRotDir: string;
-  blueStartLoc: string;
-  redStartLoc: string;
-  blueEndLoc: string;
-  redEndLoc: string;
+  leftMotionType: string;
+  rightMotionType: string;
+  leftRotDir: string;
+  rightRotDir: string;
+  leftStartLoc: string;
+  rightStartLoc: string;
+  leftEndLoc: string;
+  rightEndLoc: string;
   timing: string;
   letterType: string;
   letter: string;
@@ -73,19 +73,19 @@ function allSame(values: string[]): boolean {
 function extractBeatProperties(
   rawStep: Record<string, unknown>
 ): StepProperties {
-  const blue = (rawStep.blueAttributes as Record<string, unknown>) || {};
-  const red = (rawStep.redAttributes as Record<string, unknown>) || {};
+  const left = (rawStep.leftAttributes as Record<string, unknown>) || {};
+  const right = (rawStep.rightAttributes as Record<string, unknown>) || {};
 
   return {
     step: (rawStep.beat as number) || 0,
-    blueMotionType: (blue.motionType as string) || "unknown",
-    redMotionType: (red.motionType as string) || "unknown",
-    blueRotDir: (blue.propRotDir as string) || "unknown",
-    redRotDir: (red.propRotDir as string) || "unknown",
-    blueStartLoc: (blue.startLoc as string) || "unknown",
-    redStartLoc: (red.startLoc as string) || "unknown",
-    blueEndLoc: (blue.endLoc as string) || "unknown",
-    redEndLoc: (red.endLoc as string) || "unknown",
+    leftMotionType: (left.motionType as string) || "unknown",
+    rightMotionType: (right.motionType as string) || "unknown",
+    leftRotDir: (left.propRotDir as string) || "unknown",
+    rightRotDir: (right.propRotDir as string) || "unknown",
+    leftStartLoc: (left.startLoc as string) || "unknown",
+    rightStartLoc: (right.startLoc as string) || "unknown",
+    leftEndLoc: (left.endLoc as string) || "unknown",
+    rightEndLoc: (right.endLoc as string) || "unknown",
     timing: (rawStep.timing as string) || "none",
     letterType: (rawStep.letterType as string) || "unknown",
     letter: (rawStep.letter as string) || "",

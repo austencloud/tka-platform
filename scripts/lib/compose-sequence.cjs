@@ -272,8 +272,8 @@ function extractSoloProp(sequence, color) {
 function extractStepPairings(sequence) {
   return sequence.steps.map((step) => ({
     letter: step.letter ?? null,
-    blueReversal: step.blueReversal ?? false,
-    redReversal: step.redReversal ?? false,
+    leftReversal: step.leftReversal ?? false,
+    rightReversal: step.rightReversal ?? false,
     startPosition: step.startPosition ?? null,
     endPosition: step.endPosition ?? null,
   }));
@@ -300,16 +300,16 @@ function decomposeSequence(sequence) {
     return null;
   }
 
-  const blueSoloProp = extractSoloProp(sequence, "blue");
-  const redSoloProp = extractSoloProp(sequence, "red");
+  const leftSoloProp = extractSoloProp(sequence, "blue");
+  const rightSoloProp = extractSoloProp(sequence, "red");
   const stepPairings = extractStepPairings(sequence);
 
   return {
-    blueSoloProp,
-    redSoloProp,
+    leftSoloProp,
+    rightSoloProp,
     stepPairings,
-    blueSoloHash: blueSoloProp.contentHash,
-    redSoloHash: redSoloProp.contentHash,
+    leftSoloHash: leftSoloProp.contentHash,
+    rightSoloHash: rightSoloProp.contentHash,
   };
 }
 

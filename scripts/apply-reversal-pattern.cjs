@@ -96,10 +96,10 @@ function getReversalFlagsForBeat(patternSequence, beatIndex) {
   const symbol = patternSequence[beatIndex % patternSequence.length];
 
   switch (symbol) {
-    case "P": return { blueReversal: true,  redReversal: true  };
-    case "R": return { blueReversal: false, redReversal: true  };
-    case "B": return { blueReversal: true,  redReversal: false };
-    case "-": return { blueReversal: false, redReversal: false };
+    case "P": return { leftReversal: true,  rightReversal: true  };
+    case "R": return { leftReversal: false, rightReversal: true  };
+    case "B": return { leftReversal: true,  rightReversal: false };
+    case "-": return { leftReversal: false, rightReversal: false };
     default:
       throw new Error(
         `Unknown reversal symbol "${symbol}" at position ${beatIndex % patternSequence.length} ` +
@@ -139,19 +139,19 @@ function applyReversalPattern(steps, patternId) {
   // stored reversal flag still marks the toggle beat (the spin-change), which is
   // what the detector re-derives. Absolute per-beat flipping made book/PPPP
   // uniform-anti, which the detector reads back as "continuous".
-  let blueParity = false;
-  let redParity = false;
+  let leftParity = false;
+  let rightParity = false;
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
-    const { blueReversal, redReversal } = getReversalFlagsForBeat(pattern.sequence, i);
+    const { leftReversal, rightReversal } = getReversalFlagsForBeat(pattern.sequence, i);
 
-    if (blueReversal) blueParity = !blueParity;
-    if (redReversal)  redParity  = !redParity;
+    if (leftReversal) leftParity = !leftParity;
+    if (rightReversal)  rightParity  = !rightParity;
 
-    step.blueReversal = blueReversal;
-    step.redReversal  = redReversal;
-    step.blueMotionType = applyReversalToMotion(step.blueMotionType, blueParity);
-    step.redMotionType  = applyReversalToMotion(step.redMotionType,  redParity);
+    step.leftReversal = leftReversal;
+    step.rightReversal  = rightReversal;
+    step.leftMotionType = applyReversalToMotion(step.leftMotionType, leftParity);
+    step.rightMotionType  = applyReversalToMotion(step.rightMotionType,  rightParity);
   }
 
   return steps;

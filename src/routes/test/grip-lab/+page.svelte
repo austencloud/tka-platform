@@ -1350,8 +1350,8 @@
           {redPropState}
           visiblePlanes={new Set([Plane.WALL])}
           gridMode="diamond"
-          bluePropType={toScenePropType(PropType.STAFF)}
-          redPropType={toScenePropType(PropType.STAFF)}
+          leftPropType={toScenePropType(PropType.STAFF)}
+          rightPropType={toScenePropType(PropType.STAFF)}
           {groundOffset}
           enableLocomotion={true}
           enableFootPlanting={true}

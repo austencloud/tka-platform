@@ -67,8 +67,8 @@ export interface GridCell {
   tipEffectMap?: TipEffectMap;
   /** Per-tip effort assignments that override the global TipEffortMap for this cell */
   tipEffortMap?: TipEffortMap;
-  blueMotionVisible?: boolean;
-  redMotionVisible?: boolean;
+  leftMotionVisible?: boolean;
+  rightMotionVisible?: boolean;
 }
 
 /**
@@ -697,9 +697,9 @@ function createArrangeGridState() {
       withUndo("SET_CELL_VISIBILITY" as ArrangeUndoOperationType, label, () => {
         const newCells = [...cells];
         if (color === 'blue') {
-          newCells[cellIndex] = { ...cell, blueMotionVisible: visible };
+          newCells[cellIndex] = { ...cell, leftMotionVisible: visible };
         } else {
-          newCells[cellIndex] = { ...cell, redMotionVisible: visible };
+          newCells[cellIndex] = { ...cell, rightMotionVisible: visible };
         }
         cells = newCells;
         save();

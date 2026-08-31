@@ -4,12 +4,12 @@ import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 // Minimal step shape the filter reads: motions.blue/red.turns + isBlank.
-function step(blueTurns: number | "fl", redTurns: number | "fl", isBlank = false) {
+function step(leftTurns: number | "fl", rightTurns: number | "fl", isBlank = false) {
   return {
     isBlank,
     motions: {
-      blue: { turns: blueTurns },
-      red: { turns: redTurns },
+      left: { turns: leftTurns },
+      right: { turns: rightTurns },
     },
   };
 }

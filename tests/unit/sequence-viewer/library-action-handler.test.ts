@@ -84,8 +84,8 @@ function makeHandler() {
   const handler = createLibraryActionHandler({
     getSequence: () => sequence as never,
     getIsOwned: () => true,
-    getBluePropType: () => undefined,
-    getRedPropType: () => undefined,
+    getLeftPropType: () => undefined,
+    getRightPropType: () => undefined,
     getCatDogModeEnabled: () => false,
     getHapticService: () => ({ trigger: vi.fn() }) as never,
     onDeleteSuccess: vi.fn(),

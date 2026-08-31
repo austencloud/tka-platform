@@ -36,7 +36,7 @@
   import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -73,7 +73,7 @@
     letter: null,
     gridMode: GridMode.DIAMOND,
     motions: {
-      red: createMotionData({
+      right: createMotionData({
         motionType: type,
         rotationDirection: rot,
         startLocation: from,
@@ -81,7 +81,7 @@
         startOrientation: startOri,
         endOrientation: endOri,
         turns,
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
@@ -90,7 +90,7 @@
   const stat = (id: string, loc: GridLocation, ori: Orientation) =>
     redStaff(id, MotionType.STATIC, loc, loc, ori, ori, NOROT);
   /** Motion → the HalfwayMotion shape poseAt/poseArrow (PoseFrame) expect. */
-  const toHM = (m: ReturnType<typeof redStaff>["motions"]["red"]): HalfwayMotion => ({
+  const toHM = (m: ReturnType<typeof redStaff>["motions"]["right"]): HalfwayMotion => ({
     type: m.motionType,
     from: m.startLocation,
     to: m.endLocation,
@@ -118,8 +118,8 @@
       id: `${data.id}-anim-${stepNumber}`,
       stepNumber,
       motions: {
-        blue: createPlaceholderMotion(MotionColor.BLUE, { location: startLoc, orientation: IN }),
-        red: data.motions.red,
+        left: createPlaceholderMotion(HandSide.LEFT, { location: startLoc, orientation: IN }),
+        right: data.motions.right,
       },
     }) as unknown as StepData;
   const rowSteps = (key: string): StepData[] => {
@@ -144,7 +144,7 @@
   type Frame = { left: number; frameLabel?: string; thumbLabel?: string; render: FrameRender };
   type Strip = { y: number; size: number; capY: number; thumbY: number; frames: Frame[] };
 
-  const dashQHM = toHM(dashQCombined.motions.red);
+  const dashQHM = toHM(dashQCombined.motions.right);
   const dashQuarters: Strip = {
     y: 158,
     size: 74,
@@ -155,7 +155,7 @@
       { left: 121, render: { kind: "pose", motion: dashQHM, t: 0.25, arrowStart: 0 } },
       { left: 221, frameLabel: "halfway", render: { kind: "half", combined: dashQCombined, half: halfOf(dashQCombined, SO_) } },
       { left: 321, render: { kind: "pose", motion: dashQHM, t: 0.75, arrowStart: 0.5 } },
-      { left: 421, frameLabel: "end", thumbLabel: "out", render: { kind: "end", loc: N, ori: dashQCombined.motions.red.endOrientation } },
+      { left: 421, frameLabel: "end", thumbLabel: "out", render: { kind: "end", loc: N, ori: dashQCombined.motions.right.endOrientation } },
       { left: 523, render: { kind: "combined", animKey: "l2tds-dash-q" } },
     ],
   };
@@ -167,7 +167,7 @@
     frames: [
       { left: 86, frameLabel: "start", thumbLabel: "in", render: { kind: "start", loc: SO_, ori: IN } },
       { left: 206, frameLabel: "halfway", render: { kind: "half", combined: dashHCombined, half: halfOf(dashHCombined, SO_) } },
-      { left: 326, frameLabel: "end", thumbLabel: "out", render: { kind: "end", loc: N, ori: dashHCombined.motions.red.endOrientation } },
+      { left: 326, frameLabel: "end", thumbLabel: "out", render: { kind: "end", loc: N, ori: dashHCombined.motions.right.endOrientation } },
       { left: 446, render: { kind: "combined", animKey: "l2tds-dash-h" } },
     ],
   };
@@ -179,7 +179,7 @@
     frames: [
       { left: 95, frameLabel: "start", thumbLabel: "in", render: { kind: "start", loc: E, ori: IN } },
       { left: 215, frameLabel: "halfway", thumbLabel: "out", render: { kind: "half", combined: staticCombined, half: halfOf(staticCombined, E) } },
-      { left: 335, frameLabel: "end", thumbLabel: "in", render: { kind: "end", loc: E, ori: staticCombined.motions.red.endOrientation } },
+      { left: 335, frameLabel: "end", thumbLabel: "in", render: { kind: "end", loc: E, ori: staticCombined.motions.right.endOrientation } },
       { left: 455, render: { kind: "combined", animKey: "l2tds-static" } },
     ],
   };
@@ -276,8 +276,8 @@
           <PictographContainer
             pictographData={{ ...animStep(ANIM[animKey].data, 1, ANIM[animKey].startLoc), stepNumber: undefined } as unknown as StepData}
             gridMode={GridMode.DIAMOND}
-            redPropTypeOverride={PropType.STAFF}
-            bluePropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
+            leftPropTypeOverride={PropType.STAFF}
             {...PICTO_FLAGS}
           />
           <SelectionHit
@@ -290,9 +290,9 @@
       {:else if r.kind === "half"}
         <div class="mini" style="left:{frame.left * S}px; top:{strip.y * S}px; width:{strip.size * S}px; height:{strip.size * S}px">
           {#if r.half}
-            <PictographContainer pictographData={r.half} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} bluePropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+            <PictographContainer pictographData={r.half} gridMode={GridMode.DIAMOND} rightPropTypeOverride={PropType.STAFF} leftPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
           {:else}
-            <PoseFrame motion={toHM(r.combined.motions.red)} t={0.5} arrow={{ tStart: 0, tEnd: 0.5 }} />
+            <PoseFrame motion={toHM(r.combined.motions.right)} t={0.5} arrow={{ tStart: 0, tEnd: 0.5 }} />
           {/if}
         </div>
       {:else if r.kind === "pose"}
@@ -301,7 +301,7 @@
         </div>
       {:else}
         <div class="mini" style="left:{frame.left * S}px; top:{strip.y * S}px; width:{strip.size * S}px; height:{strip.size * S}px">
-          <PictographContainer pictographData={stat(`p23-${si}-${fi}`, r.loc, r.ori)} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} showArrow={false} {...PICTO_FLAGS} />
+          <PictographContainer pictographData={stat(`p23-${si}-${fi}`, r.loc, r.ori)} gridMode={GridMode.DIAMOND} rightPropTypeOverride={PropType.STAFF} showArrow={false} {...PICTO_FLAGS} />
         </div>
       {/if}
       {#if frame.frameLabel}

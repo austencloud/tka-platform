@@ -52,7 +52,7 @@ const OUTPUT_DIR = path.join(__dirname, '..', 'static', 'images', 'grant-feature
       id: `pictograph-${letter}`,
       letter: letter,
       motions: {
-        blue: {
+        left: {
           motionType: row[headers.indexOf('blueMotionType')],
           rotationDirection: row[headers.indexOf('blueRotationDirection')],
           startLocation: row[headers.indexOf('blueStartLocation')],
@@ -63,7 +63,7 @@ const OUTPUT_DIR = path.join(__dirname, '..', 'static', 'images', 'grant-feature
           propType: 'staff',
           propPlacementData: { propType: 'staff' }
         },
-        red: {
+        right: {
           motionType: row[headers.indexOf('redMotionType')],
           rotationDirection: row[headers.indexOf('redRotationDirection')],
           startLocation: row[headers.indexOf('redStartLocation')],

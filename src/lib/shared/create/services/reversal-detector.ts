@@ -23,6 +23,7 @@ import { deriveReversals } from "@tka/sequence-engine";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { getEffectiveRotationDirection } from "$lib/shared/pictograph/shared/domain/utils/effective-rotation-direction";
 
@@ -30,13 +31,13 @@ import { getEffectiveRotationDirection } from "$lib/shared/pictograph/shared/dom
  * Reversal Detection Service Contract
  */
 export interface ReversalInfo {
-  blueReversal: boolean;
-  redReversal: boolean;
+  leftReversal: boolean;
+  rightReversal: boolean;
 }
 
 export interface PictographWithReversals extends PictographData {
-  blueReversal: boolean;
-  redReversal: boolean;
+  leftReversal: boolean;
+  rightReversal: boolean;
 }
 
 /**
@@ -59,8 +60,8 @@ export function processReversals(sequence: SequenceData): SequenceData {
 
   const processedSteps = sequence.steps.map((step, i) =>
     applyReversalSymbols(step, {
-      blueReversal: flags[i]?.blue.propReversal ?? false,
-      redReversal: flags[i]?.red.propReversal ?? false,
+      leftReversal: flags[i]?.left.propReversal ?? false,
+      rightReversal: flags[i]?.right.propReversal ?? false,
     })
   );
 
@@ -81,8 +82,8 @@ export function detectReversal(
   const flags = deriveReversals([...previousSteps, currentStep]);
   const last = flags[flags.length - 1];
   return {
-    blueReversal: last?.blue.propReversal ?? false,
-    redReversal: last?.red.propReversal ?? false,
+    leftReversal: last?.left.propReversal ?? false,
+    rightReversal: last?.right.propReversal ?? false,
   };
 }
 
@@ -95,8 +96,8 @@ export function applyReversalSymbols(
 ): StepData {
   return createStepData({
     ...stepData,
-    blueReversal: reversalInfo.blueReversal,
-    redReversal: reversalInfo.redReversal,
+    leftReversal: reversalInfo.leftReversal,
+    rightReversal: reversalInfo.rightReversal,
   });
 }
 
@@ -110,8 +111,8 @@ export function detectReversalForOption(
   optionPictographData: PictographData
 ): ReversalInfo {
   const reversalInfo: ReversalInfo = {
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
   };
 
   if (!optionPictographData.motions) {
@@ -123,13 +124,13 @@ export function detectReversalForOption(
     return reversalInfo;
   }
 
-  reversalInfo.blueReversal = propFlips(
-    lastActivePropDir(currentSequence, "blue"),
-    optionPictographData.motions.blue
+  reversalInfo.leftReversal = propFlips(
+    lastActivePropDir(currentSequence, HandSide.LEFT),
+    optionPictographData.motions.left
   );
-  reversalInfo.redReversal = propFlips(
-    lastActivePropDir(currentSequence, "red"),
-    optionPictographData.motions.red
+  reversalInfo.rightReversal = propFlips(
+    lastActivePropDir(currentSequence, HandSide.RIGHT),
+    optionPictographData.motions.right
   );
 
   return reversalInfo;
@@ -147,23 +148,23 @@ export function detectReversalsForOptions(
   if (currentSequence.length === 0) {
     return options.map((option) => ({
       ...option,
-      blueReversal: false,
-      redReversal: false,
+      leftReversal: false,
+      rightReversal: false,
     }));
   }
 
   // Anchor once for the whole option set.
-  const blueAnchor = lastActivePropDir(currentSequence, "blue");
-  const redAnchor = lastActivePropDir(currentSequence, "red");
+  const leftAnchor = lastActivePropDir(currentSequence, HandSide.LEFT);
+  const rightAnchor = lastActivePropDir(currentSequence, HandSide.RIGHT);
 
   return options.map((option) => {
     if (!option.motions) {
-      return { ...option, blueReversal: false, redReversal: false };
+      return { ...option, leftReversal: false, rightReversal: false };
     }
     return {
       ...option,
-      blueReversal: propFlips(blueAnchor, option.motions.blue),
-      redReversal: propFlips(redAnchor, option.motions.red),
+      leftReversal: propFlips(leftAnchor, option.motions.left),
+      rightReversal: propFlips(rightAnchor, option.motions.right),
     };
   });
 }
@@ -179,8 +180,8 @@ interface MotionLike {
 interface SignalCarrier {
   readonly isBlank?: boolean;
   readonly motions?: {
-    readonly blue?: MotionLike | null;
-    readonly red?: MotionLike | null;
+    readonly left?: MotionLike | null;
+    readonly right?: MotionLike | null;
   } | null;
 }
 
@@ -208,12 +209,12 @@ function propDirOf(motion: MotionLike | null | undefined): string | null {
  */
 function lastActivePropDir(
   items: readonly SignalCarrier[],
-  color: "blue" | "red"
+  hand: HandSide
 ): string | null {
   for (let i = items.length - 1; i >= 0; i--) {
     const item = items[i];
     if (!item || item.isBlank) continue;
-    const motion = item.motions?.[color];
+    const motion = item.motions?.[hand];
     if (!motion) continue;
     const dir = propDirOf(motion);
     if (dir && dir !== "noRotation") return dir;

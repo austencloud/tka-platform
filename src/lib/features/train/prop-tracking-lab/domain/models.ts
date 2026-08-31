@@ -67,8 +67,8 @@ export interface DetectedKeyframe {
 	timestamp: number;
 	/** Hand positions at this keyframe (in TKA grid coordinates) */
 	handPositions: {
-		blue: GridLocation | null;
-		red: GridLocation | null;
+		left: GridLocation | null;
+		right: GridLocation | null;
 	};
 	/** Prop angle at this keyframe */
 	propAngle: number;

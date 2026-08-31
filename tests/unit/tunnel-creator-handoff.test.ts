@@ -34,15 +34,15 @@ const snapshot = {
   paths: {
     pathShape: "concave",
     motionAwarePaths: true,
-    bluePathLines: true,
-    redPathLines: false,
+    leftPathLines: true,
+    rightPathLines: false,
   },
   playback: { bpm: 132, playbackMode: "step" },
   props: {
-    bluePropType: "buugeng",
-    redPropType: "buugeng",
-    blueBuugengFlipped: true,
-    redBuugengFlipped: false,
+    leftPropType: "buugeng",
+    rightPropType: "buugeng",
+    leftBuugengFlipped: true,
+    rightBuugengFlipped: false,
   },
   trailRender: { mode: "trail", tailLength: 48 },
 };

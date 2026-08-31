@@ -30,8 +30,8 @@ describe("Ghost preset review candidates", () => {
   it("resolves every candidate to a complete, bounded Ghost intent", () => {
     for (const preset of GHOST_REVIEW_PRESETS) {
       const intent = resolveGhostReviewIntent(preset);
-      expect(intent.blueColor).toMatch(/^#[0-9a-f]{6}$/i);
-      expect(intent.redColor).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(intent.leftColor).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(intent.rightColor).toMatch(/^#[0-9a-f]{6}$/i);
       expect(intent.intensity).toBeGreaterThanOrEqual(0);
       expect(intent.intensity).toBeLessThanOrEqual(1);
       expect(intent.decay).toBeGreaterThanOrEqual(1);

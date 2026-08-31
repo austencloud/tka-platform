@@ -21,8 +21,8 @@
 
   const { state: fuseState } = getFuseContext();
   let open = $state(false);
-  const source = $derived(side === "blue" ? fuseState.blue : fuseState.red);
-  const label = $derived(side === "blue" ? "Blue" : "Red");
+  const source = $derived(side === "left" ? fuseState.left : fuseState.right);
+  const label = $derived(side === "left" ? "Left" : "Right");
   const isTransforming = $derived(fuseState.pendingSide === side);
   const canShiftStart = $derived((source.sequence?.steps.length ?? 0) > 1);
 

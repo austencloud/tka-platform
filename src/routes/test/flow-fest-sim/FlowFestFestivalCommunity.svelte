@@ -94,8 +94,8 @@
       <Avatar3D
         id={`flow-fest-${person.id}`}
         characterId={person.avatarId}
-        bluePropState={null}
-        redPropState={null}
+        leftPropState={null}
+        rightPropState={null}
         visible={true}
         isActive={false}
         position={{ x: living.x, y: living.y, z: living.z }}

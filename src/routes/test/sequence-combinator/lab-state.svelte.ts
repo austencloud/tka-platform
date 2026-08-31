@@ -218,7 +218,7 @@ function parseCard(text: string, slot: SlotId): SequenceData {
         `${label} is missing startPosition/endPosition — the engine walks on seams.`
       );
     }
-    if (!step.motions?.blue || !step.motions?.red) {
+    if (!step.motions?.left || !step.motions?.right) {
       throw new Error(`${label} is missing a blue or red motion.`);
     }
     // Rebuilt, never passed through. A duplicated step in the paste (a common

@@ -17,7 +17,7 @@
   import { cubicOut } from "svelte/easing";
   import { propSvgLoader } from "$lib/shared/pictograph/prop/services/prop-svg-loader";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import type { PropPlacementData } from "$lib/shared/pictograph/prop/domain/models/prop-placement-data";
   import LessonGridDisplay from "$lib/shared/pictograph/grid/components/LessonGridDisplay.svelte";
@@ -59,10 +59,10 @@
   ];
   // Canonical bases (blue,red): blue anchors south, red animates N → S → E.
   //   alpha1 = blue S, red N | beta5 = blue S, red S | gamma11 = blue S, red E
-  const BASE: Record<PosKind, { red: number; blue: number }> = {
-    alpha: { red: 0, blue: 4 },
-    beta: { red: 4, blue: 4 },
-    gamma: { red: 2, blue: 4 },
+  const BASE: Record<PosKind, { right: number; left: number }> = {
+    alpha: { right: 0, left: 4 },
+    beta: { right: 4, left: 4 },
+    gamma: { right: 2, left: 4 },
   };
 
   // Canonical letter glyph, bottom-left at x=50 y=800 in the 950 space (per TKAGlyph).
@@ -74,28 +74,28 @@
 
   // Hands from explicit current point indices. Transforms mutate these directly
   // (one-shot algebra), so rotation stays clockwise no matter what came before.
-  function handsFor(kind: PosKind, redIdx: number, blueIdx: number) {
-    const rp = PTS[redIdx]!;
-    let red: Pt = rp;
-    let blue: Pt = PTS[blueIdx]!;
+  function handsFor(kind: PosKind, rightIdx, leftIdx) {
+    const rp = PTS[rightIdx]!;
+    let right = rp;
+    let left = PTS[leftIdx]!;
     if (kind === "beta") {
-      red = { x: rp.x + BETA_DX, y: rp.y };
-      blue = { x: rp.x - BETA_DX, y: rp.y };
+      right = { x: rp.x + BETA_DX, y: rp.y };
+      left = { x: rp.x - BETA_DX, y: rp.y };
     }
     // discovery identity + variation count:
     //  alpha = 4 pairs × 2 colorings, beta = 8 points → 8; gamma = 8 pairs × 2 → 16.
     let cell: number, total: number;
     if (kind === "gamma") {
-      const diff = wrap8(blueIdx - redIdx); // 2 (red leads) or 6 (blue leads)
-      cell = redIdx + (diff === 2 ? 0 : 8);
+      const diff = wrap8(leftIdx - rightIdx); // 2 (red leads) or 6 (blue leads)
+      cell = rightIdx + (diff === 2 ? 0 : 8);
       total = 16;
     } else {
-      cell = redIdx;
+      cell = rightIdx;
       total = 8;
     }
-    return { red, blue, diamond: isDiamondPt(redIdx), cell, total };
+    return { right, left, diamond: isDiamondPt(rightIdx), cell, total };
   }
-  const baseHands = (kind: PosKind) => handsFor(kind, BASE[kind].red, BASE[kind].blue);
+  const baseHands = (kind: PosKind) => handsFor(kind, BASE[kind].right, BASE[kind].left);
 
   const COMPARE = steps.length; // index of the compare-row stage
   const TOTAL = steps.length + 1;
@@ -113,10 +113,10 @@
   let figureEls = $state<(HTMLElement | undefined)[]>([]);
   let stackOriginLeft = 0;
 
-  let redHand = $state<SvgData | null>(null);
-  let blueHand = $state<SvgData | null>(null);
+  let rightHand = $state<SvgData | null>(null);
+  let leftHand = $state<SvgData | null>(null);
 
-  async function loadHand(color: MotionColor): Promise<SvgData | null> {
+  async function loadHand(color: HandSide): Promise<SvgData | null> {
     const motionData = { propType: PropType.HAND, color } as unknown as MotionData;
     const propData = {
       positionX: 0, positionY: 0, rotationAngle: 0,
@@ -128,7 +128,7 @@
   }
 
   onMount(async () => {
-    [redHand, blueHand] = await Promise.all([loadHand(MotionColor.RED), loadHand(MotionColor.BLUE)]);
+    [rightHand, leftHand] = await Promise.all([loadHand(HandSide.RIGHT), loadHand(HandSide.LEFT)]);
   });
 
   function prefersReduced() {
@@ -173,8 +173,8 @@
 
   // ---- transform playground: tap a position → prove invariance ----
   let focus = $state<number | null>(null);
-  let redIdx = $state(0);
-  let blueIdx = $state(0);
+  let rightIdx = $state(0);
+  let leftIdx = $state(0);
   let visited = $state<Set<number>>(new Set());
   let lastAction = $state("");
   // playground opens on an intro beat (explains the 3 transforms) before the buttons
@@ -192,7 +192,7 @@
   });
 
   const focusStep = $derived(focus === null ? null : steps[focus]);
-  const focusHands = $derived(focusStep ? handsFor(focusStep.kind, redIdx, blueIdx) : null);
+  const focusHands = $derived(focusStep ? handsFor(focusStep.kind, rightIdx, leftIdx) : null);
   const currentCell = $derived(focusHands ? focusHands.cell : 0);
   const focusTotal = $derived(focusHands ? focusHands.total : 8);
 
@@ -206,26 +206,26 @@
     if (focus === idx) { focus = null; return; }
     focus = idx;
     const k = steps[idx]!.kind;
-    redIdx = BASE[k].red; blueIdx = BASE[k].blue;
+    rightIdx = BASE[k].right; leftIdx = BASE[k].left;
     visited = new Set();
     lastAction = "";
     phase = "intro";
   }
   function doRotate() {
-    redIdx = wrap8(redIdx + 1); blueIdx = wrap8(blueIdx + 1);
+    rightIdx = wrap8(rightIdx + 1); leftIdx = wrap8(leftIdx + 1);
     lastAction = `Rotated clockwise, still ${steps[focus!]!.name}.`;
   }
   function doMirror() {
-    const nr = wrap8(8 - redIdx), nb = wrap8(8 - blueIdx);
-    const noChange = nr === redIdx && nb === blueIdx;
-    redIdx = nr; blueIdx = nb;
+    const nr = wrap8(8 - rightIdx), nb = wrap8(8 - leftIdx);
+    const noChange = nr === rightIdx && nb === leftIdx;
+    rightIdx = nr; leftIdx = nb;
     lastAction = noChange
       ? `Mirror does nothing here. This one's symmetric. Still ${steps[focus!]!.name}.`
       : `Mirrored, still ${steps[focus!]!.name}.`;
   }
   function doSwap() {
-    const noChange = redIdx === blueIdx;
-    [redIdx, blueIdx] = [blueIdx, redIdx];
+    const noChange = rightIdx === leftIdx;
+    [rightIdx, leftIdx] = [leftIdx, rightIdx];
     lastAction = noChange
       ? `Swap does nothing here. Both hands share a point. Still ${steps[focus!]!.name}.`
       : `Swapped colors, still ${steps[focus!]!.name}.`;
@@ -286,8 +286,8 @@
   </div>
   <svg class="card-hands" viewBox="0 0 950 950" aria-hidden="true">
     {@render letterGlyph(s.kind)}
-    {#if redHand}{@render hand(redHand, b.red, true)}{/if}
-    {#if blueHand}{@render hand(blueHand, b.blue, false)}{/if}
+    {#if rightHand}{@render hand(rightHand, b.right, true)}{/if}
+    {#if leftHand}{@render hand(leftHand, b.left, false)}{/if}
   </svg>
 {/snippet}
 
@@ -339,8 +339,8 @@
               </div>
               <svg class="hand-layer" viewBox="0 0 950 950" aria-hidden="true">
                 {@render letterGlyph(focusStep.kind)}
-                {#if redHand}{@render hand(redHand, focusHands.red, true)}{/if}
-                {#if blueHand}{@render hand(blueHand, focusHands.blue, false)}{/if}
+                {#if rightHand}{@render hand(rightHand, focusHands.right, true)}{/if}
+                {#if leftHand}{@render hand(leftHand, focusHands.left, false)}{/if}
               </svg>
             </div>
 
@@ -386,8 +386,8 @@
           </div>
           <svg class="hand-layer" viewBox="0 0 950 950" aria-hidden="true">
             {@render letterGlyph(step.kind)}
-            {#if redHand}{@render hand(redHand, hb.red, true)}{/if}
-            {#if blueHand}{@render hand(blueHand, hb.blue, false)}{/if}
+            {#if rightHand}{@render hand(rightHand, hb.right, true)}{/if}
+            {#if leftHand}{@render hand(leftHand, hb.left, false)}{/if}
           </svg>
         </div>
 

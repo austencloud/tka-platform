@@ -72,7 +72,7 @@ interface FixtureStep {
   letter: string | null;
   startPosition: string;
   endPosition: string;
-  motions: { blue: FixtureMotion; red: FixtureMotion };
+  motions: { left: FixtureMotion; right: FixtureMotion };
 }
 
 interface FixtureSample {
@@ -109,8 +109,8 @@ function toSequenceData(sample: FixtureSample): SequenceData {
       startPosition: s.startPosition,
       endPosition: s.endPosition,
       motions: {
-        blue: { ...s.motions.blue, color: "blue" },
-        red: { ...s.motions.red, color: "red" },
+        left: { ...s.motions.left, color: "blue" },
+        right: { ...s.motions.right, color: "red" },
       },
     }));
 
@@ -139,17 +139,17 @@ function toSequenceEntry(sample: FixtureSample): SequenceEntry {
         letter: s.letter ?? "",
         startPos: s.startPosition,
         endPos: s.endPosition,
-        blueAttributes: {
-          motionType: s.motions.blue.motionType,
-          startLoc: s.motions.blue.startLocation,
-          endLoc: s.motions.blue.endLocation,
-          propRotDir: s.motions.blue.rotationDirection,
+        leftAttributes: {
+          motionType: s.motions.left.motionType,
+          startLoc: s.motions.left.startLocation,
+          endLoc: s.motions.left.endLocation,
+          propRotDir: s.motions.left.rotationDirection,
         },
-        redAttributes: {
-          motionType: s.motions.red.motionType,
-          startLoc: s.motions.red.startLocation,
-          endLoc: s.motions.red.endLocation,
-          propRotDir: s.motions.red.rotationDirection,
+        rightAttributes: {
+          motionType: s.motions.right.motionType,
+          startLoc: s.motions.right.startLocation,
+          endLoc: s.motions.right.endLocation,
+          propRotDir: s.motions.right.rotationDirection,
         },
       })),
   ];
@@ -196,8 +196,8 @@ function functionalComponents(sample: FixtureSample): string[] {
 
 function engineClassComponents(sample: FixtureSample): string[] {
   const r = loopDetectorClass.detectLOOPType(toEngineSteps(sample) as never);
-  if (!r.spec?.blue) return [];
-  return normalize([...r.spec.blue.components.keys()].map(String));
+  if (!r.spec?.left) return [];
+  return normalize([...r.spec.left.components.keys()].map(String));
 }
 
 function appClassComponents(sample: FixtureSample): string[] {

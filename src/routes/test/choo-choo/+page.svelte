@@ -210,8 +210,8 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
       {:else if selectedSequence}
         <div class="animation-container">
           <AnimatorCanvas
-            blueProp={animationState.bluePropState}
-            redProp={animationState.redPropState}
+            leftProp={animationState.leftPropState}
+            rightProp={animationState.rightPropState}
             gridVisible={true}
             gridMode={animationState.sequenceData?.gridMode ?? null}
             letter={currentLetter}

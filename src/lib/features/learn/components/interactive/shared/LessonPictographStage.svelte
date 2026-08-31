@@ -96,8 +96,8 @@
         showPositions={false}
         showNonRadialPoints={false}
         showHandPoints
-        bluePropTypeOverride={PropType.STAFF}
-        redPropTypeOverride={PropType.STAFF}
+        leftPropTypeOverride={PropType.STAFF}
+        rightPropTypeOverride={PropType.STAFF}
         {motionStartData}
         motionProgress={progress}
         arrowOpacity={progress === null ? 1 : progress}

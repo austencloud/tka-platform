@@ -76,17 +76,17 @@ Uses organizer and sizer services for section grouping and sizing.
     onSlotClicked?: (typeSection: string, slotIndex: number) => void;
     lastClickedSlot?: { typeSection: string; slotIndex: number } | null;
     // Pending turns bar
-    blueTurns: TurnValue;
-    redTurns: TurnValue;
+    leftTurns: TurnValue;
+    rightTurns: TurnValue;
     /** Working level — gates the header's turn palette. */
     level: TurnLevel;
     onLevelChange: (level: TurnLevel) => void;
-    blueRotation: RotationDirection;
-    redRotation: RotationDirection;
-    onBlueTurnsChange: (value: TurnValue) => void;
-    onRedTurnsChange: (value: TurnValue) => void;
-    onBlueRotationChange: (dir: RotationDirection) => void;
-    onRedRotationChange: (dir: RotationDirection) => void;
+    leftRotation: RotationDirection;
+    rightRotation: RotationDirection;
+    onLeftTurnsChange: (value: TurnValue) => void;
+    onRightTurnsChange: (value: TurnValue) => void;
+    onLeftRotationChange: (dir: RotationDirection) => void;
+    onRightRotationChange: (dir: RotationDirection) => void;
     showInteractionHint?: boolean;
   }
 
@@ -103,16 +103,16 @@ Uses organizer and sizer services for section grouping and sizing.
     currentSequence = [],
     onSlotClicked,
     lastClickedSlot = null,
-    blueTurns,
-    redTurns,
+    leftTurns,
+    rightTurns,
     level,
     onLevelChange,
-    blueRotation,
-    redRotation,
-    onBlueTurnsChange,
-    onRedTurnsChange,
-    onBlueRotationChange,
-    onRedRotationChange,
+    leftRotation,
+    rightRotation,
+    onLeftTurnsChange,
+    onRightTurnsChange,
+    onLeftRotationChange,
+    onRightRotationChange,
     showInteractionHint = true,
   }: Props = $props();
   const createContext = tryGetCreateModuleContext();
@@ -496,16 +496,16 @@ Uses organizer and sizer services for section grouping and sizing.
             showTurnControls={turnControlsEditable}
             {isContinuousOnly}
             {onToggleContinuous}
-            {blueTurns}
-            {redTurns}
+            {leftTurns}
+            {rightTurns}
             {level}
             {onLevelChange}
-            {blueRotation}
-            {redRotation}
-            onBlueChange={onBlueTurnsChange}
-            onRedChange={onRedTurnsChange}
-            {onBlueRotationChange}
-            {onRedRotationChange}
+            {leftRotation}
+            {rightRotation}
+            onLeftChange={onLeftTurnsChange}
+            onRightChange={onRightTurnsChange}
+            {onLeftRotationChange}
+            {onRightRotationChange}
           />
         </div>
       {/if}
@@ -520,16 +520,16 @@ Uses organizer and sizer services for section grouping and sizing.
             showTurnControls={turnControlsEditable}
             {isContinuousOnly}
             {onToggleContinuous}
-            {blueTurns}
-            {redTurns}
+            {leftTurns}
+            {rightTurns}
             {level}
             {onLevelChange}
-            {blueRotation}
-            {redRotation}
-            onBlueChange={onBlueTurnsChange}
-            onRedChange={onRedTurnsChange}
-            {onBlueRotationChange}
-            {onRedRotationChange}
+            {leftRotation}
+            {rightRotation}
+            onLeftChange={onLeftTurnsChange}
+            onRightChange={onRightTurnsChange}
+            {onLeftRotationChange}
+            {onRightRotationChange}
           />
         </div>
       {/if}
@@ -585,16 +585,16 @@ Uses organizer and sizer services for section grouping and sizing.
                 showTurnControls={turnControlsEditable}
                 {isContinuousOnly}
                 {onToggleContinuous}
-                {blueTurns}
-                {redTurns}
+                {leftTurns}
+                {rightTurns}
                 {level}
                 {onLevelChange}
-                {blueRotation}
-                {redRotation}
-                onBlueChange={onBlueTurnsChange}
-                onRedChange={onRedTurnsChange}
-                {onBlueRotationChange}
-                {onRedRotationChange}
+                {leftRotation}
+                {rightRotation}
+                onLeftChange={onLeftTurnsChange}
+                onRightChange={onRightTurnsChange}
+                {onLeftRotationChange}
+                {onRightRotationChange}
               />
             {/snippet}
           </OptionViewerSwipeLayout>

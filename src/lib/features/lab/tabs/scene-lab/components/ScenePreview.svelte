@@ -323,8 +323,8 @@
              come back once we confirm the basic render is stable. -->
         <Avatar3D
           id="scene-lab-player"
-          bluePropState={null}
-          redPropState={null}
+          leftPropState={null}
+          rightPropState={null}
           visible={true}
           isActive={false}
           position={player.avatarState.position}

@@ -1,14 +1,14 @@
 <!--
   HandPathBuilderLab.svelte - Hand Path Builder lab tab
 
-  Tap grid locations to draw spatial hand paths for blue and red hands.
+  Tap grid locations to draw spatial hand paths for left and right hands.
   No rotation - pure geometric paths through grid positions.
   Output: HandPathData objects saved to Firestore via HandPathRepository.
 
   Workflow:
     1. Pick a grid mode (diamond default)
-    2. Tap to build the blue hand path (min 2 points)
-    3. Switch to red, tap to build the red hand path (must match blue length)
+    2. Tap to build the left hand path (min 2 points)
+    3. Switch to right, tap to build the right hand path (must match left length)
     4. Complete → save both paths to the library
 
   Rendering: InteractiveCanvas composes AnimatorCanvas (Canvas2D) with
@@ -23,7 +23,7 @@
   import { propSvgLoader } from "$lib/shared/pictograph/prop/services/prop-svg-loader";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PropRenderData } from "$lib/shared/pictograph/prop/domain/models/prop-render-data";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { HandMove } from "./state/builder-state.svelte";
@@ -37,42 +37,42 @@
 
   const gridHandPoints = $derived(getHitTargets(builder.gridMode));
 
-  const blueAnimator = new HandPathAnimator();
-  const redAnimator = new HandPathAnimator();
+  const leftAnimator = new HandPathAnimator();
+  const rightAnimator = new HandPathAnimator();
   const ANIMATION_DURATION_MS = 350;
 
-  const blueColor = "var(--prop-blue, #2e8bf0)";
-  const redColor = "var(--prop-red, #ed1c24)";
+  const leftColor = "var(--prop-blue, #2e8bf0)";
+  const rightColor = "var(--prop-red, #ed1c24)";
 
   // Hand SVG render data (loaded on mount)
-  let blueHandData = $state<PropRenderData | null>(null);
-  let redHandData = $state<PropRenderData | null>(null);
+  let leftHandData = $state<PropRenderData | null>(null);
+  let rightHandData = $state<PropRenderData | null>(null);
 
   // Refs for animated hand SVG elements in the animation overlay
-  let activeBlueHandRef: SVGGElement | null = $state(null);
-  let activeRedHandRef: SVGGElement | null = $state(null);
+  let activeLeftHandRef = $state<SVGGElement | null>(null);
+  let activeRightHandRef = $state<SVGGElement | null>(null);
 
   // Load hand SVGs on mount
   $effect(() => {
-    const blueMotion = createMotionData({ propType: PropType.HAND, color: MotionColor.BLUE });
+    const leftMotion = createMotionData({ propType: PropType.HAND, color: HandSide.LEFT });
     propSvgLoader.loadPropSvg(
-      { positionX: 0, positionY: 0, rotationAngle: 0 }, blueMotion, false,
-    ).then(data => { blueHandData = data; }).catch(console.error);
+      { positionX: 0, positionY: 0, rotationAngle: 0 }, leftMotion, false,
+    ).then(data => { leftHandData = data; }).catch(console.error);
 
-    const redMotion = createMotionData({ propType: PropType.HAND, color: MotionColor.RED });
+    const rightMotion = createMotionData({ propType: PropType.HAND, color: HandSide.RIGHT });
     propSvgLoader.loadPropSvg(
-      { positionX: 0, positionY: 0, rotationAngle: 0 }, redMotion, false,
-    ).then(data => { redHandData = data; }).catch(console.error);
+      { positionX: 0, positionY: 0, rotationAngle: 0 }, rightMotion, false,
+    ).then(data => { rightHandData = data; }).catch(console.error);
   });
 
   // Register animation callback so builder.addLocation() can animate the hand
   $effect(() => {
     builder.setAnimationCallback(async (move: HandMove) => {
-      const handData = builder.phase === "blue" ? blueHandData : redHandData;
-      const handRef = builder.phase === "blue" ? activeBlueHandRef : activeRedHandRef;
+      const handData = builder.phase === "left" ? leftHandData : rightHandData;
+      const handRef = builder.phase === "left" ? activeLeftHandRef : activeRightHandRef;
       if (!handRef || !handData?.svgData) return;
 
-      const animator = builder.phase === "blue" ? blueAnimator : redAnimator;
+      const animator = builder.phase === "left" ? leftAnimator : rightAnimator;
       await animator.animate({
         element: handRef,
         startPosition: move.from,
@@ -85,15 +85,15 @@
 
   // Map builder phase to the color the HitTargetOverlay should use
   const activePhaseColor = $derived(
-    builder.phase === "blue" ? "blue" as const
-    : builder.phase === "red" ? "red" as const
+    builder.phase === "left" ? "blue" as const
+    : builder.phase === "right" ? "red" as const
     : null
   );
 
   // Build SVG path "d" strings that follow the actual movement path
   // (arc for shifts, straight line for dashes)
-  const bluePathDs = $derived(buildPathDs(builder.blueLocations));
-  const redPathDs = $derived(buildPathDs(builder.redLocations));
+  const leftPathDs = $derived(buildPathDs(builder.leftLocations));
+  const rightPathDs = $derived(buildPathDs(builder.rightLocations));
 
   function buildPathDs(locations: readonly GridLocation[]): string[] {
     const ds: string[] = [];
@@ -116,8 +116,8 @@
 
   <div class="grid-area">
     <InteractiveCanvas
-      blueProp={null}
-      redProp={null}
+      leftProp={null}
+      rightProp={null}
       gridMode={builder.gridMode}
       gridVisible={false}
       interactive={builder.phase !== "complete"}
@@ -135,22 +135,22 @@
         {/each}
 
         <!-- Path trace lines following actual movement geometry -->
-        {#each bluePathDs as d, i (i)}
-          <path {d} fill="none" stroke={blueColor} stroke-width="4" stroke-linecap="round" opacity="0.7" />
+        {#each leftPathDs as d, i (i)}
+          <path {d} fill="none" stroke={leftColor} stroke-width="4" stroke-linecap="round" opacity="0.7" />
         {/each}
-        {#each redPathDs as d, i (i)}
-          <path {d} fill="none" stroke={redColor} stroke-width="4" stroke-linecap="round" opacity="0.7" />
+        {#each rightPathDs as d, i (i)}
+          <path {d} fill="none" stroke={rightColor} stroke-width="4" stroke-linecap="round" opacity="0.7" />
         {/each}
 
         <!-- Animated hand SVGs (positioned via HandPathAnimator.animate()) -->
-        {#if builder.blueLocations.length > 0 && blueHandData?.svgData}
-          <g bind:this={activeBlueHandRef} class="hand-anim-group" aria-hidden="true">
-            {@html blueHandData.svgData.svgContent}
+        {#if builder.leftLocations.length > 0 && leftHandData?.svgData}
+          <g bind:this={activeLeftHandRef} class="hand-anim-group" aria-hidden="true">
+            {@html leftHandData.svgData.svgContent}
           </g>
         {/if}
-        {#if builder.redLocations.length > 0 && redHandData?.svgData}
-          <g bind:this={activeRedHandRef} class="hand-anim-group" aria-hidden="true">
-            {@html redHandData.svgData.svgContent}
+        {#if builder.rightLocations.length > 0 && rightHandData?.svgData}
+          <g bind:this={activeRightHandRef} class="hand-anim-group" aria-hidden="true">
+            {@html rightHandData.svgData.svgContent}
           </g>
         {/if}
 

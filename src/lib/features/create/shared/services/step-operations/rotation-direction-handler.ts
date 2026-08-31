@@ -23,7 +23,7 @@ import {
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -60,7 +60,7 @@ export function updateRotationDirection(
     return;
   }
 
-  const colorKey = color as MotionColor;
+  const colorKey = color as HandSide;
   const currentMotion: MotionData | undefined = stepData.motions[colorKey];
   if (!currentMotion) {
     logger.warn(`No motion data for ${color}`);
@@ -229,18 +229,18 @@ async function recalculateLetterAsync(
   createModuleState: ICreateModuleState,
   motionQueryHandler: IMotionQueryHandler
 ): Promise<void> {
-  const blueMotion = stepToCheck.motions?.[MotionColor.BLUE];
-  const redMotion = stepToCheck.motions?.[MotionColor.RED];
+  const leftMotion = stepToCheck.motions?.[HandSide.LEFT];
+  const rightMotion = stepToCheck.motions?.[HandSide.RIGHT];
 
   // Invisible placeholder = hand not really there (both-required Step shape):
   // a dataframe lookup against a placeholder would rewrite the letter/word.
-  if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) return;
+  if (!isVisibleMotion(leftMotion) || !isVisibleMotion(rightMotion)) return;
 
   try {
-    const gridMode = _deriveGridMode(blueMotion, redMotion);
+    const gridMode = _deriveGridMode(leftMotion, rightMotion);
     const newLetter = await motionQueryHandler.findLetterByMotionConfiguration(
-      blueMotion,
-      redMotion,
+      leftMotion,
+      rightMotion,
       gridMode
     );
 
@@ -310,19 +310,19 @@ export async function recalculateLetterForBeat(
     return;
   }
 
-  const blueMotion = stepData.motions?.[MotionColor.BLUE];
-  const redMotion = stepData.motions?.[MotionColor.RED];
+  const leftMotion = stepData.motions?.[HandSide.LEFT];
+  const rightMotion = stepData.motions?.[HandSide.RIGHT];
 
-  if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) {
+  if (!isVisibleMotion(leftMotion) || !isVisibleMotion(rightMotion)) {
     return;
   }
 
   try {
-    const gridMode = _deriveGridMode(blueMotion, redMotion);
+    const gridMode = _deriveGridMode(leftMotion, rightMotion);
 
     const newLetter = (await motionQueryHandler.findLetterByMotionConfiguration(
-      blueMotion,
-      redMotion,
+      leftMotion,
+      rightMotion,
       gridMode
     )) as Letter | null;
 

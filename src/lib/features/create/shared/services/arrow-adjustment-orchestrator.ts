@@ -21,7 +21,10 @@ import type {
   GlobalAdjustmentKey,
   GlobalArrowAdjustmentInput,
 } from "$lib/shared/pictograph/arrow/positioning/global/domain/global-arrow-adjustment";
-import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  HandSide,
+  type HandSide as HandSideValue,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { arrowAdjustmentUndoStack } from "$lib/shared/pictograph/arrow/positioning/global/state/arrow-adjustment-undo-stack";
@@ -36,7 +39,7 @@ import {
 export interface SelectedArrowContext {
   motionData: MotionData;
   pictographData: PictographData;
-  color: MotionColor | string;
+  color: HandSideValue;
 }
 
 /**
@@ -81,11 +84,12 @@ export class ArrowAdjustmentOrchestrator {
    */
   private overridePictographPropTypes(
     pictographData: PictographData,
-    arrowColor: MotionColor,
+    arrowColor: HandSideValue,
     thisPropType: string,
     otherPropType: string
   ): PictographData {
-    const otherColor = (arrowColor === "blue" ? "red" : "blue") as MotionColor;
+    const otherColor =
+      arrowColor === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
     return {
       ...pictographData,
       motions: {
@@ -133,7 +137,7 @@ export class ArrowAdjustmentOrchestrator {
           ? { propType: thisPropType, otherPropType } // Layer 3: both prop types
           : { propType: thisPropType }; // Layer 2: just this prop
 
-    const arrowColor = selectedArrow.color as MotionColor;
+    const arrowColor = selectedArrow.color;
     const pictographWithPropOverrides = this.overridePictographPropTypes(
       selectedArrow.pictographData,
       arrowColor,
@@ -157,7 +161,7 @@ export class ArrowAdjustmentOrchestrator {
     const repo = getGlobalAdjustmentRepository();
     if (!repo) return null;
 
-    const arrowColor = selectedArrow.color as MotionColor;
+    const arrowColor = selectedArrow.color;
     const pictographWithPropOverrides = this.overridePictographPropTypes(
       selectedArrow.pictographData,
       arrowColor,
@@ -194,7 +198,7 @@ export class ArrowAdjustmentOrchestrator {
     }
 
     const { motionData, pictographData, color } = selectedArrow;
-    const arrowColor = color as MotionColor;
+    const arrowColor = color;
 
     // Calculate WASD direction (screen space - what user wants to see)
     const screenSpaceAdjustment = calculateAdjustment(key, increment);
@@ -334,7 +338,7 @@ export class ArrowAdjustmentOrchestrator {
     selectedArrow: SelectedArrowContext,
     thisPropType: string,
     otherPropType: string,
-    arrowColor: MotionColor
+    arrowColor: HandSide
   ): Promise<{ currentX: number; currentY: number }> {
     const repo = getGlobalAdjustmentRepository();
     if (!repo) {
@@ -396,7 +400,8 @@ export class ArrowAdjustmentOrchestrator {
 
       // Also override the other motion's propType in pictographData so the
       // SpecialPlacer reads the same otherPropType the renderer would use.
-      const otherColor = arrowColor === "blue" ? "red" : "blue";
+      const otherColor =
+        arrowColor === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
       const otherMotion = pictographData.motions?.[otherColor];
       const pictographWithPropOverrides = otherMotion
         ? {

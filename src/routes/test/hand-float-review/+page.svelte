@@ -20,7 +20,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import {
     GridMode,
@@ -83,7 +83,7 @@
   // hand-path mode converts it to FLOAT. The other hand sits STATIC opposite.
   // Cardinal hands live on the diamond grid; intercardinal hands are box mode.
   const motion = (
-    color: MotionColor,
+    color: HandSide,
     from: GridLocation,
     to: GridLocation,
     gridMode: GridMode
@@ -105,7 +105,7 @@
   };
 
   const makeCase = (
-    movingColor: MotionColor,
+    movingColor: HandSide,
     from: GridLocation,
     to: GridLocation,
     cw: boolean
@@ -114,7 +114,7 @@
     const staticLoc = OPPOSITE[from]!;
     const moving = motion(movingColor, from, to, gridMode);
     const still = motion(
-      movingColor === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE,
+      movingColor === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT,
       staticLoc,
       staticLoc,
       gridMode
@@ -130,9 +130,9 @@
         endPosition: null,
         gridMode,
         motions:
-          movingColor === MotionColor.BLUE
-            ? { blue: moving, red: still }
-            : { blue: still, red: moving },
+          movingColor === HandSide.LEFT
+            ? { left: moving, right: still }
+            : { left: still, right: moving },
       } as unknown as PictographData,
     };
   };
@@ -214,7 +214,7 @@
     localStorage.removeItem(STORE_KEY);
   };
 
-  const sectionFor = (color: MotionColor, cw: boolean): Section => {
+  const sectionFor = (color: HandSide, cw: boolean): Section => {
     const cases: Case[] = [];
     for (const ring of [CARDINALS, INTERCARDINALS]) {
       for (const from of ring) {
@@ -222,16 +222,16 @@
       }
     }
     return {
-      title: `${color === MotionColor.BLUE ? "Blue" : "Red"} hand — ${cw ? "clockwise" : "counter-clockwise"} handpath`,
+      title: `${color === HandSide.LEFT ? "Blue" : "Red"} hand — ${cw ? "clockwise" : "counter-clockwise"} handpath`,
       cases,
     };
   };
 
   const SECTIONS: Section[] = [
-    sectionFor(MotionColor.BLUE, true),
-    sectionFor(MotionColor.BLUE, false),
-    sectionFor(MotionColor.RED, true),
-    sectionFor(MotionColor.RED, false),
+    sectionFor(HandSide.LEFT, true),
+    sectionFor(HandSide.LEFT, false),
+    sectionFor(HandSide.RIGHT, true),
+    sectionFor(HandSide.RIGHT, false),
   ];
 </script>
 
@@ -272,8 +272,8 @@
               <PictographContainer
                 pictographData={c.data}
                 gridMode={c.gridMode}
-                bluePropTypeOverride={PropType.HAND}
-                redPropTypeOverride={PropType.HAND}
+                leftPropTypeOverride={PropType.HAND}
+                rightPropTypeOverride={PropType.HAND}
                 showGrid={true}
                 showTKA={false}
                 showPositions={false}

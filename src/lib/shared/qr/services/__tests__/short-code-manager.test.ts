@@ -204,8 +204,8 @@ describe("ShortCodeManager allocation", () => {
     const [a, b] = await Promise.all([
       manager.createShortCode(SEQUENCE, { embedSequenceData: true }),
       manager.createShortCode(SEQUENCE, {
-        bluePropType: "C",
-        redPropType: "C",
+        leftPropType: "C",
+        rightPropType: "C",
       }),
     ]);
 
@@ -249,7 +249,7 @@ describe("ShortCodeManager allocation", () => {
     const runsAfterFirst = transactionRuns;
 
     const second = await manager.createShortCode(SEQUENCE, {
-      bluePropType: "F",
+      leftPropType: "F",
     });
 
     expect(second.code).toBe(first.code);
@@ -284,7 +284,7 @@ describe("ShortCodeManager allocation", () => {
 
     const [a, b] = await Promise.all([
       manager.createShortCode(SEQUENCE, { embedSequenceData: true }),
-      manager.createShortCode(SEQUENCE, { bluePropType: "C" }),
+      manager.createShortCode(SEQUENCE, { leftPropType: "C" }),
     ]);
 
     expect(a.code).toBe("COMP1");
@@ -449,7 +449,7 @@ describe("ShortCodeManager allocation", () => {
     expect(resolved?.displayName).toBe("Left-hand choreography");
     expect(resolved?.word).toBe("");
     expect(resolved?.steps.every((step) => step.letter === null)).toBe(true);
-    expect(resolved?.blueSoloProp?.id).toBe(SOLO_PROP.id);
+    expect(resolved?.leftSoloProp?.id).toBe(SOLO_PROP.id);
     expect(resolved?.metadata.sourceSoloPropId).toBe(SOLO_PROP.id);
   });
 
@@ -464,7 +464,7 @@ describe("ShortCodeManager allocation", () => {
 
     expect(record?.sourceSoloPropId).toBeUndefined();
     expect(resolved?.metadata.sourceSoloPropId).toBeUndefined();
-    expect(resolved?.blueSoloProp?.id).toBe(`shortcode-${result.code}`);
+    expect(resolved?.leftSoloProp?.id).toBe(`shortcode-${result.code}`);
   });
 
   it("falls back to canonical soloData when the codec loses the absent hand", async () => {
@@ -495,7 +495,7 @@ describe("ShortCodeManager allocation", () => {
 
   it("blocks mixed paired and single-hand choreography before minting", async () => {
     const soloSequence = soloPropToSequence(SOLO_PROP, "left");
-    const blueMotion = soloSequence.steps[0]!.motions.blue;
+    const blueMotion = soloSequence.steps[0]!.motions.left;
     const mixed = {
       ...soloSequence,
       steps: [
@@ -503,7 +503,7 @@ describe("ShortCodeManager allocation", () => {
           ...soloSequence.steps[0],
           motions: {
             ...soloSequence.steps[0]!.motions,
-            red: { ...blueMotion, color: "red" },
+            right: { ...blueMotion, color: "red" },
           },
         },
         {
@@ -552,16 +552,16 @@ describe("ShortCodeManager scan events", () => {
       referrer: null,
       userId: "user-1",
       deviceId: "device-1",
-      bluePropType: "poi",
-      redPropType: "fan",
+      leftPropType: "poi",
+      rightPropType: "fan",
       catDogMode: true,
     });
 
     expect(vi.mocked(addDoc)).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        bluePropType: "poi",
-        redPropType: "fan",
+        leftPropType: "poi",
+        rightPropType: "fan",
         catDogMode: true,
         timestamp: expect.any(String),
       })

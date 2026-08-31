@@ -17,8 +17,8 @@ export interface DetectedHandData {
 }
 
 export interface HandAssignmentResult {
-  blue: DetectedPosition | null;
-  red: DetectedPosition | null;
+  left: DetectedPosition | null;
+  right: DetectedPosition | null;
 }
 import { mapToQuadrant } from "./quadrant-mapper";
 
@@ -27,10 +27,10 @@ const HAND_PERSISTENCE_FRAMES = 5;
 
 export class HandAssigner {
   // Track last known positions for persistence
-  private _lastBluePosition: DetectedPosition | null = null;
-  private _lastRedPosition: DetectedPosition | null = null;
-  private _blueFramesMissing = 0;
-  private _redFramesMissing = 0;
+  private _lastLeftPosition: DetectedPosition | null = null;
+  private _lastRightPosition: DetectedPosition | null = null;
+  private _leftFramesMissing = 0;
+  private _rightFramesMissing = 0;
 
   constructor(private _stabilizer: HandTrackingStabilizer) {}
 
@@ -42,14 +42,14 @@ export class HandAssigner {
     isMirrored: boolean,
     timestamp: number
   ): HandAssignmentResult {
-    let bluePosition: DetectedPosition | null = null;
-    let redPosition: DetectedPosition | null = null;
+    let leftPosition: DetectedPosition | null = null;
+    let rightPosition: DetectedPosition | null = null;
 
     if (detectedHands.length === 2) {
       // Two hands detected - use position to disambiguate (most reliable)
       const result = this._assignTwoHands(detectedHands, isMirrored, timestamp);
-      bluePosition = result.blue;
-      redPosition = result.red;
+      leftPosition = result.left;
+      rightPosition = result.right;
     } else if (detectedHands.length === 1) {
       // Single hand - use proximity matching
       const result = this._assignSingleHand(
@@ -57,19 +57,19 @@ export class HandAssigner {
         isMirrored,
         timestamp
       );
-      bluePosition = result.blue;
-      redPosition = result.red;
+      leftPosition = result.left;
+      rightPosition = result.right;
     }
 
     // Clear history for hands that aren't detected
-    if (!bluePosition) {
-      this._stabilizer.clearHistory("blue");
+    if (!leftPosition) {
+      this._stabilizer.clearHistory("left");
     }
-    if (!redPosition) {
-      this._stabilizer.clearHistory("red");
+    if (!rightPosition) {
+      this._stabilizer.clearHistory("right");
     }
 
-    return { blue: bluePosition, red: redPosition };
+    return { left: leftPosition, right: rightPosition };
   }
 
   /**
@@ -87,31 +87,31 @@ export class HandAssigner {
     const hand1 = sorted[1];
 
     if (!hand0 || !hand1) {
-      return { blue: null, red: null };
+      return { left: null, right: null };
     }
 
-    let bluePosition: DetectedPosition;
-    let redPosition: DetectedPosition;
+    let leftPosition: DetectedPosition;
+    let rightPosition: DetectedPosition;
 
     // In camera space: lower X = left side of image
     // When mirrored: left side of image = right side of screen = user's right hand
     // When mirrored: right side of image = left side of screen = user's left hand
     if (isMirrored) {
-      redPosition = hand0.position; // Lower X = right side of screen = user's right hand
-      bluePosition = hand1.position; // Higher X = left side of screen = user's left hand
+      rightPosition = hand0.position; // Lower X = right side of screen = user's right hand
+      leftPosition = hand1.position; // Higher X = left side of screen = user's left hand
     } else {
-      bluePosition = hand0.position;
-      redPosition = hand1.position;
+      leftPosition = hand0.position;
+      rightPosition = hand1.position;
     }
 
-    bluePosition = this._applySmoothingToPosition(
-      bluePosition,
-      "blue",
+    leftPosition = this._applySmoothingToPosition(
+      leftPosition,
+      "left",
       timestamp
     );
-    redPosition = this._applySmoothingToPosition(redPosition, "red", timestamp);
+    rightPosition = this._applySmoothingToPosition(rightPosition, "right", timestamp);
 
-    return { blue: bluePosition, red: redPosition };
+    return { left: leftPosition, right: rightPosition };
   }
 
   /**
@@ -128,52 +128,52 @@ export class HandAssigner {
     let assignToBlue = false;
 
     // Match to existing hand based on SPATIAL PROXIMITY
-    const hasBlueHistory = this._stabilizer.hasHistory("blue");
-    const hasRedHistory = this._stabilizer.hasHistory("red");
+    const hasLeftHistory = this._stabilizer.hasHistory("left");
+    const hasRightHistory = this._stabilizer.hasHistory("right");
 
-    if (hasBlueHistory && hasRedHistory) {
+    if (hasLeftHistory && hasRightHistory) {
       // Both hands have history - match to closest
-      const lastBlue = this._stabilizer.getLastPosition("blue");
-      const lastRed = this._stabilizer.getLastPosition("red");
+      const lastLeft = this._stabilizer.getLastPosition("left");
+      const lastRight = this._stabilizer.getLastPosition("right");
 
-      if (lastBlue && lastRed) {
-        const distToBlue = this._calculateDistance(
+      if (lastLeft && lastRight) {
+        const distToLeft = this._calculateDistance(
           handX,
           handY,
-          lastBlue.x,
-          lastBlue.y
+          lastLeft.x,
+          lastLeft.y
         );
-        const distToRed = this._calculateDistance(
+        const distToRight = this._calculateDistance(
           handX,
           handY,
-          lastRed.x,
-          lastRed.y
+          lastRight.x,
+          lastRight.y
         );
-        assignToBlue = distToBlue < distToRed;
+        assignToBlue = distToLeft < distToRight;
       }
-    } else if (hasBlueHistory) {
+    } else if (hasLeftHistory) {
       // Only blue history - check if close enough
-      const lastBlue = this._stabilizer.getLastPosition("blue");
-      if (lastBlue) {
-        const distToBlue = this._calculateDistance(
+      const lastLeft = this._stabilizer.getLastPosition("left");
+      if (lastLeft) {
+        const distToLeft = this._calculateDistance(
           handX,
           handY,
-          lastBlue.x,
-          lastBlue.y
+          lastLeft.x,
+          lastLeft.y
         );
-        assignToBlue = distToBlue < 0.3; // Within 30% of screen
+        assignToBlue = distToLeft < 0.3; // Within 30% of screen
       }
-    } else if (hasRedHistory) {
+    } else if (hasRightHistory) {
       // Only red history - check if close enough
-      const lastRed = this._stabilizer.getLastPosition("red");
-      if (lastRed) {
-        const distToRed = this._calculateDistance(
+      const lastRight = this._stabilizer.getLastPosition("right");
+      if (lastRight) {
+        const distToRight = this._calculateDistance(
           handX,
           handY,
-          lastRed.x,
-          lastRed.y
+          lastRight.x,
+          lastRight.y
         );
-        assignToBlue = distToRed >= 0.3; // Too far from red, must be blue
+        assignToBlue = distToRight >= 0.3; // Too far from red, must be blue
       }
     } else {
       // No history - use screen position to guess
@@ -184,19 +184,19 @@ export class HandAssigner {
     if (assignToBlue) {
       const smoothedPosition = this._applySmoothingToPosition(
         hand.position,
-        "blue",
+        "left",
         timestamp
       );
-      this._stabilizer.setAssignedHand("blue", "left");
-      return { blue: smoothedPosition, red: null };
+      this._stabilizer.setAssignedHand("left", "left");
+      return { left: smoothedPosition, right: null };
     } else {
       const smoothedPosition = this._applySmoothingToPosition(
         hand.position,
-        "red",
+        "right",
         timestamp
       );
-      this._stabilizer.setAssignedHand("red", "right");
-      return { blue: null, red: smoothedPosition };
+      this._stabilizer.setAssignedHand("right", "right");
+      return { left: null, right: smoothedPosition };
     }
   }
 
@@ -205,7 +205,7 @@ export class HandAssigner {
    */
   private _applySmoothingToPosition(
     position: DetectedPosition,
-    handId: "blue" | "red",
+    handId: "left" | "right",
     timestamp: number
   ): DetectedPosition {
     const smoothed = this._stabilizer.addPosition(
@@ -226,41 +226,41 @@ export class HandAssigner {
    * Handle hand persistence (showing hands briefly after they disappear)
    */
   applyPersistence(
-    currentBlue: DetectedPosition | null,
-    currentRed: DetectedPosition | null
+    currentLeft: DetectedPosition | null,
+    currentRight: DetectedPosition | null
   ): HandAssignmentResult {
-    let blue = currentBlue;
-    let red = currentRed;
+    let left = currentLeft;
+    let right = currentRight;
 
     // Blue hand persistence
-    if (blue) {
-      this._lastBluePosition = blue;
-      this._blueFramesMissing = 0;
+    if (left) {
+      this._lastLeftPosition = left;
+      this._leftFramesMissing = 0;
     } else if (
-      this._lastBluePosition &&
-      this._blueFramesMissing < HAND_PERSISTENCE_FRAMES
+      this._lastLeftPosition &&
+      this._leftFramesMissing < HAND_PERSISTENCE_FRAMES
     ) {
-      blue = this._lastBluePosition;
-      this._blueFramesMissing++;
+      left = this._lastLeftPosition;
+      this._leftFramesMissing++;
     } else {
-      this._lastBluePosition = null;
+      this._lastLeftPosition = null;
     }
 
     // Red hand persistence
-    if (red) {
-      this._lastRedPosition = red;
-      this._redFramesMissing = 0;
+    if (right) {
+      this._lastRightPosition = right;
+      this._rightFramesMissing = 0;
     } else if (
-      this._lastRedPosition &&
-      this._redFramesMissing < HAND_PERSISTENCE_FRAMES
+      this._lastRightPosition &&
+      this._rightFramesMissing < HAND_PERSISTENCE_FRAMES
     ) {
-      red = this._lastRedPosition;
-      this._redFramesMissing++;
+      right = this._lastRightPosition;
+      this._rightFramesMissing++;
     } else {
-      this._lastRedPosition = null;
+      this._lastRightPosition = null;
     }
 
-    return { blue, red };
+    return { left, right };
   }
 
   /**
@@ -268,10 +268,10 @@ export class HandAssigner {
    */
   reset(): void {
     this._stabilizer.resetAll();
-    this._lastBluePosition = null;
-    this._lastRedPosition = null;
-    this._blueFramesMissing = 0;
-    this._redFramesMissing = 0;
+    this._lastLeftPosition = null;
+    this._lastRightPosition = null;
+    this._leftFramesMissing = 0;
+    this._rightFramesMissing = 0;
   }
 
   /**

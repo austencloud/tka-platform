@@ -22,7 +22,7 @@
 
   let beats = $state<SpatialBeat[]>(freshSpatialBeats());
   let activeBeatIndex = $state(2);
-  let activeHand = $state<PropSide>("blue");
+  let activeHand = $state<PropSide>("left");
   let preset = $state<SculpturePreset>("acolyte");
   let layoutMode = $state<LayoutMode>("viewport");
   let motionMode = $state<SculptureMotionMode>("trace");
@@ -48,9 +48,9 @@
 
   function setOrientation(orientation: BeatOrientation): void {
     updateActiveBeat((beat) =>
-      activeHand === "blue"
-        ? { ...beat, blueOrientation: orientation }
-        : { ...beat, redOrientation: orientation }
+      activeHand === "left"
+        ? { ...beat, leftOrientation: orientation }
+        : { ...beat, rightOrientation: orientation }
     );
   }
 
@@ -60,9 +60,9 @@
 
   function setLocation(location: GridLocation): void {
     updateActiveBeat((beat) =>
-      activeHand === "blue"
-        ? { ...beat, blueLocation: location }
-        : { ...beat, redLocation: location }
+      activeHand === "left"
+        ? { ...beat, leftLocation: location }
+        : { ...beat, rightLocation: location }
     );
   }
 
@@ -90,20 +90,20 @@
   function addBeat(): void {
     const last = beats.at(-1);
     const plane = PRIMARY_PLANES[beats.length % PRIMARY_PLANES.length]!;
-    const blueIndex = last
-      ? Math.max(0, LOCATION_ORDER.indexOf(last.blueLocation))
+    const leftIndex = last
+      ? Math.max(0, LOCATION_ORDER.indexOf(last.leftLocation))
       : 0;
-    const redIndex = last
-      ? Math.max(0, LOCATION_ORDER.indexOf(last.redLocation))
+    const rightIndex = last
+      ? Math.max(0, LOCATION_ORDER.indexOf(last.rightLocation))
       : 4;
 
     const nextBeat: SpatialBeat = {
       id: `beat-${nextBeatNumber}`,
       plane,
-      blueLocation: LOCATION_ORDER[(blueIndex + 1) % LOCATION_ORDER.length]!,
-      redLocation: LOCATION_ORDER[(redIndex + 3) % LOCATION_ORDER.length]!,
-      blueOrientation: last?.blueOrientation === "in" ? "out" : "in",
-      redOrientation: last?.redOrientation === "in" ? "out" : "in",
+      leftLocation: LOCATION_ORDER[(leftIndex + 1) % LOCATION_ORDER.length]!,
+      rightLocation: LOCATION_ORDER[(rightIndex + 3) % LOCATION_ORDER.length]!,
+      leftOrientation: last?.leftOrientation === "in" ? "out" : "in",
+      rightOrientation: last?.rightOrientation === "in" ? "out" : "in",
       turns: "0",
     };
 
@@ -123,7 +123,7 @@
   function resetMockup(): void {
     beats = freshSpatialBeats();
     activeBeatIndex = 2;
-    activeHand = "blue";
+    activeHand = "left";
     preset = "acolyte";
     motionMode = "trace";
     undulationDepth = 34;

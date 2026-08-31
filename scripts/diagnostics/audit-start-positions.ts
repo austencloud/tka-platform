@@ -176,19 +176,19 @@ async function main(): Promise<void> {
     ).doc(id).get();
     const data = snap.data();
     if (!data) { console.log(`\n[${id}] MISSING`); continue; }
-    const blueSolo = data["blueSoloProp"] as AnyRec | undefined;
-    const redSolo = data["redSoloProp"] as AnyRec | undefined;
+    const leftSolo = data["blueSoloProp"] as AnyRec | undefined;
+    const rightSolo = data["redSoloProp"] as AnyRec | undefined;
     console.log(`\n[${id}] word="${data["word"]}"`);
     console.log(`  fields: ${Object.keys(data).sort().join(", ")}`);
     console.log(`  startPosition: ${JSON.stringify(data["startPosition"])?.slice(0, 600)}`);
-    console.log(`  has stepPairings=${Array.isArray(data["stepPairings"])} blueSoloProp=${!!blueSolo} redSoloProp=${!!redSolo}`);
-    if (blueSolo) {
-      console.log(`  blueSolo.startLocation=${JSON.stringify(blueSolo["startLocation"])} startOrientation=${JSON.stringify(blueSolo["startOrientation"])}`);
-      const bsteps = blueSolo["steps"] as AnyRec[] | undefined;
+    console.log(`  has stepPairings=${Array.isArray(data["stepPairings"])} blueSoloProp=${!!leftSolo} redSoloProp=${!!rightSolo}`);
+    if (leftSolo) {
+      console.log(`  blueSolo.startLocation=${JSON.stringify(leftSolo["startLocation"])} startOrientation=${JSON.stringify(leftSolo["startOrientation"])}`);
+      const bsteps = leftSolo["steps"] as AnyRec[] | undefined;
       console.log(`  blueSolo.steps[0]=${JSON.stringify(bsteps?.[0])?.slice(0, 300)}`);
     }
-    if (redSolo) {
-      console.log(`  redSolo.startLocation=${JSON.stringify(redSolo["startLocation"])} startOrientation=${JSON.stringify(redSolo["startOrientation"])}`);
+    if (rightSolo) {
+      console.log(`  redSolo.startLocation=${JSON.stringify(rightSolo["startLocation"])} startOrientation=${JSON.stringify(rightSolo["startOrientation"])}`);
     }
     const sp0 = (data["stepPairings"] as AnyRec[] | undefined)?.[0];
     console.log(`  stepPairings[0]=${JSON.stringify(sp0)?.slice(0, 400)}`);

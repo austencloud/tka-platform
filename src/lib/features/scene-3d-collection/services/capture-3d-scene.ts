@@ -45,8 +45,8 @@ export function captureScene3DSnapshot(
   const performers: StoredPerformerSnapshot[] = cfg.performers.map((p) => ({
     position: { x: p.position.x, z: p.position.z },
     facingAngle: p.facingAngle,
-    customBluePlane: String(p.customBluePlane),
-    customRedPlane: String(p.customRedPlane),
+    customLeftPlane: String(p.customLeftPlane),
+    customRightPlane: String(p.customRightPlane),
     name: p.name ?? null,
     ...(p.settings ? { settings: { ...p.settings } } : {}),
   }));
@@ -66,8 +66,8 @@ export function captureScene3DSnapshot(
       prop: cfg.defaultProp,
       effortId: String(d.effortId),
       planeMode: String(d.planeMode),
-      customBluePlane: String(d.customBluePlane),
-      customRedPlane: String(d.customRedPlane),
+      customLeftPlane: String(d.customLeftPlane),
+      customRightPlane: String(d.customRightPlane),
     },
     visiblePlanes: cfg.visiblePlanes,
     showGridLabels: cfg.showGridLabels,
@@ -78,8 +78,8 @@ export function captureScene3DSnapshot(
     effectToggles: cfg.effectToggles ?? {},
     sceneFeatures: readSceneFeatures(),
     props: {
-      bluePropType: settings.bluePropType ? String(settings.bluePropType) : undefined,
-      redPropType: settings.redPropType ? String(settings.redPropType) : undefined,
+      leftPropType: settings.leftPropType ? String(settings.leftPropType) : undefined,
+      rightPropType: settings.rightPropType ? String(settings.rightPropType) : undefined,
     },
     ...(options.bpm !== undefined ? { bpm: options.bpm } : {}),
     ...(options.groups ? { groups: { ...options.groups } } : {}),

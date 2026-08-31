@@ -39,13 +39,17 @@
     createCanonicalPlacementContext,
     rotateScreenVectorToCanonical,
   } from "$lib/shared/pictograph/arrow/positioning/calculation/services/canonical-placement-frame";
+  import {
+    HandSide,
+    type HandSide as HandSideValue,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   const logger = createComponentLogger("PipelineEditorDock");
 
   interface Props {
     stepData: StepData;
-    blueDiagnostics: PipelineDiagnostics | null;
-    redDiagnostics: PipelineDiagnostics | null;
+    leftDiagnostics: PipelineDiagnostics | null;
+    rightDiagnostics: PipelineDiagnostics | null;
     onDiagnosticsChanged?: () => void;
     /** When set, the dock shows a single "Done" button (instead of Save) that
         persists the current edit then calls this — for one-shot flows like the
@@ -55,19 +59,18 @@
   }
   let {
     stepData,
-    blueDiagnostics,
-    redDiagnostics,
+    leftDiagnostics,
+    rightDiagnostics,
     onDiagnosticsChanged,
     onDone,
   }: Props = $props();
 
   // Selection-driven binding (live re-bind on color switch)
-  const activeColor = $derived<"blue" | "red" | null>(
-    (selectedArrowState.selectedArrow?.color as "blue" | "red" | undefined) ??
-      null
+  const activeColor = $derived<HandSideValue | null>(
+    (selectedArrowState.selectedArrow?.color as HandSideValue | undefined) ?? null
   );
   const diagnostics = $derived(
-    activeColor === "red" ? redDiagnostics : blueDiagnostics
+    activeColor === HandSide.RIGHT ? rightDiagnostics : leftDiagnostics
   );
 
   let editTarget = $state<"special-json" | "default">("special-json");
@@ -106,14 +109,14 @@
   );
 
   // Head identity derived
-  const colorName = $derived(activeColor === "red" ? "Red" : "Blue");
+  const colorName = $derived(activeColor === HandSide.RIGHT ? "Right" : "Left");
   const colorToken = $derived(
-    activeColor === "red"
+    activeColor === HandSide.RIGHT
       ? "var(--prop-red, #f85149)"
       : "var(--prop-blue, #58a6ff)"
   );
   const segColor = $derived<"blue" | "red">(
-    activeColor === "red" ? "red" : "blue"
+    activeColor === HandSide.RIGHT ? "red" : "blue"
   );
 
   // Publish the in-flight edit so PipelineTraceSection can show the edited tier's
@@ -180,18 +183,18 @@
     // withEffectivePropTypes) wins over global settings — so fixing arrows on a
     // fan/club deck card shows the right prop and the Default-tier label matches
     // the key computeSpecialOverrideKey writes (which reads motion.propType).
-    const c = activeColor ?? "blue";
+    const c = activeColor ?? HandSide.LEFT;
     const motion = stepData.motions?.[c];
     const settings = getSettings();
     const settingsPropType =
-      c === "blue" ? settings.bluePropType : settings.redPropType;
+      c === HandSide.LEFT ? settings.leftPropType : settings.rightPropType;
     return (motion?.propType ?? settingsPropType)?.toLowerCase() || "staff";
   });
 
   // THE canonical key, identical to what the renderer reads (write-key ===
   // read-key by construction). Includes the prop-scoped propType segment.
   const specialOverrideKey = $derived.by((): string | null => {
-    const c = activeColor ?? "blue";
+    const c = activeColor ?? HandSide.LEFT;
     const motion = stepData.motions?.[c];
     if (!motion || !stepData.letter) return null;
     const pd: PictographData = selectedArrowContext?.pictographData ?? {
@@ -267,7 +270,7 @@
   }
 
   // Re-bind on color switch (replaces old enterEditMode/toggleEditing).
-  let lastBoundColor: "blue" | "red" | null = null;
+  let lastBoundColor: HandSideValue | null = null;
   $effect(() => {
     const c = activeColor;
     if (c === lastBoundColor) return;
@@ -606,7 +609,7 @@
     y: number,
     original: { x: number; y: number } | null
   ): SpecialArrowPlacementInput | null {
-    const c = activeColor ?? "blue";
+    const c = activeColor ?? HandSide.LEFT;
     const motion = stepData.motions?.[c];
     if (!motion || !stepData.letter) return null;
 

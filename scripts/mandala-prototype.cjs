@@ -194,22 +194,22 @@ function generateMandalaPath(beats, color, tipOffset, gridRadius, samplesPerBeat
   for (const beat of beats) {
     const motion = color === "blue"
       ? {
-          motionType: beat.blueMotionType,
-          rotDir: beat.blueRotDir,
-          startLoc: beat.blueStartLoc,
-          endLoc: beat.blueEndLoc,
-          startOrientation: beat.blueStartOri || "out",
-          endOrientation: beat.blueEndOri || "out",
-          turns: beat.blueTurns ?? 0,
+          motionType: beat.leftMotionType,
+          rotDir: beat.leftRotDir,
+          startLoc: beat.leftStartLoc,
+          endLoc: beat.leftEndLoc,
+          startOrientation: beat.leftStartOri || "out",
+          endOrientation: beat.leftEndOri || "out",
+          turns: beat.leftTurns ?? 0,
         }
       : {
-          motionType: beat.redMotionType,
-          rotDir: beat.redRotDir,
-          startLoc: beat.redStartLoc,
-          endLoc: beat.redEndLoc,
-          startOrientation: beat.redStartOri || "out",
-          endOrientation: beat.redEndOri || "out",
-          turns: beat.redTurns ?? 0,
+          motionType: beat.rightMotionType,
+          rotDir: beat.rightRotDir,
+          startLoc: beat.rightStartLoc,
+          endLoc: beat.rightEndLoc,
+          startOrientation: beat.rightStartOri || "out",
+          endOrientation: beat.rightEndOri || "out",
+          turns: beat.rightTurns ?? 0,
         };
 
     // Skip float (no movement, no rotation = single point)
@@ -309,15 +309,15 @@ function generateMandalaSVG(sequence, options = {}) {
   const beats = sequence.beats;
 
   // Generate paths for each hand + tip combination
-  const blueLeftPoints = generateMandalaPath(beats, "blue", tipLeft, gridRadius, samplesPerBeat);
-  const blueRightPoints = generateMandalaPath(beats, "blue", tipRight, gridRadius, samplesPerBeat);
-  const redLeftPoints = generateMandalaPath(beats, "red", tipLeft, gridRadius, samplesPerBeat);
-  const redRightPoints = generateMandalaPath(beats, "red", tipRight, gridRadius, samplesPerBeat);
+  const leftLeftPoints = generateMandalaPath(beats, "blue", tipLeft, gridRadius, samplesPerBeat);
+  const leftRightPoints = generateMandalaPath(beats, "blue", tipRight, gridRadius, samplesPerBeat);
+  const rightLeftPoints = generateMandalaPath(beats, "red", tipLeft, gridRadius, samplesPerBeat);
+  const rightRightPoints = generateMandalaPath(beats, "red", tipRight, gridRadius, samplesPerBeat);
 
-  const blueLeftD = pointsToSVGPath(blueLeftPoints);
-  const blueRightD = pointsToSVGPath(blueRightPoints);
-  const redLeftD = pointsToSVGPath(redLeftPoints);
-  const redRightD = pointsToSVGPath(redRightPoints);
+  const leftLeftD = pointsToSVGPath(leftLeftPoints);
+  const leftRightD = pointsToSVGPath(leftRightPoints);
+  const rightLeftD = pointsToSVGPath(rightLeftPoints);
+  const rightRightD = pointsToSVGPath(rightRightPoints);
 
   const center = size / 2;
 
@@ -327,20 +327,20 @@ function generateMandalaSVG(sequence, options = {}) {
     return { x: Math.cos(angle) * gridRadius, y: Math.sin(angle) * gridRadius };
   }) : [];
 
-  const blueColor = "#2e3192";
-  const redColor = "#ed1c24";
+  const leftColor = "#2e3192";
+  const rightColor = "#ed1c24";
 
-  const fillBlue = style === "filled" ? `fill="rgba(46,49,146,0.15)" stroke="${blueColor}"` : `fill="none" stroke="${blueColor}"`;
-  const fillRed = style === "filled" ? `fill="rgba(237,28,36,0.15)" stroke="${redColor}"` : `fill="none" stroke="${redColor}"`;
+  const fillLeft = style === "filled" ? `fill="rgba(46,49,146,0.15)" stroke="${leftColor}"` : `fill="none" stroke="${leftColor}"`;
+  const fillRight = style === "filled" ? `fill="rgba(237,28,36,0.15)" stroke="${rightColor}"` : `fill="none" stroke="${rightColor}"`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
   <rect width="${size}" height="${size}" fill="#0d0d1a" rx="8"/>
   <g transform="translate(${center}, ${center})">
     ${gridDots.map(d => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="3" fill="rgba(255,255,255,0.3)"/>`).join("\n    ")}
-    ${blueLeftD ? `<path d="${blueLeftD}" ${fillBlue} stroke-width="${strokeWidth}" stroke-linecap="round"/>` : ""}
-    ${blueRightD ? `<path d="${blueRightD}" ${fillBlue} stroke-width="${strokeWidth}" stroke-linecap="round"/>` : ""}
-    ${redLeftD ? `<path d="${redLeftD}" ${fillRed} stroke-width="${strokeWidth}" stroke-linecap="round"/>` : ""}
-    ${redRightD ? `<path d="${redRightD}" ${fillRed} stroke-width="${strokeWidth}" stroke-linecap="round"/>` : ""}
+    ${leftLeftD ? `<path d="${leftLeftD}" ${fillLeft} stroke-width="${strokeWidth}" stroke-linecap="round"/>` : ""}
+    ${leftRightD ? `<path d="${leftRightD}" ${fillLeft} stroke-width="${strokeWidth}" stroke-linecap="round"/>` : ""}
+    ${rightLeftD ? `<path d="${rightLeftD}" ${fillRight} stroke-width="${strokeWidth}" stroke-linecap="round"/>` : ""}
+    ${rightRightD ? `<path d="${rightRightD}" ${fillRight} stroke-width="${strokeWidth}" stroke-linecap="round"/>` : ""}
   </g>
 </svg>`;
 }
@@ -362,10 +362,10 @@ function expandHalvedRotatedLoop(seedBeats) {
   // Full cycle = seed beats + same beats with all locations rotated 180°
   const rotatedBeats = seedBeats.map(beat => ({
     ...beat,
-    blueStartLoc: rotateLoc(beat.blueStartLoc),
-    blueEndLoc: rotateLoc(beat.blueEndLoc),
-    redStartLoc: rotateLoc(beat.redStartLoc),
-    redEndLoc: rotateLoc(beat.redEndLoc),
+    leftStartLoc: rotateLoc(beat.leftStartLoc),
+    leftEndLoc: rotateLoc(beat.leftEndLoc),
+    rightStartLoc: rotateLoc(beat.rightStartLoc),
+    rightEndLoc: rotateLoc(beat.rightEndLoc),
   }));
   return [...seedBeats, ...rotatedBeats];
 }
@@ -387,28 +387,28 @@ function generateDecomposedSVG(sequence, options = {}) {
   const beats = sequence.beats;
   const center = size / 2;
 
-  const blueColor = "#2e3192";
-  const redColor = "#ed1c24";
+  const leftColor = "#2e3192";
+  const rightColor = "#ed1c24";
 
   // Generate paths
   const paths = [];
 
   if (show === "blue" || show === "both") {
-    const blueLeftPoints = generateMandalaPath(beats, "blue", tipLeft, gridRadius, samplesPerBeat);
-    const blueRightPoints = generateMandalaPath(beats, "blue", tipRight, gridRadius, samplesPerBeat);
-    const blueLeftD = pointsToSVGPath(blueLeftPoints);
-    const blueRightD = pointsToSVGPath(blueRightPoints);
-    if (blueLeftD) paths.push(`<path d="${blueLeftD}" fill="none" stroke="${blueColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
-    if (blueRightD) paths.push(`<path d="${blueRightD}" fill="none" stroke="${blueColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+    const leftLeftPoints = generateMandalaPath(beats, "blue", tipLeft, gridRadius, samplesPerBeat);
+    const leftRightPoints = generateMandalaPath(beats, "blue", tipRight, gridRadius, samplesPerBeat);
+    const leftLeftD = pointsToSVGPath(leftLeftPoints);
+    const leftRightD = pointsToSVGPath(leftRightPoints);
+    if (leftLeftD) paths.push(`<path d="${leftLeftD}" fill="none" stroke="${leftColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+    if (leftRightD) paths.push(`<path d="${leftRightD}" fill="none" stroke="${leftColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
   }
 
   if (show === "red" || show === "both") {
-    const redLeftPoints = generateMandalaPath(beats, "red", tipLeft, gridRadius, samplesPerBeat);
-    const redRightPoints = generateMandalaPath(beats, "red", tipRight, gridRadius, samplesPerBeat);
-    const redLeftD = pointsToSVGPath(redLeftPoints);
-    const redRightD = pointsToSVGPath(redRightPoints);
-    if (redLeftD) paths.push(`<path d="${redLeftD}" fill="none" stroke="${redColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
-    if (redRightD) paths.push(`<path d="${redRightD}" fill="none" stroke="${redColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+    const rightLeftPoints = generateMandalaPath(beats, "red", tipLeft, gridRadius, samplesPerBeat);
+    const rightRightPoints = generateMandalaPath(beats, "red", tipRight, gridRadius, samplesPerBeat);
+    const rightLeftD = pointsToSVGPath(rightLeftPoints);
+    const rightRightD = pointsToSVGPath(rightRightPoints);
+    if (rightLeftD) paths.push(`<path d="${rightLeftD}" fill="none" stroke="${rightColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+    if (rightRightD) paths.push(`<path d="${rightRightD}" fill="none" stroke="${rightColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
   }
 
   // Grid dots
@@ -456,22 +456,22 @@ function generateBeatByBeatSVG(sequence, color, options = {}) {
     const beat = beats[b];
     const motion = color === "blue"
       ? {
-          motionType: beat.blueMotionType,
-          rotDir: beat.blueRotDir,
-          startLoc: beat.blueStartLoc,
-          endLoc: beat.blueEndLoc,
-          startOrientation: beat.blueStartOri || "out",
-          endOrientation: beat.blueEndOri || "out",
-          turns: beat.blueTurns ?? 0,
+          motionType: beat.leftMotionType,
+          rotDir: beat.leftRotDir,
+          startLoc: beat.leftStartLoc,
+          endLoc: beat.leftEndLoc,
+          startOrientation: beat.leftStartOri || "out",
+          endOrientation: beat.leftEndOri || "out",
+          turns: beat.leftTurns ?? 0,
         }
       : {
-          motionType: beat.redMotionType,
-          rotDir: beat.redRotDir,
-          startLoc: beat.redStartLoc,
-          endLoc: beat.redEndLoc,
-          startOrientation: beat.redStartOri || "out",
-          endOrientation: beat.redEndOri || "out",
-          turns: beat.redTurns ?? 0,
+          motionType: beat.rightMotionType,
+          rotDir: beat.rightRotDir,
+          startLoc: beat.rightStartLoc,
+          endLoc: beat.rightEndLoc,
+          startOrientation: beat.rightStartOri || "out",
+          endOrientation: beat.rightEndOri || "out",
+          turns: beat.rightTurns ?? 0,
         };
 
     if (motion.motionType === "float") continue;
@@ -569,8 +569,8 @@ function firestoreStepsToBeats(steps) {
   return steps
     .filter(s => s.motions) // skip start position
     .map(s => {
-      const b = s.motions.blue || {};
-      const r = s.motions.red || {};
+      const b = s.motions.left || {};
+      const r = s.motions.right || {};
       // Map rotationDirection strings
       const mapRotDir = (rd) => {
         if (rd === "clockwise" || rd === "cw") return "cw";
@@ -579,20 +579,20 @@ function firestoreStepsToBeats(steps) {
       };
       return {
         letter: s.letter,
-        blueMotionType: b.motionType || "static",
-        blueRotDir: mapRotDir(b.rotationDirection),
-        blueStartLoc: b.startLocation || "center",
-        blueEndLoc: b.endLocation || b.startLocation || "center",
-        blueStartOri: b.startOrientation || "out",
-        blueEndOri: b.endOrientation || "out",
-        blueTurns: typeof b.turns === "number" ? b.turns : 0,
-        redMotionType: r.motionType || "static",
-        redRotDir: mapRotDir(r.rotationDirection),
-        redStartLoc: r.startLocation || "center",
-        redEndLoc: r.endLocation || r.startLocation || "center",
-        redStartOri: r.startOrientation || "out",
-        redEndOri: r.endOrientation || "out",
-        redTurns: typeof r.turns === "number" ? r.turns : 0,
+        leftMotionType: b.motionType || "static",
+        leftRotDir: mapRotDir(b.rotationDirection),
+        leftStartLoc: b.startLocation || "center",
+        leftEndLoc: b.endLocation || b.startLocation || "center",
+        leftStartOri: b.startOrientation || "out",
+        leftEndOri: b.endOrientation || "out",
+        leftTurns: typeof b.turns === "number" ? b.turns : 0,
+        rightMotionType: r.motionType || "static",
+        rightRotDir: mapRotDir(r.rotationDirection),
+        rightStartLoc: r.startLocation || "center",
+        rightEndLoc: r.endLocation || r.startLocation || "center",
+        rightStartOri: r.startOrientation || "out",
+        rightEndOri: r.endOrientation || "out",
+        rightTurns: typeof r.turns === "number" ? r.turns : 0,
       };
     });
 }
@@ -625,25 +625,25 @@ function generateWithTipInset(sequence, insetAmount, options = {}) {
   const beats = sequence.beats;
   const center = size / 2;
 
-  const blueColor = "#2e3192";
-  const redColor = "#ed1c24";
+  const leftColor = "#2e3192";
+  const rightColor = "#ed1c24";
   const paths = [];
 
   // Blue paths
-  const blueLeftPoints = generateMandalaPath(beats, "blue", tipLeft, gridRadius, samplesPerBeat);
-  const blueRightPoints = generateMandalaPath(beats, "blue", tipRight, gridRadius, samplesPerBeat);
-  const blueLeftD = pointsToSVGPath(blueLeftPoints);
-  const blueRightD = pointsToSVGPath(blueRightPoints);
-  if (blueLeftD) paths.push(`<path d="${blueLeftD}" fill="none" stroke="${blueColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
-  if (blueRightD) paths.push(`<path d="${blueRightD}" fill="none" stroke="${blueColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+  const leftLeftPoints = generateMandalaPath(beats, "blue", tipLeft, gridRadius, samplesPerBeat);
+  const leftRightPoints = generateMandalaPath(beats, "blue", tipRight, gridRadius, samplesPerBeat);
+  const leftLeftD = pointsToSVGPath(leftLeftPoints);
+  const leftRightD = pointsToSVGPath(leftRightPoints);
+  if (leftLeftD) paths.push(`<path d="${leftLeftD}" fill="none" stroke="${leftColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+  if (leftRightD) paths.push(`<path d="${leftRightD}" fill="none" stroke="${leftColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
 
   // Red paths
-  const redLeftPoints = generateMandalaPath(beats, "red", tipLeft, gridRadius, samplesPerBeat);
-  const redRightPoints = generateMandalaPath(beats, "red", tipRight, gridRadius, samplesPerBeat);
-  const redLeftD = pointsToSVGPath(redLeftPoints);
-  const redRightD = pointsToSVGPath(redRightPoints);
-  if (redLeftD) paths.push(`<path d="${redLeftD}" fill="none" stroke="${redColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
-  if (redRightD) paths.push(`<path d="${redRightD}" fill="none" stroke="${redColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+  const rightLeftPoints = generateMandalaPath(beats, "red", tipLeft, gridRadius, samplesPerBeat);
+  const rightRightPoints = generateMandalaPath(beats, "red", tipRight, gridRadius, samplesPerBeat);
+  const rightLeftD = pointsToSVGPath(rightLeftPoints);
+  const rightRightD = pointsToSVGPath(rightRightPoints);
+  if (rightLeftD) paths.push(`<path d="${rightLeftD}" fill="none" stroke="${rightColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+  if (rightRightD) paths.push(`<path d="${rightRightD}" fill="none" stroke="${rightColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
 
   const gridDots = showGridDots ? Object.entries(LOCATION_ANGLES).map(([loc, angle]) => {
     if (loc === "center") return { x: 0, y: 0 };
@@ -691,14 +691,14 @@ const insetSvgs = insets.map(inset => ({
 
 // Also generate the decomposed view alongside (using 10px inset as default)
 const bestInsetOpts = { ...svgOpts };
-const blueSvg = generateDecomposedSVG(seq, { ...bestInsetOpts, show: "blue" });
-const redSvg = generateDecomposedSVG(seq, { ...bestInsetOpts, show: "red" });
+const leftSvg = generateDecomposedSVG(seq, { ...bestInsetOpts, show: "blue" });
+const rightSvg = generateDecomposedSVG(seq, { ...bestInsetOpts, show: "red" });
 const combinedSvg = generateDecomposedSVG(seq, { ...bestInsetOpts, show: "both" });
 
 // Beat color legend
 const beatColors = ["#4488ff", "#22cc88", "#ff8844", "#cc44ff", "#ffcc22", "#44cccc"];
 const legend = seq.beats.map((b, i) =>
-  `<span style="color:${beatColors[i % beatColors.length]}; margin-right: 16px;">Beat ${i+1}: ${b.letter} (${b.blueMotionType})</span>`
+  `<span style="color:${beatColors[i % beatColors.length]}; margin-right: 16px;">Beat ${i+1}: ${b.letter} (${b.leftMotionType})</span>`
 ).join("");
 
 const html = `<!DOCTYPE html>
@@ -749,12 +749,12 @@ ${insetSvgs.map(({ inset, svg }) => `
 <h2 class="section-title">Final Mandala</h2>
 <div class="row">
   <div class="panel">
-    ${blueSvg}
+    ${leftSvg}
     <h3 class="blue-label">Blue Hand</h3>
   </div>
   <div class="operator">+</div>
   <div class="panel">
-    ${redSvg}
+    ${rightSvg}
     <h3 class="red-label">Red Hand</h3>
   </div>
   <div class="operator">=</div>

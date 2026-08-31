@@ -1,20 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   getSequenceMotionProfile,
   getSequenceMotionVisibility,
 } from "$lib/shared/foundation/services/sequence-motion-profile";
 
-function step(blue: boolean, red: boolean) {
+function step(left: boolean, right: boolean) {
   return createStepData({
     motions: {
-      ...(blue && {
-        blue: createMotionData({ color: MotionColor.BLUE }),
+      ...(left && {
+        left: createMotionData({ hand: HandSide.LEFT }),
       }),
-      ...(red && {
-        red: createMotionData({ color: MotionColor.RED }),
+      ...(right && {
+        right: createMotionData({ hand: HandSide.RIGHT }),
       }),
     },
   });
@@ -39,14 +39,14 @@ describe("getSequenceMotionProfile", () => {
 
   it("derives the same participating-hand visibility used by warming and the viewer", () => {
     expect(getSequenceMotionVisibility({ steps: [step(true, false)] })).toEqual(
-      { showBlueMotion: true, showRedMotion: false }
+      { showLeftMotion: true, showRightMotion: false }
     );
     expect(getSequenceMotionVisibility({ steps: [step(false, true)] })).toEqual(
-      { showBlueMotion: false, showRedMotion: true }
+      { showLeftMotion: false, showRightMotion: true }
     );
     expect(getSequenceMotionVisibility({ steps: [step(true, true)] })).toEqual({
-      showBlueMotion: true,
-      showRedMotion: true,
+      showLeftMotion: true,
+      showRightMotion: true,
     });
   });
 

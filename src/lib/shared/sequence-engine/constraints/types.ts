@@ -28,8 +28,8 @@ export interface ConstraintPictographData {
   endPosition: string;
   timing: string;
   direction: string;
-  blueMotion: ConstraintMotionData;
-  redMotion: ConstraintMotionData;
+  leftMotion: ConstraintMotionData;
+  rightMotion: ConstraintMotionData;
 }
 
 /**
@@ -38,20 +38,20 @@ export interface ConstraintPictographData {
  */
 export interface ConstraintStep {
   letter: string;
-  blueMotionType: string;
-  redMotionType: string;
-  bluePropRotation: string;
-  redPropRotation: string;
+  leftMotionType: string;
+  rightMotionType: string;
+  leftPropRotation: string;
+  rightPropRotation: string;
   startPosition: string;
   endPosition: string;
   /** Blue hand start location (grid point) */
-  blueStartLocation?: string;
+  leftStartLocation?: string;
   /** Blue hand end location (grid point) */
-  blueEndLocation?: string;
+  leftEndLocation?: string;
   /** Red hand start location (grid point) */
-  redStartLocation?: string;
+  rightStartLocation?: string;
   /** Red hand end location (grid point) */
-  redEndLocation?: string;
+  rightEndLocation?: string;
 }
 
 /**

@@ -29,7 +29,7 @@ import {
   MotionType,
   RotationDirection,
   Orientation,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -52,17 +52,17 @@ function makeStaticStep(letter: string | null): StepData {
     id: "step-0",
     stepNumber: 0,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     letter: letter as StepData["letter"],
     startPosition: null,
     endPosition: null,
     motions: {
-      blue: createMotionData({ ...motion, color: MotionColor.BLUE }),
-      red: createMotionData({
+      left: createMotionData({ ...motion, hand: HandSide.LEFT }),
+      right: createMotionData({
         ...motion,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         startLocation: GridLocation.SOUTH,
         endLocation: GridLocation.SOUTH,
       }),

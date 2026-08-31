@@ -57,8 +57,8 @@ export function pictographDataToStepData(
   const enhancedDataWithBeatContext = enhancedData as PictographData & {
     stepNumber?: number;
     duration?: number;
-    blueReversal?: boolean;
-    redReversal?: boolean;
+    leftReversal?: boolean;
+    rightReversal?: boolean;
     isBlank?: boolean;
   };
 
@@ -69,8 +69,8 @@ export function pictographDataToStepData(
     id: stepId || enhancedData.id,
     stepNumber: enhancedDataWithBeatContext.stepNumber ?? 1,
     duration: enhancedDataWithBeatContext.duration ?? 1.0,
-    blueReversal: enhancedDataWithBeatContext.blueReversal ?? false,
-    redReversal: enhancedDataWithBeatContext.redReversal ?? false,
+    leftReversal: enhancedDataWithBeatContext.leftReversal ?? false,
+    rightReversal: enhancedDataWithBeatContext.rightReversal ?? false,
     isBlank: enhancedDataWithBeatContext.isBlank ?? false,
   });
 }
@@ -83,16 +83,16 @@ export function hasStepContext(data: PictographData): boolean {
   const dataWithStepContext = data as PictographData & {
     stepNumber?: number;
     duration?: number;
-    blueReversal?: boolean;
-    redReversal?: boolean;
+    leftReversal?: boolean;
+    rightReversal?: boolean;
     isBlank?: boolean;
   };
 
   return (
     dataWithStepContext.stepNumber !== undefined ||
     dataWithStepContext.duration !== undefined ||
-    dataWithStepContext.blueReversal !== undefined ||
-    dataWithStepContext.redReversal !== undefined ||
+    dataWithStepContext.leftReversal !== undefined ||
+    dataWithStepContext.rightReversal !== undefined ||
     dataWithStepContext.isBlank !== undefined
   );
 }

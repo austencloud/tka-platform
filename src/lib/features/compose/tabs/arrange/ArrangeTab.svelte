@@ -474,8 +474,8 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
         onSetEffect={selectedCell ? (effect) => gridState.setCellEffect(selectedCell.id, effect) : undefined}
         onSetTrailMode={selectedCell ? (mode) => gridState.setCellTrailMode(selectedCell.id, mode) : undefined}
         onSetEffort={selectedCell ? (effort) => gridState.setCellEffort(selectedCell.id, effort) : undefined}
-        onSetBlueVisible={selectedCell ? (visible) => gridState.setCellMotionVisibility(selectedCell.id, 'blue', visible) : undefined}
-        onSetRedVisible={selectedCell ? (visible) => gridState.setCellMotionVisibility(selectedCell.id, 'red', visible) : undefined}
+        onSetLeftVisible={selectedCell ? (visible) => gridState.setCellMotionVisibility(selectedCell.id, 'blue', visible) : undefined}
+        onSetRightVisible={selectedCell ? (visible) => gridState.setCellMotionVisibility(selectedCell.id, 'red', visible) : undefined}
         onSetOffset={selectedCell ? (offset) => gridState.setCellBeatOffset(selectedCell.id, offset) : undefined}
         onSetColors={selectedCell ? (colors) => gridState.setCellPropColors(selectedCell.id, colors) : undefined}
         onSetTipEffectMap={selectedCell ? (map) => gridState.setCellTipEffectMap(selectedCell.id, map) : undefined}

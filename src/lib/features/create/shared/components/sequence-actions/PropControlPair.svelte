@@ -28,9 +28,9 @@
     /** Show one mounted card at a time in narrow layouts */
     visibleHand?: TargetHand;
     /** Content for the blue prop card */
-    blueContent?: Snippet;
+    leftContent?: Snippet;
     /** Content for the red prop card */
-    redContent?: Snippet;
+    rightContent?: Snippet;
   }
 
   let {
@@ -38,8 +38,8 @@
     compact = false,
     prominentLabels = false,
     visibleHand = "both",
-    blueContent,
-    redContent,
+    leftContent,
+    rightContent,
   }: Props = $props();
 </script>
 
@@ -52,22 +52,22 @@
 >
   <div
     class="prop-card blue"
-    class:inactive={visibleHand === "red"}
-    inert={visibleHand === "red"}
+    class:inactive={visibleHand === "right"}
+    inert={visibleHand === "right"}
   >
     <span class="prop-label">Blue</span>
     <div class="card-content">
-      {@render blueContent?.()}
+      {@render leftContent?.()}
     </div>
   </div>
   <div
     class="prop-card red"
-    class:inactive={visibleHand === "blue"}
-    inert={visibleHand === "blue"}
+    class:inactive={visibleHand === "left"}
+    inert={visibleHand === "left"}
   >
     <span class="prop-label">Red</span>
     <div class="card-content">
-      {@render redContent?.()}
+      {@render rightContent?.()}
     </div>
   </div>
 </div>

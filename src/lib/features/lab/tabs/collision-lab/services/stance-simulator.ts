@@ -140,8 +140,8 @@ export class StanceSimulator {
 
   evaluate(
     stance: StancePose,
-    blueTarget: SimPropTarget,
-    redTarget: SimPropTarget
+    leftTarget: SimPropTarget,
+    rightTarget: SimPropTarget
   ): SimResult {
     // 1. Place joints from the rest pose, then apply stance transforms.
     this.applyStance(stance);
@@ -149,14 +149,14 @@ export class StanceSimulator {
     // 2. Solve IK for each arm and record reach outcomes.
     const leftReach = this.solveArmIK(
       this.skeleton.leftShoulder,
-      blueTarget.gripWorld,
+      leftTarget.gripWorld,
       this.skeleton.leftElbow,
       this.skeleton.leftHand,
       /* isLeft */ true
     );
     const rightReach = this.solveArmIK(
       this.skeleton.rightShoulder,
-      redTarget.gripWorld,
+      rightTarget.gripWorld,
       this.skeleton.rightElbow,
       this.skeleton.rightHand,
       /* isLeft */ false
@@ -168,7 +168,7 @@ export class StanceSimulator {
     this.computeFaceCenter();
 
     // 4. Collision checks.
-    const collisions = this.detectCollisions(blueTarget, redTarget);
+    const collisions = this.detectCollisions(leftTarget, rightTarget);
 
     // 5. Balance check.
     const balanceMargin = this.computeBalanceMargin(stance);
@@ -206,12 +206,12 @@ export class StanceSimulator {
 
     return {
       reachShortfall: {
-        blue: leftReach.shortfall,
-        red: rightReach.shortfall,
+        left: leftReach.shortfall,
+        right: rightReach.shortfall,
       },
       reachStretch: {
-        blue: leftReach.stretch,
-        red: rightReach.stretch,
+        left: leftReach.stretch,
+        right: rightReach.stretch,
       },
       collisions,
       balanceMargin,
@@ -230,17 +230,17 @@ export class StanceSimulator {
    */
   evaluateSweep(
     stance: StancePose,
-    blueSweep: SimPropTarget[],
-    redSweep: SimPropTarget[]
+    leftSweep: SimPropTarget[],
+    rightSweep: SimPropTarget[]
   ): SimResult {
-    const n = Math.min(blueSweep.length, redSweep.length);
+    const n = Math.min(leftSweep.length, rightSweep.length);
     if (n === 0) {
       // Degenerate: nothing to hit. Evaluate at the stance with whatever single
       // target exists so balance/joints are still reported.
       return this.evaluate(
         stance,
-        blueSweep[0] ?? redSweep[0]!,
-        redSweep[0] ?? blueSweep[0]!
+        leftSweep[0] ?? rightSweep[0]!,
+        rightSweep[0] ?? leftSweep[0]!
       );
     }
 
@@ -248,7 +248,7 @@ export class StanceSimulator {
     const worstByZone = new Map<SimCollision["zone"], SimCollision>();
 
     for (let i = 0; i < n; i++) {
-      const r = this.evaluate(stance, blueSweep[i]!, redSweep[i]!);
+      const r = this.evaluate(stance, leftSweep[i]!, rightSweep[i]!);
       if (!merged) {
         merged = {
           reachShortfall: { ...r.reachShortfall },
@@ -260,10 +260,10 @@ export class StanceSimulator {
           totalCollisionDepth: 0,
         };
       } else {
-        merged.reachShortfall.blue = Math.max(merged.reachShortfall.blue, r.reachShortfall.blue);
-        merged.reachShortfall.red = Math.max(merged.reachShortfall.red, r.reachShortfall.red);
-        merged.reachStretch.blue = Math.max(merged.reachStretch.blue, r.reachStretch.blue);
-        merged.reachStretch.red = Math.max(merged.reachStretch.red, r.reachStretch.red);
+        merged.reachShortfall.left = Math.max(merged.reachShortfall.left, r.reachShortfall.left);
+        merged.reachShortfall.right = Math.max(merged.reachShortfall.right, r.reachShortfall.right);
+        merged.reachStretch.left = Math.max(merged.reachStretch.left, r.reachStretch.left);
+        merged.reachStretch.right = Math.max(merged.reachStretch.right, r.reachStretch.right);
         merged.jointViolationRad = Math.max(merged.jointViolationRad, r.jointViolationRad);
       }
       for (const c of r.collisions) {
@@ -290,8 +290,8 @@ export class StanceSimulator {
     }
     result.totalCollisionDepth = total;
     result.feasible =
-      result.reachShortfall.blue <= REACH_FEASIBILITY_TOLERANCE &&
-      result.reachShortfall.red <= REACH_FEASIBILITY_TOLERANCE &&
+      result.reachShortfall.left <= REACH_FEASIBILITY_TOLERANCE &&
+      result.reachShortfall.right <= REACH_FEASIBILITY_TOLERANCE &&
       result.balanceMargin > -0.005 &&
       hardBodyDepth <= 0.01;
     return result;
@@ -529,16 +529,16 @@ export class StanceSimulator {
   // optimizer only keeps the best result so there's no hot-path array churn.
 
   private detectCollisions(
-    blueTarget: SimPropTarget,
-    redTarget: SimPropTarget
+    leftTarget: SimPropTarget,
+    rightTarget: SimPropTarget
   ): SimCollision[] {
     const collisions: SimCollision[] = [];
     const sk = this.skeleton;
     const rp = this.restPose;
 
     const propPairs: Array<{ label: "Blue" | "Red"; prop: SimPropTarget }> = [
-      { label: "Blue", prop: blueTarget },
-      { label: "Red", prop: redTarget },
+      { label: "Blue", prop: leftTarget },
+      { label: "Red", prop: rightTarget },
     ];
 
     // 1. Prop shaft through face.
@@ -625,10 +625,10 @@ export class StanceSimulator {
 
     // 4. Prop through prop.
     const pp = this.segmentToSegmentDistance(
-      blueTarget.tipAWorld, blueTarget.tipBWorld,
-      redTarget.tipAWorld, redTarget.tipBWorld
+      leftTarget.tipAWorld, leftTarget.tipBWorld,
+      rightTarget.tipAWorld, rightTarget.tipBWorld
     );
-    const ppThresh = blueTarget.radius + redTarget.radius + PROP_BODY_THRESHOLD;
+    const ppThresh = leftTarget.radius + rightTarget.radius + PROP_BODY_THRESHOLD;
     if (pp < ppThresh) {
       collisions.push({
         zone: "prop-through-prop",

@@ -22,23 +22,23 @@
 
   interface Props {
     /** Blue prop state (left hand) */
-    bluePropState: PropState3D | null;
+    leftPropState: PropState3D | null;
     /** Red prop state (right hand) */
-    redPropState: PropState3D | null;
+    rightPropState: PropState3D | null;
     /** Current camera mode - only render in first-person */
     cameraMode: CameraMode;
     /** Whether to show blue prop */
-    showBlue?: boolean;
+    showLeft?: boolean;
     /** Whether to show red prop */
-    showRed?: boolean;
+    showRight?: boolean;
   }
 
   let {
-    bluePropState,
-    redPropState,
+    leftPropState,
+    rightPropState,
     cameraMode,
-    showBlue = true,
-    showRed = true,
+    showLeft = true,
+    showRight = true,
   }: Props = $props();
 
   // Only render in first-person mode
@@ -62,8 +62,8 @@
 
   // Color values
   const colors = {
-    blue: { main: "#3b82f6", dark: "#1d4ed8" },
-    red: { main: "#ef4444", dark: "#b91c1c" },
+    left: { main: "#3b82f6", dark: "#1d4ed8" },
+    right: { main: "#ef4444", dark: "#b91c1c" },
   };
 
   // Viewmodel configuration
@@ -143,18 +143,18 @@
   }
 
   // Reactive positions and rotations (now based on actual prop positions)
-  const bluePosition = $derived(getViewmodelPosition(bluePropState));
-  const redPosition = $derived(getViewmodelPosition(redPropState));
-  const blueRotation = $derived(getViewmodelRotation(bluePropState));
-  const redRotation = $derived(getViewmodelRotation(redPropState));
+  const leftPosition = $derived(getViewmodelPosition(leftPropState));
+  const rightPosition = $derived(getViewmodelPosition(rightPropState));
+  const leftRotation = $derived(getViewmodelRotation(leftPropState));
+  const rightRotation = $derived(getViewmodelRotation(rightPropState));
 </script>
 
 {#if isFirstPerson}
   <!-- Blue staff (left hand) -->
-  {#if showBlue && bluePropState}
+  {#if showLeft && leftPropState}
     <T.Group
-      position={bluePosition}
-      rotation={blueRotation}
+      position={leftPosition}
+      rotation={leftRotation}
       layers={LAYER_VIEWMODEL}
     >
       <!-- Main staff body -->
@@ -163,7 +163,7 @@
           args={[staffThickness, staffThickness, staffLength, 16, 1]}
         />
         <T.MeshStandardMaterial
-          color={colors.blue.main}
+          color={colors.left.main}
           roughness={0.3}
           metalness={0.2}
         />
@@ -176,7 +176,7 @@
             args={[tBarThickness, tBarThickness, tBarLength, 12, 1]}
           />
           <T.MeshStandardMaterial
-            color={colors.blue.main}
+            color={colors.left.main}
             roughness={0.3}
             metalness={0.2}
           />
@@ -184,7 +184,7 @@
         <T.Mesh position={[-tBarLength / 2, 0, 0]}>
           <T.SphereGeometry args={[tBarThickness, 12, 12]} />
           <T.MeshStandardMaterial
-            color={colors.blue.dark}
+            color={colors.left.dark}
             roughness={0.3}
             metalness={0.2}
           />
@@ -192,7 +192,7 @@
         <T.Mesh position={[tBarLength / 2, 0, 0]}>
           <T.SphereGeometry args={[tBarThickness, 12, 12]} />
           <T.MeshStandardMaterial
-            color={colors.blue.dark}
+            color={colors.left.dark}
             roughness={0.3}
             metalness={0.2}
           />
@@ -203,7 +203,7 @@
       <T.Mesh position={[0, -halfLength, 0]}>
         <T.SphereGeometry args={[staffThickness, 16, 16]} />
         <T.MeshStandardMaterial
-          color={colors.blue.dark}
+          color={colors.left.dark}
           roughness={0.3}
           metalness={0.2}
         />
@@ -220,10 +220,10 @@
   {/if}
 
   <!-- Red staff (right hand) -->
-  {#if showRed && redPropState}
+  {#if showRight && rightPropState}
     <T.Group
-      position={redPosition}
-      rotation={redRotation}
+      position={rightPosition}
+      rotation={rightRotation}
       layers={LAYER_VIEWMODEL}
     >
       <!-- Main staff body -->
@@ -232,7 +232,7 @@
           args={[staffThickness, staffThickness, staffLength, 16, 1]}
         />
         <T.MeshStandardMaterial
-          color={colors.red.main}
+          color={colors.right.main}
           roughness={0.3}
           metalness={0.2}
         />
@@ -245,7 +245,7 @@
             args={[tBarThickness, tBarThickness, tBarLength, 12, 1]}
           />
           <T.MeshStandardMaterial
-            color={colors.red.main}
+            color={colors.right.main}
             roughness={0.3}
             metalness={0.2}
           />
@@ -253,7 +253,7 @@
         <T.Mesh position={[-tBarLength / 2, 0, 0]}>
           <T.SphereGeometry args={[tBarThickness, 12, 12]} />
           <T.MeshStandardMaterial
-            color={colors.red.dark}
+            color={colors.right.dark}
             roughness={0.3}
             metalness={0.2}
           />
@@ -261,7 +261,7 @@
         <T.Mesh position={[tBarLength / 2, 0, 0]}>
           <T.SphereGeometry args={[tBarThickness, 12, 12]} />
           <T.MeshStandardMaterial
-            color={colors.red.dark}
+            color={colors.right.dark}
             roughness={0.3}
             metalness={0.2}
           />
@@ -272,7 +272,7 @@
       <T.Mesh position={[0, -halfLength, 0]}>
         <T.SphereGeometry args={[staffThickness, 16, 16]} />
         <T.MeshStandardMaterial
-          color={colors.red.dark}
+          color={colors.right.dark}
           roughness={0.3}
           metalness={0.2}
         />

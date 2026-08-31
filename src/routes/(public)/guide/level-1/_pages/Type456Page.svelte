@@ -45,7 +45,7 @@
   import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
   import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-  import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { MotionType, HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -70,7 +70,7 @@
   const emitSequence = getGuideSequenceClick();
 
   // Motion type from the location pair: same → STATIC, opposite cardinals → DASH.
-  const motion = (color: MotionColor, from: GridLocation, to: GridLocation) =>
+  const motion = (color: HandSide, from: GridLocation, to: GridLocation) =>
     createMotionData({
       motionType: from === to ? MotionType.STATIC : OPP[from] === to ? MotionType.DASH : MotionType.PRO,
       startLocation: from,
@@ -99,13 +99,13 @@
       startPosition: gp(m[0], m[2]),
       endPosition: gp(m[1], m[3]),
       motions: {
-        blue: motion(MotionColor.BLUE, m[0], m[1]),
-        red: motion(MotionColor.RED, m[2], m[3]),
+        left: motion(HandSide.LEFT, m[0], m[1]),
+        right: motion(HandSide.RIGHT, m[2], m[3]),
       },
       stepNumber: step,
       duration: 1,
-      blueReversal: false,
-      redReversal: false,
+      leftReversal: false,
+      rightReversal: false,
       isBlank: false,
     }) as unknown as StepData;
 
@@ -346,8 +346,8 @@
           <PictographContainer
             pictographData={RESOLVED[s.key]![i]}
             gridMode={GridMode.DIAMOND}
-            bluePropTypeOverride={PropType.HAND}
-            redPropTypeOverride={PropType.HAND}
+            leftPropTypeOverride={PropType.HAND}
+            rightPropTypeOverride={PropType.HAND}
             showGrid={true}
             showTKA={s.tka}
             showPositions={!s.tka && cell.step > 0}

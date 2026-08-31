@@ -82,11 +82,11 @@ async function compareDetailed(group) {
     // Show each step's key motion data
     for (let s = 0; s < steps.length; s++) {
       const step = steps[s];
-      const blue = step.motions?.blue;
-      const red = step.motions?.red;
-      console.log(`  Step ${s}: letter=${step.letter}, blueRev=${step.blueReversal}, redRev=${step.redReversal}`);
-      if (blue) console.log(`    BLUE: ${blue.motionType} ${blue.rotationDirection} ${blue.startLocation}→${blue.endLocation} turns=${blue.turns} orient=${blue.startOrientation}→${blue.endOrientation}`);
-      if (red) console.log(`    RED:  ${red.motionType} ${red.rotationDirection} ${red.startLocation}→${red.endLocation} turns=${red.turns} orient=${red.startOrientation}→${red.endOrientation}`);
+      const left = step.motions?.left;
+      const right = step.motions?.right;
+      console.log(`  Step ${s}: letter=${step.letter}, blueRev=${step.leftReversal}, redRev=${step.rightReversal}`);
+      if (left) console.log(`    BLUE: ${left.motionType} ${left.rotationDirection} ${left.startLocation}→${left.endLocation} turns=${left.turns} orient=${left.startOrientation}→${left.endOrientation}`);
+      if (right) console.log(`    RED:  ${right.motionType} ${right.rotationDirection} ${right.startLocation}→${right.endLocation} turns=${right.turns} orient=${right.startOrientation}→${right.endOrientation}`);
     }
     console.log();
   }

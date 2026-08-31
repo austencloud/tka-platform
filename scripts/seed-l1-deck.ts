@@ -97,21 +97,21 @@ function loadDiamondDataframe(): PictographData[] {
 
     if (!row.letter || row.letter.trim() === "") continue;
 
-    const blueOrientations = calculateOrientations({
-      motionType: row.blueMotionType,
+    const leftOrientations = calculateOrientations({
+      motionType: row.leftMotionType,
       turns: 0,
-      rotationDirection: row.blueRotationDirection || "cw",
-      startLocation: row.blueStartLocation,
-      endLocation: row.blueEndLocation,
+      rotationDirection: row.leftRotationDirection || "cw",
+      startLocation: row.leftStartLocation,
+      endLocation: row.leftEndLocation,
       startOrientation: "in",
     });
 
-    const redOrientations = calculateOrientations({
-      motionType: row.redMotionType,
+    const rightOrientations = calculateOrientations({
+      motionType: row.rightMotionType,
       turns: 0,
-      rotationDirection: row.redRotationDirection || "cw",
-      startLocation: row.redStartLocation,
-      endLocation: row.redEndLocation,
+      rotationDirection: row.rightRotationDirection || "cw",
+      startLocation: row.rightStartLocation,
+      endLocation: row.rightEndLocation,
       startOrientation: "in",
     });
 
@@ -121,23 +121,23 @@ function loadDiamondDataframe(): PictographData[] {
       endPosition: row.endPosition,
       timing: row.timing,
       direction: row.direction,
-      blueMotion: {
+      leftMotion: {
         color: "blue",
-        startLocation: row.blueStartLocation,
-        endLocation: row.blueEndLocation,
-        motionType: row.blueMotionType,
-        rotationDirection: row.blueRotationDirection,
-        startOrientation: blueOrientations.startOrientation,
-        endOrientation: blueOrientations.endOrientation,
+        startLocation: row.leftStartLocation,
+        endLocation: row.leftEndLocation,
+        motionType: row.leftMotionType,
+        rotationDirection: row.leftRotationDirection,
+        startOrientation: leftOrientations.startOrientation,
+        endOrientation: leftOrientations.endOrientation,
       },
-      redMotion: {
+      rightMotion: {
         color: "red",
-        startLocation: row.redStartLocation,
-        endLocation: row.redEndLocation,
-        motionType: row.redMotionType,
-        rotationDirection: row.redRotationDirection,
-        startOrientation: redOrientations.startOrientation,
-        endOrientation: redOrientations.endOrientation,
+        startLocation: row.rightStartLocation,
+        endLocation: row.rightEndLocation,
+        motionType: row.rightMotionType,
+        rotationDirection: row.rightRotationDirection,
+        startOrientation: rightOrientations.startOrientation,
+        endOrientation: rightOrientations.endOrientation,
       },
     });
   }
@@ -168,8 +168,8 @@ function edgeToStep(edge: PictographData, stepNumber: number): SequenceStep {
     variation: 0,
     startPosition: edge.startPosition,
     endPosition: edge.endPosition,
-    blueMotion: { ...edge.blueMotion },
-    redMotion: { ...edge.redMotion },
+    leftMotion: { ...edge.leftMotion },
+    rightMotion: { ...edge.rightMotion },
     stepNumber: stepNumber,
     stepNumber,
     isBridge: false,
@@ -183,21 +183,21 @@ function buildStartPositionStep(edge: PictographData): SequenceStep {
     variation: 0,
     startPosition: edge.startPosition,
     endPosition: edge.startPosition,
-    blueMotion: {
+    leftMotion: {
       color: "blue",
       motionType: "static",
       rotationDirection: "noRotation",
-      startLocation: edge.blueMotion.startLocation,
-      endLocation: edge.blueMotion.startLocation,
+      startLocation: edge.leftMotion.startLocation,
+      endLocation: edge.leftMotion.startLocation,
       startOrientation: "in",
       endOrientation: "in",
     },
-    redMotion: {
+    rightMotion: {
       color: "red",
       motionType: "static",
       rotationDirection: "noRotation",
-      startLocation: edge.redMotion.startLocation,
-      endLocation: edge.redMotion.startLocation,
+      startLocation: edge.rightMotion.startLocation,
+      endLocation: edge.rightMotion.startLocation,
       startOrientation: "in",
       endOrientation: "in",
     },
@@ -218,17 +218,17 @@ function findMatchingPictograph(
   step: SequenceStep,
   allPictographs: PictographData[]
 ): PictographData | null {
-  const bm = step.blueMotion;
-  const rm = step.redMotion;
+  const bm = step.leftMotion;
+  const rm = step.rightMotion;
 
   for (const p of allPictographs) {
     if (
-      p.blueMotion.motionType.toLowerCase() === bm.motionType.toLowerCase() &&
-      p.blueMotion.startLocation.toLowerCase() === bm.startLocation.toLowerCase() &&
-      p.blueMotion.endLocation.toLowerCase() === bm.endLocation.toLowerCase() &&
-      p.redMotion.motionType.toLowerCase() === rm.motionType.toLowerCase() &&
-      p.redMotion.startLocation.toLowerCase() === rm.startLocation.toLowerCase() &&
-      p.redMotion.endLocation.toLowerCase() === rm.endLocation.toLowerCase()
+      p.leftMotion.motionType.toLowerCase() === bm.motionType.toLowerCase() &&
+      p.leftMotion.startLocation.toLowerCase() === bm.startLocation.toLowerCase() &&
+      p.leftMotion.endLocation.toLowerCase() === bm.endLocation.toLowerCase() &&
+      p.rightMotion.motionType.toLowerCase() === rm.motionType.toLowerCase() &&
+      p.rightMotion.startLocation.toLowerCase() === rm.startLocation.toLowerCase() &&
+      p.rightMotion.endLocation.toLowerCase() === rm.endLocation.toLowerCase()
     ) {
       return p;
     }
@@ -267,19 +267,19 @@ function fixPositionNames(
  * Returns a location chain like "s→w→w→n→n→e→e→s" for each hand.
  * The chain shows where the hand physically IS at each beat boundary.
  */
-function traceHandPath(steps: SequenceStep[]): { blue: string; red: string } {
+function traceHandPath(steps: SequenceStep[]): { left: string; right: string } {
   // Start location from beat 1, then each beat's end location
-  const blueLocations = [steps[0].blueMotion.startLocation];
-  const redLocations = [steps[0].redMotion.startLocation];
+  const leftLocations = [steps[0].leftMotion.startLocation];
+  const rightLocations = [steps[0].rightMotion.startLocation];
 
   for (const step of steps) {
-    blueLocations.push(step.blueMotion.endLocation);
-    redLocations.push(step.redMotion.endLocation);
+    leftLocations.push(step.leftMotion.endLocation);
+    rightLocations.push(step.rightMotion.endLocation);
   }
 
   return {
-    blue: blueLocations.join("→"),
-    red: redLocations.join("→"),
+    left: leftLocations.join("→"),
+    right: rightLocations.join("→"),
   };
 }
 
@@ -291,7 +291,7 @@ function traceHandPath(steps: SequenceStep[]): { blue: string; red: string } {
  */
 function computeHandPathKey(steps: SequenceStep[]): string {
   const trace = traceHandPath(steps);
-  return [trace.blue, trace.red].sort().join("|");
+  return [trace.left, trace.right].sort().join("|");
 }
 
 /**
@@ -308,48 +308,48 @@ function chainOrientations(steps: SequenceStep[]): SequenceStep[] {
   if (steps.length === 0) return steps;
 
   // Beat 1 starts at "in" (the universal starting orientation)
-  let blueOri = "in";
-  let redOri = "in";
+  let leftOri = "in";
+  let rightOri = "in";
 
   return steps.map((step) => {
     // This beat starts where the previous beat ended
-    const blueStart = blueOri;
-    const redStart = redOri;
+    const leftStart = leftOri;
+    const rightStart = rightOri;
 
     // Calculate end orientations from the motion data
-    const blueEnd = calculateEndOrientation({
-      motionType: step.blueMotion.motionType,
+    const leftEnd = calculateEndOrientation({
+      motionType: step.leftMotion.motionType,
       turns: 0,
-      rotationDirection: step.blueMotion.rotationDirection || "cw",
-      startLocation: step.blueMotion.startLocation,
-      endLocation: step.blueMotion.endLocation,
-      startOrientation: blueStart,
+      rotationDirection: step.leftMotion.rotationDirection || "cw",
+      startLocation: step.leftMotion.startLocation,
+      endLocation: step.leftMotion.endLocation,
+      startOrientation: leftStart,
     });
 
-    const redEnd = calculateEndOrientation({
-      motionType: step.redMotion.motionType,
+    const rightEnd = calculateEndOrientation({
+      motionType: step.rightMotion.motionType,
       turns: 0,
-      rotationDirection: step.redMotion.rotationDirection || "cw",
-      startLocation: step.redMotion.startLocation,
-      endLocation: step.redMotion.endLocation,
-      startOrientation: redStart,
+      rotationDirection: step.rightMotion.rotationDirection || "cw",
+      startLocation: step.rightMotion.startLocation,
+      endLocation: step.rightMotion.endLocation,
+      startOrientation: rightStart,
     });
 
     // Advance the chain for the next beat
-    blueOri = blueEnd;
-    redOri = redEnd;
+    leftOri = leftEnd;
+    rightOri = rightEnd;
 
     return {
       ...step,
-      blueMotion: {
-        ...step.blueMotion,
-        startOrientation: blueStart,
-        endOrientation: blueEnd,
+      leftMotion: {
+        ...step.leftMotion,
+        startOrientation: leftStart,
+        endOrientation: leftEnd,
       },
-      redMotion: {
-        ...step.redMotion,
-        startOrientation: redStart,
-        endOrientation: redEnd,
+      rightMotion: {
+        ...step.rightMotion,
+        startOrientation: rightStart,
+        endOrientation: rightEnd,
       },
     };
   });
@@ -393,11 +393,11 @@ function enumerateAndExecute(
         a === "noRotation" || b === "noRotation" || a === b;
 
       // Beat 1 → Beat 2 continuity
-      if (!rotOk(b1.blueMotion.rotationDirection, b2.blueMotion.rotationDirection)) continue;
-      if (!rotOk(b1.redMotion.rotationDirection, b2.redMotion.rotationDirection)) continue;
+      if (!rotOk(b1.leftMotion.rotationDirection, b2.leftMotion.rotationDirection)) continue;
+      if (!rotOk(b1.rightMotion.rotationDirection, b2.rightMotion.rotationDirection)) continue;
       // Quarter boundary: Beat 2 → Beat 1 (of next quarter) continuity
-      if (!rotOk(b2.blueMotion.rotationDirection, b1.blueMotion.rotationDirection)) continue;
-      if (!rotOk(b2.redMotion.rotationDirection, b1.redMotion.rotationDirection)) continue;
+      if (!rotOk(b2.leftMotion.rotationDirection, b1.leftMotion.rotationDirection)) continue;
+      if (!rotOk(b2.rightMotion.rotationDirection, b1.rightMotion.rotationDirection)) continue;
 
       // Build the 3-step input: [startPosition, beat1, beat2]
       const startStep = buildStartPositionStep(b1);
@@ -437,12 +437,12 @@ function enumerateAndExecute(
       // letters and motion types but differ in hand direction (CW vs CCW).
       // Include blue hand's start→end locations from both beats as disambiguator.
       const suffix = [
-        b1.blueMotion.motionType[0],
-        b1.redMotion.motionType[0],
-        b1.blueMotion.startLocation[0] + b1.blueMotion.endLocation[0],
-        b2.blueMotion.motionType[0],
-        b2.redMotion.motionType[0],
-        b2.blueMotion.startLocation[0] + b2.blueMotion.endLocation[0],
+        b1.leftMotion.motionType[0],
+        b1.rightMotion.motionType[0],
+        b1.leftMotion.startLocation[0] + b1.leftMotion.endLocation[0],
+        b2.leftMotion.motionType[0],
+        b2.rightMotion.motionType[0],
+        b2.leftMotion.startLocation[0] + b2.leftMotion.endLocation[0],
       ].join("");
 
       results.push({
@@ -538,12 +538,12 @@ function buildFirestoreStep(step: SequenceStep, stepNumber: number) {
     endPosition: step.endPosition,
     gridMode: "diamond",
     duration: 1.0,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     motions: {
-      blue: buildFirestoreMotion(step.blueMotion, "blue"),
-      red: buildFirestoreMotion(step.redMotion, "red"),
+      left: buildFirestoreMotion(step.leftMotion, "blue"),
+      right: buildFirestoreMotion(step.rightMotion, "red"),
     },
   };
 }
@@ -556,8 +556,8 @@ function buildFirestoreStartPosition(step: SequenceStep) {
     gridPosition: step.startPosition,
     gridMode: "diamond",
     motions: {
-      blue: buildFirestoreMotion(step.blueMotion, "blue"),
-      red: buildFirestoreMotion(step.redMotion, "red"),
+      left: buildFirestoreMotion(step.leftMotion, "blue"),
+      right: buildFirestoreMotion(step.rightMotion, "red"),
     },
   };
 }
@@ -817,15 +817,15 @@ async function main(): Promise<void> {
       const trace = traceHandPath(seqs[0].steps);
       const words = seqs.map(s => s.word).join(", ");
       console.log(`\n    Hand Path #${hpNum} [${family}] — ${seqs.length} sequences`);
-      console.log(`      Hand A: ${trace.blue}`);
-      console.log(`      Hand B: ${trace.red}`);
+      console.log(`      Hand A: ${trace.left}`);
+      console.log(`      Hand B: ${trace.right}`);
       console.log(`      Words: ${words}`);
       hpNum++;
     }
 
     // Print sample sequences — pick one with anti motions to verify orientation chaining
     const antiSample = unique.find(s =>
-      s.steps.some(st => st.blueMotion.motionType === "anti" || st.redMotion.motionType === "anti")
+      s.steps.some(st => st.leftMotion.motionType === "anti" || st.rightMotion.motionType === "anti")
     ) ?? unique[0];
 
     for (const sample of [unique[0], antiSample].filter((s, i, a) => a.indexOf(s) === i)) {
@@ -834,10 +834,10 @@ async function main(): Promise<void> {
       for (const step of sample.steps) {
         console.log(
           `    Beat ${step.stepNumber}: ${step.letter} ` +
-            `blue=${step.blueMotion.motionType}[${step.blueMotion.startLocation}→${step.blueMotion.endLocation}] ` +
-            `ori=${step.blueMotion.startOrientation}→${step.blueMotion.endOrientation} | ` +
-            `red=${step.redMotion.motionType}[${step.redMotion.startLocation}→${step.redMotion.endLocation}] ` +
-            `ori=${step.redMotion.startOrientation}→${step.redMotion.endOrientation}`
+            `blue=${step.leftMotion.motionType}[${step.leftMotion.startLocation}→${step.leftMotion.endLocation}] ` +
+            `ori=${step.leftMotion.startOrientation}→${step.leftMotion.endOrientation} | ` +
+            `red=${step.rightMotion.motionType}[${step.rightMotion.startLocation}→${step.rightMotion.endLocation}] ` +
+            `ori=${step.rightMotion.startOrientation}→${step.rightMotion.endOrientation}`
         );
       }
     }

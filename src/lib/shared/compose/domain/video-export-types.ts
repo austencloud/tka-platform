@@ -58,8 +58,8 @@ export interface VideoExportOrchestratorOptions {
    *  export engine loads — without them the export falls back to global settings
    *  (default "staff") and on the QR landing page (no DI bootstrap) renders the
    *  wrong/blank prop. */
-  bluePropType?: string | null;
-  redPropType?: string | null;
+  leftPropType?: string | null;
+  rightPropType?: string | null;
   /** Preview dark-mode override matching the live view's prop colors. */
   previewDarkMode?: boolean | null;
   /** Whether non-radial grid points are shown (matches the live grid). */
@@ -125,8 +125,8 @@ export interface VideoExportOrchestratorOptions {
     stepNumbers: boolean;
     wordHeader: boolean;
     progressBar: boolean;
-    bluePathLines: boolean;
-    redPathLines: boolean;
+    leftPathLines: boolean;
+    rightPathLines: boolean;
     grid: boolean;
   }>;
   onCleanup?: () => void;

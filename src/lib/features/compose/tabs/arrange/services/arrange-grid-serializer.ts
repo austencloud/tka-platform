@@ -59,10 +59,10 @@ function getMotionFallback(
   const refStep = refLayer.sequence.steps?.[0];
   if (!layerStep?.motions || !refStep?.motions) return null;
 
-  const lb = layerStep.motions.blue;
-  const lr = layerStep.motions.red;
-  const rb = refStep.motions.blue;
-  const rr = refStep.motions.red;
+  const lb = layerStep.motions.left;
+  const lr = layerStep.motions.right;
+  const rb = refStep.motions.left;
+  const rr = refStep.motions.right;
 
   const differs =
     lb?.startLocation !== rb?.startLocation ||

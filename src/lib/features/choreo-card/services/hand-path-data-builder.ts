@@ -27,7 +27,7 @@ import {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   HandPath,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -60,17 +60,17 @@ const LOCATION_BY_VALUE: Record<string, GridLocation> = Object.fromEntries(
  * The "→" separator is a Unicode right arrow (U+2192), not "->".
  */
 export function parseHandPathId(handPathId: string): HandPathTrace {
-  const [bluePart, redPart] = handPathId.split("|");
+  const [leftPart, rightPart] = handPathId.split("|");
 
-  if (!bluePart || !redPart) {
+  if (!leftPart || !rightPart) {
     throw new Error(
       `Invalid hand path ID - expected "blue|red" format: "${handPathId}"`
     );
   }
 
   return {
-    blue: parseLocationSequence(bluePart, "blue"),
-    red: parseLocationSequence(redPart, "red"),
+    left: parseLocationSequence(leftPart, "blue"),
+    right: parseLocationSequence(rightPart, "red"),
   };
 }
 
@@ -86,27 +86,27 @@ export function parseHandPathId(handPathId: string): HandPathTrace {
  *   - propType always HAND
  */
 export function buildFromTrace(trace: HandPathTrace): PictographData[] {
-  const blueLen = trace.blue.length;
-  const redLen = trace.red.length;
+  const leftLen = trace.left.length;
+  const rightLen = trace.right.length;
 
-  if (blueLen < 2 || redLen < 2) {
+  if (leftLen < 2 || rightLen < 2) {
     throw new Error(
-      `Hand path trace must have at least 2 locations per hand (blue: ${blueLen}, red: ${redLen})`
+      `Hand path trace must have at least 2 locations per hand (blue: ${leftLen}, red: ${rightLen})`
     );
   }
 
-  const stepCount = Math.min(blueLen, redLen) - 1;
+  const stepCount = Math.min(leftLen, rightLen) - 1;
   const hash = hashTrace(trace);
   const beats: PictographData[] = [];
 
   for (let i = 0; i < stepCount; i++) {
-    const blueStart = trace.blue[i]!;
-    const blueEnd = trace.blue[i + 1]!;
-    const redStart = trace.red[i]!;
-    const redEnd = trace.red[i + 1]!;
+    const leftStart = trace.left[i]!;
+    const leftEnd = trace.left[i + 1]!;
+    const rightStart = trace.right[i]!;
+    const rightEnd = trace.right[i + 1]!;
 
-    const blueHandPath = deriveHandPath(blueStart, blueEnd);
-    const redHandPath = deriveHandPath(redStart, redEnd);
+    const leftHandPath = deriveHandPath(leftStart, leftEnd);
+    const rightHandPath = deriveHandPath(rightStart, rightEnd);
     const beatSkews = trace.skews?.[i];
 
     beats.push({
@@ -114,11 +114,11 @@ export function buildFromTrace(trace: HandPathTrace): PictographData[] {
       letter: null,
       gridMode: GridMode.DIAMOND,
       motions: {
-        [MotionColor.BLUE]: createHandMotion(
-          MotionColor.BLUE, blueStart, blueEnd, blueHandPath, beatSkews?.blue
+        [HandSide.LEFT]: createHandMotion(
+          HandSide.LEFT, leftStart, leftEnd, leftHandPath, beatSkews?.left
         ),
-        [MotionColor.RED]: createHandMotion(
-          MotionColor.RED, redStart, redEnd, redHandPath, beatSkews?.red
+        [HandSide.RIGHT]: createHandMotion(
+          HandSide.RIGHT, rightStart, rightEnd, rightHandPath, beatSkews?.right
         ),
       },
     });
@@ -161,7 +161,7 @@ export function buildFromHandPathId(handPathId: string, representative?: Sequenc
  *   STATIC          | STATIC            | STATIC       | 0
  */
 function createHandMotion(
-  color: MotionColor,
+  color: HandSide,
   start: GridLocation,
   end: GridLocation,
   handPath: HandPath,
@@ -173,7 +173,7 @@ function createHandMotion(
     || handPath === HandPath.HASH_OUT;
 
   return createMotionData({
-    color,
+    hand: color,
     propType: PropType.HAND,
     startLocation: start,
     endLocation: end,
@@ -203,17 +203,17 @@ function correctColorAssignment(
   );
   if (!firstStep) return;
 
-  const blueMotion = firstStep.motions?.[MotionColor.BLUE];
+  const blueMotion = firstStep.motions?.[HandSide.LEFT];
   // Invisible placeholder = hand not really there (both-required Step shape).
   if (!isVisibleMotion(blueMotion) || !blueMotion.startLocation) return;
 
   const actualBlueStart = blueMotion.startLocation.toLowerCase();
-  const traceBlueStart = trace.blue[0];
+  const traceBlueStart = trace.left[0];
 
   if (traceBlueStart && traceBlueStart !== actualBlueStart) {
-    const temp = trace.blue;
-    trace.blue = trace.red;
-    trace.red = temp;
+    const temp = trace.left;
+    trace.left = trace.right;
+    trace.right = temp;
   }
 }
 
@@ -280,7 +280,7 @@ function deriveHandPath(
  */
 function hashTrace(trace: HandPathTrace): string {
   const combined =
-    trace.blue.join(",") + "|" + trace.red.join(",");
+    trace.left.join(",") + "|" + trace.right.join(",");
 
   let hash = 5381;
   for (let i = 0; i < combined.length; i++) {

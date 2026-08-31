@@ -235,8 +235,8 @@
           onStatusChange={(status) => (playerLoadState = status)}
           props={{
             sequence,
-            bluePropType: recordedPropConfig?.bluePropType ?? null,
-            redPropType: recordedPropConfig?.redPropType ?? null,
+            leftPropType: recordedPropConfig?.leftPropType ?? null,
+            rightPropType: recordedPropConfig?.rightPropType ?? null,
             autoPlay: true,
             showControls: false,
             chrome: "minimal",
@@ -282,8 +282,8 @@
         debugName="sequence showcase step carousel"
         props={{
           sequence,
-          bluePropType: recordedPropConfig?.bluePropType ?? null,
-          redPropType: recordedPropConfig?.redPropType ?? null,
+          leftPropType: recordedPropConfig?.leftPropType ?? null,
+          rightPropType: recordedPropConfig?.rightPropType ?? null,
           currentStep: playbackStep,
           bpm: 60,
           density: "compact",
@@ -306,8 +306,8 @@
       {#if sequence}
         <PropAwareThumbnail
           {sequence}
-          bluePropType={recordedPropConfig?.bluePropType}
-          redPropType={recordedPropConfig?.redPropType}
+          leftPropType={recordedPropConfig?.leftPropType}
+          rightPropType={recordedPropConfig?.rightPropType}
           catDogModeEnabled={recordedPropConfig?.catDogMode ?? false}
           eager
           {allowQR}

@@ -22,7 +22,7 @@ type Describable = {
   letter?: string | null;
   startPosition?: string | null;
   endPosition?: string | null;
-  motions?: { blue?: MotionData | null; red?: MotionData | null } | null;
+  motions?: { left?: MotionData | null; right?: MotionData | null } | null;
 };
 
 const LOCATION_NAME: Record<string, string> = {
@@ -97,9 +97,9 @@ export function describePictograph(
   p: Describable | null | undefined,
   opts?: { tndMode?: TnDMode | null }
 ): string {
-  const blue = p?.motions?.blue;
-  const red = p?.motions?.red;
-  if (!isVisibleMotion(blue) && !isVisibleMotion(red)) return "Pictograph (empty)";
+  const left = p?.motions?.left;
+  const right = p?.motions?.right;
+  if (!isVisibleMotion(left) && !isVisibleMotion(right)) return "Pictograph (empty)";
 
   const startG = groupOf(p?.startPosition);
   const endG = groupOf(p?.endPosition);
@@ -113,7 +113,7 @@ export function describePictograph(
   const tndPart = tndMode ? TND_NAME[tndMode] : null;
 
   const head = [letterPart, posPhrase, tndPart].filter(Boolean).join(", ");
-  const motions = [motionPhrase("Blue", blue), motionPhrase("Red", red)].filter(Boolean);
+  const motions = [motionPhrase("Blue", left), motionPhrase("Red", right)].filter(Boolean);
   const motionSentence = motions.length ? motions.join("; ") + "." : "";
 
   return [head + ".", motionSentence].filter(Boolean).join(" ").trim();

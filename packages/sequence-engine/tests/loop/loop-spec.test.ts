@@ -64,6 +64,20 @@ describe("loopSpecToWire / loopSpecFromWire", () => {
     expect(wire.left!["rotated"]).toEqual({ period: 4 });
     expect(wire.left!["rotated"].domain).toBeUndefined();
   });
+
+  it("hydrates legacy blue/red Firestore keys into left/right hands", () => {
+    const hydrated = loopSpecFromWire({
+      blue: { rotated: { period: 4 } },
+      red: { mirrored: { period: 2 } },
+    });
+
+    expect(hydrated.left?.components.get(LOOPComponent.ROTATED)?.period).toBe(4);
+    expect(hydrated.right?.components.get(LOOPComponent.MIRRORED)?.period).toBe(2);
+    expect(loopSpecToWire(hydrated)).toEqual({
+      left: { rotated: { period: 4 } },
+      right: { mirrored: { period: 2 } },
+    });
+  });
 });
 
 describe("loopSpecPeriod", () => {
