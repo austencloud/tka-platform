@@ -41,6 +41,12 @@
     type AnSlicePayload,
     type AnSliceSeed,
   } from "../services/viewer-url-slices/an-slice";
+  import {
+    captureExSlice,
+    seedFromExSlice,
+    type ExSlicePayload,
+  } from "../services/viewer-url-slices/ex-slice";
+  import type { ExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
   import {
@@ -544,6 +550,26 @@
   const anVisibilityObserver = () => urlSession.scheduleUrlWrite();
   anStores.visibility.registerObserver(anVisibilityObserver);
 
+  // Export options are another app-global singleton (`getExportOptionsState()`,
+  // borrowed here via `exportCoord.exportOptions` — same instance ~8 files call
+  // directly with no injection seam), so a link borrows it the same way as the
+  // 2D animation stores above: snapshot -> suspend -> apply seed -> (on close)
+  // restore -> resume. Its fields are plain `$state`, so the live-sync effect
+  // below tracks it without a manual observer the way an's visibility class needs.
+  const exportOptionsStore = exportCoord.exportOptions;
+  const exSeedPayload = urlSession.getSeed("ex") as ExSlicePayload | null;
+  let exRestore: ExportOptionsState | null =
+    exSeedPayload && urlSession.isOverride("ex", captureExSlice(exportOptionsStore))
+      ? exportOptionsStore.snapshot()
+      : null;
+  if (exRestore) {
+    exportOptionsStore.setPersistenceSuspended(true);
+    exportOptionsStore.replaceAll(seedFromExSlice(exSeedPayload!));
+  }
+  const unregisterExSlice = urlSession.registerSlice("ex", () =>
+    captureExSlice(exportOptionsStore)
+  );
+
   const scene3DRenderState = createScene3DRenderState();
   setScene3DRenderContext(scene3DRenderState);
 
@@ -658,6 +684,12 @@
       anStores.settings.setPersistenceSuspended(false);
       anStores.visibility.setPersistenceSuspended(false);
       anRestore = null;
+    }
+    unregisterExSlice();
+    if (exRestore) {
+      exportOptionsStore.replaceAll(exRestore);
+      exportOptionsStore.setPersistenceSuspended(false);
+      exRestore = null;
     }
     urlSession.dispose();
     interactive.clearAutoplayTimer();
