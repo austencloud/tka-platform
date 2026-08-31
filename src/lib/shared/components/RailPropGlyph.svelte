@@ -27,7 +27,10 @@
   const presentation = $derived(getRailPropGlyphPresentation(propType));
   const propImage = $derived(
     (isFanPropType(propType)
-      ? fanAppearanceArtwork(resolvedFanAppearance.build)
+      ? fanAppearanceArtwork(
+          resolvedFanAppearance.build,
+          resolvedFanAppearance.cover
+        )
       : null) ?? getPropTypeDisplayInfo(propType).image
   );
   const artworkKey = $derived(

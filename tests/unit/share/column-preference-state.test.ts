@@ -124,6 +124,15 @@ describe("card column preferences", () => {
     });
   });
 
+  it("persists three columns for a 12-step card", async () => {
+    composition.setColumnCountForStepCount(12, 3);
+
+    expect(composition.getColumnCountForStepCount(12)).toBe(3);
+
+    const reloaded = await loadManager();
+    expect(reloaded.getColumnCountForStepCount(12)).toBe(3);
+  });
+
   it("keeps an explicit guest choice across a real module reload", async () => {
     composition.setColumnCountForStepCount(8, 8);
 
