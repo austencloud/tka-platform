@@ -188,6 +188,7 @@
 
       <ExpandableSearchBar
         value={scanState.search}
+        name="scan-activity-search"
         placeholder="Search card, code, city, or country"
         onSearch={scanState.setSearch}
         onClear={() => scanState.setSearch("")}

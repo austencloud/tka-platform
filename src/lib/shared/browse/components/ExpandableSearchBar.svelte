@@ -18,6 +18,8 @@
     onClear?: () => void;
     placeholder?: string;
     value?: string;
+    /** Stable form-field name for browser tooling and autofill heuristics. */
+    name?: string;
     /** Edge that stays fixed while the collapsed control expands. */
     expansionAnchor?: "start" | "end";
   }
@@ -27,6 +29,7 @@
     onClear,
     placeholder = "Search...",
     value = "",
+    name = "search",
     expansionAnchor = "start",
   }: Props = $props();
 
@@ -155,6 +158,7 @@
     <i class="fas fa-search search-icon" aria-hidden="true"></i>
     <input
       type="text"
+      {name}
       class="search-input"
       bind:this={inputRef}
       bind:value={inputValue}
