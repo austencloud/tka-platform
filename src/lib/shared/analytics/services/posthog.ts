@@ -143,8 +143,8 @@ function resolveBootstrapDistinctId(token: string): string | undefined {
  * stops sending. So every non-drop branch below returns `event` explicitly,
  * never falls off the end of the function.
  *
- * Three console.error strings confirmed as SDK/browser chatter, not app bugs —
- * they were 80%+ of $exception volume on the Instagram-referral session that
+ * These console.error strings are confirmed SDK/browser chatter, not app bugs.
+ * The original set was 80%+ of $exception volume on the Instagram-referral session that
  * prompted this audit (docs/architecture/in-app-browser-path.md), burying real
  * errors under noise nobody could act on. This is a DENYLIST: only an event
  * matching one of these three patterns is dropped, everything else — including
@@ -181,6 +181,11 @@ const EXCEPTION_NOISE = [
   // sentinel when CORS does not grant the page access to the error details.
   // It carries no source, stack, line, or actionable failure information.
   /^Script error\.?$/,
+  // GIS reports its own intentional `cancel()` path as a console error when
+  // FedCM has an active credential request. Closing One Tap before another
+  // provider starts is expected; origin, client-ID, and network failures keep
+  // different messages and must remain visible.
+  /^\[GSI_LOGGER\]: FedCM get\(\) rejects with AbortError: signal is aborted without reason$/,
 ];
 
 /**
