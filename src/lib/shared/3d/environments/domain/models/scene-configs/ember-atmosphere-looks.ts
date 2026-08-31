@@ -116,22 +116,59 @@ export interface EmberAtmosphereLookPreset {
  */
 const CALDERA_BEARING: [number, number, number] = [-25, 0, 145];
 
+/**
+ * The baked world spans x ±190 and z −145…229, so the furthest terrain any
+ * camera can frame is roughly 530 m out. The haze dome is depth-tested; at its
+ * old 260 it cut a visible shell through the ridgelines and only the terrain
+ * behind that shell received any atmosphere. Sitting it past the world makes it
+ * purely sky and leaves every metre of distance to scene fog.
+ */
+const HAZE_DOME_RADIUS = 660;
+
+/**
+ * Scene fog is the only aerial-perspective mechanism the scene has, so its
+ * colour is the colour distance converges to. A near-black fog drove every
+ * ridge, mesa and the basalt tower to a flat cutout the further away it stood.
+ * Each look's fog now sits between its own sky mid and bottom stops: warm
+ * enough that distance desaturates into atmosphere, dark enough that the
+ * ridgeline still reads against the lit sky. Densities are set so the
+ * performer's 25 m stays under two per cent and the wash arrives past 60 m.
+ */
+const FOG: Record<EmberAtmosphereLookId, FogConfig> = {
+  "blackglass-inferno": { color: "#3f2018", density: 0.0042 },
+  "furnace-storm": { color: "#6b3018", density: 0.0072 },
+  "sulfur-caldera": { color: "#443f22", density: 0.0062 },
+};
+
+/**
+ * A grazing fill on the terminus bearing, which the other four directionals
+ * leave dark: two rake from the caldera side, one is nearly overhead. At about
+ * eight degrees of elevation it lands on vertical rock — mesa walls, ridge
+ * flanks, the basalt tower's columns — and contributes barely a seventh of its
+ * intensity to level ground, so it gives distant form back without lifting the
+ * plain or diluting the close-range rim light.
+ */
+const TERMINUS_FILL_POSITION: [number, number, number] = [26, 18, -130];
+
 const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
   id: "blackglass-inferno",
   label: "Blackglass Inferno",
   sky: {
     topColor: "#05070e",
-    midColor: "#221419",
+    // The mid stop owns most of the visible sky whenever a camera sits above
+    // the plain and looks down the valley, so a plum near-black there is what
+    // read as a void over the terminus.
+    midColor: "#341a15",
     bottomColor: "#7d2a10",
     horizonGlow: {
       color: "#c8451a",
       direction: CALDERA_BEARING,
-      height: 0.16,
-      spread: 0.42,
-      intensity: 0.34,
+      height: 0.24,
+      spread: 0.62,
+      intensity: 0.38,
     },
   },
-  fog: { color: "#1c0f0c", density: 0.0049 },
+  fog: FOG["blackglass-inferno"],
   lavaRivers: {
     baseColor: "#e33a05",
     hotColor: "#ffd05b",
@@ -147,16 +184,18 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
     enabled: true,
     color1: "#7b2b16",
     color2: "#090b0f",
-    opacity: 0.4,
+    opacity: 0.42,
     scale: 2.7,
     animationSpeed: 0.035,
     lightningInterval: 7.5,
     lightningIntensity: 0.5,
     innerGlowColor: "#ff5a12",
-    radius: 260,
+    radius: HAZE_DOME_RADIUS,
     underglowDirection: CALDERA_BEARING,
     underglowColor: "#d8501a",
-    underglowStrength: 0.38,
+    underglowStrength: 0.42,
+    underglowFocus: 2.2,
+    underglowWrap: 0.3,
   },
   embers: {
     type: "embers",
@@ -185,10 +224,13 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
     sizeRange: [0.12, 0.38],
     spin: false,
   },
+  // A hemisphere's ground colour is what reaches the vertical faces the sky
+  // half misses, so the basin bounce carries the sides of every column and
+  // cliff. It was dark enough that those faces had nothing but the two keys.
   hemisphereLight: {
     skyColor: "#8799a2",
-    groundColor: "#2f0d08",
-    intensity: 1.32,
+    groundColor: "#46170e",
+    intensity: 1.44,
   },
   skyLight: {
     enabled: true,
@@ -204,6 +246,7 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
       { position: [-20, 10, 12], color: "#7fa9bd", intensity: 1.22 },
       { position: [0, 24, -6], color: "#ffeadb", intensity: 0.38 },
       { position: [-34, 20, 90], color: "#c84620", intensity: 0.68 },
+      { position: TERMINUS_FILL_POSITION, color: "#8a6259", intensity: 0.46 },
     ],
     points: [
       {
@@ -361,12 +404,12 @@ const FURNACE_STORM: EmberAtmosphereLookPreset = {
     horizonGlow: {
       color: "#e0561d",
       direction: CALDERA_BEARING,
-      height: 0.3,
-      spread: 0.72,
-      intensity: 0.62,
+      height: 0.36,
+      spread: 0.8,
+      intensity: 0.66,
     },
   },
-  fog: { color: "#32130d", density: 0.0115 },
+  fog: FOG["furnace-storm"],
   lavaRivers: {
     ...BLACKGLASS_INFERNO.lavaRivers,
     baseColor: "#e74306",
@@ -376,17 +419,21 @@ const FURNACE_STORM: EmberAtmosphereLookPreset = {
     edgeCooling: 0.29,
     bankRadiance: 0.62,
   },
+  // Storm air scatters furthest, so its glow wraps hardest onto the bearings
+  // facing away from the vent and its lobe is the loosest of the three.
   volcanicHaze: {
     ...BLACKGLASS_INFERNO.volcanicHaze,
     color1: "#b93b13",
     color2: "#260807",
-    opacity: 0.46,
+    opacity: 0.5,
     scale: 2.8,
     animationSpeed: 0.05,
     lightningInterval: 4.6,
     lightningIntensity: 0.8,
     underglowColor: "#f0631f",
-    underglowStrength: 0.5,
+    underglowStrength: 0.54,
+    underglowFocus: 1.9,
+    underglowWrap: 0.38,
   },
   // Furnace already ran the densest air of the three looks, so it gains its
   // liveliness from the shared larger mote sizes rather than from more of them.
@@ -407,8 +454,8 @@ const FURNACE_STORM: EmberAtmosphereLookPreset = {
   },
   hemisphereLight: {
     skyColor: "#b87056",
-    groundColor: "#8e240b",
-    intensity: 1.18,
+    groundColor: "#9c3411",
+    intensity: 1.3,
   },
   skyLight: {
     enabled: true,
@@ -425,6 +472,7 @@ const FURNACE_STORM: EmberAtmosphereLookPreset = {
       { position: [-18, 12, 14], color: "#a06f6a", intensity: 0.54 },
       { position: [0, 26, -4], color: "#ffe1bf", intensity: 0.42 },
       { position: [-30, 18, 86], color: "#ff5520", intensity: 0.82 },
+      { position: TERMINUS_FILL_POSITION, color: "#a97056", intensity: 0.56 },
     ],
     points: BLACKGLASS_INFERNO.rig.points.map((light) => ({
       ...light,
@@ -469,12 +517,12 @@ const SULFUR_CALDERA: EmberAtmosphereLookPreset = {
     horizonGlow: {
       color: "#c99a2a",
       direction: CALDERA_BEARING,
-      height: 0.22,
-      spread: 0.55,
-      intensity: 0.42,
+      height: 0.28,
+      spread: 0.68,
+      intensity: 0.46,
     },
   },
-  fog: { color: "#293019", density: 0.0105 },
+  fog: FOG["sulfur-caldera"],
   lavaRivers: {
     ...BLACKGLASS_INFERNO.lavaRivers,
     baseColor: "#bd3704",
@@ -485,17 +533,21 @@ const SULFUR_CALDERA: EmberAtmosphereLookPreset = {
     edgeCooling: 0.42,
     bankRadiance: 0.34,
   },
+  // Clear sulfurous air holds the tightest lobe of the three, so the vent
+  // stays a readable direction; the wrap keeps the far bearings from emptying.
   volcanicHaze: {
     ...BLACKGLASS_INFERNO.volcanicHaze,
     color1: "#767023",
     color2: "#12150c",
-    opacity: 0.3,
+    opacity: 0.34,
     scale: 1.85,
     animationSpeed: 0.028,
     lightningIntensity: 0.26,
     innerGlowColor: "#e8b83d",
     underglowColor: "#d8a537",
-    underglowStrength: 0.3,
+    underglowStrength: 0.34,
+    underglowFocus: 2.6,
+    underglowWrap: 0.24,
   },
   embers: {
     ...BLACKGLASS_INFERNO.embers,
@@ -514,8 +566,8 @@ const SULFUR_CALDERA: EmberAtmosphereLookPreset = {
   },
   hemisphereLight: {
     skyColor: "#879078",
-    groundColor: "#60541e",
-    intensity: 1.12,
+    groundColor: "#6e6224",
+    intensity: 1.24,
   },
   skyLight: {
     enabled: true,
@@ -532,6 +584,7 @@ const SULFUR_CALDERA: EmberAtmosphereLookPreset = {
       { position: [-22, 11, 16], color: "#789082", intensity: 0.68 },
       { position: [0, 25, -5], color: "#fff3cb", intensity: 0.34 },
       { position: [-34, 20, 88], color: "#a88724", intensity: 0.62 },
+      { position: TERMINUS_FILL_POSITION, color: "#8f8a68", intensity: 0.44 },
     ],
     points: BLACKGLASS_INFERNO.rig.points.map((light, index) => ({
       ...light,
