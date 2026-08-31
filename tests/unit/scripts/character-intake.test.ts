@@ -89,14 +89,35 @@ const FINGER_SEGMENTS = [
 function createFixtureGlb({
   weighted = true,
   mixamoNamespace = false,
+  unrealNaming = false,
   lastSkinOmitsFingers = false,
 } = {}): Buffer {
-  const jointNames = [
+  const canonicalJointNames = [
     ...REQUIRED_BODY_BONES,
     ...["Left", "Right"].flatMap((side) =>
       FINGER_SEGMENTS.map((segment) => `${side}Hand${segment}`)
     ),
   ];
+  const unrealBodyNames = new Map([
+    ["Spine", "spine_01"],
+    ["Spine1", "spine_02"],
+    ["Spine2", "spine_03"],
+    ["LeftUpLeg", "thigh_l"],
+    ["LeftLeg", "calf_l"],
+    ["RightUpLeg", "thigh_r"],
+    ["RightLeg", "calf_r"],
+  ]);
+  const jointNames = canonicalJointNames.map((name) => {
+    if (!unrealNaming) return name;
+    const bodyName = unrealBodyNames.get(name);
+    if (bodyName) return bodyName;
+    const finger = name.match(
+      /^(Left|Right)Hand(Thumb|Index|Middle|Ring|Pinky)([123])$/
+    );
+    if (!finger) return name;
+    const [, side, fingerName, segment] = finger;
+    return `${fingerName.toLowerCase()}_0${segment}_${side === "Left" ? "l" : "r"}`;
+  });
   const jointNodes = jointNames.map((name) => ({
     name: mixamoNamespace ? `mixamorig12:${name}` : name,
   }));
@@ -275,6 +296,23 @@ describe("character GLB inspection", () => {
 
     expect(before.fingerChains).toBe(false);
     expect(changes).toHaveLength(52);
+    expect(after.mappedBodyBoneCount).toBe(22);
+    expect(after.fingerChains).toBe(true);
+    expect(after.errors).toEqual([]);
+  });
+
+  it("canonicalizes Unreal-style body and finger joints", () => {
+    const directory = temporaryDirectory();
+    const model = resolve(directory, "unreal.glb");
+    writeFileSync(model, createFixtureGlb({ unrealNaming: true }));
+
+    const before = inspectCharacterGlb(model);
+    const changes = normalizeRuntimeJointNames(model);
+    const after = inspectCharacterGlb(model);
+
+    expect(before.mappedBodyBoneCount).toBeLessThan(22);
+    expect(before.fingerChains).toBe(false);
+    expect(changes).toHaveLength(37);
     expect(after.mappedBodyBoneCount).toBe(22);
     expect(after.fingerChains).toBe(true);
     expect(after.errors).toEqual([]);
