@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 207" data-generated-from="scripts/assets/lotus-fire-reference.svg" data-source-version="6">
   <title>Home of Poi Medium Lotus fire fan</title>
   <desc>Generated from the measured, hand-traced Lotus geometry used by the 3D fan model.</desc>
-  <g transform="translate(130 103.5) rotate(90) scale(0.4 0.47) translate(-240 -270)" fill="none" stroke="#2E3192" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+  <g data-fan-frame="" transform="translate(130 103.5) rotate(90) scale(0.4 0.47) translate(-240 -270)" fill="none" stroke="#2E3192" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
     <path data-lotus-rail="center-petal-left" d="M 205.5407 244.0775 C 201.7161 235.9360 197.1341 224.3865 193.9154 209.9211 C 191.3404 198.4473 187.3644 179.7409 190.9996 156.1495 C 191.8327 150.7723 195.6952 127.8626 208.7216 107.4899 C 222.5053 85.9055 223.7170 84.3908 223.7170 84.3908 C 227.8446 79.1651 231.4420 75.4163 233.3732 68.8652 C 235.2287 62.4656 234.5471 56.6340 235.0772 52.5444"/>
     <path data-lotus-rail="center-petal-right" d="M 274.4593 244.0775 C 278.2839 235.9360 282.8659 224.3865 286.0846 209.9211 C 288.6596 198.4473 292.6356 179.7409 289.0004 156.1495 C 288.1673 150.7723 284.3048 127.8626 271.2784 107.4899 C 257.4947 85.9055 256.2830 84.3908 256.2830 84.3908 C 252.1554 79.1651 248.5580 75.4163 246.6268 68.8652 C 244.7713 62.4656 245.4529 56.6340 244.9228 52.5444"/>
     <path data-lotus-rail="upper-outer-petal-left" d="M 190.5452 271.3420 C 166.6888 258.9594 148.8532 246.2738 136.6978 236.6176 C 128.8214 230.3695 122.8005 225.5604 115.5300 217.9869 C 94.2864 195.8724 84.7059 173.4170 81.8280 166.1843 C 73.2321 144.6757 71.7174 126.8023 70.4678 111.9961 C 69.1803 96.7735 69.5969 83.8228 70.3163 74.2424"/>
@@ -16,7 +16,7 @@
     <circle data-lotus-finger-ring="" cx="240" cy="210" r="11"/>
     <path data-lotus-lower-cradle="" d="M 190.56 274.518 A 53.3174 53.3174 0 1 0 289.44 274.518"/>
   </g>
-  <g transform="translate(130 103.5) rotate(90) scale(0.4 0.47) translate(-240 -270)" fill="#2E3192">
+  <g data-fan-wicks="" transform="translate(130 103.5) rotate(90) scale(0.4 0.47) translate(-240 -270)" fill="#f5e6b8">
     <rect data-lotus-wick="1" x="-17.395" y="-27.4685" width="34.79" height="54.937" rx="6" transform="translate(26.2338 184.9188) rotate(142.9922)"/>
     <rect data-lotus-wick="2" x="-17.234" y="-25.207" width="34.468" height="50.414" rx="6" transform="translate(74.387 49.0354) rotate(-180)"/>
     <rect data-lotus-wick="3" x="-14.492" y="-25.2205" width="28.984" height="50.441" rx="6" transform="translate(240 27.3239) rotate(-180)"/>

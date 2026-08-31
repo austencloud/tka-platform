@@ -65,10 +65,13 @@ describe("fan appearance", () => {
   it("maps each physical build to the shared artwork owner", () => {
     expect(fanAppearanceArtwork("pictograph")).toBeNull();
     expect(fanAppearanceArtwork("fire")).toBe(
-      "/images/props/appearances/fan-fire.svg"
+      "/images/props/appearances/fan-fire.svg?v=2"
+    );
+    expect(fanAppearanceArtwork("fire", "covered")).toBe(
+      "/images/props/appearances/fan-fire-covered.svg?v=2"
     );
     expect(fanAppearanceArtwork("lotus")).toBe(
-      "/images/props/appearances/fan-lotus.svg?v=6"
+      "/images/props/appearances/fan-lotus.svg?v=7"
     );
     expect(fanAppearanceArtwork("day")).toBe(
       "/images/props/appearances/fan-day.svg"
