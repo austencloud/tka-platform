@@ -6937,10 +6937,10 @@ diff --git a/dist/lib/services/implementations/AvatarAnimator.d.ts.map b/dist/li
 deleted file mode 100644
 index f8e47d42167b6ea9bb4fd8f44f41273f48f1943b..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/AvatarAnimator.js b/dist/lib/services/implementations/AvatarAnimator.js
-index bdd5ae35ed47c58d29c537a7805705783f9b9066..8b23d0512808e4a155fc6c836a6980d1f4fad6bc 100644
+index bdd5ae35ed47c58d29c537a7805705783f9b9066..03e4f61e8e6db18e2dd1a7f4795128eeb9e4123c 100644
 --- a/dist/lib/services/implementations/AvatarAnimator.js
 +++ b/dist/lib/services/implementations/AvatarAnimator.js
-@@ -4,7 +4,49 @@
+@@ -4,7 +4,47 @@
   * Manages avatar pose states and smooth animation blending.
   * Bridges TKA prop states to skeleton IK targets.
   */
@@ -6966,8 +6966,6 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..8b23d0512808e4a155fc6c836a6980d1
 +const REACH_FULL_DEFICIT = 0.1;
 +/** Max clavicle reach-extension swing (protraction toward the target). */
 +const MAX_REACH_EXT = (12 * Math.PI) / 180;
-+/** Max spine lean toward an unreachable target. Reach extension should read as
-+ *  athletic intent, not collapse the performer's posture around the prop. */
 +// Arm reach must be solved by the arm/stance system. Pulling the spine toward
 +// an unreachable grip made tall avatars crane their necks into the very path
 +// the collision solver was trying to clear.
@@ -6991,7 +6989,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..8b23d0512808e4a155fc6c836a6980d1
  export class AvatarAnimator {
      ikSolver;
      skeleton;
-@@ -67,6 +109,95 @@ export class AvatarAnimator {
+@@ -67,6 +107,95 @@ export class AvatarAnimator {
       * on top of the twist rest pose before arm IK runs. 0 = disabled.
       */
      externalSpinePitchRad = 0;
@@ -7087,7 +7085,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..8b23d0512808e4a155fc6c836a6980d1
      constructor(ikSolver, skeleton, poleComputer, clavicleRaiser, spineTwister) {
          this.ikSolver = ikSolver;
          this.skeleton = skeleton;
-@@ -142,7 +273,7 @@ export class AvatarAnimator {
+@@ -142,7 +271,7 @@ export class AvatarAnimator {
              : null;
          this.targetPose.timestamp = Date.now();
      }
@@ -7096,7 +7094,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..8b23d0512808e4a155fc6c836a6980d1
          this.leftArmIK.targetWeight = blueProp ? 1 : 0;
          this.rightArmIK.targetWeight = redProp ? 1 : 0;
          const ox = offset?.x ?? 0;
-@@ -154,6 +285,7 @@ export class AvatarAnimator {
+@@ -154,6 +283,7 @@ export class AvatarAnimator {
          this.targetPose.leftHand = blueProp
              ? {
                  targetPosition: new Vector3(blueProp.worldPosition.x - ox, blueProp.worldPosition.y - oy, blueProp.worldPosition.z - oz),
@@ -7104,7 +7102,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..8b23d0512808e4a155fc6c836a6980d1
                  staffAngle: blueProp.staffRotationAngle,
                  plane: blueProp.plane,
                  weight: 1,
-@@ -162,6 +294,7 @@ export class AvatarAnimator {
+@@ -162,6 +292,7 @@ export class AvatarAnimator {
          this.targetPose.rightHand = redProp
              ? {
                  targetPosition: new Vector3(redProp.worldPosition.x - ox, redProp.worldPosition.y - oy, redProp.worldPosition.z - oz),
@@ -7112,7 +7110,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..8b23d0512808e4a155fc6c836a6980d1
                  staffAngle: redProp.staffRotationAngle,
                  plane: redProp.plane,
                  weight: 1,
-@@ -169,6 +302,46 @@ export class AvatarAnimator {
+@@ -169,6 +300,46 @@ export class AvatarAnimator {
              : null;
          this.targetPose.timestamp = Date.now();
      }
@@ -7159,7 +7157,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..8b23d0512808e4a155fc6c836a6980d1
      setLeftHandTarget(target) {
          this.targetPose.leftHand = { ...target };
          this.targetPose.timestamp = Date.now();
-@@ -197,7 +370,7 @@ export class AvatarAnimator {
+@@ -197,7 +368,7 @@ export class AvatarAnimator {
          // Apply combined layers
          const finalPose = this.computeFinalPose();
          // Solve IK for arms
@@ -7168,7 +7166,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..8b23d0512808e4a155fc6c836a6980d1
      }
      blendToTarget(_deltaTime) {
          // Hands snap directly to prop positions - no lerp.
-@@ -273,18 +446,85 @@ export class AvatarAnimator {
+@@ -273,18 +444,85 @@ export class AvatarAnimator {
          }
          return result;
      }
@@ -7255,7 +7253,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..8b23d0512808e4a155fc6c836a6980d1
          // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
          // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
          // position feeds back and causes oscillation.
-@@ -335,7 +575,7 @@ export class AvatarAnimator {
+@@ -335,7 +573,7 @@ export class AvatarAnimator {
              // Nullable hands are first-class: SpineTwister handles the
              // single-hand-gaze branch and the no-hand identity branch
              // internally, so we pass pose hands through as-is.
@@ -7264,7 +7262,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..8b23d0512808e4a155fc6c836a6980d1
              // Apply twist to each bone individually for a natural spinal curve.
              // Each bone gets its own weighted quaternion from SpineTwister.
              const applySpineTwist = (boneName, key, twistQuat) => {
-@@ -389,11 +629,121 @@ export class AvatarAnimator {
+@@ -389,11 +627,123 @@ export class AvatarAnimator {
                      hipsBoneForUpdate.updateMatrixWorld(true);
              }
          }
@@ -7274,9 +7272,11 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..8b23d0512808e4a155fc6c836a6980d1
 +        // track; reach lean is last frame's measured deficit pulling the
 +        // upper body toward an out-of-reach target. Neither touches the
 +        // hips, so the feet never slide.
-+        this.stanceYawSmoothedRad +=
-+            (this.stanceYawTargetRad - this.stanceYawSmoothedRad) *
-+                this.smoothingFactor;
++        // The app-level stance planner receives continuously interpolated grip
++        // targets, so its yaw is already a motion track. Smoothing it again here
++        // creates phase lag: midway through a lateral transition the shoulders can
++        // still face the previous side and put the arm straight through the head.
++        this.stanceYawSmoothedRad = this.stanceYawTargetRad;
 +        const stanceActive = Math.abs(this.stanceYawSmoothedRad) > 0.001;
 +        const leanActive = this.reachLeanAngleSmoothed > 0.001;
 +        let stanceYawCorrectionRad = 0;
@@ -20518,10 +20518,10 @@ index 0000000000000000000000000000000000000000..804080e43f4dc206951115861d4b871f
 +  return point.distanceTo(closestOut);
 +}
 diff --git a/src/lib/services/implementations/AvatarAnimator.ts b/src/lib/services/implementations/AvatarAnimator.ts
-index c73bcabe86e07dd117e6f737532aea88ac9ec194..10f07831709d0832b0a3cbc17e5c94868deed761 100644
+index c73bcabe86e07dd117e6f737532aea88ac9ec194..f0275c10af633a35bc43cc5bf568e093884082ad 100644
 --- a/src/lib/services/implementations/AvatarAnimator.ts
 +++ b/src/lib/services/implementations/AvatarAnimator.ts
-@@ -5,21 +5,94 @@
+@@ -5,21 +5,92 @@
   * Bridges TKA prop states to skeleton IK targets.
   */
  
@@ -20591,8 +20591,6 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..10f07831709d0832b0a3cbc17e5c9486
 +/** Max clavicle reach-extension swing (protraction toward the target). */
 +const MAX_REACH_EXT = (12 * Math.PI) / 180;
 +
-+/** Max spine lean toward an unreachable target. Reach extension should read as
-+ *  athletic intent, not collapse the performer's posture around the prop. */
 +// Arm reach must be solved by the arm/stance system. Pulling the spine toward
 +// an unreachable grip made tall avatars crane their necks into the very path
 +// the collision solver was trying to clear.
@@ -20620,7 +20618,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..10f07831709d0832b0a3cbc17e5c9486
  
  export class AvatarAnimator implements IAvatarAnimator {
    private currentPose: BodyPose;
-@@ -85,6 +158,105 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -85,6 +156,105 @@ export class AvatarAnimator implements IAvatarAnimator {
     */
    private externalSpinePitchRad = 0;
  
@@ -20726,7 +20724,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..10f07831709d0832b0a3cbc17e5c9486
    constructor(
      private ikSolver: IIKSolver,
      private skeleton: IAvatarSkeletonBuilder,
-@@ -186,7 +358,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -186,7 +356,8 @@ export class AvatarAnimator implements IAvatarAnimator {
    setPropsAndBlend(
      blueProp: PropState3D | null,
      redProp: PropState3D | null,
@@ -20736,7 +20734,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..10f07831709d0832b0a3cbc17e5c9486
    ): void {
      this.leftArmIK.targetWeight = blueProp ? 1 : 0;
      this.rightArmIK.targetWeight = redProp ? 1 : 0;
-@@ -205,6 +378,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -205,6 +376,7 @@ export class AvatarAnimator implements IAvatarAnimator {
              blueProp.worldPosition.y - oy,
              blueProp.worldPosition.z - oz
            ),
@@ -20744,7 +20742,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..10f07831709d0832b0a3cbc17e5c9486
            staffAngle: blueProp.staffRotationAngle,
            plane: blueProp.plane,
            weight: 1,
-@@ -218,6 +392,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -218,6 +390,7 @@ export class AvatarAnimator implements IAvatarAnimator {
              redProp.worldPosition.y - oy,
              redProp.worldPosition.z - oz
            ),
@@ -20752,7 +20750,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..10f07831709d0832b0a3cbc17e5c9486
            staffAngle: redProp.staffRotationAngle,
            plane: redProp.plane,
            weight: 1,
-@@ -227,6 +402,54 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -227,6 +400,54 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.targetPose.timestamp = Date.now();
    }
  
@@ -20807,7 +20805,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..10f07831709d0832b0a3cbc17e5c9486
    setLeftHandTarget(target: HandPose): void {
      this.targetPose.leftHand = { ...target };
      this.targetPose.timestamp = Date.now();
-@@ -259,7 +482,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -259,7 +480,7 @@ export class AvatarAnimator implements IAvatarAnimator {
      const finalPose = this.computeFinalPose();
  
      // Solve IK for arms
@@ -20816,7 +20814,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..10f07831709d0832b0a3cbc17e5c9486
    }
  
    private blendToTarget(_deltaTime: number): void {
-@@ -378,13 +601,99 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -378,13 +599,99 @@ export class AvatarAnimator implements IAvatarAnimator {
      return result;
    }
  
@@ -20917,7 +20915,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..10f07831709d0832b0a3cbc17e5c9486
      // Compute body center from Hips bone (or default to origin)
      const bodyCenter = new Vector3(0, 0, 0);
      const hipsBone = state.bones.get("Hips");
-@@ -392,6 +701,12 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -392,6 +699,12 @@ export class AvatarAnimator implements IAvatarAnimator {
        hipsBone.getWorldPosition(bodyCenter);
      }
  
@@ -20930,7 +20928,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..10f07831709d0832b0a3cbc17e5c9486
      // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
      // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
      // position feeds back and causes oscillation.
-@@ -445,7 +760,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -445,7 +758,8 @@ export class AvatarAnimator implements IAvatarAnimator {
          pose.leftHand?.targetPosition ?? null,
          pose.rightHand?.targetPosition ?? null,
          bodyCenter,
@@ -20940,7 +20938,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..10f07831709d0832b0a3cbc17e5c9486
        );
  
        // Apply twist to each bone individually for a natural spinal curve.
-@@ -511,12 +827,149 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -511,12 +825,151 @@ export class AvatarAnimator implements IAvatarAnimator {
        }
      }
  
@@ -20950,9 +20948,11 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..10f07831709d0832b0a3cbc17e5c9486
 +    // track; reach lean is last frame's measured deficit pulling the
 +    // upper body toward an out-of-reach target. Neither touches the
 +    // hips, so the feet never slide.
-+    this.stanceYawSmoothedRad +=
-+      (this.stanceYawTargetRad - this.stanceYawSmoothedRad) *
-+      this.smoothingFactor;
++    // The app-level stance planner receives continuously interpolated grip
++    // targets, so its yaw is already a motion track. Smoothing it again here
++    // creates phase lag: midway through a lateral transition the shoulders can
++    // still face the previous side and put the arm straight through the head.
++    this.stanceYawSmoothedRad = this.stanceYawTargetRad;
 +    const stanceActive = Math.abs(this.stanceYawSmoothedRad) > 0.001;
 +    const leanActive = this.reachLeanAngleSmoothed > 0.001;
 +    let stanceYawCorrectionRad = 0;

@@ -64,6 +64,18 @@ describe("avatar head-clearance policy", () => {
   it.each([
     ["source", animatorSource],
     ["runtime", animatorRuntime],
+  ])("does not phase-lag the interpolated stance track in %s", (_label, animator) => {
+    expect(animator).toContain(
+      "this.stanceYawSmoothedRad = this.stanceYawTargetRad"
+    );
+    expect(animator).not.toMatch(
+      /this\.stanceYawSmoothedRad \+=\s*\(this\.stanceYawTargetRad/
+    );
+  });
+
+  it.each([
+    ["source", animatorSource],
+    ["runtime", animatorRuntime],
   ])("retries only measured body intersections in %s", (_label, animator) => {
     expect(animator).toMatch(/this\.solveArmWithBodyClearance\(\s*"left"/);
     expect(animator).toMatch(/this\.solveArmWithBodyClearance\(\s*"right"/);
