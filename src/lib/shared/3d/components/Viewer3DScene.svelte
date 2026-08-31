@@ -18,8 +18,8 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
   import { resolvePerformerProp } from "$lib/shared/3d/state/performer-prop-resolution";
-  import { Raycaster, Vector2, AdditiveBlending } from "three";
-  import type { Group, Object3D } from "three";
+  import { AdditiveBlending } from "three";
+  import type { Group } from "three";
   import { userProportionsState } from "@austencloud/scene-3d";
   import PerformerBadge3D from "./PerformerBadge3D.svelte";
   import { getPerformerColor } from "../constants/performer-colors";
@@ -52,6 +52,12 @@
     PROTECTED_PERFORMER_LAYER,
     protectPerformerTree,
   } from "../environments/rendering/environment-transition-compositor";
+  import PerformerPickProxy from "./performer-interaction/PerformerPickProxy.svelte";
+  import PerformerHoverRing from "./performer-interaction/PerformerHoverRing.svelte";
+  import {
+    createPerformerPointerInteraction,
+    type PerformerPointerInteraction,
+  } from "./performer-interaction/performer-pointer-interaction.svelte";
 
   // Performer layer membership inherits through the nested PerformerRig tree.
   layers();
@@ -353,65 +359,8 @@
     }
   });
 
-  const raycaster = new Raycaster();
-  const pointer = new Vector2();
-
-  /**
-   * Convert a DOM pointer event into normalized device coordinates (-1..1),
-   * matching the canvas the renderer is drawing into.
-   */
-  function setPointerFromEvent(e: PointerEvent): void {
-    const canvas = _raycasterCanvas ?? renderer.domElement;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-  }
-
-  /**
-   * Walk up the parent chain of a hit Object3D looking for a node whose
-   * `userData.performerIndex` is set by the iteration template below.
-   * Returns the performer index or null.
-   */
-  function findPerformerIndexFromHit(obj: Object3D | null): number | null {
-    let cur: Object3D | null = obj;
-    while (cur) {
-      const idx = (cur.userData as { performerIndex?: number } | undefined)
-        ?.performerIndex;
-      if (typeof idx === "number") return idx;
-      cur = cur.parent;
-    }
-    return null;
-  }
-
-  /**
-   * Hit-test the whole scene, then resolve the first performer hit. Returns
-   * the performer index that was hit, or null for empty-space / non-performer.
-   */
-  function hitTestPerformers(e: PointerEvent): number | null {
-    const activeCamera = camera.current;
-    if (!activeCamera) return null;
-
-    setPointerFromEvent(e);
-    raycaster.setFromCamera(pointer, activeCamera);
-    const hits = raycaster.intersectObjects(scene.children, true);
-
-    for (const hit of hits) {
-      const idx = findPerformerIndexFromHit(hit.object);
-      if (idx !== null) return idx;
-    }
-    return null;
-  }
-
-  // Attach the pointerdown listener to the renderer's DOM canvas. Suppress
-  // clicks during camera orbit so ending a drag doesn't steal the selection.
-  let _raycasterCanvas: HTMLCanvasElement | null = null;
-
-  function onPointerDown(e: PointerEvent): void {
-    if (viewer3DState.isCameraDragging) return;
-    const idx = hitTestPerformers(e);
-    viewer3DState.selectPerformerScope(idx);
-  }
+  let performerInteraction = $state<PerformerPointerInteraction | null>(null);
+  let detachPerformerInteraction: (() => void) | null = null;
 
   let _detachUndo: (() => void) | null = null;
 
@@ -435,10 +384,29 @@
       );
     }
 
-    _raycasterCanvas = renderer.domElement;
-    if (_raycasterCanvas) {
-      _raycasterCanvas.addEventListener("pointerdown", onPointerDown);
-
+    const interactionCanvas = renderer.domElement;
+    if (interactionCanvas) {
+      if (interactionCanvas.tabIndex < 0) interactionCanvas.tabIndex = 0;
+      performerInteraction = createPerformerPointerInteraction({
+        canvas: interactionCanvas,
+        camera: () => camera.current,
+        viewer: viewer3DState,
+        groundY: () => performerGroundLevel,
+        stageBounds: () => ({
+          width: stageDimensions.width,
+          depth: stageDimensions.depth,
+        }),
+        onHintDismissed: () => {
+          localStorage.setItem(
+            "tka-performer-direct-manipulation-hint",
+            "dismissed"
+          );
+          window.dispatchEvent(
+            new CustomEvent("tka-performer-interaction-hint-dismissed")
+          );
+        },
+      });
+      detachPerformerInteraction = performerInteraction.attach();
       _detachUndo = attachSceneUndoKeyboard(
         getSceneUndoManager(),
         (desc) => toast.info(`Undid: ${desc}`, 1500),
@@ -452,7 +420,7 @@
   });
 
   onDestroy(() => {
-    _raycasterCanvas?.removeEventListener("pointerdown", onPointerDown);
+    detachPerformerInteraction?.();
     _detachUndo?.();
   });
 
@@ -710,6 +678,22 @@
       userData={{ performerIndex: i }}
       visible={renderEntry.presencePhase === "exiting" || i < performerCount}
     >
+      {#if performerInteraction}
+        <PerformerPickProxy
+          performerIndex={i}
+          position={performer.position}
+          groundY={performerGroundLevel}
+          register={performerInteraction.registerPickTarget}
+        />
+        {#if performerInteraction.hoveredIndex === i || performerInteraction.draggingIndex === i}
+          <PerformerHoverRing
+            position={performer.position}
+            groundY={performerGroundLevel}
+            color={getPerformerColor(i)}
+            dragging={performerInteraction.draggingIndex === i}
+          />
+        {/if}
+      {/if}
       {@const performerGridMode = (sequenceData?.gridMode ??
         "diamond") as GridMode}
       {@const performerGridOffset = GRID_OFFSETS[performer.planeMode]}
@@ -869,6 +853,7 @@
             index={i}
             selected={viewer3DState.selectedPerformerIndex === i}
             allMode={viewer3DState.selectedPerformerIndex === null}
+            registerPickTarget={performerInteraction?.registerPickTarget}
           />
         </T.Group>
       {/if}

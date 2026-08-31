@@ -58,7 +58,7 @@ export type SceneUndoOperationType =
 export interface ViewerDomainSnapshot {
   performers: PerformerPositionSnapshot[];
   selectedPerformerIndex: number | null;
-  activeFormation: FormationPreset | "manual";
+  activeFormation: FormationPreset | "manual" | "custom";
 }
 
 export interface PerformerPositionSnapshot {
