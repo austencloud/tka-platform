@@ -1,5 +1,6 @@
 <script lang="ts">
   import GuidePictograph from "../../../guide/level-1/_components/GuidePictograph.svelte";
+  import PictographTypeFrame from "$lib/shared/pictograph/shared/components/PictographTypeFrame.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import PropControlPair from "$lib/features/create/shared/components/sequence-actions/PropControlPair.svelte";
   import PropTurnsControl from "$lib/features/create/shared/components/sequence-actions/PropTurnsControl.svelte";
@@ -27,7 +28,6 @@
 
   let {
     info,
-    description,
     gridMode,
     variations,
     selectedIndex,
@@ -53,7 +53,6 @@
     onCopyLink,
   }: {
     info: CodexLetterInfo;
-    description: string;
     gridMode: GridModeValue;
     variations: PictographData[];
     selectedIndex: number;
@@ -110,24 +109,24 @@
           {edited ? "Unsaved draft" : "Canonical variation"}
         </span>
         <span class="variation-count">
-          {gridLabel} · {variations.length > 0
-            ? `Variation ${selectedIndex + 1} of ${variations.length}`
-            : "Variation"}
+          {gridLabel} · {variations.length} pictographs
         </span>
       </div>
 
       <div class="hero-frame">
         {#if draft}
-          <GuidePictograph
-            data={draft}
-            size="lg"
-            showGrid
-            showArrows
-            showTKA
-            showNonRadialPoints={gridMode === GridMode.BOX}
-            forceTheme="dark"
-            eager
-          />
+          <PictographTypeFrame letter={draft.letter}>
+            <GuidePictograph
+              data={draft}
+              size="lg"
+              showGrid
+              showArrows
+              showTKA
+              showNonRadialPoints={gridMode === GridMode.BOX}
+              forceTheme="dark"
+              eager
+            />
+          </PictographTypeFrame>
         {:else if isLoading}
           <div class="hero-state" role="status">
             <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
@@ -141,15 +140,14 @@
       {#if draft}
         <div class="motion-identity">
           <strong>{draft.startPosition} → {draft.endPosition}</strong>
-          <span>{info.typeName} · {info.transition}</span>
         </div>
       {/if}
 
       <div class="editor-card">
         <div class="section-heading compact-heading">
           <div>
-            <p class="eyebrow">Edit this beat</p>
-            <h3>Turns</h3>
+            <h3>Pictograph turns</h3>
+            <p class="heading-note">Applied to every variation shown.</p>
           </div>
           {#if edited}
             <button class="reset-button" type="button" onclick={onReset}>
@@ -209,7 +207,7 @@
       <p class="draft-note">
         {edited
           ? "The link carries these turn edits. This draft is not saved to your Library."
-          : "Choose a variation or add turns here. Composer is where you add more beats and save."}
+          : "Choose a variation or add turns here. Composer is where you add more steps and save."}
       </p>
     </section>
 
@@ -217,8 +215,10 @@
       <section class="variation-section" aria-labelledby="variation-heading">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Related variations</p>
-            <h3 id="variation-heading">Choose the version to inspect</h3>
+            <h3 id="variation-heading">{info.label} variations</h3>
+            <p class="heading-note">
+              Select any pictograph to inspect it at full size.
+            </p>
           </div>
           <div class="grid-switcher">
             <span>View grid</span>
@@ -233,10 +233,6 @@
             />
           </div>
         </div>
-
-        {#if description}
-          <p class="description">{description}</p>
-        {/if}
 
         {#if isLoading}
           <div class="load-state" role="status">
@@ -267,18 +263,19 @@
                 onclick={() => onVariationChange(index)}
               >
                 <span class="variation-picture">
-                  <GuidePictograph
-                    data={pictograph}
-                    size="sm"
-                    showGrid
-                    showArrows
-                    showTKA
-                    showNonRadialPoints={gridMode === GridMode.BOX}
-                    forceTheme="dark"
-                    eager
-                  />
+                  <PictographTypeFrame letter={pictograph.letter}>
+                    <GuidePictograph
+                      data={pictograph}
+                      size="sm"
+                      showGrid
+                      showArrows
+                      showTKA
+                      showNonRadialPoints={gridMode === GridMode.BOX}
+                      forceTheme="dark"
+                      eager
+                    />
+                  </PictographTypeFrame>
                 </span>
-                <span class="variation-label">{index + 1}</span>
               </button>
             {/each}
           </div>
@@ -447,8 +444,6 @@
     aspect-ratio: 1;
     margin-inline: auto;
     overflow: hidden;
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
-    border-radius: var(--radius-lg, 16px);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
@@ -487,11 +482,6 @@
     font-size: clamp(1rem, 0.5cqi + 0.85rem, 1.35rem);
   }
 
-  .motion-identity span {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-sm, 0.875rem);
-  }
-
   .editor-card,
   .context-card {
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -520,6 +510,13 @@
     font-weight: 750;
     letter-spacing: 0.09em;
     text-transform: uppercase;
+  }
+
+  .heading-note {
+    margin-top: 0.2rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-sm, 0.875rem);
+    line-height: 1.4;
   }
 
   h3,
@@ -598,7 +595,6 @@
   }
 
   .draft-note,
-  .description,
   .context-card p {
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.72));
     font-size: var(--font-size-sm, 0.875rem);
@@ -607,12 +603,6 @@
 
   .draft-note {
     text-align: center;
-  }
-
-  .description {
-    max-width: 72ch;
-    margin-bottom: 1rem;
-    text-wrap: pretty;
   }
 
   .grid-switcher {
@@ -648,8 +638,8 @@
     min-width: 0;
     padding: 0;
     overflow: hidden;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 12px;
+    border: 0;
+    border-radius: 0;
     color: var(--theme-text, #fff);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     cursor: pointer;
@@ -660,13 +650,13 @@
   }
 
   .variation-button:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.24));
     transform: translateY(-2px);
   }
 
   .variation-button.selected {
-    border-color: var(--theme-accent);
-    box-shadow: 0 0 0 2px
+    outline: 3px solid var(--theme-accent);
+    outline-offset: 2px;
+    box-shadow: 0 0 16px
       color-mix(in srgb, var(--theme-accent) 32%, transparent);
   }
 
@@ -683,22 +673,6 @@
     display: block;
     width: 100%;
     aspect-ratio: 1;
-  }
-
-  .variation-label {
-    position: absolute;
-    right: 0.4rem;
-    bottom: 0.4rem;
-    display: grid;
-    place-items: center;
-    min-width: 1.6rem;
-    min-height: 1.6rem;
-    padding: 0.1rem 0.35rem;
-    border-radius: 999px;
-    color: var(--theme-text, #fff);
-    background: color-mix(in srgb, var(--theme-panel-bg) 86%, transparent);
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 800;
   }
 
   .context-grid {
@@ -809,6 +783,37 @@
     .action {
       flex-basis: auto;
       width: 100%;
+    }
+  }
+
+  @media (max-height: 600px) and (min-width: 700px) {
+    .explorer {
+      grid-template-columns: minmax(14rem, 0.8fr) minmax(0, 1.8fr);
+      gap: 1rem;
+    }
+
+    .preview-column {
+      position: sticky;
+    }
+
+    .hero-frame {
+      width: min(100%, 16rem);
+    }
+
+    .section-heading {
+      align-items: center;
+      flex-direction: row;
+    }
+
+    .variation-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+      overflow: visible;
+      padding: 0;
+    }
+
+    .variation-button {
+      width: auto;
     }
   }
 

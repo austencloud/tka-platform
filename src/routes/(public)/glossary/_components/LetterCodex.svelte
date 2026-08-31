@@ -47,7 +47,7 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { TurnValue } from "$lib/shared/create/domain/turn-pattern-data";
-  import { applyPendingTurnsToOption } from "$lib/shared/create/services/apply-turns-to-motion";
+  import { applyTurnsToVariations } from "./codex-boards/letter-explorer-variations";
   import { loadFoundingCollectionSequences } from "$lib/features/browse/collections/config/founding-collections";
   import { filterSequencesByExactLetter } from "$lib/shared/browse/services/sequence-letter-occurrence";
   import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
@@ -56,11 +56,9 @@
   let {
     initialLetter = "A",
     board = "atlas",
-    descriptions,
   }: {
     initialLetter?: string;
     board?: BoardKey;
-    descriptions: Record<string, string>;
   } = $props();
 
   const selection = new SequenceSelection();
@@ -74,7 +72,6 @@
   selection.select(fallback.id);
 
   const info = $derived(CODEX_LETTERS.get(selectedId) ?? fallback);
-  const description = $derived(descriptions[info.label] ?? "");
   const overlayBoard = $derived(board !== "stage");
 
   let gridMode = $state<GridModeValue>(GridMode.DIAMOND);
@@ -115,19 +112,20 @@
       (pictograph) => pictograph.letter === info.label
     )
   );
+  const editedVariations = $derived(
+    applyTurnsToVariations(
+      variations,
+      blueTurns,
+      redTurns,
+      blueRotation,
+      redRotation
+    )
+  );
   const selectedBase = $derived(
     variations[selectedVariationIndex] ?? variations[0] ?? null
   );
-  const draft = $derived.by(() =>
-    selectedBase
-      ? applyPendingTurnsToOption(
-          selectedBase,
-          blueTurns,
-          redTurns,
-          blueRotation,
-          redRotation
-        )
-      : null
+  const draft = $derived(
+    editedVariations[selectedVariationIndex] ?? editedVariations[0] ?? null
   );
   const composerHref = $derived.by(() => {
     if (!draft) return null;
@@ -274,7 +272,6 @@
   function selectVariation(index: number): void {
     if (index < 0 || index >= variations.length) return;
     selectedVariationIndex = index;
-    resetEdits();
     commitRoute("push");
   }
 
@@ -370,16 +367,15 @@
       <ModalHeader
         id="codex-overlay-title"
         title={info.name ? `${info.label} · ${info.name}` : info.label}
-        subtitle={`${gridMode === GridMode.BOX ? "Box" : "Diamond"} grid · ${info.typeName} · ${info.transition}`}
+        subtitle={`${gridMode === GridMode.BOX ? "Box" : "Diamond"} pictographs`}
         iconColor={info.typeColor}
         onClose={closeExplorer}
       />
     {/snippet}
     <LetterExplorer
       {info}
-      {description}
       {gridMode}
-      {variations}
+      variations={editedVariations}
       selectedIndex={selectedVariationIndex}
       {draft}
       {blueTurns}

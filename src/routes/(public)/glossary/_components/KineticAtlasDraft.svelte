@@ -679,11 +679,7 @@
     {#if codexView}
       <div class="codex-host">
         {#key codexInitialLetter}
-          <LetterCodex
-            initialLetter={codexInitialLetter}
-            board={codexBoard}
-            descriptions={data.codex.descriptions}
-          />
+          <LetterCodex initialLetter={codexInitialLetter} board={codexBoard} />
         {/key}
       </div>
     {/if}
