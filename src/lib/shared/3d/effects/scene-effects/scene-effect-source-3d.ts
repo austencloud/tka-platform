@@ -30,6 +30,9 @@ interface SceneEffectTipBase3D {
   speed: number;
   /** Fractional animation step, used by beat-triggered scene effects. */
   currentStep: number;
+  /** Step count and seam contract for effects that retain motion history. */
+  totalSteps?: number;
+  seamlesslyLoopable?: boolean;
   /** Canonical prop tint for prop-matched color modes. */
   propColor: string;
 }
@@ -74,6 +77,8 @@ export interface SilkTipSource3D extends SceneEffectTipBase3D {
 export interface AnimalTipSource3D extends SceneEffectTipBase3D {
   effect: "animal";
   params: Animal3DParams;
+  totalSteps: number;
+  seamlesslyLoopable: boolean;
 }
 
 export interface PulseTipSource3D extends SceneEffectTipBase3D {

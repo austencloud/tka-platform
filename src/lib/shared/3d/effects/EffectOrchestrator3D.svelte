@@ -296,6 +296,8 @@
         velocity: { x: 0, y: 0, z: 0 },
         speed: 0,
         currentStep,
+        totalSteps,
+        seamlesslyLoopable,
         propColor:
           propIndex === 0 ? PROP_COLORS.blue.main : PROP_COLORS.red.main,
       };
@@ -413,6 +415,8 @@
     source.velocity.z = pooledVelocity.z;
     source.speed = pooledVelocity.length();
     source.currentStep = currentStep;
+    source.totalSteps = totalSteps;
+    source.seamlesslyLoopable = seamlesslyLoopable;
     source.propColor =
       propIndex === 0
         ? PROP_COLORS.blue.main
