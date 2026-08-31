@@ -357,6 +357,44 @@ describe("ElbowPoleComputer", () => {
     );
   });
 
+  it("reroutes the upper arm around the neck without moving the hand target", () => {
+    const shoulder = new Vector3(0, 0, 0);
+    const target = new Vector3(0, 0.4, 0);
+    const neck = new Vector3(0.14, 0.125, 0);
+    const chain = makeArm(shoulder, new Vector3(0, 1, 0), 0.3, 0.3);
+    const resolvedPole = computer.resolveForearmFaceClearance(
+      new Vector3(1, 0, 0),
+      target,
+      "left",
+      {
+        faceCenter: new Vector3(2, 2, 2),
+        neckCenter: neck,
+        shoulderPosition: shoulder,
+        upperArmLength: chain.upperLength,
+        forearmLength: chain.lowerLength,
+      }
+    );
+    const solver = new IKSolver();
+
+    solver.solveAndApply(chain, {
+      position: target,
+      poleHint: resolvedPole,
+    });
+
+    const elbow = new Vector3();
+    const hand = new Vector3();
+    const upperArmBodyStart = new Vector3();
+    chain.middle.getWorldPosition(elbow);
+    chain.effector.getWorldPosition(hand);
+    upperArmBodyStart.lerpVectors(shoulder, elbow, 0.35);
+
+    expectNormalized(resolvedPole);
+    expect(hand.distanceTo(target)).toBeLessThan(0.002);
+    expect(
+      pointToSegmentDistance(neck, upperArmBodyStart, elbow)
+    ).toBeGreaterThanOrEqual(0.134);
+  });
+
   it("returns a finite best-effort pole when the fixed hand target occupies the face", () => {
     const shoulder = new Vector3(0, 0, 0);
     const targetAndFace = new Vector3(0, 0.4, 0);
