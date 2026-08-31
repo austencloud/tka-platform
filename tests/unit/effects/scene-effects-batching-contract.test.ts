@@ -121,9 +121,19 @@ describe("scene-level particle batching contract", () => {
     expect(BLOOM_MATERIAL).toContain("vFalloff");
     expect(
       existsSync(
-        resolve("src/lib/shared/3d/effects/post-processing/BloomBillboard3D.svelte")
+        resolve(
+          "src/lib/shared/3d/effects/post-processing/BloomBillboard3D.svelte"
+        )
       )
     ).toBe(false);
+  });
+
+  it("routes Fire through the scene batch instead of one renderer per rig", () => {
+    expect(ORCHESTRATOR).toContain('effect !== "fire"');
+    expect(ORCHESTRATOR).toContain("params: resolvedFire");
+    expect(ORCHESTRATOR).toContain(
+      'effect === "fire" && sceneEffectsManager === null'
+    );
   });
 
   it("does not leave the retired duplicate fire emitter in the tree", () => {
