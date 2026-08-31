@@ -320,21 +320,28 @@
         >Blank motion frames: {summary.motionBlankFrames}</span
       >
       <span data-problem={summary.motionUnready3DFrames > 0}
-        >Unready 3D frames: {summary.motionUnready3DFrames}</span
+        >Unprotected 3D frames: {summary.motionUnready3DFrames}</span
       >
-      <span data-problem={summary.motionCurtainFrames > 0}
-        >Visible loading-curtain frames: {summary.motionCurtainFrames}</span
+      <span
+        data-problem={summary.motionPreparationFrames > 0 &&
+          summary.motionCurtainFrames < summary.motionPreparationFrames}
+        >Protected preparation frames: {summary.motionCurtainFrames} / {summary.motionPreparationFrames}</span
+      >
+      <span data-problem={summary.motionMisidentified3DFrames > 0}
+        >Misidentified 3D frames: {summary.motionMisidentified3DFrames}</span
+      >
+      <span data-problem={summary.motionPreparationProgressRegressions > 0}
+        >Progress regressions: {summary.motionPreparationProgressRegressions}</span
+      >
+      <span
+        >Preparation phases: {summary.motionPreparationLabels.join(" → ") ||
+          "n/a"}</span
       >
       <span data-dissolve={summary.motionCrossfadeFrames > 0}
         >Crossfade frames: {summary.motionCrossfadeFrames}</span
       >
-      <span>Preparing frames: {summary.motionPreparationFrames}</span>
       <span
-        data-problem={summary.motionPreparationFrames > 0 &&
-          summary.motionPreparationGeometryHeldFrames !==
-            summary.motionPreparationFrames}
-        >Sharp-frame lease: {summary.motionPreparationGeometryHeldFrames} / {summary.motionPreparationFrames}
-        preparing frames</span
+        >Sharp 2D exit frames: {summary.motionPreparationGeometryHeldFrames}</span
       >
       <span data-problem={summary.motionMagnifiedPreparationFrames > 0}
         >Placeholder raster growth: {summary.motionPreparationRasterGrowthMaximum ===

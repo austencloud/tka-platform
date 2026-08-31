@@ -209,33 +209,6 @@
   transform: translateX(-50%);
 }
 
-.split-view .viewer-3d-handoff-anchor {
-  position: absolute;
-  top: max(16px, 3cqh);
-  right: 0;
-  left: 0;
-  z-index: 6;
-  display: flex;
-  justify-content: center;
-  pointer-events: none;
-}
-
-.split-view .viewer-3d-handoff-status {
-  display: flex;
-  min-height: 36px;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
-  border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-  border-radius: 999px;
-  background: var(--theme-panel-bg, rgba(18, 18, 28, 0.96));
-  color: var(--theme-text, #f7f8fb);
-  box-shadow: var(--shadow-sm, 0 6px 18px rgba(0, 0, 0, 0.24));
-  font-size: var(--font-size-min, 14px);
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
 .split-view .practice-mirror-layer {
   position: absolute;
   inset: 0;
