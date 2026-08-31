@@ -216,16 +216,13 @@ export interface FlowFestNpc {
 const AVATAR_ROSTER: FlowFestFestivalAvatarId[] = [
   "ch01",
   "ch07",
-  "ch10",
   "ch12",
   "ch18",
   "ch21",
   "ch22",
   "ch24",
-  "ch34",
   "ch41",
   "ch42",
-  "ch44",
 ];
 
 const NPC_NAMES = [
