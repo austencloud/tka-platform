@@ -10,6 +10,7 @@
   import { T, useTask } from "@threlte/core";
   import { onMount, onDestroy } from "svelte";
   import {
+    Vector2,
     Vector3,
     BufferGeometry,
     Float32BufferAttribute,
@@ -18,7 +19,10 @@
     NormalBlending,
     Color,
   } from "three";
-  import type { ParticleType } from "../domain/models/environment-models";
+  import type {
+    ParticleRangeFalloff,
+    ParticleType,
+  } from "../domain/models/environment-models";
   import {
     prefersReducedMotion,
     resolveMotionScale,
@@ -70,6 +74,17 @@
      * a rounded canopy instead of filling the corners of its bounding box.
      */
     emissionShape?: "box" | "ellipse";
+    /**
+     * Born at the floor of the area and accelerating upward for the whole
+     * climb. Left off, a rising type keeps its legacy profile — born at the
+     * ceiling, decelerating — which the other scenes are tuned against.
+     */
+    buoyant?: boolean;
+    /**
+     * Range treatment. Left unset the emitter draws exactly as before: the
+     * uniforms below resolve to an identity multiply.
+     */
+    rangeFalloff?: ParticleRangeFalloff;
   }
 
   // Default values in meters (1 unit = 1 meter)
@@ -86,6 +101,8 @@
     shape,
     motionScale,
     emissionShape = "box",
+    buoyant = false,
+    rangeFalloff,
   }: Props = $props();
 
   // Particle data
@@ -204,9 +221,15 @@
     attribute float colorIndex;
     attribute float aspect;
 
+    uniform float uSubPixelFade;
+    uniform vec2 uFadeRange;
+    uniform vec2 uTintRange;
+
     varying float vRotation;
     varying float vColorIndex;
     varying float vAspect;
+    varying float vRangeAlpha;
+    varying float vRangeTint;
 
     void main() {
       vRotation = rotation;
@@ -214,7 +237,23 @@
       vAspect = aspect;
 
       vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-      gl_PointSize = size * (1000.0 / -mvPosition.z);
+      float projected = size * (1000.0 / -mvPosition.z);
+      gl_PointSize = projected;
+
+      // A point below the driver's one-pixel floor is still rasterised a whole
+      // pixel wide, so its coverage has to come off the alpha or a far mote
+      // draws many times the light it earns.
+      float subPixel = mix(1.0, clamp(projected, 0.0, 1.0), uSubPixelFade);
+
+      float dist = -mvPosition.z;
+      float fade = uFadeRange.y > uFadeRange.x
+        ? 1.0 - smoothstep(uFadeRange.x, uFadeRange.y, dist)
+        : 1.0;
+      vRangeAlpha = subPixel * fade;
+      vRangeTint = uTintRange.y > uTintRange.x
+        ? smoothstep(uTintRange.x, uTintRange.y, dist)
+        : 0.0;
+
       gl_Position = projectionMatrix * mvPosition;
     }
   `;
@@ -224,10 +263,13 @@
     uniform vec3 uColors[4];
     uniform float uShape; // 0=circle 1=diamond 2=petal 3=star 4=glow 5=snowflake 6=leaf
     uniform float uOpacity;
+    uniform vec3 uTintColor;
 
     varying float vRotation;
     varying float vColorIndex;
     varying float vAspect;
+    varying float vRangeAlpha;
+    varying float vRangeTint;
 
     void main() {
       vec2 center = gl_PointCoord - 0.5;
@@ -330,8 +372,11 @@
       // Select color based on index
       int idx = int(floor(vColorIndex));
       vec3 color = uColors[min(idx, 3)] * shade;
+      // Distance never carries a particle toward white: it settles on a colour
+      // the look chose, so a far ember stays an ember.
+      color = mix(color, uTintColor, vRangeTint);
 
-      gl_FragColor = vec4(color, alpha * uOpacity);
+      gl_FragColor = vec4(color, alpha * uOpacity * vRangeAlpha);
     }
   `;
 
@@ -348,11 +393,14 @@
       z = (Math.random() - 0.5) * area.depth;
     }
 
-    // Fireflies spawn throughout the area, others at top
+    // Fireflies spawn throughout the area, buoyant fields at the floor they
+    // climb from, everything else at the top it falls from.
     const isFirefly = type === "fireflies";
     const y = isFirefly
       ? (Math.random() - 0.5) * area.height * 0.8 // Throughout area
-      : area.height * 0.4 + Math.random() * 0.25; // At top (0.25m variation)
+      : buoyant
+        ? -area.height * 0.4 - Math.random() * 0.25 // At the floor
+        : area.height * 0.4 + Math.random() * 0.25; // At top (0.25m variation)
 
     // Fireflies have very slow random drift, others fall/rise (values in m/s)
     const vx = isFirefly
@@ -360,7 +408,9 @@
       : (Math.random() - 0.5) * 0.05;
     const vy = isFirefly
       ? (Math.random() - 0.5) * 0.015 // Gentle vertical drift
-      : -speed * (0.5 + Math.random() * 0.5) * (type === "embers" ? -1 : 1);
+      : buoyant
+        ? speed * (0.5 + Math.random() * 0.5)
+        : -speed * (0.5 + Math.random() * 0.5) * (type === "embers" ? -1 : 1);
     const vz = isFirefly
       ? (Math.random() - 0.5) * 0.025
       : (Math.random() - 0.5) * 0.05;
@@ -449,6 +499,23 @@
         uColors: { value: colorArray },
         uShape: { value: getShapeIndex() },
         uOpacity: { value: opacity },
+        uSubPixelFade: { value: rangeFalloff?.subPixel ? 1 : 0 },
+        // An empty range is the off switch: the shaders compare y > x.
+        uFadeRange: {
+          value: new Vector2(
+            rangeFalloff?.fade?.[0] ?? 0,
+            rangeFalloff?.fade?.[1] ?? 0
+          ),
+        },
+        uTintRange: {
+          value: new Vector2(
+            rangeFalloff?.tint?.start ?? 0,
+            rangeFalloff?.tint?.end ?? 0
+          ),
+        },
+        uTintColor: {
+          value: new Color(rangeFalloff?.tint?.color ?? "#ffffff"),
+        },
       },
       vertexShader,
       fragmentShader,
@@ -495,6 +562,23 @@
     }
   });
 
+  $effect(() => {
+    const uniforms = material?.uniforms;
+    if (!uniforms?.uSubPixelFade) return;
+    uniforms.uSubPixelFade.value = rangeFalloff?.subPixel ? 1 : 0;
+    (uniforms.uFadeRange?.value as Vector2 | undefined)?.set(
+      rangeFalloff?.fade?.[0] ?? 0,
+      rangeFalloff?.fade?.[1] ?? 0
+    );
+    (uniforms.uTintRange?.value as Vector2 | undefined)?.set(
+      rangeFalloff?.tint?.start ?? 0,
+      rangeFalloff?.tint?.end ?? 0
+    );
+    (uniforms.uTintColor?.value as Color | undefined)?.set(
+      rangeFalloff?.tint?.color ?? "#ffffff"
+    );
+  });
+
   // Animation loop.
   //
   // `time` is a local accumulator fed by the useTask delta instead of
@@ -538,7 +622,15 @@
 
       // Apply gravity (fireflies have none)
       if (config.gravity !== 0) {
-        p.velocity.y -= config.gravity * delta * (type === "embers" ? -1 : 1);
+        if (buoyant) {
+          // Convection accelerates a climb. The legacy embers branch inverted
+          // the sign a second time and decelerated instead, so a mote reached
+          // its apex in about a second and hung there — the stalled dots that
+          // read as stuck pixels rather than as anything rising.
+          p.velocity.y += Math.abs(config.gravity) * delta;
+        } else {
+          p.velocity.y -= config.gravity * delta * (type === "embers" ? -1 : 1);
+        }
       }
 
       // Apply sway - fireflies also sway in Z direction for 3D wandering

@@ -22,6 +22,7 @@
   import VolcanicHaze from "./ember/VolcanicHaze.svelte";
   import HeatDistortion from "./ember/HeatDistortion.svelte";
   import EmberGroundDetail from "./ember/EmberGroundDetail.svelte";
+  import EmberPlumes from "./ember/EmberPlumes.svelte";
   import EmberSurfaceEcology from "./ember/EmberSurfaceEcology.svelte";
   import {
     type EmberSceneConfig,
@@ -467,6 +468,8 @@
     colors={activeConfig.embers.colors}
     sizeRange={activeConfig.embers.sizeRange}
     spin={activeConfig.embers.spin ?? false}
+    buoyant={activeConfig.embers.buoyant ?? false}
+    rangeFalloff={activeConfig.embers.rangeFalloff}
   />
 {/key}
 
@@ -481,6 +484,8 @@
       colors={activeConfig.ash.colors}
       sizeRange={activeConfig.ash.sizeRange}
       spin={activeConfig.ash.spin ?? false}
+      buoyant={activeConfig.ash.buoyant ?? false}
+      rangeFalloff={activeConfig.ash.rangeFalloff}
     />
   {/key}
 {/if}
@@ -496,6 +501,8 @@
       colors={activeConfig.smoke.colors}
       sizeRange={activeConfig.smoke.sizeRange}
       spin={activeConfig.smoke.spin ?? false}
+      buoyant={activeConfig.smoke.buoyant ?? false}
+      rangeFalloff={activeConfig.smoke.rangeFalloff}
     />
   {/key}
 {/if}
@@ -521,26 +528,14 @@
 {/if}
 
 <!-- Layered fumaroles stitch the playable shelf into the distant active caldera. -->
-{#each activeConfig.atmosphere.plumes as plume}
-  <T.Group
-    position.x={plume.position[0]}
-    position.y={groundY + plume.position[1]}
-    position.z={plume.position[2]}
-  >
-    <FallingParticles
-      type="smoke"
-      count={plume.count}
-      area={plume.area}
-      speed={plume.speed}
-      colors={plume.colors}
-      sizeRange={plume.sizeRange}
-      spin={false}
-      opacity={plume.opacity}
-      emissionShape="ellipse"
-      motionScale={plume.motionScale}
-    />
-  </T.Group>
-{/each}
+{#key activeConfig.atmosphere.id}
+  <EmberPlumes
+    plumes={activeConfig.atmosphere.plumes}
+    {groundY}
+    fogColor={activeConfig.fog.color}
+    fogDensity={activeConfig.fog.density}
+  />
+{/key}
 
 <T.PointLight
   position={[
