@@ -11,6 +11,7 @@ const SEVERITY_RANK: Record<CollisionSeverity, number> = {
   clip: 1,
   penetrate: 2,
 };
+const MAX_DESCRIPTIONS_PER_CLUSTER = 12;
 
 export const AVATAR_COLLISION_AUDIT_STORAGE_KEY =
   "__avatarCollisionAuditReport";
@@ -30,6 +31,7 @@ export interface CollisionCluster {
   worstProgress: number;
   worstPenetrationDepth: number;
   worstPose: AvatarPoseDiagnostics;
+  worstDescription: string;
   descriptions: string[];
 }
 
@@ -52,6 +54,12 @@ function copyCluster(cluster: MutableCluster): CollisionCluster {
   return { ...copy, descriptions: [...copy.descriptions] };
 }
 
+function descriptionCategory(description: string): string {
+  return description
+    .replace(/\d+(?:\.\d+)?cm/g, "#cm")
+    .replace(/\s*\([^)]*\)\s*$/, "");
+}
+
 /** Groups per-render-frame collision events into reviewable motion spans. */
 export class AvatarSequenceCollisionAudit {
   private readonly open = new Map<string, MutableCluster>();
@@ -69,6 +77,11 @@ export class AvatarSequenceCollisionAudit {
       requestedStanceYawRad: 0,
       achievedShoulderYawRad: 0,
       shoulderWidth: 0,
+      requestedSpinePitchRad: 0,
+      appliedStanceYawRad: 0,
+      appliedReachLeanRad: 0,
+      appliedHeadDodgeRad: 0,
+      achievedTorsoPitchRad: 0,
     }
   ): void {
     this.sampledFrames += 1;
@@ -107,8 +120,9 @@ export class AvatarSequenceCollisionAudit {
           worstProgress: event.beatProgress,
           worstPenetrationDepth: event.penetrationDepth,
           worstPose: { ...diagnostics },
+          worstDescription: event.description,
           descriptions: [event.description],
-          descriptionSet: new Set([event.description]),
+          descriptionSet: new Set([descriptionCategory(event.description)]),
         });
         continue;
       }
@@ -124,9 +138,14 @@ export class AvatarSequenceCollisionAudit {
         cluster.worstStep = event.stepNumber;
         cluster.worstProgress = event.beatProgress;
         cluster.worstPose = { ...diagnostics };
+        cluster.worstDescription = event.description;
       }
-      if (!cluster.descriptionSet.has(event.description)) {
-        cluster.descriptionSet.add(event.description);
+      const category = descriptionCategory(event.description);
+      if (
+        !cluster.descriptionSet.has(category) &&
+        cluster.descriptions.length < MAX_DESCRIPTIONS_PER_CLUSTER
+      ) {
+        cluster.descriptionSet.add(category);
         cluster.descriptions.push(event.description);
       }
     }
