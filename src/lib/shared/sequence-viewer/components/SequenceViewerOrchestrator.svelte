@@ -551,6 +551,14 @@
         })
       : createEffectsConfigState();
   setEffectsConfigContext(effectsConfigState);
+  // Wire the instance to the global visibility manager NOW, not on first 2D
+  // canvas mount (CanvasSurface line ~228 makes this same assignment). A link
+  // that boots straight into the 3D pane never mounts a 2D canvas, and
+  // Viewer3DScene reads `visibilityManager.effectsConfigState` for its tip
+  // effect map — left null, a seeded fx (e.g. sparkles) renders nowhere in 3D
+  // until an unrelated pane switch mounts a canvas. Like CanvasSurface, no
+  // teardown: the next mounting surface re-assigns its own context instance.
+  getAnimationVisibilityManager().effectsConfigState = effectsConfigState;
   urlSession.registerSlice("fx", () => captureFxSlice(effectsConfigState));
   // Activate a requested effect on mount (QR scan page asks for "trails").
   // setActiveEffect keeps tipEffectMap in sync so the renderer doesn't filter tips.
