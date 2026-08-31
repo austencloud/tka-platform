@@ -231,7 +231,19 @@ export function applyDirectorCameraFrame(
   );
 
   const camera = viewer.threlteCamera as PerspectiveCamera | null;
-  if (!camera || Math.abs(camera.fov - previewFovDeg) < 0.001) return;
-  camera.fov = previewFovDeg;
-  camera.updateProjectionMatrix();
+  if (!camera) return;
+
+  if (frame.rollDeg !== 0) {
+    // Re-derive the orientation locally: snapCameraTo may skip its lookAt on
+    // an unchanged position, and during a pure roll the position IS
+    // unchanged frame to frame — an accumulated rotateZ would spin out.
+    camera.up.set(0, 1, 0);
+    camera.lookAt(frame.target[0], frame.target[1], frame.target[2]);
+    camera.rotateZ((frame.rollDeg * Math.PI) / 180);
+  }
+
+  if (Math.abs(camera.fov - previewFovDeg) >= 0.001) {
+    camera.fov = previewFovDeg;
+    camera.updateProjectionMatrix();
+  }
 }

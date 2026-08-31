@@ -27,6 +27,8 @@ export interface DirectorCameraFrame {
   position: [number, number, number];
   target: [number, number, number];
   fovDeg: number;
+  /** Horizon tilt, degrees; positive = clockwise on screen. Always present (0 = level). */
+  rollDeg: number;
 }
 
 export function getPreviewCameraFov(
@@ -112,9 +114,18 @@ function keyframe(
   target: [number, number, number],
   fovDeg: number,
   interpolation: ResolvedDirectorCameraKeyframe["interpolation"] = "smooth",
-  easing: ResolvedDirectorCameraKeyframe["easing"] = "ease-in-out"
+  easing: ResolvedDirectorCameraKeyframe["easing"] = "ease-in-out",
+  rollDeg?: number
 ): ResolvedDirectorCameraKeyframe {
-  return { atSeconds, position, target, fovDeg, interpolation, easing };
+  return {
+    atSeconds,
+    position,
+    target,
+    fovDeg,
+    interpolation,
+    easing,
+    ...(rollDeg !== undefined ? { rollDeg } : {}),
+  };
 }
 
 export function resolveDirectorCameraTrack(
@@ -174,7 +185,8 @@ export function resolveDirectorCameraTrack(
           ),
           frame.fovDeg ?? 50,
           frame.interpolation ?? "smooth",
-          frame.easing ?? "ease-in-out"
+          frame.easing ?? "ease-in-out",
+          frame.rollDeg
         );
       })
       .sort((left, right) => left.atSeconds - right.atSeconds);
@@ -304,13 +316,14 @@ export function sampleDirectorCameraTrack(
 ): DirectorCameraFrame {
   const first = keyframes[0];
   if (!first) {
-    return { position: [0, 1, -4], target: [0, 0, 0], fovDeg: 50 };
+    return { position: [0, 1, -4], target: [0, 0, 0], fovDeg: 50, rollDeg: 0 };
   }
   if (keyframes.length === 1 || atSeconds <= first.atSeconds) {
     return {
       position: [...first.position],
       target: [...first.target],
       fovDeg: first.fovDeg,
+      rollDeg: first.rollDeg ?? 0,
     };
   }
 
@@ -320,6 +333,7 @@ export function sampleDirectorCameraTrack(
       position: [...last.position],
       target: [...last.target],
       fovDeg: last.fovDeg,
+      rollDeg: last.rollDeg ?? 0,
     };
   }
 
@@ -332,6 +346,7 @@ export function sampleDirectorCameraTrack(
       position: [...start.position],
       target: [...start.target],
       fovDeg: start.fovDeg,
+      rollDeg: start.rollDeg ?? 0,
     };
   }
 
@@ -367,6 +382,14 @@ export function sampleDirectorCameraTrack(
       start.fovDeg,
       end.fovDeg,
       after.fovDeg,
+      progress,
+      smooth
+    ),
+    rollDeg: interpolateScalar(
+      before.rollDeg ?? 0,
+      start.rollDeg ?? 0,
+      end.rollDeg ?? 0,
+      after.rollDeg ?? 0,
       progress,
       smooth
     ),

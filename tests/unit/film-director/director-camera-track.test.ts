@@ -46,12 +46,28 @@ const frames: ResolvedDirectorCameraKeyframe[] = [
   },
 ];
 
+/** Factory for a resolved keyframe with sensible defaults, so rollDeg-focused
+ * tests only spell out the fields they care about. */
+function kf(
+  overrides: Partial<ResolvedDirectorCameraKeyframe> & { atSeconds: number }
+): ResolvedDirectorCameraKeyframe {
+  return {
+    position: [0, 1, -8],
+    target: [0, 0, 0],
+    fovDeg: 50,
+    interpolation: "linear",
+    easing: "linear",
+    ...overrides,
+  };
+}
+
 describe("director camera sampling", () => {
   it("interpolates position, target, and lens on the same clock", () => {
     expect(sampleDirectorCameraTrack(frames, 2)).toEqual({
       position: [2, 1.5, -6],
       target: [0, 0.25, 0],
       fovDeg: 50,
+      rollDeg: 0,
     });
   });
 
@@ -64,6 +80,7 @@ describe("director camera sampling", () => {
       position: [0, 1, -8],
       target: [0, 0, 0],
       fovDeg: 54,
+      rollDeg: 0,
     });
   });
 
@@ -115,5 +132,36 @@ describe("director camera grammar resolution", () => {
         CONTEXT
       )
     ).toThrow(/preset/i);
+  });
+
+  it("carries an authored rollDeg through raw keyframe resolution", () => {
+    const track = resolveDirectorCameraTrack(
+      {
+        keyframes: [
+          { atSeconds: 0, position: [0, 1, -4], rollDeg: 12 },
+          { atSeconds: 4, position: [0, 1, -4] },
+        ],
+      },
+      CONTEXT
+    );
+    expect(track.keyframes[0]!.rollDeg).toBe(12);
+    expect(track.keyframes[1]!.rollDeg).toBeUndefined();
+  });
+});
+
+describe("rollDeg sampling", () => {
+  it("interpolates roll between keyframes and defaults absent roll to 0", () => {
+    const rollFrames = [
+      kf({ atSeconds: 0, rollDeg: 0, interpolation: "linear" }),
+      kf({ atSeconds: 4, rollDeg: 10, interpolation: "linear" }),
+    ];
+    expect(sampleDirectorCameraTrack(rollFrames, 2).rollDeg).toBeCloseTo(5, 4);
+    expect(sampleDirectorCameraTrack(rollFrames, 0).rollDeg).toBe(0);
+    expect(sampleDirectorCameraTrack(rollFrames, 99).rollDeg).toBe(10);
+  });
+
+  it("legacy keyframes without rollDeg sample as 0", () => {
+    const legacyFrames = [kf({ atSeconds: 0 }), kf({ atSeconds: 4 })];
+    expect(sampleDirectorCameraTrack(legacyFrames, 2).rollDeg).toBe(0);
   });
 });
