@@ -1153,8 +1153,8 @@
               <small>{captionRealization.element.name}</small>
             </span>
           </span>
-          <i class="fas fa-arrow-right derivation-arrow" aria-label="produces"
-          ></i>
+          <i class="fas fa-arrow-right derivation-arrow" aria-hidden="true"></i>
+          <span class="sr-only">produces</span>
           <span class="relationship-badge prop-relationship">
             {#if captionRealization.propRelationship.kind === "full"}
               <img

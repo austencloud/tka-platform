@@ -109,14 +109,6 @@
       height: 600,
       shape: "wide" as const,
     },
-    {
-      src: "/roots/software/visualspinner3d.webp",
-      alt: "VisualSpinner3D project page with its embedded multi-prop renderer",
-      caption: "VisualSpinner3D's project page and embedded renderer",
-      width: 1734,
-      height: 917,
-      shape: "wide" as const,
-    },
   ];
 
   const spiroAnimImages = [
@@ -554,7 +546,7 @@
           </div>
         {/snippet}
         {#snippet media()}<SoftwareGallery
-            label="VisualSpinner3D demo and project screenshots"
+            label="VisualSpinner3D demo screenshot"
             images={visualSpinnerImages}
             variant="wide"
           />{/snippet}
