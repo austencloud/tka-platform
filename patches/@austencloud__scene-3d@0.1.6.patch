@@ -19815,7 +19815,7 @@ index 0000000000000000000000000000000000000000..804080e43f4dc206951115861d4b871f
 +  return point.distanceTo(closestOut);
 +}
 diff --git a/src/lib/services/implementations/AvatarAnimator.ts b/src/lib/services/implementations/AvatarAnimator.ts
-index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771d70c19ae 100644
+index c73bcabe86e07dd117e6f737532aea88ac9ec194..91a597336d69f2783531ed2080da04600b2f3965 100644
 --- a/src/lib/services/implementations/AvatarAnimator.ts
 +++ b/src/lib/services/implementations/AvatarAnimator.ts
 @@ -5,7 +5,8 @@
@@ -19905,7 +19905,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
 
  export class AvatarAnimator implements IAvatarAnimator {
    private currentPose: BodyPose;
-@@ -85,6 +146,101 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -85,6 +146,102 @@ export class AvatarAnimator implements IAvatarAnimator {
     */
    private externalSpinePitchRad = 0;
 
@@ -19962,6 +19962,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
 +    lateral: new Vector3(1, 0, 0),
 +    forward: new Vector3(0, 0, 1),
 +  };
++  private readonly _stanceReferenceForward = new Vector3(0, 0, 1);
 +  private readonly _leftShoulderWorld = new Vector3();
 +  private readonly _rightShoulderWorld = new Vector3();
 +  private readonly _headWorld = new Vector3();
@@ -20007,7 +20008,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
    constructor(
      private ikSolver: IIKSolver,
      private skeleton: IAvatarSkeletonBuilder,
-@@ -186,7 +342,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -186,7 +343,8 @@ export class AvatarAnimator implements IAvatarAnimator {
    setPropsAndBlend(
      blueProp: PropState3D | null,
      redProp: PropState3D | null,
@@ -20017,7 +20018,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
    ): void {
      this.leftArmIK.targetWeight = blueProp ? 1 : 0;
      this.rightArmIK.targetWeight = redProp ? 1 : 0;
-@@ -205,6 +362,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -205,6 +363,7 @@ export class AvatarAnimator implements IAvatarAnimator {
              blueProp.worldPosition.y - oy,
              blueProp.worldPosition.z - oz
            ),
@@ -20025,7 +20026,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
            staffAngle: blueProp.staffRotationAngle,
            plane: blueProp.plane,
            weight: 1,
-@@ -218,6 +376,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -218,6 +377,7 @@ export class AvatarAnimator implements IAvatarAnimator {
              redProp.worldPosition.y - oy,
              redProp.worldPosition.z - oz
            ),
@@ -20033,7 +20034,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
            staffAngle: redProp.staffRotationAngle,
            plane: redProp.plane,
            weight: 1,
-@@ -227,6 +386,44 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -227,6 +387,44 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.targetPose.timestamp = Date.now();
    }
 
@@ -20078,7 +20079,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
    setLeftHandTarget(target: HandPose): void {
      this.targetPose.leftHand = { ...target };
      this.targetPose.timestamp = Date.now();
-@@ -259,7 +456,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -259,7 +457,7 @@ export class AvatarAnimator implements IAvatarAnimator {
      const finalPose = this.computeFinalPose();
 
      // Solve IK for arms
@@ -20087,7 +20088,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
    }
 
    private blendToTarget(_deltaTime: number): void {
-@@ -378,13 +575,77 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -378,13 +576,99 @@ export class AvatarAnimator implements IAvatarAnimator {
      return result;
    }
 
@@ -20147,6 +20148,28 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
 +    }
 +  }
 +
++  /**
++   * Convert a desired total shoulder yaw into the remaining local spine yaw.
++   * SpineTwister may already have supplied part of the requested turn; adding
++   * the full stance again over-rotates the shoulders and recreates the neck
++   * collision on the far side.
++   */
++  private resolveStanceYawCorrection(
++    requestedYawRad: number,
++    referenceForward: Vector3,
++    achievedForward: Vector3
++  ): number {
++    const achievedYaw = Math.atan2(
++      referenceForward.z * achievedForward.x -
++        referenceForward.x * achievedForward.z,
++      Math.max(-1, Math.min(1, referenceForward.dot(achievedForward)))
++    );
++    return Math.max(
++      -MAX_STANCE_YAW,
++      Math.min(MAX_STANCE_YAW, requestedYawRad - achievedYaw)
++    );
++  }
++
 +  private applyIKToSkeleton(pose: BodyPose, deltaTime: number): void {
      const state = this.skeleton.getState();
      if (!state.isLoaded) return;
@@ -20166,7 +20189,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
      // Compute body center from Hips bone (or default to origin)
      const bodyCenter = new Vector3(0, 0, 0);
      const hipsBone = state.bones.get("Hips");
-@@ -392,6 +653,11 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -392,6 +676,12 @@ export class AvatarAnimator implements IAvatarAnimator {
        hipsBone.getWorldPosition(bodyCenter);
      }
 
@@ -20174,11 +20197,12 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
 +    // the avatar, while the mapped shoulder line tells us the exporter's
 +    // actual left/right convention.
 +    this.refreshBodyFrame(state, leftChain, rightChain);
++    this._stanceReferenceForward.copy(this._bodyFrame.forward);
 +
      // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
      // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
      // position feeds back and causes oscillation.
-@@ -445,7 +711,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -445,7 +735,8 @@ export class AvatarAnimator implements IAvatarAnimator {
          pose.leftHand?.targetPosition ?? null,
          pose.rightHand?.targetPosition ?? null,
          bodyCenter,
@@ -20188,7 +20212,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
        );
 
        // Apply twist to each bone individually for a natural spinal curve.
-@@ -511,12 +778,137 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -511,12 +802,149 @@ export class AvatarAnimator implements IAvatarAnimator {
        }
      }
 
@@ -20203,6 +20227,18 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
 +      this.smoothingFactor;
 +    const stanceActive = Math.abs(this.stanceYawSmoothedRad) > 0.001;
 +    const leanActive = this.reachLeanAngleSmoothed > 0.001;
++    let stanceYawCorrectionRad = 0;
++    if (stanceActive) {
++      // Measure what SpineTwister already achieved before resolving the
++      // planner's remaining yaw. Stance yaw is a target, not an additive
++      // rotation, so the two systems cannot double-count the same turn.
++      this.refreshBodyFrame(state, leftChain, rightChain);
++      stanceYawCorrectionRad = this.resolveStanceYawCorrection(
++        this.stanceYawSmoothedRad,
++        this._stanceReferenceForward,
++        this._bodyFrame.forward
++      );
++    }
 +    if ((stanceActive || leanActive) && this.spineRestCached) {
 +      const spine1Bone = state.bones.get("Spine1");
 +      const spine2Bone = state.bones.get("Spine2");
@@ -20228,14 +20264,14 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
 +        if (spine1Bone) {
 +          this._q1.setFromAxisAngle(
 +            this._v1.set(0, 1, 0),
-+            this.stanceYawSmoothedRad * 0.45
++            stanceYawCorrectionRad * 0.45
 +          );
 +          spine1Bone.quaternion.multiply(this._q1);
 +        }
 +        if (spine2Bone) {
 +          this._q1.setFromAxisAngle(
 +            this._v1.set(0, 1, 0),
-+            this.stanceYawSmoothedRad * 0.55
++            stanceYawCorrectionRad * 0.55
 +          );
 +          spine2Bone.quaternion.multiply(this._q1);
 +        }
@@ -20327,7 +20363,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = leftChain.root.quaternion.clone();
          const animMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -527,7 +919,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -527,7 +955,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const leftShoulder = state.bones.get("LeftShoulder");
            if (leftShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -20336,7 +20372,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
                "left",
                this.leftShoulderRestY,
                leftChain.totalLength
-@@ -540,6 +932,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -540,6 +968,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
 
@@ -20351,7 +20387,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: leftTarget,
-@@ -547,17 +947,58 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -547,17 +983,58 @@ export class AvatarAnimator implements IAvatarAnimator {
          };
 
          if (this._poleVectorsEnabled && this.poleComputer && leftHand.plane) {
@@ -20411,7 +20447,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
          // Solve IK (overwrites bone quaternions)
          this.ikSolver.solveAndApply(leftChain, target);
 
-@@ -572,13 +1013,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -572,13 +1049,14 @@ export class AvatarAnimator implements IAvatarAnimator {
          leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
 
@@ -20427,7 +20463,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = rightChain.root.quaternion.clone();
          const animMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -589,7 +1031,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -589,7 +1067,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const rightShoulder = state.bones.get("RightShoulder");
            if (rightShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -20436,7 +20472,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
                "right",
                this.rightShoulderRestY,
                rightChain.totalLength
-@@ -602,6 +1044,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -602,6 +1080,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
 
@@ -20451,7 +20487,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: rightTarget,
-@@ -609,17 +1059,55 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -609,17 +1095,55 @@ export class AvatarAnimator implements IAvatarAnimator {
          };
 
          if (this._poleVectorsEnabled && this.poleComputer && rightHand.plane) {
@@ -20508,7 +20544,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
          // Solve IK (overwrites bone quaternions)
          this.ikSolver.solveAndApply(rightChain, target);
 
-@@ -634,13 +1122,432 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -634,13 +1158,432 @@ export class AvatarAnimator implements IAvatarAnimator {
          rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
 
@@ -20941,7 +20977,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771
 
    addLayer(layer: AnimationLayer): void {
      this.layers.set(layer.id, layer);
-@@ -689,6 +1596,20 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -689,6 +1632,20 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.externalSpinePitchRad = radians;
    }
 

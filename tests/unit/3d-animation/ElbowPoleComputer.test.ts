@@ -440,6 +440,31 @@ describe("SpineTwister crossed-arm posture", () => {
 });
 
 describe("AvatarAnimator forearm reflex", () => {
+  it("subtracts the spine twist already present from the stance target", () => {
+    const animator = new AvatarAnimator(
+      {} as never,
+      {} as never
+    ) as unknown as {
+      resolveStanceYawCorrection: (
+        requestedYawRad: number,
+        referenceForward: Vector3,
+        achievedForward: Vector3
+      ) => number;
+    };
+    const reference = new Vector3(0, 0, 1);
+    const achieved = reference
+      .clone()
+      .applyAxisAngle(new Vector3(0, 1, 0), (-36 * Math.PI) / 180);
+
+    const correction = animator.resolveStanceYawCorrection(
+      (-60 * Math.PI) / 180,
+      reference,
+      achieved
+    );
+
+    expect(correction).toBeCloseTo((-24 * Math.PI) / 180, 6);
+  });
+
   it("refreshes arm-routing axes from the achieved shoulder yaw", () => {
     const sceneRoot = new Bone();
     const torso = new Bone();
