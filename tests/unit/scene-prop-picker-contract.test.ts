@@ -162,6 +162,14 @@ describe("scene prop picker contract", () => {
     );
   });
 
+  it("keeps family popovers in the viewport and gives Escape to the local layer", () => {
+    const canonicalGrid = read(BENTO_GRID_PATH);
+
+    expect(canonicalGrid).toContain("<Popover.Portal>");
+    expect(canonicalGrid).toContain("data-escape-shortcut-local");
+    expect(canonicalGrid).toContain("--bits-popover-content-available-height");
+  });
+
   it("carries Buugeng chirality into the existing 3D rig owner", () => {
     const scene = read(VIEWER_SCENE_PATH);
     const packagePatch = read(SCENE_PACKAGE_PATCH);
