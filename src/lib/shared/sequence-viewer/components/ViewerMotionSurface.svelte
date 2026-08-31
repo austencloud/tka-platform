@@ -475,6 +475,7 @@
           word={sequence?.word}
           bluePropType={propRendering.bluePropType}
           redPropType={propRendering.redPropType}
+          fanAppearance={propRendering.fanAppearance}
           backgroundAlpha={side === "left" &&
           practiceActive &&
           practiceMirrorEnabled

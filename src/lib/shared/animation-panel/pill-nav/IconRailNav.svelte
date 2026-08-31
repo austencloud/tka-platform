@@ -10,6 +10,7 @@
 <script lang="ts" generics="T extends string">
   import RailPropGlyph from "$lib/shared/components/RailPropGlyph.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
   interface RailPill {
     id: T;
@@ -17,6 +18,7 @@
     icon?: string;
     /** The current prop itself is more informative than a generic Props glyph. */
     propType?: PropType;
+    fanAppearance?: FanAppearance;
     label: string;
     /** Optional one-line summary surfaced in the button title tooltip. */
     summary?: string;
@@ -111,7 +113,11 @@
     >
       <span class="rail-glyph">
         {#if pill.propType}
-          <RailPropGlyph propType={pill.propType} size={26} />
+          <RailPropGlyph
+            propType={pill.propType}
+            fanAppearance={pill.fanAppearance}
+            size={26}
+          />
         {:else if pill.icon}
           <i class="fas {pill.icon}" aria-hidden="true"></i>
         {:else}

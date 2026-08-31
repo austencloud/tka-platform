@@ -21,6 +21,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import { type TrailSettings } from "../domain/types/trail-types";
 import type { AdditionalLayerProps } from "../domain/types/trail-capture-types";
+import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 import {
   getAnimationVisibilityManager,
   type AnimationVisibilityStateManager,
@@ -90,6 +91,8 @@ export interface AnimationEngineProps {
   // Prop type overrides - bypass settings when provided (useful for demos/previews)
   bluePropType?: string | null;
   redPropType?: string | null;
+  /** Visual fan build. The notation prop remains fan/bigfan. */
+  fanAppearance?: FanAppearance;
   /** Per-document chirality overrides for isolated editors/previews. */
   blueBuugengFlipped?: boolean;
   redBuugengFlipped?: boolean;

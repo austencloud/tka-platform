@@ -25,6 +25,8 @@
     onPlaybackToggle = () => {},
     bluePropType = null,
     onPropChange,
+    fanAppearance,
+    onFanAppearanceChange,
     onArtSettingChange,
     exporting = false,
   }: ArtSettingsPanelProps = $props();
@@ -57,6 +59,8 @@
     {onPlaybackToggle}
     {bluePropType}
     {onPropChange}
+    {fanAppearance}
+    {onFanAppearanceChange}
     {onArtSettingChange}
     {exporting}
     {reduceMotion}

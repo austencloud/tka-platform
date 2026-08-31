@@ -3,6 +3,7 @@ import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
 export interface ViewerPlaybackState {
   animationState: AnimationPanelState;
@@ -38,6 +39,7 @@ export interface PropRenderingProps {
   bluePropType?: PropType;
   redPropType?: PropType;
   catDogModeEnabled?: boolean;
+  fanAppearance?: FanAppearance;
 }
 
 export interface ViewerLayoutState {

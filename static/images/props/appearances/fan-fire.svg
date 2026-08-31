@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 207">
+  <title>DoodleGrip fire fan</title>
+  <g fill="none" stroke="#2E3192" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="130" cy="103.5" r="13" stroke-width="7"/>
+    <path d="M130 92 C145 66 164 35 202 4 M134 94 C158 79 190 60 229 46 M141 103.5 H256 M134 113 C158 128 190 147 229 161 M130 115 C145 141 164 172 202 203"/>
+    <path d="M143 92 C169 83 196 78 226 78 M143 115 C169 124 196 129 226 129" stroke-width="3.5"/>
+    <path d="M128 117 C129 133 136 145 148 153 C157 159 169 158 175 149" stroke-width="7"/>
+  </g>
+  <g fill="#2E3192">
+    <rect x="194" y="0" width="16" height="10" rx="3"/>
+    <rect x="221" y="40" width="18" height="12" rx="3" transform="rotate(31 230 46)"/>
+    <rect x="249" y="97" width="11" height="13" rx="3"/>
+    <rect x="221" y="155" width="18" height="12" rx="3" transform="rotate(-31 230 161)"/>
+    <rect x="194" y="197" width="16" height="10" rx="3"/>
+  </g>
+</svg>

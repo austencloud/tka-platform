@@ -50,6 +50,7 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
   import type { AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
   import CanvasSurface from "./CanvasSurface.svelte";
   import { untrack } from "svelte";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
   let {
     blueProp,
@@ -66,6 +67,7 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     trailSettings = undefined,
     bluePropType = null,
     redPropType = null,
+    fanAppearance = undefined,
     tipEffectMap = undefined,
     visibilityManagerOverride = undefined,
     showNonRadialPoints = true,
@@ -98,6 +100,7 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     trailSettings?: TrailSettings;
     bluePropType?: string | null;
     redPropType?: string | null;
+    fanAppearance?: FanAppearance;
     tipEffectMap?: TipEffectMap;
     visibilityManagerOverride?: AnimationVisibilityStateManager;
     showNonRadialPoints?: boolean;
@@ -182,6 +185,7 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
       {trailSettings}
       {bluePropType}
       {redPropType}
+      {fanAppearance}
       {tipEffectMap}
       {visibilityManagerOverride}
       {showNonRadialPoints}
@@ -209,6 +213,7 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
       {trailSettings}
       {bluePropType}
       {redPropType}
+      {fanAppearance}
       {tipEffectMap}
       {visibilityManagerOverride}
       {showNonRadialPoints}
@@ -266,7 +271,6 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     width: 100%;
     height: 100%;
   }
-
 
   @media (prefers-reduced-motion: reduce) {
     .split-canvases {

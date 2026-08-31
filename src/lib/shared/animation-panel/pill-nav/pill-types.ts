@@ -1,4 +1,5 @@
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
 /**
  * Pill-nav contract for AnimationPanel.
@@ -37,6 +38,7 @@ export interface PillSpec {
   icon?: string;
   /** Live prop artwork for the Props destination. Takes precedence over icon. */
   propType?: PropType;
+  fanAppearance?: FanAppearance;
   /** Live one-line summary of the section's current state, ≤24 chars (truncated with ellipsis if longer). */
   summary: string;
   /** Optional accent color override. Effort sets this to its color so the active glow matches. */
@@ -86,21 +88,23 @@ export function resolveActivePill(
   // first part the rail offers. A remembered "display" needs neither hop — it
   // is a member of the rail in both modes.
   if (parts.includes(active)) {
-    return availableIds.includes("motion") ? "motion" : (availableIds[0] ?? null);
+    return availableIds.includes("motion")
+      ? "motion"
+      : (availableIds[0] ?? null);
   }
   if (active === "motion") {
     return (
       availableIds.find((id) => parts.includes(id)) ?? availableIds[0] ?? null
     );
   }
-  return availableIds.includes("effects") ? "effects" : (availableIds[0] ?? null);
+  return availableIds.includes("effects")
+    ? "effects"
+    : (availableIds[0] ?? null);
 }
 
 export function buildPillSpecs(
   specs: Partial<Record<PillId, Omit<PillSpec, "id">>>,
-  order: readonly PillId[] = PILL_ORDER,
+  order: readonly PillId[] = PILL_ORDER
 ): PillSpec[] {
-  return order
-    .filter((id) => id in specs)
-    .map((id) => ({ id, ...specs[id]! }));
+  return order.filter((id) => id in specs).map((id) => ({ id, ...specs[id]! }));
 }

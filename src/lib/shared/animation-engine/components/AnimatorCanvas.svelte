@@ -61,6 +61,7 @@ Last audit: 2025-12-27
   import SplitCanvasView from "./SplitCanvasView.svelte";
   import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import type { QualityTier } from "../domain/types/quality-types";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
   // Props
   let {
@@ -82,6 +83,7 @@ Last audit: 2025-12-27
     trailSettings: externalTrailSettings = $bindable(),
     bluePropType = null,
     redPropType = null,
+    fanAppearance = undefined,
     blueBuugengFlipped = undefined,
     redBuugengFlipped = undefined,
     word = null,
@@ -149,6 +151,7 @@ Last audit: 2025-12-27
     trailSettings?: TrailSettings;
     bluePropType?: string | null;
     redPropType?: string | null;
+    fanAppearance?: FanAppearance;
     blueBuugengFlipped?: boolean;
     redBuugengFlipped?: boolean;
     word?: string | null;
@@ -669,6 +672,7 @@ Last audit: 2025-12-27
       bind:trailSettings={externalTrailSettings}
       {bluePropType}
       {redPropType}
+      {fanAppearance}
       {blueBuugengFlipped}
       {redBuugengFlipped}
       {previewDarkMode}
@@ -720,6 +724,7 @@ Last audit: 2025-12-27
         trailSettings={externalTrailSettings}
         {bluePropType}
         {redPropType}
+        {fanAppearance}
         tipEffectMap={cellTipEffectMap}
         {visibilityManagerOverride}
         {showNonRadialPoints}
