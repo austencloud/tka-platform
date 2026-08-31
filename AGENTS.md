@@ -22,12 +22,15 @@ an unrelated task.
 
 Create a unique task branch before committing (`codex/<task-slug>` for Codex;
 use the current client's configured agent prefix elsewhere). Keep commits scoped
-to paths owned by the task. After verification, integrate the branch into
-`main` only when the primary checkout has no conflicting in-flight changes,
-then remove the task branch and worktree. If integration is unsafe, leave both
-intact and report the exact conflict. Never delete a dirty worktree until every
-change is proven landed, intentionally discarded by Austen, or preserved
-elsewhere.
+to paths owned by the task. Approval to implement authorizes the complete task
+lifecycle: verify, commit, integrate into local `main`, remove the task branch
+and worktree, and deliver the real `https://localhost:5173` route in the in-app
+Browser. Do not ask separate permission to merge or clean up. Use
+`npm run wt:finish -- <branch> --route /real-route` (or `--nonvisual`) after
+bringing the task branch current with `main`. If a safety gate fails, leave the
+branch and worktree intact and report the exact conflict. Never delete a dirty
+worktree until every change is proven landed, intentionally discarded by
+Austen, or preserved elsewhere.
 
 Direct edits in the primary checkout require Austen to request that exact
 workflow in the current conversation. If a task depends on uncommitted primary
@@ -146,6 +149,10 @@ non-trivial implementation. "Run autonomously" means execute the approved plan
 to completion; it does not skip the approval gate. A queue command may rank and
 drift-check the next item, but `PICK AND GO` must stop after presenting the
 recommended plan until Austen approves it.
+
+Once implementation is approved, that approval includes ordinary commit,
+local-main integration, task-worktree cleanup, and in-app delivery. Those are
+not new approval gates.
 
 A direct instruction to make a clearly bounded, trivial change is sufficient
 authorization for that exact change. State the intended edit before making it.
