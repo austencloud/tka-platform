@@ -6958,7 +6958,7 @@ diff --git a/dist/lib/services/implementations/AvatarAnimator.d.ts.map b/dist/li
 deleted file mode 100644
 index f8e47d42167b6ea9bb4fd8f44f41273f48f1943b..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/AvatarAnimator.js b/dist/lib/services/implementations/AvatarAnimator.js
-index bdd5ae35ed47c58d29c537a7805705783f9b9066..b43cb0edfc7ae4e78e5ac4f1ada87965cd108eba 100644
+index bdd5ae35ed47c58d29c537a7805705783f9b9066..3c15769e6565ff08ee3a0e44c9078d748858c12e 100644
 --- a/dist/lib/services/implementations/AvatarAnimator.js
 +++ b/dist/lib/services/implementations/AvatarAnimator.js
 @@ -4,7 +4,49 @@
@@ -7200,7 +7200,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..b43cb0edfc7ae4e78e5ac4f1ada87965
      }
      blendToTarget(_deltaTime) {
          // Hands snap directly to prop positions - no lerp.
-@@ -273,18 +450,85 @@ export class AvatarAnimator {
+@@ -273,18 +450,104 @@ export class AvatarAnimator {
          }
          return result;
      }
@@ -7250,6 +7250,25 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..b43cb0edfc7ae4e78e5ac4f1ada87965
 +        }
 +    }
 +    /**
++     * Refresh the face-clearance envelope from the same shoulder joints used by
++     * the rendered-pose collision detector. MetaPerson rigs insert clavicle
++     * bones between the torso and the actual arm roots, so the mapped
++     * LeftShoulder / RightShoulder bones are not interchangeable with the
++     * shoulder positions that define the arm geometry.
++     */
++    refreshFaceClearanceCenter(state, leftChain, rightChain) {
++        const headBone = state.bones.get("Head");
++        const leftShoulderBone = leftChain?.root ?? state.bones.get("LeftShoulder");
++        const rightShoulderBone = rightChain?.root ?? state.bones.get("RightShoulder");
++        if (!headBone || !leftShoulderBone || !rightShoulderBone)
++            return false;
++        headBone.getWorldPosition(this._headWorld);
++        leftShoulderBone.getWorldPosition(this._leftShoulderWorld);
++        rightShoulderBone.getWorldPosition(this._rightShoulderWorld);
++        computeFaceCenter(this._headWorld, this._leftShoulderWorld, this._rightShoulderWorld, this._faceCenterWorld, this._faceRightScratch, this._faceForwardScratch);
++        return true;
++    }
++    /**
 +     * Convert a desired total shoulder yaw into the remaining local spine yaw.
 +     * SpineTwister may already have supplied part of the requested turn; adding
 +     * the full stance again over-rotates the shoulders and recreates the neck
@@ -7287,7 +7306,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..b43cb0edfc7ae4e78e5ac4f1ada87965
          // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
          // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
          // position feeds back and causes oscillation.
-@@ -335,7 +579,7 @@ export class AvatarAnimator {
+@@ -335,7 +598,7 @@ export class AvatarAnimator {
              // Nullable hands are first-class: SpineTwister handles the
              // single-hand-gaze branch and the no-hand identity branch
              // internally, so we pass pose hands through as-is.
@@ -7296,7 +7315,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..b43cb0edfc7ae4e78e5ac4f1ada87965
              // Apply twist to each bone individually for a natural spinal curve.
              // Each bone gets its own weighted quaternion from SpineTwister.
              const applySpineTwist = (boneName, key, twistQuat) => {
-@@ -389,11 +633,125 @@ export class AvatarAnimator {
+@@ -389,11 +652,115 @@ export class AvatarAnimator {
                      hipsBoneForUpdate.updateMatrixWorld(true);
              }
          }
@@ -7386,18 +7405,8 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..b43cb0edfc7ae4e78e5ac4f1ada87965
 +        // the frame now so pair routing and pole vectors operate in the torso's
 +        // achieved orientation rather than the square pre-turn pose.
 +        this.refreshBodyFrame(state, leftChain, rightChain);
-+        let faceCenterAvailable = false;
++        let faceCenterAvailable = this.refreshFaceClearanceCenter(state, leftChain, rightChain);
 +        let bodyClearanceAvailable = false;
-+        const headBone = state.bones.get("Head");
-+        const leftShoulderBone = state.bones.get("LeftShoulder");
-+        const rightShoulderBone = state.bones.get("RightShoulder");
-+        if (headBone && leftShoulderBone && rightShoulderBone) {
-+            headBone.getWorldPosition(this._headWorld);
-+            leftShoulderBone.getWorldPosition(this._leftShoulderWorld);
-+            rightShoulderBone.getWorldPosition(this._rightShoulderWorld);
-+            computeFaceCenter(this._headWorld, this._leftShoulderWorld, this._rightShoulderWorld, this._faceCenterWorld, this._faceRightScratch, this._faceForwardScratch);
-+            faceCenterAvailable = true;
-+        }
 +        const neckBone = state.bones.get("Neck");
 +        const spine1Bone = state.bones.get("Spine1");
 +        const spine2Bone = state.bones.get("Spine2");
@@ -7423,7 +7432,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..b43cb0edfc7ae4e78e5ac4f1ada87965
                  // Save what the locomotion animation wrote to bone quaternions
                  const animRootQuat = leftChain.root.quaternion.clone();
                  const animMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -402,7 +760,7 @@ export class AvatarAnimator {
+@@ -402,7 +769,7 @@ export class AvatarAnimator {
                  if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
                      const leftShoulder = state.bones.get("LeftShoulder");
                      if (leftShoulder) {
@@ -7432,7 +7441,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..b43cb0edfc7ae4e78e5ac4f1ada87965
                          this.leftClavicleQuat.slerp(targetQuat, this.smoothingFactor);
                          leftShoulder.quaternion
                              .copy(this.leftClavicleRestQuat)
-@@ -410,19 +768,54 @@ export class AvatarAnimator {
+@@ -410,19 +777,57 @@ export class AvatarAnimator {
                          leftShoulder.updateMatrixWorld(true);
                      }
                  }
@@ -7461,6 +7470,9 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..b43cb0edfc7ae4e78e5ac4f1ada87965
 +                // Reach escalation: if the target is beyond the chain, extend the
 +                // clavicle toward it and record the deficit for the spine lean.
 +                this.applyReachEscalation("left", leftChain, target, state);
++                // Clavicle raise and reach escalation both move the real arm root.
++                // Re-sample the face envelope before judging the rendered arm route.
++                faceCenterAvailable = this.refreshFaceClearanceCenter(state, leftChain, rightChain);
 +                // Reach extension changes the arm root. Resolve the collision route
 +                // from that final shoulder position so the predicted elbow circle is
 +                // the one the IK solver will actually use.
@@ -7490,7 +7502,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..b43cb0edfc7ae4e78e5ac4f1ada87965
                  // Save IK results BEFORE blending - .copy() would overwrite them
                  const ikRootQuat = leftChain.root.quaternion.clone();
                  const ikMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -432,12 +825,20 @@ export class AvatarAnimator {
+@@ -432,12 +837,20 @@ export class AvatarAnimator {
                  leftChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
                  leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
                  leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
@@ -7512,7 +7524,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..b43cb0edfc7ae4e78e5ac4f1ada87965
                  // Save what the locomotion animation wrote to bone quaternions
                  const animRootQuat = rightChain.root.quaternion.clone();
                  const animMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -446,7 +847,7 @@ export class AvatarAnimator {
+@@ -446,7 +859,7 @@ export class AvatarAnimator {
                  if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
                      const rightShoulder = state.bones.get("RightShoulder");
                      if (rightShoulder) {
@@ -7521,7 +7533,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..b43cb0edfc7ae4e78e5ac4f1ada87965
                          this.rightClavicleQuat.slerp(targetQuat, this.smoothingFactor);
                          rightShoulder.quaternion
                              .copy(this.rightClavicleRestQuat)
-@@ -454,19 +855,49 @@ export class AvatarAnimator {
+@@ -454,19 +867,50 @@ export class AvatarAnimator {
                          rightShoulder.updateMatrixWorld(true);
                      }
                  }
@@ -7550,6 +7562,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..b43cb0edfc7ae4e78e5ac4f1ada87965
 +                // Reach escalation: if the target is beyond the chain, extend the
 +                // clavicle toward it and record the deficit for the spine lean.
 +                this.applyReachEscalation("right", rightChain, target, state);
++                faceCenterAvailable = this.refreshFaceClearanceCenter(state, leftChain, rightChain);
 +                let rightClearanceContext = null;
 +                if (faceCenterAvailable &&
 +                    this.poleComputer &&
@@ -7574,7 +7587,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..b43cb0edfc7ae4e78e5ac4f1ada87965
                  // Save IK results BEFORE blending - .copy() would overwrite them
                  const ikRootQuat = rightChain.root.quaternion.clone();
                  const ikMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -476,11 +907,453 @@ export class AvatarAnimator {
+@@ -476,11 +920,453 @@ export class AvatarAnimator {
                  rightChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
                  rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
                  rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
@@ -8028,7 +8041,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..b43cb0edfc7ae4e78e5ac4f1ada87965
      addLayer(layer) {
          this.layers.set(layer.id, layer);
      }
-@@ -521,6 +1394,12 @@ export class AvatarAnimator {
+@@ -521,6 +1407,12 @@ export class AvatarAnimator {
      setExternalSpinePitch(radians) {
          this.externalSpinePitchRad = radians;
      }
@@ -8605,7 +8618,7 @@ diff --git a/dist/lib/services/implementations/CollisionDetector.d.ts.map b/dist
 deleted file mode 100644
 index 589730c42dd77154bad8305e67d5804bdf805018..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/CollisionDetector.js b/dist/lib/services/implementations/CollisionDetector.js
-index bdf2062fc3ee834f003879c49286b6dd7a282887..3af4d60d28c29d808e849a8083f056836c68a1be 100644
+index bdf2062fc3ee834f003879c49286b6dd7a282887..b7b227ff8a407f134d1a556ffe518ab4aa936c47 100644
 --- a/dist/lib/services/implementations/CollisionDetector.js
 +++ b/dist/lib/services/implementations/CollisionDetector.js
 @@ -18,12 +18,7 @@
@@ -8658,7 +8671,7 @@ index bdf2062fc3ee834f003879c49286b6dd7a282887..3af4d60d28c29d808e849a8083f05683
              if (closest < threshold) {
                  const depth = threshold - closest;
                  events.push(this.makeEvent("prop-through-prop", stepNumber, beatProgress, depth, `Staffs cross (${(closest * 100).toFixed(1)}cm gap, ${(depth * 100).toFixed(1)}cm overlap)`));
-@@ -144,17 +141,43 @@ export class CollisionDetector {
+@@ -144,16 +141,49 @@ export class CollisionDetector {
          //    Uses body.face so the collision zone matches where the visual
          //    face actually is, not where the Mixamo head joint sits.
          const leftArmDist = this.pointToSegmentDistance(body.face, body.leftElbow, body.leftHand);
@@ -8666,17 +8679,23 @@ index bdf2062fc3ee834f003879c49286b6dd7a282887..3af4d60d28c29d808e849a8083f05683
 +        const leftArmThreshold = FOREARM_FACE_CLEARANCE;
          if (leftArmDist < leftArmThreshold) {
              const penetration = leftArmThreshold - leftArmDist;
-             events.push(this.makeEvent("arm-through-face", stepNumber, beatProgress, penetration, `L forearm → face (${(leftArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`));
+-            events.push(this.makeEvent("arm-through-face", stepNumber, beatProgress, penetration, `L forearm → face (${(leftArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`));
++            const handDistance = body.leftHand.distanceTo(body.face);
++            events.push(this.makeEvent("arm-through-face", stepNumber, beatProgress, penetration, `L forearm → face (${(leftArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep; hand ${(handDistance * 100).toFixed(1)}cm from center)`));
          }
          const rightArmDist = this.pointToSegmentDistance(body.face, body.rightElbow, body.rightHand);
 -        const rightArmThreshold = HEAD_RADIUS + ARM_SEGMENT_RADIUS + PROP_BODY_THRESHOLD;
 +        const rightArmThreshold = FOREARM_FACE_CLEARANCE;
          if (rightArmDist < rightArmThreshold) {
              const penetration = rightArmThreshold - rightArmDist;
-             events.push(this.makeEvent("arm-through-face", stepNumber, beatProgress, penetration, `R forearm → face (${(rightArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`));
-         }
-+        // 3b. Arms through neck/torso. Exclude the shoulder-adjacent 35%
-+        // of each upper arm because that segment is anatomically attached.
+-            events.push(this.makeEvent("arm-through-face", stepNumber, beatProgress, penetration, `R forearm → face (${(rightArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`));
++            const handDistance = body.rightHand.distanceTo(body.face);
++            events.push(this.makeEvent("arm-through-face", stepNumber, beatProgress, penetration, `R forearm → face (${(rightArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep; hand ${(handDistance * 100).toFixed(1)}cm from center)`));
++        }
++        // 3b. Arms through neck/torso. The face sphere alone misses the common
++        //     side-on failure where a forearm goes behind the chin and straight
++        //     through the neck or upper chest. Exclude the shoulder-adjacent 35%
++        //     of each upper arm because that segment is anatomically attached.
 +        _leftUpperBodyStart.lerpVectors(body.leftShoulder, body.leftElbow, 0.35);
 +        _rightUpperBodyStart.lerpVectors(body.rightShoulder, body.rightElbow, 0.35);
 +        const bodyArmSegments = [
@@ -8688,23 +8707,25 @@ index bdf2062fc3ee834f003879c49286b6dd7a282887..3af4d60d28c29d808e849a8083f05683
 +        const torsoCenters = [body.spine1, body.spine2];
 +        for (const arm of bodyArmSegments) {
 +            const neckDistance = this.pointToSegmentDistance(body.neck, arm.a, arm.b);
++            const endpointNeckDistance = arm.b.distanceTo(body.neck);
 +            if (neckDistance < FOREARM_NECK_CLEARANCE) {
 +                const penetration = FOREARM_NECK_CLEARANCE - neckDistance;
-+                events.push(this.makeEvent("arm-through-neck", stepNumber, beatProgress, penetration, `${arm.name} → neck (${(neckDistance * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`));
++                events.push(this.makeEvent("arm-through-neck", stepNumber, beatProgress, penetration, `${arm.name} → neck (${(neckDistance * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep; endpoint ${(endpointNeckDistance * 100).toFixed(1)}cm from center)`));
 +            }
 +            let worstTorsoDepth = 0;
++            let nearestEndpointTorsoDistance = Number.POSITIVE_INFINITY;
 +            for (const center of torsoCenters) {
 +                const distance = this.pointToSegmentDistance(center, arm.a, arm.b);
++                nearestEndpointTorsoDistance = Math.min(nearestEndpointTorsoDistance, arm.b.distanceTo(center));
 +                worstTorsoDepth = Math.max(worstTorsoDepth, FOREARM_TORSO_CLEARANCE - distance);
 +            }
 +            if (worstTorsoDepth > 0) {
-+                events.push(this.makeEvent("arm-through-torso", stepNumber, beatProgress, worstTorsoDepth, `${arm.name} → torso (${(worstTorsoDepth * 100).toFixed(1)}cm deep)`));
++                events.push(this.makeEvent("arm-through-torso", stepNumber, beatProgress, worstTorsoDepth, `${arm.name} → torso (${(worstTorsoDepth * 100).toFixed(1)}cm deep; endpoint ${(nearestEndpointTorsoDistance * 100).toFixed(1)}cm from center)`));
 +            }
-+        }
+         }
          // 4. Arms through each other - forearm segments
          const armArmDist = this.segmentToSegmentDistance(body.leftElbow, body.leftHand, body.rightElbow, body.rightHand);
-         if (armArmDist < ARM_ARM_THRESHOLD) {
-@@ -189,14 +212,7 @@ export class CollisionDetector {
+@@ -189,14 +219,7 @@ export class CollisionDetector {
          return Math.max(0, radius - dist);
      }
      pointToSegmentDistance(point, segA, segB) {
@@ -20613,7 +20634,7 @@ index 0000000000000000000000000000000000000000..804080e43f4dc206951115861d4b871f
 +  return point.distanceTo(closestOut);
 +}
 diff --git a/src/lib/services/implementations/AvatarAnimator.ts b/src/lib/services/implementations/AvatarAnimator.ts
-index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1f53c1d16 100644
+index c73bcabe86e07dd117e6f737532aea88ac9ec194..879f4488e0c5594f325d5e75944f304a69e6af70 100644
 --- a/src/lib/services/implementations/AvatarAnimator.ts
 +++ b/src/lib/services/implementations/AvatarAnimator.ts
 @@ -5,21 +5,94 @@
@@ -20922,7 +20943,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
    }
  
    private blendToTarget(_deltaTime: number): void {
-@@ -378,13 +605,99 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -378,13 +605,130 @@ export class AvatarAnimator implements IAvatarAnimator {
      return result;
    }
  
@@ -20983,6 +21004,37 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
 +  }
 +
 +  /**
++   * Refresh the face-clearance envelope from the same shoulder joints used by
++   * the rendered-pose collision detector. MetaPerson rigs insert clavicle
++   * bones between the torso and the actual arm roots, so the mapped
++   * LeftShoulder / RightShoulder bones are not interchangeable with the
++   * shoulder positions that define the arm geometry.
++   */
++  private refreshFaceClearanceCenter(
++    state: SkeletonState,
++    leftChain: BoneChain | null,
++    rightChain: BoneChain | null
++  ): boolean {
++    const headBone = state.bones.get("Head");
++    const leftShoulderBone = leftChain?.root ?? state.bones.get("LeftShoulder");
++    const rightShoulderBone = rightChain?.root ?? state.bones.get("RightShoulder");
++    if (!headBone || !leftShoulderBone || !rightShoulderBone) return false;
++
++    headBone.getWorldPosition(this._headWorld);
++    leftShoulderBone.getWorldPosition(this._leftShoulderWorld);
++    rightShoulderBone.getWorldPosition(this._rightShoulderWorld);
++    computeFaceCenter(
++      this._headWorld,
++      this._leftShoulderWorld,
++      this._rightShoulderWorld,
++      this._faceCenterWorld,
++      this._faceRightScratch,
++      this._faceForwardScratch
++    );
++    return true;
++  }
++
++  /**
 +   * Convert a desired total shoulder yaw into the remaining local spine yaw.
 +   * SpineTwister may already have supplied part of the requested turn; adding
 +   * the full stance again over-rotates the shoulders and recreates the neck
@@ -21023,7 +21075,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
      // Compute body center from Hips bone (or default to origin)
      const bodyCenter = new Vector3(0, 0, 0);
      const hipsBone = state.bones.get("Hips");
-@@ -392,6 +705,12 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -392,6 +736,12 @@ export class AvatarAnimator implements IAvatarAnimator {
        hipsBone.getWorldPosition(bodyCenter);
      }
  
@@ -21036,7 +21088,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
      // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
      // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
      // position feeds back and causes oscillation.
-@@ -445,7 +764,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -445,7 +795,8 @@ export class AvatarAnimator implements IAvatarAnimator {
          pose.leftHand?.targetPosition ?? null,
          pose.rightHand?.targetPosition ?? null,
          bodyCenter,
@@ -21046,7 +21098,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
        );
  
        // Apply twist to each bone individually for a natural spinal curve.
-@@ -511,12 +831,153 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -511,12 +862,140 @@ export class AvatarAnimator implements IAvatarAnimator {
        }
      }
  
@@ -21150,25 +21202,12 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
 +    // achieved orientation rather than the square pre-turn pose.
 +    this.refreshBodyFrame(state, leftChain, rightChain);
 +
-+    let faceCenterAvailable = false;
++    let faceCenterAvailable = this.refreshFaceClearanceCenter(
++      state,
++      leftChain,
++      rightChain
++    );
 +    let bodyClearanceAvailable = false;
-+    const headBone = state.bones.get("Head");
-+    const leftShoulderBone = state.bones.get("LeftShoulder");
-+    const rightShoulderBone = state.bones.get("RightShoulder");
-+    if (headBone && leftShoulderBone && rightShoulderBone) {
-+      headBone.getWorldPosition(this._headWorld);
-+      leftShoulderBone.getWorldPosition(this._leftShoulderWorld);
-+      rightShoulderBone.getWorldPosition(this._rightShoulderWorld);
-+      computeFaceCenter(
-+        this._headWorld,
-+        this._leftShoulderWorld,
-+        this._rightShoulderWorld,
-+        this._faceCenterWorld,
-+        this._faceRightScratch,
-+        this._faceForwardScratch
-+      );
-+      faceCenterAvailable = true;
-+    }
 +    const neckBone = state.bones.get("Neck");
 +    const spine1Bone = state.bones.get("Spine1");
 +    const spine2Bone = state.bones.get("Spine2");
@@ -21201,7 +21240,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = leftChain.root.quaternion.clone();
          const animMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -527,7 +988,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -527,7 +1006,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const leftShoulder = state.bones.get("LeftShoulder");
            if (leftShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -21210,7 +21249,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
                "left",
                this.leftShoulderRestY,
                leftChain.totalLength
-@@ -540,6 +1001,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -540,6 +1019,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -21225,7 +21264,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: leftTarget,
-@@ -547,19 +1016,68 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -547,19 +1034,76 @@ export class AvatarAnimator implements IAvatarAnimator {
          };
  
          if (this._poleVectorsEnabled && this.poleComputer && leftHand.plane) {
@@ -21252,6 +21291,14 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
 +        // Reach escalation: if the target is beyond the chain, extend the
 +        // clavicle toward it and record the deficit for the spine lean.
 +        this.applyReachEscalation("left", leftChain, target, state);
++
++        // Clavicle raise and reach escalation both move the real arm root.
++        // Re-sample the face envelope before judging the rendered arm route.
++        faceCenterAvailable = this.refreshFaceClearanceCenter(
++          state,
++          leftChain,
++          rightChain
++        );
 +
 +        // Reach extension changes the arm root. Resolve the collision route
 +        // from that final shoulder position so the predicted elbow circle is
@@ -21297,7 +21344,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
  
          // Save IK results BEFORE blending - .copy() would overwrite them
          const ikRootQuat = leftChain.root.quaternion.clone();
-@@ -572,13 +1090,24 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -572,13 +1116,24 @@ export class AvatarAnimator implements IAvatarAnimator {
          leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -21323,7 +21370,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = rightChain.root.quaternion.clone();
          const animMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -589,7 +1118,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -589,7 +1144,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const rightShoulder = state.bones.get("RightShoulder");
            if (rightShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -21332,7 +21379,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
                "right",
                this.rightShoulderRestY,
                rightChain.totalLength
-@@ -602,6 +1131,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -602,6 +1157,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -21347,7 +21394,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: rightTarget,
-@@ -609,19 +1146,63 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -609,19 +1172,69 @@ export class AvatarAnimator implements IAvatarAnimator {
          };
  
          if (this._poleVectorsEnabled && this.poleComputer && rightHand.plane) {
@@ -21374,6 +21421,12 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
 +        // Reach escalation: if the target is beyond the chain, extend the
 +        // clavicle toward it and record the deficit for the spine lean.
 +        this.applyReachEscalation("right", rightChain, target, state);
++
++        faceCenterAvailable = this.refreshFaceClearanceCenter(
++          state,
++          leftChain,
++          rightChain
++        );
 +
 +        let rightClearanceContext: ForearmFaceClearanceContext | null = null;
 +        if (
@@ -21414,7 +21467,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
  
          // Save IK results BEFORE blending - .copy() would overwrite them
          const ikRootQuat = rightChain.root.quaternion.clone();
-@@ -634,13 +1215,617 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -634,13 +1247,617 @@ export class AvatarAnimator implements IAvatarAnimator {
          rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -22032,7 +22085,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e64e9ac9f4c65b05dea83b51ba3ecef1
  
    addLayer(layer: AnimationLayer): void {
      this.layers.set(layer.id, layer);
-@@ -689,6 +1874,20 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -689,6 +1906,20 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.externalSpinePitchRad = radians;
    }
  
@@ -22915,7 +22968,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b
          bestDist = dist;
          best = clip;
 diff --git a/src/lib/services/implementations/CollisionDetector.ts b/src/lib/services/implementations/CollisionDetector.ts
-index 7bcee43c7bd19f3e7aa820ab57f8902cd7e90ca9..d479f955a53f505080fe6fe473571d628fb8aa59 100644
+index 7bcee43c7bd19f3e7aa820ab57f8902cd7e90ca9..145b22db339a0b1197cbd5228c7be949a2a9e62e 100644
 --- a/src/lib/services/implementations/CollisionDetector.ts
 +++ b/src/lib/services/implementations/CollisionDetector.ts
 @@ -27,14 +27,16 @@ import type {
@@ -22979,7 +23032,7 @@ index 7bcee43c7bd19f3e7aa820ab57f8902cd7e90ca9..d479f955a53f505080fe6fe473571d62
        if (closest < threshold) {
          const depth = threshold - closest;
          events.push(this.makeEvent("prop-through-prop", stepNumber, beatProgress, depth,
-@@ -190,20 +194,69 @@ export class CollisionDetector implements ICollisionDetector {
+@@ -190,18 +194,75 @@ export class CollisionDetector implements ICollisionDetector {
      //    Uses body.face so the collision zone matches where the visual
      //    face actually is, not where the Mixamo head joint sits.
      const leftArmDist = this.pointToSegmentDistance(body.face, body.leftElbow, body.leftHand);
@@ -22987,18 +23040,22 @@ index 7bcee43c7bd19f3e7aa820ab57f8902cd7e90ca9..d479f955a53f505080fe6fe473571d62
 +    const leftArmThreshold = FOREARM_FACE_CLEARANCE;
      if (leftArmDist < leftArmThreshold) {
        const penetration = leftArmThreshold - leftArmDist;
++      const handDistance = body.leftHand.distanceTo(body.face);
        events.push(this.makeEvent("arm-through-face", stepNumber, beatProgress, penetration,
-         `L forearm → face (${(leftArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`));
+-        `L forearm → face (${(leftArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`));
++        `L forearm → face (${(leftArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep; hand ${(handDistance * 100).toFixed(1)}cm from center)`));
      }
      const rightArmDist = this.pointToSegmentDistance(body.face, body.rightElbow, body.rightHand);
 -    const rightArmThreshold = HEAD_RADIUS + ARM_SEGMENT_RADIUS + PROP_BODY_THRESHOLD;
 +    const rightArmThreshold = FOREARM_FACE_CLEARANCE;
      if (rightArmDist < rightArmThreshold) {
        const penetration = rightArmThreshold - rightArmDist;
++      const handDistance = body.rightHand.distanceTo(body.face);
        events.push(this.makeEvent("arm-through-face", stepNumber, beatProgress, penetration,
-         `R forearm → face (${(rightArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`));
-     }
- 
+-        `R forearm → face (${(rightArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`));
++        `R forearm → face (${(rightArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep; hand ${(handDistance * 100).toFixed(1)}cm from center)`));
++    }
++
 +    // 3b. Arms through neck/torso. The face sphere alone misses the common
 +    //     side-on failure where a forearm goes behind the chin and straight
 +    //     through the neck or upper chest. Exclude the shoulder-adjacent 35%
@@ -23018,6 +23075,7 @@ index 7bcee43c7bd19f3e7aa820ab57f8902cd7e90ca9..d479f955a53f505080fe6fe473571d62
 +    const torsoCenters = [body.spine1, body.spine2];
 +    for (const arm of bodyArmSegments) {
 +      const neckDistance = this.pointToSegmentDistance(body.neck, arm.a, arm.b);
++      const endpointNeckDistance = arm.b.distanceTo(body.neck);
 +      if (neckDistance < FOREARM_NECK_CLEARANCE) {
 +        const penetration = FOREARM_NECK_CLEARANCE - neckDistance;
 +        events.push(this.makeEvent(
@@ -23025,13 +23083,18 @@ index 7bcee43c7bd19f3e7aa820ab57f8902cd7e90ca9..d479f955a53f505080fe6fe473571d62
 +          stepNumber,
 +          beatProgress,
 +          penetration,
-+          `${arm.name} → neck (${(neckDistance * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`
++          `${arm.name} → neck (${(neckDistance * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep; endpoint ${(endpointNeckDistance * 100).toFixed(1)}cm from center)`
 +        ));
 +      }
 +
 +      let worstTorsoDepth = 0;
++      let nearestEndpointTorsoDistance = Number.POSITIVE_INFINITY;
 +      for (const center of torsoCenters) {
 +        const distance = this.pointToSegmentDistance(center, arm.a, arm.b);
++        nearestEndpointTorsoDistance = Math.min(
++          nearestEndpointTorsoDistance,
++          arm.b.distanceTo(center)
++        );
 +        worstTorsoDepth = Math.max(
 +          worstTorsoDepth,
 +          FOREARM_TORSO_CLEARANCE - distance
@@ -23043,15 +23106,13 @@ index 7bcee43c7bd19f3e7aa820ab57f8902cd7e90ca9..d479f955a53f505080fe6fe473571d62
 +          stepNumber,
 +          beatProgress,
 +          worstTorsoDepth,
-+          `${arm.name} → torso (${(worstTorsoDepth * 100).toFixed(1)}cm deep)`
++          `${arm.name} → torso (${(worstTorsoDepth * 100).toFixed(1)}cm deep; endpoint ${(nearestEndpointTorsoDistance * 100).toFixed(1)}cm from center)`
 +        ));
 +      }
-+    }
-+
+     }
+
      // 4. Arms through each other - forearm segments
-     const armArmDist = this.segmentToSegmentDistance(
-       body.leftElbow, body.leftHand,
-@@ -251,14 +304,14 @@ export class CollisionDetector implements ICollisionDetector {
+@@ -251,14 +312,14 @@ export class CollisionDetector implements ICollisionDetector {
    }
  
    private pointToSegmentDistance(point: Vector3, segA: Vector3, segB: Vector3): number {
