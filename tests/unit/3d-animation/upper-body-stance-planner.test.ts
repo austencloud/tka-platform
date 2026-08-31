@@ -28,6 +28,20 @@ describe("planUpperBodyStanceYaw", () => {
     expect(yaw).toBeLessThanOrEqual((75 * Math.PI) / 180);
   });
 
+  it("does not dilute a side stance with the wall plane depth offset", () => {
+    const near = planUpperBodyStanceYaw({
+      blue: { x: 0.48, z: 0.15 },
+      red: { x: 0.44, z: 0.15 },
+    });
+    const far = planUpperBodyStanceYaw({
+      blue: { x: 0.48, z: 0.9 },
+      red: { x: 0.44, z: 0.9 },
+    });
+
+    expect(far).toBeCloseTo(near, 8);
+    expect(near).toBeCloseTo((-75 * Math.PI) / 180, 8);
+  });
+
   it("stays square for opposed targets", () => {
     const plan = planUpperBodyStance({
       blue: { x: 0.45, z: 0.3 },
