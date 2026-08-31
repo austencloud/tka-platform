@@ -61,17 +61,26 @@
     return Math.max(44, Math.min(maxCellPx, fit));
   });
 
-  // Cells/headers render once at a fixed resolution; CSS scales to `cell`, so
-  // resizing never triggers a re-render and the image stays crisp.
-  const RENDER_PX = 128;
+  // Cells and headers are cached as vector images. They can follow the grid
+  // from the 44px touch-target floor through the 320px 4K layout without
+  // stretching a small raster image or rebuilding geometry during resize.
+  const VECTOR_VIEWBOX_PX = 128;
 
-  const headerSrc = (f: Flower, hand: "blue" | "red") =>
-    paintHeader(
-      (hand === "blue" ? data.blue : data.red).get(flowerKey(f))!,
-      hand,
-      RENDER_PX,
-      data.clubTipDx
-    );
+  const headerCache = new Map<string, string>();
+  function headerSrc(f: Flower, hand: "blue" | "red"): string {
+    const k = `${data.propType}__${hand}__${flowerKey(f)}`;
+    let url = headerCache.get(k);
+    if (!url) {
+      url = paintHeader(
+        (hand === "blue" ? data.blue : data.red).get(flowerKey(f))!,
+        hand,
+        VECTOR_VIEWBOX_PX,
+        data.clubTipDx
+      );
+      headerCache.set(k, url);
+    }
+    return url;
+  }
 
   const cellCache = new Map<string, string>();
   function cellSrc(b: Flower, r: Flower): string {
@@ -81,7 +90,7 @@
       url = paintCell(
         data.blue.get(flowerKey(b))!,
         data.red.get(flowerKey(r))!,
-        RENDER_PX,
+        VECTOR_VIEWBOX_PX,
         data.clubTipDx
       );
       cellCache.set(k, url);
