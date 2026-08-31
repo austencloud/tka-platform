@@ -3,6 +3,10 @@ import type {
   FormationSpot,
   StageChoreography,
 } from "./stage-types";
+import type {
+  ScheduledGaitTimingSample,
+  TerminalStepPlan,
+} from "@austencloud/scene-3d";
 
 const MOVEMENT_EPSILON = 0.0001;
 
@@ -17,6 +21,8 @@ export interface StagePerformanceFrame {
   isMoving: boolean;
   activeMarkIndex: number;
   transitionProgress: number;
+  gaitTimingSample?: ScheduledGaitTimingSample;
+  terminalStepPlan?: TerminalStepPlan;
 }
 
 export interface SequencePlaybackSample {

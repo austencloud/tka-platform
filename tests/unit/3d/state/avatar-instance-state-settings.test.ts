@@ -112,6 +112,22 @@ describe("AvatarInstanceState — performer settings", () => {
     expect(a.displayName).toBeNull();
   });
 
+  it("undoes and redoes an avatar change", () => {
+    const undo = getSceneUndoManager();
+    undo.clear();
+    const a = createAvatarInstanceState(makeConfig(), makeDeps());
+
+    a.setAvatarModel("y-bot");
+    expect(a.avatarModelId).toBe("y-bot");
+    expect(undo.historySize).toBe(1);
+
+    undo.undo();
+    expect(a.avatarModelId).toBe("x-bot");
+
+    undo.redo();
+    expect(a.avatarModelId).toBe("y-bot");
+  });
+
   it("resetAllOverrides clears all settings to null, preserves staffLengthCm", () => {
     const a = createAvatarInstanceState(makeConfig(), makeDeps());
     a.setProp(PropType.FAN);

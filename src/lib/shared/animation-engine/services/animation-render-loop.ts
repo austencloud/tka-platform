@@ -131,8 +131,7 @@ interface EffectDispatchContext {
     | undefined;
   /** Live prop sprite images — echo ghosts these at past poses. */
   propImages:
-    | { blue: HTMLImageElement | null; red: HTMLImageElement | null }
-    | undefined;
+    { blue: HTMLImageElement | null; red: HTMLImageElement | null } | undefined;
   loopDetectedThisFrame: boolean;
   isSeamlesslyLoopable: boolean;
 }
@@ -431,8 +430,7 @@ export class AnimationRenderLoop {
   /** Snapshot of render loop state for diagnostic reports. */
   getDiagnostics(): Record<string, unknown> {
     const fireRenderer = this.renderers.get("fire") as
-      | (WebGLFireRenderer & { getDiagnostics?: () => unknown })
-      | undefined;
+      (WebGLFireRenderer & { getDiagnostics?: () => unknown }) | undefined;
     const charcoalRenderer = this.renderers.get("charcoal");
     const ledRenderer = this.renderers.get("led");
     const trailOverlay = this.renderers.get("trails");
@@ -1262,6 +1260,7 @@ export class AnimationRenderLoop {
             : [],
         hasBlue: !!layer.blueProp && effectiveBlueMotionVisible,
         hasRed: !!layer.redProp && effectiveRedMotionVisible,
+        opacity: Math.max(0, Math.min(1, layer.opacity ?? 1)),
         blueColor: colors?.blue ?? "#8b5cf6",
         redColor: colors?.red ?? "#f97316",
         bluePropType: layer.bluePropType,
@@ -1289,8 +1288,7 @@ export class AnimationRenderLoop {
       }
       // Clear trail overlay (Canvas2D)
       const trailOverlayRenderer = this.renderers.get("trails") as
-        | (ITrailOverlayCanvas & { canvas?: HTMLCanvasElement })
-        | undefined;
+        (ITrailOverlayCanvas & { canvas?: HTMLCanvasElement }) | undefined;
       if (trailOverlayRenderer) {
         const trailCanvas = trailOverlayRenderer.canvas;
         if (trailCanvas) {
@@ -1310,8 +1308,7 @@ export class AnimationRenderLoop {
 
     // Route trail rendering through the overlay canvas
     const trailOverlay = this.renderers.get("trails") as
-      | ITrailOverlayCanvas
-      | undefined;
+      ITrailOverlayCanvas | undefined;
     if (trailOverlay && effectiveTrailsVisible && !params.suppress2DOverlays) {
       if (this.lastTrailFrameTime === 0) {
         trailOverlay.setVisible(true);
@@ -1509,6 +1506,7 @@ export class AnimationRenderLoop {
             ? props.additionalLayers.map((l) => ({
                 blueProp: effectiveBlueMotionVisible ? l.blueProp : null,
                 redProp: effectiveRedMotionVisible ? l.redProp : null,
+                opacity: l.opacity,
               }))
             : undefined,
       };
@@ -1668,6 +1666,7 @@ export class AnimationRenderLoop {
               ? props.additionalLayers.map((l) => ({
                   blueProp: effectiveBlueMotionVisible ? l.blueProp : null,
                   redProp: effectiveRedMotionVisible ? l.redProp : null,
+                  opacity: l.opacity,
                 }))
               : undefined,
           tunnelSpectrum: props.tunnelSpectrum ?? true,
@@ -1742,8 +1741,7 @@ export class AnimationRenderLoop {
       if (hints && hints.tier !== this.previousQualityTier) {
         this.previousQualityTier = hints.tier;
         const fireRenderer = this.renderers.get("fire") as
-          | WebGLFireRenderer
-          | undefined;
+          WebGLFireRenderer | undefined;
         if (fireRenderer?.isInitialized()) {
           // Map quality tier → fire simulation quality level
           const fireQuality =

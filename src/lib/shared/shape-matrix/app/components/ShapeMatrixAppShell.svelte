@@ -524,7 +524,11 @@
     max-width: 100%;
     display: flex;
     align-items: center;
-    justify-self: start;
+    /* Centered, not start-justified: the turn control swings from 4 to 14
+       segments across levels, and a left-packed band strands the width
+       reserved for level 4 as a dead field on the right. Centering splits
+       the slack into balanced gutters at every level. */
+    justify-self: center;
     gap: 0.5rem;
     min-width: 0;
     padding: 0.3rem;
@@ -627,6 +631,9 @@
   .turn-control {
     width: min(100%, calc(var(--turn-option-count, 4) * 3rem));
     justify-self: start;
+    /* Level changes rewrite the option count, so the control's width is an
+       intentional structural change — ease it instead of snapping. */
+    transition: width var(--transition-normal);
   }
 
   .turn-control :global(.segmented-control) {
@@ -750,6 +757,25 @@
     }
   }
 
+  /* Wide hosts hold the whole header in one row. The seam sits above the
+     WIDEST ribbon state: level 4's fourteen-segment turn control plus
+     identity and actions measures ~138rem, so 140rem guarantees the row
+     fits with slack. The controls column may shrink to zero so any drift
+     degrades into the turn-scroller's own scroll, never page overflow. */
+  @container shape-matrix-app (min-width: 140rem) {
+    .topbar {
+      grid-template-columns:
+        minmax(max-content, 1fr)
+        minmax(0, max-content)
+        minmax(max-content, 1fr);
+      grid-template-areas: "identity controls actions";
+    }
+
+    .matrix-controls {
+      min-width: 0;
+    }
+  }
+
   @container shape-matrix-app (max-width: 25rem) {
     .topbar {
       gap: 0.3rem;
@@ -804,7 +830,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .top-action,
-    .back-to-matrix {
+    .back-to-matrix,
+    .turn-control {
       transition: none;
     }
   }

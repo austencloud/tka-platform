@@ -37,6 +37,57 @@ html.named-route-morph::view-transition {
   background: transparent;
 }
 
+/*
+ * REDUCED-MOTION SEQUENCE VIEWER DISSOLVE
+ *
+ * The live canvas and Card stay mounted. Chrome snapshots the stable outer
+ * workspace and overlaps the old/new pixels for one standard transition beat.
+ * The group itself never interpolates geometry, so reduced motion contains no
+ * scale, pan, slide, or resizing — only the muted opacity change recommended
+ * by WCAG's interaction-animation guidance.
+ */
+html.sequence-viewer-reduced-dissolve::view-transition {
+  background: transparent;
+}
+
+html.sequence-viewer-reduced-dissolve::view-transition-group(
+    sequence-viewer-workspace
+  ) {
+  animation: none !important;
+}
+
+html.sequence-viewer-reduced-dissolve::view-transition-old(
+    sequence-viewer-workspace
+  ) {
+  animation: sequence-viewer-dissolve-out var(--duration-normal)
+    var(--ease-in-out) both !important;
+}
+
+html.sequence-viewer-reduced-dissolve::view-transition-new(
+    sequence-viewer-workspace
+  ) {
+  animation: sequence-viewer-dissolve-in var(--duration-normal)
+    var(--ease-in-out) both !important;
+}
+
+@keyframes sequence-viewer-dissolve-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sequence-viewer-dissolve-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* ============================================================================
    SHOP BOOK MORPH
    The live shop has one generic product-detail journey: the guide book. Its
@@ -675,7 +726,6 @@ html.named-route-morph::view-transition {
   z-index: 1;
   position: relative;
 }
-
 
 /* CSS custom properties for zoom origin (set via JS from button position) */
 :root {

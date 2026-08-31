@@ -79,4 +79,42 @@ describe("normalizeFormations", () => {
     expect(result[0]).toMatchObject({ atBeat: 0, transitionBeats: 0 });
     expect(result[0]!.spots.performerA).toBeDefined();
   });
+
+  it("migrates optional performer travel without changing legacy spots", () => {
+    const result = normalizeFormations(
+      [
+        formation("opening", 0, 0, {
+          performerA: {
+            x: 1,
+            z: 1,
+            walkStyle: "direct",
+            easing: "linear",
+          },
+        }),
+        formation("arrival", 16, 8, {
+          performerA: {
+            x: 6,
+            z: 1,
+            walkStyle: "direct",
+            easing: "linear",
+            travel: {
+              departureBeat: -4,
+              arrivalBeat: 20,
+              stepCount: 99,
+            },
+          },
+        }),
+      ],
+      ["performerA"],
+      10,
+      8
+    );
+
+    expect(result[0]!.spots.performerA.travel).toBeUndefined();
+    expect(result[1]!.spots.performerA.travel).toEqual({
+      departureBeat: 0,
+      arrivalBeat: 16,
+      stepCount: 16,
+    });
+  });
 });

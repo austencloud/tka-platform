@@ -54,6 +54,11 @@
     createTerminalStepPlan,
   } from "$lib/shared/3d/locomotion/destination-walk-plan";
   import {
+    MAX_EXACT_STEPS,
+    MIN_EXACT_STEPS,
+    exactStepRange as supportedExactStepRange,
+  } from "$lib/shared/3d/locomotion/straight-travel-constraints";
+  import {
     createCountedGaitTimingPlan,
     type CountedGaitSchedule,
   } from "$lib/shared/3d/locomotion/gait-timing-plan";
@@ -62,18 +67,14 @@
 
   const MANUAL = "manual";
   const EXACT_MARK = "exact-mark";
-  const MIN_EXACT_STEP_LENGTH = 0.55;
-  const MAX_EXACT_STEP_LENGTH = 0.85;
-  const MAX_EXACT_STEPS = 16;
   const TEMPO_OPTIONS = [90, 120, 150] as const;
-
   function exactStepRange(distance: number): { min: number; max: number } {
-    const min = Math.max(3, Math.ceil(distance / MAX_EXACT_STEP_LENGTH));
-    const max = Math.max(
-      min,
-      Math.min(MAX_EXACT_STEPS, Math.floor(distance / MIN_EXACT_STEP_LENGTH))
+    return (
+      supportedExactStepRange(distance) ?? {
+        min: MIN_EXACT_STEPS,
+        max: MAX_EXACT_STEPS,
+      }
     );
-    return { min, max };
   }
 
   function clampExactSteps(distance: number, steps: number): number {

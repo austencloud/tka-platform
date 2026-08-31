@@ -179,6 +179,111 @@ describe("spiroanim bridge resolver", () => {
 });
 
 /**
+ * Orientation translation. The transcription was captured at SpiroAnim pattern
+ * orientation -90; SpiroAnim's live default for every bridged ratio is 0. A
+ * plain key therefore renders the transcription rotated 90° clockwise, and an
+ * `o` token requests any of the six views. Verified against his compiler
+ * (2026-08-30): +45° of orientation = one compass step clockwise for every
+ * hand.
+ */
+describe("spiroanim bridge orientation translation", () => {
+  const positionsOf = (steps: readonly { startPosition: unknown; endPosition: unknown }[]) =>
+    steps.map((step) => `${step.startPosition}>${step.endPosition}`);
+
+  it("renders the default view 90° clockwise of the transcription", async () => {
+    // vtg 3-4 @ 1:3 is the cell Austen reported: KEKE, transcribed as
+    // alpha7>beta5>alpha3>beta1>alpha7. One compass step per 45°, so the
+    // 0-orientation default sits two steps clockwise of the -90 capture.
+    const resolved = await resolveCell("vtg.3-4.1x3.diamond.base", transcription);
+    expect(resolved).not.toBeNull();
+    expect(positionsOf(resolved!.sequence.steps)).toEqual([
+      "alpha1>beta7",
+      "beta7>alpha5",
+      "alpha5>beta3",
+      "beta3>alpha1",
+    ]);
+    expect(resolved!.sequence.word).toBe("KEKE");
+    expect(resolved!.sequence.metadata?.spiroanimOrientation).toBe(0);
+  });
+
+  it("reproduces the transcription exactly at o-90", async () => {
+    const resolved = await resolveCell(
+      "vtg.3-4.1x3.diamond.base.o-90",
+      transcription
+    );
+    expect(resolved).not.toBeNull();
+    expect(positionsOf(resolved!.sequence.steps)).toEqual(
+      positionsOf(resolved!.entry.steps)
+    );
+    expect(resolved!.sequence.metadata?.spiroanimOrientation).toBe(-90);
+  });
+
+  it("rotates qtr gamma cells the same way", async () => {
+    // qtr 3-4 @ 1:3: NQNQ, transcribed gamma15>gamma5>gamma11>gamma1. At the
+    // default view (+2 steps clockwise): gamma15(N,W)→(E,N)=gamma9,
+    // gamma5(E,S)→(S,W)=gamma7, gamma11(S,E)→(W,S)=gamma13,
+    // gamma1(W,N)→(N,E)=gamma3.
+    const resolved = await resolveCell("qtr.3-4.1x3.diamond.base", transcription);
+    expect(resolved).not.toBeNull();
+    expect(positionsOf(resolved!.sequence.steps)).toEqual([
+      "gamma9>gamma7",
+      "gamma7>gamma13",
+      "gamma13>gamma3",
+      "gamma3>gamma9",
+    ]);
+    expect(resolved!.sequence.word).toBe("NQNQ");
+  });
+
+  it("never rotates 8stp and ignores its foreign orientation token", async () => {
+    const plain = await resolveCell("8stp.1-aa.1x1.diamond.base", transcription);
+    const tokened = await resolveCell(
+      "8stp.1-aa.1x1.diamond.base.o90",
+      transcription
+    );
+    expect(plain).not.toBeNull();
+    expect(tokened).not.toBeNull();
+    expect(positionsOf(tokened!.sequence.steps)).toEqual(
+      positionsOf(plain!.sequence.steps)
+    );
+    expect(positionsOf(plain!.sequence.steps)).toEqual(
+      positionsOf(plain!.entry.steps)
+    );
+    expect(plain!.sequence.metadata?.spiroanimOrientation).toBeUndefined();
+  });
+
+  it(
+    "resolves every vtg/qtr cell at the 45° view (box-grid positions)",
+    async () => {
+      // 45° rotations land every hand on intercardinal points, so this sweep
+      // proves the Box dataframe covers the whole rotated corpus. The other
+      // intercardinal views (o-45, o135-equivalent o180±45) are 90° rotations
+      // of these rows within the same frame.
+      const failures: string[] = [];
+      let checked = 0;
+      for (const [key, entry] of addressable) {
+        if (key.startsWith("8stp.")) continue;
+        checked++;
+        const resolved = await resolveCell(`${key}.o45`, transcription);
+        if (!resolved) {
+          failures.push(`${key}.o45: resolved to null`);
+          continue;
+        }
+        if (resolved.sequence.word !== entry.word) {
+          failures.push(
+            `${key}.o45: derived word ${resolved.sequence.word} !== transcribed ${entry.word}`
+          );
+        }
+      }
+      console.log(`o45 cells checked: ${checked}, failures: ${failures.length}`);
+      if (failures.length) console.log(failures.slice(0, 20).join("\n"));
+      expect(checked).toBe(864);
+      expect(failures).toEqual([]);
+    },
+    600_000
+  );
+});
+
+/**
  * The trip back. `vtg-qtr-deep-links.json` is generated in the SpiroAnim repo
  * with his own codec at its current version and vendored here; the 8-Step map
  * is the legacy v6 export. Without the vtg/qtr artifact the coverage sweep has

@@ -815,6 +815,23 @@ export const PLAYGROUND_TABS: Section[] = [
   },
 ];
 
+// Toys module tabs - user-facing interactive toys, added one at a time on
+// Austen's explicit request (the successor to the dissolved Playground module,
+// whose galleries now live in the Library's Art shelf). First toy: Shape Matrix.
+export const TOYS_TABS: Section[] = [
+  {
+    id: "shape-matrix",
+    labelKey: "tab_toys_shape_matrix",
+    descKey: "tab_desc_toys_shape_matrix",
+    label: "Shape Matrix",
+    icon: '<i class="fas fa-border-all" aria-hidden="true"></i>',
+    description:
+      "Explore shape pairings in an interactive matrix and watch each path traced live",
+    color: "#2dd4bf",
+    gradient: "linear-gradient(135deg, #5eead4 0%, #2dd4bf 100%)",
+  },
+];
+
 // Video module tabs (graduated from Lab Mar 2026)
 export const VIDEO_TABS: Section[] = [
   {

@@ -79,6 +79,7 @@ export type ModuleId =
   | "lab" // Experimental features lab (all experiments consolidated here)
   | "stage" // Stage choreography - multi-performer formation locomotion
   | "mandala" // Mandala creation, collection, meditation, and export
+  | "toys" // User-facing interactive toys (first toy: Shape Matrix explorer)
   | "shop"; // Plain link-out to /shop (Choreo Cards store) — never boots the module shell, see `linkHref`
 
 /**

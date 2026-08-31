@@ -123,3 +123,22 @@ not register, publish, or deploy that asset.
    on the personal MetaPerson plus at least one legacy candidate. Cross-body
    must show forward torso participation and no arm-arm or arm-torso
    interpenetration from front and quarter views.
+
+## Production integration and facial exposure
+
+The production sequence performer enables `Avatar3D`'s existing head-threat
+avoidance. The grip lab had enabled it while the real app had not, which left
+the staff and raised forearm free to occupy the head on tall rigs.
+
+Fire remains an emissive particle effect with a subtle local light. Three.js
+point lights use inverse-square attenuation, so the fire translator caps the
+authored point-light intensity below half a candela before motion flicker. This
+preserves iris, skin, and clothing detail when a wick passes close to the face
+without flattening the flame or removing its bloom.
+
+Avatar swap fades must also restore each material's authored render state.
+Forcing every material back to opaque after a fade turns MetaPerson's cornea
+opaque and hides the iris behind a white shell. The shared `Avatar3D` fade path
+therefore records and restores authored opacity, transparency, and depth-write
+settings while still using a transparent, depth-write-disabled state during the
+fade itself.

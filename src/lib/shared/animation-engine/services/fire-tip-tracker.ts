@@ -42,6 +42,7 @@ export interface FireTipTrackerConfig {
   additionalLayers?: Array<{
     blueProp: PropState | null;
     redProp: PropState | null;
+    opacity?: number;
   }>;
 }
 
@@ -226,7 +227,8 @@ export class FireTipTracker {
             `${li}-b`,
             currentTime,
             layerOutputIndex,
-            cap
+            cap,
+            layer.opacity ?? 1
           );
         }
         if (layer.redProp) {
@@ -239,7 +241,8 @@ export class FireTipTracker {
             `${li}-r`,
             currentTime,
             layerOutputIndex,
-            cap
+            cap,
+            layer.opacity ?? 1
           );
         }
       }
@@ -355,7 +358,8 @@ export class FireTipTracker {
     keyPrefix: string,
     currentTime: number,
     outputStartIndex: number,
-    cap: number
+    cap: number,
+    opacity: number
   ): number {
     const tipConfig = getTipPoints(propType);
     const tipPoints = tipConfig.points;
@@ -387,7 +391,7 @@ export class FireTipTracker {
         worldY,
         propIndex,
         i,
-        1.0,
+        Math.max(0, Math.min(1, opacity)),
         currentTime,
         outputIndex
       );

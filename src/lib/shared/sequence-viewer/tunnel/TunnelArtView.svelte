@@ -34,6 +34,7 @@
     visibilityManager,
     blueBuugengFlipped,
     redBuugengFlipped,
+    onCanvasReady,
   }: {
     sequence: SequenceData;
     playback?: ViewerPlaybackState;
@@ -61,7 +62,25 @@
     visibilityManager?: AnimationVisibilityStateManager;
     blueBuugengFlipped?: boolean;
     redBuugengFlipped?: boolean;
+    onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
   } = $props();
+
+  let readyFrame = 0;
+
+  function handleCanvasReady(canvas: HTMLCanvasElement | null): void {
+    cancelAnimationFrame(readyFrame);
+    if (!canvas) {
+      onCanvasReady?.(null);
+      return;
+    }
+
+    // AnimatorCanvas announces its backing surface before starting the render
+    // loop. Hold the parent reveal through the first painted frame so a cold
+    // Tunnel never fades up as an initialized-but-empty canvas.
+    readyFrame = requestAnimationFrame(() => {
+      readyFrame = requestAnimationFrame(() => onCanvasReady?.(canvas));
+    });
+  }
 
   function handlePlaybackToggle(): void {
     const next = toggleTunnelPlayback(playing, "canvas");
@@ -140,7 +159,10 @@
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      cancelAnimationFrame(readyFrame);
+    };
   });
 
   // Unbounded-within-loop playhead (1-indexed) for the kaleidoscope sampling —
@@ -204,6 +226,7 @@
         {trailSettings}
         {tipEffectMap}
         effectsConfigState={effectsConfig ?? undefined}
+        onCanvasReady={handleCanvasReady}
         visibilityManagerOverride={visibilityManager}
         gridVisible={controller.gridVisible}
         hideHeader={true}

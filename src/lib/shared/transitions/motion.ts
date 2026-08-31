@@ -15,7 +15,10 @@ import { DURATION } from "./transitions";
 export function reducedMotion(): boolean {
   return (
     typeof window !== "undefined" &&
-    (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false)
+    ((typeof document !== "undefined" &&
+      document.documentElement.dataset.motionPreference === "reduce") ||
+      (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ??
+        false))
   );
 }
 
@@ -118,7 +121,12 @@ export function flexPresence(
  */
 export function growFade(
   node: HTMLElement,
-  { duration = DURATION.normal, delay = 0, axis = "y", x = 0 }: GrowFadeParams = {}
+  {
+    duration = DURATION.normal,
+    delay = 0,
+    axis = "y",
+    x = 0,
+  }: GrowFadeParams = {}
 ): TransitionConfig {
   // Like svelte's `slide`, collapse padding/margin/border along the axis too —
   // otherwise a padded element ends its collapse with a residual-height pop.
@@ -127,10 +135,28 @@ export function growFade(
   const size = axis === "y" ? rect.height : rect.width;
   const props =
     axis === "y"
-      ? (["height", "padding-top", "padding-bottom", "margin-top", "margin-bottom", "border-top-width", "border-bottom-width"] as const)
-      : (["width", "padding-left", "padding-right", "margin-left", "margin-right", "border-left-width", "border-right-width"] as const);
+      ? ([
+          "height",
+          "padding-top",
+          "padding-bottom",
+          "margin-top",
+          "margin-bottom",
+          "border-top-width",
+          "border-bottom-width",
+        ] as const)
+      : ([
+          "width",
+          "padding-left",
+          "padding-right",
+          "margin-left",
+          "margin-right",
+          "border-left-width",
+          "border-right-width",
+        ] as const);
   const values = props.map((p) =>
-    p === "height" || p === "width" ? size : parseFloat(style.getPropertyValue(p)) || 0
+    p === "height" || p === "width"
+      ? size
+      : parseFloat(style.getPropertyValue(p)) || 0
   );
   return {
     duration: motionDuration(duration),

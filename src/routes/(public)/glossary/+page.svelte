@@ -802,16 +802,18 @@
       </div>
     {/key}
 
-    <div class="cta-card">
-      <h3>See the notation in motion</h3>
-      <p>
-        These terms come alive in the composer. Build a sequence and watch it
-        animate.
-      </p>
-      <a class="cta-button" href="/create"
-        >Open the Composer <i class="fa-solid fa-arrow-right"></i></a
-      >
-    </div>
+    {#if !codexView}
+      <div class="cta-card">
+        <h3>See the notation in motion</h3>
+        <p>
+          These terms come alive in the composer. Build a sequence and watch it
+          animate.
+        </p>
+        <a class="cta-button" href="/create"
+          >Open the Composer <i class="fa-solid fa-arrow-right"></i></a
+        >
+      </div>
+    {/if}
 
     <p class="creator-credit">
       A reference for <a href="/notation">Flow Arts Notation</a> ·
@@ -1143,6 +1145,18 @@
   .codex-host {
     min-width: 0;
     margin: 0 0 3rem;
+  }
+
+  .codex-view .codex-host {
+    margin-bottom: 0.75rem;
+  }
+
+  /* The full SiteFooter carries a 4.5rem handoff above itself. Let the Codex
+     claim the rest of the first viewport so that handoff begins at the fold:
+     the footer is either fully below the page content or deliberately reached
+     by scrolling, never stranded as a partial footer under a compressed board. */
+  .codex-view .editorial {
+    min-height: calc(100dvh - 4.5rem);
   }
 
   .codex-search-result {

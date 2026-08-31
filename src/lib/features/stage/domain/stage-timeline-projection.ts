@@ -1,15 +1,24 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 import { sampleFormationPerformance } from "./stage-formation-sampler";
+import { resolveStageTravel } from "./stage-travel-plan";
 import type { StageChoreography } from "./stage-types";
 
 export interface StageFloorTravelSegment {
   id: string;
+  formationId: string;
+  performerId: string;
   setIndex: number;
   label: string;
   startBeat: number;
   endBeat: number;
+  minimumStartBeat: number;
+  maximumEndBeat: number;
   distanceMeters: number;
+  requestedStepCount: number | null;
+  resolvedStepCount: number | null;
+  supportedStepRange: { min: number; max: number } | null;
+  exact: boolean;
 }
 
 export interface StageFloorSpeedSample {
@@ -45,18 +54,25 @@ export function projectPerformerFloorTravel(
 ): StageFloorTravelSegment[] {
   return choreography.formations.slice(1).flatMap((formation, offset) => {
     const setIndex = offset + 1;
-    const from = spotAtOrBefore(choreography, performerId, setIndex - 1);
-    const to = formation.spots[performerId] ?? from;
-    if (!from || !to) return [];
+    const travel = resolveStageTravel(choreography, performerId, setIndex);
+    if (!travel) return [];
 
     return [
       {
-        id: formation.id,
+        id: `${performerId}:${formation.id}`,
+        formationId: formation.id,
+        performerId,
         setIndex,
         label: formation.label?.trim() || `Set ${setIndex + 1}`,
-        startBeat: Math.max(0, formation.atBeat - formation.transitionBeats),
-        endBeat: formation.atBeat,
-        distanceMeters: Math.hypot(to.x - from.x, to.z - from.z),
+        startBeat: travel.departureBeat,
+        endBeat: travel.arrivalBeat,
+        minimumStartBeat: choreography.formations[setIndex - 1]?.atBeat ?? 0,
+        maximumEndBeat: formation.atBeat,
+        distanceMeters: travel.distanceMeters,
+        requestedStepCount: travel.requestedStepCount,
+        resolvedStepCount: travel.resolvedStepCount,
+        supportedStepRange: travel.supportedStepRange,
+        exact: travel.exact,
       },
     ];
   });

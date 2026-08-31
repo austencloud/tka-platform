@@ -91,6 +91,8 @@ export function applyStagePerformerMotion(
       speed: frame.speedMetersPerSecond,
       // A paused stage is a held pose, not a performer walking in place.
       moving: isPlaying && frame.isMoving,
+      gaitTimingSample: frame.gaitTimingSample ?? null,
+      terminalStepPlan: frame.terminalStepPlan ?? null,
     });
   }
 }
