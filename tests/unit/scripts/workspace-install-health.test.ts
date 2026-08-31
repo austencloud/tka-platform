@@ -178,4 +178,25 @@ describe("dev launcher install guard", () => {
   it("requests one clean Vite optimizer pass after a repair", () => {
     expect(launcher).toContain('$env:TKA_FORCE_VITE_DEPS = "1"');
   });
+
+  it("places local-ingress flags before the tunnel run subcommand", () => {
+    expect(launcher).toMatch(
+      /"tunnel",\s*"--url",\s*"https:\/\/localhost:5173",\s*"--no-tls-verify",\s*`?\s*\n?\s*"run",\s*"--token"/
+    );
+  });
+
+  it("refuses to launch a competing Windows tunnel service", () => {
+    expect(launcher).toContain("Test-CompetingCloudflaredService");
+    expect(launcher).toContain("would create a second tka-dev connector");
+  });
+
+  it("supervises public tunnel health without restarting Vite", () => {
+    expect(launcher).toContain('Test-Http200 "https://dev.tkaflowarts.com/"');
+    expect(launcher).toContain("$publicFailureCount -ge 3");
+    expect(launcher).toContain("recycling cloudflared without stopping Vite");
+    expect(launcher).toContain("$tunnelProc.HasExited");
+    expect(launcher).toContain("Start-TkaTunnel");
+    expect(launcher).toContain("$manageTunnel -and ((-not $tunnelProc)");
+    expect(launcher).toContain("while Vite stays online");
+  });
 });
