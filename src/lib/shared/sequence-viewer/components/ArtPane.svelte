@@ -213,6 +213,7 @@
     getBluePropType: () => bluePropType,
     getRedPropType: () => redPropType,
     pathPolicy: getAnimationVisibilityManager(),
+    customColorState: controller.customColorState,
   });
 
   // Effects config (grabbed at init — getContext must run during setup) + a ref

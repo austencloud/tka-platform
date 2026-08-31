@@ -426,8 +426,9 @@
         <LabeledColorPairPicker
           blue={ctrl.customBlue}
           red={ctrl.customRed}
-          blueLabel="Color A"
-          redLabel="Color B"
+          blueLabel="Left pathway"
+          redLabel="Right pathway"
+          groupLabel="Pathway colors"
           onchange={(hand, value) => {
             if (hand === "blue") ctrl.customBlue = value;
             else ctrl.customRed = value;

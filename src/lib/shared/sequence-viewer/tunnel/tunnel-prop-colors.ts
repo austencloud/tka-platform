@@ -16,15 +16,15 @@
  * the tip trackers: base blue=0, red=1; layer li blue=2+2*li, red=3+2*li.
  */
 
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
+import {
+  DEFAULT_VIEWER_CUSTOM_COLORS,
+  normalizeViewerHexColor,
+  type ViewerCustomColorPair,
+} from "../domain/viewer-custom-colors";
 
 export type TunnelPropColorMode = "hands" | "spectrum" | "custom";
 
-export interface TunnelPropColorPair {
-  blue: string;
-  red: string;
-}
+export type TunnelPropColorPair = ViewerCustomColorPair;
 
 export interface TunnelPropColorState {
   mode: TunnelPropColorMode;
@@ -34,8 +34,7 @@ export interface TunnelPropColorState {
 /** Stable seed for Custom mode. It deliberately uses the dark-stage hand
  * colors because Tunnel playback is authored on the dark canvas. */
 export const DEFAULT_TUNNEL_CUSTOM_PROP_COLORS: TunnelPropColorPair = {
-  blue: getMotionColor(MotionColor.BLUE, "dark"),
-  red: getMotionColor(MotionColor.RED, "dark"),
+  ...DEFAULT_VIEWER_CUSTOM_COLORS,
 };
 
 export const DEFAULT_TUNNEL_PROP_COLOR_STATE: TunnelPropColorState = {
@@ -43,18 +42,11 @@ export const DEFAULT_TUNNEL_PROP_COLOR_STATE: TunnelPropColorState = {
   custom: { ...DEFAULT_TUNNEL_CUSTOM_PROP_COLORS },
 };
 
-const HEX_COLOR = /^#[0-9a-f]{6}$/i;
-
 export function normalizeTunnelHexColor(
   value: unknown,
   fallback: string
 ): string {
-  if (typeof value !== "string") return fallback;
-  const trimmed = value.trim();
-  const expanded = /^#[0-9a-f]{3}$/i.test(trimmed)
-    ? `#${trimmed[1]}${trimmed[1]}${trimmed[2]}${trimmed[2]}${trimmed[3]}${trimmed[3]}`
-    : trimmed;
-  return HEX_COLOR.test(expanded) ? expanded.toLowerCase() : fallback;
+  return normalizeViewerHexColor(value, fallback);
 }
 
 /** Parse current color state and the version-2 `spectrum` boolean at one

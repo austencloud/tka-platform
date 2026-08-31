@@ -37,8 +37,6 @@ import {
 import { performerRing } from "./performer-ring-model";
 import {
   activeTunnelPropColorPair,
-  DEFAULT_TUNNEL_CUSTOM_PROP_COLORS,
-  normalizeTunnelHexColor,
   resolveTunnelPropColorState,
   tunnelPropColor,
   type TunnelPropColorMode,
@@ -57,6 +55,16 @@ import {
   saveTunnelViewState,
   type TunnelViewState,
 } from "./tunnel-view-state";
+import {
+  consumeStagedViewerCustomColors,
+  ensureViewerCustomColorPreference,
+  loadViewerCustomColorPreference,
+  saveViewerCustomColorPreference,
+} from "../services/viewer-custom-color-preferences";
+import {
+  createViewerCustomColorState,
+  type ViewerCustomColorState,
+} from "../state/viewer-custom-colors-state.svelte";
 
 const DEFAULT_PROP_STATE: PropState = {
   centerPathAngle: 0,
@@ -74,6 +82,8 @@ export interface TunnelControllerSources {
   visibilityManager?: AnimationVisibilityStateManager;
   /** Embedded editors must not rewrite the viewer's last-used view state. */
   persistViewState?: boolean;
+  /** A parent-scoped pair shared with another art controller. */
+  customColorState?: ViewerCustomColorState;
 }
 
 /** Reduced motion caps a dense ring so a heavy kaleidoscope doesn't spin for
@@ -130,9 +140,11 @@ export class TunnelViewController {
    * the pair while another mode is active lets authors compare looks without
    * losing their values. */
   colorMode = $state<TunnelPropColorMode>("spectrum");
-  customPropColors = $state<TunnelPropColorPair>({
-    ...DEFAULT_TUNNEL_CUSTOM_PROP_COLORS,
-  });
+  readonly customColorState: ViewerCustomColorState;
+
+  get customPropColors(): TunnelPropColorPair {
+    return this.customColorState.colors;
+  }
 
   get colors(): TunnelPropColorState {
     return {
@@ -144,7 +156,7 @@ export class TunnelViewController {
   set colors(value: TunnelPropColorState) {
     const resolved = resolveTunnelPropColorState(value);
     this.colorMode = resolved.mode;
-    this.customPropColors = { ...resolved.custom };
+    this.customColorState.hydrate(resolved.custom);
   }
 
   /** Compatibility for older preview/test callers. New Tunnel authoring code
@@ -165,8 +177,7 @@ export class TunnelViewController {
   );
 
   setCustomPropColor(hand: "blue" | "red", value: string): void {
-    const next = normalizeTunnelHexColor(value, this.customPropColors[hand]);
-    this.customPropColors = { ...this.customPropColors, [hand]: next };
+    this.customColorState.setColor(hand, value);
   }
 
   /** Active rail section in the Art settings panel, persisted with the view
@@ -190,6 +201,19 @@ export class TunnelViewController {
     // Restore the last-left config before any effect wires up, clamped to the
     // live budget (a persisted dense ring shrinks under reduced motion).
     const view = loadTunnelViewState();
+    const persistViewState = sources.persistViewState ?? true;
+    if (sources.customColorState) {
+      this.customColorState = sources.customColorState;
+    } else {
+      const stagedColors = consumeStagedViewerCustomColors();
+      const preferenceColors = persistViewState
+        ? ensureViewerCustomColorPreference()
+        : loadViewerCustomColorPreference(undefined, false);
+      this.customColorState = createViewerCustomColorState(
+        stagedColors ?? preferenceColors,
+        persistViewState ? saveViewerCustomColorPreference : undefined
+      );
+    }
     const requestedConfig =
       sources.getComposition?.()?.formation ?? view.config;
     const cfg = clampConfig(requestedConfig, this.#maxImages());
@@ -201,12 +225,12 @@ export class TunnelViewController {
     this.staggerSteps = cfg.staggerSteps;
     this.speedOverrides = { ...cfg.speedOverrides };
     this.gridVisible = view.gridVisible;
-    this.colors = view.colors;
+    this.colorMode = view.colors.mode;
     this.section = view.section;
     this.presetRecipe = cloneTunnelPresetRecipe(view.presetRecipe);
 
     // Persist the live view state on change.
-    if (sources.persistViewState ?? true) {
+    if (persistViewState) {
       $effect(() => {
         const snapshot: TunnelViewState = {
           config: this.config,

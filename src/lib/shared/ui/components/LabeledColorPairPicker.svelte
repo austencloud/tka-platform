@@ -4,6 +4,7 @@
     red: string;
     blueLabel?: string;
     redLabel?: string;
+    groupLabel?: string;
     onchange: (hand: "blue" | "red", value: string) => void;
   }
 
@@ -12,6 +13,7 @@
     red,
     blueLabel = "Left prop",
     redLabel = "Right prop",
+    groupLabel = "Prop colors",
     onchange,
   }: Props = $props();
 
@@ -24,7 +26,7 @@
   ]);
 </script>
 
-<div class="color-pair" aria-label="Prop colors">
+<div class="color-pair" role="group" aria-label={groupLabel}>
   <span
     class="pair-preview"
     style:background={`linear-gradient(90deg, ${blue}, ${red})`}
