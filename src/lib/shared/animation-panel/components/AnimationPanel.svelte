@@ -29,7 +29,10 @@
   import { getAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
-  import { EFFECT_LABELS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
+  import {
+    EFFECT_COLORS,
+    EFFECT_LABELS,
+  } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
   import DisplayPanel from "$lib/shared/animation-engine/components/settings-panels/DisplayPanel.svelte";
   import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
@@ -37,6 +40,7 @@
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import type { PropChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
   import IconRailNav from "../pill-nav/IconRailNav.svelte";
+  import { RAIL_CATEGORY_ACCENTS } from "../pill-nav/rail-category-accents";
   import ControlDock, {
     type ControlDockTab,
     type ControlDockAction,
@@ -322,11 +326,16 @@
     );
   });
 
-  const effectsSummary = $derived.by(() => {
+  const activeEffectId = $derived.by(() => {
     void vmVersion;
-    const activeEffect = effectsConfigState?.activeEffect ?? "none";
-    return computeEffectsSummary(activeEffect, EFFECT_LABELS);
+    return effectsConfigState?.activeEffect ?? "none";
   });
+  const effectsSummary = $derived(
+    computeEffectsSummary(activeEffectId, EFFECT_LABELS)
+  );
+  const effectsAccent = $derived(
+    EFFECT_COLORS[activeEffectId] ?? RAIL_CATEGORY_ACCENTS.effects
+  );
 
   const effortSummary = $derived(activeEffort.label);
   const effortAccent = $derived(activeEffort.color);
@@ -434,9 +443,10 @@
         ...(onPropChange
           ? {
               props: {
-                icon: "fa-paintbrush",
+                propType: selectedPropType,
                 label: "Props",
                 summary: propsSummary,
+                accentColor: RAIL_CATEGORY_ACCENTS.props,
               },
             }
           : {}),
@@ -444,6 +454,7 @@
           icon: "fa-wand-magic-sparkles",
           label: "Effects",
           summary: effectsSummary,
+          accentColor: effectsAccent,
         },
         effort: {
           label: "Effort",
@@ -451,11 +462,17 @@
           accentColor: effortAccent,
         },
         playback: {
-          icon: "fa-play",
+          icon: "fa-route",
           label: "Playback",
           summary: playbackSummary,
+          accentColor: RAIL_CATEGORY_ACCENTS.playback,
         },
-        display: { icon: "fa-eye", label: "Display", summary: displaySummary },
+        display: {
+          icon: "fa-eye",
+          label: "Display",
+          summary: displaySummary,
+          accentColor: RAIL_CATEGORY_ACCENTS.display,
+        },
         // Effort alone, not effort + playback: the summary contract is ≤24
         // chars (pill-types.ts) and concatenating two live values blew past it
         // and changed width on every BPM tick, which is a shifting rail.
@@ -519,6 +536,7 @@
       id: p.id,
       label: p.label,
       icon: p.icon,
+      propType: p.propType,
       accentColor: p.accentColor,
     }))
   );
