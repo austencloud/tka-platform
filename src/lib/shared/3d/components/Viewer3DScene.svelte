@@ -64,7 +64,7 @@
     createPerformerPointerInteraction,
     type PerformerPointerInteraction,
   } from "./performer-interaction/performer-pointer-interaction.svelte";
-  import { planUpperBodyStanceYaw } from "../collision/upper-body-stance-planner";
+  import { planUpperBodyStance } from "../collision/upper-body-stance-planner";
   import { getAvatarSequenceCollisionAudit } from "../collision/avatar-sequence-collision-audit";
 
   // Performer layer membership inherits through the nested PerformerRig tree.
@@ -77,12 +77,12 @@
     ? getAvatarSequenceCollisionAudit()
     : null;
 
-  function resolveUpperBodyStanceYaw(
+  function resolveUpperBodyStance(
     performer: CharacterInstanceState
-  ): number {
+  ) {
     const mode = PLANE_MODE_CONFIGS[performer.planeMode];
     const gridOffset = GRID_OFFSETS[performer.planeMode];
-    return planUpperBodyStanceYaw({
+    return planUpperBodyStance({
       blue: performer.bluePropState
         ? {
             x: mode.blueLateralOffset + performer.bluePropState.worldPosition.x,
@@ -761,6 +761,7 @@
         performerStepOffsets[i] ?? 0,
         performer.totalSteps
       )}
+      {@const upperBodyStance = resolveUpperBodyStance(performer)}
       <CharacterSwapTransition
         {performer}
         performerIndex={i}
@@ -798,7 +799,8 @@
             moveDirection={performer.moveDirection}
             gaitTimingSample={performer.gaitTimingSample}
             terminalStepPlan={performer.terminalStepPlan}
-            stanceYaw={resolveUpperBodyStanceYaw(performer)}
+            stanceYaw={upperBodyStance.yawRad}
+            spinePitchOffset={upperBodyStance.pitchRad}
             headDodge={true}
             onCollisionEvents={collisionAudit
               ? (

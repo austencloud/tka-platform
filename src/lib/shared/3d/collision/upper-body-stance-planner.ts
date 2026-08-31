@@ -8,7 +8,13 @@ export interface UpperBodyStanceTargets {
   red: GripTargetXZ | null;
 }
 
+export interface UpperBodyStancePlan {
+  yawRad: number;
+  pitchRad: number;
+}
+
 const MAX_STANCE_YAW_RAD = (75 * Math.PI) / 180;
+const MAX_STANCE_PITCH_RAD = (18 * Math.PI) / 180;
 const LATERAL_DEAD_ZONE_M = 0.1;
 const FULL_ASSIST_LATERAL_M = 0.28;
 const MIN_FORWARD_REFERENCE_M = 0.14;
@@ -29,13 +35,13 @@ function smoothstep01(value: number): number {
  * west, the avatar should stay square. When both gather on the same side, the
  * body shares the reach instead of forcing both arms across the neck.
  */
-export function planUpperBodyStanceYaw(
+export function planUpperBodyStance(
   targets: UpperBodyStanceTargets
-): number {
+): UpperBodyStancePlan {
   const active = [targets.blue, targets.red].filter(
     (target): target is GripTargetXZ => target !== null
   );
-  if (active.length < 2) return 0;
+  if (active.length < 2) return { yawRad: 0, pitchRad: 0 };
 
   const meanX =
     active.reduce((sum, target) => sum + target.x, 0) / active.length;
@@ -43,22 +49,35 @@ export function planUpperBodyStanceYaw(
     active.reduce((sum, target) => sum + target.z, 0) / active.length;
   const meanAbsX =
     active.reduce((sum, target) => sum + Math.abs(target.x), 0) / active.length;
-  if (meanAbsX < 1e-6) return 0;
+  if (meanAbsX < 1e-6) return { yawRad: 0, pitchRad: 0 };
 
   const coherence = clamp(Math.abs(meanX) / meanAbsX, 0, 1);
   const lateralWeight = smoothstep01(
     (Math.abs(meanX) - LATERAL_DEAD_ZONE_M) /
       (FULL_ASSIST_LATERAL_M - LATERAL_DEAD_ZONE_M)
   );
-  if (coherence < 0.35 || lateralWeight === 0) return 0;
+  if (coherence < 0.35 || lateralWeight === 0) {
+    return { yawRad: 0, pitchRad: 0 };
+  }
 
   const desiredYaw = Math.atan2(
     meanX,
     Math.max(MIN_FORWARD_REFERENCE_M, meanZ)
   );
-  return (
-    clamp(desiredYaw, -MAX_STANCE_YAW_RAD, MAX_STANCE_YAW_RAD) *
-    smoothstep01(coherence) *
-    lateralWeight
-  );
+  const assistance = smoothstep01(coherence) * lateralWeight;
+  return {
+    yawRad:
+      clamp(desiredYaw, -MAX_STANCE_YAW_RAD, MAX_STANCE_YAW_RAD) *
+      assistance,
+    // The built-in cross-body pitch contributes up to 10°. Collision Lab's
+    // same-side E/E solve needs about 29° total, so this track supplies the
+    // missing shoulder carry without moving the hips or hand targets.
+    pitchRad: MAX_STANCE_PITCH_RAD * assistance,
+  };
+}
+
+export function planUpperBodyStanceYaw(
+  targets: UpperBodyStanceTargets
+): number {
+  return planUpperBodyStance(targets).yawRad;
 }
