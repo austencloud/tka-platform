@@ -1,66 +1,72 @@
-# worktree-automerge
+# Worktree lifecycle
 
-Auto-merges finished worktrees to `main` so you never have to remember to. Runs
-on a schedule, hands-off. **Pushing `main` auto-deploys to production (CF Pages)**,
-so every merge here ships — that's intentional, which is why the gate is strict.
+Worktrees isolate implementation from Austen's primary-checkout dev server.
+They are temporary task infrastructure, not a review or approval queue.
 
-## The gate (a worktree merges only when ALL hold)
+## Normal finish
 
-- branch isn't `main` and isn't a skip-prefix (`wip/ spike/ experiment/ tmp/ draft/`)
-- no `.automerge-skip` file in the worktree (explicit opt-out)
-- working tree is clean (nothing uncommitted)
-- **quiescent** — last commit older than 30 min (an actively-worked branch is left
-  alone; the bot never yanks a worktree out from under a live session)
-- ahead of `origin/main` (something to merge)
-- merges into `origin/main` with no conflicts
-- **`npm run check` passes** in the worktree
+Once implementation is approved, the agent owns the whole lifecycle: verify,
+commit, integrate into local `main`, remove the worktree and branch, then put
+the integrated result in front of Austen. There is no separate merge or cleanup
+approval.
 
-It merges **server-side via `gh`** (push branch → PR → `gh pr merge --admin`), so it
-never touches your primary checkout's (usually dirty) working tree.
-
-## Commands
-
-```bash
-npm run wt:status           # fast preview: which worktrees pass the cheap gates (no check run)
-npm run wt:automerge        # full dry run incl. `npm run check` — reports, merges nothing
-npm run wt:automerge:apply  # actually merge the ready ones
-```
-
-Add `--prune` to `:apply` to also remove each merged worktree (and its node_modules
-junction) after merge.
-
-## Opt a worktree out
-
-Drop an empty file to keep a worktree from auto-shipping (e.g. it's mid-review, or
-gated on an external step):
-
-```bash
-touch E:/worktrees/tka-platform/<name>/.automerge-skip
-```
-
-`.automerge-skip` is gitignored — it's a local, per-worktree marker, never committed.
-Delete it when the branch is ready to ship.
-
-## Audit + revert
-
-Every merge appends to `.git/automerge-log.jsonl` with the branch, its head, and the
-**pre-merge `origin/main` SHA**. To revert a bad auto-merge:
-
-```bash
-git push origin <preMergeOriginMain>:refs/heads/main --force-with-lease
-```
-
-(Prod redeploys from the reverted `main`.)
-
-## Schedule (Windows)
-
-Registered as a Scheduled Task running `:apply` every 20 min. Manage it:
+From the primary checkout:
 
 ```powershell
-schtasks /query /tn "tka-worktree-automerge"    # status
-schtasks /change /tn "tka-worktree-automerge" /disable   # pause
-schtasks /delete /tn "tka-worktree-automerge" /f         # remove
+Set-Location E:/tka-platform
+npm run wt:finish -- codex/<task-slug> --route /real-shipping-route
+npm run wt:finish -- codex/<task-slug> --nonvisual
 ```
 
-A lock (`.git/automerge.lock`, stale after 60 min) keeps a slow run and the next tick
-from colliding.
+The primary-checkout directory matters on Windows. A terminal whose current
+directory is inside the task worktree prevents Windows from deleting it.
+
+The finish command requires all of these conditions:
+
+- exact task branch and registered worktree;
+- clean task worktree;
+- task branch contains current local `main`, or is already integrated;
+- no in-progress Git operation in the primary checkout;
+- no overlap between task paths and uncommitted primary-checkout paths;
+- `npm run check` passes;
+- local `main` does not move while checks run;
+- visual work names a real app-relative delivery route.
+
+Unrelated uncommitted work in the primary checkout is preserved. A failed gate
+returns nonzero before integration and leaves the task branch and worktree
+intact. A successful finish creates one local merge commit, verifies ancestry,
+unlinks the root `node_modules` junction safely, removes the worktree, deletes
+the merged branch, prunes stale metadata, and prints the
+`https://localhost:5173` delivery URL.
+
+The agent must immediately open that URL in the desktop app's in-app Browser
+pane. A worktree preview can be used during verification but is never the final
+handoff.
+
+## Readiness diagnostics
+
+These commands are read-only:
+
+```powershell
+npm run wt:status     # cheap gates only
+npm run wt:automerge  # includes npm run check for candidates
+```
+
+They report worktrees that look ready relative to local `main`. They never
+merge, push, delete, or prune. The former server-side `--apply` and `--prune`
+paths are retired and fail closed; batch-merging could update remote `main`
+without updating the local `main` that drives port 5173, and it could leave the
+worktree behind.
+
+## Legacy scheduled task
+
+The Windows Scheduled Task `tka-worktree-automerge` was disabled on 2026-08-31.
+It called the retired server-side batch apply path every 20 minutes from an old
+worktree launcher. Keep it disabled. The launcher remains on disk only as
+recoverable historical state; it is not part of the supported lifecycle.
+
+## Audit log
+
+Successful local finishes append the task branch, task head, pre-merge local
+main, post-merge local main, and delivery URL to `.git/automerge-log.jsonl`.
+This is an audit trail, not a substitute for Git history.

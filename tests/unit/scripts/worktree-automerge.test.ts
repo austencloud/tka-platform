@@ -202,4 +202,16 @@ describe("worktree finish lifecycle", () => {
     expect(readFileSync(join(repo, "feature.txt"), "utf8")).toBe("checked\n");
     expect(existsSync(task)).toBe(false);
   });
+
+  it("fails closed when the retired server-side batch apply flag is used", () => {
+    const result = spawnSync(
+      process.execPath,
+      [SCRIPT, "--apply", "--skip-checks"],
+      { cwd: repo, encoding: "utf8" }
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("server-side batch apply is retired");
+    expect(existsSync(task)).toBe(true);
+  });
 });
