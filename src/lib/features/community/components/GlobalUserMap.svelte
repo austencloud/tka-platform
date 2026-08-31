@@ -4,6 +4,7 @@
   Google Maps display with clustered user location markers
 -->
 <script lang="ts">
+  import { MarkerClusterer } from "@googlemaps/markerclusterer";
   import { onMount, untrack } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { UserLocationWithProfile } from "../domain/models/user-location";
@@ -34,6 +35,7 @@
       lng: number;
       label?: string;
       styleClass?: "pin" | "pin-new";
+      selected?: boolean;
     }>;
     /** Fired when a scan-origin pin is clicked (Scan Activity view). */
     onScanMarkerClick?: (id: string) => void;
@@ -60,8 +62,29 @@
 
   let mapContainer: HTMLDivElement;
   let map: google.maps.Map | null = null;
-  let markers: google.maps.marker.AdvancedMarkerElement[] = [];
-  let injectedScanMarkers: google.maps.marker.AdvancedMarkerElement[] = [];
+  type MutableAdvancedMarker = google.maps.marker.AdvancedMarkerElement & {
+    position: unknown;
+    title: string;
+  };
+  type AccessibleAdvancedMarkerOptions =
+    google.maps.marker.AdvancedMarkerElementOptions & {
+      gmpClickable: boolean;
+    };
+  type UserMarkerHandle = {
+    marker: MutableAdvancedMarker;
+    location: UserLocationWithProfile;
+  };
+  type ScanMarker = (typeof scanMarkers)[number];
+  type ScanMarkerHandle = {
+    marker: MutableAdvancedMarker;
+    content: HTMLDivElement;
+    scan: ScanMarker;
+  };
+
+  const userMarkerHandles = new Map<string, UserMarkerHandle>();
+  const scanMarkerHandles = new Map<string, ScanMarkerHandle>();
+  let userClusterer: MarkerClusterer | null = null;
+  let scanClusterer: MarkerClusterer | null = null;
   let selectedUser: UserLocationWithProfile | null = $state(null);
   let mapReady = $state(false);
   let mapError = $state<string | null>(null);
@@ -84,10 +107,14 @@
 
     return () => {
       mounted = false;
-      for (const marker of markers) marker.map = null;
-      for (const marker of injectedScanMarkers) marker.map = null;
-      markers = [];
-      injectedScanMarkers = [];
+      userClusterer?.clearMarkers();
+      scanClusterer?.clearMarkers();
+      for (const handle of userMarkerHandles.values()) handle.marker.map = null;
+      for (const handle of scanMarkerHandles.values()) handle.marker.map = null;
+      userMarkerHandles.clear();
+      scanMarkerHandles.clear();
+      userClusterer = null;
+      scanClusterer = null;
       map = null;
       mapReady = false;
     };
@@ -107,11 +134,7 @@
     // A framed map re-frames the moment markers exist. Opening at the no-repeat
     // floor rather than at 2 means the first paint is never a tiled world that
     // then snaps.
-    const zoom = userLocation
-      ? 4
-      : frame === "markers"
-        ? noRepeatMinZoom()
-        : 2;
+    const zoom = userLocation ? 4 : frame === "markers" ? noRepeatMinZoom() : 2;
 
     map = new google.maps.Map(mapContainer, {
       center,
@@ -183,21 +206,26 @@
   function createMarkers(incoming: typeof locations): void {
     if (!map) return;
 
-    // Always clear existing markers first
-    markers.forEach((marker) => {
-      marker.map = null;
-    });
-    markers.length = 0;
+    const { AdvancedMarkerElement, PinElement } = google.maps.marker;
+    const incomingIds = new Set(incoming.map((location) => location.userId));
 
-    // If no locations, we're done (markers cleared)
-    if (incoming.length === 0) {
-      return;
+    for (const [userId, handle] of userMarkerHandles) {
+      if (incomingIds.has(userId)) continue;
+      handle.marker.map = null;
+      userMarkerHandles.delete(userId);
     }
 
-    const { AdvancedMarkerElement, PinElement } = google.maps.marker;
-
-    // Create markers for each user location
     for (const location of incoming) {
+      const position = location.cityCenterCoordinates;
+      const title = `${location.displayName} - ${location.city}, ${location.country}`;
+      const existing = userMarkerHandles.get(location.userId);
+      if (existing) {
+        existing.location = location;
+        existing.marker.position = position;
+        existing.marker.title = title;
+        continue;
+      }
+
       const pin = new PinElement({
         background: "#4a9eff",
         borderColor: "#ffffff",
@@ -206,32 +234,28 @@
 
       const marker = new AdvancedMarkerElement({
         map,
-        position: {
-          lat: location.cityCenterCoordinates.lat,
-          lng: location.cityCenterCoordinates.lng,
-        },
+        position,
         content: pin,
-        title: `${location.displayName} - ${location.city}, ${location.country}`,
-      });
+        title,
+        gmpClickable: true,
+      } as AccessibleAdvancedMarkerOptions) as MutableAdvancedMarker;
 
       marker.addListener("click", () => {
-        selectedUser = location;
+        const current = userMarkerHandles.get(location.userId)?.location;
+        if (!current) return;
+        selectedUser = current;
 
-        // Pan map to marker
-        map?.panTo({
-          lat: location.cityCenterCoordinates.lat,
-          lng: location.cityCenterCoordinates.lng,
-        });
+        map?.panTo(current.cityCenterCoordinates);
       });
 
-      markers.push(marker);
+      userMarkerHandles.set(location.userId, { marker, location });
     }
 
+    userClusterer = reconcileClusterer(
+      userClusterer,
+      [...userMarkerHandles.values()].map((handle) => handle.marker)
+    );
     frameToMarkers();
-
-    // Marker clustering will be added later once package is installed
-    // For now, markers will display individually
-    // TODO: Add marker clustering with @googlemaps/markerclusterer
   }
 
   function handleViewProfile(userId: string) {
@@ -260,26 +284,77 @@
 
   function createScanMarkers(incoming: typeof scanMarkers): void {
     if (!map) return;
-    for (const m of injectedScanMarkers) m.map = null;
-    injectedScanMarkers = [];
-
-    if (incoming.length === 0) return;
 
     const { AdvancedMarkerElement } = google.maps.marker;
-    for (const m of incoming) {
+    const incomingIds = new Set(incoming.map((scan) => scan.id));
+
+    for (const [id, handle] of scanMarkerHandles) {
+      if (incomingIds.has(id)) continue;
+      handle.marker.map = null;
+      scanMarkerHandles.delete(id);
+    }
+
+    for (const scan of incoming) {
+      const existing = scanMarkerHandles.get(scan.id);
+      if (existing) {
+        existing.scan = scan;
+        existing.marker.position = { lat: scan.lat, lng: scan.lng };
+        existing.marker.title = scanMarkerTitle(scan);
+        applyScanPinState(existing.content, scan);
+        continue;
+      }
+
       const content = document.createElement("div");
-      content.className = `scan-pin${m.styleClass === "pin-new" ? " scan-pin--new" : ""}`;
+      applyScanPinState(content, scan);
       const marker = new AdvancedMarkerElement({
         map,
-        position: { lat: m.lat, lng: m.lng },
+        position: { lat: scan.lat, lng: scan.lng },
         content,
-        title: m.label ?? "",
-      });
+        title: scanMarkerTitle(scan),
+        gmpClickable: Boolean(onScanMarkerClick),
+      } as AccessibleAdvancedMarkerOptions) as MutableAdvancedMarker;
       if (onScanMarkerClick) {
-        marker.addListener("click", () => onScanMarkerClick(m.id));
+        marker.addListener("click", () => {
+          if (scanMarkerHandles.has(scan.id)) onScanMarkerClick?.(scan.id);
+        });
       }
-      injectedScanMarkers.push(marker);
+      scanMarkerHandles.set(scan.id, { marker, content, scan });
     }
+
+    scanClusterer = reconcileClusterer(
+      scanClusterer,
+      [...scanMarkerHandles.values()].map((handle) => handle.marker)
+    );
+  }
+
+  function applyScanPinState(content: HTMLDivElement, scan: ScanMarker): void {
+    content.className = [
+      "scan-pin",
+      scan.styleClass === "pin-new" ? "scan-pin--new" : "",
+      scan.selected ? "scan-pin--selected" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  function scanMarkerTitle(scan: ScanMarker): string {
+    const label = scan.label || "Scan";
+    return scan.selected ? `Selected scan: ${label}` : label;
+  }
+
+  function reconcileClusterer(
+    current: MarkerClusterer | null,
+    currentMarkers: google.maps.marker.AdvancedMarkerElement[]
+  ): MarkerClusterer {
+    if (!map)
+      throw new Error("Cannot cluster markers before the map is ready.");
+    if (!current) return new MarkerClusterer({ map, markers: currentMarkers });
+
+    // The marker objects stay alive between snapshots. Only cluster membership
+    // changes, so keyboard focus is not discarded whenever a scan arrives.
+    current.clearMarkers(true);
+    current.addMarkers(currentMarkers);
+    return current;
   }
 
   // `mapReady` is reactive so markers that arrived while the map script was
@@ -384,11 +459,26 @@
   }
 
   :global(.scan-pin) {
-    width: 12px;
-    height: 12px;
+    display: grid;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    place-items: center;
+    border-radius: 50%;
+  }
+
+  :global(.scan-pin::before) {
+    width: 14px;
+    height: 14px;
     background: var(--semantic-success, #10b981);
+    border: 3px solid var(--theme-panel-bg, #12121c);
     border-radius: 50%;
     box-shadow: 0 0 8px var(--semantic-success, #10b981);
+    content: "";
+  }
+
+  :global(.scan-pin--selected::before) {
+    outline: 3px solid var(--theme-accent, #34d399);
+    outline-offset: 3px;
   }
 
   :global(.scan-pin--new) {
@@ -398,11 +488,10 @@
   @keyframes scanPinPulse {
     0%,
     100% {
-      transform: scale(1);
+      scale: 1;
     }
     50% {
-      transform: scale(1.5);
-      box-shadow: 0 0 16px var(--semantic-success, #10b981);
+      scale: 1.18;
     }
   }
 

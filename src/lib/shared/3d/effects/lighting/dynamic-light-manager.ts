@@ -17,6 +17,7 @@ export class DynamicLightManager {
   private parent: Object3D;
   private maxLights: number;
   private pool: PointLight[] = [];
+  private claimedLights = new Set<PointLight>();
   private activeHandles = new Map<number, PointLight>();
   private nextId = 0;
 
@@ -27,7 +28,11 @@ export class DynamicLightManager {
     // Pre-allocate the full pool so no runtime allocations happen
     for (let i = 0; i < this.maxLights; i++) {
       const light = new PointLight(0xffffff, 0, 10);
-      light.visible = false;
+      // Point-light visibility participates in Three's program signature.
+      // Keep the full bounded pool present from scene startup and make an idle
+      // slot inert with zero intensity, so the first effect selection never
+      // asks every lit material in the scene to compile a new shader variant.
+      light.visible = true;
       this.parent.add(light);
       this.pool.push(light);
     }
@@ -41,14 +46,16 @@ export class DynamicLightManager {
   ): LightHandle | null {
     if (this.maxLights === 0) return null;
 
-    const light = this.pool.find((l) => !l.visible);
+    const light = this.pool.find(
+      (candidate) => !this.claimedLights.has(candidate)
+    );
     if (!light) return null; // Pool exhausted
 
     light.position.copy(position);
     light.color.copy(color);
     light.intensity = intensity;
     light.distance = range;
-    light.visible = true;
+    this.claimedLights.add(light);
 
     const id = this.nextId++;
     this.activeHandles.set(id, light);
@@ -75,16 +82,18 @@ export class DynamicLightManager {
     const light = this.activeHandles.get(handle.id);
     if (!light) return;
 
-    light.visible = false;
     light.intensity = 0;
+    light.visible = true;
+    this.claimedLights.delete(light);
     this.activeHandles.delete(handle.id);
   }
 
   releaseAll(): void {
     for (const light of this.activeHandles.values()) {
-      light.visible = false;
       light.intensity = 0;
+      light.visible = true;
     }
+    this.claimedLights.clear();
     this.activeHandles.clear();
   }
 
@@ -102,6 +111,7 @@ export class DynamicLightManager {
       light.dispose();
     }
     this.pool = [];
+    this.claimedLights.clear();
     this.activeHandles.clear();
   }
 }

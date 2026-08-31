@@ -34,6 +34,32 @@ export const REQUIRED_BODY_BONES = [
   "RightToeBase",
 ];
 
+const IMPORT_JOINT_ALIASES = new Map([
+  ["spine_01", "Spine"],
+  ["spine_02", "Spine1"],
+  ["spine_03", "Spine2"],
+  ["thigh_l", "LeftUpLeg"],
+  ["calf_l", "LeftLeg"],
+  ["thigh_r", "RightUpLeg"],
+  ["calf_r", "RightLeg"],
+]);
+
+function canonicalImportedJointName(name) {
+  const withoutNamespace = name.replace(/^mixamorig\d*:/i, "");
+  const bodyBone = IMPORT_JOINT_ALIASES.get(withoutNamespace.toLowerCase());
+  if (bodyBone) return bodyBone;
+
+  const finger = withoutNamespace.match(
+    /^(thumb|index|middle|ring|pinky)_0?([123])_([lr])$/i
+  );
+  if (!finger) return withoutNamespace;
+
+  const [, fingerName, segment, side] = finger;
+  const canonicalFinger =
+    fingerName[0].toUpperCase() + fingerName.slice(1).toLowerCase();
+  return `${side.toLowerCase() === "l" ? "Left" : "Right"}Hand${canonicalFinger}${segment}`;
+}
+
 export function sha256File(filePath) {
   return createHash("sha256").update(readFileSync(filePath)).digest("hex");
 }
@@ -64,7 +90,7 @@ function serializeGlb(document, binary) {
   ]);
 }
 
-/** Remove Mixamo's exporter namespace without changing joint node indices. */
+/** Canonicalize supported vendor joint names without changing node indices. */
 export function normalizeRuntimeJointNames(filePath) {
   const absolutePath = resolve(filePath);
   const { document, binary } = parseGlb(absolutePath);
@@ -78,7 +104,7 @@ export function normalizeRuntimeJointNames(filePath) {
   for (const index of jointIndices) {
     const node = nodes[index];
     if (typeof node?.name !== "string") continue;
-    const normalized = node.name.replace(/^mixamorig\d*:/i, "");
+    const normalized = canonicalImportedJointName(node.name);
     const existingIndex = normalizedNames.get(normalized);
     if (existingIndex !== undefined && existingIndex !== index) {
       throw new Error(

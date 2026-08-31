@@ -13,6 +13,7 @@ import {
   collectionGroup,
   deleteDoc,
   doc,
+  documentId,
   getDoc,
   getDocs,
   query,
@@ -1178,6 +1179,55 @@ describe("collections: person-specific viewer and editor grants", () => {
     await seedSharedCollection();
     const db = userCtx(STRANGER).firestore(SDK_SETTINGS);
     await assertFails(getDoc(doc(db, collectionPath)));
+  });
+});
+
+describe("public collection member queries", () => {
+  const OWNER = "public-collection-owner";
+  const sequencePath = `users/${OWNER}/sequences`;
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore(SDK_SETTINGS);
+      await setDoc(doc(db, `${sequencePath}/public-sequence`), {
+        visibility: "public",
+        word: "AB",
+      });
+      await setDoc(doc(db, `${sequencePath}/private-sequence`), {
+        visibility: "private",
+        word: "CD",
+      });
+      await setDoc(doc(db, "publicSequences/public-sequence"), {
+        ownerId: OWNER,
+        word: "AB",
+      });
+    });
+  });
+
+  it("uses the public mirror when an owner batch mixes visibility", async () => {
+    const db = testEnv.unauthenticatedContext().firestore(SDK_SETTINGS);
+
+    await assertFails(
+      getDocs(
+        query(
+          collection(db, sequencePath),
+          where(documentId(), "in", ["public-sequence", "private-sequence"])
+        )
+      )
+    );
+
+    const visible = await assertSucceeds(
+      getDocs(
+        query(
+          collection(db, "publicSequences"),
+          where("ownerId", "==", OWNER),
+          where(documentId(), "in", ["public-sequence", "private-sequence"])
+        )
+      )
+    );
+    if (visible.size !== 1) {
+      throw new Error(`Expected one public member, received ${visible.size}`);
+    }
   });
 });
 

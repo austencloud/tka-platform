@@ -1,4 +1,4 @@
-import type { Camera, Object3D, WebGLRenderer } from "three";
+import type { Camera, Object3D, Scene, WebGLRenderer } from "three";
 
 export interface WarmupHandles {
   renderer: WebGLRenderer;
@@ -49,8 +49,13 @@ export async function warmupRenderer(
   let warned = false;
 
   const compile = async (object: Object3D): Promise<void> => {
+    const wasVisible = object.visible;
     try {
-      await renderer.compileAsync(object, camera, scene);
+      // Inactive effects keep their preallocated mesh hidden. Compile each
+      // material target as a temporary root so visibility cannot exclude its
+      // shader from the pre-reveal pass; restore the live state immediately.
+      object.visible = true;
+      await renderer.compileAsync(object, camera, scene as Scene);
     } catch (error) {
       // A failed compile must never hold the curtain — the object simply pays
       // its link cost on first render, as it did before this warmup existed.
@@ -58,6 +63,8 @@ export async function warmupRenderer(
         warned = true;
         console.warn("[scene-boot] shader warmup failed:", error);
       }
+    } finally {
+      object.visible = wasVisible;
     }
   };
 
