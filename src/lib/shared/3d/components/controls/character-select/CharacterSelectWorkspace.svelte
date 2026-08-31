@@ -3,12 +3,15 @@
     CHARACTER_DEFINITIONS,
     type CharacterId,
   } from "$lib/shared/3d/domain/character-model";
+  import type { CharacterInstanceState } from "$lib/shared/3d/state/character-instance-state.svelte";
   import PerformerCharacterPicker from "../PerformerCharacterPicker.svelte";
 
   interface Props {
     currentCharacterId: CharacterId | null;
     pendingCharacterId?: CharacterId | null;
     performerColor?: string;
+    previewPerformer: CharacterInstanceState | null;
+    previewPerformerNumber: number;
     onIntent: (id: CharacterId) => void;
     onCancelIntent: () => void;
     onSelect: (id: CharacterId) => void;
@@ -18,6 +21,8 @@
     currentCharacterId,
     pendingCharacterId = null,
     performerColor = "var(--theme-accent)",
+    previewPerformer,
+    previewPerformerNumber,
     onIntent,
     onCancelIntent,
     onSelect,
@@ -38,7 +43,12 @@
 <div class="character-select-shell" style:--performer-color={performerColor}>
   <div class="picker-heading">
     <strong>Choose a character</strong>
-    <span>Updates the scene instantly. Use Undo to switch back.</span>
+    <span>
+      Hover to preview {previewPerformerNumber === 1
+        ? "Performer 1's"
+        : `Performer ${previewPerformerNumber}'s`} sequence. Choose one to update
+      the scene; Undo switches back.
+    </span>
   </div>
 
   <span class="selection-status" aria-live="polite">
@@ -52,6 +62,7 @@
   <PerformerCharacterPicker
     selectedCharacterId={currentCharacterId}
     groupLabel="Choose a character"
+    {previewPerformer}
     {pendingCharacterId}
     {onSelect}
     {onIntent}

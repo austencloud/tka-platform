@@ -14,7 +14,7 @@
   aria-hidden="true"
 >
   <Crossfade key={propType} duration={DURATION.fast} fill>
-    <PropCompositionPreview {propType} {size} />
+    <PropCompositionPreview {propType} {size} neutral />
   </Crossfade>
 </span>
 
@@ -35,5 +35,7 @@
   .rail-prop-glyph :global(.prop-composition-preview) {
     width: 100%;
     height: 100%;
+    transform: scale(1.5);
+    transform-origin: center;
   }
 </style>
