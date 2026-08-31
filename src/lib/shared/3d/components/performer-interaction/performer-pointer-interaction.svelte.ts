@@ -312,6 +312,15 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
         : { x: 0, z: 0 },
     };
     options.canvas.setPointerCapture(event.pointerId);
+    if (event.pointerType !== "touch") {
+      // Orbit controls listen on this same canvas in the bubble phase; this
+      // handler runs first (capture phase). A mouse press on a performer is
+      // select-or-drag, never a camera orbit, so the press must not reach
+      // the controls — otherwise controlstart flags a camera drag and every
+      // subsequent guard in this interaction sees it. Touch keeps
+      // propagating: an unselected touch that moves is a camera pan.
+      event.stopImmediatePropagation();
+    }
     if (
       event.pointerType === "touch" &&
       options.viewer.selectedPerformerIndex !== performerIndex
@@ -429,6 +438,11 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
     if (event.key === "Escape") {
       if (draggingIndex !== null) cancelDrag();
       else if (selected !== null) options.viewer.selectPerformerScope(null);
+      else return;
+      // Consumed: cancel-drag and deselect must not also reach the viewer
+      // shell's Escape handler, which closes the whole viewer.
+      event.preventDefault();
+      event.stopPropagation();
       return;
     }
     if (selected === null) return;
@@ -461,7 +475,12 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
 
   function attach(): () => void {
     options.canvas.style.touchAction = "none";
-    options.canvas.addEventListener("pointerdown", onPointerDown);
+    // Capture phase so this runs before the orbit controls' bubble-phase
+    // pointerdown on the same canvas — otherwise controlstart fires first
+    // and the camera-drag guard rejects every performer press.
+    options.canvas.addEventListener("pointerdown", onPointerDown, {
+      capture: true,
+    });
     options.canvas.addEventListener("pointermove", onPointerMove);
     options.canvas.addEventListener("pointerup", onPointerUp);
     options.canvas.addEventListener("pointercancel", onPointerCancel);
@@ -470,7 +489,9 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
     options.canvas.addEventListener("keydown", onKeyDown);
     return () => {
       clearHoldTimer();
-      options.canvas.removeEventListener("pointerdown", onPointerDown);
+      options.canvas.removeEventListener("pointerdown", onPointerDown, {
+        capture: true,
+      });
       options.canvas.removeEventListener("pointermove", onPointerMove);
       options.canvas.removeEventListener("pointerup", onPointerUp);
       options.canvas.removeEventListener("pointercancel", onPointerCancel);

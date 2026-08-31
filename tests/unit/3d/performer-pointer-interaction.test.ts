@@ -1,6 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import {
+  BoxGeometry,
+  Mesh,
+  MeshBasicMaterial,
+  PerspectiveCamera,
+} from "three";
 import {
   clampPerformerPosition,
+  createPerformerPointerInteraction,
   getPointerIntent,
   intersectGroundPlane,
   isWithinMinimumTouchTarget,
@@ -81,5 +88,132 @@ describe("performer pointer interaction", () => {
       x: 0,
       z: -1,
     });
+  });
+});
+
+describe("performer press vs camera-controls listener ordering", () => {
+  function firePointer(
+    target: EventTarget,
+    type: string,
+    init: { clientX: number; clientY: number; pointerId?: number }
+  ): void {
+    const Ctor =
+      typeof PointerEvent !== "undefined" ? PointerEvent : MouseEvent;
+    const event = new Ctor(type, {
+      bubbles: true,
+      cancelable: true,
+      clientX: init.clientX,
+      clientY: init.clientY,
+      button: 0,
+    });
+    if (!("pointerId" in event)) {
+      Object.defineProperty(event, "pointerId", {
+        value: init.pointerId ?? 1,
+      });
+      Object.defineProperty(event, "pointerType", { value: "mouse" });
+    }
+    target.dispatchEvent(event);
+  }
+
+  function buildHarness() {
+    // The global test setup replaces document.createElement with inert mocks
+    // that cannot dispatch events, so the canvas stand-in is a raw
+    // EventTarget — jsdom's dispatch honors capture ordering, which is the
+    // behavior under test.
+    const canvas = new EventTarget() as unknown as HTMLCanvasElement;
+    Object.assign(canvas, {
+      style: {},
+      getBoundingClientRect: () =>
+        ({ left: 0, top: 0, width: 100, height: 100 }) as DOMRect,
+      setPointerCapture: () => {},
+      releasePointerCapture: () => {},
+    });
+
+    const camera = new PerspectiveCamera(50, 1, 0.1, 100);
+    camera.position.set(0, 2, 8);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrixWorld(true);
+
+    const proxy = new Mesh(new BoxGeometry(2, 2, 2), new MeshBasicMaterial());
+    proxy.userData = { performerIndex: 0, performerPickTarget: true };
+    proxy.updateMatrixWorld(true);
+
+    const viewer = {
+      selectedPerformerIndex: null as number | null,
+      isCameraDragging: false,
+      performerManager: {
+        performers: [{ position: { x: 0, z: 0 } }],
+        handleDrag: vi.fn(),
+      },
+      selectPerformerScope: vi.fn(),
+      beginSpatialEdit: vi.fn(),
+      endSpatialEdit: vi.fn(),
+      cancelSpatialEdit: vi.fn(),
+      markFormationCustom: vi.fn(),
+      cameraChoreography: { controls: null },
+    };
+
+    // Simulates orbit controls: registered on the canvas BEFORE the
+    // interaction attaches, flags a camera drag on pointerdown — the exact
+    // ordering that suppressed every performer press before the capture fix.
+    const orbitDown = vi.fn(() => {
+      viewer.isCameraDragging = true;
+    });
+    canvas.addEventListener("pointerdown", orbitDown);
+
+    const interaction = createPerformerPointerInteraction({
+      canvas,
+      camera: () => camera,
+      viewer,
+      groundY: () => 0,
+      stageBounds: () => ({ width: 10, depth: 10, zOffset: 0 }),
+    });
+    interaction.registerPickTarget(proxy);
+    const detach = interaction.attach();
+    return { canvas, viewer, orbitDown, interaction, detach };
+  }
+
+  it("selects a performer even though the camera listener registered first", () => {
+    const { canvas, viewer, orbitDown, detach } = buildHarness();
+    firePointer(canvas, "pointerdown", { clientX: 50, clientY: 50 });
+    expect(orbitDown).not.toHaveBeenCalled();
+    firePointer(canvas, "pointerup", { clientX: 50, clientY: 50 });
+    expect(viewer.selectPerformerScope).toHaveBeenCalledWith(0);
+    detach();
+  });
+
+  it("consumes Escape when it deselects, so the viewer shell stays open", () => {
+    const { canvas, viewer, detach } = buildHarness();
+    viewer.selectedPerformerIndex = 0;
+    const escape = new KeyboardEvent("keydown", {
+      key: "Escape",
+      bubbles: true,
+      cancelable: true,
+    });
+    canvas.dispatchEvent(escape);
+    expect(viewer.selectPerformerScope).toHaveBeenCalledWith(null);
+    expect(escape.defaultPrevented).toBe(true);
+    detach();
+  });
+
+  it("lets Escape through when nothing is selected", () => {
+    const { canvas, viewer, detach } = buildHarness();
+    const escape = new KeyboardEvent("keydown", {
+      key: "Escape",
+      bubbles: true,
+      cancelable: true,
+    });
+    canvas.dispatchEvent(escape);
+    expect(viewer.selectPerformerScope).not.toHaveBeenCalled();
+    expect(escape.defaultPrevented).toBe(false);
+    detach();
+  });
+
+  it("lets an empty press through to the camera controls", () => {
+    const { canvas, viewer, orbitDown, detach } = buildHarness();
+    firePointer(canvas, "pointerdown", { clientX: 2, clientY: 2 });
+    expect(orbitDown).toHaveBeenCalledTimes(1);
+    expect(viewer.selectPerformerScope).not.toHaveBeenCalled();
+    detach();
   });
 });
