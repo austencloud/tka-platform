@@ -9684,6 +9684,82 @@ index d49f92aedabc5145aac812b52d74784fc1b5429c..00000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/FingerAnimator.d.ts.map b/dist/lib/services/implementations/FingerAnimator.d.ts.map
 deleted file mode 100644
 index c81171af6db42d1aee03e56854cbd3557e1a6695..0000000000000000000000000000000000000000
+diff --git a/dist/lib/services/implementations/FingerAnimator.js b/dist/lib/services/implementations/FingerAnimator.js
+index 6c2e8693da61c08f226c11b78b90cc1439db718f..5d20bb62187f500ba7307fe5e7cf876f75f4828a 100644
+--- a/dist/lib/services/implementations/FingerAnimator.js
++++ b/dist/lib/services/implementations/FingerAnimator.js
+@@ -7,6 +7,7 @@ export class FingerAnimator {
+     blendSpeed = 6.0;
+     ready = false;
+     scratchQuat = new Quaternion();
++    scratchDelta = new Quaternion();
+     initialize(fingerChains) {
+         this.leftHand = this.createHandState(fingerChains.left);
+         this.rightHand = this.createHandState(fingerChains.right);
+@@ -47,6 +48,7 @@ export class FingerAnimator {
+     }
+     createHandState(boneMap) {
+         const bones = [];
++        const restRotations = [];
+         const currentRotations = [];
+         for (const boneName of FINGER_BONES) {
+             const bone = boneMap.get(boneName);
+@@ -54,32 +56,39 @@ export class FingerAnimator {
+                 throw new Error(`Missing finger bone: ${boneName}`);
+             }
+             bones.push(bone);
+-            currentRotations.push(new Quaternion(0, 0, 0, 1));
++            restRotations.push(bone.quaternion.clone());
++            currentRotations.push(bone.quaternion.clone());
+         }
+         return {
+             targetGrip: GripType.IDLE,
++            restRotations,
+             currentRotations,
+             bones,
+         };
+     }
+-    // Writes the target rotation for boneIndex into scratchQuat, mirroring for right hand.
+-    // Right-hand mirror negates Y and Z to reflect across the YZ plane.
+-    writeTargetRotation(gripType, boneIndex, hand) {
++    // Grip poses are joint deltas, not replacement local rotations. Keeping each
++    // character's imported reference pose is what lets the same curl work on
++    // Mixamo, Unreal, and other rigs whose finger axes start differently.
++    writeTargetRotation(state, gripType, boneIndex, hand) {
+         const pose = STAFF_GRIP_POSES[gripType];
+         // boneIndex is always within [0, FINGER_BONES.length), guaranteed by callers.
+         const raw = pose.rotations[boneIndex];
+         if (hand === "right") {
+-            this.scratchQuat.set(raw[0], -raw[1], -raw[2], raw[3]);
++            this.scratchDelta.set(raw[0], -raw[1], -raw[2], raw[3]);
+         }
+         else {
+-            this.scratchQuat.set(raw[0], raw[1], raw[2], raw[3]);
++            this.scratchDelta.set(raw[0], raw[1], raw[2], raw[3]);
+         }
++        this.scratchQuat
++            .copy(state.restRotations[boneIndex])
++            .multiply(this.scratchDelta)
++            .normalize();
+     }
+     updateHand(state, hand, deltaTime) {
+         // Clamp alpha to [0, 1] so large delta times don't overshoot.
+         const alpha = Math.min(1, this.blendSpeed * deltaTime);
+         for (let i = 0; i < FINGER_BONES.length; i++) {
+-            this.writeTargetRotation(state.targetGrip, i, hand);
++            this.writeTargetRotation(state, state.targetGrip, i, hand);
+             // Arrays are sized to FINGER_BONES.length in createHandState - index is always valid.
+             state.currentRotations[i].slerp(this.scratchQuat, alpha);
+             state.bones[i].quaternion.copy(state.currentRotations[i]);
+@@ -88,7 +97,7 @@ export class FingerAnimator {
+     applyPoseImmediate(state, gripType, hand) {
+         state.targetGrip = gripType;
+         for (let i = 0; i < FINGER_BONES.length; i++) {
+-            this.writeTargetRotation(gripType, i, hand);
++            this.writeTargetRotation(state, gripType, i, hand);
+             // Arrays are sized to FINGER_BONES.length in createHandState - index is always valid.
+             state.currentRotations[i].copy(this.scratchQuat);
+             state.bones[i].quaternion.copy(this.scratchQuat);
 diff --git a/dist/lib/services/implementations/FootPlanter.d.ts b/dist/lib/services/implementations/FootPlanter.d.ts
 deleted file mode 100644
 index cb9ec218790bcbe6ea8ba4ee45a46a0607217daa..0000000000000000000000000000000000000000
@@ -24854,6 +24930,96 @@ index 626111debe6cf0d4a8846c94e3b6847e3aa2758f..beac36ea1ba8dcd58f43158c07c6e709
 +    return Math.max(0, Math.min(1, value));
 +  }
  }
+diff --git a/src/lib/services/implementations/FingerAnimator.ts b/src/lib/services/implementations/FingerAnimator.ts
+index 0b10e18f5606c70eae1b5f61a7322173ad38e1d3..276e7f05b2821f5b3099af0aba57b17c754aa1af 100644
+--- a/src/lib/services/implementations/FingerAnimator.ts
++++ b/src/lib/services/implementations/FingerAnimator.ts
+@@ -11,6 +11,7 @@ import { STAFF_GRIP_POSES } from "../../data/grip-poses/staff-grip-poses";
+
+ interface HandState {
+   targetGrip: GripType;
++  restRotations: Quaternion[];
+   currentRotations: Quaternion[];
+   bones: Bone[];
+ }
+@@ -21,6 +22,7 @@ export class FingerAnimator implements IFingerAnimator {
+   private blendSpeed = 6.0;
+   private ready = false;
+   private readonly scratchQuat = new Quaternion();
++  private readonly scratchDelta = new Quaternion();
+
+   initialize(fingerChains: FingerChains): void {
+     this.leftHand = this.createHandState(fingerChains.left);
+ @@ -71,6 +73,7 @@ export class FingerAnimator implements IFingerAnimator {
+
+   private createHandState(boneMap: Map<FingerBoneName, Bone>): HandState {
+     const bones: Bone[] = [];
++    const restRotations: Quaternion[] = [];
+     const currentRotations: Quaternion[] = [];
+
+     for (const boneName of FINGER_BONES) {
+@@ -79,19 +82,23 @@ export class FingerAnimator implements IFingerAnimator {
+         throw new Error(`Missing finger bone: ${boneName}`);
+       }
+       bones.push(bone);
+-      currentRotations.push(new Quaternion(0, 0, 0, 1));
++      restRotations.push(bone.quaternion.clone());
++      currentRotations.push(bone.quaternion.clone());
+     }
+
+     return {
+       targetGrip: GripType.IDLE,
++      restRotations,
+       currentRotations,
+       bones,
+     };
+   }
+
+-  // Writes the target rotation for boneIndex into scratchQuat, mirroring for right hand.
+-  // Right-hand mirror negates Y and Z to reflect across the YZ plane.
++  // Grip poses are joint deltas, not replacement local rotations. Keeping each
++  // character's imported reference pose is what lets the same curl work on
++  // Mixamo, Unreal, and other rigs whose finger axes start differently.
+   private writeTargetRotation(
++    state: HandState,
+     gripType: GripType,
+     boneIndex: number,
+     hand: "left" | "right"
+@@ -100,10 +107,14 @@ export class FingerAnimator implements IFingerAnimator {
+     // boneIndex is always within [0, FINGER_BONES.length), guaranteed by callers.
+     const raw = pose.rotations[boneIndex]!;
+     if (hand === "right") {
+-      this.scratchQuat.set(raw[0], -raw[1], -raw[2], raw[3]);
++      this.scratchDelta.set(raw[0], -raw[1], -raw[2], raw[3]);
+     } else {
+-      this.scratchQuat.set(raw[0], raw[1], raw[2], raw[3]);
++      this.scratchDelta.set(raw[0], raw[1], raw[2], raw[3]);
+     }
++    this.scratchQuat
++      .copy(state.restRotations[boneIndex]!)
++      .multiply(this.scratchDelta)
++      .normalize();
+   }
+
+   private updateHand(
+@@ -115,7 +126,7 @@ export class FingerAnimator implements IFingerAnimator {
+     const alpha = Math.min(1, this.blendSpeed * deltaTime);
+
+     for (let i = 0; i < FINGER_BONES.length; i++) {
+-      this.writeTargetRotation(state.targetGrip, i, hand);
++      this.writeTargetRotation(state, state.targetGrip, i, hand);
+       // Arrays are sized to FINGER_BONES.length in createHandState - index is always valid.
+       state.currentRotations[i]!.slerp(this.scratchQuat, alpha);
+       state.bones[i]!.quaternion.copy(state.currentRotations[i]!);
+@@ -129,7 +140,7 @@ export class FingerAnimator implements IFingerAnimator {
+   ): void {
+     state.targetGrip = gripType;
+     for (let i = 0; i < FINGER_BONES.length; i++) {
+-      this.writeTargetRotation(gripType, i, hand);
++      this.writeTargetRotation(state, gripType, i, hand);
+       // Arrays are sized to FINGER_BONES.length in createHandState - index is always valid.
+       state.currentRotations[i]!.copy(this.scratchQuat);
+       state.bones[i]!.quaternion.copy(this.scratchQuat);
 diff --git a/src/lib/services/implementations/FootPlanter.ts b/src/lib/services/implementations/FootPlanter.ts
 index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e10bc1b0f 100644
 --- a/src/lib/services/implementations/FootPlanter.ts
