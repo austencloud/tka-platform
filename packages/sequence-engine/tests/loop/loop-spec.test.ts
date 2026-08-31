@@ -26,43 +26,43 @@ describe("loopSpecToWire / loopSpecFromWire", () => {
     const wire = loopSpecToWire(spec);
     const hydrated = loopSpecFromWire(wire);
 
-    expect(hydrated.blue!.components.get(LOOPComponent.ROTATED)!.period).toBe(4);
-    expect(hydrated.blue!.components.get(LOOPComponent.MIRRORED)!.period).toBe(2);
-    expect(hydrated.red!.components.get(LOOPComponent.ROTATED)!.period).toBe(4);
-    expect(hydrated.red!.components.get(LOOPComponent.MIRRORED)!.period).toBe(2);
+    expect(hydrated.left!.components.get(LOOPComponent.ROTATED)!.period).toBe(4);
+    expect(hydrated.left!.components.get(LOOPComponent.MIRRORED)!.period).toBe(2);
+    expect(hydrated.right!.components.get(LOOPComponent.ROTATED)!.period).toBe(4);
+    expect(hydrated.right!.components.get(LOOPComponent.MIRRORED)!.period).toBe(2);
   });
 
   it("round-trips an asymmetric spec", () => {
     const spec: LOOPSpec = {
-      blue: undefined,
-      red: singleComponent(LOOPComponent.ROTATED, 4),
+      left: undefined,
+      right: singleComponent(LOOPComponent.ROTATED, 4),
     };
     const wire = loopSpecToWire(spec);
     const hydrated = loopSpecFromWire(wire);
 
-    expect(hydrated.blue).toBeUndefined();
-    expect(hydrated.red!.components.get(LOOPComponent.ROTATED)!.period).toBe(4);
+    expect(hydrated.left).toBeUndefined();
+    expect(hydrated.right!.components.get(LOOPComponent.ROTATED)!.period).toBe(4);
   });
 
   it("preserves domain field", () => {
     const spec: LOOPSpec = {
-      blue: singleComponent(LOOPComponent.MIRRORED, 2, "orientation"),
+      left: singleComponent(LOOPComponent.MIRRORED, 2, "orientation"),
     };
     const wire = loopSpecToWire(spec);
     const hydrated = loopSpecFromWire(wire);
 
-    expect(hydrated.blue!.components.get(LOOPComponent.MIRRORED)!.domain).toBe(
+    expect(hydrated.left!.components.get(LOOPComponent.MIRRORED)!.domain).toBe(
       "orientation",
     );
   });
 
   it("omits domain when absent", () => {
     const spec: LOOPSpec = {
-      blue: singleComponent(LOOPComponent.ROTATED, 4),
+      left: singleComponent(LOOPComponent.ROTATED, 4),
     };
     const wire = loopSpecToWire(spec);
-    expect(wire.blue!["rotated"]).toEqual({ period: 4 });
-    expect(wire.blue!["rotated"].domain).toBeUndefined();
+    expect(wire.left!["rotated"]).toEqual({ period: 4 });
+    expect(wire.left!["rotated"].domain).toBeUndefined();
   });
 });
 
@@ -80,8 +80,8 @@ describe("loopSpecPeriod", () => {
 
   it("returns LCM across props", () => {
     const spec: LOOPSpec = {
-      blue: singleComponent(LOOPComponent.ROTATED, 4),
-      red: singleComponent(LOOPComponent.MIRRORED, 2),
+      left: singleComponent(LOOPComponent.ROTATED, 4),
+      right: singleComponent(LOOPComponent.MIRRORED, 2),
     };
     expect(loopSpecPeriod(spec)).toBe(4);
   });
@@ -91,14 +91,14 @@ describe("loopSpecPeriod", () => {
       [LOOPComponent.ROTATED, { period: 4 }],
       [LOOPComponent.INVERTED, { period: 2 }],
     ]);
-    const spec: LOOPSpec = { blue: { components } };
+    const spec: LOOPSpec = { left: { components } };
     expect(loopSpecPeriod(spec)).toBe(4);
   });
 
   it("handles period 8", () => {
     const spec: LOOPSpec = {
-      blue: singleComponent(LOOPComponent.ROTATED, 8),
-      red: singleComponent(LOOPComponent.MIRRORED, 4),
+      left: singleComponent(LOOPComponent.ROTATED, 8),
+      right: singleComponent(LOOPComponent.MIRRORED, 4),
     };
     expect(loopSpecPeriod(spec)).toBe(8);
   });
@@ -107,32 +107,32 @@ describe("loopSpecPeriod", () => {
 describe("loopSpecFromLegacy", () => {
   it("parses mirrored_rotated with period 4", () => {
     const spec = loopSpecFromLegacy("mirrored_rotated", 4);
-    expect(spec.blue!.components.has(LOOPComponent.MIRRORED)).toBe(true);
-    expect(spec.blue!.components.has(LOOPComponent.ROTATED)).toBe(true);
-    expect(spec.blue!.components.get(LOOPComponent.MIRRORED)!.period).toBe(4);
-    expect(spec.blue!.components.get(LOOPComponent.ROTATED)!.period).toBe(4);
-    expect(specsAreEqual(spec.blue, spec.red)).toBe(true);
+    expect(spec.left!.components.has(LOOPComponent.MIRRORED)).toBe(true);
+    expect(spec.left!.components.has(LOOPComponent.ROTATED)).toBe(true);
+    expect(spec.left!.components.get(LOOPComponent.MIRRORED)!.period).toBe(4);
+    expect(spec.left!.components.get(LOOPComponent.ROTATED)!.period).toBe(4);
+    expect(specsAreEqual(spec.left, spec.right)).toBe(true);
   });
 
   it("parses single component", () => {
     const spec = loopSpecFromLegacy("rotated", 2);
-    expect(spec.blue!.components.size).toBe(1);
-    expect(spec.blue!.components.has(LOOPComponent.ROTATED)).toBe(true);
+    expect(spec.left!.components.size).toBe(1);
+    expect(spec.left!.components.has(LOOPComponent.ROTATED)).toBe(true);
   });
 
   it("parses mirrored_rotated_inverted_swapped", () => {
     const spec = loopSpecFromLegacy("mirrored_rotated_inverted_swapped", 2);
-    expect(spec.blue!.components.size).toBe(4);
-    expect(spec.blue!.components.has(LOOPComponent.MIRRORED)).toBe(true);
-    expect(spec.blue!.components.has(LOOPComponent.ROTATED)).toBe(true);
-    expect(spec.blue!.components.has(LOOPComponent.INVERTED)).toBe(true);
-    expect(spec.blue!.components.has(LOOPComponent.SWAPPED)).toBe(true);
+    expect(spec.left!.components.size).toBe(4);
+    expect(spec.left!.components.has(LOOPComponent.MIRRORED)).toBe(true);
+    expect(spec.left!.components.has(LOOPComponent.ROTATED)).toBe(true);
+    expect(spec.left!.components.has(LOOPComponent.INVERTED)).toBe(true);
+    expect(spec.left!.components.has(LOOPComponent.SWAPPED)).toBe(true);
   });
 
   it("parses rewound", () => {
     const spec = loopSpecFromLegacy("rewound", 2);
-    expect(spec.blue!.components.size).toBe(1);
-    expect(spec.blue!.components.has(LOOPComponent.REWOUND)).toBe(true);
+    expect(spec.left!.components.size).toBe(1);
+    expect(spec.left!.components.has(LOOPComponent.REWOUND)).toBe(true);
   });
 });
 
@@ -148,13 +148,13 @@ describe("helper constructors", () => {
       [LOOPComponent.MIRRORED, { period: 2 }],
     ]);
     const spec = symmetricSpec(components);
-    expect(spec.blue).toBe(spec.red);
+    expect(spec.left).toBe(spec.right);
   });
 
   it("allActiveComponents merges with max period", () => {
     const spec: LOOPSpec = {
-      blue: singleComponent(LOOPComponent.ROTATED, 2),
-      red: singleComponent(LOOPComponent.ROTATED, 4),
+      left: singleComponent(LOOPComponent.ROTATED, 2),
+      right: singleComponent(LOOPComponent.ROTATED, 4),
     };
     const active = allActiveComponents(spec);
     expect(active.get(LOOPComponent.ROTATED)!.period).toBe(4);
@@ -162,12 +162,12 @@ describe("helper constructors", () => {
 
   it("isEmptySpec is true for no components", () => {
     expect(isEmptySpec({})).toBe(true);
-    expect(isEmptySpec({ blue: EMPTY_PROP_SPEC })).toBe(true);
+    expect(isEmptySpec({ left: EMPTY_PROP_SPEC })).toBe(true);
   });
 
   it("isEmptySpec is false when components exist", () => {
     expect(
-      isEmptySpec({ blue: singleComponent(LOOPComponent.ROTATED, 2) }),
+      isEmptySpec({ left: singleComponent(LOOPComponent.ROTATED, 2) }),
     ).toBe(false);
   });
 });
@@ -206,7 +206,7 @@ describe("validateLOOPSpec", () => {
 
   it("catches period < 2", () => {
     const spec: LOOPSpec = {
-      blue: singleComponent(LOOPComponent.ROTATED, 1),
+      left: singleComponent(LOOPComponent.ROTATED, 1),
     };
     const errors = validateLOOPSpec(spec);
     expect(errors).toHaveLength(1);
@@ -218,15 +218,15 @@ describe("validateLOOPSpec", () => {
       [LOOPComponent.REWOUND, { period: 2 }],
       [LOOPComponent.MIRRORED, { period: 2 }],
     ]);
-    const spec: LOOPSpec = { blue: { components } };
+    const spec: LOOPSpec = { left: { components } };
     const errors = validateLOOPSpec(spec);
     expect(errors.some((e) => e.rule === "rewound_exclusivity")).toBe(true);
   });
 
   it("catches SWAPPED asymmetry", () => {
     const spec: LOOPSpec = {
-      blue: singleComponent(LOOPComponent.SWAPPED, 2),
-      red: singleComponent(LOOPComponent.ROTATED, 2),
+      left: singleComponent(LOOPComponent.SWAPPED, 2),
+      right: singleComponent(LOOPComponent.ROTATED, 2),
     };
     const errors = validateLOOPSpec(spec);
     expect(errors.some((e) => e.rule === "swapped_symmetry")).toBe(true);
@@ -234,8 +234,8 @@ describe("validateLOOPSpec", () => {
 
   it("catches SWAPPED period mismatch", () => {
     const spec: LOOPSpec = {
-      blue: singleComponent(LOOPComponent.SWAPPED, 2),
-      red: singleComponent(LOOPComponent.SWAPPED, 4),
+      left: singleComponent(LOOPComponent.SWAPPED, 2),
+      right: singleComponent(LOOPComponent.SWAPPED, 4),
     };
     const errors = validateLOOPSpec(spec);
     expect(errors.some((e) => e.rule === "swapped_symmetry")).toBe(true);

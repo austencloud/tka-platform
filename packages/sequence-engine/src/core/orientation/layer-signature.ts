@@ -8,8 +8,8 @@
  *
  *   layer 1  both props radial
  *   layer 2  both props non-radial
- *   layer 3  blue radial, red non-radial
- *   layer 4  blue non-radial, red radial
+ *   layer 3  left radial, right non-radial
+ *   layer 4  left non-radial, right radial
  *
  * Read one layer per step and you get a string like `1233341112333411` — the
  * sequence's layer signature. It is what makes two sequences with the same
@@ -48,7 +48,7 @@ export type LayerId = 1 | 2 | 3 | 4;
 
 /**
  * Layers 3 and 4 are mirror images of each other — mirroring a sequence swaps
- * blue and red, which turns every 3 into a 4. Collapsing them gives a reading
+ * left and right, which turns every 3 into a 4. Collapsing them gives a reading
  * that survives mirroring, which is what you want on a badge or a filter.
  * Keep the four-way value for anything that has to do arithmetic; collapse only
  * for display.
@@ -57,7 +57,7 @@ export type CollapsedLayerId = 1 | 2 | 3;
 
 /**
  * What one step does to the layer, written as which props crossed between
- * radial and non-radial: nothing, blue only, red only, or both.
+ * radial and non-radial: nothing, left only, right only, or both.
  */
 export type FlipVector = "." | "B" | "R" | "X";
 
@@ -97,8 +97,8 @@ export interface LayerMotionInput {
 
 export interface LayerStepInput {
   readonly motions?: {
-    readonly blue?: LayerMotionInput | null;
-    readonly red?: LayerMotionInput | null;
+    readonly left?: LayerMotionInput | null;
+    readonly right?: LayerMotionInput | null;
   } | null;
 }
 
@@ -127,17 +127,17 @@ export function isRadialOrientation(
 
 /** The layer both props are in, or null if either orientation is off-cycle. */
 export function layerOf(
-  blueOrientation: string | null | undefined,
-  redOrientation: string | null | undefined
+  leftOrientation: string | null | undefined,
+  rightOrientation: string | null | undefined
 ): LayerId | null {
-  const blue = orientationClass(blueOrientation);
-  const red = orientationClass(redOrientation);
-  if (blue === null || red === null) return null;
-  const blueRadial = blue === 0;
-  const redRadial = red === 0;
-  if (blueRadial && redRadial) return 1;
-  if (!blueRadial && !redRadial) return 2;
-  return blueRadial ? 3 : 4;
+  const left = orientationClass(leftOrientation);
+  const right = orientationClass(rightOrientation);
+  if (left === null || right === null) return null;
+  const leftRadial = left === 0;
+  const rightRadial = right === 0;
+  if (leftRadial && rightRadial) return 1;
+  if (!leftRadial && !rightRadial) return 2;
+  return leftRadial ? 3 : 4;
 }
 
 export function collapseLayer(layer: LayerId): CollapsedLayerId {
@@ -214,11 +214,11 @@ export function flipsLayer(motion: LayerMotionInput | null | undefined): boolean
 }
 
 export function flipVectorOf(step: LayerStepInput | null | undefined): FlipVector {
-  const blue = flipsLayer(step?.motions?.blue);
-  const red = flipsLayer(step?.motions?.red);
-  if (blue && red) return "X";
-  if (blue) return "B";
-  if (red) return "R";
+  const left = flipsLayer(step?.motions?.left);
+  const right = flipsLayer(step?.motions?.right);
+  if (left && right) return "X";
+  if (left) return "B";
+  if (right) return "R";
   return ".";
 }
 
@@ -226,7 +226,7 @@ export function flipVectorOf(step: LayerStepInput | null | undefined): FlipVecto
 
 // Moving from a layer by a flip is the same shape as flipping two switches, so
 // the whole thing is a four-by-four table and nothing more. Reading it: from
-// layer 1, flipping blue lands on layer 4, because blue is now the non-radial one.
+// layer 1, flipping left lands on layer 4, because left is now the non-radial one.
 const LAYER_TRANSITIONS: Record<LayerId, Record<FlipVector, LayerId>> = {
   1: { ".": 1, B: 4, R: 3, X: 2 },
   2: { ".": 2, B: 3, R: 4, X: 1 },
@@ -265,8 +265,8 @@ export function layerSignature(
 
   const first = steps[0];
   const start = layerOf(
-    first?.motions?.blue?.startOrientation,
-    first?.motions?.red?.startOrientation
+    first?.motions?.left?.startOrientation,
+    first?.motions?.right?.startOrientation
   );
 
   const signature: LayerId[] = [];
@@ -274,8 +274,8 @@ export function layerSignature(
 
   for (const step of steps) {
     const stored = layerOf(
-      step?.motions?.blue?.endOrientation,
-      step?.motions?.red?.endOrientation
+      step?.motions?.left?.endOrientation,
+      step?.motions?.right?.endOrientation
     );
     current = stored ?? applyFlip(current, flipVectorOf(step));
     signature.push(current);
@@ -291,8 +291,8 @@ export function layerPatternOf(
   const first = steps[0];
   const startLayer =
     layerOf(
-      first?.motions?.blue?.startOrientation,
-      first?.motions?.red?.startOrientation
+      first?.motions?.left?.startOrientation,
+      first?.motions?.right?.startOrientation
     ) ?? 1;
   return { startLayer, flips: steps.map(flipVectorOf) };
 }
@@ -332,13 +332,13 @@ export function patternFromSignature(
  * different from the first — each prop needs an even number of flips.
  */
 export function isLayerClosed(pattern: LayerPattern): boolean {
-  let blue = 0;
-  let red = 0;
+  let left = 0;
+  let right = 0;
   for (const flip of pattern.flips) {
-    if (flip === "B" || flip === "X") blue++;
-    if (flip === "R" || flip === "X") red++;
+    if (flip === "B" || flip === "X") left++;
+    if (flip === "R" || flip === "X") right++;
   }
-  return blue % 2 === 0 && red % 2 === 0;
+  return left % 2 === 0 && right % 2 === 0;
 }
 
 /** The same pattern with the props exchanged — what mirroring a sequence does. */

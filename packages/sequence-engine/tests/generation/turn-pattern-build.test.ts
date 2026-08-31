@@ -40,8 +40,8 @@ function loadVariations(csvPath: string): PictographData[] {
       endPosition: c[2]!,
       timing: c[3]!,
       direction: c[4]!,
-      blueMotion: {
-        color: "blue",
+      leftMotion: {
+        hand: "left",
         motionType: c[5]!,
         rotationDirection: c[6]!,
         startLocation: c[7]!,
@@ -49,8 +49,8 @@ function loadVariations(csvPath: string): PictographData[] {
         startOrientation: "in",
         endOrientation: "in",
       },
-      redMotion: {
-        color: "red",
+      rightMotion: {
+        hand: "right",
         motionType: c[9]!,
         rotationDirection: c[10]!,
         startLocation: c[11]!,
@@ -98,7 +98,7 @@ beforeAll(async () => {
 });
 
 type TurnedStep = {
-  motions: { blue: { turns: unknown }; red: { turns: unknown } };
+  motions: { left: { turns: unknown }; right: { turns: unknown } };
 };
 
 describe("SequenceBuilder — turnPattern", () => {
@@ -108,7 +108,7 @@ describe("SequenceBuilder — turnPattern", () => {
       gridMode: "diamond",
       level: 3,
       constraintPreset: "smooth",
-      turnPattern: { blue: [0, 1.5], red: [0.5] },
+      turnPattern: { left: [0, 1.5], right: [0.5] },
     });
 
     const steps = result.sequence.slice(1) as never as TurnedStep[];
@@ -117,8 +117,8 @@ describe("SequenceBuilder — turnPattern", () => {
     expect(steps.length).toBeGreaterThan(16);
 
     for (const [i, step] of steps.entries()) {
-      expect(step.motions.blue.turns, `blue step ${i}`).toBeDefined();
-      expect(step.motions.red.turns, `red step ${i}`).toBeDefined();
+      expect(step.motions.left.turns, `left step ${i}`).toBeDefined();
+      expect(step.motions.right.turns, `right step ${i}`).toBeDefined();
     }
   });
 
@@ -128,13 +128,13 @@ describe("SequenceBuilder — turnPattern", () => {
       gridMode: "diamond",
       level: 3,
       constraintPreset: "smooth",
-      turnPattern: { blue: [0, 2], red: [1] },
+      turnPattern: { left: [0, 2], right: [1] },
     });
 
     const steps = result.sequence.slice(1) as never as TurnedStep[];
 
     for (const [i, step] of steps.entries()) {
-      expect(step.motions.red.turns, `red step ${i}`).toBe(1);
+      expect(step.motions.right.turns, `right step ${i}`).toBe(1);
     }
   });
 });

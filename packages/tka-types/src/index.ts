@@ -8,6 +8,7 @@ export * from "./rotation-direction.js";
 export * from "./orientation.js";
 export * from "./plane.js";
 export * from "./hand-side.js";
+export * from "./legacy-hand-identity.js";
 export * from "./motion.js";
 export * from "./step.js";
 export * from "./builders.js";

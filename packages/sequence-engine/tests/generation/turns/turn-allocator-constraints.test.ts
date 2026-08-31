@@ -4,8 +4,8 @@ import { allocateTurns } from "../../../src/generation/turns/TurnAllocator.js";
 describe("TurnAllocator hard output constraints", () => {
   it("uses the required turn value on every step for both hands", () => {
     expect(allocateTurns(4, 2, 2, { requiredTurns: 1 })).toEqual({
-      blue: [1, 1, 1, 1],
-      red: [1, 1, 1, 1],
+      left: [1, 1, 1, 1],
+      right: [1, 1, 1, 1],
     });
   });
 
@@ -18,8 +18,8 @@ describe("TurnAllocator hard output constraints", () => {
   it("does not allocate float when a hard motion type must survive emission", () => {
     for (let sample = 0; sample < 100; sample++) {
       const allocation = allocateTurns(8, 3, 3, { allowFloat: false });
-      expect(allocation.blue).not.toContain("fl");
-      expect(allocation.red).not.toContain("fl");
+      expect(allocation.left).not.toContain("fl");
+      expect(allocation.right).not.toContain("fl");
     }
   });
 });

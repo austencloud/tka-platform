@@ -1,13 +1,13 @@
 /**
  * Per-Hand Dash Constraint
  *
- * Controls dash vs shift preference for a specific hand (blue/red).
- * Enables constraints like "blue hand lots of dashes, red hand minimize dashes"
+ * Controls dash vs shift preference for a specific hand (left/right).
+ * Enables constraints like "left hand lots of dashes, right hand minimize dashes"
  * or "left hand should dash, right hand should shift".
  *
  * In TKA terminology:
- * - Blue = performer's left hand
- * - Red = performer's right hand
+ * - Left = performer's left hand
+ * - Right = performer's right hand
  */
 
 import { ConstraintType, type ConstraintMode } from "../constraint-types.js";
@@ -18,7 +18,7 @@ import type {
   PictographData,
 } from "../types.js";
 
-export type HandTarget = "blue" | "red";
+export type HandTarget = "left" | "right";
 export type HandDashMode = "maximize" | "minimize" | "require" | "forbid";
 
 export class PerHandDashConstraint implements IVariationConstraint {
@@ -36,7 +36,7 @@ export class PerHandDashConstraint implements IVariationConstraint {
     // "require" and "forbid" are hard mode
     this.mode = dashMode === "require" || dashMode === "forbid" ? "hard" : "soft";
 
-    const handName = hand === "blue" ? "Blue (left)" : "Red (right)";
+    const handName = hand === "left" ? "Left (left)" : "Right (right)";
 
     switch (dashMode) {
       case "maximize":
@@ -58,7 +58,7 @@ export class PerHandDashConstraint implements IVariationConstraint {
     const { candidate } = context;
 
     // Get the motion for the target hand
-    const motion = this.hand === "blue" ? candidate.blueMotion : candidate.redMotion;
+    const motion = this.hand === "left" ? candidate.leftMotion : candidate.rightMotion;
     const isDash = motion.motionType === "dash";
     const isShift = motion.motionType === "pro" || motion.motionType === "anti";
     const isStatic = motion.motionType === "static";
@@ -67,7 +67,7 @@ export class PerHandDashConstraint implements IVariationConstraint {
     let satisfied: boolean;
     let reason: string;
 
-    const handName = this.hand === "blue" ? "Blue" : "Red";
+    const handName = this.hand === "left" ? "Left" : "Right";
 
     switch (this.dashMode) {
       case "require":
@@ -128,7 +128,7 @@ export class PerHandDashConstraint implements IVariationConstraint {
       return true;
     }
 
-    const motion = this.hand === "blue" ? candidate.blueMotion : candidate.redMotion;
+    const motion = this.hand === "left" ? candidate.leftMotion : candidate.rightMotion;
     const isDash = motion.motionType === "dash";
 
     if (this.dashMode === "require") {
@@ -146,38 +146,38 @@ export class PerHandDashConstraint implements IVariationConstraint {
  * Convenience factories for per-hand dash constraints
  */
 
-// Blue (left) hand factories
-export function blueHandMaximizeDash(): PerHandDashConstraint {
-  return new PerHandDashConstraint("blue", "maximize");
+// Left (left) hand factories
+export function leftHandMaximizeDash(): PerHandDashConstraint {
+  return new PerHandDashConstraint("left", "maximize");
 }
 
-export function blueHandMinimizeDash(): PerHandDashConstraint {
-  return new PerHandDashConstraint("blue", "minimize");
+export function leftHandMinimizeDash(): PerHandDashConstraint {
+  return new PerHandDashConstraint("left", "minimize");
 }
 
-export function blueHandRequireDash(): PerHandDashConstraint {
-  return new PerHandDashConstraint("blue", "require");
+export function leftHandRequireDash(): PerHandDashConstraint {
+  return new PerHandDashConstraint("left", "require");
 }
 
-export function blueHandForbidDash(): PerHandDashConstraint {
-  return new PerHandDashConstraint("blue", "forbid");
+export function leftHandForbidDash(): PerHandDashConstraint {
+  return new PerHandDashConstraint("left", "forbid");
 }
 
-// Red (right) hand factories
-export function redHandMaximizeDash(): PerHandDashConstraint {
-  return new PerHandDashConstraint("red", "maximize");
+// Right (right) hand factories
+export function rightHandMaximizeDash(): PerHandDashConstraint {
+  return new PerHandDashConstraint("right", "maximize");
 }
 
-export function redHandMinimizeDash(): PerHandDashConstraint {
-  return new PerHandDashConstraint("red", "minimize");
+export function rightHandMinimizeDash(): PerHandDashConstraint {
+  return new PerHandDashConstraint("right", "minimize");
 }
 
-export function redHandRequireDash(): PerHandDashConstraint {
-  return new PerHandDashConstraint("red", "require");
+export function rightHandRequireDash(): PerHandDashConstraint {
+  return new PerHandDashConstraint("right", "require");
 }
 
-export function redHandForbidDash(): PerHandDashConstraint {
-  return new PerHandDashConstraint("red", "forbid");
+export function rightHandForbidDash(): PerHandDashConstraint {
+  return new PerHandDashConstraint("right", "forbid");
 }
 
 /**

@@ -41,8 +41,8 @@ function loadVariations(csvPath: string): PictographData[] {
       endPosition: c[2]!,
       timing: c[3]!,
       direction: c[4]!,
-      blueMotion: {
-        color: "blue",
+      leftMotion: {
+        hand: "left",
         motionType: c[5]!,
         rotationDirection: c[6]!,
         startLocation: c[7]!,
@@ -50,8 +50,8 @@ function loadVariations(csvPath: string): PictographData[] {
         startOrientation: "in",
         endOrientation: "in",
       },
-      redMotion: {
-        color: "red",
+      rightMotion: {
+        hand: "right",
         motionType: c[9]!,
         rotationDirection: c[10]!,
         startLocation: c[11]!,
@@ -103,7 +103,7 @@ const TYPE_6 = new Set(["α", "β", "γ"]);
 
 type BuiltStep = {
   letter: string;
-  motions: { blue: { turns: unknown }; red: { turns: unknown } };
+  motions: { left: { turns: unknown }; right: { turns: unknown } };
 };
 
 describe("a zeroed step gets a letter that can survive it", () => {
@@ -115,7 +115,7 @@ describe("a zeroed step gets a letter that can survive it", () => {
       gridMode: "diamond",
       level: 3,
       constraintPreset: "smooth",
-      turnPattern: { blue: [1.5, 0], red: [1.5, 0] },
+      turnPattern: { left: [1.5, 0], right: [1.5, 0] },
     });
 
     const steps = result.sequence.slice(1) as never as BuiltStep[];
@@ -135,14 +135,14 @@ describe("a zeroed step gets a letter that can survive it", () => {
       gridMode: "diamond",
       level: 3,
       constraintPreset: "smooth",
-      turnPattern: { blue: [1.5, 0], red: [1.5, 0] },
+      turnPattern: { left: [1.5, 0], right: [1.5, 0] },
     });
 
     const steps = result.sequence.slice(1) as never as BuiltStep[];
     for (const [i, step] of steps.entries()) {
       const expected = i % 2 === 0 ? 1.5 : 0;
-      expect(step.motions.blue.turns, `blue step ${i}`).toBe(expected);
-      expect(step.motions.red.turns, `red step ${i}`).toBe(expected);
+      expect(step.motions.left.turns, `left step ${i}`).toBe(expected);
+      expect(step.motions.right.turns, `right step ${i}`).toBe(expected);
     }
   });
 });

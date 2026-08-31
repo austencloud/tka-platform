@@ -9,7 +9,7 @@ import {
 
 function symmetric(components: Array<[LOOPComponent, { period: number; mode?: "expand" | "overlay" }]>): LOOPSpec {
   const map = new Map(components);
-  return { blue: { components: map }, red: { components: map } };
+  return { left: { components: map }, right: { components: map } };
 }
 
 describe("ComponentSpec.mode", () => {
@@ -19,8 +19,8 @@ describe("ComponentSpec.mode", () => {
       [LOOPComponent.INVERTED, { period: 4, mode: "overlay" }],
     ]);
     const back = loopSpecFromWire(loopSpecToWire(spec));
-    expect(back.blue!.components.get(LOOPComponent.INVERTED)!.mode).toBe("overlay");
-    expect(back.blue!.components.get(LOOPComponent.ROTATED)!.mode).toBeUndefined();
+    expect(back.left!.components.get(LOOPComponent.INVERTED)!.mode).toBe("overlay");
+    expect(back.left!.components.get(LOOPComponent.ROTATED)!.mode).toBeUndefined();
   });
 
   it("accepts overlay on INVERTED", () => {

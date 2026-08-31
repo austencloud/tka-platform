@@ -56,6 +56,11 @@
       "import": "./dist/hand-side.js",
       "default": "./dist/hand-side.js"
     },
+    "./legacy-hand-identity": {
+      "types": "./src/legacy-hand-identity.ts",
+      "import": "./dist/legacy-hand-identity.js",
+      "default": "./dist/legacy-hand-identity.js"
+    },
     "./builders": {
       "types": "./src/builders.ts",
       "import": "./dist/builders.js",

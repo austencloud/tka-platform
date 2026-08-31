@@ -8,13 +8,13 @@
  * - Level 2: 0, 1, 2, 3 (whole numbers)
  * - Level 3: 0, 0.5, 1, 1.5, 2, 2.5, 3, "fl" (all values including float)
  *
- * For each step, blue and red get independently randomized turn values
+ * For each step, left and right get independently randomized turn values
  * filtered by the maxTurnIntensity cap.
  */
 
 export interface TurnAllocation {
-  blue: (number | "fl")[];
-  red: (number | "fl")[];
+  left: (number | "fl")[];
+  right: (number | "fl")[];
 }
 
 function getPossibleTurnsForLevel(level: number): (number | "fl")[] {
@@ -101,7 +101,7 @@ function wheelQuarters(turn: number | "fl"): number {
  * @param level - Difficulty level (1-3)
  * @param maxTurnIntensity - Maximum turn intensity allowed (0-3, or undefined for level default)
  * @param options - Optional allocation constraints (e.g. period-4 parity)
- * @returns Turn allocations for blue and red props per step
+ * @returns Turn allocations for left and right props per step
  */
 export function allocateTurns(
   stepCount: number,
@@ -124,17 +124,17 @@ export function allocateTurns(
       );
     }
     return {
-      blue: Array(stepCount).fill(requiredTurns),
-      red: Array(stepCount).fill(requiredTurns),
+      left: Array(stepCount).fill(requiredTurns),
+      right: Array(stepCount).fill(requiredTurns),
     };
   }
 
-  const turnsBlue = allocateSingleHand(stepCount, turnsPool, random, options);
-  const turnsRed = allocateSingleHand(stepCount, turnsPool, random, options);
+  const turnsLeft = allocateSingleHand(stepCount, turnsPool, random, options);
+  const turnsRight = allocateSingleHand(stepCount, turnsPool, random, options);
 
   return {
-    blue: turnsBlue,
-    red: turnsRed,
+    left: turnsLeft,
+    right: turnsRight,
   };
 }
 

@@ -6,7 +6,7 @@ import type {
 } from "../../../../src/generation/constraints/types.js";
 
 const EMPTY_MOTION = {
-  color: "",
+  hand: "",
   startLocation: "",
   endLocation: "",
   motionType: "",
@@ -28,8 +28,8 @@ function makeContext(
       endPosition: "alpha1",
       timing: "together",
       direction: "same",
-      blueMotion: EMPTY_MOTION,
-      redMotion: EMPTY_MOTION,
+      leftMotion: EMPTY_MOTION,
+      rightMotion: EMPTY_MOTION,
     },
     letter: "A",
   };
@@ -61,7 +61,7 @@ describe("Type6Constraint", () => {
       makeContext({
         letter: "γ",
         level: 2,
-        turnAllocation: { blue: 1, red: 0 },
+        turnAllocation: { left: 1, right: 0 },
       }),
     );
     expect(result.satisfied).toBe(true);
@@ -73,7 +73,7 @@ describe("Type6Constraint", () => {
       makeContext({
         letter: "α",
         level: 2,
-        turnAllocation: { blue: 0, red: 0 },
+        turnAllocation: { left: 0, right: 0 },
       }),
     );
     expect(result.satisfied).toBe(false);
@@ -85,7 +85,7 @@ describe("Type6Constraint", () => {
       makeContext({
         letter: "α",
         level: 3,
-        turnAllocation: { blue: 1, red: 0 },
+        turnAllocation: { left: 1, right: 0 },
       }),
     );
     expect(result.satisfied).toBe(true);
@@ -97,7 +97,7 @@ describe("Type6Constraint", () => {
       makeContext({
         letter: "β",
         level: 3,
-        turnAllocation: { blue: 0, red: 0 },
+        turnAllocation: { left: 0, right: 0 },
       }),
     );
     expect(result.satisfied).toBe(false);
