@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Bone, Vector3 } from "three";
 import {
+  AvatarAnimator,
   ElbowPoleComputer,
   IKSolver,
   Plane,
@@ -54,21 +55,80 @@ function makeArm(
   };
 }
 
-function pointToSegmentDistance(point: Vector3, a: Vector3, b: Vector3): number {
+function pointToSegmentDistance(
+  point: Vector3,
+  a: Vector3,
+  b: Vector3
+): number {
   const segment = b.clone().sub(a);
   const lengthSq = segment.lengthSq();
   if (lengthSq < 1e-8) return point.distanceTo(a);
-  const t = Math.max(0, Math.min(1, point.clone().sub(a).dot(segment) / lengthSq));
+  const t = Math.max(
+    0,
+    Math.min(1, point.clone().sub(a).dot(segment) / lengthSq)
+  );
   return point.distanceTo(a.clone().addScaledVector(segment, t));
 }
 
-function segmentDistance(a0: Vector3, a1: Vector3, b0: Vector3, b1: Vector3): number {
+function segmentDistance(
+  a0: Vector3,
+  a1: Vector3,
+  b0: Vector3,
+  b1: Vector3
+): number {
   return Math.min(
     pointToSegmentDistance(a0, b0, b1),
     pointToSegmentDistance(a1, b0, b1),
     pointToSegmentDistance(b0, a0, a1),
     pointToSegmentDistance(b1, a0, a1)
   );
+}
+
+function makeFaceCollisionRig(): {
+  state: {
+    bones: Map<string, Bone>;
+  };
+  skeleton: {
+    getLeftArmChain: () => null;
+    getRightArmChain: () => BoneChain;
+  };
+  root: Bone;
+} {
+  const root = new Bone();
+  const neck = new Bone();
+  const head = new Bone();
+  const leftShoulder = new Bone();
+  const rightShoulder = new Bone();
+
+  neck.position.set(0, 1.6, 0);
+  head.position.set(0, 0.1, 0);
+  leftShoulder.position.set(0.18, 1.5, 0);
+  rightShoulder.position.set(-0.18, 1.5, 0);
+  root.add(neck, leftShoulder, rightShoulder);
+  neck.add(head);
+
+  const rightArm = makeArm(
+    new Vector3(-0.18, 1.5, 0),
+    new Vector3(0.18, 0.3, -0.08)
+  );
+  root.add(rightArm.root.parent as Bone);
+  root.updateMatrixWorld(true);
+
+  return {
+    root,
+    state: {
+      bones: new Map([
+        ["Neck", neck],
+        ["Head", head],
+        ["LeftShoulder", leftShoulder],
+        ["RightShoulder", rightShoulder],
+      ]),
+    },
+    skeleton: {
+      getLeftArmChain: () => null,
+      getRightArmChain: () => rightArm,
+    },
+  };
 }
 
 describe("ElbowPoleComputer", () => {
@@ -147,8 +207,12 @@ describe("ElbowPoleComputer", () => {
 
     expect(leftElbowOffset.dot(leftOutward)).toBeGreaterThan(0.22);
     expect(rightElbowOffset.dot(rightOutward)).toBeGreaterThan(0.22);
-    expect(Math.abs(leftElbowOffset.dot(mirroredFrame.forward))).toBeLessThan(0.06);
-    expect(Math.abs(rightElbowOffset.dot(mirroredFrame.forward))).toBeLessThan(0.06);
+    expect(Math.abs(leftElbowOffset.dot(mirroredFrame.forward))).toBeLessThan(
+      0.06
+    );
+    expect(Math.abs(rightElbowOffset.dot(mirroredFrame.forward))).toBeLessThan(
+      0.06
+    );
   });
 
   it("assigns stable complementary layers to an equal-height crossed pair", () => {
@@ -230,8 +294,14 @@ describe("ElbowPoleComputer", () => {
       }
     );
     const solver = new IKSolver();
-    solver.solveAndApply(leftChain, { position: leftTarget, poleHint: leftPole });
-    solver.solveAndApply(rightChain, { position: rightTarget, poleHint: rightPole });
+    solver.solveAndApply(leftChain, {
+      position: leftTarget,
+      poleHint: leftPole,
+    });
+    solver.solveAndApply(rightChain, {
+      position: rightTarget,
+      poleHint: rightPole,
+    });
 
     const leftElbow = new Vector3();
     const rightElbow = new Vector3();
@@ -245,7 +315,65 @@ describe("ElbowPoleComputer", () => {
     expect(leftHand.distanceTo(leftTarget)).toBeLessThan(0.002);
     expect(rightHand.distanceTo(rightTarget)).toBeLessThan(0.002);
     expect(leftElbow.y - rightElbow.y).toBeGreaterThan(0.08);
-    expect(segmentDistance(leftElbow, leftHand, rightElbow, rightHand)).toBeGreaterThan(0.06);
+    expect(
+      segmentDistance(leftElbow, leftHand, rightElbow, rightHand)
+    ).toBeGreaterThan(0.06);
+  });
+
+  it("reroutes a forearm around the face without moving the hand target", () => {
+    const shoulder = new Vector3(0, 0, 0);
+    const target = new Vector3(0, 0.4, 0);
+    const face = new Vector3(Math.sqrt(0.05), 0.2, 0);
+    const chain = makeArm(shoulder, new Vector3(0, 1, 0), 0.3, 0.3);
+    const preferredPole = new Vector3(1, 0, 0);
+    const resolvedPole = computer.resolveForearmFaceClearance(
+      preferredPole,
+      target,
+      "left",
+      {
+        faceCenter: face,
+        shoulderPosition: shoulder,
+        upperArmLength: chain.upperLength,
+        forearmLength: chain.lowerLength,
+        minimumClearance: 0.15,
+      }
+    );
+    const solver = new IKSolver();
+
+    solver.solveAndApply(chain, {
+      position: target,
+      poleHint: resolvedPole,
+    });
+
+    const elbow = new Vector3();
+    const hand = new Vector3();
+    chain.middle.getWorldPosition(elbow);
+    chain.effector.getWorldPosition(hand);
+
+    expectNormalized(resolvedPole);
+    expect(hand.distanceTo(target)).toBeLessThan(0.002);
+    expect(pointToSegmentDistance(face, elbow, hand)).toBeGreaterThanOrEqual(
+      0.154
+    );
+  });
+
+  it("returns a finite best-effort pole when the fixed hand target occupies the face", () => {
+    const shoulder = new Vector3(0, 0, 0);
+    const targetAndFace = new Vector3(0, 0.4, 0);
+    const resolvedPole = computer.resolveForearmFaceClearance(
+      new Vector3(1, 0, 0),
+      targetAndFace,
+      "right",
+      {
+        faceCenter: targetAndFace,
+        shoulderPosition: shoulder,
+        upperArmLength: 0.3,
+        forearmLength: 0.3,
+      }
+    );
+
+    expectNormalized(resolvedPole);
+    expect(resolvedPole.toArray().every(Number.isFinite)).toBe(true);
   });
 });
 
@@ -270,5 +398,32 @@ describe("SpineTwister crossed-arm posture", () => {
     expect(conventional.spine1.x).toBeGreaterThan(0.01);
     expect(mirrored.spine1.x).toBeCloseTo(conventional.spine1.x, 6);
     expect(mirrored.spine2.x).toBeCloseTo(conventional.spine2.x, 6);
+  });
+});
+
+describe("AvatarAnimator forearm reflex", () => {
+  it("moves the head backward even when optional staff dodging is disabled", () => {
+    const rig = makeFaceCollisionRig();
+    const animator = new AvatarAnimator(
+      {} as never,
+      rig.skeleton as never
+    ) as unknown as {
+      applyHeadDodge: (
+        state: { bones: Map<string, Bone> },
+        deltaTime: number,
+        maxIKWeight: number
+      ) => void;
+      headDodgeAngleSmoothed: number;
+    };
+    const head = rig.state.bones.get("Head")!;
+    const before = head.getWorldPosition(new Vector3());
+
+    animator.applyHeadDodge(rig.state, 1, 1);
+    rig.root.updateMatrixWorld(true);
+
+    const after = head.getWorldPosition(new Vector3());
+    expect(after.z).toBeLessThan(before.z - 0.005);
+    expect(animator.headDodgeAngleSmoothed).toBeGreaterThan(0.5);
+    expect(animator.headDodgeAngleSmoothed).toBeLessThanOrEqual(0.8);
   });
 });
