@@ -590,7 +590,7 @@
   <!-- ── desktop sidebar: search + category nav (terms render once, in the
        master list — the rail never repeats them). Hidden on the Atlas overview,
        which owns its search and region navigation. ── -->
-  <aside class="glossary-sidebar" aria-label="Glossary navigation">
+  <aside class="glossary-sidebar" aria-label="Atlas navigation">
     <GlossaryNav
       groups={sidebarGroups}
       total={data.total}
@@ -612,7 +612,7 @@
           name="glossary-search"
           type="search"
           placeholder="Filter terms"
-          aria-label="Filter glossary terms"
+          aria-label="Filter Atlas terms"
           autocomplete="off"
           bind:value={query}
         />
@@ -818,7 +818,7 @@
     class="drawer"
     role="dialog"
     aria-modal="true"
-    aria-label="Glossary contents"
+    aria-label="Atlas contents"
   >
     <div class="drawer-head">
       <span class="drawer-title">Contents</span>

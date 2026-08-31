@@ -98,7 +98,7 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
   // holes. 12 cells = three clean rows: composer 2x2, three 2x1s, two 1x1s.
   // Source order follows the tablet bento's visual reading order: do
   // (Composer), hold (Choreo Cards), learn (Guide), understand (Notation),
-  // ask (FAQ), and look up (Glossary).
+  // ask (FAQ), and look up (Kinetic Atlas).
   // Deeper theory stays in the Notation dropdown instead of competing with
   // the front doors. Secondary destinations live in the strip.
   {
@@ -131,11 +131,11 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
   {
     id: "glossary",
     href: "/glossary",
-    heading: "Glossary",
-    descriptor: "TKA terms, defined.",
+    heading: "Kinetic Atlas",
+    descriptor: "Explore letters, motion, notation, and technique.",
     span: "1x1",
     color: "#94a3b8",
-    icon: "fa-book-open",
+    icon: "fa-compass",
     media: "dictionary",
     morphName: "launchpad-glossary",
   },
