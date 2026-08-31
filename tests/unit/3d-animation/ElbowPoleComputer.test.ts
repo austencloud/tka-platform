@@ -440,6 +440,50 @@ describe("SpineTwister crossed-arm posture", () => {
 });
 
 describe("AvatarAnimator forearm reflex", () => {
+  it("refreshes arm-routing axes from the achieved shoulder yaw", () => {
+    const sceneRoot = new Bone();
+    const torso = new Bone();
+    const leftArm = makeArm(
+      new Vector3(0.2, 1.45, 0),
+      new Vector3(1, 0, 0)
+    );
+    const rightArm = makeArm(
+      new Vector3(-0.2, 1.45, 0),
+      new Vector3(-1, 0, 0)
+    );
+    sceneRoot.add(torso);
+    torso.add(leftArm.root.parent as Bone, rightArm.root.parent as Bone);
+    sceneRoot.updateMatrixWorld(true);
+
+    const animator = new AvatarAnimator(
+      {} as never,
+      {} as never
+    ) as unknown as {
+      refreshBodyFrame: (
+        state: { root: Bone },
+        leftChain: BoneChain,
+        rightChain: BoneChain
+      ) => void;
+      _bodyFrame: BodyFrame;
+    };
+
+    animator.refreshBodyFrame({ root: sceneRoot }, leftArm, rightArm);
+    expect(animator._bodyFrame.forward.dot(new Vector3(0, 0, 1))).toBeCloseTo(
+      1,
+      6
+    );
+
+    torso.rotation.y = Math.PI / 3;
+    sceneRoot.updateMatrixWorld(true);
+    animator.refreshBodyFrame({ root: sceneRoot }, leftArm, rightArm);
+
+    const achievedForward = new Vector3(0, 0, 1).applyAxisAngle(
+      new Vector3(0, 1, 0),
+      Math.PI / 3
+    );
+    expect(animator._bodyFrame.forward.dot(achievedForward)).toBeCloseTo(1, 6);
+  });
+
   it("moves the head backward even when optional staff dodging is disabled", () => {
     const rig = makeFaceCollisionRig();
     const animator = new AvatarAnimator(

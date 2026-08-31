@@ -19716,7 +19716,7 @@ index 0000000000000000000000000000000000000000..804080e43f4dc206951115861d4b871f
 +  return point.distanceTo(closestOut);
 +}
 diff --git a/src/lib/services/implementations/AvatarAnimator.ts b/src/lib/services/implementations/AvatarAnimator.ts
-index c73bcabe86e07dd117e6f737532aea88ac9ec194..fa5bfa55d767a01d66c1f86705660329e161f673 100644
+index c73bcabe86e07dd117e6f737532aea88ac9ec194..3b0c0a20aa613a5d7a62ff08e0243771d70c19ae 100644
 --- a/src/lib/services/implementations/AvatarAnimator.ts
 +++ b/src/lib/services/implementations/AvatarAnimator.ts
 @@ -5,7 +5,8 @@
@@ -19988,11 +19988,66 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..fa5bfa55d767a01d66c1f86705660329
    }
 
    private blendToTarget(_deltaTime: number): void {
-@@ -378,13 +575,22 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -378,13 +575,77 @@ export class AvatarAnimator implements IAvatarAnimator {
      return result;
    }
 
 -  private applyIKToSkeleton(pose: BodyPose): void {
++  /**
++   * Refresh the horizontal anatomical frame from the skeleton's current pose.
++   *
++   * This runs once before torso posture is planned and again after spine yaw /
++   * lean has been applied. Arm routing must consume the second sample: using
++   * the pre-turn shoulder line makes a correctly bladed torso look square to
++   * the elbow solver and sends the upper arms through the neck corridor.
++   */
++  private refreshBodyFrame(
++    state: SkeletonState,
++    leftChain: BoneChain | null,
++    rightChain: BoneChain | null
++  ): void {
++    if (state.root) {
++      state.root.getWorldQuaternion(this._q1);
++      this._bodyFrame.lateral.set(1, 0, 0).applyQuaternion(this._q1);
++      this._v4.set(0, 0, 1).applyQuaternion(this._q1);
++    } else {
++      this._bodyFrame.lateral.set(1, 0, 0);
++      this._v4.set(0, 0, 1);
++    }
++
++    this._bodyFrame.lateral.y = 0;
++    this._v4.y = 0;
++
++    if (leftChain && rightChain) {
++      leftChain.root.getWorldPosition(this._leftShoulderWorld);
++      rightChain.root.getWorldPosition(this._rightShoulderWorld);
++      this._bodyFrame.lateral
++        .subVectors(this._rightShoulderWorld, this._leftShoulderWorld);
++      this._bodyFrame.lateral.y = 0;
++    }
++
++    if (
++      this._bodyFrame.lateral.lengthSq() <= 1e-6 ||
++      this._v4.lengthSq() <= 1e-6
++    ) {
++      this._bodyFrame.lateral.set(1, 0, 0);
++      this._bodyFrame.forward.set(0, 0, 1);
++      return;
++    }
++
++    this._bodyFrame.lateral.normalize();
++    this._v4.normalize();
++    this._bodyFrame.forward
++      .crossVectors(this._bodyFrame.lateral, WORLD_UP)
++      .normalize();
++
++    // The shoulder line has two valid perpendiculars. Preserve the root's
++    // forward hemisphere so differently exported rigs cannot face backwards.
++    if (this._bodyFrame.forward.dot(this._v4) < 0) {
++      this._bodyFrame.forward.multiplyScalar(-1);
++    }
++  }
++
 +  private applyIKToSkeleton(pose: BodyPose, deltaTime: number): void {
      const state = this.skeleton.getState();
      if (!state.isLoaded) return;
@@ -20012,59 +20067,19 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..fa5bfa55d767a01d66c1f86705660329
      // Compute body center from Hips bone (or default to origin)
      const bodyCenter = new Vector3(0, 0, 0);
      const hipsBone = state.bones.get("Hips");
-@@ -392,6 +598,51 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -392,6 +653,11 @@ export class AvatarAnimator implements IAvatarAnimator {
        hipsBone.getWorldPosition(bodyCenter);
      }
 
-+    // Build an anatomical body frame. Rig yaw lives OUTSIDE the avatar
-+    // (PerformerRig rotates the wrapper group), and model exporters disagree
-+    // about whether +X is anatomical left or right. The mapped shoulder line
-+    // is the only reliable source of that answer.
-+    if (state.root) {
-+      state.root.getWorldQuaternion(this._q1);
-+      this._bodyFrame.lateral.set(1, 0, 0).applyQuaternion(this._q1);
-+      this._bodyFrame.lateral.y = 0;
-+      this._bodyFrame.forward.set(0, 0, 1).applyQuaternion(this._q1);
-+      this._bodyFrame.forward.y = 0;
-+    } else {
-+      this._bodyFrame.lateral.set(1, 0, 0);
-+      this._bodyFrame.forward.set(0, 0, 1);
-+    }
-+
-+    if (leftChain && rightChain) {
-+      leftChain.root.getWorldPosition(this._leftShoulderWorld);
-+      rightChain.root.getWorldPosition(this._rightShoulderWorld);
-+      this._bodyFrame.lateral
-+        .subVectors(this._rightShoulderWorld, this._leftShoulderWorld);
-+      this._bodyFrame.lateral.y = 0;
-+    }
-+
-+    if (
-+      this._bodyFrame.lateral.lengthSq() > 1e-6 &&
-+      this._bodyFrame.forward.lengthSq() > 1e-6
-+    ) {
-+      this._bodyFrame.lateral.normalize();
-+      // Remove any exporter skew so forward and lateral remain an orthogonal
-+      // frame. This also keeps projections stable under wrapper yaw.
-+      this._bodyFrame.forward.addScaledVector(
-+        this._bodyFrame.lateral,
-+        -this._bodyFrame.forward.dot(this._bodyFrame.lateral)
-+      );
-+      if (this._bodyFrame.forward.lengthSq() > 1e-6) {
-+        this._bodyFrame.forward.normalize();
-+      } else {
-+        this._bodyFrame.forward.set(0, 0, 1);
-+      }
-+    } else {
-+      // Degenerate (missing shoulder span or root pitched ~90°).
-+      this._bodyFrame.lateral.set(1, 0, 0);
-+      this._bodyFrame.forward.set(0, 0, 1);
-+    }
++    // Initial anatomical frame for the torso planner. Rig yaw lives outside
++    // the avatar, while the mapped shoulder line tells us the exporter's
++    // actual left/right convention.
++    this.refreshBodyFrame(state, leftChain, rightChain);
 +
      // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
      // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
      // position feeds back and causes oscillation.
-@@ -445,7 +696,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -445,7 +711,8 @@ export class AvatarAnimator implements IAvatarAnimator {
          pose.leftHand?.targetPosition ?? null,
          pose.rightHand?.targetPosition ?? null,
          bodyCenter,
@@ -20074,7 +20089,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..fa5bfa55d767a01d66c1f86705660329
        );
 
        // Apply twist to each bone individually for a natural spinal curve.
-@@ -511,12 +763,132 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -511,12 +778,137 @@ export class AvatarAnimator implements IAvatarAnimator {
        }
      }
 
@@ -20157,6 +20172,11 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..fa5bfa55d767a01d66c1f86705660329
 +      if (hipsBoneForUpdate) hipsBoneForUpdate.updateMatrixWorld(true);
 +    }
 +
++    // Spine twist, stance yaw, and reach lean all move the shoulders. Refresh
++    // the frame now so pair routing and pole vectors operate in the torso's
++    // achieved orientation rather than the square pre-turn pose.
++    this.refreshBodyFrame(state, leftChain, rightChain);
++
 +    let faceCenterAvailable = false;
 +    let bodyClearanceAvailable = false;
 +    const headBone = state.bones.get("Head");
@@ -20208,7 +20228,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..fa5bfa55d767a01d66c1f86705660329
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = leftChain.root.quaternion.clone();
          const animMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -527,7 +899,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -527,7 +919,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const leftShoulder = state.bones.get("LeftShoulder");
            if (leftShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -20217,7 +20237,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..fa5bfa55d767a01d66c1f86705660329
                "left",
                this.leftShoulderRestY,
                leftChain.totalLength
-@@ -540,6 +912,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -540,6 +932,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
 
@@ -20232,7 +20252,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..fa5bfa55d767a01d66c1f86705660329
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: leftTarget,
-@@ -547,17 +927,58 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -547,17 +947,58 @@ export class AvatarAnimator implements IAvatarAnimator {
          };
 
          if (this._poleVectorsEnabled && this.poleComputer && leftHand.plane) {
@@ -20292,7 +20312,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..fa5bfa55d767a01d66c1f86705660329
          // Solve IK (overwrites bone quaternions)
          this.ikSolver.solveAndApply(leftChain, target);
 
-@@ -572,13 +993,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -572,13 +1013,14 @@ export class AvatarAnimator implements IAvatarAnimator {
          leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
 
@@ -20308,7 +20328,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..fa5bfa55d767a01d66c1f86705660329
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = rightChain.root.quaternion.clone();
          const animMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -589,7 +1011,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -589,7 +1031,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const rightShoulder = state.bones.get("RightShoulder");
            if (rightShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -20317,7 +20337,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..fa5bfa55d767a01d66c1f86705660329
                "right",
                this.rightShoulderRestY,
                rightChain.totalLength
-@@ -602,6 +1024,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -602,6 +1044,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
 
@@ -20332,7 +20352,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..fa5bfa55d767a01d66c1f86705660329
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: rightTarget,
-@@ -609,17 +1039,55 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -609,17 +1059,55 @@ export class AvatarAnimator implements IAvatarAnimator {
          };
 
          if (this._poleVectorsEnabled && this.poleComputer && rightHand.plane) {
@@ -20389,7 +20409,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..fa5bfa55d767a01d66c1f86705660329
          // Solve IK (overwrites bone quaternions)
          this.ikSolver.solveAndApply(rightChain, target);
 
-@@ -634,13 +1102,432 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -634,13 +1122,432 @@ export class AvatarAnimator implements IAvatarAnimator {
          rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
 
@@ -20822,7 +20842,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..fa5bfa55d767a01d66c1f86705660329
 
    addLayer(layer: AnimationLayer): void {
      this.layers.set(layer.id, layer);
-@@ -689,6 +1576,20 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -689,6 +1596,20 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.externalSpinePitchRad = radians;
    }
 
