@@ -58,10 +58,18 @@ used by `static/models/props/fan.glb`:
 - DoodleGrip Day: `scripts/assets/doodlegrip-day-contours.json`
 
 The checked-in Lotus animation artwork is generated from all ten traced
-centerlines plus the measured rings, cradle, and wick geometry. Its picker
-preview carries a provenance manifest keyed to those references and the model
-builder, so refining the physical fan cannot silently leave either 2D surface
-on an older revision.
+centerlines plus the measured rings, cradle, and wick geometry. DoodleGrip Fire
+is likewise generated from the measured five-wick crown, curved outside rails,
+straight inner spines, welded lattice, spinning ring, and constant-radius grip
+shell. Its covered variant uses one fitted crescent sleeve derived from the
+same wick-clearance curve as the 3D cover, never generic dots placed over the
+bare sprite.
+
+Physical materials remain distinct in the renderer. Motion identity recolors
+only the marked fan frame; woven Kevlar stays cream and the fitted cover keeps
+its authored fabric color. Both generators write source and version metadata
+into the SVG, and focused parity tests count the structural parts that would be
+easy to lose during a later asset refinement.
 
 The animated SVGs keep the established fan pivot and five-emitter envelope so
 the existing assembly, trail, LED, charcoal, and fire systems continue to use
@@ -93,6 +101,9 @@ overrides.
   appearance-triggered prop crossfades.
 - The existing prop-glyph gate renders every registered prop at real desktop
   and mobile rail sizes, including every fan build.
+- The fire-fan fidelity gate compares each current 3D proof render with blue and
+  red output from the production 2D SVG generator, including bare DoodleGrip,
+  covered DoodleGrip, and Lotus.
 - The sequence-viewer transition gate exercises Pictograph, Fire, Lotus, and
   Day in 2D and Tunnel, then 3D, at desktop, tablet, short-landscape, and iPhone
   SE viewports with normal and reduced motion.

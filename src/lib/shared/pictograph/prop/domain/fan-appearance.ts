@@ -127,9 +127,16 @@ export function parseFanRenderKey(value: string): FanRenderKey | null {
   };
 }
 
-export function fanAppearanceArtwork(build: FanBuild): string | null {
+export function fanAppearanceArtwork(
+  build: FanBuild,
+  cover: FanCover = "bare"
+): string | null {
   if (build === "pictograph") return null;
-  const revision = build === "lotus" ? "?v=6" : "";
+  if (build === "fire") {
+    const file = cover === "covered" ? "fan-fire-covered.svg" : "fan-fire.svg";
+    return `/images/props/appearances/${file}?v=2`;
+  }
+  const revision = build === "lotus" ? "?v=7" : "";
   return `/images/props/appearances/fan-${build}.svg${revision}`;
 }
 
