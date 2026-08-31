@@ -16,7 +16,11 @@
     isViewer3DIntroReplayRequested,
     shouldShowViewer3DIntro,
   } from "$lib/shared/onboarding/state/viewer3d-intro-state";
-  import { flyFade, motionDuration } from "$lib/shared/transitions/motion";
+  import {
+    flyFade,
+    motionDuration,
+    reducedMotion,
+  } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { Tween } from "svelte/motion";
   import { cubicInOut } from "svelte/easing";
@@ -201,17 +205,32 @@
     replayViewer3DIntro || shouldShowViewer3DIntro()
   );
   let pane2D: HTMLDivElement | undefined = $state();
+  let pane2DWidth = $state(0);
+  let lastReadable2DWidth = $state(0);
   let pane3D: HTMLDivElement | undefined = $state();
   let rail2D: HTMLDivElement | undefined = $state();
   let rail3D: HTMLDivElement | undefined = $state();
   let previousPresentedPane = $state(presentedPane);
   let presentationWidthReleaseTimer: ReturnType<typeof setTimeout> | undefined;
+  let preparationCanvasWidth = $state<number | null>(null);
+  let preparationCanvasWidthReleaseTimer:
+    | ReturnType<typeof setTimeout>
+    | undefined;
   let contactBoundaryReportedReady = $state(false);
   let saveMenuHost: VisualSequenceSaveContextMenuHost | undefined = $state();
   let sceneControlLayout = $state<SceneControlLayout>({
     presentation: "overlay",
     panelWidth: 520,
     reservedWidth: 0,
+  });
+
+  // Remember the last width while 2D/Tunnel genuinely owns the stage. Once a
+  // 3D selection starts, PanelGroup may publish a transient narrow width before
+  // this component's pre-effect runs; that departure geometry is exactly what
+  // the preparation lease must not capture.
+  $effect(() => {
+    const width = pane2DWidth;
+    if (isAnimatorActive && width > 0) lastReadable2DWidth = width;
   });
 
   function handle3DContextMenu(event: MouseEvent): void {
@@ -271,6 +290,55 @@
   });
 
   $effect(() => () => clearTimeout(presentationWidthReleaseTimer));
+
+  // The first 3D boot can take several seconds. The surrounding workspace is
+  // already moving from its inspector allocation to the full scene during
+  // that time, but the inert outgoing canvas deliberately retains its old
+  // backing store. Letting its DOM box stretch with the workspace magnifies
+  // that raster and makes otherwise crisp prop artwork look badly compressed.
+  //
+  // Capture the last authored 2D width before the mode update paints. The live
+  // canvas then glides to the center at that exact size while 3D prepares
+  // behind it. Keep the lease through the surface dissolve and release only
+  // after 2D is fully covered.
+  $effect.pre(() => {
+    if (side !== "left" || !is3DPreparing) return;
+
+    // A reversal may have armed the release while the 3D boot continues in
+    // the keep-alive layer. Re-entering 3D renews the existing lease instead
+    // of letting that stale timer drop it halfway through preparation.
+    clearTimeout(preparationCanvasWidthReleaseTimer);
+    preparationCanvasWidthReleaseTimer = undefined;
+    if (preparationCanvasWidth !== null || !pane2D) return;
+
+    const width = lastReadable2DWidth || pane2D.getBoundingClientRect().width;
+    if (width <= 0) return;
+    preparationCanvasWidth = width;
+  });
+
+  $effect(() => {
+    if (is3DPreparing || preparationCanvasWidth === null) return;
+
+    clearTimeout(preparationCanvasWidthReleaseTimer);
+    const releaseWidth = () => {
+      preparationCanvasWidthReleaseTimer = undefined;
+      preparationCanvasWidth = null;
+    };
+    // Reduced motion still owns one quiet opacity dissolve between these two
+    // co-located surfaces, so its sharp frame lease follows that CSS clock.
+    const duration = reducedMotion()
+      ? DURATION.normal
+      : motionDuration(DURATION.emphasis);
+    if (duration === 0) {
+      releaseWidth();
+    } else {
+      preparationCanvasWidthReleaseTimer = setTimeout(releaseWidth, duration);
+    }
+  });
+
+  $effect(() => () => {
+    clearTimeout(preparationCanvasWidthReleaseTimer);
+  });
 
   function handleCloseClick(event: MouseEvent | KeyboardEvent): void {
     event.stopPropagation();
@@ -406,6 +474,7 @@
 {#if is2DMounted}
   <div
     bind:this={pane2D}
+    bind:clientWidth={pane2DWidth}
     class="media-pane animation-pane persistent-2d"
     class:persistent-2d-hidden={!is2DPresented}
     data-motion-surface="2d"
@@ -449,6 +518,11 @@
       {/if}
       <div
         class="canvas-layer canvas-2d-layer"
+        class:canvas-2d-preparation-held={preparationCanvasWidth !== null}
+        data-3d-preparation-held={preparationCanvasWidth !== null || undefined}
+        style:--preparation-canvas-width={preparationCanvasWidth === null
+          ? undefined
+          : `${preparationCanvasWidth}px`}
         style="opacity:1;pointer-events:auto;"
       >
         <!-- Focused 2D and Tunnel keep the same full transport. In the phone's

@@ -196,6 +196,19 @@
   transition: opacity var(--transition-normal);
 }
 
+/* While the first 3D scene boots, the live 2D stage is a continuity frame,
+   not a responsive destination. Keep it at the sharp width it already owned
+   and let the expanding workspace carry that frame to center. `max-width`
+   must be cleared because the generic media-pane child constraint would
+   otherwise squeeze it through PanelGroup's narrow departure frames. */
+.split-view .canvas-2d-layer.canvas-2d-preparation-held {
+  right: auto;
+  left: 50%;
+  width: var(--preparation-canvas-width);
+  max-width: none;
+  transform: translateX(-50%);
+}
+
 .split-view .viewer-3d-handoff-anchor {
   position: absolute;
   top: max(16px, 3cqh);
