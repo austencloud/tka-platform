@@ -29,7 +29,15 @@
     loadPersistedEffectsConfig,
   } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import { createViewerUrlSession } from "../services/viewer-url-session";
+  import {
+    createViewerUrlSession,
+    setViewerUrlSessionContext,
+  } from "../services/viewer-url-session";
+  import {
+    seedFromT3Slice,
+    persistedT3SliceFromStorage,
+    type T3SlicePayload,
+  } from "../services/viewer-url-slices/t3-slice";
   import {
     captureFxSlice,
     seedFromFxSlice,
@@ -261,13 +269,39 @@
     playback.bpmLocal = _sceneBpmIntent ?? initialBpm;
   });
 
+  // The `t3` slice is MIXED. Its seed is applied here because the environment
+  // lives on `viewer3DState`, which only this scope constructs; its CAPTURE is
+  // registered inside `Viewer3DCanvas`, the only place that holds both that
+  // state and the pane's scene-feature state (see `setViewerUrlSessionContext`
+  // below). While the 3D pane is closed nothing is registered, so the session's
+  // pass-through keeps whatever `t3` the inbound link carried.
+  const firstUseEnvironment = sceneEnvironmentIdForBackground(
+    getSettings().backgroundType
+  );
+  const t3SeedPayload = urlSession.getSeed("t3") as T3SlicePayload | null;
+  // Own-link rule in slice space, both sides through the same module: the
+  // visitor's disk is read WITHOUT `loadPersistedEnvironment`, whose first-use
+  // migration would write the key before any override decision was made.
+  const t3Seed =
+    t3SeedPayload &&
+    urlSession.isOverride("t3", persistedT3SliceFromStorage(firstUseEnvironment))
+      ? seedFromT3Slice(t3SeedPayload)
+      : null;
+
   const viewer3DState = createViewer3DState(undefined, {
-    firstUseEnvironment: sceneEnvironmentIdForBackground(
-      getSettings().backgroundType
-    ),
+    firstUseEnvironment,
     appDefaultProp: getSettings().bluePropType ?? null,
+    ...(t3Seed
+      ? {
+          viewOnlyEnvironmentId: t3Seed.environmentId,
+          viewOnlySceneFeatures: t3Seed.sceneFeatures,
+        }
+      : {}),
   });
   setViewer3DContext(viewer3DState);
+  // Published for viewer-internal hosts whose store is built per pane rather
+  // than here — today `Viewer3DCanvas`, which registers the `t3` capture.
+  setViewerUrlSessionContext(urlSession);
 
   const accessibilityHelper = createModalAccessibilityHelper();
 

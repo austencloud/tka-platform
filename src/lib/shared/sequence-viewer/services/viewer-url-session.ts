@@ -5,6 +5,7 @@
  * is always a complete snapshot.
  * Spec: docs/superpowers/specs/2026-08-30-viewer-url-addressable-state-design.md
  */
+import { getContext, setContext } from "svelte";
 import {
   decodeViewerStateParams,
   encodeViewerStateParams,
@@ -97,4 +98,26 @@ export function createViewerUrlSession(
     ownedParams,
     dispose,
   };
+}
+
+const VIEWER_URL_SESSION_KEY = Symbol("viewer-url-session");
+
+/**
+ * Publish the session to viewer-internal hosts. Slices whose store is
+ * constructed per PANE rather than at orchestrator scope (`t3`, whose scene
+ * feature state lives inside `Viewer3DCanvas`) register their capture through
+ * this instead of being reached from the orchestrator. Set once, by the
+ * orchestrator that owns the session.
+ */
+export function setViewerUrlSessionContext(session: ViewerUrlSession): void {
+  setContext(VIEWER_URL_SESSION_KEY, session);
+}
+
+/**
+ * The session, or `undefined` outside a sequence viewer. Shared 3D components
+ * mount under half a dozen other hosts (saved-scene tiles, the composer demo,
+ * test routes); there is no session there and registration is a no-op.
+ */
+export function tryGetViewerUrlSessionContext(): ViewerUrlSession | undefined {
+  return getContext<ViewerUrlSession | undefined>(VIEWER_URL_SESSION_KEY);
 }

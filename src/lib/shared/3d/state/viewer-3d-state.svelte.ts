@@ -483,6 +483,26 @@ export interface Viewer3DStateOptions {
    * being ambushed by a stale saved prop. A preset-sourced open ignores it.
    */
   appDefaultProp?: string | null;
+  /**
+   * View-only environment, from a shared viewer link (`t3` URL slice). It wins
+   * over the persisted key AND suppresses this instance's environment writes,
+   * so the sender's scene renders without ever reaching the recipient's disk —
+   * the same `initial` + `persist:false` shape `createEffectsConfigState` uses.
+   *
+   * Deliberately NOT expressed by passing a `Viewer3DStateSeed`: a seed marks
+   * the whole instance as a self-contained PREVIEW (it stops persisting camera,
+   * planes, performers and prop, forces verbatim performer restore, and makes
+   * `seededBackgroundType` non-null, which `Viewer3DCamera` reads to pick a
+   * preview-specific distance for Blossom). A link override is a real viewer,
+   * so it narrows the override to the one field the slice actually encodes.
+   */
+  viewOnlyEnvironmentId?: SceneEnvironmentId;
+  /**
+   * View-only scene-feature toggles from the same link. Read by
+   * `Viewer3DCanvas`, which builds an ISOLATED feature state from them — the
+   * shared `tka-scene-features` key is then ignored in both directions.
+   */
+  viewOnlySceneFeatures?: Record<string, boolean>;
 }
 
 function buildViewer3DState(
@@ -520,7 +540,14 @@ function buildViewer3DState(
     persistent && options.appDefaultProp !== undefined
       ? consumeViewer3DPresetIntent()
       : true;
-  const seededEnvironment = seed?.environmentId ?? seed?.backgroundType;
+  const seededEnvironment =
+    seed?.environmentId ?? seed?.backgroundType ?? options.viewOnlyEnvironmentId;
+  /**
+   * A link override reads its environment from the URL and writes none back.
+   * `loadPersistedEnvironment` is skipped entirely, which also skips its
+   * first-use migration write — the recipient's key stays exactly as it was.
+   */
+  const environmentIsViewOnly = options.viewOnlyEnvironmentId !== undefined;
   let environmentId = $state<SceneEnvironmentId>(
     seededEnvironment !== undefined
       ? normalizeSceneEnvironmentId(seededEnvironment)
@@ -538,7 +565,8 @@ function buildViewer3DState(
   const persistActiveFormation = persistent ? WRITERS.activeFormation : noop;
   const persistSelectedIndex = persistent ? WRITERS.selectedIndex : noop;
   const persistEffectToggles = persistent ? WRITERS.effectToggles : noop;
-  const persistSceneEnvironment = persistent ? persistEnvironment : noop;
+  const persistSceneEnvironment =
+    persistent && !environmentIsViewOnly ? persistEnvironment : noop;
   /** The four keys written inline rather than through a `persist*` helper. */
   const writeKey = (key: string, value: string) => {
     if (!persistent) return;
@@ -1770,6 +1798,14 @@ function buildViewer3DState(
     /** Scene-feature toggles this viewer owns; `null` = use the shared key. */
     get seededSceneFeatures(): Record<string, boolean> | null {
       return seed?.sceneFeatures ?? null;
+    },
+    /**
+     * Scene-feature toggles a shared link imposed on this viewer; `null` = use
+     * the shared key. Same effect as `seededSceneFeatures` on the canvas, but
+     * available to a real (non-preview) viewer.
+     */
+    get viewOnlySceneFeatures(): Record<string, boolean> | null {
+      return options.viewOnlySceneFeatures ?? null;
     },
     setOceanVariant(v: OceanVariant) {
       oceanVariant = v;
