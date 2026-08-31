@@ -397,8 +397,13 @@
           depth: stageDimensions.depth,
         }),
         onHintDismissed: () => {
-          localStorage.setItem("tka-performer-direct-manipulation-hint", "dismissed");
-          window.dispatchEvent(new CustomEvent("tka-performer-interaction-hint-dismissed"));
+          localStorage.setItem(
+            "tka-performer-direct-manipulation-hint",
+            "dismissed"
+          );
+          window.dispatchEvent(
+            new CustomEvent("tka-performer-interaction-hint-dismissed")
+          );
         },
       });
       detachPerformerInteraction = performerInteraction.attach();
@@ -848,6 +853,7 @@
             index={i}
             selected={viewer3DState.selectedPerformerIndex === i}
             allMode={viewer3DState.selectedPerformerIndex === null}
+            registerPickTarget={performerInteraction?.registerPickTarget}
           />
         </T.Group>
       {/if}

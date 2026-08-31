@@ -17,6 +17,8 @@
   import SceneControlInspector from "./SceneControlInspector.svelte";
   import SceneControlRail from "./SceneControlRail.svelte";
   import type { PerformerEditSink } from "./performer-hub-types";
+  import { onMount } from "svelte";
+  import { flyFade } from "$lib/shared/transitions/motion";
 
   interface Props {
     bpm?: number;
@@ -91,7 +93,34 @@
   let activeTool = $state<SceneControlTool | null>(null);
   let panelEl = $state<HTMLElement | null>(null);
   let saveSceneOpen = $state(false);
+  let showInteractionHint = $state(false);
+  let interactionAnnouncement = $state("");
   const viewer = getViewer3DContext();
+
+  onMount(() => {
+    showInteractionHint =
+      localStorage.getItem("tka-performer-direct-manipulation-hint") !==
+      "dismissed";
+    const dismissHint = () => (showInteractionHint = false);
+    const announce = (event: Event) => {
+      interactionAnnouncement = (event as CustomEvent<string>).detail;
+    };
+    window.addEventListener(
+      "tka-performer-interaction-hint-dismissed",
+      dismissHint
+    );
+    window.addEventListener("tka-performer-interaction-announcement", announce);
+    return () => {
+      window.removeEventListener(
+        "tka-performer-interaction-hint-dismissed",
+        dismissHint
+      );
+      window.removeEventListener(
+        "tka-performer-interaction-announcement",
+        announce
+      );
+    };
+  });
 
   function openSaveScene(): void {
     activeTool = null;
@@ -224,6 +253,11 @@
         {onSettingChange}
         onScopeSelect={() => (activeTool = "performer")}
       />
+      {#if showInteractionHint}
+        <p class="interaction-hint" transition:flyFade>
+          Click a performer to select · drag to move
+        </p>
+      {/if}
     </div>
 
     <SceneControlRail
@@ -254,6 +288,8 @@
     {/if}
   {/if}
 </div>
+
+<div class="sr-only" aria-live="polite">{interactionAnnouncement}</div>
 
 {#if allowSaveScene}
   <SaveSceneModal
@@ -300,6 +336,32 @@
     background: var(--theme-panel-bg, #0c0e16);
     box-shadow: var(--theme-panel-shadow, 0 1.25rem 4rem rgba(0, 0, 0, 0.62));
     pointer-events: auto;
+  }
+
+  .interaction-hint {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    width: max-content;
+    max-width: min(22rem, 80vw);
+    margin: 0;
+    padding: 0.45rem 0.7rem;
+    border-radius: 0.65rem;
+    background: var(--theme-panel-bg, #0c0e16);
+    color: var(--theme-text, #fff);
+    box-shadow: var(--theme-panel-shadow, 0 1rem 3rem rgba(0, 0, 0, 0.5));
+    font-size: var(--font-size-compact, 0.75rem);
+    line-height: 1.35;
+    pointer-events: none;
+  }
+
+  .sr-only {
+    position: fixed;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .performer-bar-anchor > :global(*) {
