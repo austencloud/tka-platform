@@ -5,7 +5,7 @@ import {
 } from "$lib/shared/3d/collision/upper-body-stance-planner";
 
 describe("planUpperBodyStanceYaw", () => {
-  it("turns the shoulders toward two east-side targets", () => {
+  it("mirrors audience-grid east into performer-facing yaw", () => {
     const targets = {
       blue: { x: 0.48, z: 0.3 },
       red: { x: 0.44, z: 0.3 },
@@ -13,19 +13,19 @@ describe("planUpperBodyStanceYaw", () => {
     const yaw = planUpperBodyStanceYaw(targets);
     const plan = planUpperBodyStance(targets);
 
-    expect(yaw).toBeGreaterThan((45 * Math.PI) / 180);
-    expect(yaw).toBeLessThanOrEqual((75 * Math.PI) / 180);
+    expect(yaw).toBeLessThan((-45 * Math.PI) / 180);
+    expect(yaw).toBeGreaterThanOrEqual((-75 * Math.PI) / 180);
     expect(plan.pitchRad).toBe(0);
   });
 
-  it("turns the opposite direction for two west-side targets", () => {
+  it("mirrors audience-grid west into performer-facing yaw", () => {
     const yaw = planUpperBodyStanceYaw({
       blue: { x: -0.48, z: 0.3 },
       red: { x: -0.44, z: 0.3 },
     });
 
-    expect(yaw).toBeLessThan((-45 * Math.PI) / 180);
-    expect(yaw).toBeGreaterThanOrEqual((-75 * Math.PI) / 180);
+    expect(yaw).toBeGreaterThan((45 * Math.PI) / 180);
+    expect(yaw).toBeLessThanOrEqual((75 * Math.PI) / 180);
   });
 
   it("stays square for opposed targets", () => {

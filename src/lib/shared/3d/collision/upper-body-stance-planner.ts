@@ -28,11 +28,13 @@ function smoothstep01(value: number): number {
 }
 
 /**
- * Aim the shoulder line toward a coherent same-side pair of hand targets.
+ * Turn a coherent same-side pair of targets into the body's forward reach
+ * corridor.
  *
- * Split targets intentionally cancel: when one hand is east and the other is
- * west, the avatar should stay square. When both gather on the same side, the
- * body shares the reach instead of forcing both arms across the neck.
+ * Prop X is expressed in the audience-facing grid frame, while positive avatar
+ * yaw is performer-facing. Those lateral frames are mirrored, so the stance
+ * turn must use the opposite sign. Split targets intentionally cancel: when one
+ * hand is east and the other is west, the avatar should stay square.
  */
 export function planUpperBodyStance(
   targets: UpperBodyStanceTargets
@@ -60,7 +62,7 @@ export function planUpperBodyStance(
   }
 
   const desiredYaw = Math.atan2(
-    meanX,
+    -meanX,
     Math.max(MIN_FORWARD_REFERENCE_M, meanZ)
   );
   const assistance = smoothstep01(coherence) * lateralWeight;
