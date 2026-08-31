@@ -181,8 +181,14 @@ describe("dev launcher install guard", () => {
 
   it("places local-ingress flags before the tunnel run subcommand", () => {
     expect(launcher).toMatch(
-      /"tunnel",\s*"--url",\s*"https:\/\/localhost:5173",\s*"--no-tls-verify",\s*`?\s*\n?\s*"run",\s*"--token"/
+      /"tunnel",\s*"--protocol",\s*"http2",\s*"--url",\s*"https:\/\/localhost:5173",\s*"--no-tls-verify",\s*`?\s*\n?\s*"run",\s*"--token"/
     );
+  });
+
+  it("pins both tunnel credential modes to the verified HTTP/2 transport", () => {
+    const protocolSelections = launcher.match(/"--protocol",\s*"http2"/g);
+
+    expect(protocolSelections).toHaveLength(2);
   });
 
   it("refuses to launch a competing Windows tunnel service", () => {
