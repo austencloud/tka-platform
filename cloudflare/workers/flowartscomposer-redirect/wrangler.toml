@@ -1,0 +1,12 @@
+name = "flowartscomposer-redirect"
+main = "worker.js"
+compatibility_date = "2026-08-31"
+workers_dev = false
+
+routes = [
+  { pattern = "flowartscomposer.com/*", zone_name = "flowartscomposer.com" },
+  { pattern = "www.flowartscomposer.com/*", zone_name = "flowartscomposer.com" }
+]
+
+[observability]
+enabled = true

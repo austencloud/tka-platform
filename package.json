@@ -129,6 +129,8 @@
     "export:deck-bundle": "node scripts/export-deck-bundle.cjs",
     "r2:cors:list": "wrangler r2 bucket cors list tka-assets",
     "r2:cors:apply": "wrangler r2 bucket cors set tka-assets --file firebase-functions/r2-cors.json -y",
+    "legacy-redirect:deploy": "npx wrangler@4.125.0 deploy --cwd cloudflare/workers/flowartscomposer-redirect --config wrangler.toml",
+    "legacy-redirect:dry-run": "npx wrangler@4.125.0 deploy --dry-run --cwd cloudflare/workers/flowartscomposer-redirect --config wrangler.toml",
     "posthog-relay:deploy": "npx wrangler@4.125.0 deploy --cwd cloudflare/workers/posthog-relay --config wrangler.toml",
     "posthog-relay:dry-run": "npx wrangler@4.125.0 deploy --dry-run --cwd cloudflare/workers/posthog-relay --config wrangler.toml",
     "storage:cors:list": "node scripts/apply-storage-cors.cjs --list",
