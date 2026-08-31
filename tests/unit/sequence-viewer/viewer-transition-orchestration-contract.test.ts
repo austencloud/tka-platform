@@ -161,6 +161,16 @@ describe("Sequence Viewer transition orchestration contract", () => {
       'side === "left" && is2DMounted ? "streaming" : "gated"'
     );
     expect(motionSurface).toContain("Preparing 3D");
+    expect(motionSurface).toContain(
+      "class:canvas-2d-preparation-held={preparationCanvasWidth !== null}"
+    );
+    expect(motionSurface).toContain(
+      "data-3d-preparation-held={preparationCanvasWidth !== null || undefined}"
+    );
+    expect(splitPaneCss).toContain(
+      ".canvas-2d-layer.canvas-2d-preparation-held"
+    );
+    expect(splitPaneCss).toContain("width: var(--preparation-canvas-width)");
     expect(motionSurface).toContain("data-scene-ready={scene3DReady}");
     expect(motionSurface).toContain("inert={!is3DActive}");
     expect(motionSurface).toContain("inert={!isAnimatorActive}");

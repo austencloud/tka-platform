@@ -360,6 +360,13 @@
       mandalaDisplaySize,
       mandalaRasterScale:
         mandalaBackingSize > 0 ? mandalaDisplaySize / mandalaBackingSize : 0,
+      mandalaDisplayWidth: mandalaBounds?.width ?? 0,
+      mandalaDisplayHeight: mandalaBounds?.height ?? 0,
+      mandalaMaximumRasterScale:
+        mandalaBackingSize > 0 && mandalaBounds
+          ? Math.max(mandalaBounds.width, mandalaBounds.height) /
+            mandalaBackingSize
+          : 0,
       cardSize: elementSize('[data-panel-id="preview"]', direction),
       cardFlexGrow: elementFlexGrow('[data-panel-id="preview"]'),
       cardHidden: elementDataFlag(".split-column.preview-column", "hidden"),
@@ -432,6 +439,9 @@
       ),
       motion3DPreparing: Boolean(
         document.querySelector(".viewer-3d-handoff-status")
+      ),
+      motion2DPreparationHeld: Boolean(
+        document.querySelector('[data-3d-preparation-held="true"]')
       ),
       sceneCurtainVisible: Boolean(
         document.querySelector(
