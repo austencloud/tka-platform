@@ -85,7 +85,7 @@
     "clean:all": "rimraf build .svelte-kit node_modules",
     "analyze:dead-code": "ts-prune --project tsconfig.json > ts-prune-full-report.txt",
     "analyze:dead-code:quick": "ts-prune --project tsconfig.json | grep -v '(used in module)' | grep 'src\\\\lib\\\\modules' | wc -l",
-    "postinstall": "svelte-kit sync",
+    "postinstall": "node scripts/svelte-kit-sync-if-needed.mjs",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "release:setup": "node scripts/setup-release-workflow.js",

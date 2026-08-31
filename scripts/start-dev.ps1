@@ -190,6 +190,38 @@ function Repair-WorkspaceInstall($RepoRoot) {
     Write-Status "Dependency repair verified - Vite will rebuild its dependency cache once."
 }
 
+# SvelteKit's generated route proxies are shared mutable state. A route-tree
+# update can leave the root proxy absent if generation is interrupted, and Vite
+# then serves a sticky 500 even though its process is still alive. Run the
+# existing guarded generator only while Vite is stopped so startup never inherits
+# that broken state.
+function Repair-SvelteKitGeneratedState($RepoRoot) {
+    Write-Status "Verifying SvelteKit generated route state before Vite starts."
+    $syncExit = Invoke-RepoCommand $RepoRoot "node scripts/svelte-kit-sync-if-needed.mjs"
+    if ($syncExit -ne 0) {
+        throw "SvelteKit generated route repair failed. Vite was not started with missing route proxies."
+    }
+}
+
+# Read the response only after the cheap status-only origin probe fails. This
+# distinguishes the known generated-proxy race from a real source-code error;
+# only the former earns an immediate full-stack recycle.
+function Test-SvelteKitGeneratedStateError {
+    param(
+        [string]$Url,
+        [bool]$SkipCertificateCheck = $false,
+        [int]$TimeoutSec = 8
+    )
+
+    $curlArguments = @("-g", "-s", "--max-time", $TimeoutSec)
+    if ($SkipCertificateCheck) { $curlArguments += "-k" }
+    $curlArguments += $Url
+
+    $response = (& curl.exe @curlArguments 2>$null) -join "`n"
+    return $response -match "ENOENT: no such file or directory" -and
+        $response -match "\.svelte-kit[\\\\/]types[\\\\/]src[\\\\/]routes[\\\\/]proxy\+layout\.server\.ts"
+}
+
 function Ensure-DevHttpsCertificate($RepoRoot) {
     $certificateDirectory = Join-Path $RepoRoot ".cert"
     $certificatePath = Join-Path $certificateDirectory "dev-cert.pem"
@@ -308,6 +340,7 @@ if (-not (Test-WorkspaceInstall $repoRoot)) {
     Stop-Pm2App
     Clear-Port5173
 }
+Repair-SvelteKitGeneratedState $repoRoot
 Write-Status "Starting Vite dev server..."
 Write-Line ""
 $viteProc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "pnpm run dev" `
@@ -371,6 +404,9 @@ try {
                 $originFailureCount += 1
                 $publicFailureCount = 0
                 Write-Status "Local Vite origin probe failed ($originFailureCount/3)."
+                if (Test-SvelteKitGeneratedStateError $originUrl $true) {
+                    throw "SvelteKit's generated root route proxy is unavailable. Exiting so pm2 can repair the generated state and restart the dev stack."
+                }
                 if ($originFailureCount -ge 3) {
                     throw "Local Vite origin remained unavailable across three probes. Exiting so pm2 can restart the complete dev stack."
                 }
