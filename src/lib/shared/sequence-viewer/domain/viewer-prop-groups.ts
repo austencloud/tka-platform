@@ -26,6 +26,7 @@ export interface ImageCompositionProps {
   showDifficulty: boolean;
   showStartPos: boolean;
   showNotes: boolean;
+  customNotesText: string;
   showQRCode: boolean;
   showMandala?: boolean;
   showLoopGlyph?: boolean;
