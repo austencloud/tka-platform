@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   normalizeLegacyHandSide,
+  normalizeLegacySequence,
   normalizeLegacyStep,
   normalizeLegacySteps,
 } from "../src/legacy-hand-identity.js";
@@ -47,5 +48,40 @@ describe("legacy hand identity normalization", () => {
 
     expect(normalized[0]?.motions.left.hand).toBe("left");
     expect(source[0]?.motions.blue.color).toBe("blue");
+  });
+
+  it("normalizes persisted sequence composition and prop intent", () => {
+    const source = {
+      blueSoloProp: { id: "blue-solo" },
+      redSoloProp: { id: "red-solo" },
+      bluePathHash: "blue-path",
+      redPathHash: "red-path",
+      blueSoloHash: "blue-solo-hash",
+      redSoloHash: "red-solo-hash",
+      stepPairings: [{ blueReversal: true, redReversal: false }],
+      intendedProp: { bluePropType: "staff", redPropType: "fan" },
+      creatorIntent: {
+        propConfig: { bluePropType: "club", redPropType: "poi" },
+      },
+    };
+
+    const normalized = normalizeLegacySequence(source) as Record<string, any>;
+
+    expect(normalized).toMatchObject({
+      leftSoloProp: { id: "blue-solo" },
+      rightSoloProp: { id: "red-solo" },
+      leftPathHash: "blue-path",
+      rightPathHash: "red-path",
+      leftSoloHash: "blue-solo-hash",
+      rightSoloHash: "red-solo-hash",
+      stepPairings: [{ leftReversal: true, rightReversal: false }],
+      intendedProp: { leftPropType: "staff", rightPropType: "fan" },
+      creatorIntent: {
+        propConfig: { leftPropType: "club", rightPropType: "poi" },
+      },
+    });
+    expect(normalized).not.toHaveProperty("blueSoloProp");
+    expect(normalized).not.toHaveProperty("redSoloProp");
+    expect(source.blueSoloProp.id).toBe("blue-solo");
   });
 });
