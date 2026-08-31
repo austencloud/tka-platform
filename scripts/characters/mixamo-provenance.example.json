@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "replace-with-character-id",
+  "displayName": "Replace with character name",
+  "description": "Short picker description",
+  "source": {
+    "provider": "Adobe Mixamo",
+    "assetName": "Exact Mixamo character name",
+    "assetId": "Record an asset id when Adobe exposes one",
+    "creator": "Adobe Mixamo",
+    "url": "https://www.mixamo.com/"
+  },
+  "license": {
+    "name": "Adobe Mixamo terms",
+    "url": "https://helpx.adobe.com/creative-cloud/faq/mixamo-faq.html"
+  },
+  "rights": {
+    "commercialUse": "unknown",
+    "applicationRuntimeDistribution": "unknown",
+    "rawSourceRedistribution": "forbidden",
+    "attributionRequired": false,
+    "restrictions": [
+      "Replace unknown decisions only after reviewing the current Adobe terms.",
+      "Do not offer the source FBX or prepared GLB as a standalone download."
+    ]
+  },
+  "evidence": [
+    {
+      "url": "https://helpx.adobe.com/creative-cloud/faq/mixamo-faq.html",
+      "retrievedAt": "2026-08-31",
+      "note": "Replace with the exact rights conclusion used for this intake."
+    }
+  ],
+  "acquiredAt": "2026-08-31T00:00:00.000Z"
+}

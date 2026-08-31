@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseCandidateId, parseStressPoseId } from "./avatar-bakeoff-data";
+import {
+  formatMegabytes,
+  parseCandidateId,
+  parseStressPoseId,
+} from "./avatar-bakeoff-data";
 
 describe("avatar bake-off query parsing", () => {
   it("accepts known candidates and falls back from stale links", () => {
@@ -11,11 +15,16 @@ describe("avatar bake-off query parsing", () => {
       "human-generator-parity"
     );
     expect(parseCandidateId("personal-metaperson")).toBe("personal-metaperson");
+    expect(parseCandidateId("intake-current")).toBe("intake-current");
     expect(parseCandidateId("missing-vendor")).toBe("current-optimized");
   });
 
   it("accepts known stress poses and defaults to the hardest comparison", () => {
     expect(parseStressPoseId("overhead")).toBe("overhead");
     expect(parseStressPoseId(null)).toBe("cross-body");
+  });
+
+  it("labels the variable local intake without inventing a file size", () => {
+    expect(formatMegabytes(null)).toBe("local staged file");
   });
 });

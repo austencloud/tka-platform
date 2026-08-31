@@ -1,0 +1,76 @@
+import { execFileSync } from "node:child_process";
+import { createRequire } from "node:module";
+import { existsSync, mkdirSync, rmSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+
+const require = createRequire(import.meta.url);
+const cliModule = require.resolve("@gltf-transform/cli");
+const cliEntry = resolve(dirname(cliModule), "../bin/cli.js");
+
+export function buildCharacterOptimizationSteps(
+  input,
+  output,
+  temporaryDirectory
+) {
+  const source = resolve(input);
+  const destination = resolve(output);
+  const temporary = resolve(temporaryDirectory);
+  const resized = resolve(temporary, "01-resized.glb");
+  const webp = resolve(temporary, "02-webp.glb");
+  const resampled = resolve(temporary, "03-resampled.glb");
+  const pruned = resolve(temporary, "04-pruned.glb");
+
+  return [
+    ["resize", source, resized, "--width", "1024", "--height", "1024"],
+    ["webp", resized, webp, "--quality", "85"],
+    ["resample", webp, resampled],
+    ["prune", resampled, pruned],
+    ["dedup", pruned, destination],
+  ];
+}
+
+/**
+ * Run the character-safe optimization sequence used by the deployed catalog.
+ *
+ * Weld, simplify, join, Draco, and meshopt are intentionally absent. The first
+ * three can alter a skinned character and the latter two need decoders that the
+ * character loader does not install.
+ */
+export function optimizeCharacterGlb({
+  input,
+  output,
+  temporaryDirectory,
+  onStep = () => {},
+}) {
+  const source = resolve(input);
+  const destination = resolve(output);
+  const temporary = resolve(temporaryDirectory);
+
+  if (!existsSync(source)) {
+    throw new Error(`Character source GLB does not exist: ${source}`);
+  }
+  if (source === destination) {
+    throw new Error(
+      "Character optimizer input and output must be different files"
+    );
+  }
+
+  mkdirSync(dirname(destination), { recursive: true });
+  rmSync(temporary, { recursive: true, force: true });
+  mkdirSync(temporary, { recursive: true });
+
+  const steps = buildCharacterOptimizationSteps(source, destination, temporary);
+
+  try {
+    for (const args of steps) {
+      onStep(args[0]);
+      execFileSync(process.execPath, [cliEntry, ...args], {
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+    }
+  } finally {
+    rmSync(temporary, { recursive: true, force: true });
+  }
+
+  return destination;
+}
