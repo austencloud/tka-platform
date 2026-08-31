@@ -5,7 +5,7 @@
  * state (position + blue/red orientation) must equal the next row's START state.
  * Mirrors the comparators in
  * `create/spell/services/orientation-continuity-validator.ts` and
- * `3d/state/avatar-instance-state.svelte.ts`.
+ * `3d/state/character-instance-state.svelte.ts`.
  */
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";

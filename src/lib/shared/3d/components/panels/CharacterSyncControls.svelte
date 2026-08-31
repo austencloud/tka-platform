@@ -1,16 +1,16 @@
 <script lang="ts">
   /**
-   * AvatarSyncControls - UI for avatar synchronization settings
+   * CharacterSyncControls - UI for character synchronization settings
    *
    * Provides toggle for sync mode and beat offset stepper.
    * Compact design for side panel placement.
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import type { AvatarSyncState } from "../../state/avatar-sync-state.svelte";
+  import type { CharacterSyncState } from "../../state/character-sync-state.svelte";
 
   interface Props {
-    syncState: AvatarSyncState;
+    syncState: CharacterSyncState;
   }
 
   let { syncState }: Props = $props();
@@ -27,10 +27,12 @@
     class:active={syncState.isSyncEnabled}
     onclick={() => syncState.toggleSync()}
     aria-pressed={syncState.isSyncEnabled}
-    aria-label={syncState.isSyncEnabled ? "Disable avatar sync" : "Enable avatar sync"}
+    aria-label={syncState.isSyncEnabled
+      ? "Disable character sync"
+      : "Enable character sync"}
   >
     <i class="fas fa-link" aria-hidden="true"></i>
-    <span>{t('avatar_sync')}</span>
+    <span>{t("character_sync")}</span>
   </button>
 
   <!-- Expanded controls when sync is enabled -->
@@ -38,7 +40,7 @@
     <div class="sync-details">
       <!-- Beat offset stepper -->
       <div class="offset-control">
-        <span class="offset-label">{t('avatar_beat_offset')}</span>
+        <span class="offset-label">{t("character_beat_offset")}</span>
         <div class="stepper">
           <button
             class="stepper-btn"
@@ -68,23 +70,27 @@
       <!-- Beat display -->
       <div class="beat-display">
         <div class="beat-indicator">
-          <span class="beat-label">{t('avatar_master')}</span>
-          <span class="beat-value">{syncState.master.currentStepIndex + 1}</span
+          <span class="beat-label">{t("character_leader")}</span>
+          <span class="beat-value">{syncState.leader.currentStepIndex + 1}</span
           >
         </div>
         <i class="fas fa-arrow-right connector" aria-hidden="true"></i>
         <div class="beat-indicator">
-          <span class="beat-label">{t('avatar_follower')}</span>
+          <span class="beat-label">{t("character_follower")}</span>
           <span class="beat-value"
             >{syncState.follower.currentStepIndex + 1}</span
           >
         </div>
       </div>
 
-      <!-- Swap master button -->
-      <button class="swap-btn" onclick={() => syncState.swapMaster()} aria-label="Swap master avatar">
+      <!-- Swap leader button -->
+      <button
+        class="swap-btn"
+        onclick={() => syncState.swapLeader()}
+        aria-label="Swap leader character"
+      >
         <i class="fas fa-exchange-alt" aria-hidden="true"></i>
-        <span>{t('avatar_swap_master')}</span>
+        <span>{t("character_swap_leader")}</span>
       </button>
     </div>
   {/if}
@@ -114,7 +120,10 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-sm, 14px);
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition:
+      background var(--transition-fast),
+      border-color var(--transition-fast),
+      color var(--transition-fast);
   }
 
   .sync-toggle:hover {
@@ -167,7 +176,10 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-size: 0.75rem;
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition:
+      background var(--transition-fast),
+      color var(--transition-fast),
+      opacity var(--transition-fast);
   }
 
   .stepper-btn:hover:not(:disabled) {
@@ -242,7 +254,10 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition:
+      background var(--transition-fast),
+      border-color var(--transition-fast),
+      color var(--transition-fast);
   }
 
   .swap-btn:hover {

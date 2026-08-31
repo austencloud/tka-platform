@@ -2,7 +2,7 @@
 
 exports[`film resolution snapshots > "Break the Star" (break) resolves to its frozen spec 1`] = `
 "{
-  "version": 3,
+  "version": 4,
   "id": "break-the-star-r1",
   "title": "Break the Star",
   "brief": "Five performers hold a star facing the audience, then break it: the fans slide out sideways, the back pair walks forward, the tip backs up, and all five land on one line.",
@@ -50,7 +50,7 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
           {
             "id": "lead",
             "name": "Lead",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "capsule_baton",
             "effect": "led",
             "effort": "linear",
@@ -118,7 +118,7 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
           {
             "id": "fan-left",
             "name": "Fan left",
-            "avatarId": "ch07",
+            "characterId": "ch07",
             "prop": "fan",
             "effect": "silk",
             "effort": "glide",
@@ -181,7 +181,7 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
           {
             "id": "fan-right",
             "name": "Fan right",
-            "avatarId": "ch22",
+            "characterId": "ch22",
             "prop": "fan",
             "effect": "silk",
             "effort": "glide",
@@ -244,7 +244,7 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
           {
             "id": "back-left",
             "name": "Buugeng left",
-            "avatarId": "ch10",
+            "characterId": "ch10",
             "prop": "buugeng",
             "effect": "bubbles",
             "effort": "linear",
@@ -307,7 +307,7 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
           {
             "id": "back-right",
             "name": "Buugeng right",
-            "avatarId": "ch24",
+            "characterId": "ch24",
             "prop": "buugeng",
             "effect": "bubbles",
             "effort": "linear",
@@ -555,7 +555,7 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
 
 exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its frozen spec 1`] = `
 "{
-  "version": 3,
+  "version": 4,
   "id": "chance-suite-r1",
   "title": "Chance Suite",
   "brief": "A film the seed writes: environment, formation, prop, effect, effort, and both hand planes are all drawn from pools. Rerolling means bumping one integer in the seed block, and the opening and closing scenes share directives but land on different rolls.",
@@ -603,7 +603,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-1",
             "name": "Performer 1",
-            "avatarId": "ch41",
+            "characterId": "ch41",
             "prop": "sword",
             "effect": "silk",
             "effort": "elastic",
@@ -646,7 +646,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-2",
             "name": "Performer 2",
-            "avatarId": "ch44",
+            "characterId": "ch44",
             "prop": "club",
             "effect": "smoke",
             "effort": "bounce",
@@ -689,7 +689,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-3",
             "name": "Performer 3",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "club",
             "effect": "petals",
             "effort": "dab",
@@ -732,7 +732,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-4",
             "name": "Performer 4",
-            "avatarId": "ch12",
+            "characterId": "ch12",
             "prop": "club",
             "effect": "ghost",
             "effort": "press",
@@ -915,7 +915,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-1",
             "name": "Performer 1",
-            "avatarId": "ch41",
+            "characterId": "ch41",
             "prop": "triad",
             "effect": "trails",
             "effort": "linear",
@@ -958,7 +958,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-2",
             "name": "Performer 2",
-            "avatarId": "x-bot",
+            "characterId": "x-bot",
             "prop": "staff",
             "effect": "smoke",
             "effort": "punch",
@@ -1001,7 +1001,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-3",
             "name": "Performer 3",
-            "avatarId": "ch42",
+            "characterId": "ch42",
             "prop": "club",
             "effect": "ink",
             "effort": "dab",
@@ -1044,7 +1044,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-4",
             "name": "Performer 4",
-            "avatarId": "ch21",
+            "characterId": "ch21",
             "prop": "sword",
             "effect": "bubbles",
             "effort": "glide",
@@ -1087,7 +1087,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-5",
             "name": "Performer 5",
-            "avatarId": "ch44",
+            "characterId": "ch44",
             "prop": "fire_double_staff",
             "effect": "zap",
             "effort": "elastic",
@@ -1314,7 +1314,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-1",
             "name": "Performer 1",
-            "avatarId": "ch42",
+            "characterId": "ch42",
             "prop": "club",
             "effect": "trails",
             "effort": "elastic",
@@ -1368,7 +1368,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-2",
             "name": "Performer 2",
-            "avatarId": "ch18",
+            "characterId": "ch18",
             "prop": "club",
             "effect": "led",
             "effort": "press",
@@ -1422,7 +1422,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-3",
             "name": "Performer 3",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "club",
             "effect": "led",
             "effort": "glide",
@@ -1476,7 +1476,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-4",
             "name": "Performer 4",
-            "avatarId": "ch10",
+            "characterId": "ch10",
             "prop": "club",
             "effect": "fire",
             "effort": "elastic",
@@ -1530,7 +1530,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-5",
             "name": "Performer 5",
-            "avatarId": "remy",
+            "characterId": "remy",
             "prop": "club",
             "effect": "fire",
             "effort": "elastic",
@@ -1584,7 +1584,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-6",
             "name": "Performer 6",
-            "avatarId": "personal-metaperson",
+            "characterId": "personal-metaperson",
             "prop": "club",
             "effect": "trails",
             "effort": "press",
@@ -1866,7 +1866,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-1",
             "name": "Performer 1",
-            "avatarId": "ch44",
+            "characterId": "ch44",
             "prop": "sword",
             "effect": "bubbles",
             "effort": "anticipation",
@@ -1909,7 +1909,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-2",
             "name": "Performer 2",
-            "avatarId": "ch34",
+            "characterId": "ch34",
             "prop": "staff",
             "effect": "pulse",
             "effort": "dab",
@@ -1952,7 +1952,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-3",
             "name": "Performer 3",
-            "avatarId": "ch12",
+            "characterId": "ch12",
             "prop": "club",
             "effect": "ink",
             "effort": "bounce",
@@ -1995,7 +1995,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-4",
             "name": "Performer 4",
-            "avatarId": "ch07",
+            "characterId": "ch07",
             "prop": "staff",
             "effect": "petals",
             "effort": "glide",
@@ -2038,7 +2038,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-5",
             "name": "Performer 5",
-            "avatarId": "ch26",
+            "characterId": "ch26",
             "prop": "triad",
             "effect": "zap",
             "effort": "press",
@@ -2081,7 +2081,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-6",
             "name": "Performer 6",
-            "avatarId": "ch21",
+            "characterId": "ch21",
             "prop": "staff",
             "effect": "silk",
             "effort": "elastic",
@@ -2124,7 +2124,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-7",
             "name": "Performer 7",
-            "avatarId": "personal-metaperson",
+            "characterId": "personal-metaperson",
             "prop": "triad",
             "effect": "pulse",
             "effort": "linear",
@@ -2167,7 +2167,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
           {
             "id": "performer-8",
             "name": "Performer 8",
-            "avatarId": "remy",
+            "characterId": "remy",
             "prop": "staff",
             "effect": "pulse",
             "effort": "punch",
@@ -2499,7 +2499,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
 
 exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec 1`] = `
 "{
-  "version": 3,
+  "version": 4,
   "id": "ember-r1",
   "title": "Ember",
   "brief": "A master and an apprentice, and one ten-step figure passed between them: full at level 3 with a turn figure of [1, fl, 0, half], shadowed flat a beat behind, taken alone at level 2, then performed on fire by the student while the teacher marks it in smoke. Every axis is pinned — no directive randomness anywhere.",
@@ -2547,7 +2547,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
           {
             "id": "master",
             "name": "Master",
-            "avatarId": "ch10",
+            "characterId": "ch10",
             "prop": "staff",
             "effect": "charcoal",
             "effort": "glide",
@@ -2755,7 +2755,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
           {
             "id": "master",
             "name": "Master",
-            "avatarId": "ch10",
+            "characterId": "ch10",
             "prop": "staff",
             "effect": "charcoal",
             "effort": "glide",
@@ -2807,7 +2807,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
           {
             "id": "apprentice",
             "name": "Apprentice",
-            "avatarId": "ch34",
+            "characterId": "ch34",
             "prop": "staff",
             "effect": "none",
             "effort": "anticipation",
@@ -3033,7 +3033,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
           {
             "id": "apprentice",
             "name": "Apprentice",
-            "avatarId": "ch34",
+            "characterId": "ch34",
             "prop": "staff",
             "effect": "sparkles",
             "effort": "press",
@@ -3119,7 +3119,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
           {
             "id": "master",
             "name": "Master",
-            "avatarId": "ch10",
+            "characterId": "ch10",
             "prop": "staff",
             "effect": "charcoal",
             "effort": "glide",
@@ -3358,7 +3358,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
           {
             "id": "apprentice",
             "name": "Apprentice",
-            "avatarId": "ch34",
+            "characterId": "ch34",
             "prop": "fire_double_staff",
             "effect": "fire",
             "effort": "glide",
@@ -3410,7 +3410,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
           {
             "id": "master",
             "name": "Master",
-            "avatarId": "ch10",
+            "characterId": "ch10",
             "prop": "staff",
             "effect": "smoke",
             "effort": "glide",
@@ -3581,7 +3581,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
 
 exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen spec 1`] = `
 "{
-  "version": 3,
+  "version": 4,
   "id": "figures-r1",
   "title": "Figures",
   "brief": "Five scenes on what a group writes on the floor: a solo before a seated house, a silhouette that splits in two, two rings turning opposite ways, four performers weaving a figure eight, and a cast that walks into formation on one instruction.",
@@ -3629,7 +3629,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "soloist",
             "name": "Soloist",
-            "avatarId": "ch18",
+            "characterId": "ch18",
             "prop": "staff",
             "effect": "led",
             "effort": "glide",
@@ -3843,7 +3843,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "near",
             "name": "Near",
-            "avatarId": "ch44",
+            "characterId": "ch44",
             "prop": "buugeng",
             "effect": "ghost",
             "effort": "press",
@@ -3888,7 +3888,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "far",
             "name": "Far",
-            "avatarId": "ch12",
+            "characterId": "ch12",
             "prop": "buugeng",
             "effect": "ghost",
             "effort": "press",
@@ -4119,7 +4119,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "wheel-in-a",
             "name": "Inner A",
-            "avatarId": "ch07",
+            "characterId": "ch07",
             "prop": "fan",
             "effect": "silk",
             "effort": "glide",
@@ -4254,7 +4254,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "wheel-in-b",
             "name": "Inner B",
-            "avatarId": "ch18",
+            "characterId": "ch18",
             "prop": "fan",
             "effect": "silk",
             "effort": "glide",
@@ -4389,7 +4389,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "wheel-in-c",
             "name": "Inner C",
-            "avatarId": "ch12",
+            "characterId": "ch12",
             "prop": "fan",
             "effect": "silk",
             "effort": "glide",
@@ -4524,7 +4524,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "wheel-out-a",
             "name": "Outer A",
-            "avatarId": "ch42",
+            "characterId": "ch42",
             "prop": "staff",
             "effect": "trails",
             "effort": "linear",
@@ -4659,7 +4659,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "wheel-out-b",
             "name": "Outer B",
-            "avatarId": "ch41",
+            "characterId": "ch41",
             "prop": "staff",
             "effect": "trails",
             "effort": "linear",
@@ -4794,7 +4794,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "wheel-out-c",
             "name": "Outer C",
-            "avatarId": "ch21",
+            "characterId": "ch21",
             "prop": "staff",
             "effect": "trails",
             "effort": "linear",
@@ -5392,7 +5392,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "hey-1",
             "name": "Hey 1",
-            "avatarId": "ch22",
+            "characterId": "ch22",
             "prop": "staff",
             "effect": "led",
             "effort": "linear",
@@ -5556,7 +5556,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "hey-2",
             "name": "Hey 2",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "staff",
             "effect": "led",
             "effort": "linear",
@@ -5720,7 +5720,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "hey-3",
             "name": "Hey 3",
-            "avatarId": "ch44",
+            "characterId": "ch44",
             "prop": "staff",
             "effect": "led",
             "effort": "linear",
@@ -5883,7 +5883,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "hey-4",
             "name": "Hey 4",
-            "avatarId": "ch24",
+            "characterId": "ch24",
             "prop": "staff",
             "effect": "led",
             "effort": "linear",
@@ -6412,7 +6412,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "performer-1",
             "name": "Point",
-            "avatarId": "ch22",
+            "characterId": "ch22",
             "prop": "staff",
             "effect": "bloom",
             "effort": "glide",
@@ -6467,7 +6467,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "performer-2",
             "name": "Left wing",
-            "avatarId": "ch34",
+            "characterId": "ch34",
             "prop": "fan",
             "effect": "silk",
             "effort": "glide",
@@ -6522,7 +6522,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "performer-3",
             "name": "Right wing",
-            "avatarId": "ch10",
+            "characterId": "ch10",
             "prop": "fan",
             "effect": "silk",
             "effort": "glide",
@@ -6577,7 +6577,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "performer-4",
             "name": "Left mid",
-            "avatarId": "ch18",
+            "characterId": "ch18",
             "prop": "staff",
             "effect": "trails",
             "effort": "glide",
@@ -6632,7 +6632,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "performer-5",
             "name": "Right mid",
-            "avatarId": "ch07",
+            "characterId": "ch07",
             "prop": "staff",
             "effect": "trails",
             "effort": "glide",
@@ -6687,7 +6687,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "performer-6",
             "name": "Left back",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "buugeng",
             "effect": "trails",
             "effort": "glide",
@@ -6742,7 +6742,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "performer-7",
             "name": "Right back",
-            "avatarId": "ch41",
+            "characterId": "ch41",
             "prop": "buugeng",
             "effect": "trails",
             "effort": "glide",
@@ -6797,7 +6797,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           {
             "id": "performer-8",
             "name": "Tail",
-            "avatarId": "ch24",
+            "characterId": "ch24",
             "prop": "club",
             "effect": "silk",
             "effort": "glide",
@@ -7081,7 +7081,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
 
 exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its frozen spec 1`] = `
 "{
-  "version": 3,
+  "version": 4,
   "id": "nine-planes-r1",
   "title": "Nine Planes",
   "brief": "Four scenes that put the plane grammar on camera: a whole-cast wheel circle, a distinct-plane draw where no two performers match, a mid-phrase scramble driven by per-step overrides, and a split shield wall with its grids dictated visible.",
@@ -7131,7 +7131,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-1",
             "name": "Performer 1",
-            "avatarId": "ch07",
+            "characterId": "ch07",
             "prop": "staff",
             "effect": "trails",
             "effort": "glide",
@@ -7174,7 +7174,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-2",
             "name": "Performer 2",
-            "avatarId": "ch41",
+            "characterId": "ch41",
             "prop": "staff",
             "effect": "trails",
             "effort": "glide",
@@ -7217,7 +7217,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-3",
             "name": "Performer 3",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "staff",
             "effect": "trails",
             "effort": "glide",
@@ -7260,7 +7260,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-4",
             "name": "Performer 4",
-            "avatarId": "ch26",
+            "characterId": "ch26",
             "prop": "staff",
             "effect": "trails",
             "effort": "glide",
@@ -7303,7 +7303,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-5",
             "name": "Performer 5",
-            "avatarId": "y-bot",
+            "characterId": "y-bot",
             "prop": "staff",
             "effect": "trails",
             "effort": "glide",
@@ -7346,7 +7346,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-6",
             "name": "Performer 6",
-            "avatarId": "ch34",
+            "characterId": "ch34",
             "prop": "staff",
             "effect": "trails",
             "effort": "glide",
@@ -7389,7 +7389,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-7",
             "name": "Performer 7",
-            "avatarId": "ch12",
+            "characterId": "ch12",
             "prop": "staff",
             "effect": "trails",
             "effort": "glide",
@@ -7432,7 +7432,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-8",
             "name": "Performer 8",
-            "avatarId": "ch44",
+            "characterId": "ch44",
             "prop": "staff",
             "effect": "trails",
             "effort": "glide",
@@ -7697,7 +7697,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-1",
             "name": "Performer 1",
-            "avatarId": "ch24",
+            "characterId": "ch24",
             "prop": "club",
             "effect": "led",
             "effort": "press",
@@ -7740,7 +7740,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-2",
             "name": "Performer 2",
-            "avatarId": "ch41",
+            "characterId": "ch41",
             "prop": "club",
             "effect": "led",
             "effort": "press",
@@ -7783,7 +7783,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-3",
             "name": "Performer 3",
-            "avatarId": "ch07",
+            "characterId": "ch07",
             "prop": "club",
             "effect": "led",
             "effort": "press",
@@ -7826,7 +7826,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-4",
             "name": "Performer 4",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "club",
             "effect": "led",
             "effort": "press",
@@ -7869,7 +7869,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-5",
             "name": "Performer 5",
-            "avatarId": "y-bot",
+            "characterId": "y-bot",
             "prop": "club",
             "effect": "led",
             "effort": "press",
@@ -7912,7 +7912,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-6",
             "name": "Performer 6",
-            "avatarId": "ch44",
+            "characterId": "ch44",
             "prop": "club",
             "effect": "led",
             "effort": "press",
@@ -7955,7 +7955,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-7",
             "name": "Performer 7",
-            "avatarId": "ch10",
+            "characterId": "ch10",
             "prop": "club",
             "effect": "led",
             "effort": "press",
@@ -7998,7 +7998,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-8",
             "name": "Performer 8",
-            "avatarId": "personal-metaperson",
+            "characterId": "personal-metaperson",
             "prop": "club",
             "effect": "led",
             "effort": "press",
@@ -8231,7 +8231,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-1",
             "name": "Performer 1",
-            "avatarId": "personal-metaperson",
+            "characterId": "personal-metaperson",
             "prop": "staff",
             "effect": "zap",
             "effort": "punch",
@@ -8295,7 +8295,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-2",
             "name": "Performer 2",
-            "avatarId": "remy",
+            "characterId": "remy",
             "prop": "staff",
             "effect": "zap",
             "effort": "punch",
@@ -8359,7 +8359,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-3",
             "name": "Performer 3",
-            "avatarId": "ch24",
+            "characterId": "ch24",
             "prop": "staff",
             "effect": "zap",
             "effort": "punch",
@@ -8423,7 +8423,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-4",
             "name": "Performer 4",
-            "avatarId": "ch10",
+            "characterId": "ch10",
             "prop": "staff",
             "effect": "zap",
             "effort": "punch",
@@ -8487,7 +8487,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-5",
             "name": "Performer 5",
-            "avatarId": "ch12",
+            "characterId": "ch12",
             "prop": "staff",
             "effect": "zap",
             "effort": "punch",
@@ -8551,7 +8551,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-6",
             "name": "Performer 6",
-            "avatarId": "ch18",
+            "characterId": "ch18",
             "prop": "staff",
             "effect": "zap",
             "effort": "punch",
@@ -8615,7 +8615,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-7",
             "name": "Performer 7",
-            "avatarId": "ch21",
+            "characterId": "ch21",
             "prop": "staff",
             "effect": "zap",
             "effort": "punch",
@@ -8679,7 +8679,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-8",
             "name": "Performer 8",
-            "avatarId": "x-bot",
+            "characterId": "x-bot",
             "prop": "staff",
             "effect": "zap",
             "effort": "punch",
@@ -8920,7 +8920,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-1",
             "name": "Performer 1",
-            "avatarId": "ch26",
+            "characterId": "ch26",
             "prop": "club",
             "effect": "sparkles",
             "effort": "press",
@@ -8963,7 +8963,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-2",
             "name": "Performer 2",
-            "avatarId": "x-bot",
+            "characterId": "x-bot",
             "prop": "club",
             "effect": "sparkles",
             "effort": "press",
@@ -9006,7 +9006,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-3",
             "name": "Performer 3",
-            "avatarId": "ch22",
+            "characterId": "ch22",
             "prop": "club",
             "effect": "sparkles",
             "effort": "press",
@@ -9049,7 +9049,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-4",
             "name": "Performer 4",
-            "avatarId": "personal-metaperson",
+            "characterId": "personal-metaperson",
             "prop": "club",
             "effect": "sparkles",
             "effort": "press",
@@ -9092,7 +9092,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-5",
             "name": "Performer 5",
-            "avatarId": "ch41",
+            "characterId": "ch41",
             "prop": "club",
             "effect": "sparkles",
             "effort": "press",
@@ -9135,7 +9135,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-6",
             "name": "Performer 6",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "club",
             "effect": "sparkles",
             "effort": "press",
@@ -9178,7 +9178,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-7",
             "name": "Performer 7",
-            "avatarId": "ch10",
+            "characterId": "ch10",
             "prop": "club",
             "effect": "sparkles",
             "effort": "press",
@@ -9221,7 +9221,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
           {
             "id": "performer-8",
             "name": "Performer 8",
-            "avatarId": "ch21",
+            "characterId": "ch21",
             "prop": "club",
             "effect": "sparkles",
             "effort": "press",
@@ -9484,7 +9484,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "id": "performer-1",
             "name": "Performer 1",
-            "avatarId": "x-bot",
+            "characterId": "x-bot",
             "prop": "staff",
             "effect": "none",
             "effort": "linear",
@@ -9527,7 +9527,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "id": "performer-2",
             "name": "Performer 2",
-            "avatarId": "y-bot",
+            "characterId": "y-bot",
             "prop": "staff",
             "effect": "none",
             "effort": "linear",
@@ -9570,7 +9570,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "id": "performer-3",
             "name": "Performer 3",
-            "avatarId": "remy",
+            "characterId": "remy",
             "prop": "staff",
             "effect": "none",
             "effort": "linear",
@@ -9725,7 +9725,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "id": "performer-1",
             "name": "Performer 1",
-            "avatarId": "x-bot",
+            "characterId": "x-bot",
             "prop": "staff",
             "effect": "none",
             "effort": "linear",
@@ -9768,7 +9768,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "id": "performer-2",
             "name": "Performer 2",
-            "avatarId": "y-bot",
+            "characterId": "y-bot",
             "prop": "staff",
             "effect": "none",
             "effort": "linear",
@@ -9914,7 +9914,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
 
 exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its frozen spec 1`] = `
 "{
-  "version": 3,
+  "version": 4,
   "id": "sky-is-the-limit-r1",
   "title": "Sky Is the Limit",
   "brief": "A first directed proof that changes cast, formation, prop, effect, effort, environment, timing, and camera without inheriting the viewer settings of whoever opens it.",
@@ -9962,7 +9962,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "ember-1",
             "name": "Performer 1",
-            "avatarId": "y-bot",
+            "characterId": "y-bot",
             "prop": "staff",
             "effect": "fire",
             "effort": "glide",
@@ -10005,7 +10005,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "ember-2",
             "name": "Performer 2",
-            "avatarId": "x-bot",
+            "characterId": "x-bot",
             "prop": "staff",
             "effect": "fire",
             "effort": "glide",
@@ -10048,7 +10048,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "ember-3",
             "name": "Performer 3",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "staff",
             "effect": "fire",
             "effort": "glide",
@@ -10091,7 +10091,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "ember-4",
             "name": "Performer 4",
-            "avatarId": "y-bot",
+            "characterId": "y-bot",
             "prop": "staff",
             "effect": "fire",
             "effort": "glide",
@@ -10134,7 +10134,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "ember-5",
             "name": "Performer 5",
-            "avatarId": "x-bot",
+            "characterId": "x-bot",
             "prop": "staff",
             "effect": "fire",
             "effort": "glide",
@@ -10177,7 +10177,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "ember-6",
             "name": "Performer 6",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "staff",
             "effect": "fire",
             "effort": "glide",
@@ -10220,7 +10220,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "ember-7",
             "name": "Performer 7",
-            "avatarId": "y-bot",
+            "characterId": "y-bot",
             "prop": "staff",
             "effect": "fire",
             "effort": "glide",
@@ -10263,7 +10263,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "ember-8",
             "name": "Performer 8",
-            "avatarId": "x-bot",
+            "characterId": "x-bot",
             "prop": "staff",
             "effect": "fire",
             "effort": "glide",
@@ -10581,7 +10581,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "lead",
             "name": "Lead",
-            "avatarId": "y-bot",
+            "characterId": "y-bot",
             "prop": "sword",
             "effect": "fire",
             "effort": "punch",
@@ -10624,7 +10624,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "left-support",
             "name": "Left support",
-            "avatarId": "x-bot",
+            "characterId": "x-bot",
             "prop": "fire_double_staff",
             "effect": "trails",
             "effort": "press",
@@ -10667,7 +10667,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "right-support",
             "name": "Right support",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "fire_double_staff",
             "effect": "trails",
             "effort": "press",
@@ -10830,7 +10830,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "ocean-1",
             "name": "Performer 1",
-            "avatarId": "y-bot",
+            "characterId": "y-bot",
             "prop": "triad",
             "effect": "bubbles",
             "effort": "glide",
@@ -10873,7 +10873,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "ocean-2",
             "name": "Performer 2",
-            "avatarId": "x-bot",
+            "characterId": "x-bot",
             "prop": "triad",
             "effect": "bubbles",
             "effort": "glide",
@@ -10916,7 +10916,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "ocean-3",
             "name": "Performer 3",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "club",
             "effect": "bubbles",
             "effort": "elastic",
@@ -10959,7 +10959,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "ocean-4",
             "name": "Performer 4",
-            "avatarId": "y-bot",
+            "characterId": "y-bot",
             "prop": "club",
             "effect": "bubbles",
             "effort": "elastic",
@@ -11128,7 +11128,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "canon-1",
             "name": "Performer 1",
-            "avatarId": "y-bot",
+            "characterId": "y-bot",
             "prop": "club",
             "effect": "led",
             "effort": "linear",
@@ -11171,7 +11171,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "canon-2",
             "name": "Performer 2",
-            "avatarId": "x-bot",
+            "characterId": "x-bot",
             "prop": "club",
             "effect": "led",
             "effort": "linear",
@@ -11214,7 +11214,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "canon-3",
             "name": "Performer 3",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "club",
             "effect": "led",
             "effort": "linear",
@@ -11257,7 +11257,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "canon-4",
             "name": "Performer 4",
-            "avatarId": "y-bot",
+            "characterId": "y-bot",
             "prop": "club",
             "effect": "led",
             "effort": "linear",
@@ -11300,7 +11300,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "canon-5",
             "name": "Performer 5",
-            "avatarId": "x-bot",
+            "characterId": "x-bot",
             "prop": "club",
             "effect": "led",
             "effort": "linear",
@@ -11343,7 +11343,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "canon-6",
             "name": "Performer 6",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "club",
             "effect": "led",
             "effort": "linear",
@@ -11386,7 +11386,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "canon-7",
             "name": "Performer 7",
-            "avatarId": "y-bot",
+            "characterId": "y-bot",
             "prop": "club",
             "effect": "led",
             "effort": "linear",
@@ -11429,7 +11429,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
           {
             "id": "canon-8",
             "name": "Performer 8",
-            "avatarId": "x-bot",
+            "characterId": "x-bot",
             "prop": "club",
             "effect": "led",
             "effort": "linear",
@@ -11635,7 +11635,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
 
 exports[`film resolution snapshots > "Star of Five" (star) resolves to its frozen spec 1`] = `
 "{
-  "version": 3,
+  "version": 4,
   "id": "star-of-five-r1",
   "title": "Star of Five",
   "brief": "Five performers hold a star facing the audience under the clouds. The camera opens tight on the baton at the tip and pulls back until the whole star is in frame.",
@@ -11683,7 +11683,7 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
           {
             "id": "baton-tip",
             "name": "Baton tip",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "capsule_baton",
             "effect": "led",
             "effort": "linear",
@@ -11726,7 +11726,7 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
           {
             "id": "fan-left",
             "name": "Fan left",
-            "avatarId": "ch07",
+            "characterId": "ch07",
             "prop": "fan",
             "effect": "silk",
             "effort": "glide",
@@ -11769,7 +11769,7 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
           {
             "id": "fan-right",
             "name": "Fan right",
-            "avatarId": "ch22",
+            "characterId": "ch22",
             "prop": "fan",
             "effect": "silk",
             "effort": "glide",
@@ -11812,7 +11812,7 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
           {
             "id": "buugeng-left",
             "name": "Buugeng left",
-            "avatarId": "ch10",
+            "characterId": "ch10",
             "prop": "buugeng",
             "effect": "bubbles",
             "effort": "linear",
@@ -11855,7 +11855,7 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
           {
             "id": "buugeng-right",
             "name": "Buugeng right",
-            "avatarId": "ch24",
+            "characterId": "ch24",
             "prop": "buugeng",
             "effect": "bubbles",
             "effort": "linear",
@@ -12043,7 +12043,7 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
 
 exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to its frozen spec 1`] = `
 "{
-  "version": 3,
+  "version": 4,
   "id": "understudy-night-r1",
   "title": "Understudy Night",
   "brief": "A pinned lead and four understudies who copy the lead's prop but are forbidden the lead's effect, a cast that draws all eight efforts at once, a sameAs mirror pair, and a closing circle with one deliberate outlier.",
@@ -12091,7 +12091,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-1",
             "name": "Lead",
-            "avatarId": "y-bot",
+            "characterId": "y-bot",
             "prop": "sword",
             "effect": "fire",
             "effort": "punch",
@@ -12134,7 +12134,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-2",
             "name": "Performer 2",
-            "avatarId": "ch44",
+            "characterId": "ch44",
             "prop": "sword",
             "effect": "zap",
             "effort": "bounce",
@@ -12177,7 +12177,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-3",
             "name": "Performer 3",
-            "avatarId": "personal-metaperson",
+            "characterId": "personal-metaperson",
             "prop": "sword",
             "effect": "petals",
             "effort": "press",
@@ -12220,7 +12220,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-4",
             "name": "Performer 4",
-            "avatarId": "ch10",
+            "characterId": "ch10",
             "prop": "sword",
             "effect": "ink",
             "effort": "dab",
@@ -12263,7 +12263,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-5",
             "name": "Performer 5",
-            "avatarId": "ch26",
+            "characterId": "ch26",
             "prop": "sword",
             "effect": "bubbles",
             "effort": "anticipation",
@@ -12492,7 +12492,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-1",
             "name": "Performer 1",
-            "avatarId": "personal-metaperson",
+            "characterId": "personal-metaperson",
             "prop": "staff",
             "effect": "led",
             "effort": "elastic",
@@ -12535,7 +12535,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-2",
             "name": "Performer 2",
-            "avatarId": "ch07",
+            "characterId": "ch07",
             "prop": "staff",
             "effect": "led",
             "effort": "press",
@@ -12578,7 +12578,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-3",
             "name": "Performer 3",
-            "avatarId": "remy",
+            "characterId": "remy",
             "prop": "staff",
             "effect": "led",
             "effort": "bounce",
@@ -12621,7 +12621,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-4",
             "name": "Performer 4",
-            "avatarId": "ch42",
+            "characterId": "ch42",
             "prop": "staff",
             "effect": "led",
             "effort": "anticipation",
@@ -12664,7 +12664,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-5",
             "name": "Performer 5",
-            "avatarId": "y-bot",
+            "characterId": "y-bot",
             "prop": "staff",
             "effect": "led",
             "effort": "linear",
@@ -12707,7 +12707,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-6",
             "name": "Performer 6",
-            "avatarId": "ch18",
+            "characterId": "ch18",
             "prop": "staff",
             "effect": "led",
             "effort": "glide",
@@ -12750,7 +12750,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-7",
             "name": "Performer 7",
-            "avatarId": "ch41",
+            "characterId": "ch41",
             "prop": "staff",
             "effect": "led",
             "effort": "punch",
@@ -12793,7 +12793,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-8",
             "name": "Performer 8",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "staff",
             "effect": "led",
             "effort": "dab",
@@ -13042,7 +13042,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-1",
             "name": "Original",
-            "avatarId": "x-bot",
+            "characterId": "x-bot",
             "prop": "staff",
             "effect": "petals",
             "effort": "glide",
@@ -13085,7 +13085,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-2",
             "name": "Mirror",
-            "avatarId": "ch01",
+            "characterId": "ch01",
             "prop": "staff",
             "effect": "petals",
             "effort": "glide",
@@ -13230,7 +13230,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-1",
             "name": "Performer 1",
-            "avatarId": "ch26",
+            "characterId": "ch26",
             "prop": "triad",
             "effect": "silk",
             "effort": "elastic",
@@ -13273,7 +13273,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-2",
             "name": "Performer 2",
-            "avatarId": "ch21",
+            "characterId": "ch21",
             "prop": "triad",
             "effect": "silk",
             "effort": "elastic",
@@ -13316,7 +13316,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-3",
             "name": "Performer 3",
-            "avatarId": "ch07",
+            "characterId": "ch07",
             "prop": "triad",
             "effect": "silk",
             "effort": "elastic",
@@ -13359,7 +13359,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-4",
             "name": "Performer 4",
-            "avatarId": "ch10",
+            "characterId": "ch10",
             "prop": "triad",
             "effect": "silk",
             "effort": "elastic",
@@ -13402,7 +13402,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-5",
             "name": "Performer 5",
-            "avatarId": "remy",
+            "characterId": "remy",
             "prop": "triad",
             "effect": "silk",
             "effort": "elastic",
@@ -13445,7 +13445,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
           {
             "id": "performer-6",
             "name": "Outlier",
-            "avatarId": "ch24",
+            "characterId": "ch24",
             "prop": "triad",
             "effect": "zap",
             "effort": "bounce",

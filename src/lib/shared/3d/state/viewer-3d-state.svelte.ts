@@ -2,7 +2,7 @@
  * Viewer 3D State
  *
  * Top-level state factory for the 3D viewer feature.
- * Manages render mode (2D/3D), a single avatar instance, effect toggles,
+ * Manages render mode, character instances, effect toggles,
  * and the last known camera snapshot.
  *
  * WebGL2 availability is detected once at factory creation time so callers
@@ -11,7 +11,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 // propInterpolator / sequenceConverter are now module-level functions; no type imports needed
-import type { AvatarId, CameraStateSnapshot } from "@austencloud/scene-3d";
+import type { CameraStateSnapshot } from "@austencloud/scene-3d";
 import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
 import type {
   DefaultsDomainSnapshot,
@@ -20,8 +20,8 @@ import type {
   VisibilityDomainSnapshot,
 } from "../undo/scene-undo-types";
 import { Plane, PlaneMode } from "@austencloud/scene-3d";
-import type { AvatarInstanceState } from "./avatar-instance-state.svelte";
-import { derivePlaneModeFromHands } from "./avatar-instance-state.svelte";
+import type { CharacterInstanceState } from "./character-instance-state.svelte";
+import { derivePlaneModeFromHands } from "./character-instance-state.svelte";
 import type {
   DefaultPerformerSettings,
   CascadeCategory,
@@ -33,7 +33,11 @@ import {
   createPerformerManager,
   type PerformerManager,
 } from "./performer-manager.svelte";
-import { AVATAR_DEFINITIONS, DEFAULT_AVATAR_ID } from "@austencloud/scene-3d";
+import {
+  CHARACTER_DEFINITIONS,
+  DEFAULT_CHARACTER_ID,
+  type CharacterId,
+} from "../domain/character-model";
 import { STAGE } from "@austencloud/scene-3d";
 import type { FormationPreset } from "@austencloud/scene-3d";
 import {
@@ -168,11 +172,13 @@ export interface StoredPerformerSettings {
 }
 
 export interface StoredPerformerSnapshot {
+  /** The visible character model selected for this performer. */
+  characterId?: CharacterId;
   position: { x: number; z: number };
   facingAngle: number;
   customBluePlane: Plane;
   customRedPlane: Plane;
-  /** User-assigned display name; absent/null = inherit the avatar model's name. */
+  /** User-assigned display name; absent/null = inherit the character model's name. */
   name?: string | null;
   /** Cascade overrides; absent = no overrides (pre-v2 snapshots). */
   settings?: StoredPerformerSettings;
@@ -342,7 +348,7 @@ function persistSelectedIndex(value: number | null): void {
 }
 
 /**
- * One-time migration: if the old single-avatar visiblePlanes key exists and
+ * One-time migration: if the old single-character visiblePlanes key exists and
  * the new per-performer key does not, construct a single-performer snapshot
  * from the old data and save it to the new key. Delete the old key so the
  * migration never runs twice.
@@ -622,7 +628,7 @@ function buildViewer3DState(
   // The viewer passes its viewer-specific cap (8) while realm/museum/duet
   // keep their shared cap (4) by not passing maxPerformers at all.
   const performerManager: PerformerManager = createPerformerManager({
-    initialAvatarId: DEFAULT_AVATAR_ID,
+    initialCharacterId: DEFAULT_CHARACTER_ID,
     maxPerformers: STAGE.MAX_VIEWER_PERFORMERS,
     getDefaults: () => _defaultSettings,
     getFrontStageFacingAngle: () =>
@@ -659,7 +665,7 @@ function buildViewer3DState(
    * - valid index   → single performer
    * - bad index     → empty (caller should no-op)
    */
-  function scopedPerformers(): AvatarInstanceState[] {
+  function scopedPerformers(): CharacterInstanceState[] {
     if (selectedPerformerIndex === null) return performerManager.performers;
     const p = performerManager.performers[selectedPerformerIndex];
     return p ? [p] : [];
@@ -719,25 +725,6 @@ function buildViewer3DState(
   }
 
   /**
-   * Keep the complete cast in view after a cast or formation edit. The shot is
-   * calculated from the destination slots, so the camera arrives with the
-   * performers instead of correcting itself after their movement finishes.
-   */
-  function framePerformerGroup(
-    performers: readonly PerformerShotSubject[]
-  ): void {
-    if (renderMode !== "3d" || !_snapToFn || performers.length === 0) return;
-    const shot = computeViewerFrontStageShot(performers);
-    snapCameraTo(
-      { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
-      { x: shot.target.x, y: shot.target.y, z: shot.target.z },
-      undefined,
-      true,
-      performerManager.formationTransitionTiming ?? undefined
-    );
-  }
-
-  /**
    * Refit the complete cast after the viewer gives real width to a dock. The
    * calculated shot supplies the distance and group center, while the live
    * camera supplies its direction. Opening controls therefore keeps the angle
@@ -793,21 +780,6 @@ function buildViewer3DState(
   function selectPerformerScope(index: number | null): void {
     selectedPerformerIndex = index;
     persistSelectedIndex(index);
-
-    // Selecting a performer changes who the controls affect; it should not
-    // discard the camera angle the user chose while watching the formation.
-    // The light and ground ring in Viewer3DScene make the active performer
-    // visible without moving the view. Returning to All still restores the
-    // group overview promised by that control.
-    if (index !== null || renderMode !== "3d" || !_snapToFn) return;
-    const performers = performerManager.performers;
-    if (performers.length === 0) return;
-
-    const shot = computeViewerFrontStageShot(performers);
-    snapCameraTo(
-      { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
-      { x: shot.target.x, y: shot.target.y, z: shot.target.z }
-    );
   }
 
   /**
@@ -950,34 +922,34 @@ function buildViewer3DState(
     );
   }
 
-  function setAvatarModelScoped(modelId: AvatarId): boolean {
+  function setCharacterScoped(modelId: CharacterId): boolean {
     const changes = scopedPerformers()
-      .filter((performer) => performer.avatarModelId !== modelId)
+      .filter((performer) => performer.characterId !== modelId)
       .map((performer) => ({
         performer,
-        previousModelId: performer.avatarModelId,
+        previousModelId: performer.characterId,
       }));
     if (changes.length === 0) return false;
 
     if (changes.length === 1) {
-      changes[0]!.performer.setAvatarModel(modelId);
+      changes[0]!.performer.setCharacter(modelId);
       return true;
     }
 
     sceneUndo.withoutUndo(() => {
-      for (const { performer } of changes) performer.setAvatarModel(modelId);
+      for (const { performer } of changes) performer.setCharacter(modelId);
     });
     const name =
-      AVATAR_DEFINITIONS.find((definition) => definition.id === modelId)
+      CHARACTER_DEFINITIONS.find((definition) => definition.id === modelId)
         ?.name ?? modelId;
-    sceneUndo.pushSelfRestoringEntry("change-avatar", `Avatar: ${name}`, {
+    sceneUndo.pushSelfRestoringEntry("change-character", `Character: ${name}`, {
       undo: () => {
         for (const { performer, previousModelId } of changes) {
-          performer.setAvatarModel(previousModelId);
+          performer.setCharacter(previousModelId);
         }
       },
       redo: () => {
-        for (const { performer } of changes) performer.setAvatarModel(modelId);
+        for (const { performer } of changes) performer.setCharacter(modelId);
       },
     });
     return true;
@@ -1047,7 +1019,6 @@ function buildViewer3DState(
 
     activeFormation = snap.activeFormation;
     selectedPerformerIndex = snap.selectedPerformerIndex;
-    framePerformerGroup(snap.performers);
   }
 
   function restoreVisibilitySnapshot(snap: VisibilityDomainSnapshot): void {
@@ -1056,7 +1027,7 @@ function buildViewer3DState(
     persistPlanes(visiblePlanes);
   }
 
-  function spawnPerformerWithoutUndo(frameAfter = true): boolean {
+  function spawnPerformerWithoutUndo(): boolean {
     if (performerManager.performers.length >= performerManager.maxPerformers)
       return false;
 
@@ -1064,6 +1035,7 @@ function buildViewer3DState(
     const source = performerManager.performers[sourceIndex];
 
     const layoutTargets = performerManager.addPerformer();
+    if (!layoutTargets) return false;
 
     const newIndex = performerManager.performers.length - 1;
     const newPerf = performerManager.performers[newIndex];
@@ -1078,7 +1050,6 @@ function buildViewer3DState(
     });
 
     selectedPerformerIndex = newIndex;
-    if (frameAfter && layoutTargets) framePerformerGroup(layoutTargets);
     return true;
   }
 
@@ -1091,17 +1062,16 @@ function buildViewer3DState(
     sceneUndo.commitState();
   }
 
-  function removePerformerWithoutUndo(frameAfter = true): boolean {
+  function removePerformerWithoutUndo(): boolean {
     if (performerManager.performers.length <= 1) return false;
     const removedIndex =
       selectedPerformerIndex ?? performerManager.performers.length - 1;
     const layoutTargets = performerManager.removePerformer(removedIndex);
+    if (!layoutTargets) return false;
     selectedPerformerIndex = Math.min(
       removedIndex,
       performerManager.performers.length - 1
     );
-
-    if (frameAfter && layoutTargets) framePerformerGroup(layoutTargets);
     return true;
   }
 
@@ -1132,13 +1102,12 @@ function buildViewer3DState(
       const iterationLimit = Math.abs(boundedTarget - current);
       for (let iteration = 0; iteration < iterationLimit; iteration += 1) {
         const before = performerManager.performers.length;
-        if (before < boundedTarget) spawnPerformerWithoutUndo(false);
-        else if (before > boundedTarget) removePerformerWithoutUndo(false);
+        if (before < boundedTarget) spawnPerformerWithoutUndo();
+        else if (before > boundedTarget) removePerformerWithoutUndo();
         if (performerManager.performers.length === before) break;
       }
     });
     sceneUndo.commitState();
-    framePerformerGroup(performerManager.performers);
   }
 
   function applyFormationFromUI(preset: FormationPreset): void {
@@ -1147,7 +1116,7 @@ function buildViewer3DState(
 
     const beforeSnap = captureViewerSnapshot();
 
-    performerManager.transitionToFormation(preset, 500);
+    performerManager.transitionToFormation(preset);
     activeFormation = preset;
 
     const targetFormation = createFormationFromPreset(preset, count);
@@ -1184,7 +1153,6 @@ function buildViewer3DState(
         redo: () => restoreViewerSnapshot(afterSnap),
       }
     );
-    framePerformerGroup(afterPerformers);
   }
 
   let _spatialBeforeSnapshot: ViewerDomainSnapshot | null = null;
@@ -1377,6 +1345,7 @@ function buildViewer3DState(
   $effect(() => {
     const snapshots: StoredPerformerSnapshot[] =
       performerManager.performers.map((p) => ({
+        characterId: p.characterId,
         position: { x: p.position.x, z: p.position.z },
         facingAngle: p.facingAngle,
         customBluePlane: p.customBluePlane,
@@ -1439,6 +1408,7 @@ function buildViewer3DState(
           p.setFacingAngle(snap.facingAngle);
           p.setHandPlane("blue", snap.customBluePlane);
           p.setHandPlane("red", snap.customRedPlane);
+          if (snap.characterId) p.setCharacter(snap.characterId);
           p.setDisplayName(snap.name ?? null);
           // On a plain open the per-performer prop AND staffLengthCm overrides
           // are stripped, so the performer inherits _defaultSettings.prop —
@@ -1496,7 +1466,7 @@ function buildViewer3DState(
   }
 
   /**
-   * Return to 2D render mode (avatar instance is kept alive to avoid
+   * Return to 2D render mode (character instance is kept alive to avoid
    * re-allocating WebGL resources if the user flips back).
    */
   function exit3D() {
@@ -1535,6 +1505,7 @@ function buildViewer3DState(
       environmentId,
       camera: cameraSnapshot ?? _persistedCamera,
       performers: performerManager.performers.map((p) => ({
+        characterId: p.characterId,
         position: { x: p.position.x, z: p.position.z },
         facingAngle: p.facingAngle,
         customBluePlane: p.customBluePlane,
@@ -1604,6 +1575,7 @@ function buildViewer3DState(
           p.setFacingAngle(snap.facingAngle);
           p.setHandPlane("blue", snap.customBluePlane);
           p.setHandPlane("red", snap.customRedPlane);
+          if (snap.characterId) p.setCharacter(snap.characterId);
           p.setDisplayName(snap.name ?? null);
           // Clear all four cascade overrides first. A preset that stores null
           // for a field means "inherit the viewer default", and only a reset
@@ -1714,7 +1686,7 @@ function buildViewer3DState(
   let _disposed = false;
 
   /**
-   * Release all resources held by the avatar instance.
+   * Release all resources held by the character instance.
    * Call when the viewer component is unmounted.
    */
   function dispose() {
@@ -1846,7 +1818,7 @@ function buildViewer3DState(
       return propSizeLinked;
     },
     togglePropSizeLink,
-    setAvatarModelScoped,
+    setCharacterScoped,
     setHandPlaneScoped,
     loadSequenceScoped,
     get canUndo() {

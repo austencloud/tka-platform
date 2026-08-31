@@ -61,6 +61,9 @@
     onPerformerEdit?: PerformerEditSink;
     /** Fires with the tool being inspected, or null when the inspector closes. */
     onInspectorChange?: (tool: SceneControlTool | null) => void;
+    /** Compact sheets are independent from the desktop rail. Hosts can use
+     *  this signal to animate surrounding chrome out of their way. */
+    onCompactSheetChange?: (sheet: "performer" | "scene" | null) => void;
   }
 
   let {
@@ -80,6 +83,7 @@
     allowSaveScene = true,
     onPerformerEdit,
     onInspectorChange,
+    onCompactSheetChange,
   }: Props = $props();
 
   let workspaceWidth = $state(0);
@@ -206,6 +210,7 @@
         {onStepBackward}
         {onSettingChange}
         {onPerformerEdit}
+        onSheetChange={onCompactSheetChange}
       />
     </div>
   {:else}

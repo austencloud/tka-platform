@@ -46,7 +46,7 @@
     gridMode?: GridMode;
     /** Performer layout used to place plane geometry */
     planeMode?: PlaneMode;
-    /** Optional label for this grid (e.g., "Avatar 1") */
+    /** Optional label for this grid (e.g., "Performer 1") */
     label?: string;
     /**
      * Center sphere + axis arrows. Film-style surfaces show dictated plane

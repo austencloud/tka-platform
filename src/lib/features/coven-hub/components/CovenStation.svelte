@@ -8,7 +8,7 @@
    * sequence on all three primary planes simultaneously.
    *
    * Center: 6 PerformerRigs (3 planes × original/mirror) - props visible,
-   * no avatar, grid visible. Perimeter: 6 acolytes - avatar visible, no
+   * no character, grid visible. Perimeter: 6 acolytes - character visible, no
    * props, no grid. Each acolyte's IK targets track the actual center prop
    * positions every frame, creating a dynamic "telekinetic control" effect
    * where arms subtly shift as the floating staffs move through the sequence.
@@ -26,9 +26,9 @@
   import { PlaneMode } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
-    createAvatarInstanceState,
+    createCharacterInstanceState,
     makeStandaloneDeps,
-  } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  } from "$lib/shared/3d/state/character-instance-state.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { buildTipEffectMap } from "$lib/features/coven-hub/domain/coven-effect-map";
@@ -58,7 +58,7 @@
      * Render the centre staffs. Turning this off leaves the effect trace alone
      * in space — still driven by the real prop motion, with nothing visible
      * making it. That is the "elemental motif" configuration: the modality
-     * draws itself. Avatars are already off on the centre rigs.
+     * draws itself. Characters are already off on the centre rigs.
      */
     showProps?: boolean;
     /**
@@ -85,7 +85,7 @@
   const platformColor = new Color(0x2a1f18);
   const platformRingColor = new Color(0x4a3828);
 
-  // Avatar3D in "stage mode" positions feet at groundY (≈ -1.4m below rig origin).
+  // Character3D in "stage mode" positions feet at groundY (≈ -1.4m below rig origin).
   // In the museum the floor is at y=0, so we offset by -groundY + PLATFORM_HEIGHT.
   // Both center rigs AND acolyte rigs use this so grids/props align with shoulder height.
   const presentationFloorOffset =
@@ -139,18 +139,18 @@
     props.tipEffectMap ?? buildTipEffectMap(props.effectId ?? null)
   );
 
-  type AvatarInstance = ReturnType<typeof createAvatarInstanceState>;
+  type CharacterInstance = ReturnType<typeof createCharacterInstanceState>;
 
-  // Create avatar instances: 6 for center planes + 6 for acolytes
-  let centerInstances = $state<AvatarInstance[]>([]);
-  let acolyteInstances = $state<AvatarInstance[]>([]);
-  // True when avatar-instance construction threw — the scene falls back to a
+  // Create character instances: 6 for center planes + 6 for acolytes
+  let centerInstances = $state<CharacterInstance[]>([]);
+  let acolyteInstances = $state<CharacterInstance[]>([]);
+  // True when character-instance construction threw — the scene falls back to a
   // visible marker (below) instead of rendering nothing, and we surface a toast.
   let initFailed = $state(false);
 
   try {
     centerInstances = CENTER_PLANES.map((cfg, i) =>
-      createAvatarInstanceState(
+      createCharacterInstanceState(
         {
           id: `formation-${stationId}-center-${cfg.plane}-${cfg.mirror ? "mirror" : "orig"}`,
           positionX: 0,
@@ -163,7 +163,7 @@
     acolyteInstances =
       presentation === "ritual"
         ? ACOLYTE_POSITIONS.map((_, i) =>
-            createAvatarInstanceState(
+            createCharacterInstanceState(
               {
                 id: `formation-${stationId}-acolyte-${i}`,
                 positionX: 0,
@@ -216,7 +216,7 @@
 
   // A frozen station remains mounted as a static exhibit, but its playback
   // clocks must stop. Museum rooms can contain many stations, and one RAF loop
-  // per hidden avatar otherwise keeps recomputing prop textures indefinitely.
+  // per hidden character otherwise keeps recomputing prop textures indefinitely.
   $effect(() => {
     const shouldPlay = autoPlay && stationPlaying;
     untrack(() => {
@@ -375,7 +375,7 @@
   {/if}
 
   {#if initFailed}
-    <!-- Degraded fallback: avatar instances failed to construct, so the rigs
+    <!-- Degraded fallback: character instances failed to construct, so the rigs
          below render nothing. Show a clearly-broken marker pillar at center so
          the empty station is observable rather than silently blank. -->
     <T.Mesh position.y={presentationFloorOffset + 0.75}>
@@ -411,7 +411,7 @@
     castShadow={false}
   />
 
-  <!-- CENTER RIGS: 6 total (3 planes × original + mirror), props + grid visible, no avatar -->
+  <!-- CENTER RIGS: 6 total (3 planes × original + mirror), props + grid visible, no character -->
   <!-- Mirrored rigs swap blue/red prop states for a symmetric pattern on each plane.
        Only the original (non-mirror) rigs show the grid to avoid visual clutter. -->
   {#each visibleCenter as instance, i (instance.id)}
@@ -465,7 +465,7 @@
     {/if}
   {/each}
 
-  <!-- ACOLYTE RIGS: 6 avatars with arms dynamically tracking center props -->
+  <!-- ACOLYTE RIGS: 6 characters with arms dynamically tracking center props -->
   {#if showAcolytes}
     {#each acolyteInstances as instance, i (instance.id)}
       {@const acolytePos = ACOLYTE_POSITIONS[i]}

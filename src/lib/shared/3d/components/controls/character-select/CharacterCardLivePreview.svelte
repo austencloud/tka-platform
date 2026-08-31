@@ -5,28 +5,28 @@
     Plane,
     cmToUnits,
     userProportionsState,
-    type AvatarId,
   } from "@austencloud/scene-3d";
   import { onDestroy, onMount, untrack } from "svelte";
 
   import CanvasLifecycle from "$lib/shared/3d/components/CanvasLifecycle.svelte";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
+  import type { CharacterId } from "$lib/shared/3d/domain/character-model";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
   import {
-    createAvatarInstanceState,
-    type AvatarInstanceState,
-  } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+    createCharacterInstanceState,
+    type CharacterInstanceState,
+  } from "$lib/shared/3d/state/character-instance-state.svelte";
   import { makeStandaloneDefaults } from "$lib/shared/3d/state/performer-settings-types";
   import { reducedMotion } from "$lib/shared/transitions/motion";
 
   interface Props {
-    avatarId: AvatarId;
-    sourcePerformer: AvatarInstanceState | null;
+    characterId: CharacterId;
+    sourcePerformer: CharacterInstanceState | null;
     active: boolean;
     onReady: () => void;
   }
 
-  let { avatarId, sourcePerformer, active, onReady }: Props = $props();
+  let { characterId, sourcePerformer, active, onReady }: Props = $props();
 
   const standaloneDefaults = makeStandaloneDefaults();
   const canvasDpr =
@@ -42,12 +42,12 @@
   // The picker owns one ephemeral performer. Its defaults read from the
   // selected scope without calling the source performer's setters, so a
   // preview can never create an Undo entry or mutate the live scene.
-  const previewState = createAvatarInstanceState(
+  const previewState = createCharacterInstanceState(
     {
-      id: "avatar-picker-preview",
+      id: "character-picker-preview",
       positionX: 0,
       positionZ: 0,
-      avatarModelId: avatarId,
+      characterId,
       persistent: false,
     },
     {
@@ -157,7 +157,7 @@
       facingAngle={0}
       planeMode={previewState.effectivePlaneMode}
       avatarState={previewState}
-      {avatarId}
+      avatarId={characterId}
       showGrid={false}
       showProps={previewState.hasSequence}
       showEffects={false}

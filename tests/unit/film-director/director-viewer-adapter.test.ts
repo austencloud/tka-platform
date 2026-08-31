@@ -3,7 +3,7 @@
  * "wire resolved planes into the viewer." Task 2 (already landed) taught
  * `resolveFilmDirectorSpec` to resolve bluePlane/redPlane/stepPlanes per
  * performer and scene.visiblePlanes per scene. This file proves the adapter
- * actually carries those resolved values onto the viewer/avatar-instance
+ * actually carries those resolved values onto the viewer/character-instance
  * layer:
  *
  *  (a) `buildDirectorViewerSeed` puts the resolved planes on the seed.
@@ -32,9 +32,9 @@ const demoSequence = demoSequenceJson as unknown as SequenceData;
 // capability probe sees "not supported" rather than throwing. Same pattern
 // as tests/unit/3d-viewer/viewer3d-integration.test.ts.
 beforeAll(() => {
-  const originalCreateElement = document.createElement as unknown as (
-    tag: string
-  ) => unknown;
+  const originalCreateElement = document.createElement.bind(
+    document
+  ) as unknown as (tag: string) => unknown;
   (
     document as unknown as { createElement: (tag: string) => unknown }
   ).createElement = (tag: string) => {
@@ -47,7 +47,10 @@ beforeAll(() => {
   __resetWebGL2CapabilityForTests();
 });
 
-function film(scene: Record<string, unknown>, extras: Record<string, unknown> = {}) {
+function film(
+  scene: Record<string, unknown>,
+  extras: Record<string, unknown> = {}
+) {
   return {
     version: 2,
     id: "viewer-adapter-film",
@@ -109,7 +112,7 @@ describe("buildDirectorViewerSeed carries resolved planes", () => {
   });
 });
 
-describe("applyDirectorSceneToViewer wires planes onto real avatar instances", () => {
+describe("applyDirectorSceneToViewer wires planes onto real character instances", () => {
   it("sets hand planes and step overrides on scene A, then on scene B (reused instance) clears A's stale step overrides and applies B's own hand planes", () => {
     const { state, dispose } = createViewer3DStateForTest({});
     try {
@@ -143,7 +146,7 @@ describe("applyDirectorSceneToViewer wires planes onto real avatar instances", (
 
       const performer = state.performerManager.performers[0]!;
       // Reused-instance identity across the whole test: scene A and scene B
-      // both target this exact AvatarInstanceState.
+      // both target this exact CharacterInstanceState.
       expect(state.performerManager.performers).toHaveLength(1);
 
       expect(performer.customBluePlane).toBe(Plane.WHEEL);

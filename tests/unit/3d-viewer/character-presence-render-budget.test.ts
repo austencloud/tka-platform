@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const swapSource = readFileSync(
-  resolve("src/lib/shared/3d/components/AvatarSwapTransition.svelte"),
+  resolve("src/lib/shared/3d/components/CharacterSwapTransition.svelte"),
   "utf8"
 );
 const stageSource = readFileSync(
@@ -20,7 +20,13 @@ const staffSource = readFileSync(
 );
 
 describe("performer add render budget", () => {
-  it("does not mount the avatar-swap particle buffer for an idle performer", () => {
+  it("takes the complete rig to a point instead of popping opaque props away", () => {
+    expect(swapSource).toContain("Math.pow(visiblePresence, 0.25)");
+    expect(swapSource).toContain("scale={presenceScale}");
+    expect(swapSource).not.toContain("0.88 + presenceProgress");
+  });
+
+  it("does not mount the character-swap particle buffer for an idle performer", () => {
     const particleGate = swapSource.indexOf(
       '{#if phase !== "idle" || particlesActive}'
     );

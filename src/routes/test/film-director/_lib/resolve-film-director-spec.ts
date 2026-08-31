@@ -1,12 +1,14 @@
 import {
-  AVATAR_DEFINITIONS,
   Plane,
   PRESET_VALID_COUNTS,
   calculateFacingAngle,
   createFormationFromPreset,
-  type AvatarId,
   type FormationPreset,
 } from "@austencloud/scene-3d";
+import {
+  CHARACTER_DEFINITIONS,
+  type CharacterId,
+} from "$lib/shared/3d/domain/character-model";
 
 import {
   EFFECTS,
@@ -53,11 +55,28 @@ import {
   type ResolvedFilmDirectorSpec,
 } from "./film-director-schema";
 
-const DEFAULT_AVATARS = AVATAR_DEFINITIONS.map(
-  (avatar) => avatar.id
-) as AvatarId[];
+const DEFAULT_CHARACTERS = CHARACTER_DEFINITIONS.map(
+  (character) => character.id
+) as CharacterId[];
 
-// Axis catalogs, built once at module scope. `effect` and `avatarId` stay
+function createCharacterAxisStream(
+  seed: FilmSeed,
+  sceneId: string
+): () => number {
+  // Seed namespaces are persisted behavior. Keep the historical hash key so
+  // migrating avatarId to characterId does not silently recast a saved film,
+  // while making characterId the canonical reroll control for v4 authors.
+  const legacySeed: FilmSeed = {
+    ...seed,
+    axes: {
+      ...seed.axes,
+      avatarId: seed.axes.characterId ?? seed.axes.avatarId ?? 0,
+    },
+  };
+  return createAxisStream(legacySeed, sceneId, "avatarId");
+}
+
+// Axis catalogs, built once at module scope. `effect` and `characterId` stay
 // loosely typed as `string` here (see the per-axis comments in resolveScene)
 // because their schema fields are un-narrowed `z.string()` refinements —
 // the registry-type cast happens once, on the resolved concrete value, same
@@ -81,7 +100,7 @@ type PerformerInput = NonNullable<DirectorCastInput["performers"]>[number];
 interface ResolvedPerformerFields {
   id: string;
   name?: string;
-  avatarId: AvatarId;
+  characterId: CharacterId;
   prop: PropType;
   effect: EffectType;
   effort: EffortId;
@@ -401,9 +420,13 @@ function buildResolvedPerformers(
     if (seenIds.has(id)) throw new Error(`Performer id "${id}" is duplicated.`);
     seenIds.add(id);
 
-    if (!AVATAR_DEFINITIONS.some((avatar) => avatar.id === input.avatarId)) {
+    if (
+      !CHARACTER_DEFINITIONS.some(
+        (character) => character.id === input.characterId
+      )
+    ) {
       throw new Error(
-        `Avatar "${input.avatarId}" is not in the deployed 3D catalog.`
+        `Character "${input.characterId}" is not in the deployed 3D catalog.`
       );
     }
 
@@ -430,7 +453,7 @@ function buildResolvedPerformers(
     return {
       id,
       name: input.name ?? `Performer ${index + 1}`,
-      avatarId: input.avatarId,
+      characterId: input.characterId,
       prop: input.prop,
       effect: input.effect,
       effort: input.effort,
@@ -480,15 +503,15 @@ function resolveScene(
     (input, index) => input.id ?? `performer-${index + 1}`
   );
 
-  // avatarId's schema field is an un-narrowed `z.string()` (validated at
+  // characterId's schema field is an un-narrowed `z.string()` (validated at
   // runtime against the deployed catalog, not by a literal-union schema), so
   // the axis resolves as plain strings and the registry cast happens once on
   // the resolved value below — same pattern this file used pre-directives.
-  const avatarIdValues: DirectiveValue<string>[] = rawInputs.map(
+  const characterIdValues: DirectiveValue<string>[] = rawInputs.map(
     (input, index) =>
-      input.avatarId ??
-      cast?.defaults?.avatarId ??
-      DEFAULT_AVATARS[index % DEFAULT_AVATARS.length]!
+      input.characterId ??
+      cast?.defaults?.characterId ??
+      DEFAULT_CHARACTERS[index % DEFAULT_CHARACTERS.length]!
   );
   const propValues: DirectiveValue<PropType>[] = rawInputs.map(
     (input) => input.prop ?? cast?.defaults?.prop ?? PropType.STAFF
@@ -500,24 +523,24 @@ function resolveScene(
     (input) => input.effort ?? cast?.defaults?.effort ?? "linear"
   );
 
-  // Pre-validate literal avatarIds with the original, more specific error
+  // Pre-validate literal character IDs with the original, more specific error
   // text ("not in the deployed 3D catalog") — resolveCastAxis's own catalog
   // check exists too (needed so a distinct pick still has a pool to draw
   // from), but its generic axis-catalog message is a worse error for the
-  // single-avatar case this file has always reported this way.
-  for (const value of avatarIdValues) {
+  // single-character case this file has always reported this way.
+  for (const value of characterIdValues) {
     if (isDirectiveExpression(value)) continue;
-    if (!AVATAR_DEFINITIONS.some((avatar) => avatar.id === value)) {
-      throw new Error(`Avatar "${value}" is not in the deployed 3D catalog.`);
+    if (!CHARACTER_DEFINITIONS.some((character) => character.id === value)) {
+      throw new Error(`Character "${value}" is not in the deployed 3D catalog.`);
     }
   }
-  const resolvedAvatarIds = resolveCastAxis<string>({
-    axis: "avatarId",
+  const resolvedCharacterIds = resolveCastAxis<string>({
+    axis: "characterId",
     sceneId: scene.id,
     performerIds,
-    values: avatarIdValues,
-    catalog: DEFAULT_AVATARS,
-    random: createAxisStream(filmSeed, scene.id, "avatarId"),
+    values: characterIdValues,
+    catalog: DEFAULT_CHARACTERS,
+    random: createCharacterAxisStream(filmSeed, scene.id),
   });
   const resolvedProps = resolveCastAxis<PropType>({
     axis: "prop",
@@ -660,7 +683,7 @@ function resolveScene(
     (input, index) => ({
       id: performerIds[index]!,
       name: input.name,
-      avatarId: resolvedAvatarIds[index]! as AvatarId,
+      characterId: resolvedCharacterIds[index]! as CharacterId,
       prop: resolvedProps[index]!,
       effect: resolvedEffects[index]! as EffectType,
       effort: resolvedEfforts[index]!,

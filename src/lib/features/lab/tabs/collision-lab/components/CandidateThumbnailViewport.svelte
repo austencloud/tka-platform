@@ -145,7 +145,7 @@
     showGrid={true}
     showLabels={false}
     {visiblePlanes}
-    avatarPositions={gridAnchorPositions}
+    characterPositions={gridAnchorPositions}
     backgroundType={BackgroundType.FOREST}
     disableOrbitControls={true}
   >

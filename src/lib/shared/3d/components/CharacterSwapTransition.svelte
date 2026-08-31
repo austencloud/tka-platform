@@ -1,10 +1,11 @@
 <script module lang="ts">
-  import { getAvatarModelPath, prepareSharedGltf } from "@austencloud/scene-3d";
+  import { prepareSharedGltf } from "@austencloud/scene-3d";
+  import { getCharacterModelPath } from "../domain/character-model";
 
   const preparedModels = new Map<string, Promise<void>>();
 
-  function prepareAvatar(avatarId: string): Promise<void> {
-    const url = getAvatarModelPath(avatarId);
+  function prepareCharacter(characterId: string): Promise<void> {
+    const url = getCharacterModelPath(characterId);
     const existing = preparedModels.get(url);
     if (existing) return existing;
 
@@ -31,48 +32,63 @@
     AdditiveBlending,
     Group,
   } from "three";
-  import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
+  import type { CharacterInstanceState } from "../state/character-instance-state.svelte";
   import { getPerformerColor } from "../constants/performer-colors";
-
-  // SWITCH THIS TO COMPARE MODES:
-  //   "fade" = opacity crossfade (avatar only, props stay)
-  //   "pop"  = instant hide + particle burst
-  const MODE: "fade" | "pop" = "pop";
+  import { motionDuration } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
 
   interface Props {
-    performer: AvatarInstanceState;
+    performer: CharacterInstanceState;
     performerIndex: number;
     groundOffset: number;
+    presenceProgress?: number;
     children: Snippet<
-      [{ onAvatarSwapped: (id: string) => void; avatarOpacity: number }]
+      [{ onCharacterSwapped: (id: string) => void; characterOpacity: number }]
     >;
   }
 
-  let { performer, performerIndex, groundOffset, children }: Props = $props();
+  let {
+    performer,
+    performerIndex,
+    groundOffset,
+    presenceProgress = 1,
+    children,
+  }: Props = $props();
 
   const N = 36;
-  const FADE_OUT_S = 0.25;
-  const FADE_IN_S = 0.25;
+  const FADE_OUT_S = motionDuration(DURATION.fast) / 1_000;
+  const FADE_IN_S = motionDuration(DURATION.normal) / 1_000;
   const MAX_HOLD_S = 4;
 
   type Phase = "idle" | "out" | "hold" | "in";
   let phase = $state<Phase>("idle");
   let elapsed = $state(0);
-  let prevAvatarId = $state(performer.avatarModelId);
+  let previousCharacterId = $state(performer.characterId);
   let modelReady = $state(false);
-  let avatarOpacity = $state(1);
+  let swapOpacity = $state(1);
+  const visiblePresence = $derived(
+    Math.min(1, Math.max(0, presenceProgress))
+  );
+  const characterOpacity = $derived(swapOpacity * visiblePresence);
+  // The fourth-root curve preserves a nearly full-size silhouette through most
+  // of the dissolve, then takes the character, props, and effects cleanly to a
+  // point instead of leaving opaque props to pop out on the final frame.
+  const presenceScale = $derived(
+    Math.max(0.001, Math.pow(visiblePresence, 0.25))
+  );
+  const presenceOffset = $derived((1 - visiblePresence) * -0.12);
 
   let wrapperGroup = $state<Group | undefined>(undefined);
 
-  function handleAvatarSwapped(_id: string) {
+  function handleCharacterSwapped(_id: string) {
     modelReady = true;
   }
 
-  // The first rig parses the active avatar into the package's shared cache.
+  // The first rig parses the active character into the package's shared cache.
   // New performers can then clone the intended body without ever showing the
   // procedural fallback as an intermediate frame.
   onMount(() => {
-    void prepareAvatar(performer.avatarModelId).catch(() => {});
+    void prepareCharacter(performer.characterId).catch(() => {});
   });
 
   const pos: Vector3[] = [];
@@ -117,17 +133,13 @@
     }
   }
 
-  function easeOut(t: number) {
-    return 1 - (1 - t) ** 2;
-  }
-
   $effect(() => {
-    const id = performer.avatarModelId;
-    if (id !== prevAvatarId && phase === "idle") {
+    const id = performer.characterId;
+    if (id !== previousCharacterId && phase === "idle") {
       modelReady = false;
       phase = "out";
       elapsed = 0;
-      prevAvatarId = id;
+      previousCharacterId = id;
     }
   });
 
@@ -183,61 +195,47 @@
     elapsed += delta;
     const g = wrapperGroup;
 
-    if (MODE === "fade") {
-      // ── FADE MODE: opacity only, props unaffected ──
-      if (phase === "out") {
-        const t = Math.min(elapsed / FADE_OUT_S, 1);
-        avatarOpacity = 1 - t;
-        if (t >= 1) {
-          avatarOpacity = 0;
-          if (g) g.visible = false;
-          phase = "hold";
-          elapsed = 0;
-          spawnParticles();
-          if (instMesh) instMesh.visible = true;
-        }
-      } else if (phase === "hold") {
-        avatarOpacity = 0;
+    if (phase === "out") {
+      const t = FADE_OUT_S === 0 ? 1 : Math.min(elapsed / FADE_OUT_S, 1);
+      swapOpacity = 1 - t;
+      if (t >= 1) {
+        swapOpacity = 0;
         if (g) g.visible = false;
-        tickParticles(delta, 2.5, 3);
-        if (modelReady || elapsed >= MAX_HOLD_S) {
-          if (g) g.visible = true;
-          phase = "in";
-          elapsed = 0;
-        }
-      } else if (phase === "in") {
-        const t = Math.min(elapsed / FADE_IN_S, 1);
-        avatarOpacity = t;
-        tickParticles(delta, 1.5, 2);
-        if (t >= 1) {
-          avatarOpacity = 1;
-          phase = "idle";
-        }
-      }
-    } else {
-      // ── POP MODE: instant hide, particles, instant show ──
-      if (phase === "out") {
-        // Instant hide
-        if (g) g.visible = false;
-        spawnParticles();
-        if (instMesh) instMesh.visible = true;
         phase = "hold";
         elapsed = 0;
-      } else if (phase === "hold") {
-        if (g) g.visible = false;
-        tickParticles(delta, 2.5, 3);
-        if (modelReady || elapsed >= MAX_HOLD_S) {
-          if (g) g.visible = true;
-          avatarOpacity = 1;
-          phase = "idle";
-        }
+        spawnParticles();
+        if (instMesh) instMesh.visible = true;
+      }
+    } else if (phase === "hold") {
+      swapOpacity = 0;
+      if (g) g.visible = false;
+      tickParticles(delta, 2.5, 3);
+      if (modelReady || elapsed >= MAX_HOLD_S) {
+        if (g) g.visible = true;
+        phase = "in";
+        elapsed = 0;
+      }
+    } else if (phase === "in") {
+      const t = FADE_IN_S === 0 ? 1 : Math.min(elapsed / FADE_IN_S, 1);
+      swapOpacity = t;
+      tickParticles(delta, 1.5, 2);
+      if (t >= 1) {
+        swapOpacity = 1;
+        phase = "idle";
       }
     }
   });
 </script>
 
-<T.Group bind:ref={wrapperGroup}>
-  {@render children({ onAvatarSwapped: handleAvatarSwapped, avatarOpacity })}
+<T.Group
+  bind:ref={wrapperGroup}
+  scale={presenceScale}
+  position={[0, presenceOffset, 0]}
+>
+  {@render children({
+    onCharacterSwapped: handleCharacterSwapped,
+    characterOpacity,
+  })}
 </T.Group>
 
 {#if phase !== "idle" || particlesActive}

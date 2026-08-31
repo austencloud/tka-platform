@@ -7,7 +7,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * per-step scrambles, and dictated grid visibility.
  */
 export const ninePlanesFilm: FilmDirectorInput = {
-  version: 3,
+  version: 4,
   id: "nine-planes-r1",
   title: "Nine Planes",
   brief:
@@ -33,7 +33,7 @@ export const ninePlanesFilm: FilmDirectorInput = {
         cast: {
           count: 8,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: PropType.STAFF,
             effect: "trails",
             effort: "glide",
@@ -72,7 +72,7 @@ export const ninePlanesFilm: FilmDirectorInput = {
         cast: {
           count: 8,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: PropType.CLUB,
             effect: "led",
             effort: "press",
@@ -112,7 +112,7 @@ export const ninePlanesFilm: FilmDirectorInput = {
         cast: {
           count: 8,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: PropType.STAFF,
             effect: "zap",
             effort: "punch",
@@ -158,7 +158,7 @@ export const ninePlanesFilm: FilmDirectorInput = {
         cast: {
           count: 8,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: PropType.CLUB,
             effect: "sparkles",
             effort: "press",

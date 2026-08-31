@@ -9,8 +9,12 @@ import { getSceneUndoManager } from "$lib/shared/3d/undo/get-scene-undo-manager"
 // that returns null from getContext (= "not supported"), which is fine —
 // these tests never enter actual 3D rendering.
 beforeAll(() => {
-  const originalCreateElement = document.createElement as unknown as (tag: string) => unknown;
-  (document as unknown as { createElement: (tag: string) => unknown }).createElement = (tag: string) => {
+  const originalCreateElement = document.createElement.bind(
+    document
+  ) as unknown as (tag: string) => unknown;
+  (
+    document as unknown as { createElement: (tag: string) => unknown }
+  ).createElement = (tag: string) => {
     const base = originalCreateElement(tag) as Record<string, unknown>;
     if (tag === "canvas") {
       base.getContext = () => null;
@@ -72,7 +76,7 @@ describe("viewer3d integration: spawn → formation → undo", () => {
     expect(state.performerManager.performers.length).toBe(8);
   });
 
-  it("changes every selected performer avatar as one undoable action", () => {
+  it("changes every selected performer character as one undoable action", () => {
     const state = makeState();
     state.performerManager.initialize();
     state.spawnPerformerFromUI();
@@ -81,11 +85,11 @@ describe("viewer3d integration: spawn → formation → undo", () => {
 
     const undo = getSceneUndoManager();
     undo.clear();
-    expect(state.setAvatarModelScoped("y-bot")).toBe(true);
+    expect(state.setCharacterScoped("y-bot")).toBe(true);
     expect(state.performerManager.performers).toHaveLength(3);
     expect(
       state.performerManager.performers.every(
-        (performer) => performer.avatarModelId === "y-bot"
+        (performer) => performer.characterId === "y-bot"
       )
     ).toBe(true);
     expect(undo.historySize).toBe(1);
@@ -93,14 +97,14 @@ describe("viewer3d integration: spawn → formation → undo", () => {
     state.undo();
     expect(
       state.performerManager.performers.every(
-        (performer) => performer.avatarModelId === "x-bot"
+        (performer) => performer.characterId === "x-bot"
       )
     ).toBe(true);
 
     state.redo();
     expect(
       state.performerManager.performers.every(
-        (performer) => performer.avatarModelId === "y-bot"
+        (performer) => performer.characterId === "y-bot"
       )
     ).toBe(true);
   });

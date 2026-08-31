@@ -51,10 +51,10 @@
 </script>
 
 <div class="proportions-panel" class:compact>
-  <h3>{t("avatar_proportions")}</h3>
+  <h3>{t("character_proportions")}</h3>
 
   <section class="input-section">
-    <span class="section-label">{t("avatar_body_type")}</span>
+    <span class="section-label">{t("character_body_type")}</span>
     <div class="current-value">{userProportionsState.heightDisplay}</div>
 
     {#if !useCustomHeight}
@@ -109,7 +109,7 @@
   </section>
 
   <section class="input-section">
-    <span class="section-label">{t("avatar_skin_tone")}</span>
+    <span class="section-label">{t("character_skin_tone")}</span>
     <div class="current-value">{userProportionsState.staffLengthDisplay}</div>
 
     {#if !useCustomStaff}

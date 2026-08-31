@@ -128,26 +128,26 @@ export const entries: CorpusEntry[] = [
     expect: { outcome: "rejects", messageIncludes: 'Unknown 3D environment \\"tundra\\"' },
   },
   {
-    id: "nonexistent-avatar-robo9000",
+    id: "nonexistent-character-robo9000",
     utterance: "Cast robo-9000 as the performer.",
-    film: corpusFilm("nonexistent-avatar-robo9000", {
-      performance: { cast: { count: 1, performers: [{ avatarId: "robo-9000" }] } },
+    film: corpusFilm("nonexistent-character-robo9000", {
+      performance: { cast: { count: 1, performers: [{ characterId: "robo-9000" }] } },
     }),
-    expect: { outcome: "rejects", messageIncludes: 'Avatar "robo-9000" is not in the deployed 3D catalog' },
+    expect: { outcome: "rejects", messageIncludes: 'Character "robo-9000" is not in the deployed 3D catalog' },
   },
   {
-    id: "nonexistent-avatar-captain-crunch-in-defaults",
-    utterance: "Cast captain-crunch as everyone's default avatar.",
-    film: corpusFilm("nonexistent-avatar-captain-crunch-in-defaults", {
-      performance: { cast: { count: 2, defaults: { avatarId: "captain-crunch" } } },
+    id: "nonexistent-character-captain-crunch-in-defaults",
+    utterance: "Cast captain-crunch as everyone's default character.",
+    film: corpusFilm("nonexistent-character-captain-crunch-in-defaults", {
+      performance: { cast: { count: 2, defaults: { characterId: "captain-crunch" } } },
     }),
-    expect: { outcome: "rejects", messageIncludes: 'Avatar "captain-crunch" is not in the deployed 3D catalog' },
+    expect: { outcome: "rejects", messageIncludes: 'Character "captain-crunch" is not in the deployed 3D catalog' },
   },
   {
-    id: "nonexistent-avatar-inside-oneof",
+    id: "nonexistent-character-inside-oneof",
     utterance: "Cast this performer as either x-bot or robo-9000.",
-    film: corpusFilm("nonexistent-avatar-inside-oneof", {
-      performance: { cast: { count: 1, performers: [{ avatarId: { oneOf: ["x-bot", "robo-9000"] } }] } },
+    film: corpusFilm("nonexistent-character-inside-oneof", {
+      performance: { cast: { count: 1, performers: [{ characterId: { oneOf: ["x-bot", "robo-9000"] } }] } },
     }),
     expect: {
       outcome: "rejects",
@@ -236,12 +236,12 @@ export const entries: CorpusEntry[] = [
     expect: { outcome: "rejects", messageIncludes: 'Unknown prop \\"stafff\\"' },
   },
   {
-    id: "nonexistent-avatar-phantom-cast-member",
-    utterance: "Cast an unnamed avatar for this performer.",
-    film: corpusFilm("nonexistent-avatar-blank-string", {
-      performance: { cast: { count: 1, performers: [{ avatarId: "phantom-cast-member" }] } },
+    id: "nonexistent-character-phantom-cast-member",
+    utterance: "Cast an unnamed character for this performer.",
+    film: corpusFilm("nonexistent-character-blank-string", {
+      performance: { cast: { count: 1, performers: [{ characterId: "phantom-cast-member" }] } },
     }),
-    expect: { outcome: "rejects", messageIncludes: 'Avatar "phantom-cast-member" is not in the deployed 3D catalog' },
+    expect: { outcome: "rejects", messageIncludes: 'Character "phantom-cast-member" is not in the deployed 3D catalog' },
   },
   {
     id: "real-prop-and-effect-sanity-check",

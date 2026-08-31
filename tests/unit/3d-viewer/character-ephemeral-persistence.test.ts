@@ -2,17 +2,17 @@
  * Guards the Task 1 fix from
  * docs/superpowers/plans/2026-08-24-film-director-plane-axes.md: a seeded
  * viewer is documented as "reads its own config and writes NOTHING back",
- * but avatar instances used to read the user's persisted plane mode at
+ * but character instances used to read the user's persisted plane mode at
  * creation and write the tka-3d-planeMode-<id> / tka-3d-rotVariant-<id>
  * localStorage keys on every plane/rotation change regardless of that seed.
- * `AvatarInstanceConfig.persistent`
- * threads the seeded viewer's write-silence down to the avatar instance.
+ * `CharacterInstanceConfig.persistent`
+ * threads the seeded viewer's write-silence down to the character instance.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  createAvatarInstanceState,
+  createCharacterInstanceState,
   makeStandaloneDeps,
-} from "$lib/shared/3d/state/avatar-instance-state.svelte";
+} from "$lib/shared/3d/state/character-instance-state.svelte";
 import { Plane } from "@austencloud/scene-3d";
 
 const ID = "eph-persist-test";
@@ -29,11 +29,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("avatar instance state — persistent: false (ephemeral / seeded viewers)", () => {
+describe("character instance state — persistent: false (ephemeral / seeded viewers)", () => {
   it("does not read a pre-populated persisted plane mode into initial state", () => {
     localStorage.setItem(PLANE_MODE_KEY, "dual-wheel");
 
-    const a = createAvatarInstanceState(
+    const a = createCharacterInstanceState(
       { id: ID, positionX: 0, persistent: false },
       makeDeps()
     );
@@ -48,7 +48,7 @@ describe("avatar instance state — persistent: false (ephemeral / seeded viewer
   it("records zero writes to plane-mode/rot-variant keys for setHandPlane + setStepHandPlane", () => {
     const setItemSpy = vi.spyOn(Storage.prototype, "setItem");
 
-    const a = createAvatarInstanceState(
+    const a = createCharacterInstanceState(
       { id: ID, positionX: 0, persistent: false },
       makeDeps()
     );
@@ -73,7 +73,7 @@ describe("avatar instance state — persistent: false (ephemeral / seeded viewer
   it("records zero writes for cycleRotationVariant", () => {
     const setItemSpy = vi.spyOn(Storage.prototype, "setItem");
 
-    const a = createAvatarInstanceState(
+    const a = createCharacterInstanceState(
       { id: ID, positionX: 0, persistent: false },
       makeDeps()
     );
@@ -88,7 +88,7 @@ describe("avatar instance state — persistent: false (ephemeral / seeded viewer
   });
 
   it("default (persistent omitted) still persists — the real viewer is unchanged", () => {
-    const a = createAvatarInstanceState({ id: ID, positionX: 0 }, makeDeps());
+    const a = createCharacterInstanceState({ id: ID, positionX: 0 }, makeDeps());
 
     a.setHandPlane("blue", Plane.WHEEL);
 
@@ -98,7 +98,7 @@ describe("avatar instance state — persistent: false (ephemeral / seeded viewer
   it("default (persistent omitted) still reads a pre-populated persisted plane mode", () => {
     localStorage.setItem(PLANE_MODE_KEY, "dual-wheel");
 
-    const a = createAvatarInstanceState({ id: ID, positionX: 0 }, makeDeps());
+    const a = createCharacterInstanceState({ id: ID, positionX: 0 }, makeDeps());
 
     expect(a.rawPlaneMode).toBe("dual-wheel");
   });

@@ -1,22 +1,25 @@
 <script lang="ts">
-  import { AVATAR_DEFINITIONS, type AvatarId } from "@austencloud/scene-3d";
-  import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
-  import PerformerAvatarPicker from "../PerformerAvatarPicker.svelte";
+  import {
+    CHARACTER_DEFINITIONS,
+    type CharacterId,
+  } from "$lib/shared/3d/domain/character-model";
+  import type { CharacterInstanceState } from "$lib/shared/3d/state/character-instance-state.svelte";
+  import PerformerCharacterPicker from "../PerformerCharacterPicker.svelte";
 
   interface Props {
-    currentAvatarId: AvatarId | null;
-    pendingAvatarId?: AvatarId | null;
+    currentCharacterId: CharacterId | null;
+    pendingCharacterId?: CharacterId | null;
     performerColor?: string;
-    previewPerformer: AvatarInstanceState | null;
+    previewPerformer: CharacterInstanceState | null;
     previewPerformerNumber: number;
-    onIntent: (id: AvatarId) => void;
+    onIntent: (id: CharacterId) => void;
     onCancelIntent: () => void;
-    onSelect: (id: AvatarId) => void;
+    onSelect: (id: CharacterId) => void;
   }
 
   let {
-    currentAvatarId,
-    pendingAvatarId = null,
+    currentCharacterId,
+    pendingCharacterId = null,
     performerColor = "var(--theme-accent)",
     previewPerformer,
     previewPerformerNumber,
@@ -26,24 +29,25 @@
   }: Props = $props();
 
   const currentDefinition = $derived(
-    AVATAR_DEFINITIONS.find(
-      (definition) => definition.id === currentAvatarId
+    CHARACTER_DEFINITIONS.find(
+      (definition) => definition.id === currentCharacterId
     ) ?? null
   );
   const pendingDefinition = $derived(
-    AVATAR_DEFINITIONS.find(
-      (definition) => definition.id === pendingAvatarId
+    CHARACTER_DEFINITIONS.find(
+      (definition) => definition.id === pendingCharacterId
     ) ?? null
   );
 </script>
 
-<div class="avatar-select-shell" style:--performer-color={performerColor}>
+<div class="character-select-shell" style:--performer-color={performerColor}>
   <div class="picker-heading">
-    <strong>Choose an avatar</strong>
+    <strong>Choose a character</strong>
     <span>
       Hover to preview {previewPerformerNumber === 1
         ? "Performer 1's"
-        : `Performer ${previewPerformerNumber}'s`} sequence. Select to apply instantly.
+        : `Performer ${previewPerformerNumber}'s`} sequence. Choose one to update
+      the scene; Undo switches back.
     </span>
   </div>
 
@@ -52,14 +56,14 @@
       ? `Loading ${pendingDefinition.name}`
       : currentDefinition
         ? `${currentDefinition.name} is active`
-        : "Performers use different avatars"}
+        : "Performers use different characters"}
   </span>
 
-  <PerformerAvatarPicker
-    selectedAvatarId={currentAvatarId}
-    groupLabel="Choose an avatar"
+  <PerformerCharacterPicker
+    selectedCharacterId={currentCharacterId}
+    groupLabel="Choose a character"
     {previewPerformer}
-    {pendingAvatarId}
+    {pendingCharacterId}
     {onSelect}
     {onIntent}
     {onCancelIntent}
@@ -67,7 +71,7 @@
 </div>
 
 <style>
-  .avatar-select-shell {
+  .character-select-shell {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;

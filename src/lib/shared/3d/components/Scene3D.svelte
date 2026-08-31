@@ -40,7 +40,7 @@
   import type { Snippet } from "svelte";
   import { WALL_OFFSET } from "@austencloud/scene-3d";
   import { CameraMode } from "$lib/shared/3d/camera/types";
-  import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
+  import type { CharacterInstanceState } from "../state/character-instance-state.svelte";
   import { getCameraLayers } from "@austencloud/scene-3d";
   import { SCALE, STAGE } from "@austencloud/scene-3d";
   import { userProportionsState } from "@austencloud/scene-3d";
@@ -48,20 +48,20 @@
   // Enable Threlte layers plugin for layer inheritance through component tree
   layers();
 
-  /** Avatar position for per-avatar grids */
-  interface AvatarGridPosition {
+  /** Character position for per-character grids */
+  interface CharacterGridPosition {
     x: number;
     y: number;
     z: number;
-    /** Avatar facing angle - grids rotate with avatar's body orientation */
+    /** Character facing angle - grids rotate with the character's body orientation */
     facingAngle?: number;
   }
 
   interface Props {
     /** Camera mode for view switching (orbit vs first-person) */
     cameraMode?: CameraMode;
-    /** Primary avatar to follow in first-person mode */
-    primaryAvatar?: AvatarInstanceState | null;
+    /** Primary character to follow in first-person mode */
+    primaryCharacter?: CharacterInstanceState | null;
     /** Which planes to show */
     visiblePlanes?: Set<Plane>;
     /** Whether to show the grid */
@@ -122,8 +122,8 @@
     bloomRadius?: number;
     /** Background type - controls both 2D theme and 3D environment */
     backgroundType?: BackgroundType;
-    /** Avatar positions for per-avatar grids (if empty, single grid at origin) */
-    avatarPositions?: AvatarGridPosition[];
+    /** Character positions for per-character grids (if empty, single grid at origin) */
+    characterPositions?: CharacterGridPosition[];
     /** Disable built-in camera (for locomotion mode which provides its own) */
     disableCamera?: boolean;
     /** Disable orbit controls (for object dragging) */
@@ -153,7 +153,7 @@
 
   let {
     cameraMode = CameraMode.THIRD_PERSON,
-    primaryAvatar = null,
+    primaryCharacter = null,
     visiblePlanes = new Set([Plane.WALL, Plane.WHEEL, Plane.FLOOR]),
     showGrid = true,
     showLabels = true,
@@ -178,7 +178,7 @@
     bloomThreshold = 0.8,
     bloomRadius = 0.4,
     backgroundType = BackgroundType.COSMIC,
-    avatarPositions = [],
+    characterPositions = [],
     disableCamera = false,
     disableOrbitControls = false,
     onMeshClick,
@@ -200,14 +200,16 @@
     }
   }
 
-  // Grid positions match avatar positions - rotation pivot is at the avatar.
+  // Grid positions match character positions; rotation pivots at the character.
   // Grid offset is applied via parent T.Group, not Grid3D props.
   const gridPositions = $derived(
-    avatarPositions.length > 0 ? avatarPositions : [{ x: 0, y: 0, z: 0 }]
+    characterPositions.length > 0
+      ? characterPositions
+      : [{ x: 0, y: 0, z: 0 }]
   );
 
-  // Grid offset pushes the grid forward from avatar in body-local space
-  // WALL_OFFSET is negative (avatar behind grid), so negate to get positive forward offset
+  // Grid offset pushes the grid forward from the character in body-local space.
+  // WALL_OFFSET is negative (character behind grid), so negate it for forward.
   const gridOffset = $derived(gridForwardOffset ?? -WALL_OFFSET);
 
   // Determine if this is a night/dark environment that needs reduced lighting
@@ -376,7 +378,7 @@
     <SeatedAudience3D count={audienceCount} />
   {/if}
 
-  <!-- Grid planes - one per avatar position, rotating with avatar facing -->
+  <!-- Grid planes - one per character position, rotating with character facing -->
   {#if showGrid}
     {#each gridPositions as pos, i}
       <T.Group
@@ -417,17 +419,17 @@
 
     <!-- Perspective Camera (disabled when locomotion mode provides its own) -->
     {#if !disableCamera}
-      {#if cameraMode === CameraMode.FIRST_PERSON && primaryAvatar}
-        <!-- First-person camera following primary avatar (in meters) -->
+      {#if cameraMode === CameraMode.FIRST_PERSON && primaryCharacter}
+        <!-- First-person camera following primary character (in meters) -->
         {@const eyeHeight = SCALE.EYE_HEIGHT}
         {@const forwardOffset = STAGE.FIRST_PERSON_FORWARD_OFFSET}
         {@const eyeX =
-          primaryAvatar.position.x +
-          Math.sin(primaryAvatar.facingAngle) * forwardOffset}
-        {@const eyeY = primaryAvatar.position.y + eyeHeight}
+          primaryCharacter.position.x +
+          Math.sin(primaryCharacter.facingAngle) * forwardOffset}
+        {@const eyeY = primaryCharacter.position.y + eyeHeight}
         {@const eyeZ =
-          primaryAvatar.position.z +
-          Math.cos(primaryAvatar.facingAngle) * forwardOffset}
+          primaryCharacter.position.z +
+          Math.cos(primaryCharacter.facingAngle) * forwardOffset}
 
         <T.PerspectiveCamera
           bind:ref={cameraRef}
@@ -438,12 +440,12 @@
           far={SCALE.FAR_CLIP}
         />
 
-        <!-- Update camera rotation to match avatar facing -->
+        <!-- Update camera rotation to match character facing -->
         <T.Object3D
           onFrame={() => {
-            if (cameraRef && primaryAvatar) {
+            if (cameraRef && primaryCharacter) {
               cameraRef.rotation.order = "YXZ";
-              cameraRef.rotation.y = primaryAvatar.facingAngle;
+              cameraRef.rotation.y = primaryCharacter.facingAngle;
               cameraRef.rotation.x = 0; // Look straight ahead
             }
           }}
