@@ -91,6 +91,8 @@ export interface TransitionGeometrySample {
   motion3DPreparing: boolean;
   motion2DPreparationHeld: boolean;
   sceneCurtainVisible: boolean;
+  scenePreparationProgress: number | null;
+  scenePreparationLabel: string | null;
   tunnelOpacity: number;
   tunnelPresented: boolean;
   tunnelCanvasReady: boolean;
@@ -151,6 +153,9 @@ export interface TransitionGeometrySummary {
   motionBlankFrames: number;
   motionUnready3DFrames: number;
   motionCurtainFrames: number;
+  motionMisidentified3DFrames: number;
+  motionPreparationProgressRegressions: number;
+  motionPreparationLabels: string[];
   motionCrossfadeFrames: number;
   motionPreparationFrames: number;
   motionPreparationGeometryHeldFrames: number;
@@ -455,6 +460,25 @@ function late2DBackingChanges(samples: TransitionGeometrySample[]): number {
   return changes;
 }
 
+function preparationProgressRegressions(
+  samples: TransitionGeometrySample[]
+): number {
+  let previous: number | null = null;
+  let regressions = 0;
+  for (const sample of samples) {
+    if (!sample.sceneCurtainVisible || sample.scenePreparationProgress === null)
+      continue;
+    if (
+      previous !== null &&
+      sample.scenePreparationProgress < previous - 0.001
+    ) {
+      regressions += 1;
+    }
+    previous = sample.scenePreparationProgress;
+  }
+  return regressions;
+}
+
 function uniqueTunnelSurfacePath(
   samples: TransitionGeometrySample[]
 ): string[] {
@@ -733,7 +757,10 @@ export function summarizeTransitionGeometry(
       : 0,
     motionUnready3DFrames: isMotionTrace
       ? trace.samples.filter(
-          (sample) => sample.motion3DPresented && !sample.motion3DReady
+          (sample) =>
+            sample.motion3DPresented &&
+            !sample.motion3DReady &&
+            !sample.sceneCurtainVisible
         ).length
       : 0,
     motionCurtainFrames: isMotionTrace
@@ -741,6 +768,24 @@ export function summarizeTransitionGeometry(
           (sample) => sample.motion3DPresented && sample.sceneCurtainVisible
         ).length
       : 0,
+    motionMisidentified3DFrames: isMotionTrace
+      ? trace.samples.filter(
+          (sample) =>
+            !sample.dissolveActive &&
+            sample.selectedMode === "animation-3d" &&
+            sample.motion2DPresented
+        ).length
+      : 0,
+    motionPreparationProgressRegressions: isMotionTrace
+      ? preparationProgressRegressions(trace.samples)
+      : 0,
+    motionPreparationLabels: isMotionTrace
+      ? uniqueValuePath(
+          trace.samples
+            .map((sample) => sample.scenePreparationLabel)
+            .filter((label): label is string => Boolean(label))
+        )
+      : [],
     motionCrossfadeFrames: isMotionTrace
       ? trace.samples.filter(
           (sample) =>
