@@ -221,10 +221,10 @@
           desc: "Written reference, Codex, and PDFs",
         },
         {
-          label: "Glossary",
+          label: "Kinetic Atlas",
           href: "/glossary",
-          icon: "fa-spell-check",
-          desc: "Every TKA term, defined",
+          icon: "fa-compass",
+          desc: "Letters, motion, notation, and technique",
         },
         {
           label: "FAQ",

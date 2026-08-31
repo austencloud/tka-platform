@@ -53,6 +53,12 @@
   const mandala = createPaneKeepAlive(() => selectedPane === "mandala");
   const tunnel = createPaneKeepAlive(() => selectedPane === "tunnel");
 
+  // A focused Card has no neighboring playback surface for a seek to explain.
+  // Keep its cells static; split view retains click-to-seek beside the motion.
+  const cardStepClick = $derived(
+    layout.focusedPane === "image" ? undefined : onStepClick
+  );
+
   function handleCloseClick(event: MouseEvent | KeyboardEvent): void {
     event.stopPropagation();
     onUnfocusPane();
@@ -88,9 +94,9 @@
       showHighlight={side === "right" && layout.focusedPane === "image"
         ? false
         : playback.isPlaying || playback.highlightedStepIndex !== null}
-      {onStepClick}
+      onStepClick={cardStepClick}
       {onQrPlayClick}
-      clickableStart
+      clickableStart={!!cardStepClick}
       {onRenderProgress}
       showWord={imageComposition.showWord}
       showStepNumbers={imageComposition.showStepNumbers}

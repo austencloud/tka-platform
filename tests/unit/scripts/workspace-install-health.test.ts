@@ -196,6 +196,35 @@ describe("dev launcher install guard", () => {
     expect(launcher).toContain("would create a second tka-dev connector");
   });
 
+  it("removes stale connectors for this tunnel before Vite starts", () => {
+    const cleanupIndex = launcher.indexOf(
+      "Clear-StaleTkaTunnelProcesses $tokenFile"
+    );
+    const viteStartIndex = launcher.indexOf(
+      'Write-Status "Starting Vite dev server..."'
+    );
+
+    expect(launcher).toContain("Get-StaleTkaTunnelProcesses");
+    expect(launcher).toContain("Get-CimInstance Win32_Process");
+    expect(launcher).toContain("run\\s+tka-dev");
+    expect(cleanupIndex).toBeGreaterThan(-1);
+    expect(viteStartIndex).toBeGreaterThan(cleanupIndex);
+  });
+
+  it("lets pm2 rebuild a false-healthy wrapper when the origin stays dead", () => {
+    expect(launcher).toContain('$originUrl = "https://[::1]:5173/"');
+    expect(launcher).toContain("$originFailureCount -ge 3");
+    expect(launcher).toContain(
+      "Exiting so pm2 can restart the complete dev stack."
+    );
+    expect(launcher).toContain(
+      "elseif ((Get-Date) -ge $nextHealthProbeAt)"
+    );
+    expect(launcher).not.toContain(
+      "elseif ($tunnelProc -and (Get-Date) -ge $nextPublicProbeAt)"
+    );
+  });
+
   it("supervises public tunnel health without restarting Vite", () => {
     expect(launcher).toContain('Test-Http200 "https://dev.tkaflowarts.com/"');
     expect(launcher).toContain("$publicFailureCount -ge 3");

@@ -5,6 +5,7 @@
   import {
     PerformerRig,
     PLANE_MODE_CONFIGS,
+    type AvatarGripDiagnostics,
     type AvatarPoseDiagnostics,
     type CollisionEvent,
   } from "@austencloud/scene-3d";
@@ -66,6 +67,7 @@
   } from "./performer-interaction/performer-pointer-interaction.svelte";
   import { planUpperBodyStance } from "../collision/upper-body-stance-planner";
   import { getAvatarSequenceCollisionAudit } from "../collision/avatar-sequence-collision-audit";
+  import { getAvatarGripMotionAudit } from "../diagnostics/avatar-grip-motion-audit";
 
   // Performer layer membership inherits through the nested PerformerRig tree.
   layers();
@@ -75,6 +77,9 @@
   ];
   const collisionAudit = import.meta.env.DEV
     ? getAvatarSequenceCollisionAudit()
+    : null;
+  const gripMotionAudit = import.meta.env.DEV
+    ? getAvatarGripMotionAudit()
     : null;
 
   function resolveUpperBodyStance(performer: CharacterInstanceState) {
@@ -826,11 +831,19 @@
             stanceYaw={upperBodyStance.yawRad}
             spinePitchOffset={upperBodyStance.pitchRad}
             headDodge={true}
-            onCollisionEvents={collisionAudit
+            onCollisionEvents={collisionAudit || gripMotionAudit
               ? (
                   events: CollisionEvent[],
-                  diagnostics: AvatarPoseDiagnostics
-                ) => collisionAudit.record(performer.id, events, diagnostics)
+                  diagnostics: AvatarPoseDiagnostics,
+                  gripDiagnostics: AvatarGripDiagnostics
+                ) => {
+                  collisionAudit?.record(performer.id, events, diagnostics);
+                  gripMotionAudit?.record(
+                    performer.id,
+                    gripDiagnostics,
+                    events
+                  );
+                }
               : undefined}
             onAvatarSwapped={(characterId) => {
               onCharacterSwapped(characterId);

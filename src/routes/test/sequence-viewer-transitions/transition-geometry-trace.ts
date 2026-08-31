@@ -48,6 +48,9 @@ export interface TransitionGeometrySample {
   mandalaBackingSize: number;
   mandalaDisplaySize: number;
   mandalaRasterScale: number;
+  mandalaDisplayWidth: number;
+  mandalaDisplayHeight: number;
+  mandalaMaximumRasterScale: number;
   cardSize: number;
   cardFlexGrow: number;
   cardHidden: boolean;
@@ -86,6 +89,7 @@ export interface TransitionGeometrySample {
   motion3DPresented: boolean;
   motion3DReady: boolean;
   motion3DPreparing: boolean;
+  motion2DPreparationHeld: boolean;
   sceneCurtainVisible: boolean;
   tunnelOpacity: number;
   tunnelPresented: boolean;
@@ -149,6 +153,10 @@ export interface TransitionGeometrySummary {
   motionCurtainFrames: number;
   motionCrossfadeFrames: number;
   motionPreparationFrames: number;
+  motionPreparationGeometryHeldFrames: number;
+  motionPreparationRasterScaleMaximum: number | null;
+  motionPreparationRasterGrowthMaximum: number | null;
+  motionMagnifiedPreparationFrames: number;
   motionLate2DBackingChanges: number;
   motionSurfacePath: string[];
   motionHandoffLatency: number | null;
@@ -559,6 +567,32 @@ export function summarizeTransitionGeometry(
   const transformedCardCellSamples = expectedCardSamples.filter(
     (sample) => sample.cardTransformedCellCount > 0
   );
+  const motionPreparationSamples = isMotionTrace
+    ? trace.samples.filter(
+        (sample) =>
+          sample.phase === "prepare-3d" &&
+          sample.motion3DPreparing &&
+          sample.motion2DOpacity >= VISIBLE_PANE_OPACITY &&
+          sample.mandalaMaximumRasterScale > 0
+      )
+    : [];
+  const motionPreparationRasterBaseline = isMotionTrace
+    ? (trace.samples.find(
+        (sample) =>
+          !sample.motion3DPreparing &&
+          sample.motion2DPresented &&
+          sample.motion2DOpacity >= VISIBLE_PANE_OPACITY &&
+          sample.mandalaMaximumRasterScale > 0
+      )?.mandalaMaximumRasterScale ??
+      motionPreparationSamples[0]?.mandalaMaximumRasterScale ??
+      null)
+    : null;
+  const magnifiedMotionPreparationSamples = motionPreparationSamples.filter(
+    (sample) =>
+      motionPreparationRasterBaseline !== null &&
+      sample.mandalaMaximumRasterScale / motionPreparationRasterBaseline >
+        MAX_MANDALA_RASTER_SCALE
+  );
 
   return {
     cardExitMinimum: minimumVisibleSize(
@@ -716,6 +750,31 @@ export function summarizeTransitionGeometry(
     motionPreparationFrames: isMotionTrace
       ? trace.samples.filter((sample) => sample.motion3DPreparing).length
       : 0,
+    motionPreparationGeometryHeldFrames: isMotionTrace
+      ? trace.samples.filter(
+          (sample) => sample.motion3DPreparing && sample.motion2DPreparationHeld
+        ).length
+      : 0,
+    motionPreparationRasterScaleMaximum:
+      motionPreparationSamples.length === 0
+        ? null
+        : Math.max(
+            ...motionPreparationSamples.map(
+              (sample) => sample.mandalaMaximumRasterScale
+            )
+          ),
+    motionPreparationRasterGrowthMaximum:
+      motionPreparationSamples.length === 0 ||
+      motionPreparationRasterBaseline === null
+        ? null
+        : Math.max(
+            ...motionPreparationSamples.map(
+              (sample) =>
+                sample.mandalaMaximumRasterScale /
+                motionPreparationRasterBaseline
+            )
+          ),
+    motionMagnifiedPreparationFrames: magnifiedMotionPreparationSamples.length,
     motionLate2DBackingChanges: isMotionTrace
       ? late2DBackingChanges(trace.samples)
       : 0,

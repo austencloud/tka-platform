@@ -23,6 +23,8 @@
     visualSpinner: "https://infiniteperplexity.github.io/visual-spinner-3d/",
     visualSpinnerGithub:
       "https://github.com/infiniteperplexity/visual-spinner-3d",
+    spiroAnim: "https://spiroanim.com/app",
+    spiroAnimGithub: "https://github.com/rbgirard/spiroanim",
     arFlowArtsPlay:
       "https://play.google.com/store/apps/details?id=com.arflowartsreact",
     arFlowArtsIos: "https://apps.apple.com/us/app/arflowarts/id1517940593",
@@ -51,7 +53,7 @@
         description: DESCRIPTION,
         inLanguage: "en-US",
         datePublished: "2026-07-16",
-        dateModified: "2026-07-20",
+        dateModified: "2026-08-31",
         image: "https://tkaflowarts.com/branding/og-image.png",
         author: { "@id": PERSON_ID },
         publisher: { "@id": ORGANIZATION_ID },
@@ -106,7 +108,7 @@
       <span aria-hidden="true">·</span>
       Published July 16, 2026
       <span aria-hidden="true">·</span>
-      Updated July 20, 2026
+      Updated August 31, 2026
     </p>
   </header>
 
@@ -372,6 +374,62 @@
     </div>
   </section>
 
+  <!-- SpiroAnim -->
+  <section class="editorial-section" style="--accent: #22d3ee">
+    <h2 class="section-title">SpiroAnim</h2>
+    <div class="prose">
+      <p>
+        <strong>SpiroAnim</strong> is Ryan Girard's browser workspace for advanced
+        poi and staff concepts. Its animated player sits beside live generators for
+        Vulcan Tech Gospel, Quarter Spacing, and Eight Step. Change a cell, speed
+        ratio, grid, pattern option, or playback setting, and the movement redraws
+        immediately. A timeline and editor handle patterns built outside those
+        concept catalogs.
+      </p>
+      <p>
+        The project became public in 2026 after several years of development. It
+        is open source, installable as a progressive web app, and designed to
+        reopen offline after its first successful visit. SpiroAnim's own builders
+        and compiler also supplied the source geometry for the app's full
+        transcription into The Kinetic Alphabet.
+      </p>
+      <div class="shot-strip web">
+        <figure class="shot">
+          <img
+            src="/roots/software/spiroanim.webp"
+            alt="SpiroAnim showing animated cyan and green poi paths beside its Vulcan Tech Gospel concept matrix"
+            loading="lazy"
+            width="1920"
+            height="1080"
+          />
+          <figcaption>
+            SpiroAnim player and Vulcan Tech Gospel concept matrix
+          </figcaption>
+        </figure>
+      </div>
+      <div class="resource-row">
+        <a
+          href={links.spiroAnim}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="resource-chip"
+        >
+          <span>Open SpiroAnim</span>
+          <i class="fas fa-external-link-alt ext" aria-hidden="true"></i>
+        </a>
+        <a
+          href={links.spiroAnimGithub}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="resource-chip"
+        >
+          <span>Source on GitHub</span>
+          <i class="fas fa-external-link-alt ext" aria-hidden="true"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
   <!-- Today -->
   <section class="editorial-section" style="--accent: #22c55e">
     <h2 class="section-title">Today</h2>
@@ -469,7 +527,7 @@
         Built flow arts software? Remember a tool this page is missing, or
         spotted a detail that is wrong? Submit it below. Every submission gets
         reviewed, and anything that belongs here gets added with credit.
-        Statuses on this page were last checked in July 2026.
+        Statuses on this page were last checked in August 2026.
       </p>
       <SoftwareSubmitForm source="roots-software" />
     </div>

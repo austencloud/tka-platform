@@ -909,42 +909,43 @@ describe("scan activity state", () => {
 
   it("hydrates decoded shortcode motions before rendering their scanned props", async () => {
     let pushEvents: (events: ScanEventRow[]) => void = () => {};
-    const decodeSequence = vi.fn(async () =>
-      ({
-        id: "decoded-prop-card",
-        word: "PROP",
-        steps: [
-          {
-            id: "decoded-step",
-            stepNumber: 1,
-            duration: 1,
-            motions: {
-              blue: {
-                color: "blue",
-                motionType: "static",
-                rotationDirection: "noRotation",
-                startLocation: "s",
-                endLocation: "s",
-                turns: 0,
-                startOrientation: "in",
-                endOrientation: "in",
-                propType: PropType.POI,
-              },
-              red: {
-                color: "red",
-                motionType: "static",
-                rotationDirection: "noRotation",
-                startLocation: "n",
-                endLocation: "n",
-                turns: 0,
-                startOrientation: "in",
-                endOrientation: "in",
-                propType: PropType.FAN,
+    const decodeSequence = vi.fn(
+      async () =>
+        ({
+          id: "decoded-prop-card",
+          word: "PROP",
+          steps: [
+            {
+              id: "decoded-step",
+              stepNumber: 1,
+              duration: 1,
+              motions: {
+                blue: {
+                  color: "blue",
+                  motionType: "static",
+                  rotationDirection: "noRotation",
+                  startLocation: "s",
+                  endLocation: "s",
+                  turns: 0,
+                  startOrientation: "in",
+                  endOrientation: "in",
+                  propType: PropType.POI,
+                },
+                red: {
+                  color: "red",
+                  motionType: "static",
+                  rotationDirection: "noRotation",
+                  startLocation: "n",
+                  endLocation: "n",
+                  turns: 0,
+                  startOrientation: "in",
+                  endOrientation: "in",
+                  propType: PropType.FAN,
+                },
               },
             },
-          },
-        ],
-      }) as unknown as SequenceData
+          ],
+        }) as unknown as SequenceData
     );
     const state = createScanActivityState({
       data: {
@@ -1081,25 +1082,23 @@ describe("scan activity state", () => {
 describe("ScanActivityWatcher", () => {
   it("publishes the prop configuration stored on each scan event", async () => {
     const receiveEvents = vi.fn();
-    vi.mocked(onSnapshot).mockImplementationOnce(
-      ((...args: unknown[]) => {
-        const onNext = args[1] as (snapshot: unknown) => void;
-        onNext({
-          docs: [
-            {
-              ref: { path: "shortcodes/PROP/scanEvents/event-1" },
-              data: () => ({
-                timestamp: "2026-07-20T12:00:00.000Z",
-                bluePropType: "P",
-                redPropType: "fan",
-                catDogMode: true,
-              }),
-            },
-          ],
-        });
-        return vi.fn();
-      }) as never
-    );
+    vi.mocked(onSnapshot).mockImplementationOnce(((...args: unknown[]) => {
+      const onNext = args[1] as (snapshot: unknown) => void;
+      onNext({
+        docs: [
+          {
+            ref: { path: "shortcodes/PROP/scanEvents/event-1" },
+            data: () => ({
+              timestamp: "2026-07-20T12:00:00.000Z",
+              bluePropType: "P",
+              redPropType: "fan",
+              catDogMode: true,
+            }),
+          },
+        ],
+      });
+      return vi.fn();
+    }) as never);
 
     const watcher = new ScanActivityWatcher();
     await watcher.watchRecentEvents(receiveEvents, vi.fn());
@@ -1138,18 +1137,41 @@ describe("GlobalUserMap scan marker contract", () => {
     "utf8"
   );
 
-  it("uses click listeners supported by the weekly Maps channel", () => {
+  it("keeps weekly-channel click listeners and enables keyboard interaction", () => {
     expect(source.match(/marker\.addListener\("click"/g)).toHaveLength(2);
     expect(source).not.toContain('addEventListener("gmp-click"');
+    expect(source).toContain("gmpClickable: true");
+    expect(source).toContain("gmpClickable: Boolean(onScanMarkerClick)");
   });
 
-  it("keeps imperative marker rebuilds outside effect tracking", () => {
+  it("reconciles stable marker handles outside effect tracking", () => {
     expect(source).toContain('import { onMount, untrack } from "svelte"');
+    expect(source).toContain("const userMarkerHandles = new Map");
+    expect(source).toContain("const scanMarkerHandles = new Map");
     expect(source).toMatch(
       /untrack\(\(\) => \{\s*try \{\s*createMarkers\(incoming\)/s
     );
     expect(source).toMatch(
       /untrack\(\(\) => \{\s*try \{\s*createScanMarkers\(incoming\)/s
     );
+  });
+
+  it("clusters both map layers without replacing marker objects", () => {
+    expect(source).toContain(
+      'import { MarkerClusterer } from "@googlemaps/markerclusterer"'
+    );
+    expect(source).toContain("current.clearMarkers(true)");
+    expect(source).toContain("current.addMarkers(currentMarkers)");
+    expect(source).not.toContain("injectedScanMarkers = []");
+  });
+
+  it("gives scan marker interactions a full touch target", () => {
+    expect(source).toContain("width: var(--min-touch-target, 44px)");
+    expect(source).toContain("height: var(--min-touch-target, 44px)");
+  });
+
+  it("announces the selected scan through the marker title", () => {
+    expect(source).toContain("Selected scan: ${label}");
+    expect(source).toContain("scanMarkerTitle(scan)");
   });
 });

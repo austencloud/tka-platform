@@ -4,6 +4,7 @@ export const CANDIDATE_IDS = [
   "human-generator-trial",
   "human-generator-parity",
   "personal-metaperson",
+  "intake-current",
   "avatar-sdk",
   "avaturn",
   "ready-player-me-archived",
@@ -25,7 +26,7 @@ export interface BakeoffCandidate {
   label: string;
   source: string;
   modelUrl: string;
-  bytes: number;
+  bytes: number | null;
   continuity: "current" | "control" | "disqualified";
   note: string;
 }
@@ -76,6 +77,15 @@ export const BAKEOFF_CANDIDATES: Record<CandidateId, BakeoffCandidate> = {
     continuity: "current",
     note: "Evaluation-only LOD1 GLB with the standard 73-joint MetaPerson skeleton and 1K PBR textures.",
   },
+  "intake-current": {
+    id: "intake-current",
+    label: "Current intake slot",
+    source: "Local character intake pipeline",
+    modelUrl: "/models/avatars/bakeoff/intake-current.glb",
+    bytes: null,
+    continuity: "current",
+    note: "The latest locally staged intake. Review every stress pose before catalog promotion.",
+  },
   "avatar-sdk": {
     id: "avatar-sdk",
     label: "Avatar SDK MetaPerson",
@@ -117,6 +127,7 @@ export function parseStressPoseId(value: string | null): StressPoseId {
     : "cross-body";
 }
 
-export function formatMegabytes(bytes: number): string {
+export function formatMegabytes(bytes: number | null): string {
+  if (bytes === null) return "local staged file";
   return `${(bytes / 1_000_000).toFixed(1)} MB`;
 }

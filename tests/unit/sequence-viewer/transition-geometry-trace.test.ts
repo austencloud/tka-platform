@@ -26,6 +26,9 @@ function sample(
     mandalaBackingSize: 630,
     mandalaDisplaySize: 630,
     mandalaRasterScale: 1,
+    mandalaDisplayWidth: 630,
+    mandalaDisplayHeight: 630,
+    mandalaMaximumRasterScale: 1,
     cardSize: 450,
     cardFlexGrow: 1,
     cardHidden: false,
@@ -64,6 +67,7 @@ function sample(
     motion3DPresented: false,
     motion3DReady: false,
     motion3DPreparing: false,
+    motion2DPreparationHeld: false,
     sceneCurtainVisible: false,
     tunnelOpacity: 0,
     tunnelPresented: false,
@@ -325,6 +329,7 @@ describe("Sequence Viewer geometry trace", () => {
       phase: "prepare-3d" as const,
       selectedMode: "animation-3d" as const,
       motion3DPreparing: true,
+      motion2DPreparationHeld: true,
     };
     const reveal = {
       ...preparing,
@@ -356,8 +361,36 @@ describe("Sequence Viewer geometry trace", () => {
     expect(summary.motionCurtainFrames).toBe(0);
     expect(summary.motionCrossfadeFrames).toBe(1);
     expect(summary.motionPreparationFrames).toBe(1);
+    expect(summary.motionPreparationGeometryHeldFrames).toBe(1);
+    expect(summary.motionPreparationRasterScaleMaximum).toBe(1);
+    expect(summary.motionPreparationRasterGrowthMaximum).toBe(1);
+    expect(summary.motionMagnifiedPreparationFrames).toBe(0);
     expect(summary.motionSurfacePath).toEqual(["2D", "3D"]);
     expect(summary.motionHandoffLatency).toBe(140);
+  });
+
+  it("flags a first-3D placeholder stretched beyond its backing raster", () => {
+    const stretched = {
+      ...sample(80, 900, 1),
+      phase: "prepare-3d" as const,
+      selectedMode: "animation-3d" as const,
+      motion3DPreparing: true,
+      mandalaDisplayWidth: 1260,
+      mandalaDisplayHeight: 700,
+      mandalaMaximumRasterScale: 2,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "3d-first",
+      duration: 80,
+      samples: [sample(0, 900, 1), stretched],
+      modeCommits: [],
+    });
+
+    expect(summary.motionPreparationRasterScaleMaximum).toBe(2);
+    expect(summary.motionPreparationRasterGrowthMaximum).toBe(2);
+    expect(summary.motionMagnifiedPreparationFrames).toBe(1);
+    expect(summary.motionPreparationGeometryHeldFrames).toBe(0);
   });
 
   it("flags a 2D backing-store rebuild after the returning surface is opaque", () => {
