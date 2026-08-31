@@ -55,6 +55,10 @@ describe("Shape Matrix app boundary", () => {
     expect(drillSource).toContain("initialQualityTier: QualityTier.LOW");
     expect(drillSource).toContain("resolveRealizationEntryStep");
     expect(drillSource).toContain("initialStep: layer.initialStep");
+    expect(drillSource).toContain("onsettled={finishCrossfade}");
+    expect(drillSource).not.toContain("fadeSettlementTimer");
+    expect(drillSource).toContain("retryPlayerLoad");
+    expect(drillSource).toContain("railLoadError");
   });
 
   it("loads public base words from the checked-in snapshot, not Firebase", () => {

@@ -86,6 +86,7 @@ describe("shape matrix app state", () => {
     state.selectPair({ blue, red });
 
     expect(state.activeView).toBe("detail");
+    expect(state.compactFocusRequest).toEqual({ id: 1, target: "detail" });
     expect(state.selectedMode).not.toBeNull();
     expect(syncState).toHaveBeenCalledWith(
       expect.objectContaining({ pair: { blue, red } })
@@ -101,7 +102,20 @@ describe("shape matrix app state", () => {
     state.showMatrix();
 
     expect(state.activeView).toBe("matrix");
+    expect(state.compactFocusRequest).toEqual({ id: 2, target: "matrix" });
     expect(state.selectedPair).toEqual({ blue, red });
+  });
+
+  it("does not request compact focus for desktop selection or responsive changes", () => {
+    const { state } = createState(false);
+    const [blue, red] = buildFlowerAxis();
+    if (!blue || !red) throw new Error("Shape Matrix axis is empty");
+
+    state.selectPair({ blue, red });
+    expect(state.compactFocusRequest).toBeNull();
+
+    state.setCompact(true);
+    expect(state.compactFocusRequest).toBeNull();
   });
 
   it("keeps both-pane selection state when responsive mode changes", () => {
