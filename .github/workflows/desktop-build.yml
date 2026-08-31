@@ -2,32 +2,77 @@ name: Desktop Build
 on:
   workflow_dispatch:
   push:
-    tags: ['v*']
+    tags: ["v*"]
 
 permissions:
   contents: write
 
 jobs:
+  prepare-sequence-bundle:
+    name: Export and verify offline sequence data
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Create Firebase credential file
+        env:
+          SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+        run: printf '%s' "$SERVICE_ACCOUNT_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
+
+      - name: Export desktop sequence bundle
+        run: pnpm export:deck-bundle
+
+      - name: Verify desktop sequence bundle
+        run: pnpm verify:desktop-sequence-bundle
+
+      - name: Remove Firebase credential file
+        if: always()
+        run: rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
+
+      - name: Upload desktop sequence bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-sequence-bundle
+          path: data/sequences/
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 9
+
   build:
+    needs: prepare-sequence-bundle
     strategy:
       fail-fast: false
       matrix:
         include:
           - platform: windows-latest
-            args: ''
+            args: ""
           - platform: macos-latest
-            args: '--target aarch64-apple-darwin'
+            args: "--target aarch64-apple-darwin"
           - platform: macos-latest
-            args: '--target x86_64-apple-darwin'
+            args: "--target x86_64-apple-darwin"
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: pnpm/action-setup@v4
         with:
           version: 10.28.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: pnpm
@@ -36,7 +81,16 @@ jobs:
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
+
+      - name: Download desktop sequence bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: desktop-sequence-bundle
+          path: data/sequences
+
+      - name: Verify downloaded desktop sequence bundle
+        run: pnpm verify:desktop-sequence-bundle
 
       - name: Create .env from example
         run: cp .env.example .env
@@ -48,8 +102,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'Flow Arts Composer ${{ github.ref_name }}'
-          releaseBody: 'Desktop release — see web changelog for details.'
+          releaseName: "Flow Arts Composer ${{ github.ref_name }}"
+          releaseBody: "Desktop release — see web changelog for details."
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
