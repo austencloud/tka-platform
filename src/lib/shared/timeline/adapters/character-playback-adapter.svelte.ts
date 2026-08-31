@@ -25,9 +25,9 @@ export function computeSeek3D(
   return { stepIndex, stepProgress };
 }
 
-// ── Avatar interface (subset of AvatarInstanceState we need) ──────────
+// ── Character interface (subset of CharacterInstanceState we need) ──────
 
-export interface AvatarPlaybackHandle {
+export interface CharacterPlaybackHandle {
   readonly progress: number;
   readonly currentStepIndex: number;
   readonly totalSteps: number;
@@ -48,7 +48,7 @@ export interface OrchestratorCallbacks {
   onPlaybackToggle: () => void;
   onProgressBarSeek: (targetStep: number) => void;
   getIsPlaying: () => boolean;
-  /** Sequence-owned fallback while the first 3D avatar is still hydrating. */
+  /** Sequence-owned fallback while the first 3D character is still hydrating. */
   getCurrentStep?: () => number;
   getTotalSteps?: () => number;
 }
@@ -61,28 +61,28 @@ export interface TempoCallbacks {
 }
 
 
-export function createAvatarPlaybackAdapter(
-  getAvatar: () => AvatarPlaybackHandle | null,
+export function createCharacterPlaybackAdapter(
+  getCharacter: () => CharacterPlaybackHandle | null,
   orchestrator?: OrchestratorCallbacks,
   tempo?: TempoCallbacks
 ): UnifiedPlaybackContext {
   function totalSteps(): number {
-    const avatarSteps = getAvatar()?.totalSteps ?? 0;
-    return avatarSteps > 0
-      ? avatarSteps
+    const characterSteps = getCharacter()?.totalSteps ?? 0;
+    return characterSteps > 0
+      ? characterSteps
       : (orchestrator?.getTotalSteps?.() ?? 0);
   }
 
   function currentStep(): number {
-    const avatar = getAvatar();
-    return avatar && avatar.totalSteps > 0
-      ? avatar.currentStepIndex + avatar.progress
+    const character = getCharacter();
+    return character && character.totalSteps > 0
+      ? character.currentStepIndex + character.progress
       : (orchestrator?.getCurrentStep?.() ?? 0);
   }
 
   return {
     get overallProgress() {
-      const av = getAvatar();
+      const av = getCharacter();
       const steps = totalSteps();
       if (steps <= 0) return 0;
       if (!av || av.totalSteps <= 0) return currentStep() / steps;
@@ -100,18 +100,18 @@ export function createAvatarPlaybackAdapter(
     },
     get isPlaying() {
       if (orchestrator) return orchestrator.getIsPlaying();
-      return getAvatar()?.isPlaying ?? false;
+      return getCharacter()?.isPlaying ?? false;
     },
     get isLooping() {
-      return getAvatar()?.loop ?? false;
+      return getCharacter()?.loop ?? false;
     },
     get duration() {
-      const av = getAvatar();
+      const av = getCharacter();
       if (!av || av.speed <= 0) return 0;
       return 1 / av.speed;
     },
     get elapsed() {
-      const av = getAvatar();
+      const av = getCharacter();
       if (!av || av.speed <= 0) return 0;
       const totalSec = 1 / av.speed;
       return totalSec * this.overallProgress;
@@ -130,7 +130,7 @@ export function createAvatarPlaybackAdapter(
     onBpmChange: tempo?.onBpmChange,
     onPlaybackModeChange: tempo?.onPlaybackModeChange,
     seek(progress: number) {
-      const av = getAvatar();
+      const av = getCharacter();
       if (orchestrator) {
         const clamped = Math.max(0, Math.min(1, progress));
         orchestrator.onProgressBarSeek(clamped * totalSteps());
@@ -149,10 +149,10 @@ export function createAvatarPlaybackAdapter(
         orchestrator.onPlaybackToggle();
         return;
       }
-      getAvatar()?.togglePlay();
+      getCharacter()?.togglePlay();
     },
     toggleLoop() {
-      const av = getAvatar();
+      const av = getCharacter();
       if (av) av.loop = !av.loop;
     },
   };

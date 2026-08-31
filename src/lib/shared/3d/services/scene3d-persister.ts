@@ -7,7 +7,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { MotionConfig3D } from "../domain/models/motion-data-3d";
 import type { GridMode } from "@austencloud/scene-3d";
 
-export interface AvatarProportions {
+export interface CharacterProportions {
   height: number;
   headHeight: number;
   neckLength: number;
@@ -33,11 +33,11 @@ export interface Scene3DPersistedState {
   activeTab: "blue" | "red";
   panelOpen: boolean;
   speed: number;
-  avatarId: string;
+  characterId: string;
   bodyType: "masculine" | "feminine" | "androgynous";
   skinTone: string;
   showFigure: boolean;
-  avatarProportions: AvatarProportions;
+  characterProportions: CharacterProportions;
   loop: boolean;
   showBlue: boolean;
   showRed: boolean;
@@ -50,7 +50,7 @@ export interface Scene3DPersistedState {
 const STORAGE_KEY = "tka-3d-animator-state";
 
 /**
- * Structural interface matching the old class API consumed by AvatarCustomizer.
+ * Structural interface matching the old class API consumed by CharacterCustomizer.
  * Satisfiable by passing `{ saveState: saveScene3DState, loadState: loadScene3DState }`.
  */
 export interface Scene3DPersisterAPI {
@@ -74,7 +74,19 @@ export function loadScene3DState(): Partial<Scene3DPersistedState> {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return {};
-    const state = JSON.parse(stored);
+    const state = JSON.parse(stored) as Record<string, unknown>;
+
+    // Pre-character-schema saves used the renderer package's historical
+    // vocabulary. Normalize once at the storage boundary so every caller sees
+    // the canonical product model.
+    if ("avatarId" in state && !("characterId" in state)) {
+      state.characterId = state.avatarId;
+      delete state.avatarId;
+    }
+    if ("avatarProportions" in state && !("characterProportions" in state)) {
+      state.characterProportions = state.avatarProportions;
+      delete state.avatarProportions;
+    }
 
     // Migration: Clear legacy camera positions (pre-meter scale).
     if (state.cameraPosition) {
@@ -86,7 +98,7 @@ export function loadScene3DState(): Partial<Scene3DPersistedState> {
       }
     }
 
-    return state;
+    return state as Partial<Scene3DPersistedState>;
   } catch (e) {
     console.warn("Failed to load 3D scene state:", e);
     return {};

@@ -1,9 +1,9 @@
 <script lang="ts">
   /**
-   * One live fire-court performer composed from the canonical avatar, prop,
+   * One live fire-court performer composed from the canonical character, prop,
    * sequence-playback, and 3D effect owners.
    */
-  import type { AvatarId } from "@austencloud/scene-3d";
+  import type { CharacterId } from "$lib/shared/3d/domain/character-model";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import LiveSequencePerformer3D from "$lib/shared/3d/performers/LiveSequencePerformer3D.svelte";
@@ -14,7 +14,7 @@
     worldZ: number;
     facingAngle: number;
     surfaceElevation: number;
-    avatarId: AvatarId;
+    characterId: CharacterId;
     propType: PropType;
     sequence: SequenceData;
     onReady?: () => void;
@@ -31,7 +31,7 @@
     z: props.worldZ,
   }}
   facingAngle={props.facingAngle}
-  avatarId={props.avatarId}
+  characterId={props.characterId}
   propType={props.propType}
   sequence={props.sequence}
   effectId="fire"

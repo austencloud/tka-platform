@@ -1,14 +1,13 @@
 /**
- * Avatar Instance State
+ * Character Instance State
  *
- * Per-avatar state factory for multi-avatar 3D viewer.
- * Each avatar has independent sequence loading, playback, and locomotion.
+ * Per-character state factory for the multi-character 3D viewer.
+ * Each character has independent sequence loading, playback, and locomotion.
  */
 
 import type { MotionConfig3D } from "../domain/models/motion-data-3d";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
-  AVATAR_DEFINITIONS,
   Plane,
   propFinishState,
   type PropBuild,
@@ -27,8 +26,11 @@ import {
   getStartPositionConfigs,
 } from "../services/sequence-converter";
 import type { StepMotionConfigs } from "../services/sequence-converter";
-import type { AvatarId } from "@austencloud/scene-3d";
-import { DEFAULT_AVATAR_ID } from "@austencloud/scene-3d";
+import {
+  CHARACTER_DEFINITIONS,
+  DEFAULT_CHARACTER_ID,
+  type CharacterId,
+} from "../domain/character-model";
 import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { EffortTimeline } from "$lib/shared/effort/domain/effort-timeline-types";
@@ -51,7 +53,7 @@ import type { PerformerDomainSnapshot } from "../undo/scene-undo-types";
 
 // Position Constants (all in meters)
 
-/** Default Z position for avatars - same as grid plane so hands are at prop positions */
+/** Default Z position for characters - same as grid plane so hands are at prop positions */
 const FIGURE_Z = 0;
 
 /**
@@ -60,7 +62,7 @@ const FIGURE_Z = 0;
  * When both hands are on the same preset plane, use the matching preset mode
  * (WALL or DUAL_WHEEL) so the renderer produces the intended spatial layout.
  * DUAL_WHEEL is required when both hands are on WHEEL - a single wheel plane
- * can't hold both hands without overlap through the avatar.
+ * can't hold both hands without overlap through the character.
  *
  * Any other combination falls back to CUSTOM (per-hand independent).
  */
@@ -123,14 +125,14 @@ function isSeamlesslyLoopable(sequence: SequenceData): boolean {
 }
 
 /**
- * Configuration for an avatar instance
+ * Configuration for a character instance
  */
-export interface AvatarInstanceConfig {
+export interface CharacterInstanceConfig {
   id: string;
   positionX: number;
   positionZ?: number;
-  avatarModelId?: AvatarId;
-  /** User-assigned display name; null = fall back to the avatar model's name. */
+  characterId?: CharacterId;
+  /** User-assigned display name; null = fall back to the character model's name. */
   name?: string | null;
   /**
    * Whether this instance reads/writes its persisted plane-mode and
@@ -143,33 +145,33 @@ export interface AvatarInstanceConfig {
 }
 
 /**
- * Dependencies for avatar instance state
+ * Dependencies for character instance state
  */
-export interface AvatarInstanceDeps {
+export interface CharacterInstanceDeps {
   getDefaults: () => DefaultPerformerSettings;
 }
 
 /** Standalone deps for call sites without a viewer-level defaults provider */
-const _standaloneDeps: AvatarInstanceDeps = {
+const _standaloneDeps: CharacterInstanceDeps = {
   getDefaults: makeStandaloneDefaults,
 };
 
 /**
  * Create deps that inherit from standalone defaults.
- * Use this for museum, village, and other non-viewer avatar consumers.
+ * Use this for museum, village, and other non-viewer character consumers.
  * The main viewer (performer-manager) wires its own getDefaults from viewer state.
  */
-export function makeStandaloneDeps(): AvatarInstanceDeps {
+export function makeStandaloneDeps(): CharacterInstanceDeps {
   return _standaloneDeps;
 }
 
-export function createAvatarInstanceState(
-  config: AvatarInstanceConfig,
-  deps: AvatarInstanceDeps
+export function createCharacterInstanceState(
+  config: CharacterInstanceConfig,
+  deps: CharacterInstanceDeps
 ) {
   const getDefaults = deps.getDefaults;
 
-  // Avatar identity
+  // Character identity
   const id = config.id;
   // Seeded/ephemeral viewers (preview tiles, film-director shots) pass
   // `persistent: false` so this instance never touches the user's saved
@@ -177,12 +179,17 @@ export function createAvatarInstanceState(
   // at creation nor writing on every plane change. Default true = the real
   // viewer's unchanged behavior.
   const persistToStorage = config.persistent !== false;
-  let avatarModelId = $state<AvatarId>(
-    config.avatarModelId ?? DEFAULT_AVATAR_ID
+  let characterId = $state<CharacterId>(
+    config.characterId ?? DEFAULT_CHARACTER_ID
   );
 
-  // User-assigned display name. null = inherit the avatar model's name.
+  // User-assigned display name. null = inherit the character model's name.
   let displayName = $state<string | null>(config.name ?? null);
+
+  // Scene presence is renderer state, not cast membership. The performer
+  // manager can remove a character from the document immediately while this
+  // value carries the visible exit to completion.
+  let presenceProgress = $state(1);
 
   // Performer Settings (declared early so derived computations can read them)
 
@@ -222,7 +229,7 @@ export function createAvatarInstanceState(
   // Movement input from WASD keys (-1 to 1 for each axis)
   let moveInput = $state({ x: 0, z: 0 });
 
-  // Whether avatar is currently moving
+  // Whether the character is currently moving
   let isMoving = $state(false);
 
   // Ground speed in m/s. The locomotion animator scales the walk clip's
@@ -324,7 +331,7 @@ export function createAvatarInstanceState(
   const ROTATION_LABELS: string[] = ["Wall rot", "Wheel rot", "Floor rot"];
   let rotationVariantIndex = $state(loadPersistedRotVariant());
 
-  // Per-avatar playback with unique persistence key
+  // Per-character playback with unique persistence key
   const playback = createPlaybackState({
     onCycleComplete: () => handleCycleComplete(),
     persistenceKey: `tka-3d-playback-${id}`,
@@ -454,7 +461,7 @@ export function createAvatarInstanceState(
   );
 
   /**
-   * Load a sequence for this avatar.
+   * Load a sequence for this character.
    * Auto-enables looping for circular sequences (matching 2D animator behavior).
    */
   function loadSequence(sequence: SequenceData) {
@@ -511,7 +518,7 @@ export function createAvatarInstanceState(
   /**
    * Switch between plane modes (wall vs dual wheel).
    * Re-converts the loaded sequence with the new mode's per-hand
-   * plane assignments and lateral offsets, and rotates the avatar
+   * plane assignments and lateral offsets, and rotates the character
    * to match the mode's facing angle.
    */
   /** Build an effective mode config with the current rotation variant override */
@@ -529,7 +536,7 @@ export function createAvatarInstanceState(
     const base = PLANE_MODE_CONFIGS[mode];
     // Dual-wheel no longer needs special overrides - the unified rotation
     // pipeline handles wheel plane correctly without skipFacingTransform
-    // or rotationPlane overrides. Avatar faces forward, lateral offsets
+    // or rotationPlane overrides. The character faces forward, lateral offsets
     // place each hand's wheel plane to the sides.
     return base;
   }
@@ -553,7 +560,7 @@ export function createAvatarInstanceState(
 
     const modeConfig = getEffectiveModeConfig(mode);
 
-    // Snap avatar rotation to match mode orientation immediately
+    // Snap character rotation to match mode orientation immediately
     facingAngle = modeConfig.facingAngle;
     targetFacingAngle = modeConfig.facingAngle;
 
@@ -792,28 +799,32 @@ export function createAvatarInstanceState(
   }
 
   /**
-   * Set avatar model
+   * Set character model
    */
-  function setAvatarModel(modelId: AvatarId) {
-    if (avatarModelId === modelId) return;
-    const before = avatarModelId;
-    avatarModelId = modelId;
+  function setCharacter(modelId: CharacterId) {
+    if (characterId === modelId) return;
+    const before = characterId;
+    characterId = modelId;
     const name =
-      AVATAR_DEFINITIONS.find((definition) => definition.id === modelId)
+      CHARACTER_DEFINITIONS.find((definition) => definition.id === modelId)
         ?.name ?? modelId;
-    sceneUndo.pushSelfRestoringEntry("change-avatar", `Avatar: ${name}`, {
+    sceneUndo.pushSelfRestoringEntry("change-character", `Character: ${name}`, {
       undo: () => {
-        avatarModelId = before;
+        characterId = before;
       },
       redo: () => {
-        avatarModelId = modelId;
+        characterId = modelId;
       },
     });
   }
 
+  function setPresenceProgress(progress: number) {
+    presenceProgress = Math.max(0, Math.min(1, progress));
+  }
+
   /**
    * Set the user-assigned display name. Trims; an empty string clears the
-   * override so the avatar model's name shows through again.
+   * override so the character model's name shows through again.
    */
   function setDisplayName(name: string | null) {
     const trimmed = name?.trim();
@@ -861,7 +872,7 @@ export function createAvatarInstanceState(
   /**
    * @deprecated Movement is now handled by UnifiedCameraController.
    * This method exists only for interface compatibility.
-   * Position updates happen directly via avatarState.position.x/z mutation.
+   * Position updates happen directly through the character position.
    */
   function updateMovement(_delta: number, _cameraAngle: number) {
     // NO-OP: Movement calculation moved to UnifiedCameraController
@@ -878,8 +889,8 @@ export function createAvatarInstanceState(
 
   /**
    * Set facing angle target.
-   * Called by UnifiedCameraController to tell the avatar where to face.
-   * In third-person mode this sets a TARGET that the avatar lerps toward
+   * Called by UnifiedCameraController to tell the character where to face.
+   * In third-person mode this sets a target that the character turns toward
    * smoothly. In first-person mode, use snapFacingAngle for instant response.
    */
   function setFacingAngle(value: number) {
@@ -888,7 +899,7 @@ export function createAvatarInstanceState(
 
   /**
    * Snap facing angle instantly (no lerp). Used for first-person mode
-   * where the avatar body must exactly match the camera direction.
+   * where the character body must exactly match the camera direction.
    */
   function snapFacingAngle(value: number) {
     facingAngle = value;
@@ -1183,7 +1194,7 @@ export function createAvatarInstanceState(
 
   /**
    * Update locomotion state each frame. Lerps facing angle toward
-   * target for smooth avatar rotation in third-person mode.
+   * target for smooth character rotation in third-person mode.
    * @param delta - frame time in seconds
    */
   function updateLocomotion(delta: number) {
@@ -1256,12 +1267,16 @@ export function createAvatarInstanceState(
     setFacingAngle,
     snapFacingAngle,
 
-    // Avatar model
-    get avatarModelId() {
-      return avatarModelId;
+    // Character model
+    get characterId() {
+      return characterId;
     },
-    setAvatarModel,
-    /** User-assigned display name; null = inherit the avatar model's name. */
+    setCharacter,
+    get presenceProgress() {
+      return presenceProgress;
+    },
+    setPresenceProgress,
+    /** User-assigned display name; null = inherit the character model's name. */
     get displayName() {
       return displayName;
     },
@@ -1455,4 +1470,6 @@ export function createAvatarInstanceState(
   };
 }
 
-export type AvatarInstanceState = ReturnType<typeof createAvatarInstanceState>;
+export type CharacterInstanceState = ReturnType<
+  typeof createCharacterInstanceState
+>;

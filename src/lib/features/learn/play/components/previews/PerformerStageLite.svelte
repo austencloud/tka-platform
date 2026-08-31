@@ -15,9 +15,9 @@
   import type { GridMode } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
-    createAvatarInstanceState,
+    createCharacterInstanceState,
     makeStandaloneDeps,
-  } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  } from "$lib/shared/3d/state/character-instance-state.svelte";
   import { computeFramingShot } from "$lib/shared/3d/camera/compute-framing-shot";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
@@ -44,10 +44,10 @@
     2 * shot.target.z - shot.eye.z,
   ]);
 
-  let performerState = $state<ReturnType<typeof createAvatarInstanceState> | null>(null);
+  let performerState = $state<ReturnType<typeof createCharacterInstanceState> | null>(null);
 
   try {
-    performerState = createAvatarInstanceState(
+    performerState = createCharacterInstanceState(
       { id: "hub-preview-performer", positionX: 0, positionZ: 0 },
       makeStandaloneDeps()
     );

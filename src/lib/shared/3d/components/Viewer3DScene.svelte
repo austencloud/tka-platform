@@ -14,7 +14,7 @@
   import Grid3D from "./Grid3D.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
-  import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
+  import type { CharacterInstanceState } from "../state/character-instance-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
   import { resolvePerformerProp } from "$lib/shared/3d/state/performer-prop-resolution";
@@ -26,7 +26,7 @@
   import { attachSceneUndoKeyboard } from "../undo/scene-undo-keyboard";
   import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import AvatarSwapTransition from "./AvatarSwapTransition.svelte";
+  import CharacterSwapTransition from "./CharacterSwapTransition.svelte";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
   import type { SceneEffectsManager3D } from "../effects/scene-effects/scene-effects-manager-3d";
   import type { QualityTier } from "../effects/types";
@@ -64,7 +64,7 @@
     sequenceData: SequenceData | null;
     currentStep: number;
     isPlaying: boolean;
-    avatarState: AvatarInstanceState | null;
+    characterState: CharacterInstanceState | null;
     /** Explicit prop-type override from the viewer's Theirs/Mine toggle.
      *  When set, takes precedence over sequenceData.intendedProp and
      *  creatorIntent.propConfig so the viewer's prop-context choice is
@@ -138,7 +138,7 @@
     sequenceData,
     currentStep,
     isPlaying,
-    avatarState,
+    characterState,
     bluePropTypeOverride = null,
     redPropTypeOverride = null,
     hideSceneMarkers = false,
@@ -161,7 +161,7 @@
   // The scene now iterates viewer3DState.performerManager. This compatibility
   // prop can be empty while 3D Studio shows the environment before choreography.
   $effect(() => {
-    void avatarState;
+    void characterState;
   });
 
   const viewer3DState = getViewer3DContext();
@@ -173,7 +173,7 @@
   );
   const sceneFeatures = getSceneFeatureContext();
   let sceneEffectsManager = $state<SceneEffectsManager3D | null>(null);
-  let readyAvatarKeys = $state<Record<string, true>>({});
+  let readyCharacterKeys = $state<Record<string, true>>({});
   const sceneEffectsCoordinatorModule = enableEffects
     ? import("../effects/scene-effects/SceneEffectsCoordinator3D.svelte")
     : null;
@@ -184,13 +184,13 @@
   const { renderer, camera, scene } = useThrelte();
   const { scheduler, resetFrameInvalidation } = useScheduler();
 
-  function markPerformerAvatarReady(
+  function markPerformerCharacterReady(
     performerId: string,
-    avatarId: string
+    characterId: string
   ): void {
-    readyAvatarKeys = {
-      ...readyAvatarKeys,
-      [`${performerId}:${avatarId}`]: true,
+    readyCharacterKeys = {
+      ...readyCharacterKeys,
+      [`${performerId}:${characterId}`]: true,
     };
   }
 
@@ -202,7 +202,7 @@
     return {
       readyCount: performers.filter(
         (performer) =>
-          readyAvatarKeys[`${performer.id}:${performer.avatarModelId}`]
+          readyCharacterKeys[`${performer.id}:${performer.characterId}`]
       ).length,
       totalCount: performers.length,
     };
@@ -346,7 +346,7 @@
     // Drive formation transitions. transitionToFormation (called from the
     // Performers tab) kicks off an animation but doesn't run its own frame
     // loop - this tick is what actually walks positions toward the target
-    // slots over the 500ms window. Without it, applyFormationFromUI flips
+    // slots over the canonical motion window. Without it, applyFormationFromUI flips
     // activeFormation but nothing visibly moves.
     if (!viewer3DState.isExporting) {
       performerManager.updateFormationTransition();
@@ -703,8 +703,13 @@
     </T.Mesh>
   </T.Group>
 
-  {#each performerManager.performers as performer, i (performer.id)}
-    <T.Group userData={{ performerIndex: i }} visible={i < performerCount}>
+  {#each performerManager.renderablePerformers as renderEntry (renderEntry.performer.id)}
+    {@const performer = renderEntry.performer}
+    {@const i = renderEntry.castIndex}
+    <T.Group
+      userData={{ performerIndex: i }}
+      visible={renderEntry.presencePhase === "exiting" || i < performerCount}
+    >
       {@const performerGridMode = (sequenceData?.gridMode ??
         "diamond") as GridMode}
       {@const performerGridOffset = GRID_OFFSETS[performer.planeMode]}
@@ -724,19 +729,20 @@
         performerStepOffsets[i] ?? 0,
         performer.totalSteps
       )}
-      <AvatarSwapTransition
+      <CharacterSwapTransition
         {performer}
         performerIndex={i}
         groundOffset={stageGroundOffset}
+        presenceProgress={performer.presenceProgress}
       >
-        {#snippet children({ onAvatarSwapped, avatarOpacity })}
+        {#snippet children({ onCharacterSwapped, characterOpacity })}
           <PerformerRig
             position={performer.position}
             groundOffset={stageGroundOffset}
             facingAngle={performer.facingAngle}
             planeMode={performer.planeMode}
             avatarState={performer}
-            avatarId={performer.avatarModelId}
+            avatarId={performer.characterId}
             visiblePlanes={explicitPlanes}
             gridMode={performerGridMode}
             bluePropType={toScenePropType(
@@ -758,7 +764,9 @@
             tipEffectMap={perfTipMap}
             {propLength}
             {propBuild}
-            isPlaying={isPlaying && i < performerCount}
+            isPlaying={renderEntry.presencePhase !== "exiting" &&
+              isPlaying &&
+              i < performerCount}
             enableLocomotion={enablePerformerLocomotion}
             enableFootPlanting={enablePerformerLocomotion}
             isMoving={performer.isMoving}
@@ -766,11 +774,11 @@
             moveDirection={performer.moveDirection}
             gaitTimingSample={performer.gaitTimingSample}
             terminalStepPlan={performer.terminalStepPlan}
-            onAvatarSwapped={(avatarId) => {
-              onAvatarSwapped(avatarId);
-              markPerformerAvatarReady(performer.id, avatarId);
+            onAvatarSwapped={(characterId) => {
+              onCharacterSwapped(characterId);
+              markPerformerCharacterReady(performer.id, characterId);
             }}
-            {avatarOpacity}
+            avatarOpacity={characterOpacity}
           >
             {#snippet gridSlot()}
               {#if !hideSceneMarkers}
@@ -834,9 +842,9 @@
             {/snippet}
           </PerformerRig>
         {/snippet}
-      </AvatarSwapTransition>
+      </CharacterSwapTransition>
 
-      {#if viewer3DState.selectedPerformerIndex === null}
+      {#if renderEntry.presencePhase !== "exiting" && viewer3DState.selectedPerformerIndex === null}
         <T.Mesh
           position={[
             performer.position.x,
@@ -850,7 +858,7 @@
         </T.Mesh>
       {/if}
 
-      {#if !hideSceneMarkers && !hidePerformerBadges}
+      {#if renderEntry.presencePhase !== "exiting" && !hideSceneMarkers && !hidePerformerBadges}
         <!-- Floating numbered badge above performer head -->
         <T.Group
           position.x={performer.position.x}

@@ -1,16 +1,16 @@
 /**
- * Avatar Sync State
+ * Character Sync State
  *
- * Manages synchronization between two avatar instances with beat offset.
- * When sync is enabled, the follower avatar mirrors the master's playback
+ * Manages synchronization between two character instances with beat offset.
+ * When sync is enabled, the follower character mirrors the leader's playback
  * with a configurable beat offset (positive = ahead, negative = behind).
  */
 
-import type { AvatarInstanceState } from "./avatar-instance-state.svelte";
+import type { CharacterInstanceState } from "./character-instance-state.svelte";
 
-export interface AvatarSyncConfig {
+export interface CharacterSyncConfig {
   isSyncEnabled: boolean;
-  masterAvatarId: "avatar1" | "avatar2";
+  leaderCharacterId: "character1" | "character2";
   stepOffset: number; // -8 to +8
 }
 
@@ -18,106 +18,106 @@ const MIN_OFFSET = -8;
 const MAX_OFFSET = 8;
 
 /**
- * Create sync state for dual avatar coordination
+ * Create sync state for two-character coordination
  *
  * Uses $effect.root() to allow creation outside component initialization
  * (e.g., inside onMount after async service loading).
  */
-export function createAvatarSyncState(
-  avatar1: AvatarInstanceState,
-  avatar2: AvatarInstanceState
+export function createCharacterSyncState(
+  character1: CharacterInstanceState,
+  character2: CharacterInstanceState
 ) {
   let isSyncEnabled = $state(false);
-  let masterAvatarId = $state<"avatar1" | "avatar2">("avatar1");
+  let leaderCharacterId = $state<"character1" | "character2">("character1");
   let stepOffset = $state(0);
 
-  // Track previous master beat to detect changes
-  let prevMasterStep = -1;
+  // Track the previous leader beat to detect changes.
+  let previousLeaderStep = -1;
 
   // Cleanup function for effect root
   let cleanupEffects: (() => void) | null = null;
 
-  function getMaster() {
-    return masterAvatarId === "avatar1" ? avatar1 : avatar2;
+  function getLeader() {
+    return leaderCharacterId === "character1" ? character1 : character2;
   }
 
   function getFollower() {
-    return masterAvatarId === "avatar1" ? avatar2 : avatar1;
+    return leaderCharacterId === "character1" ? character2 : character1;
   }
 
   function calculateFollowerBeat(
-    masterStep: number,
+    leaderStep: number,
     totalSteps: number
   ): number {
     if (totalSteps === 0) return 0;
     // Add offset and wrap using modulo (handles negatives correctly)
     const result =
-      (((masterStep + stepOffset) % totalSteps) + totalSteps) % totalSteps;
+      (((leaderStep + stepOffset) % totalSteps) + totalSteps) % totalSteps;
     return result;
   }
 
   /**
-   * Sync follower to master's current beat with offset
+   * Sync the follower to the leader's current beat with an offset.
    */
   function syncFollowerStep() {
     if (!isSyncEnabled) return;
-    const master = getMaster();
+    const leader = getLeader();
     const follower = getFollower();
-    if (!master.hasSequence || !follower.hasSequence) return;
+    if (!leader.hasSequence || !follower.hasSequence) return;
 
     const followerBeat = calculateFollowerBeat(
-      master.currentStepIndex,
+      leader.currentStepIndex,
       follower.totalSteps
     );
     follower.goToStep(followerBeat);
   }
 
   /**
-   * Sync follower playback state to master
+   * Sync follower playback state to the leader.
    */
   function syncFollowerPlayback() {
     if (!isSyncEnabled) return;
-    const master = getMaster();
+    const leader = getLeader();
     const follower = getFollower();
 
-    if (master.isPlaying && !follower.isPlaying) {
+    if (leader.isPlaying && !follower.isPlaying) {
       follower.play();
-    } else if (!master.isPlaying && follower.isPlaying) {
+    } else if (!leader.isPlaying && follower.isPlaying) {
       follower.pause();
     }
   }
 
   // Create effects in a root scope (allows creation outside component init)
   cleanupEffects = $effect.root(() => {
-    // Watch master's beat changes and sync follower
+    // Watch the leader's beat changes and sync the follower.
     $effect(() => {
       if (!isSyncEnabled) return;
 
-      const master = getMaster();
-      const currentMasterBeat = master.currentStepIndex;
+      const leader = getLeader();
+      const currentLeaderBeat = leader.currentStepIndex;
 
       // Only sync when beat actually changes
-      if (currentMasterBeat !== prevMasterStep) {
-        prevMasterStep = currentMasterBeat;
+      if (currentLeaderBeat !== previousLeaderStep) {
+        previousLeaderStep = currentLeaderBeat;
         syncFollowerStep();
       }
     });
 
-    // Watch master's playing state and sync follower
+    // Watch the leader's playing state and sync the follower.
     $effect(() => {
       if (!isSyncEnabled) return;
 
-      const master = getMaster();
+      const leader = getLeader();
       // Access isPlaying to establish dependency
-      const _playing = master.isPlaying;
+      const _playing = leader.isPlaying;
       syncFollowerPlayback();
     });
 
     // When sync is enabled, immediately sync state
     $effect(() => {
       if (isSyncEnabled) {
-        const master = getMaster();
-        prevMasterStep = master.currentStepIndex;
+        const leader = getLeader();
+        previousLeaderStep = leader.currentStepIndex;
         syncFollowerStep();
         syncFollowerPlayback();
       }
@@ -131,8 +131,8 @@ export function createAvatarSyncState(
     isSyncEnabled = !isSyncEnabled;
     if (isSyncEnabled) {
       // Sync immediately when enabled
-      const master = getMaster();
-      prevMasterStep = master.currentStepIndex;
+      const leader = getLeader();
+      previousLeaderStep = leader.currentStepIndex;
       syncFollowerStep();
       syncFollowerPlayback();
     }
@@ -163,11 +163,12 @@ export function createAvatarSyncState(
   }
 
   /**
-   * Swap which avatar is master
+   * Swap which character leads.
    */
-  function swapMaster() {
-    masterAvatarId = masterAvatarId === "avatar1" ? "avatar2" : "avatar1";
-    prevMasterStep = -1; // Reset to trigger sync
+  function swapLeader() {
+    leaderCharacterId =
+      leaderCharacterId === "character1" ? "character2" : "character1";
+    previousLeaderStep = -1;
     if (isSyncEnabled) {
       syncFollowerStep();
       syncFollowerPlayback();
@@ -175,7 +176,8 @@ export function createAvatarSyncState(
   }
 
   function getOffsetDescription(): string {
-    const followerName = masterAvatarId === "avatar1" ? "Avatar 2" : "Avatar 1";
+    const followerName =
+      leaderCharacterId === "character1" ? "Character 2" : "Character 1";
     if (stepOffset === 0) {
       return `${followerName} is in sync`;
     } else if (stepOffset > 0) {
@@ -201,16 +203,16 @@ export function createAvatarSyncState(
     get isSyncEnabled() {
       return isSyncEnabled;
     },
-    get masterAvatarId() {
-      return masterAvatarId;
+    get leaderCharacterId() {
+      return leaderCharacterId;
     },
     get stepOffset() {
       return stepOffset;
     },
 
     // Derived state
-    get master() {
-      return getMaster();
+    get leader() {
+      return getLeader();
     },
     get follower() {
       return getFollower();
@@ -228,9 +230,9 @@ export function createAvatarSyncState(
     setOffset,
     incrementOffset,
     decrementOffset,
-    swapMaster,
+    swapLeader,
     destroy,
   };
 }
 
-export type AvatarSyncState = ReturnType<typeof createAvatarSyncState>;
+export type CharacterSyncState = ReturnType<typeof createCharacterSyncState>;

@@ -17,7 +17,7 @@
 <T.Group position={[x, labelY, z]}>
   <HTML center sprite>
     <span
-      class="avatar-label-3d"
+      class="character-label-3d"
       class:active={isActive}
     >
       {label}
@@ -26,7 +26,7 @@
 </T.Group>
 
 <style>
-  .avatar-label-3d {
+  .character-label-3d {
     font-size: 14px;
     font-weight: 600;
     color: #ffffff;
@@ -39,7 +39,7 @@
     pointer-events: none;
     user-select: none;
   }
-  .avatar-label-3d.active {
+  .character-label-3d.active {
     color: #60a5fa;
     text-shadow:
       -1px -1px 0 #1d4ed8,

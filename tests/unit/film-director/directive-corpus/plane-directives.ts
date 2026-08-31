@@ -4,7 +4,7 @@ import { corpusFilm } from "./_helpers";
 // bluePlane, redPlane, stepPlanes, and scene.visiblePlanes (landed
 // 2026-08-24, plan docs/superpowers/plans/2026-08-24-film-director-plane-axes.md).
 // bluePlane/redPlane are full performer-scoped directives (literal, pick
-// any/distinct, oneOf, not, sameAs) exactly like prop/effort/avatarId.
+// any/distinct, oneOf, not, sameAs) exactly like prop/effort/characterId.
 // stepPlanes entries are scene-scoped directives (literal, pick:any, oneOf,
 // not) resolved via resolveSceneDirective, same restriction as environmentId
 // and formation — hence the two rejection entries proving distinct/sameAs

@@ -11,9 +11,9 @@ import { tick } from "svelte";
 // getContext returns null so the capability probe reports "not supported",
 // which is fine — these scope tests never actually enter 3D mode.
 beforeAll(() => {
-  const originalCreateElement = document.createElement as unknown as (
-    tag: string
-  ) => unknown;
+  const originalCreateElement = document.createElement.bind(
+    document
+  ) as unknown as (tag: string) => unknown;
   (
     document as unknown as { createElement: (tag: string) => unknown }
   ).createElement = (tag: string) => {
@@ -102,6 +102,43 @@ describe("viewer-3d-state: selection scope", () => {
 
     expect(state.selectedPerformerIndex).toBe(0);
     expect(moveCamera).not.toHaveBeenCalled();
+  });
+
+  it("returning to All keeps the current camera view", () => {
+    const state = makeSeeded3DState();
+    state.performerManager.initialize();
+    const moveCamera = vi.fn();
+    state.registerSnapTo(moveCamera);
+
+    state.selectPerformerScope(0);
+    state.selectPerformerScope(null);
+
+    expect(moveCamera).not.toHaveBeenCalled();
+  });
+
+  it("keeps the editing camera through cast and formation changes", () => {
+    const state = makeSeeded3DState();
+    state.performerManager.initialize();
+    const moveCamera = vi.fn();
+    state.registerSnapTo(moveCamera);
+
+    state.spawnPerformerFromUI();
+    state.applyFormationFromUI("stage-lr");
+    state.removePerformerFromUI();
+
+    expect(moveCamera).not.toHaveBeenCalled();
+  });
+
+  it("moves the camera only when the user explicitly frames the cast", () => {
+    const state = makeSeeded3DState();
+    state.performerManager.initialize();
+    state.spawnPerformerFromUI();
+    const moveCamera = vi.fn();
+    state.registerSnapTo(moveCamera);
+
+    state.frameAllPerformers();
+
+    expect(moveCamera).toHaveBeenCalledTimes(1);
   });
 
   it("setHandPlaneScoped updates every performer when All is selected", () => {

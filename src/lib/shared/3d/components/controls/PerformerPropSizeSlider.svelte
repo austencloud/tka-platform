@@ -1,13 +1,13 @@
 <script lang="ts">
   import { inchesToCm } from "@austencloud/scene-3d";
-  import type { AvatarInstanceState } from "../../state/avatar-instance-state.svelte";
+  import type { CharacterInstanceState } from "../../state/character-instance-state.svelte";
   import {
     reportViewerControlChange,
     type ViewerControlSink,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   interface Props {
-    performer: AvatarInstanceState;
+    performer: CharacterInstanceState;
     onSizeChange?: (cm: number) => void;
     onSettingChange?: ViewerControlSink;
   }

@@ -1,9 +1,6 @@
 import { z } from "zod";
-import {
-  Plane,
-  type AvatarId,
-  type FormationPreset,
-} from "@austencloud/scene-3d";
+import { Plane, type FormationPreset } from "@austencloud/scene-3d";
+import type { CharacterId } from "$lib/shared/3d/domain/character-model";
 
 import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
 import type { EffectType } from "$lib/shared/effects/domain/effects-config";
@@ -28,13 +25,14 @@ import {
   type DirectorPerformerSequence,
 } from "./sequence-language";
 
-export const FILM_DIRECTOR_SCHEMA_VERSION = 1 as const;
+export const FILM_DIRECTOR_SCHEMA_VERSION_1 = 1 as const;
 export const FILM_DIRECTOR_SCHEMA_VERSION_2 = 2 as const;
 export const FILM_DIRECTOR_SCHEMA_VERSION_3 = 3 as const;
 export const FILM_DIRECTOR_SCHEMA_VERSION_4 = 4 as const;
+export const FILM_DIRECTOR_SCHEMA_VERSION = FILM_DIRECTOR_SCHEMA_VERSION_4;
 
 export const FILM_DIRECTOR_DIRECTIVE_AXES = [
-  "avatarId",
+  "characterId",
   "prop",
   "effect",
   "effort",
@@ -153,7 +151,10 @@ const atMostOneTimeUnit = (
   value: { durationSeconds?: number; durationBeats?: number },
   ctx: z.RefinementCtx
 ) => {
-  if (value.durationSeconds !== undefined && value.durationBeats !== undefined) {
+  if (
+    value.durationSeconds !== undefined &&
+    value.durationBeats !== undefined
+  ) {
     ctx.addIssue({
       code: "custom",
       message: 'State exactly one of "durationSeconds" or "durationBeats".',
@@ -167,7 +168,7 @@ const position2Schema = z.object({ x: finiteNumber, z: finiteNumber }).strict();
 const environmentIdSchema = z.string().refine(isSceneEnvironmentId, {
   error: (issue) => `Unknown 3D environment "${String(issue.input)}"`,
 });
-const avatarIdSchema = z.string().min(1);
+const characterIdSchema = z.string().min(1);
 const PROP_TYPE_VALUES = new Set<string>(Object.values(PropType));
 // string+refine, not z.nativeEnum — see the comment above effortIdSchema for
 // why: it lets the refine's own message surface through directiveSchema()'s
@@ -492,7 +493,7 @@ const performerSchema = z
     id: z.string().min(1).optional(),
     name: z.string().min(1).optional(),
     sequence: performerSequenceSchema.optional(),
-    avatarId: directiveSchema(avatarIdSchema).optional(),
+    characterId: directiveSchema(characterIdSchema).optional(),
     prop: directiveSchema(propTypeSchema).optional(),
     effect: directiveSchema(effectIdSchema).optional(),
     effort: directiveSchema(effortIdSchema).optional(),
@@ -510,7 +511,7 @@ const performerSchema = z
 const castDefaultsSchema = z
   .object({
     sequence: performerSequenceSchema.optional(),
-    avatarId: directiveSchema(avatarIdSchema).optional(),
+    characterId: directiveSchema(characterIdSchema).optional(),
     prop: directiveSchema(propTypeSchema).optional(),
     effect: directiveSchema(effectIdSchema).optional(),
     effort: directiveSchema(effortIdSchema).optional(),
@@ -699,10 +700,10 @@ const filmDirectorInputSchema = z
     // set when a new number ships and let the grammar itself decide what's
     // legal.
     version: z.union([
-      z.literal(FILM_DIRECTOR_SCHEMA_VERSION),
+      z.literal(FILM_DIRECTOR_SCHEMA_VERSION_1),
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION_2),
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION_3),
-      z.literal(FILM_DIRECTOR_SCHEMA_VERSION_4),
+      z.literal(FILM_DIRECTOR_SCHEMA_VERSION),
     ]),
     id: z.string().min(1),
     title: z.string().min(1),
@@ -752,7 +753,7 @@ export interface ResolvedDirectorStepPlane {
 export interface ResolvedDirectorPerformer {
   id: string;
   name: string;
-  avatarId: AvatarId;
+  characterId: CharacterId;
   prop: PropType;
   effect: EffectType;
   effort: EffortId;
@@ -826,10 +827,10 @@ export interface ResolvedDirectorScene {
 
 export interface ResolvedFilmDirectorSpec {
   version:
-    | typeof FILM_DIRECTOR_SCHEMA_VERSION
+    | typeof FILM_DIRECTOR_SCHEMA_VERSION_1
     | typeof FILM_DIRECTOR_SCHEMA_VERSION_2
     | typeof FILM_DIRECTOR_SCHEMA_VERSION_3
-    | typeof FILM_DIRECTOR_SCHEMA_VERSION_4;
+    | typeof FILM_DIRECTOR_SCHEMA_VERSION;
   id: string;
   title: string;
   brief: string | null;

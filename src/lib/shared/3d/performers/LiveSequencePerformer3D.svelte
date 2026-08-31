@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * A world-space performer whose avatar, hands, props, and tip effects all
+   * A world-space performer whose character, hands, props, and tip effects all
    * come from the production sequence stack.
    */
   import { onDestroy, untrack } from "svelte";
@@ -9,14 +9,14 @@
     Plane,
     PlaneMode,
     userProportionsState,
-    type AvatarId,
   } from "@austencloud/scene-3d";
+  import type { CharacterId } from "$lib/shared/3d/domain/character-model";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
-    createAvatarInstanceState,
+    createCharacterInstanceState,
     makeStandaloneDeps,
-  } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  } from "$lib/shared/3d/state/character-instance-state.svelte";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
   import { buildTipEffectMap } from "$lib/shared/animation-engine/domain/tip-effect-map";
   import EffectOrchestrator3D from "$lib/shared/3d/effects/EffectOrchestrator3D.svelte";
@@ -25,7 +25,7 @@
     id: string;
     position: { x: number; y: number; z: number };
     facingAngle: number;
-    avatarId: AvatarId;
+    characterId: CharacterId;
     propType: PropType;
     sequence: SequenceData;
     effectId: string;
@@ -41,12 +41,12 @@
   const rigGroundOffset = $derived(
     props.position.y - userProportionsState.groundY
   );
-  const performerState = createAvatarInstanceState(
+  const performerState = createCharacterInstanceState(
     {
       id: props.id,
       positionX: props.position.x,
       positionZ: props.position.z,
-      avatarModelId: props.avatarId,
+      characterId: props.characterId,
       persistent: false,
     },
     makeStandaloneDeps()
@@ -89,7 +89,7 @@
   facingAngle={props.facingAngle}
   planeMode={PlaneMode.WALL}
   avatarState={performerState}
-  avatarId={props.avatarId}
+  avatarId={props.characterId}
   showGrid={false}
   visiblePlanes={new Set([Plane.WALL])}
   bluePropType={toScenePropType(props.propType)}

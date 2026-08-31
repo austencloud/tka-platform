@@ -22,7 +22,7 @@ import type {
 
 /** Axes whose authored value may be a directive, so they are freeze-sensitive. */
 export const DIRECTIVE_PERFORMER_FIELDS = [
-  "avatarId",
+  "characterId",
   "prop",
   "effect",
   "effort",

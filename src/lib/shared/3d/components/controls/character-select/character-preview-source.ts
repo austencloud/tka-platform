@@ -1,4 +1,4 @@
-export function resolveAvatarPreviewPerformer<T>(
+export function resolveCharacterPreviewPerformer<T>(
   performers: readonly T[],
   selectedIndex: number | null
 ): T | null {

@@ -246,7 +246,7 @@
   $effect(() => {
     if (browser && !performerManager) {
       performerManager = createPerformerManager({
-        initialAvatarId: DEFAULT_AVATAR_ID,
+        initialCharacterId: DEFAULT_AVATAR_ID,
       });
 
       // Initialize with first performer

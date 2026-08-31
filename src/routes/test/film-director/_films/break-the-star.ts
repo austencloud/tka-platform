@@ -19,13 +19,13 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * at a shared 0.75 m/s.
  *
  * Casting and mirroring are Star of Five's — see that file for why SAILOR and
- * ORBITS are the words and why these five avatar ids read the way they do on
+ * ORBITS are the words and why these five character IDs read the way they do on
  * screen. The lead is directed rather than merely spelled: DJ out of beta at
  * south, one turn on every step, so the featured performer's spin is pinned
  * where the star's tip points instead of wherever the generator started.
  */
 export const breakTheStarFilm: FilmDirectorInput = {
-  version: 3,
+  version: 4,
   id: "break-the-star-r1",
   title: "Break the Star",
   brief:
@@ -47,7 +47,7 @@ export const breakTheStarFilm: FilmDirectorInput = {
           {
             id: "lead",
             name: "Lead",
-            avatarId: "ch01",
+            characterId: "ch01",
             prop: PropType.CAPSULE_BATON,
             effect: "led",
             effort: "linear",
@@ -73,7 +73,7 @@ export const breakTheStarFilm: FilmDirectorInput = {
           {
             id: "fan-left",
             name: "Fan left",
-            avatarId: "ch07",
+            characterId: "ch07",
             prop: PropType.FAN,
             effect: "silk",
             effort: "glide",
@@ -97,7 +97,7 @@ export const breakTheStarFilm: FilmDirectorInput = {
           {
             id: "fan-right",
             name: "Fan right",
-            avatarId: "ch22",
+            characterId: "ch22",
             prop: PropType.FAN,
             effect: "silk",
             effort: "glide",
@@ -119,7 +119,7 @@ export const breakTheStarFilm: FilmDirectorInput = {
           {
             id: "back-left",
             name: "Buugeng left",
-            avatarId: "ch10",
+            characterId: "ch10",
             prop: PropType.BUUGENG,
             effect: "bubbles",
             effort: "linear",
@@ -143,7 +143,7 @@ export const breakTheStarFilm: FilmDirectorInput = {
           {
             id: "back-right",
             name: "Buugeng right",
-            avatarId: "ch24",
+            characterId: "ch24",
             prop: PropType.BUUGENG,
             effect: "bubbles",
             effort: "linear",

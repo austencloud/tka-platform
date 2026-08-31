@@ -1,6 +1,6 @@
 # Film Director Capability Matrix
 
-<!-- directive-axes: avatarId,prop,effect,effort,staffLengthCm,environmentId,formation,bluePlane,redPlane,stepPlane -->
+<!-- directive-axes: characterId,prop,effect,effort,staffLengthCm,environmentId,formation,bluePlane,redPlane,stepPlane -->
 
 One row per speakable axis of the `/test/film-director` schema (v4). "Source
 of truth" is the live registry/enum — never copy value lists here.
@@ -23,7 +23,7 @@ not}` and still reject `distinct`, with or without `not`.
 | Axis | Scope | Grammar | Source of truth | Rejection behavior |
 |---|---|---|---|---|
 | prop | performer | literal, pick any/distinct, oneOf, not, sameAs | `src/lib/shared/pictograph/prop/domain/enums/prop-type.ts` (`PropType`) | unknown value: `"<value>" is not in the deployed catalog for this axis` |
-| avatarId | performer | literal, pick any/distinct, oneOf, not, sameAs | `@austencloud/scene-3d` `AVATAR_DEFINITIONS` | literal: `Avatar "<id>" is not in the deployed 3D catalog.`; directive form: catalog message above |
+| characterId | performer | literal, pick any/distinct, oneOf, not, sameAs | `src/lib/shared/3d/domain/character-model.ts` (`CHARACTER_DEFINITIONS`) | literal: `Character "<id>" is not in the deployed 3D catalog.`; directive form: catalog message above |
 | effect | performer | literal, pick any/distinct, oneOf, not, sameAs ("none" is a legal literal) | `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts` (`EFFECTS`) | catalog message above |
 | effort | performer | literal, pick any/distinct, oneOf, not, sameAs | `DIRECTOR_EFFORT_IDS` in `src/routes/test/film-director/_lib/film-director-schema.ts` | catalog message above |
 | staffLengthCm | performer | literal, directives require an explicit `from` (no finite catalog) | schema bounds 40–300 in `film-director-schema.ts` | open pick with no `from`: `this axis has no finite catalog — provide "from" with explicit values.`; `sameAs` to a performer with no staff length: `has no staff length to copy` |
@@ -153,8 +153,8 @@ branch, not the schema.
 ## Real but not yet speakable
 
 Swept from `src/routes/test/film-director/_lib/director-viewer-adapter.ts`
-against the per-performer setter API on the avatar/performer state factory
-(`src/lib/shared/3d/state/avatar-instance-state.svelte.ts`) and the viewer-level
+against the per-performer setter API on the character/performer state factory
+(`src/lib/shared/3d/state/character-instance-state.svelte.ts`) and the viewer-level
 setter API (`src/lib/shared/3d/state/viewer-3d-state.svelte.ts`). Each of these
 is a real, callable setter the director adapter has access to but never calls
 with a directed value — it either hardwires a constant into
@@ -214,11 +214,11 @@ exist in the app's control surface at all:
   (`src/lib/shared/3d/components/controls/PropPopover.svelte`'s
   `getPerformerColor(index)`) are a fixed index-based UI accent, not a
   material property that can be assigned.
-- **Avatar scale / height, per performer.** `setScale(scale)` exists on
+- **Character scale / height, per performer.** `setScale(scale)` exists on
   `AvatarSkeletonBuilder` (`@austencloud/scene-3d`), but nothing in this app
   calls it per performer — the only caller path is the global
   `userProportionsState` singleton (`user-proportions-state.svelte.ts`), which
-  derives one `avatarScale` for the whole scene from the user's own height/
+  derives one character scale for the whole scene from the user's own height/
   build settings. There is no per-performer entry point to override it.
 - **Lighting** (per-scene or per-environment light rig control). No schema
   axis, no adapter hook, no setter surfaced to the director path.
@@ -232,6 +232,6 @@ exist in the app's control surface at all:
 - **Two time units on one field.** `durationSeconds` and `durationBeats`
   together, or a keyframe's `atSeconds` with `atBeats`, reject rather than
   picking a winner. See "Counted time" above.
-- **A nonexistent avatar, prop, effect, effort, environment, or formation
+- **A nonexistent character, prop, effect, effort, environment, or formation
   name.** Every axis validates against its live catalog and rejects by name
   (see the "Rejection behavior" column above) — there is no silent fallback.

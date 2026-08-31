@@ -1,39 +1,40 @@
 <script lang="ts">
   /**
-   * AvatarSettingsPanel
+   * CharacterSettingsPanel
    *
-   * Side panel section for avatar visibility and selection.
-   * - Toggle avatar visibility
-   * - Select from available avatar models
+   * Side panel section for character visibility and selection.
+   * - Toggle character visibility
+   * - Select from available character models
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { type AvatarId } from "@austencloud/scene-3d";
-  import { DEPLOYED_AVATAR_DEFINITIONS } from "$lib/shared/3d/config/deployed-avatars";
+  import { type CharacterId } from "$lib/shared/3d/domain/character-model";
+  import { DEPLOYED_CHARACTER_DEFINITIONS } from "$lib/shared/3d/config/deployed-characters";
 
   interface Props {
-    /** Whether avatar is visible */
+    /** Whether the character is visible */
     showFigure: boolean;
-    /** Currently selected avatar ID */
-    avatarId: AvatarId;
+    /** Currently selected character ID */
+    characterId: CharacterId;
     /** Callbacks */
     onToggle: () => void;
-    onAvatarChange: (id: AvatarId) => void;
+    onCharacterChange: (id: CharacterId) => void;
   }
 
-  let { showFigure, avatarId, onToggle, onAvatarChange }: Props = $props();
+  let { showFigure, characterId, onToggle, onCharacterChange }: Props =
+    $props();
 </script>
 
-<div class="avatar-panel">
+<div class="character-panel">
   <!-- Visibility toggle row -->
   <div class="visibility-row">
-    <span class="visibility-label">{t("avatar_show")}</span>
+    <span class="visibility-label">{t("character_show")}</span>
     <button
       class="visibility-toggle"
       class:active={showFigure}
       onclick={onToggle}
-      aria-label={showFigure ? t("avatar_hidden") : t("avatar_show")}
-      title={showFigure ? t("avatar_hidden") : t("avatar_show")}
+      aria-label={showFigure ? t("character_hidden") : t("character_show")}
+      title={showFigure ? t("character_hidden") : t("character_show")}
     >
       <i
         class="fas"
@@ -45,31 +46,35 @@
   </div>
 
   {#if showFigure}
-    <div class="avatar-grid" role="radiogroup" aria-label={t("avatar_settings")}>
-      {#each DEPLOYED_AVATAR_DEFINITIONS as avatar}
+    <div
+      class="character-grid"
+      role="radiogroup"
+      aria-label={t("character_settings")}
+    >
+      {#each DEPLOYED_CHARACTER_DEFINITIONS as character}
         <button
-          class="avatar-card"
-          class:selected={avatarId === avatar.id}
+          class="character-card"
+          class:selected={characterId === character.id}
           role="radio"
-          aria-checked={avatarId === avatar.id}
-          onclick={() => onAvatarChange(avatar.id)}
-          aria-label={avatar.name}
-          title={avatar.description}
+          aria-checked={characterId === character.id}
+          onclick={() => onCharacterChange(character.id)}
+          aria-label={character.name}
+          title={character.description}
         >
-          <i class="fas {avatar.icon ?? 'fa-user'}" aria-hidden="true"></i>
-          <span class="avatar-name">{avatar.name}</span>
+          <i class="fas {character.icon ?? 'fa-user'}" aria-hidden="true"></i>
+          <span class="character-name">{character.name}</span>
         </button>
       {/each}
     </div>
   {:else}
     <div class="hidden-state">
-      <span>{t("avatar_hidden")}</span>
+      <span>{t("character_hidden")}</span>
     </div>
   {/if}
 </div>
 
 <style>
-  .avatar-panel {
+  .character-panel {
     padding: 0.875rem;
     display: flex;
     flex-direction: column;
@@ -98,7 +103,10 @@
     border-radius: 8px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition:
+      background var(--transition-fast),
+      border-color var(--transition-fast),
+      color var(--transition-fast);
   }
 
   .visibility-toggle:hover {
@@ -112,13 +120,13 @@
     color: var(--theme-accent);
   }
 
-  .avatar-grid {
+  .character-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 0.5rem;
   }
 
-  .avatar-card {
+  .character-card {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -131,25 +139,28 @@
     border-radius: 10px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition:
+      background var(--transition-fast),
+      border-color var(--transition-fast),
+      color var(--transition-fast);
   }
 
-  .avatar-card:hover {
+  .character-card:hover {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     color: var(--theme-text, #ffffff);
   }
 
-  .avatar-card.selected {
+  .character-card.selected {
     background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
     border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
     color: var(--theme-accent);
   }
 
-  .avatar-card i {
+  .character-card i {
     font-size: 1.125rem;
   }
 
-  .avatar-name {
+  .character-name {
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     text-align: center;
@@ -164,7 +175,7 @@
   }
 
   @media (max-width: 400px) {
-    .avatar-grid {
+    .character-grid {
       grid-template-columns: repeat(2, 1fr);
     }
   }
