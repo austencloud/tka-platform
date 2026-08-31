@@ -43,7 +43,7 @@ import { SampledCurlGrid2D } from "../smoke/smoke-curl-field";
 import { QualityTier } from "../types";
 import type { Fire3DParams } from "$lib/shared/effects/translators/webgl3d-types";
 
-const MAX_FIRE_TIPS = 4;
+const DEFAULT_MAX_DYNAMIC_LIGHTS = 4;
 
 /** Per-tier particle pool sizes (shared across all active tips). High density
  *  is what lets the soft faint blobs overlap into a continuous flame body. */
@@ -134,7 +134,9 @@ interface Particle {
 }
 
 export interface FireTipInput {
-  position: Vector3;
+  /** Stable across frames when one renderer serves multiple performer rigs. */
+  sourceId?: number;
+  position: { x: number; y: number; z: number };
   velocityX: number;
   velocityY: number;
   velocityZ: number;
@@ -147,10 +149,22 @@ export interface FireTipInput {
 
 export interface FireRendererOptions {
   preset?: FireColorPreset;
+  /** Override the fixed per-rig pool when one scene-level renderer is shared. */
+  poolSize?: number;
+  /** Cap expensive point lights independently from the number of fire tips. */
+  maxDynamicLights?: number;
+}
+
+interface FireSourceState {
+  accumulator: number;
+  previousPosition: Vector3;
+  valid: boolean;
+  lastSeenFrame: number;
 }
 
 export class FireRenderer3D {
   private particles: Particle[];
+  private activeParticles: Particle[] = [];
   private poolSize: number;
   private qualityTier: QualityTier;
   private preset: FireColorPreset;
@@ -184,14 +198,15 @@ export class FireRenderer3D {
 
   private lights: PointLight[] = [];
   private lightEnabled: boolean;
+  private maxDynamicLights: number;
 
   private time = 0;
 
-  // Per-tip emission state (continuous accumulator + last tip position for the
-  // path-distributed spawn sweep).
-  private emitAccumulator: number[] = [];
-  private prevTipPos: Vector3[] = [];
-  private prevTipValid: boolean[] = [];
+  // Stable per-source emission state. A scene-level renderer receives a
+  // variable set of tips as performers toggle effects; array position is not
+  // identity and would draw a flame streak between two different performers.
+  private sourceStates = new Map<number, FireSourceState>();
+  private sourceFrame = 0;
 
   constructor(
     qualityTier: QualityTier = QualityTier.HIGH,
@@ -199,9 +214,13 @@ export class FireRenderer3D {
   ) {
     this.qualityTier = qualityTier;
     this.preset = options?.preset ?? "classic";
-    this.poolSize = POOL_SIZE[qualityTier];
+    this.poolSize = options?.poolSize ?? POOL_SIZE[qualityTier];
     this.emitRate = EMIT_RATE[qualityTier];
     this.lightEnabled = qualityTier !== QualityTier.LOW;
+    this.maxDynamicLights = Math.max(
+      0,
+      Math.floor(options?.maxDynamicLights ?? DEFAULT_MAX_DYNAMIC_LIGHTS)
+    );
 
     this.particles = new Array(this.poolSize);
     for (let i = 0; i < this.poolSize; i++) {
@@ -229,12 +248,6 @@ export class FireRenderer3D {
     this.seeds = new Float32Array(this.poolSize);
     this.instSizes = new Float32Array(this.poolSize);
     this.propColors = new Float32Array(this.poolSize * 3);
-
-    for (let i = 0; i < MAX_FIRE_TIPS; i++) {
-      this.emitAccumulator.push(0);
-      this.prevTipPos.push(new Vector3());
-      this.prevTipValid.push(false);
-    }
   }
 
   initialize(parent: Object3D): void {
@@ -280,12 +293,40 @@ export class FireRenderer3D {
     parent.add(this.mesh);
 
     if (this.lightEnabled) {
-      for (let i = 0; i < MAX_FIRE_TIPS; i++) {
+      for (let i = 0; i < this.maxDynamicLights; i++) {
         const light = new PointLight(0xff7a22, 0, 3.2, 2.0);
-        light.visible = false;
+        // Keep the lights in Three's program signature from startup onward.
+        // Toggling visibility changes NUM_POINT_LIGHTS and recompiles every lit
+        // material in the scene on the first Fire click; zero intensity is the
+        // visually inert state without a shader-variant swap.
+        light.visible = true;
         parent.add(light);
         this.lights.push(light);
       }
+    }
+  }
+
+  /**
+   * Make the renderer participate in the scene's hidden startup frames before
+   * a performer asks for Fire. A zero-sized instance is visually inert, but it
+   * forces Three.js to create the instanced attribute buffers and compile the
+   * material while the loading curtain is still opaque.
+   */
+  primeGpuUpload(): void {
+    if (!this.mesh) return;
+    this.instSizes[0] = 0;
+    this.mesh.count = 1;
+    for (const name of [
+      "aCenter",
+      "aVel",
+      "aLife",
+      "aSeed",
+      "aSize",
+      "aPropColor",
+    ]) {
+      (
+        this.mesh.geometry.getAttribute(name) as InstancedBufferAttribute
+      ).needsUpdate = true;
     }
   }
 
@@ -295,24 +336,43 @@ export class FireRenderer3D {
     const safeDt = Math.min(dt, 1 / 15);
     this.time += safeDt;
     this.material.uniforms.uTime!.value = this.time;
+    this.sourceFrame++;
 
     // -- Emit from each active tip --
-    for (let i = 0; i < MAX_FIRE_TIPS; i++) {
-      if (i >= tips.length) {
-        this.prevTipValid[i] = false;
-        continue;
+    for (let i = 0; i < tips.length; i++) {
+      const tip = tips[i]!;
+      const sourceId = tip.sourceId ?? i;
+      let sourceState = this.sourceStates.get(sourceId);
+      if (!sourceState) {
+        sourceState = {
+          accumulator: 0,
+          previousPosition: new Vector3(),
+          valid: false,
+          lastSeenFrame: this.sourceFrame,
+        };
+        this.sourceStates.set(sourceId, sourceState);
       }
-      this.emitFromTip(i, tips[i]!, safeDt);
+      sourceState.lastSeenFrame = this.sourceFrame;
+      this.emitFromTip(sourceState, tip, safeDt);
+    }
+    for (const sourceState of this.sourceStates.values()) {
+      if (sourceState.lastSeenFrame === this.sourceFrame) continue;
+      sourceState.valid = false;
+      sourceState.accumulator = 0;
     }
 
     let visibleCount = 0;
 
-    for (const p of this.particles) {
-      if (!p.active) continue;
-
+    let activeIndex = 0;
+    while (activeIndex < this.activeParticles.length) {
+      const p = this.activeParticles[activeIndex]!;
       p.age += safeDt;
       if (p.age >= p.maxLife) {
         p.active = false;
+        const last = this.activeParticles.pop()!;
+        if (activeIndex < this.activeParticles.length) {
+          this.activeParticles[activeIndex] = last;
+        }
         continue;
       }
 
@@ -351,6 +411,7 @@ export class FireRenderer3D {
       this.propColors[i3 + 1] = p.pg;
       this.propColors[i3 + 2] = p.pb;
       visibleCount++;
+      activeIndex++;
     }
 
     const geo = this.mesh.geometry;
@@ -383,30 +444,38 @@ export class FireRenderer3D {
               Math.sin(this.time * 23.1 + i * 1.7) * 0.03;
           }
           light.intensity = Math.max(this.lightIntensity * motionScale, 0.04);
-          light.visible = true;
         } else {
-          light.visible = false;
+          light.intensity = 0;
         }
       }
     }
   }
 
   /** Spawn particles for one tip: continuous at the wick + along the path. */
-  private emitFromTip(i: number, tip: FireTipInput, safeDt: number): void {
-    const prev = this.prevTipPos[i]!;
+  private emitFromTip(
+    sourceState: FireSourceState,
+    tip: FireTipInput,
+    safeDt: number
+  ): void {
+    const prev = sourceState.previousPosition;
     const cur = tip.position;
 
     let segLen = 0;
-    if (this.prevTipValid[i]) {
+    if (sourceState.valid) {
       segLen = Math.hypot(cur.x - prev.x, cur.y - prev.y, cur.z - prev.z);
     }
 
     // Combined demand: idle stream (time-rate) + gapless path coverage.
-    this.emitAccumulator[i]! +=
-      this.emitRate * safeDt + segLen / PATH_SPACING[this.qualityTier];
-    let count = Math.floor(this.emitAccumulator[i]!);
+    // A source's first frame may inherit a large frame-gate delta even though
+    // no visible flame existed during that interval. Start at one 60 Hz slice
+    // so activation produces an immediate core instead of a one-frame burst;
+    // normal density fills in on the following frames.
+    const emissionDt = sourceState.valid ? safeDt : Math.min(safeDt, 1 / 60);
+    sourceState.accumulator +=
+      this.emitRate * emissionDt + segLen / PATH_SPACING[this.qualityTier];
+    let count = Math.floor(sourceState.accumulator);
     if (count > MAX_SPAWN_PER_TIP) count = MAX_SPAWN_PER_TIP;
-    this.emitAccumulator[i]! -= count;
+    sourceState.accumulator -= count;
 
     for (let k = 0; k < count; k++) {
       const particle = this.nextSlot();
@@ -445,8 +514,8 @@ export class FireRenderer3D {
       particle.active = true;
     }
 
-    prev.copy(cur);
-    this.prevTipValid[i] = true;
+    prev.set(cur.x, cur.y, cur.z);
+    sourceState.valid = true;
   }
 
   /**
@@ -460,6 +529,10 @@ export class FireRenderer3D {
     const p = this.particles[this.cursor]!;
     this.cursor++;
     if (this.cursor >= this.poolSize) this.cursor = 0;
+    if (!p.active) {
+      p.active = true;
+      this.activeParticles.push(p);
+    }
     return p;
   }
 
@@ -496,15 +569,14 @@ export class FireRenderer3D {
   }
 
   reset(): void {
-    for (const p of this.particles) {
+    for (const p of this.activeParticles) {
       p.active = false;
     }
-    for (let i = 0; i < MAX_FIRE_TIPS; i++) {
-      this.emitAccumulator[i] = 0;
-      this.prevTipValid[i] = false;
-    }
+    this.activeParticles.length = 0;
+    this.sourceStates.clear();
     for (const light of this.lights) {
-      light.visible = false;
+      light.intensity = 0;
+      light.visible = true;
     }
     if (this.mesh) {
       this.mesh.count = 0;
