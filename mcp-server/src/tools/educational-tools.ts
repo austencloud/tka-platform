@@ -174,7 +174,7 @@ Sequences that return home through transformations:
 - **Reflection**: Reflect across N-S, E-W, NE-SW, or NW-SE
 - **Mirrored**: Familiar name for N-S reflection
 - **Flipped**: Familiar name for E-W reflection
-- **Swapped**: Blue↔Red hand roles swap
+- **Swapped**: Left/right hand roles swap
 - **Inverted**: Pro↔Anti motions swap
 - **Rewound**: Second half plays in reverse
 
@@ -250,7 +250,7 @@ Use \`list_letter_variations\` to see all variations for a specific letter.`;
         return {
           content: [{
             type: "text" as const,
-            text: `${letter}: Type ${typeNum} (${fullTypeInfo?.name || "?"}) | Blue: ${varData.blueMotion.motionType} | Red: ${varData.redMotion.motionType} | ${variations.length} variations | Var ${variation}: ${varData.startPosition}→${varData.endPosition}`,
+            text: `${letter}: Type ${typeNum} (${fullTypeInfo?.name || "?"}) | Blue: ${varData.leftMotion.motionType} | Red: ${varData.rightMotion.motionType} | ${variations.length} variations | Var ${variation}: ${varData.startPosition}→${varData.endPosition}`,
           }],
         };
       }
@@ -258,7 +258,7 @@ Use \`list_letter_variations\` to see all variations for a specific letter.`;
       const varData = variations[Math.min(variation, variations.length - 1)];
 
       // Describe rotation type in human-readable form
-      const describeMotion = (motion: typeof varData.blueMotion) => {
+      const describeMotion = (motion: typeof varData.leftMotion) => {
         const mt = motion.motionType;
         const rd = motion.rotationDirection;
         if (mt === "static") return "static (no hand movement)";
@@ -278,14 +278,14 @@ ${fullTypeInfo?.description || ""}
 ${fullTypeInfo?.characteristics ? "**Characteristics:**\n" + fullTypeInfo.characteristics.map(c => `- ${c}`).join("\n") : ""}
 
 ## Motion Pattern
-- **Blue hand:** ${describeMotion(varData.blueMotion)}
-- **Red hand:** ${describeMotion(varData.redMotion)}
+- **Left hand:** ${describeMotion(varData.leftMotion)}
+- **Right hand:** ${describeMotion(varData.rightMotion)}
 
 ## Variation ${variation} Details
 - **Start position:** ${varData.startPosition}
 - **End position:** ${varData.endPosition}
-- **Blue motion:** ${varData.blueMotion.startLocation} → ${varData.blueMotion.endLocation}
-- **Red motion:** ${varData.redMotion.startLocation} → ${varData.redMotion.endLocation}
+- **Blue motion:** ${varData.leftMotion.startLocation} → ${varData.leftMotion.endLocation}
+- **Red motion:** ${varData.rightMotion.startLocation} → ${varData.rightMotion.endLocation}
 
 ## All Variations (${variations.length} total)
 ${variations.slice(0, 5).map((v, i) => `[${i}] ${v.startPosition} → ${v.endPosition}`).join("\n")}${variations.length > 5 ? `\n... and ${variations.length - 5} more` : ""}
@@ -410,7 +410,7 @@ ${entry.examples.map(e => `- ${e}`).join("\n")}
       const rep2 = var2[0];
 
       // Helper to describe rotation type
-      const describeRotation = (motion: typeof rep1.blueMotion) => {
+      const describeRotation = (motion: typeof rep1.leftMotion) => {
         if (motion.motionType === "static") return "static";
         if (motion.motionType === "dash") return "dash";
         const dir = motion.rotationDirection;
@@ -428,33 +428,33 @@ ${entry.examples.map(e => `- ${e}`).join("\n")}
       }
 
       // Compare motion types
-      if (rep1.blueMotion.motionType === rep2.blueMotion.motionType) {
-        similarities.push(`Both have ${rep1.blueMotion.motionType} blue motion`);
+      if (rep1.leftMotion.motionType === rep2.leftMotion.motionType) {
+        similarities.push(`Both have ${rep1.leftMotion.motionType} left-hand motion`);
       } else {
-        differences.push(`Blue motion differs: ${letter1} uses ${rep1.blueMotion.motionType}, ${letter2} uses ${rep2.blueMotion.motionType}`);
+        differences.push(`Blue motion differs: ${letter1} uses ${rep1.leftMotion.motionType}, ${letter2} uses ${rep2.leftMotion.motionType}`);
       }
 
-      if (rep1.redMotion.motionType === rep2.redMotion.motionType) {
-        similarities.push(`Both have ${rep1.redMotion.motionType} red motion`);
+      if (rep1.rightMotion.motionType === rep2.rightMotion.motionType) {
+        similarities.push(`Both have ${rep1.rightMotion.motionType} right-hand motion`);
       } else {
-        differences.push(`Red motion differs: ${letter1} uses ${rep1.redMotion.motionType}, ${letter2} uses ${rep2.redMotion.motionType}`);
+        differences.push(`Red motion differs: ${letter1} uses ${rep1.rightMotion.motionType}, ${letter2} uses ${rep2.rightMotion.motionType}`);
       }
 
       // Compare rotation directions (the key differentiator for same-type letters)
-      if (rep1.blueMotion.rotationDirection === rep2.blueMotion.rotationDirection) {
-        if (rep1.blueMotion.rotationDirection !== "noRotation") {
-          similarities.push(`Both have ${describeRotation(rep1.blueMotion)} blue rotation`);
+      if (rep1.leftMotion.rotationDirection === rep2.leftMotion.rotationDirection) {
+        if (rep1.leftMotion.rotationDirection !== "noRotation") {
+          similarities.push(`Both have ${describeRotation(rep1.leftMotion)} blue rotation`);
         }
       } else {
-        differences.push(`Blue rotation differs: ${letter1} is ${describeRotation(rep1.blueMotion)}, ${letter2} is ${describeRotation(rep2.blueMotion)}`);
+        differences.push(`Blue rotation differs: ${letter1} is ${describeRotation(rep1.leftMotion)}, ${letter2} is ${describeRotation(rep2.leftMotion)}`);
       }
 
-      if (rep1.redMotion.rotationDirection === rep2.redMotion.rotationDirection) {
-        if (rep1.redMotion.rotationDirection !== "noRotation") {
-          similarities.push(`Both have ${describeRotation(rep1.redMotion)} red rotation`);
+      if (rep1.rightMotion.rotationDirection === rep2.rightMotion.rotationDirection) {
+        if (rep1.rightMotion.rotationDirection !== "noRotation") {
+          similarities.push(`Both have ${describeRotation(rep1.rightMotion)} red rotation`);
         }
       } else {
-        differences.push(`Red rotation differs: ${letter1} is ${describeRotation(rep1.redMotion)}, ${letter2} is ${describeRotation(rep2.redMotion)}`);
+        differences.push(`Red rotation differs: ${letter1} is ${describeRotation(rep1.rightMotion)}, ${letter2} is ${describeRotation(rep2.rightMotion)}`);
       }
 
       // Compare position patterns
@@ -482,10 +482,10 @@ ${entry.examples.map(e => `- ${e}`).join("\n")}
 
       // Check inversion pair (same motions, opposite rotations)
       if (
-        rep1.blueMotion.motionType === rep2.blueMotion.motionType &&
-        rep1.redMotion.motionType === rep2.redMotion.motionType &&
-        rep1.blueMotion.rotationDirection !== rep2.blueMotion.rotationDirection &&
-        rep1.blueMotion.rotationDirection !== "noRotation" &&
+        rep1.leftMotion.motionType === rep2.leftMotion.motionType &&
+        rep1.rightMotion.motionType === rep2.rightMotion.motionType &&
+        rep1.leftMotion.rotationDirection !== rep2.leftMotion.rotationDirection &&
+        rep1.leftMotion.rotationDirection !== "noRotation" &&
         pattern1 === pattern2
       ) {
         relationships.push(`**Inversion pair**: ${letter1} and ${letter2} are the same motion with opposite rotations (pro↔anti). Used in the inverted LOOP transformation.`);
@@ -505,8 +505,8 @@ ${entry.examples.map(e => `- ${e}`).join("\n")}
 | Property | ${letter1} | ${letter2} |
 |----------|------------|------------|
 | Type | ${typeNum1} (${letterTypes[typeNum1]?.name || "?"}) | ${typeNum2} (${letterTypes[typeNum2]?.name || "?"}) |
-| Blue motion | ${describeRotation(rep1.blueMotion)} ${rep1.blueMotion.motionType} | ${describeRotation(rep2.blueMotion)} ${rep2.blueMotion.motionType} |
-| Red motion | ${describeRotation(rep1.redMotion)} ${rep1.redMotion.motionType} | ${describeRotation(rep2.redMotion)} ${rep2.redMotion.motionType} |
+| Blue motion | ${describeRotation(rep1.leftMotion)} ${rep1.leftMotion.motionType} | ${describeRotation(rep2.leftMotion)} ${rep2.leftMotion.motionType} |
+| Red motion | ${describeRotation(rep1.rightMotion)} ${rep1.rightMotion.motionType} | ${describeRotation(rep2.rightMotion)} ${rep2.rightMotion.motionType} |
 | Position pattern | ${pattern1} | ${pattern2} |
 | Variations | ${var1.length} | ${var2.length} |
 
@@ -576,8 +576,8 @@ ${relationships.length > 0 ? `\n## Relationships\n${relationships.map(r => `- ${
 **Description:** ${typeInfo.description}
 
 **Motion Pattern:**
-- Blue hand: ${typeInfo.motionPattern.blueMotion}
-- Red hand: ${typeInfo.motionPattern.redMotion}
+- Left hand: ${typeInfo.motionPattern.leftMotion}
+- Right hand: ${typeInfo.motionPattern.rightMotion}
 ${typeInfo.motionPattern.note ? `- Note: ${typeInfo.motionPattern.note}` : ""}
 
 **Characteristics:**

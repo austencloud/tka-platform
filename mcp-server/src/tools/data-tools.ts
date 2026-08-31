@@ -39,8 +39,8 @@ export function registerDataTools(server: McpServer): void {
       const variationList = toShow
         .map((v, i) => {
           return `[${i}] ${v.startPosition} → ${v.endPosition}
-   Blue: ${v.blueMotion.startLocation}→${v.blueMotion.endLocation} (${v.blueMotion.motionType}, ${v.blueMotion.rotationDirection})
-   Red: ${v.redMotion.startLocation}→${v.redMotion.endLocation} (${v.redMotion.motionType}, ${v.redMotion.rotationDirection})`;
+   Blue: ${v.leftMotion.startLocation}→${v.leftMotion.endLocation} (${v.leftMotion.motionType}, ${v.leftMotion.rotationDirection})
+   Red: ${v.rightMotion.startLocation}→${v.rightMotion.endLocation} (${v.rightMotion.motionType}, ${v.rightMotion.rotationDirection})`;
         })
         .join("\n\n");
 
@@ -134,24 +134,24 @@ export function registerDataTools(server: McpServer): void {
       if (motionType) {
         results = results.filter(
           (p) =>
-            p.blueMotion.motionType === motionType ||
-            p.redMotion.motionType === motionType
+            p.leftMotion.motionType === motionType ||
+            p.rightMotion.motionType === motionType
         );
       }
 
       if (startLocation) {
         results = results.filter(
           (p) =>
-            p.blueMotion.startLocation === startLocation ||
-            p.redMotion.startLocation === startLocation
+            p.leftMotion.startLocation === startLocation ||
+            p.rightMotion.startLocation === startLocation
         );
       }
 
       if (endLocation) {
         results = results.filter(
           (p) =>
-            p.blueMotion.endLocation === endLocation ||
-            p.redMotion.endLocation === endLocation
+            p.leftMotion.endLocation === endLocation ||
+            p.rightMotion.endLocation === endLocation
         );
       }
 
@@ -167,7 +167,7 @@ export function registerDataTools(server: McpServer): void {
 
       const resultList = limited
         .map((p) => {
-          return `${p.letter}: ${p.startPosition}→${p.endPosition} | Blue: ${p.blueMotion.startLocation}→${p.blueMotion.endLocation} (${p.blueMotion.motionType}) | Red: ${p.redMotion.startLocation}→${p.redMotion.endLocation} (${p.redMotion.motionType})`;
+          return `${p.letter}: ${p.startPosition}→${p.endPosition} | Blue: ${p.leftMotion.startLocation}→${p.leftMotion.endLocation} (${p.leftMotion.motionType}) | Red: ${p.rightMotion.startLocation}→${p.rightMotion.endLocation} (${p.rightMotion.motionType})`;
         })
         .join("\n");
 

@@ -19,11 +19,12 @@ import {
 } from "@tka/sequence-engine/generation";
 import { getLetterTransitionGraph } from "./letter-transition-graph.js";
 import { recalculateAllOrientations } from "./orientation-propagation.js";
+import type { HandSide } from "@tka/tka-types";
 
 // Types (re-exported for consumers)
 
 interface MotionData {
-  color?: string;
+  hand?: HandSide;
   startLocation: string;
   endLocation: string;
   motionType: string;
@@ -39,13 +40,13 @@ export interface SequenceStep {
   variation?: number;
   startPosition: string;
   endPosition: string;
-  blueMotion: MotionData;
-  redMotion: MotionData;
+  leftMotion: MotionData;
+  rightMotion: MotionData;
   /** Step index in the sequence (matches stepNumber for MCP adapter) */
   stepNumber: number;
   isBridge?: boolean;
-  blueReversal?: boolean;
-  redReversal?: boolean;
+  leftReversal?: boolean;
+  rightReversal?: boolean;
 }
 
 export interface SequenceResult {
@@ -197,8 +198,8 @@ function attemptSequenceBuild(
     variation: 0,
     startPosition: startPictograph.startPosition,
     endPosition: startPictograph.endPosition,
-    blueMotion: startPictograph.blueMotion,
-    redMotion: startPictograph.redMotion,
+    leftMotion: startPictograph.leftMotion,
+    rightMotion: startPictograph.rightMotion,
     stepNumber: 0,
   }));
 
@@ -207,8 +208,8 @@ function attemptSequenceBuild(
     variation: firstVariationIndex,
     startPosition: firstVariation.startPosition,
     endPosition: firstVariation.endPosition,
-    blueMotion: firstVariation.blueMotion,
-    redMotion: firstVariation.redMotion,
+    leftMotion: firstVariation.leftMotion,
+    rightMotion: firstVariation.rightMotion,
     stepNumber: 1,
     isBridge: false,
   }));
@@ -240,8 +241,8 @@ function attemptSequenceBuild(
       variation: variationIndex >= 0 ? variationIndex : 0,
       startPosition: chosenVariation.startPosition,
       endPosition: chosenVariation.endPosition,
-      blueMotion: chosenVariation.blueMotion,
-      redMotion: chosenVariation.redMotion,
+      leftMotion: chosenVariation.leftMotion,
+      rightMotion: chosenVariation.rightMotion,
       stepNumber: i + 1,
       isBridge: bridgeIndices?.has(i) ?? false,
     }));
@@ -335,8 +336,8 @@ function attemptSequenceBuildWithEndConstraint(
     return {
       word,
       steps: [
-        makeStep({ letter: startPictograph.letter, variation: 0, startPosition: startPictograph.startPosition, endPosition: startPictograph.endPosition, blueMotion: startPictograph.blueMotion, redMotion: startPictograph.redMotion, stepNumber: 0 }),
-        makeStep({ letter: chosen.letter, variation: variationIndex >= 0 ? variationIndex : 0, startPosition: chosen.startPosition, endPosition: chosen.endPosition, blueMotion: chosen.blueMotion, redMotion: chosen.redMotion, stepNumber: 1, isBridge: false }),
+        makeStep({ letter: startPictograph.letter, variation: 0, startPosition: startPictograph.startPosition, endPosition: startPictograph.endPosition, leftMotion: startPictograph.leftMotion, rightMotion: startPictograph.rightMotion, stepNumber: 0 }),
+        makeStep({ letter: chosen.letter, variation: variationIndex >= 0 ? variationIndex : 0, startPosition: chosen.startPosition, endPosition: chosen.endPosition, leftMotion: chosen.leftMotion, rightMotion: chosen.rightMotion, stepNumber: 1, isBridge: false }),
       ],
       startPosition,
       endPosition: chosen.endPosition,
@@ -363,8 +364,8 @@ function attemptSequenceBuildWithEndConstraint(
   }
 
   const startPictograph = pickRandom(validStartPositions)!;
-  steps.push(makeStep({ letter: startPictograph.letter, variation: 0, startPosition: startPictograph.startPosition, endPosition: startPictograph.endPosition, blueMotion: startPictograph.blueMotion, redMotion: startPictograph.redMotion, stepNumber: 0 }));
-  steps.push(makeStep({ letter: firstVariation.letter, variation: firstVariationIndex, startPosition: firstVariation.startPosition, endPosition: firstVariation.endPosition, blueMotion: firstVariation.blueMotion, redMotion: firstVariation.redMotion, stepNumber: 1, isBridge: false }));
+  steps.push(makeStep({ letter: startPictograph.letter, variation: 0, startPosition: startPictograph.startPosition, endPosition: startPictograph.endPosition, leftMotion: startPictograph.leftMotion, rightMotion: startPictograph.rightMotion, stepNumber: 0 }));
+  steps.push(makeStep({ letter: firstVariation.letter, variation: firstVariationIndex, startPosition: firstVariation.startPosition, endPosition: firstVariation.endPosition, leftMotion: firstVariation.leftMotion, rightMotion: firstVariation.rightMotion, stepNumber: 1, isBridge: false }));
 
   let currentEndPosition = firstVariation.endPosition;
 
@@ -384,8 +385,8 @@ function attemptSequenceBuildWithEndConstraint(
       variation: variationIndex >= 0 ? variationIndex : 0,
       startPosition: chosenVariation.startPosition,
       endPosition: chosenVariation.endPosition,
-      blueMotion: chosenVariation.blueMotion,
-      redMotion: chosenVariation.redMotion,
+      leftMotion: chosenVariation.leftMotion,
+      rightMotion: chosenVariation.rightMotion,
       stepNumber: i + 1,
       isBridge: bridgeIndices?.has(i) ?? false,
     }));
@@ -408,8 +409,8 @@ function attemptSequenceBuildWithEndConstraint(
     variation: lastVariationIndex >= 0 ? lastVariationIndex : 0,
     startPosition: lastVariation.startPosition,
     endPosition: lastVariation.endPosition,
-    blueMotion: lastVariation.blueMotion,
-    redMotion: lastVariation.redMotion,
+    leftMotion: lastVariation.leftMotion,
+    rightMotion: lastVariation.rightMotion,
     stepNumber: letters.length,
     isBridge: bridgeIndices?.has(letters.length - 1) ?? false,
   }));
@@ -583,8 +584,8 @@ export function buildSequenceForLoop(
           variation: bridgeIndex >= 0 ? bridgeIndex : 0,
           startPosition: bridgeLetter.startPosition,
           endPosition: bridgeLetter.endPosition,
-          blueMotion: bridgeLetter.blueMotion,
-          redMotion: bridgeLetter.redMotion,
+          leftMotion: bridgeLetter.leftMotion,
+          rightMotion: bridgeLetter.rightMotion,
           stepNumber: steps.length,
           isBridge: true,
         }));
@@ -709,26 +710,26 @@ export function detectReversals(steps: SequenceStep[]): SequenceStep[] {
 
   return steps.map((step, index) => {
     if (index === 0) {
-      return { ...step, blueReversal: false, redReversal: false };
+      return { ...step, leftReversal: false, rightReversal: false };
     }
 
     const previousSteps = steps.slice(0, index);
-    const lastBlueRotDir = getLastValidRotationDirection(previousSteps, "blue");
-    const lastRedRotDir = getLastValidRotationDirection(previousSteps, "red");
-    const currentBlueRotDir = getRotationDirection(step, "blue");
-    const currentRedRotDir = getRotationDirection(step, "red");
-    const blueReversal = isReversal(lastBlueRotDir, currentBlueRotDir);
-    const redReversal = isReversal(lastRedRotDir, currentRedRotDir);
+    const lastLeftRotDir = getLastValidRotationDirection(previousSteps, "left");
+    const lastRightRotDir = getLastValidRotationDirection(previousSteps, "right");
+    const currentLeftRotDir = getRotationDirection(step, "left");
+    const currentRightRotDir = getRotationDirection(step, "right");
+    const leftReversal = isReversal(lastLeftRotDir, currentLeftRotDir);
+    const rightReversal = isReversal(lastRightRotDir, currentRightRotDir);
 
-    return { ...step, blueReversal, redReversal };
+    return { ...step, leftReversal, rightReversal };
   });
 }
 
-function getLastValidRotationDirection(steps: SequenceStep[], color: "blue" | "red"): string | null {
+function getLastValidRotationDirection(steps: SequenceStep[], hand: HandSide): string | null {
   for (let i = steps.length - 1; i >= 0; i--) {
     const step = steps[i];
     if (!step) continue;
-    const rotDir = getRotationDirection(step, color);
+    const rotDir = getRotationDirection(step, hand);
     if (rotDir && rotDir !== "no_rotation" && rotDir !== "noRotation") {
       return rotDir;
     }
@@ -736,8 +737,8 @@ function getLastValidRotationDirection(steps: SequenceStep[], color: "blue" | "r
   return null;
 }
 
-function getRotationDirection(step: SequenceStep, color: "blue" | "red"): string | null {
-  const motion = color === "blue" ? step.blueMotion : step.redMotion;
+function getRotationDirection(step: SequenceStep, hand: HandSide): string | null {
+  const motion = hand === "left" ? step.leftMotion : step.rightMotion;
   if (!motion) return null;
   if (motion.motionType === "static") return "no_rotation";
   return motion.rotationDirection || null;
@@ -760,8 +761,8 @@ function normalizeRotationDirection(rotDir: string): string {
 // ─────────────────────────────────────────────────────────────────────────────
 // Type bridge: MCP SequenceStep ↔ engine Step
 //
-// The engine's Step type uses `motions: { blue, red }` while MCP's SequenceStep
-// uses flat `blueMotion`/`redMotion`. These converters bridge the two at
+// The engine uses `motions: { left, right }` while MCP's SequenceStep uses
+// flat `leftMotion`/`rightMotion`. These converters bridge the two at
 // function-call boundaries.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -772,7 +773,7 @@ export function mcpStepsToEngineSteps(steps: SequenceStep[]): any[] {
     letter: s.letter || null,
     startPosition: s.startPosition || null,
     endPosition: s.endPosition || null,
-    motions: { blue: s.blueMotion, red: s.redMotion },
+    motions: { left: s.leftMotion, right: s.rightMotion },
     stepNumber: s.stepNumber ?? i,
     duration: 1,
     isBridge: s.isBridge,
@@ -786,8 +787,8 @@ export function engineStepsToMcpSteps(steps: any[]): SequenceStep[] {
     letter: String(s.letter ?? ""),
     startPosition: String(s.startPosition ?? ""),
     endPosition: String(s.endPosition ?? ""),
-    blueMotion: (s.motions?.blue ?? s.blueMotion) as SequenceStep["blueMotion"],
-    redMotion: (s.motions?.red ?? s.redMotion) as SequenceStep["redMotion"],
+    leftMotion: (s.motions?.left ?? s.leftMotion) as SequenceStep["leftMotion"],
+    rightMotion: (s.motions?.right ?? s.rightMotion) as SequenceStep["rightMotion"],
     stepNumber: s.stepNumber ?? i,
     isBridge: s.isBridge,
     variation: s.variation,

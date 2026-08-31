@@ -478,7 +478,7 @@ A **LOOP** is a sequence that returns to its starting position (circular) and fo
 |-----------|-------------|
 | **Rotated** | Positions continue rotating same direction (180 or 90 degree slices) |
 | **Reflection** | Reflects locations across one of four axes. Legacy **Mirrored** means N-S; legacy **Flipped** means E-W |
-| **Swapped** | Blue<->Red hand roles swap |
+| **Swapped** | Left/right hand roles swap |
 | **Inverted** | Pro<->Anti motion types swap |
 | **Rewound** | Second half plays in reverse (temporal, not geometric) |
 
@@ -584,7 +584,7 @@ LOOPs use composable transformations that operate on TKA words:
 |---------------|-------------|
 | **Rotated** | Positions continue rotating same direction (180 or 90 degree slices) |
 | **Reflection** | Reflects across N-S, E-W, NE-SW, or NW-SE. Legacy Mirrored means N-S; legacy Flipped means E-W |
-| **Swapped** | Blue<->Red hand roles swap |
+| **Swapped** | Left/right hand roles swap |
 | **Inverted** | Pro<->Anti motion types swap |
 | **Rewound** | Second half plays in reverse |
 
@@ -1089,7 +1089,7 @@ Rotational relationship **only applies when both props rotate**. Pictographs wit
 
 Rotational relationship applies to Type 2, Type 3, Type 4, Type 5, and Type 6 pictographs (whenever both hands rotate). It does **not** apply to Lambda (Λ, Λ-) or gamma (γ), which use opening/closing instead.
 
-In the codebase, rotational relationship is derived at render time by comparing \`blueMotion.rotationDirection\` to \`redMotion.rotationDirection\` (see \`TurnsTupleGenerator.ts\` lines ~192-248 for Type 2, ~448-452 for Type 5, ~551-555 for Type 6). It is not a stored field on \`MotionData\`. The visual dot is rendered by \`src/lib/shared/pictograph/tka-glyph/components/DirectionDot.svelte\`.
+In the codebase, rotational relationship is derived at render time by comparing \`leftMotion.rotationDirection\` to \`rightMotion.rotationDirection\` (see \`TurnsTupleGenerator.ts\` lines ~192-248 for Type 2, ~448-452 for Type 5, ~551-555 for Type 6). It is not a stored field on \`MotionData\`. The visual dot is rendered by \`src/lib/shared/pictograph/tka-glyph/components/DirectionDot.svelte\`.
 
 ### Opening and Closing: The Lambda/Gamma Exception
 

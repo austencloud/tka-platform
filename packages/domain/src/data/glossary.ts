@@ -350,7 +350,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
       "A per-hand designation used by Lambda (Λ), Lambda-Dash (Λ-), and gamma (γ). Opening means the rotating hand's trajectory would continue through a pro shift toward an alpha position. Each hand can be opening or closing independently.",
     examples: [
       "Λ(0,1,op): Lambda with 1-turn static hand whose trajectory would resolve to alpha",
-      "Λ-(1,1,op,cl): Lambda-Dash with blue hand opening (toward alpha), red hand closing (toward beta)",
+      "Λ-(1,1,op,cl): Lambda-Dash with the left hand opening (toward alpha), right hand closing (toward beta)",
       "γ(op,op): gamma with both hands rotating such that both trajectories resolve to alpha",
     ],
     relatedTerms: ["closing", "glyph", "alpha", "rotational-relationship"],
@@ -448,7 +448,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
 
   chirality: {
     definition:
-      "Which of two mirror-image forms an asymmetric prop takes. A chiral prop is not superimposable on its own mirror image, so the shape has a handedness that rotation cannot change: orientation turns the prop, chirality decides which of the two shapes is being turned. Chirality is set per hand, so the blue prop and the red prop can differ. In TKA it applies to the buugeng family, where the pair's relative chirality is what matters: two props of the same chirality stay visibly apart at a shared hand point, while two of opposite chirality nest into a single combined shape and take no separation offset. Neither form is the canonical one, so TKA names them A and B rather than treating one as a mirrored version of the other.",
+      "Which of two mirror-image forms an asymmetric prop takes. A chiral prop is not superimposable on its own mirror image, so the shape has a handedness that rotation cannot change: orientation turns the prop, chirality decides which of the two shapes is being turned. Chirality is set per hand, so the left and right props can differ. In TKA it applies to the buugeng family, where the pair's relative chirality is what matters: two props of the same chirality stay visibly apart at a shared hand point, while two of opposite chirality nest into a single combined shape and take no separation offset. Neither form is the canonical one, so TKA names them A and B rather than treating one as a mirrored version of the other.",
     examples: [
       "Blue A beside red B is the pairing that nests at a beta position",
       "Blue A beside red A stays separated, the same as any other matched pair",
@@ -1149,7 +1149,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   swapped: {
     definition:
-      "A LOOP transformation where the blue and red hands swap roles. What the blue hand did, the red hand now does (and vice versa). Changes body motion significantly.",
+      "A LOOP transformation where the left and right hands swap roles. What the left hand did, the right hand now does (and vice versa). Changes body motion significantly.",
     examples: [
       "Blue was at N doing pro, now red is at N doing pro",
       "Body has to reorganize to execute the swapped version",
@@ -1337,7 +1337,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     definition:
       "A Level 7 concept where two grids share a junction point, expanding the spatial canvas and bridging to 3D. Each grid shows one hand's motion. The junction point creates new position combinations that can't exist on a single grid, including patterns with two center points. Uses existing terminology (alpha, beta, gamma, etc.) to express new spatial relationships across the paired grids. Placed after the centric grid (L6) so the single grid is complete — every orientation (L4), every perimeter pairing (L5), and the center point itself (L6) — before expanding beyond one grid. The junction consumes the center point directly.",
     examples: [
-      "Two grids sharing a north/south junction, blue hand on grid A, red hand on grid B",
+      "Two grids sharing a north/south junction, left hand on grid A, right hand on grid B",
       "Layouts: left-right, top-bottom, diagonal arrangements",
       "Patterns where hands are spatially further apart than a single grid allows",
     ],

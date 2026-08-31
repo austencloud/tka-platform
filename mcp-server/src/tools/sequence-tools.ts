@@ -517,8 +517,8 @@ export function registerSequenceTools(server: McpServer): void {
       bridgeSelections: z.record(z.string(), z.number()).optional().describe("Map of bridge transition index to preferred bridge option index."),
 
       // Orientation overrides
-      blueStartOrientation: z.enum(["in", "out", "clock", "counter", "clockIn", "clockOut", "counterIn", "counterOut"]).optional().describe('Override starting orientation for blue prop (default: "in")'),
-      redStartOrientation: z.enum(["in", "out", "clock", "counter", "clockIn", "clockOut", "counterIn", "counterOut"]).optional().describe('Override starting orientation for red prop (default: "in")'),
+      leftStartOrientation: z.enum(["in", "out", "clock", "counter", "clockIn", "clockOut", "counterIn", "counterOut"]).optional().describe('Override starting orientation for blue prop (default: "in")'),
+      rightStartOrientation: z.enum(["in", "out", "clock", "counter", "clockIn", "clockOut", "counterIn", "counterOut"]).optional().describe('Override starting orientation for red prop (default: "in")'),
 
       // Display params
       layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
@@ -536,7 +536,7 @@ export function registerSequenceTools(server: McpServer): void {
       notes: z.string().optional().describe("Notes to show in footer (bottom-center)"),
       birthday: z.string().optional().describe("Birthday/creation date in ISO format (bottom-right), e.g., '2024-01-15'"),
     },
-    async ({ word, length, loopType, period = "halved", reflectionAxis, constraintPreset, constraints, handPathMode, motionTypeFilter, startPosition, endPosition, blockedStartPositions, mustContainLetters, mustNotContainLetters, gridMode = "diamond", level = 1, propType, turnIntensity, maxAttempts = 500, bridgeSelections, blueStartOrientation, redStartOrientation, layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, displayWord, darkMode = true, showDifficulty = true, showReversals = true, loopComponents, userName, notes, birthday }) => {
+    async ({ word, length, loopType, period = "halved", reflectionAxis, constraintPreset, constraints, handPathMode, motionTypeFilter, startPosition, endPosition, blockedStartPositions, mustContainLetters, mustNotContainLetters, gridMode = "diamond", level = 1, propType, turnIntensity, maxAttempts = 500, bridgeSelections, leftStartOrientation, rightStartOrientation, layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, displayWord, darkMode = true, showDifficulty = true, showReversals = true, loopComponents, userName, notes, birthday }) => {
       // Validation: must have word or length
       if (!word && !length) {
         return {
@@ -603,8 +603,8 @@ export function registerSequenceTools(server: McpServer): void {
           loopType,
           period,
           reflectionAxis,
-          blueStartOrientation,
-          redStartOrientation,
+          leftStartOrientation,
+          rightStartOrientation,
         }, allPictographs as any);
 
         result = engineResult.result;
@@ -707,8 +707,8 @@ export function registerSequenceTools(server: McpServer): void {
           showReversals,
           seedWord: displayWord?.toUpperCase() ?? engineSeedWord,
           derivedStepIndices: engineDerivedStepIndices,
-          bluePropType: propType,
-          redPropType: propType,
+          leftPropType: propType,
+          rightPropType: propType,
         });
 
         const headerWord = displayWord ?? result.word ?? word ?? "sequence";
@@ -719,16 +719,16 @@ export function registerSequenceTools(server: McpServer): void {
         // Include compact step data so Claude can inspect the sequence
         // without needing a separate tool call or image reading.
         const stepSummary = result.steps.map((s, i) => {
-          const b = s.blueMotion;
-          const r = s.redMotion;
+          const b = s.leftMotion;
+          const r = s.rightMotion;
           return {
             step: i,
             letter: s.letter,
             pos: `${s.startPosition}→${s.endPosition}`,
-            blue: { type: b.motionType, dir: b.rotationDirection, turns: b.turns, loc: `${b.startLocation}→${b.endLocation}`, ori: `${b.startOrientation}→${b.endOrientation}` },
-            red: { type: r.motionType, dir: r.rotationDirection, turns: r.turns, loc: `${r.startLocation}→${r.endLocation}`, ori: `${r.startOrientation}→${r.endOrientation}` },
-            ...(s.blueReversal ? { blueRev: true } : {}),
-            ...(s.redReversal ? { redRev: true } : {}),
+            left: { type: b.motionType, dir: b.rotationDirection, turns: b.turns, loc: `${b.startLocation}→${b.endLocation}`, ori: `${b.startOrientation}→${b.endOrientation}` },
+            right: { type: r.motionType, dir: r.rotationDirection, turns: r.turns, loc: `${r.startLocation}→${r.endLocation}`, ori: `${r.startOrientation}→${r.endOrientation}` },
+            ...(s.leftReversal ? { leftRev: true } : {}),
+            ...(s.rightReversal ? { rightRev: true } : {}),
           };
         });
 

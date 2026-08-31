@@ -188,10 +188,10 @@ export function registerLoopTools(server: McpServer): void {
       period: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size: "halved" for 180° rotation (default), "quartered" for 90° rotation'),
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
       maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
-      blueStartOrientation: orientationEnum.optional().describe('Override starting orientation for blue prop (default: "in")'),
-      redStartOrientation: orientationEnum.optional().describe('Override starting orientation for red prop (default: "in")'),
+      leftStartOrientation: orientationEnum.optional().describe('Override starting orientation for blue prop (default: "in")'),
+      rightStartOrientation: orientationEnum.optional().describe('Override starting orientation for red prop (default: "in")'),
     },
-    async ({ word, loopType, period = "halved", gridMode = "diamond", maxAttempts = 500, blueStartOrientation, redStartOrientation }) => {
+    async ({ word, loopType, period = "halved", gridMode = "diamond", maxAttempts = 500, leftStartOrientation, rightStartOrientation }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -293,8 +293,8 @@ export function registerLoopTools(server: McpServer): void {
       const mcpLoopSteps = engineStepsToMcpSteps(loopResult.steps as any);
 
       // Apply orientation overrides if specified
-      const finalMcpSteps = (blueStartOrientation || redStartOrientation)
-        ? recalculateOrientationsWithOverrides(mcpLoopSteps, blueStartOrientation, redStartOrientation)
+      const finalMcpSteps = (leftStartOrientation || rightStartOrientation)
+        ? recalculateOrientationsWithOverrides(mcpLoopSteps, leftStartOrientation, rightStartOrientation)
         : mcpLoopSteps;
 
       // Format output
@@ -316,17 +316,17 @@ export function registerLoopTools(server: McpServer): void {
           isDerived: loopResult!.derivedStepIndices.includes(i),
           startPosition: step.startPosition,
           endPosition: step.endPosition,
-          blueMotion: {
-            startLocation: step.blueMotion.startLocation,
-            endLocation: step.blueMotion.endLocation,
-            motionType: step.blueMotion.motionType,
-            rotationDirection: step.blueMotion.rotationDirection,
+          leftMotion: {
+            startLocation: step.leftMotion.startLocation,
+            endLocation: step.leftMotion.endLocation,
+            motionType: step.leftMotion.motionType,
+            rotationDirection: step.leftMotion.rotationDirection,
           },
-          redMotion: {
-            startLocation: step.redMotion.startLocation,
-            endLocation: step.redMotion.endLocation,
-            motionType: step.redMotion.motionType,
-            rotationDirection: step.redMotion.rotationDirection,
+          rightMotion: {
+            startLocation: step.rightMotion.startLocation,
+            endLocation: step.rightMotion.endLocation,
+            motionType: step.rightMotion.motionType,
+            rotationDirection: step.rightMotion.rotationDirection,
           },
         })),
       };
@@ -363,10 +363,10 @@ export function registerLoopTools(server: McpServer): void {
       userName: z.string().optional().describe("Username for footer"),
       notes: z.string().optional().describe("Notes for footer"),
       birthday: z.string().optional().describe("Birthday/creation date in ISO format"),
-      blueStartOrientation: orientationEnum.optional().describe('Override starting orientation for blue prop (default: "in")'),
-      redStartOrientation: orientationEnum.optional().describe('Override starting orientation for red prop (default: "in")'),
+      leftStartOrientation: orientationEnum.optional().describe('Override starting orientation for blue prop (default: "in")'),
+      rightStartOrientation: orientationEnum.optional().describe('Override starting orientation for red prop (default: "in")'),
     },
-    async ({ word, loopType, period = "halved", gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 500, loopComponents, level = 1, turnIntensity, userName, notes, birthday, blueStartOrientation, redStartOrientation }) => {
+    async ({ word, loopType, period = "halved", gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 500, loopComponents, level = 1, turnIntensity, userName, notes, birthday, leftStartOrientation, rightStartOrientation }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -468,8 +468,8 @@ export function registerLoopTools(server: McpServer): void {
       const mcpLoopSteps2 = engineStepsToMcpSteps(loopResult.steps as any);
 
       // Apply orientation overrides if specified
-      const finalMcpSteps2 = (blueStartOrientation || redStartOrientation)
-        ? recalculateOrientationsWithOverrides(mcpLoopSteps2, blueStartOrientation, redStartOrientation)
+      const finalMcpSteps2 = (leftStartOrientation || rightStartOrientation)
+        ? recalculateOrientationsWithOverrides(mcpLoopSteps2, leftStartOrientation, rightStartOrientation)
         : mcpLoopSteps2;
 
       try {
@@ -579,10 +579,10 @@ export function registerLoopTools(server: McpServer): void {
       userName: z.string().optional().describe("Username for footer"),
       notes: z.string().optional().describe("Notes for footer"),
       birthday: z.string().optional().describe("Birthday/creation date in ISO format"),
-      blueStartOrientation: orientationEnum.optional().describe('Override starting orientation for blue prop (default: "in")'),
-      redStartOrientation: orientationEnum.optional().describe('Override starting orientation for red prop (default: "in")'),
+      leftStartOrientation: orientationEnum.optional().describe('Override starting orientation for blue prop (default: "in")'),
+      rightStartOrientation: orientationEnum.optional().describe('Override starting orientation for red prop (default: "in")'),
     },
-    async ({ word, loopType, period = "halved", gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 500, loopComponents, level = 1, turnIntensity, userName, notes, birthday, blueStartOrientation, redStartOrientation }) => {
+    async ({ word, loopType, period = "halved", gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 500, loopComponents, level = 1, turnIntensity, userName, notes, birthday, leftStartOrientation, rightStartOrientation }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -684,8 +684,8 @@ export function registerLoopTools(server: McpServer): void {
       const mcpLoopSteps3 = engineStepsToMcpSteps(loopResult.steps as any);
 
       // Apply orientation overrides if specified
-      const finalMcpSteps3 = (blueStartOrientation || redStartOrientation)
-        ? recalculateOrientationsWithOverrides(mcpLoopSteps3, blueStartOrientation, redStartOrientation)
+      const finalMcpSteps3 = (leftStartOrientation || rightStartOrientation)
+        ? recalculateOrientationsWithOverrides(mcpLoopSteps3, leftStartOrientation, rightStartOrientation)
         : mcpLoopSteps3;
 
       try {

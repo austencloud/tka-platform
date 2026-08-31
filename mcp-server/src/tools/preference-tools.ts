@@ -30,10 +30,10 @@ export function registerPreferenceTools(server: McpServer): void {
       showGrid: z.boolean().optional().describe("Show grid (master toggle)"),
       showNonRadialPoints: z.boolean().optional().describe("Show non-radial grid points (corners)"),
       handPointVisibility: z.enum(["all", "active", "none"]).optional().describe("Hand point visibility mode"),
-      showBlueMotion: z.boolean().optional().describe("Show blue motion (prop + arrow)"),
-      showRedMotion: z.boolean().optional().describe("Show red motion (prop + arrow)"),
-      bluePropType: z.string().nullable().optional().describe("Blue prop type (staff, fan, club, etc.) or null for default"),
-      redPropType: z.string().nullable().optional().describe("Red prop type or null for default"),
+      showLeftMotion: z.boolean().optional().describe("Show left-hand motion (prop + arrow)"),
+      showRightMotion: z.boolean().optional().describe("Show right-hand motion (prop + arrow)"),
+      leftPropType: z.string().nullable().optional().describe("Blue prop type (staff, fan, club, etc.) or null for default"),
+      rightPropType: z.string().nullable().optional().describe("Red prop type or null for default"),
     },
     async (newPrefs) => {
       const before = { ...getPreferences() };
@@ -49,10 +49,10 @@ export function registerPreferenceTools(server: McpServer): void {
       if (newPrefs.showGrid !== undefined) updates.showGrid = newPrefs.showGrid;
       if (newPrefs.showNonRadialPoints !== undefined) updates.showNonRadialPoints = newPrefs.showNonRadialPoints;
       if (newPrefs.handPointVisibility !== undefined) updates.handPointVisibility = newPrefs.handPointVisibility;
-      if (newPrefs.showBlueMotion !== undefined) updates.showBlueMotion = newPrefs.showBlueMotion;
-      if (newPrefs.showRedMotion !== undefined) updates.showRedMotion = newPrefs.showRedMotion;
-      if (newPrefs.bluePropType !== undefined) updates.bluePropType = newPrefs.bluePropType;
-      if (newPrefs.redPropType !== undefined) updates.redPropType = newPrefs.redPropType;
+      if (newPrefs.showLeftMotion !== undefined) updates.showLeftMotion = newPrefs.showLeftMotion;
+      if (newPrefs.showRightMotion !== undefined) updates.showRightMotion = newPrefs.showRightMotion;
+      if (newPrefs.leftPropType !== undefined) updates.leftPropType = newPrefs.leftPropType;
+      if (newPrefs.rightPropType !== undefined) updates.rightPropType = newPrefs.rightPropType;
 
       updatePreferences(updates);
       const current = getPreferences();
@@ -97,8 +97,8 @@ export function registerPreferenceTools(server: McpServer): void {
           `pos:${prefs.showPositions}`,
           `rev:${prefs.showReversals}`,
           `grid:${prefs.showGrid}`,
-          `blue:${prefs.showBlueMotion}`,
-          `red:${prefs.showRedMotion}`,
+          `blue:${prefs.showLeftMotion}`,
+          `red:${prefs.showRightMotion}`,
         ];
         return {
           content: [{ type: "text" as const, text: pairs.join(" ") }],
@@ -123,12 +123,12 @@ Grid:
   • handPointVisibility: ${prefs.handPointVisibility}
 
 Motions:
-  • showBlueMotion: ${prefs.showBlueMotion}
-  • showRedMotion: ${prefs.showRedMotion}
+  • showBlueMotion: ${prefs.showLeftMotion}
+  • showRedMotion: ${prefs.showRightMotion}
 
 Props:
-  • bluePropType: ${prefs.bluePropType ?? "staff (default)"}
-  • redPropType: ${prefs.redPropType ?? "staff (default)"}`;
+  • bluePropType: ${prefs.leftPropType ?? "staff (default)"}
+  • redPropType: ${prefs.rightPropType ?? "staff (default)"}`;
 
       return {
         content: [
