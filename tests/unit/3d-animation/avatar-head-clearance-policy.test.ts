@@ -28,6 +28,8 @@ describe("avatar head-clearance policy", () => {
     expect(animatorRuntime).toContain(
       "const MAX_REACH_LEAN = (4 * Math.PI) / 180"
     );
+    expect(animatorSource).toContain("const MAX_ARM_EXTENSION_RATIO = 0.86");
+    expect(animatorRuntime).toContain("const MAX_ARM_EXTENSION_RATIO = 0.86");
   });
 
   it.each([
@@ -57,5 +59,30 @@ describe("avatar head-clearance policy", () => {
     expect(method).toContain("targetAngle = bestFactor * MAX_HEAD_DODGE");
     expect(method).not.toContain("getLeftArmChain");
     expect(method).not.toContain("getRightArmChain");
+  });
+
+  it.each([
+    ["source", animatorSource],
+    ["runtime", animatorRuntime],
+  ])("preserves elbow bend before body-clearance routing in %s", (_label, animator) => {
+    const leftLimit = animator.indexOf(
+      "this.limitArmExtensionForClearance(leftChain, target)"
+    );
+    const leftRoute = animator.indexOf(
+      "this.poleComputer.resolveForearmFaceClearance(",
+      leftLimit
+    );
+    const rightLimit = animator.indexOf(
+      "this.limitArmExtensionForClearance(rightChain, target)"
+    );
+    const rightRoute = animator.indexOf(
+      "this.poleComputer.resolveForearmFaceClearance(",
+      rightLimit
+    );
+
+    expect(leftLimit).toBeGreaterThan(-1);
+    expect(leftRoute).toBeGreaterThan(leftLimit);
+    expect(rightLimit).toBeGreaterThan(-1);
+    expect(rightRoute).toBeGreaterThan(rightLimit);
   });
 });
