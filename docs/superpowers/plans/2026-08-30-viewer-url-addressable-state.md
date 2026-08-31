@@ -1067,7 +1067,7 @@ memento above is the sanctioned mechanism for global-store slices; per-store
 discovery chooses instance-seam (fx) vs memento (an).
 
 ### Task 10: `ex` — export options
-- [ ] Store: `createExportOptionsState()` (`export-options-state.svelte.ts`, key `tka_export_options`). Add options seam, slice, tests, registration in the export panel host.
+- [x] Store: `createExportOptionsState()` (`export-options-state.svelte.ts`, key `tka_export_options`). Add options seam, slice, tests, registration in the export panel host.
 
 ### Task 11: `t3` — 3D viewer
 - [ ] Stores (sub-keys of one payload): `tka-3d-animator-state` (`scene3d-persister.ts`), `tka-viewer3d-environment`, `tka-scene-features`, `tka-3d-playback-state` (`createPlaybackState` — already takes options), `tka-scene-audio-v1`, `tka-3d-quality-tier-override`. Discovery step decides which of these are *visual state* (encode) vs *device capability* (quality tier: DO NOT encode — a sender's GPU tier must not follow the link; record the exclusion in the slice's doc comment).
@@ -1102,7 +1102,7 @@ discovery chooses instance-seam (fx) vs memento (an).
 - [x] Task 7 — close cleanup
 - [x] Task 8 — Phase A gate (PASSED 2026-08-30: check 0 errors; 165/165 tests; live round-trip on :5209 — sparkles+rate90%+2D pane restored in isolated context, zero recipient localStorage writes; drawer params appear on /browse and strip on close; plain-link invariant holds. Fix landed during gate: fx slice now diffs the EFFECTIVE active effect (tipEffectMap wildcard) against the derived default — raw DEFAULT_EFFECTS_CONFIG.activeEffect "none" vs migration-derived "trails" stamped fx=trails onto every untouched viewer)
 - [x] Task 9 — an slice (d7be08fda1; REVISED to global-store memento after executor discovery, 05e0d3bcc3. Orchestrator verified: re-ran suite personally — 47 files/318 tests green incl. 12 new an-slice tests; read full diff; check 0 errors per executor log)
-- [ ] Task 10 — ex slice
+- [x] Task 10 — ex slice (ea2c3c5567; memento pattern — getExportOptionsState() is a module singleton with ~8 direct readers, verified. Orchestrator verified: re-ran sequence-viewer suite personally 19 files/151 tests green incl. 10 new ex-slice tests; read full diff; confirmed exportCoord.exportOptions IS the global singleton)
 - [ ] Task 11 — t3 slice
 - [ ] Task 12 — cd slice
 - [ ] Task 13 — tn slice
