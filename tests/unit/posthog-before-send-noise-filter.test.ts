@@ -132,6 +132,23 @@ describe("dropKnownNoise (PostHog before_send)", () => {
     expect(dropKnownNoise(exceptionEvent("Script error"))).toBeNull();
   });
 
+  it("drops the expected Google One Tap FedCM cancellation", () => {
+    expect(
+      dropKnownNoise(
+        exceptionEvent(
+          "[GSI_LOGGER]: FedCM get() rejects with AbortError: signal is aborted without reason"
+        )
+      )
+    ).toBeNull();
+  });
+
+  it("keeps actionable Google Identity configuration failures visible", () => {
+    const event = exceptionEvent(
+      "[GSI_LOGGER]: The given origin is not allowed for the given client ID."
+    );
+    expect(dropKnownNoise(event)).toBe(event);
+  });
+
   it("keeps actionable errors that merely mention a script error", () => {
     const event = exceptionEvent("Script error while saving a sequence");
     expect(dropKnownNoise(event)).toBe(event);
