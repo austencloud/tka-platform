@@ -8,6 +8,10 @@ type SocketTargetProbe = {
   leftPalmLocal: Vector3 | null;
   rightPalmLocal: Vector3 | null;
   _bodyFrame: { lateral: Vector3 };
+  targetPose: {
+    leftHand: { targetPosition: Vector3 } | null;
+    rightHand: { targetPosition: Vector3 } | null;
+  };
   computeSocketTarget: (
     side: "left" | "right",
     chain: BoneChain,
@@ -54,6 +58,9 @@ describe("avatar wrist-side clearance", () => {
     ) as unknown as SocketTargetProbe;
     const anatomicalRight = new Vector3(0, 0, 1);
     const palmLength = 0.04;
+    const chain = createArmChain();
+    chain.root.scale.setScalar(0.25);
+    chain.root.updateMatrixWorld(true);
 
     animator.leftPalmLocal = new Vector3(palmLength, 0, 0);
     animator.rightPalmLocal = new Vector3(palmLength, 0, 0);
@@ -63,21 +70,50 @@ describe("avatar wrist-side clearance", () => {
     const rightGrip = anatomicalRight.clone().multiplyScalar(0.03);
     const leftWrist = animator.computeSocketTarget(
       "left",
-      {} as BoneChain,
+      chain,
       leftGrip
     );
     const rightWrist = animator.computeSocketTarget(
       "right",
-      {} as BoneChain,
+      chain,
       rightGrip
     );
 
     const lateral = (point: Vector3) => point.dot(anatomicalRight);
-    expect(lateral(leftWrist)).toBeCloseTo(-0.07);
-    expect(lateral(rightWrist)).toBeCloseTo(0.07);
+    expect(lateral(leftWrist)).toBeCloseTo(-0.04);
+    expect(lateral(rightWrist)).toBeCloseTo(0.04);
     expect(leftWrist.distanceTo(rightWrist)).toBeGreaterThan(
       leftGrip.distanceTo(rightGrip)
     );
+  });
+
+  it("splits coincident paired grips around their authored midpoint", () => {
+    const leftChain = createArmChain();
+    const rightChain = createArmChain();
+    leftChain.root.position.x = -0.2;
+    rightChain.root.position.x = 0.2;
+    leftChain.root.updateMatrixWorld(true);
+    rightChain.root.updateMatrixWorld(true);
+    const skeleton = {
+      getLeftArmChain: () => leftChain,
+      getRightArmChain: () => rightChain,
+    };
+    const animator = new AvatarAnimator(
+      {} as never,
+      skeleton as never
+    ) as unknown as SocketTargetProbe & {
+      setPropsAndBlend: AvatarAnimator["setPropsAndBlend"];
+    };
+    const coincidentProp = {
+      worldPosition: new Vector3(0, 0.03, 0.3),
+      staffRotationAngle: 0,
+      plane: "wall",
+    } as never;
+
+    animator.setPropsAndBlend(coincidentProp, coincidentProp);
+
+    expect(animator.targetPose.leftHand?.targetPosition.x).toBeCloseTo(-0.035);
+    expect(animator.targetPose.rightHand?.targetPosition.x).toBeCloseTo(0.035);
   });
 
   it("resolves the free staff roll so the palm faces inward", () => {
