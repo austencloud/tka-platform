@@ -33,7 +33,7 @@
 </script>
 
 <div class="shape-matrix-toy">
-  <ShapeMatrixApp {persistence} />
+  <ShapeMatrixApp {persistence} variant="embedded" />
 </div>
 
 <style>
