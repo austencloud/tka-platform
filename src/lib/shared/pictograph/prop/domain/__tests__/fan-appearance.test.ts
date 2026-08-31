@@ -4,6 +4,7 @@ import { PropType } from "../enums/prop-type";
 import {
   DEFAULT_FAN_APPEARANCE,
   fanAppearanceArtwork,
+  fanBuildPreviewOptions,
   normalizeFanAppearance,
   parseFanRenderKey,
   resolveFanRenderKey,
@@ -67,10 +68,15 @@ describe("fan appearance", () => {
       "/images/props/appearances/fan-fire.svg"
     );
     expect(fanAppearanceArtwork("lotus")).toBe(
-      "/images/props/appearances/fan-lotus.svg"
+      "/images/props/appearances/fan-lotus.svg?v=6"
     );
     expect(fanAppearanceArtwork("day")).toBe(
       "/images/props/appearances/fan-day.svg"
     );
+    expect(
+      fanBuildPreviewOptions(DEFAULT_FAN_APPEARANCE).find(
+        ({ id }) => id === "lotus"
+      )?.image
+    ).toBe("/images/props/build-previews/fan-lotus-bare-complete.webp?v=6");
   });
 });

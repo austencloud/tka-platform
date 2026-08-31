@@ -57,6 +57,12 @@ used by `static/models/props/fan.glb`:
 - Medium Lotus Fire: `scripts/assets/lotus-fire-reference.svg` and `.json`
 - DoodleGrip Day: `scripts/assets/doodlegrip-day-contours.json`
 
+The checked-in Lotus animation artwork is generated from all ten traced
+centerlines plus the measured rings, cradle, and wick geometry. Its picker
+preview carries a provenance manifest keyed to those references and the model
+builder, so refining the physical fan cannot silently leave either 2D surface
+on an older revision.
+
 The animated SVGs keep the established fan pivot and five-emitter envelope so
 the existing assembly, trail, LED, charcoal, and fire systems continue to use
 one geometry path. Big Fan uses the same artwork scaled around its existing

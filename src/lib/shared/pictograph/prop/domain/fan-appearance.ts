@@ -128,9 +128,9 @@ export function parseFanRenderKey(value: string): FanRenderKey | null {
 }
 
 export function fanAppearanceArtwork(build: FanBuild): string | null {
-  return build === "pictograph"
-    ? null
-    : `/images/props/appearances/fan-${build}.svg`;
+  if (build === "pictograph") return null;
+  const revision = build === "lotus" ? "?v=6" : "";
+  return `/images/props/appearances/fan-${build}.svg${revision}`;
 }
 
 const PREVIEW_ROOT = "/images/props/build-previews";
@@ -147,7 +147,7 @@ function fanPreviewImage(appearance: FanAppearance): string {
     return previewImage(`fan-fire-${appearance.cover}-complete.webp`);
   }
   if (appearance.build === "lotus") {
-    return previewImage("fan-lotus-bare-complete.webp");
+    return `${previewImage("fan-lotus-bare-complete.webp")}?v=6`;
   }
   return previewImage(
     `fan-day-${appearance.frameColor}-${appearance.cover}-complete.webp`
