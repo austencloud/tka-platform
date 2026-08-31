@@ -1,12 +1,10 @@
 /**
  * Static contract test for the one-surface 3D prop picker.
  *
- * Choosing a 3D prop happens on ScenePropPicker, everywhere, reading
- * scene-prop-catalog.ts, always. Before that was true the performer inspector
- * and the Prop Studio had drifted into two different pickers over two
- * different data sources: the inspector grouped props by category and offered
- * no finish or fan-appearance controls at all, so a build reachable in the
- * studio was unreachable in the actual 3D environment.
+ * Choosing a 3D prop happens through the canonical BentoPropGrid, composed by
+ * ScenePropPicker with the controls that only exist in a spatial scene. Before
+ * that was true the performer inspector owned a second card grid, family
+ * selector, and visual language that drifted from every other prop surface.
  *
  * This test locks the shape that fixed it: every host renders the shared
  * picker, no host reaches past it into its parts, and the picker's own choices
@@ -32,6 +30,10 @@ const repoRoot = path.resolve(
 const PICKER_PATH =
   "src/lib/shared/3d/components/controls/ScenePropPicker.svelte";
 const CATALOG_PATH = "src/lib/shared/3d/domain/scene-prop-catalog.ts";
+const VIEWER_SCENE_PATH = "src/lib/shared/3d/components/Viewer3DScene.svelte";
+const BENTO_GRID_PATH =
+  "src/lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
+const SCENE_PACKAGE_PATCH = "patches/@austencloud__scene-3d@0.1.6.patch";
 
 /** Every surface where a person picks a 3D prop. Add new ones here. */
 const HOSTS: Record<string, string> = {
@@ -54,15 +56,14 @@ const NON_HOSTS: Record<string, string> = {
  * prop picker, which is the exact drift this file exists to stop.
  */
 const PICKER_INTERNALS = [
+  "BentoPropGrid",
+  "createGlobalChiralitySeam",
   "PropBuildPicker",
-  "PropCompositionPreview",
   "propFinishState",
   "finishPreviewOptions",
   "fanBuildPreviewOptions",
   "fanFramePreviewOptions",
   "fanCoverPreviewOptions",
-  "propBuildPreviewImage",
-  "SCENE_PROP_REPRESENTATIVES",
 ];
 
 function read(relativePath: string): string {
@@ -113,7 +114,8 @@ describe("scene prop picker contract", () => {
 
   it("has exactly one component that picks a 3D prop", () => {
     const picker = read(PICKER_PATH);
-    expect(picker).toContain("SCENE_PROP_REPRESENTATIVES");
+    expect(picker).toContain("BentoPropGrid");
+    expect(picker).toContain("SCENE_PROP_TYPES");
     expect(picker).toContain("scene-prop-catalog");
   });
 
@@ -121,8 +123,10 @@ describe("scene prop picker contract", () => {
     const picker = read(PICKER_PATH);
     const catalog = read(CATALOG_PATH);
 
-    // Representatives and family labels are declared once, in the catalog.
+    // Supported scene props stay in the scene catalog while the canonical grid
+    // owns their family labels, popovers, cards, and access behavior.
     expect(catalog).toContain("export const SCENE_PROP_REPRESENTATIVES");
+    expect(picker).toContain("allowedProps={SCENE_PROP_TYPES}");
     expect(picker).not.toMatch(/PropType\.(MINIHOOP|BUUGENG|DOUBLESTAR)/);
 
     // Same for the build pictures.
@@ -142,5 +146,32 @@ describe("scene prop picker contract", () => {
     ]) {
       expect(picker, `picker must call ${setter}`).toContain(setter);
     }
+  });
+
+  it("adapts mixed selection, host scrolling, bare hands, and chirality without another grid", () => {
+    const picker = read(PICKER_PATH);
+    const canonicalGrid = read(BENTO_GRID_PATH);
+    expect(picker).toContain("currentProp: PropType | null");
+    expect(picker).toContain('scrollMode="host"');
+    expect(picker).toContain("includeBareHands={showBareHands}");
+    expect(picker).toContain("createGlobalChiralitySeam");
+    expect(picker).not.toContain('class="prop-grid"');
+    expect(picker).not.toContain('class="prop-tile"');
+    expect(canonicalGrid).toContain(
+      "prop === PropType.HAND && includeBareHands"
+    );
+  });
+
+  it("carries Buugeng chirality into the existing 3D rig owner", () => {
+    const scene = read(VIEWER_SCENE_PATH);
+    const packagePatch = read(SCENE_PACKAGE_PATCH);
+
+    expect(scene).toContain("isBuugengFamilyProp");
+    expect(scene).toContain("bluePropFlipped=");
+    expect(scene).toContain("redPropFlipped=");
+    expect(packagePatch).toContain("bluePropFlipped?: boolean");
+    expect(packagePatch).toContain("redPropFlipped?: boolean");
+    expect(packagePatch).toContain("scale.x={bluePropFlipped ? -1 : 1}");
+    expect(packagePatch).toContain("scale.x={redPropFlipped ? -1 : 1}");
   });
 });

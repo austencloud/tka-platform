@@ -4,6 +4,7 @@
   import { onMount, onDestroy, type Snippet } from "svelte";
   import { PerformerRig } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import { BackgroundType } from "@austencloud/backgrounds";
   import Environment3D from "../environments/components/Environment3D.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
@@ -450,6 +451,12 @@
       return PropType.STAFF;
     }
   });
+  const blueBuugengFlipped = $derived(
+    viewerSettings?.settings?.blueBuugengFlipped ?? false
+  );
+  const redBuugengFlipped = $derived(
+    viewerSettings?.settings?.redBuugengFlipped ?? false
+  );
 
   const explicitPlanes = $derived(viewer3DState.visiblePlanes as Set<Plane>);
 
@@ -701,6 +708,16 @@
       {@const propLength =
         perfStaffCm != null ? cmToUnits(perfStaffCm) : undefined}
       {@const propBuild = performer.effectivePropBuild}
+      {@const resolvedBlueProp = resolvePerformerProp(
+        performer,
+        bluePropType,
+        bluePropTypeOverride as PropType | null
+      )}
+      {@const resolvedRedProp = resolvePerformerProp(
+        performer,
+        redPropType,
+        redPropTypeOverride as PropType | null
+      )}
       <!-- Per-performer effect cascade: this performer's override, else the
          global default (effects-config wildcard). This is what makes the
          Performer Hub effect selection actually reach the renderer. -->
@@ -729,20 +746,12 @@
             avatarId={performer.characterId}
             visiblePlanes={explicitPlanes}
             gridMode={performerGridMode}
-            bluePropType={toScenePropType(
-              resolvePerformerProp(
-                performer,
-                bluePropType,
-                bluePropTypeOverride as PropType | null
-              )
-            )}
-            redPropType={toScenePropType(
-              resolvePerformerProp(
-                performer,
-                redPropType,
-                redPropTypeOverride as PropType | null
-              )
-            )}
+            bluePropType={toScenePropType(resolvedBlueProp)}
+            redPropType={toScenePropType(resolvedRedProp)}
+            bluePropFlipped={isBuugengFamilyProp(resolvedBlueProp) &&
+              blueBuugengFlipped}
+            redPropFlipped={isBuugengFamilyProp(resolvedRedProp) &&
+              redBuugengFlipped}
             bluePropState={performer.bluePropState}
             redPropState={performer.redPropState}
             tipEffectMap={perfTipMap}
@@ -794,20 +803,8 @@
                   <EffectOrchestrator3D
                     {bluePropState}
                     {redPropState}
-                    bluePropType={toScenePropType(
-                      resolvePerformerProp(
-                        performer,
-                        bluePropType,
-                        bluePropTypeOverride as PropType | null
-                      )
-                    )}
-                    redPropType={toScenePropType(
-                      resolvePerformerProp(
-                        performer,
-                        redPropType,
-                        redPropTypeOverride as PropType | null
-                      )
-                    )}
+                    bluePropType={toScenePropType(resolvedBlueProp)}
+                    redPropType={toScenePropType(resolvedRedProp)}
                     isPlaying={rigPlaying}
                     {staffHalfLength}
                     {propBuild}

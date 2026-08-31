@@ -1034,6 +1034,15 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
 
    // Constant sets to avoid allocating new Set objects on every reactive update.
    const WHEEL_ONLY = new Set([Plane.WHEEL]);
+@@ -69,5 +73,5 @@
+     // Prop types
+-    bluePropType?: PropType;
+-    redPropType?: PropType;
+-
++    bluePropType?: PropType; bluePropFlipped?: boolean;
++    redPropType?: PropType; redPropFlipped?: boolean;
++
+     // Prop state overrides (for dual-wheel mode - caller swaps before passing)
 @@ -79,6 +83,7 @@
      isPlaying?: boolean;
      staffHalfLength?: number;
@@ -1108,6 +1117,17 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
      /** Avatar mesh opacity 0-1, forwarded to Avatar3D for swap cross-fades.
       *  1 = fully opaque (default). */
      avatarOpacity?: number;
+@@ -148,8 +176,8 @@
+     showProps = true,
+     showEffects = true,
+     visiblePlanes = new Set([Plane.WALL, Plane.WHEEL, Plane.FLOOR]),
+     gridMode = "diamond" as GridMode,
+-    bluePropType = PropType.STAFF,
+-    redPropType = PropType.STAFF,
++    bluePropType = PropType.STAFF, bluePropFlipped = false,
++    redPropType = PropType.STAFF, redPropFlipped = false,
+     bluePropState: bluePropStateOverride,
+     redPropState: redPropStateOverride,
 @@ -157,16 +185,22 @@
      isPlaying = false,
      staffHalfLength: staffHalfLengthProp,
@@ -1292,7 +1312,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
 -            length={propLength}
 -          />
 -        {/if}
-+        <T.Group bind:ref={bluePropCorrectionRef}>
++        <T.Group bind:ref={bluePropCorrectionRef} scale.x={bluePropFlipped ? -1 : 1}>
 +          {#if showProps && propsMounted}
 +            <Prop3D
 +              propType={bluePropType}
@@ -1328,7 +1348,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
 -            length={propLength}
 -          />
 -        {/if}
-+        <T.Group bind:ref={redPropCorrectionRef}>
++        <T.Group bind:ref={redPropCorrectionRef} scale.x={redPropFlipped ? -1 : 1}>
 +          {#if showProps && propsMounted}
 +            <Prop3D
 +              propType={redPropType}
@@ -13073,6 +13093,15 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
 
    // Constant sets to avoid allocating new Set objects on every reactive update.
    const WHEEL_ONLY = new Set([Plane.WHEEL]);
+@@ -69,5 +78,5 @@
+     // Prop types
+-    bluePropType?: PropType;
+-    redPropType?: PropType;
+-
++    bluePropType?: PropType; bluePropFlipped?: boolean;
++    redPropType?: PropType; redPropFlipped?: boolean;
++
+     // Prop state overrides (for dual-wheel mode - caller swaps before passing)
 @@ -79,6 +88,7 @@
      isPlaying?: boolean;
      staffHalfLength?: number;
@@ -13155,6 +13184,17 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
      /** Avatar mesh opacity 0-1, forwarded to Avatar3D for swap cross-fades.
       *  1 = fully opaque (default). */
      avatarOpacity?: number;
+@@ -148,8 +189,8 @@
+     showProps = true,
+     showEffects = true,
+     visiblePlanes = new Set([Plane.WALL, Plane.WHEEL, Plane.FLOOR]),
+     gridMode = "diamond" as GridMode,
+-    bluePropType = PropType.STAFF,
+-    redPropType = PropType.STAFF,
++    bluePropType = PropType.STAFF, bluePropFlipped = false,
++    redPropType = PropType.STAFF, redPropFlipped = false,
+     bluePropState: bluePropStateOverride,
+     redPropState: redPropStateOverride,
 @@ -157,16 +198,26 @@
      isPlaying = false,
      staffHalfLength: staffHalfLengthProp,
@@ -13395,7 +13435,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
 -            length={propLength}
 -          />
 -        {/if}
-+        <T.Group bind:ref={bluePropCorrectionRef}>
++        <T.Group bind:ref={bluePropCorrectionRef} scale.x={bluePropFlipped ? -1 : 1}>
 +          {#if showProps && propsMounted}
 +            <Prop3D
 +              propType={bluePropType}
@@ -13431,7 +13471,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
 -            length={propLength}
 -          />
 -        {/if}
-+        <T.Group bind:ref={redPropCorrectionRef}>
++        <T.Group bind:ref={redPropCorrectionRef} scale.x={redPropFlipped ? -1 : 1}>
 +          {#if showProps && propsMounted}
 +            <Prop3D
 +              propType={redPropType}

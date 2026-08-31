@@ -58,11 +58,13 @@
     onSelect,
     variant = "panel",
     flat = false,
+    scrollMode = "internal",
+    includeBareHands = false,
     chirality,
     allowedProps,
     accessMode = "standard",
   } = $props<{
-    selectedPropType: PropType;
+    selectedPropType: PropType | null;
     color?: "blue" | "red" | (string & {});
     title?: string;
     onSelect: (propType: PropType) => void;
@@ -73,6 +75,14 @@
      * visible count beats grouping.
      */
     flat?: boolean;
+    /**
+     * Drawers own a bounded internal scroller. Embedded inspectors already
+     * scroll the whole tab, so their picker contributes its natural height and
+     * lets that host remain the only vertical scroll owner.
+     */
+    scrollMode?: "internal" | "host";
+    /** Adds the scene-only no-prop choice using the same canonical card. */
+    includeBareHands?: boolean;
     /**
      * Buugeng chirality seam. Absent means the picker renders no chirality
      * row, so hosts that should never expose it (the deck releaser renders
@@ -94,7 +104,13 @@
     allowedProps ? new Set<PropType>(allowedProps) : null
   );
 
+  const pickerSections = $derived([
+    ...PROP_PICKER_SECTIONS,
+    ...(includeBareHands ? [{ label: "Scene", props: [PropType.HAND] }] : []),
+  ]);
+
   function canShowProp(prop: PropType): boolean {
+    if (prop === PropType.HAND && includeBareHands) return true;
     if (allowedPropSet && !allowedPropSet.has(prop)) return false;
     if (prop === PropType.POI)
       return accessMode === "educational" || poiPickerEnabled;
@@ -103,9 +119,9 @@
   }
 
   const selectableProps = $derived(
-    PROP_PICKER_SECTIONS.flatMap((section) => section.props).filter((prop) =>
-      canShowProp(prop)
-    )
+    pickerSections
+      .flatMap((section) => section.props)
+      .filter((prop) => canShowProp(prop))
   );
   const selectablePropSet = $derived(new Set(selectableProps));
 
@@ -116,22 +132,28 @@
   // so internal-only Staff builds stay internal.
   const sections = $derived.by(() => {
     const seen = new Set<PropType>();
-    return PROP_PICKER_SECTIONS.map((section) => {
-      const bases: PropType[] = [];
-      for (const prop of section.props) {
-        if (!canShowProp(prop)) continue;
-        const base = isPremiumCosmeticProp(prop) ? prop : getBasePropType(prop);
-        if (prop !== base) continue;
-        if (seen.has(base)) continue;
-        seen.add(base);
-        bases.push(base);
-      }
-      return { label: section.label, bases };
-    }).filter((section) => section.bases.length > 0);
+    return pickerSections
+      .map((section) => {
+        const bases: PropType[] = [];
+        for (const prop of section.props) {
+          if (!canShowProp(prop)) continue;
+          const base = isPremiumCosmeticProp(prop)
+            ? prop
+            : getBasePropType(prop);
+          if (prop !== base) continue;
+          if (seen.has(base)) continue;
+          seen.add(base);
+          bases.push(base);
+        }
+        return { label: section.label, bases };
+      })
+      .filter((section) => section.bases.length > 0);
   });
 
   const allBases = $derived(sections.flatMap((section) => section.bases));
-  const selectedBase = $derived(getBasePropType(selectedPropType));
+  const selectedBase = $derived(
+    selectedPropType === null ? null : getBasePropType(selectedPropType)
+  );
 
   function familyChoices(base: PropType): PropType[] {
     return getAllVariations(base).filter((prop) => selectablePropSet.has(prop));
@@ -143,6 +165,7 @@
   }
 
   function familyDisplayProp(base: PropType): PropType {
+    if (selectedPropType === null) return base;
     return getFamilyTileDisplayProp(base, selectedPropType);
   }
 
@@ -166,6 +189,14 @@
    * - earn-tip: toggles the inline earn tip; never calls onSelect.
    */
   function handleTileClick(prop: PropType) {
+    if (prop === PropType.HAND && includeBareHands) {
+      lockedTipFor = null;
+      premiumNudgeFor = null;
+      openFamily = null;
+      onSelect(prop);
+      return;
+    }
+
     const premium = isPremiumCosmeticProp(prop);
     if (accessMode === "educational" && !premium) {
       lockedTipFor = null;
@@ -203,6 +234,7 @@
   class:panel={variant === "panel"}
   class:inline={variant === "inline"}
   class:flat
+  class:host-scroll={scrollMode === "host"}
 >
   {#if variant === "panel"}
     <header class="grid-header">
@@ -226,7 +258,7 @@
     <div
       class="tile-wrapper"
       class:premium
-      class:locked={!premium && !isPropUnlocked(prop)}
+      class:locked={prop !== PropType.HAND && !premium && !isPropUnlocked(prop)}
     >
       <PropTypeButton
         propType={prop}
@@ -238,7 +270,7 @@
         <span class="crown-glyph">
           <PremiumBadge tooltip="Premium prop" />
         </span>
-      {:else if !isPropUnlocked(prop)}
+      {:else if prop !== PropType.HAND && !isPropUnlocked(prop)}
         <i class="fas fa-lock lock-glyph" aria-hidden="true"></i>
         {#if lockedTipFor === prop}
           <span class="earn-tip">Earn by creating</span>
@@ -348,7 +380,7 @@
     {/if}
   </div>
 
-  {#if chirality && isBuugengFamilyProp(selectedPropType)}
+  {#if chirality && selectedPropType !== null && isBuugengFamilyProp(selectedPropType)}
     <div class="chirality-dock" transition:growFade={{ axis: "y" }}>
       <PropChiralityRow
         propType={selectedPropType}
@@ -392,6 +424,16 @@
     background: transparent;
     border: none;
     border-radius: 0;
+  }
+
+  .prop-grid-root.host-scroll {
+    height: auto;
+    flex: none;
+  }
+
+  .prop-grid-root.host-scroll .grid-scroll {
+    flex: none;
+    overflow: visible;
   }
 
   .grid-header {

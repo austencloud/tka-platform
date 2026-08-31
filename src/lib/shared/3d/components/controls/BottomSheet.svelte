@@ -162,6 +162,33 @@
     padding: 12px 14px 18px;
   }
 
+  @media (max-height: 34rem) {
+    .sheet-layer {
+      bottom: max(3.875rem, calc(env(safe-area-inset-bottom) + 3.875rem));
+    }
+
+    /* Short landscape phones need the whole space above the control bar. The
+       default 78dvh cap left performer tabs with a 27px viewport after the
+       scope row and tab bar took their fixed space. */
+    .sheet-panel {
+      max-height: 100%;
+    }
+
+    .grab-handle {
+      display: none;
+    }
+
+    .sheet-header {
+      min-height: 44px;
+      padding: 0 10px 0 14px;
+    }
+
+    .sheet-body {
+      flex: 1 1 auto;
+      padding: 6px 14px 8px;
+    }
+  }
+
   /* On wider viewports the same control surface becomes a bounded panel. It
      stays above the dock, leaving the performance visible and interactive. */
   @media (min-width: 48rem) and (min-height: 34rem) {
