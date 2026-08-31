@@ -243,7 +243,9 @@ function isAnimatedOnlyProp(propTypeLower: string): boolean {
  */
 export function resolvePropSvgPath(propTypeLower: string): string {
   const fanRenderKey = parseFanRenderKey(propTypeLower);
-  if (fanRenderKey) return fanAppearanceArtwork(fanRenderKey.build)!;
+  if (fanRenderKey) {
+    return fanAppearanceArtwork(fanRenderKey.build, fanRenderKey.cover)!;
+  }
   const family = isAnimatedOnlyProp(propTypeLower) ? "animated" : "pictograph";
   return `/images/props/${family}/${propTypeLower}.svg`;
 }
@@ -265,11 +267,30 @@ function appendFanAppearanceDetails(
       ? `<g data-fan-frame-color="${fanRenderKey.frameColor}" fill="none" stroke="${frameColor}" stroke-width="2.5" stroke-linecap="round" opacity="0.92"><path d="M139 91 L202 3 M143 96 L229 46 M145 103.5 H258 M143 111 L229 161 M139 116 L202 204"/></g>`
       : "";
   const coverOverlay =
-    fanRenderKey.cover === "covered" && fanRenderKey.build !== "lotus"
+    fanRenderKey.cover === "covered" && fanRenderKey.build === "day"
       ? `<g data-fan-wick-cover="covered" fill="#f5aec9" stroke="#7b3653" stroke-width="2"><circle cx="202" cy="5" r="8"/><circle cx="230" cy="46" r="9"/><circle cx="255" cy="103.5" r="8"/><circle cx="230" cy="161" r="9"/><circle cx="202" cy="202" r="8"/></g>`
       : "";
 
   return svg.replace(/<\/svg>\s*$/i, `${frameOverlay}${coverOverlay}</svg>`);
+}
+
+/**
+ * Physical fire-fan artwork owns its material colors. Only the marked metal
+ * frame follows the motion color; Kevlar wicks and fitted covers stay physical.
+ */
+export function applyFanFrameColor(svg: string, color: string): string {
+  return svg.replace(
+    /<g\b(?=[^>]*\bdata-fan-frame=(?:""|''))[^>]*>/i,
+    (tag) => {
+      if (/\bstroke=(?:"[^"]*"|'[^']*')/i.test(tag)) {
+        return tag.replace(
+          /\bstroke=(?:"[^"]*"|'[^']*')/i,
+          `stroke="${color}"`
+        );
+      }
+      return tag.replace(/>$/, ` stroke="${color}">`);
+    }
+  );
 }
 
 /**
@@ -285,7 +306,11 @@ export async function generatePropSvg(
   const fanRenderKey = parseFanRenderKey(propTypeLower);
   const fetchedSvg = await fetchPropSvg(path);
   const semanticPropType = fanRenderKey?.propType ?? propTypeLower;
-  const coloredSvg = applyColorToPropSvg(fetchedSvg, color, semanticPropType);
+  const isPhysicalFireFan =
+    fanRenderKey?.build === "fire" || fanRenderKey?.build === "lotus";
+  const coloredSvg = isPhysicalFireFan
+    ? applyFanFrameColor(fetchedSvg, color)
+    : applyColorToPropSvg(fetchedSvg, color, semanticPropType);
   const detailedSvg = fanRenderKey
     ? appendFanAppearanceDetails(coloredSvg, fanRenderKey)
     : coloredSvg;
