@@ -11,6 +11,8 @@ const SEVERITY_RANK: Record<CollisionSeverity, number> = {
 
 export const AVATAR_COLLISION_AUDIT_STORAGE_KEY =
   "__avatarCollisionAuditReport";
+export const AVATAR_COLLISION_AUDIT_ATTRIBUTE =
+  "data-avatar-collision-audit-report";
 
 export interface CollisionCluster {
   performerId: string;
@@ -133,11 +135,19 @@ export class AvatarSequenceCollisionAudit {
   }
 
   private publishBrowserSnapshot(): void {
-    if (typeof sessionStorage === "undefined") return;
-    sessionStorage.setItem(
-      AVATAR_COLLISION_AUDIT_STORAGE_KEY,
-      JSON.stringify(this.report())
-    );
+    const serializedReport = JSON.stringify(this.report());
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem(
+        AVATAR_COLLISION_AUDIT_STORAGE_KEY,
+        serializedReport
+      );
+    }
+    if (typeof document !== "undefined" && import.meta.env.DEV) {
+      document.documentElement.setAttribute(
+        AVATAR_COLLISION_AUDIT_ATTRIBUTE,
+        serializedReport
+      );
+    }
   }
 }
 
