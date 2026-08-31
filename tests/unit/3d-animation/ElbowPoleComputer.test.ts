@@ -440,33 +440,58 @@ describe("SpineTwister crossed-arm posture", () => {
 });
 
 describe("AvatarAnimator body routing", () => {
-  it("preserves an elbow circle for targets that would lock the arm straight", () => {
+  it("retracts only as far as needed to clear an otherwise locked arm", () => {
     const chain = makeArm(
       new Vector3(0, 0, 0),
-      new Vector3(1, 0, 0),
+      new Vector3(0, 1, 0),
       0.3,
       0.27
     );
     const animator = new AvatarAnimator(
+      new IKSolver(),
       {} as never,
-      {} as never
+      new ElbowPoleComputer()
     ) as unknown as {
-      limitArmExtensionForClearance: (
+      solveArmWithBodyClearance: (
+        side: "left" | "right",
         arm: BoneChain,
-        target: { position: Vector3 }
+        target: { position: Vector3; poleHint: Vector3 },
+        context: {
+          faceCenter: Vector3;
+          neckCenter: Vector3;
+          shoulderPosition: Vector3;
+          upperArmLength: number;
+          forearmLength: number;
+        }
       ) => void;
     };
-    const farTarget = { position: new Vector3(1, 0, 0) };
-    const nearTarget = { position: new Vector3(0.4, 0, 0) };
+    const target = {
+      position: new Vector3(0, 0.56, 0),
+      poleHint: new Vector3(1, 0, 0),
+    };
+    const neck = new Vector3(0.06, 0.15, 0);
 
-    animator.limitArmExtensionForClearance(chain, farTarget);
-    animator.limitArmExtensionForClearance(chain, nearTarget);
+    animator.solveArmWithBodyClearance("left", chain, target, {
+      faceCenter: new Vector3(2, 2, 2),
+      neckCenter: neck,
+      shoulderPosition: new Vector3(0, 0, 0),
+      upperArmLength: chain.upperLength,
+      forearmLength: chain.lowerLength,
+    });
 
-    expect(farTarget.position.length()).toBeCloseTo(0.57 * 0.86, 6);
-    expect(farTarget.position.clone().normalize()).toEqual(
-      new Vector3(1, 0, 0)
+    const elbow = chain.middle.getWorldPosition(new Vector3());
+    const hand = chain.effector.getWorldPosition(new Vector3());
+    const upperArmBodyStart = new Vector3().lerpVectors(
+      new Vector3(0, 0, 0),
+      elbow,
+      0.35
     );
-    expect(nearTarget.position).toEqual(new Vector3(0.4, 0, 0));
+
+    expect(target.position.y).toBeLessThan(0.56);
+    expect(hand.distanceTo(target.position)).toBeLessThan(0.002);
+    expect(
+      pointToSegmentDistance(neck, upperArmBodyStart, elbow)
+    ).toBeGreaterThanOrEqual(0.13);
   });
 
   it("subtracts the spine twist already present from the stance target", () => {
