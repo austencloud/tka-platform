@@ -1003,10 +1003,10 @@ git commit -m "fix(viewer): closing the drawer strips all viewer-state URL param
 
 ### Task 8: Phase A verification gate (orchestrator runs this, not a subagent)
 
-- [ ] Full unit suite for touched areas green; one `npm run check` captured to log, 0 errors.
-- [ ] Live round-trip in the browser (DevTools MCP, dedicated instance, per `visual-verification-mandatory.md`): open `/sequence/<id>`, set effect to sparkles + tune rate, switch pane to 2D, wait 1s, confirm address bar contains `vm`/`fx`/`s`; copy URL; open it in a fresh incognito-context page; confirm identical pane + effect + tuning; confirm `localStorage.getItem("tka_effects_config")` in the fresh context is unchanged/null.
-- [ ] Confirm drawer path: open viewer from gallery, tweak, confirm URL params appear on the module route; close drawer, confirm params stripped.
-- [ ] Confirm plain-link invariant: fresh viewer with untouched settings shows NO new params.
+- [x] Full unit suite for touched areas green; one `npm run check` captured to log, 0 errors.
+- [x] Live round-trip in the browser (DevTools MCP, dedicated instance, per `visual-verification-mandatory.md`): open `/sequence/<id>`, set effect to sparkles + tune rate, switch pane to 2D, wait 1s, confirm address bar contains `vm`/`fx`/`s`; copy URL; open it in a fresh incognito-context page; confirm identical pane + effect + tuning; confirm `localStorage.getItem("tka_effects_config")` in the fresh context is unchanged/null.
+- [x] Confirm drawer path: open viewer from gallery, tweak, confirm URL params appear on the module route; close drawer, confirm params stripped.
+- [x] Confirm plain-link invariant: fresh viewer with untouched settings shows NO new params.
 
 ---
 
