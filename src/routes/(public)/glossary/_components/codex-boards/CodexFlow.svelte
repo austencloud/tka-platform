@@ -11,6 +11,7 @@
 -->
 <script lang="ts">
   import CodexBox from "../../../guide/codex/_components/CodexBox.svelte";
+  import CodexTransitionGlyph from "../../../guide/codex/_components/CodexTransitionGlyph.svelte";
   import {
     CODEX_BOXES,
     typeName,
@@ -23,11 +24,29 @@
     /** Which boxes to flow. Defaults to the whole codex in sheet order; a
      *  type-banded board passes one type's boxes per band. */
     boxes = CODEX_BOXES,
-  }: { onSelect: (id: string) => void; boxes?: TaggedBox[] } = $props();
+    /** A transition shared by the complete flow rather than its first box.
+     *  Atlas uses this for the Type 1 gamma land, where the printed sheet only
+     *  repeats the caption over M-O even though it describes M-V. */
+    flowHeader,
+  }: {
+    onSelect: (id: string) => void;
+    boxes?: TaggedBox[];
+    flowHeader?: string;
+  } = $props();
+
+  function boxForFlow(tagged: TaggedBox, index: number) {
+    if (index !== 0 || tagged.box.header !== flowHeader) return tagged.box;
+    return { ...tagged.box, header: undefined };
+  }
 </script>
 
 <div class="flow">
-  {#each boxes as tagged (tagged.key)}
+  {#if flowHeader}
+    <div class="flow-head">
+      <CodexTransitionGlyph text={flowHeader} />
+    </div>
+  {/if}
+  {#each boxes as tagged, index (tagged.key)}
     <div
       class="abox"
       style:--type-c={typeColor(tagged.type)}
@@ -36,7 +55,7 @@
       <!-- Flat-board captions all occupy this same reserved header slot. The
            print sheet keeps its original per-cell placement. -->
       <CodexBox
-        box={tagged.box}
+        box={boxForFlow(tagged, index)}
         theme="dark"
         reserveHead
         showName={false}
@@ -53,6 +72,7 @@
      makes every box in a row the same height, which lands the rules on one
      continuous line under the row. */
   .flow {
+    position: relative;
     display: flex;
     flex-wrap: wrap;
     align-items: stretch;
@@ -61,6 +81,20 @@
     /* A dense reference grid needs a stable cell matrix. Keep the shared
        selected ring, but do not enlarge one pictograph beyond its neighbors. */
     --selection-selected-transform: none;
+  }
+
+  /* Some sheet captions describe a complete position land even though print
+     places them over its first box. The flat Atlas gives that relationship one
+     centered owner while every box keeps the same reserved header geometry. */
+  .flow-head {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1.25rem;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    color: var(--codex-transition, #1a1a1a);
+    pointer-events: none;
   }
 
   /* Every flat-board box reserves the same header height. Grouped transitions
