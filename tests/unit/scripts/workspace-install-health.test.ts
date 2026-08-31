@@ -136,6 +136,22 @@ describe("workspace install health", () => {
 describe("dev launcher install guard", () => {
   const launcher = readFileSync(path.resolve("scripts/start-dev.ps1"), "utf8");
 
+  it("restores the HTTPS certificate before Vite is allowed to start", () => {
+    const certificateGuardIndex = launcher.indexOf(
+      "Ensure-DevHttpsCertificate $repoRoot"
+    );
+    const viteStartIndex = launcher.indexOf(
+      'Write-Status "Starting Vite dev server..."'
+    );
+
+    expect(launcher).toContain('Join-Path $RepoRoot ".tools\\mkcert.exe"');
+    expect(launcher).toContain(
+      "Vite was not started because the Cloudflare tunnel requires HTTPS."
+    );
+    expect(certificateGuardIndex).toBeGreaterThan(-1);
+    expect(viteStartIndex).toBeGreaterThan(certificateGuardIndex);
+  });
+
   it("runs the install preflight before Vite is allowed to start", () => {
     const preflightIndex = launcher.lastIndexOf(
       "Test-WorkspaceInstall $repoRoot"

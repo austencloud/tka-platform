@@ -3,6 +3,9 @@
 #   THEN starts the Cloudflare tunnel (dev.tkaflowarts.com).
 # - Verifies installed dependency manifests and imports before Vite starts. A
 #   broken install is rebuilt from the frozen lockfile and rechecked first.
+# - Restores the machine-local mkcert certificate pair before Vite starts. The
+#   tunnel always targets HTTPS, so allowing Vite to silently fall back to HTTP
+#   would leave a connected tunnel returning 502s.
 # - Ordering matters: cloudflared connects to Cloudflare's edge in ~1s, but Vite
 #   on a project this size takes much longer to boot. If the tunnel comes up
 #   first, dev.tkaflowarts.com returns 502 Bad Gateway for the whole cold-boot
@@ -126,6 +129,33 @@ function Repair-WorkspaceInstall($RepoRoot) {
     Write-Status "Dependency repair verified - Vite will rebuild its dependency cache once."
 }
 
+function Ensure-DevHttpsCertificate($RepoRoot) {
+    $certificateDirectory = Join-Path $RepoRoot ".cert"
+    $certificatePath = Join-Path $certificateDirectory "dev-cert.pem"
+    $keyPath = Join-Path $certificateDirectory "dev-key.pem"
+
+    if ((Test-Path -LiteralPath $certificatePath) -and (Test-Path -LiteralPath $keyPath)) {
+        return
+    }
+
+    $mkcert = Join-Path $RepoRoot ".tools\mkcert.exe"
+    if (-not (Test-Path -LiteralPath $mkcert)) {
+        throw "Dev HTTPS certificate is missing and $mkcert is unavailable. Vite was not started because the Cloudflare tunnel requires HTTPS."
+    }
+
+    New-Item -ItemType Directory -Force -Path $certificateDirectory | Out-Null
+    Write-Status "Dev HTTPS certificate missing - regenerating the localhost certificate pair."
+    & $mkcert -cert-file $certificatePath -key-file $keyPath localhost 127.0.0.1 ::1
+
+    if (($LASTEXITCODE -ne 0) -or
+        (-not (Test-Path -LiteralPath $certificatePath)) -or
+        (-not (Test-Path -LiteralPath $keyPath))) {
+        throw "Dev HTTPS certificate generation failed. Vite was not started because the Cloudflare tunnel requires HTTPS."
+    }
+
+    Write-Status "Dev HTTPS certificate restored."
+}
+
 # Main execution
 Write-Line ""
 Write-Line "========================================"
@@ -156,6 +186,7 @@ $tunnelProc = $null
 # into this console and keeps node in this process tree, so console Ctrl+C and
 # VS Code "terminate" both reach it. WorkingDirectory is the repo root.
 $repoRoot = Split-Path -Parent $PSScriptRoot
+Ensure-DevHttpsCertificate $repoRoot
 if (-not (Test-WorkspaceInstall $repoRoot)) {
     Stop-Pm2App
     Clear-Port5173
