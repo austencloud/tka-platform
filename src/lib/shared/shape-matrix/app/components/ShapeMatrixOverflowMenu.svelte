@@ -116,7 +116,7 @@
   }
 
   .overflow-trigger:focus-visible {
-    outline: 2px solid #f59e0b;
+    outline: 2px solid var(--theme-accent, #f59e0b);
     outline-offset: 2px;
   }
 
@@ -131,13 +131,13 @@
       var(--theme-panel-bg, #101721),
       var(--theme-panel-bg, #101721)
     );
-    box-shadow: 0 16px 42px rgb(0 0 0 / 0.42);
+    box-shadow: 0 16px 42px var(--theme-shadow, rgb(0 0 0 / 0.42));
     outline: none;
     transform-origin: var(--bits-dropdown-menu-content-transform-origin);
   }
 
   :global(.shape-matrix-overflow[data-state="open"]) {
-    animation: menu-in 150ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: menu-in var(--duration-fast) var(--ease-out) both;
   }
 
   :global(.shape-matrix-overflow-item) {
@@ -172,7 +172,7 @@
 
   :global(.shape-matrix-overflow-item > i) {
     height: auto;
-    color: #f4b54c;
+    color: var(--theme-accent, #f59e0b);
   }
 
   :global(.shape-matrix-overflow-item .item-copy) {

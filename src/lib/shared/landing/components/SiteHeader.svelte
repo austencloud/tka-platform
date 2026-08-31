@@ -379,7 +379,7 @@
           <span>Back</span>
         </a>
       {/if}
-      <a href="/" class="logo" aria-label="The Kinetic Alphabet, Home">
+      <a href="/" class="logo" aria-label="TKA, The Kinetic Alphabet, Home">
         <span class="logo-text">TKA</span>
       </a>
     </div>

@@ -21,7 +21,6 @@
   interface Props {
     open?: boolean;
     useMobileSheet: boolean;
-    hasFullAccount: boolean;
     disabled: boolean;
     tooltip: string;
     cardPhase: WorkspaceSharePreparationPhase;
@@ -32,14 +31,13 @@
     awaitingFreshGesture: boolean;
     canShareCard: boolean;
     onTriggerClick: () => void;
-    onGuestShare: () => void;
     /**
      * Press opens the share sheet instead of this menu. The menu's own items
      * all exist inside that sheet now, so leaving both is the second context
-     * menu Austen asked to be rid of. The menu markup stays for the moment as
-     * the guest-gated fallback path.
+     * menu Austen asked to be rid of. The menu remains as the reusable fallback
+     * for hosts that do not provide a direct sheet.
      */
-    onDirectOpen: () => void;
+    onDirectOpen?: (() => void) | null;
     onShareCard: () => void;
     onSendSequence: () => void;
     onCopyLink: () => void;
@@ -49,7 +47,6 @@
   let {
     open = $bindable(false),
     useMobileSheet,
-    hasFullAccount,
     disabled,
     tooltip,
     cardPhase,
@@ -60,8 +57,7 @@
     awaitingFreshGesture,
     canShareCard,
     onTriggerClick,
-    onGuestShare,
-    onDirectOpen,
+    onDirectOpen = null,
     onShareCard,
     onSendSequence,
     onCopyLink,
@@ -205,7 +201,7 @@
   {useMobileSheet}
   {disabled}
   busy={triggerBusy}
-  canOpen={hasFullAccount}
+  canOpen={true}
   ariaLabel="Share sequence"
   sheetTitle="Share sequence"
   triggerLabel={WORKSPACE_BUTTON_ICON.share.visibleLabel}
@@ -216,6 +212,5 @@
   {statusMessage}
   {onTriggerClick}
   {onDirectOpen}
-  onBlockedOpen={onGuestShare}
   onActionSelect={(actionId) => handleActionSelect(actionId as ShareActionId)}
 />

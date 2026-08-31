@@ -103,6 +103,7 @@
       showDifficultyLevel={imageComposition.showDifficulty}
       includeStartPosition={imageComposition.showStartPos}
       showNotes={imageComposition.showNotes}
+      customNotesText={imageComposition.customNotesText}
       showQRCode={imageComposition.showQRCode}
       showMandala={imageComposition.showMandala ?? false}
       showLoopGlyph={imageComposition.showLoopGlyph ?? true}

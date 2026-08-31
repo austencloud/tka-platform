@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
@@ -113,11 +114,43 @@
     return `Level ${appState.level} · ${selected?.label ?? "Mixed axis values"}`;
   });
   let sizes = $state([1.28, 0.82]);
+  let matrixPaneElement: HTMLDivElement;
+  let detailPaneElement: HTMLDivElement;
+
+  $effect(() => {
+    const request = appState.compactFocusRequest;
+    if (!request || !appState.compact) return;
+
+    let frame = 0;
+    let cancelled = false;
+    void tick().then(() => {
+      if (cancelled) return;
+      frame = requestAnimationFrame(() => {
+        const pane =
+          request.target === "matrix" ? matrixPaneElement : detailPaneElement;
+        const focusTarget =
+          request.target === "matrix"
+            ? pane.querySelector<HTMLButtonElement>(
+                'button.cell[aria-pressed="true"], button.cell.sel'
+              )
+            : pane.querySelector<HTMLButtonElement>(
+                'button[role="radio"][aria-checked="true"]'
+              );
+        focusTarget?.focus({ preventScroll: true });
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
+  });
 </script>
 
 {#snippet matrixPane()}
   <div
     class="workspace-pane"
+    bind:this={matrixPaneElement}
     inert={appState.compact && appState.activeView !== "matrix"}
     aria-hidden={appState.compact && appState.activeView !== "matrix"}
   >
@@ -128,6 +161,7 @@
 {#snippet detailPane()}
   <div
     class="workspace-pane"
+    bind:this={detailPaneElement}
     inert={appState.compact && appState.activeView !== "detail"}
     aria-hidden={appState.compact && appState.activeView !== "detail"}
   >
@@ -205,7 +239,7 @@
               ariaLabel="Axis edited by the turn control"
             />
           </div>
-          <div class="control-cell turn-scroller">
+          <div class="control-cell turn-scroller themed-scrollbar-accent">
             <span class="control-label">{turnControlLabel}</span>
             {#if appState.availableTurns.length === 1}
               <output
@@ -247,9 +281,7 @@
             >
               <img class="selected-prop-icon" src={selectedProp.image} alt="" />
               <span>{selectedPropLabel}</span>
-              <i
-                class="fas fa-chevron-down disclosure-icon"
-                aria-hidden="true"
+              <i class="fas fa-chevron-down disclosure-icon" aria-hidden="true"
               ></i>
             </button>
           </div>
@@ -330,8 +362,6 @@
 
 <style>
   .shape-app {
-    --shape-surface: #0a0f14;
-    --shape-panel: #101721;
     position: absolute;
     inset: 0;
     z-index: 2;
@@ -343,10 +373,10 @@
     background:
       radial-gradient(
         circle at 75% 0%,
-        rgb(245 158 11 / 0.08),
+        color-mix(in srgb, var(--theme-accent, #f59e0b) 8%, transparent),
         transparent 30rem
       ),
-      var(--shape-surface);
+      var(--theme-panel-bg, #0a0f14);
     color: var(--theme-text, #f5f7fa);
   }
 
@@ -360,8 +390,7 @@
     gap: 0.3rem 0.8rem;
     padding: 0.3rem 0.75rem 0.45rem;
     border-bottom: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.11));
-    background: rgb(10 15 20 / 0.94);
-    backdrop-filter: blur(18px);
+    background: var(--theme-panel-bg, rgb(10 15 20 / 0.94));
   }
 
   .top-action {
@@ -392,7 +421,7 @@
     gap: 0.45rem;
     padding: 0.45rem 0.8rem;
     font: inherit;
-    font-size: 0.82rem;
+    font-size: var(--font-size-min, 0.875rem);
     white-space: nowrap;
     overflow: hidden;
   }
@@ -418,12 +447,20 @@
 
   .top-action:hover {
     color: var(--theme-text, #fff);
-    border-color: rgb(245 158 11 / 0.55);
-    background: rgb(245 158 11 / 0.08);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 55%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 8%,
+      transparent
+    );
   }
 
   .top-action:focus-visible {
-    outline: 2px solid #f59e0b;
+    outline: 2px solid var(--theme-accent, #f59e0b);
     outline-offset: 2px;
   }
 
@@ -485,7 +522,8 @@
       var(--theme-accent, #f59e0b) 9%,
       var(--theme-card-bg, transparent)
     );
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+    box-shadow: inset 0 1px 0
+      color-mix(in srgb, var(--theme-text, #fff) 5%, transparent);
     color: var(--theme-text, #fff);
     cursor: pointer;
     font: inherit;
@@ -511,7 +549,7 @@
   }
 
   .back-to-matrix:focus-visible {
-    outline: 2px solid #f59e0b;
+    outline: 2px solid var(--theme-accent, #f59e0b);
     outline-offset: 2px;
   }
 
@@ -519,14 +557,13 @@
     min-width: 0;
     overflow: hidden;
     color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
-    font-size: var(--font-size-compact, 0.75rem);
+    font-size: var(--font-size-min, 0.875rem);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .matrix-controls {
     grid-area: controls;
-    --theme-accent: #d9901a;
     /* One shared control height for all ribbon cells: a one-line sm
        SegmentedControl (44px segment + its own padding and border). Cells
        size to content — fixed cell widths overflowed once the four level
@@ -564,7 +601,8 @@
       var(--theme-panel-bg, #101721) 82%,
       transparent
     );
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.035);
+    box-shadow: inset 0 1px 0
+      color-mix(in srgb, var(--theme-text, #fff) 3.5%, transparent);
   }
 
   .level-control {
@@ -588,10 +626,6 @@
     min-width: var(--min-touch-target, 44px);
     height: var(--ribbon-control-h);
     min-height: var(--min-touch-target, 44px);
-  }
-
-  .neutral-accent {
-    --theme-accent: #d9901a;
   }
 
   .label-control {
@@ -626,11 +660,7 @@
     flex: 0 1 auto;
     min-width: 0;
     overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .turn-scroller::-webkit-scrollbar {
-    display: none;
+    scrollbar-gutter: stable;
   }
 
   .turn-control {
@@ -702,12 +732,20 @@
   }
 
   .prop-action:hover {
-    border-color: rgb(245 158 11 / 0.55);
-    background: rgb(245 158 11 / 0.08);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 55%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 8%,
+      transparent
+    );
   }
 
   .prop-action:focus-visible {
-    outline: 2px solid #f59e0b;
+    outline: 2px solid var(--theme-accent, #f59e0b);
     outline-offset: 2px;
   }
 
@@ -719,8 +757,16 @@
   }
 
   .compact-detail-action {
-    border-color: color-mix(in srgb, #f59e0b 56%, transparent);
-    background: color-mix(in srgb, #f59e0b 13%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 56%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 13%,
+      transparent
+    );
     color: var(--theme-text, #fff);
   }
 

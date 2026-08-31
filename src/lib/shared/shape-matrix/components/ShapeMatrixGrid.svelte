@@ -185,6 +185,7 @@
                   class:dim={dimFor?.(bf, rf) ?? false}
                   use:watch={slotKey}
                   aria-label={`blue ${flowerLabel(bf)} over red ${flowerLabel(rf)}`}
+                  aria-pressed={selectedKey === key}
                   onclick={() => {
                     sel = key;
                     onselect({ blue: bf, red: rf });
@@ -214,16 +215,16 @@
 <style>
   .wrap {
     overflow: auto;
-    height: 100%;
-    background: var(--theme-panel-bg, #0a0f14);
     display: grid;
+    height: 100%;
     place-content: safe center;
+    background: var(--theme-panel-bg, #0a0f14);
   }
   .empty {
-    color: rgba(255, 255, 255, 0.82);
     padding: 48px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.82));
     text-align: center;
-    font-size: 14px;
+    font-size: var(--font-size-min, 14px);
   }
 
   table.matrix {
@@ -247,9 +248,9 @@
     z-index: 5;
     width: var(--cell);
     height: var(--cell);
+    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: var(--theme-card-bg, #111922);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .colhead {
@@ -258,8 +259,8 @@
     z-index: 4;
     width: var(--cell);
     height: var(--cell);
-    background: var(--theme-card-bg, #111922);
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, #111922);
   }
   .rowhead {
     position: sticky;
@@ -267,8 +268,8 @@
     z-index: 3;
     width: var(--cell);
     height: var(--cell);
-    background: var(--theme-card-bg, #111922);
     border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, #111922);
   }
   .colhead img,
   .rowhead img {
@@ -297,7 +298,7 @@
       var(--transition-easing, ease);
   }
   .cell:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
   }
   .cell.sel {
     outline: none;
@@ -328,16 +329,31 @@
 
   /* Verdict tints: inset ring + wash, so the cell box never changes size. */
   .cell.v-legal {
-    box-shadow: inset 0 0 0 2px rgba(74, 222, 128, 0.85);
-    background: rgba(74, 222, 128, 0.12);
+    box-shadow: inset 0 0 0 2px
+      color-mix(in srgb, var(--semantic-success, #4ade80) 85%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #4ade80) 12%,
+      transparent
+    );
   }
   .cell.v-illegal {
-    box-shadow: inset 0 0 0 2px rgba(248, 113, 113, 0.85);
-    background: rgba(248, 113, 113, 0.14);
+    box-shadow: inset 0 0 0 2px
+      color-mix(in srgb, var(--semantic-error, #f87171) 85%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #f87171) 14%,
+      transparent
+    );
   }
   .cell.v-unsure {
-    box-shadow: inset 0 0 0 2px rgba(250, 204, 21, 0.8);
-    background: rgba(250, 204, 21, 0.1);
+    box-shadow: inset 0 0 0 2px
+      color-mix(in srgb, var(--semantic-warning, #facc15) 80%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-warning, #facc15) 10%,
+      transparent
+    );
   }
   .cell.dim {
     opacity: 0.25;

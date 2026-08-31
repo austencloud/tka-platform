@@ -7,7 +7,9 @@ describe("warmupRenderer", () => {
     const scene = new Scene();
     const hiddenEffect = new Mesh(undefined, new MeshBasicMaterial());
     hiddenEffect.visible = false;
-    scene.add(hiddenEffect);
+    const equivalentEffect = new Mesh(undefined, new MeshBasicMaterial());
+    equivalentEffect.visible = false;
+    scene.add(hiddenEffect, equivalentEffect);
     const compileAsync = vi.fn(async (object: Mesh) => {
       expect(object.visible).toBe(true);
     });
@@ -23,6 +25,8 @@ describe("warmupRenderer", () => {
       expect.any(PerspectiveCamera),
       scene
     );
+    expect(compileAsync).toHaveBeenCalledTimes(1);
     expect(hiddenEffect.visible).toBe(false);
+    expect(equivalentEffect.visible).toBe(false);
   });
 });
