@@ -5,6 +5,7 @@
   import {
     PerformerRig,
     PLANE_MODE_CONFIGS,
+    type AvatarPoseDiagnostics,
     type CollisionEvent,
   } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -800,8 +801,10 @@
             stanceYaw={resolveUpperBodyStanceYaw(performer)}
             headDodge={true}
             onCollisionEvents={collisionAudit
-              ? (events: CollisionEvent[]) =>
-                  collisionAudit.record(performer.id, events)
+              ? (
+                  events: CollisionEvent[],
+                  diagnostics: AvatarPoseDiagnostics
+                ) => collisionAudit.record(performer.id, events, diagnostics)
               : undefined}
             onAvatarSwapped={(characterId) => {
               onCharacterSwapped(characterId);

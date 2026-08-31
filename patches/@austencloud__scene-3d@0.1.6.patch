@@ -11933,7 +11933,7 @@ diff --git a/dist/lib/state/user-proportions-state.svelte.d.ts.map b/dist/lib/st
 deleted file mode 100644
 index a8fd5a41c1434bf568841daf28c8443ba1515e65..0000000000000000000000000000000000000000
 diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8a3687350 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b53ebddf709f0f9e63b7f6748b27cb86daa8a66 100644
 --- a/src/lib/components/Avatar3D.svelte
 +++ b/src/lib/components/Avatar3D.svelte
 @@ -16,29 +16,43 @@
@@ -11988,13 +11988,14 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
    import type { IAnimationStateMachine } from "../services/contracts/IAnimationStateMachine";
    import { LocomotionState } from "../services/contracts/IAnimationStateMachine";
    import type { IRootMotionExtractor } from "../services/contracts/IRootMotionExtractor";
-@@ -51,7 +65,12 @@
+@@ -51,7 +65,13 @@
    import { createAvatarServices } from "../services/implementations/AvatarServicesFactory";
    import { GripType } from "../domain/models/GripPose";
    import { CollisionDetector } from "../services/implementations/CollisionDetector";
 -  import type { BodySnapshot, CollisionEvent, PropSegment } from "../services/contracts/ICollisionDetector";
 +  import { computeFaceCenter } from "../services/geometry/BodyCollisionGeometry";
 +  import type {
++    AvatarPoseDiagnostics,
 +    BodySnapshot,
 +    CollisionEvent,
 +    PropSegment,
@@ -12002,7 +12003,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
    import { tryGetViewer3DContext } from "../context/viewer-3d-context";
    import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
    import {
-@@ -74,6 +93,17 @@
+@@ -74,6 +94,17 @@
    const blueVisible = $derived(viewerVisibility?.blueMotion ?? true);
    const redVisible = $derived(viewerVisibility?.redMotion ?? true);
 
@@ -12020,7 +12021,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
    // Default Z position for avatars
    // Placing avatar at z=0 (same as grid plane) so hands are exactly at prop positions
    // The avatar's body is thin enough that it won't clip through the grid
-@@ -99,6 +129,8 @@
+@@ -99,6 +130,8 @@
      moveSpeed?: number;
      /** Movement direction relative to facing: x (-1 left, +1 right), z (-1 back, +1 forward) */
      moveDirection?: { x: number; z: number };
@@ -12029,7 +12030,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
      /** Enable idle/walk locomotion animation. False for exhibit performers
       *  that should only use IK (no idle animation fighting the pose). */
      enableLocomotion?: boolean;
-@@ -115,11 +147,50 @@
+@@ -115,11 +148,50 @@
      enableRootMotion?: boolean;
      /** Called each frame with the world-space XZ delta from root motion.
       *  The parent applies this to physics for collision-aware movement. */
@@ -12081,7 +12082,19 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
      /** Disable spine twist (dual-wheel: wide lateral targets twist the torso/feet) */
      disableSpineTwist?: boolean;
      /** Current beat index for collision detection logging */
-@@ -166,6 +237,7 @@
+@@ -128,7 +200,10 @@
+     beatProgress?: number;
+     /** Optional callback invoked each frame with the collision detector's events.
+      *  Lets parent components surface collision state without duplicating detection. */
+-    onCollisionEvents?: (events: CollisionEvent[]) => void;
++    onCollisionEvents?: (
++      events: CollisionEvent[],
++      diagnostics: AvatarPoseDiagnostics
++    ) => void;
+     /** Extra forward pitch (radians) applied to Spine1 before arm IK runs.
+      *  Positive values lean the torso forward. Used by the collision lab's
+      *  lean-forward stance variant. 0 = no external pitch. */
+@@ -166,6 +241,7 @@
      isMoving = false,
      moveSpeed = 1,
      moveDirection = { x: 0, z: 1 },
@@ -12089,7 +12102,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
      enableLocomotion = false,
      isGrounded = true,
      verticalVelocity = 0,
-@@ -173,8 +245,19 @@
+@@ -173,8 +249,19 @@
      isJumpRequested = false,
      enableRootMotion = false,
      onRootMotion,
@@ -12109,7 +12122,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
      disableSpineTwist = false,
      stepNumber = 0,
      beatProgress = 0,
-@@ -195,8 +278,17 @@
+@@ -195,8 +282,17 @@
    // Services (manually instantiated to ensure shared skeleton instance)
    let skeletonService: IAvatarSkeletonBuilder | null = $state(null);
    let ikSolver: IIKSolver | null = $state(null);
@@ -12128,7 +12141,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
    let stateMachine: IAnimationStateMachine | null = null;
    let rootMotionExtractor: IRootMotionExtractor | null = null;
    let footPlanter: IFootPlanter | null = null;
-@@ -210,21 +302,21 @@
+@@ -210,21 +306,30 @@
    // Collision detection - logs when props/arms clip through the avatar body
    const collisionDetector = new CollisionDetector();
    const _boneVecs = {
@@ -12159,10 +12172,19 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
    const _faceForward = new Vector3();
 -  const FACE_FORWARD_OFFSET = 0.08; // 8 cm forward from head bone
 -  const FACE_UP_OFFSET = 0.05;      // 5 cm up from head bone
++  const _diagnosticRootForward = new Vector3();
++  const _diagnosticShoulderLateral = new Vector3();
++  const _diagnosticShoulderForward = new Vector3();
++  const _diagnosticRootQuaternion = new Quaternion();
++  const _poseDiagnostics: AvatarPoseDiagnostics = {
++    requestedStanceYawRad: 0,
++    achievedShoulderYawRad: 0,
++    shoulderWidth: 0,
++  };
 
    /**
     * Base rotation from the staff's local-Y axis to the "horizontal" axis
-@@ -277,10 +369,185 @@
+@@ -277,10 +382,185 @@
    }
 
    const _unitY = new Vector3(0, 1, 0);
@@ -12349,7 +12371,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
    let currentLoadedAvatarId = $state<string | null>(null);
    let isLoading = $state(false);
    let hasShownFallbackToast = $state(false);
-@@ -302,14 +569,68 @@
+@@ -302,14 +582,68 @@
    // feetOffset adjusts so feet touch the ground (it's negative)
    const baseGroupY = $derived(
      position.y !== undefined && position.y !== 0
@@ -12420,7 +12442,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
    // Load a GLTF model for a specific avatar
    // Uses hot-swap pattern: keeps old avatar visible until new one is ready
    async function loadAvatar(targetAvatarId: string) {
-@@ -319,12 +640,23 @@
+@@ -319,12 +653,23 @@
      if (currentLoadedAvatarId === targetAvatarId) return;
 
      const url = getAvatarModelPath(targetAvatarId);
@@ -12445,7 +12467,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
 
        // Scale model to match user's height
        // setHeight() calculates proper scale and stores feet offset
-@@ -333,19 +665,43 @@
+@@ -333,19 +678,43 @@
        // Get the feet offset for positioning (negative value)
        feetOffset = skeletonService.getFeetOffset();
 
@@ -12498,7 +12520,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
        currentLoadedAvatarId = targetAvatarId;
        modelLoaded = true;
        useProceduralFallback = false;
-@@ -363,8 +719,14 @@
+@@ -363,8 +732,14 @@
        const rightUpLeg = skState.bones.get("RightUpLeg");
        if (leftUpLeg && rightUpLeg) {
          const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
@@ -12515,7 +12537,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
          leftUpLeg.quaternion.multiply(leftTilt);
          rightUpLeg.quaternion.multiply(rightTilt);
          leftUpLeg.updateMatrixWorld(true);
-@@ -388,17 +750,21 @@
+@@ -388,17 +763,21 @@
        // use IK only and don't need idle/walk animations.
        if (enableLocomotion && locomotionAnimator && cachedRoot) {
          // Configure before initialize so clips are prepared correctly
@@ -12542,7 +12564,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
            const hipsBone = locomotionAnimator.getHipsBone();
            if (hipsBone) {
              rootMotionExtractor.initialize(hipsBone);
-@@ -416,12 +782,39 @@
+@@ -416,12 +795,39 @@
              idle: `${animBase}idle${rmSuffix}.glb`,
              forward: `${animBase}walk-forward${rmSuffix}.glb`,
              backward: `${animBase}walk-backward${rmSuffix}.glb`,
@@ -12585,7 +12607,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
            })
            .catch((err) => {
              console.warn(
-@@ -444,18 +837,39 @@
+@@ -444,18 +850,39 @@
          const turnsBase = "/animations/turns/";
          const probeUrl = `${turnsBase}turn-left-90.glb`;
          const rootForTurns = cachedRoot;
@@ -12634,7 +12656,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
                ])
                .then(() => {
                  // Register turn clip contact curves so FootPlanter can query them
-@@ -476,7 +890,13 @@
+@@ -476,7 +903,13 @@
        // ikSolver, which is still used by arm IK elsewhere in this file).
        // Gated on enableFootPlanting - off by default so the museum FPS player
        // (which wants responsive code-driven movement) isn't affected.
@@ -12649,7 +12671,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
          footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
        }
 
-@@ -502,6 +922,16 @@
+@@ -502,6 +935,16 @@
        }
      } finally {
        isLoading = false;
@@ -12666,7 +12688,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
      }
    }
 
-@@ -560,6 +990,15 @@
+@@ -560,6 +1003,15 @@
      }
    });
 
@@ -12682,7 +12704,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
    // React to height changes - update avatar scale
    $effect(() => {
      if (!skeletonService || !modelLoaded || useProceduralFallback) return;
-@@ -587,25 +1026,30 @@
+@@ -587,25 +1039,30 @@
 
      // Disable spine twist in dual-wheel mode - wide lateral IK targets
      // twist the torso and shift the feet on the ground.
@@ -12724,7 +12746,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
 
          // Feed state to LocomotionAnimator for clip selection
          locomotionAnimator.setActiveState?.(stateOutput.state);
-@@ -614,6 +1058,7 @@
+@@ -614,6 +1071,7 @@
            speed: stateOutput.animationSpeed,
            facingAngle: stateOutput.facingAngle,
            moveDirection: stateOutput.moveDirection,
@@ -12732,7 +12754,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
          });
          // Track state for FootPlanter (airborne states skip foot planting)
          currentLocomotionState = stateOutput.state;
-@@ -624,9 +1069,19 @@
+@@ -624,9 +1082,19 @@
            speed: moveSpeed,
            facingAngle,
            moveDirection,
@@ -12752,7 +12774,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
 
        // Turn clip overlay - when a turn is active, overwrite lower-body
        // and spine bones with the turn clip's authored pose at the current
-@@ -639,20 +1094,52 @@
+@@ -639,20 +1107,52 @@
        if (turnRequestProp && turnAnimator?.isReady() && skeletonService) {
          const sample = turnAnimator.sample(turnRequestProp);
          const bones = skeletonService.getState().bones;
@@ -12816,7 +12838,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
            }
          }
 
-@@ -681,7 +1168,11 @@
+@@ -681,7 +1181,11 @@
        // displacement needs the same conversion.
        if (rootMotionExtractor?.isReady() && onRootMotion) {
          const localDelta = rootMotionExtractor.extract();
@@ -12829,7 +12851,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
            // Convert Mixamo centimeters to scene units.
            // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
            // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
-@@ -708,28 +1199,97 @@
+@@ -708,28 +1212,97 @@
        // clips without authored curves. Gated on enableFootPlanting so the
        // museum FPS player stays fully code-driven.
        if (enableFootPlanting && footPlanter?.isReady()) {
@@ -12932,7 +12954,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
      }
 
      if (redPropAnchorRef && redPropState) {
-@@ -737,6 +1297,10 @@
+@@ -737,6 +1310,10 @@
        redPropAnchorRef.getWorldPosition(redIKTarget);
      } else if (redPropState) {
        redIKTarget.copy(redPropState.worldPosition);
@@ -12943,7 +12965,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
      }
 
      const blueWorldProp = bluePropState
-@@ -746,15 +1310,74 @@
+@@ -746,15 +1323,74 @@
        ? { ...redPropState, worldPosition: redIKTarget }
        : null;
 
@@ -13018,7 +13040,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
      // 2b. Collision detection - run after IK so bones are at final positions
      if (collisionDetector.enabled && skeletonService) {
        const state = skeletonService.getState();
-@@ -775,24 +1398,14 @@
+@@ -775,24 +1411,14 @@
        leftChain?.effector.getWorldPosition(_boneVecs.leftHand);
        rightChain?.effector.getWorldPosition(_boneVecs.rightHand);
 
@@ -13051,7 +13073,48 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
 
        // Build staff segments (tip-to-tip) for shaft-through-body checks.
        // A staff is a line, not a point - point-based collision would miss
-@@ -867,20 +1480,15 @@
+@@ -832,7 +1458,39 @@
+         stepNumber,
+         beatProgress
+       );
+-      onCollisionEvents?.(events);
++      _diagnosticShoulderLateral.subVectors(
++        _boneVecs.rightShoulder,
++        _boneVecs.leftShoulder
++      );
++      _poseDiagnostics.shoulderWidth = _diagnosticShoulderLateral.length();
++      _diagnosticShoulderLateral.y = 0;
++      state.root?.getWorldQuaternion(_diagnosticRootQuaternion);
++      _diagnosticRootForward
++        .set(0, 0, 1)
++        .applyQuaternion(_diagnosticRootQuaternion);
++      _diagnosticRootForward.y = 0;
++      if (
++        _diagnosticRootForward.lengthSq() > 1e-6 &&
++        _diagnosticShoulderLateral.lengthSq() > 1e-6
++      ) {
++        _diagnosticRootForward.normalize();
++        _diagnosticShoulderLateral.normalize();
++        _diagnosticShoulderForward
++          .crossVectors(_diagnosticShoulderLateral, _unitY)
++          .normalize();
++        if (_diagnosticShoulderForward.dot(_diagnosticRootForward) < 0) {
++          _diagnosticShoulderForward.multiplyScalar(-1);
++        }
++        _poseDiagnostics.achievedShoulderYawRad = Math.atan2(
++          _diagnosticRootForward.z * _diagnosticShoulderForward.x -
++            _diagnosticRootForward.x * _diagnosticShoulderForward.z,
++          _diagnosticRootForward.dot(_diagnosticShoulderForward)
++        );
++      } else {
++        _poseDiagnostics.achievedShoulderYawRad = 0;
++      }
++      _poseDiagnostics.requestedStanceYawRad = stanceYaw;
++      onCollisionEvents?.(events, _poseDiagnostics);
+     }
+
+     // 3. Finger grips
+@@ -867,20 +1525,15 @@
    // transparent with depth-write off so the fade blends correctly.
    $effect(() => {
      if (!cachedRoot) return;
@@ -13078,7 +13141,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
      // Dispose locomotion animator, state machine, and foot planter
      if (locomotionAnimator) {
        locomotionAnimator.dispose();
-@@ -913,13 +1521,19 @@
+@@ -913,13 +1566,19 @@
  </script>
 
  {#if visible}
@@ -13105,7 +13168,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
      <T.Group
        name={`PERFORMER_${id}`}
        position={[position.x, position.y ?? 0, position.z]}
-@@ -950,6 +1564,7 @@
+@@ -950,6 +1609,7 @@
        preventing visual glitches during avatar swap.
      -->
      <T.Group
@@ -13114,7 +13177,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
        position={[position.x, groupY, position.z]}
        rotation.y={facingAngle}
 diff --git a/src/lib/components/PerformerRig.svelte b/src/lib/components/PerformerRig.svelte
-index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b4730f694dfd826273000767e6f146f7d9628306 100644
+index 99a40cd26b35183a5e71c93105e0704084dbf9e9..84337554f21a3a947692506f503f66b50d00f7fa 100644
 --- a/src/lib/components/PerformerRig.svelte
 +++ b/src/lib/components/PerformerRig.svelte
 @@ -16,11 +16,12 @@
@@ -13131,11 +13194,14 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b4730f694dfd826273000767e6f146f7
    import { Plane } from "../domain/enums/Plane";
    import { PlaneMode } from "../domain/enums/PlaneMode";
    import {
-@@ -34,8 +35,17 @@
+@@ -34,8 +35,20 @@
    import type { GridMode } from "../domain/constants/grid-layout";
    import type { TipEffectMap } from "../domain/types/TipEffectTypes";
    import type { TurnRequest } from "../services/contracts/ITurnAnimator";
-+  import type { CollisionEvent } from "../services/contracts/ICollisionDetector";
++  import type {
++    AvatarPoseDiagnostics,
++    CollisionEvent,
++  } from "../services/contracts/ICollisionDetector";
 +  import type {
 +    LateralGait,
 +    LocomotionGaitClock,
@@ -13149,7 +13215,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b4730f694dfd826273000767e6f146f7
 
    // Constant sets to avoid allocating new Set objects on every reactive update.
    const WHEEL_ONLY = new Set([Plane.WHEEL]);
-@@ -67,8 +77,8 @@
+@@ -67,8 +80,8 @@
      gridMode?: GridMode;
 
      // Prop types
@@ -13160,7 +13226,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b4730f694dfd826273000767e6f146f7
 
      // Prop state overrides (for dual-wheel mode - caller swaps before passing)
      bluePropState?: PropState3D | null;
-@@ -79,6 +89,7 @@
+@@ -79,6 +92,7 @@
      isPlaying?: boolean;
      staffHalfLength?: number;
      propLength?: number;
@@ -13168,7 +13234,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b4730f694dfd826273000767e6f146f7
 
      // Vertical offset (museum platforms, stages)
      groundOffset?: number;
-@@ -90,6 +101,13 @@
+@@ -90,6 +104,13 @@
      enableLocomotion?: boolean;
      isMoving?: boolean;
      moveSpeed?: number;
@@ -13182,7 +13248,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b4730f694dfd826273000767e6f146f7
 
      /** When true, facingAngle is driven by root motion yawDelta from
       *  the animation clip (accumulated each frame). When false (default),
-@@ -100,6 +118,14 @@
+@@ -100,6 +121,14 @@
       *  is true. The consumer receives the new accumulated angle so it can
       *  sync its own sequence/state representation if needed. */
      onYawIntegrated?: (newAngle: number) => void;
@@ -13197,7 +13263,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b4730f694dfd826273000767e6f146f7
      /** Enable idle/walk locomotion animation on the avatar.
       *  When true, the avatar breathes/sways while standing. */
      enableRootMotion?: boolean;
-@@ -119,23 +145,41 @@
+@@ -119,23 +148,44 @@
       * effect orchestrator can place tip-tracking effects (trails, LED, etc.)
       * in the correct rig-root-local frame without duplicating rig internals.
       */
@@ -13246,11 +13312,14 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b4730f694dfd826273000767e6f146f7
       *  swapping. Forwarded from Avatar3D for swap-transition wrappers. */
      onAvatarSwapped?: (avatarId: string) => void;
 +    /** Final post-IK collision sample for the current rendered frame. */
-+    onCollisionEvents?: (events: CollisionEvent[]) => void;
++    onCollisionEvents?: (
++      events: CollisionEvent[],
++      diagnostics: AvatarPoseDiagnostics
++    ) => void;
    }
 
    let {
-@@ -149,44 +193,60 @@
+@@ -149,44 +199,60 @@
      showEffects = true,
      visiblePlanes = new Set([Plane.WALL, Plane.WHEEL, Plane.FLOOR]),
      gridMode = "diamond" as GridMode,
@@ -13321,7 +13390,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b4730f694dfd826273000767e6f146f7
 
    // Derive mode config and grid offset from the current plane mode
    const modeConfig = $derived(PLANE_MODE_CONFIGS[planeMode]);
-@@ -247,7 +307,23 @@
+@@ -247,7 +313,23 @@
 
    // When a turn is active, enable animation-driven yaw so the rig
    // rotates from the turn clip's root motion rather than snapping.
@@ -13346,7 +13415,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b4730f694dfd826273000767e6f146f7
 
    // Turn completion snap: when turnRequest goes null after being active,
    // snap avatarState to the post-turn heading so the sync effect below
-@@ -259,6 +335,8 @@
+@@ -259,6 +341,8 @@
        // Turn just completed - snap avatarState to post-turn heading
        avatarState.snapFacingAngle(turnTargetHeading);
        turnTargetHeading = null;
@@ -13355,7 +13424,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b4730f694dfd826273000767e6f146f7
      }
    });
 
-@@ -291,45 +369,107 @@
+@@ -291,45 +375,107 @@
    let bluePropAnchorRef = $state<Group | undefined>(undefined);
    let redPropAnchorRef = $state<Group | undefined>(undefined);
 
@@ -13472,7 +13541,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b4730f694dfd826273000767e6f146f7
                accumulatedYaw += delta.yawDelta;
                onYawIntegrated?.(accumulatedYaw);
              }
-@@ -339,15 +479,12 @@
+@@ -339,15 +485,12 @@
    {/if}
 
    <!-- Grid (consumer-provided via gridSlot) -->
@@ -13490,7 +13559,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b4730f694dfd826273000767e6f146f7
      {#if bluePropState && blueVisible}
        <T.Group
          bind:ref={bluePropAnchorRef}
-@@ -355,23 +492,23 @@
+@@ -355,23 +498,23 @@
          position.y={bluePropState.worldPosition.y}
          position.z={bluePropState.worldPosition.z}
        >
@@ -13526,7 +13595,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b4730f694dfd826273000767e6f146f7
      {#if redPropState && redVisible}
        <T.Group
          bind:ref={redPropAnchorRef}
-@@ -379,20 +516,23 @@
+@@ -379,20 +522,23 @@
          position.y={redPropState.worldPosition.y}
          position.z={redPropState.worldPosition.z}
        >
@@ -18543,7 +18612,7 @@ index a6a29aa9b928eb98fc102f572da1ed2035c658ba..08994c5b2a1f5816db497d58a030af04
  	BIGTORCH = "bigtorch",
  	POI = "poi",
 diff --git a/src/lib/index.ts b/src/lib/index.ts
-index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..3689ee9cca4e1b856b18ecbbc5ddd0c2aa884179 100644
+index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..ead140b5892df6d9f8a146ea1c191459dbf23edc 100644
 --- a/src/lib/index.ts
 +++ b/src/lib/index.ts
 @@ -71,6 +71,16 @@ export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shoul
@@ -18579,7 +18648,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..3689ee9cca4e1b856b18ecbbc5ddd0c2
  export type { IAnimationStateMachine } from "./services/contracts/IAnimationStateMachine";
  export { LocomotionState } from "./services/contracts/IAnimationStateMachine";
  export type { IFootPlanter } from "./services/contracts/IFootPlanter";
-@@ -89,7 +106,13 @@ export type { IRootMotionExtractor } from "./services/contracts/IRootMotionExtra
+@@ -89,9 +106,21 @@ export type { IRootMotionExtractor } from "./services/contracts/IRootMotionExtra
  export type { IFingerAnimator } from "./services/contracts/IFingerAnimator";
  export type { IClavicleRaiser } from "./services/contracts/IClavicleRaiser";
  export type { ISpineTwister } from "./services/contracts/ISpineTwister";
@@ -18592,9 +18661,18 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..3689ee9cca4e1b856b18ecbbc5ddd0c2
 +  IElbowPoleComputer,
 +} from "./services/contracts/IElbowPoleComputer";
  export type { IAngleMathCalculator } from "./services/contracts/IAngleMathCalculator";
- export type { ICollisionDetector, CollisionEvent, BodySnapshot, PropSegment } from "./services/contracts/ICollisionDetector";
+-export type { ICollisionDetector, CollisionEvent, BodySnapshot, PropSegment } from "./services/contracts/ICollisionDetector";
++export type {
++  ICollisionDetector,
++  AvatarPoseDiagnostics,
++  CollisionEvent,
++  BodySnapshot,
++  PropSegment,
++} from "./services/contracts/ICollisionDetector";
  export type { ICameraChoreographer, PerformerPositionProvider } from "./services/contracts/ICameraChoreographer";
-@@ -113,6 +136,10 @@ export { IKSolver } from "./services/implementations/IKSolver";
+ export type { IFormationManager } from "./services/contracts/IFormationManager";
+ export type { IContactCurveCache } from "./services/contracts/IContactCurveCache";
+@@ -113,6 +142,10 @@ export { IKSolver } from "./services/implementations/IKSolver";
  export { LocomotionAnimator } from "./services/implementations/LocomotionAnimator";
  export { AnimationStateMachine } from "./services/implementations/AnimationStateMachine";
  export { FootPlanter } from "./services/implementations/FootPlanter";
@@ -18605,7 +18683,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..3689ee9cca4e1b856b18ecbbc5ddd0c2
  export { RootMotionExtractor } from "./services/implementations/RootMotionExtractor";
  export { FingerAnimator } from "./services/implementations/FingerAnimator";
  export { ClavicleRaiser } from "./services/implementations/ClavicleRaiser";
-@@ -151,3 +178,7 @@ export { PROP_COLORS, METAL_COLORS } from "./components/props/Prop3DProps";
+@@ -151,3 +184,7 @@ export { PROP_COLORS, METAL_COLORS } from "./components/props/Prop3DProps";
 
  // Data
  export { STAFF_GRIP_POSES } from "./data/grip-poses/staff-grip-poses";
@@ -19072,7 +19150,7 @@ index 666a20b6ddead4b33f695ce341c854f937eaabb6..e0b23efe86d24cb2ffedebf41579906d
     * Dispose of the loaded model and free resources
     */
 diff --git a/src/lib/services/contracts/ICollisionDetector.ts b/src/lib/services/contracts/ICollisionDetector.ts
-index 4f198331785178e696142a56f0f2b6675d020abe..1588f3eb8b3fd9628c4ab728edc87185b9dda7be 100644
+index 4f198331785178e696142a56f0f2b6675d020abe..904866b5d6b3b96f2626554582d928ebd1255795 100644
 --- a/src/lib/services/contracts/ICollisionDetector.ts
 +++ b/src/lib/services/contracts/ICollisionDetector.ts
 @@ -17,6 +17,8 @@ export type CollisionZone =
@@ -19084,6 +19162,23 @@ index 4f198331785178e696142a56f0f2b6675d020abe..1588f3eb8b3fd9628c4ab728edc87185
    | "arms-through-each-other";
 
  /**
+@@ -51,6 +53,16 @@ export interface CollisionEvent {
+   description: string;
+ }
+
++/** Post-pose measurements attached to a collision sample for audit tooling. */
++export interface AvatarPoseDiagnostics {
++  /** Planner request delivered to the rig this frame. */
++  requestedStanceYawRad: number;
++  /** Signed yaw from the root facing axis to the achieved shoulder frame. */
++  achievedShoulderYawRad: number;
++  /** Current shoulder span in world meters, useful for spotting collapsed rigs. */
++  shoulderWidth: number;
++}
++
+ /** Bone positions snapshot needed for collision checks */
+ export interface BodySnapshot {
+   /**
 diff --git a/src/lib/services/contracts/IElbowPoleComputer.ts b/src/lib/services/contracts/IElbowPoleComputer.ts
 index e1d06d6b7212d8689bbd087c62c023714629d718..c51692237501de565e3550f3761aad9d5f237708 100644
 --- a/src/lib/services/contracts/IElbowPoleComputer.ts

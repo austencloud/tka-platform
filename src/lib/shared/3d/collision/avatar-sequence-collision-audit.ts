@@ -1,4 +1,7 @@
-import type { CollisionEvent } from "@austencloud/scene-3d";
+import type {
+  AvatarPoseDiagnostics,
+  CollisionEvent,
+} from "@austencloud/scene-3d";
 
 type CollisionSeverity = CollisionEvent["severity"];
 type CollisionZone = CollisionEvent["zone"];
@@ -26,11 +29,13 @@ export interface CollisionCluster {
   worstStep: number;
   worstProgress: number;
   worstPenetrationDepth: number;
+  worstPose: AvatarPoseDiagnostics;
   descriptions: string[];
 }
 
 export interface CollisionAuditReport {
   sampledFrames: number;
+  currentPoseByPerformer: Record<string, AvatarPoseDiagnostics>;
   clusters: CollisionCluster[];
 }
 
@@ -51,10 +56,23 @@ function copyCluster(cluster: MutableCluster): CollisionCluster {
 export class AvatarSequenceCollisionAudit {
   private readonly open = new Map<string, MutableCluster>();
   private readonly completed: CollisionCluster[] = [];
+  private readonly currentPoseByPerformer = new Map<
+    string,
+    AvatarPoseDiagnostics
+  >();
   private sampledFrames = 0;
 
-  record(performerId: string, events: readonly CollisionEvent[]): void {
+  record(
+    performerId: string,
+    events: readonly CollisionEvent[],
+    diagnostics: AvatarPoseDiagnostics = {
+      requestedStanceYawRad: 0,
+      achievedShoulderYawRad: 0,
+      shoulderWidth: 0,
+    }
+  ): void {
     this.sampledFrames += 1;
+    this.currentPoseByPerformer.set(performerId, { ...diagnostics });
     const worstByZone = new Map<CollisionZone, CollisionEvent>();
 
     for (const event of events) {
@@ -88,6 +106,7 @@ export class AvatarSequenceCollisionAudit {
           worstStep: event.stepNumber,
           worstProgress: event.beatProgress,
           worstPenetrationDepth: event.penetrationDepth,
+          worstPose: { ...diagnostics },
           descriptions: [event.description],
           descriptionSet: new Set([event.description]),
         });
@@ -104,6 +123,7 @@ export class AvatarSequenceCollisionAudit {
         cluster.worstPenetrationDepth = event.penetrationDepth;
         cluster.worstStep = event.stepNumber;
         cluster.worstProgress = event.beatProgress;
+        cluster.worstPose = { ...diagnostics };
       }
       if (!cluster.descriptionSet.has(event.description)) {
         cluster.descriptionSet.add(event.description);
@@ -117,6 +137,12 @@ export class AvatarSequenceCollisionAudit {
   report(): CollisionAuditReport {
     return {
       sampledFrames: this.sampledFrames,
+      currentPoseByPerformer: Object.fromEntries(
+        [...this.currentPoseByPerformer].map(([performerId, diagnostics]) => [
+          performerId,
+          { ...diagnostics },
+        ])
+      ),
       clusters: [
         ...this.completed.map((cluster) => ({
           ...cluster,
@@ -130,6 +156,7 @@ export class AvatarSequenceCollisionAudit {
   clear(): void {
     this.open.clear();
     this.completed.length = 0;
+    this.currentPoseByPerformer.clear();
     this.sampledFrames = 0;
     this.publishBrowserSnapshot();
   }

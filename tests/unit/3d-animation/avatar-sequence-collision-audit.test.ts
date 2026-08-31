@@ -24,10 +24,26 @@ function event(
 describe("AvatarSequenceCollisionAudit", () => {
   it("clusters contiguous bad frames and keeps the exact worst sample", () => {
     const audit = new AvatarSequenceCollisionAudit();
-    audit.record("austen", [event(2, 0.2, 0.03)]);
-    audit.record("austen", [event(2, 0.3, 0.08)]);
-    audit.record("austen", [event(2, 0.4, 0.04)]);
-    audit.record("austen", []);
+    audit.record("austen", [event(2, 0.2, 0.03)], {
+      requestedStanceYawRad: 0.4,
+      achievedShoulderYawRad: 0.1,
+      shoulderWidth: 0.4,
+    });
+    audit.record("austen", [event(2, 0.3, 0.08)], {
+      requestedStanceYawRad: 0.8,
+      achievedShoulderYawRad: 0.25,
+      shoulderWidth: 0.39,
+    });
+    audit.record("austen", [event(2, 0.4, 0.04)], {
+      requestedStanceYawRad: 0.6,
+      achievedShoulderYawRad: 0.2,
+      shoulderWidth: 0.38,
+    });
+    audit.record("austen", [], {
+      requestedStanceYawRad: 0.6,
+      achievedShoulderYawRad: 0.2,
+      shoulderWidth: 0.38,
+    });
 
     expect(audit.report()).toMatchObject({
       sampledFrames: 4,
@@ -42,9 +58,19 @@ describe("AvatarSequenceCollisionAudit", () => {
           worstStep: 2,
           worstProgress: 0.3,
           worstPenetrationDepth: 0.08,
+          worstPose: {
+            requestedStanceYawRad: 0.8,
+            achievedShoulderYawRad: 0.25,
+            shoulderWidth: 0.39,
+          },
           severity: "penetrate",
         },
       ],
+    });
+    expect(audit.report().currentPoseByPerformer.austen).toEqual({
+      requestedStanceYawRad: 0.6,
+      achievedShoulderYawRad: 0.2,
+      shoulderWidth: 0.38,
     });
   });
 
