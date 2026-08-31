@@ -2,7 +2,11 @@
   import { T, useTask, useThrelte, useScheduler } from "@threlte/core";
   import { layers, type ThrelteLayers } from "@threlte/extras";
   import { onMount, onDestroy, type Snippet } from "svelte";
-  import { PerformerRig } from "@austencloud/scene-3d";
+  import {
+    PerformerRig,
+    PLANE_MODE_CONFIGS,
+    type CollisionEvent,
+  } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import { BackgroundType } from "@austencloud/backgrounds";
@@ -59,6 +63,8 @@
     createPerformerPointerInteraction,
     type PerformerPointerInteraction,
   } from "./performer-interaction/performer-pointer-interaction.svelte";
+  import { planUpperBodyStanceYaw } from "../collision/upper-body-stance-planner";
+  import { getAvatarSequenceCollisionAudit } from "../collision/avatar-sequence-collision-audit";
 
   // Performer layer membership inherits through the nested PerformerRig tree.
   layers();
@@ -66,6 +72,30 @@
     BASE_SCENE_LAYER,
     PROTECTED_PERFORMER_LAYER,
   ];
+  const collisionAudit = import.meta.env.DEV
+    ? getAvatarSequenceCollisionAudit()
+    : null;
+
+  function resolveUpperBodyStanceYaw(
+    performer: CharacterInstanceState
+  ): number {
+    const mode = PLANE_MODE_CONFIGS[performer.planeMode];
+    const gridOffset = GRID_OFFSETS[performer.planeMode];
+    return planUpperBodyStanceYaw({
+      blue: performer.bluePropState
+        ? {
+            x: mode.blueLateralOffset + performer.bluePropState.worldPosition.x,
+            z: gridOffset + performer.bluePropState.worldPosition.z,
+          }
+        : null,
+      red: performer.redPropState
+        ? {
+            x: mode.redLateralOffset + performer.redPropState.worldPosition.x,
+            z: gridOffset + performer.redPropState.worldPosition.z,
+          }
+        : null,
+    });
+  }
 
   interface Props {
     sequenceData: SequenceData | null;
@@ -767,6 +797,12 @@
             moveDirection={performer.moveDirection}
             gaitTimingSample={performer.gaitTimingSample}
             terminalStepPlan={performer.terminalStepPlan}
+            stanceYaw={resolveUpperBodyStanceYaw(performer)}
+            headDodge={true}
+            onCollisionEvents={collisionAudit
+              ? (events: CollisionEvent[]) =>
+                  collisionAudit.record(performer.id, events)
+              : undefined}
             onAvatarSwapped={(characterId) => {
               onCharacterSwapped(characterId);
               markPerformerCharacterReady(performer.id, characterId);

@@ -1005,7 +1005,7 @@ diff --git a/dist/lib/components/LimbSegment.svelte.d.ts.map b/dist/lib/componen
 deleted file mode 100644
 index cde3408aa49f552ba186378457fee937ba0d21ec..0000000000000000000000000000000000000000
 diff --git a/dist/lib/components/PerformerRig.svelte b/dist/lib/components/PerformerRig.svelte
-index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8197a2b04 100644
+index 99a40cd26b35183a5e71c93105e0704084dbf9e9..ce06a8a1f8419f9842fc52e4d3f149a0192f23b7 100644
 --- a/dist/lib/components/PerformerRig.svelte
 +++ b/dist/lib/components/PerformerRig.svelte
 @@ -16,11 +16,12 @@
@@ -1022,10 +1022,11 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
    import { Plane } from "../domain/enums/Plane";
    import { PlaneMode } from "../domain/enums/PlaneMode";
    import {
-@@ -34,8 +35,11 @@
+@@ -34,8 +35,12 @@
    import type { GridMode } from "../domain/constants/grid-layout";
    import type { TipEffectMap } from "../domain/types/TipEffectTypes";
    import type { TurnRequest } from "../services/contracts/ITurnAnimator";
++  import type { CollisionEvent } from "../services/contracts/ICollisionDetector";
 +  import type { LocomotionGaitClock } from "../services/contracts/ILocomotionAnimator";
    import { derivePlaneModeFromHands } from "../domain/utils/plane-mode-utils";
    import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
@@ -1034,16 +1035,18 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
 
    // Constant sets to avoid allocating new Set objects on every reactive update.
    const WHEEL_ONLY = new Set([Plane.WHEEL]);
-@@ -69,5 +73,5 @@
+@@ -67,8 +72,8 @@
+     gridMode?: GridMode;
+
      // Prop types
 -    bluePropType?: PropType;
 -    redPropType?: PropType;
--
 +    bluePropType?: PropType; bluePropFlipped?: boolean;
 +    redPropType?: PropType; redPropFlipped?: boolean;
-+
+
      // Prop state overrides (for dual-wheel mode - caller swaps before passing)
-@@ -79,6 +83,7 @@
+     bluePropState?: PropState3D | null;
+@@ -79,6 +84,7 @@
      isPlaying?: boolean;
      staffHalfLength?: number;
      propLength?: number;
@@ -1051,7 +1054,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
 
      // Vertical offset (museum platforms, stages)
      groundOffset?: number;
-@@ -90,6 +95,11 @@
+@@ -90,6 +96,11 @@
      enableLocomotion?: boolean;
      isMoving?: boolean;
      moveSpeed?: number;
@@ -1063,7 +1066,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
 
      /** When true, facingAngle is driven by root motion yawDelta from
       *  the animation clip (accumulated each frame). When false (default),
-@@ -100,6 +110,8 @@
+@@ -100,6 +111,8 @@
       *  is true. The consumer receives the new accumulated angle so it can
       *  sync its own sequence/state representation if needed. */
      onYawIntegrated?: (newAngle: number) => void;
@@ -1072,7 +1075,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
      /** Enable idle/walk locomotion animation on the avatar.
       *  When true, the avatar breathes/sways while standing. */
      enableRootMotion?: boolean;
-@@ -119,17 +131,33 @@
+@@ -119,23 +132,41 @@
       * effect orchestrator can place tip-tracking effects (trails, LED, etc.)
       * in the correct rig-root-local frame without duplicating rig internals.
       */
@@ -1117,8 +1120,15 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
      /** Avatar mesh opacity 0-1, forwarded to Avatar3D for swap cross-fades.
       *  1 = fully opaque (default). */
      avatarOpacity?: number;
-@@ -148,8 +176,8 @@
-     showProps = true,
+     /** Fired with the avatar id when the avatar model finishes loading or
+      *  swapping. Forwarded from Avatar3D for swap-transition wrappers. */
+     onAvatarSwapped?: (avatarId: string) => void;
++    /** Final post-IK collision sample for the current rendered frame. */
++    onCollisionEvents?: (events: CollisionEvent[]) => void;
+   }
+
+   let {
+@@ -149,32 +180,40 @@
      showEffects = true,
      visiblePlanes = new Set([Plane.WALL, Plane.WHEEL, Plane.FLOOR]),
      gridMode = "diamond" as GridMode,
@@ -1128,7 +1138,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
 +    redPropType = PropType.STAFF, redPropFlipped = false,
      bluePropState: bluePropStateOverride,
      redPropState: redPropStateOverride,
-@@ -157,16 +185,22 @@
+     tipEffectMap = {},
      isPlaying = false,
      staffHalfLength: staffHalfLengthProp,
      propLength,
@@ -1150,8 +1160,9 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
 +    headDodge = false,
      avatarOpacity = 1,
      onAvatarSwapped,
++    onCollisionEvents,
      gridSlot,
-@@ -174,7 +208,8 @@
+     effectsSlot,
    }: Props = $props();
 
    const staffHalfLength = $derived(
@@ -1161,7 +1172,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
    );
 
    // Animation-driven yaw accumulator. When animationDrivenYaw is true, the
-@@ -185,8 +220,12 @@
+@@ -185,8 +224,12 @@
    let accumulatedYaw = $state(untrack(() => facingAngle));
 
    // Resolve prop states: use overrides (for dual-wheel swap) or avatarState defaults
@@ -1176,7 +1187,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
 
    // Derive mode config and grid offset from the current plane mode
    const modeConfig = $derived(PLANE_MODE_CONFIGS[planeMode]);
-@@ -247,7 +286,9 @@
+@@ -247,7 +290,9 @@
 
    // When a turn is active, enable animation-driven yaw so the rig
    // rotates from the turn clip's root motion rather than snapping.
@@ -1187,7 +1198,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
 
    // Turn completion snap: when turnRequest goes null after being active,
    // snap avatarState to the post-turn heading so the sync effect below
-@@ -291,9 +332,55 @@
+@@ -291,9 +336,55 @@
    let bluePropAnchorRef = $state<Group | undefined>(undefined);
    let redPropAnchorRef = $state<Group | undefined>(undefined);
 
@@ -1243,7 +1254,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
  </script>
 
  <!-- Root: position in world space, apply facing rotation -->
-@@ -305,25 +392,32 @@
+@@ -305,25 +396,33 @@
  >
    <!-- Avatar3D uses groundY (~-1.56) internally to position its mesh,
         so shoulders end up near y=0 in rig space. -->
@@ -1256,6 +1267,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
        onModelSwapped={onAvatarSwapped}
 -      bluePropState={bluePropState}
 -      redPropState={redPropState}
++      {onCollisionEvents}
 +      {bluePropState}
 +      {redPropState}
        facingAngle={0}
@@ -1282,7 +1294,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
        disableSpineTwist={isDualWheel}
        stepNumber={avatarState.currentStepIndex}
        beatProgress={avatarState.progress}
-@@ -339,15 +433,12 @@
+@@ -339,15 +438,12 @@
    {/if}
 
    <!-- Grid (consumer-provided via gridSlot) -->
@@ -1300,7 +1312,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
      {#if bluePropState && blueVisible}
        <T.Group
          bind:ref={bluePropAnchorRef}
-@@ -355,23 +446,23 @@
+@@ -355,23 +451,23 @@
          position.y={bluePropState.worldPosition.y}
          position.z={bluePropState.worldPosition.z}
        >
@@ -1336,7 +1348,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
      {#if redPropState && redVisible}
        <T.Group
          bind:ref={redPropAnchorRef}
-@@ -379,20 +470,23 @@
+@@ -379,20 +475,23 @@
          position.y={redPropState.worldPosition.y}
          position.z={redPropState.worldPosition.z}
        >
@@ -6588,14 +6600,18 @@ deleted file mode 100644
 index 8d0262d3ce741f36f066d69fc14af57691e8d939..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/geometry/BodyCollisionGeometry.js b/dist/lib/services/geometry/BodyCollisionGeometry.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..e6db205d113d6c19d35661812cb311fd6085890b
+index 0000000000000000000000000000000000000000..889d20576124946b866af1508231ba9e2d19d0a5
 --- /dev/null
 +++ b/dist/lib/services/geometry/BodyCollisionGeometry.js
-@@ -0,0 +1,39 @@
+@@ -0,0 +1,43 @@
 +export const FACE_RADIUS = 0.09;
 +export const FOREARM_RADIUS = 0.04;
 +export const BODY_CLEARANCE_PADDING = 0.02;
 +export const FOREARM_FACE_CLEARANCE = FACE_RADIUS + FOREARM_RADIUS + BODY_CLEARANCE_PADDING;
++export const NECK_RADIUS = 0.07;
++export const TORSO_RADIUS = 0.12;
++export const FOREARM_NECK_CLEARANCE = NECK_RADIUS + FOREARM_RADIUS + BODY_CLEARANCE_PADDING;
++export const FOREARM_TORSO_CLEARANCE = TORSO_RADIUS + FOREARM_RADIUS;
 +const FACE_FORWARD_OFFSET = 0.08;
 +const FACE_UP_OFFSET = 0.05;
 +/**
@@ -8077,23 +8093,32 @@ diff --git a/dist/lib/services/implementations/CollisionDetector.d.ts.map b/dist
 deleted file mode 100644
 index 589730c42dd77154bad8305e67d5804bdf805018..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/CollisionDetector.js b/dist/lib/services/implementations/CollisionDetector.js
-index bdf2062fc3ee834f003879c49286b6dd7a282887..a0b22b12f714168c6df83878f9ec949712e0e296 100644
+index bdf2062fc3ee834f003879c49286b6dd7a282887..3af4d60d28c29d808e849a8083f056836c68a1be 100644
 --- a/dist/lib/services/implementations/CollisionDetector.js
 +++ b/dist/lib/services/implementations/CollisionDetector.js
-@@ -18,12 +18,9 @@
+@@ -18,12 +18,7 @@
   * Domain: 3D - Collision Avoidance
   */
  import { Vector3 } from "three";
-+import { BODY_CLEARANCE_PADDING, FACE_RADIUS, FOREARM_FACE_CLEARANCE, FOREARM_RADIUS, pointToSegmentDistance, } from "../geometry/BodyCollisionGeometry";
- // Bounding radii for body parts (meters, scene scale)
+-// Bounding radii for body parts (meters, scene scale)
 -const HEAD_RADIUS = 0.09;
- const TORSO_RADIUS = 0.12;
+-const TORSO_RADIUS = 0.12;
 -const ARM_SEGMENT_RADIUS = 0.04;
 -// How close a prop can get before we flag it (meters)
 -const PROP_BODY_THRESHOLD = 0.02;
++import { BODY_CLEARANCE_PADDING, FACE_RADIUS, FOREARM_FACE_CLEARANCE, FOREARM_NECK_CLEARANCE, FOREARM_RADIUS, FOREARM_TORSO_CLEARANCE, TORSO_RADIUS, pointToSegmentDistance, } from "../geometry/BodyCollisionGeometry";
  // How close two arm segments can get before we flag overlap
  const ARM_ARM_THRESHOLD = 0.06;
  // Severity thresholds (meters of penetration)
+@@ -40,6 +35,8 @@ const COOLDOWN_MS = {
+ const _tempA = new Vector3();
+ const _tempB = new Vector3();
+ const _closest = new Vector3();
++const _leftUpperBodyStart = new Vector3();
++const _rightUpperBodyStart = new Vector3();
+ // Severity badge for console
+ const SEVERITY_BADGE = {
+     graze: "🟡 GRAZE",
 @@ -86,7 +83,7 @@ export class CollisionDetector {
          //    the bone-based distance check stays ~14 cm away.
          for (const { label, seg } of propPairs) {
@@ -8121,7 +8146,7 @@ index bdf2062fc3ee834f003879c49286b6dd7a282887..a0b22b12f714168c6df83878f9ec9497
              if (closest < threshold) {
                  const depth = threshold - closest;
                  events.push(this.makeEvent("prop-through-prop", stepNumber, beatProgress, depth, `Staffs cross (${(closest * 100).toFixed(1)}cm gap, ${(depth * 100).toFixed(1)}cm overlap)`));
-@@ -144,13 +141,13 @@ export class CollisionDetector {
+@@ -144,17 +141,43 @@ export class CollisionDetector {
          //    Uses body.face so the collision zone matches where the visual
          //    face actually is, not where the Mixamo head joint sits.
          const leftArmDist = this.pointToSegmentDistance(body.face, body.leftElbow, body.leftHand);
@@ -8137,7 +8162,37 @@ index bdf2062fc3ee834f003879c49286b6dd7a282887..a0b22b12f714168c6df83878f9ec9497
          if (rightArmDist < rightArmThreshold) {
              const penetration = rightArmThreshold - rightArmDist;
              events.push(this.makeEvent("arm-through-face", stepNumber, beatProgress, penetration, `R forearm → face (${(rightArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`));
-@@ -189,14 +186,7 @@ export class CollisionDetector {
+         }
++        // 3b. Arms through neck/torso. Exclude the shoulder-adjacent 35%
++        // of each upper arm because that segment is anatomically attached.
++        _leftUpperBodyStart.lerpVectors(body.leftShoulder, body.leftElbow, 0.35);
++        _rightUpperBodyStart.lerpVectors(body.rightShoulder, body.rightElbow, 0.35);
++        const bodyArmSegments = [
++            { name: "L upper arm", a: _leftUpperBodyStart, b: body.leftElbow },
++            { name: "L forearm", a: body.leftElbow, b: body.leftHand },
++            { name: "R upper arm", a: _rightUpperBodyStart, b: body.rightElbow },
++            { name: "R forearm", a: body.rightElbow, b: body.rightHand },
++        ];
++        const torsoCenters = [body.spine1, body.spine2];
++        for (const arm of bodyArmSegments) {
++            const neckDistance = this.pointToSegmentDistance(body.neck, arm.a, arm.b);
++            if (neckDistance < FOREARM_NECK_CLEARANCE) {
++                const penetration = FOREARM_NECK_CLEARANCE - neckDistance;
++                events.push(this.makeEvent("arm-through-neck", stepNumber, beatProgress, penetration, `${arm.name} → neck (${(neckDistance * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`));
++            }
++            let worstTorsoDepth = 0;
++            for (const center of torsoCenters) {
++                const distance = this.pointToSegmentDistance(center, arm.a, arm.b);
++                worstTorsoDepth = Math.max(worstTorsoDepth, FOREARM_TORSO_CLEARANCE - distance);
++            }
++            if (worstTorsoDepth > 0) {
++                events.push(this.makeEvent("arm-through-torso", stepNumber, beatProgress, worstTorsoDepth, `${arm.name} → torso (${(worstTorsoDepth * 100).toFixed(1)}cm deep)`));
++            }
++        }
+         // 4. Arms through each other - forearm segments
+         const armArmDist = this.segmentToSegmentDistance(body.leftElbow, body.leftHand, body.rightElbow, body.rightHand);
+         if (armArmDist < ARM_ARM_THRESHOLD) {
+@@ -189,14 +212,7 @@ export class CollisionDetector {
          return Math.max(0, radius - dist);
      }
      pointToSegmentDistance(point, segA, segB) {
@@ -13059,7 +13114,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c2413415608f4f08cb9463394f0b2ce8
        position={[position.x, groupY, position.z]}
        rotation.y={facingAngle}
 diff --git a/src/lib/components/PerformerRig.svelte b/src/lib/components/PerformerRig.svelte
-index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcfd0882fca 100644
+index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b4730f694dfd826273000767e6f146f7d9628306 100644
 --- a/src/lib/components/PerformerRig.svelte
 +++ b/src/lib/components/PerformerRig.svelte
 @@ -16,11 +16,12 @@
@@ -13076,10 +13131,11 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
    import { Plane } from "../domain/enums/Plane";
    import { PlaneMode } from "../domain/enums/PlaneMode";
    import {
-@@ -34,8 +35,16 @@
+@@ -34,8 +35,17 @@
    import type { GridMode } from "../domain/constants/grid-layout";
    import type { TipEffectMap } from "../domain/types/TipEffectTypes";
    import type { TurnRequest } from "../services/contracts/ITurnAnimator";
++  import type { CollisionEvent } from "../services/contracts/ICollisionDetector";
 +  import type {
 +    LateralGait,
 +    LocomotionGaitClock,
@@ -13093,16 +13149,18 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
 
    // Constant sets to avoid allocating new Set objects on every reactive update.
    const WHEEL_ONLY = new Set([Plane.WHEEL]);
-@@ -69,5 +78,5 @@
+@@ -67,8 +77,8 @@
+     gridMode?: GridMode;
+
      // Prop types
 -    bluePropType?: PropType;
 -    redPropType?: PropType;
--
 +    bluePropType?: PropType; bluePropFlipped?: boolean;
 +    redPropType?: PropType; redPropFlipped?: boolean;
-+
+
      // Prop state overrides (for dual-wheel mode - caller swaps before passing)
-@@ -79,6 +88,7 @@
+     bluePropState?: PropState3D | null;
+@@ -79,6 +89,7 @@
      isPlaying?: boolean;
      staffHalfLength?: number;
      propLength?: number;
@@ -13110,7 +13168,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
 
      // Vertical offset (museum platforms, stages)
      groundOffset?: number;
-@@ -90,6 +100,13 @@
+@@ -90,6 +101,13 @@
      enableLocomotion?: boolean;
      isMoving?: boolean;
      moveSpeed?: number;
@@ -13124,7 +13182,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
 
      /** When true, facingAngle is driven by root motion yawDelta from
       *  the animation clip (accumulated each frame). When false (default),
-@@ -100,6 +117,14 @@
+@@ -100,6 +118,14 @@
       *  is true. The consumer receives the new accumulated angle so it can
       *  sync its own sequence/state representation if needed. */
      onYawIntegrated?: (newAngle: number) => void;
@@ -13139,7 +13197,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
      /** Enable idle/walk locomotion animation on the avatar.
       *  When true, the avatar breathes/sways while standing. */
      enableRootMotion?: boolean;
-@@ -119,17 +144,33 @@
+@@ -119,23 +145,41 @@
       * effect orchestrator can place tip-tracking effects (trails, LED, etc.)
       * in the correct rig-root-local frame without duplicating rig internals.
       */
@@ -13184,8 +13242,15 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
      /** Avatar mesh opacity 0-1, forwarded to Avatar3D for swap cross-fades.
       *  1 = fully opaque (default). */
      avatarOpacity?: number;
-@@ -148,8 +189,8 @@
-     showProps = true,
+     /** Fired with the avatar id when the avatar model finishes loading or
+      *  swapping. Forwarded from Avatar3D for swap-transition wrappers. */
+     onAvatarSwapped?: (avatarId: string) => void;
++    /** Final post-IK collision sample for the current rendered frame. */
++    onCollisionEvents?: (events: CollisionEvent[]) => void;
+   }
+
+   let {
+@@ -149,44 +193,60 @@
      showEffects = true,
      visiblePlanes = new Set([Plane.WALL, Plane.WHEEL, Plane.FLOOR]),
      gridMode = "diamond" as GridMode,
@@ -13195,7 +13260,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
 +    redPropType = PropType.STAFF, redPropFlipped = false,
      bluePropState: bluePropStateOverride,
      redPropState: redPropStateOverride,
-@@ -157,16 +198,26 @@
+     tipEffectMap = {},
      isPlaying = false,
      staffHalfLength: staffHalfLengthProp,
      propLength,
@@ -13221,8 +13286,9 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
 +    headDodge = false,
      avatarOpacity = 1,
      onAvatarSwapped,
++    onCollisionEvents,
      gridSlot,
-@@ -174,19 +225,24 @@
+     effectsSlot,
    }: Props = $props();
 
    const staffHalfLength = $derived(
@@ -13255,7 +13321,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
 
    // Derive mode config and grid offset from the current plane mode
    const modeConfig = $derived(PLANE_MODE_CONFIGS[planeMode]);
-@@ -247,7 +303,23 @@
+@@ -247,7 +307,23 @@
 
    // When a turn is active, enable animation-driven yaw so the rig
    // rotates from the turn clip's root motion rather than snapping.
@@ -13280,7 +13346,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
 
    // Turn completion snap: when turnRequest goes null after being active,
    // snap avatarState to the post-turn heading so the sync effect below
-@@ -259,6 +331,8 @@
+@@ -259,6 +335,8 @@
        // Turn just completed - snap avatarState to post-turn heading
        avatarState.snapFacingAngle(turnTargetHeading);
        turnTargetHeading = null;
@@ -13289,7 +13355,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
      }
    });
 
-@@ -291,45 +365,106 @@
+@@ -291,45 +369,107 @@
    let bluePropAnchorRef = $state<Group | undefined>(undefined);
    let redPropAnchorRef = $state<Group | undefined>(undefined);
 
@@ -13364,6 +13430,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
        onModelSwapped={onAvatarSwapped}
 -      bluePropState={bluePropState}
 -      redPropState={redPropState}
++      {onCollisionEvents}
 +      {bluePropState}
 +      {redPropState}
        facingAngle={0}
@@ -13405,7 +13472,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
                accumulatedYaw += delta.yawDelta;
                onYawIntegrated?.(accumulatedYaw);
              }
-@@ -339,15 +474,12 @@
+@@ -339,15 +479,12 @@
    {/if}
 
    <!-- Grid (consumer-provided via gridSlot) -->
@@ -13423,7 +13490,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
      {#if bluePropState && blueVisible}
        <T.Group
          bind:ref={bluePropAnchorRef}
-@@ -355,23 +487,23 @@
+@@ -355,23 +492,23 @@
          position.y={bluePropState.worldPosition.y}
          position.z={bluePropState.worldPosition.z}
        >
@@ -13459,7 +13526,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
      {#if redPropState && redVisible}
        <T.Group
          bind:ref={redPropAnchorRef}
-@@ -379,20 +511,23 @@
+@@ -379,20 +516,23 @@
          position.y={redPropState.worldPosition.y}
          position.z={redPropState.worldPosition.z}
        >
@@ -19004,6 +19071,19 @@ index 666a20b6ddead4b33f695ce341c854f937eaabb6..e0b23efe86d24cb2ffedebf41579906d
    /**
     * Dispose of the loaded model and free resources
     */
+diff --git a/src/lib/services/contracts/ICollisionDetector.ts b/src/lib/services/contracts/ICollisionDetector.ts
+index 4f198331785178e696142a56f0f2b6675d020abe..1588f3eb8b3fd9628c4ab728edc87185b9dda7be 100644
+--- a/src/lib/services/contracts/ICollisionDetector.ts
++++ b/src/lib/services/contracts/ICollisionDetector.ts
+@@ -17,6 +17,8 @@ export type CollisionZone =
+   | "prop-through-arm"
+   | "prop-through-prop"
+   | "arm-through-face"
++  | "arm-through-neck"
++  | "arm-through-torso"
+   | "arms-through-each-other";
+
+ /**
 diff --git a/src/lib/services/contracts/IElbowPoleComputer.ts b/src/lib/services/contracts/IElbowPoleComputer.ts
 index e1d06d6b7212d8689bbd087c62c023714629d718..b5290c798ee1c1f3d1e4867e9e1b6b48431167e0 100644
 --- a/src/lib/services/contracts/IElbowPoleComputer.ts
@@ -19558,10 +19638,10 @@ index f906b396cdb9f1a924c617f9a44c5978f9cfd46b..d78c415dce9399f16b6c8654b88ba70a
    /** Per-foot contact state: 0 = airborne, 1 = fully planted. */
 diff --git a/src/lib/services/geometry/BodyCollisionGeometry.ts b/src/lib/services/geometry/BodyCollisionGeometry.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..263b1e72a162716db6f6b8f62d51963be12e46fc
+index 0000000000000000000000000000000000000000..804080e43f4dc206951115861d4b871fe92f612e
 --- /dev/null
 +++ b/src/lib/services/geometry/BodyCollisionGeometry.ts
-@@ -0,0 +1,63 @@
+@@ -0,0 +1,68 @@
 +import { Vector3 } from "three";
 +
 +export const FACE_RADIUS = 0.09;
@@ -19569,6 +19649,11 @@ index 0000000000000000000000000000000000000000..263b1e72a162716db6f6b8f62d51963b
 +export const BODY_CLEARANCE_PADDING = 0.02;
 +export const FOREARM_FACE_CLEARANCE =
 +  FACE_RADIUS + FOREARM_RADIUS + BODY_CLEARANCE_PADDING;
++export const NECK_RADIUS = 0.07;
++export const TORSO_RADIUS = 0.12;
++export const FOREARM_NECK_CLEARANCE =
++  NECK_RADIUS + FOREARM_RADIUS + BODY_CLEARANCE_PADDING;
++export const FOREARM_TORSO_CLEARANCE = TORSO_RADIUS + FOREARM_RADIUS;
 +
 +const FACE_FORWARD_OFFSET = 0.08;
 +const FACE_UP_OFFSET = 0.05;
@@ -21586,32 +21671,44 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b
          bestDist = dist;
          best = clip;
 diff --git a/src/lib/services/implementations/CollisionDetector.ts b/src/lib/services/implementations/CollisionDetector.ts
-index 7bcee43c7bd19f3e7aa820ab57f8902cd7e90ca9..1026f0e9eb36196c0f7245ddb59070869a0b7fab 100644
+index 7bcee43c7bd19f3e7aa820ab57f8902cd7e90ca9..d479f955a53f505080fe6fe473571d628fb8aa59 100644
 --- a/src/lib/services/implementations/CollisionDetector.ts
 +++ b/src/lib/services/implementations/CollisionDetector.ts
 @@ -27,14 +27,16 @@ import type {
    CollisionSeverity,
    PropSegment,
  } from "../contracts/ICollisionDetector";
-+import {
-+  BODY_CLEARANCE_PADDING,
-+  FACE_RADIUS,
-+  FOREARM_FACE_CLEARANCE,
-+  FOREARM_RADIUS,
-+  pointToSegmentDistance,
-+} from "../geometry/BodyCollisionGeometry";
-
- // Bounding radii for body parts (meters, scene scale)
+-
+-// Bounding radii for body parts (meters, scene scale)
 -const HEAD_RADIUS = 0.09;
- const TORSO_RADIUS = 0.12;
+-const TORSO_RADIUS = 0.12;
 -const ARM_SEGMENT_RADIUS = 0.04;
 -
 -// How close a prop can get before we flag it (meters)
 -const PROP_BODY_THRESHOLD = 0.02;
++import {
++  BODY_CLEARANCE_PADDING,
++  FACE_RADIUS,
++  FOREARM_FACE_CLEARANCE,
++  FOREARM_NECK_CLEARANCE,
++  FOREARM_RADIUS,
++  FOREARM_TORSO_CLEARANCE,
++  TORSO_RADIUS,
++  pointToSegmentDistance,
++} from "../geometry/BodyCollisionGeometry";
 
  // How close two arm segments can get before we flag overlap
  const ARM_ARM_THRESHOLD = 0.06;
-@@ -122,7 +124,7 @@ export class CollisionDetector implements ICollisionDetector {
+@@ -55,6 +57,8 @@ const COOLDOWN_MS: Record<CollisionSeverity, number> = {
+ const _tempA = new Vector3();
+ const _tempB = new Vector3();
+ const _closest = new Vector3();
++const _leftUpperBodyStart = new Vector3();
++const _rightUpperBodyStart = new Vector3();
+
+ // Severity badge for console
+ const SEVERITY_BADGE: Record<CollisionSeverity, string> = {
+@@ -122,7 +126,7 @@ export class CollisionDetector implements ICollisionDetector {
      //    the bone-based distance check stays ~14 cm away.
      for (const { label, seg } of propPairs) {
        const closest = this.pointToSegmentDistance(body.face, seg.a, seg.b);
@@ -21620,7 +21717,7 @@ index 7bcee43c7bd19f3e7aa820ab57f8902cd7e90ca9..1026f0e9eb36196c0f7245ddb5907086
        if (closest < threshold) {
          const depth = threshold - closest;
          events.push(this.makeEvent("prop-through-head", stepNumber, beatProgress, depth,
-@@ -161,7 +163,7 @@ export class CollisionDetector implements ICollisionDetector {
+@@ -161,7 +165,7 @@ export class CollisionDetector implements ICollisionDetector {
      for (const { label, seg } of propPairs) {
        for (const arm of armSegments) {
          const closest = this.segmentToSegmentDistance(seg.a, seg.b, arm.a, arm.b);
@@ -21629,7 +21726,7 @@ index 7bcee43c7bd19f3e7aa820ab57f8902cd7e90ca9..1026f0e9eb36196c0f7245ddb5907086
          if (closest < threshold) {
            const depth = threshold - closest;
            events.push(this.makeEvent("prop-through-arm", stepNumber, beatProgress, depth,
-@@ -178,7 +180,7 @@ export class CollisionDetector implements ICollisionDetector {
+@@ -178,7 +182,7 @@ export class CollisionDetector implements ICollisionDetector {
          blueProp.a, blueProp.b,
          redProp.a,  redProp.b
        );
@@ -21638,7 +21735,7 @@ index 7bcee43c7bd19f3e7aa820ab57f8902cd7e90ca9..1026f0e9eb36196c0f7245ddb5907086
        if (closest < threshold) {
          const depth = threshold - closest;
          events.push(this.makeEvent("prop-through-prop", stepNumber, beatProgress, depth,
-@@ -190,14 +192,14 @@ export class CollisionDetector implements ICollisionDetector {
+@@ -190,20 +194,69 @@ export class CollisionDetector implements ICollisionDetector {
      //    Uses body.face so the collision zone matches where the visual
      //    face actually is, not where the Mixamo head joint sits.
      const leftArmDist = this.pointToSegmentDistance(body.face, body.leftElbow, body.leftHand);
@@ -21655,7 +21752,62 @@ index 7bcee43c7bd19f3e7aa820ab57f8902cd7e90ca9..1026f0e9eb36196c0f7245ddb5907086
      if (rightArmDist < rightArmThreshold) {
        const penetration = rightArmThreshold - rightArmDist;
        events.push(this.makeEvent("arm-through-face", stepNumber, beatProgress, penetration,
-@@ -251,14 +253,14 @@ export class CollisionDetector implements ICollisionDetector {
+         `R forearm → face (${(rightArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`));
+     }
+
++    // 3b. Arms through neck/torso. The face sphere alone misses the common
++    //     side-on failure where a forearm goes behind the chin and straight
++    //     through the neck or upper chest. Exclude the shoulder-adjacent 35%
++    //     of each upper arm because that segment is anatomically attached.
++    _leftUpperBodyStart.lerpVectors(body.leftShoulder, body.leftElbow, 0.35);
++    _rightUpperBodyStart.lerpVectors(body.rightShoulder, body.rightElbow, 0.35);
++    const bodyArmSegments: Array<{
++      name: string;
++      a: Vector3;
++      b: Vector3;
++    }> = [
++      { name: "L upper arm", a: _leftUpperBodyStart, b: body.leftElbow },
++      { name: "L forearm", a: body.leftElbow, b: body.leftHand },
++      { name: "R upper arm", a: _rightUpperBodyStart, b: body.rightElbow },
++      { name: "R forearm", a: body.rightElbow, b: body.rightHand },
++    ];
++    const torsoCenters = [body.spine1, body.spine2];
++    for (const arm of bodyArmSegments) {
++      const neckDistance = this.pointToSegmentDistance(body.neck, arm.a, arm.b);
++      if (neckDistance < FOREARM_NECK_CLEARANCE) {
++        const penetration = FOREARM_NECK_CLEARANCE - neckDistance;
++        events.push(this.makeEvent(
++          "arm-through-neck",
++          stepNumber,
++          beatProgress,
++          penetration,
++          `${arm.name} → neck (${(neckDistance * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`
++        ));
++      }
++
++      let worstTorsoDepth = 0;
++      for (const center of torsoCenters) {
++        const distance = this.pointToSegmentDistance(center, arm.a, arm.b);
++        worstTorsoDepth = Math.max(
++          worstTorsoDepth,
++          FOREARM_TORSO_CLEARANCE - distance
++        );
++      }
++      if (worstTorsoDepth > 0) {
++        events.push(this.makeEvent(
++          "arm-through-torso",
++          stepNumber,
++          beatProgress,
++          worstTorsoDepth,
++          `${arm.name} → torso (${(worstTorsoDepth * 100).toFixed(1)}cm deep)`
++        ));
++      }
++    }
++
+     // 4. Arms through each other - forearm segments
+     const armArmDist = this.segmentToSegmentDistance(
+       body.leftElbow, body.leftHand,
+@@ -251,14 +304,14 @@ export class CollisionDetector implements ICollisionDetector {
    }
 
    private pointToSegmentDistance(point: Vector3, segA: Vector3, segB: Vector3): number {

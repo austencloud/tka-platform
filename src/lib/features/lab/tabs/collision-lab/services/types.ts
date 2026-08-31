@@ -16,7 +16,6 @@
 import type { Vector3 } from "three";
 import type { StancePose } from "../domain/types";
 
-
 /**
  * The pose targets the optimizer is trying to satisfy. This is a subset
  * of the full PoseDefinition - the optimizer only needs to know where the
@@ -163,6 +162,8 @@ export interface SimCollision {
     | "prop-through-arm"
     | "prop-through-prop"
     | "arm-through-face"
+    | "arm-through-neck"
+    | "arm-through-torso"
     | "arms-through-each-other";
   /** Penetration depth in meters (positive = overlapping). */
   depth: number;
@@ -207,4 +208,3 @@ export interface SimResult {
  * prop targets and get back a SimResult they can use to decide if the
  * stance is acceptable.
  */
-
