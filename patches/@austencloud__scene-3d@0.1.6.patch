@@ -7040,10 +7040,10 @@ diff --git a/dist/lib/services/implementations/AvatarAnimator.d.ts.map b/dist/li
 deleted file mode 100644
 index f8e47d42167b6ea9bb4fd8f44f41273f48f1943b..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/AvatarAnimator.js b/dist/lib/services/implementations/AvatarAnimator.js
-index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6312c6a40 100644
+index bdd5ae35ed47c58d29c537a7805705783f9b9066..58f7e5d07e581ca7bd7b73586721e5340cf29a01 100644
 --- a/dist/lib/services/implementations/AvatarAnimator.js
 +++ b/dist/lib/services/implementations/AvatarAnimator.js
-@@ -4,7 +4,49 @@
+@@ -4,7 +4,52 @@
   * Manages avatar pose states and smooth animation blending.
   * Bridges TKA prop states to skeleton IK targets.
   */
@@ -7063,6 +7063,9 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
 +/** Palm center sits this fraction of the way from the wrist joint to the
 + *  Middle1 knuckle - the spot a staff shaft actually crosses the hand. */
 +const PALM_CENTER_FRACTION = 0.65;
++/** Two adjacent grips need enough lateral room for both closed hands. The
++ *  render-side contact lock can bridge half of this distance per prop. */
++const MIN_ADJACENT_GRIP_SEPARATION = 0.07;
 +/** Reach deficits (meters) below this don't trigger escalation. */
 +const REACH_EPSILON = 0.015;
 +/** Deficit (meters) at which clavicle reach-extension saturates. */
@@ -7094,7 +7097,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
  export class AvatarAnimator {
      ikSolver;
      skeleton;
-@@ -14,6 +56,10 @@ export class AvatarAnimator {
+@@ -14,6 +59,10 @@ export class AvatarAnimator {
      // Per-arm IK blend weights: 0 = animation drives the arm, 1 = IK drives the arm
      leftArmIK = { weight: 0, targetWeight: 0 };
      rightArmIK = { weight: 0, targetWeight: 0 };
@@ -7105,7 +7108,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
      ikBlendSpeed = 1 / 0.3; // ~0.3s ramp time
      smoothBlending = true;
      smoothingFactor = 0.15; // 0-1, higher = smoother but laggier
-@@ -67,6 +113,97 @@ export class AvatarAnimator {
+@@ -67,6 +116,97 @@ export class AvatarAnimator {
       * on top of the twist rest pose before arm IK runs. 0 = disabled.
       */
      externalSpinePitchRad = 0;
@@ -7203,16 +7206,50 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
      constructor(ikSolver, skeleton, poleComputer, clavicleRaiser, spineTwister) {
          this.ikSolver = ikSolver;
          this.skeleton = skeleton;
-@@ -142,7 +279,7 @@ export class AvatarAnimator {
+@@ -140,9 +280,41 @@ export class AvatarAnimator {
+                 weight: 1,
+             }
              : null;
++        this.separateAdjacentGripTargets();
          this.targetPose.timestamp = Date.now();
      }
 -    setPropsAndBlend(blueProp, redProp, offset) {
++    /**
++     * Keep paired grip centers ordered left/right in the avatar's anatomical
++     * frame. Authored prop paths are allowed to coincide at center; hands are
++     * not. Splitting the two IK targets symmetrically preserves the authored
++     * midpoint while giving the palms and wrists distinct destinations.
++     */
++    separateAdjacentGripTargets() {
++        const leftHand = this.targetPose.leftHand;
++        const rightHand = this.targetPose.rightHand;
++        if (!leftHand || !rightHand)
++            return;
++        const leftChain = this.skeleton.getLeftArmChain();
++        const rightChain = this.skeleton.getRightArmChain();
++        if (leftChain && rightChain) {
++            leftChain.root.getWorldPosition(this._v1);
++            rightChain.root.getWorldPosition(this._v2);
++            this._bodyFrame.lateral.subVectors(this._v2, this._v1);
++            this._bodyFrame.lateral.y = 0;
++            if (this._bodyFrame.lateral.lengthSq() > 1e-8) {
++                this._bodyFrame.lateral.normalize();
++            }
++        }
++        const currentSeparation = this._v1
++            .subVectors(rightHand.targetPosition, leftHand.targetPosition)
++            .dot(this._bodyFrame.lateral);
++        if (currentSeparation >= MIN_ADJACENT_GRIP_SEPARATION)
++            return;
++        const halfCorrection = (MIN_ADJACENT_GRIP_SEPARATION - currentSeparation) / 2;
++        leftHand.targetPosition.addScaledVector(this._bodyFrame.lateral, -halfCorrection);
++        rightHand.targetPosition.addScaledVector(this._bodyFrame.lateral, halfCorrection);
++    }
 +    setPropsAndBlend(blueProp, redProp, offset, orientations) {
          this.leftArmIK.targetWeight = blueProp ? 1 : 0;
          this.rightArmIK.targetWeight = redProp ? 1 : 0;
          const ox = offset?.x ?? 0;
-@@ -154,6 +291,7 @@ export class AvatarAnimator {
+@@ -154,6 +326,7 @@ export class AvatarAnimator {
          this.targetPose.leftHand = blueProp
              ? {
                  targetPosition: new Vector3(blueProp.worldPosition.x - ox, blueProp.worldPosition.y - oy, blueProp.worldPosition.z - oz),
@@ -7220,7 +7257,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
                  staffAngle: blueProp.staffRotationAngle,
                  plane: blueProp.plane,
                  weight: 1,
-@@ -162,6 +300,7 @@ export class AvatarAnimator {
+@@ -162,13 +335,55 @@ export class AvatarAnimator {
          this.targetPose.rightHand = redProp
              ? {
                  targetPosition: new Vector3(redProp.worldPosition.x - ox, redProp.worldPosition.y - oy, redProp.worldPosition.z - oz),
@@ -7228,8 +7265,9 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
                  staffAngle: redProp.staffRotationAngle,
                  plane: redProp.plane,
                  weight: 1,
-@@ -169,6 +308,46 @@ export class AvatarAnimator {
+             }
              : null;
++        this.separateAdjacentGripTargets();
          this.targetPose.timestamp = Date.now();
      }
 +    setStanceYaw(radians) {
@@ -7275,7 +7313,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
      setLeftHandTarget(target) {
          this.targetPose.leftHand = { ...target };
          this.targetPose.timestamp = Date.now();
-@@ -197,7 +376,7 @@ export class AvatarAnimator {
+@@ -197,7 +412,7 @@ export class AvatarAnimator {
          // Apply combined layers
          const finalPose = this.computeFinalPose();
          // Solve IK for arms
@@ -7284,7 +7322,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
      }
      blendToTarget(_deltaTime) {
          // Hands snap directly to prop positions - no lerp.
-@@ -273,18 +452,104 @@ export class AvatarAnimator {
+@@ -273,18 +488,104 @@ export class AvatarAnimator {
          }
          return result;
      }
@@ -7390,7 +7428,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
          // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
          // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
          // position feeds back and causes oscillation.
-@@ -335,7 +600,7 @@ export class AvatarAnimator {
+@@ -335,7 +636,7 @@ export class AvatarAnimator {
              // Nullable hands are first-class: SpineTwister handles the
              // single-hand-gaze branch and the no-hand identity branch
              // internally, so we pass pose hands through as-is.
@@ -7399,7 +7437,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
              // Apply twist to each bone individually for a natural spinal curve.
              // Each bone gets its own weighted quaternion from SpineTwister.
              const applySpineTwist = (boneName, key, twistQuat) => {
-@@ -389,11 +654,115 @@ export class AvatarAnimator {
+@@ -389,11 +690,115 @@ export class AvatarAnimator {
                      hipsBoneForUpdate.updateMatrixWorld(true);
              }
          }
@@ -7516,7 +7554,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
                  // Save what the locomotion animation wrote to bone quaternions
                  const animRootQuat = leftChain.root.quaternion.clone();
                  const animMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -402,7 +771,7 @@ export class AvatarAnimator {
+@@ -402,7 +807,7 @@ export class AvatarAnimator {
                  if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
                      const leftShoulder = state.bones.get("LeftShoulder");
                      if (leftShoulder) {
@@ -7525,7 +7563,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
                          this.leftClavicleQuat.slerp(targetQuat, this.smoothingFactor);
                          leftShoulder.quaternion
                              .copy(this.leftClavicleRestQuat)
-@@ -410,19 +779,57 @@ export class AvatarAnimator {
+@@ -410,19 +815,57 @@ export class AvatarAnimator {
                          leftShoulder.updateMatrixWorld(true);
                      }
                  }
@@ -7586,7 +7624,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
                  // Save IK results BEFORE blending - .copy() would overwrite them
                  const ikRootQuat = leftChain.root.quaternion.clone();
                  const ikMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -432,12 +839,20 @@ export class AvatarAnimator {
+@@ -432,12 +875,20 @@ export class AvatarAnimator {
                  leftChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
                  leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
                  leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
@@ -7608,7 +7646,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
                  // Save what the locomotion animation wrote to bone quaternions
                  const animRootQuat = rightChain.root.quaternion.clone();
                  const animMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -446,7 +861,7 @@ export class AvatarAnimator {
+@@ -446,7 +897,7 @@ export class AvatarAnimator {
                  if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
                      const rightShoulder = state.bones.get("RightShoulder");
                      if (rightShoulder) {
@@ -7617,7 +7655,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
                          this.rightClavicleQuat.slerp(targetQuat, this.smoothingFactor);
                          rightShoulder.quaternion
                              .copy(this.rightClavicleRestQuat)
-@@ -454,19 +869,50 @@ export class AvatarAnimator {
+@@ -454,19 +905,50 @@ export class AvatarAnimator {
                          rightShoulder.updateMatrixWorld(true);
                      }
                  }
@@ -7671,7 +7709,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
                  // Save IK results BEFORE blending - .copy() would overwrite them
                  const ikRootQuat = rightChain.root.quaternion.clone();
                  const ikMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -476,11 +922,486 @@ export class AvatarAnimator {
+@@ -476,11 +958,490 @@ export class AvatarAnimator {
                  rightChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
                  rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
                  rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
@@ -7857,7 +7895,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
 +     * both socket corrections to converge between close parallel staffs,
 +     * putting the two wrist joints at the same point.
 +     */
-+    computeSocketTarget(side, _chain, gripPoint) {
++    computeSocketTarget(side, chain, gripPoint) {
 +        const palmLocal = side === "left" ? this.leftPalmLocal : this.rightPalmLocal;
 +        const out = side === "left" ? this._socketTargetLeft : this._socketTargetRight;
 +        if (!palmLocal)
@@ -7867,11 +7905,15 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
 +        // palm approaches along -lateral. Subtracting that palm vector places
 +        // the wrist on the outer side of the requested grip.
 +        const medialSign = side === "left" ? 1 : -1;
++        this._v1.copy(palmLocal);
++        chain.effector.localToWorld(this._v1);
++        chain.effector.getWorldPosition(this._v2);
++        const worldPalmLength = this._v1.distanceTo(this._v2);
 +        this._v1
 +            .copy(this._bodyFrame.lateral)
 +            .multiplyScalar(medialSign)
 +            .normalize()
-+            .multiplyScalar(palmLocal.length());
++            .multiplyScalar(worldPalmLength);
 +        return out.copy(gripPoint).sub(this._v1);
 +    }
 +    /**
@@ -8158,7 +8200,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..2d3c5bf1bd67beb780b2eae587bff7e6
      addLayer(layer) {
          this.layers.set(layer.id, layer);
      }
-@@ -521,6 +1442,12 @@ export class AvatarAnimator {
+@@ -521,6 +1482,12 @@ export class AvatarAnimator {
      setExternalSpinePitch(radians) {
          this.externalSpinePitchRad = radians;
      }
@@ -20861,10 +20903,10 @@ index 0000000000000000000000000000000000000000..804080e43f4dc206951115861d4b871f
 +  return point.distanceTo(closestOut);
 +}
 diff --git a/src/lib/services/implementations/AvatarAnimator.ts b/src/lib/services/implementations/AvatarAnimator.ts
-index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353feba62f74 100644
+index c73bcabe86e07dd117e6f737532aea88ac9ec194..e0fca74652f0db66bb0171b0a443bf0319612e39 100644
 --- a/src/lib/services/implementations/AvatarAnimator.ts
 +++ b/src/lib/services/implementations/AvatarAnimator.ts
-@@ -5,21 +5,94 @@
+@@ -5,21 +5,98 @@
   * Bridges TKA prop states to skeleton IK targets.
   */
  
@@ -20925,6 +20967,10 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
 + *  Middle1 knuckle - the spot a staff shaft actually crosses the hand. */
 +const PALM_CENTER_FRACTION = 0.65;
 +
++/** Two adjacent grips need enough lateral room for both closed hands. The
++ *  render-side contact lock can bridge half of this distance per prop. */
++const MIN_ADJACENT_GRIP_SEPARATION = 0.07;
++
 +/** Reach deficits (meters) below this don't trigger escalation. */
 +const REACH_EPSILON = 0.015;
 +
@@ -20963,7 +21009,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
  
  export class AvatarAnimator implements IAvatarAnimator {
    private currentPose: BodyPose;
-@@ -29,6 +102,10 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -29,6 +106,10 @@ export class AvatarAnimator implements IAvatarAnimator {
    // Per-arm IK blend weights: 0 = animation drives the arm, 1 = IK drives the arm
    private leftArmIK = { weight: 0, targetWeight: 0 };
    private rightArmIK = { weight: 0, targetWeight: 0 };
@@ -20974,7 +21020,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
    private ikBlendSpeed = 1 / 0.3; // ~0.3s ramp time
    private smoothBlending = true;
    private smoothingFactor = 0.15; // 0-1, higher = smoother but laggier
-@@ -85,6 +162,107 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -85,6 +166,107 @@ export class AvatarAnimator implements IAvatarAnimator {
     */
    private externalSpinePitchRad = 0;
  
@@ -21082,7 +21128,57 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
    constructor(
      private ikSolver: IIKSolver,
      private skeleton: IAvatarSkeletonBuilder,
-@@ -186,7 +364,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -180,13 +362,58 @@ export class AvatarAnimator implements IAvatarAnimator {
+         }
+       : null;
+ 
++    this.separateAdjacentGripTargets();
+     this.targetPose.timestamp = Date.now();
+   }
+ 
++  /**
++   * Keep paired grip centers ordered left/right in the avatar's anatomical
++   * frame. Authored prop paths are allowed to coincide at center; hands are
++   * not. Splitting the two IK targets symmetrically preserves the authored
++   * midpoint while giving the palms and wrists distinct destinations.
++   */
++  private separateAdjacentGripTargets(): void {
++    const leftHand = this.targetPose.leftHand;
++    const rightHand = this.targetPose.rightHand;
++    if (!leftHand || !rightHand) return;
++
++    const leftChain = this.skeleton.getLeftArmChain();
++    const rightChain = this.skeleton.getRightArmChain();
++    if (leftChain && rightChain) {
++      leftChain.root.getWorldPosition(this._v1);
++      rightChain.root.getWorldPosition(this._v2);
++      this._bodyFrame.lateral.subVectors(this._v2, this._v1);
++      this._bodyFrame.lateral.y = 0;
++      if (this._bodyFrame.lateral.lengthSq() > 1e-8) {
++        this._bodyFrame.lateral.normalize();
++      }
++    }
++
++    const currentSeparation = this._v1
++      .subVectors(
++        rightHand.targetPosition,
++        leftHand.targetPosition
++      )
++      .dot(this._bodyFrame.lateral);
++    if (currentSeparation >= MIN_ADJACENT_GRIP_SEPARATION) return;
++
++    const halfCorrection =
++      (MIN_ADJACENT_GRIP_SEPARATION - currentSeparation) / 2;
++    leftHand.targetPosition.addScaledVector(
++      this._bodyFrame.lateral,
++      -halfCorrection
++    );
++    rightHand.targetPosition.addScaledVector(
++      this._bodyFrame.lateral,
++      halfCorrection
++    );
++  }
++
    setPropsAndBlend(
      blueProp: PropState3D | null,
      redProp: PropState3D | null,
@@ -21092,7 +21188,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
    ): void {
      this.leftArmIK.targetWeight = blueProp ? 1 : 0;
      this.rightArmIK.targetWeight = redProp ? 1 : 0;
-@@ -205,6 +384,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -205,6 +432,7 @@ export class AvatarAnimator implements IAvatarAnimator {
              blueProp.worldPosition.y - oy,
              blueProp.worldPosition.z - oz
            ),
@@ -21100,7 +21196,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
            staffAngle: blueProp.staffRotationAngle,
            plane: blueProp.plane,
            weight: 1,
-@@ -218,6 +398,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -218,15 +446,65 @@ export class AvatarAnimator implements IAvatarAnimator {
              redProp.worldPosition.y - oy,
              redProp.worldPosition.z - oz
            ),
@@ -21108,7 +21204,10 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
            staffAngle: redProp.staffRotationAngle,
            plane: redProp.plane,
            weight: 1,
-@@ -227,6 +408,54 @@ export class AvatarAnimator implements IAvatarAnimator {
+         }
+       : null;
+ 
++    this.separateAdjacentGripTargets();
      this.targetPose.timestamp = Date.now();
    }
  
@@ -21163,7 +21262,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
    setLeftHandTarget(target: HandPose): void {
      this.targetPose.leftHand = { ...target };
      this.targetPose.timestamp = Date.now();
-@@ -259,7 +488,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -259,7 +537,7 @@ export class AvatarAnimator implements IAvatarAnimator {
      const finalPose = this.computeFinalPose();
  
      // Solve IK for arms
@@ -21172,7 +21271,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
    }
  
    private blendToTarget(_deltaTime: number): void {
-@@ -378,13 +607,130 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -378,13 +656,130 @@ export class AvatarAnimator implements IAvatarAnimator {
      return result;
    }
  
@@ -21304,7 +21403,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
      // Compute body center from Hips bone (or default to origin)
      const bodyCenter = new Vector3(0, 0, 0);
      const hipsBone = state.bones.get("Hips");
-@@ -392,6 +738,12 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -392,6 +787,12 @@ export class AvatarAnimator implements IAvatarAnimator {
        hipsBone.getWorldPosition(bodyCenter);
      }
  
@@ -21317,7 +21416,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
      // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
      // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
      // position feeds back and causes oscillation.
-@@ -445,7 +797,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -445,7 +846,8 @@ export class AvatarAnimator implements IAvatarAnimator {
          pose.leftHand?.targetPosition ?? null,
          pose.rightHand?.targetPosition ?? null,
          bodyCenter,
@@ -21327,7 +21426,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
        );
  
        // Apply twist to each bone individually for a natural spinal curve.
-@@ -511,12 +864,140 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -511,12 +913,140 @@ export class AvatarAnimator implements IAvatarAnimator {
        }
      }
  
@@ -21469,7 +21568,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = leftChain.root.quaternion.clone();
          const animMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -527,7 +1008,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -527,7 +1057,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const leftShoulder = state.bones.get("LeftShoulder");
            if (leftShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -21478,7 +21577,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
                "left",
                this.leftShoulderRestY,
                leftChain.totalLength
-@@ -540,6 +1021,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -540,6 +1070,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -21493,7 +21592,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: leftTarget,
-@@ -547,19 +1036,76 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -547,19 +1085,76 @@ export class AvatarAnimator implements IAvatarAnimator {
          };
  
          if (this._poleVectorsEnabled && this.poleComputer && leftHand.plane) {
@@ -21573,7 +21672,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
  
          // Save IK results BEFORE blending - .copy() would overwrite them
          const ikRootQuat = leftChain.root.quaternion.clone();
-@@ -572,13 +1118,24 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -572,13 +1167,24 @@ export class AvatarAnimator implements IAvatarAnimator {
          leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -21599,7 +21698,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = rightChain.root.quaternion.clone();
          const animMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -589,7 +1146,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -589,7 +1195,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const rightShoulder = state.bones.get("RightShoulder");
            if (rightShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -21608,7 +21707,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
                "right",
                this.rightShoulderRestY,
                rightChain.totalLength
-@@ -602,6 +1159,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -602,6 +1208,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -21623,7 +21722,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: rightTarget,
-@@ -609,19 +1174,69 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -609,19 +1223,69 @@ export class AvatarAnimator implements IAvatarAnimator {
          };
  
          if (this._poleVectorsEnabled && this.poleComputer && rightHand.plane) {
@@ -21696,7 +21795,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
  
          // Save IK results BEFORE blending - .copy() would overwrite them
          const ikRootQuat = rightChain.root.quaternion.clone();
-@@ -634,13 +1249,660 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -634,13 +1298,664 @@ export class AvatarAnimator implements IAvatarAnimator {
          rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -21915,7 +22014,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
 +   */
 +  private computeSocketTarget(
 +    side: "left" | "right",
-+    _chain: BoneChain,
++    chain: BoneChain,
 +    gripPoint: Vector3
 +  ): Vector3 {
 +    const palmLocal = side === "left" ? this.leftPalmLocal : this.rightPalmLocal;
@@ -21927,11 +22026,15 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
 +    // palm approaches along -lateral. Subtracting that palm vector places
 +    // the wrist on the outer side of the requested grip.
 +    const medialSign = side === "left" ? 1 : -1;
++    this._v1.copy(palmLocal);
++    chain.effector.localToWorld(this._v1);
++    chain.effector.getWorldPosition(this._v2);
++    const worldPalmLength = this._v1.distanceTo(this._v2);
 +    this._v1
 +      .copy(this._bodyFrame.lateral)
 +      .multiplyScalar(medialSign)
 +      .normalize()
-+      .multiplyScalar(palmLocal.length());
++      .multiplyScalar(worldPalmLength);
 +    return out.copy(gripPoint).sub(this._v1);
 +  }
 +
@@ -22357,7 +22460,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..b13583c4e2f7fad2064df5b10632353f
  
    addLayer(layer: AnimationLayer): void {
      this.layers.set(layer.id, layer);
-@@ -689,6 +1951,20 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -689,6 +2004,20 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.externalSpinePitchRad = radians;
    }
  
