@@ -54,7 +54,7 @@
     onBpmChange: (bpm: number) => void;
     onPlaybackModeChange: (mode: PlaybackMode) => void;
     onPlaybackToggle: () => void;
-    bluePropType: string | null;
+    leftPropType: string | null;
     onPropChange?: (propType: PropType) => void;
     propChirality?: PropChiralitySeam;
     animationSettingsState?: AnimationSettingsState;
@@ -78,7 +78,7 @@
     onBpmChange,
     onPlaybackModeChange,
     onPlaybackToggle,
-    bluePropType,
+    leftPropType,
     onPropChange,
     propChirality = createGlobalChiralitySeam(),
     animationSettingsState = animationSettings,
@@ -107,7 +107,7 @@
   // The active prop for the Props grid's highlight. Tunnel uses a single prop for
   // both hands (like the 2D Download panel), so blue is the source of truth.
   const selectedPropType = $derived<PropType>(
-    (bluePropType as PropType | null) ?? PropType.STAFF
+    (leftPropType as PropType | null) ?? PropType.STAFF
   );
   const visibility =
     getAnimationVisibilityContext() ?? getAnimationVisibilityManager();

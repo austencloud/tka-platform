@@ -505,7 +505,7 @@
   // Buugeng chirality is read from settings here rather than taken as a prop,
   // for the same reason PropSvg and the 2D animation canvas read it directly:
   // it is a global handedness preference, not a per-host override. Hosts that
-  // override bluePropType/redPropType are unaffected — chirality only applies
+  // override leftPropType/rightPropType are unaffected; chirality only applies
   // to buugeng-family props.
   const leftBuugengFlipped = $derived(
     getSettings().leftBuugengFlipped ?? false

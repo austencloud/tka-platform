@@ -26,11 +26,11 @@ export function sampleTunnelProps(
   ease?: (progress: number) => number,
   offset = 0,
   speed = 1,
-): { blue: PropState; red: PropState } {
+): { left: PropState; right: PropState } {
   const steps = seq.steps ?? [];
   const length = steps.length;
   if (length === 0) {
-    return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE } };
+    return { left: { ...DEFAULT_PROP_STATE }, right: { ...DEFAULT_PROP_STATE } };
   }
   let effStep = currentStep;
   if (speed !== 1 || offset !== 0) {
@@ -48,11 +48,11 @@ export function sampleTunnelProps(
   }
   const { idx, progress } = stepToIndexProgress(effStep, length);
   const step = steps[idx];
-  if (!step) return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE } };
+  if (!step) return { left: { ...DEFAULT_PROP_STATE }, right: { ...DEFAULT_PROP_STATE } };
   const eased = ease ? ease(progress) : progress;
   const r = interpolatePropAngles(step, eased);
   return {
-    blue: r.isValid ? (r.blueAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
-    red: r.isValid ? (r.redAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
+    left: r.isValid ? (r.leftAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
+    right: r.isValid ? (r.rightAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
   };
 }

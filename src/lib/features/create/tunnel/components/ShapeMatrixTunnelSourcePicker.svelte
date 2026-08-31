@@ -29,7 +29,7 @@
   let open = $state(true);
   let size = $state<MatrixSize>("small");
   let data = $state<ShapeMatrixData | null>(null);
-  let selectedPair = $state<{ blue: Flower; red: Flower } | null>(null);
+  let selectedPair = $state<{ left: Flower; right: Flower } | null>(null);
   let loadError = $state(false);
 
   const sizeOptions: { value: MatrixSize; label: string }[] = [
@@ -39,10 +39,10 @@
   ];
   const filters = $derived(matrixFiltersForSize(size));
   const rowAxis = $derived(
-    data ? applyFilter(data.axis, filters.blue, false) : []
+    data ? applyFilter(data.axis, filters.left, false) : []
   );
   const colAxis = $derived(
-    data ? applyFilter(data.axis, filters.red, false) : []
+    data ? applyFilter(data.axis, filters.right, false) : []
   );
 
   onMount(async () => {

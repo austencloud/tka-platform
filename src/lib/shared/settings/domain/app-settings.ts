@@ -11,16 +11,17 @@ import type { GridMode, GridPosition } from "../../pictograph/grid/domain/enums/
 import type { BackgroundType } from "@austencloud/backgrounds";
 import type { BackgroundLabSettings } from "$lib/shared/background-builder/domain/lab-settings-types";
 import type { TimeSignatureKey } from "../../foundation/domain/models/time-signature";
+import { normalizeLegacyPropConfig } from "@tka/tka-types";
 
 /**
  * Prop Preset - A saved prop configuration for quick switching
  */
 export interface PropPreset {
-  bluePropType: PropType;
-  redPropType: PropType;
+  leftPropType: PropType;
+  rightPropType: PropType;
   catDogMode: boolean;
-  blueBuugengFlipped?: boolean; // Flip buugeng for blue hand (asymmetric prop)
-  redBuugengFlipped?: boolean; // Flip buugeng for red hand (asymmetric prop)
+  leftBuugengFlipped?: boolean; // Flip buugeng for blue hand (asymmetric prop)
+  rightBuugengFlipped?: boolean; // Flip buugeng for red hand (asymmetric prop)
 }
 
 export interface AppSettings {
@@ -30,11 +31,11 @@ export interface AppSettings {
   gridMode: GridMode;
   userName?: string;
   propType?: PropType; // Legacy - kept for backward compatibility
-  bluePropType?: PropType; // Per-color prop type for blue motions
-  redPropType?: PropType; // Per-color prop type for red motions
+  leftPropType?: PropType; // Per-color prop type for blue motions
+  rightPropType?: PropType; // Per-color prop type for red motions
   catDogMode?: boolean; // Whether CatDog Mode is enabled in prop type settings
-  blueBuugengFlipped?: boolean; // Flip buugeng for blue hand (asymmetric prop)
-  redBuugengFlipped?: boolean; // Flip buugeng for red hand (asymmetric prop)
+  leftBuugengFlipped?: boolean; // Flip buugeng for blue hand (asymmetric prop)
+  rightBuugengFlipped?: boolean; // Flip buugeng for red hand (asymmetric prop)
   propPresets?: (PropPreset | null)[]; // Up to 10 saved prop configurations (nulls preserve slot indices)
   selectedPresetIndex?: number; // Index of currently active preset (0-9)
   backupFrequency?: string;
@@ -151,4 +152,30 @@ export interface AccessibilitySettings {
   reducedMotion: boolean;
   highContrast: boolean;
   visibleParticleSize?: number;
+}
+
+/** Normalize settings persisted before hand identity moved from colors to sides. */
+export function normalizeLegacyAppSettings(value: unknown): AppSettings {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return value as AppSettings;
+  }
+
+  const source = value as Record<string, unknown>;
+  const normalized = normalizeLegacyPropConfig(source) as Record<string, unknown>;
+  if (normalized.leftBuugengFlipped === undefined && source.blueBuugengFlipped !== undefined) {
+    normalized.leftBuugengFlipped = source.blueBuugengFlipped;
+  }
+  if (normalized.rightBuugengFlipped === undefined && source.redBuugengFlipped !== undefined) {
+    normalized.rightBuugengFlipped = source.redBuugengFlipped;
+  }
+  delete normalized.blueBuugengFlipped;
+  delete normalized.redBuugengFlipped;
+
+  if (Array.isArray(source.propPresets)) {
+    normalized.propPresets = source.propPresets.map((preset) =>
+      preset === null ? null : normalizeLegacyAppSettings(preset)
+    );
+  }
+
+  return normalized as unknown as AppSettings;
 }

@@ -85,8 +85,8 @@
     shown,
     layout = "sidebar",
     sharedTunnelCanvas = false,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     bpm = 60,
     onBpmChange = () => {},
     playbackMode = "continuous",
@@ -124,8 +124,8 @@
     layout?: "sidebar" | "bottom";
     /** The viewer's already-mounted AnimatorCanvas renders Tunnel in place. */
     sharedTunnelCanvas?: boolean;
-    bluePropType?: string;
-    redPropType?: string;
+    leftPropType?: string;
+    rightPropType?: string;
     bpm?: number;
     onBpmChange?: (bpm: number) => void;
     playbackMode?: PlaybackMode;
@@ -210,8 +210,8 @@
   // export orchestrator).
   const mandalaController = new MandalaViewerController({
     getSequence: () => playback.animationState.sequenceData ?? sequence,
-    getBluePropType: () => bluePropType,
-    getRedPropType: () => redPropType,
+    getLeftPropType: () => leftPropType,
+    getRightPropType: () => rightPropType,
     pathPolicy: getAnimationVisibilityManager(),
     customColorState: controller.customColorState,
   });
@@ -259,8 +259,8 @@
   function artExportConfig(): Record<string, ArtExportAnalyticsValue> {
     const common = {
       bpm,
-      blue_prop: bluePropType ?? null,
-      red_prop: redPropType ?? null,
+      left_prop: leftPropType ?? null,
+      right_prop: rightPropType ?? null,
     };
     if (artType === "tunnel") {
       return {
@@ -275,11 +275,11 @@
         color_mode: controller.colorMode,
         left_prop_color:
           controller.colorMode === "custom"
-            ? controller.customPropColors.blue
+            ? controller.customPropColors.left
             : null,
         right_prop_color:
           controller.colorMode === "custom"
-            ? controller.customPropColors.red
+            ? controller.customPropColors.right
             : null,
         grid_visible: controller.gridVisible,
         performer_count: controller.performerCount,
@@ -598,11 +598,11 @@
       effects: effectsForSave,
       visibility: getAnimationVisibilityManager(),
       settings: {
-        bluePropType: bluePropType ?? "staff",
-        redPropType: redPropType ?? "staff",
-        blueBuugengFlipped:
-          settingsService.settings.blueBuugengFlipped ?? false,
-        redBuugengFlipped: settingsService.settings.redBuugengFlipped ?? false,
+        leftPropType: leftPropType ?? "staff",
+        rightPropType: rightPropType ?? "staff",
+        leftBuugengFlipped:
+          settingsService.settings.leftBuugengFlipped ?? false,
+        rightBuugengFlipped: settingsService.settings.rightBuugengFlipped ?? false,
         updateSettings: () => {},
       },
       animationSettings,
@@ -777,8 +777,8 @@
         ctrl={mandalaController}
         controlsPlacement="external"
         {sequence}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         exportTakeoverSuppressed={artShareActive}
         onExportCancel={cancelMandalaExport}
         onExportRetry={retryMandalaExport}
@@ -789,8 +789,8 @@
         {playback}
         {controller}
         {bpm}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         onSaveTunnel={() => void handleSaveTunnel("canvas_context_menu")}
         {saveTunnelLabel}
         playing={tunnelPlaying}
@@ -860,8 +860,8 @@
         : artType === "tunnel"
           ? () => handleTunnelPlaybackToggle("sidebar")
           : onPlaybackToggle}
-      bluePropType={bluePropType ?? null}
-      redPropType={redPropType ?? null}
+      leftPropType={leftPropType ?? null}
+      rightPropType={rightPropType ?? null}
       {onPropChange}
       {onArtSettingChange}
       exporting={exportAttemptBusy}

@@ -26,7 +26,7 @@ const presentation = {
     gridVisible: true,
     colors: {
       mode: "hands",
-      custom: { blue: "#2e8bf0", red: "#ed1c24" },
+      custom: { left: "#2e8bf0", right: "#ed1c24" },
     },
     section: "props",
     presetRecipe: null,
@@ -36,15 +36,15 @@ const presentation = {
   paths: {
     pathShape: "arc",
     motionAwarePaths: false,
-    bluePathLines: false,
-    redPathLines: false,
+    leftPathLines: false,
+    rightPathLines: false,
   },
   playback: { bpm: 96, playbackMode: "step" },
   props: {
-    bluePropType: "buugeng",
-    redPropType: "buugeng",
-    blueBuugengFlipped: true,
-    redBuugengFlipped: false,
+    leftPropType: "buugeng",
+    rightPropType: "buugeng",
+    leftBuugengFlipped: true,
+    rightBuugengFlipped: false,
   },
   trailRender: { mode: "trail" },
 } as unknown as TunnelSnapshot;
@@ -84,14 +84,14 @@ describe("tunnel creator draft", () => {
       version: 1 as const,
       baseSequenceId: "base-sequence",
       mode: "QO" as const,
-      blueFlower: {
+      leftFlower: {
         style: "pro" as const,
         turns: 1,
         ori: "in" as const,
         grid: "diamond" as const,
         petals: 2,
       },
-      redFlower: {
+      rightFlower: {
         style: "anti" as const,
         turns: 1,
         ori: "out" as const,

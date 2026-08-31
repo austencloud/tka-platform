@@ -19,9 +19,9 @@
 
   Exactly one of two states is always active per hand, so this routes to
   SegmentedControl per .claude/rules/chip-primitives.md. Each segment renders
-  the selected prop's own art in its hand's colour — one upright, one mirrored
+  the selected prop's own art in its hand's canonical colour, one upright and one mirrored,
   — through the primitive's existing optionContent slot. The hand cards keep
-  visible Blue/Red labels as well as their aria-labels because this choice is a
+  visible Left/Right labels as well as their aria-labels because this choice is a
   primary part of selecting a buugeng, not an expert-only adjustment.
 
   The two are named A and B, matching what pictograph-inspect already prints
@@ -48,7 +48,7 @@
   }: {
     /** The prop whose art the segments preview. */
     propType: PropType;
-    /** One entry per hand this picker governs, blue first. */
+    /** One entry per hand this picker governs, left first. */
     hands: readonly PropChiralityHandState[];
     onChange: (hand: ChiralityHand, flipped: boolean) => void;
   } = $props();
@@ -72,18 +72,18 @@
   </div>
   <div class="chirality-controls">
     {#each hands as state (state.hand)}
-      <div class="chirality-hand" class:red={state.hand === "red"}>
+      <div class="chirality-hand" class:red={state.hand === "right"}>
         <span class="chirality-hand-label">
           <span class="chirality-hand-dot" aria-hidden="true"></span>
-          {state.hand === "red" ? "Red prop" : "Blue prop"}
+          {state.hand === "right" ? "Right prop" : "Left prop"}
         </span>
         <SegmentedControl
           {options}
           value={valueFor(state.flipped)}
           onchange={(next) => onChange(state.hand, next === "b")}
-          color={state.hand}
+          color={state.hand === "left" ? "blue" : "red"}
           semantics="radiogroup"
-          ariaLabel="{state.hand === 'red' ? 'Red' : 'Blue'} buugeng chirality"
+          ariaLabel="{state.hand === 'right' ? 'Right' : 'Left'} buugeng chirality"
         >
           {#snippet optionContent(option)}
             <img

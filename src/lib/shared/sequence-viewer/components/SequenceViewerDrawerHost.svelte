@@ -284,8 +284,8 @@
         record
       );
       await updateSettings({
-        bluePropType: propConfig.bluePropType,
-        redPropType: propConfig.redPropType,
+        leftPropType: propConfig.leftPropType,
+        rightPropType: propConfig.rightPropType,
         catDogMode: propConfig.catDogMode,
       });
       markNativeScanTransitionStage(code, "settings-applied");

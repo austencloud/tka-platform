@@ -208,7 +208,7 @@
     {
       getContext: () => ctx,
       getSequence: () => sequence,
-      getDefaultBluePropType: () => settingsService.settings.bluePropType,
+      getDefaultBluePropType: () => settingsService.settings.leftPropType,
     },
     {
       openSendSequenceSheet,
@@ -482,8 +482,8 @@
         : interactions.handleEnterPractice
       : undefined}
     {canToggleMotionVisibility}
-    onMotionToggleBlue={() => interactions.handleMotionToggle("blue")}
-    onMotionToggleRed={() => interactions.handleMotionToggle("red")}
+    onMotionToggleLeft={() => interactions.handleMotionToggle("left")}
+    onMotionToggleRight={() => interactions.handleMotionToggle("right")}
     onVideoUpload={interactions.headerActions.onVideoUpload && !embedded
       ? interactions.handleHeaderVideoUpload
       : undefined}
@@ -838,7 +838,7 @@
                         bpm={ctx.bpmLocal}
                         renderMode={ctx.renderMode}
                         playbackMode={ctx.playbackMode}
-                        selectedPropType={ctx.bluePropType}
+                        selectedPropType={ctx.leftPropType}
                         propChirality={createGlobalChiralitySeam()}
                         sequence={ctx.effectiveSequence}
                         showInlineExportProgress={false}

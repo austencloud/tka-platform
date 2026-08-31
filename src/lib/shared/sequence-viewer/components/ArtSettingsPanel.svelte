@@ -23,7 +23,7 @@
     onBpmChange = () => {},
     onPlaybackModeChange = () => {},
     onPlaybackToggle = () => {},
-    bluePropType = null,
+    leftPropType = null,
     onPropChange,
     onArtSettingChange,
     exporting = false,
@@ -55,7 +55,7 @@
     {onBpmChange}
     {onPlaybackModeChange}
     {onPlaybackToggle}
-    {bluePropType}
+    {leftPropType}
     {onPropChange}
     {onArtSettingChange}
     {exporting}

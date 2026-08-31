@@ -59,7 +59,7 @@ export function resolveTunnelPropColorState(
     value && typeof value === "object"
       ? (value as {
           mode?: unknown;
-          custom?: { blue?: unknown; red?: unknown } | null;
+          custom?: { left?: unknown; right?: unknown } | null;
         })
       : null;
   const mode: TunnelPropColorMode =
@@ -73,13 +73,13 @@ export function resolveTunnelPropColorState(
   return {
     mode,
     custom: {
-      blue: normalizeTunnelHexColor(
-        candidate?.custom?.blue,
-        DEFAULT_TUNNEL_CUSTOM_PROP_COLORS.blue
+      left: normalizeTunnelHexColor(
+        candidate?.custom?.left,
+        DEFAULT_TUNNEL_CUSTOM_PROP_COLORS.left
       ),
-      red: normalizeTunnelHexColor(
-        candidate?.custom?.red,
-        DEFAULT_TUNNEL_CUSTOM_PROP_COLORS.red
+      right: normalizeTunnelHexColor(
+        candidate?.custom?.right,
+        DEFAULT_TUNNEL_CUSTOM_PROP_COLORS.right
       ),
     },
   };

@@ -100,14 +100,14 @@
     <Crossfade key={controller.colorMode} animateHeight>
       {#if controller.colorMode === "custom"}
         <LabeledColorPairPicker
-          blue={controller.customPropColors.blue}
-          red={controller.customPropColors.red}
+          left={controller.customPropColors.left}
+          right={controller.customPropColors.right}
           onchange={(hand, value) => {
             const previous = controller.customPropColors[hand];
             controller.setCustomPropColor(hand, value);
             reportSetting(
               "art_tunnel",
-              hand === "blue" ? "left_prop_color" : "right_prop_color",
+              hand === "left" ? "left_prop_color" : "right_prop_color",
               previous,
               value,
               true

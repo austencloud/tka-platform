@@ -19,7 +19,7 @@ const validSnapshot = {
     gridVisible: false,
     colors: {
       mode: "custom",
-      custom: { blue: "#123456", red: "#abcdef" },
+      custom: { left: "#123456", right: "#abcdef" },
     },
     section: "tunnel",
     presetRecipe: null,
@@ -29,11 +29,11 @@ const validSnapshot = {
   paths: {
     pathShape: "arc",
     motionAwarePaths: false,
-    bluePathLines: false,
-    redPathLines: false,
+    leftPathLines: false,
+    rightPathLines: false,
   },
   playback: { bpm: 60, playbackMode: "continuous" },
-  props: { bluePropType: "staff", redPropType: "staff" },
+  props: { leftPropType: "staff", rightPropType: "staff" },
   trailRender: { mode: "trail" },
 };
 
@@ -61,7 +61,7 @@ function fakeDeps(): SnapshotDeps {
       gridVisible: true,
       colors: {
         mode: "custom",
-        custom: { blue: "#123456", red: "#abcdef" },
+        custom: { left: "#123456", right: "#abcdef" },
       },
       section: "effects",
       presetRecipe: null,
@@ -75,17 +75,17 @@ function fakeDeps(): SnapshotDeps {
       getEffortPreset: () => "punch",
       getPathShape: () => "concave",
       getMotionAwarePaths: () => true,
-      getVisibility: (k: string) => k === "bluePathLines",
+      getVisibility: (k: string) => k === "leftPathLines",
       setEffortPreset() {},
       setPathShape() {},
       setMotionAwarePaths() {},
       setVisibility() {},
     } as unknown as SnapshotDeps["visibility"],
     settings: {
-      bluePropType: "fan",
-      redPropType: "club",
-      blueBuugengFlipped: true,
-      redBuugengFlipped: false,
+      leftPropType: "fan",
+      rightPropType: "club",
+      leftBuugengFlipped: true,
+      rightBuugengFlipped: false,
       updateSettings() {},
     } as unknown as SnapshotDeps["settings"],
     animationSettings: {
@@ -124,7 +124,7 @@ describe("captureTunnelSnapshot", () => {
       gridVisible: true,
       colors: {
         mode: "custom",
-        custom: { blue: "#123456", red: "#abcdef" },
+        custom: { left: "#123456", right: "#abcdef" },
       },
       section: "effects",
       presetRecipe: null,
@@ -133,15 +133,15 @@ describe("captureTunnelSnapshot", () => {
     expect(snap.paths).toEqual({
       pathShape: "concave",
       motionAwarePaths: true,
-      bluePathLines: true,
-      redPathLines: false,
+      leftPathLines: true,
+      rightPathLines: false,
     });
     expect(snap.playback).toEqual({ bpm: 144, playbackMode: "step" });
     expect(snap.props).toEqual({
-      bluePropType: "fan",
-      redPropType: "club",
-      blueBuugengFlipped: true,
-      redBuugengFlipped: false,
+      leftPropType: "fan",
+      rightPropType: "club",
+      leftBuugengFlipped: true,
+      rightBuugengFlipped: false,
     });
   });
 
@@ -168,19 +168,19 @@ describe("applyTunnelSnapshot", () => {
       gridVisible: false,
       colors: {
         mode: "hands" as const,
-        custom: { blue: "#111111", red: "#eeeeee" },
+        custom: { left: "#111111", right: "#eeeeee" },
       },
       section: "tunnel",
       presetRecipe: null,
       effort: "linear",
       pathShape: "arc",
       motionAware: false,
-      blueLines: false,
-      redLines: false,
-      bluePropType: "staff",
-      redPropType: "staff",
-      blueBuugengFlipped: false,
-      redBuugengFlipped: false,
+      leftLines: false,
+      rightLines: false,
+      leftPropType: "staff",
+      rightPropType: "staff",
+      leftBuugengFlipped: false,
+      rightBuugengFlipped: false,
       bpm: 60,
       playbackMode: "continuous",
       effects: { activeEffect: "none" },
@@ -241,24 +241,24 @@ describe("applyTunnelSnapshot", () => {
           store.motionAware = v;
         }),
         getVisibility: (k: string) =>
-          k === "bluePathLines" ? store.blueLines : store.redLines,
+          k === "leftPathLines" ? store.leftLines : store.rightLines,
         setVisibility: vi.fn((k, v) => {
-          if (k === "bluePathLines") store.blueLines = v;
-          else store.redLines = v;
+          if (k === "leftPathLines") store.leftLines = v;
+          else store.rightLines = v;
         }),
       },
       settings: {
-        get bluePropType() {
-          return store.bluePropType;
+        get leftPropType() {
+          return store.leftPropType;
         },
-        get redPropType() {
-          return store.redPropType;
+        get rightPropType() {
+          return store.rightPropType;
         },
-        get blueBuugengFlipped() {
-          return store.blueBuugengFlipped;
+        get leftBuugengFlipped() {
+          return store.leftBuugengFlipped;
         },
-        get redBuugengFlipped() {
-          return store.redBuugengFlipped;
+        get rightBuugengFlipped() {
+          return store.rightBuugengFlipped;
         },
         updateSettings: vi.fn((p) => Object.assign(store, p)),
       },
@@ -293,7 +293,7 @@ describe("applyTunnelSnapshot", () => {
         gridVisible: true,
         colors: {
           mode: "custom",
-          custom: { blue: "#2255aa", red: "#dd7733" },
+          custom: { left: "#2255aa", right: "#dd7733" },
         },
         section: "effort",
         presetRecipe: null,
@@ -303,15 +303,15 @@ describe("applyTunnelSnapshot", () => {
       paths: {
         pathShape: "concave",
         motionAwarePaths: true,
-        bluePathLines: true,
-        redPathLines: false,
+        leftPathLines: true,
+        rightPathLines: false,
       },
       playback: { bpm: 120, playbackMode: "step" },
       props: {
-        bluePropType: "fan",
-        redPropType: "club",
-        blueBuugengFlipped: true,
-        redBuugengFlipped: false,
+        leftPropType: "fan",
+        rightPropType: "club",
+        leftBuugengFlipped: true,
+        rightBuugengFlipped: false,
       },
       trailRender: { mode: "trail" } as never,
     };

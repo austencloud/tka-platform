@@ -113,8 +113,8 @@ export function createViewerShellInteractionState(
       includeEndHold: options.includeEndHold,
       renderMode: ctx.renderMode,
       playbackMode: ctx.playbackMode,
-      bluePropType: ctx.bluePropType,
-      redPropType: ctx.redPropType,
+      leftPropType: ctx.leftPropType,
+      rightPropType: ctx.rightPropType,
     });
   }
 
@@ -125,8 +125,8 @@ export function createViewerShellInteractionState(
       darkMode: ctx.exportOptions.imageDarkMode,
       includeStartPosition: ctx.splitPaneImageComposition.showStartPos,
       handPath: ctx.splitPaneImageComposition.handPathMode ?? false,
-      bluePropType: ctx.bluePropType,
-      redPropType: ctx.redPropType,
+      leftPropType: ctx.leftPropType,
+      rightPropType: ctx.rightPropType,
     });
   }
 
@@ -314,20 +314,20 @@ export function createViewerShellInteractionState(
 
   function handlePropChange(propType: PropType, source: string): void {
     const ctx = inputs.getContext();
-    const previousBlue = ctx.bluePropType ? String(ctx.bluePropType) : null;
-    const previousRed = ctx.redPropType ? String(ctx.redPropType) : null;
+    const previousLeft = ctx.leftPropType ? String(ctx.leftPropType) : null;
+    const previousRight = ctx.rightPropType ? String(ctx.rightPropType) : null;
     ctx.handlePropTypeChange(propType);
-    const blue = ctx.bluePropType ? String(ctx.bluePropType) : null;
-    const red = ctx.redPropType ? String(ctx.redPropType) : null;
+    const left = ctx.leftPropType ? String(ctx.leftPropType) : null;
+    const right = ctx.rightPropType ? String(ctx.rightPropType) : null;
     dependencies.captureScanSettingChanged({
       group: "props",
       setting: "prop_type",
-      previous_value: `blue:${previousBlue ?? "none"}|red:${previousRed ?? "none"}`,
-      value: `blue:${blue ?? "none"}|red:${red ?? "none"}`,
-      previous_blue_prop: previousBlue,
-      previous_red_prop: previousRed,
-      blue_prop: blue,
-      red_prop: red,
+      previous_value: `blue:${previousLeft ?? "none"}|red:${previousRight ?? "none"}`,
+      value: `blue:${left ?? "none"}|red:${right ?? "none"}`,
+      previous_left_prop: previousLeft,
+      previous_right_prop: previousRight,
+      left_prop: left,
+      right_prop: right,
       source,
     });
   }
@@ -438,14 +438,14 @@ export function createViewerShellInteractionState(
     inputs.getContext().exitEditMode();
   }
 
-  function handleMotionToggle(hand: "blue" | "red"): void {
+  function handleMotionToggle(hand: "left" | "right"): void {
     const ctx = inputs.getContext();
     const previous =
-      hand === "blue"
-        ? ctx.viewerVisibility.blueMotion
-        : ctx.viewerVisibility.redMotion;
-    if (hand === "blue") ctx.viewerVisibility.toggleBlue();
-    else ctx.viewerVisibility.toggleRed();
+      hand === "left"
+        ? ctx.viewerVisibility.leftMotion
+        : ctx.viewerVisibility.rightMotion;
+    if (hand === "left") ctx.viewerVisibility.toggleLeft();
+    else ctx.viewerVisibility.toggleRight();
     dependencies.captureScanSettingChanged({
       group: "motion",
       setting: `${hand}_visible`,

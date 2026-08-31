@@ -69,7 +69,7 @@ export function deriveCacheKey(
   // Delegate pictograph identity to the single source of truth.
   // PictographKeyHasher captures: letter, all motion fields (motionType,
   // locations, turns, orientations, rotationDirection, propType, gridMode),
-  // and all visibility settings (showTKA, darkMode, bluePropType, etc.).
+  // and all visibility settings (showTKA, darkMode, leftPropType, etc.).
   const visibility = mapToVisibility(options, isDark);
   const pictographHash = pictographKeyHasher.deriveKey(
     pictographData,
@@ -101,7 +101,7 @@ export function deriveCacheKey(
 /**
  * Maps PreviewCellRenderOptions + isDark to PictographVisibilityOptions.
  *
- * Resolves catDogMode (the hasher receives an already-resolved redPropType).
+ * Resolves catDogMode (the hasher receives an already-resolved rightPropType).
  * VTG/elemental/positions flow from the export visibility toggles (sourced
  * from VisibilityStateManager in ChoreoCard) rather than being hardcoded.
  * printMode is always false (preview cells are never print mode).

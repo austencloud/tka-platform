@@ -79,8 +79,8 @@ interface ViewerOrchestratorContextInputs {
   getCardReady: () => boolean;
   getResolvedCardAutoLayout: () => ResolvedAutoLayout | null;
   getIsHandPath: () => boolean;
-  getBluePropType: () => PropType;
-  getRedPropType: () => PropType;
+  getLeftPropType: () => PropType;
+  getRightPropType: () => PropType;
   getCatDogModeEnabled: () => boolean;
   getIsLoggedIn: () => boolean;
   getIsOwned: () => boolean;
@@ -140,8 +140,8 @@ export function createViewerOrchestratorContextState(
       mirrorEnabled: inputs.playback.mirrorEnabled,
       handleToggleMirror: inputs.playback.handleToggleMirror,
 
-      bluePropType: inputs.getBluePropType(),
-      redPropType: inputs.getRedPropType(),
+      leftPropType: inputs.getLeftPropType(),
+      rightPropType: inputs.getRightPropType(),
       catDogModeEnabled: inputs.getCatDogModeEnabled(),
       handlePropTypeChange: inputs.handlers.handlePropTypeChange,
 
@@ -269,8 +269,8 @@ export function createViewerOrchestratorContextState(
         forceContain: false,
       },
       splitPanePropRendering: {
-        bluePropType: inputs.getBluePropType(),
-        redPropType: inputs.getRedPropType(),
+        leftPropType: inputs.getLeftPropType(),
+        rightPropType: inputs.getRightPropType(),
         catDogModeEnabled: inputs.getCatDogModeEnabled(),
       },
 

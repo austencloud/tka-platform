@@ -29,8 +29,8 @@
     strokeWidth?: number;
     show?: "blue" | "red" | "both";
     palette?: MandalaPalette;
-    bluePropType?: string;
-    redPropType?: string;
+    leftPropType?: string;
+    rightPropType?: string;
   }
 
   let {
@@ -43,8 +43,8 @@
     strokeWidth,
     show = "both",
     palette,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
   }: Props = $props();
 </script>
 
@@ -63,8 +63,8 @@
       {strokeWidth}
       {show}
       {palette}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
       animate={false}
       darkMode={true}
     />

@@ -16,19 +16,19 @@
 
   const visibility = getViewerVisibilityContext();
   interface Props {
-    onToggleBlue?: () => void;
-    onToggleRed?: () => void;
+    onToggleLeft?: () => void;
+    onToggleRight?: () => void;
   }
-  let { onToggleBlue, onToggleRed }: Props = $props();
+  let { onToggleLeft, onToggleRight }: Props = $props();
 
-  function toggleBlue(): void {
-    if (onToggleBlue) onToggleBlue();
-    else visibility.toggleBlue();
+  function toggleLeft(): void {
+    if (onToggleLeft) onToggleLeft();
+    else visibility.toggleLeft();
   }
 
-  function toggleRed(): void {
-    if (onToggleRed) onToggleRed();
-    else visibility.toggleRed();
+  function toggleRight(): void {
+    if (onToggleRight) onToggleRight();
+    else visibility.toggleRight();
   }
 
   let open = $state(false);
@@ -78,12 +78,12 @@
   >
     <span
       class="prop-silhouette blue"
-      class:muted={!visibility.blueMotion}
+      class:muted={!visibility.leftMotion}
       aria-hidden="true"
     ></span>
     <span
       class="prop-silhouette red"
-      class:muted={!visibility.redMotion}
+      class:muted={!visibility.rightMotion}
       aria-hidden="true"
     ></span>
   </button>
@@ -104,10 +104,10 @@
       out:scale={{ duration: 120, start: 0.98, opacity: 0, easing: cubicOut }}
     >
       <MotionColorChips
-        showBlue={visibility.blueMotion}
-        showRed={visibility.redMotion}
-        onToggleBlue={toggleBlue}
-        onToggleRed={toggleRed}
+        showLeft={visibility.leftMotion}
+        showRight={visibility.rightMotion}
+        onToggleLeft={toggleLeft}
+        onToggleRight={toggleRight}
       />
     </div>
   {/if}

@@ -31,7 +31,7 @@ export interface PreviewCellRenderOptions {
   /** Red hand prop type override (used when catDogModeEnabled) */
   rightPropType?: PropType;
 
-  /** When true, red hand uses redPropType; otherwise uses bluePropType */
+  /** When true, the right hand uses rightPropType; otherwise both use leftPropType. */
   catDogModeEnabled?: boolean;
 
   /** Buugeng chirality for the blue prop (buugeng-family props only). Mirrors
@@ -40,7 +40,7 @@ export interface PreviewCellRenderOptions {
    *  2D animation canvas do. */
   leftBuugengFlipped?: boolean;
 
-  /** Buugeng chirality for the red prop. See blueBuugengFlipped. */
+  /** Buugeng chirality for the right prop. See leftBuugengFlipped. */
   rightBuugengFlipped?: boolean;
 
   /** Whether to render step numbers on the pictograph */

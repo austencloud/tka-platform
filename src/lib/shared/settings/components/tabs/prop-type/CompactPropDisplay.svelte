@@ -22,31 +22,31 @@
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     catDogMode = false,
-    blueBuugengFlipped = false,
-    redBuugengFlipped = false,
+    leftBuugengFlipped = false,
+    rightBuugengFlipped = false,
     onToggleBig,
   } = $props<{
-    bluePropType: PropType;
-    redPropType: PropType;
+    leftPropType: PropType;
+    rightPropType: PropType;
     catDogMode?: boolean;
-    blueBuugengFlipped?: boolean;
-    redBuugengFlipped?: boolean;
+    leftBuugengFlipped?: boolean;
+    rightBuugengFlipped?: boolean;
     onToggleBig?: (hand: "blue" | "red") => void;
   }>();
 
   // Display info
-  const blueInfo = $derived(getPropTypeDisplayInfo(bluePropType));
-  const redInfo = $derived(getPropTypeDisplayInfo(redPropType));
-  const blueIsBuugeng = $derived(isBuugengFamilyProp(bluePropType));
-  const redIsBuugeng = $derived(isBuugengFamilyProp(redPropType));
+  const leftInfo = $derived(getPropTypeDisplayInfo(leftPropType));
+  const rightInfo = $derived(getPropTypeDisplayInfo(rightPropType));
+  const leftIsBuugeng = $derived(isBuugengFamilyProp(leftPropType));
+  const rightIsBuugeng = $derived(isBuugengFamilyProp(rightPropType));
   // Size modifier (standard ⇄ big)
-  const blueHasBig = $derived(hasBigVariant(bluePropType));
-  const redHasBig = $derived(hasBigVariant(redPropType));
-  const blueIsBig = $derived(isBigVariant(bluePropType));
-  const redIsBig = $derived(isBigVariant(redPropType));
+  const leftHasBig = $derived(hasBigVariant(leftPropType));
+  const rightHasBig = $derived(hasBigVariant(rightPropType));
+  const leftIsBig = $derived(isBigVariant(leftPropType));
+  const rightIsBig = $derived(isBigVariant(rightPropType));
 </script>
 
 <div class="compact-prop-display" class:dual={catDogMode}>
@@ -55,8 +55,8 @@
     class="prop-row"
     class:blue={catDogMode}
     aria-label={catDogMode
-      ? `${t("settings_left_hand")}: ${blueInfo.label}`
-      : blueInfo.label}
+      ? `${t("settings_left_hand")}: ${leftInfo.label}`
+      : leftInfo.label}
   >
     {#if catDogMode}
       <span class="hand-indicator blue">
@@ -65,22 +65,22 @@
     {/if}
 
     <img
-      src={blueInfo.image}
+      src={leftInfo.image}
       alt=""
       class="prop-icon"
-      class:flipped={blueIsBuugeng && blueBuugengFlipped}
+      class:flipped={leftIsBuugeng && leftBuugengFlipped}
     />
 
-    <span class="prop-name">{blueInfo.label}</span>
+    <span class="prop-name">{leftInfo.label}</span>
 
     <span class="action-buttons">
-      {#if blueHasBig}
+      {#if leftHasBig}
         <button
           class="action-btn"
-          class:active={blueIsBig}
+          class:active={leftIsBig}
           onclick={() => onToggleBig?.("blue")}
           aria-label="Toggle big size"
-          aria-pressed={blueIsBig}
+          aria-pressed={leftIsBig}
           title="Big version"
         >
           <i
@@ -96,29 +96,29 @@
   {#if catDogMode}
     <div
       class="prop-row red"
-      aria-label={`${t("settings_right_hand")}: ${redInfo.label}`}
+      aria-label={`${t("settings_right_hand")}: ${rightInfo.label}`}
     >
       <span class="hand-indicator red">
         <span class="hand-dot"></span>
       </span>
 
       <img
-        src={redInfo.image}
+        src={rightInfo.image}
         alt=""
         class="prop-icon"
-        class:flipped={redIsBuugeng && redBuugengFlipped}
+        class:flipped={rightIsBuugeng && rightBuugengFlipped}
       />
 
-      <span class="prop-name">{redInfo.label}</span>
+      <span class="prop-name">{rightInfo.label}</span>
 
       <span class="action-buttons">
-        {#if redHasBig}
+        {#if rightHasBig}
           <button
             class="action-btn"
-            class:active={redIsBig}
+            class:active={rightIsBig}
             onclick={() => onToggleBig?.("red")}
             aria-label="Toggle big size"
-            aria-pressed={redIsBig}
+            aria-pressed={rightIsBig}
             title="Big version"
           >
             <i

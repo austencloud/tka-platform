@@ -140,13 +140,13 @@ function describeFormation(config: TunnelConfig | null | undefined): {
 function describeProps(
   snapshot: TunnelSnapshot | null | undefined,
 ): string | null {
-  const blue = snapshot?.props?.bluePropType;
-  const red = snapshot?.props?.redPropType;
-  if (!blue || !red) return null;
-  if (blue !== red) return "mixed props";
-  if (blue === PropType.STAFF) return null;
+  const left = snapshot?.props?.leftPropType;
+  const right = snapshot?.props?.rightPropType;
+  if (!left || !right) return null;
+  if (left !== right) return "mixed props";
+  if (left === PropType.STAFF) return null;
 
-  const propType = findPropTypeByValue(blue);
+  const propType = findPropTypeByValue(left);
   if (!propType) return null;
   const label = getPropTypeDisplayInfo(propType).label.toLowerCase();
   return label.endsWith("s") ? label : `${label}s`;

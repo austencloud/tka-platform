@@ -120,10 +120,10 @@
     const [a, b] = ctrl.accentPair;
     const mix = mixColors(a, b);
     return {
-      blueStroke: a,
-      blueFill: withAlpha(a, 0.15),
-      redStroke: b,
-      redFill: withAlpha(b, 0.15),
+      leftStroke: a,
+      leftFill: withAlpha(a, 0.15),
+      rightStroke: b,
+      rightFill: withAlpha(b, 0.15),
       purpleStroke: mix,
       purpleFill: withAlpha(mix, 0.2),
     };
@@ -263,8 +263,8 @@
         size={72}
         show={ctrl.show}
         palette={previewPalette}
-        bluePropType={ctrl.bluePropType}
-        redPropType={ctrl.redPropType}
+        leftPropType={ctrl.leftPropType}
+        rightPropType={ctrl.rightPropType}
         onselect={() =>
           changeSetting(
             "path_shape",
@@ -424,16 +424,16 @@
           aria-hidden="true"
         ></span>
         <LabeledColorPairPicker
-          blue={ctrl.customBlue}
-          red={ctrl.customRed}
-          blueLabel="Left pathway"
-          redLabel="Right pathway"
+          left={ctrl.customLeft}
+          right={ctrl.customRight}
+          leftLabel="Left pathway"
+          rightLabel="Right pathway"
           groupLabel="Pathway colors"
           onchange={(hand, value) => {
-            if (hand === "blue") ctrl.customBlue = value;
-            else ctrl.customRed = value;
+            if (hand === "left") ctrl.customLeft = value;
+            else ctrl.customRight = value;
             reportSetting(
-              hand === "blue" ? "custom_color_a" : "custom_color_b",
+              hand === "left" ? "custom_color_a" : "custom_color_b",
               "custom",
               "changed",
               true

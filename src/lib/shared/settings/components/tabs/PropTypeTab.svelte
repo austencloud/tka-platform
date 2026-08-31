@@ -33,16 +33,16 @@
 
   // Default presets for reset functionality
   const DEFAULT_PRESETS: PropPreset[] = [
-    { bluePropType: PropType.STAFF, redPropType: PropType.STAFF, catDogMode: false },
-    { bluePropType: PropType.CLUB, redPropType: PropType.CLUB, catDogMode: false },
-    { bluePropType: PropType.FAN, redPropType: PropType.FAN, catDogMode: false },
-    { bluePropType: PropType.BUUGENG, redPropType: PropType.BUUGENG, catDogMode: false },
-    { bluePropType: PropType.TRIAD, redPropType: PropType.TRIAD, catDogMode: false },
-    { bluePropType: PropType.MINIHOOP, redPropType: PropType.MINIHOOP, catDogMode: false },
-    { bluePropType: PropType.EIGHTRINGS, redPropType: PropType.EIGHTRINGS, catDogMode: false },
-    { bluePropType: PropType.DOUBLESTAR, redPropType: PropType.DOUBLESTAR, catDogMode: false },
-    { bluePropType: PropType.SWORD, redPropType: PropType.SWORD, catDogMode: false },
-    { bluePropType: PropType.QUIAD, redPropType: PropType.QUIAD, catDogMode: false },
+    { leftPropType: PropType.STAFF, rightPropType: PropType.STAFF, catDogMode: false },
+    { leftPropType: PropType.CLUB, rightPropType: PropType.CLUB, catDogMode: false },
+    { leftPropType: PropType.FAN, rightPropType: PropType.FAN, catDogMode: false },
+    { leftPropType: PropType.BUUGENG, rightPropType: PropType.BUUGENG, catDogMode: false },
+    { leftPropType: PropType.TRIAD, rightPropType: PropType.TRIAD, catDogMode: false },
+    { leftPropType: PropType.MINIHOOP, rightPropType: PropType.MINIHOOP, catDogMode: false },
+    { leftPropType: PropType.EIGHTRINGS, rightPropType: PropType.EIGHTRINGS, catDogMode: false },
+    { leftPropType: PropType.DOUBLESTAR, rightPropType: PropType.DOUBLESTAR, catDogMode: false },
+    { leftPropType: PropType.SWORD, rightPropType: PropType.SWORD, catDogMode: false },
+    { leftPropType: PropType.QUIAD, rightPropType: PropType.QUIAD, catDogMode: false },
   ];
 
   let { settings, onUpdate } = $props<{
@@ -58,16 +58,16 @@
   let hasKeyboard = $state(false);
 
   // Current selections
-  let selectedBluePropType = $state(PropType.STAFF);
-  let selectedRedPropType = $state(PropType.STAFF);
+  let selectedLeftPropType = $state(PropType.STAFF);
+  let selectedRightPropType = $state(PropType.STAFF);
 
   // CatDog Mode
   let catDogMode = $state(false);
-  let rememberedRedProp = $state<PropType | null>(null);
+  let rememberedRightProp = $state<PropType | null>(null);
 
   // Which hand the inline grid edits in cat/dog mode on narrow screens
   // (desktop shows both grids side-by-side, so no tab needed there).
-  let mobileHand = $state<"blue" | "red">("blue");
+  let mobileHand = $state<ChiralityHand>("left");
 
   // Narrow viewport → stack a single tabbed grid instead of dual side-by-side.
   // Matches the 900px breakpoint the layout switches at.
@@ -78,8 +78,8 @@
   let selectedPresetIndex = $state(-1);
 
   // Buugeng flip state
-  let blueBuugengFlipped = $state(false);
-  let redBuugengFlipped = $state(false);
+  let leftBuugengFlipped = $state(false);
+  let rightBuugengFlipped = $state(false);
 
   onMount(() => {
     hapticService = getHapticFeedback();
@@ -116,13 +116,13 @@
 
   // Sync from settings
   $effect(() => {
-    selectedBluePropType =
-      settings.bluePropType || settings.propType || PropType.STAFF;
-    selectedRedPropType =
-      settings.redPropType || settings.propType || PropType.STAFF;
+    selectedLeftPropType =
+      settings.leftPropType || settings.propType || PropType.STAFF;
+    selectedRightPropType =
+      settings.rightPropType || settings.propType || PropType.STAFF;
     catDogMode = settings.catDogMode ?? false;
-    blueBuugengFlipped = settings.blueBuugengFlipped ?? false;
-    redBuugengFlipped = settings.redBuugengFlipped ?? false;
+    leftBuugengFlipped = settings.leftBuugengFlipped ?? false;
+    rightBuugengFlipped = settings.rightBuugengFlipped ?? false;
 
     const existingPresets = settings.propPresets || [];
     propPresets = Array.from(
@@ -169,29 +169,29 @@
     if (!preset) return;
 
     selectedPresetIndex = index;
-    selectedBluePropType = preset.bluePropType;
-    selectedRedPropType = preset.redPropType;
+    selectedLeftPropType = preset.leftPropType;
+    selectedRightPropType = preset.rightPropType;
     catDogMode = preset.catDogMode;
-    blueBuugengFlipped = preset.blueBuugengFlipped ?? false;
-    redBuugengFlipped = preset.redBuugengFlipped ?? false;
+    leftBuugengFlipped = preset.leftBuugengFlipped ?? false;
+    rightBuugengFlipped = preset.rightBuugengFlipped ?? false;
 
     onUpdate?.({ key: "selectedPresetIndex", value: index });
-    onUpdate?.({ key: "bluePropType", value: preset.bluePropType });
-    onUpdate?.({ key: "redPropType", value: preset.redPropType });
+    onUpdate?.({ key: "leftPropType", value: preset.leftPropType });
+    onUpdate?.({ key: "rightPropType", value: preset.rightPropType });
     onUpdate?.({ key: "catDogMode", value: preset.catDogMode });
-    onUpdate?.({ key: "blueBuugengFlipped", value: blueBuugengFlipped });
-    onUpdate?.({ key: "redBuugengFlipped", value: redBuugengFlipped });
+    onUpdate?.({ key: "leftBuugengFlipped", value: leftBuugengFlipped });
+    onUpdate?.({ key: "rightBuugengFlipped", value: rightBuugengFlipped });
   }
 
   function handleSaveToSlot(index: number) {
     hapticService?.trigger("selection");
 
     const newPreset: PropPreset = {
-      bluePropType: selectedBluePropType,
-      redPropType: selectedRedPropType,
+      leftPropType: selectedLeftPropType,
+      rightPropType: selectedRightPropType,
       catDogMode,
-      blueBuugengFlipped,
-      redBuugengFlipped,
+      leftBuugengFlipped,
+      rightBuugengFlipped,
     };
 
     const newPresets = [...propPresets];
@@ -230,20 +230,20 @@
     // Apply the first preset's props
     const firstPreset = DEFAULT_PRESETS[0];
     if (firstPreset) {
-      selectedBluePropType = firstPreset.bluePropType;
-      selectedRedPropType = firstPreset.redPropType;
+      selectedLeftPropType = firstPreset.leftPropType;
+      selectedRightPropType = firstPreset.rightPropType;
       catDogMode = firstPreset.catDogMode;
-      blueBuugengFlipped = false;
-      redBuugengFlipped = false;
+      leftBuugengFlipped = false;
+      rightBuugengFlipped = false;
 
       // Persist all changes
       onUpdate?.({ key: "propPresets", value: [...DEFAULT_PRESETS] });
       onUpdate?.({ key: "selectedPresetIndex", value: 0 });
-      onUpdate?.({ key: "bluePropType", value: firstPreset.bluePropType });
-      onUpdate?.({ key: "redPropType", value: firstPreset.redPropType });
+      onUpdate?.({ key: "leftPropType", value: firstPreset.leftPropType });
+      onUpdate?.({ key: "rightPropType", value: firstPreset.rightPropType });
       onUpdate?.({ key: "catDogMode", value: false });
-      onUpdate?.({ key: "blueBuugengFlipped", value: false });
-      onUpdate?.({ key: "redBuugengFlipped", value: false });
+      onUpdate?.({ key: "leftBuugengFlipped", value: false });
+      onUpdate?.({ key: "rightBuugengFlipped", value: false });
     }
   }
 
@@ -251,11 +251,11 @@
     if (selectedPresetIndex < 0 || !propPresets[selectedPresetIndex]) return;
 
     const updatedPreset: PropPreset = {
-      bluePropType: selectedBluePropType,
-      redPropType: selectedRedPropType,
+      leftPropType: selectedLeftPropType,
+      rightPropType: selectedRightPropType,
       catDogMode,
-      blueBuugengFlipped,
-      redBuugengFlipped,
+      leftBuugengFlipped,
+      rightBuugengFlipped,
     };
 
     const newPresets = [...propPresets];
@@ -272,17 +272,17 @@
     const newCatDogMode = !catDogMode;
 
     if (newCatDogMode) {
-      if (rememberedRedProp !== null) {
-        selectedRedPropType = rememberedRedProp;
-        onUpdate?.({ key: "redPropType", value: rememberedRedProp });
-        rememberedRedProp = null;
+      if (rememberedRightProp !== null) {
+        selectedRightPropType = rememberedRightProp;
+        onUpdate?.({ key: "rightPropType", value: rememberedRightProp });
+        rememberedRightProp = null;
       }
     } else {
-      if (selectedRedPropType !== selectedBluePropType) {
-        rememberedRedProp = selectedRedPropType;
+      if (selectedRightPropType !== selectedLeftPropType) {
+        rememberedRightProp = selectedRightPropType;
       }
-      selectedRedPropType = selectedBluePropType;
-      onUpdate?.({ key: "redPropType", value: selectedBluePropType });
+      selectedRightPropType = selectedLeftPropType;
+      onUpdate?.({ key: "rightPropType", value: selectedLeftPropType });
     }
 
     catDogMode = newCatDogMode;
@@ -293,38 +293,38 @@
   // Inline selection (blue / shared-when-not-cat-dog)
   function handleInlineSelect(propType: PropType) {
     hapticService?.trigger("selection");
-    selectedBluePropType = propType;
-    onUpdate?.({ key: "bluePropType", value: propType });
+    selectedLeftPropType = propType;
+    onUpdate?.({ key: "leftPropType", value: propType });
     if (!catDogMode) {
-      selectedRedPropType = propType;
-      onUpdate?.({ key: "redPropType", value: propType });
+      selectedRightPropType = propType;
+      onUpdate?.({ key: "rightPropType", value: propType });
     }
     updateCurrentPreset();
   }
 
   function handleInlineSelectRed(propType: PropType) {
     hapticService?.trigger("selection");
-    selectedRedPropType = propType;
-    onUpdate?.({ key: "redPropType", value: propType });
+    selectedRightPropType = propType;
+    onUpdate?.({ key: "rightPropType", value: propType });
     updateCurrentPreset();
   }
 
   // Size modifier — swap the hand's prop between standard and big.
-  function handleToggleBig(hand: "blue" | "red") {
+  function handleToggleBig(hand: ChiralityHand) {
     hapticService?.trigger("selection");
 
-    if (hand === "blue") {
-      const next = toggleBigVariant(selectedBluePropType);
-      selectedBluePropType = next;
-      onUpdate?.({ key: "bluePropType", value: next });
+    if (hand === "left") {
+      const next = toggleBigVariant(selectedLeftPropType);
+      selectedLeftPropType = next;
+      onUpdate?.({ key: "leftPropType", value: next });
       if (!catDogMode) {
-        selectedRedPropType = next;
-        onUpdate?.({ key: "redPropType", value: next });
+        selectedRightPropType = next;
+        onUpdate?.({ key: "rightPropType", value: next });
       }
     } else {
-      const next = toggleBigVariant(selectedRedPropType);
-      selectedRedPropType = next;
-      onUpdate?.({ key: "redPropType", value: next });
+      const next = toggleBigVariant(selectedRightPropType);
+      selectedRightPropType = next;
+      onUpdate?.({ key: "rightPropType", value: next });
     }
     updateCurrentPreset();
   }
@@ -335,17 +335,17 @@
   // mirrors (and the preset row that reads them) stale.
   // Each hand keeps its own handedness even when both hands share a prop
   // type. Two buugeng of the same chirality stay apart; two of opposite
-  // chirality nest into one shape, so mirroring blue onto red would erase the
+  // chirality nest into one shape, so mirroring left onto right would erase the
   // distinction the setting exists to make.
   function setChirality(hand: ChiralityHand, flipped: boolean) {
     hapticService?.trigger("selection");
 
-    if (hand === "blue") {
-      blueBuugengFlipped = flipped;
-      onUpdate?.({ key: "blueBuugengFlipped", value: blueBuugengFlipped });
+    if (hand === "left") {
+      leftBuugengFlipped = flipped;
+      onUpdate?.({ key: "leftBuugengFlipped", value: leftBuugengFlipped });
     } else {
-      redBuugengFlipped = flipped;
-      onUpdate?.({ key: "redBuugengFlipped", value: redBuugengFlipped });
+      rightBuugengFlipped = flipped;
+      onUpdate?.({ key: "rightBuugengFlipped", value: rightBuugengFlipped });
     }
     updateCurrentPreset();
   }
@@ -354,7 +354,7 @@
     return {
       hand,
       get flipped() {
-        return hand === "blue" ? blueBuugengFlipped : redBuugengFlipped;
+        return hand === "left" ? leftBuugengFlipped : rightBuugengFlipped;
       },
     };
   }
@@ -380,11 +380,11 @@
     <!-- Current Selection (front and center) -->
     <div class="prop-display">
       <CompactPropDisplay
-        bluePropType={selectedBluePropType}
-        redPropType={selectedRedPropType}
+        leftPropType={selectedLeftPropType}
+        rightPropType={selectedRightPropType}
         {catDogMode}
-        {blueBuugengFlipped}
-        {redBuugengFlipped}
+        {leftBuugengFlipped}
+        {rightBuugengFlipped}
         onToggleBig={handleToggleBig}
       />
     </div>
@@ -427,12 +427,12 @@
       <SegmentedControl
         options={[
           {
-            value: "blue",
+            value: "left",
             label: t("settings_select_left_prop"),
             tone: "blue",
           },
           {
-            value: "red",
+            value: "right",
             label: t("settings_select_right_prop"),
             tone: "red",
           },
@@ -445,48 +445,48 @@
         color="accent"
         size="sm"
       />
-      {#if mobileHand === "blue"}
+      {#if mobileHand === "left"}
         <BentoPropGrid
-          selectedPropType={selectedBluePropType}
+          selectedPropType={selectedLeftPropType}
           color="blue"
           title={t("settings_select_left_prop")}
           onSelect={handleInlineSelect}
-          chirality={chiralitySeam("blue")}
+          chirality={chiralitySeam("left")}
         />
       {:else}
         <BentoPropGrid
-          selectedPropType={selectedRedPropType}
+          selectedPropType={selectedRightPropType}
           color="red"
           title={t("settings_select_right_prop")}
           onSelect={handleInlineSelectRed}
-          chirality={chiralitySeam("red")}
+          chirality={chiralitySeam("right")}
         />
       {/if}
     {:else if catDogMode}
       <!-- Desktop cat/dog: both grids side by side -->
       <div class="dual-grids">
         <BentoPropGrid
-          selectedPropType={selectedBluePropType}
+          selectedPropType={selectedLeftPropType}
           color="blue"
           title={t("settings_select_left_prop")}
           onSelect={handleInlineSelect}
-          chirality={chiralitySeam("blue")}
+          chirality={chiralitySeam("left")}
         />
         <BentoPropGrid
-          selectedPropType={selectedRedPropType}
+          selectedPropType={selectedRightPropType}
           color="red"
           title={t("settings_select_right_prop")}
           onSelect={handleInlineSelectRed}
-          chirality={chiralitySeam("red")}
+          chirality={chiralitySeam("right")}
         />
       </div>
     {:else}
       <BentoPropGrid
-        selectedPropType={selectedBluePropType}
+        selectedPropType={selectedLeftPropType}
         color="blue"
         title="Select Prop"
         onSelect={handleInlineSelect}
-        chirality={chiralitySeam("blue", "red")}
+        chirality={chiralitySeam("left", "right")}
       />
     {/if}
   </section>
