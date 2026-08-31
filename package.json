@@ -128,6 +128,7 @@
     "tauri:build": "tauri build",
     "tauri:icons": "tauri icon static/pwa/icons/icon-512x512.png",
     "export:deck-bundle": "node scripts/export-deck-bundle.cjs",
+    "verify:desktop-sequence-bundle": "node scripts/verify-desktop-sequence-bundle.mjs",
     "r2:cors:list": "wrangler r2 bucket cors list tka-assets",
     "r2:cors:apply": "wrangler r2 bucket cors set tka-assets --file firebase-functions/r2-cors.json -y",
     "legacy-redirect:deploy": "npx wrangler@4.125.0 deploy --cwd cloudflare/workers/flowartscomposer-redirect --config wrangler.toml",
