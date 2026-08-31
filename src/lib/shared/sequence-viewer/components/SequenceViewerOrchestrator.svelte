@@ -35,6 +35,13 @@
     seedFromFxSlice,
     type FxSlicePayload,
   } from "../services/viewer-url-slices/fx-slice";
+  import {
+    captureAnSlice,
+    seedFromAnSlice,
+    type AnSlicePayload,
+    type AnSliceSeed,
+  } from "../services/viewer-url-slices/an-slice";
+  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
   import {
     loadSplitConfig,
@@ -504,6 +511,39 @@
   if (initialActiveEffect)
     effectsConfigState.setActiveEffect(initialActiveEffect);
 
+  // The 2D animation stores are app-global singletons read directly by ~7 viewer
+  // files and 2 services, with no injection seam short of the AnimationScope
+  // refactor. So a link BORROWS them (memento) instead of constructing a
+  // view-only instance the way fx does: snapshot -> suspend persistence -> apply
+  // the seed -> every consumer renders it by construction (dark mode included,
+  // because suspension does not disable the store's theme sync the way
+  // `ephemeral` would) -> on close, restore the snapshot while still suspended,
+  // then resume. The recipient's disk is never written, and their tweaks during
+  // the session stay session-local.
+  const anStores = {
+    settings: animationSettings,
+    visibility: getAnimationVisibilityManager(),
+  };
+  const anSeedPayload = urlSession.getSeed("an") as AnSlicePayload | null;
+  // Own-link rule, in slice space: a link matching what this visitor's own
+  // stores already hold is not an override, so nothing is borrowed or restored.
+  let anRestore: AnSliceSeed | null =
+    anSeedPayload && urlSession.isOverride("an", captureAnSlice(anStores))
+      ? { settings: anStores.settings.snapshot(), visibility: anStores.visibility.snapshot() }
+      : null;
+  if (anRestore) {
+    anStores.settings.setPersistenceSuspended(true);
+    anStores.visibility.setPersistenceSuspended(true);
+    const anSeed = seedFromAnSlice(anSeedPayload!);
+    anStores.settings.replaceAll(anSeed.settings);
+    anStores.visibility.replaceAll(anSeed.visibility);
+  }
+  urlSession.registerSlice("an", () => captureAnSlice(anStores));
+  // The visibility manager is a plain class, not runes, so the live-sync effect
+  // below cannot see its changes. Its own observer API closes that gap.
+  const anVisibilityObserver = () => urlSession.scheduleUrlWrite();
+  anStores.visibility.registerObserver(anVisibilityObserver);
+
   const scene3DRenderState = createScene3DRenderState();
   setScene3DRenderContext(scene3DRenderState);
 
@@ -608,6 +648,17 @@
   });
 
   onDestroy(() => {
+    anStores.visibility.unregisterObserver(anVisibilityObserver);
+    // Restore FIRST, while writes are still suppressed, then resume — so the
+    // borrowed globals go back to the visitor's own state without the link
+    // session ever reaching disk.
+    if (anRestore) {
+      anStores.settings.replaceAll(anRestore.settings);
+      anStores.visibility.replaceAll(anRestore.visibility);
+      anStores.settings.setPersistenceSuspended(false);
+      anStores.visibility.setPersistenceSuspended(false);
+      anRestore = null;
+    }
     urlSession.dispose();
     interactive.clearAutoplayTimer();
     playback.stopPracticeIfActive();
