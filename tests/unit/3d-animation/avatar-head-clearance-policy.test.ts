@@ -28,8 +28,12 @@ describe("avatar head-clearance policy", () => {
     expect(animatorRuntime).toContain(
       "const MAX_REACH_LEAN = (4 * Math.PI) / 180"
     );
-    expect(animatorSource).toContain("const MAX_ARM_EXTENSION_RATIO = 0.86");
-    expect(animatorRuntime).toContain("const MAX_ARM_EXTENSION_RATIO = 0.86");
+    expect(animatorSource).toContain(
+      "const ARM_CLEARANCE_REACH_RATIOS = [0.92, 0.84, 0.76, 0.68, 0.6]"
+    );
+    expect(animatorRuntime).toContain(
+      "const ARM_CLEARANCE_REACH_RATIOS = [0.92, 0.84, 0.76, 0.68, 0.6]"
+    );
   });
 
   it.each([
@@ -64,25 +68,10 @@ describe("avatar head-clearance policy", () => {
   it.each([
     ["source", animatorSource],
     ["runtime", animatorRuntime],
-  ])("preserves elbow bend before body-clearance routing in %s", (_label, animator) => {
-    const leftLimit = animator.indexOf(
-      "this.limitArmExtensionForClearance(leftChain, target)"
-    );
-    const leftRoute = animator.indexOf(
-      "this.poleComputer.resolveForearmFaceClearance(",
-      leftLimit
-    );
-    const rightLimit = animator.indexOf(
-      "this.limitArmExtensionForClearance(rightChain, target)"
-    );
-    const rightRoute = animator.indexOf(
-      "this.poleComputer.resolveForearmFaceClearance(",
-      rightLimit
-    );
-
-    expect(leftLimit).toBeGreaterThan(-1);
-    expect(leftRoute).toBeGreaterThan(leftLimit);
-    expect(rightLimit).toBeGreaterThan(-1);
-    expect(rightRoute).toBeGreaterThan(rightLimit);
+  ])("retries only measured body intersections in %s", (_label, animator) => {
+    expect(animator).toMatch(/this\.solveArmWithBodyClearance\(\s*"left"/);
+    expect(animator).toMatch(/this\.solveArmWithBodyClearance\(\s*"right"/);
+    expect(animator).toContain("this.armClearsBody(chain, context)");
+    expect(animator).not.toContain("limitArmExtensionForClearance");
   });
 });
