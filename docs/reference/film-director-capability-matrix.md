@@ -83,7 +83,7 @@ downstream with the existing seconds-speaking message.)
 | effectPresets | scene | `Record<effectId, presetId \| {pick:"any"}>` | effect registry preset groups (`effect-registry.ts`, `getRegistration(effectId).presetGroup.presets`) | unknown effect: `Effect preset references unknown effect "<id>".`; unknown preset: `Effect "<id>" has no preset named "<preset>".`; `{pick:"any"}` with no registered presets: `has no registered presets to pick from.` |
 | effectOverrides | scene | `Record<effectId, Record<string, unknown>>` | validated against `effect-registry.ts` registration only (property-level values are NOT validated against the effect's own schema) | unknown effect: `Effect overrides reference unknown effect "<id>".` |
 | camera keyframes | scene | literal array of `{atSeconds \| atBeats, position, target?, fovDeg?, interpolation?, easing?}` | `film-director-schema.ts` `cameraKeyframeSchema` | A keyframe states its cue in seconds or in beats — exactly one, converted at the scene bpm (see "Counted time"). Mutually exclusive with the framing grammar (`shotSize`/`angle`/`position`/`moves`/`subject`) and with `preset` (unless `preset: "custom"`, which requires at least one keyframe). |
-| camera framing grammar | scene | `subject` + `shotSize`/`angle`/`position` + `moves[]`, each move `{move, amount?, direction?, durationSeconds? \| durationBeats?, easing?}` | `src/routes/test/film-director/_lib/camera-language.ts` | A move's length is stated in seconds or beats, one unit per move, converted at the scene bpm (see "Counted time"); moves that state neither split the scene's remaining time evenly. Exclusivity rules enforced by `cameraSchema`'s `.refine()`s (keyframes vs. framing; preset vs. framing; `subject` vs. `target`). Per-move unit/direction contradictions enforced by `validateMove()` in `camera-language.ts` (e.g. `orbit` takes degrees + cw/ccw only, `push-in`/`pull-back` take meters and no direction). |
+| camera framing grammar | scene | `subject` + `shotSize`/`angle`/`position` + `moves[]`, each move `{move, amount?, direction?, durationSeconds? \| durationBeats?, easing?}`. `move` ∈ `hold`/`push-in`/`pull-back`/`orbit`/`crane`/`pan`/`truck`/`zoom`/`roll` | `src/routes/test/film-director/_lib/camera-language.ts` | A move's length is stated in seconds or beats, one unit per move, converted at the scene bpm (see "Counted time"); moves that state neither split the scene's remaining time evenly. Exclusivity rules enforced by `cameraSchema`'s `.refine()`s (keyframes vs. framing; preset vs. framing; `subject` vs. `target`). Per-move unit/direction contradictions enforced by `validateMove()` in `camera-language.ts` (e.g. `orbit` takes degrees + cw/ccw only, `push-in`/`pull-back` take meters and no direction). `truck` takes meters, direction `left`/`right` (default `left`, default amount 2), and translates position and target together along the camera-right ground axis — the framing slides sideways without turning. `zoom` takes degrees, direction `in`/`out` (default `in`, default amount 10), and adjusts `fovDeg` in place (`in` narrows, `out` widens) without moving the camera; a zoom that would take the lens outside 20–100 degrees rejects rather than clamping, naming the degrees, the resulting fov, and the current fov. `roll` takes degrees, direction `cw`/`ccw` (default `cw`, default amount 15), and ramps `rollDeg` from an explicit `0` anchor on the first roll of a scene — rolls accumulate across moves with no total cap. `rollDeg` is optional on a resolved keyframe (present only on streams where a roll ran, so films that never roll stay byte-identical to their pre-roll snapshots) and required on a sampled `DirectorCameraFrame` (always 0 when absent). See "Camera roll direction convention" below for the sign. |
 | cast block | scene (`performance.cast`) | `{count: 1-8, defaults?, performers?: override[]}` | `castSchema` | Mutually exclusive with `performance.performers` (schema `.refine()`). Overrides addressed by `id` (`performer-<n>`) fill their named slot; overrides with no `id` fill remaining slots in array order. An `id` that doesn't match any of the cast's performers rejects: `Cast override "<id>" does not match any of the <n> performers.` |
 
 ## Sequence directives
@@ -150,6 +150,19 @@ confirmed against this convention yet — if Austen reads a `cw` orbit as
 turning the wrong way on screen, the fix is flipping the sign in that one
 branch, not the schema.
 
+## Camera roll direction convention
+
+`roll` moves take `direction: "cw" | "ccw"` and accumulate into a resolved
+keyframe's `rollDeg`. Positive `rollDeg` is defined as clockwise as the
+audience sees the frame: the adapter applies it via `camera.rotateZ(+rollRad)`
+after `lookAt`, so `cw` adds to `rollDeg` and `ccw` subtracts. A scene's first
+roll anchors the ramp with an explicit `rollDeg: 0` keyframe before it starts
+turning, so the tilt reads as departing from level rather than snapping in
+partway rolled. Like the orbit convention above, the on-screen sense has not
+been visually confirmed — if a `cw` roll reads as tilting the wrong way, the
+fix is a one-line sign flip in `applyDirectorCameraFrame`
+(`director-viewer-adapter.ts`), not the schema or the compiler.
+
 ## Real but not yet speakable
 
 Swept from `src/routes/test/film-director/_lib/director-viewer-adapter.ts`
@@ -201,6 +214,24 @@ None open. Closed so far:
   `normalizeDirective` checks `pick` before the bare `{not}` form so a
   `{pick, not}` object cannot fall through to the exclude-only branch.
   `/test/film-director?film=proving` exercises it on two axes at once.
+- **Camera edges: truck, zoom, roll** (closed 2026-08-30). Before this gap
+  closed, the camera vocabulary stopped at `hold`/`push-in`/`pull-back`/
+  `orbit`/`crane`/`pan` — no move slid the frame sideways without turning it,
+  tightened the lens without moving the rig, or tilted the horizon. Three
+  moves close it: `truck` (meters, `left`/`right`) translates position and
+  target together along the camera-right ground axis; `zoom` (degrees,
+  `in`/`out`) adjusts `fovDeg` in place and rejects rather than clamps when a
+  request would take the lens outside 20–100 degrees, naming the degrees
+  asked for, the fov it would reach, and the fov it is at; `roll` (degrees,
+  `cw`/`ccw`) ramps a new `rollDeg` field from an explicit `0` anchor on a
+  scene's first roll. `rollDeg` is optional on a resolved keyframe (present
+  only where a roll ran, so every film that never rolls stays byte-identical
+  to its pre-roll snapshot) and required on a sampled `DirectorCameraFrame`
+  (always `0` when absent). Positive `rollDeg` means clockwise as the audience
+  sees the frame — see "Camera roll direction convention" above for the sign,
+  including that it has not yet been visually confirmed. `/test/film-director?film=proving`
+  scene 3 ("camera-edges") states all three in one breath: a two-meter truck,
+  a fifteen-degree zoom, and a ten-degree clockwise roll.
 
 ## Spoken but not real (proven rejections)
 
