@@ -104,7 +104,9 @@ describe("avatar head-clearance policy", () => {
     expect(animator).toMatch(/this\.solveArmWithBodyClearance\(\s*"right"/);
     expect(animator).toContain("this.armClearsBody(chain, context)");
     expect(animator).toContain("this.armBodyClearanceMargin(chain, context)");
-    expect(animator).not.toContain("ARM_CLEARANCE_POLE_SEARCH_STEPS");
+    expect(animator).toContain("this.solveArmAtClearPole(chain, target, context)");
+    expect(animator).toContain("ARM_CLEARANCE_RECOVERY_INTERVAL");
+    expect(animator).toContain("this.rememberClearArmRoute(");
     expect(animator).toMatch(
       /!this\.armClearsBody\(leftChain, leftClearanceContext\)/
     );
