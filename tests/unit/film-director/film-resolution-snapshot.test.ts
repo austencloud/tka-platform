@@ -15,13 +15,24 @@ import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/
 function stableJson(value: unknown): string {
   return JSON.stringify(
     value,
-    (_key, val) =>
-      typeof val === "number" ? Math.round(val * 1e6) / 1e6 : val,
+    (_key, val) => {
+      if (typeof val !== "number") return val;
+      // JSON has no NaN/Infinity literal, so JSON.stringify would otherwise
+      // silently turn a non-finite value into `null` — indistinguishable
+      // from a field that was legitimately null. A sentinel string makes a
+      // NaN/Infinity bug visible IN the snapshot diff instead of hiding it.
+      if (!Number.isFinite(val)) return `__nonfinite:${val}__`;
+      return Math.round(val * 1e6) / 1e6;
+    },
     2
   );
 }
 
 describe("film resolution snapshots", () => {
+  it("keeps its exact set of films — removing one must fail here, not orphan its snapshot block", () => {
+    expect(FILM_LIBRARY.map((entry) => entry.key)).toMatchSnapshot();
+  });
+
   for (const entry of FILM_LIBRARY) {
     it(`"${entry.label}" (${entry.key}) resolves to its frozen spec`, () => {
       expect(stableJson(resolveFilmDirectorSpec(entry.film))).toMatchSnapshot();

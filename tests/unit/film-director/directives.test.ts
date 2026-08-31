@@ -7,6 +7,7 @@ import {
   normalizeDirective,
   type DirectiveValue,
 } from "../../../src/routes/test/film-director/_lib/directives";
+import { resolveCastAxis } from "../../../src/routes/test/film-director/_lib/resolve-directives";
 
 const propValue = z.enum(["staff", "fan", "club"]);
 const schema = directiveSchema(propValue);
@@ -98,19 +99,37 @@ describe("pick with not", () => {
     });
   });
 
-  it("schema accepts {pick: 'distinct', not} on a plane axis", () => {
-    const planeAxis = directiveSchema(z.string());
+  it("schema accepts {pick: 'distinct', not} on a string axis", () => {
+    const stringAxis = directiveSchema(z.string());
     expect(
-      planeAxis.safeParse({ pick: "distinct", not: "wall" }).success
+      stringAxis.safeParse({ pick: "distinct", not: "wall" }).success
     ).toBe(true);
     expect(
-      planeAxis.safeParse({ pick: "distinct", not: ["wall", "floor"] }).success
+      stringAxis.safeParse({ pick: "distinct", not: ["wall", "floor"] }).success
     ).toBe(true);
   });
 
   it("schema still rejects an empty not array on the pick branch", () => {
-    const planeAxis = directiveSchema(z.string());
-    expect(planeAxis.safeParse({ pick: "any", not: [] }).success).toBe(false);
+    const stringAxis = directiveSchema(z.string());
+    expect(stringAxis.safeParse({ pick: "any", not: [] }).success).toBe(false);
+  });
+
+  it("rejects a catalog-invalid `not` value at resolve time, naming the bad value", () => {
+    // The schema alone can't catch this — `not` accepts any value of the
+    // axis's base type, catalog membership is a resolve-time concern
+    // (assertInCatalog in resolve-directives.ts).
+    expect(() =>
+      resolveCastAxis<string>({
+        axis: "prop",
+        sceneId: "scene-1",
+        performerIds: ["performer-1"],
+        values: [{ pick: "any", not: "chainsaw" }],
+        catalog: ["staff", "fan", "club"],
+        random: () => 0.5,
+      })
+    ).toThrow(
+      'Scene "scene-1", axis "prop": "chainsaw" is not in the deployed catalog for this axis.'
+    );
   });
 });
 
@@ -209,5 +228,16 @@ describe("normalizeDirective", () => {
       pool: null,
       exclude: [],
     });
+  });
+
+  it("normalizes an object carrying a `not` key valued undefined to the benign default, not exclude: [undefined]", () => {
+    // `"not" in value` is true here even though `value.not` itself is
+    // undefined (e.g. a spread-constructed directive) — isDirectiveExpression
+    // still routes it into the bare-{not} tail. Without the guard it would
+    // compute `exclude: [undefined]` instead of the harmless no-op this
+    // object actually expresses.
+    expect(
+      normalizeDirective({ not: undefined } as unknown as DirectiveValue<string>)
+    ).toEqual({ kind: "pick", distinct: false, pool: null, exclude: [] });
   });
 });

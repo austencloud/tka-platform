@@ -52,25 +52,30 @@ proving-film scenes author at version 4.
 
 ## Gap sequence and status
 
-- [ ] **Phase 0 — resolution snapshot harness** (gate for everything after).
+- [x] **Phase 0 — resolution snapshot harness** (gate for everything after).
       Snapshot the resolved spec of every library film with numbers rounded to
       1e-6. Any later phase that changes a snapshot must show why.
-- [ ] **Gap 9 — `distinct` + `not` combined spelling.** Add optional `not` to
+- [x] **Gap 9 — `distinct` + `not` combined spelling.** Add optional `not` to
       the `{pick}` branch of the directive grammar; normalize to the
       already-supported `{kind:"pick", distinct, pool, exclude}`. Scene-scoped
       axes keep rejecting `distinct` but accept `{pick:"any", not}`.
-- [ ] **Gap 1 — beats as a time unit.** `durationBeats` beside every
+- [x] **Gap 1 — beats as a time unit.** `durationBeats` beside every
       `durationSeconds` (scene, transition, blocking moves, scene blocking,
       camera moves) and `atBeats` beside keyframe `atSeconds`. Converted once,
       early in `resolveScene`, via `beats * 60 / bpm` (the scene's own bpm);
       compilers stay seconds-only. Bounds validated post-conversion with
       beats-speaking error text. Version bump to 4 lands here.
 - [ ] **Gap 8a — camera edges: truck / zoom / roll.** New moves in the
-      framing-grammar move compiler: `truck` (lateral meters, left/right),
-      `zoom` (fov delta or target fov), `roll` (degrees, cw/ccw — needs a
-      camera-up channel through the resolved keyframe + sampler + viewer rig;
-      verify the viewer seam first, descope roll to a documented rejection if
-      the rig cannot bank).
+      framing-grammar move compiler: `truck` (lateral meters, left/right —
+      position AND target translate together along the camera-right ground
+      axis), `zoom` (fov delta in degrees, in/out, clamped 20–100 — the
+      compiler gains fov as mutable move state; the sampler already
+      interpolates fovDeg), `roll` (degrees, cw/ccw). Roll seam VERIFIED
+      2026-08-30: `applyDirectorCameraFrame` holds a raw THREE
+      `PerspectiveCamera` after `snapCameraTo`'s lookAt, so roll is a local-Z
+      rotation applied there; carried as OPTIONAL `rollDeg?` on resolved
+      keyframes + `DirectorCameraFrame` so the 8 shipped films' snapshots
+      stay untouched.
 - [ ] **Gap 3 — camera tracks a walking performer.** Resolved camera track
       gains `tracking: { performerId, mode: "aim" | "follow", height? } | null`
       spoken as `subject: {kind:"performer", performerId, track: true|"follow"}`.
@@ -114,6 +119,32 @@ proving-film scenes author at version 4.
 - [ ] **Final — showcase + docs + memory.** Bake proving-grounds poster
       (`node scripts/build-film-posters.mjs --only proving` on :5173),
       capability-matrix sweep, memory file update, worktree cleanup.
+
+## Wave 1 acceptance record (Phase 0 + Gap 9 + Gap 1)
+
+- **Executor commit** `e8324a0208`; full diff read by the main loop; opus
+  review subagent returned 23 findings. 18 fixed pre-merge (error copy
+  reporting post-exclusion candidates, 2-decimal number formatting in all
+  user-facing rejections, "the default 90 bpm" when tempo was unstated,
+  normalizeDirective no-key fallthrough guard, real non-mutation tests for
+  convertSceneBeatTimes, snapshot-harness film-key guard + non-finite
+  sentinel, stronger push/plane assertions, seed pinned so the combined draw
+  shows six unique planes, naming/doc fixes). 2 deferred with owners: the
+  `transition {kind:"cut"}` scene still resolving a 0.8 s transition window
+  is pre-existing behavior deferred to **Gap 4** (which owns cut semantics);
+  the proving film not yet exercising `atBeats` keyframes /
+  `transition.durationBeats` / blocking-defaults beats is deferred to later
+  waves, whose appended scenes use those spellings naturally. 3 were already
+  fixed in the working tree when reviewed.
+- **Visual gate, scene 2 (On the Beat):** the first two arrivals failed the
+  frame test — a medium two-shot pushed 1.5 m ended inside the performers'
+  bodies, and after widening, a group-aimed camera held vacated space for the
+  closing four seconds while the walker sat half-cropped at the frame edge.
+  Fixed in grammar, not post-production: `subject: {kind:"performer",
+  performerId:"performer-1"}` (aim at the mark-holder, not the vacated group
+  center) plus a 1.0 m push. Mid-walk and arrival frames both verified at
+  1920×1080 — walker crosses through center, arrival is a layered two-shot,
+  nothing cropped.
 
 ## Proving film
 

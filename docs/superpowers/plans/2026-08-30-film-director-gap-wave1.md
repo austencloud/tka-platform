@@ -34,7 +34,7 @@ server. Do not push.
 **Files:**
 - Test: `tests/unit/film-director/film-resolution-snapshot.test.ts` (create)
 
-- [ ] **Step 1: Write the test**
+- [x] **Step 1: Write the test**
 
 ```ts
 /**
@@ -69,14 +69,14 @@ describe("film resolution snapshots", () => {
 });
 ```
 
-- [ ] **Step 2: Run it once to WRITE the snapshots, then again to prove they hold**
+- [x] **Step 2: Run it once to WRITE the snapshots, then again to prove they hold**
 
 Run: `npx vitest run tests/unit/film-director/film-resolution-snapshot.test.ts`
 Expected: first run PASSES and reports "snapshots written"; a second identical
 run PASSES with 0 written. Confirm a `__snapshots__/film-resolution-snapshot.test.ts.snap`
 file appeared next to the test.
 
-- [ ] **Step 3: Commit (snapshot file included)**
+- [x] **Step 3: Commit (snapshot file included)**
 
 ```bash
 git commit -m "test(film-director): freeze resolved specs of all library films" -- tests/unit/film-director/film-resolution-snapshot.test.ts tests/unit/film-director/__snapshots__/film-resolution-snapshot.test.ts.snap
@@ -92,7 +92,7 @@ git commit -m "test(film-director): freeze resolved specs of all library films" 
 - Test: `tests/unit/film-director/resolve-directives.test.ts` (extend)
 - Test: `tests/unit/film-director/resolve-directive-spec.test.ts` (extend)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `tests/unit/film-director/directives.test.ts`, add (adapt describe nesting
 to the file's existing style — read it first):
@@ -178,13 +178,13 @@ it("scene-scoped formation still rejects pick distinct, with or without not", ()
 
 Same rule: concrete bodies, reusing the file's film-fixture helpers.
 
-- [ ] **Step 2: Run to verify the new tests fail**
+- [x] **Step 2: Run to verify the new tests fail**
 
 Run: `npx vitest run tests/unit/film-director/directives.test.ts`
 Expected: FAIL — schema rejects `{pick, not}` (strict object), normalize
 returns exclude `[]`.
 
-- [ ] **Step 3: Implement in `directives.ts`**
+- [x] **Step 3: Implement in `directives.ts`**
 
 Type change:
 
@@ -247,13 +247,13 @@ changes meaning.
 Also update the union's error string to name the new spelling, keeping its
 shape: `"Expected a literal value or a directive object ({pick}, {pick, not}, {oneOf}, {not}, {sameAs})"`.
 
-- [ ] **Step 4: Run the full film-director suite**
+- [x] **Step 4: Run the full film-director suite**
 
 Run: `npx vitest run tests/unit/film-director`
 Expected: PASS everywhere, including the Task 1 snapshots (this change touches
 no resolved output for existing films) and the directive corpus.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(film-director): speak distinct+not on one axis" -- src/routes/test/film-director/_lib/directives.ts tests/unit/film-director/directives.test.ts tests/unit/film-director/resolve-directives.test.ts tests/unit/film-director/resolve-directive-spec.test.ts
@@ -267,7 +267,7 @@ git commit -m "feat(film-director): speak distinct+not on one axis" -- src/route
 - Create: `src/routes/test/film-director/_lib/director-beat-times.ts`
 - Test: `tests/unit/film-director/director-beat-times.test.ts` (create)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -422,12 +422,12 @@ describe("convertSceneBeatTimes", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `npx vitest run tests/unit/film-director/director-beat-times.test.ts`
 Expected: FAIL — module does not exist.
 
-- [ ] **Step 3: Implement `director-beat-times.ts`**
+- [x] **Step 3: Implement `director-beat-times.ts`**
 
 ```ts
 /**
@@ -584,14 +584,14 @@ NOTE: this code reads `durationBeats`/`atBeats` off schema types that do not
 carry them until Task 4. Implement Tasks 3 and 4 together if the intermediate
 type errors block the test run, but keep the commits separate as written.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `npx vitest run tests/unit/film-director/director-beat-times.test.ts`
 Expected: PASS (if types block compilation before Task 4's schema fields
 exist, proceed to Task 4 and come back — the two tasks' tests must both pass
 before either commit).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(film-director): beat-to-seconds converter for scene inputs" -- src/routes/test/film-director/_lib/director-beat-times.ts tests/unit/film-director/director-beat-times.test.ts
@@ -606,7 +606,7 @@ git commit -m "feat(film-director): beat-to-seconds converter for scene inputs" 
 - Modify: `src/routes/test/film-director/_lib/director-camera-track.ts` (keyframe seconds guard)
 - Test: `tests/unit/film-director/film-director-schema.test.ts` (extend)
 
-- [ ] **Step 1: Write the failing schema tests**
+- [x] **Step 1: Write the failing schema tests**
 
 Add to `film-director-schema.test.ts`, following its existing fixture helpers
 (read the file first; it has minimal-film builders):
@@ -640,12 +640,12 @@ describe("beats as a time unit", () => {
 Concrete bodies, real fixtures — the sketches above name the required
 assertions.
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `npx vitest run tests/unit/film-director/film-director-schema.test.ts`
 Expected: FAIL — unknown keys on strict objects.
 
-- [ ] **Step 3: Implement the schema fields**
+- [x] **Step 3: Implement the schema fields**
 
 In `film-director-schema.ts`:
 
@@ -717,12 +717,12 @@ if (atSeconds === undefined) {
    and use `atSeconds` in the `keyframe(...)` call. This is defensive: after
    Task 5 wires the converter, resolution can never see an unconverted frame.
 
-- [ ] **Step 4: Run schema tests + the Task 3 tests together**
+- [x] **Step 4: Run schema tests + the Task 3 tests together**
 
 Run: `npx vitest run tests/unit/film-director/film-director-schema.test.ts tests/unit/film-director/director-beat-times.test.ts`
 Expected: PASS both.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(film-director): durationBeats/atBeats grammar, schema v4" -- src/routes/test/film-director/_lib/film-director-schema.ts src/routes/test/film-director/_lib/director-camera-track.ts tests/unit/film-director/film-director-schema.test.ts
@@ -736,7 +736,7 @@ git commit -m "feat(film-director): durationBeats/atBeats grammar, schema v4" --
 - Modify: `src/routes/test/film-director/_lib/resolve-film-director-spec.ts`
 - Test: `tests/unit/film-director/resolve-directive-spec.test.ts` (extend)
 
-- [ ] **Step 1: Write the failing end-to-end tests**
+- [x] **Step 1: Write the failing end-to-end tests**
 
 Add to `resolve-directive-spec.test.ts` (reuse its minimal-film fixtures):
 
@@ -774,13 +774,13 @@ describe("beats resolve through the scene bpm", () => {
 
 Concrete bodies against the file's fixtures.
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `npx vitest run tests/unit/film-director/resolve-directive-spec.test.ts`
 Expected: the new tests FAIL (beats fields parse but are silently ignored —
 scene falls back to the 8s default).
 
-- [ ] **Step 3: Wire the converter**
+- [x] **Step 3: Wire the converter**
 
 In `resolve-film-director-spec.ts`:
 
@@ -808,14 +808,14 @@ const durationSeconds = scene.durationSeconds ?? 8;
 existing `bpm: scene.performance?.bpm ?? 90` line in the returned
 `performance` object to `bpm,` so the two reads cannot drift.
 
-- [ ] **Step 4: Run the FULL film-director suite including snapshots**
+- [x] **Step 4: Run the FULL film-director suite including snapshots**
 
 Run: `npx vitest run tests/unit/film-director`
 Expected: PASS everywhere. The Task 1 snapshots must be UNCHANGED (no library
 film states beats) — if any snapshot churns, the wiring changed seconds-stated
 behavior and must be fixed, not re-snapshotted.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(film-director): resolve beats through the scene bpm" -- src/routes/test/film-director/_lib/resolve-film-director-spec.ts tests/unit/film-director/resolve-directive-spec.test.ts
@@ -831,7 +831,7 @@ git commit -m "feat(film-director): resolve beats through the scene bpm" -- src/
 - Modify: `docs/reference/film-director-capability-matrix.md`
 - Test: `tests/unit/film-director/film-library.test.ts` (extend with behavior assertions)
 
-- [ ] **Step 1: Author the film**
+- [x] **Step 1: Author the film**
 
 `proving-grounds.ts` — version 4, id `proving-grounds-r1`, two scenes (one per
 wave-1 gap; later waves append scenes). Follow the authorial idiom of
@@ -879,7 +879,7 @@ Registry entry in `_films/index.ts` (append, matching existing entries):
 },
 ```
 
-- [ ] **Step 2: Extend film-library.test.ts with proving-grounds behavior checks**
+- [x] **Step 2: Extend film-library.test.ts with proving-grounds behavior checks**
 
 Following the "Nine Planes actually exercises..." pattern:
 
@@ -911,7 +911,7 @@ it("Proving Grounds exercises the gaps it advertises", () => {
 });
 ```
 
-- [ ] **Step 3: Run the full film-director suite**
+- [x] **Step 3: Run the full film-director suite**
 
 Run: `npx vitest run tests/unit/film-director`
 Expected: everything PASSES except ONE test:
@@ -920,7 +920,7 @@ missing". That is the only allowed red — the poster is baked by the main
 session after this task (it needs a browser). If anything else is red, fix it.
 The snapshot test now writes ONE new snapshot (proving-grounds) — commit it.
 
-- [ ] **Step 4: Update the capability matrix**
+- [x] **Step 4: Update the capability matrix**
 
 In `docs/reference/film-director-capability-matrix.md`:
 - Header version "(v3)" → "(v4)".
@@ -934,7 +934,7 @@ In `docs/reference/film-director-capability-matrix.md`:
   beside `atSeconds`.
 - Do NOT touch the `<!-- directive-axes: ... -->` comment — no new axis.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(film-director): Proving Grounds film exercises wave-1 gaps" -- src/routes/test/film-director/_films/proving-grounds.ts src/routes/test/film-director/_films/index.ts tests/unit/film-director/film-library.test.ts tests/unit/film-director/__snapshots__/film-resolution-snapshot.test.ts.snap docs/reference/film-director-capability-matrix.md

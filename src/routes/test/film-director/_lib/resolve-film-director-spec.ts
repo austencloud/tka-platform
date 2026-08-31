@@ -460,9 +460,13 @@ function resolveScene(
   filmSeed: FilmSeed
 ): ResolvedDirectorScene {
   // Beats convert against the scene's own bpm, so bpm resolves first; every
-  // line below this one thinks purely in seconds.
+  // line below this one thinks purely in seconds. `stated` tracks whether
+  // the director actually wrote a bpm — describeBeats() phrases an
+  // unstated fallback as "the default 90 bpm" rather than naming a number
+  // the director never typed.
+  const bpmStated = rawScene.performance?.bpm !== undefined;
   const bpm = rawScene.performance?.bpm ?? 90;
-  const scene = convertSceneBeatTimes(rawScene, bpm);
+  const scene = convertSceneBeatTimes(rawScene, { value: bpm, stated: bpmStated });
   const durationSeconds = scene.durationSeconds ?? 8;
   const cast = scene.performance?.cast;
 
@@ -734,6 +738,7 @@ function resolveScene(
     aspectRatio,
     groundOffset,
     formation,
+    sceneId: scene.id,
     performers: performers.map((performer) => ({
       ...performer,
       position: {

@@ -19,10 +19,28 @@ export function beatsToSeconds(beats: number, bpm: number): number {
   return (beats * 60) / bpm;
 }
 
+/**
+ * The scene's tempo, plus whether the director actually stated it. When
+ * `stated` is false, `value` is the 90bpm fallback the caller substituted —
+ * error copy must say "the default 90 bpm", never "90 bpm", so the director
+ * isn't told they typed a number they never wrote.
+ */
+export interface SceneBpm {
+  value: number;
+  stated: boolean;
+}
+
 interface BeatTimed {
   durationSeconds?: number;
   durationBeats?: number;
 }
+
+/** Two-decimal display for a user-facing seconds value — see the sibling
+ * helper of the same name/intent in director-move-windows.ts and
+ * blocking-language.ts. `toFixed(1)` could print a value inside the very
+ * range the message claims it violates (0.993s -> "1.0s"); two decimals
+ * pushes that boundary case out of visible range. */
+const fmt = (n: number): string => String(Number(n.toFixed(2)));
 
 function convertDuration<T extends BeatTimed>(value: T, bpm: number): T {
   if (value.durationBeats === undefined) return value;
@@ -30,42 +48,46 @@ function convertDuration<T extends BeatTimed>(value: T, bpm: number): T {
   return { ...rest, durationSeconds: beatsToSeconds(durationBeats, bpm) } as T;
 }
 
-function describeBeats(beats: number, bpm: number): string {
-  const seconds = beatsToSeconds(beats, bpm);
-  return `${beats} beats at ${bpm} bpm is ${seconds.toFixed(1)}s`;
+function describeBeats(beats: number, bpm: SceneBpm): string {
+  const seconds = beatsToSeconds(beats, bpm.value);
+  const bpmClause = bpm.stated ? `${bpm.value} bpm` : `the default ${bpm.value} bpm`;
+  return `${beats} beats at ${bpmClause} is ${fmt(seconds)}s`;
 }
 
 export function convertSceneBeatTimes(
   scene: DirectorSceneInput,
-  bpm: number
+  bpm: SceneBpm
 ): DirectorSceneInput {
   let converted: DirectorSceneInput = scene;
-  const mutate = () => {
+  // Never mutates `scene` — lazily clones it into `converted` on first
+  // write, so a scene with no beats fields returns the identical input
+  // reference untouched.
+  const writable = () => {
     if (converted === scene) converted = { ...scene };
     return converted as DirectorSceneInput & Record<string, unknown>;
   };
 
   if (scene.durationBeats !== undefined) {
-    const seconds = beatsToSeconds(scene.durationBeats, bpm);
+    const seconds = beatsToSeconds(scene.durationBeats, bpm.value);
     if (seconds < 1 || seconds > 60) {
       throw new Error(
         `Scene "${scene.id}": ${describeBeats(scene.durationBeats, bpm)} — scenes run 1-60 seconds.`
       );
     }
-    const target = mutate();
+    const target = writable();
     delete target.durationBeats;
     target.durationSeconds = seconds;
   }
 
   if (scene.transition?.durationBeats !== undefined) {
-    const seconds = beatsToSeconds(scene.transition.durationBeats, bpm);
+    const seconds = beatsToSeconds(scene.transition.durationBeats, bpm.value);
     if (seconds > 3) {
       throw new Error(
         `Scene "${scene.id}": transition ${describeBeats(scene.transition.durationBeats, bpm)} — transitions top out at 3 seconds.`
       );
     }
-    const target = mutate();
-    target.transition = convertDuration(scene.transition, bpm);
+    const target = writable();
+    target.transition = convertDuration(scene.transition, bpm.value);
   }
 
   if (scene.performance) {
@@ -73,7 +95,7 @@ export function convertSceneBeatTimes(
     let performanceChanged = false;
 
     if (performance.blocking?.durationBeats !== undefined) {
-      performance.blocking = convertDuration(performance.blocking, bpm);
+      performance.blocking = convertDuration(performance.blocking, bpm.value);
       performanceChanged = true;
     }
 
@@ -87,7 +109,7 @@ export function convertSceneBeatTimes(
       }
       return {
         ...owner,
-        blocking: owner.blocking.map((move) => convertDuration(move, bpm)),
+        blocking: owner.blocking.map((move) => convertDuration(move, bpm.value)),
       };
     };
 
@@ -121,7 +143,7 @@ export function convertSceneBeatTimes(
       }
     }
 
-    if (performanceChanged) mutate().performance = performance;
+    if (performanceChanged) writable().performance = performance;
   }
 
   if (scene.camera) {
@@ -129,19 +151,19 @@ export function convertSceneBeatTimes(
     let cameraChanged = false;
 
     if (camera.moves?.some((move) => move.durationBeats !== undefined)) {
-      camera.moves = camera.moves.map((move) => convertDuration(move, bpm));
+      camera.moves = camera.moves.map((move) => convertDuration(move, bpm.value));
       cameraChanged = true;
     }
     if (camera.keyframes?.some((frame) => frame.atBeats !== undefined)) {
       camera.keyframes = camera.keyframes.map((frame) => {
         if (frame.atBeats === undefined) return frame;
         const { atBeats, ...rest } = frame;
-        return { ...rest, atSeconds: beatsToSeconds(atBeats, bpm) };
+        return { ...rest, atSeconds: beatsToSeconds(atBeats, bpm.value) };
       });
       cameraChanged = true;
     }
 
-    if (cameraChanged) mutate().camera = camera;
+    if (cameraChanged) writable().camera = camera;
   }
 
   return converted;

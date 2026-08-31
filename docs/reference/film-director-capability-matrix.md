@@ -55,8 +55,11 @@ resolves, so seconds stay the only internal unit
 one unit per field: naming both rejects with `State exactly one of
 "durationSeconds" or "durationBeats".` (keyframes: `A camera keyframe states
 exactly one of "atSeconds" or "atBeats".`). A beat count that converts outside
-a field's second bounds rejects in the unit it was spoken in — `96 beats at 66
-bpm is 87.3s`, not a bare seconds number the director never wrote.
+a scene or transition second bound rejects in the unit it was spoken in — `96
+beats at 66 bpm is 87.27s`, not a bare seconds number the director never wrote.
+(Beats-stated moves and keyframes have no second bound of their own; a move
+total that overruns the scene, or a keyframe past its end, still rejects
+downstream with the existing seconds-speaking message.)
 
 | Axis | Scope | Shape | Source of truth | Notes |
 |---|---|---|---|---|
@@ -69,7 +72,7 @@ bpm is 87.3s`, not a bare seconds number the director never wrote.
 | `performance.blocking` | scene | literal `{endFormation, durationSeconds? \| durationBeats?, easing?, facing?}` | `sceneBlockingSchema` in `film-director-schema.ts` | Beats convert at the scene bpm; state exactly one unit (see "Counted time"). Cast-wide staging: walks every performer from their opening slot into the named formation's slots — the spoken "and then they all form a line". A performer with their own `blocking` list ignores it. `endFormation` validates against the same formation catalog (and per-count validity) as the `formation` axis. |
 | performer `sequence` | performer | one source (`{source:"demo"}` \| `word` \| `length` \| `mirrorOf`) plus, for the two generated sources, any of the twelve controls below | `src/routes/test/film-director/_lib/sequence-language.ts` (grammar + meaning), `film-director-schema.ts` `performerSequenceSchema` (shape); resolved async by `director-sequence-library.ts` | Defaults to `{source:"demo"}` (the film's shared sequence). See "Sequence directives" below. Deliberately not directive-capable: `mirrorOf` names one specific performer, so a random pick would have nothing to mean. Rejections: `A sequence names one source…`; `performer "<id>" cannot mirror themselves.`; `mirrors "<id>", who is not in this scene.`; `mirrors "<id>", who is already a mirror. Mirror the original instead.` Generation happens after the first frame, so a scene opens on the shared sequence and re-applies when the library resolves. |
 | bpm | scene (`performance.bpm`) | literal number, 20–300 | `performanceSchema` | Defaults to 90. |
-| durationSeconds / durationBeats | scene | literal number, 1–60 seconds or 0–240 beats | `sceneSchema` | Defaults to 8s when neither is stated. Beats convert at this scene's own bpm (default 90) and the converted seconds must still land in 1–60; state exactly one unit (see "Counted time"). |
+| durationSeconds / durationBeats | scene | literal number, 1–60 seconds or a positive beat count up to 240 | `sceneSchema` | Defaults to 8s when neither is stated. Beats convert at this scene's own bpm (default 90) and the converted seconds must still land in 1–60; state exactly one unit (see "Counted time"). |
 | transition | scene | literal `{kind, durationSeconds \| durationBeats}` | `transitionSchema` | `kind` ∈ `cut` / `environment-dissolve` / `fade-through-black`. First scene defaults to `cut` (0s); later scenes default to `environment-dissolve` (0.8s). Seconds bound 0–3, beats 0–32, and beats convert at the scene bpm into that seconds range — one unit per transition (see "Counted time"). |
 | showStage / showAudience | scene (`location`) | literal booleans | `sceneSchema` | Both default `false`. Applied through the scene-feature context in `FilmDirectorScene.svelte`, not through `director-viewer-adapter.ts`. |
 | location.visiblePlanes | scene (`location`) | literal `Plane[]`, default `[]` | `sceneSchema`, `Plane` enum (`@austencloud/scene-3d`) | Not directive-capable — a director names an exact set of grid planes to show, not a pick. Duplicate rejected: `location.visiblePlanes lists "<value>" twice.`; unknown value: same catalog message as bluePlane. |
@@ -175,6 +178,20 @@ and each got an explicit ruling, not a "maybe later":
 
 None open. Closed so far:
 
+- **Beats as a time unit** (closed 2026-08-30). Before this gap closed, every
+  duration field in the scene schema accepted only `durationSeconds` — a
+  director who counts music had to do the beats-to-seconds arithmetic
+  themselves and write the result by hand. Every duration field now takes a
+  `durationBeats` twin (and camera keyframes an `atBeats` twin), converted
+  ONCE at the top of `resolveScene` via `convertSceneBeatTimes`
+  (`director-beat-times.ts`), using the scene's own `performance.bpm` — every
+  compiler downstream (move windows, blocking, camera) keeps thinking purely
+  in seconds and never learns beats exist. A beat count that converts outside
+  its field's valid seconds range rejects in the unit it was spoken in, and
+  names whether the bpm was stated or defaulted (see "Counted time" above).
+  `/test/film-director?film=proving` scene 2 ("on-the-beat") states its whole
+  clock in beats: a 16-beat scene, an 8-beat camera push, and an 8-beat
+  crossing walk.
 - **Distinct + exclude in one directive** (closed 2026-08-30). The canonical
   `NormalizedDirective` shape (`directives.ts`) could always represent
   `{kind: "pick", distinct: true, pool, exclude: [...]}`, but the Zod union's

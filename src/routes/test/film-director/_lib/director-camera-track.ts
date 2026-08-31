@@ -62,6 +62,8 @@ interface CameraTrackContext {
   groundOffset: number;
   performers: readonly ResolvedDirectorPerformer[];
   formation: DirectorFormation;
+  /** The owning scene's id, for error messages only — not resolution math. */
+  sceneId: string;
 }
 
 export interface ResolvedDirectorCameraTrack {
@@ -136,7 +138,8 @@ export function resolveDirectorCameraTrack(
     throw new Error("A preset and framing grammar are exclusive — use one.");
   }
 
-  const { durationSeconds, aspectRatio, groundOffset, performers } = context;
+  const { durationSeconds, aspectRatio, groundOffset, performers, sceneId } =
+    context;
   const baseShot = computeFramingShot({
     performers: performers.map((performer) => performer.position),
     plane: "wall",
@@ -157,7 +160,7 @@ export function resolveDirectorCameraTrack(
         const atSeconds = frame.atSeconds;
         if (atSeconds === undefined) {
           throw new Error(
-            "Camera keyframes must be converted to seconds before resolution — convertSceneBeatTimes was skipped."
+            `Scene "${sceneId}": camera keyframes must be converted to seconds before resolution — convertSceneBeatTimes was skipped.`
           );
         }
         return keyframe(

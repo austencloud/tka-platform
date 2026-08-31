@@ -107,7 +107,13 @@ export function normalizeDirective<T extends string | number>(
       exclude,
     };
   }
-  // bare { not, from? }
+  // bare { not, from? }. `"not" in value` can be true with `value.not`
+  // itself `undefined` (e.g. a spread-constructed object) — that carries no
+  // exclusion at all, so it falls back to the same benign default a
+  // no-grammar-keys object gets rather than computing `exclude: [undefined]`.
+  if (value.not === undefined) {
+    return { kind: "pick", distinct: false, pool: null, exclude: [] };
+  }
   const exclude = Array.isArray(value.not) ? [...value.not] : [value.not];
   return {
     kind: "pick",

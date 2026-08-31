@@ -9521,7 +9521,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "beatOffset": 0,
             "staffLengthCm": null,
             "bluePlane": "wheel",
-            "redPlane": "backward-ramp",
+            "redPlane": "right-wing",
             "stepPlanes": []
           },
           {
@@ -9564,7 +9564,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "beatOffset": 0,
             "staffLengthCm": null,
             "bluePlane": "floor",
-            "redPlane": "floor",
+            "redPlane": "left-wing",
             "stepPlanes": []
           },
           {
@@ -9607,7 +9607,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "beatOffset": 0,
             "staffLengthCm": null,
             "bluePlane": "backward-ramp",
-            "redPlane": "forward-ramp",
+            "redPlane": "right-shield",
             "stepPlanes": []
           }
         ],
@@ -9794,20 +9794,20 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
               {
                 "atSeconds": 4,
                 "position": {
-                  "x": 3,
+                  "x": -1.5,
                   "z": -1
                 },
-                "facingAngle": 2.015216,
+                "facingAngle": -1.965587,
                 "walking": false,
                 "easing": "linear"
               },
               {
                 "atSeconds": 8,
                 "position": {
-                  "x": 3,
+                  "x": -1.5,
                   "z": -1
                 },
-                "facingAngle": 2.015216,
+                "facingAngle": -1.965587,
                 "walking": false,
                 "easing": "linear"
               }
@@ -9841,11 +9841,11 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "z": 0
           },
           {
-            "x": 3,
+            "x": -1.5,
             "z": -1
           },
           {
-            "x": 3,
+            "x": -1.5,
             "z": -1
           }
         ]
@@ -9859,12 +9859,12 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "atSeconds": 0,
             "position": [
-              0,
-              0.718559,
-              -2.614694
+              -0.9,
+              0.852639,
+              -4.532137
             ],
             "target": [
-              0,
+              -0.9,
               0.535721,
               0
             ],
@@ -9875,12 +9875,12 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "atSeconds": 4,
             "position": [
-              0,
-              0.613924,
-              -1.118348
+              -0.9,
+              0.782883,
+              -3.534573
             ],
             "target": [
-              0,
+              -0.9,
               0.535721,
               0
             ],
@@ -9891,12 +9891,12 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "atSeconds": 8,
             "position": [
-              0,
-              0.613924,
-              -1.118348
+              -0.9,
+              0.782883,
+              -3.534573
             ],
             "target": [
-              0,
+              -0.9,
               0.535721,
               0
             ],
@@ -13719,4 +13719,18 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
   ],
   "durationSeconds": 36
 }"
+`;
+
+exports[`film resolution snapshots > keeps its exact set of films — removing one must fail here, not orphan its snapshot block 1`] = `
+[
+  "sky",
+  "planes",
+  "understudy",
+  "chance",
+  "star",
+  "break",
+  "figures",
+  "ember",
+  "proving",
+]
 `;

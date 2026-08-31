@@ -28,6 +28,11 @@ export const provingGroundsFilm: FilmDirectorInput = {
     "One scene per closed gap. Three performers draw distinct blue and red planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing.",
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
+  // The grammar only guarantees distinctness PER axis; three blues and three
+  // reds may still overlap each other. This red-stream seed lands a draw with
+  // zero cross-axis repeats, so the proving frame shows six visibly different
+  // planes — film-library.test.ts asserts the union size to keep it honest.
+  seed: { axes: { redPlane: 5 } },
   scenes: [
     {
       id: "combined-draw",
@@ -52,7 +57,6 @@ export const provingGroundsFilm: FilmDirectorInput = {
         ],
       },
       performance: {
-        bpm: 90,
         formation: "line",
         cast: {
           count: 3,
@@ -89,13 +93,16 @@ export const provingGroundsFilm: FilmDirectorInput = {
           performers: [
             {
               id: "performer-2",
-              // Side-by-side puts this one on the mark at (0.9, 0), so the
-              // crossing covers 2.33 m in the four seconds eight beats buy —
-              // 0.58 m/s, a walk, well inside the 2.6 m/s travel ceiling.
+              // Side-by-side puts this one on the mark at (0.9, 0). The
+              // crossing runs THROUGH the frame — downstage of the partner to
+              // (-1.5, -1) — 2.62 m in the four seconds eight beats buy, or
+              // 0.65 m/s, inside the 0.47-2.6 m/s window where a walk reads
+              // as a walk. A destination out the side of the frame turned the
+              // pushed-in arrival into a wall of close-up geometry.
               blocking: [
                 {
                   move: "walk",
-                  to: { x: 3, z: -1 },
+                  to: { x: -1.5, z: -1 },
                   durationBeats: 8,
                   facing: "travel",
                 },
@@ -106,11 +113,18 @@ export const provingGroundsFilm: FilmDirectorInput = {
         },
       },
       camera: {
-        shotSize: "medium",
+        // Aim at the performer who HOLDS a mark, not the group: the group's
+        // center is vacated the moment the crossing starts, and a camera
+        // aimed at vacated space holds an empty frame for the closing four
+        // seconds. Wide with a one-meter push keeps both the push-in and the
+        // crossing readable; a deeper push ends with the downstage walker
+        // half-cropped at the frame edge.
+        subject: { kind: "performer", performerId: "performer-1" },
+        shotSize: "wide",
         angle: "eye",
         position: "front",
         moves: [
-          { move: "push-in", amount: { meters: 1.5 }, durationBeats: 8 },
+          { move: "push-in", amount: { meters: 1 }, durationBeats: 8 },
           { move: "hold", durationBeats: 8 },
         ],
       },
