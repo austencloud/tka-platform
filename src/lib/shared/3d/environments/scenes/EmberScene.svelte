@@ -353,6 +353,7 @@
   <LavaRivers
     config={activeConfig.lavaRivers}
     poolPosition={activeConfig.lavaPool.position}
+    terrain={productionSliceAsset}
   />
 {/if}
 
