@@ -25,6 +25,7 @@ import type { LOOPSpecWire } from "@tka/sequence-engine/loop";
 import type { SoloPropData } from "./solo-prop-data";
 import type { StepPairingData } from "./step-pairing-data";
 import type { WallFeasibilityMetadata } from "$lib/shared/3d/domain/models/wall-feasibility";
+import type { CardPresentation } from "$lib/shared/share/domain/models/card-presentation";
 
 export interface SequenceData {
   readonly id: string;
@@ -168,6 +169,8 @@ export interface SequenceData {
   readonly animatedSequencePath?: string;
   /** User-provided tagline or notes for this sequence */
   readonly notes?: string;
+  /** Public-facing card content. Deliberately separate from private `notes`. */
+  readonly cardPresentation?: CardPresentation;
   /** Effort timeline: phrase-level effort easing curves spanning multiple beats */
   readonly effortTimeline?: EffortTimeline | null;
   /** Prop configuration the creator intended this sequence to be viewed with.
@@ -335,6 +338,9 @@ export function createSequenceData(
       animatedSequencePath: data.animatedSequencePath,
     }),
     ...(data.notes !== undefined && { notes: data.notes }),
+    ...(data.cardPresentation !== undefined && {
+      cardPresentation: data.cardPresentation,
+    }),
     ...(data.effortTimeline !== undefined && {
       effortTimeline: data.effortTimeline,
     }),
@@ -387,7 +393,6 @@ export function removeStepFromSequence(
     steps: newSteps,
   });
 }
-
 
 /**
  * Prop dimensions for rendering
