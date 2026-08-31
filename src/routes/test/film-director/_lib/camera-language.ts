@@ -157,8 +157,17 @@ function resolveSubject(
 }
 
 export interface DirectorCameraMove {
-  move: "hold" | "push-in" | "pull-back" | "orbit" | "crane" | "pan";
-  direction?: "cw" | "ccw" | "up" | "down" | "left" | "right";
+  move:
+    | "hold"
+    | "push-in"
+    | "pull-back"
+    | "orbit"
+    | "crane"
+    | "pan"
+    | "truck"
+    | "zoom"
+    | "roll";
+  direction?: "cw" | "ccw" | "up" | "down" | "left" | "right" | "in" | "out";
   amount?: { degrees: number } | { meters: number };
   durationSeconds?: number;
   easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
@@ -174,9 +183,19 @@ const MOVE_RULES: Record<
   orbit: { unit: "degrees", directions: ["cw", "ccw"] },
   crane: { unit: "meters", directions: ["up", "down"] },
   pan: { unit: "degrees", directions: ["left", "right"] },
+  truck: { unit: "meters", directions: ["left", "right"] },
+  zoom: { unit: "degrees", directions: ["in", "out"] },
+  roll: { unit: "degrees", directions: ["cw", "ccw"] },
 };
 
 const ORBIT_SEGMENT_DEG = 30;
+
+const MIN_FOV_DEG = 20;
+const MAX_FOV_DEG = 100;
+
+/** Two-decimal display for zoom's rejection message — same rounding
+ * convention as director-move-windows.ts's `fmt`. */
+const fmt = (n: number): string => String(Number(n.toFixed(2)));
 
 export function compileCameraMoves(
   moves: readonly DirectorCameraMove[],
@@ -214,6 +233,8 @@ export function compileCameraMoves(
   const frames: ResolvedDirectorCameraKeyframe[] = [];
   let position: [number, number, number] = [...framing.position];
   let target: [number, number, number] = [...framing.target];
+  let fovDeg = framing.fovDeg;
+  let rollDeg: number | undefined;
 
   moves.forEach((move, index) => {
     validateMove(move);
@@ -227,7 +248,15 @@ export function compileCameraMoves(
     ) => {
       const last = frames.at(-1);
       if (last && Math.abs(last.atSeconds - atSeconds) < 1e-6) frames.pop();
-      frames.push({ atSeconds, position: pos, target: tgt, fovDeg: framing.fovDeg, interpolation, easing });
+      frames.push({
+        atSeconds,
+        position: pos,
+        target: tgt,
+        fovDeg,
+        interpolation,
+        easing,
+        ...(rollDeg !== undefined ? { rollDeg } : {}),
+      });
     };
 
     if (move.move === "hold") {
@@ -294,21 +323,77 @@ export function compileCameraMoves(
       return;
     }
 
-    // pan: rotate the aim point around the camera.
-    const degrees =
-      (move.amount && "degrees" in move.amount ? move.amount.degrees : 30) *
-      (move.direction === "right" ? -1 : 1);
-    const dx = target[0] - position[0];
-    const dz = target[2] - position[2];
-    const angle = (degrees * Math.PI) / 180;
-    const next: [number, number, number] = [
-      position[0] + dx * Math.cos(angle) + dz * Math.sin(angle),
-      target[1],
-      position[2] - dx * Math.sin(angle) + dz * Math.cos(angle),
-    ];
-    push(start, [...position], [...target]);
-    push(end, [...position], next);
-    target = next;
+    if (move.move === "truck") {
+      const meters =
+        (move.amount && "meters" in move.amount ? move.amount.meters : 2) *
+        (move.direction === "right" ? 1 : -1);
+      const fx = target[0] - position[0];
+      const fz = target[2] - position[2];
+      const groundLength = Math.hypot(fx, fz) || 1;
+      const right: [number, number] = [-fz / groundLength, fx / groundLength];
+      const nextPosition: [number, number, number] = [
+        position[0] + right[0] * meters,
+        position[1],
+        position[2] + right[1] * meters,
+      ];
+      const nextTarget: [number, number, number] = [
+        target[0] + right[0] * meters,
+        target[1],
+        target[2] + right[1] * meters,
+      ];
+      push(start, [...position], [...target]);
+      push(end, nextPosition, nextTarget);
+      position = nextPosition;
+      target = nextTarget;
+      return;
+    }
+
+    if (move.move === "zoom") {
+      const degrees =
+        (move.amount && "degrees" in move.amount ? move.amount.degrees : 10) *
+        (move.direction === "out" ? 1 : -1);
+      const next = fovDeg + degrees;
+      if (next < MIN_FOV_DEG || next > MAX_FOV_DEG) {
+        throw new Error(
+          `A zoom of ${fmt(Math.abs(degrees))} degrees would take the lens to ${fmt(next)} degrees, outside the ${MIN_FOV_DEG}-${MAX_FOV_DEG} degree range (it is at ${fmt(fovDeg)}).`
+        );
+      }
+      push(start, [...position], [...target]);
+      fovDeg = next;
+      push(end, [...position], [...target]);
+      return;
+    }
+
+    if (move.move === "roll") {
+      const degrees =
+        (move.amount && "degrees" in move.amount ? move.amount.degrees : 15) *
+        (move.direction === "ccw" ? -1 : 1);
+      rollDeg ??= 0;
+      push(start, [...position], [...target]);
+      rollDeg += degrees;
+      push(end, [...position], [...target]);
+      return;
+    }
+
+    // pan: rotate the aim point around the camera. This branch is last and
+    // explicit (rather than a bare trailing fallthrough) so a future move
+    // inserted above can never silently fall into it.
+    if (move.move === "pan") {
+      const degrees =
+        (move.amount && "degrees" in move.amount ? move.amount.degrees : 30) *
+        (move.direction === "right" ? -1 : 1);
+      const dx = target[0] - position[0];
+      const dz = target[2] - position[2];
+      const angle = (degrees * Math.PI) / 180;
+      const next: [number, number, number] = [
+        position[0] + dx * Math.cos(angle) + dz * Math.sin(angle),
+        target[1],
+        position[2] - dx * Math.sin(angle) + dz * Math.cos(angle),
+      ];
+      push(start, [...position], [...target]);
+      push(end, [...position], next);
+      target = next;
+    }
   });
 
   if (frames[0]!.atSeconds !== 0) {
