@@ -152,6 +152,7 @@
     align-items: center;
     gap: 2px;
     min-width: 0;
+    border-radius: var(--codex-cell-radius, 0);
   }
 
   /* Every colour and caption size below is a token whose DEFAULT is the value
@@ -183,6 +184,7 @@
       --codex-cell-frame,
       1px solid var(--codex-cell-border, #2b2b2b)
     );
+    border-radius: var(--codex-cell-radius, 0);
     display: flex;
     align-items: center;
     justify-content: center;

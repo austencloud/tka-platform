@@ -111,9 +111,9 @@
   <header>
     <h1>Prop size audit</h1>
     <p>
-      True animation-canvas scale. Solid ring is the hand orbit (150). Dashed
-      ring is the mandala radius that prop produces. Club is the reference at
-      {CLUB_REACH} reach.
+      The fan gate tests inward landing on strict animation points. The full
+      inventory below keeps true 950-unit prop dimensions and the club reach
+      reference.
     </p>
   </header>
 
