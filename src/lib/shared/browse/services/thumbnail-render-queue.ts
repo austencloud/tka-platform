@@ -23,12 +23,20 @@ export interface QueueStats {
   activeIds: string[];
 }
 
+export interface ThumbnailQueueOptions {
+  priority?: number;
+  consumerSignal?: AbortSignal;
+  /** Run only after active thumbnails drain, and block later work until done. */
+  exclusive?: boolean;
+}
+
 interface QueuedTask<T> {
   id: string;
   execute: (signal: AbortSignal, reportActivity: () => void) => Promise<T>;
   resolve: (value: T) => void;
   reject: (error: Error) => void;
   priority: number;
+  exclusive: boolean;
 }
 
 // A QR-bearing thumbnail also warms its canonical scan cells before composing.
@@ -79,13 +87,18 @@ export class ThumbnailRenderQueue {
   private pendingPromises = new Map<string, Promise<unknown>>();
   private consumerCounts = new Map<string, number>();
   private maxConcurrent = DEFAULT_MAX_CONCURRENT;
+  private activeExclusive = false;
 
   enqueue<T>(
     id: string,
     execute: (signal: AbortSignal, reportActivity: () => void) => Promise<T>,
-    priority: number = Infinity,
-    consumerSignal?: AbortSignal
+    options: ThumbnailQueueOptions = {}
   ): Promise<T> {
+    const {
+      priority = Infinity,
+      consumerSignal,
+      exclusive = false,
+    } = options;
     if (consumerSignal?.aborted) {
       return Promise.reject(cancellationError(consumerSignal));
     }
@@ -93,7 +106,14 @@ export class ThumbnailRenderQueue {
     let corePromise = this.pendingPromises.get(id) as Promise<T> | undefined;
     if (!corePromise) {
       corePromise = new Promise<T>((resolve, reject) => {
-        const task: QueuedTask<T> = { id, execute, resolve, reject, priority };
+        const task: QueuedTask<T> = {
+          id,
+          execute,
+          resolve,
+          reject,
+          priority,
+          exclusive,
+        };
 
         // Insert in priority order (lower priority value = higher priority = front of queue)
         const insertIndex = this.queue.findIndex((t) => t.priority > priority);
@@ -213,21 +233,34 @@ export class ThumbnailRenderQueue {
 
   private async processQueue(): Promise<void> {
     // Don't exceed max concurrent
-    if (this.activeCount >= this.maxConcurrent) {
+    if (this.activeCount >= this.maxConcurrent || this.activeExclusive) {
       return;
     }
 
-    // Get next task
+    // An exclusive task is a fairness barrier: let existing work drain, then
+    // run it alone. Later ordinary thumbnails cannot leapfrog it and recreate
+    // the QR warm-up contention this queue is meant to prevent.
+    const nextTask = this.queue[0];
+    if (nextTask?.exclusive && this.activeCount > 0) {
+      return;
+    }
+
     const task = this.queue.shift();
     if (!task) {
       return;
     }
 
     this.activeCount++;
+    this.activeExclusive = task.exclusive;
     this.activeIds.add(task.id);
 
     const controller = new AbortController();
     this.activeControllers.set(task.id, controller);
+
+    // Fill the remaining capacity synchronously. This matters after an
+    // exclusive task releases a backed-up queue: one completion should restore
+    // the configured parallelism instead of leaving the queue at one-at-a-time.
+    void this.processQueue();
 
     // Hold the timer id so progress can refresh the inactivity deadline and a
     // completed render cannot leave an orphaned rejection behind.
@@ -264,6 +297,7 @@ export class ThumbnailRenderQueue {
       deadlineClosed = true;
       if (timeoutId !== undefined) clearTimeout(timeoutId);
       this.activeCount--;
+      if (task.exclusive) this.activeExclusive = false;
       this.activeIds.delete(task.id);
       this.activeControllers.delete(task.id);
 
