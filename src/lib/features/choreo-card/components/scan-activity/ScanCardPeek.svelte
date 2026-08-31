@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import AdminActionButton from "$lib/shared/admin/components/AdminActionButton.svelte";
+  import TkaLabel from "$lib/shared/components/TkaLabel.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { formatTimeAgo } from "$lib/shared/i18n/i18n-formatters";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -60,8 +61,7 @@
       const url = new URL(`/q/${code}`, window.location.origin).toString();
       await navigator.clipboard.writeText(url);
       toast.success("Card link copied");
-    } catch (error) {
-      console.error("Failed to copy card link:", error);
+    } catch {
       toast.error("Could not copy the card link");
     }
   }
@@ -70,7 +70,9 @@
 <aside class="peek" aria-label="Scan event inspector">
   <header class="peek-top">
     <div class="title-group">
-      <span class="peek-title">{word}</span>
+      <h2 class="peek-title" aria-label={word}>
+        <TkaLabel text={word} darkMode />
+      </h2>
       <span class="code">{code}</span>
     </div>
     <button
@@ -156,7 +158,11 @@
     {#if relatedEvents.length > 0}
       <div class="related-list">
         {#each relatedEvents as related (related.id)}
-          <button type="button" onclick={() => onSelectEvent(related.id)}>
+          <button
+            type="button"
+            aria-label={`Inspect ${related.city || "location unavailable"} scan from ${relativeTime(related.timestamp)}`}
+            onclick={() => onSelectEvent(related.id)}
+          >
             <span>{related.city || "Location unavailable"}</span>
             <span>{relativeTime(related.timestamp)}</span>
           </button>
@@ -200,6 +206,7 @@
 
   .peek-title {
     overflow: hidden;
+    margin: 0;
     color: var(--theme-text, #fff);
     font-size: var(--font-size-md, 16px);
     font-weight: 650;
