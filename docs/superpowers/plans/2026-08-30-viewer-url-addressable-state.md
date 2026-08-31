@@ -1012,12 +1012,59 @@ git commit -m "fix(viewer): closing the drawer strips all viewer-state URL param
 
 ## Phase B — Remaining slices (one task each, clone the Task 4 pattern)
 
-Every Phase B task follows the same five steps: **(1) Discovery** — read the backing store file(s) end-to-end and list the exact persisted fields (post-normalize shape); **(2) seam** — add `initial`/`persist:false` options to the store factory if missing (for `createPersistenceHelper` consumers, add the option to the helper once, in Task 9); **(3) slice module** in `viewer-url-slices/<id>-slice.ts` with capture-diff-vs-defaults returning null at defaults + seed-merge-onto-defaults; **(4) tests** — round-trip identity, null-at-defaults, zero-write spy (same three shapes as `fx-slice.test.ts`); **(5) register** in the surface that owns the store (register on mount, unregister on destroy — these surfaces mount/unmount with panes, unlike fx). Commit per task with pathspec.
+Every Phase B task follows the same five steps: **(1) Discovery** — read the backing store file(s) end-to-end and list the exact persisted fields (post-normalize shape); **(2) seam** — add `initial`/`persist:false` options to the store factory if missing (seam choice per store: an instance seam like fx for per-mount stores, or the global-store memento defined in Task 9 for app-global singletons); **(3) slice module** in `viewer-url-slices/<id>-slice.ts` with capture-diff-vs-defaults returning null at defaults + seed-merge-onto-defaults; **(4) tests** — round-trip identity, null-at-defaults, zero-write spy (same three shapes as `fx-slice.test.ts`); **(5) register** in the surface that owns the store (register on mount, unregister on destroy — these surfaces mount/unmount with panes, unlike fx). Commit per task with pathspec.
 
-### Task 9: `an` — 2D animation settings
-- [ ] Extend `createPersistenceHelper` (`src/lib/shared/state/utils/persistent-state.ts`) with `{ initial?: T; persist?: boolean }` — one change, inherited by its 6 consumers.
-- [ ] Stores: `tka_animation_settings` (`animation-settings-state.svelte.ts`), `animation-visibility-settings` (`animation-visibility-state.svelte.ts`), `tka_trail_settings` (owner per `trail-types.ts`). Discovery decides whether visibility + trails fold into one `an` payload (`{ settings, visibility, trails }` sub-keys) — they do; one slice, three sub-keys.
-- [ ] Slice + tests + registration where the 2D animation pane constructs these states.
+### Task 9: `an` — 2D animation settings (REVISED 2026-08-30 after executor discovery)
+
+Discovery invalidated the original premise. `createPersistenceHelper` is invoked at
+MODULE scope in `animation-settings-state.svelte.ts` (~line 91), so a helper option
+never reaches `createAnimationSettingsState`; the stores are app-global singletons
+(`animationSettings` export ~line 357; lazy `getAnimationVisibilityManager()`) read
+directly by ~7 viewer files and 2 services with no injection seam short of the
+AnimationScope Phase 2 refactor; and `AnimationVisibilityStateManager.ephemeral`
+gates BOTH `saveToStorage()` AND `syncDarkModeClass()`, so an ephemeral seeded
+instance could never render a link's dark mode. The fx separate-instance pattern is
+therefore WRONG here — any read site missed (now or by future code) would silently
+show recipient state.
+
+**Revised mechanism — memento on the global stores.** A link session borrows the
+real singletons and restores them on close: snapshot → suspend persistence → apply
+seed → every consumer renders it by construction (dark mode included, via the
+store's own non-ephemeral sync path) → on dispose, restore the snapshot while still
+suspended, THEN resume persistence. Disk is never touched; recipient tweaks during
+the session stay session-local (approved view-only contract).
+
+- [ ] **Store seams (additive; NO `createPersistenceHelper` change — that premise is dropped):**
+  - `animation-settings-state.svelte.ts`: add `setPersistenceSuspended(suspended: boolean)` (gates the module-scope helper's save), `snapshot(): AnimationSettings` (deep), `replaceAll(settings)`.
+  - `animation-visibility-state.svelte.ts`: same trio on the manager — suspension flag checked in `saveToStorage()` (alongside, not replacing, `ephemeral`), `snapshot()`, `replaceAll(settings)` applied through the normal setter path so `syncDarkModeClass()` fires on the global instance.
+- [ ] **Slice module** `viewer-url-slices/an-slice.ts`: payload `{ settings?, visibility? }`.
+  `tka_trail_settings` EXCLUDED — in the viewer it is shadowed by
+  `tka_animation_settings.trail` (viewer surfaces pass external trail settings);
+  record why in the doc comment. Diff baselines are POST-NORMALIZE defaults (fx
+  precedent): trail forced-vivid == `DEFAULT_TRAIL_SETTINGS` (verified byte-equal);
+  the visibility baseline must account for `stepNumbers` forced `true` on every
+  load — derive it from a fresh `ephemeral` instance or shared normalize function,
+  never the raw constant. `effortPreset` + `tipEffortMap` are ONE quantity (mirror
+  pair — same trap as fx activeEffect/tipEffectMap). Capture the user-owned
+  settings: if `motionPolicySource` overlay values are viewer/sequence-derived
+  (recipient re-derives them), capture RAW settings and say so in the doc comment;
+  implementer decides from the code with a stated reason.
+- [ ] **Tests** (`an-slice.test.ts`): round-trip identity; null at post-normalize
+  defaults; zero-write spy across suspend→apply→tweak→restore→resume for BOTH
+  storage keys; restore returns the store to the pre-override snapshot.
+- [ ] **Wiring** in `SequenceViewerOrchestrator.svelte` (like fx — the globals are
+  session-wide, not per-pane; a link carries 2D settings regardless of active pane):
+  compute `persistedAnSlice` from the live globals; if a seed exists and
+  `urlSession.isOverride("an", persistedAnSlice)`: snapshot both stores, suspend
+  persistence, apply the seed (merge onto post-normalize defaults → `replaceAll`).
+  In the existing dispose path: `replaceAll(snapshot)` while still suspended, THEN
+  resume persistence. Always `urlSession.registerSlice("an", () => captureAnSlice(...))`
+  reading the live globals.
+- [ ] **Commit** with explicit pathspec.
+
+Note for Task 11: several `tka-3d-*` stores may also be app-global singletons. The
+memento above is the sanctioned mechanism for global-store slices; per-store
+discovery chooses instance-seam (fx) vs memento (an).
 
 ### Task 10: `ex` — export options
 - [ ] Store: `createExportOptionsState()` (`export-options-state.svelte.ts`, key `tka_export_options`). Add options seam, slice, tests, registration in the export panel host.
