@@ -2,7 +2,7 @@ import { render } from "vitest-browser-svelte";
 import { page } from "vitest/browser";
 import { describe, expect, it, vi } from "vitest";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type {
   CodeEntry,
   ScanEventRow,
@@ -14,12 +14,19 @@ vi.mock("$lib/shared/browse/components/PropAwareThumbnail.svelte", async () => {
   return { default: stub.default };
 });
 
-const sequence = {
+vi.mock("$lib/shared/render/get-glyph-cache", () => ({
+  getGlyphCache: () => ({
+    getGlyphDataUrl: () => null,
+    loadGlyphsByLetter: () => Promise.resolve(),
+  }),
+}));
+
+const sequence = createSequenceData({
   id: "sequence-9XAK",
   name: "Assemble Sequence",
   word: "AAAA",
   steps: [],
-} as unknown as SequenceData;
+});
 
 const event: ScanEventRow = {
   id: "shortcodes/9XAK/scanEvents/live",
@@ -114,5 +121,16 @@ describe("ScanCardPeek", () => {
     await expect
       .element(page.getByText("Loading card preview"))
       .not.toBeInTheDocument();
+  });
+
+  it("renders a repeated TKA word once in the alphabet", async () => {
+    renderPeek(entry({ word: "ABAB" }));
+
+    const title = page.getByRole("heading", { name: "AB" });
+    await expect.element(title).toBeInTheDocument();
+    await expect.element(page.getByText("ABAB")).not.toBeInTheDocument();
+    expect(
+      document.querySelector(".peek-title .tka-label.glyphs")
+    ).not.toBeNull();
   });
 });

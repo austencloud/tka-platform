@@ -1,4 +1,4 @@
-import type { Camera, Object3D, WebGLRenderer } from "three";
+import type { Camera, Object3D, Scene, WebGLRenderer } from "three";
 
 export interface WarmupHandles {
   renderer: WebGLRenderer;
@@ -9,19 +9,6 @@ export interface WarmupHandles {
 export interface WarmupOptions {
   onProgress?: (fraction: number) => void;
   signal?: AbortSignal;
-}
-
-interface RenderableObject extends Object3D {
-  material?: unknown;
-}
-
-function collectCompileTargets(root: Object3D): Object3D[] {
-  const targets: Object3D[] = [];
-  root.traverse((object) => {
-    const material = (object as RenderableObject).material;
-    if (material) targets.push(object);
-  });
-  return targets;
 }
 
 /**
@@ -45,31 +32,28 @@ export async function warmupRenderer(
     return;
   }
 
-  const targets = collectCompileTargets(scene);
-  let warned = false;
+  if (signal?.aborted) return;
 
-  const compile = async (object: Object3D): Promise<void> => {
-    try {
-      await renderer.compileAsync(object, camera, scene);
-    } catch (error) {
-      // A failed compile must never hold the curtain — the object simply pays
-      // its link cost on first render, as it did before this warmup existed.
-      if (!warned) {
-        warned = true;
-        console.warn("[scene-boot] shader warmup failed:", error);
-      }
+  // Three skips descendants of an invisible group during compilation. Expose
+  // the complete mounted scene just for one batched traversal, then restore
+  // every live flag. One compile call lets Three deduplicate shader programs;
+  // compiling hundreds of effect meshes separately made warmup itself slow.
+  const hiddenObjects: Object3D[] = [];
+  scene.traverse((object) => {
+    if (!object.visible) {
+      hiddenObjects.push(object);
+      object.visible = true;
     }
-  };
+  });
 
-  if (targets.length === 0) {
-    await compile(scene);
-    onProgress?.(1);
-    return;
+  try {
+    await renderer.compileAsync(scene, camera, scene as Scene);
+  } catch (error) {
+    // A failed compile must never hold the curtain — the scene simply pays its
+    // link cost on first render, as it did before this warmup existed.
+    console.warn("[scene-boot] shader warmup failed:", error);
+  } finally {
+    for (const object of hiddenObjects) object.visible = false;
   }
-
-  for (let index = 0; index < targets.length; index += 1) {
-    if (signal?.aborted) return;
-    await compile(targets[index]!);
-    onProgress?.((index + 1) / targets.length);
-  }
+  onProgress?.(1);
 }

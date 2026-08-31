@@ -1,4 +1,4 @@
-import type { Object3D, WebGLRenderer } from "three";
+import { Vector3, type Object3D, type WebGLRenderer } from "three";
 import { BubbleRenderer3D } from "../bubbles/bubble-renderer-3d";
 import { PetalPoolRenderer3D } from "../petals/petal-pool-renderer-3d";
 import {
@@ -17,6 +17,11 @@ import { SilkRenderer3D } from "../silk/silk-renderer-3d";
 import { AnimalRenderer3D } from "../animal/animal-renderer-3d";
 import { PulseRenderer3D } from "../pulse/pulse-renderer-3d";
 import { BloomRenderer3D } from "../bloom/bloom-renderer-3d";
+import {
+  CharcoalRenderer3D,
+  type CharcoalTipInput,
+} from "../charcoal/charcoal-renderer-3d";
+import { DynamicLightManager } from "../lighting/dynamic-light-manager";
 import type {
   BubbleTipSource3D,
   GooTipSource3D,
@@ -30,7 +35,10 @@ import type {
   PulseTipSource3D,
   BloomTipSource3D,
   FireTipSource3D,
+  CharcoalTipSource3D,
 } from "./scene-effect-source-3d";
+
+const MAX_SCENE_EFFECT_TIPS = 8 * 2 * 2;
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const value = Number.parseInt(hex.replace("#", ""), 16);
@@ -69,7 +77,9 @@ export class SceneEffectsManager3D {
   private readonly pulse: PulseTipSource3D[] = [];
   private readonly bloom: BloomTipSource3D[] = [];
   private readonly fire: FireTipSource3D[] = [];
+  private readonly charcoal: CharcoalTipSource3D[] = [];
   private readonly fireInputs: FireTipInput[] = [];
+  private readonly charcoalInputs: CharcoalTipInput[] = [];
   private readonly fireColors = new Map<
     string,
     { r: number; g: number; b: number }
@@ -86,6 +96,8 @@ export class SceneEffectsManager3D {
   private pulseRenderer: PulseRenderer3D | null = null;
   private bloomRenderer: BloomRenderer3D | null = null;
   private fireRenderer: FireRenderer3D | null = null;
+  private charcoalRenderer: CharcoalRenderer3D | null = null;
+  private dynamicLightManager: DynamicLightManager | null = null;
   private fireWasActive = false;
   private parent: Object3D | null = null;
   private nextSourceId = 1;
@@ -111,6 +123,10 @@ export class SceneEffectsManager3D {
     if (this.parent === parent) return;
     if (this.parent) this.disposeRenderers();
     this.parent = parent;
+    this.dynamicLightManager = new DynamicLightManager(
+      parent,
+      TIER_CONFIGS[QualityTier.HIGH]
+    );
     this.sparkleRenderer = new SparkleRenderer3D();
     this.gooRenderer = new GooRenderer3D();
     this.bubbleRenderer = new BubbleRenderer3D();
@@ -124,6 +140,10 @@ export class SceneEffectsManager3D {
     this.animalRenderer = new AnimalRenderer3D();
     this.pulseRenderer = new PulseRenderer3D();
     this.bloomRenderer = new BloomRenderer3D();
+    this.charcoalRenderer = new CharcoalRenderer3D(
+      QualityTier.HIGH,
+      MAX_SCENE_EFFECT_TIPS
+    );
     this.fireRenderer = new FireRenderer3D(QualityTier.HIGH, {
       // Eight performers × two props × two live ends. One scene pool keeps the
       // shipped high-tier density without constructing eight renderers when
@@ -141,7 +161,8 @@ export class SceneEffectsManager3D {
     this.silkRenderer.initialize(parent);
     this.animalRenderer.initialize(parent);
     this.pulseRenderer.initialize(parent);
-    this.bloomRenderer.initialize(parent);
+    this.bloomRenderer.initialize(parent, this.dynamicLightManager);
+    this.charcoalRenderer.initialize(parent);
     this.fireRenderer.initialize(parent);
     this.fireRenderer.primeGpuUpload();
   }
@@ -167,6 +188,7 @@ export class SceneEffectsManager3D {
     this.pulse.length = 0;
     this.bloom.length = 0;
     this.fire.length = 0;
+    this.charcoal.length = 0;
     let anyPlaying = false;
 
     for (const rig of this.rigs) {
@@ -207,6 +229,9 @@ export class SceneEffectsManager3D {
             break;
           case "fire":
             this.fire.push(source);
+            break;
+          case "charcoal":
+            this.charcoal.push(source);
             break;
         }
       }
@@ -254,6 +279,47 @@ export class SceneEffectsManager3D {
       this.fireInputs.length = 0;
       this.fireWasActive = false;
     }
+    if (this.charcoal.length > 0 && this.charcoalRenderer) {
+      this.charcoalRenderer.updateConfig(this.charcoal[0]!.params);
+      for (let index = 0; index < this.charcoal.length; index++) {
+        const source = this.charcoal[index]!;
+        let input = this.charcoalInputs[index];
+        if (!input) {
+          const created: CharcoalTipInput = {
+            sourceId: source.sourceId,
+            position: new Vector3(),
+            velocityX: 0,
+            velocityY: 0,
+            velocityZ: 0,
+            speed: 0,
+            jerk: 0,
+          };
+          this.charcoalInputs[index] = created;
+          input = created;
+        }
+        input.sourceId = source.sourceId;
+        input.position.set(
+          source.position.x,
+          source.position.y,
+          source.position.z
+        );
+        input.velocityX = source.velocity.x;
+        input.velocityY = source.velocity.y;
+        input.velocityZ = source.velocity.z;
+        input.speed = source.speed;
+        input.jerk = source.jerk;
+      }
+      this.charcoalInputs.length = this.charcoal.length;
+      const continuity = this.charcoal[0]!;
+      this.charcoalRenderer.update(this.charcoalInputs, delta, {
+        currentStep: continuity.currentStep,
+        totalSteps: continuity.totalSteps,
+        collisionFloorY: continuity.collisionFloorY,
+      });
+    } else {
+      this.charcoalInputs.length = 0;
+      this.charcoalRenderer?.reset();
+    }
     this.sparkleRenderer?.update(this.sparkles, delta);
     this.gooRenderer?.update(this.goo, delta);
     this.bubbleRenderer?.update(this.bubbles, delta);
@@ -288,7 +354,9 @@ export class SceneEffectsManager3D {
     this.pulseRenderer?.clear();
     this.bloomRenderer?.clear();
     this.fireRenderer?.reset();
+    this.charcoalRenderer?.reset();
     this.fireInputs.length = 0;
+    this.charcoalInputs.length = 0;
     this.fireWasActive = false;
   }
 
@@ -311,6 +379,8 @@ export class SceneEffectsManager3D {
     this.pulseRenderer?.dispose();
     this.bloomRenderer?.dispose();
     this.fireRenderer?.dispose();
+    this.charcoalRenderer?.dispose();
+    this.dynamicLightManager?.dispose();
     this.sparkleRenderer = null;
     this.gooRenderer = null;
     this.bubbleRenderer = null;
@@ -323,10 +393,16 @@ export class SceneEffectsManager3D {
     this.pulseRenderer = null;
     this.bloomRenderer = null;
     this.fireRenderer = null;
+    this.charcoalRenderer = null;
+    this.dynamicLightManager = null;
     this.fireWasActive = false;
   }
 
   getSmokeDebugSnapshot(): SmokeVolumeDebugSnapshot3D | null {
     return this.smokeVolumeRenderer?.getDebugSnapshot() ?? null;
+  }
+
+  getDynamicLightManager(): DynamicLightManager | null {
+    return this.dynamicLightManager;
   }
 }
