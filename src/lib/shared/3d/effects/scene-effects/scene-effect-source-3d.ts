@@ -9,6 +9,7 @@ import type {
   Animal3DParams,
   Pulse3DParams,
   Bloom3DParams,
+  Fire3DParams,
 } from "$lib/shared/effects/translators/webgl3d-types";
 import type { QualityTier } from "../types";
 
@@ -86,6 +87,14 @@ export interface BloomTipSource3D extends SceneEffectTipBase3D {
   qualityTier: QualityTier;
 }
 
+export interface FireTipSource3D extends SceneEffectTipBase3D {
+  effect: "fire";
+  params: Fire3DParams;
+  qualityTier: QualityTier;
+  /** Scalar jerk magnitude used for the brightest local-light stalls. */
+  jerk: number;
+}
+
 export type SceneEffectTipSource3D =
   | SparkleTipSource3D
   | GooTipSource3D
@@ -96,7 +105,8 @@ export type SceneEffectTipSource3D =
   | SilkTipSource3D
   | AnimalTipSource3D
   | PulseTipSource3D
-  | BloomTipSource3D;
+  | BloomTipSource3D
+  | FireTipSource3D;
 
 export interface SceneEffectRigFrame3D {
   playing: boolean;

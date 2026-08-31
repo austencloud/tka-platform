@@ -246,6 +246,7 @@
   const resolvedAnimal = $derived(resolveAnimal3D(effectsState.animal));
   const resolvedPulse = $derived(resolvePulse3D(effectsState.pulse));
   const resolvedBloom = $derived(resolveBloom3D(effectsState.bloom));
+  const resolvedFire = $derived(resolveFire3D(effectsState.fire));
 
   const pooledFrame: SceneEffectRigFrame3D = { playing: false, sources: [] };
   const pooledSources: Array<SceneEffectTipSource3D | null> = [
@@ -279,7 +280,8 @@
       effect !== "silk" &&
       effect !== "animal" &&
       effect !== "pulse" &&
-      effect !== "bloom"
+      effect !== "bloom" &&
+      effect !== "fire"
     )
       return;
 
@@ -343,6 +345,15 @@
             qualityTier,
           };
           break;
+        case "fire":
+          source = {
+            ...base,
+            effect,
+            params: resolvedFire,
+            qualityTier,
+            jerk: 0,
+          };
+          break;
       }
       pooledSources[slot] = source;
     }
@@ -381,6 +392,11 @@
         source.params = resolvedBloom;
         source.qualityTier = qualityTier;
         break;
+      case "fire":
+        source.params = resolvedFire;
+        source.qualityTier = qualityTier;
+        source.jerk = Math.hypot(tip.jerk.x, tip.jerk.y, tip.jerk.z);
+        break;
     }
 
     pooledPosition.set(tip.position.x, tip.position.y, tip.position.z);
@@ -398,7 +414,11 @@
     source.speed = pooledVelocity.length();
     source.currentStep = currentStep;
     source.propColor =
-      propIndex === 0 ? PROP_COLORS.blue.main : PROP_COLORS.red.main;
+      propIndex === 0
+        ? PROP_COLORS.blue.main
+        : source.effect === "fire"
+          ? "#ff2410"
+          : PROP_COLORS.red.main;
     pooledFrame.sources.push(source);
   }
 
@@ -848,7 +868,7 @@
                   )
                 : 0,
           });
-        } else if (effect === "fire") {
+        } else if (effect === "fire" && sceneEffectsManager === null) {
           fireTips.push({
             position: new Vector3(
               tip.position.x,
@@ -939,7 +959,7 @@
                   )
                 : 0,
           });
-        } else if (effect === "fire") {
+        } else if (effect === "fire" && sceneEffectsManager === null) {
           fireTips.push({
             position: new Vector3(
               tip.position.x,
