@@ -477,6 +477,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           showNonRadialPoints: options.showNonRadialPoints ?? true,
           additionalLayerCount,
           tunnelSpectrum: options.tunnelSpectrum,
+          tunnelPropColors: options.tunnelPropColors,
         });
       }
 

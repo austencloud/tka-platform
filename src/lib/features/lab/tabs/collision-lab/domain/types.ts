@@ -6,7 +6,7 @@
  */
 
 import type { Plane } from "@austencloud/scene-3d";
-import type { SimResult } from '../services/types';
+import type { SimResult } from "../services/types";
 
 export type DiamondPosition = "N" | "E" | "S" | "W";
 export type HandOrientation = "in" | "out"; // radial | antiradial
@@ -51,6 +51,8 @@ export type CollisionZoneType =
   | "prop-through-head"
   | "prop-through-arm"
   | "prop-through-prop"
+  | "arm-through-neck"
+  | "arm-through-torso"
   | "arms-through-each-other";
 
 export type SnapshotSeverity = "clear" | "graze" | "clip" | "penetrate";

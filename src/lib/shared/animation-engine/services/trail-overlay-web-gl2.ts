@@ -710,8 +710,12 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     const thicknessNdc = (lineWidth * 2) / Math.max(1, this.width);
     const decayPerSecond = decayRateFor(trailSettings.fadeDurationMs);
     const glowNdc = thicknessNdc * GLOW_RATIO;
-    const [bR, bG, bB] = hexToRgb(trailSettings.blueColor);
-    const [rR, rG, rB] = hexToRgb(trailSettings.redColor);
+    const [bR, bG, bB] = hexToRgb(
+      params.tunnelPropColors?.blue ?? trailSettings.blueColor
+    );
+    const [rR, rG, rB] = hexToRgb(
+      params.tunnelPropColors?.red ?? trailSettings.redColor
+    );
     const alpha = Math.max(0, Math.min(1, trailSettings.maxOpacity));
 
     const tips: TrailTipState[] = [];
@@ -813,7 +817,8 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     // Spectrum off: layers inherit the base blue/red trail color ([bR..]/[rR..],
     // which already carry the user's Choose-a-Look / custom colors) so the whole
     // kaleidoscope trails in one chosen pair instead of a rainbow.
-    const spectrum = params.tunnelSpectrum ?? true;
+    const spectrum =
+      (params.tunnelSpectrum ?? true) && !params.tunnelPropColors;
     const layerCount = this.layerRings.length;
     for (let i = 0; i < layerCount; i++) {
       const rings = this.layerRings[i]!;

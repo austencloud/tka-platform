@@ -13,7 +13,7 @@ import { createTunnelPresentationState } from "./tunnel-presentation-state.svelt
 
 function savedSnapshot(): TunnelSnapshot {
   return {
-    version: 2,
+    version: 3,
     tunnel: {
       config: {
         ...DEFAULT_CONFIG,
@@ -23,7 +23,10 @@ function savedSnapshot(): TunnelSnapshot {
         speedOverrides: { 1: 0.5 },
       },
       gridVisible: true,
-      spectrum: false,
+      colors: {
+        mode: "custom",
+        custom: { blue: "#123456", red: "#abcdef" },
+      },
       section: "props",
       presetRecipe: null,
     },
@@ -54,7 +57,10 @@ function controllerFor(): TunnelViewController {
   const state = {
     config: { ...DEFAULT_CONFIG, speedOverrides: {} },
     gridVisible: false,
-    spectrum: true,
+    colors: {
+      mode: "hands" as const,
+      custom: { blue: "#111111", red: "#eeeeee" },
+    },
     section: "tunnel" as TunnelSnapshot["tunnel"]["section"],
     presetRecipe: null as TunnelSnapshot["tunnel"]["presetRecipe"],
   };
@@ -68,11 +74,11 @@ function controllerFor(): TunnelViewController {
     set gridVisible(value) {
       state.gridVisible = value;
     },
-    get spectrum() {
-      return state.spectrum;
+    get colors() {
+      return state.colors;
     },
-    set spectrum(value) {
-      state.spectrum = value;
+    set colors(value) {
+      state.colors = value;
     },
     get section() {
       return state.section;
@@ -150,7 +156,7 @@ describe("tunnel presentation state", () => {
       tunnel: {
         config: { fold: 2 },
         gridVisible: true,
-        spectrum: false,
+        colors: { mode: "hands" },
         section: "playback",
         presetRecipe: null,
       },
@@ -166,7 +172,7 @@ describe("tunnel presentation state", () => {
     });
   });
 
-  it("starts new creator stages with pictograph hand colors but preserves saved spectrum", () => {
+  it("starts new creator stages with hand colors and preserves saved exact colors", () => {
     const create = (initialSnapshot?: TunnelSnapshot) => {
       const state = createTunnelPresentationState({
         initialSnapshot,
@@ -180,12 +186,13 @@ describe("tunnel presentation state", () => {
       });
       const controller = controllerFor();
       state.attachController(controller);
-      return state.capture().tunnel.spectrum;
+      return state.capture().tunnel.colors;
     };
 
-    expect(create()).toBe(false);
-    const legacySpectrum = savedSnapshot();
-    legacySpectrum.tunnel.spectrum = true;
-    expect(create(legacySpectrum)).toBe(true);
+    expect(create().mode).toBe("hands");
+    expect(create(savedSnapshot())).toEqual({
+      mode: "custom",
+      custom: { blue: "#123456", red: "#abcdef" },
+    });
   });
 });

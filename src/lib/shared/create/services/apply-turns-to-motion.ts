@@ -58,7 +58,7 @@ export function applyTurnToMotion(
     rotationDirection = findRotationContext(allSteps, stepIndex, color);
     if (rotationDirection !== currentMotion.rotationDirection) {
       logger.log(
-        `Applied context rotation ${rotationDirection} to beat ${stepIndex + 1} ${color}`
+        `Applied context rotation ${rotationDirection} to step ${stepIndex + 1} ${color}`
       );
     }
   }
@@ -78,24 +78,24 @@ function findRotationContext(
   color: MotionColor
 ): RotationDirection {
   for (let i = currentStepIndex - 1; i >= 0; i--) {
-    const beat = steps[i];
-    if (!beat) continue;
-    const motion = beat.motions?.[color];
+    const step = steps[i];
+    if (!step) continue;
+    const motion = step.motions?.[color];
     if (isVisibleMotion(motion) && motion.rotationDirection !== RotationDirection.NO_ROTATION) {
       logger.log(
-        `Found backward rotation context at beat ${i + 1}: ${motion.rotationDirection}`
+        `Found backward rotation context at step ${i + 1}: ${motion.rotationDirection}`
       );
       return motion.rotationDirection;
     }
   }
 
   for (let i = currentStepIndex + 1; i < steps.length; i++) {
-    const beat = steps[i];
-    if (!beat) continue;
-    const motion = beat.motions?.[color];
+    const step = steps[i];
+    if (!step) continue;
+    const motion = step.motions?.[color];
     if (isVisibleMotion(motion) && motion.rotationDirection !== RotationDirection.NO_ROTATION) {
       logger.log(
-        `Found forward rotation context at beat ${i + 1}: ${motion.rotationDirection}`
+        `Found forward rotation context at step ${i + 1}: ${motion.rotationDirection}`
       );
       return motion.rotationDirection;
     }

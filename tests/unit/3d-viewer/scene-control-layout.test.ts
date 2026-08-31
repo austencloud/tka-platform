@@ -20,6 +20,15 @@ describe("scene control workspace layout", () => {
     );
   });
 
+  it("uses the compact editor when a wide workspace is too shallow to expose a touch target", () => {
+    expect(resolveSceneControlLayout(1280, 400, true).presentation).toBe(
+      "compact"
+    );
+    expect(resolveSceneControlLayout(2560, 500, true).presentation).toBe(
+      "compact"
+    );
+  });
+
   it("uses an overlay for intermediate and split-view workspaces", () => {
     expect(resolveSceneControlLayout(820, 1180, true)).toEqual({
       presentation: "overlay",

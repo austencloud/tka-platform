@@ -4,7 +4,7 @@
   Boxes are atomic: a shared-transition group (ABC, S-V, the Y/Z pair) never
   splits across a wrap, so the grouping the codex actually means survives the
   reflow. Type identity - which the printed page carried through its geometry -
-  is carried here by a coloured rule under each box.
+  is carried by the historical nested borders on each pictograph.
 
   Sizing is the host's: set --codex-picto-size and the flow re-packs itself.
   Rendering is CodexBox's and CodexCell's. Nothing is re-implemented here.
@@ -12,12 +12,7 @@
 <script lang="ts">
   import CodexBox from "../../../guide/codex/_components/CodexBox.svelte";
   import CodexTransitionGlyph from "../../../guide/codex/_components/CodexTransitionGlyph.svelte";
-  import {
-    CODEX_BOXES,
-    typeName,
-    typeColor,
-    type TaggedBox,
-  } from "./codex-letters";
+  import { CODEX_BOXES, typeName, type TaggedBox } from "./codex-letters";
 
   let {
     onSelect,
@@ -47,11 +42,7 @@
     </div>
   {/if}
   {#each boxes as tagged, index (tagged.key)}
-    <div
-      class="abox"
-      style:--type-c={typeColor(tagged.type)}
-      aria-label={typeName(tagged.type)}
-    >
+    <div class="abox" aria-label={typeName(tagged.type)}>
       <!-- Flat-board captions all occupy this same reserved header slot. The
            print sheet keeps its original per-cell placement. -->
       <CodexBox
@@ -66,11 +57,6 @@
 </div>
 
 <style>
-  /* stretch, not flex-start: boxes in a wrapped row differ in height (a Greek
-     name under Sigma, a per-cell caption over Phi), and with flex-start each
-     box's type rule stops at its own bottom edge, so the rules stagger. Stretch
-     makes every box in a row the same height, which lands the rules on one
-     continuous line under the row. */
   .flow {
     position: relative;
     display: flex;
@@ -103,13 +89,9 @@
     height: 1.25rem;
     min-height: 0;
   }
-  /* The type rule runs under the whole box, so a box belongs to exactly one
-     type even when two types share a wrapped row. */
   .abox {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    padding-bottom: 0.15rem;
-    border-bottom: 3px solid var(--type-c);
   }
 </style>

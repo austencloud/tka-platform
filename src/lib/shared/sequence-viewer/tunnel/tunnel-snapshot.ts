@@ -7,8 +7,12 @@ import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/tr
 import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { TunnelPresetRecipe } from "./tunnel-preset-recipe";
 import type { TunnelComposition, TunnelSaveTarget } from "./tunnel-composition";
+import {
+  resolveTunnelPropColorState,
+  type TunnelPropColorState,
+} from "./tunnel-prop-colors";
 
-export const SNAPSHOT_VERSION = 2;
+export const SNAPSHOT_VERSION = 3;
 
 type TunnelSection = TunnelViewState["section"];
 type PathShape = "arc" | "linear" | "concave";
@@ -20,7 +24,7 @@ export interface TunnelSnapshot {
   tunnel: {
     config: TunnelConfig;
     gridVisible: boolean;
-    spectrum: boolean;
+    colors: TunnelPropColorState;
     section: TunnelSection;
     /** Preserves which recipe the author started from without treating generated
      * copies as authored choreography. Null is honest for old/custom work. */
@@ -56,42 +60,59 @@ export type TunnelSavedCallback = (receipt: TunnelSaveReceipt) => void;
 // TunnelConfig / EffectsConfig / TrailSettings are large, internally-validated
 // shapes; the boundary schema guards the envelope + enums and passes the deep
 // blobs through as `z.any()` (same pattern mandala uses for nested StepData).
-export const TunnelSnapshotSchema = z.object({
-  version: z.number(),
-  tunnel: z.object({
-    config: z.any(),
-    gridVisible: z.boolean(),
-    spectrum: z.boolean(),
-    section: z.enum([
-      "tunnel",
-      "props",
-      "speed",
-      "effects",
-      "effort",
-      "playback",
-    ]),
-    presetRecipe: z.any().optional(),
-  }),
-  effects: z.any(),
-  effort: z.string(),
-  paths: z.object({
-    pathShape: z.enum(["arc", "linear", "concave"]),
-    motionAwarePaths: z.boolean(),
-    bluePathLines: z.boolean(),
-    redPathLines: z.boolean(),
-  }),
-  playback: z.object({
-    bpm: z.number(),
-    playbackMode: z.enum(["continuous", "step"]),
-  }),
-  props: z.object({
-    bluePropType: z.string(),
-    redPropType: z.string(),
-    blueBuugengFlipped: z.boolean().optional(),
-    redBuugengFlipped: z.boolean().optional(),
-  }),
-  trailRender: z.any(),
-});
+const RawTunnelSnapshotSchema = z
+  .object({
+    version: z.number(),
+    tunnel: z.object({
+      config: z.any(),
+      gridVisible: z.boolean(),
+      colors: z
+        .object({
+          mode: z.enum(["hands", "spectrum", "custom"]),
+          custom: z.object({ blue: z.string(), red: z.string() }),
+        })
+        .optional(),
+      spectrum: z.boolean().optional(),
+      section: z.enum([
+        "tunnel",
+        "props",
+        "speed",
+        "effects",
+        "effort",
+        "playback",
+      ]),
+      presetRecipe: z.any().optional(),
+    }),
+    effects: z.any(),
+    effort: z.string(),
+    paths: z.object({
+      pathShape: z.enum(["arc", "linear", "concave"]),
+      motionAwarePaths: z.boolean(),
+      bluePathLines: z.boolean(),
+      redPathLines: z.boolean(),
+    }),
+    playback: z.object({
+      bpm: z.number(),
+      playbackMode: z.enum(["continuous", "step"]),
+    }),
+    props: z.object({
+      bluePropType: z.string(),
+      redPropType: z.string(),
+      blueBuugengFlipped: z.boolean().optional(),
+      redBuugengFlipped: z.boolean().optional(),
+    }),
+    trailRender: z.any(),
+  })
+  .refine(
+    (snapshot) =>
+      snapshot.tunnel.colors !== undefined ||
+      snapshot.tunnel.spectrum !== undefined,
+    { message: "Tunnel snapshot requires colors or legacy spectrum state" }
+  );
+
+export const TunnelSnapshotSchema = RawTunnelSnapshotSchema.transform(
+  (snapshot) => migrateTunnelSnapshot(snapshot as LegacyTunnelSnapshot)
+);
 
 import type { TunnelViewController } from "./tunnel-view-controller.svelte";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
@@ -148,7 +169,7 @@ export function captureTunnelSnapshot(deps: SnapshotDeps): TunnelSnapshot {
     tunnel: {
       config: clone(controller.config),
       gridVisible: controller.gridVisible,
-      spectrum: controller.spectrum,
+      colors: controller.colors,
       section: controller.section,
       presetRecipe: controller.presetRecipe,
     },
@@ -184,11 +205,11 @@ export function applyTunnelSnapshot(
     playback,
   } = deps;
 
-  // Tunnel topology + chrome (applyConfig clamps to the live budget; grid/spectrum/
-  // section are public $state fields on the controller).
+  // Tunnel topology + chrome (applyConfig clamps to the live budget; grid,
+  // colors, and section are public reactive fields on the controller).
   controller.applyConfig(snap.tunnel.config, snap.tunnel.presetRecipe ?? null);
   controller.gridVisible = snap.tunnel.gridVisible;
-  controller.spectrum = snap.tunnel.spectrum;
+  controller.colors = snap.tunnel.colors;
   controller.section = snap.tunnel.section;
 
   // Effects (its own capture/restore pair).
@@ -221,23 +242,47 @@ export function applyTunnelSnapshot(
   });
 }
 
-/** Converts the one earlier snapshot shape without claiming it had a preset
- * recipe. The performed configuration is copied verbatim. */
+interface LegacyTunnelSnapshot extends Omit<TunnelSnapshot, "tunnel"> {
+  tunnel: Omit<TunnelSnapshot["tunnel"], "colors"> & {
+    colors?: unknown;
+    spectrum?: boolean;
+  };
+}
+
+/** Converts earlier snapshot shapes without changing their performed look.
+ * Version 1 gains honest null recipe provenance; version 2's spectrum boolean
+ * becomes the explicit color mode. Exact values are normalized on every read. */
 export function migrateTunnelSnapshot(
-  snapshot: TunnelSnapshot
+  snapshot: TunnelSnapshot | LegacyTunnelSnapshot
 ): TunnelSnapshot {
+  const legacySpectrum =
+    "spectrum" in snapshot.tunnel ? snapshot.tunnel.spectrum : undefined;
+  const {
+    spectrum: _legacySpectrum,
+    colors,
+    ...tunnel
+  } = snapshot.tunnel as LegacyTunnelSnapshot["tunnel"];
+  const resolvedColors = resolveTunnelPropColorState(colors, legacySpectrum);
   if (
     snapshot.version >= SNAPSHOT_VERSION &&
-    "presetRecipe" in snapshot.tunnel
+    !("spectrum" in snapshot.tunnel) &&
+    "presetRecipe" in snapshot.tunnel &&
+    snapshot.tunnel.colors.mode === resolvedColors.mode &&
+    snapshot.tunnel.colors.custom.blue === resolvedColors.custom.blue &&
+    snapshot.tunnel.colors.custom.red === resolvedColors.custom.red
   ) {
-    return snapshot;
+    return snapshot as TunnelSnapshot;
   }
   return {
     ...snapshot,
     version: SNAPSHOT_VERSION,
     tunnel: {
-      ...snapshot.tunnel,
-      presetRecipe: null,
+      ...tunnel,
+      colors: resolvedColors,
+      presetRecipe:
+        "presetRecipe" in snapshot.tunnel
+          ? (snapshot.tunnel.presetRecipe ?? null)
+          : null,
     },
   };
 }

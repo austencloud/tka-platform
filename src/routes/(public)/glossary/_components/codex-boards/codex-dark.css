@@ -15,6 +15,8 @@
 .codex-dark {
   /* Cell */
   --codex-cell-border: var(--theme-stroke, oklch(0.42 0.04 270 / 0.42));
+  --codex-cell-frame: none;
+  --codex-cell-overlap: 0;
   --codex-caption: var(--theme-text-muted, oklch(0.72 0.015 270));
   --codex-name: var(--theme-text-muted, oklch(0.72 0.015 270));
 
@@ -48,8 +50,7 @@
   --codex-divider: var(--theme-stroke, oklch(0.42 0.04 270 / 0.35));
   --codex-type-word: var(--theme-text, oklch(0.96 0.01 270));
 
-  /* The pictograph draws its own dark-mode outline; the cell border is the
-     only frame the codex wants, exactly as in print. */
+  /* PictographTypeFrame supplies the historical nested type borders. */
   --pictograph-border: none;
 }
 

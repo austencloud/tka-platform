@@ -98,10 +98,11 @@ describe("Create workspace mandala viewer contract", () => {
     expect(mandalaDock).toContain("trailingAction={dockAction}");
   });
 
-  it("opens with canonical blue and red instead of saved custom colors", () => {
-    expect(mandalaPanel).toContain("customBlue: BLUE_STROKE");
-    expect(mandalaPanel).toContain("customRed: RED_STROKE");
+  it("edits the shared custom pair without replacing the full Mandala look", () => {
+    expect(mandalaPanel).not.toContain("customBlue:");
+    expect(mandalaPanel).not.toContain("customRed:");
     expect(mandalaPanel).toContain('colorMode: "solid"');
     expect(mandalaPanel).toContain("persistViewState: false");
+    expect(mandalaPanel).toContain("persistCustomColors: true");
   });
 });

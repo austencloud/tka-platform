@@ -465,6 +465,7 @@
           redProp={playback.animationState.redPropState}
           additionalLayers={tunnelLayers}
           tunnelSpectrum={tunnelController.spectrum}
+          tunnelPropColors={tunnelController.exactPropColors}
           tunnelSelectedLayer={tunnelVisualActive
             ? tunnelController.spotlightLayers
             : null}

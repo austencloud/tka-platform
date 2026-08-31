@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { TunnelSnapshotSchema, SNAPSHOT_VERSION, migrateTunnelSnapshot } from "../tunnel-snapshot";
+import {
+  TunnelSnapshotSchema,
+  SNAPSHOT_VERSION,
+  migrateTunnelSnapshot,
+} from "../tunnel-snapshot";
 import {
   captureTunnelSnapshot,
   applyTunnelSnapshot,
@@ -13,7 +17,10 @@ const validSnapshot = {
   tunnel: {
     config: DEFAULT_CONFIG,
     gridVisible: false,
-    spectrum: true,
+    colors: {
+      mode: "custom",
+      custom: { blue: "#123456", red: "#abcdef" },
+    },
     section: "tunnel",
     presetRecipe: null,
   },
@@ -52,7 +59,10 @@ function fakeDeps(): SnapshotDeps {
     controller: {
       config: { ...DEFAULT_CONFIG, fold: 4 },
       gridVisible: true,
-      spectrum: false,
+      colors: {
+        mode: "custom",
+        custom: { blue: "#123456", red: "#abcdef" },
+      },
       section: "effects",
       presetRecipe: null,
       applyConfig() {},
@@ -112,7 +122,10 @@ describe("captureTunnelSnapshot", () => {
     expect(snap.tunnel).toEqual({
       config: { ...DEFAULT_CONFIG, fold: 4 },
       gridVisible: true,
-      spectrum: false,
+      colors: {
+        mode: "custom",
+        custom: { blue: "#123456", red: "#abcdef" },
+      },
       section: "effects",
       presetRecipe: null,
     });
@@ -153,7 +166,10 @@ describe("applyTunnelSnapshot", () => {
     const store = {
       config: { ...DEFAULT_CONFIG },
       gridVisible: false,
-      spectrum: true,
+      colors: {
+        mode: "hands" as const,
+        custom: { blue: "#111111", red: "#eeeeee" },
+      },
       section: "tunnel",
       presetRecipe: null,
       effort: "linear",
@@ -181,11 +197,11 @@ describe("applyTunnelSnapshot", () => {
         set gridVisible(v) {
           store.gridVisible = v;
         },
-        get spectrum() {
-          return store.spectrum;
+        get colors() {
+          return store.colors;
         },
-        set spectrum(v) {
-          store.spectrum = v;
+        set colors(v) {
+          store.colors = v;
         },
         get section() {
           return store.section;
@@ -275,7 +291,10 @@ describe("applyTunnelSnapshot", () => {
       tunnel: {
         config: { ...DEFAULT_CONFIG, fold: 8 },
         gridVisible: true,
-        spectrum: false,
+        colors: {
+          mode: "custom",
+          custom: { blue: "#2255aa", red: "#dd7733" },
+        },
         section: "effort",
         presetRecipe: null,
       },
@@ -300,7 +319,10 @@ describe("applyTunnelSnapshot", () => {
     applyTunnelSnapshot(deps, target);
 
     expect(captureTunnelSnapshot(deps)).toEqual(target);
-    expect(deps.controller.applyConfig).toHaveBeenCalledWith(target.tunnel.config, null);
+    expect(deps.controller.applyConfig).toHaveBeenCalledWith(
+      target.tunnel.config,
+      null
+    );
     expect(deps.effects.replace).toHaveBeenCalledWith(target.effects);
     expect(deps.playback.handleBpmChange).toHaveBeenCalledWith(120);
   });
@@ -320,5 +342,23 @@ describe("migrateTunnelSnapshot", () => {
     expect(migrated.version).toBe(SNAPSHOT_VERSION);
     expect(migrated.tunnel.config).toEqual(legacy.tunnel.config);
     expect(migrated.tunnel.presetRecipe).toBeNull();
+  });
+
+  it("maps version-2 spectrum state to the version-3 color contract", () => {
+    const legacy = {
+      ...validSnapshot,
+      version: 2,
+      tunnel: {
+        ...validSnapshot.tunnel,
+        colors: undefined,
+        spectrum: false,
+      },
+    } as unknown as TunnelSnapshot;
+
+    const migrated = migrateTunnelSnapshot(legacy);
+
+    expect(migrated.tunnel.colors.mode).toBe("hands");
+    expect(migrated.tunnel).not.toHaveProperty("spectrum");
+    expect(TunnelSnapshotSchema.safeParse(legacy).success).toBe(true);
   });
 });

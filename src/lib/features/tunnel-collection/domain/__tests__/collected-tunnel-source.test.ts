@@ -76,7 +76,10 @@ function savedTunnel(
       tunnel: {
         config,
         gridVisible: false,
-        spectrum: true,
+        colors: {
+          mode: "spectrum",
+          custom: { blue: "#2e8bf0", red: "#ed1c24" },
+        },
         section: "tunnel",
       },
       effects: { activeEffect: "none" },

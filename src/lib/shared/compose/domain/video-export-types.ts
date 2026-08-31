@@ -1,6 +1,7 @@
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
+import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 export type VideoExportFormat = "webm" | "mp4";
 
@@ -10,7 +11,12 @@ export type VideoExportFormat = "webm" | "mp4";
  * named type — svelte-fast-check can't resolve named type exports from a
  * `*.svelte` module.
  */
-export type ExportPhase = "idle" | "capturing" | "encoding" | "complete" | "error";
+export type ExportPhase =
+  | "idle"
+  | "capturing"
+  | "encoding"
+  | "complete"
+  | "error";
 
 export interface VideoExportProgress {
   progress: number;
@@ -93,6 +99,8 @@ export interface VideoExportOrchestratorOptions {
    * (defaults to true) for normal sequence export.
    */
   tunnelSpectrum?: boolean;
+  /** Exact Left/Right pair for a Custom Tunnel export. */
+  tunnelPropColors?: TunnelPropColorPair | null;
 
   /**
    * Square source-size override (px). When set, the export ignores the live

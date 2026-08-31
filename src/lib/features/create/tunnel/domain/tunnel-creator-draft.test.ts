@@ -20,12 +20,16 @@ const sequence = {
 } as unknown as SequenceData;
 
 const presentation = {
-  version: 1,
+  version: 3,
   tunnel: {
     config: DEFAULT_CONFIG,
     gridVisible: true,
-    spectrum: false,
+    colors: {
+      mode: "hands",
+      custom: { blue: "#2e8bf0", red: "#ed1c24" },
+    },
     section: "props",
+    presetRecipe: null,
   },
   effects: { activeEffect: "none" },
   effort: "linear",

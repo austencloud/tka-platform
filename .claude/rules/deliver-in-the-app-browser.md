@@ -18,10 +18,10 @@ work whatsoever is to use the In App Browser."*
 
 ## The Rule
 
-**In the desktop app (the `mcp__Claude_Browser__*` tools are present), any
-message that announces work for Austen to review MUST open the destination in
-the in-app Browser pane in the same turn.** `preview_start({url})` for a new
-pane, `navigate` if one is already open.
+**In the desktop app, any message that announces work for Austen to review MUST
+open the destination in the in-app Browser pane in the same turn.** In Codex,
+call `open_in_codex` with a browser target. In Claude, call
+`preview_start({url})` for a new pane or `navigate` if one is already open.
 
 **AND that message MUST end with the clickable link.** Both, every time. They
 are not alternatives — they serve different moments, and each fails where the
@@ -92,6 +92,13 @@ route you used to develop it. A harness proves the code runs; it is not the
 thing he asked to see. If both matter, the real surface is what the pane shows
 and the harness is a link underneath.
 
+For repository UI work, final delivery happens **after** the task branch has
+been integrated into local `main` and its worktree has been removed. Point the
+pane at `https://localhost:5173/<real-route>`, which is Austen's primary-checkout
+dev server. A worktree server or alternate-port preview can prove the change
+during implementation, but it cannot be the surface handed to Austen for final
+feedback.
+
 When the shipping route genuinely will not load in the pane — a login wall, an
 `adminOnly` gate, a microphone or folder grant the pane's browser context does
 not have — open the closest surface that renders the REAL component and say in
@@ -118,8 +125,9 @@ Grep your own draft for URLs and "take a look" phrasing. If the message
 contains a route, page, or artifact Austen would open, both of these must be
 true before sending:
 
-1. A `mcp__Claude_Browser__` call happened this turn, pointed at the real
-   surface. If not, make it happen.
+1. An in-app Browser call happened this turn, pointed at the real integrated
+   surface (`open_in_codex` in Codex; the Claude Browser tool in Claude). If
+   not, make it happen.
 2. The message **ends** with the clickable `https://` link to that surface. If
    not, add it. No code fence, no bare host:port — see `clickable-links.md`.
 

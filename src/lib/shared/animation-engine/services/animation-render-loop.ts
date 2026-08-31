@@ -131,7 +131,8 @@ interface EffectDispatchContext {
     | undefined;
   /** Live prop sprite images — echo ghosts these at past poses. */
   propImages:
-    { blue: HTMLImageElement | null; red: HTMLImageElement | null } | undefined;
+    | { blue: HTMLImageElement | null; red: HTMLImageElement | null }
+    | undefined;
   loopDetectedThisFrame: boolean;
   isSeamlesslyLoopable: boolean;
 }
@@ -430,7 +431,8 @@ export class AnimationRenderLoop {
   /** Snapshot of render loop state for diagnostic reports. */
   getDiagnostics(): Record<string, unknown> {
     const fireRenderer = this.renderers.get("fire") as
-      (WebGLFireRenderer & { getDiagnostics?: () => unknown }) | undefined;
+      | (WebGLFireRenderer & { getDiagnostics?: () => unknown })
+      | undefined;
     const charcoalRenderer = this.renderers.get("charcoal");
     const ledRenderer = this.renderers.get("led");
     const trailOverlay = this.renderers.get("trails");
@@ -508,9 +510,12 @@ export class AnimationRenderLoop {
     params: RenderFrameParams
   ): EmitterTip[] {
     const layerCount = params.props.additionalLayers.length;
-    const spectrum = params.props.tunnelSpectrum ?? true;
-    const baseBlue = params.trailSettings.blueColor;
-    const baseRed = params.trailSettings.redColor;
+    const spectrum =
+      (params.props.tunnelSpectrum ?? true) && !params.props.tunnelPropColors;
+    const baseBlue =
+      params.props.tunnelPropColors?.blue ?? params.trailSettings.blueColor;
+    const baseRed =
+      params.props.tunnelPropColors?.red ?? params.trailSettings.redColor;
     const out: EmitterTip[] = [];
     for (const t of tips) {
       if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== effect)
@@ -593,9 +598,12 @@ export class AnimationRenderLoop {
     velocityY?: number;
   }[] {
     const layerCount = params.props.additionalLayers.length;
-    const spectrum = params.props.tunnelSpectrum ?? true;
-    const baseBlue = params.trailSettings.blueColor;
-    const baseRed = params.trailSettings.redColor;
+    const spectrum =
+      (params.props.tunnelSpectrum ?? true) && !params.props.tunnelPropColors;
+    const baseBlue =
+      params.props.tunnelPropColors?.blue ?? params.trailSettings.blueColor;
+    const baseRed =
+      params.props.tunnelPropColors?.red ?? params.trailSettings.redColor;
     const result: {
       x: number;
       y: number;
@@ -1288,7 +1296,8 @@ export class AnimationRenderLoop {
       }
       // Clear trail overlay (Canvas2D)
       const trailOverlayRenderer = this.renderers.get("trails") as
-        (ITrailOverlayCanvas & { canvas?: HTMLCanvasElement }) | undefined;
+        | (ITrailOverlayCanvas & { canvas?: HTMLCanvasElement })
+        | undefined;
       if (trailOverlayRenderer) {
         const trailCanvas = trailOverlayRenderer.canvas;
         if (trailCanvas) {
@@ -1308,7 +1317,8 @@ export class AnimationRenderLoop {
 
     // Route trail rendering through the overlay canvas
     const trailOverlay = this.renderers.get("trails") as
-      ITrailOverlayCanvas | undefined;
+      | ITrailOverlayCanvas
+      | undefined;
     if (trailOverlay && effectiveTrailsVisible && !params.suppress2DOverlays) {
       if (this.lastTrailFrameTime === 0) {
         trailOverlay.setVisible(true);
@@ -1376,6 +1386,7 @@ export class AnimationRenderLoop {
               ? additionalLayerRenderData
               : undefined,
           tunnelSpectrum: props.tunnelSpectrum,
+          tunnelPropColors: props.tunnelPropColors,
           tunnelSelectedLayer: props.tunnelSelectedLayer ?? null,
           blueProp: params.props.blueProp,
           redProp: params.props.redProp,
@@ -1670,6 +1681,7 @@ export class AnimationRenderLoop {
                 }))
               : undefined,
           tunnelSpectrum: props.tunnelSpectrum ?? true,
+          tunnelPropColors: props.tunnelPropColors,
         };
 
         const allLeds = this.ledSampler.update(
@@ -1741,7 +1753,8 @@ export class AnimationRenderLoop {
       if (hints && hints.tier !== this.previousQualityTier) {
         this.previousQualityTier = hints.tier;
         const fireRenderer = this.renderers.get("fire") as
-          WebGLFireRenderer | undefined;
+          | WebGLFireRenderer
+          | undefined;
         if (fireRenderer?.isInitialized()) {
           // Map quality tier → fire simulation quality level
           const fireQuality =

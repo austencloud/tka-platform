@@ -78,8 +78,6 @@ export const TERM_ALIASES: Record<string, string> = {
   "cap": "caps",
   "continuous assembly pattern": "caps",
   "continuous assembly patterns": "caps",
-  "beat": "step",
-  "beats": "step",
   "quarter time": "quarter-time",
   "qt": "quarter-time",
   "tau dash": "tau-dash",

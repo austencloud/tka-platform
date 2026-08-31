@@ -34,6 +34,16 @@ import {
   resolveMandalaExportDelivery,
   type MandalaExportDelivery,
 } from "../services/mandala-export-delivery";
+import { resolveViewerCustomColorPair } from "../domain/viewer-custom-colors";
+import {
+  ensureViewerCustomColorPreference,
+  loadViewerCustomColorPreference,
+  saveViewerCustomColorPreference,
+} from "../services/viewer-custom-color-preferences";
+import {
+  createViewerCustomColorState,
+  type ViewerCustomColorState,
+} from "./viewer-custom-colors-state.svelte";
 
 export type MandalaExportPhase =
   | "idle"
@@ -49,6 +59,7 @@ export interface MandalaControllerSources {
   getBluePropType: () => string | undefined;
   getRedPropType: () => string | undefined;
   pathPolicy: AnimationVisibilityStateManager;
+  customColorState?: ViewerCustomColorState;
 }
 
 const BASE_PERIOD = 5;
@@ -77,6 +88,8 @@ export interface MandalaControllerOptions {
   viewOverrides?: Partial<MandalaViewState>;
   /** Keep this controller's changes out of the shared viewer preference. */
   persistViewState?: boolean;
+  /** Let an embedded Mandala edit the shared pair without saving its other look. */
+  persistCustomColors?: boolean;
 }
 function clampReps(n: number): number {
   return Math.max(1, Math.min(10, Math.round(n)));
@@ -136,8 +149,23 @@ export class MandalaViewerController {
   depth = $state(100);
   colorMode = $state<MandalaColorMode>("flow");
   preset = $state<MandalaPresetId>("aurora");
-  customBlue = $state("#4fc3f7");
-  customRed = $state("#ef5350");
+  readonly customColorState: ViewerCustomColorState;
+
+  get customBlue(): string {
+    return this.customColorState.colors.blue;
+  }
+
+  set customBlue(value: string) {
+    this.customColorState.setColor("blue", value);
+  }
+
+  get customRed(): string {
+    return this.customColorState.colors.red;
+  }
+
+  set customRed(value: string) {
+    this.customColorState.setColor("red", value);
+  }
   lineWeight = $state(2.5);
   exporting = $state(false);
 
@@ -200,6 +228,35 @@ export class MandalaViewerController {
     this.#pathPolicy = sources.pathPolicy;
     this.#pathShape = toMandalaPathShape(this.#pathPolicy.getPathPolicy());
 
+    const persistViewState = options.persistViewState ?? true;
+    const persistCustomColors = options.persistCustomColors ?? persistViewState;
+    const savedView = loadViewState();
+    if (sources.customColorState) {
+      this.customColorState = sources.customColorState;
+    } else {
+      const preferenceColors = persistCustomColors
+        ? ensureViewerCustomColorPreference()
+        : loadViewerCustomColorPreference(undefined, false);
+      this.customColorState = createViewerCustomColorState(
+        preferenceColors,
+        persistCustomColors ? saveViewerCustomColorPreference : undefined
+      );
+    }
+    if (
+      typeof options.viewOverrides?.customBlue === "string" ||
+      typeof options.viewOverrides?.customRed === "string"
+    ) {
+      this.customColorState.hydrate(
+        resolveViewerCustomColorPair(
+          {
+            blue: options.viewOverrides.customBlue,
+            red: options.viewOverrides.customRed,
+          },
+          this.customColorState.colors
+        )
+      );
+    }
+
     const cfg = loadExportConfig();
     this.exportReps = cfg.reps;
     this.exportResolution = cfg.resolution;
@@ -207,19 +264,17 @@ export class MandalaViewerController {
 
     // Restore the persisted look (each field guarded so a partial/old payload
     // falls back to the field default).
-    const view = { ...loadViewState(), ...options.viewOverrides };
+    const view = { ...savedView, ...options.viewOverrides };
     if (typeof view.rotation === "number") this.rotation = view.rotation;
     if (typeof view.speed === "number") this.speed = view.speed;
     if (typeof view.depth === "number") this.depth = view.depth;
     if (view.colorMode !== undefined) this.colorMode = view.colorMode;
     if (view.preset !== undefined) this.preset = view.preset;
-    if (typeof view.customBlue === "string") this.customBlue = view.customBlue;
-    if (typeof view.customRed === "string") this.customRed = view.customRed;
     if (typeof view.lineWeight === "number") this.lineWeight = view.lineWeight;
 
     // Persist the look on change (separate key from export config).
     $effect(() => {
-      if (options.persistViewState === false) return;
+      if (!persistViewState) return;
       const snapshot: MandalaViewState = {
         rotation: this.rotation,
         speed: this.speed,

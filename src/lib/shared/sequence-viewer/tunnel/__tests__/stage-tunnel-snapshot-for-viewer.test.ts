@@ -8,11 +8,14 @@ import {
 import { EFFECTS_CONFIG_STORAGE_KEY } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 const snapshot = {
-  version: 2,
+  version: 3,
   tunnel: {
     config: { ...DEFAULT_CONFIG, fold: 6 },
     gridVisible: true,
-    spectrum: false,
+    colors: {
+      mode: "custom",
+      custom: { blue: "#123456", red: "#abcdef" },
+    },
     section: "props",
     presetRecipe: null,
   },
@@ -46,6 +49,8 @@ describe("stageTunnelSnapshotForViewer", () => {
       settings: { updateSettings: vi.fn() },
       saveViewState: vi.fn(),
       storage: { setItem: vi.fn() },
+      ensureCustomColorPreference: vi.fn(),
+      stageCustomColors: vi.fn(),
     } as unknown as TunnelViewerStagingDependencies;
 
     stageTunnelSnapshotForViewer(snapshot, dependencies);
@@ -74,6 +79,10 @@ describe("stageTunnelSnapshotForViewer", () => {
       snapshot.props
     );
     expect(dependencies.saveViewState).toHaveBeenCalledWith(snapshot.tunnel);
+    expect(dependencies.ensureCustomColorPreference).toHaveBeenCalledOnce();
+    expect(dependencies.stageCustomColors).toHaveBeenCalledWith(
+      snapshot.tunnel.colors.custom
+    );
     expect(dependencies.storage?.setItem).toHaveBeenCalledWith(
       EFFECTS_CONFIG_STORAGE_KEY,
       JSON.stringify(snapshot.effects)

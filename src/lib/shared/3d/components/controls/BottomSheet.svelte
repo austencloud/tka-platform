@@ -164,14 +164,17 @@
 
   @media (max-height: 34rem) {
     .sheet-layer {
-      bottom: max(3.875rem, calc(env(safe-area-inset-bottom) + 3.875rem));
+      bottom: 0;
     }
 
-    /* Short landscape phones need the whole space above the control bar. The
-       default 78dvh cap left performer tabs with a 27px viewport after the
-       scope row and tab bar took their fixed space. */
+    /* Short viewports need the whole stage while the sheet is open. The
+       compact action bar already leaves with the sheet, and exposing only the
+       bottom slice of a taller host transport is neither useful nor clear. */
     .sheet-panel {
       max-height: 100%;
+      background:
+        linear-gradient(var(--theme-panel-bg), var(--theme-panel-bg)),
+        var(--theme-page-bg, #0c0e16);
     }
 
     .grab-handle {
@@ -186,6 +189,23 @@
     .sheet-body {
       flex: 1 1 auto;
       padding: 6px 14px 8px;
+    }
+  }
+
+  /* On the smallest portrait screens the host transport wraps into two rows.
+     Leaving that whole dock visible gives the editor less than one touch
+     target of usable height. The sheet temporarily owns the stage instead;
+     its always-visible close control returns the transport immediately. */
+  @media (max-width: 47.999rem) and (max-height: 36rem) {
+    .sheet-layer {
+      bottom: 0;
+    }
+
+    .sheet-panel {
+      max-height: 100%;
+      background:
+        linear-gradient(var(--theme-panel-bg), var(--theme-panel-bg)),
+        var(--theme-page-bg, #0c0e16);
     }
   }
 

@@ -20,7 +20,10 @@ import type { IAnimationPrecomputer } from "./IAnimationPrecomputer";
 import type { PropTypeChanger } from "./prop-type-changer.svelte";
 import type { FireTipTracker } from "./fire-tip-tracker";
 import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
-import { tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
+import {
+  tunnelPropColor,
+  type TunnelPropColorPair,
+} from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import { getBaseMotionColors } from "./svg-generator";
 import {
   DEFAULT_FAN_APPEARANCE,
@@ -50,6 +53,9 @@ export class PropTypeManager {
   // a sprite regenerate (see handleAdditionalLayers).
   private lastLayerCount = 0;
   private lastSpectrum = true;
+  private lastTunnelPropColorSig = "";
+  private lastBasePropColorSig = "";
+  private currentBaseColors: TunnelPropColorPair | null = null;
   // Per-layer prop-type signature. A performer-set change (a copy swapping its
   // prop) must regenerate that layer's sprite even when count + spectrum hold.
   private lastLayerPropSig = "";
@@ -194,7 +200,11 @@ export class PropTypeManager {
       this.fireTipTracker?.reset();
 
       // Hot-swap textures
-      this.loadPropTextures(state, prevDarkMode).then(() => {
+      this.loadPropTextures(
+        state,
+        prevDarkMode,
+        props.tunnelPropColors ?? null
+      ).then(() => {
         // Clear trails again after texture load to discard any points
         // captured during the async gap with old prop dimensions
         this.trailCapturer?.clearTrails();
@@ -220,7 +230,8 @@ export class PropTypeManager {
   handleSettingsChange(
     state: AnimatorState,
     getFrameParams: FrameParamsProvider,
-    prevDarkMode: boolean
+    prevDarkMode: boolean,
+    colors: TunnelPropColorPair | null = null
   ): boolean {
     this.latestFrameParamsProvider = getFrameParams;
     // No overrides - use settings via propTypeChangeService
@@ -308,7 +319,7 @@ export class PropTypeManager {
 
       // Hot-swap textures without full re-initialization
       // The render loop keeps running with old textures until new ones load
-      this.loadPropTextures(state, prevDarkMode).then(() => {
+      this.loadPropTextures(state, prevDarkMode, colors).then(() => {
         this.trailCapturer?.clearTrails();
         this.trailsSuppressedUntilTextureLoad = false;
         // Same per-color crossfade start as handleOverrides — see its comment.
@@ -330,12 +341,18 @@ export class PropTypeManager {
   handleAdditionalLayers(
     props: AnimationEngineProps,
     state: AnimatorState,
-    getFrameParams: FrameParamsProvider
+    getFrameParams: FrameParamsProvider,
+    darkMode = false
   ): void {
     this.latestFrameParamsProvider = getFrameParams;
     const additionalLayers = props.additionalLayers ?? [];
     const layerCount = additionalLayers.length;
     const spectrum = props.tunnelSpectrum ?? true;
+    const exactColors = props.tunnelPropColors ?? null;
+    this.currentBaseColors = exactColors;
+    const colorSig = exactColors
+      ? `${exactColors.blue}:${exactColors.red}`
+      : "";
     // Signature of every layer's per-hand prop type. Empty entries fall back to
     // the global prop, so an all-default set yields "|"-joined blanks — a
     // performer swapping a prop changes the signature and re-generates sprites.
@@ -349,10 +366,12 @@ export class PropTypeManager {
     if (
       layerCount !== this.lastLayerCount ||
       spectrum !== this.lastSpectrum ||
+      colorSig !== this.lastTunnelPropColorSig ||
       propSig !== this.lastLayerPropSig
     ) {
       this.lastLayerCount = layerCount;
       this.lastSpectrum = spectrum;
+      this.lastTunnelPropColorSig = colorSig;
       this.lastLayerPropSig = propSig;
       this.additionalLayerTexturesLoaded = [];
       this.additionalLayerTexturesLoading = [];
@@ -373,7 +392,8 @@ export class PropTypeManager {
           const { blue: blueColor, red: redColor } = this.additionalLayerColors(
             i,
             layerCount,
-            spectrum
+            spectrum,
+            exactColors
           );
           // Each performer's per-hand prop; falls back to the global prop when a
           // layer carries no explicit type (default 1-skin appearance = today).
@@ -410,6 +430,17 @@ export class PropTypeManager {
         }
       }
     }
+
+    if (colorSig !== this.lastBasePropColorSig) {
+      this.lastBasePropColorSig = colorSig;
+      this.animationRenderer?.prepareBluePropCrossfade();
+      this.animationRenderer?.prepareRedPropCrossfade();
+      void this.loadPropTextures(state, darkMode, exactColors).then(() => {
+        this.animationRenderer?.startBluePropCrossfade();
+        this.animationRenderer?.startRedPropCrossfade();
+        this.triggerRenderWithLatestFrame(state);
+      });
+    }
   }
 
   /**
@@ -428,8 +459,10 @@ export class PropTypeManager {
   private additionalLayerColors(
     layerIndex: number,
     layerCount: number,
-    spectrum: boolean
+    spectrum: boolean,
+    exactColors: TunnelPropColorPair | null = null
   ): { blue: string; red: string } {
+    if (exactColors) return exactColors;
     const baseColors = spectrum ? null : getBaseMotionColors();
     return {
       blue: baseColors
@@ -458,7 +491,8 @@ export class PropTypeManager {
     layerCount: number,
     spectrum: boolean,
     propType: string,
-    perLayerTypes?: ReadonlyArray<{ blue: string; red: string }>
+    perLayerTypes?: ReadonlyArray<{ blue: string; red: string }>,
+    exactColors: TunnelPropColorPair | null = null
   ): Promise<void> {
     if (layerCount <= 0 || !this.animationRenderer) return;
     this.lastLayerCount = layerCount;
@@ -473,7 +507,8 @@ export class PropTypeManager {
         const { blue, red } = this.additionalLayerColors(
           i,
           layerCount,
-          spectrum
+          spectrum,
+          exactColors
         );
         // Per-performer prop types when supplied (Performer Set export); else the
         // single global prop for both hands — today's export behavior, unchanged.
@@ -498,7 +533,8 @@ export class PropTypeManager {
    */
   async loadPropTextures(
     state: AnimatorState,
-    prevDarkMode: boolean
+    prevDarkMode: boolean,
+    colors?: TunnelPropColorPair | null
   ): Promise<void> {
     if (!this.propTextureService) return;
 
@@ -532,10 +568,19 @@ export class PropTypeManager {
 
     // Pass dark mode state for prop color selection
     // This allows preview isolation - local preview dark mode instead of global
+    const effectiveColors =
+      colors === undefined ? this.currentBaseColors : colors;
+    this.currentBaseColors = effectiveColors;
+    if (colors !== undefined) {
+      this.lastBasePropColorSig = effectiveColors
+        ? `${effectiveColors.blue}:${effectiveColors.red}`
+        : "";
+    }
     await this.propTextureService.loadPropTextures(
       blueRenderType,
       redRenderType,
-      prevDarkMode
+      prevDarkMode,
+      effectiveColors
     );
 
     // CRITICAL: Sync dimensions to engine state immediately after loading

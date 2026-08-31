@@ -68,6 +68,8 @@ const W_ZONE: Record<string, number> = {
   "prop-through-head": 500,
   "prop-through-torso": 400,
   "arm-through-face": 500,
+  "arm-through-neck": 500,
+  "arm-through-torso": 400,
   "prop-through-arm": 60,
   "arms-through-each-other": 40,
   "prop-through-prop": 30,

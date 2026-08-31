@@ -41,6 +41,7 @@ captureEffectDiagnostics to the context menu.
   import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import type { TrailSettings } from "../domain/types/trail-types";
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
+  import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
   import GlyphRenderer from "./GlyphRenderer.svelte";
   import GlyphOverlay from "./layers/GlyphOverlay.svelte";
   import PathLinesOverlay from "./layers/PathLinesOverlay.svelte";
@@ -75,6 +76,7 @@ captureEffectDiagnostics to the context menu.
     redProp,
     additionalLayers = [],
     tunnelSpectrum = true,
+    tunnelPropColors = null,
     tunnelSelectedLayer = null,
     gridVisible = true,
     gridMode = GridMode.DIAMOND,
@@ -132,6 +134,7 @@ captureEffectDiagnostics to the context menu.
     redProp: PropState | null;
     additionalLayers?: AdditionalLayerProps[];
     tunnelSpectrum?: boolean;
+    tunnelPropColors?: TunnelPropColorPair | null;
     tunnelSelectedLayer?: number | readonly number[] | null;
     gridVisible?: boolean;
     gridMode?: GridMode | null;
@@ -405,6 +408,7 @@ captureEffectDiagnostics to the context menu.
       redProp,
       additionalLayers,
       tunnelSpectrum,
+      tunnelPropColors,
       tunnelSelectedLayer,
       gridVisible,
       gridMode,

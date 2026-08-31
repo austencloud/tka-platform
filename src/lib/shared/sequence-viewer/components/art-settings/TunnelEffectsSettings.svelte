@@ -1,6 +1,8 @@
 <script lang="ts">
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import LabeledColorPairPicker from "$lib/shared/ui/components/LabeledColorPairPicker.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import type { TunnelViewController } from "../../tunnel/tunnel-view-controller.svelte";
   import { changeArtSetting, reportArtSetting } from "./art-setting-change";
   import type {
@@ -70,8 +72,9 @@
   // Hand colors match the choreography cards. Spectrum remains an explicit
   // instance-coloring appearance for saved tunnels that already authored it.
   const colorOptions = [
-    { value: "uniform", label: "Pictograph hands" },
-    { value: "rainbow", label: "Spectrum copies" },
+    { value: "hands", label: "Hand colors" },
+    { value: "spectrum", label: "Spectrum" },
+    { value: "custom", label: "Custom pair" },
   ];
 </script>
 
@@ -82,25 +85,43 @@
     <span class="rt-section-label">Colors</span>
     <SegmentedControl
       options={colorOptions}
-      value={controller.spectrum ? "rainbow" : "uniform"}
+      value={controller.colorMode}
       onchange={(v) =>
         changeSetting(
           "art_tunnel",
           "colors",
-          controller.spectrum ? "rainbow" : "uniform",
+          controller.colorMode,
           v,
-          () => (controller.spectrum = v === "rainbow")
+          () => (controller.colorMode = v as "hands" | "spectrum" | "custom")
         )}
       color="accent"
       size="sm"
     />
-    {#if !dense}
-      <p class="section-hint">
-        {controller.spectrum
-          ? "Stage hues identify generated copies; card hand identity stays blue Left and red Right."
-          : "Stage props exactly match the blue Left and red Right pictographs."}
-      </p>
-    {/if}
+    <Crossfade key={controller.colorMode} animateHeight>
+      {#if controller.colorMode === "custom"}
+        <LabeledColorPairPicker
+          blue={controller.customPropColors.blue}
+          red={controller.customPropColors.red}
+          onchange={(hand, value) => {
+            const previous = controller.customPropColors[hand];
+            controller.setCustomPropColor(hand, value);
+            reportSetting(
+              "art_tunnel",
+              hand === "blue" ? "left_prop_color" : "right_prop_color",
+              previous,
+              value,
+              true
+            );
+          }}
+        />
+      {:else if !dense}
+        <p class="section-hint">
+          {controller.colorMode === "spectrum"
+            ? "Generated copies use distinct hues; Left and Right stay labeled throughout the editor."
+            : "Stage props match the pictograph Left and Right hand colors."}
+        </p>
+      {/if}
+    </Crossfade>
   </div>
   <EffectsPanel
     layout={dense ? "strip" : "sidebar"}

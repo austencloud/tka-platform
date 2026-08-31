@@ -23,7 +23,10 @@ const snapshot = {
   tunnel: {
     config: DEFAULT_CONFIG,
     gridVisible: false,
-    spectrum: true,
+    colors: {
+      mode: "custom",
+      custom: { blue: "#123456", red: "#abcdef" },
+    },
     section: "tunnel",
   },
   effects: { activeEffect: "none" },
@@ -174,6 +177,14 @@ describe("tunnelPublicPayload", () => {
     expect(payload.snapshot.tunnel.config).toEqual(DEFAULT_CONFIG);
     expect(payload.snapshot.tunnel.presetRecipe).toBeNull();
     expect(JSON.stringify(payload)).not.toContain("personal-recipe-42");
+  });
+
+  it("preserves the normalized exact pair in public copies", () => {
+    const payload = tunnelPublicPayload(tunnelFixture());
+    expect(payload.snapshot.tunnel.colors).toEqual({
+      mode: "custom",
+      custom: { blue: "#123456", red: "#abcdef" },
+    });
   });
 });
 
