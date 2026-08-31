@@ -204,4 +204,36 @@ describe("shared viewer custom color state", () => {
 
     cleanup();
   });
+
+  it("lets the focused Mandala persist colors without saving its other look", () => {
+    const storage = new MemoryStorage();
+    vi.stubGlobal("localStorage", storage);
+    const pathPolicy = new AnimationVisibilityStateManager({ ephemeral: true });
+    let mandala!: MandalaViewerController;
+
+    const cleanup = effect_root(() => {
+      mandala = new MandalaViewerController(
+        {
+          getSequence: () => ({ steps: [] }) as SequenceData,
+          getBluePropType: () => "staff",
+          getRedPropType: () => "staff",
+          pathPolicy,
+        },
+        {
+          viewOverrides: { colorMode: "solid", preset: "custom" },
+          persistViewState: false,
+          persistCustomColors: true,
+        }
+      );
+    });
+
+    mandala.customBlue = "#00d4ff";
+
+    expect(
+      JSON.parse(storage.getItem(VIEWER_CUSTOM_COLORS_STORAGE_KEY)!)
+    ).toMatchObject({ colors: { blue: "#00d4ff" } });
+    expect(storage.getItem("tka_mandala_view_state")).toBeNull();
+
+    cleanup();
+  });
 });

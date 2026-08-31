@@ -88,6 +88,8 @@ export interface MandalaControllerOptions {
   viewOverrides?: Partial<MandalaViewState>;
   /** Keep this controller's changes out of the shared viewer preference. */
   persistViewState?: boolean;
+  /** Let an embedded Mandala edit the shared pair without saving its other look. */
+  persistCustomColors?: boolean;
 }
 function clampReps(n: number): number {
   return Math.max(1, Math.min(10, Math.round(n)));
@@ -227,16 +229,17 @@ export class MandalaViewerController {
     this.#pathShape = toMandalaPathShape(this.#pathPolicy.getPathPolicy());
 
     const persistViewState = options.persistViewState ?? true;
+    const persistCustomColors = options.persistCustomColors ?? persistViewState;
     const savedView = loadViewState();
     if (sources.customColorState) {
       this.customColorState = sources.customColorState;
     } else {
-      const preferenceColors = persistViewState
+      const preferenceColors = persistCustomColors
         ? ensureViewerCustomColorPreference()
         : loadViewerCustomColorPreference(undefined, false);
       this.customColorState = createViewerCustomColorState(
         preferenceColors,
-        persistViewState ? saveViewerCustomColorPreference : undefined
+        persistCustomColors ? saveViewerCustomColorPreference : undefined
       );
     }
     if (

@@ -5,10 +5,6 @@
     MandalaPathShape,
     MandalaRenderOptions,
   } from "$lib/shared/mandala/domain/mandala-types";
-  import {
-    BLUE_STROKE,
-    RED_STROKE,
-  } from "$lib/shared/mandala/domain/mandala-constants";
   import PanelHeader from "$lib/shared/create/components/PanelHeader.svelte";
   import MandalaPane from "$lib/shared/sequence-viewer/components/MandalaPane.svelte";
   import type { ControlDockAction } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
@@ -46,16 +42,14 @@
       pathPolicy: getAnimationVisibilityManager(),
     },
     {
-      // This focused viewer always opens in the standard stroke colors.
-      // Palette controls can change them without replacing the full viewer's
-      // saved look.
+      // This focused viewer owns no other lasting Mandala look, but its Custom
+      // palette is the same authored pair available from Tunnel.
       viewOverrides: {
         colorMode: "solid",
         preset: "custom",
-        customBlue: BLUE_STROKE,
-        customRed: RED_STROKE,
       },
       persistViewState: false,
+      persistCustomColors: true,
     }
   );
 

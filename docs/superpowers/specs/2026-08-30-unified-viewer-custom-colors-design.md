@@ -21,7 +21,8 @@ mode selections.
 factory passed to both controllers; there is no module-level reactive singleton.
 The shell-owned Tunnel controller creates the state for the sequence viewer,
 and every Mandala controller mounted beside it receives that same instance from
-`ArtPane`.
+`ArtPane`. The Create workspace's focused Mandala panel reads and edits the same
+canonical preference while keeping its other Mandala look ephemeral.
 
 `viewer-custom-color-preferences.ts` owns validation, migration, and browser
 storage. `LabeledColorPairPicker.svelte` remains the single UI owner.
@@ -45,8 +46,9 @@ not replace the canonical preference. Before staging an artifact, the current
 preference is materialized; the artifact pair travels through a one-use session
 handoff. An explicit picker edit is what persists a new preference.
 
-Embedded editors that already opt out of view persistence also receive an
-ephemeral custom-color state.
+Embedded editors that opt out of both view and color persistence receive an
+ephemeral custom-color state. The focused Create Mandala panel opts into color
+persistence only, so its spin, depth, and other look settings remain local.
 
 ## Accessibility
 
