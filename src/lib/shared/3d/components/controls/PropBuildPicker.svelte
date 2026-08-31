@@ -2,7 +2,7 @@
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { popIn } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
-  import type { PropBuildPreviewOption } from "../../domain/scene-prop-catalog";
+  import type { PropBuildPreviewOption } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
   interface Props {
     label: string;

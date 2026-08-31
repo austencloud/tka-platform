@@ -638,6 +638,7 @@
                     onSaveToLibrary={interactions.handleSave}
                     onPropChange={(prop) =>
                       interactions.handlePropChange(prop, "viewer")}
+                    onFanAppearanceChange={ctx.handleFanAppearanceChange}
                     playback={ctx.splitPanePlayback}
                     imageComposition={layout.isImageExportActive
                       ? {
@@ -839,6 +840,8 @@
                         renderMode={ctx.renderMode}
                         playbackMode={ctx.playbackMode}
                         selectedPropType={ctx.bluePropType}
+                        fanAppearance={ctx.fanAppearance}
+                        onFanAppearanceChange={ctx.handleFanAppearanceChange}
                         propChirality={createGlobalChiralitySeam()}
                         sequence={ctx.effectiveSequence}
                         showInlineExportProgress={false}

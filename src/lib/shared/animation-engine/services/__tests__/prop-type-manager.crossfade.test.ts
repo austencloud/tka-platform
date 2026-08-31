@@ -175,6 +175,100 @@ describe("PropTypeManager.handleOverrides crossfade trigger", () => {
     expect(renderer.startRedPropCrossfade).toHaveBeenCalledTimes(1);
   });
 
+  it("crossfades a fan build without changing the choreography prop type", async () => {
+    const propTextureService = {
+      state: {
+        blueDimensions: { width: 260, height: 207 },
+        redDimensions: { width: 260, height: 207 },
+      },
+      loadPropTextures: vi.fn().mockResolvedValue(undefined),
+    };
+    const { ptm, renderer } = makeManager({ propTextureService });
+    const state = makeState("fan", "fan");
+
+    ptm.handleOverrides(
+      {
+        bluePropType: "fan",
+        redPropType: "fan",
+        fanAppearance: {
+          build: "pictograph",
+          frameColor: "black",
+          cover: "bare",
+        },
+      } as any,
+      state,
+      getFrameParams,
+      false
+    );
+    await flushHotSwap();
+    renderer.prepareBluePropCrossfade.mockClear();
+    renderer.prepareRedPropCrossfade.mockClear();
+    renderer.startBluePropCrossfade.mockClear();
+    renderer.startRedPropCrossfade.mockClear();
+    propTextureService.loadPropTextures.mockClear();
+
+    const changed = ptm.handleOverrides(
+      {
+        bluePropType: "fan",
+        redPropType: "fan",
+        fanAppearance: {
+          build: "fire",
+          frameColor: "black",
+          cover: "bare",
+        },
+      } as any,
+      state,
+      getFrameParams,
+      false
+    );
+    await flushHotSwap();
+
+    expect(changed).toBe(true);
+    expect(state.currentBluePropType).toBe("fan");
+    expect(state.currentRedPropType).toBe("fan");
+    expect(propTextureService.loadPropTextures).toHaveBeenCalledWith(
+      "fan__fire_bare",
+      "fan__fire_bare",
+      false
+    );
+    expect(renderer.prepareBluePropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.prepareRedPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.startBluePropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.startRedPropCrossfade).toHaveBeenCalledTimes(1);
+
+    renderer.prepareBluePropCrossfade.mockClear();
+    renderer.prepareRedPropCrossfade.mockClear();
+    renderer.startBluePropCrossfade.mockClear();
+    renderer.startRedPropCrossfade.mockClear();
+    propTextureService.loadPropTextures.mockClear();
+
+    ptm.handleOverrides(
+      {
+        bluePropType: "fan",
+        redPropType: "fan",
+        fanAppearance: {
+          build: "fire",
+          frameColor: "black",
+          cover: "covered",
+        },
+      } as any,
+      state,
+      getFrameParams,
+      false
+    );
+    await flushHotSwap();
+
+    expect(propTextureService.loadPropTextures).toHaveBeenCalledWith(
+      "fan__fire_covered",
+      "fan__fire_covered",
+      false
+    );
+    expect(renderer.prepareBluePropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.prepareRedPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.startBluePropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.startRedPropCrossfade).toHaveBeenCalledTimes(1);
+  });
+
   it("does not fade when nothing actually changed (handleOverrides returns false)", async () => {
     const { ptm, renderer } = makeManager();
     const state = makeState("staff", "staff");

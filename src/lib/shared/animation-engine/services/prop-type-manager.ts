@@ -25,6 +25,12 @@ import {
   type TunnelPropColorPair,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import { getBaseMotionColors } from "./svg-generator";
+import {
+  DEFAULT_FAN_APPEARANCE,
+  normalizeFanAppearance,
+  resolveFanRenderKey,
+  type FanAppearance,
+} from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
 import type { AnimationEngineProps } from "./animation-engine.svelte";
 import type { AnimatorState } from "../state/animator-state.svelte";
@@ -35,6 +41,9 @@ export type FrameParamsProvider = () => RenderFrameParams;
 export class PropTypeManager {
   propTypeOverrideBlue: string | null = null;
   propTypeOverrideRed: string | null = null;
+  private renderPropTypeBlue: string | null = null;
+  private renderPropTypeRed: string | null = null;
+  private fanAppearance: FanAppearance = DEFAULT_FAN_APPEARANCE;
   trailsSuppressedUntilTextureLoad = false;
 
   // Additional layer texture loading for tunnel mode (indexed by layer)
@@ -125,11 +134,19 @@ export class PropTypeManager {
     this.latestFrameParamsProvider = getFrameParams;
     const newBlue = props.bluePropType ?? this.propTypeOverrideBlue ?? "staff";
     const newRed = props.redPropType ?? this.propTypeOverrideRed ?? "staff";
+    const nextAppearance = normalizeFanAppearance(
+      props.fanAppearance ??
+        this.settingsService?.currentSettings?.fanAppearance
+    );
+    const newBlueRender = resolveFanRenderKey(newBlue, nextAppearance);
+    const newRedRender = resolveFanRenderKey(newRed, nextAppearance);
 
     // Check if overrides changed
     if (
       newBlue !== this.propTypeOverrideBlue ||
-      newRed !== this.propTypeOverrideRed
+      newRed !== this.propTypeOverrideRed ||
+      newBlueRender !== this.renderPropTypeBlue ||
+      newRedRender !== this.renderPropTypeRed
     ) {
       // Per-color hot-swap flags for the crossfade below. Gated on
       // propTypeOverrideBlue/Red already being non-null: the FIRST time an
@@ -137,11 +154,11 @@ export class PropTypeManager {
       // initial state, not swapping an already-displayed prop, so it must not
       // fade — only a genuine value-to-value change does.
       const blueChanged =
-        this.propTypeOverrideBlue !== null &&
-        newBlue !== this.propTypeOverrideBlue;
+        this.renderPropTypeBlue !== null &&
+        newBlueRender !== this.renderPropTypeBlue;
       const redChanged =
-        this.propTypeOverrideRed !== null &&
-        newRed !== this.propTypeOverrideRed;
+        this.renderPropTypeRed !== null &&
+        newRedRender !== this.renderPropTypeRed;
 
       // Remember the last pose before the incoming sequence/prop state reaches
       // the canvas. The texture load is asynchronous, so waiting until it
@@ -152,6 +169,9 @@ export class PropTypeManager {
 
       this.propTypeOverrideBlue = newBlue;
       this.propTypeOverrideRed = newRed;
+      this.renderPropTypeBlue = newBlueRender;
+      this.renderPropTypeRed = newRedRender;
+      this.fanAppearance = nextAppearance;
       state.setBluePropType(newBlue);
       state.setRedPropType(newRed);
       state.setLegacyPropType(newBlue);
@@ -220,7 +240,30 @@ export class PropTypeManager {
     // Handle texture reload signal (track last signal to detect changes)
     const textureSignal =
       this.propTypeChangeService?.state.textureReloadSignal ?? 0;
-    if (textureSignal > 0 && textureSignal !== this.lastTextureReloadSignal) {
+    const settingsAppearance = normalizeFanAppearance(
+      this.settingsService?.currentSettings?.fanAppearance
+    );
+    const settingsBlue =
+      this.propTypeChangeService?.state.bluePropType ??
+      state.currentBluePropType;
+    const settingsRed =
+      this.propTypeChangeService?.state.redPropType ?? state.currentRedPropType;
+    const settingsBlueRender = resolveFanRenderKey(
+      settingsBlue,
+      settingsAppearance
+    );
+    const settingsRedRender = resolveFanRenderKey(
+      settingsRed,
+      settingsAppearance
+    );
+    const renderAppearanceChanged =
+      this.renderPropTypeBlue !== null &&
+      (settingsBlueRender !== this.renderPropTypeBlue ||
+        settingsRedRender !== this.renderPropTypeRed);
+    if (
+      (textureSignal > 0 && textureSignal !== this.lastTextureReloadSignal) ||
+      renderAppearanceChanged
+    ) {
       this.lastTextureReloadSignal = textureSignal;
 
       // Per-color hot-swap flags for the crossfade below, captured
@@ -230,13 +273,11 @@ export class PropTypeManager {
       // and "new" values here are equal and nothing fades) from a genuine
       // later settings-driven change (old and new differ, so it fades).
       const blueChanged =
-        this.propTypeChangeService != null &&
-        this.propTypeChangeService.state.bluePropType !==
-          state.currentBluePropType;
+        this.renderPropTypeBlue !== null &&
+        settingsBlueRender !== this.renderPropTypeBlue;
       const redChanged =
-        this.propTypeChangeService != null &&
-        this.propTypeChangeService.state.redPropType !==
-          state.currentRedPropType;
+        this.renderPropTypeRed !== null &&
+        settingsRedRender !== this.renderPropTypeRed;
 
       if (blueChanged) this.animationRenderer?.prepareBluePropCrossfade();
       if (redChanged) this.animationRenderer?.prepareRedPropCrossfade();
@@ -253,6 +294,9 @@ export class PropTypeManager {
           this.propTypeChangeService.state.bluePropType
         );
       }
+      this.renderPropTypeBlue = settingsBlueRender;
+      this.renderPropTypeRed = settingsRedRender;
+      this.fanAppearance = settingsAppearance;
 
       // Invalidate path cache FIRST - it holds pre-computed endpoint positions
       // for the old prop geometry. If the render loop reads stale cache data
@@ -312,9 +356,9 @@ export class PropTypeManager {
     // Signature of every layer's per-hand prop type. Empty entries fall back to
     // the global prop, so an all-default set yields "|"-joined blanks — a
     // performer swapping a prop changes the signature and re-generates sprites.
-    const propSig = additionalLayers
+    const propSig = `${this.fanAppearance.build}:${this.fanAppearance.frameColor}:${this.fanAppearance.cover}|${additionalLayers
       .map((l) => `${l.bluePropType ?? ""}:${l.redPropType ?? ""}`)
-      .join("|");
+      .join("|")}`;
 
     // Spectrum colors fan across the active stack, so they depend on layerCount
     // AND the spectrum toggle. Per-performer props depend on propSig. When any
@@ -355,12 +399,20 @@ export class PropTypeManager {
           // layer carries no explicit type (default 1-skin appearance = today).
           const bluePropType = layer.bluePropType ?? state.currentBluePropType;
           const redPropType = layer.redPropType ?? state.currentRedPropType;
+          const blueRenderType = resolveFanRenderKey(
+            bluePropType,
+            this.fanAppearance
+          );
+          const redRenderType = resolveFanRenderKey(
+            redPropType,
+            this.fanAppearance
+          );
 
           this.animationRenderer
             .loadAdditionalLayerPropTextures(
               i,
-              bluePropType,
-              redPropType,
+              blueRenderType,
+              redRenderType,
               blueColor,
               redColor
             )
@@ -465,8 +517,8 @@ export class PropTypeManager {
         const redType = t?.red ?? propType;
         return this.animationRenderer!.loadAdditionalLayerPropTextures(
           i,
-          blueType,
-          redType,
+          resolveFanRenderKey(blueType, this.fanAppearance),
+          resolveFanRenderKey(redType, this.fanAppearance),
           blue,
           red
         ).then(() => {
@@ -489,6 +541,7 @@ export class PropTypeManager {
     // Use overrides if set, otherwise read from settings
     let bluePropType = state.currentBluePropType;
     let redPropType = state.currentRedPropType;
+    let appearance = this.fanAppearance;
 
     if (this.propTypeOverrideBlue != null || this.propTypeOverrideRed != null) {
       // Use overrides - bypass settings entirely
@@ -499,12 +552,19 @@ export class PropTypeManager {
       const settings = this.settingsService.currentSettings;
       bluePropType = settings.bluePropType || settings.propType || "staff";
       redPropType = settings.redPropType || settings.propType || "staff";
+      appearance = normalizeFanAppearance(settings.fanAppearance);
 
       // Also update engine state to keep it in sync
       state.setBluePropType(bluePropType);
       state.setRedPropType(redPropType);
       state.setLegacyPropType(bluePropType);
     }
+
+    this.fanAppearance = appearance;
+    const blueRenderType = resolveFanRenderKey(bluePropType, appearance);
+    const redRenderType = resolveFanRenderKey(redPropType, appearance);
+    this.renderPropTypeBlue = blueRenderType;
+    this.renderPropTypeRed = redRenderType;
 
     // Pass dark mode state for prop color selection
     // This allows preview isolation - local preview dark mode instead of global
@@ -517,8 +577,8 @@ export class PropTypeManager {
         : "";
     }
     await this.propTextureService.loadPropTextures(
-      bluePropType,
-      redPropType,
+      blueRenderType,
+      redRenderType,
       prevDarkMode,
       effectiveColors
     );

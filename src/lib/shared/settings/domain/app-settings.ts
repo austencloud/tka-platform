@@ -7,10 +7,14 @@
 
 import type { PropType } from "../../pictograph/prop/domain/enums/prop-type";
 import type { CompositionRecipe } from "../../pictograph/prop/domain/prop-composition-recipes";
-import type { GridMode, GridPosition } from "../../pictograph/grid/domain/enums/grid-enums";
+import type {
+  GridMode,
+  GridPosition,
+} from "../../pictograph/grid/domain/enums/grid-enums";
 import type { BackgroundType } from "@austencloud/backgrounds";
 import type { BackgroundLabSettings } from "$lib/shared/background-builder/domain/lab-settings-types";
 import type { TimeSignatureKey } from "../../foundation/domain/models/time-signature";
+import type { FanAppearance } from "../../pictograph/prop/domain/fan-appearance";
 
 /**
  * Prop Preset - A saved prop configuration for quick switching
@@ -32,6 +36,8 @@ export interface AppSettings {
   propType?: PropType; // Legacy - kept for backward compatibility
   bluePropType?: PropType; // Per-color prop type for blue motions
   redPropType?: PropType; // Per-color prop type for red motions
+  /** Shared visual build for fan/bigfan across 2D, Tunnel, 3D, and rails. */
+  fanAppearance?: FanAppearance;
   catDogMode?: boolean; // Whether CatDog Mode is enabled in prop type settings
   blueBuugengFlipped?: boolean; // Flip buugeng for blue hand (asymmetric prop)
   redBuugengFlipped?: boolean; // Flip buugeng for red hand (asymmetric prop)

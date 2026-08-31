@@ -19,6 +19,7 @@
   import type { MandalaExportDelivery } from "../services/mandala-export-delivery";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
   import type { ViewerPlaybackState } from "../domain/viewer-prop-groups";
   import type {
     PlaybackMode,
@@ -93,6 +94,8 @@
     onPlaybackModeChange = () => {},
     onPlaybackToggle = () => {},
     onPropChange,
+    fanAppearance,
+    onFanAppearanceChange,
     onArtExport,
     onArtShare,
     artShareActive = false,
@@ -134,6 +137,8 @@
     /** Change the art view's prop type (routes through the viewer's shared
      *  handlePropTypeChange). Surfaces the Props rail section in the tunnel. */
     onPropChange?: (propType: PropType) => void;
+    fanAppearance?: FanAppearance;
+    onFanAppearanceChange?: (appearance: FanAppearance) => void;
     /**
      * Resolved viewer export entry. When the type is "tunnel" the caller MUST
      * thread `additionalLayersForBeat` + the all-false `overlayOverrides`
@@ -863,6 +868,8 @@
       bluePropType={bluePropType ?? null}
       redPropType={redPropType ?? null}
       {onPropChange}
+      {fanAppearance}
+      {onFanAppearanceChange}
       {onArtSettingChange}
       exporting={exportAttemptBusy}
     />

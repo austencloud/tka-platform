@@ -16,6 +16,7 @@
 -->
 <script lang="ts" module>
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
   export interface ControlDockTab {
     id: string;
@@ -24,6 +25,7 @@
     icon?: string;
     /** Live prop artwork for the Props destination. Takes precedence over icon. */
     propType?: PropType;
+    fanAppearance?: FanAppearance;
     /** Tints the active state (and the solo dot when there's no icon). */
     accentColor?: string;
     /** Two-color dot pair instead of an icon (mandala "Colors" tab). */
@@ -356,7 +358,11 @@
                  the ducked nav). -->
             <i class="fas fa-chevron-down" aria-hidden="true"></i>
           {:else if t.propType}
-            <RailPropGlyph propType={t.propType} size={20} />
+            <RailPropGlyph
+              propType={t.propType}
+              fanAppearance={t.fanAppearance}
+              size={20}
+            />
           {:else if t.dots}
             <span class="cat-dots">
               <span class="dot" style:background={t.dots[0]}></span>

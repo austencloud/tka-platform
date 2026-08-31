@@ -18,6 +18,7 @@
     onBpmChange,
     onSaveToLibrary,
     onPropChange,
+    onFanAppearanceChange,
     onRenderProgress,
     onUnfocusPane,
     onStepClick,
@@ -163,6 +164,8 @@
       onPlaybackToggle={onPlaybackToggle ?? (() => {})}
       layout={layout.isMobile ? "bottom" : "sidebar"}
       {onPropChange}
+      fanAppearance={propRendering.fanAppearance}
+      {onFanAppearanceChange}
       {onArtExport}
       {onArtShare}
       {artShareActive}
@@ -208,6 +211,8 @@
       onPlaybackToggle={onPlaybackToggle ?? (() => {})}
       layout={layout.isMobile ? "bottom" : "sidebar"}
       {onPropChange}
+      fanAppearance={propRendering.fanAppearance}
+      {onFanAppearanceChange}
       {onArtExport}
       {onArtShare}
       {artShareActive}

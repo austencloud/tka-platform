@@ -7,6 +7,7 @@ import { updateTheme as updateThemeService } from "../../theme/services/theme-se
 import { applyThemeForBackground } from "../../settings/utils/background-theme-calculator";
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "../../pictograph/prop/domain/enums/prop-type";
+import { DEFAULT_FAN_APPEARANCE } from "../../pictograph/prop/domain/fan-appearance";
 import type { AppSettings, PropPreset } from "../domain/app-settings";
 // Dynamic import: posthog-activity-logger → posthog → $env/dynamic/public.
 // Static import crashes the composition worker (no globalThis.__sveltekit_dev).
@@ -89,6 +90,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   catDogMode: false,
   bluePropType: PropType.STAFF,
   redPropType: PropType.STAFF,
+  fanAppearance: DEFAULT_FAN_APPEARANCE,
   blockedStartPositions: [],
   blockedStartPositionsByGridMode: {},
   propPresets: DEFAULT_PROP_PRESETS,
@@ -128,8 +130,7 @@ class SettingsState {
     (settings: AppSettings | null, userId: string) => void
   >();
   private lastRemoteApplication:
-    | { settings: AppSettings | null; userId: string }
-    | undefined;
+    { settings: AppSettings | null; userId: string } | undefined;
   private syncInitialized = false;
   private isSavingToFirebase = false;
   private pendingFirebaseSave: Promise<void> | null = null;

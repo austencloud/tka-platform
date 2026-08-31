@@ -61,7 +61,12 @@ describe("prop studio build previews", () => {
   });
 
   it("shows the exact current fan configuration in every dependent picker", () => {
-    const builds = fanBuildPreviewOptions("white", "covered");
+    const appearance = {
+      build: "day" as const,
+      frameColor: "white" as const,
+      cover: "covered" as const,
+    };
+    const builds = fanBuildPreviewOptions(appearance);
     expect(builds.find((option) => option.id === "day")?.image).toContain(
       "fan-day-white-covered"
     );
@@ -89,13 +94,13 @@ describe("prop studio build previews", () => {
       sourceUrl: "https://flowtoys.com/products/doodlegrip-practice-fans",
     });
 
-    const frames = fanFramePreviewOptions("bare");
+    const frames = fanFramePreviewOptions({ ...appearance, cover: "bare" });
     expect(frames.map((option) => option.image)).toEqual([
       "/images/props/build-previews/fan-day-black-bare-complete.webp",
       "/images/props/build-previews/fan-day-white-bare-complete.webp",
     ]);
 
-    const covers = fanCoverPreviewOptions("day", "white");
+    const covers = fanCoverPreviewOptions(appearance);
     expect(covers.map((option) => option.image)).toEqual([
       "/images/props/build-previews/fan-day-white-bare-complete.webp",
       "/images/props/build-previews/fan-day-white-covered-complete.webp",

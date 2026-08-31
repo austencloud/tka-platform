@@ -48,6 +48,7 @@
     onBpmChange = () => {},
     onSaveToLibrary,
     onPropChange,
+    onFanAppearanceChange,
     onRenderProgress,
     onUnfocusPane,
     onStepClick,
@@ -370,6 +371,7 @@
       {onBpmChange}
       {onSaveToLibrary}
       {onPropChange}
+      {onFanAppearanceChange}
       {onRenderProgress}
       {onUnfocusPane}
       {onStepClick}
@@ -453,6 +455,7 @@
         {onBpmChange}
         {onSaveToLibrary}
         {onPropChange}
+        {onFanAppearanceChange}
         {onRenderProgress}
         {onUnfocusPane}
         {onStepClick}

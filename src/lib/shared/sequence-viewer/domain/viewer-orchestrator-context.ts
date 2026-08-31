@@ -20,6 +20,7 @@ import type { TunnelViewController } from "$lib/shared/sequence-viewer/tunnel/tu
 import type { MandalaViewerController } from "$lib/shared/sequence-viewer/state/mandala-viewer-controller.svelte";
 import type { PendingActionType } from "$lib/shared/sequence-viewer/services/pending-action-queue";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
 import type {
   ImageCompositionProps,
@@ -85,6 +86,8 @@ export interface OrchestratorContext {
   redPropType: PropType | undefined;
   catDogModeEnabled: boolean | undefined;
   handlePropTypeChange: (propType: PropType) => void;
+  fanAppearance: FanAppearance;
+  handleFanAppearanceChange: (appearance: FanAppearance) => void;
 
   imgShowWord: boolean;
   imgShowStartPos: boolean;
