@@ -1,7 +1,7 @@
 <script lang="ts">
   import { T, useTask, useThrelte, useScheduler } from "@threlte/core";
   import { layers, type ThrelteLayers } from "@threlte/extras";
-  import { onMount, onDestroy, type Snippet } from "svelte";
+  import { onMount, onDestroy, tick, type Snippet } from "svelte";
   import {
     PerformerRig,
     PLANE_MODE_CONFIGS,
@@ -173,6 +173,8 @@
     onEnvironmentTransitionChange?: (
       observation: EnvironmentTransitionObservation<BackgroundType>
     ) => void;
+    /** Holds shader warmup until the full interactive effects tree is mounted. */
+    onEffectsRuntimeReadyChange?: (ready: boolean) => void;
   }
 
   let {
@@ -198,6 +200,7 @@
     environmentTransitionVisualMode = "internal",
     onPerformerReadinessChange,
     onEnvironmentTransitionChange,
+    onEffectsRuntimeReadyChange,
   }: Props = $props();
   // The scene now iterates viewer3DState.performerManager. This compatibility
   // prop can be empty while 3D Studio shows the environment before choreography.
@@ -214,6 +217,27 @@
   );
   const sceneFeatures = getSceneFeatureContext();
   let sceneEffectsManager = $state<SceneEffectsManager3D | null>(null);
+  let effectsReadyToken = 0;
+
+  function handleEffectsManagerReady(ready: boolean): void {
+    const token = ++effectsReadyToken;
+    if (!ready) {
+      onEffectsRuntimeReadyChange?.(false);
+      return;
+    }
+    // The manager and every performer orchestrator mount in the same Svelte
+    // update. Wait through that flush and one real frame before allowing the
+    // whole-scene shader compile to take its snapshot.
+    const afterPaint = () =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    void (async () => {
+      await tick();
+      await afterPaint();
+      await tick();
+      await afterPaint();
+      if (token === effectsReadyToken) onEffectsRuntimeReadyChange?.(true);
+    })();
+  }
   let readyCharacterKeys = $state<Record<string, true>>({});
   const sceneEffectsCoordinatorModule = enableEffects
     ? import("../effects/scene-effects/SceneEffectsCoordinator3D.svelte")
@@ -412,12 +436,13 @@
     }
 
     if (enableEffects) {
+      onEffectsRuntimeReadyChange?.(false);
       void import("../effects/scene-effects/scene-effects-manager-3d").then(
         ({ SceneEffectsManager3D }) => {
           if (mounted) sceneEffectsManager = new SceneEffectsManager3D();
         }
       );
-    }
+    } else onEffectsRuntimeReadyChange?.(true);
 
     const interactionCanvas = renderer.domElement;
     if (interactionCanvas) {
@@ -609,6 +634,7 @@
       manager={sceneEffectsManager}
       parent={sceneEffectsLayerRoot}
       {petalEnvironmentProfile}
+      onReadyChange={handleEffectsManagerReady}
     />
   {/await}
 {/if}
