@@ -440,6 +440,35 @@ describe("SpineTwister crossed-arm posture", () => {
 });
 
 describe("AvatarAnimator body routing", () => {
+  it("preserves an elbow circle for targets that would lock the arm straight", () => {
+    const chain = makeArm(
+      new Vector3(0, 0, 0),
+      new Vector3(1, 0, 0),
+      0.3,
+      0.27
+    );
+    const animator = new AvatarAnimator(
+      {} as never,
+      {} as never
+    ) as unknown as {
+      limitArmExtensionForClearance: (
+        arm: BoneChain,
+        target: { position: Vector3 }
+      ) => void;
+    };
+    const farTarget = { position: new Vector3(1, 0, 0) };
+    const nearTarget = { position: new Vector3(0.4, 0, 0) };
+
+    animator.limitArmExtensionForClearance(chain, farTarget);
+    animator.limitArmExtensionForClearance(chain, nearTarget);
+
+    expect(farTarget.position.length()).toBeCloseTo(0.57 * 0.86, 6);
+    expect(farTarget.position.clone().normalize()).toEqual(
+      new Vector3(1, 0, 0)
+    );
+    expect(nearTarget.position).toEqual(new Vector3(0.4, 0, 0));
+  });
+
   it("subtracts the spine twist already present from the stance target", () => {
     const animator = new AvatarAnimator(
       {} as never,
