@@ -56,7 +56,7 @@ describe("worktree finish lifecycle", () => {
     git(task, "commit", "-m", `change ${path}`);
   }
 
-  function finish(...extraArgs: string[]) {
+  function finish(cwd = repo, ...extraArgs: string[]) {
     return spawnSync(
       process.execPath,
       [
@@ -67,7 +67,7 @@ describe("worktree finish lifecycle", () => {
         "--skip-checks",
         ...extraArgs,
       ],
-      { cwd: repo, encoding: "utf8" }
+      { cwd, encoding: "utf8" }
     );
   }
 
@@ -157,6 +157,20 @@ describe("worktree finish lifecycle", () => {
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("visual work requires --route /real-route");
+    expect(existsSync(task)).toBe(true);
+  });
+
+  it("refuses before merging when invoked from inside the task worktree", () => {
+    commitTaskFile("feature.txt", "finished from task\n");
+    const mainBefore = git(repo, "rev-parse", "HEAD");
+
+    const result = finish(task);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      "Windows cannot remove the calling terminal's current worktree"
+    );
+    expect(git(repo, "rev-parse", "HEAD")).toBe(mainBefore);
     expect(existsSync(task)).toBe(true);
   });
 });

@@ -24,7 +24,7 @@
  * is logged to .git/automerge-log.jsonl with the pre-merge origin/main SHA so a
  * bad merge can be reverted.
  *
- * Local task completion (the normal agent workflow):
+ * Local task completion (run from the primary checkout):
  *   node scripts/worktree-automerge.mjs --finish codex/my-task --route /real-route
  *   node scripts/worktree-automerge.mjs --finish codex/my-task --nonvisual
  *
@@ -192,6 +192,11 @@ function ensureInside(child, parent) {
   return rel !== "" && !rel.startsWith("..") && !isAbsolute(rel);
 }
 
+function isInsideOrSame(child, parent) {
+  const rel = relative(resolve(parent), resolve(child));
+  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+}
+
 function removeRootNodeModules(worktreePath) {
   const dependencyPath = join(worktreePath, "node_modules");
   if (!existsSync(dependencyPath)) return;
@@ -229,6 +234,11 @@ function localFinish() {
   if (!primary) fail(`no registered worktree has branch ${MAIN}`);
   if (task.path === primary.path)
     fail("the task branch cannot be the main checkout");
+  if (isInsideOrSame(realpathSync(process.cwd()), realpathSync(task.path))) {
+    fail(
+      `Windows cannot remove the calling terminal's current worktree; change directory to ${primary.path} and run the finish command there`
+    );
+  }
   if (statusCodes(task.path).length) {
     fail(`task worktree is dirty: ${task.path}`);
   }

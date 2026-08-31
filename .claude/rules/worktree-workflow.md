@@ -40,9 +40,13 @@ or “may I delete the worktree?” gates after the implementation was approved.
 2. Fetch remote state, bring the task branch current with local `main`, and
    repeat any verification invalidated by that update. Never rewrite a branch
    shared by another task.
-3. Finish the lifecycle with one guarded command from anywhere in the repo:
+3. Change the terminal's current directory to the primary checkout, then finish
+   the lifecycle with one guarded command. This matters on Windows: a terminal
+   whose current directory is inside the task worktree prevents that directory
+   from being deleted.
 
    ```powershell
+   Set-Location E:/tka-platform
    npm run wt:finish -- codex/<task-slug> --route /real-shipping-route
    npm run wt:finish -- codex/<task-slug> --nonvisual
    ```

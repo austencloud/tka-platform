@@ -26,11 +26,12 @@ to paths owned by the task. Approval to implement authorizes the complete task
 lifecycle: verify, commit, integrate into local `main`, remove the task branch
 and worktree, and deliver the real `https://localhost:5173` route in the in-app
 Browser. Do not ask separate permission to merge or clean up. Use
-`npm run wt:finish -- <branch> --route /real-route` (or `--nonvisual`) after
-bringing the task branch current with `main`. If a safety gate fails, leave the
-branch and worktree intact and report the exact conflict. Never delete a dirty
-worktree until every change is proven landed, intentionally discarded by
-Austen, or preserved elsewhere.
+`npm run wt:finish -- <branch> --route /real-route` (or `--nonvisual`) from the
+primary checkout after bringing the task branch current with `main`. On Windows,
+the calling terminal cannot remain inside the worktree being removed. If a
+safety gate fails, leave the branch and worktree intact and report the exact
+conflict. Never delete a dirty worktree until every change is proven landed,
+intentionally discarded by Austen, or preserved elsewhere.
 
 Direct edits in the primary checkout require Austen to request that exact
 workflow in the current conversation. If a task depends on uncommitted primary
