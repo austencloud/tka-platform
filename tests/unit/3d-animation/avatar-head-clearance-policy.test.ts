@@ -28,6 +28,16 @@ const spineTwisterSource = readFileSync(
   "utf8"
 );
 
+const avatarComponentSource = readFileSync(
+  resolve(packageRoot, "src/lib/components/Avatar3D.svelte"),
+  "utf8"
+);
+
+const avatarComponentRuntime = readFileSync(
+  resolve(packageRoot, "dist/lib/components/Avatar3D.svelte"),
+  "utf8"
+);
+
 describe("avatar head-clearance policy", () => {
   it("keeps unreachable arm targets from pulling the spine into their path", () => {
     expect(animatorSource).toContain("const MAX_REACH_LEAN = 0");
@@ -102,5 +112,17 @@ describe("avatar head-clearance policy", () => {
       /!this\.armClearsBody\(rightChain, rightClearanceContext\)/
     );
     expect(animator).not.toContain("limitArmExtensionForClearance");
+  });
+
+  it.each([
+    ["source", avatarComponentSource],
+    ["runtime", avatarComponentRuntime],
+  ])("measures upper arms from their real chain roots in %s", (_label, component) => {
+    expect(component).toContain(
+      "leftChain.root.getWorldPosition(_boneVecs.leftShoulder)"
+    );
+    expect(component).toContain(
+      "rightChain.root.getWorldPosition(_boneVecs.rightShoulder)"
+    );
   });
 });
