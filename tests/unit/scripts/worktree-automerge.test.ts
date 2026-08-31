@@ -1,5 +1,6 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -8,7 +9,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const SCRIPT = join(process.cwd(), "scripts", "worktree-automerge.mjs");
@@ -172,5 +173,33 @@ describe("worktree finish lifecycle", () => {
     );
     expect(git(repo, "rev-parse", "HEAD")).toBe(mainBefore);
     expect(existsSync(task)).toBe(true);
+  });
+
+  it("runs the check command through the platform launcher before merging", () => {
+    commitTaskFile("feature.txt", "checked\n");
+    const bin = join(root, "bin");
+    mkdirSync(bin);
+    const npmStub = join(bin, process.platform === "win32" ? "npm.cmd" : "npm");
+    writeFileSync(
+      npmStub,
+      process.platform === "win32"
+        ? "@echo off\r\nexit /b 0\r\n"
+        : "#!/bin/sh\nexit 0\n"
+    );
+    if (process.platform !== "win32") chmodSync(npmStub, 0o755);
+
+    const result = spawnSync(
+      process.execPath,
+      [SCRIPT, "--finish", BRANCH, "--nonvisual"],
+      {
+        cwd: repo,
+        encoding: "utf8",
+        env: { ...process.env, PATH: `${bin}${delimiter}${process.env.PATH}` },
+      }
+    );
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(readFileSync(join(repo, "feature.txt"), "utf8")).toBe("checked\n");
+    expect(existsSync(task)).toBe(false);
   });
 });

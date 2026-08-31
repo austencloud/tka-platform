@@ -274,11 +274,18 @@ function localFinish() {
 
     if (!SKIP_CHECKS) {
       console.log(`    running \`npm run check\` in ${FINISH_BRANCH} …`);
-      const npmExecutable = process.platform === "win32" ? "npm.cmd" : "npm";
-      run(npmExecutable, ["run", "check"], {
-        cwd: task.path,
-        stdio: "inherit",
-      });
+      if (process.platform === "win32") {
+        run(
+          process.env.ComSpec ?? "cmd.exe",
+          ["/d", "/s", "/c", "npm run check"],
+          {
+            cwd: task.path,
+            stdio: "inherit",
+          }
+        );
+      } else {
+        run("npm", ["run", "check"], { cwd: task.path, stdio: "inherit" });
+      }
     }
 
     const mainAfterChecks = git(["-C", primary.path, "rev-parse", "HEAD"]);
