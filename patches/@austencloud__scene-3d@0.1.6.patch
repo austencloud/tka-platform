@@ -6937,16 +6937,16 @@ diff --git a/dist/lib/services/implementations/AvatarAnimator.d.ts.map b/dist/li
 deleted file mode 100644
 index f8e47d42167b6ea9bb4fd8f44f41273f48f1943b..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/AvatarAnimator.js b/dist/lib/services/implementations/AvatarAnimator.js
-index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f38257032a8c 100644
+index bdd5ae35ed47c58d29c537a7805705783f9b9066..2df8a71fc511a668a931fcc67a9b79b1ab852b84 100644
 --- a/dist/lib/services/implementations/AvatarAnimator.js
 +++ b/dist/lib/services/implementations/AvatarAnimator.js
-@@ -4,7 +4,42 @@
+@@ -4,7 +4,40 @@
   * Manages avatar pose states and smooth animation blending.
   * Bridges TKA prop states to skeleton IK targets.
   */
 -import { Vector3, Quaternion } from "three";
 +import { Vector3, Quaternion, Matrix4 } from "three";
-+import { computeFaceCenter, FOREARM_FACE_CLEARANCE, pointToSegmentDistance, } from "../geometry/BodyCollisionGeometry";
++import { computeFaceCenter } from "../geometry/BodyCollisionGeometry";
 +/** Max wrist swing toward the staff axis. Beyond this the alignment is
 + *  anatomically implausible - bend partway and let the rest read as strain. */
 +const MAX_WRIST_SWING = (55 * Math.PI) / 180;
@@ -6966,25 +6966,23 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
 +const REACH_FULL_DEFICIT = 0.1;
 +/** Max clavicle reach-extension swing (protraction toward the target). */
 +const MAX_REACH_EXT = (12 * Math.PI) / 180;
-+/** Max spine lean toward an unreachable target. */
-+const MAX_REACH_LEAN = (10 * Math.PI) / 180;
++/** Max spine lean toward an unreachable target. Reach extension should read as
++ *  athletic intent, not collapse the performer's posture around the prop. */
++const MAX_REACH_LEAN = (4 * Math.PI) / 180;
 +/** Radians of spine lean per meter of reach deficit. */
 +const REACH_LEAN_GAIN = 1.2;
 +/** Stance yaw input clamp (~matches the thoracic+cervical twist budget). */
 +const MAX_STANCE_YAW = (90 * Math.PI) / 180;
 +const WORLD_UP = new Vector3(0, 1, 0);
 +const MAX_HEAD_DODGE = 0.42;
-+const MAX_FOREARM_HEAD_DODGE = 0.8;
 +const HEAD_DODGE_ENGAGE_DISTANCE = 0.32;
 +const HEAD_DODGE_FULL_DISTANCE = 0.14;
 +const HEAD_DODGE_ATTACK_TAU = 0.06;
 +const HEAD_DODGE_RELEASE_TAU = 0.25;
-+const FOREARM_DODGE_ENGAGE_DISTANCE = FOREARM_FACE_CLEARANCE + 0.02;
-+const FOREARM_DODGE_FULL_DISTANCE = 0.1;
  export class AvatarAnimator {
      ikSolver;
      skeleton;
-@@ -67,6 +102,89 @@ export class AvatarAnimator {
+@@ -67,6 +100,84 @@ export class AvatarAnimator {
       * on top of the twist rest pose before arm IK runs. 0 = disabled.
       */
      externalSpinePitchRad = 0;
@@ -7044,11 +7042,6 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
 +    _faceCenterWorld = new Vector3();
 +    _faceRightScratch = new Vector3();
 +    _faceForwardScratch = new Vector3();
-+    _forearmElbowScratch = new Vector3();
-+    _forearmHandScratch = new Vector3();
-+    _segmentOffsetScratch = new Vector3();
-+    _segmentDirectionScratch = new Vector3();
-+    _segmentClosestScratch = new Vector3();
 +    // Scratch objects for per-frame math (no allocation in the hot path)
 +    _v1 = new Vector3();
 +    _v2 = new Vector3();
@@ -7074,7 +7067,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
      constructor(ikSolver, skeleton, poleComputer, clavicleRaiser, spineTwister) {
          this.ikSolver = ikSolver;
          this.skeleton = skeleton;
-@@ -142,7 +260,7 @@ export class AvatarAnimator {
+@@ -142,7 +253,7 @@ export class AvatarAnimator {
              : null;
          this.targetPose.timestamp = Date.now();
      }
@@ -7083,7 +7076,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
          this.leftArmIK.targetWeight = blueProp ? 1 : 0;
          this.rightArmIK.targetWeight = redProp ? 1 : 0;
          const ox = offset?.x ?? 0;
-@@ -154,6 +272,7 @@ export class AvatarAnimator {
+@@ -154,6 +265,7 @@ export class AvatarAnimator {
          this.targetPose.leftHand = blueProp
              ? {
                  targetPosition: new Vector3(blueProp.worldPosition.x - ox, blueProp.worldPosition.y - oy, blueProp.worldPosition.z - oz),
@@ -7091,7 +7084,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
                  staffAngle: blueProp.staffRotationAngle,
                  plane: blueProp.plane,
                  weight: 1,
-@@ -162,6 +281,7 @@ export class AvatarAnimator {
+@@ -162,6 +274,7 @@ export class AvatarAnimator {
          this.targetPose.rightHand = redProp
              ? {
                  targetPosition: new Vector3(redProp.worldPosition.x - ox, redProp.worldPosition.y - oy, redProp.worldPosition.z - oz),
@@ -7099,7 +7092,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
                  staffAngle: redProp.staffRotationAngle,
                  plane: redProp.plane,
                  weight: 1,
-@@ -169,6 +289,43 @@ export class AvatarAnimator {
+@@ -169,6 +282,43 @@ export class AvatarAnimator {
              : null;
          this.targetPose.timestamp = Date.now();
      }
@@ -7143,7 +7136,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
      setLeftHandTarget(target) {
          this.targetPose.leftHand = { ...target };
          this.targetPose.timestamp = Date.now();
-@@ -197,7 +354,7 @@ export class AvatarAnimator {
+@@ -197,7 +347,7 @@ export class AvatarAnimator {
          // Apply combined layers
          const finalPose = this.computeFinalPose();
          // Solve IK for arms
@@ -7152,7 +7145,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
      }
      blendToTarget(_deltaTime) {
          // Hands snap directly to prop positions - no lerp.
-@@ -273,18 +430,65 @@ export class AvatarAnimator {
+@@ -273,18 +423,65 @@ export class AvatarAnimator {
          }
          return result;
      }
@@ -7219,7 +7212,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
          // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
          // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
          // position feeds back and causes oscillation.
-@@ -335,7 +539,7 @@ export class AvatarAnimator {
+@@ -335,7 +532,7 @@ export class AvatarAnimator {
              // Nullable hands are first-class: SpineTwister handles the
              // single-hand-gaze branch and the no-hand identity branch
              // internally, so we pass pose hands through as-is.
@@ -7228,7 +7221,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
              // Apply twist to each bone individually for a natural spinal curve.
              // Each bone gets its own weighted quaternion from SpineTwister.
              const applySpineTwist = (boneName, key, twistQuat) => {
-@@ -389,11 +593,99 @@ export class AvatarAnimator {
+@@ -389,11 +586,99 @@ export class AvatarAnimator {
                      hipsBoneForUpdate.updateMatrixWorld(true);
              }
          }
@@ -7329,7 +7322,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
                  // Save what the locomotion animation wrote to bone quaternions
                  const animRootQuat = leftChain.root.quaternion.clone();
                  const animMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -402,7 +694,7 @@ export class AvatarAnimator {
+@@ -402,7 +687,7 @@ export class AvatarAnimator {
                  if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
                      const leftShoulder = state.bones.get("LeftShoulder");
                      if (leftShoulder) {
@@ -7338,7 +7331,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
                          this.leftClavicleQuat.slerp(targetQuat, this.smoothingFactor);
                          leftShoulder.quaternion
                              .copy(this.leftClavicleRestQuat)
-@@ -410,17 +702,43 @@ export class AvatarAnimator {
+@@ -410,17 +695,43 @@ export class AvatarAnimator {
                          leftShoulder.updateMatrixWorld(true);
                      }
                  }
@@ -7383,7 +7376,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
                  // Solve IK (overwrites bone quaternions)
                  this.ikSolver.solveAndApply(leftChain, target);
                  // Save IK results BEFORE blending - .copy() would overwrite them
-@@ -432,12 +750,13 @@ export class AvatarAnimator {
+@@ -432,12 +743,13 @@ export class AvatarAnimator {
                  leftChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
                  leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
                  leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
@@ -7398,7 +7391,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
                  // Save what the locomotion animation wrote to bone quaternions
                  const animRootQuat = rightChain.root.quaternion.clone();
                  const animMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -446,7 +765,7 @@ export class AvatarAnimator {
+@@ -446,7 +758,7 @@ export class AvatarAnimator {
                  if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
                      const rightShoulder = state.bones.get("RightShoulder");
                      if (rightShoulder) {
@@ -7407,7 +7400,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
                          this.rightClavicleQuat.slerp(targetQuat, this.smoothingFactor);
                          rightShoulder.quaternion
                              .copy(this.rightClavicleRestQuat)
-@@ -454,17 +773,40 @@ export class AvatarAnimator {
+@@ -454,17 +766,40 @@ export class AvatarAnimator {
                          rightShoulder.updateMatrixWorld(true);
                      }
                  }
@@ -7449,7 +7442,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
                  // Solve IK (overwrites bone quaternions)
                  this.ikSolver.solveAndApply(rightChain, target);
                  // Save IK results BEFORE blending - .copy() would overwrite them
-@@ -476,11 +818,348 @@ export class AvatarAnimator {
+@@ -476,11 +811,306 @@ export class AvatarAnimator {
                  rightChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
                  rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
                  rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
@@ -7477,10 +7470,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
 +        const head = state.bones.get("Head");
 +        if (!head)
 +            return;
-+        const forearmDodgeEnabled = maxIKWeight > 0.001;
-+        if (!this.headDodgeEnabled &&
-+            !forearmDodgeEnabled &&
-+            this.headDodgeAngleSmoothed < 0.001) {
++        if (!this.headDodgeEnabled && this.headDodgeAngleSmoothed < 0.001) {
 +            this.headDodgeAngleSmoothed = 0;
 +            return;
 +        }
@@ -7498,80 +7488,41 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
 +        head.updateWorldMatrix(true, false);
 +        let targetAngle = 0;
 +        let bestFactor = 0;
-+        let bestThreatIsForearm = false;
-+        if (this.headDodgeEnabled || forearmDodgeEnabled) {
++        if (this.headDodgeEnabled) {
 +            head.getWorldPosition(this._headWorld);
-+            if (this.headDodgeEnabled) {
-+                for (let i = 0; i < this.headThreats.length; i++) {
-+                    const threat = this.headThreats[i];
-+                    if (!threat)
-+                        continue;
-+                    this._v2.set(0, 1, 0).applyQuaternion(threat.quaternion);
-+                    this._v3.subVectors(this._headWorld, threat.position);
-+                    const along = Math.max(-threat.halfLen, Math.min(threat.halfLen, this._v3.dot(this._v2)));
-+                    this._v3.copy(threat.position).addScaledVector(this._v2, along);
-+                    const distance = this._v4
-+                        .subVectors(this._headWorld, this._v3)
-+                        .length();
-+                    const raw = Math.max(0, Math.min(1, (HEAD_DODGE_ENGAGE_DISTANCE - distance) /
-+                        (HEAD_DODGE_ENGAGE_DISTANCE - HEAD_DODGE_FULL_DISTANCE)));
-+                    const factor = raw * raw * (3 - 2 * raw);
-+                    if (factor > bestFactor) {
-+                        bestFactor = factor;
-+                        bestThreatIsForearm = false;
-+                        this.headThreatClosestPoint.copy(this._v3);
-+                        this.headDodgeReferencePoint.copy(this._headWorld);
-+                    }
++            for (let i = 0; i < this.headThreats.length; i++) {
++                const threat = this.headThreats[i];
++                if (!threat)
++                    continue;
++                this._v2.set(0, 1, 0).applyQuaternion(threat.quaternion);
++                this._v3.subVectors(this._headWorld, threat.position);
++                const along = Math.max(-threat.halfLen, Math.min(threat.halfLen, this._v3.dot(this._v2)));
++                this._v3.copy(threat.position).addScaledVector(this._v2, along);
++                const distance = this._v4
++                    .subVectors(this._headWorld, this._v3)
++                    .length();
++                const raw = Math.max(0, Math.min(1, (HEAD_DODGE_ENGAGE_DISTANCE - distance) /
++                    (HEAD_DODGE_ENGAGE_DISTANCE - HEAD_DODGE_FULL_DISTANCE)));
++                const factor = raw * raw * (3 - 2 * raw);
++                if (factor > bestFactor) {
++                    bestFactor = factor;
++                    this.headThreatClosestPoint.copy(this._v3);
++                    this.headDodgeReferencePoint.copy(this._headWorld);
 +                }
 +            }
-+            const leftShoulder = state.bones.get("LeftShoulder");
-+            const rightShoulder = state.bones.get("RightShoulder");
-+            if (forearmDodgeEnabled && leftShoulder && rightShoulder) {
-+                leftShoulder.getWorldPosition(this._leftShoulderWorld);
-+                rightShoulder.getWorldPosition(this._rightShoulderWorld);
-+                computeFaceCenter(this._headWorld, this._leftShoulderWorld, this._rightShoulderWorld, this._faceCenterWorld, this._faceRightScratch, this._faceForwardScratch);
-+                const evaluateForearm = (chain) => {
-+                    if (!chain)
-+                        return;
-+                    chain.middle.getWorldPosition(this._forearmElbowScratch);
-+                    chain.effector.getWorldPosition(this._forearmHandScratch);
-+                    const distance = pointToSegmentDistance(this._faceCenterWorld, this._forearmElbowScratch, this._forearmHandScratch, this._segmentOffsetScratch, this._segmentDirectionScratch, this._segmentClosestScratch);
-+                    const raw = Math.max(0, Math.min(1, (FOREARM_DODGE_ENGAGE_DISTANCE - distance) /
-+                        (FOREARM_DODGE_ENGAGE_DISTANCE -
-+                            FOREARM_DODGE_FULL_DISTANCE)));
-+                    const factor = raw * raw * (3 - 2 * raw);
-+                    if (factor > bestFactor) {
-+                        bestFactor = factor;
-+                        bestThreatIsForearm = true;
-+                        this.headThreatClosestPoint.copy(this._segmentClosestScratch);
-+                        this.headDodgeReferencePoint.copy(this._faceCenterWorld);
-+                    }
-+                };
-+                evaluateForearm(this.skeleton.getLeftArmChain());
-+                evaluateForearm(this.skeleton.getRightArmChain());
-+            }
 +            if (bestFactor > 0) {
-+                if (bestThreatIsForearm) {
++                this._v4
++                    .copy(this.headDodgeReferencePoint)
++                    .sub(this.headThreatClosestPoint);
++                this._v4.y = 0;
++                if (this._v4.lengthSq() < 1e-8) {
 +                    this._v4.copy(this._bodyFrame.forward).multiplyScalar(-1);
 +                }
 +                else {
-+                    this._v4
-+                        .copy(this.headDodgeReferencePoint)
-+                        .sub(this.headThreatClosestPoint);
-+                    this._v4.y = 0;
-+                    if (this._v4.lengthSq() < 1e-8) {
-+                        this._v4.copy(this._bodyFrame.forward).multiplyScalar(-1);
-+                    }
-+                    else {
-+                        this._v4.normalize();
-+                    }
++                    this._v4.normalize();
 +                }
 +                this._v3.crossVectors(WORLD_UP, this._v4).normalize();
-+                targetAngle =
-+                    bestFactor *
-+                        (bestThreatIsForearm
-+                            ? MAX_FOREARM_HEAD_DODGE
-+                            : MAX_HEAD_DODGE);
++                targetAngle = bestFactor * MAX_HEAD_DODGE;
 +            }
 +        }
 +        const tau = targetAngle > this.headDodgeAngleSmoothed
@@ -7798,7 +7749,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..0405d2f621d8ca37bae9b31060f8f382
      addLayer(layer) {
          this.layers.set(layer.id, layer);
      }
-@@ -521,6 +1200,12 @@ export class AvatarAnimator {
+@@ -521,6 +1151,12 @@ export class AvatarAnimator {
      setExternalSpinePitch(radians) {
          this.externalSpinePitchRad = radians;
      }
@@ -20350,10 +20301,10 @@ index 0000000000000000000000000000000000000000..804080e43f4dc206951115861d4b871f
 +  return point.distanceTo(closestOut);
 +}
 diff --git a/src/lib/services/implementations/AvatarAnimator.ts b/src/lib/services/implementations/AvatarAnimator.ts
-index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f7355f26355 100644
+index c73bcabe86e07dd117e6f737532aea88ac9ec194..1f73d906d505e6a68eb21b8d64ce2487961588cb 100644
 --- a/src/lib/services/implementations/AvatarAnimator.ts
 +++ b/src/lib/services/implementations/AvatarAnimator.ts
-@@ -5,21 +5,83 @@
+@@ -5,21 +5,77 @@
   * Bridges TKA prop states to skeleton IK targets.
   */
  
@@ -20388,11 +20339,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
 -import type { ISpineTwister } from "../contracts/ISpineTwister";
 +import type { ISpineTwister, BodyFrame } from "../contracts/ISpineTwister";
 +import type { FingerBoneName } from "../../domain/models/GripPose";
-+import {
-+  computeFaceCenter,
-+  FOREARM_FACE_CLEARANCE,
-+  pointToSegmentDistance,
-+} from "../geometry/BodyCollisionGeometry";
++import { computeFaceCenter } from "../geometry/BodyCollisionGeometry";
 +
 +/** Max wrist swing toward the staff axis. Beyond this the alignment is
 + *  anatomically implausible - bend partway and let the rest read as strain. */
@@ -20420,8 +20367,9 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
 +/** Max clavicle reach-extension swing (protraction toward the target). */
 +const MAX_REACH_EXT = (12 * Math.PI) / 180;
 +
-+/** Max spine lean toward an unreachable target. */
-+const MAX_REACH_LEAN = (10 * Math.PI) / 180;
++/** Max spine lean toward an unreachable target. Reach extension should read as
++ *  athletic intent, not collapse the performer's posture around the prop. */
++const MAX_REACH_LEAN = (4 * Math.PI) / 180;
 +
 +/** Radians of spine lean per meter of reach deficit. */
 +const REACH_LEAN_GAIN = 1.2;
@@ -20431,17 +20379,14 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
 +
 +const WORLD_UP = new Vector3(0, 1, 0);
 +const MAX_HEAD_DODGE = 0.42;
-+const MAX_FOREARM_HEAD_DODGE = 0.8;
 +const HEAD_DODGE_ENGAGE_DISTANCE = 0.32;
 +const HEAD_DODGE_FULL_DISTANCE = 0.14;
 +const HEAD_DODGE_ATTACK_TAU = 0.06;
 +const HEAD_DODGE_RELEASE_TAU = 0.25;
-+const FOREARM_DODGE_ENGAGE_DISTANCE = FOREARM_FACE_CLEARANCE + 0.02;
-+const FOREARM_DODGE_FULL_DISTANCE = 0.1;
  
  export class AvatarAnimator implements IAvatarAnimator {
    private currentPose: BodyPose;
-@@ -85,6 +147,107 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -85,6 +141,102 @@ export class AvatarAnimator implements IAvatarAnimator {
     */
    private externalSpinePitchRad = 0;
  
@@ -20517,11 +20462,6 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
 +  ] as const;
 +  private readonly _faceRightScratch = new Vector3();
 +  private readonly _faceForwardScratch = new Vector3();
-+  private readonly _forearmElbowScratch = new Vector3();
-+  private readonly _forearmHandScratch = new Vector3();
-+  private readonly _segmentOffsetScratch = new Vector3();
-+  private readonly _segmentDirectionScratch = new Vector3();
-+  private readonly _segmentClosestScratch = new Vector3();
 +
 +  // Scratch objects for per-frame math (no allocation in the hot path)
 +  private readonly _v1 = new Vector3();
@@ -20549,7 +20489,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
    constructor(
      private ikSolver: IIKSolver,
      private skeleton: IAvatarSkeletonBuilder,
-@@ -186,7 +349,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -186,7 +338,8 @@ export class AvatarAnimator implements IAvatarAnimator {
    setPropsAndBlend(
      blueProp: PropState3D | null,
      redProp: PropState3D | null,
@@ -20559,7 +20499,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
    ): void {
      this.leftArmIK.targetWeight = blueProp ? 1 : 0;
      this.rightArmIK.targetWeight = redProp ? 1 : 0;
-@@ -205,6 +369,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -205,6 +358,7 @@ export class AvatarAnimator implements IAvatarAnimator {
              blueProp.worldPosition.y - oy,
              blueProp.worldPosition.z - oz
            ),
@@ -20567,7 +20507,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
            staffAngle: blueProp.staffRotationAngle,
            plane: blueProp.plane,
            weight: 1,
-@@ -218,6 +383,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -218,6 +372,7 @@ export class AvatarAnimator implements IAvatarAnimator {
              redProp.worldPosition.y - oy,
              redProp.worldPosition.z - oz
            ),
@@ -20575,7 +20515,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
            staffAngle: redProp.staffRotationAngle,
            plane: redProp.plane,
            weight: 1,
-@@ -227,6 +393,54 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -227,6 +382,54 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.targetPose.timestamp = Date.now();
    }
  
@@ -20630,7 +20570,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
    setLeftHandTarget(target: HandPose): void {
      this.targetPose.leftHand = { ...target };
      this.targetPose.timestamp = Date.now();
-@@ -259,7 +473,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -259,7 +462,7 @@ export class AvatarAnimator implements IAvatarAnimator {
      const finalPose = this.computeFinalPose();
  
      // Solve IK for arms
@@ -20639,7 +20579,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
    }
  
    private blendToTarget(_deltaTime: number): void {
-@@ -378,13 +592,99 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -378,13 +581,99 @@ export class AvatarAnimator implements IAvatarAnimator {
      return result;
    }
  
@@ -20740,7 +20680,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
      // Compute body center from Hips bone (or default to origin)
      const bodyCenter = new Vector3(0, 0, 0);
      const hipsBone = state.bones.get("Hips");
-@@ -392,6 +692,12 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -392,6 +681,12 @@ export class AvatarAnimator implements IAvatarAnimator {
        hipsBone.getWorldPosition(bodyCenter);
      }
  
@@ -20753,7 +20693,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
      // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
      // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
      // position feeds back and causes oscillation.
-@@ -445,7 +751,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -445,7 +740,8 @@ export class AvatarAnimator implements IAvatarAnimator {
          pose.leftHand?.targetPosition ?? null,
          pose.rightHand?.targetPosition ?? null,
          bodyCenter,
@@ -20763,7 +20703,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
        );
  
        // Apply twist to each bone individually for a natural spinal curve.
-@@ -511,12 +818,149 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -511,12 +807,149 @@ export class AvatarAnimator implements IAvatarAnimator {
        }
      }
  
@@ -20914,7 +20854,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = leftChain.root.quaternion.clone();
          const animMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -527,7 +971,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -527,7 +960,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const leftShoulder = state.bones.get("LeftShoulder");
            if (leftShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -20923,7 +20863,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
                "left",
                this.leftShoulderRestY,
                leftChain.totalLength
-@@ -540,6 +984,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -540,6 +973,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -20938,7 +20878,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: leftTarget,
-@@ -547,17 +999,58 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -547,17 +988,58 @@ export class AvatarAnimator implements IAvatarAnimator {
          };
  
          if (this._poleVectorsEnabled && this.poleComputer && leftHand.plane) {
@@ -20998,7 +20938,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
          // Solve IK (overwrites bone quaternions)
          this.ikSolver.solveAndApply(leftChain, target);
  
-@@ -572,13 +1065,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -572,13 +1054,14 @@ export class AvatarAnimator implements IAvatarAnimator {
          leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -21014,7 +20954,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = rightChain.root.quaternion.clone();
          const animMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -589,7 +1083,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -589,7 +1072,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const rightShoulder = state.bones.get("RightShoulder");
            if (rightShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -21023,7 +20963,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
                "right",
                this.rightShoulderRestY,
                rightChain.totalLength
-@@ -602,6 +1096,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -602,6 +1085,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -21038,7 +20978,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: rightTarget,
-@@ -609,17 +1111,55 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -609,17 +1100,55 @@ export class AvatarAnimator implements IAvatarAnimator {
          };
  
          if (this._poleVectorsEnabled && this.poleComputer && rightHand.plane) {
@@ -21095,7 +21035,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
          // Solve IK (overwrites bone quaternions)
          this.ikSolver.solveAndApply(rightChain, target);
  
-@@ -634,13 +1174,432 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -634,13 +1163,367 @@ export class AvatarAnimator implements IAvatarAnimator {
          rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -21131,12 +21071,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
 +  ): void {
 +    const head = state.bones.get("Head");
 +    if (!head) return;
-+    const forearmDodgeEnabled = maxIKWeight > 0.001;
-+    if (
-+      !this.headDodgeEnabled &&
-+      !forearmDodgeEnabled &&
-+      this.headDodgeAngleSmoothed < 0.001
-+    ) {
++    if (!this.headDodgeEnabled && this.headDodgeAngleSmoothed < 0.001) {
 +      this.headDodgeAngleSmoothed = 0;
 +      return;
 +    }
@@ -21157,109 +21092,49 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
 +
 +    let targetAngle = 0;
 +    let bestFactor = 0;
-+    let bestThreatIsForearm = false;
-+    if (this.headDodgeEnabled || forearmDodgeEnabled) {
++    if (this.headDodgeEnabled) {
 +      head.getWorldPosition(this._headWorld);
-+      if (this.headDodgeEnabled) {
-+        for (let i = 0; i < this.headThreats.length; i++) {
-+          const threat = this.headThreats[i];
-+          if (!threat) continue;
-+          this._v2.set(0, 1, 0).applyQuaternion(threat.quaternion);
-+          this._v3.subVectors(this._headWorld, threat.position);
-+          const along = Math.max(
-+            -threat.halfLen,
-+            Math.min(threat.halfLen, this._v3.dot(this._v2))
-+          );
-+          this._v3.copy(threat.position).addScaledVector(this._v2, along);
-+          const distance = this._v4
-+            .subVectors(this._headWorld, this._v3)
-+            .length();
-+          const raw = Math.max(
-+            0,
-+            Math.min(
-+              1,
-+              (HEAD_DODGE_ENGAGE_DISTANCE - distance) /
-+                (HEAD_DODGE_ENGAGE_DISTANCE - HEAD_DODGE_FULL_DISTANCE)
-+            )
-+          );
-+          const factor = raw * raw * (3 - 2 * raw);
-+          if (factor > bestFactor) {
-+            bestFactor = factor;
-+            bestThreatIsForearm = false;
-+            this.headThreatClosestPoint.copy(this._v3);
-+            this.headDodgeReferencePoint.copy(this._headWorld);
-+          }
-+        }
-+      }
-+
-+      const leftShoulder = state.bones.get("LeftShoulder");
-+      const rightShoulder = state.bones.get("RightShoulder");
-+      if (forearmDodgeEnabled && leftShoulder && rightShoulder) {
-+        leftShoulder.getWorldPosition(this._leftShoulderWorld);
-+        rightShoulder.getWorldPosition(this._rightShoulderWorld);
-+        computeFaceCenter(
-+          this._headWorld,
-+          this._leftShoulderWorld,
-+          this._rightShoulderWorld,
-+          this._faceCenterWorld,
-+          this._faceRightScratch,
-+          this._faceForwardScratch
++      for (let i = 0; i < this.headThreats.length; i++) {
++        const threat = this.headThreats[i];
++        if (!threat) continue;
++        this._v2.set(0, 1, 0).applyQuaternion(threat.quaternion);
++        this._v3.subVectors(this._headWorld, threat.position);
++        const along = Math.max(
++          -threat.halfLen,
++          Math.min(threat.halfLen, this._v3.dot(this._v2))
 +        );
-+
-+        const evaluateForearm = (chain: BoneChain | null): void => {
-+          if (!chain) return;
-+          chain.middle.getWorldPosition(this._forearmElbowScratch);
-+          chain.effector.getWorldPosition(this._forearmHandScratch);
-+          const distance = pointToSegmentDistance(
-+            this._faceCenterWorld,
-+            this._forearmElbowScratch,
-+            this._forearmHandScratch,
-+            this._segmentOffsetScratch,
-+            this._segmentDirectionScratch,
-+            this._segmentClosestScratch
-+          );
-+          const raw = Math.max(
-+            0,
-+            Math.min(
-+              1,
-+              (FOREARM_DODGE_ENGAGE_DISTANCE - distance) /
-+                (FOREARM_DODGE_ENGAGE_DISTANCE -
-+                  FOREARM_DODGE_FULL_DISTANCE)
-+            )
-+          );
-+          const factor = raw * raw * (3 - 2 * raw);
-+          if (factor > bestFactor) {
-+            bestFactor = factor;
-+            bestThreatIsForearm = true;
-+            this.headThreatClosestPoint.copy(this._segmentClosestScratch);
-+            this.headDodgeReferencePoint.copy(this._faceCenterWorld);
-+          }
-+        };
-+
-+        evaluateForearm(this.skeleton.getLeftArmChain());
-+        evaluateForearm(this.skeleton.getRightArmChain());
++        this._v3.copy(threat.position).addScaledVector(this._v2, along);
++        const distance = this._v4
++          .subVectors(this._headWorld, this._v3)
++          .length();
++        const raw = Math.max(
++          0,
++          Math.min(
++            1,
++            (HEAD_DODGE_ENGAGE_DISTANCE - distance) /
++              (HEAD_DODGE_ENGAGE_DISTANCE - HEAD_DODGE_FULL_DISTANCE)
++          )
++        );
++        const factor = raw * raw * (3 - 2 * raw);
++        if (factor > bestFactor) {
++          bestFactor = factor;
++          this.headThreatClosestPoint.copy(this._v3);
++          this.headDodgeReferencePoint.copy(this._headWorld);
++        }
 +      }
 +
 +      if (bestFactor > 0) {
-+        if (bestThreatIsForearm) {
++        this._v4
++          .copy(this.headDodgeReferencePoint)
++          .sub(this.headThreatClosestPoint);
++        this._v4.y = 0;
++        if (this._v4.lengthSq() < 1e-8) {
 +          this._v4.copy(this._bodyFrame.forward).multiplyScalar(-1);
 +        } else {
-+          this._v4
-+            .copy(this.headDodgeReferencePoint)
-+            .sub(this.headThreatClosestPoint);
-+          this._v4.y = 0;
-+          if (this._v4.lengthSq() < 1e-8) {
-+            this._v4.copy(this._bodyFrame.forward).multiplyScalar(-1);
-+          } else {
-+            this._v4.normalize();
-+          }
++          this._v4.normalize();
 +        }
 +        this._v3.crossVectors(WORLD_UP, this._v4).normalize();
-+        targetAngle =
-+          bestFactor *
-+          (bestThreatIsForearm
-+            ? MAX_FOREARM_HEAD_DODGE
-+            : MAX_HEAD_DODGE);
++        targetAngle = bestFactor * MAX_HEAD_DODGE;
 +      }
 +    }
 +
@@ -21528,7 +21403,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..a873976507966bccc3a43de0b51c2f73
  
    addLayer(layer: AnimationLayer): void {
      this.layers.set(layer.id, layer);
-@@ -689,6 +1648,20 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -689,6 +1572,20 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.externalSpinePitchRad = radians;
    }
  

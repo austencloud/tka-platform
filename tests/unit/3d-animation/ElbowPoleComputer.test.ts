@@ -439,7 +439,7 @@ describe("SpineTwister crossed-arm posture", () => {
   });
 });
 
-describe("AvatarAnimator forearm reflex", () => {
+describe("AvatarAnimator body routing", () => {
   it("subtracts the spine twist already present from the stance target", () => {
     const animator = new AvatarAnimator(
       {} as never,
@@ -509,7 +509,7 @@ describe("AvatarAnimator forearm reflex", () => {
     expect(animator._bodyFrame.forward.dot(achievedForward)).toBeCloseTo(1, 6);
   });
 
-  it("moves the head backward even when optional staff dodging is disabled", () => {
+  it("does not move the head after the elbow solver has routed a forearm", () => {
     const rig = makeFaceCollisionRig();
     const animator = new AvatarAnimator(
       {} as never,
@@ -529,8 +529,7 @@ describe("AvatarAnimator forearm reflex", () => {
     rig.root.updateMatrixWorld(true);
 
     const after = head.getWorldPosition(new Vector3());
-    expect(after.z).toBeLessThan(before.z - 0.005);
-    expect(animator.headDodgeAngleSmoothed).toBeGreaterThan(0.5);
-    expect(animator.headDodgeAngleSmoothed).toBeLessThanOrEqual(0.8);
+    expect(after.distanceTo(before)).toBeLessThan(1e-8);
+    expect(animator.headDodgeAngleSmoothed).toBe(0);
   });
 });
