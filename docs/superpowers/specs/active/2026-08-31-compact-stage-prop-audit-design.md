@@ -11,6 +11,9 @@ while the grid, hand orbit, and mandala geometry contract beneath it.
 - `/test/prop-size-audit` remains the visual owner for true 950-unit prop-scale
   comparisons.
 - `prop-type-display-registry.ts` remains the owner of standard-to-Big pairs.
+- `GridSvg.svelte` and its production grid asset remain the visual owner of grid
+  geometry. The gate uses the strict animation points from that shared grid; it
+  does not draw a parallel diagram.
 - The audit composes those owners. It does not create another prop pairing map
   or change production rendering.
 
@@ -21,8 +24,10 @@ matched compact scale is `b / B`. The proposed hand orbit is `H × b / B`, so
 `b / proposedOrbit` equals `B / H`. This preserves the current prop-to-grid
 ratio while displaying the regular prop artwork.
 
-Line thickness, point size, labels, and controls stay constant. Only spatial
-anchors move. The slider follows the pointer directly and carries no easing.
+Line thickness, point size, labels, and controls stay constant. The compact
+proposal scales the shared grid's spatial anchors around its center, then
+counter-scales its point marks so the diagram remains legible. The slider
+follows the pointer directly and carries no easing.
 
 ## Gate
 

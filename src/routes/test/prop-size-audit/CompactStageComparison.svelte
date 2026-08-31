@@ -1,5 +1,7 @@
 <script lang="ts">
   import { VIEWBOX_SIZE } from "$lib/shared/render/core/constants/viewbox";
+  import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getPropDimensions } from "$lib/shared/animation-engine/services/IPropTextureLoader";
   import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
   import {
@@ -136,22 +138,8 @@
     );
   }
 
-  function diamondPoints(radius: number): string {
-    return [
-      `${CENTER},${CENTER - radius}`,
-      `${CENTER + radius},${CENTER}`,
-      `${CENTER},${CENTER + radius}`,
-      `${CENTER - radius},${CENTER}`,
-    ].join(" ");
-  }
-
-  function cardinalPoints(radius: number): { x: number; y: number }[] {
-    return [
-      { x: CENTER, y: CENTER - radius },
-      { x: CENTER + radius, y: CENTER },
-      { x: CENTER, y: CENTER + radius },
-      { x: CENTER - radius, y: CENTER },
-    ];
+  function gridScaleTransform(scale: number): string {
+    return `translate(${CENTER} ${CENTER}) scale(${scale}) translate(${-CENTER} ${-CENTER})`;
   }
 </script>
 
@@ -187,6 +175,12 @@
   </div>
 
   {#if selectedPair && metrics}
+    <div class="stage-legend" aria-label="Comparison diagram legend">
+      <span><i class="grid-swatch"></i>Production animation grid</span>
+      <span><i class="reach-swatch"></i>Measured outer reach</span>
+      <span><i class="reference-swatch"></i>Full-size hand radius</span>
+    </div>
+
     <div class="comparison-grid">
       <figure class="stage-card current-card">
         <figcaption>
@@ -206,11 +200,9 @@
             r={HAND_ORBIT + selectedPair.big.reach}
             class="mandala-ring"
           />
-          <polygon points={diamondPoints(HAND_ORBIT)} class="grid-shape" />
-          {#each cardinalPoints(HAND_ORBIT) as point}
-            <circle cx={point.x} cy={point.y} r="7" class="grid-point" />
-          {/each}
-          <circle cx={CENTER} cy={CENTER} r="8" class="grid-center" />
+          <g class="production-grid strict-mode">
+            <GridSvg gridMode={GridMode.DIAMOND} showNonRadialPoints={true} />
+          </g>
           <image
             href={selectedPair.big.href}
             x={CENTER + HAND_ORBIT - selectedPair.big.width / 2}
@@ -246,19 +238,13 @@
             r={metrics.compactOrbit + selectedPair.base.reach}
             class="mandala-ring proposed"
           />
-          <polygon
-            points={diamondPoints(metrics.compactOrbit)}
-            class="grid-shape proposed"
-          />
-          {#each cardinalPoints(metrics.compactOrbit) as point}
-            <circle
-              cx={point.x}
-              cy={point.y}
-              r="7"
-              class="grid-point proposed"
-            />
-          {/each}
-          <circle cx={CENTER} cy={CENTER} r="8" class="grid-center" />
+          <g
+            class="production-grid compact strict-mode"
+            transform={gridScaleTransform(metrics.stageScale)}
+            style:--grid-mark-counter-scale={1 / metrics.stageScale}
+          >
+            <GridSvg gridMode={GridMode.DIAMOND} showNonRadialPoints={true} />
+          </g>
           <image
             href={selectedPair.base.href}
             x={CENTER + metrics.compactOrbit - selectedPair.base.width / 2}
@@ -431,6 +417,40 @@
     gap: 1rem;
   }
 
+  .stage-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem 1.1rem;
+    margin: 0 0 0.85rem;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-compact, 0.75rem);
+  }
+
+  .stage-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .stage-legend i {
+    display: inline-block;
+    width: 1.25rem;
+    height: 0.5rem;
+  }
+
+  .grid-swatch {
+    border-radius: 999px;
+    background: #d0d0d0;
+  }
+
+  .reach-swatch {
+    border-top: 2px dashed rgba(255, 255, 255, 0.48);
+  }
+
+  .reference-swatch {
+    border-top: 2px dashed rgba(255, 255, 255, 0.2);
+  }
+
   .stage-card {
     min-width: 0;
     margin: 0;
@@ -478,29 +498,20 @@
     fill: var(--theme-panel-bg, #0c0c13);
   }
 
-  .grid-shape,
   .ghost-orbit,
   .mandala-ring {
     fill: none;
     vector-effect: non-scaling-stroke;
   }
 
-  .grid-shape {
-    stroke: rgba(255, 255, 255, 0.3);
-    stroke-width: 3;
+  .production-grid {
+    color: #d0d0d0;
   }
 
-  .grid-shape.proposed {
-    stroke: color-mix(in srgb, var(--theme-accent, #9b8cff) 70%, white);
-  }
-
-  .grid-point {
-    fill: rgba(255, 255, 255, 0.5);
-  }
-
-  .grid-point.proposed,
-  .grid-center {
-    fill: var(--theme-accent, #9b8cff);
+  .production-grid.compact :global(circle) {
+    transform: scale(var(--grid-mark-counter-scale));
+    transform-box: fill-box;
+    transform-origin: center;
   }
 
   .mandala-ring {
