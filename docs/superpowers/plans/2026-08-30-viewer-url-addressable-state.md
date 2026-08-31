@@ -1051,9 +1051,9 @@ Every Phase B task follows the same five steps: **(1) Discovery** — read the b
 - [x] Task 3 — effects snapshot/export
 - [x] Task 4 — fx slice
 - [x] Task 5 — view seam + wiring
-- [x] Task 6 — share captureNow (implemented + manually reviewed; vitest non-functional repo-wide, see note above Task 6)
+- [x] Task 6 — share captureNow (verified: env blocker resolved via worktree-local pnpm install; share-state test 1/1, full sequence-viewer suite 127/127)
 - [x] Task 7 — close cleanup
-- [ ] Task 8 — Phase A gate (orchestrator)
+- [x] Task 8 — Phase A gate (PASSED 2026-08-30: check 0 errors; 165/165 tests; live round-trip on :5209 — sparkles+rate90%+2D pane restored in isolated context, zero recipient localStorage writes; drawer params appear on /browse and strip on close; plain-link invariant holds. Fix landed during gate: fx slice now diffs the EFFECTIVE active effect (tipEffectMap wildcard) against the derived default — raw DEFAULT_EFFECTS_CONFIG.activeEffect "none" vs migration-derived "trails" stamped fx=trails onto every untouched viewer)
 - [ ] Task 9 — an slice
 - [ ] Task 10 — ex slice
 - [ ] Task 11 — t3 slice

@@ -11,6 +11,28 @@ describe("fx slice", () => {
     expect(captureFxSlice(state)).toBeNull();
   });
 
+  it("returns null when boot migration derived activeEffect from the default wildcard", () => {
+    // migrateFromVmStorageOnce sets activeEffect = tipEffectMap["*"].effect
+    // ("trails") on any browser with an animation-visibility-settings entry.
+    // That is still the untouched default experience — no fx params.
+    const state = createEffectsConfigState(
+      { ...DEFAULT_EFFECTS_CONFIG, activeEffect: "trails" },
+      { persist: false }
+    );
+    expect(captureFxSlice(state)).toBeNull();
+  });
+
+  it("captures an explicit 'none' (effects off) and round-trips it", () => {
+    const a = createEffectsConfigState(undefined, { persist: false });
+    a.setActiveEffect("none");
+    const slice = captureFxSlice(a);
+    expect(slice?.active).toBe("none");
+
+    const b = createEffectsConfigState(seedFromFxSlice(slice!), { persist: false });
+    expect(captureFxSlice(b)).toEqual(slice);
+    expect(b.snapshot().tipEffectMap).toEqual({});
+  });
+
   it("captures only the keys that differ from defaults", () => {
     const state = createEffectsConfigState(undefined, { persist: false });
     state.setActiveEffect("sparkles");
