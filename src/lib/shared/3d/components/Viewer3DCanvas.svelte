@@ -347,6 +347,7 @@
   // curtain's own latch), so the rail/playback gate only fires on first load.
   let rendererReady = $state(false);
   let interactivePropsReady = $state(false);
+  let effectsRuntimeReady = $state(!enableEffects);
   let sceneReady = $state(false);
   let readyPerformerCount = $state(0);
   let totalPerformerCount = $state(0);
@@ -504,7 +505,9 @@
               onReadyChange={handleRendererReadyChange}
               waitForAllFeatures={initialRevealMode === "streaming"}
               cacheKey={shaderWarmupCacheKey}
-              additionalReady={performersReady && interactivePropsReady}
+              additionalReady={performersReady &&
+                interactivePropsReady &&
+                effectsRuntimeReady}
             />
             {#snippet sceneContent()}
               <Viewer3DCamera
@@ -535,6 +538,8 @@
                 {environmentTransitionVisualMode}
                 onPerformerReadinessChange={handlePerformerReadinessChange}
                 onEnvironmentTransitionChange={handleEnvironmentTransitionChange}
+                onEffectsRuntimeReadyChange={(ready) =>
+                  (effectsRuntimeReady = ready)}
               />
             {/snippet}
             {@render sceneContent()}

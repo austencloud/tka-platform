@@ -17,10 +17,10 @@ describe("SceneEffectsManager3D", () => {
     const manager = new SceneEffectsManager3D();
     manager.initialize(scene);
 
-    // Existing six particle/material variants, twelve scene-level visual
-    // layers for Ink, Silk, Animal, and Pulse, one Bloom optical batch, plus
-    // one shared Fire mesh and its four capped scene lights.
-    expect(scene.children).toHaveLength(24);
+    // Existing pooled visuals, one shared Coal renderer (two draws), Fire's
+    // four stable lights, and the four-light scene pool shared by Bloom,
+    // Trails, and Zap.
+    expect(scene.children).toHaveLength(30);
     manager.update(1 / 60);
     manager.dispose();
     expect(scene.children).toHaveLength(0);

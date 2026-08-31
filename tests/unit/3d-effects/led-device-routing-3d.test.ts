@@ -28,9 +28,7 @@ describe("LED 3D routes by device kind", () => {
 
   it("builds the POV strip renderer for a pixel staff, at the device's LED count", () => {
     expect(source).toMatch(/if \(usePixelStaff\) \{/);
-    expect(source).toMatch(
-      /new PovStripRenderer3D\(qualityTier, ledCount\)/
-    );
+    expect(source).toMatch(/new PovStripRenderer3D\(qualityTier, ledCount\)/);
   });
 
   it("keeps the ribbon renderer on the capsule branch", () => {
@@ -44,7 +42,9 @@ describe("LED 3D routes by device kind", () => {
   });
 
   it("skips the per-tip supersampled ribbon input on a pixel staff", () => {
-    expect(source).toMatch(/if \(!usePixelStaff\) \{\s*const color = ledColorAt/);
+    expect(source).toMatch(
+      /if \(!usePixelStaff\) \{\s*const color = ledColorAt/
+    );
   });
 });
 
@@ -98,22 +98,24 @@ describe("LED 3D look plumbing", () => {
   });
 });
 
-describe("LED 3D disposes on a device change", () => {
+describe("LED 3D device changes", () => {
   it("keys the live renderers to the device kind and LED count", () => {
-    expect(source).toMatch(/syncLedDevice\(resolvedLed\.device\.kind, ledCount\)/);
+    expect(source).toMatch(
+      /syncLedDevice\(resolvedLed\.device\.kind, ledCount\)/
+    );
     expect(source).toMatch(/const key = `\$\{kind\}:\$\{ledCount\}`/);
   });
 
-  it("disposes and clears both renderer families when that key changes", () => {
+  it("keeps capsule buffers warm and only rebuilds capacity-bound POV buffers", () => {
     const start = source.indexOf("function syncLedDevice");
     expect(start).toBeGreaterThan(0);
     const body = source.slice(start, source.indexOf("\n  }", start));
-    for (const renderer of [
-      "blueLedRenderer",
-      "redLedRenderer",
-      "bluePovRenderer",
-      "redPovRenderer",
-    ]) {
+    for (const renderer of ["blueLedRenderer", "redLedRenderer"]) {
+      expect(body).toContain(`${renderer}?.reset();`);
+      expect(body).not.toContain(`${renderer}?.dispose();`);
+      expect(body).not.toContain(`${renderer} = null;`);
+    }
+    for (const renderer of ["bluePovRenderer", "redPovRenderer"]) {
       expect(body).toContain(`${renderer}?.dispose();`);
       expect(body).toContain(`${renderer} = null;`);
     }

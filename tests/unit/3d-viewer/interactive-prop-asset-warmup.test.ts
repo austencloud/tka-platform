@@ -12,12 +12,17 @@ const canvasSource = readFileSync(
 );
 
 describe("interactive prop asset warmup", () => {
-  it("prepares the canonical Fire Staff model in the live Canvas cache", () => {
+  it("prepares every effect-driven GLB swap in the live Canvas cache", () => {
     expect(warmupSource).toContain(
       "PROP_MODEL_REGISTRY[PropType.FIRE_DOUBLE_STAFF]"
     );
-    expect(warmupSource).toContain("useGltf(fireStaffEntry.modelUrl)");
+    expect(warmupSource).toContain("gltfLoader.load(fireStaffEntry.modelUrl)");
+    expect(warmupSource).toContain(
+      "PROP_MODEL_REGISTRY[PropType.CAPSULE_BATON]"
+    );
+    expect(warmupSource).toContain("gltfLoader.load(ledBatonEntry.modelUrl)");
     expect(warmupSource).toContain("$fireStaff?.scene.clone(true)");
+    expect(warmupSource).toContain("$ledBaton?.scene.clone(true)");
     expect(warmupSource).toContain("new FireRenderer3D(QualityTier.HIGH");
     expect(warmupSource).toContain("fireWarmup.primeGpuUpload()");
     expect(warmupSource).toContain("handles.renderer.compileAsync(");
@@ -26,7 +31,7 @@ describe("interactive prop asset warmup", () => {
   it("holds the gated reveal until the interactive prop is ready", () => {
     expect(canvasSource).toContain("<InteractivePropAssetWarmup");
     expect(canvasSource).toContain(
-      "additionalReady={performersReady && interactivePropsReady}"
+      "interactivePropsReady &&\n                effectsRuntimeReady"
     );
   });
 });

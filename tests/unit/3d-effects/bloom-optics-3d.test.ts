@@ -265,7 +265,7 @@ describe("BloomRenderer3D", () => {
     const positions = scene.children
       .filter(
         (child): child is PointLight =>
-          child instanceof PointLight && child.visible
+          child instanceof PointLight && child.intensity > 0
       )
       .map((light) => light.position.x)
       .sort((a, b) => a - b);
@@ -278,7 +278,7 @@ describe("BloomRenderer3D", () => {
       scene.children
         .filter(
           (child): child is PointLight =>
-            child instanceof PointLight && child.visible
+            child instanceof PointLight && child.intensity > 0
         )
         .map((light) => light.position.x)
         .sort((a, b) => a - b)
@@ -330,11 +330,11 @@ describe("BloomRenderer3D", () => {
       ],
       1 / 60
     );
-    expect(
-      highScene.children.filter(
-        (child) => child instanceof PointLight && child.visible
-      )
-    ).toHaveLength(3);
+    const highLights = highScene.children.filter(
+      (child): child is PointLight => child instanceof PointLight
+    );
+    expect(highLights).toHaveLength(4);
+    expect(highLights.filter((light) => light.intensity > 0)).toHaveLength(3);
     highRenderer.dispose();
 
     const lowScene = new Scene();
