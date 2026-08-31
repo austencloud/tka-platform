@@ -98,6 +98,7 @@
     "models:download": "node scripts/model-curator/download-packs.cjs",
     "models:scan": "node scripts/model-curator/scan-models.cjs",
     "models:curate": "node scripts/model-curator/curator-server.cjs",
+    "characters:intake": "node --import tsx scripts/characters/character-intake.mjs",
     "arrows:placements:seed": "tsx scripts/seed-default-arrow-placements.ts",
     "arrows:placements:export": "tsx scripts/export-default-arrow-placements.ts",
     "arrows:placements:migrate": "tsx scripts/migrate-arrow-placement-frames.ts",

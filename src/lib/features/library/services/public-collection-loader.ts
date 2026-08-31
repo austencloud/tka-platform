@@ -44,7 +44,6 @@ import {
 import {
   mapDocToCollection,
   batchFetchPublicSequences,
-  batchFetchSequences,
 } from "$lib/shared/library/services/collection-firestore-mapper";
 
 export async function getUserPublicCollections(
@@ -415,27 +414,11 @@ export async function getUserCollectionSequences(
     return [];
   }
 
-  const ownSequences = await batchFetchSequences(
+  return batchFetchPublicSequences(
     firestore,
-    userId,
     collectionData.sequenceIds,
-    true
+    userId
   );
-
-  if (ownSequences.length === collectionData.sequenceIds.length) {
-    return ownSequences;
-  }
-
-  const foundIds = new Set(ownSequences.map((sequence) => sequence.id));
-  const missingIds = collectionData.sequenceIds.filter(
-    (sequenceId) => !foundIds.has(sequenceId)
-  );
-  const publicSequences = await batchFetchPublicSequences(
-    firestore,
-    missingIds
-  );
-
-  return [...ownSequences, ...publicSequences];
 }
 
 export async function getUserPublicFavoriteIds(

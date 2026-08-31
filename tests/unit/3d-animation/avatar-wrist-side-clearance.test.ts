@@ -7,6 +7,8 @@ type SocketTargetProbe = {
   rightGripAxisLocal: Vector3 | null;
   leftPalmLocal: Vector3 | null;
   rightPalmLocal: Vector3 | null;
+  leftPalmWorldLength: number;
+  rightPalmWorldLength: number;
   _bodyFrame: { lateral: Vector3 };
   targetPose: {
     leftHand: { targetPosition: Vector3 } | null;
@@ -64,6 +66,8 @@ describe("avatar wrist-side clearance", () => {
 
     animator.leftPalmLocal = new Vector3(palmLength, 0, 0);
     animator.rightPalmLocal = new Vector3(palmLength, 0, 0);
+    animator.leftPalmWorldLength = 0.01;
+    animator.rightPalmWorldLength = 0.01;
     animator._bodyFrame.lateral.copy(anatomicalRight);
 
     const leftGrip = anatomicalRight.clone().multiplyScalar(-0.03);
@@ -90,10 +94,8 @@ describe("avatar wrist-side clearance", () => {
   it("splits coincident paired grips around their authored midpoint", () => {
     const leftChain = createArmChain();
     const rightChain = createArmChain();
-    leftChain.root.position.x = -0.2;
-    rightChain.root.position.x = 0.2;
-    leftChain.root.updateMatrixWorld(true);
-    rightChain.root.updateMatrixWorld(true);
+    // A GLB briefly reports coincident shoulder origins while its matrices
+    // bind. The last valid anatomical frame must survive that interval.
     const skeleton = {
       getLeftArmChain: () => leftChain,
       getRightArmChain: () => rightChain,

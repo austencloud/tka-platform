@@ -329,6 +329,25 @@
         >Crossfade frames: {summary.motionCrossfadeFrames}</span
       >
       <span>Preparing frames: {summary.motionPreparationFrames}</span>
+      <span
+        data-problem={summary.motionPreparationFrames > 0 &&
+          summary.motionPreparationGeometryHeldFrames !==
+            summary.motionPreparationFrames}
+        >Sharp-frame lease: {summary.motionPreparationGeometryHeldFrames} / {summary.motionPreparationFrames}
+        preparing frames</span
+      >
+      <span data-problem={summary.motionMagnifiedPreparationFrames > 0}
+        >Placeholder raster growth: {summary.motionPreparationRasterGrowthMaximum ===
+        null
+          ? "n/a"
+          : `${summary.motionPreparationRasterGrowthMaximum.toFixed(2)}×`} · peak
+        scale {summary.motionPreparationRasterScaleMaximum === null
+          ? "n/a"
+          : `${summary.motionPreparationRasterScaleMaximum.toFixed(2)}×`}</span
+      >
+      <span data-problem={summary.motionMagnifiedPreparationFrames > 0}
+        >Magnified placeholder frames: {summary.motionMagnifiedPreparationFrames}</span
+      >
       <span data-problem={summary.motionLate2DBackingChanges > 0}
         >Late 2D backing changes: {summary.motionLate2DBackingChanges}</span
       >
