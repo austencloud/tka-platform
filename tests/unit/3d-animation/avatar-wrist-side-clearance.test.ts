@@ -90,10 +90,8 @@ describe("avatar wrist-side clearance", () => {
   it("splits coincident paired grips around their authored midpoint", () => {
     const leftChain = createArmChain();
     const rightChain = createArmChain();
-    leftChain.root.position.x = -0.2;
-    rightChain.root.position.x = 0.2;
-    leftChain.root.updateMatrixWorld(true);
-    rightChain.root.updateMatrixWorld(true);
+    // A GLB briefly reports coincident shoulder origins while its matrices
+    // bind. The last valid anatomical frame must survive that interval.
     const skeleton = {
       getLeftArmChain: () => leftChain,
       getRightArmChain: () => rightChain,

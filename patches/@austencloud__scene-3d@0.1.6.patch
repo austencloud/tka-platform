@@ -7040,7 +7040,7 @@ diff --git a/dist/lib/services/implementations/AvatarAnimator.d.ts.map b/dist/li
 deleted file mode 100644
 index f8e47d42167b6ea9bb4fd8f44f41273f48f1943b..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/AvatarAnimator.js b/dist/lib/services/implementations/AvatarAnimator.js
-index bdd5ae35ed47c58d29c537a7805705783f9b9066..58f7e5d07e581ca7bd7b73586721e5340cf29a01 100644
+index bdd5ae35ed47c58d29c537a7805705783f9b9066..17b6fd74fd7da40438352988d6fb25b4a3476459 100644
 --- a/dist/lib/services/implementations/AvatarAnimator.js
 +++ b/dist/lib/services/implementations/AvatarAnimator.js
 @@ -4,7 +4,52 @@
@@ -7230,10 +7230,10 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..58f7e5d07e581ca7bd7b73586721e534
 +        if (leftChain && rightChain) {
 +            leftChain.root.getWorldPosition(this._v1);
 +            rightChain.root.getWorldPosition(this._v2);
-+            this._bodyFrame.lateral.subVectors(this._v2, this._v1);
-+            this._bodyFrame.lateral.y = 0;
-+            if (this._bodyFrame.lateral.lengthSq() > 1e-8) {
-+                this._bodyFrame.lateral.normalize();
++            this._v3.subVectors(this._v2, this._v1);
++            this._v3.y = 0;
++            if (this._v3.lengthSq() > 1e-8) {
++                this._bodyFrame.lateral.copy(this._v3).normalize();
 +            }
 +        }
 +        const currentSeparation = this._v1
@@ -20903,7 +20903,7 @@ index 0000000000000000000000000000000000000000..804080e43f4dc206951115861d4b871f
 +  return point.distanceTo(closestOut);
 +}
 diff --git a/src/lib/services/implementations/AvatarAnimator.ts b/src/lib/services/implementations/AvatarAnimator.ts
-index c73bcabe86e07dd117e6f737532aea88ac9ec194..e0fca74652f0db66bb0171b0a443bf0319612e39 100644
+index c73bcabe86e07dd117e6f737532aea88ac9ec194..0ff5ef1ce3d3f4b21e78636a01b77b5288c305f9 100644
 --- a/src/lib/services/implementations/AvatarAnimator.ts
 +++ b/src/lib/services/implementations/AvatarAnimator.ts
 @@ -5,21 +5,98 @@
@@ -21152,10 +21152,10 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..e0fca74652f0db66bb0171b0a443bf03
 +    if (leftChain && rightChain) {
 +      leftChain.root.getWorldPosition(this._v1);
 +      rightChain.root.getWorldPosition(this._v2);
-+      this._bodyFrame.lateral.subVectors(this._v2, this._v1);
-+      this._bodyFrame.lateral.y = 0;
-+      if (this._bodyFrame.lateral.lengthSq() > 1e-8) {
-+        this._bodyFrame.lateral.normalize();
++      this._v3.subVectors(this._v2, this._v1);
++      this._v3.y = 0;
++      if (this._v3.lengthSq() > 1e-8) {
++        this._bodyFrame.lateral.copy(this._v3).normalize();
 +      }
 +    }
 +
