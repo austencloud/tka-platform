@@ -28,6 +28,17 @@ export interface StageBounds {
   zOffset?: number;
 }
 
+export function isWithinMinimumTouchTarget(
+  pointer: Point2,
+  projectedCenter: Point2,
+  minimumSizePx = MIN_TOUCH_TARGET_PX
+): boolean {
+  return (
+    Math.hypot(pointer.x - projectedCenter.x, pointer.y - projectedCenter.y) <=
+    minimumSizePx / 2
+  );
+}
+
 export function getPointerIntent(
   start: Point2,
   current: Point2
@@ -192,7 +203,10 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
       const y = rect.top + ((1 - projected.y) * rect.height) / 2;
       const distance = Math.hypot(event.clientX - x, event.clientY - y);
       if (
-        distance <= MIN_TOUCH_TARGET_PX / 2 &&
+        isWithinMinimumTouchTarget(
+          { x: event.clientX, y: event.clientY },
+          { x, y }
+        ) &&
         (!nearest || distance < nearest.distance)
       )
         nearest = { index, distance };

@@ -3,6 +3,7 @@ import {
   clampPerformerPosition,
   getPointerIntent,
   intersectGroundPlane,
+  isWithinMinimumTouchTarget,
   resolveCameraRelativeNudge,
   resolveTouchIntent,
 } from "$lib/shared/3d/components/performer-interaction/performer-pointer-interaction.svelte";
@@ -28,6 +29,15 @@ describe("performer pointer interaction", () => {
     expect(
       resolveTouchIntent({ selected: false, heldMs: 300, travelPx: 5.01 })
     ).toBe("camera");
+  });
+
+  it("keeps a 44px minimum touch target around projected performers", () => {
+    expect(isWithinMinimumTouchTarget({ x: 22, y: 0 }, { x: 0, y: 0 })).toBe(
+      true
+    );
+    expect(isWithinMinimumTouchTarget({ x: 22.01, y: 0 }, { x: 0, y: 0 })).toBe(
+      false
+    );
   });
 
   it("intersects the stage plane and preserves the original grab offset", () => {
