@@ -5,6 +5,7 @@
   import { fits3DViewport } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import SequenceViewerTransitionReviewFrame from "./_components/SequenceViewerTransitionReviewFrame.svelte";
+  import RailPropGlyphReview from "./_components/RailPropGlyphReview.svelte";
   import TransitionGeometryTrace from "./_components/TransitionGeometryTrace.svelte";
   import {
     TRANSITION_REVIEW_GATES,
@@ -71,6 +72,7 @@
 
   const review = createTransitionReviewState();
   const isFrame = $derived(page.url.searchParams.get("frame") === "1");
+  const isGlyphReview = $derived(page.url.searchParams.get("glyphs") === "1");
   const selectedViewport = $derived(
     VIEWPORTS.find((viewport) => viewport.id === viewportId) ?? VIEWPORTS[3]
   );
@@ -358,13 +360,17 @@
 
 <svelte:head>
   <title
-    >{isFrame
-      ? "Sequence Viewer transition frame"
-      : "Sequence Viewer transition review"}</title
+    >{isGlyphReview
+      ? "Sequence Viewer prop glyph fit"
+      : isFrame
+        ? "Sequence Viewer transition frame"
+        : "Sequence Viewer transition review"}</title
   >
 </svelte:head>
 
-{#if isFrame}
+{#if isGlyphReview}
+  <RailPropGlyphReview />
+{:else if isFrame}
   <SequenceViewerTransitionReviewFrame />
 {:else}
   <main class="review-page">
