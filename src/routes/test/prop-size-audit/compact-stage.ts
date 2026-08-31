@@ -1,52 +1,53 @@
 export const HAND_ORBIT = 150;
-export const MIN_STAGE_SCALE = 0.2;
-export const MAX_STAGE_SCALE = 1;
+export const MIN_FAN_BLEND = 0;
+export const MAX_FAN_BLEND = 1;
+export const DEFAULT_FAN_BLEND = 0.5;
+export const AUTHORED_FAN_SPAN = 300;
+export const AUTHORED_FAN_HEIGHT = 239.4;
+export const AUTHORED_BIG_FAN_SPAN = 600;
+export const AUTHORED_BIG_FAN_HEIGHT = 567.4;
 
-export interface CompactStageMetrics {
+export interface FanLandingMetrics {
+  blend: number;
+  propScale: number;
   stageScale: number;
   compactOrbit: number;
-  currentPropToGridRatio: number;
-  proposedPropToGridRatio: number;
-  ratioDriftPercent: number;
+  scaledFanSpan: number;
+  scaledFanHeight: number;
+  inwardFanReach: number;
+  oppositeHandDistance: number;
+  landingError: number;
 }
 
-export function clampStageScale(value: number): number {
-  return Math.min(MAX_STAGE_SCALE, Math.max(MIN_STAGE_SCALE, value));
+export function clampFanBlend(value: number): number {
+  return Math.min(MAX_FAN_BLEND, Math.max(MIN_FAN_BLEND, value));
 }
 
-export function matchedStageScale(baseReach: number, bigReach: number): number {
-  return clampStageScale(requiredStageScale(baseReach, bigReach));
-}
-
-export function requiredStageScale(
-  baseReach: number,
-  bigReach: number
-): number {
-  if (baseReach <= 0 || bigReach <= 0) return MAX_STAGE_SCALE;
-  return baseReach / bigReach;
-}
-
-export function compactStageMetrics(
-  baseReach: number,
-  bigReach: number,
-  stageScale: number
-): CompactStageMetrics {
-  const safeScale = clampStageScale(stageScale);
-  const compactOrbit = HAND_ORBIT * safeScale;
-  const currentPropToGridRatio = bigReach / HAND_ORBIT;
-  const proposedPropToGridRatio = baseReach / compactOrbit;
-  const ratioDriftPercent =
-    currentPropToGridRatio > 0
-      ? ((proposedPropToGridRatio - currentPropToGridRatio) /
-          currentPropToGridRatio) *
-        100
-      : 0;
+export function fanLandingMetrics(
+  requestedBlend: number,
+  fanSpan = AUTHORED_FAN_SPAN,
+  bigFanSpan = AUTHORED_BIG_FAN_SPAN,
+  handOrbit = HAND_ORBIT
+): FanLandingMetrics {
+  const blend = clampFanBlend(requestedBlend);
+  const bigEquivalentScale = bigFanSpan / fanSpan;
+  const propScale = bigEquivalentScale + (1 - bigEquivalentScale) * blend;
+  const scaledFanSpan = fanSpan * propScale;
+  const stageScale = scaledFanSpan / (handOrbit * 4);
+  const compactOrbit = handOrbit * stageScale;
+  const scaledFanHeight = AUTHORED_FAN_HEIGHT * propScale;
+  const inwardFanReach = scaledFanSpan / 2;
+  const oppositeHandDistance = compactOrbit * 2;
 
   return {
-    stageScale: safeScale,
+    blend,
+    propScale,
+    stageScale,
     compactOrbit,
-    currentPropToGridRatio,
-    proposedPropToGridRatio,
-    ratioDriftPercent,
+    scaledFanSpan,
+    scaledFanHeight,
+    inwardFanReach,
+    oppositeHandDistance,
+    landingError: inwardFanReach - oppositeHandDistance,
   };
 }

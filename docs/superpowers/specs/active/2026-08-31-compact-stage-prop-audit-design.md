@@ -1,56 +1,57 @@
-# Compact Stage Prop Audit
+# Fan Opposite-Point Landing Audit
 
 ## Goal
 
-Test whether size-only Big prop variants can become a regular prop rendered
-against a smaller spatial stage. The prop keeps a comfortable visible size
-while the grid, hand orbit, and mandala geometry contract beneath it.
+Test the proposed replacement for Big Fan against its authored spatial
+contract. With the fan oriented IN from one strict hand point, its far edge must
+land on the opposite strict hand point.
 
 ## Ownership
 
 - `/test/prop-size-audit` remains the visual owner for true 950-unit prop-scale
   comparisons.
-- `prop-type-display-registry.ts` remains the owner of standard-to-Big pairs.
 - `GridSvg.svelte` and its production grid asset remain the visual owner of grid
-  geometry. The gate uses the strict animation points from that shared grid; it
-  does not draw a parallel diagram.
-- The audit composes those owners. It does not create another prop pairing map
-  or change production rendering.
+  geometry. The gate shows only the strict animation points from that shared
+  grid. Normal pictograph points remain hidden.
+- The authored animated Fan and Big Fan assets remain the silhouette owners.
+- The audit composes those owners and does not change production rendering.
 
 ## Comparison math
 
-For base reach `b`, Big reach `B`, and the production hand orbit `H = 150`, the
-matched compact scale is `b / B`. The proposed hand orbit is `H × b / B`, so
-`b / proposedOrbit` equals `B / H`. This preserves the current prop-to-grid
-ratio while displaying the regular prop artwork.
+The authored Fan span is 300 units, the Big Fan span is 600 units, and opposite
+strict hand points are 300 units apart on the full grid. The audit preserves
+that exact landing across one blend:
 
-Line thickness, point size, labels, and controls stay constant. The compact
-proposal scales the shared grid's spatial anchors around its center, then
-counter-scales its point marks so the diagram remains legible. The slider
-follows the pointer directly and carries no easing.
+- `0`: 200% Fan on a 100% grid.
+- `0.5`: 150% Fan on a 75% grid.
+- `1`: 100% Fan on a 50% grid.
+
+At every value, half the scaled fan span equals twice the scaled hand orbit.
+Landing error therefore remains zero. The 150% / 75% midpoint is the proposed
+default because it meets between the existing size and grid extremes.
+
+Point size, labels, and controls stay constant. The compact proposal scales the
+shared grid's spatial anchors around its center, then counter-scales its point
+marks so the diagram remains legible. The slider follows the pointer directly
+and carries no easing.
 
 ## Gate
 
-The page presents one standard-to-Big family at a time:
+The page presents one Fan contract:
 
-1. Current Big artwork on the full production grid.
-2. Base artwork on the compact grid.
-3. A direct stage-scale scrubber with a matched-ratio reset.
-4. Ratio drift and tracked-end counts.
+1. Authored Big Fan on the full strict animation grid.
+2. Authored Fan at 150% on a 75% strict animation grid.
+3. A direct blend scrubber that keeps the inward landing exact.
+4. Prop scale, grid scale, and landing error measurements.
 
-A tracked-end change is a hard warning. Those props require a semantic identity
-and cannot be replaced by spatial scale alone. A matching end count is necessary
-but not sufficient; the visible silhouette still requires approval.
-
-When the ratio would require a stage larger than 100%, the gate labels the
-closest compact value and the unavailable required scale. It never describes a
-clamped approximation as a match.
+The opposite target point is emphasized in both cards. The fan is rotated IN at
+the east hand point so its left edge can be compared directly to that target.
 
 ## Non-goals
 
 - No production prop type is removed or renamed.
 - No saved sequence is migrated.
 - No renderer, arrow, effect, or trail geometry changes in this gate.
+- No claim is made yet about Big Club, Big Staff, or other Big variants.
 
-Production work begins only after the paired visual review identifies which
-families are true scale variants.
+Production work begins only after this exact Fan landing is visually approved.
