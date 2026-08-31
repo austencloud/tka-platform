@@ -21,6 +21,8 @@
     spinScience: "https://sirlorq.wordpress.com/",
     sirLorq: "https://sirlorq.wordpress.com/tech-tiles/",
     visualSpinner: "https://infiniteperplexity.github.io/visual-spinner-3d/",
+    visualSpinnerDemo:
+      "https://infiniteperplexity.github.io/visual-spinner-3d/demo.html",
     visualSpinnerGithub:
       "https://github.com/infiniteperplexity/visual-spinner-3d",
     spiroAnim: "https://spiroanim.com/app",
@@ -99,9 +101,18 @@
 
   const visualSpinnerImages = [
     {
+      src: "/roots/software/visualspinner3d-demo.webp",
+      alt: "VisualSpinner3D demo with four control columns beside four colored props in the 3D renderer",
+      caption:
+        "The live demo's four independent prop lanes and shared renderer",
+      width: 920,
+      height: 600,
+      shape: "wide" as const,
+    },
+    {
       src: "/roots/software/visualspinner3d.webp",
-      alt: "Screenshot of the VisualSpinner3D browser simulator by Glenn Wright",
-      caption: "VisualSpinner3D",
+      alt: "VisualSpinner3D project page with its embedded multi-prop renderer",
+      caption: "VisualSpinner3D's project page and embedded renderer",
       width: 1734,
       height: 917,
       shape: "wide" as const,
@@ -484,28 +495,47 @@
       <HistoryEra
         id="browser-tools"
         number="04A"
-        period="Browser tools · published 2014"
-        title="VisualSpinner3D puts a simulator in a link"
+        period="Browser simulator · published 2014 · last updated 2023"
+        title="VisualSpinner3D puts prop simulation in the browser"
       >
         {#snippet children()}
           <div class="prose">
             <p>
-              Glenn Wright's <strong>VisualSpinner3D</strong> runs in the browser
-              with no install. Set each hand's shape, direction, timing, and prop;
-              the two animated paths update together in a 3D view.
+              Glenn Wright's <strong>VisualSpinner3D</strong> put a general-purpose
+              prop simulator in the browser. Its main demo exposes four independent
+              prop lanes. For each one, an artist can choose the prop, motion plane,
+              entry angle, orientation, spin direction, and move; the 3D view animates
+              them together.
             </p>
             <p>
-              Wright published the project in 2014 and still maintains it. The
-              live simulator and its source are both public, which makes it a
-              durable teaching reference as well as a tool.
+              The engine underneath is more open-ended than the demo. It builds
+              each prop as an articulated chain, fits moves together, and can
+              draw flowers, isolations, pendulums, C-CAPs, snakes, toroids,
+              bend, twist, and arbitrary motion planes.
+            </p>
+            <p>
+              The project's Git history begins in April 2014, with its latest
+              commit in April 2023. The live demo remains online. Its model is
+              kinematic: it draws authored paths rather than simulating forces,
+              collisions, or the limits of a human body.
             </p>
             <div class="resource-row">
+              <a
+                href={links.visualSpinnerDemo}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="resource-chip"
+                ><span>Open the four-prop demo</span><i
+                  class="fas fa-external-link-alt ext"
+                  aria-hidden="true"
+                ></i></a
+              >
               <a
                 href={links.visualSpinner}
                 target="_blank"
                 rel="noopener noreferrer"
                 class="resource-chip"
-                ><span>VisualSpinner3D live demo</span><i
+                ><span>Project page</span><i
                   class="fas fa-external-link-alt ext"
                   aria-hidden="true"
                 ></i></a
@@ -524,7 +554,7 @@
           </div>
         {/snippet}
         {#snippet media()}<SoftwareGallery
-            label="VisualSpinner3D screenshot"
+            label="VisualSpinner3D demo and project screenshots"
             images={visualSpinnerImages}
             variant="wide"
           />{/snippet}
