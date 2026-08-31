@@ -22,7 +22,7 @@
    * those via the transform chain - so the props always sit on the visible
    * grid regardless of where the avatar is standing or which way it faces.
    *
-   * Scene3D also gets `avatarPositions=[footOffset]` so its internal Grid3D
+   * Scene3D also gets `characterPositions=[footOffset]` so its internal Grid3D
    * visual is rendered at the same rig-root offset we use for props.
    */
 
@@ -154,7 +154,7 @@
   const facingAngle = $derived(labCtx.state.rootYawRad);
   const spinePitchOffset = $derived(labCtx.state.spinePitchRad);
 
-  // Scene3D's avatarPositions drives where its Grid3D visual is rendered.
+  // Scene3D's characterPositions drives where its Grid3D visual is rendered.
   // We want the grid to stay in world XZ (performer walks around it)
   // but to be lifted onto the stage deck alongside the performer,
   // otherwise the avatar's hands reach for prop targets floating below
@@ -211,7 +211,7 @@
     showGrid={true}
     showLabels={false}
     {visiblePlanes}
-    avatarPositions={gridAnchorPositions}
+    characterPositions={gridAnchorPositions}
     backgroundType={BackgroundType.FOREST}
   >
     {#snippet children()}

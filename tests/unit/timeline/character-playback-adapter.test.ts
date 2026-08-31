@@ -3,9 +3,9 @@ import { describe, it, expect, vi } from "vitest";
 import {
 	computeOverallProgress3D,
 	computeSeek3D,
-} from "$lib/shared/timeline/adapters/avatar-playback-adapter.svelte";
+} from "$lib/shared/timeline/adapters/character-playback-adapter.svelte";
 
-describe("avatar-playback-adapter", () => {
+describe("character-playback-adapter", () => {
 	describe("computeOverallProgress3D", () => {
 		it("returns 0 at step 0, progress 0", () => {
 			expect(computeOverallProgress3D(0, 0, 8)).toBeCloseTo(0);

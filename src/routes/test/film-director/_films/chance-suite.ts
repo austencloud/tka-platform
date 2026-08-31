@@ -33,7 +33,7 @@ const ROLLABLE_EFFECTS = [
 ];
 
 export const chanceSuiteFilm: FilmDirectorInput = {
-  version: 3,
+  version: 4,
   id: "chance-suite-r1",
   title: "Chance Suite",
   brief:
@@ -55,7 +55,7 @@ export const chanceSuiteFilm: FilmDirectorInput = {
         cast: {
           count: 4,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: { pick: "any", from: ROLLABLE_PROPS },
             effect: { pick: "any", from: ROLLABLE_EFFECTS },
             effort: { pick: "any" },
@@ -92,7 +92,7 @@ export const chanceSuiteFilm: FilmDirectorInput = {
         cast: {
           count: 5,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: { pick: "distinct", from: ROLLABLE_PROPS },
             effect: { pick: "distinct", from: ROLLABLE_EFFECTS },
             effort: { pick: "distinct" },
@@ -133,7 +133,7 @@ export const chanceSuiteFilm: FilmDirectorInput = {
         cast: {
           count: 6,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: PropType.CLUB,
             effect: { oneOf: ["fire", "led", "trails"] },
             effort: { pick: "any", from: ["glide", "press", "elastic"] },
@@ -183,7 +183,7 @@ export const chanceSuiteFilm: FilmDirectorInput = {
         cast: {
           count: 8,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: { pick: "any", from: ROLLABLE_PROPS },
             effect: { pick: "any", from: ROLLABLE_EFFECTS },
             effort: { pick: "any" },

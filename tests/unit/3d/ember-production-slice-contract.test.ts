@@ -4,9 +4,13 @@ import { describe, expect, it } from "vitest";
 
 import { createDefaultEmberConfig } from "$lib/shared/3d/environments/domain/models/scene-configs/ember-scene-config";
 import { getCanonicalPerformerStageBounds } from "$lib/shared/3d/environments/domain/performer-stage-bounds";
+import { isEmberGroundDetailSurface } from "$lib/shared/3d/environments/scenes/ember/ember-ground-detail";
 import {
+  createEmberHorizonApron,
   createEmberSurfaceEcology,
+  createEmberTerrainHeightField,
   distanceToEmberLavaCorridor,
+  sampleEmberTerrainHeight,
 } from "$lib/shared/3d/environments/scenes/ember/ember-surface-ecology";
 import { createEmberSurfacePlateGeometry } from "$lib/shared/3d/environments/scenes/ember/ember-surface-plate-geometry";
 import { createLavaRiverStripGeometry } from "$lib/shared/3d/environments/scenes/ember/lava-river-geometry";
@@ -24,11 +28,13 @@ import {
   SceneEnvironmentId,
 } from "$lib/shared/3d/environments/domain/scene-environment";
 import { createFormationFromPreset } from "@austencloud/scene-3d";
+import { MeshStandardMaterial } from "three";
 
 interface EmberSliceGltf {
   extensionsRequired?: string[];
   extensionsUsed?: string[];
   materials?: Array<{ name?: string }>;
+  meshes?: Array<{ primitives: Array<{ material: number }> }>;
   images?: Array<{ name?: string; mimeType?: string }>;
   nodes?: Array<{
     name?: string;
@@ -509,6 +515,152 @@ describe("Ember integrated-room contracts", () => {
       expect(Math.hypot(x, z)).toBeGreaterThanOrEqual(7.4);
       expect(distanceToEmberLavaCorridor(x, z)).toBeGreaterThanOrEqual(4.3);
     }
+  });
+
+  it("gives every geology role a detail pass or a named reason it has none", () => {
+    const HERO_EXCEPTION = new Set(["meshy-hero-geology"]);
+    const HIDDEN = new Set(["cooled-fissure", "live-fissure"]);
+    const seen = new Set<string>();
+
+    for (const node of gltf.nodes ?? []) {
+      if (node.mesh === undefined) continue;
+      const role = node.extras?.tka_role;
+      if (!role || seen.has(role)) continue;
+      seen.add(role);
+      for (const primitive of gltf.meshes?.[node.mesh]?.primitives ?? []) {
+        const material = new MeshStandardMaterial({
+          name: gltf.materials?.[primitive.material]?.name ?? "",
+        });
+        if (HIDDEN.has(role) || HERO_EXCEPTION.has(role)) {
+          expect(isEmberGroundDetailSurface(role, material)).toBe(false);
+          continue;
+        }
+        // Anything else that ships in the slice must be textured. The pale
+        // upcountry masses were failing exactly here.
+        expect(
+          `${role} -> ${isEmberGroundDetailSurface(role, material)}`
+        ).toBe(`${role} -> true`);
+      }
+    }
+
+    // Guard the inventory itself: a new role added to the slice has to make a
+    // deliberate choice rather than silently inheriting a shared material.
+    expect(seen.size).toBe(13);
+  });
+
+  it("seats outer scatter on the sampled terrain and closes the world rim", () => {
+    // A synthetic bowl over the real terrain bounds: high rim, low centre, so
+    // both the sampler and the apron have real relief to trace.
+    const minX = -190;
+    const maxX = 190;
+    const minZ = -145;
+    const maxZ = 190;
+    const groundY = 1.5;
+    const columns = 96;
+    const rows = 96;
+    const points = new Float32Array(columns * rows * 3);
+    const bowl = (x: number, z: number) =>
+      (Math.hypot(x, z) / 190) * 34 - 6 + Math.sin(x * 0.05) * 1.5;
+    for (let row = 0; row < rows; row += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        const x = minX + ((maxX - minX) * column) / (columns - 1);
+        const z = minZ + ((maxZ - minZ) * row) / (rows - 1);
+        const index = (row * columns + column) * 3;
+        points[index] = x;
+        points[index + 1] = groundY + bowl(x, z);
+        points[index + 2] = z;
+      }
+    }
+    const field = createEmberTerrainHeightField(points, groundY);
+    expect(field.heights.some((height) => height !== 0)).toBe(true);
+    expect(sampleEmberTerrainHeight(field, 0, 0)).toBeLessThan(
+      sampleEmberTerrainHeight(field, 170, 0)
+    );
+
+    const seated = createEmberSurfaceEcology(5.2, 9413, field);
+    expect(seated.rubble).toHaveLength(150);
+    expect(seated.plates).toHaveLength(32);
+    expect(seated.outcrops).toHaveLength(240);
+    // Same three instanced meshes as the near-field rubble: instances, not
+    // draw calls.
+    expect(new Set(seated.outcrops.map((rock) => rock.family))).toEqual(
+      new Set(["cold", "iron", "glass"])
+    );
+    expect(createEmberSurfaceEcology(5.2, 9413, field)).toEqual(seated);
+    // Without a field there is nothing to seat on, so the outer pass stays out
+    // rather than floating boulders at stage height.
+    expect(createEmberSurfaceEcology(5.2).outcrops).toHaveLength(0);
+
+    let east = 0;
+    let west = 0;
+    let south = 0;
+    for (const rock of seated.outcrops) {
+      const [x, y, z] = rock.position;
+      expect(Math.hypot(x, z)).toBeGreaterThanOrEqual(34);
+      expect(distanceToEmberLavaCorridor(x, z)).toBeGreaterThanOrEqual(8);
+      // Seated, not floating: within a boulder's own height of the terrain.
+      expect(Math.abs(y - sampleEmberTerrainHeight(field, x, z))).toBeLessThan(
+        Math.max(...rock.scale)
+      );
+      if (x > 34) east += 1;
+      if (x < -34) west += 1;
+      if (z < -34) south += 1;
+    }
+    // The bald bearings the orbit cameras fill.
+    expect(east).toBeGreaterThan(30);
+    expect(west).toBeGreaterThan(30);
+    expect(south).toBeGreaterThan(30);
+
+    const apron = createEmberHorizonApron(field);
+    expect(apron.indices).toHaveLength(224 * 6);
+    expect(apron.positions).toHaveLength(225 * 2 * 3);
+    let reachesPastRim = 0;
+    let descends = 0;
+    for (let step = 0; step <= 224; step += 1) {
+      const inner = step * 6;
+      const innerX = apron.positions[inner]!;
+      const innerZ = apron.positions[inner + 2]!;
+      const outerX = apron.positions[inner + 3]!;
+      const outerZ = apron.positions[inner + 5]!;
+      if (Math.hypot(outerX, outerZ) > Math.hypot(innerX, innerZ) + 80)
+        reachesPastRim += 1;
+      if (apron.positions[inner + 4]! < apron.positions[inner + 1]!)
+        descends += 1;
+      // The rim ring has to track the terrain, not a flat plane.
+      expect(apron.positions[inner + 1]!).toBeCloseTo(
+        sampleEmberTerrainHeight(field, innerX, innerZ),
+        4
+      );
+    }
+    expect(reachesPastRim).toBe(225);
+    expect(descends).toBe(225);
+    // Closed loop: last pair repeats the first, so the skirt has no seam.
+    expect(Array.from(apron.positions.slice(0, 6))).toEqual(
+      Array.from(apron.positions.slice(224 * 6, 224 * 6 + 6))
+    );
+    // Up-facing, or the apron is invisible from every camera above it.
+    for (let vertex = 1; vertex < apron.normals.length; vertex += 3) {
+      expect(apron.normals[vertex]!).toBeGreaterThan(0);
+    }
+  });
+
+  it("treats each shared slice material once instead of once per mesh", () => {
+    const sceneSource = readFileSync(
+      resolve("src/lib/shared/3d/environments/scenes/EmberScene.svelte"),
+      "utf8"
+    );
+    // GLTFLoader shares one material instance per glTF material index, so the
+    // treatment has to resolve per material with a declared precedence rather
+    // than lerping once per mesh in traversal order.
+    expect(sceneSource).toContain("TREATMENT_PRECEDENCE");
+    expect(sceneSource).toContain("compoundedBlend");
+    const traversal = sceneSource.slice(
+      sceneSource.indexOf("asset.traverse((child)"),
+      sceneSource.indexOf("for (const [material, counts] of routed)")
+    );
+    expect(traversal).not.toContain("material.color.lerp");
+    expect(traversal).not.toContain("material.roughness =");
+    expect(traversal).not.toContain("material.emissiveIntensity =");
   });
 
   it("uses one faceted volcanic plate mesh instead of instanced graybox slabs", () => {

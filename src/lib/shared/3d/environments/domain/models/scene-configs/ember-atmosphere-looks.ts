@@ -40,12 +40,26 @@ export interface EmberHeatFieldConfig {
 export interface EmberPlumeConfig {
   position: [number, number, number];
   count: number;
+  /** Mouth footprint and the column height a puff dissolves over. */
   area: { width: number; height: number; depth: number };
+  /**
+   * Mean climb in metres per second across a puff's whole life. Buoyancy runs
+   * above it at the mouth and below it at the crown, and `area.height` divided
+   * by it is how long a puff lives — so this sets the pace of the column, not
+   * just the speed of a sprite.
+   */
   speed: number;
-  colors: string[];
+  /** Ash at the mouth, underlit by the vent. */
+  litColor: string;
+  /** Ash aloft, where the column is a silhouette against the sky. */
+  ashColor: string;
   sizeRange: [number, number];
   opacity: number;
   motionScale: number;
+  /** Metres of lateral drift per metre climbed. One wind across a look. */
+  windShear?: [number, number];
+  /** Radius multiplier at birth and at dissolution. */
+  growth?: [number, number];
 }
 
 interface EmberMaterialLayerConfig {
@@ -116,22 +130,59 @@ export interface EmberAtmosphereLookPreset {
  */
 const CALDERA_BEARING: [number, number, number] = [-25, 0, 145];
 
+/**
+ * The baked world spans x ±190 and z −145…229, so the furthest terrain any
+ * camera can frame is roughly 530 m out. The haze dome is depth-tested; at its
+ * old 260 it cut a visible shell through the ridgelines and only the terrain
+ * behind that shell received any atmosphere. Sitting it past the world makes it
+ * purely sky and leaves every metre of distance to scene fog.
+ */
+const HAZE_DOME_RADIUS = 660;
+
+/**
+ * Scene fog is the only aerial-perspective mechanism the scene has, so its
+ * colour is the colour distance converges to. A near-black fog drove every
+ * ridge, mesa and the basalt tower to a flat cutout the further away it stood.
+ * Each look's fog now sits between its own sky mid and bottom stops: warm
+ * enough that distance desaturates into atmosphere, dark enough that the
+ * ridgeline still reads against the lit sky. Densities are set so the
+ * performer's 25 m stays under two per cent and the wash arrives past 60 m.
+ */
+const FOG: Record<EmberAtmosphereLookId, FogConfig> = {
+  "blackglass-inferno": { color: "#3f2018", density: 0.0042 },
+  "furnace-storm": { color: "#6b3018", density: 0.0072 },
+  "sulfur-caldera": { color: "#443f22", density: 0.0062 },
+};
+
+/**
+ * A grazing fill on the terminus bearing, which the other four directionals
+ * leave dark: two rake from the caldera side, one is nearly overhead. At about
+ * eight degrees of elevation it lands on vertical rock — mesa walls, ridge
+ * flanks, the basalt tower's columns — and contributes barely a seventh of its
+ * intensity to level ground, so it gives distant form back without lifting the
+ * plain or diluting the close-range rim light.
+ */
+const TERMINUS_FILL_POSITION: [number, number, number] = [26, 18, -130];
+
 const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
   id: "blackglass-inferno",
   label: "Blackglass Inferno",
   sky: {
     topColor: "#05070e",
-    midColor: "#221419",
+    // The mid stop owns most of the visible sky whenever a camera sits above
+    // the plain and looks down the valley, so a plum near-black there is what
+    // read as a void over the terminus.
+    midColor: "#341a15",
     bottomColor: "#7d2a10",
     horizonGlow: {
       color: "#c8451a",
       direction: CALDERA_BEARING,
-      height: 0.16,
-      spread: 0.42,
-      intensity: 0.34,
+      height: 0.24,
+      spread: 0.62,
+      intensity: 0.38,
     },
   },
-  fog: { color: "#1c0f0c", density: 0.0049 },
+  fog: FOG["blackglass-inferno"],
   lavaRivers: {
     baseColor: "#e33a05",
     hotColor: "#ffd05b",
@@ -147,34 +198,51 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
     enabled: true,
     color1: "#7b2b16",
     color2: "#090b0f",
-    opacity: 0.4,
+    opacity: 0.42,
     scale: 2.7,
     animationSpeed: 0.035,
     lightningInterval: 7.5,
     lightningIntensity: 0.5,
     innerGlowColor: "#ff5a12",
-    radius: 260,
+    radius: HAZE_DOME_RADIUS,
     underglowDirection: CALDERA_BEARING,
     underglowColor: "#d8501a",
-    underglowStrength: 0.38,
+    underglowStrength: 0.42,
+    underglowFocus: 2.2,
+    underglowWrap: 0.3,
   },
+  // A mote whose projected size falls under a pixel is still drawn a whole
+  // pixel wide, so at range these fields used to read as hot white specks
+  // parked on the sky. `subPixel` charges each mote only the coverage it earns
+  // and `fade` retires it before it can drift into empty sky as a stray.
   embers: {
     type: "embers",
     count: 126,
     area: { width: 28, height: 11, depth: 34 },
     speed: 0.17,
-    colors: ["#ff3a08", "#ff6a0a", "#ff9c20", "#ffd070"],
+    colors: ["#ff3a08", "#ff6a0a", "#ff9c20", "#ffb03a"],
     sizeRange: [0.014, 0.05],
     spin: false,
+    buoyant: true,
+    rangeFalloff: {
+      subPixel: true,
+      fade: [45, 110],
+      tint: { color: "#c22a04", start: 22, end: 90 },
+    },
   },
   ash: {
     type: "dust",
     count: 118,
     area: { width: 34, height: 13, depth: 42 },
     speed: 0.038,
-    colors: ["#66514a", "#3d3434", "#796059", "#2c292d"],
+    colors: ["#5c4038", "#3a2c28", "#6e4b3a", "#2a2422"],
     sizeRange: [0.018, 0.07],
     spin: false,
+    rangeFalloff: {
+      subPixel: true,
+      fade: [35, 85],
+      tint: { color: "#1c0f0c", start: 18, end: 70 },
+    },
   },
   smoke: {
     type: "smoke",
@@ -184,11 +252,16 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
     colors: ["#160b0b", "#23100d", "#0b080b", "#32120d"],
     sizeRange: [0.12, 0.38],
     spin: false,
+    buoyant: true,
+    rangeFalloff: { subPixel: true, fade: [40, 95] },
   },
+  // A hemisphere's ground colour is what reaches the vertical faces the sky
+  // half misses, so the basin bounce carries the sides of every column and
+  // cliff. It was dark enough that those faces had nothing but the two keys.
   hemisphereLight: {
     skyColor: "#8799a2",
-    groundColor: "#2f0d08",
-    intensity: 1.32,
+    groundColor: "#46170e",
+    intensity: 1.44,
   },
   skyLight: {
     enabled: true,
@@ -204,6 +277,7 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
       { position: [-20, 10, 12], color: "#7fa9bd", intensity: 1.22 },
       { position: [0, 24, -6], color: "#ffeadb", intensity: 0.38 },
       { position: [-34, 20, 90], color: "#c84620", intensity: 0.68 },
+      { position: TERMINUS_FILL_POSITION, color: "#8a6259", intensity: 0.46 },
     ],
     points: [
       {
@@ -264,49 +338,62 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
       },
       { position: { x: -25, z: 145 }, radius: 9, height: 15, intensity: 0.06 },
     ],
-    // Plumes render additively against a near-black sky, so their colour is
-    // what makes them read at all. Ash lit from beneath is a warm mid grey,
-    // not the near-black these carried when they were invisible.
+    // Ash is lit from beneath, so `litColor` holds the mouth and `ashColor`
+    // takes the crown into silhouette. Normal blending carries both: a column
+    // darkens the bright horizon band and lightens the near-black zenith from
+    // one material. One shear vector per look keeps every vent on one wind.
     plumes: [
       {
         position: [-25, 44, 145],
         count: 64,
         area: { width: 18, height: 34, depth: 16 },
-        speed: 0.034,
-        colors: ["#5a3a30", "#6d4a3c", "#3a2c2c", "#8a5236"],
-        sizeRange: [1.2, 3.1],
-        opacity: 0.3,
+        speed: 2.05,
+        litColor: "#7a3a18",
+        ashColor: "#14100f",
+        sizeRange: [1.5, 3.6],
+        opacity: 0.34,
         motionScale: 0.7,
+        windShear: [0.34, -0.12],
+        growth: [0.22, 1.15],
       },
       {
         position: [34, 15, -74],
         count: 24,
         area: { width: 8, height: 18, depth: 8 },
-        speed: 0.026,
-        colors: ["#453230", "#5a3c33", "#2b2429"],
-        sizeRange: [0.65, 1.55],
-        opacity: 0.2,
+        speed: 1.9,
+        litColor: "#6b3315",
+        ashColor: "#14100f",
+        sizeRange: [0.8, 1.85],
+        opacity: 0.26,
         motionScale: 0.6,
+        windShear: [0.34, -0.12],
+        growth: [0.26, 1],
       },
       {
         position: [-37, 12, 28],
         count: 18,
         area: { width: 6, height: 12, depth: 6 },
-        speed: 0.022,
-        colors: ["#4a3130", "#5f382c", "#2a2228"],
-        sizeRange: [0.45, 1.1],
-        opacity: 0.19,
+        speed: 1.7,
+        litColor: "#6b3315",
+        ashColor: "#16110f",
+        sizeRange: [0.55, 1.3],
+        opacity: 0.24,
         motionScale: 0.56,
+        windShear: [0.34, -0.12],
+        growth: [0.26, 1],
       },
       {
         position: [2, 12, -108],
         count: 32,
         area: { width: 10, height: 22, depth: 9 },
-        speed: 0.028,
-        colors: ["#42302f", "#573b33", "#242229", "#6f4030"],
-        sizeRange: [0.8, 1.9],
-        opacity: 0.22,
+        speed: 1.95,
+        litColor: "#74371a",
+        ashColor: "#15110f",
+        sizeRange: [0.95, 2.25],
+        opacity: 0.28,
         motionScale: 0.64,
+        windShear: [0.34, -0.12],
+        growth: [0.24, 1.08],
       },
     ],
     materials: {
@@ -361,12 +448,12 @@ const FURNACE_STORM: EmberAtmosphereLookPreset = {
     horizonGlow: {
       color: "#e0561d",
       direction: CALDERA_BEARING,
-      height: 0.3,
-      spread: 0.72,
-      intensity: 0.62,
+      height: 0.36,
+      spread: 0.8,
+      intensity: 0.66,
     },
   },
-  fog: { color: "#32130d", density: 0.0115 },
+  fog: FOG["furnace-storm"],
   lavaRivers: {
     ...BLACKGLASS_INFERNO.lavaRivers,
     baseColor: "#e74306",
@@ -376,17 +463,21 @@ const FURNACE_STORM: EmberAtmosphereLookPreset = {
     edgeCooling: 0.29,
     bankRadiance: 0.62,
   },
+  // Storm air scatters furthest, so its glow wraps hardest onto the bearings
+  // facing away from the vent and its lobe is the loosest of the three.
   volcanicHaze: {
     ...BLACKGLASS_INFERNO.volcanicHaze,
     color1: "#b93b13",
     color2: "#260807",
-    opacity: 0.46,
+    opacity: 0.5,
     scale: 2.8,
     animationSpeed: 0.05,
     lightningInterval: 4.6,
     lightningIntensity: 0.8,
     underglowColor: "#f0631f",
-    underglowStrength: 0.5,
+    underglowStrength: 0.54,
+    underglowFocus: 1.9,
+    underglowWrap: 0.38,
   },
   // Furnace already ran the densest air of the three looks, so it gains its
   // liveliness from the shared larger mote sizes rather than from more of them.
@@ -398,7 +489,12 @@ const FURNACE_STORM: EmberAtmosphereLookPreset = {
   ash: {
     ...BLACKGLASS_INFERNO.ash,
     count: 124,
-    colors: ["#8d5541", "#5c3b35", "#aa704e", "#392b2c"],
+    colors: ["#8a4c30", "#5a3428", "#a4643a", "#382723"],
+    rangeFalloff: {
+      subPixel: true,
+      fade: [35, 85],
+      tint: { color: "#32130d", start: 18, end: 70 },
+    },
   },
   smoke: {
     ...BLACKGLASS_INFERNO.smoke,
@@ -407,8 +503,8 @@ const FURNACE_STORM: EmberAtmosphereLookPreset = {
   },
   hemisphereLight: {
     skyColor: "#b87056",
-    groundColor: "#8e240b",
-    intensity: 1.18,
+    groundColor: "#9c3411",
+    intensity: 1.3,
   },
   skyLight: {
     enabled: true,
@@ -425,15 +521,24 @@ const FURNACE_STORM: EmberAtmosphereLookPreset = {
       { position: [-18, 12, 14], color: "#a06f6a", intensity: 0.54 },
       { position: [0, 26, -4], color: "#ffe1bf", intensity: 0.42 },
       { position: [-30, 18, 86], color: "#ff5520", intensity: 0.82 },
+      { position: TERMINUS_FILL_POSITION, color: "#a97056", intensity: 0.56 },
     ],
     points: BLACKGLASS_INFERNO.rig.points.map((light) => ({
       ...light,
       intensity: light.intensity * 1.25,
       color: "#ff6720",
     })),
+    // Storm-grey ash, driven harder and leaning further off each vent.
     plumes: BLACKGLASS_INFERNO.rig.plumes.map((plume) => ({
       ...plume,
       count: Math.max(12, Math.floor(plume.count * 0.72)),
+      // A storm drives its columns harder and shreds them sooner, so the same
+      // vents climb faster here on top of nearly twice the lateral shear.
+      speed: plume.speed * 1.18,
+      litColor: "#8f4a20",
+      ashColor: "#2e2a2c",
+      opacity: plume.opacity * 1.12,
+      windShear: [0.52, -0.2] as [number, number],
     })),
     calderaLight: {
       ...BLACKGLASS_INFERNO.rig.calderaLight,
@@ -469,12 +574,12 @@ const SULFUR_CALDERA: EmberAtmosphereLookPreset = {
     horizonGlow: {
       color: "#c99a2a",
       direction: CALDERA_BEARING,
-      height: 0.22,
-      spread: 0.55,
-      intensity: 0.42,
+      height: 0.28,
+      spread: 0.68,
+      intensity: 0.46,
     },
   },
-  fog: { color: "#293019", density: 0.0105 },
+  fog: FOG["sulfur-caldera"],
   lavaRivers: {
     ...BLACKGLASS_INFERNO.lavaRivers,
     baseColor: "#bd3704",
@@ -485,27 +590,41 @@ const SULFUR_CALDERA: EmberAtmosphereLookPreset = {
     edgeCooling: 0.42,
     bankRadiance: 0.34,
   },
+  // Clear sulfurous air holds the tightest lobe of the three, so the vent
+  // stays a readable direction; the wrap keeps the far bearings from emptying.
   volcanicHaze: {
     ...BLACKGLASS_INFERNO.volcanicHaze,
     color1: "#767023",
     color2: "#12150c",
-    opacity: 0.3,
+    opacity: 0.34,
     scale: 1.85,
     animationSpeed: 0.028,
     lightningIntensity: 0.26,
     innerGlowColor: "#e8b83d",
     underglowColor: "#d8a537",
-    underglowStrength: 0.3,
+    underglowStrength: 0.34,
+    underglowFocus: 2.6,
+    underglowWrap: 0.24,
   },
   embers: {
     ...BLACKGLASS_INFERNO.embers,
     count: 128,
-    colors: ["#ff6a0a", "#ffa21b", "#ffd84e", "#fff09a"],
+    colors: ["#ff6a0a", "#ffa21b", "#ffc02e", "#ffce4d"],
+    rangeFalloff: {
+      subPixel: true,
+      fade: [45, 110],
+      tint: { color: "#c96a08", start: 22, end: 90 },
+    },
   },
   ash: {
     ...BLACKGLASS_INFERNO.ash,
     count: 122,
-    colors: ["#77735b", "#505241", "#91855b", "#363a31"],
+    colors: ["#7a6f42", "#4e4a30", "#94814a", "#343626"],
+    rangeFalloff: {
+      subPixel: true,
+      fade: [35, 85],
+      tint: { color: "#293019", start: 18, end: 70 },
+    },
   },
   smoke: {
     ...BLACKGLASS_INFERNO.smoke,
@@ -514,8 +633,8 @@ const SULFUR_CALDERA: EmberAtmosphereLookPreset = {
   },
   hemisphereLight: {
     skyColor: "#879078",
-    groundColor: "#60541e",
-    intensity: 1.12,
+    groundColor: "#6e6224",
+    intensity: 1.24,
   },
   skyLight: {
     enabled: true,
@@ -527,11 +646,20 @@ const SULFUR_CALDERA: EmberAtmosphereLookPreset = {
     ...BLACKGLASS_INFERNO.rig,
     id: "sulfur-caldera",
     label: "Sulfur Caldera",
+    // Sulfur-tinged ash on a slack wind: the columns stand nearly upright and
+    // hold their shape longer than the storm's do.
+    plumes: BLACKGLASS_INFERNO.rig.plumes.map((plume) => ({
+      ...plume,
+      litColor: "#8f7a24",
+      ashColor: "#26261a",
+      windShear: [0.22, -0.08] as [number, number],
+    })),
     directionals: [
       { position: [18, 16, 14], color: "#d9d3a5", intensity: 0.64 },
       { position: [-22, 11, 16], color: "#789082", intensity: 0.68 },
       { position: [0, 25, -5], color: "#fff3cb", intensity: 0.34 },
       { position: [-34, 20, 88], color: "#a88724", intensity: 0.62 },
+      { position: TERMINUS_FILL_POSITION, color: "#8f8a68", intensity: 0.44 },
     ],
     points: BLACKGLASS_INFERNO.rig.points.map((light, index) => ({
       ...light,

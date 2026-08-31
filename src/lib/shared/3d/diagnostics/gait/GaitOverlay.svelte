@@ -132,7 +132,7 @@
             {maneuver}
           />
         {:else}
-          <p class="empty">No rigged avatars found in this scene yet.</p>
+          <p class="empty">No rigged characters found in this scene yet.</p>
         {/if}
       </div>
     {/if}

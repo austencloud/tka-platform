@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createAvatarPlaybackAdapter } from "./avatar-playback-adapter.svelte";
+import { createCharacterPlaybackAdapter } from "./character-playback-adapter.svelte";
 
-describe("createAvatarPlaybackAdapter", () => {
-  it("keeps transport available while the avatar sequence is hydrating", () => {
+describe("createCharacterPlaybackAdapter", () => {
+  it("keeps transport available while the character sequence is hydrating", () => {
     const seek = vi.fn();
     const toggle = vi.fn();
-    const adapter = createAvatarPlaybackAdapter(
+    const adapter = createCharacterPlaybackAdapter(
       () => ({
         progress: 0,
         currentStepIndex: 0,

@@ -1,53 +1,56 @@
 <script lang="ts">
-  import { AVATAR_DEFINITIONS, type AvatarId } from "@austencloud/scene-3d";
   import { onDestroy } from "svelte";
 
-  import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
-  import { avatarThumbnailUrl } from "../../constants/r2-cdn";
-  import AvatarCardLivePreview from "./avatar-select/AvatarCardLivePreview.svelte";
+  import {
+    CHARACTER_DEFINITIONS,
+    type CharacterId,
+  } from "$lib/shared/3d/domain/character-model";
+  import type { CharacterInstanceState } from "$lib/shared/3d/state/character-instance-state.svelte";
+  import { characterThumbnailUrl } from "../../constants/r2-cdn";
+  import CharacterCardLivePreview from "./character-select/CharacterCardLivePreview.svelte";
 
   interface Props {
-    selectedAvatarId: AvatarId | null;
-    pendingAvatarId: AvatarId | null;
-    previewPerformer: AvatarInstanceState | null;
+    selectedCharacterId: CharacterId | null;
+    pendingCharacterId: CharacterId | null;
+    previewPerformer: CharacterInstanceState | null;
     groupLabel?: string;
-    onSelect: (id: AvatarId) => void;
-    onIntent: (id: AvatarId) => void;
+    onSelect: (id: CharacterId) => void;
+    onIntent: (id: CharacterId) => void;
     onCancelIntent: () => void;
   }
 
   let {
-    selectedAvatarId,
-    pendingAvatarId,
+    selectedCharacterId,
+    pendingCharacterId,
     previewPerformer,
-    groupLabel = "Select avatar",
+    groupLabel = "Select character",
     onSelect,
     onIntent,
     onCancelIntent,
   }: Props = $props();
 
-  const personalAvatarId =
-    (AVATAR_DEFINITIONS.find(
+  const personalCharacterId =
+    (CHARACTER_DEFINITIONS.find(
       (definition) => definition.availability === "local-evaluation"
-    )?.id as AvatarId | undefined) ?? null;
+    )?.id as CharacterId | undefined) ?? null;
 
   let loadedThumbs = $state(new Set<string>());
-  let hoveredAvatarId = $state<AvatarId | null>(null);
-  let focusedAvatarId = $state<AvatarId | null>(null);
-  let interactionReadyAvatarId = $state<AvatarId | null>(null);
+  let hoveredCharacterId = $state<CharacterId | null>(null);
+  let focusedCharacterId = $state<CharacterId | null>(null);
+  let interactionReadyCharacterId = $state<CharacterId | null>(null);
   let personalPreviewReady = $state(false);
   let hoverPreviewTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const restingPreviewAvatarId = $derived(
-    personalAvatarId ??
-      selectedAvatarId ??
-      (AVATAR_DEFINITIONS[0]?.id as AvatarId)
+  const restingPreviewCharacterId = $derived(
+    personalCharacterId ??
+      selectedCharacterId ??
+      (CHARACTER_DEFINITIONS[0]?.id as CharacterId)
   );
-  const livePreviewAvatarId = $derived(
-    focusedAvatarId ?? hoveredAvatarId ?? restingPreviewAvatarId
+  const livePreviewCharacterId = $derived(
+    focusedCharacterId ?? hoveredCharacterId ?? restingPreviewCharacterId
   );
   const livePreviewActive = $derived(
-    focusedAvatarId !== null || hoveredAvatarId !== null
+    focusedCharacterId !== null || hoveredCharacterId !== null
   );
 
   function clearHoverPreviewTimer(): void {
@@ -56,60 +59,64 @@
     hoverPreviewTimer = null;
   }
 
-  function startPointerPreview(id: AvatarId): void {
+  function startPointerPreview(id: CharacterId): void {
     onIntent(id);
     clearHoverPreviewTimer();
     hoverPreviewTimer = setTimeout(() => {
       hoverPreviewTimer = null;
-      interactionReadyAvatarId = null;
-      hoveredAvatarId = id;
+      interactionReadyCharacterId = null;
+      hoveredCharacterId = id;
     }, 120);
   }
 
-  function stopPointerPreview(id: AvatarId): void {
+  function stopPointerPreview(id: CharacterId): void {
     onCancelIntent();
     clearHoverPreviewTimer();
-    if (hoveredAvatarId === id) {
-      hoveredAvatarId = null;
-      interactionReadyAvatarId = null;
+    if (hoveredCharacterId === id) {
+      hoveredCharacterId = null;
+      interactionReadyCharacterId = null;
     }
   }
 
-  function startFocusPreview(id: AvatarId): void {
+  function startFocusPreview(id: CharacterId): void {
     onIntent(id);
-    focusedAvatarId = id;
-    interactionReadyAvatarId = null;
+    focusedCharacterId = id;
+    interactionReadyCharacterId = null;
   }
 
-  function stopFocusPreview(id: AvatarId): void {
+  function stopFocusPreview(id: CharacterId): void {
     onCancelIntent();
-    if (focusedAvatarId === id) {
-      focusedAvatarId = null;
-      interactionReadyAvatarId = null;
+    if (focusedCharacterId === id) {
+      focusedCharacterId = null;
+      interactionReadyCharacterId = null;
     }
   }
 
-  function moveSelection(event: KeyboardEvent, id: AvatarId): void {
-    const currentIndex = AVATAR_DEFINITIONS.findIndex(
-      (avatar) => avatar.id === id
+  function moveSelection(event: KeyboardEvent, id: CharacterId): void {
+    const currentIndex = CHARACTER_DEFINITIONS.findIndex(
+      (character) => character.id === id
     );
     let nextIndex = currentIndex;
     if (event.key === "ArrowRight" || event.key === "ArrowDown") nextIndex++;
     else if (event.key === "ArrowLeft" || event.key === "ArrowUp") nextIndex--;
     else if (event.key === "Home") nextIndex = 0;
-    else if (event.key === "End") nextIndex = AVATAR_DEFINITIONS.length - 1;
+    else if (event.key === "End") nextIndex = CHARACTER_DEFINITIONS.length - 1;
     else return;
 
     event.preventDefault();
     nextIndex =
-      (nextIndex + AVATAR_DEFINITIONS.length) % AVATAR_DEFINITIONS.length;
-    const nextAvatar = AVATAR_DEFINITIONS[nextIndex];
-    if (!nextAvatar) return;
-    const group = (event.currentTarget as HTMLElement).closest(".avatar-grid");
-    onSelect(nextAvatar.id as AvatarId);
+      (nextIndex + CHARACTER_DEFINITIONS.length) % CHARACTER_DEFINITIONS.length;
+    const nextCharacter = CHARACTER_DEFINITIONS[nextIndex];
+    if (!nextCharacter) return;
+    const group = (event.currentTarget as HTMLElement).closest(
+      ".character-grid"
+    );
+    onSelect(nextCharacter.id as CharacterId);
     queueMicrotask(() => {
       group
-        ?.querySelector<HTMLElement>(`[data-avatar-id="${nextAvatar.id}"]`)
+        ?.querySelector<HTMLElement>(
+          `[data-character-id="${nextCharacter.id}"]`
+        )
         ?.focus();
     });
   }
@@ -117,48 +124,48 @@
   onDestroy(clearHoverPreviewTimer);
 </script>
 
-<div class="avatar-picker">
-  <div class="avatar-grid" role="radiogroup" aria-label={groupLabel}>
-    {#each AVATAR_DEFINITIONS as definition, index (definition.id)}
-      {@const avatarId = definition.id as AvatarId}
-      {@const thumbnailUrl = avatarThumbnailUrl(definition.id)}
-      {@const isPersonalAvatar = personalAvatarId === definition.id}
+<div class="character-picker">
+  <div class="character-grid" role="radiogroup" aria-label={groupLabel}>
+    {#each CHARACTER_DEFINITIONS as definition, index (definition.id)}
+      {@const characterId = definition.id as CharacterId}
+      {@const thumbnailUrl = characterThumbnailUrl(definition.id)}
+      {@const isPersonalCharacter = personalCharacterId === definition.id}
       {@const hasLivePreview =
-        isPersonalAvatar || livePreviewAvatarId === definition.id}
-      {@const livePreviewReady = isPersonalAvatar
+        isPersonalCharacter || livePreviewCharacterId === definition.id}
+      {@const livePreviewReady = isPersonalCharacter
         ? personalPreviewReady
-        : interactionReadyAvatarId === definition.id}
+        : interactionReadyCharacterId === definition.id}
       <button
-        class="avatar-card"
-        class:selected={selectedAvatarId === definition.id}
-        class:preparing={pendingAvatarId === definition.id}
+        class="character-card"
+        class:selected={selectedCharacterId === definition.id}
+        class:preparing={pendingCharacterId === definition.id}
         class:live-ready={livePreviewReady}
         type="button"
         role="radio"
-        aria-checked={selectedAvatarId === definition.id}
-        aria-busy={pendingAvatarId === definition.id}
-        tabindex={selectedAvatarId === definition.id ||
-        (selectedAvatarId === null && index === 0)
+        aria-checked={selectedCharacterId === definition.id}
+        aria-busy={pendingCharacterId === definition.id}
+        tabindex={selectedCharacterId === definition.id ||
+        (selectedCharacterId === null && index === 0)
           ? 0
           : -1}
-        data-avatar-id={definition.id}
-        onpointerenter={() => startPointerPreview(avatarId)}
-        onpointerleave={() => stopPointerPreview(avatarId)}
-        onfocus={() => startFocusPreview(avatarId)}
-        onblur={() => stopFocusPreview(avatarId)}
-        onkeydown={(event) => moveSelection(event, avatarId)}
-        onclick={() => onSelect(avatarId)}
+        data-character-id={definition.id}
+        onpointerenter={() => startPointerPreview(characterId)}
+        onpointerleave={() => stopPointerPreview(characterId)}
+        onfocus={() => startFocusPreview(characterId)}
+        onblur={() => stopFocusPreview(characterId)}
+        onkeydown={(event) => moveSelection(event, characterId)}
+        onclick={() => onSelect(characterId)}
         title={definition.description}
-        aria-label={pendingAvatarId === definition.id
+        aria-label={pendingCharacterId === definition.id
           ? `${definition.name}, loading`
-          : selectedAvatarId === definition.id
-            ? `${definition.name}, active avatar`
+          : selectedCharacterId === definition.id
+            ? `${definition.name}, active character`
             : `${definition.name}, hover for live preview`}
       >
         <span class="portrait-backdrop" aria-hidden="true"></span>
 
         <i
-          class="fas {definition.icon ?? 'fa-user'} avatar-fallback-icon"
+          class="fas {definition.icon ?? 'fa-user'} character-fallback-icon"
           class:hidden={loadedThumbs.has(definition.id) ||
             (hasLivePreview && livePreviewReady)}
           aria-hidden="true"
@@ -166,7 +173,7 @@
 
         {#if thumbnailUrl}
           <img
-            class="avatar-thumb"
+            class="character-thumb"
             class:loaded={loadedThumbs.has(definition.id)}
             src={thumbnailUrl}
             alt=""
@@ -178,52 +185,52 @@
 
         {#if hasLivePreview}
           <span class="live-preview-layer" aria-hidden="true">
-            <AvatarCardLivePreview
-              {avatarId}
+            <CharacterCardLivePreview
+              {characterId}
               sourcePerformer={previewPerformer}
-              active={livePreviewAvatarId === definition.id &&
+              active={livePreviewCharacterId === definition.id &&
                 livePreviewActive}
               onReady={() => {
-                if (isPersonalAvatar) {
+                if (isPersonalCharacter) {
                   personalPreviewReady = true;
-                } else if (livePreviewAvatarId === avatarId) {
-                  interactionReadyAvatarId = avatarId;
+                } else if (livePreviewCharacterId === characterId) {
+                  interactionReadyCharacterId = characterId;
                 }
               }}
             />
           </span>
         {/if}
 
-        {#if pendingAvatarId === definition.id}
-          <span class="avatar-loading" aria-hidden="true"></span>
+        {#if pendingCharacterId === definition.id}
+          <span class="character-loading" aria-hidden="true"></span>
         {/if}
-        {#if selectedAvatarId === definition.id}
-          <span class="avatar-selected-mark" aria-hidden="true">
+        {#if selectedCharacterId === definition.id}
+          <span class="character-selected-mark" aria-hidden="true">
             <i class="fas fa-check"></i>
           </span>
         {/if}
         {#if definition.availability === "local-evaluation"}
-          <span class="avatar-personal-badge" aria-hidden="true">You</span>
+          <span class="character-personal-badge" aria-hidden="true">You</span>
         {/if}
 
-        <span class="avatar-card-name">{definition.name}</span>
+        <span class="character-card-name">{definition.name}</span>
       </button>
     {/each}
   </div>
 </div>
 
 <style>
-  .avatar-picker {
+  .character-picker {
     container-type: inline-size;
   }
 
-  .avatar-grid {
+  .character-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.5rem;
   }
 
-  .avatar-card {
+  .character-card {
     position: relative;
     display: grid;
     place-items: center;
@@ -260,7 +267,7 @@
       linear-gradient(160deg, var(--theme-card-bg), var(--surface-inset-deep));
   }
 
-  .avatar-fallback-icon {
+  .character-fallback-icon {
     color: color-mix(
       in srgb,
       var(--performer-color) 65%,
@@ -270,11 +277,11 @@
     opacity: 0.72;
   }
 
-  .avatar-fallback-icon.hidden {
+  .character-fallback-icon.hidden {
     opacity: 0;
   }
 
-  .avatar-thumb {
+  .character-thumb {
     position: absolute;
     inset: 0;
     z-index: -1;
@@ -292,7 +299,7 @@
       filter var(--transition-fast);
   }
 
-  .avatar-thumb.loaded {
+  .character-thumb.loaded {
     opacity: 0.9;
   }
 
@@ -304,11 +311,11 @@
     transition: opacity var(--transition-normal);
   }
 
-  .avatar-card.live-ready .live-preview-layer {
+  .character-card.live-ready .live-preview-layer {
     opacity: 1;
   }
 
-  .avatar-selected-mark {
+  .character-selected-mark {
     position: absolute;
     z-index: 3;
     top: 0.3125rem;
@@ -325,7 +332,7 @@
     box-shadow: 0 0.125rem 0.5rem color-mix(in srgb, black 45%, transparent);
   }
 
-  .avatar-personal-badge {
+  .character-personal-badge {
     position: absolute;
     z-index: 3;
     top: 0.3125rem;
@@ -341,7 +348,7 @@
     backdrop-filter: blur(0.375rem);
   }
 
-  .avatar-card-name {
+  .character-card-name {
     position: absolute;
     z-index: 2;
     right: 0;
@@ -363,7 +370,7 @@
     );
   }
 
-  .avatar-card:hover {
+  .character-card:hover {
     border-color: color-mix(
       in srgb,
       var(--performer-color) 58%,
@@ -374,14 +381,14 @@
     box-shadow: 0 0.4rem 1rem color-mix(in srgb, black 38%, transparent);
   }
 
-  .avatar-card:hover .avatar-thumb,
-  .avatar-card:focus-visible .avatar-thumb {
+  .character-card:hover .character-thumb,
+  .character-card:focus-visible .character-thumb {
     opacity: 1;
     transform: scale(2.2);
     filter: saturate(1) contrast(1.06);
   }
 
-  .avatar-card.selected {
+  .character-card.selected {
     border-color: var(--performer-color);
     color: var(--theme-text);
     box-shadow:
@@ -390,11 +397,11 @@
         color-mix(in srgb, var(--performer-color) 22%, transparent);
   }
 
-  .avatar-card.preparing {
+  .character-card.preparing {
     border-color: color-mix(in srgb, var(--performer-color) 68%, transparent);
   }
 
-  .avatar-loading {
+  .character-loading {
     position: absolute;
     z-index: 4;
     top: 50%;
@@ -405,11 +412,11 @@
       color-mix(in srgb, var(--performer-color) 25%, transparent);
     border-top-color: var(--performer-color);
     border-radius: 50%;
-    animation: avatar-loading-spin calc(var(--duration-dramatic) * 2) linear
+    animation: character-loading-spin calc(var(--duration-dramatic) * 2) linear
       infinite;
   }
 
-  @keyframes avatar-loading-spin {
+  @keyframes character-loading-spin {
     from {
       transform: translate(-50%, -50%) rotate(0deg);
     }
@@ -424,41 +431,41 @@
   }
 
   @container (min-width: 26rem) {
-    .avatar-grid {
+    .character-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 
   @container (min-width: 42rem) {
-    .avatar-grid {
+    .character-grid {
       grid-template-columns: repeat(5, minmax(0, 1fr));
     }
   }
 
   @container (min-width: 62rem) {
-    .avatar-grid {
+    .character-grid {
       grid-template-columns: repeat(6, minmax(0, 1fr));
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .avatar-card,
-    .avatar-thumb,
+    .character-card,
+    .character-thumb,
     .live-preview-layer {
       transition: none;
     }
 
-    .avatar-card:hover {
+    .character-card:hover {
       transform: none;
     }
 
-    .avatar-thumb,
-    .avatar-card:hover .avatar-thumb,
-    .avatar-card:focus-visible .avatar-thumb {
+    .character-thumb,
+    .character-card:hover .character-thumb,
+    .character-card:focus-visible .character-thumb {
       transform: scale(2.15);
     }
 
-    .avatar-loading {
+    .character-loading {
       animation: none;
     }
   }

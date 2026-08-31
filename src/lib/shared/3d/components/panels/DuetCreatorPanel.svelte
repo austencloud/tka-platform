@@ -31,8 +31,8 @@ import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
   // Form state
   let name = $state("");
   let description = $state("");
-  let avatar1SequenceId = $state<string | null>(null);
-  let avatar2SequenceId = $state<string | null>(null);
+  let performer1SequenceId = $state<string | null>(null);
+  let performer2SequenceId = $state<string | null>(null);
   let stepOffset = $state(0);
   let positioning = $state<DuetPositioning>("side-by-side");
 
@@ -42,7 +42,7 @@ import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
   let isSaving = $state(false);
   let error = $state<string | null>(null);
   let searchQuery = $state("");
-  let activeSelector = $state<"avatar1" | "avatar2" | null>(null);
+  let activeSelector = $state<"performer1" | "performer2" | null>(null);
 
   // Services
   let browseLoader: PublicSequencesLoader | null = null;
@@ -61,18 +61,18 @@ import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
     })
   );
 
-  const avatar1Sequence = $derived(
-    avatar1SequenceId ? sequences.find((s) => s.id === avatar1SequenceId) : null
+  const performer1Sequence = $derived(
+    performer1SequenceId ? sequences.find((s) => s.id === performer1SequenceId) : null
   );
 
-  const avatar2Sequence = $derived(
-    avatar2SequenceId ? sequences.find((s) => s.id === avatar2SequenceId) : null
+  const performer2Sequence = $derived(
+    performer2SequenceId ? sequences.find((s) => s.id === performer2SequenceId) : null
   );
 
   const canSave = $derived(
     name.trim().length > 0 &&
-      avatar1SequenceId &&
-      avatar2SequenceId &&
+      performer1SequenceId &&
+      performer2SequenceId &&
       !isSaving
   );
 
@@ -102,17 +102,17 @@ import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
   }
 
   function selectSequence(sequenceId: string) {
-    if (activeSelector === "avatar1") {
-      avatar1SequenceId = sequenceId;
-    } else if (activeSelector === "avatar2") {
-      avatar2SequenceId = sequenceId;
+    if (activeSelector === "performer1") {
+      performer1SequenceId = sequenceId;
+    } else if (activeSelector === "performer2") {
+      performer2SequenceId = sequenceId;
     }
     activeSelector = null;
     searchQuery = "";
   }
 
   async function handleSave() {
-    if (!duetPersister || !avatar1SequenceId || !avatar2SequenceId) return;
+    if (!duetPersister || !performer1SequenceId || !performer2SequenceId) return;
 
     isSaving = true;
     error = null;
@@ -121,8 +121,8 @@ import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
       const input: CreateDuetInput = {
         name: name.trim(),
         description: description.trim() || undefined,
-        avatar1SequenceId,
-        avatar2SequenceId,
+        performer1SequenceId,
+        performer2SequenceId,
         stepOffset,
         positioning,
       };
@@ -161,7 +161,7 @@ import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
         >
           <i class="fas fa-arrow-left" aria-hidden="true"></i>
         </button>
-        <span>Select for Avatar {activeSelector === "avatar1" ? "1" : "2"}</span
+        <span>Select for Performer {activeSelector === "performer1" ? "1" : "2"}</span
         >
       </div>
 
@@ -184,11 +184,11 @@ import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
           {#each filteredSequences.slice(0, 50) as seq (seq.id)}
             <button
               class="sequence-item"
-              class:selected={seq.id === avatar1SequenceId ||
-                seq.id === avatar2SequenceId}
+              class:selected={seq.id === performer1SequenceId ||
+                seq.id === performer2SequenceId}
               onclick={() => selectSequence(seq.id)}
               aria-label={`Select sequence: ${seq.word || seq.name || "Untitled"}`}
-              aria-pressed={seq.id === avatar1SequenceId || seq.id === avatar2SequenceId}
+              aria-pressed={seq.id === performer1SequenceId || seq.id === performer2SequenceId}
             >
               <span class="seq-word">{seq.word || seq.name || "Untitled"}</span>
               <span class="seq-meta">
@@ -242,19 +242,19 @@ import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
       <!-- Sequence Pickers -->
       <div class="sequence-pickers">
         <div class="picker-group">
-          <span class="picker-label">{t('duet_avatar1_sequence')}</span>
+          <span class="picker-label">{t('duet_performer1_sequence')}</span>
           <button
             class="picker-btn"
-            class:has-selection={avatar1Sequence}
-            onclick={() => (activeSelector = "avatar1")}
-            aria-label={avatar1Sequence ? `Avatar 1: ${avatar1Sequence.word || avatar1Sequence.name || "Untitled"} - click to change` : "Select sequence for Avatar 1"}
+            class:has-selection={performer1Sequence}
+            onclick={() => (activeSelector = "performer1")}
+            aria-label={performer1Sequence ? `Performer 1: ${performer1Sequence.word || performer1Sequence.name || "Untitled"} - click to change` : "Select sequence for Performer 1"}
           >
-            {#if avatar1Sequence}
+            {#if performer1Sequence}
               <span class="selection-name">
-                {avatar1Sequence.word || avatar1Sequence.name || "Untitled"}
+                {performer1Sequence.word || performer1Sequence.name || "Untitled"}
               </span>
               <span class="selection-steps"
-                >{avatar1Sequence.steps?.length || 0} steps</span
+                >{performer1Sequence.steps?.length || 0} steps</span
               >
             {:else}
               <i class="fas fa-plus" aria-hidden="true"></i>
@@ -264,19 +264,19 @@ import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
         </div>
 
         <div class="picker-group">
-          <span class="picker-label">{t('duet_avatar2_sequence')}</span>
+          <span class="picker-label">{t('duet_performer2_sequence')}</span>
           <button
             class="picker-btn"
-            class:has-selection={avatar2Sequence}
-            onclick={() => (activeSelector = "avatar2")}
-            aria-label={avatar2Sequence ? `Avatar 2: ${avatar2Sequence.word || avatar2Sequence.name || "Untitled"} - click to change` : "Select sequence for Avatar 2"}
+            class:has-selection={performer2Sequence}
+            onclick={() => (activeSelector = "performer2")}
+            aria-label={performer2Sequence ? `Performer 2: ${performer2Sequence.word || performer2Sequence.name || "Untitled"} - click to change` : "Select sequence for Performer 2"}
           >
-            {#if avatar2Sequence}
+            {#if performer2Sequence}
               <span class="selection-name">
-                {avatar2Sequence.word || avatar2Sequence.name || "Untitled"}
+                {performer2Sequence.word || performer2Sequence.name || "Untitled"}
               </span>
               <span class="selection-steps"
-                >{avatar2Sequence.steps?.length || 0} steps</span
+                >{performer2Sequence.steps?.length || 0} steps</span
               >
             {:else}
               <i class="fas fa-plus" aria-hidden="true"></i>
@@ -288,7 +288,7 @@ import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
 
       <!-- Beat Offset -->
       <div class="form-group">
-        <span class="form-label">{t('avatar_beat_offset')} ({t('avatar_follower')})</span>
+        <span class="form-label">{t('character_beat_offset')} ({t('character_follower')})</span>
         <div class="offset-control">
           <button
             class="offset-btn"
@@ -312,7 +312,7 @@ import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
             <i class="fas fa-plus" aria-hidden="true"></i>
           </button>
         </div>
-        <p class="help-text">Positive = Avatar 2 starts later</p>
+        <p class="help-text">Positive = Performer 2 starts later</p>
       </div>
 
       <!-- Positioning -->

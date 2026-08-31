@@ -39,9 +39,9 @@
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import {
-    createAvatarInstanceState,
+    createCharacterInstanceState,
     makeStandaloneDeps,
-  } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  } from "$lib/shared/3d/state/character-instance-state.svelte";
   import GaitProbe from "$lib/shared/3d/diagnostics/gait/GaitProbe.svelte";
   import GaitOverlay from "$lib/shared/3d/diagnostics/gait/GaitOverlay.svelte";
   import { gaitProbeState } from "$lib/shared/3d/diagnostics/gait/gait-probe-state.svelte";
@@ -304,11 +304,11 @@
    */
   const groundOffset = $derived(-userProportionsState.groundY);
 
-  let avatarState = $state<ReturnType<typeof createAvatarInstanceState> | null>(
+  let avatarState = $state<ReturnType<typeof createCharacterInstanceState> | null>(
     null
   );
   try {
-    avatarState = createAvatarInstanceState(
+    avatarState = createCharacterInstanceState(
       {
         id: "walk-lab-performer",
         positionX: 0,

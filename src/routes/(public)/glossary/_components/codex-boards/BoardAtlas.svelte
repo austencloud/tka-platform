@@ -22,9 +22,18 @@
 
   let { onSelect }: { onSelect: (id: string) => void } = $props();
 
-  function positionLandFlows(band: CodexTypeBand): TaggedBox[][] {
-    if (band.type.n !== 1) return [band.boxes];
-    return [band.boxes.slice(0, 4), band.boxes.slice(4)];
+  interface AtlasFlow {
+    boxes: TaggedBox[];
+    flowHeader?: string;
+  }
+
+  function positionLandFlows(band: CodexTypeBand): AtlasFlow[] {
+    if (band.type.n !== 1) return [{ boxes: band.boxes }];
+    const gammaLand = band.boxes.slice(4);
+    return [
+      { boxes: band.boxes.slice(0, 4) },
+      { boxes: gammaLand, flowHeader: gammaLand[0]?.box.header },
+    ];
   }
 </script>
 
@@ -37,8 +46,12 @@
         aria-label={band.type.word.replace(/:\s*$/, "")}
       >
         <CodexBandHead type={band.type} />
-        {#each positionLandFlows(band) as boxes, index (`${band.type.n}-${index}`)}
-          <CodexFlow {boxes} {onSelect} />
+        {#each positionLandFlows(band) as flow, index (`${band.type.n}-${index}`)}
+          <CodexFlow
+            boxes={flow.boxes}
+            flowHeader={flow.flowHeader}
+            {onSelect}
+          />
         {/each}
       </section>
     {/each}

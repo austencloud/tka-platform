@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import BottomSheet from "./controls/BottomSheet.svelte";
   import MobileScenePerformerSheet from "./MobileScenePerformerSheet.svelte";
   import MobileSceneEverythingSheet from "./MobileSceneEverythingSheet.svelte";
@@ -14,6 +15,9 @@
     onSettingChange?: ViewerControlSink;
     /** Forwarded to the performer sheet — see PerformerHubDetail's Props. */
     onPerformerEdit?: PerformerEditSink;
+    /** Lets a host make room for the active compact sheet without teaching
+     *  this shared control surface about the host's surrounding layout. */
+    onSheetChange?: (sheet: "performer" | "scene" | null) => void;
   }
   let {
     showPlayback = true,
@@ -23,6 +27,7 @@
     onStepBackward = () => {},
     onSettingChange,
     onPerformerEdit,
+    onSheetChange,
   }: Props = $props();
 
   type Sheet = "performer" | "everything" | null;
@@ -31,6 +36,16 @@
   function toggle(sheet: Exclude<Sheet, null>) {
     openSheet = openSheet === sheet ? null : sheet;
   }
+
+  let lastReportedSheet = $state<Sheet>(null);
+  $effect(() => {
+    const current = openSheet;
+    if (current === lastReportedSheet) return;
+    lastReportedSheet = current;
+    onSheetChange?.(current === "everything" ? "scene" : current);
+  });
+
+  onDestroy(() => onSheetChange?.(null));
 </script>
 
 <!-- Sheets render above everything in the bar -->
@@ -50,7 +65,10 @@
   <MobileSceneEverythingSheet {onSettingChange} />
 </BottomSheet>
 
-<div class="bar-cluster">
+<div
+  class="bar-cluster"
+  data-sheet-open={openSheet !== null ? "true" : undefined}
+>
   {#if showPlayback}
     <div class="playback-row">
       <button class="ctl" onclick={onStepBackward} aria-label="Previous step">
@@ -111,6 +129,16 @@
     justify-content: center;
     padding: 0 0.75rem;
     pointer-events: none;
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+      opacity var(--transition-fast),
+      transform var(--transition-fast);
+  }
+
+  .bar-cluster[data-sheet-open="true"] {
+    opacity: 0;
+    transform: translateY(0.5rem);
   }
 
   .bar-cluster > * {
@@ -219,6 +247,12 @@
     .scene-action {
       flex: 1;
       min-width: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bar-cluster {
+      transition: none;
     }
   }
 </style>
