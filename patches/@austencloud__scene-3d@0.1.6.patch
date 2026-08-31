@@ -5,7 +5,7 @@ diff --git a/dist/index.d.ts.map b/dist/index.d.ts.map
 deleted file mode 100644
 index d554c5bba49036758f9b3c997d025556395cf72b..0000000000000000000000000000000000000000
 diff --git a/dist/lib/components/Avatar3D.svelte b/dist/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..867d62cab747f6c3ab08c865871910c40ebe03a1 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c29b8fbd224cdee7de977701796a4b510ca2f2ae 100644
 --- a/dist/lib/components/Avatar3D.svelte
 +++ b/dist/lib/components/Avatar3D.svelte
 @@ -16,29 +16,40 @@
@@ -1020,7 +1020,28 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..867d62cab747f6c3ab08c865871910c4
      // 2b. Collision detection - run after IK so bones are at final positions
      if (collisionDetector.enabled && skeletonService) {
        const state = skeletonService.getState();
-@@ -775,49 +1309,36 @@
+@@ -768,56 +1302,55 @@
+       bones.get("Spine2")?.getWorldPosition(_boneVecs.spine2);
+       bones.get("Spine1")?.getWorldPosition(_boneVecs.spine1);
+       bones.get("Hips")?.getWorldPosition(_boneVecs.hips);
+-      bones.get("LeftShoulder")?.getWorldPosition(_boneVecs.leftShoulder);
+-      bones.get("RightShoulder")?.getWorldPosition(_boneVecs.rightShoulder);
++      // The mapped Shoulder bones are clavicles on MetaPerson/Mixamo rigs;
++      // treating their inner origins as upper-arm joints draws an imaginary
++      // segment through the chest. Use the actual arm-chain roots so collision
++      // geometry matches both the rendered limb and the IK solver.
++      if (leftChain) {
++        leftChain.root.getWorldPosition(_boneVecs.leftShoulder);
++      } else {
++        bones.get("LeftShoulder")?.getWorldPosition(_boneVecs.leftShoulder);
++      }
++      if (rightChain) {
++        rightChain.root.getWorldPosition(_boneVecs.rightShoulder);
++      } else {
++        bones.get("RightShoulder")?.getWorldPosition(_boneVecs.rightShoulder);
++      }
+       leftChain?.middle.getWorldPosition(_boneVecs.leftElbow);
+       rightChain?.middle.getWorldPosition(_boneVecs.rightElbow);
        leftChain?.effector.getWorldPosition(_boneVecs.leftHand);
        rightChain?.effector.getWorldPosition(_boneVecs.rightHand);
  
@@ -1086,7 +1107,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..867d62cab747f6c3ab08c865871910c4
            halfStaffLength,
            _redSegA,
            _redSegB
-@@ -825,14 +1346,77 @@
+@@ -825,14 +1358,77 @@
          redSegOrNull = redSeg;
        }
  
@@ -1171,7 +1192,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..867d62cab747f6c3ab08c865871910c4
      }
  
      // 3. Finger grips
-@@ -867,20 +1451,15 @@
+@@ -867,20 +1463,15 @@
    // transparent with depth-write off so the fade blends correctly.
    $effect(() => {
      if (!cachedRoot) return;
@@ -1198,7 +1219,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..867d62cab747f6c3ab08c865871910c4
      // Dispose locomotion animator, state machine, and foot planter
      if (locomotionAnimator) {
        locomotionAnimator.dispose();
-@@ -913,13 +1492,19 @@
+@@ -913,13 +1504,19 @@
  </script>
  
  {#if visible}
@@ -1225,7 +1246,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..867d62cab747f6c3ab08c865871910c4
      <T.Group
        name={`PERFORMER_${id}`}
        position={[position.x, position.y ?? 0, position.z]}
-@@ -950,6 +1535,7 @@
+@@ -950,6 +1547,7 @@
        preventing visual glitches during avatar swap.
      -->
      <T.Group
@@ -12358,7 +12379,7 @@ diff --git a/dist/lib/state/user-proportions-state.svelte.d.ts.map b/dist/lib/st
 deleted file mode 100644
 index a8fd5a41c1434bf568841daf28c8443ba1515e65..0000000000000000000000000000000000000000
 diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c5ff21975b99528d42a0c437bcb76a3d8103e87d 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..8cae5f6b6385e1b5af081587f1ac20b929cc285a 100644
 --- a/src/lib/components/Avatar3D.svelte
 +++ b/src/lib/components/Avatar3D.svelte
 @@ -16,29 +16,43 @@
@@ -13582,7 +13603,28 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c5ff21975b99528d42a0c437bcb76a3d
      // 2b. Collision detection - run after IK so bones are at final positions
      if (collisionDetector.enabled && skeletonService) {
        const state = skeletonService.getState();
-@@ -775,49 +1461,36 @@
+@@ -768,56 +1454,55 @@
+       bones.get("Spine2")?.getWorldPosition(_boneVecs.spine2);
+       bones.get("Spine1")?.getWorldPosition(_boneVecs.spine1);
+       bones.get("Hips")?.getWorldPosition(_boneVecs.hips);
+-      bones.get("LeftShoulder")?.getWorldPosition(_boneVecs.leftShoulder);
+-      bones.get("RightShoulder")?.getWorldPosition(_boneVecs.rightShoulder);
++      // The mapped Shoulder bones are clavicles on MetaPerson/Mixamo rigs;
++      // treating their inner origins as upper-arm joints draws an imaginary
++      // segment through the chest. Use the actual arm-chain roots so collision
++      // geometry matches both the rendered limb and the IK solver.
++      if (leftChain) {
++        leftChain.root.getWorldPosition(_boneVecs.leftShoulder);
++      } else {
++        bones.get("LeftShoulder")?.getWorldPosition(_boneVecs.leftShoulder);
++      }
++      if (rightChain) {
++        rightChain.root.getWorldPosition(_boneVecs.rightShoulder);
++      } else {
++        bones.get("RightShoulder")?.getWorldPosition(_boneVecs.rightShoulder);
++      }
+       leftChain?.middle.getWorldPosition(_boneVecs.leftElbow);
+       rightChain?.middle.getWorldPosition(_boneVecs.rightElbow);
        leftChain?.effector.getWorldPosition(_boneVecs.leftHand);
        rightChain?.effector.getWorldPosition(_boneVecs.rightHand);
  
@@ -13648,7 +13690,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c5ff21975b99528d42a0c437bcb76a3d
            halfStaffLength,
            _redSegA,
            _redSegB
-@@ -825,14 +1498,82 @@
+@@ -825,14 +1510,82 @@
          redSegOrNull = redSeg;
        }
  
@@ -13661,8 +13703,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c5ff21975b99528d42a0c437bcb76a3d
 +      _diagnosticShoulderLateral.subVectors(
 +        _boneVecs.rightShoulder,
 +        _boneVecs.leftShoulder
-       );
--      onCollisionEvents?.(events);
++      );
 +      _poseDiagnostics.shoulderWidth = _diagnosticShoulderLateral.length();
 +      _diagnosticRootQuaternion.identity();
 +      state.root?.getWorldQuaternion(_diagnosticRootQuaternion);
@@ -13675,7 +13716,8 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c5ff21975b99528d42a0c437bcb76a3d
 +      _diagnosticTorsoUp.subVectors(
 +        _boneVecs.spine2,
 +        _boneVecs.spine1
-+      );
+       );
+-      onCollisionEvents?.(events);
 +      if (
 +        _diagnosticTorsoUp.lengthSq() > 1e-6 &&
 +        _diagnosticRootForward.lengthSq() > 1e-6 &&
@@ -13738,7 +13780,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c5ff21975b99528d42a0c437bcb76a3d
      }
  
      // 3. Finger grips
-@@ -867,20 +1608,15 @@
+@@ -867,20 +1620,15 @@
    // transparent with depth-write off so the fade blends correctly.
    $effect(() => {
      if (!cachedRoot) return;
@@ -13765,7 +13807,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c5ff21975b99528d42a0c437bcb76a3d
      // Dispose locomotion animator, state machine, and foot planter
      if (locomotionAnimator) {
        locomotionAnimator.dispose();
-@@ -913,13 +1649,19 @@
+@@ -913,13 +1661,19 @@
  </script>
  
  {#if visible}
@@ -13792,7 +13834,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c5ff21975b99528d42a0c437bcb76a3d
      <T.Group
        name={`PERFORMER_${id}`}
        position={[position.x, position.y ?? 0, position.z]}
-@@ -950,6 +1692,7 @@
+@@ -950,6 +1704,7 @@
        preventing visual glitches during avatar swap.
      -->
      <T.Group
