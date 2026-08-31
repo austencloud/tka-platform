@@ -7,9 +7,9 @@ export interface ShowcaseMandala {
   id: string;
   name: string;
   steps: StepData[];
-  variant: "blue" | "red" | "both";
-  bluePropType: string;
-  redPropType: string;
+  variant: "left" | "right" | "both";
+  leftPropType: string;
+  rightPropType: string;
 }
 
 export const SHOWCASE_MANDALAS = [
@@ -1346,7 +1346,7 @@ export const SHOWCASE_MANDALAS = [
         "startPosition": "gamma13"
       }
     ],
-    "variant": "red",
+    "variant": "right",
     "bluePropType": "staff",
     "redPropType": "staff"
   },
@@ -16729,7 +16729,7 @@ export const SHOWCASE_MANDALAS = [
         "gridMode": "diamond"
       }
     ],
-    "variant": "blue",
+    "variant": "left",
     "bluePropType": "staff",
     "redPropType": "staff"
   },
@@ -18066,7 +18066,7 @@ export const SHOWCASE_MANDALAS = [
         "isBlank": false
       }
     ],
-    "variant": "red",
+    "variant": "right",
     "bluePropType": "staff",
     "redPropType": "staff"
   },
@@ -28634,7 +28634,7 @@ export const SHOWCASE_MANDALAS = [
         "isBlank": false
       }
     ],
-    "variant": "blue",
+    "variant": "left",
     "bluePropType": "staff",
     "redPropType": "staff"
   },
@@ -32276,7 +32276,7 @@ export const SHOWCASE_MANDALAS = [
         "isBlank": false
       }
     ],
-    "variant": "blue",
+    "variant": "left",
     "bluePropType": "staff",
     "redPropType": "staff"
   },
@@ -36263,7 +36263,7 @@ export const SHOWCASE_MANDALAS = [
         "isBlank": false
       }
     ],
-    "variant": "blue",
+    "variant": "left",
     "bluePropType": "staff",
     "redPropType": "staff"
   },
@@ -37600,7 +37600,7 @@ export const SHOWCASE_MANDALAS = [
         "isBlank": false
       }
     ],
-    "variant": "red",
+    "variant": "right",
     "bluePropType": "staff",
     "redPropType": "staff"
   },
@@ -41563,7 +41563,7 @@ export const SHOWCASE_MANDALAS = [
         "isBlank": false
       }
     ],
-    "variant": "blue",
+    "variant": "left",
     "bluePropType": "staff",
     "redPropType": "staff"
   },

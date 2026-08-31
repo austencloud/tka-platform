@@ -16,6 +16,7 @@
   import type {
     MandalaPalette,
     MandalaPathShape,
+    MandalaRenderOptions,
   } from "$lib/shared/mandala/domain/mandala-types";
 
   interface Props {
@@ -27,7 +28,7 @@
     size?: number;
     pathShape?: MandalaPathShape;
     strokeWidth?: number;
-    show?: "blue" | "red" | "both";
+    show?: MandalaRenderOptions["show"];
     palette?: MandalaPalette;
     leftPropType?: string;
     rightPropType?: string;

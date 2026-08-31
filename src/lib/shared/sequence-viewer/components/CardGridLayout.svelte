@@ -58,7 +58,7 @@
   interface MandalaPlacement {
     row: number;
     col: number;
-    variant: "blue" | "red" | "full";
+    variant: "left" | "right" | "full";
   }
 
   interface Props {
@@ -1028,7 +1028,7 @@
     }
   }
 
-  /* Mandala fill cell - sits in empty col-0 cells and shows blue/red/full path viz. */
+  /* Mandala fill cell - sits in empty col-0 cells and shows left/right/full paths. */
   .mandala-cell {
     display: flex;
     align-items: center;

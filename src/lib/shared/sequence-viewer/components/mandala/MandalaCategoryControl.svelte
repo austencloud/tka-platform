@@ -150,9 +150,9 @@
     label: string;
     tone: "blue" | "red" | "accent";
   }[] = [
-    { value: "blue", label: "Blue", tone: "blue" },
+		{ value: "left", label: "Left", tone: "blue" },
     { value: "both", label: "Both", tone: "accent" },
-    { value: "red", label: "Red", tone: "red" },
+		{ value: "right", label: "Right", tone: "red" },
   ];
   const motionMode = $derived<MotionMode>(ctrl.paused ? "static" : "animated");
   // Derived from PRESET_COLORS (the single source of truth) so a preset added

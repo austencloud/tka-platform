@@ -14,7 +14,7 @@ import {
 import type { MandalaPrimitiveRef } from "../domain/sticker-types";
 
 export type CatalogShapeScope = "solo" | "combined";
-export type SoloProp = "blue" | "red";
+export type SoloProp = "left" | "right";
 
 export interface CatalogShapeMember {
   key: string;
@@ -35,7 +35,7 @@ export interface CatalogShapeGroup {
 }
 
 function soloPreview(paths: readonly SVGPathData[]): MandalaPaths {
-  return { blue: [...paths], red: [], purple: [] };
+  return { left: [...paths], right: [], purple: [] };
 }
 
 export function createCatalogShapeMembers(
@@ -60,8 +60,8 @@ export function createCatalogShapeMembers(
   }
 
   const solos: Array<{ prop: SoloProp; paths: SVGPathData[] }> = [
-    { prop: "blue", paths: fullPaths.blue },
-    { prop: "red", paths: fullPaths.red },
+    { prop: "left", paths: fullPaths.left },
+    { prop: "right", paths: fullPaths.right },
   ];
 
   return solos

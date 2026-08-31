@@ -27,19 +27,19 @@
   let { members, initialIndex = 0, copyCount, onBack, onAdd }: Props = $props();
 
   const COLOR_PALETTE: MandalaPalette = {
-    blueStroke: DARK_MOTION_BLUE_STROKE,
-    blueFill: DARK_MOTION_BLUE_FILL,
-    redStroke: DARK_MOTION_RED_STROKE,
-    redFill: DARK_MOTION_RED_FILL,
+    leftStroke: DARK_MOTION_BLUE_STROKE,
+    leftFill: DARK_MOTION_BLUE_FILL,
+    rightStroke: DARK_MOTION_RED_STROKE,
+    rightFill: DARK_MOTION_RED_FILL,
     purpleStroke: DARK_MOTION_PURPLE_STROKE,
     purpleFill: DARK_MOTION_PURPLE_FILL,
   };
 
   const MONO_PALETTE: MandalaPalette = {
-    blueStroke: "#c0b8e8",
-    blueFill: "rgba(192, 184, 232, 0.1)",
-    redStroke: "#c0b8e8",
-    redFill: "rgba(192, 184, 232, 0.1)",
+    leftStroke: "#c0b8e8",
+    leftFill: "rgba(192, 184, 232, 0.1)",
+    rightStroke: "#c0b8e8",
+    rightFill: "rgba(192, 184, 232, 0.1)",
     purpleStroke: "#c0b8e8",
     purpleFill: "rgba(192, 184, 232, 0.1)",
   };
