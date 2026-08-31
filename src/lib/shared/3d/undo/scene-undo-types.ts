@@ -19,6 +19,7 @@ export type SceneUndoOperationType =
   | "remove-performer"
   | "apply-formation"
   | "spatial-edit"
+  | "change-character"
   | "change-prop"
   | "change-staff-length"
   | "change-effort"

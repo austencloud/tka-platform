@@ -27,6 +27,7 @@ import {
 } from "../services/sequence-converter";
 import type { StepMotionConfigs } from "../services/sequence-converter";
 import {
+  CHARACTER_DEFINITIONS,
   DEFAULT_CHARACTER_ID,
   type CharacterId,
 } from "../domain/character-model";
@@ -801,7 +802,20 @@ export function createCharacterInstanceState(
    * Set character model
    */
   function setCharacter(modelId: CharacterId) {
+    if (characterId === modelId) return;
+    const before = characterId;
     characterId = modelId;
+    const name =
+      CHARACTER_DEFINITIONS.find((definition) => definition.id === modelId)
+        ?.name ?? modelId;
+    sceneUndo.pushSelfRestoringEntry("change-character", `Character: ${name}`, {
+      undo: () => {
+        characterId = before;
+      },
+      redo: () => {
+        characterId = modelId;
+      },
+    });
   }
 
   function setPresenceProgress(progress: number) {

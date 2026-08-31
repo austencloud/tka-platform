@@ -90,13 +90,14 @@
       : null;
   });
 
-  const characterScopeKey = $derived(
-    selectedIndex === null ? "all-performers" : `performer-${selectedIndex}`
-  );
-
   async function pickCharacter(id: CharacterId): Promise<void> {
     cancelCharacterSelectionIntent();
-    if (pendingCharacterId === id || currentCharacterId === id) return;
+    if (pendingCharacterId === id) return;
+    if (currentCharacterId === id) {
+      characterSelectionRequest++;
+      pendingCharacterId = null;
+      return;
+    }
 
     const selectionRequest = ++characterSelectionRequest;
     pendingCharacterId = id;
@@ -106,12 +107,14 @@
       pendingCharacterId = null;
 
       const previous = currentCharacterId;
-      if (
-        !writeParameter({ field: "characterId", value: id }, (p) =>
-          p?.setCharacter(id)
-        )
-      )
-        return;
+      const applied = onPerformerEdit
+        ? onPerformerEdit({
+            performerIndex: selectedIndex,
+            field: "characterId",
+            value: id,
+          })
+        : viewer.setCharacterScoped(id);
+      if (!applied) return;
       reportViewerControlChange(
         onSettingChange,
         "viewer_3d_performer",
@@ -411,10 +414,9 @@
             {currentCharacterId}
             {pendingCharacterId}
             {performerColor}
-            scopeKey={characterScopeKey}
             onIntent={queueCharacterSelectionIntent}
             onCancelIntent={cancelCharacterSelectionIntent}
-            onCommit={(id) => void pickCharacter(id)}
+            onSelect={(id) => void pickCharacter(id)}
           />
         </div>
       </div>

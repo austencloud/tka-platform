@@ -4,6 +4,7 @@
   import { createPaneKeepAlive } from "./pane-keep-alive.svelte";
   import type { ViewerCompanionSurfaceProps } from "./viewer-split-pane-types";
   import SequenceVideos from "./sequence-videos/SequenceVideos.svelte";
+  import { getViewerTunnelStageContext } from "../context/viewer-tunnel-stage-context";
 
   let {
     side,
@@ -22,6 +23,8 @@
     onStepClick,
     onQrPlayClick,
     onChoreoCardContextMenu,
+    cardAutoLayoutOverride,
+    cardContainSizeMotion = null,
     onAutoLayoutResolved,
     onPlaybackToggle,
     playbackMode,
@@ -43,6 +46,7 @@
   const selectedPane = $derived(
     side === "left" ? splitConfig.leftPane : splitConfig.rightPane
   );
+  const tunnelStage = getViewerTunnelStageContext();
   const card = createPaneKeepAlive(() => selectedPane === "card");
   const videos = createPaneKeepAlive(() => selectedPane === "videos");
   const mandala = createPaneKeepAlive(() => selectedPane === "mandala");
@@ -107,6 +111,8 @@
       catDogModeEnabled={propRendering.catDogModeEnabled}
       {rerenderTrigger}
       onContextMenu={onChoreoCardContextMenu}
+      autoLayoutOverride={cardAutoLayoutOverride}
+      containSizeMotion={cardContainSizeMotion}
       onAutoLayoutResolved={card.shown ? onAutoLayoutResolved : undefined}
     />
   </div>
@@ -139,6 +145,7 @@
   >
     <ArtPane
       artType="mandala"
+      controller={tunnelStage.controller}
       active={side === "right" ? mandala.shown : true}
       shown={mandala.shown}
       {sequence}
@@ -169,12 +176,21 @@
 {/if}
 
 {#if tunnel.mounted}
+  <!-- Tunnel contributes controls and export overlays here. Its live art stays
+       on the shell-owned Animator canvas beneath this transparent surface. -->
   <div
     class="media-pane content-overlay"
     class:content-overlay-hidden={!tunnel.shown}
+    data-companion-surface="tunnel"
+    data-shared-tunnel-canvas
+    data-presented={tunnel.shown}
+    inert={!tunnel.shown}
+    aria-hidden={!tunnel.shown}
   >
     <ArtPane
       artType="tunnel"
+      controller={tunnelStage.controller}
+      sharedTunnelCanvas
       active={side === "right" ? tunnel.shown : true}
       shown={tunnel.shown}
       {sequence}

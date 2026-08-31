@@ -28,7 +28,9 @@ const hubSource = readFileSync(
 // the hub and into this picker. The hub still owns the intent/commit logic and
 // hands the picker its callbacks, so the budget contract spans both files.
 const pickerSource = readFileSync(
-  resolve("src/lib/shared/3d/components/controls/PerformerCharacterPicker.svelte"),
+  resolve(
+    "src/lib/shared/3d/components/controls/PerformerCharacterPicker.svelte"
+  ),
   "utf8"
 );
 
@@ -40,7 +42,9 @@ describe("character swap render budget", () => {
     expect(hubSource).toContain("queueCharacterSelectionIntent");
     // The hub wires its intent handlers into the picker...
     expect(hubSource).toContain("onIntent={queueCharacterSelectionIntent}");
-    expect(hubSource).toContain("onCancelIntent={cancelCharacterSelectionIntent}");
+    expect(hubSource).toContain(
+      "onCancelIntent={cancelCharacterSelectionIntent}"
+    );
     // ...and the picker binds them to the pointer and focus pair, so an intent
     // that never becomes a selection is always withdrawn.
     expect(pickerSource).toContain("onpointerenter={() => onIntent(");
@@ -56,21 +60,16 @@ describe("character swap render budget", () => {
     const prepareSelection = hubSource.indexOf(
       "await prepareCharacterSelection(id)"
     );
-    // `46dcf56152` routed the commit through writeParameter so the director can
-    // record the swap as a per-performer parameter. The scope callback that
-    // actually replaces the model is unchanged, and it still sits after the
-    // await, which is the ordering this test exists to hold. Anchor on that
-    // callback so the guard survives the next rename of its wrapper.
+    // The live viewer groups an All-Performers swap into one undo entry. The
+    // director still receives the same host-owned edit through onPerformerEdit.
     const commitSelection = hubSource.indexOf(
-      "p?.setCharacter(id)",
+      "viewer.setCharacterScoped(id)",
       prepareSelection
     );
 
     expect(prepareSelection).toBeGreaterThan(-1);
     expect(commitSelection).toBeGreaterThan(prepareSelection);
-    expect(hubSource).toContain(
-      'writeParameter({ field: "characterId", value: id }'
-    );
+    expect(hubSource).toContain('field: "characterId"');
     expect(hubSource).toContain("pendingCharacterId = id");
     // The pending flag crosses into the picker, which paints the slot it marks.
     expect(hubSource).toContain("{pendingCharacterId}");

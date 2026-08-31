@@ -11,9 +11,9 @@ import { tick } from "svelte";
 // getContext returns null so the capability probe reports "not supported",
 // which is fine — these scope tests never actually enter 3D mode.
 beforeAll(() => {
-  const originalCreateElement = document.createElement as unknown as (
-    tag: string
-  ) => unknown;
+  const originalCreateElement = document.createElement.bind(
+    document
+  ) as unknown as (tag: string) => unknown;
   (
     document as unknown as { createElement: (tag: string) => unknown }
   ).createElement = (tag: string) => {

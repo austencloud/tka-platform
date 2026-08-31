@@ -34,6 +34,7 @@ import {
   type PerformerManager,
 } from "./performer-manager.svelte";
 import {
+  CHARACTER_DEFINITIONS,
   DEFAULT_CHARACTER_ID,
   type CharacterId,
 } from "../domain/character-model";
@@ -495,6 +496,12 @@ function buildViewer3DState(
   options: Viewer3DStateOptions = {}
 ) {
   const sceneUndo = getSceneUndoManager();
+  // The manager is imperative. This revision carries its subscription events
+  // into Svelte so shortcut availability changes in the same frame as history.
+  let undoRevision = $state(0);
+  const unsubscribeFromUndo = sceneUndo.subscribe(() => {
+    undoRevision++;
+  });
   const _webgl2Available = isWebGL2Available();
   /** A seeded field wins over storage; `undefined` means "not seeded". */
   const seeded = <T>(value: T | undefined, fromStorage: () => T): T =>
@@ -913,6 +920,39 @@ function buildViewer3DState(
         redo: () => restoreViewerSnapshot(afterSnap),
       }
     );
+  }
+
+  function setCharacterScoped(modelId: CharacterId): boolean {
+    const changes = scopedPerformers()
+      .filter((performer) => performer.characterId !== modelId)
+      .map((performer) => ({
+        performer,
+        previousModelId: performer.characterId,
+      }));
+    if (changes.length === 0) return false;
+
+    if (changes.length === 1) {
+      changes[0]!.performer.setCharacter(modelId);
+      return true;
+    }
+
+    sceneUndo.withoutUndo(() => {
+      for (const { performer } of changes) performer.setCharacter(modelId);
+    });
+    const name =
+      CHARACTER_DEFINITIONS.find((definition) => definition.id === modelId)
+        ?.name ?? modelId;
+    sceneUndo.pushSelfRestoringEntry("change-character", `Character: ${name}`, {
+      undo: () => {
+        for (const { performer, previousModelId } of changes) {
+          performer.setCharacter(previousModelId);
+        }
+      },
+      redo: () => {
+        for (const { performer } of changes) performer.setCharacter(modelId);
+      },
+    });
+    return true;
   }
 
   /**
@@ -1651,6 +1691,7 @@ function buildViewer3DState(
    */
   function dispose() {
     _disposed = true;
+    unsubscribeFromUndo();
     performerManager.destroy();
   }
 
@@ -1777,12 +1818,15 @@ function buildViewer3DState(
       return propSizeLinked;
     },
     togglePropSizeLink,
+    setCharacterScoped,
     setHandPlaneScoped,
     loadSequenceScoped,
     get canUndo() {
+      undoRevision;
       return sceneUndo.canUndo;
     },
     get canRedo() {
+      undoRevision;
       return sceneUndo.canRedo;
     },
     get activeFormation() {

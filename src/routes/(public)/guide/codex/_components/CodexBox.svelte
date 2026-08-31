@@ -56,6 +56,7 @@
       class="box-head"
       class:corner-left={side === "left"}
       class:corner-right={side === "right"}
+      class:flat-pair={side === undefined && Boolean(box.header && box.mode)}
     >
       {#if box.header}<span class="box-transition"
           ><CodexTransitionGlyph text={box.header} /></span
@@ -129,10 +130,31 @@
     bottom: 0;
   }
 
+  /* Flat boards read the transition first and OPEN/CLOSE as its qualifier.
+     Keep the transition on the box's actual center line, then place the mode
+     in an equally sized track to its right. Centering the two labels as one
+     unit makes the arrow look offset from the pictographs it describes. */
+  .box-head.flat-pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    column-gap: 0;
+  }
+
+  .box-head.flat-pair .box-transition {
+    grid-column: 2;
+  }
+
+  .box-head.flat-pair .box-mode {
+    grid-column: 3;
+    justify-self: start;
+    margin-left: var(--settings-codex-mode-gap, 0.45rem);
+  }
+
   .box-mode {
     font-style: italic;
     font-size: var(--codex-mode-size, 0.62rem);
     letter-spacing: 0.1em;
+    white-space: nowrap;
     color: var(--codex-mode, #888);
   }
 

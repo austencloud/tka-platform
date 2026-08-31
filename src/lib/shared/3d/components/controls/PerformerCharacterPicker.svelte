@@ -6,14 +6,8 @@
   import { characterThumbnailUrl } from "../../constants/r2-cdn";
 
   interface Props {
-    /** The tile the radiogroup treats as chosen. In the select modal this is
-        the previewed character, which is not yet the applied one. */
     selectedCharacterId: CharacterId | null;
-    /** The character actually on the performer(s) right now. Marked with a badge
-        so previewing another body never erases where you started. */
-    appliedCharacterId?: CharacterId | null;
     pendingCharacterId: CharacterId | null;
-    /** Names what choosing a tile does, since it is not always "select". */
     groupLabel?: string;
     onSelect: (id: CharacterId) => void;
     onIntent: (id: CharacterId) => void;
@@ -22,7 +16,6 @@
 
   let {
     selectedCharacterId,
-    appliedCharacterId = null,
     pendingCharacterId,
     groupLabel = "Select character",
     onSelect,
@@ -89,9 +82,11 @@
           moveSelection(event, definition.id as CharacterId)}
         onclick={() => onSelect(definition.id as CharacterId)}
         title={definition.description}
-        aria-label={appliedCharacterId === definition.id
-          ? `${definition.name}, current character`
-          : definition.name}
+        aria-label={pendingCharacterId === definition.id
+          ? `${definition.name}, loading`
+          : selectedCharacterId === definition.id
+            ? `${definition.name}, active character`
+            : definition.name}
       >
         {#if pendingCharacterId === definition.id}
           <span class="character-loading" aria-hidden="true"></span>
@@ -112,9 +107,10 @@
               (loadedThumbs = new Set(loadedThumbs).add(definition.id))}
           />
         {/if}
-        {#if appliedCharacterId === definition.id}
-          <span class="character-current-badge" aria-hidden="true">Current</span
-          >
+        {#if selectedCharacterId === definition.id}
+          <span class="character-selected-mark" aria-hidden="true">
+            <i class="fas fa-check"></i>
+          </span>
         {/if}
         {#if definition.availability === "local-evaluation"}
           <span class="character-personal-badge" aria-hidden="true">Yours</span>
@@ -127,64 +123,71 @@
 
 <style>
   .character-picker {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
     container-type: inline-size;
   }
+
   .character-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.625rem;
   }
+
   .character-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: 0.3125rem;
+    aspect-ratio: 1;
+    width: 100%;
     min-width: 0;
-    min-height: 82px;
-    padding: 8px 5px;
+    min-height: 0;
+    padding: 0.625rem 0.375rem;
     overflow: hidden;
-    position: relative;
+    border: 2px solid var(--theme-stroke);
+    border-radius: 0.875rem;
     background: var(--theme-card-bg);
-    border: 1.5px solid transparent;
-    border-radius: 10px;
     color: var(--theme-text-dim);
     cursor: pointer;
     transition:
       background var(--transition-fast),
       border-color var(--transition-fast),
       color var(--transition-fast),
-      transform var(--transition-fast);
+      transform var(--transition-fast),
+      box-shadow var(--transition-fast);
   }
+
   .character-card.has-thumb {
-    padding: 0;
     justify-content: flex-end;
+    padding: 0;
   }
+
   .character-card.personal {
-    grid-column: 2 / span 2;
     border-color: color-mix(
       in srgb,
-      var(--performer-color) 35%,
+      var(--performer-color) 42%,
       var(--theme-stroke)
     );
     background: color-mix(
       in srgb,
-      var(--performer-color) 12%,
+      var(--performer-color) 10%,
       var(--theme-card-bg)
     );
   }
+
   .character-card.personal .character-fallback-icon {
-    font-size: 28px;
+    font-size: 2rem;
   }
+
   .character-fallback-icon {
-    font-size: 19px;
+    font-size: 1.5rem;
   }
+
   .character-fallback-icon.hidden {
     display: none;
   }
+
   .character-thumb {
     position: absolute;
     inset: 0;
@@ -193,90 +196,122 @@
     object-fit: cover;
     object-position: center top;
     opacity: 0;
-    transition: opacity var(--transition-fast);
+    transition:
+      opacity var(--transition-fast),
+      transform var(--transition-fast);
   }
+
   .character-thumb.loaded {
-    opacity: 0.74;
+    opacity: 0.82;
   }
+
   .character-card.has-thumb:hover .character-thumb,
   .character-card.has-thumb.selected .character-thumb {
     opacity: 1;
+    transform: scale(1.025);
   }
-  .character-current-badge {
+
+  .character-selected-mark {
     position: absolute;
     z-index: 2;
-    top: 4px;
-    left: 4px;
-    padding: 2px 6px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--performer-color) 82%, black);
+    top: 0.375rem;
+    left: 0.375rem;
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 1px solid color-mix(in srgb, white 42%, transparent);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--performer-color) 88%, black);
     color: white;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    line-height: 1.2;
+    font-size: 0.6875rem;
+    box-shadow: 0 0.125rem 0.5rem color-mix(in srgb, black 45%, transparent);
   }
+
   .character-personal-badge {
     position: absolute;
     z-index: 2;
-    top: 4px;
-    right: 4px;
-    padding: 2px 6px;
+    top: 0.375rem;
+    right: 0.375rem;
+    padding: 0.1875rem 0.4375rem;
     border-radius: 999px;
-    background: var(--surface-inset-deep);
-    color: var(--theme-text-dim);
-    font-size: 12px;
+    background: color-mix(in srgb, var(--surface-inset-deep) 88%, black);
+    color: var(--theme-text);
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     line-height: 1.2;
   }
+
   .character-card-name {
     position: relative;
     z-index: 1;
     width: 100%;
-    padding: 3px 5px 5px;
-    font-size: 14px;
-    font-weight: 650;
-    text-align: center;
-    line-height: 1.2;
-    white-space: nowrap;
+    padding: 0.75rem 0.375rem 0.4375rem;
     overflow: hidden;
+    color: currentColor;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+    line-height: 1.2;
+    text-align: center;
     text-overflow: ellipsis;
+    white-space: nowrap;
   }
+
   .character-card.has-thumb .character-card-name {
     background: linear-gradient(
       transparent,
-      color-mix(in srgb, var(--surface-darker) 82%, black)
+      color-mix(in srgb, var(--surface-darker) 94%, black)
     );
   }
+
   .character-card:hover {
-    background: color-mix(in srgb, var(--performer-color) 10%, transparent);
-    border-color: color-mix(in srgb, var(--performer-color) 30%, transparent);
-    color: white;
-    transform: translateY(-1px);
+    border-color: color-mix(
+      in srgb,
+      var(--performer-color) 48%,
+      var(--theme-stroke)
+    );
+    background: color-mix(
+      in srgb,
+      var(--performer-color) 12%,
+      var(--theme-card-bg)
+    );
+    color: var(--theme-text);
+    transform: translateY(-0.125rem);
   }
+
   .character-card.selected {
-    background: color-mix(in srgb, var(--performer-color) 22%, transparent);
     border-color: var(--performer-color);
-    color: white;
-    box-shadow: 0 0 12px
-      color-mix(in srgb, var(--performer-color) 24%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--performer-color) 20%,
+      var(--theme-card-bg)
+    );
+    color: var(--theme-text);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--performer-color) 32%, transparent),
+      0 0.375rem 1.25rem
+        color-mix(in srgb, var(--performer-color) 22%, transparent);
   }
+
   .character-card.preparing {
-    border-color: color-mix(in srgb, var(--performer-color) 55%, transparent);
+    border-color: color-mix(in srgb, var(--performer-color) 68%, transparent);
   }
+
   .character-loading {
     position: absolute;
-    z-index: 2;
+    z-index: 3;
     top: 50%;
     left: 50%;
-    width: 20px;
-    height: 20px;
+    width: 1.5rem;
+    height: 1.5rem;
     border: 2px solid
       color-mix(in srgb, var(--performer-color) 25%, transparent);
     border-top-color: var(--performer-color);
     border-radius: 50%;
-    animation: character-loading-spin var(--duration-dramatic) linear infinite;
+    animation: character-loading-spin calc(var(--duration-dramatic) * 2) linear
+      infinite;
   }
+
   @keyframes character-loading-spin {
     from {
       transform: translate(-50%, -50%) rotate(0deg);
@@ -285,23 +320,44 @@
       transform: translate(-50%, -50%) rotate(360deg);
     }
   }
+
   button:focus-visible {
     outline: 2px solid var(--performer-color);
     outline-offset: 2px;
   }
-  @container (min-width: 580px) {
+
+  @container (min-width: 26rem) {
     .character-grid {
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
-    .character-card.personal {
-      grid-column: auto / span 2;
+
+    .character-card.personal:last-child:nth-child(4n + 1) {
+      grid-column: 2;
     }
   }
+
+  @container (min-width: 56rem) {
+    .character-grid {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+
+    .character-card.personal:last-child:nth-child(8n + 1) {
+      grid-column: 4;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .character-card,
     .character-thumb {
       transition: none;
     }
+
+    .character-card:hover,
+    .character-card.has-thumb:hover .character-thumb,
+    .character-card.has-thumb.selected .character-thumb {
+      transform: none;
+    }
+
     .character-loading {
       animation: none;
     }

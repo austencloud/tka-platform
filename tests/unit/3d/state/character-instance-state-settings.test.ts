@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { createCharacterInstanceState, makeStandaloneDeps } from "$lib/shared/3d/state/character-instance-state.svelte";
+import {
+  createCharacterInstanceState,
+  makeStandaloneDeps,
+} from "$lib/shared/3d/state/character-instance-state.svelte";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { getSceneUndoManager } from "$lib/shared/3d/undo/get-scene-undo-manager";
 
@@ -79,7 +82,10 @@ describe("CharacterInstanceState — performer settings", () => {
   it("sets and resets a partial prop build override", () => {
     const a = createCharacterInstanceState(makeConfig(), makeDeps());
     a.setPropBuild({ fanBuild: "fire", fanCover: "bare" });
-    expect(a.settings.propBuild).toEqual({ fanBuild: "fire", fanCover: "bare" });
+    expect(a.settings.propBuild).toEqual({
+      fanBuild: "fire",
+      fanCover: "bare",
+    });
     a.resetPropBuild();
     expect(a.settings.propBuild).toBeNull();
   });
@@ -110,6 +116,22 @@ describe("CharacterInstanceState — performer settings", () => {
     a.setDisplayName("Nova");
     a.setDisplayName(null);
     expect(a.displayName).toBeNull();
+  });
+
+  it("undoes and redoes a character change", () => {
+    const undo = getSceneUndoManager();
+    undo.clear();
+    const a = createCharacterInstanceState(makeConfig(), makeDeps());
+
+    a.setCharacter("y-bot");
+    expect(a.characterId).toBe("y-bot");
+    expect(undo.historySize).toBe(1);
+
+    undo.undo();
+    expect(a.characterId).toBe("x-bot");
+
+    undo.redo();
+    expect(a.characterId).toBe("y-bot");
   });
 
   it("resetAllOverrides clears all settings to null, preserves staffLengthCm", () => {

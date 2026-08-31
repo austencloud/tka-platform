@@ -32,9 +32,9 @@ const demoSequence = demoSequenceJson as unknown as SequenceData;
 // capability probe sees "not supported" rather than throwing. Same pattern
 // as tests/unit/3d-viewer/viewer3d-integration.test.ts.
 beforeAll(() => {
-  const originalCreateElement = document.createElement as unknown as (
-    tag: string
-  ) => unknown;
+  const originalCreateElement = document.createElement.bind(
+    document
+  ) as unknown as (tag: string) => unknown;
   (
     document as unknown as { createElement: (tag: string) => unknown }
   ).createElement = (tag: string) => {
