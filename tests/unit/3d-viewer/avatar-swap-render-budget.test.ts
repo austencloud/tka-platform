@@ -43,10 +43,16 @@ describe("avatar swap render budget", () => {
     expect(hubSource).toContain("onCancelIntent={cancelAvatarSelectionIntent}");
     // ...and the picker binds them to the pointer and focus pair, so an intent
     // that never becomes a selection is always withdrawn.
-    expect(pickerSource).toContain("onpointerenter={() => onIntent(");
-    expect(pickerSource).toContain("onpointerleave={onCancelIntent}");
-    expect(pickerSource).toContain("onfocus={() => onIntent(");
-    expect(pickerSource).toContain("onblur={onCancelIntent}");
+    expect(pickerSource).toContain(
+      "onpointerenter={() => startPointerPreview("
+    );
+    expect(pickerSource).toContain("onpointerleave={() => stopPointerPreview(");
+    expect(pickerSource).toContain("onfocus={() => startFocusPreview(");
+    expect(pickerSource).toContain("onblur={() => stopFocusPreview(");
+    expect(pickerSource).toContain("function startPointerPreview");
+    expect(pickerSource).toContain("function startFocusPreview");
+    expect(pickerSource).toContain("onIntent(id)");
+    expect(pickerSource).toContain("onCancelIntent()");
   });
 
   it("keeps the current avatar visible until its replacement is prepared", () => {

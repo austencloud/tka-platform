@@ -12,6 +12,7 @@
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import PerformerPropSizeSlider from "./PerformerPropSizeSlider.svelte";
   import AvatarSelectWorkspace from "./avatar-select/AvatarSelectWorkspace.svelte";
+  import { resolveAvatarPreviewPerformer } from "./avatar-select/avatar-preview-source";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import PerformerSequencePanel from "./PerformerSequencePanel.svelte";
@@ -56,6 +57,14 @@
   const allPerformers = $derived(viewer.performerManager.performers);
   const performer = $derived(
     selectedIndex !== null ? (allPerformers[selectedIndex] ?? null) : null
+  );
+  const previewPerformer = $derived(
+    resolveAvatarPreviewPerformer(allPerformers, selectedIndex)
+  );
+  const previewPerformerNumber = $derived(
+    previewPerformer
+      ? Math.max(1, allPerformers.indexOf(previewPerformer) + 1)
+      : 1
   );
 
   const performerColor = $derived(
@@ -410,6 +419,8 @@
             {currentAvatarId}
             {pendingAvatarId}
             {performerColor}
+            {previewPerformer}
+            {previewPerformerNumber}
             onIntent={queueAvatarSelectionIntent}
             onCancelIntent={cancelAvatarSelectionIntent}
             onSelect={(id) => void pickAvatar(id)}

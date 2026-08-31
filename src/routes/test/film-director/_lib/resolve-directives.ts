@@ -71,8 +71,24 @@ export function resolveCastAxis<T extends string | number>(
     const candidates = pool.filter((value) => !exclude.has(value));
     if (candidates.length === 0) {
       if (directive.distinct) {
+        // Report the pool the director actually had to draw from, not the
+        // catalog/`from` list before this directive's own `not` trimmed it —
+        // a `not` exclusion can be the entire reason the pool ran out, and
+        // naming the pre-exclusion count hides that from the director. Only
+        // this directive's own exclusions count here — the cumulative
+        // `taken` set (other performers' already-resolved values) is a
+        // separate reason to run out and stays out of the pool description.
+        const staticExclude = new Set<T>(directive.exclude);
+        const postExclusionPool = pool.filter(
+          (value) => !staticExclude.has(value)
+        );
+        const excludedFromPool = pool.filter((value) => staticExclude.has(value));
+        const poolClause =
+          excludedFromPool.length > 0
+            ? `${postExclusionPool.length} (${postExclusionPool.join(", ")}) after excluding ${excludedFromPool.join(", ")}`
+            : `${postExclusionPool.length} (${postExclusionPool.join(", ")})`;
         throw new Error(
-          `${where}: distinct values were requested for ${distinctCount} performers but the allowed pool has only ${pool.length} (${pool.join(", ")}).`
+          `${where}: distinct values were requested for ${distinctCount} performers but the allowed pool has only ${poolClause}.`
         );
       }
       throw new Error(

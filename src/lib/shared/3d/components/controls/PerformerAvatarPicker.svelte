@@ -1,10 +1,15 @@
 <script lang="ts">
   import { AVATAR_DEFINITIONS, type AvatarId } from "@austencloud/scene-3d";
+  import { onDestroy } from "svelte";
+
+  import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { avatarThumbnailUrl } from "../../constants/r2-cdn";
+  import AvatarCardLivePreview from "./avatar-select/AvatarCardLivePreview.svelte";
 
   interface Props {
     selectedAvatarId: AvatarId | null;
     pendingAvatarId: AvatarId | null;
+    previewPerformer: AvatarInstanceState | null;
     groupLabel?: string;
     onSelect: (id: AvatarId) => void;
     onIntent: (id: AvatarId) => void;
@@ -14,13 +19,75 @@
   let {
     selectedAvatarId,
     pendingAvatarId,
+    previewPerformer,
     groupLabel = "Select avatar",
     onSelect,
     onIntent,
     onCancelIntent,
   }: Props = $props();
 
+  const personalAvatarId =
+    (AVATAR_DEFINITIONS.find(
+      (definition) => definition.availability === "local-evaluation"
+    )?.id as AvatarId | undefined) ?? null;
+
   let loadedThumbs = $state(new Set<string>());
+  let hoveredAvatarId = $state<AvatarId | null>(null);
+  let focusedAvatarId = $state<AvatarId | null>(null);
+  let interactionReadyAvatarId = $state<AvatarId | null>(null);
+  let personalPreviewReady = $state(false);
+  let hoverPreviewTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const restingPreviewAvatarId = $derived(
+    personalAvatarId ??
+      selectedAvatarId ??
+      (AVATAR_DEFINITIONS[0]?.id as AvatarId)
+  );
+  const livePreviewAvatarId = $derived(
+    focusedAvatarId ?? hoveredAvatarId ?? restingPreviewAvatarId
+  );
+  const livePreviewActive = $derived(
+    focusedAvatarId !== null || hoveredAvatarId !== null
+  );
+
+  function clearHoverPreviewTimer(): void {
+    if (hoverPreviewTimer === null) return;
+    clearTimeout(hoverPreviewTimer);
+    hoverPreviewTimer = null;
+  }
+
+  function startPointerPreview(id: AvatarId): void {
+    onIntent(id);
+    clearHoverPreviewTimer();
+    hoverPreviewTimer = setTimeout(() => {
+      hoverPreviewTimer = null;
+      interactionReadyAvatarId = null;
+      hoveredAvatarId = id;
+    }, 120);
+  }
+
+  function stopPointerPreview(id: AvatarId): void {
+    onCancelIntent();
+    clearHoverPreviewTimer();
+    if (hoveredAvatarId === id) {
+      hoveredAvatarId = null;
+      interactionReadyAvatarId = null;
+    }
+  }
+
+  function startFocusPreview(id: AvatarId): void {
+    onIntent(id);
+    focusedAvatarId = id;
+    interactionReadyAvatarId = null;
+  }
+
+  function stopFocusPreview(id: AvatarId): void {
+    onCancelIntent();
+    if (focusedAvatarId === id) {
+      focusedAvatarId = null;
+      interactionReadyAvatarId = null;
+    }
+  }
 
   function moveSelection(event: KeyboardEvent, id: AvatarId): void {
     const currentIndex = AVATAR_DEFINITIONS.findIndex(
@@ -46,18 +113,26 @@
         ?.focus();
     });
   }
+
+  onDestroy(clearHoverPreviewTimer);
 </script>
 
 <div class="avatar-picker">
   <div class="avatar-grid" role="radiogroup" aria-label={groupLabel}>
     {#each AVATAR_DEFINITIONS as definition, index (definition.id)}
+      {@const avatarId = definition.id as AvatarId}
       {@const thumbnailUrl = avatarThumbnailUrl(definition.id)}
+      {@const isPersonalAvatar = personalAvatarId === definition.id}
+      {@const hasLivePreview =
+        isPersonalAvatar || livePreviewAvatarId === definition.id}
+      {@const livePreviewReady = isPersonalAvatar
+        ? personalPreviewReady
+        : interactionReadyAvatarId === definition.id}
       <button
         class="avatar-card"
         class:selected={selectedAvatarId === definition.id}
         class:preparing={pendingAvatarId === definition.id}
-        class:has-thumb={loadedThumbs.has(definition.id)}
-        class:personal={definition.availability === "local-evaluation"}
+        class:live-ready={livePreviewReady}
         type="button"
         role="radio"
         aria-checked={selectedAvatarId === definition.id}
@@ -67,27 +142,28 @@
           ? 0
           : -1}
         data-avatar-id={definition.id}
-        onpointerenter={() => onIntent(definition.id as AvatarId)}
-        onpointerleave={onCancelIntent}
-        onfocus={() => onIntent(definition.id as AvatarId)}
-        onblur={onCancelIntent}
-        onkeydown={(event) => moveSelection(event, definition.id as AvatarId)}
-        onclick={() => onSelect(definition.id as AvatarId)}
+        onpointerenter={() => startPointerPreview(avatarId)}
+        onpointerleave={() => stopPointerPreview(avatarId)}
+        onfocus={() => startFocusPreview(avatarId)}
+        onblur={() => stopFocusPreview(avatarId)}
+        onkeydown={(event) => moveSelection(event, avatarId)}
+        onclick={() => onSelect(avatarId)}
         title={definition.description}
         aria-label={pendingAvatarId === definition.id
           ? `${definition.name}, loading`
           : selectedAvatarId === definition.id
             ? `${definition.name}, active avatar`
-            : definition.name}
+            : `${definition.name}, hover for live preview`}
       >
-        {#if pendingAvatarId === definition.id}
-          <span class="avatar-loading" aria-hidden="true"></span>
-        {/if}
+        <span class="portrait-backdrop" aria-hidden="true"></span>
+
         <i
           class="fas {definition.icon ?? 'fa-user'} avatar-fallback-icon"
-          class:hidden={loadedThumbs.has(definition.id)}
+          class:hidden={loadedThumbs.has(definition.id) ||
+            (hasLivePreview && livePreviewReady)}
           aria-hidden="true"
         ></i>
+
         {#if thumbnailUrl}
           <img
             class="avatar-thumb"
@@ -99,14 +175,37 @@
               (loadedThumbs = new Set(loadedThumbs).add(definition.id))}
           />
         {/if}
+
+        {#if hasLivePreview}
+          <span class="live-preview-layer" aria-hidden="true">
+            <AvatarCardLivePreview
+              {avatarId}
+              sourcePerformer={previewPerformer}
+              active={livePreviewAvatarId === definition.id &&
+                livePreviewActive}
+              onReady={() => {
+                if (isPersonalAvatar) {
+                  personalPreviewReady = true;
+                } else if (livePreviewAvatarId === avatarId) {
+                  interactionReadyAvatarId = avatarId;
+                }
+              }}
+            />
+          </span>
+        {/if}
+
+        {#if pendingAvatarId === definition.id}
+          <span class="avatar-loading" aria-hidden="true"></span>
+        {/if}
         {#if selectedAvatarId === definition.id}
           <span class="avatar-selected-mark" aria-hidden="true">
             <i class="fas fa-check"></i>
           </span>
         {/if}
         {#if definition.availability === "local-evaluation"}
-          <span class="avatar-personal-badge" aria-hidden="true">Yours</span>
+          <span class="avatar-personal-badge" aria-hidden="true">You</span>
         {/if}
+
         <span class="avatar-card-name">{definition.name}</span>
       </button>
     {/each}
@@ -121,27 +220,25 @@
   .avatar-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.625rem;
+    gap: 0.5rem;
   }
 
   .avatar-card {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.3125rem;
-    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 4 / 3;
     width: 100%;
     min-width: 0;
-    min-height: 0;
-    padding: 0.625rem 0.375rem;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0;
     overflow: hidden;
     border: 2px solid var(--theme-stroke);
-    border-radius: 0.875rem;
+    border-radius: 0.75rem;
     background: var(--theme-card-bg);
     color: var(--theme-text-dim);
     cursor: pointer;
+    isolation: isolate;
     transition:
       background var(--transition-fast),
       border-color var(--transition-fast),
@@ -150,64 +247,72 @@
       box-shadow var(--transition-fast);
   }
 
-  .avatar-card.has-thumb {
-    justify-content: flex-end;
-    padding: 0;
-  }
-
-  .avatar-card.personal {
-    border-color: color-mix(
-      in srgb,
-      var(--performer-color) 42%,
-      var(--theme-stroke)
-    );
-    background: color-mix(
-      in srgb,
-      var(--performer-color) 10%,
-      var(--theme-card-bg)
-    );
-  }
-
-  .avatar-card.personal .avatar-fallback-icon {
-    font-size: 2rem;
+  .portrait-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background:
+      radial-gradient(
+        circle at 50% 34%,
+        color-mix(in srgb, var(--performer-color) 15%, transparent),
+        transparent 54%
+      ),
+      linear-gradient(160deg, var(--theme-card-bg), var(--surface-inset-deep));
   }
 
   .avatar-fallback-icon {
-    font-size: 1.5rem;
+    color: color-mix(
+      in srgb,
+      var(--performer-color) 65%,
+      var(--theme-text-dim)
+    );
+    font-size: clamp(1.5rem, 12cqi, 2.5rem);
+    opacity: 0.72;
   }
 
   .avatar-fallback-icon.hidden {
-    display: none;
+    opacity: 0;
   }
 
   .avatar-thumb {
     position: absolute;
     inset: 0;
+    z-index: -1;
     width: 100%;
     height: 100%;
     object-fit: cover;
     object-position: center top;
     opacity: 0;
+    transform: scale(2.15);
+    transform-origin: 50% 17%;
+    filter: saturate(0.92) contrast(1.04);
     transition:
       opacity var(--transition-fast),
-      transform var(--transition-fast);
+      transform var(--transition-fast),
+      filter var(--transition-fast);
   }
 
   .avatar-thumb.loaded {
-    opacity: 0.82;
+    opacity: 0.9;
   }
 
-  .avatar-card.has-thumb:hover .avatar-thumb,
-  .avatar-card.has-thumb.selected .avatar-thumb {
+  .live-preview-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+  }
+
+  .avatar-card.live-ready .live-preview-layer {
     opacity: 1;
-    transform: scale(1.025);
   }
 
   .avatar-selected-mark {
     position: absolute;
-    z-index: 2;
-    top: 0.375rem;
-    left: 0.375rem;
+    z-index: 3;
+    top: 0.3125rem;
+    left: 0.3125rem;
     display: grid;
     place-items: center;
     width: 1.5rem;
@@ -222,62 +327,62 @@
 
   .avatar-personal-badge {
     position: absolute;
-    z-index: 2;
-    top: 0.375rem;
-    right: 0.375rem;
+    z-index: 3;
+    top: 0.3125rem;
+    right: 0.3125rem;
     padding: 0.1875rem 0.4375rem;
+    border: 1px solid color-mix(in srgb, white 12%, transparent);
     border-radius: 999px;
     background: color-mix(in srgb, var(--surface-inset-deep) 88%, black);
     color: var(--theme-text);
     font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     line-height: 1.2;
+    backdrop-filter: blur(0.375rem);
   }
 
   .avatar-card-name {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    padding: 0.75rem 0.375rem 0.4375rem;
+    position: absolute;
+    z-index: 2;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 1.25rem 0.375rem 0.375rem;
     overflow: hidden;
-    color: currentColor;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 650;
+    color: var(--theme-text);
+    font-size: clamp(var(--font-size-min, 14px), 1.65cqi, 1.125rem);
+    font-weight: 680;
     line-height: 1.2;
     text-align: center;
     text-overflow: ellipsis;
+    text-shadow: 0 1px 3px black;
     white-space: nowrap;
-  }
-
-  .avatar-card.has-thumb .avatar-card-name {
     background: linear-gradient(
       transparent,
-      color-mix(in srgb, var(--surface-darker) 94%, black)
+      color-mix(in srgb, var(--surface-darker) 96%, black)
     );
   }
 
   .avatar-card:hover {
     border-color: color-mix(
       in srgb,
-      var(--performer-color) 48%,
+      var(--performer-color) 58%,
       var(--theme-stroke)
-    );
-    background: color-mix(
-      in srgb,
-      var(--performer-color) 12%,
-      var(--theme-card-bg)
     );
     color: var(--theme-text);
     transform: translateY(-0.125rem);
+    box-shadow: 0 0.4rem 1rem color-mix(in srgb, black 38%, transparent);
+  }
+
+  .avatar-card:hover .avatar-thumb,
+  .avatar-card:focus-visible .avatar-thumb {
+    opacity: 1;
+    transform: scale(2.2);
+    filter: saturate(1) contrast(1.06);
   }
 
   .avatar-card.selected {
     border-color: var(--performer-color);
-    background: color-mix(
-      in srgb,
-      var(--performer-color) 20%,
-      var(--theme-card-bg)
-    );
     color: var(--theme-text);
     box-shadow:
       0 0 0 1px color-mix(in srgb, var(--performer-color) 32%, transparent),
@@ -291,7 +396,7 @@
 
   .avatar-loading {
     position: absolute;
-    z-index: 3;
+    z-index: 4;
     top: 50%;
     left: 50%;
     width: 1.5rem;
@@ -322,32 +427,35 @@
     .avatar-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
+  }
 
-    .avatar-card.personal:last-child:nth-child(4n + 1) {
-      grid-column: 2;
+  @container (min-width: 42rem) {
+    .avatar-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
     }
   }
 
-  @container (min-width: 56rem) {
+  @container (min-width: 62rem) {
     .avatar-grid {
-      grid-template-columns: repeat(8, minmax(0, 1fr));
-    }
-
-    .avatar-card.personal:last-child:nth-child(8n + 1) {
-      grid-column: 4;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .avatar-card,
-    .avatar-thumb {
+    .avatar-thumb,
+    .live-preview-layer {
       transition: none;
     }
 
-    .avatar-card:hover,
-    .avatar-card.has-thumb:hover .avatar-thumb,
-    .avatar-card.has-thumb.selected .avatar-thumb {
+    .avatar-card:hover {
       transform: none;
+    }
+
+    .avatar-thumb,
+    .avatar-card:hover .avatar-thumb,
+    .avatar-card:focus-visible .avatar-thumb {
+      transform: scale(2.15);
     }
 
     .avatar-loading {

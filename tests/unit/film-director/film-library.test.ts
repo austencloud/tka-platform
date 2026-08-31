@@ -187,6 +187,43 @@ describe("film library", () => {
     expect(mirror.staffLengthCm).not.toBe(original.staffLengthCm);
   });
 
+  it("Proving Grounds exercises the gaps it advertises", () => {
+    const proving = FILM_LIBRARY.find((entry) => entry.key === "proving")!;
+    const resolved = resolveFilmDirectorSpec(proving.film);
+
+    const combined = resolved.scenes.find((s) => s.id === "combined-draw")!;
+    const blues = combined.performance.performers.map((p) => p.bluePlane);
+    const reds = combined.performance.performers.map((p) => p.redPlane);
+    expect(new Set(blues).size).toBe(blues.length);
+    expect(new Set(reds).size).toBe(reds.length);
+    expect(blues).not.toContain("wall");
+    expect(reds).not.toContain("wall");
+    // Distinctness is only guaranteed PER axis — the pinned seed additionally
+    // produces zero cross-axis repeats, so the frame actually shows six
+    // different planes rather than four unique ones reused across six slots.
+    expect(new Set([...blues, ...reds]).size).toBe(6);
+
+    const onBeat = resolved.scenes.find((s) => s.id === "on-the-beat")!;
+    expect(onBeat.durationSeconds).toBe(8);
+    const pushStart = onBeat.camera.keyframes.find(
+      (frame) => Math.abs(frame.atSeconds - 0) < 1e-6
+    );
+    const pushArrival = onBeat.camera.keyframes.find(
+      (frame) => Math.abs(frame.atSeconds - 4) < 1e-6
+    );
+    expect(pushStart).toBeDefined();
+    expect(pushArrival).toBeDefined();
+    // A keyframe existing at 4s isn't proof the push actually moved the
+    // camera — compare against the 0s keyframe to prove it did.
+    expect(pushArrival!.position).not.toEqual(pushStart!.position);
+    const walker = onBeat.performance.performers[1]!;
+    const arrival = walker.blocking.find(
+      (frame) => Math.abs(frame.atSeconds - 4) < 1e-6
+    );
+    expect(arrival).toBeDefined();
+    expect(arrival!.position).toEqual({ x: -1.5, z: -1 });
+  });
+
   it("Chance Suite's identical directives on different scenes draw from different streams", () => {
     const chance = FILM_LIBRARY.find((entry) => entry.key === "chance")!;
     const resolved = resolveFilmDirectorSpec(chance.film);

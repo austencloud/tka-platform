@@ -18,6 +18,13 @@
   import { getPropTypeDisplayInfo } from "$lib/shared/settings/components/tabs/prop-type/prop-type-registry";
   import { growFade } from "$lib/shared/transitions/motion";
 
+  interface Props {
+    /** Embedded hosts (the Toys tab) get their name from module chrome, so
+        the header drops the identity block and leads with the controls. */
+    variant?: "standalone" | "embedded";
+  }
+
+  const { variant = "standalone" }: Props = $props();
   const appState = getShapeMatrixAppContext();
   const LEVELS: readonly TurnLevel[] = [1, 2, 3, 4];
   const LEVEL_DESCRIPTIONS: Record<TurnLevel, { name: string; blurb: string }> =
@@ -150,7 +157,7 @@
           <strong>Shape Matrix</strong>
         {/if}
       </div>
-    {:else}
+    {:else if variant === "standalone"}
       <div class="identity">
         <strong>Shape Matrix Explorer</strong>
         <span>Built on Lorq Nichols’ Shape Matrix</span>
@@ -159,22 +166,18 @@
 
     {#if !appState.compact || appState.activeView === "matrix"}
       <div class="matrix-controls">
-        <div class="level-control">
-          <span class="control-label difficulty-label">
-            <span class="difficulty-full">Difficulty level</span>
-            <span class="difficulty-short">Level</span>
-          </span>
+        <div class="control-cell level-control">
+          <span class="control-label">Difficulty</span>
           <LevelSelector
             value={appState.level}
             levels={LEVELS}
             describe={(level) => LEVEL_DESCRIPTIONS[level]}
             onchange={appState.setLevel}
             compact={true}
-            appearance="filled"
             ariaLabel="Kinetic Alphabet level"
           />
         </div>
-        <div class="label-control neutral-accent">
+        <div class="control-cell label-control neutral-accent">
           <span class="control-label">Notation</span>
           <SegmentedControl
             options={LABEL_OPTIONS}
@@ -188,7 +191,7 @@
           />
         </div>
         <div class="turn-editor">
-          <div class="axis-control">
+          <div class="control-cell axis-control">
             <span class="control-label">Apply to</span>
             <SegmentedControl
               options={AXIS_OPTIONS}
@@ -202,7 +205,7 @@
               ariaLabel="Axis edited by the turn control"
             />
           </div>
-          <div class="turn-scroller">
+          <div class="control-cell turn-scroller">
             <span class="control-label">{turnControlLabel}</span>
             {#if appState.availableTurns.length === 1}
               <output
@@ -233,6 +236,24 @@
             {/if}
           </div>
         </div>
+        {#if !appState.compact}
+          <div class="control-cell prop-control">
+            <span class="control-label">Prop</span>
+            <button
+              class="prop-action"
+              type="button"
+              aria-label={`Choose prop. Current prop: ${selectedPropLabel}`}
+              onclick={appState.openPropPicker}
+            >
+              <img class="selected-prop-icon" src={selectedProp.image} alt="" />
+              <span>{selectedPropLabel}</span>
+              <i
+                class="fas fa-chevron-down disclosure-icon"
+                aria-hidden="true"
+              ></i>
+            </button>
+          </div>
+        {/if}
       </div>
     {/if}
 
@@ -245,7 +266,7 @@
             onclick={appState.showDetail}
             transition:growFade={{ axis: "x", x: 4 }}
           >
-            <span>Realization</span>
+            <span>Detail</span>
             <i class="fas fa-arrow-right" aria-hidden="true"></i>
           </button>
         {/if}
@@ -260,16 +281,6 @@
           <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
           <span>Original</span>
         </a>
-        <button
-          class="top-action prop-action"
-          type="button"
-          aria-label={`Choose prop. Current prop: ${selectedPropLabel}`}
-          onclick={appState.openPropPicker}
-        >
-          <img class="selected-prop-icon" src={selectedProp.image} alt="" />
-          <span>{selectedPropLabel}</span>
-          <i class="fas fa-chevron-down disclosure-icon" aria-hidden="true"></i>
-        </button>
         <button
           class="top-action"
           type="button"
@@ -425,14 +436,16 @@
   }
 
   .identity strong {
-    font-size: 1rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.005em;
     white-space: nowrap;
   }
 
   .identity span {
     overflow: hidden;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
-    font-size: 0.75rem;
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.68));
+    font-size: var(--font-size-min, 0.875rem);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -514,16 +527,16 @@
   .matrix-controls {
     grid-area: controls;
     --theme-accent: #d9901a;
-    /* One shared control height for all four ribbon groups: a one-line sm
-       SegmentedControl (44px segment + its own padding and border). Groups
-       size to content — fixed group widths overflowed once the four level
+    /* One shared control height for all ribbon cells: a one-line sm
+       SegmentedControl (44px segment + its own padding and border). Cells
+       size to content — fixed cell widths overflowed once the four level
        tiles outgrew them, and stretched the tiles into full-width swatches
        in the stacked compact bands. */
     --ribbon-control-h: 3.25rem;
     width: fit-content;
     max-width: 100%;
     display: flex;
-    align-items: center;
+    align-items: stretch;
     /* Centered, not start-justified: the turn control swings from 4 to 14
        segments across levels, and a left-packed band strands the width
        reserved for level 4 as a dead field on the right. Centering splits
@@ -531,8 +544,20 @@
     justify-self: center;
     gap: 0.5rem;
     min-width: 0;
-    padding: 0.3rem;
-    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+  }
+
+  /* The bento cell: a caption row over its control, each cell carrying its
+     own card chrome. The caption names the control so the band reads as
+     labeled instruments instead of a strip of anonymous widgets. */
+  .control-cell {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: center;
+    justify-items: start;
+    gap: 0.3rem;
+    min-width: 0;
+    padding: 0.45rem 0.55rem 0.5rem;
+    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.09));
     border-radius: 12px;
     background: color-mix(
       in srgb,
@@ -545,31 +570,24 @@
   .level-control {
     grid-area: level;
     flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    min-width: 0;
   }
 
   .control-label {
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.52));
     font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 600;
-    letter-spacing: 0.015em;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     white-space: nowrap;
   }
 
-  .difficulty-short {
-    display: none;
-  }
-
+  /* Pin the badge tiles to the shared ribbon height; the selector's own
+     big-screen media ramp would otherwise outgrow the segmented controls. */
   .level-control :global(.lvl) {
     flex: 0 0 auto;
     min-width: var(--min-touch-target, 44px);
     height: var(--ribbon-control-h);
     min-height: var(--min-touch-target, 44px);
-    padding-inline: 0.45rem;
-    border-radius: 8px;
   }
 
   .neutral-accent {
@@ -579,10 +597,6 @@
   .label-control {
     grid-area: labels;
     flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    min-width: 0;
   }
 
   /* SegmentedControl's sliding indicator assumes equal-width segments, so
@@ -593,10 +607,6 @@
 
   .axis-control {
     flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    min-width: 0;
   }
 
   .axis-control :global(.segmented-control) {
@@ -607,18 +617,13 @@
     grid-area: turns;
     display: flex;
     flex: 0 1 auto;
-    align-items: center;
-    gap: 0.35rem;
+    align-items: stretch;
+    gap: 0.5rem;
     min-width: 0;
   }
 
   .turn-scroller {
-    grid-area: turns;
     flex: 0 1 auto;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: 0.45rem;
     min-width: 0;
     overflow-x: auto;
     scrollbar-width: none;
@@ -662,6 +667,48 @@
     color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
     font-size: var(--font-size-compact, 0.75rem);
     font-weight: 500;
+  }
+
+  .prop-control {
+    flex: 0 0 auto;
+  }
+
+  .prop-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: var(--ribbon-control-h);
+    max-width: 11rem;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgb(255 255 255 / 0.05));
+    color: var(--theme-text, #fff);
+    cursor: pointer;
+    font: inherit;
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 600;
+    white-space: nowrap;
+    transition:
+      color var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease,
+      background var(--duration-fast, 150ms) ease;
+  }
+
+  .prop-action span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .prop-action:hover {
+    border-color: rgb(245 158 11 / 0.55);
+    background: rgb(245 158 11 / 0.08);
+  }
+
+  .prop-action:focus-visible {
+    outline: 2px solid #f59e0b;
+    outline-offset: 2px;
   }
 
   .top-actions {
@@ -708,15 +755,16 @@
       gap: 0.4rem;
     }
 
-    .difficulty-full,
-    .label-control .control-label,
-    .axis-control .control-label,
-    .turn-scroller .control-label {
+    /* Compact hosts trade the captions for canvas; the cells keep their
+       card chrome so the band still reads as grouped instruments. */
+    .control-label {
       display: none;
     }
 
-    .difficulty-short {
-      display: inline;
+    .control-cell {
+      gap: 0;
+      padding: 0.25rem 0.35rem;
+      border-radius: 10px;
     }
 
     .top-actions {
@@ -797,18 +845,18 @@
       scrollbar-width: none;
     }
 
-    .label-control .control-label,
-    .axis-control .control-label,
-    .turn-scroller .control-label,
-    .fixed-turn-value span {
-      display: none;
-    }
-
-    .difficulty-full {
+    /* The vertical stack has room for captions again, and a first-time
+       phone viewer needs them more than anyone. */
+    .control-label {
       display: inline;
     }
 
-    .difficulty-short {
+    .control-cell {
+      gap: 0.25rem;
+      padding: 0.35rem 0.45rem 0.45rem;
+    }
+
+    .fixed-turn-value span {
       display: none;
     }
 
@@ -830,6 +878,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .top-action,
+    .prop-action,
     .back-to-matrix,
     .turn-control {
       transition: none;
