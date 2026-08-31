@@ -7,11 +7,10 @@
 
   const state = getShapeMatrixAppContext();
   const DRIVER_OPTIONS = [
-    { value: "hands" as const, label: "Hand path", shortLabel: "Hands" },
+    { value: "hands" as const, label: "Hands" },
     {
       value: "props" as const,
-      label: "Prop motion",
-      shortLabel: "Props",
+      label: "Props",
     },
   ];
   const driverHint = $derived(
@@ -26,8 +25,7 @@
     class={driver === "hands" ? "fas fa-hands" : "fas fa-wand-magic-sparkles"}
     aria-hidden="true"
   ></i>
-  <span class="driver-full">{driver === "hands" ? "Hand path" : "Prop motion"}</span>
-  <span class="driver-short">{driver === "hands" ? "Hands" : "Props"}</span>
+  <span>{driver === "hands" ? "Hands" : "Props"}</span>
 {/snippet}
 
 <aside class="detail-pane" aria-label="Shape detail">
@@ -83,7 +81,7 @@
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
     border-radius: 16px;
-    background: rgb(16 23 33 / 0.82);
+    background: var(--theme-panel-bg, rgb(16 23 33 / 0.82));
   }
 
   .pane-heading {
@@ -127,16 +125,6 @@
     width: min(14rem, 58%);
     margin-left: auto;
     flex: 0 0 auto;
-    --theme-accent: #d9901a;
-  }
-
-  .driver-full,
-  .driver-short {
-    white-space: nowrap;
-  }
-
-  .driver-short {
-    display: none;
   }
 
   /* The hint is a nicety, not chrome: once the divider squeezes the pane it
@@ -148,19 +136,9 @@
     }
   }
 
-  @container shape-matrix-detail-heading (max-width: 34rem) {
-    .driver-full {
-      display: none;
-    }
-
-    .driver-short {
-      display: inline;
-    }
-  }
-
   .eyebrow {
     flex: 0 0 auto;
-    color: #f4b54c;
+    color: var(--theme-accent, #f4b54c);
     font-size: var(--font-size-min, 0.875rem);
     font-weight: 650;
     letter-spacing: 0.015em;
@@ -172,7 +150,7 @@
     min-height: 0;
     padding: 0.9rem;
     overflow: hidden;
-    background: #0a0f14;
+    background: var(--theme-panel-bg, #0a0f14);
     container: shape-matrix-drill / size;
   }
 
@@ -182,6 +160,7 @@
     width: 100%;
     height: 100%;
     text-align: center;
+    font-size: var(--font-size-min, 0.875rem);
   }
 
   @container shape-matrix-app (max-width: 74.99rem) or (max-height: 41.99rem) {
