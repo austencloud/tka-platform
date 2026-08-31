@@ -32,8 +32,6 @@
     describe?: (level: T) => { name: string; blurb: string };
     /** Numerals only — for bars too tight to carry the level name. */
     compact?: boolean;
-    /** Let a compact instrument use each level's gradient as the whole control. */
-    appearance?: "badge" | "filled";
     ariaLabel?: string;
     disabled?: boolean;
   }
@@ -44,7 +42,6 @@
     levels = [1, 2, 3] as unknown as readonly T[],
     describe,
     compact = false,
-    appearance = "badge",
     ariaLabel = "Difficulty level",
     disabled = false,
   }: Props = $props();
@@ -76,13 +73,7 @@
   }
 </script>
 
-<div
-  class="level-selector"
-  class:compact
-  class:filled={appearance === "filled"}
-  role="group"
-  aria-label={ariaLabel}
->
+<div class="level-selector" class:compact role="group" aria-label={ariaLabel}>
   {#each levels as n (n)}
     {@const meta = descriptionFor(n)}
     <button
@@ -201,50 +192,6 @@
 
   .lvl.selected .name {
     color: white;
-  }
-
-  /* Dense instruments can carry the canonical level identity on the whole
-     button. The default badge treatment remains unchanged for Construct and
-     Generate; Shape Matrix opts into this stronger toolbar treatment. */
-  .level-selector.filled .lvl {
-    background: var(--lvl-bg);
-    border-color: color-mix(in srgb, var(--lvl-accent) 48%, black);
-    color: var(--lvl-ink);
-    filter: saturate(0.72) brightness(0.62);
-    opacity: 0.82;
-  }
-
-  .level-selector.filled .lvl:hover:not(.selected) {
-    background: var(--lvl-bg);
-    filter: saturate(0.88) brightness(0.78);
-  }
-
-  .level-selector.filled .lvl.selected {
-    background: var(--lvl-bg);
-    border-color: color-mix(in srgb, white 68%, var(--lvl-accent));
-    filter: none;
-    opacity: 1;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.38),
-      inset 0 0 0 1px color-mix(in srgb, var(--lvl-ink) 42%, transparent),
-      0 5px 18px -7px var(--lvl-accent);
-  }
-
-  .level-selector.filled .numeral {
-    width: auto;
-    height: auto;
-    border: 0;
-    border-radius: 0;
-    background: none;
-    color: var(--lvl-ink);
-    opacity: 0.9;
-    text-shadow: 0 1px 1px rgb(0 0 0 / 0.3);
-  }
-
-  .level-selector.filled .lvl.selected .numeral {
-    transform: none;
-    opacity: 1;
-    box-shadow: none;
   }
 
   .lvl:active {
