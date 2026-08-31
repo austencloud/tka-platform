@@ -12,6 +12,7 @@
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
   import { dockSlide } from "$lib/shared/transitions/dock-slide";
   import { createSheetDismiss } from "./sheet-dismiss";
+  import { shouldDeferEscapeShortcut } from "$lib/shared/keyboard/domain/escape-shortcut-target";
   import SaveSceneModal from "$lib/features/scene-3d-collection/components/SaveSceneModal.svelte";
   import PerformerSpine from "./PerformerSpine.svelte";
   import SceneControlInspector from "./SceneControlInspector.svelte";
@@ -95,6 +96,7 @@
   let saveSceneOpen = $state(false);
   let showInteractionHint = $state(false);
   let interactionAnnouncement = $state("");
+  let compactSheet = $state<"performer" | "scene" | null>(null);
   const viewer = getViewer3DContext();
 
   onMount(() => {
@@ -152,6 +154,11 @@
     activeTool = null;
   }
 
+  function handleCompactSheetChange(sheet: "performer" | "scene" | null): void {
+    compactSheet = sheet;
+    onCompactSheetChange?.(sheet);
+  }
+
   const dismiss = createSheetDismiss(
     closeInspector,
     () => panelEl,
@@ -206,7 +213,13 @@
     }
   }}
   onkeydown={(event) => {
-    if (activeTool && !isModalTarget(event.target)) dismiss.onKeydown(event);
+    if (
+      activeTool &&
+      !shouldDeferEscapeShortcut(document) &&
+      !isModalTarget(event.target)
+    ) {
+      dismiss.onKeydown(event);
+    }
   }}
 />
 
@@ -215,6 +228,7 @@
   class:docked={layout.presentation === "docked"}
   class:overlay={layout.presentation === "overlay"}
   class:compact={layout.presentation === "compact"}
+  class:compact-sheet-open={compactSheet !== null}
   bind:clientWidth={workspaceWidth}
   bind:clientHeight={workspaceHeight}
   data-scene-control-workspace
@@ -239,7 +253,7 @@
         {onStepBackward}
         {onSettingChange}
         {onPerformerEdit}
-        onSheetChange={onCompactSheetChange}
+        onSheetChange={handleCompactSheetChange}
       />
     </div>
   {:else}
@@ -308,6 +322,13 @@
     min-width: 0;
     min-height: 0;
     pointer-events: none;
+  }
+
+  /* Compact sheets own the stage while they are open. A host transport may
+     otherwise sit above this entire stacking context and cover the sheet's
+     tabs even though the sheet itself has a higher local z-index. */
+  .scene-control-workspace.compact-sheet-open {
+    z-index: 40;
   }
 
   .scene-control-workspace :global(button),

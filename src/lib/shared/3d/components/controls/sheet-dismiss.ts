@@ -11,7 +11,7 @@ export function createSheetDismiss(
 ) {
   return {
     onKeydown(e: KeyboardEvent) {
-      if (e.key !== "Escape") return;
+      if (e.key !== "Escape" || e.defaultPrevented) return;
       if (isExempt(e.target)) return;
       onClose();
     },

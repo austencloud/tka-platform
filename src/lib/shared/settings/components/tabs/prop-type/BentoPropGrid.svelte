@@ -326,35 +326,38 @@
             />
           {/snippet}
         </Popover.Trigger>
-        <Popover.Content
-          side="bottom"
-          sideOffset={8}
-          avoidCollisions={true}
-          collisionPadding={12}
-          forceMount
-        >
-          {#snippet child({ open, wrapperProps, props })}
-            <div {...wrapperProps}>
-              {#if open}
-                <section
-                  {...props}
-                  class="variant-popover"
-                  aria-label={`${getPropTypeDisplayInfo(base).label} styles`}
-                  transition:flyFade={{ y: 6 }}
-                >
-                  <span class="variant-popover-label">
-                    {getPropTypeDisplayInfo(base).label} styles
-                  </span>
-                  <div class="variant-popover-buttons">
-                    {#each choices as prop (prop)}
-                      {@render tile(prop)}
-                    {/each}
-                  </div>
-                </section>
-              {/if}
-            </div>
-          {/snippet}
-        </Popover.Content>
+        <Popover.Portal>
+          <Popover.Content
+            side="bottom"
+            sideOffset={8}
+            avoidCollisions={true}
+            collisionPadding={12}
+            forceMount
+          >
+            {#snippet child({ open, wrapperProps, props })}
+              <div {...wrapperProps}>
+                {#if open}
+                  <section
+                    {...props}
+                    class="variant-popover"
+                    aria-label={`${getPropTypeDisplayInfo(base).label} styles`}
+                    data-escape-shortcut-local
+                    transition:flyFade={{ y: 6 }}
+                  >
+                    <span class="variant-popover-label">
+                      {getPropTypeDisplayInfo(base).label} styles
+                    </span>
+                    <div class="variant-popover-buttons">
+                      {#each choices as prop (prop)}
+                        {@render tile(prop)}
+                      {/each}
+                    </div>
+                  </section>
+                {/if}
+              </div>
+            {/snippet}
+          </Popover.Content>
+        </Popover.Portal>
       </Popover.Root>
     {/if}
   {/snippet}
@@ -370,7 +373,10 @@
       <div class="grid-content">
         {#each sections as section, i}
           <div class="section-label" class:first={i === 0}>{section.label}</div>
-          <div class="section-buttons">
+          <div
+            class="section-buttons"
+            class:single={section.bases.length === 1}
+          >
             {#each section.bases as base (base)}
               {@render familyTile(base)}
             {/each}
@@ -507,16 +513,19 @@
   }
 
   .section-buttons {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 124px));
     gap: 10px;
     justify-content: center;
     padding: 0 2px;
   }
 
+  .section-buttons.single {
+    grid-template-columns: minmax(0, 124px);
+  }
+
   .section-buttons :global(.prop-button) {
-    width: clamp(98px, 28cqw, 124px);
-    flex-shrink: 0;
+    width: 100%;
   }
 
   .variant-popover {
@@ -524,7 +533,11 @@
     container-type: inline-size;
     display: flex;
     width: min(420px, calc(100vw - 24px));
-    max-height: min(440px, calc(100vh - 24px));
+    max-height: min(
+      440px,
+      calc(100vh - 24px),
+      var(--bits-popover-content-available-height, calc(100vh - 24px))
+    );
     box-sizing: border-box;
     flex-direction: column;
     gap: 10px;
@@ -595,15 +608,27 @@
     order: -1;
   }
 
+  @container prop-grid (min-width: 360px) {
+    .section-buttons:not(.single) {
+      grid-template-columns: repeat(3, minmax(0, 124px));
+    }
+  }
+
   @container prop-grid (min-width: 550px) {
-    .section-buttons :global(.prop-button) {
-      width: clamp(104px, 17cqw, 118px);
+    .section-buttons:not(.single) {
+      grid-template-columns: repeat(4, minmax(0, 118px));
     }
   }
 
   @container prop-grid (min-width: 700px) {
-    .section-buttons :global(.prop-button) {
-      width: clamp(102px, 13cqw, 112px);
+    .section-buttons:not(.single) {
+      grid-template-columns: repeat(6, minmax(0, 112px));
+    }
+  }
+
+  @container prop-grid (min-width: 850px) {
+    .section-buttons:not(.single) {
+      grid-template-columns: repeat(8, minmax(0, 112px));
     }
   }
 
