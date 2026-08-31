@@ -197,6 +197,9 @@ describe("Medium Lotus five-wick fire fan", () => {
       'data-generated-from="scripts/assets/lotus-fire-reference.svg"'
     );
     expect(appearance).toContain(`data-source-version="${reference.version}"`);
+    expect(appearance).toContain('data-fan-frame=""');
+    expect(appearance).toContain('data-fan-wicks=""');
+    expect(appearance).toContain('fill="#f5e6b8"');
     expect(paths).toHaveLength(10);
     for (const [, id, pathData] of paths) {
       expect(appearance).toContain(`data-lotus-rail="${id}" d="${pathData}"`);
