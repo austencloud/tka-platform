@@ -32,13 +32,13 @@
     void loadSoloLibrarySequences({
       subject: "props",
       granularity: "solo",
-      color: side,
+      hand: side,
     })
       .then((loaded) => {
         if (!active) return;
         sequences = loaded.filter((sequence) => {
           const solo =
-            side === "blue" ? sequence.blueSoloProp : sequence.redSoloProp;
+            side === "left" ? sequence.leftSoloProp : sequence.rightSoloProp;
           return !!solo && solo.length === length && isStructuredSoloLoop(solo);
         });
       })
@@ -96,7 +96,7 @@
               browseViewMode={{
                 subject: "props",
                 granularity: "solo",
-                color: side,
+                hand: side,
               }}
               columnCount={Math.min(4, length)}
               includeStartPosition={false}

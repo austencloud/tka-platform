@@ -26,10 +26,10 @@ export interface PreviewCellRenderOptions {
   widthMultiplier?: number;
 
   /** Blue hand prop type override */
-  bluePropType?: PropType;
+  leftPropType?: PropType;
 
   /** Red hand prop type override (used when catDogModeEnabled) */
-  redPropType?: PropType;
+  rightPropType?: PropType;
 
   /** When true, red hand uses redPropType; otherwise uses bluePropType */
   catDogModeEnabled?: boolean;
@@ -38,10 +38,10 @@ export interface PreviewCellRenderOptions {
    *  the prop and collapses the beta separation offset when the two props end
    *  up with opposite handedness, exactly as the live SVG pictograph and the
    *  2D animation canvas do. */
-  blueBuugengFlipped?: boolean;
+  leftBuugengFlipped?: boolean;
 
   /** Buugeng chirality for the red prop. See blueBuugengFlipped. */
-  redBuugengFlipped?: boolean;
+  rightBuugengFlipped?: boolean;
 
   /** Whether to render step numbers on the pictograph */
   showStepNumbers?: boolean;
@@ -77,15 +77,15 @@ export interface PreviewCellRenderOptions {
    *  no TKA overlay, no reversals. Shows pure spatial trajectory. */
   handPathMode?: boolean;
 
-  /** Browse view mode (props/hands x combined/solo x blue/red).
+  /** Browse view mode (props/hands x combined/solo x left/right).
    *  Affects cache keys so the same sequence renders differently per mode. */
   browseViewMode?: BrowseViewMode;
 
   /** Show blue motion (prop + arrow). When false, renderer skips blue entirely. Default: true. */
-  showBlueMotion?: boolean;
+  showLeftMotion?: boolean;
 
   /** Show red motion (prop + arrow). When false, renderer skips red entirely. Default: true. */
-  showRedMotion?: boolean;
+  showRightMotion?: boolean;
 
   /** When true, consult the shared cross-device cloud image store before/after
    *  local render (download-instead-of-rasterize + crowd-source upload). Only
@@ -116,12 +116,12 @@ function filterSoloMotions(
   data: PictographData,
   viewMode: BrowseViewMode
 ): PictographData {
-  const keepColor = viewMode.color;
+  const keepHand = viewMode.hand;
   const motions = { ...data.motions };
-  if (keepColor === "blue") {
-    delete motions.red;
+  if (keepHand === "left") {
+    delete motions.right;
   } else {
-    delete motions.blue;
+    delete motions.left;
   }
   return { ...data, motions };
 }
@@ -154,8 +154,8 @@ export async function renderCell(
   // Solo / motion-solo views keep their repositioned location label as a live
   // overlay (CellRenderer), so don't bake a number into those.
   const isMotionSoloCell =
-    (options.showBlueMotion === true && options.showRedMotion === false) ||
-    (options.showRedMotion === true && options.showBlueMotion === false);
+    (options.showLeftMotion === true && options.showRightMotion === false) ||
+    (options.showRightMotion === true && options.showLeftMotion === false);
   const wantNumber =
     !!options.showStepNumbers &&
     stepNumber != null &&
@@ -253,12 +253,12 @@ export async function renderCell(
   const isSoloView = viewMode?.granularity === "solo";
 
   const isHandPath = (options.handPathMode ?? false) || isHandsView;
-  const effectiveBlueProp = isHandPath ? PropType.HAND : options.bluePropType;
-  const effectiveRedProp = isHandPath
+  const effectiveLeftProp = isHandPath ? PropType.HAND : options.leftPropType;
+  const effectiveRightProp = isHandPath
     ? PropType.HAND
     : options.catDogModeEnabled
-      ? options.redPropType
-      : options.bluePropType;
+      ? options.rightPropType
+      : options.leftPropType;
 
   const soloFiltered = isSoloView
     ? filterSoloMotions(pictographData, viewMode!)
@@ -268,23 +268,23 @@ export async function renderCell(
 
   // Hand-path mode swaps both props for HANDs, so chirality is meaningless
   // there — passing it would only fragment the cache.
-  const blueFlipped = isHandPath ? false : (options.blueBuugengFlipped ?? false);
-  const redFlipped = isHandPath ? false : (options.redBuugengFlipped ?? false);
+  const leftFlipped = isHandPath ? false : (options.leftBuugengFlipped ?? false);
+  const rightFlipped = isHandPath ? false : (options.rightBuugengFlipped ?? false);
 
   const prepared = await pictographPreparer.prepareSingle(dataForRender, {
     themeMode: isDark ? "dark" : "light",
-    bluePropType: effectiveBlueProp,
-    redPropType: effectiveRedProp,
+    leftPropType: effectiveLeftProp,
+    rightPropType: effectiveRightProp,
     handPathMode: isHandPath,
-    showBlueMotion: options.showBlueMotion,
-    showRedMotion: options.showRedMotion,
-    blueBuugengFlipped: blueFlipped,
-    redBuugengFlipped: redFlipped,
+    showLeftMotion: options.showLeftMotion,
+    showRightMotion: options.showRightMotion,
+    leftBuugengFlipped: leftFlipped,
+    rightBuugengFlipped: rightFlipped,
   });
 
   const isMotionSolo =
-    (options.showBlueMotion === true && options.showRedMotion === false) ||
-    (options.showRedMotion === true && options.showBlueMotion === false);
+    (options.showLeftMotion === true && options.showRightMotion === false) ||
+    (options.showRightMotion === true && options.showLeftMotion === false);
   const suppressOverlays = isHandPath || isSoloView || isMotionSolo;
 
   const renderOptions: LayerRenderOptions = {
@@ -294,12 +294,12 @@ export async function renderCell(
     showNonRadialPoints: options.showNonRadialPoints ?? true,
     showGrid: options.showGrid ?? true,
     handPointVisibility: options.handPointVisibility ?? "all",
-    bluePropType: effectiveBlueProp,
-    redPropType: effectiveRedProp,
-    blueBuugengFlipped: blueFlipped,
-    redBuugengFlipped: redFlipped,
-    showBlueMotion: options.showBlueMotion,
-    showRedMotion: options.showRedMotion,
+    leftPropType: effectiveLeftProp,
+    rightPropType: effectiveRightProp,
+    leftBuugengFlipped: leftFlipped,
+    rightBuugengFlipped: rightFlipped,
+    showLeftMotion: options.showLeftMotion,
+    showRightMotion: options.showRightMotion,
     showTnD: suppressOverlays ? false : (options.showTnD ?? false),
     showElemental: suppressOverlays ? false : (options.showElemental ?? false),
     showPositions: suppressOverlays ? false : (options.showPositions ?? false),

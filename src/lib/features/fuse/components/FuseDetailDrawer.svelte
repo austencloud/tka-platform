@@ -10,7 +10,7 @@
   let {
     isOpen = $bindable(false),
     kind = "help",
-    side = "blue",
+    side = "left",
   }: {
     isOpen?: boolean;
     kind?: "help" | "notation";
@@ -19,15 +19,15 @@
 
   const { state: fuseState } = getFuseContext();
   const settings = getSettings();
-  const source = $derived(side === "blue" ? fuseState.blue : fuseState.red);
-  const label = $derived(side === "blue" ? "Blue" : "Red");
+  const source = $derived(side === "left" ? fuseState.left : fuseState.right);
+  const label = $derived(side === "left" ? "Left" : "Right");
   const title = $derived(
     kind === "help" ? "How Fuse works" : `${label} notation`
   );
   const viewMode = $derived<BrowseViewMode>({
     subject: "props",
     granularity: "solo",
-    color: side,
+    hand: side,
   });
   const cardColumns = $derived(
     (source.sequence?.steps.length ?? 0) <= 4 ? 2 : 4
@@ -102,8 +102,8 @@
           showNotes={false}
           showLoopGlyph={false}
           darkMode={true}
-          bluePropType={settings.bluePropType}
-          redPropType={settings.redPropType}
+          leftPropType={settings.leftPropType}
+          rightPropType={settings.rightPropType}
           hideSoloHeader={true}
           fitWidth={true}
         />

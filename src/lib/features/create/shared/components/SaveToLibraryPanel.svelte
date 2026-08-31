@@ -187,8 +187,8 @@
               }}
               darkMode={s.darkMode}
               forceContain={true}
-              bluePropType={appSettings.bluePropType}
-              redPropType={appSettings.redPropType}
+              leftPropType={appSettings.leftPropType}
+              rightPropType={appSettings.rightPropType}
               showWord={s.isSolo ? false : compositionManager.addWord}
               showStepNumbers={compositionManager.addStepNumbers}
               showDifficultyLevel={compositionManager.addDifficultyLevel}
@@ -200,11 +200,11 @@
               columnCount={compositionManager.getColumnCountForStepCount(
                 s.sequence.steps?.length ?? 0
               )}
-              browseViewMode={s.isSolo && s.soloColor
+              browseViewMode={s.isSolo && s.soloHand
                 ? {
                     subject: "props",
                     granularity: "solo",
-                    color: s.soloColor,
+                    hand: s.soloHand,
                   }
                 : undefined}
             />

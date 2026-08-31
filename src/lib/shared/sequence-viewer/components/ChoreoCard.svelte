@@ -31,6 +31,7 @@
   import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
   import { getScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
   import { CANONICAL_CARD_VISIBILITY } from "$lib/shared/render/services/cloud-cell-key";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -90,8 +91,8 @@
     darkMode?: boolean;
     customNotesText?: string;
     // Prop overrides
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
     catDogModeEnabled?: boolean;
     // Step highlighting (for animation sync)
     highlightedStepIndex?: number | null; // 0-indexed step to highlight (null = none)
@@ -145,8 +146,8 @@
     browseViewMode,
     darkMode = false,
     customNotesText = "Created using Flow Arts Composer",
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     catDogModeEnabled = false,
     highlightedStepIndex = null,
     showHighlight = false,
@@ -259,13 +260,13 @@
       hideSoloHeader,
       showLoopGlyph,
       showNotes,
-      showBlueMotion: viewerVisibility?.blueMotion ?? true,
-      showRedMotion: viewerVisibility?.redMotion ?? true,
+      showLeftMotion: viewerVisibility?.leftMotion ?? true,
+      showRightMotion: viewerVisibility?.rightMotion ?? true,
     }),
     vm
   );
-  const showBlueMotion = $derived(displayState.showBlueMotion);
-  const showRedMotion = $derived(displayState.showRedMotion);
+  const showLeftMotion = $derived(displayState.showLeftMotion);
+  const showRightMotion = $derived(displayState.showRightMotion);
   const allMotionsVisible = $derived(displayState.allMotionsVisible);
   const showTnD = $derived(displayState.showTnD);
   const showElemental = $derived(displayState.showElemental);
@@ -278,7 +279,7 @@
   const isBrowseSoloMode = $derived(displayState.isBrowseSoloMode);
   const isMotionSoloMode = $derived(displayState.isMotionSoloMode);
   const isSoloMode = $derived(displayState.isSoloMode);
-  const soloColor = $derived(displayState.soloColor);
+  const soloHand = $derived(displayState.soloHand);
   const isHandsMode = $derived(displayState.isHandsMode);
   const difficultyLevel = $derived(displayState.difficultyLevel);
   const currentLevelStyle = $derived(displayState.currentLevelStyle);
@@ -366,8 +367,8 @@
       showQRCode: effShowQRCode,
       darkMode,
       isAuthenticated,
-      bluePropType,
-      redPropType,
+      leftPropType,
+      rightPropType,
       browseViewMode,
     }),
     { getGenerator: getQRCodeGenerator }
@@ -403,9 +404,9 @@
     forceContain,
     // These feed ONLY the mandala placement (which color fills the info cell).
     // In browse-solo the card shows a single prop, so the mandala must match
-    // that color — otherwise it fills with both. Motion-solo/normal unchanged.
-    showBlueMotion: isBrowseSoloMode ? soloColor === "blue" : showBlueMotion,
-    showRedMotion: isBrowseSoloMode ? soloColor === "red" : showRedMotion,
+    // that hand — otherwise it fills with both. Motion-solo/normal unchanged.
+    showLeftMotion: isBrowseSoloMode ? soloHand === "left" : showLeftMotion,
+    showRightMotion: isBrowseSoloMode ? soloHand === "right" : showRightMotion,
     startPositionLayoutOverride,
     compositionVersion,
     cellWidth: sizingState.cellWidth,
@@ -506,10 +507,10 @@
   // it is a global handedness preference, not a per-host override. Hosts that
   // override bluePropType/redPropType are unaffected — chirality only applies
   // to buugeng-family props.
-  const blueBuugengFlipped = $derived(
-    getSettings().blueBuugengFlipped ?? false
+  const leftBuugengFlipped = $derived(
+    getSettings().leftBuugengFlipped ?? false
   );
-  const redBuugengFlipped = $derived(getSettings().redBuugengFlipped ?? false);
+  const rightBuugengFlipped = $derived(getSettings().rightBuugengFlipped ?? false);
 
   /**
    * Build render options from current component state (delegates to extracted pure function)
@@ -517,11 +518,11 @@
   function buildRenderOptionsFn(): PreviewCellRenderOptions {
     const baseOptions = buildRenderOptions({
       cellSize: CELL_SIZE,
-      bluePropType,
-      redPropType,
+      leftPropType,
+      rightPropType,
       catDogModeEnabled,
-      blueBuugengFlipped,
-      redBuugengFlipped,
+      leftBuugengFlipped,
+      rightBuugengFlipped,
       showNonRadial,
       showGrid,
       handPointVis,
@@ -533,8 +534,8 @@
       isSoloMode,
       handPathMode,
       browseViewMode,
-      showBlueMotion,
-      showRedMotion,
+      showLeftMotion,
+      showRightMotion,
     });
 
     return {
@@ -544,8 +545,8 @@
       // verifies cloud assets; retain the sequence's participating hands.
       ...(cloudProbeEnabled && {
         ...CANONICAL_CARD_VISIBILITY,
-        showBlueMotion,
-        showRedMotion,
+        showLeftMotion,
+        showRightMotion,
       }),
       // Scan cards keep numbers as the existing HTML overlay. Re-compositing
       // every cached blob through canvas made a warm phone pay a full
@@ -565,8 +566,8 @@
     () => ({
       sequence,
       renderOptions: buildRenderOptionsFn(),
-      bluePropType,
-      redPropType,
+      leftPropType,
+      rightPropType,
       browseViewMode,
       showStepNumbers,
       includeStartPosition,
@@ -592,12 +593,12 @@
   renderLifecycle = createChoreoCardRenderLifecycle(
     () => ({
       sequence,
-      bluePropType,
-      redPropType,
+      leftPropType,
+      rightPropType,
       browseViewMode,
       catDogModeEnabled,
-      blueBuugengFlipped,
-      redBuugengFlipped,
+      leftBuugengFlipped,
+      rightBuugengFlipped,
       showStepNumbers,
       showNonRadial,
       handPointVis,
@@ -607,8 +608,8 @@
       showElemental,
       showPositions,
       showGrid,
-      showBlueMotion,
-      showRedMotion,
+      showLeftMotion,
+      showRightMotion,
       includeStartPosition,
       startPositionLayout,
       effectiveColumns,
@@ -634,7 +635,7 @@
     if (!isSoloMode || !sequence.steps) return String(stepIndex + 1);
     const step = sequence.steps[stepIndex];
     if (!step?.motions) return String(stepIndex + 1);
-    const motion = soloColor === "blue" ? step.motions.blue : step.motions.red;
+    const motion = soloHand === "left" ? step.motions.left : step.motions.right;
     if (!motion?.endLocation) return String(stepIndex + 1);
     // Capitalize location abbreviation: "n" → "N", "ne" → "NE"
     return motion.endLocation.toUpperCase();
@@ -642,7 +643,7 @@
 
   /**
    * Look up the visible motion for a given cell in either solo mode. Motion-solo
-   * keeps the toggled-on color; browse-solo keeps browseViewMode's color. Both
+   * keeps the toggled-on hand; browse-solo keeps browseViewMode's hand. Both
    * render the same start→end + turns annotation. cellIndex === -1 is the start
    * position. Returns undefined when not solo or data is missing.
    */
@@ -651,23 +652,25 @@
   ):
     | import("$lib/shared/pictograph/shared/domain/models/motion-data").MotionData
     | undefined {
-    const color = isMotionSoloMode
-      ? showBlueMotion
-        ? "blue"
-        : "red"
+    const hand = isMotionSoloMode
+      ? showLeftMotion
+        ? HandSide.LEFT
+        : HandSide.RIGHT
       : isBrowseSoloMode
-        ? soloColor
+        ? soloHand === "left"
+          ? HandSide.LEFT
+          : HandSide.RIGHT
         : undefined;
-    if (!color) return undefined;
+    if (!hand) return undefined;
     if (cellIndex === -1) {
       const startData =
         sequence.startPosition ??
         (sequence.steps?.[0]
           ? createStartPositionFromBeatStart(sequence.steps[0])
           : undefined);
-      return startData?.motions?.[color] ?? undefined;
+      return startData?.motions?.[hand] ?? undefined;
     }
-    return sequence.steps?.[cellIndex]?.motions?.[color] ?? undefined;
+    return sequence.steps?.[cellIndex]?.motions?.[hand] ?? undefined;
   }
 
   // Fallback context menu (when no onContextMenu prop is wired): additive
@@ -829,7 +832,7 @@
         {sequence}
         {showHeader}
         {isBrowseSoloMode}
-        {soloColor}
+        {soloHand}
         {browseViewMode}
         showDifficultyLevel={effectiveShowDifficulty}
         {difficultyLevel}
@@ -873,8 +876,8 @@
         {flipDuration}
         {cellWidth}
         {activeDarkMode}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         {onStepClick}
         {onQrPlayClick}
         {clickableStart}
@@ -886,7 +889,7 @@
         transitionMode={crossfader.transitionMode}
         {isBrowseSoloMode}
         {isMotionSoloMode}
-        {soloColor}
+        {soloHand}
         {stepNumFontSize}
         {formatDuration}
         {getMotionSoloMotion}
