@@ -73,6 +73,11 @@ fails or integration is genuinely unsafe, and report the exact blocker plus
 the evidence. Feedback that requires another edit starts a new task worktree
 from the newly integrated `main`.
 
+Never use the retired server-side batch `--apply`/`--prune` workflow. It can
+advance remote `main` without updating the local checkout that serves port 5173
+and can leave completed worktrees behind. `wt:status` and `wt:automerge` are
+read-only diagnostics; `wt:finish` is the only mutating lifecycle command.
+
 Never delete a dirty worktree until every uncommitted path is proven landed,
 intentionally discarded by Austen, or preserved elsewhere.
 
