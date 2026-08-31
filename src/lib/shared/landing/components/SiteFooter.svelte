@@ -104,8 +104,10 @@
     >
       {#if variant !== "sitemap"}
         <div class="brand">
-          <a href="/" class="wordmark" aria-label="The Kinetic Alphabet, Home"
-            >TKA</a
+          <a
+            href="/"
+            class="wordmark"
+            aria-label="TKA, The Kinetic Alphabet, Home">TKA</a
           >
           <p class="tagline">Notation for flow arts.</p>
           {#if variant === "full"}

@@ -1984,3 +1984,42 @@ describe("media composition presets: private reusable layouts", () => {
     await assertFails(getDoc(doc(signedOut, presetPath(FULL_UID))));
   });
 });
+
+describe("software history submissions", () => {
+  const submission = {
+    name: "SpiroAnim",
+    url: "https://example.com/spiroanim",
+    notes: "Early flow arts software",
+    source: "roots-software",
+  };
+
+  it("denies direct browser writes for every visitor role", async () => {
+    const databases = [
+      testEnv.unauthenticatedContext().firestore(SDK_SETTINGS),
+      anonCtx().firestore(SDK_SETTINGS),
+      fullCtx().firestore(SDK_SETTINGS),
+      adminCtx().firestore(SDK_SETTINGS),
+    ];
+
+    for (const db of databases) {
+      await assertFails(
+        addDoc(collection(db, "software_submissions"), submission)
+      );
+    }
+  });
+
+  it("keeps server-created submissions private to admins", async () => {
+    const path = "software_submissions/submission-1";
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), path), submission);
+    });
+
+    await assertSucceeds(getDoc(doc(adminCtx().firestore(SDK_SETTINGS), path)));
+    await assertFails(
+      getDoc(
+        doc(testEnv.unauthenticatedContext().firestore(SDK_SETTINGS), path)
+      )
+    );
+    await assertFails(getDoc(doc(fullCtx().firestore(SDK_SETTINGS), path)));
+  });
+});
