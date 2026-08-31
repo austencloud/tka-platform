@@ -732,7 +732,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   step: {
     definition:
-      "The fundamental unit of a sequence: one step = one letter = one pictograph. A sequence of N letters has N steps of motion plus a start position (step 0). Each step shows what both hands and props do during that moment, regardless of its duration.",
+      "A pictograph in the context of a sequence. A sequence of N letters has N steps of motion plus a start position (step 0). Each step shows what both hands and props do, while its duration is measured separately in musical beats.",
     examples: [
       "A 4-letter word is 4 steps long",
       "Step 0 is the start position (no motion yet)",
@@ -740,6 +740,16 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     ],
     relatedTerms: ["letter", "pictograph", "sequence"],
     category: "general",
+  },
+  beat: {
+    definition:
+      "A unit of musical timing. A beat can be subdivided, and a sequence step may last for one or more beats. Beat does not mean pictograph or step.",
+    examples: [
+      "A half beat is a subdivision of one beat",
+      "A held step can last for two beats",
+    ],
+    relatedTerms: ["step", "sequence", "timing"],
+    category: "notation",
   },
   "type-1": {
     definition:
@@ -868,7 +878,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   pictograph: {
     definition:
-      "A visual representation of one step of motion in TKA. Shows two props, arrows indicating motion, and optional glyphs for letter name, timing, positions, and reversals.",
+      "A visual TKA diagram showing two props, arrows indicating motion, and optional glyphs for letter name, timing, positions, and reversals. A pictograph can stand alone; when it is placed in a sequence, it functions as a step.",
     examples: [
       "Each letter has multiple pictograph variations",
       "Pictographs can be sequenced into choreo cards",

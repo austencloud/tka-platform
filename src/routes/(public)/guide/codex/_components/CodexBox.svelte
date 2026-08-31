@@ -170,6 +170,6 @@
 
   /* Collapse the shared wall between adjacent pictograph borders. */
   .box-cells :global(.codex-cell + .codex-cell) {
-    margin-left: -1px;
+    margin-left: var(--codex-cell-overlap, -1px);
   }
 </style>

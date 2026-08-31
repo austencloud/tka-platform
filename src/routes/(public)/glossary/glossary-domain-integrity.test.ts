@@ -43,6 +43,15 @@ describe("glossary domain integrity", () => {
     expect(GLOSSARY["negative-space"]?.definition).toContain("body turns");
   });
 
+  it("keeps pictographs, sequence steps, and musical beats distinct", () => {
+    expect(resolveTermAlias("beat")).toBe("beat");
+    expect(GLOSSARY.beat?.definition).toContain("musical timing");
+    expect(GLOSSARY.step?.definition).toContain(
+      "pictograph in the context of a sequence"
+    );
+    expect(GLOSSARY.pictograph?.definition).toContain("can stand alone");
+  });
+
   it("keeps individual letters out of the glossary taxonomy", () => {
     const letterTypes = Object.keys(GLOSSARY).filter(
       (term) => GLOSSARY[term]?.category === "letterType"
