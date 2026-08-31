@@ -31,6 +31,7 @@ import {
 export const FILM_DIRECTOR_SCHEMA_VERSION = 1 as const;
 export const FILM_DIRECTOR_SCHEMA_VERSION_2 = 2 as const;
 export const FILM_DIRECTOR_SCHEMA_VERSION_3 = 3 as const;
+export const FILM_DIRECTOR_SCHEMA_VERSION_4 = 4 as const;
 
 export const FILM_DIRECTOR_DIRECTIVE_AXES = [
   "avatarId",
@@ -123,6 +124,43 @@ export const DIRECTOR_EASINGS = [
 ] as const;
 
 const finiteNumber = z.number().finite();
+
+/**
+ * Every duration in this schema has a `durationBeats` twin, because a director
+ * counts music rather than reading a stopwatch. Stating both units on one
+ * field is a contradiction, not a preference — the converter would have to
+ * pick a winner, and either choice silently discards what the director wrote.
+ *
+ * Two-layer validity contract for every `durationBeats`/`atBeats` field: this
+ * schema only bounds beats SYNTACTICALLY (e.g. scene durationBeats is
+ * positive and capped at 240, transition durationBeats at 32) — those caps
+ * are generous enough to admit values that convert to an out-of-range
+ * seconds figure at a slow bpm. The REAL bound (converted seconds within the
+ * scene's 1-60s window, the transition's 0-3s window) is enforced at resolve
+ * time by `convertSceneBeatTimes` (director-beat-times.ts), once the scene's
+ * bpm is known. `schema.parse` succeeding is therefore necessary but not
+ * sufficient for a beats-stated field to be valid — resolution can still
+ * reject it.
+ *
+ * Named `atMostOneTimeUnit` (not `exactlyOne`) because both fields are
+ * optional-with-a-computed-default: stating neither is fine (something else
+ * supplies the duration), only stating BOTH is the contradiction. This is the
+ * opposite of `cameraKeyframeSchema`'s inline `atSeconds`/`atBeats` check
+ * further below, which requires EXACTLY one — a keyframe has no default
+ * clock, so stating neither is just as invalid as stating both.
+ */
+const atMostOneTimeUnit = (
+  value: { durationSeconds?: number; durationBeats?: number },
+  ctx: z.RefinementCtx
+) => {
+  if (value.durationSeconds !== undefined && value.durationBeats !== undefined) {
+    ctx.addIssue({
+      code: "custom",
+      message: 'State exactly one of "durationSeconds" or "durationBeats".',
+    });
+  }
+};
+
 const vector3Schema = z.tuple([finiteNumber, finiteNumber, finiteNumber]);
 const position2Schema = z.object({ x: finiteNumber, z: finiteNumber }).strict();
 
@@ -213,14 +251,28 @@ const cameraTargetSchema = z.discriminatedUnion("kind", [
 
 const cameraKeyframeSchema = z
   .object({
-    atSeconds: finiteNumber.nonnegative(),
+    // Unlike every `durationSeconds`/`durationBeats` pair guarded by
+    // `atMostOneTimeUnit` above, a keyframe has no computed-default clock —
+    // stating NEITHER unit is just as invalid as stating both, checked
+    // inline just below rather than reusing that helper.
+    atSeconds: finiteNumber.nonnegative().optional(),
+    atBeats: finiteNumber.nonnegative().optional(),
     position: vector3Schema,
     target: cameraTargetSchema.optional(),
     fovDeg: finiteNumber.min(20).max(100).optional(),
     interpolation: z.enum(DIRECTOR_INTERPOLATIONS).optional(),
     easing: z.enum(DIRECTOR_EASINGS).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((frame, ctx) => {
+    if ((frame.atSeconds !== undefined) === (frame.atBeats !== undefined)) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          'A camera keyframe states exactly one of "atSeconds" or "atBeats".',
+      });
+    }
+  });
 
 const positionRefSchema = z.union(
   [
@@ -406,9 +458,11 @@ const blockingMoveSchema = z
       ])
       .optional(),
     durationSeconds: finiteNumber.positive().optional(),
+    durationBeats: finiteNumber.positive().optional(),
     easing: z.enum(DIRECTOR_EASINGS).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine(atMostOneTimeUnit);
 
 const blockingSchema = z.array(blockingMoveSchema).min(1).max(16);
 
@@ -421,6 +475,7 @@ const sceneBlockingSchema = z
   .object({
     endFormation: formationIdSchema,
     durationSeconds: finiteNumber.positive().optional(),
+    durationBeats: finiteNumber.positive().optional(),
     easing: z.enum(DIRECTOR_EASINGS).optional(),
     facing: z
       .union([
@@ -429,7 +484,8 @@ const sceneBlockingSchema = z
       ])
       .optional(),
   })
-  .strict();
+  .strict()
+  .superRefine(atMostOneTimeUnit);
 
 const performerSchema = z
   .object({
@@ -539,9 +595,11 @@ const cameraSchema = z
               ])
               .optional(),
             durationSeconds: finiteNumber.positive().optional(),
+            durationBeats: finiteNumber.positive().optional(),
             easing: z.enum(DIRECTOR_EASINGS).optional(),
           })
           .strict()
+          .superRefine(atMostOneTimeUnit)
       )
       .min(1)
       .max(16)
@@ -590,8 +648,14 @@ const transitionSchema = z
   .object({
     kind: z.enum(["cut", "environment-dissolve", "fade-through-black"]),
     durationSeconds: finiteNumber.min(0).max(3).optional(),
+    // max 32 beats is a syntactic cap, not the real one — see the two-layer
+    // contract note on atMostOneTimeUnit above. At a slow bpm, 32 beats can
+    // still convert to more than the 3-second ceiling this transition
+    // actually enforces; convertSceneBeatTimes catches that at resolve time.
+    durationBeats: finiteNumber.min(0).max(32).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine(atMostOneTimeUnit);
 
 const sceneSchema = z
   .object({
@@ -599,6 +663,11 @@ const sceneSchema = z
     title: z.string().min(1),
     intent: z.string().min(1).optional(),
     durationSeconds: finiteNumber.min(1).max(60).optional(),
+    // max 240 beats is a syntactic cap, not the real one — see the
+    // two-layer contract note on atMostOneTimeUnit above. At a slow bpm,
+    // 240 beats can still convert to more than the scene's 60-second
+    // ceiling; convertSceneBeatTimes catches that at resolve time.
+    durationBeats: finiteNumber.positive().max(240).optional(),
     transition: transitionSchema.optional(),
     location: locationSchema.optional(),
     performance: performanceSchema.optional(),
@@ -616,14 +685,24 @@ const sceneSchema = z
       .optional(),
     camera: cameraSchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine(atMostOneTimeUnit);
 
 const filmDirectorInputSchema = z
   .object({
+    // Declarative provenance, not a grammar gate. `version` records which
+    // revision of this document a director authored against — it does NOT
+    // restrict which grammar that document may use. Newer grammar (beats as
+    // a time unit, combined pick+not) is accepted at ANY stated version,
+    // exactly as v2/v3 grammar was: a v1-labeled film can freely use v4-era
+    // syntax. Don't add version-conditional parsing here; bump the literal
+    // set when a new number ships and let the grammar itself decide what's
+    // legal.
     version: z.union([
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION),
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION_2),
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION_3),
+      z.literal(FILM_DIRECTOR_SCHEMA_VERSION_4),
     ]),
     id: z.string().min(1),
     title: z.string().min(1),
@@ -749,7 +828,8 @@ export interface ResolvedFilmDirectorSpec {
   version:
     | typeof FILM_DIRECTOR_SCHEMA_VERSION
     | typeof FILM_DIRECTOR_SCHEMA_VERSION_2
-    | typeof FILM_DIRECTOR_SCHEMA_VERSION_3;
+    | typeof FILM_DIRECTOR_SCHEMA_VERSION_3
+    | typeof FILM_DIRECTOR_SCHEMA_VERSION_4;
   id: string;
   title: string;
   brief: string | null;
