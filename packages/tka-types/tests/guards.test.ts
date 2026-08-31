@@ -11,7 +11,7 @@ import {
   MotionType,
   Orientation,
   Plane,
-  PropColor,
+  HandSide,
   RotationDirection,
 } from "../src/index.js";
 
@@ -25,7 +25,7 @@ function makeBlue() {
     endOrientation: Orientation.out,
     turns: 0,
     plane: Plane.wall,
-    color: PropColor.blue,
+    hand: HandSide.LEFT,
   });
 }
 
@@ -39,7 +39,7 @@ function makeRed() {
     endOrientation: Orientation.out,
     turns: 0,
     plane: Plane.wall,
-    color: PropColor.red,
+    hand: HandSide.RIGHT,
   });
 }
 
@@ -58,7 +58,7 @@ describe("isMotion", () => {
       endOrientation: Orientation.out,
       turns: "fl",
       plane: Plane.wall,
-      color: PropColor.blue,
+      hand: HandSide.LEFT,
     });
     expect(isMotion(float)).toBe(true);
   });
@@ -97,7 +97,7 @@ describe("isStep", () => {
       letter: Letter.A,
       startPosition: GridPosition.alpha1,
       endPosition: GridPosition.alpha3,
-      motions: { blue: makeBlue(), red: makeRed() },
+      motions: { left: makeBlue(), right: makeRed() },
       stepNumber: 1,
       duration: 1,
     });
@@ -109,20 +109,20 @@ describe("isStep", () => {
     expect(isStep(s)).toBe(true);
   });
 
-  it("rejects a Step whose motions.blue.color is 'red'", () => {
+  it("rejects a Step whose motions.left.hand is 'right'", () => {
     const s = createStep({
       id: "step-1-A",
       letter: Letter.A,
       startPosition: GridPosition.alpha1,
       endPosition: GridPosition.alpha3,
-      motions: { blue: makeBlue(), red: makeRed() },
+      motions: { left: makeBlue(), right: makeRed() },
       stepNumber: 1,
       duration: 1,
     });
     // Tamper with a clone (guards operate on untrusted input)
     const tampered = {
       ...s,
-      motions: { blue: { ...s.motions.blue, color: "red" }, red: s.motions.red },
+      motions: { left: { ...s.motions.left, hand: "right" }, right: s.motions.right },
     };
     expect(isStep(tampered)).toBe(false);
   });
@@ -137,7 +137,7 @@ describe("isStep", () => {
       letter: "A",
       startPosition: "alpha1",
       endPosition: "alpha3",
-      motions: { blue: makeBlue(), red: makeRed() },
+      motions: { left: makeBlue(), right: makeRed() },
       stepNumber: 1,
       duration: 1,
     };
@@ -150,7 +150,7 @@ describe("isStep", () => {
       letter: "A",
       startPosition: "alpha1",
       endPosition: "alpha3",
-      motions: { blue: makeBlue(), red: makeRed() },
+      motions: { left: makeBlue(), right: makeRed() },
       stepNumber: -1,
       duration: 1,
     };
@@ -163,7 +163,7 @@ describe("isStep", () => {
       letter: "A",
       startPosition: "alpha1",
       endPosition: "alpha3",
-      motions: { blue: makeBlue(), red: makeRed() },
+      motions: { left: makeBlue(), right: makeRed() },
       stepNumber: 1,
       duration: 1,
       gridMode: "hex",
@@ -171,13 +171,13 @@ describe("isStep", () => {
     expect(isStep(candidate)).toBe(false);
   });
 
-  it("rejects a Step whose motions.red is not a Motion", () => {
+  it("rejects a Step whose motions.right is not a Motion", () => {
     const candidate = {
       id: "x",
       letter: "A",
       startPosition: "alpha1",
       endPosition: "alpha3",
-      motions: { blue: makeBlue(), red: { color: "red" } },
+      motions: { left: makeBlue(), right: { hand: "right" } },
       stepNumber: 1,
       duration: 1,
     };
@@ -190,7 +190,7 @@ describe("isStep", () => {
       letter: "A",
       startPosition: null,
       endPosition: "alpha3",
-      motions: { blue: makeBlue(), red: makeRed() },
+      motions: { left: makeBlue(), right: makeRed() },
       stepNumber: 1,
       duration: 1,
     };

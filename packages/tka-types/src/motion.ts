@@ -14,7 +14,7 @@ import type { RotationDirection } from "./rotation-direction.js";
 import type { Orientation } from "./orientation.js";
 import type { GridLocation } from "./grid.js";
 import type { Plane } from "./plane.js";
-import type { PropColor } from "./prop-color.js";
+import type { HandSide } from "./hand-side.js";
 
 export interface Motion {
   readonly motionType: MotionType;
@@ -36,11 +36,10 @@ export interface Motion {
    */
   readonly plane?: Plane;
   /**
-   * Prop color. Optional: Motions stored under `step.motions.blue` are
-   * definitionally blue; `color` is redundant there. Kept for back-compat
-   * with code that passes flat Motion objects across boundaries.
+   * Performer-relative hand identity. Optional when the motion is already
+   * stored under `step.motions.left` or `step.motions.right`.
    */
-  readonly color?: PropColor;
+  readonly hand?: HandSide;
   /**
    * Original motion type before float conversion. Present only when
    * `motionType === "float"` and the source was a shift. Consumers like

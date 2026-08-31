@@ -17,7 +17,7 @@ import { RotationDirection } from "./rotation-direction.js";
 import { Orientation } from "./orientation.js";
 import { GridLocation, GridMode, GridPosition } from "./grid.js";
 import { Plane } from "./plane.js";
-import { PropColor } from "./prop-color.js";
+import { HandSide } from "./hand-side.js";
 
 // Reusable enum-value lookups for fast runtime validation.
 const MOTION_TYPE_VALUES = new Set<string>(Object.values(MotionType));
@@ -27,7 +27,7 @@ const GRID_LOCATION_VALUES = new Set<string>(Object.values(GridLocation));
 const GRID_MODE_VALUES = new Set<string>(Object.values(GridMode));
 const GRID_POSITION_VALUES = new Set<string>(Object.values(GridPosition));
 const PLANE_VALUES = new Set<string>(Object.values(Plane));
-const PROP_COLOR_VALUES = new Set<string>(Object.values(PropColor));
+const HAND_SIDE_VALUES = new Set<string>(Object.values(HandSide));
 
 function assertMember(
   value: unknown,
@@ -64,8 +64,8 @@ function assertTurns(value: unknown): void {
  *   - `plane` defaults to `Plane.wall` when not supplied.
  *
  * Optional:
- *   - `color` may be omitted; a Motion stored under `step.motions.blue` is
- *     definitionally blue (and same for red), so color is redundant there.
+ *   - `hand` may be omitted; a Motion stored under `step.motions.left` is
+ *     definitionally left (and same for right), so hand is redundant there.
  *
  * Throws TypeError on invalid enum membership, on missing required fields,
  * or on invalid `turns` values.
@@ -84,7 +84,7 @@ export function createMotion(input: Motion): Motion {
   assertTurns(input.turns);
   const plane: Plane = input.plane ?? Plane.wall;
   assertMember(plane, PLANE_VALUES, "plane");
-  assertOptionalMember(input.color, PROP_COLOR_VALUES, "color");
+  assertOptionalMember(input.hand, HAND_SIDE_VALUES, "hand");
   assertOptionalMember(
     input.prefloatMotionType,
     MOTION_TYPE_VALUES,
@@ -105,7 +105,7 @@ export function createMotion(input: Motion): Motion {
     endOrientation: input.endOrientation,
     turns: input.turns,
     plane,
-    ...(input.color !== undefined && { color: input.color }),
+    ...(input.hand !== undefined && { hand: input.hand }),
     ...(input.prefloatMotionType !== undefined && {
       prefloatMotionType: input.prefloatMotionType,
     }),
@@ -120,25 +120,25 @@ export function updateMotion(base: Motion, changes: Partial<Motion>): Motion {
   return createMotion({ ...base, ...changes });
 }
 
-function freezeStepMotions(blue: Motion, red: Motion): StepMotions {
-  if (!Object.isFrozen(blue) || !Object.isFrozen(red)) {
+function freezeStepMotions(left: Motion, right: Motion): StepMotions {
+  if (!Object.isFrozen(left) || !Object.isFrozen(right)) {
     throw new TypeError(
-      "Step.motions.blue and Step.motions.red must be produced via createMotion (frozen)"
+      "Step.motions.left and Step.motions.right must be produced via createMotion (frozen)"
     );
   }
-  // `color` is optional on Motion. When present it must match the channel;
-  // when absent, the channel itself ("blue"/"red") is definitional.
-  if (blue.color !== undefined && blue.color !== "blue") {
+  // `hand` is optional on Motion. When present it must match the channel;
+  // when absent, the channel itself ("left"/"right") is definitional.
+  if (left.hand !== undefined && left.hand !== "left") {
     throw new TypeError(
-      `Step.motions.blue.color must be "blue" or undefined, got ${JSON.stringify(blue.color)}`
+      `Step.motions.left.hand must be "left" or undefined, got ${JSON.stringify(left.hand)}`
     );
   }
-  if (red.color !== undefined && red.color !== "red") {
+  if (right.hand !== undefined && right.hand !== "right") {
     throw new TypeError(
-      `Step.motions.red.color must be "red" or undefined, got ${JSON.stringify(red.color)}`
+      `Step.motions.right.hand must be "right" or undefined, got ${JSON.stringify(right.hand)}`
     );
   }
-  return Object.freeze({ blue, red });
+  return Object.freeze({ left, right });
 }
 
 function validateStepScalars(input: Step): void {
@@ -211,7 +211,7 @@ export function createStep(input: CreateStepInput): Step {
     duration: input.duration ?? 1,
   };
   validateStepScalars(populated);
-  const motions = freezeStepMotions(populated.motions.blue, populated.motions.red);
+  const motions = freezeStepMotions(populated.motions.left, populated.motions.right);
   const frozen: Step = {
     id: populated.id,
     letter: populated.letter,
@@ -243,7 +243,7 @@ export function createStartStep(pos: GridPosition): Step {
     endOrientation: Orientation.in,
     turns: 0,
     plane: Plane.wall,
-    color: PropColor.blue,
+    hand: HandSide.LEFT,
   });
   const staticRed = createMotion({
     motionType: MotionType.static,
@@ -254,14 +254,14 @@ export function createStartStep(pos: GridPosition): Step {
     endOrientation: Orientation.in,
     turns: 0,
     plane: Plane.wall,
-    color: PropColor.red,
+    hand: HandSide.RIGHT,
   });
   return createStep({
     id: `step-0-${pos}`,
     letter: null,
     startPosition: pos,
     endPosition: pos,
-    motions: { blue: staticBlue, red: staticRed },
+    motions: { left: staticBlue, right: staticRed },
     stepNumber: 0,
     duration: 1,
   });

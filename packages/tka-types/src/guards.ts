@@ -16,7 +16,7 @@ import { RotationDirection } from "./rotation-direction.js";
 import { Orientation } from "./orientation.js";
 import { GridLocation, GridMode, GridPosition } from "./grid.js";
 import { Plane } from "./plane.js";
-import { PropColor } from "./prop-color.js";
+import { HandSide } from "./hand-side.js";
 
 const MOTION_TYPE_VALUES = new Set<string>(Object.values(MotionType));
 const ROTATION_DIRECTION_VALUES = new Set<string>(
@@ -27,7 +27,7 @@ const GRID_LOCATION_VALUES = new Set<string>(Object.values(GridLocation));
 const GRID_MODE_VALUES = new Set<string>(Object.values(GridMode));
 const GRID_POSITION_VALUES = new Set<string>(Object.values(GridPosition));
 const PLANE_VALUES = new Set<string>(Object.values(Plane));
-const PROP_COLOR_VALUES = new Set<string>(Object.values(PropColor));
+const HAND_SIDE_VALUES = new Set<string>(Object.values(HandSide));
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -60,8 +60,8 @@ export function isMotion(value: unknown): value is Motion {
   if (!isEnumMember(value.endOrientation, ORIENTATION_VALUES)) return false;
   if (!isTurns(value.turns)) return false;
   if (!isOptionalEnumMember(value.plane, PLANE_VALUES)) return false;
-  // `color` is optional on Motion (redundant when keyed under step.motions.blue/red).
-  if (!isOptionalEnumMember(value.color, PROP_COLOR_VALUES)) return false;
+  // `hand` is optional on Motion (redundant when keyed under step.motions.left/right).
+  if (!isOptionalEnumMember(value.hand, HAND_SIDE_VALUES)) return false;
   if (!isOptionalEnumMember(value.prefloatMotionType, MOTION_TYPE_VALUES))
     return false;
   if (
@@ -75,8 +75,8 @@ export function isMotion(value: unknown): value is Motion {
 }
 
 /**
- * `value.motions.blue` and `value.motions.red` via isMotion, including the
- * color-channel invariant (blue.color === "blue", red.color === "red").
+ * `value.motions.left` and `value.motions.right` via isMotion, including the
+ * hand-channel invariant (left.hand === "left", right.hand === "right").
  */
 export function isStep(value: unknown): value is Step {
   if (!isRecord(value)) return false;
@@ -122,12 +122,12 @@ export function isStep(value: unknown): value is Step {
 
   if (!isRecord(value.motions)) return false;
   const motions = value.motions as Record<string, unknown>;
-  if (!isMotion(motions.blue)) return false;
-  if (!isMotion(motions.red)) return false;
-  // `color` is optional; if present it must match the channel.
-  const blueColor = (motions.blue as Motion).color;
-  if (blueColor !== undefined && blueColor !== "blue") return false;
-  const redColor = (motions.red as Motion).color;
-  if (redColor !== undefined && redColor !== "red") return false;
+  if (!isMotion(motions.left)) return false;
+  if (!isMotion(motions.right)) return false;
+  // `hand` is optional; if present it must match the channel.
+  const blueColor = (motions.left as Motion).hand;
+  if (blueColor !== undefined && blueColor !== "left") return false;
+  const redColor = (motions.right as Motion).hand;
+  if (redColor !== undefined && redColor !== "right") return false;
   return true;
 }
