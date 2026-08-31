@@ -5,7 +5,7 @@ import {
 } from "$lib/shared/3d/collision/upper-body-stance-planner";
 
 describe("planUpperBodyStanceYaw", () => {
-  it("mirrors audience-grid east into performer-facing yaw", () => {
+  it("turns the upper body toward audience-grid east", () => {
     const targets = {
       blue: { x: 0.48, z: 0.3 },
       red: { x: 0.44, z: 0.3 },
@@ -13,19 +13,19 @@ describe("planUpperBodyStanceYaw", () => {
     const yaw = planUpperBodyStanceYaw(targets);
     const plan = planUpperBodyStance(targets);
 
-    expect(yaw).toBeLessThan((-45 * Math.PI) / 180);
-    expect(yaw).toBeGreaterThanOrEqual((-75 * Math.PI) / 180);
+    expect(yaw).toBeGreaterThan((45 * Math.PI) / 180);
+    expect(yaw).toBeLessThanOrEqual((75 * Math.PI) / 180);
     expect(plan.pitchRad).toBe(0);
   });
 
-  it("mirrors audience-grid west into performer-facing yaw", () => {
+  it("turns the upper body toward audience-grid west", () => {
     const yaw = planUpperBodyStanceYaw({
       blue: { x: -0.48, z: 0.3 },
       red: { x: -0.44, z: 0.3 },
     });
 
-    expect(yaw).toBeGreaterThan((45 * Math.PI) / 180);
-    expect(yaw).toBeLessThanOrEqual((75 * Math.PI) / 180);
+    expect(yaw).toBeLessThan((-45 * Math.PI) / 180);
+    expect(yaw).toBeGreaterThanOrEqual((-75 * Math.PI) / 180);
   });
 
   it("does not dilute a side stance with the wall plane depth offset", () => {
@@ -39,7 +39,7 @@ describe("planUpperBodyStanceYaw", () => {
     });
 
     expect(far).toBeCloseTo(near, 8);
-    expect(near).toBeCloseTo((-75 * Math.PI) / 180, 8);
+    expect(near).toBeCloseTo((75 * Math.PI) / 180, 8);
   });
 
   it("stays square for opposed targets", () => {

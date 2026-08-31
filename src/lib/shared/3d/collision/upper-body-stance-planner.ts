@@ -30,10 +30,9 @@ function smoothstep01(value: number): number {
  * Turn a coherent same-side pair of targets into the body's forward reach
  * corridor.
  *
- * Prop X is expressed in the audience-facing grid frame, while positive avatar
- * yaw is performer-facing. Those lateral frames are mirrored, so the stance
- * turn must use the opposite sign. Split targets intentionally cancel: when one
- * hand is east and the other is west, the avatar should stay square.
+ * Split targets intentionally cancel: when one hand is east and the other is
+ * west, the avatar stays square. A coherent pair turns toward its mean target
+ * in the scene's X/Z frame so the grips remain in front of the ribcage.
  */
 export function planUpperBodyStance(
   targets: UpperBodyStanceTargets
@@ -62,7 +61,7 @@ export function planUpperBodyStance(
   // depth into atan2 made a true E/W two-hand hold look merely diagonal and
   // left the far shoulder reaching through the neck. Lateral placement owns
   // the stance direction; coherence and lateralWeight still soften entrances.
-  const desiredYaw = -Math.sign(meanX) * MAX_STANCE_YAW_RAD;
+  const desiredYaw = Math.sign(meanX) * MAX_STANCE_YAW_RAD;
   const assistance = smoothstep01(coherence) * lateralWeight;
   return {
     yawRad:

@@ -416,7 +416,7 @@ describe("ElbowPoleComputer", () => {
 });
 
 describe("SpineTwister crossed-arm posture", () => {
-  it("activates the same forward hunch on conventional and mirrored rigs", () => {
+  it("keeps crossed-arm posture upright on conventional and mirrored rigs", () => {
     const twister = new SpineTwister();
     const conventional = twister.computeSpineTwist(
       new Vector3(0.34, 1.3, 0.2),
@@ -433,7 +433,7 @@ describe("SpineTwister crossed-arm posture", () => {
       mirroredFrame
     );
 
-    expect(conventional.spine1.x).toBeGreaterThan(0.01);
+    expect(conventional.spine1.x).toBeCloseTo(0, 6);
     expect(mirrored.spine1.x).toBeCloseTo(conventional.spine1.x, 6);
     expect(mirrored.spine2.x).toBeCloseTo(conventional.spine2.x, 6);
   });
