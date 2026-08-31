@@ -6,6 +6,7 @@
  */
 
 import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
+import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import type { ISVGGenerator } from "$lib/shared/animation-engine/services/ISVGGenerator";
 import type { ITrailCapturer } from "$lib/shared/animation-engine/services/ITrailCapturer";
 
@@ -201,7 +202,8 @@ export interface IPropTextureLoader {
   loadPropTextures(
     bluePropType: string,
     redPropType: string,
-    darkMode?: boolean
+    darkMode?: boolean,
+    colors?: TunnelPropColorPair | null
   ): Promise<void>;
 
   /**

@@ -25,7 +25,11 @@ import {
   calculatePropCenter,
   type PropEndpointConfig,
 } from "./prop-position-calculator";
-import { tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
+import {
+  tunnelColorFromHex,
+  tunnelPropColor,
+  type TunnelPropColorPair,
+} from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 export interface LedSamplerConfig {
   canvasSize: number;
@@ -47,6 +51,7 @@ export interface LedSamplerConfig {
   /** Tunnel rainbow spectrum. When false, overlaid layers take the pattern's
    *  own colors instead of a distinct per-copy spectrum color. Default true. */
   tunnelSpectrum?: boolean;
+  tunnelPropColors?: TunnelPropColorPair | null;
 }
 
 /**
@@ -120,7 +125,9 @@ export class LedSampler {
         pattern,
         frameIndex,
         gain,
-        null,
+        config.tunnelPropColors
+          ? tunnelColorFromHex(config.tunnelPropColors.blue).rgb01
+          : null,
         count
       );
     }
@@ -135,7 +142,9 @@ export class LedSampler {
         pattern,
         frameIndex,
         gain,
-        null,
+        config.tunnelPropColors
+          ? tunnelColorFromHex(config.tunnelPropColors.red).rgb01
+          : null,
         count
       );
     }
@@ -144,7 +153,9 @@ export class LedSampler {
     // color so the copies stay distinguishable, exactly as they did in v1.
     const layers = config.additionalLayers;
     if (layers && layers.length > 0) {
-      const spectrum = config.tunnelSpectrum ?? true;
+      const spectrum =
+        (config.tunnelSpectrum ?? true) && !config.tunnelPropColors;
+      const exact = config.tunnelPropColors;
       for (
         let li = 0;
         li < layers.length && count < LED_SAMPLER_MAX_LEDS;
@@ -163,7 +174,11 @@ export class LedSampler {
             pattern,
             frameIndex,
             gain,
-            spectrum ? tunnelPropColor(propIndex, layers.length).rgb01 : null,
+            exact
+              ? tunnelColorFromHex(exact.blue).rgb01
+              : spectrum
+                ? tunnelPropColor(propIndex, layers.length).rgb01
+                : null,
             count,
             layer.opacity ?? 1
           );
@@ -180,7 +195,11 @@ export class LedSampler {
             pattern,
             frameIndex,
             gain,
-            spectrum ? tunnelPropColor(propIndex, layers.length).rgb01 : null,
+            exact
+              ? tunnelColorFromHex(exact.red).rgb01
+              : spectrum
+                ? tunnelPropColor(propIndex, layers.length).rgb01
+                : null,
             count,
             layer.opacity ?? 1
           );

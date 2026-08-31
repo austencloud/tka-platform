@@ -35,7 +35,16 @@ import {
   type TunnelPresetRecipe,
 } from "./tunnel-preset-recipe";
 import { performerRing } from "./performer-ring-model";
-import { tunnelPropColor } from "./tunnel-prop-colors";
+import {
+  activeTunnelPropColorPair,
+  DEFAULT_TUNNEL_CUSTOM_PROP_COLORS,
+  normalizeTunnelHexColor,
+  resolveTunnelPropColorState,
+  tunnelPropColor,
+  type TunnelPropColorMode,
+  type TunnelPropColorPair,
+  type TunnelPropColorState,
+} from "./tunnel-prop-colors";
 import { getBaseMotionColors } from "$lib/shared/animation-engine/services/svg-generator";
 import {
   createIndependentTunnelPerformer,
@@ -117,10 +126,48 @@ export class TunnelViewController {
    *  the grid is clutter behind a dense overlay. */
   gridVisible = $state(false);
 
-  /** Per-prop rainbow spectrum coloring. On (default) = every copy takes its own
-   *  spectrum color; off = layers inherit the base/preset colors so the Effects
-   *  panel's colors drive every prop. Persisted with the view state. */
-  spectrum = $state(true);
+  /** One explicit appearance mode plus the last authored exact pair. Keeping
+   * the pair while another mode is active lets authors compare looks without
+   * losing their values. */
+  colorMode = $state<TunnelPropColorMode>("spectrum");
+  customPropColors = $state<TunnelPropColorPair>({
+    ...DEFAULT_TUNNEL_CUSTOM_PROP_COLORS,
+  });
+
+  get colors(): TunnelPropColorState {
+    return {
+      mode: this.colorMode,
+      custom: { ...this.customPropColors },
+    };
+  }
+
+  set colors(value: TunnelPropColorState) {
+    const resolved = resolveTunnelPropColorState(value);
+    this.colorMode = resolved.mode;
+    this.customPropColors = { ...resolved.custom };
+  }
+
+  /** Compatibility for older preview/test callers. New Tunnel authoring code
+   * uses `colorMode` so Custom cannot be collapsed into a boolean. */
+  get spectrum(): boolean {
+    return this.colorMode === "spectrum";
+  }
+
+  set spectrum(value: boolean) {
+    this.colorMode = value ? "spectrum" : "hands";
+  }
+
+  exactPropColors = $derived.by(() =>
+    activeTunnelPropColorPair({
+      mode: this.colorMode,
+      custom: this.customPropColors,
+    })
+  );
+
+  setCustomPropColor(hand: "blue" | "red", value: string): void {
+    const next = normalizeTunnelHexColor(value, this.customPropColors[hand]);
+    this.customPropColors = { ...this.customPropColors, [hand]: next };
+  }
 
   /** Active rail section in the Art settings panel, persisted with the view
    *  state so the panel reopens on the section the user last used. */
@@ -154,7 +201,7 @@ export class TunnelViewController {
     this.staggerSteps = cfg.staggerSteps;
     this.speedOverrides = { ...cfg.speedOverrides };
     this.gridVisible = view.gridVisible;
-    this.spectrum = view.spectrum;
+    this.colors = view.colors;
     this.section = view.section;
     this.presetRecipe = cloneTunnelPresetRecipe(view.presetRecipe);
 
@@ -164,7 +211,7 @@ export class TunnelViewController {
         const snapshot: TunnelViewState = {
           config: this.config,
           gridVisible: this.gridVisible,
-          spectrum: this.spectrum,
+          colors: this.colors,
           section: this.section,
           presetRecipe: this.presetRecipe,
         };
@@ -457,16 +504,19 @@ export class TunnelViewController {
     const cfg = this.config;
     const layerCount = Math.max(0, imageCount(cfg) - 1);
     const handColors = getBaseMotionColors();
+    const exactColors = this.exactPropColors;
     return performerRing(cfg).map((_p, i) => ({
       arm: i,
       label: this.#layers[i]?.performerLabel ?? (i === 0 ? "You" : `Copy ${i}`),
       rate: effectiveSpeed(cfg, i),
-      blueHex:
-        i === 0 || !this.spectrum
+      blueHex: exactColors
+        ? exactColors.blue
+        : i === 0 || !this.spectrum
           ? handColors.blue
           : tunnelPropColor(i * 2, layerCount).hex,
-      redHex:
-        i === 0 || !this.spectrum
+      redHex: exactColors
+        ? exactColors.red
+        : i === 0 || !this.spectrum
           ? handColors.red
           : tunnelPropColor(i * 2 + 1, layerCount).hex,
     }));

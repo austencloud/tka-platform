@@ -62,6 +62,7 @@ export interface VideoExportOptions {
    * layer colors match the on-screen view. Omit for normal sequence export.
    */
   tunnelSpectrum?: boolean;
+  tunnelPropColors?: VideoExportOrchestratorOptions["tunnelPropColors"];
   /**
    * Per-export chrome-visibility overrides, merged over the global visibility
    * manager (does NOT mutate global state). Forwarded to the orchestrator so
@@ -178,7 +179,8 @@ export class SequenceModalExporter {
     // ensure* loads that module on demand rather than losing the export to the
     // race.
     this._videoExportOrchestrator ??=
-      tryGetVideoExportOrchestrator() ?? (await ensureVideoExportOrchestrator());
+      tryGetVideoExportOrchestrator() ??
+      (await ensureVideoExportOrchestrator());
     return this._videoExportOrchestrator;
   }
 
@@ -259,6 +261,7 @@ export class SequenceModalExporter {
           sourceSizeOverride: options.sourceSizeOverride,
           additionalLayersForBeat: options.additionalLayersForBeat,
           tunnelSpectrum: options.tunnelSpectrum,
+          tunnelPropColors: options.tunnelPropColors,
           overlayOverrides: options.overlayOverrides,
         }
       );

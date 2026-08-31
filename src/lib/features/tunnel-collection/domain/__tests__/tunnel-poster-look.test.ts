@@ -26,7 +26,10 @@ function tunnel(): CollectedTunnel {
       tunnel: {
         config: { ...DEFAULT_CONFIG },
         gridVisible: true,
-        spectrum: true,
+        colors: {
+          mode: "spectrum",
+          custom: { blue: "#2e8bf0", red: "#ed1c24" },
+        },
         section: "tunnel",
       },
       effects: { tipEffectMap: { "*": { effect: "fire" } } },
@@ -108,7 +111,7 @@ describe("tunnelForPoster", () => {
     expect(forPoster.snapshot.tunnel.config).toEqual(
       original.snapshot.tunnel.config
     );
-    expect(forPoster.snapshot.tunnel.spectrum).toBe(true);
+    expect(forPoster.snapshot.tunnel.colors.mode).toBe("spectrum");
     expect(forPoster.snapshot.effects).toEqual(original.snapshot.effects);
     expect(forPoster.snapshot.props).toEqual(original.snapshot.props);
     expect(forPoster.snapshot.playback).toEqual(original.snapshot.playback);

@@ -8,13 +8,12 @@
 import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
 import type { ISVGGenerator as SVGGenerator } from "$lib/shared/animation-engine/services/ISVGGenerator";
 import type { ITrailCapturer as TrailCapturer } from "$lib/shared/animation-engine/services/ITrailCapturer";
-import type {
-  PropTextureState,
-} from "./IPropTextureLoader";
+import type { PropTextureState } from "./IPropTextureLoader";
 import {
   DEFAULT_PROP_DIMENSIONS,
   getPropDimensions,
 } from "./IPropTextureLoader";
+import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 export class PropTextureLoader {
   // Reactive state - owned by service, read by component via $derived
@@ -43,7 +42,8 @@ export class PropTextureLoader {
   async loadPropTextures(
     bluePropType: string,
     redPropType: string,
-    darkMode?: boolean
+    darkMode?: boolean,
+    colors?: TunnelPropColorPair | null
   ): Promise<void> {
     if (!this.renderer || !this.svgGenerator) {
       console.warn(
@@ -73,7 +73,8 @@ export class PropTextureLoader {
       await this.renderer.loadPerColorPropTextures(
         bluePropType,
         redPropType,
-        darkMode
+        darkMode,
+        colors
       );
 
       // Re-check after await - dispose() may have been called while loading
@@ -83,8 +84,20 @@ export class PropTextureLoader {
       // Get prop dimensions for each color (may be different types!)
       // Pass darkMode for consistent color generation
       const [bluePropData, redPropData] = await Promise.all([
-        this.svgGenerator.generateBluePropSvg(bluePropType, darkMode),
-        this.svgGenerator.generateRedPropSvg(redPropType, darkMode),
+        colors
+          ? this.svgGenerator.generatePropSvg(
+              bluePropType,
+              colors.blue,
+              darkMode === undefined ? undefined : darkMode ? "dark" : "light"
+            )
+          : this.svgGenerator.generateBluePropSvg(bluePropType, darkMode),
+        colors
+          ? this.svgGenerator.generatePropSvg(
+              redPropType,
+              colors.red,
+              darkMode === undefined ? undefined : darkMode ? "dark" : "light"
+            )
+          : this.svgGenerator.generateRedPropSvg(redPropType, darkMode),
       ]);
 
       // Update dimensions AFTER textures are loaded - this ensures texture and

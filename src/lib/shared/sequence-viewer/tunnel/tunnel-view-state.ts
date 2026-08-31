@@ -9,6 +9,11 @@ import {
   cloneTunnelPresetRecipe,
   type TunnelPresetRecipe,
 } from "./tunnel-preset-recipe";
+import {
+  DEFAULT_TUNNEL_PROP_COLOR_STATE,
+  resolveTunnelPropColorState,
+  type TunnelPropColorState,
+} from "./tunnel-prop-colors";
 
 /**
  * Persisted tunnel-view config + chrome (the state the user last left the
@@ -18,9 +23,7 @@ export interface TunnelViewState {
   /** The primitive config (see `tunnel-config.ts`). */
   config: TunnelConfig;
   gridVisible: boolean;
-  /** Per-prop rainbow spectrum coloring. On = every copy fans across the
-   *  spectrum; off = layers inherit the base/preset colors. */
-  spectrum: boolean;
+  colors: TunnelPropColorState;
   /** Active rail section in the Art settings panel. */
   section: "tunnel" | "props" | "speed" | "effects" | "effort" | "playback";
   presetRecipe: TunnelPresetRecipe | null;
@@ -31,7 +34,10 @@ const STORAGE_KEY = "tka_tunnel_view_state";
 const DEFAULTS: TunnelViewState = {
   config: { ...DEFAULT_CONFIG },
   gridVisible: false,
-  spectrum: true,
+  colors: {
+    mode: DEFAULT_TUNNEL_PROP_COLOR_STATE.mode,
+    custom: { ...DEFAULT_TUNNEL_PROP_COLOR_STATE.custom },
+  },
   section: "tunnel",
   presetRecipe: null,
 };
@@ -60,7 +66,9 @@ function resolveConfig(p: Record<string, unknown>): TunnelConfig {
   // Current shape.
   const c = p.config as Partial<TunnelConfig> | undefined;
   if (c && typeof c === "object") {
-    const fold = FOLD_OPTIONS.includes(c.fold as number) ? (c.fold as number) : DEFAULT_CONFIG.fold;
+    const fold = FOLD_OPTIONS.includes(c.fold as number)
+      ? (c.fold as number)
+      : DEFAULT_CONFIG.fold;
     const mirror = bool(c.mirror, DEFAULT_CONFIG.mirror);
     const flip = bool(c.flip, DEFAULT_CONFIG.flip);
     return {
@@ -68,21 +76,28 @@ function resolveConfig(p: Record<string, unknown>): TunnelConfig {
       mirror,
       flip,
       // `invert` was briefly named `counter` (2026-07-06) — read the old key too.
-      invert: bool(c.invert ?? (c as { counter?: unknown }).counter, DEFAULT_CONFIG.invert),
+      invert: bool(
+        c.invert ?? (c as { counter?: unknown }).counter,
+        DEFAULT_CONFIG.invert
+      ),
       echo: bool(c.echo, DEFAULT_CONFIG.echo),
       staggerSteps:
-        typeof c.staggerSteps === "number" && c.staggerSteps > 0 ? Math.floor(c.staggerSteps) : 0,
+        typeof c.staggerSteps === "number" && c.staggerSteps > 0
+          ? Math.floor(c.staggerSteps)
+          : 0,
       // Migrate the short-lived `speedPattern` mode + legacy boolean `speed` into
       // the override-only model (fills spread across this config's copies).
       speedOverrides: resolveSpeedOverrides(
         c as Record<string, unknown>,
-        imageCount({ ...DEFAULT_CONFIG, fold, mirror, flip }),
+        imageCount({ ...DEFAULT_CONFIG, fold, mirror, flip })
       ),
     };
   }
 
   const density =
-    typeof p.density === "number" && FOLD_OPTIONS.includes(p.density) ? p.density : 4;
+    typeof p.density === "number" && FOLD_OPTIONS.includes(p.density)
+      ? p.density
+      : 4;
 
   // Named-look era.
   if (typeof p.lookId === "string" && p.lookId in LOOK_TO_CONFIG) {
@@ -106,10 +121,10 @@ function resolveConfig(p: Record<string, unknown>): TunnelConfig {
 }
 
 export function loadTunnelViewState(): TunnelViewState {
-  if (typeof localStorage === "undefined") return { ...DEFAULTS, config: { ...DEFAULT_CONFIG } };
+  if (typeof localStorage === "undefined") return cloneDefaults();
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULTS, config: { ...DEFAULT_CONFIG } };
+    if (!raw) return cloneDefaults();
     const p = JSON.parse(raw) as Record<string, unknown>;
     // A stored "appearance" (the retired Cast tab) falls through to "tunnel".
     const section =
@@ -124,15 +139,26 @@ export function loadTunnelViewState(): TunnelViewState {
     return {
       config: resolveConfig(p),
       gridVisible: bool(p.gridVisible, DEFAULTS.gridVisible),
-      spectrum: bool(p.spectrum, DEFAULTS.spectrum),
+      colors: resolveTunnelPropColorState(p.colors, p.spectrum),
       section,
       // Older view state only had the live config. Preserve that uncertainty;
       // a matching built-in value is not evidence that it came from that recipe.
       presetRecipe: parsePresetRecipe(p.presetRecipe),
     };
   } catch {
-    return { ...DEFAULTS, config: { ...DEFAULT_CONFIG } };
+    return cloneDefaults();
   }
+}
+
+function cloneDefaults(): TunnelViewState {
+  return {
+    ...DEFAULTS,
+    config: { ...DEFAULT_CONFIG },
+    colors: {
+      mode: DEFAULTS.colors.mode,
+      custom: { ...DEFAULTS.colors.custom },
+    },
+  };
 }
 
 function parsePresetRecipe(value: unknown): TunnelPresetRecipe | null {

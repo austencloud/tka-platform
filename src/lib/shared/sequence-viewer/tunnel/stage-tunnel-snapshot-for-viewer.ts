@@ -61,7 +61,7 @@ export function stageTunnelSnapshotForViewer(
   saveViewState({
     config: snapshot.tunnel.config,
     gridVisible: snapshot.tunnel.gridVisible,
-    spectrum: snapshot.tunnel.spectrum,
+    colors: snapshot.tunnel.colors,
     section: snapshot.tunnel.section,
     presetRecipe: snapshot.tunnel.presetRecipe ?? null,
   });

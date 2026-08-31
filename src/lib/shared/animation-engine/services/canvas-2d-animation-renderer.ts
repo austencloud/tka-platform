@@ -25,6 +25,7 @@
  * - Canvas2DGridFadeManager: Grid visibility toggle transitions
  * - Canvas2DVisibilityFadeManager: Props and trails visibility transitions
  */
+import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/fire-types";
 import type { RenderedPropSprite } from "$lib/shared/animation-engine/domain/types/rendered-prop-sprite";
@@ -291,12 +292,14 @@ export class Canvas2DAnimationRenderer {
   async loadPerColorPropTextures(
     bluePropType: string,
     redPropType: string,
-    darkMode?: boolean
+    darkMode?: boolean,
+    colors?: TunnelPropColorPair | null
   ): Promise<void> {
     await this.imageLoader.loadPerColorPropImages(
       bluePropType,
       redPropType,
-      darkMode
+      darkMode,
+      colors
     );
   }
 

@@ -25,6 +25,7 @@
     withAlpha,
   } from "$lib/shared/mandala/domain/mandala-palette";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import LabeledColorPairPicker from "$lib/shared/ui/components/LabeledColorPairPicker.svelte";
   import MandalaPreviewOption from "./MandalaPreviewOption.svelte";
 
   /** "download" holds the export config (loops / fidelity / fps + estimate). */
@@ -181,8 +182,6 @@
   );
 
   // Hidden native color inputs (styled chips trigger the OS picker).
-  let blueInputEl: HTMLInputElement | undefined = $state();
-  let redInputEl: HTMLInputElement | undefined = $state();
   let presetsOpen = $state(false);
 
   function handleExport() {
@@ -424,60 +423,22 @@
           style:background={ctrl.previewGradient("custom")}
           aria-hidden="true"
         ></span>
-        <div class="flow-stops">
-          <button
-            class="color-chip"
-            style:--c={ctrl.customBlue}
-            onclick={() => blueInputEl?.click()}
-            aria-label="Edit first color {ctrl.customBlue}"
-          >
-            <span class="chip-swatch"
-              ><i class="fas fa-eye-dropper" aria-hidden="true"></i></span
-            >
-            <span class="chip-meta">
-              <span class="chip-name">Color A</span>
-              <span class="chip-hex">{ctrl.customBlue.toUpperCase()}</span>
-            </span>
-            <input
-              bind:this={blueInputEl}
-              type="color"
-              value={ctrl.customBlue}
-              oninput={(e) => {
-                ctrl.customBlue = (e.target as HTMLInputElement).value;
-                reportSetting("custom_color_a", "custom", "changed", true);
-              }}
-              class="native-color"
-              tabindex="-1"
-              aria-hidden="true"
-            />
-          </button>
-          <button
-            class="color-chip"
-            style:--c={ctrl.customRed}
-            onclick={() => redInputEl?.click()}
-            aria-label="Edit second color {ctrl.customRed}"
-          >
-            <span class="chip-swatch"
-              ><i class="fas fa-eye-dropper" aria-hidden="true"></i></span
-            >
-            <span class="chip-meta">
-              <span class="chip-name">Color B</span>
-              <span class="chip-hex">{ctrl.customRed.toUpperCase()}</span>
-            </span>
-            <input
-              bind:this={redInputEl}
-              type="color"
-              value={ctrl.customRed}
-              oninput={(e) => {
-                ctrl.customRed = (e.target as HTMLInputElement).value;
-                reportSetting("custom_color_b", "custom", "changed", true);
-              }}
-              class="native-color"
-              tabindex="-1"
-              aria-hidden="true"
-            />
-          </button>
-        </div>
+        <LabeledColorPairPicker
+          blue={ctrl.customBlue}
+          red={ctrl.customRed}
+          blueLabel="Color A"
+          redLabel="Color B"
+          onchange={(hand, value) => {
+            if (hand === "blue") ctrl.customBlue = value;
+            else ctrl.customRed = value;
+            reportSetting(
+              hand === "blue" ? "custom_color_a" : "custom_color_b",
+              "custom",
+              "changed",
+              true
+            );
+          }}
+        />
       </div>
     {/if}
   </div>
@@ -805,94 +766,6 @@
       inset 0 0 0 1px rgba(255, 255, 255, 0.12),
       0 2px 8px rgba(0, 0, 0, 0.35);
   }
-  .flow-stops {
-    display: flex;
-    gap: 10px;
-  }
-  .color-chip {
-    position: relative;
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 52px;
-    padding: 8px 10px;
-    border-radius: 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    background: color-mix(
-      in srgb,
-      var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 70%,
-      transparent
-    );
-    cursor: pointer;
-    overflow: hidden;
-    -webkit-tap-highlight-color: transparent;
-    transition:
-      border-color 0.15s ease,
-      box-shadow 0.15s ease;
-  }
-  .color-chip:hover {
-    border-color: color-mix(
-      in srgb,
-      var(--c) 50%,
-      var(--theme-stroke, rgba(255, 255, 255, 0.2))
-    );
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent);
-  }
-  .color-chip:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--c) 70%, white);
-    outline-offset: 2px;
-  }
-  .chip-swatch {
-    flex: 0 0 auto;
-    width: 34px;
-    height: 34px;
-    border-radius: 9px;
-    background: var(--c);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.25),
-      0 2px 6px color-mix(in srgb, var(--c) 45%, transparent);
-    color: rgba(255, 255, 255, 0.95);
-    font-size: 12px;
-  }
-  .chip-swatch i {
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
-  }
-  .chip-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    min-width: 0;
-    text-align: left;
-  }
-  .chip-name {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-  .chip-hex {
-    font-size: 12px;
-    font-weight: 600;
-    font-family: ui-monospace, "SF Mono", monospace;
-    color: var(--theme-text, #ffffff);
-    letter-spacing: 0.02em;
-  }
-  .native-color {
-    position: absolute;
-    left: 12px;
-    bottom: 4px;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    border: none;
-    opacity: 0;
-    pointer-events: none;
-  }
-
   .chip {
     flex: 1;
     min-width: 0;

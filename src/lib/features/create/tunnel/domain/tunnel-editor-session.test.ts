@@ -40,7 +40,10 @@ const snapshot = {
   tunnel: {
     config: DEFAULT_CONFIG,
     gridVisible: false,
-    spectrum: false,
+    colors: {
+      mode: "hands",
+      custom: { blue: "#2e8bf0", red: "#ed1c24" },
+    },
     section: "tunnel",
     presetRecipe: null,
   },

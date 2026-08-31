@@ -30,6 +30,7 @@ Last audit: 2025-12-27
   import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import type { TrailSettings } from "../domain/types/trail-types";
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
+  import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
   import CanvasSurface from "./CanvasSurface.svelte";
   import WordHeader from "./layers/WordHeader.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
@@ -68,6 +69,7 @@ Last audit: 2025-12-27
     redProp,
     additionalLayers = [],
     tunnelSpectrum = true,
+    tunnelPropColors = null,
     tunnelSelectedLayer = null,
     gridVisible = true,
     gridMode = GridMode.DIAMOND,
@@ -135,6 +137,7 @@ Last audit: 2025-12-27
     redProp: PropState | null;
     additionalLayers?: AdditionalLayerProps[];
     tunnelSpectrum?: boolean;
+    tunnelPropColors?: TunnelPropColorPair | null;
     tunnelSelectedLayer?: number | readonly number[] | null;
     gridVisible?: boolean;
     gridMode?: GridMode | null;
@@ -289,7 +292,10 @@ Last audit: 2025-12-27
   // assembled → disassembling → disassembled → reassembling → assembled
   // All transitions happen via CSS on the SAME DOM tree. No overlay swaps.
   type ViewState =
-    "assembled" | "disassembling" | "disassembled" | "reassembling";
+    | "assembled"
+    | "disassembling"
+    | "disassembled"
+    | "reassembling";
   let viewState = $state<ViewState>("assembled");
   let contentWrapperEl: HTMLDivElement | undefined = $state();
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -657,6 +663,7 @@ Last audit: 2025-12-27
       {redProp}
       {additionalLayers}
       {tunnelSpectrum}
+      {tunnelPropColors}
       {tunnelSelectedLayer}
       {gridVisible}
       {gridMode}

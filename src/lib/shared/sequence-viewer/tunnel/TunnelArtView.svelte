@@ -210,6 +210,7 @@
         redProp={base.red}
         {additionalLayers}
         tunnelSpectrum={controller.spectrum}
+        tunnelPropColors={controller.exactPropColors}
         tunnelSelectedLayer={controller.spotlightLayers}
         {bluePropType}
         {redPropType}

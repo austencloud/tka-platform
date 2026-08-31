@@ -271,7 +271,15 @@
         echo: controller.echo,
         stagger_steps: controller.staggerSteps,
         speed_override_count: Object.keys(controller.speedOverrides).length,
-        spectrum: controller.spectrum,
+        color_mode: controller.colorMode,
+        left_prop_color:
+          controller.colorMode === "custom"
+            ? controller.customPropColors.blue
+            : null,
+        right_prop_color:
+          controller.colorMode === "custom"
+            ? controller.customPropColors.red
+            : null,
         grid_visible: controller.gridVisible,
         performer_count: controller.performerCount,
         preset: controller.activePresetId ?? "custom",

@@ -8,11 +8,14 @@ import {
 import { EFFECTS_CONFIG_STORAGE_KEY } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 const snapshot = {
-  version: 2,
+  version: 3,
   tunnel: {
     config: { ...DEFAULT_CONFIG, fold: 6 },
     gridVisible: true,
-    spectrum: false,
+    colors: {
+      mode: "custom",
+      custom: { blue: "#123456", red: "#abcdef" },
+    },
     section: "props",
     presetRecipe: null,
   },

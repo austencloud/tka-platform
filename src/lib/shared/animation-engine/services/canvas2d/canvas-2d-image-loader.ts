@@ -6,6 +6,7 @@ import {
 } from "$lib/shared/animation-engine/services/svg-generator";
 import { hashString } from "$lib/shared/foundation/services/content-hasher";
 import { getSvgImageCache } from "$lib/shared/render/services/svg-image-cache";
+import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 /**
  * Canvas2D Image Loader
@@ -146,7 +147,8 @@ export class Canvas2DImageLoader {
   async loadPerColorPropImages(
     bluePropType: string,
     redPropType: string,
-    darkMode?: boolean
+    darkMode?: boolean,
+    colors?: TunnelPropColorPair | null
   ): Promise<{
     blue: HTMLImageElement;
     red: HTMLImageElement;
@@ -155,8 +157,20 @@ export class Canvas2DImageLoader {
       // Generate blue and red prop SVGs with different types
       // Pass darkMode to use local preview state instead of global
       const [bluePropData, redPropData] = await Promise.all([
-        generateBluePropSvg(bluePropType, darkMode),
-        generateRedPropSvg(redPropType, darkMode),
+        colors
+          ? generatePropSvg(
+              bluePropType,
+              colors.blue,
+              darkMode === undefined ? undefined : darkMode ? "dark" : "light"
+            )
+          : generateBluePropSvg(bluePropType, darkMode),
+        colors
+          ? generatePropSvg(
+              redPropType,
+              colors.red,
+              darkMode === undefined ? undefined : darkMode ? "dark" : "light"
+            )
+          : generateRedPropSvg(redPropType, darkMode),
       ]);
 
       // Create new images
