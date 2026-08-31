@@ -26,6 +26,9 @@ function sample(
     mandalaBackingSize: 630,
     mandalaDisplaySize: 630,
     mandalaRasterScale: 1,
+    mandalaDisplayWidth: 630,
+    mandalaDisplayHeight: 630,
+    mandalaMaximumRasterScale: 1,
     cardSize: 450,
     cardFlexGrow: 1,
     cardHidden: false,
@@ -64,7 +67,10 @@ function sample(
     motion3DPresented: false,
     motion3DReady: false,
     motion3DPreparing: false,
+    motion2DPreparationHeld: false,
     sceneCurtainVisible: false,
+    scenePreparationProgress: null,
+    scenePreparationLabel: null,
     tunnelOpacity: 0,
     tunnelPresented: false,
     tunnelCanvasReady: true,
@@ -319,45 +325,123 @@ describe("Sequence Viewer geometry trace", () => {
     expect(summary.motionHandoffLatency).toBe(80);
   });
 
-  it("accepts a first 3D reveal that stays behind 2D until ready", () => {
-    const preparing = {
+  it("accepts an honest first-3D preparation surface with monotonic progress", () => {
+    const crossfade = {
       ...sample(40, 450, 1),
       phase: "prepare-3d" as const,
       selectedMode: "animation-3d" as const,
-      motion3DPreparing: true,
-    };
-    const reveal = {
-      ...preparing,
-      time: 180,
-      phase: "show-3d" as const,
       motion2DOpacity: 0.7,
       motion3DOpacity: 0.3,
       motion2DPresented: false,
       motion3DPresented: true,
-      motion3DReady: true,
-      motion3DPreparing: false,
+      motion3DPreparing: true,
+      motion2DPreparationHeld: true,
+      sceneCurtainVisible: true,
+      scenePreparationLabel: "Opening 3D",
     };
-    const settled = {
-      ...reveal,
-      time: 260,
+    const preparing = {
+      ...crossfade,
+      time: 100,
       motion2DOpacity: 0,
       motion3DOpacity: 1,
+      scenePreparationProgress: 0.42,
+      scenePreparationLabel: "Setting the stage",
+    };
+    const warming = {
+      ...preparing,
+      time: 160,
+      scenePreparationProgress: 0.84,
+      scenePreparationLabel: "Warming up",
+    };
+    const ready = {
+      ...warming,
+      time: 220,
+      phase: "show-3d" as const,
+      motion3DReady: true,
+      motion3DPreparing: false,
+      sceneCurtainVisible: false,
+      scenePreparationProgress: null,
+      scenePreparationLabel: null,
     };
 
     const summary = summarizeTransitionGeometry({
       command: "3d-first",
-      duration: 260,
-      samples: [sample(0, 450, 1), preparing, reveal, settled],
+      duration: 220,
+      samples: [sample(0, 450, 1), crossfade, preparing, warming, ready],
       modeCommits: [],
     });
 
     expect(summary.motionBlankFrames).toBe(0);
     expect(summary.motionUnready3DFrames).toBe(0);
-    expect(summary.motionCurtainFrames).toBe(0);
+    expect(summary.motionCurtainFrames).toBe(3);
+    expect(summary.motionMisidentified3DFrames).toBe(0);
+    expect(summary.motionPreparationProgressRegressions).toBe(0);
+    expect(summary.motionPreparationLabels).toEqual([
+      "Opening 3D",
+      "Setting the stage",
+      "Warming up",
+    ]);
     expect(summary.motionCrossfadeFrames).toBe(1);
-    expect(summary.motionPreparationFrames).toBe(1);
+    expect(summary.motionPreparationFrames).toBe(3);
+    expect(summary.motionPreparationGeometryHeldFrames).toBe(3);
+    expect(summary.motionPreparationRasterScaleMaximum).toBe(1);
+    expect(summary.motionPreparationRasterGrowthMaximum).toBe(1);
+    expect(summary.motionMagnifiedPreparationFrames).toBe(0);
     expect(summary.motionSurfacePath).toEqual(["2D", "3D"]);
-    expect(summary.motionHandoffLatency).toBe(140);
+    expect(summary.motionHandoffLatency).toBe(180);
+  });
+
+  it("flags stale 2D identity and backwards scene progress after selecting 3D", () => {
+    const stale2D = {
+      ...sample(40, 450, 1),
+      phase: "prepare-3d" as const,
+      selectedMode: "animation-3d" as const,
+      motion3DPresented: true,
+      motion3DPreparing: true,
+      sceneCurtainVisible: true,
+      scenePreparationProgress: 0.72,
+      scenePreparationLabel: "Setting the stage",
+    };
+    const regressed = {
+      ...stale2D,
+      time: 80,
+      motion2DPresented: false,
+      scenePreparationProgress: 0.51,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "3d-first",
+      duration: 80,
+      samples: [sample(0, 450, 1), stale2D, regressed],
+      modeCommits: [],
+    });
+
+    expect(summary.motionMisidentified3DFrames).toBe(1);
+    expect(summary.motionPreparationProgressRegressions).toBe(1);
+  });
+
+  it("flags a first-3D placeholder stretched beyond its backing raster", () => {
+    const stretched = {
+      ...sample(80, 900, 1),
+      phase: "prepare-3d" as const,
+      selectedMode: "animation-3d" as const,
+      motion3DPreparing: true,
+      mandalaDisplayWidth: 1260,
+      mandalaDisplayHeight: 700,
+      mandalaMaximumRasterScale: 2,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "3d-first",
+      duration: 80,
+      samples: [sample(0, 900, 1), stretched],
+      modeCommits: [],
+    });
+
+    expect(summary.motionPreparationRasterScaleMaximum).toBe(2);
+    expect(summary.motionPreparationRasterGrowthMaximum).toBe(2);
+    expect(summary.motionMagnifiedPreparationFrames).toBe(1);
+    expect(summary.motionPreparationGeometryHeldFrames).toBe(0);
   });
 
   it("flags a 2D backing-store rebuild after the returning surface is opaque", () => {

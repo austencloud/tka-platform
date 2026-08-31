@@ -94,6 +94,7 @@ export class BloomRenderer3D {
   private parent: Object3D | null = null;
   private lightManager: DynamicLightManager | null = null;
   private lightTier: QualityTier | null = null;
+  private ownsLightManager = false;
   private clock = 0;
   private epoch = 0;
   private visibleCount = 0;
@@ -132,11 +133,23 @@ export class BloomRenderer3D {
     this.object3D.renderOrder = LIVE_RENDER_ORDER;
   }
 
-  initialize(parent: Object3D): void {
-    if (this.parent === parent) return;
+  initialize(
+    parent: Object3D,
+    sharedLightManager?: DynamicLightManager | null
+  ): void {
+    if (
+      this.parent === parent &&
+      (!sharedLightManager || this.lightManager === sharedLightManager)
+    )
+      return;
     this.parent?.remove(this.object3D);
     this.disposeLights();
     this.parent = parent;
+    if (sharedLightManager) {
+      this.lightManager = sharedLightManager;
+      this.lightTier = QualityTier.HIGH;
+      this.ownsLightManager = false;
+    }
     parent.add(this.object3D);
   }
 
@@ -400,16 +413,24 @@ export class BloomRenderer3D {
     }
     const tier = sources[0]!.qualityTier;
     if (tier === QualityTier.LOW) {
-      this.disposeLights();
+      this.releaseLights();
       return;
     }
     if (!this.lightManager || this.lightTier !== tier) {
-      this.disposeLights();
-      this.lightManager = new DynamicLightManager(
-        this.parent,
-        TIER_CONFIGS[tier]
-      );
-      this.lightTier = tier;
+      if (this.ownsLightManager) this.disposeLights();
+      if (this.lightManager) {
+        // A scene-shared pool is deliberately sized once at startup. Runtime
+        // quality changes reduce usage without changing the scene's light
+        // count and forcing a new shader program.
+        this.lightTier = tier;
+      } else {
+        this.lightManager = new DynamicLightManager(
+          this.parent,
+          TIER_CONFIGS[tier]
+        );
+        this.lightTier = tier;
+        this.ownsLightManager = true;
+      }
     }
 
     const lightSources = this.selectLightSources(
@@ -516,9 +537,10 @@ export class BloomRenderer3D {
 
   private disposeLights(): void {
     this.releaseLights();
-    this.lightManager?.dispose();
+    if (this.ownsLightManager) this.lightManager?.dispose();
     this.lightManager = null;
     this.lightTier = null;
+    this.ownsLightManager = false;
     this.lightHandles.length = 0;
   }
 

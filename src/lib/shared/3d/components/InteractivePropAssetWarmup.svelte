@@ -2,15 +2,14 @@
   /**
    * Loads and compiles the prop assets an already-visible control can equip.
    *
-   * The Fire effect changes a Double Staff performer to the authored Fire
-   * Staff model. Warming that model in the same Threlte cache and renderer as
-   * the live scene keeps the control path to a state update instead of a
-   * fetch/parse/shader-compile pipeline.
+   * Fire and LED can change a Double Staff performer to authored GLB models.
+   * Warming both in the same Threlte cache and renderer as the live scene keeps
+   * either control path to a state update instead of fetch, parse, and compile.
    */
   import { T, useThrelte } from "@threlte/core";
   import { useGltf } from "@threlte/extras";
   import { onMount } from "svelte";
-  import { Group } from "three";
+  import { Group, type Scene } from "three";
   import { PROP_MODEL_REGISTRY, PropType } from "@austencloud/scene-3d";
 
   import { resolveThrelteHandles } from "../scene-boot/threlte-handles";
@@ -24,14 +23,21 @@
   let { onReadyChange }: Props = $props();
 
   const fireStaffEntry = PROP_MODEL_REGISTRY[PropType.FIRE_DOUBLE_STAFF];
+  const ledBatonEntry = PROP_MODEL_REGISTRY[PropType.CAPSULE_BATON];
   if (!fireStaffEntry) {
     throw new Error("Fire Double Staff is missing from PROP_MODEL_REGISTRY");
+  }
+  if (!ledBatonEntry) {
+    throw new Error("LED Baton is missing from PROP_MODEL_REGISTRY");
   }
 
   // useGltf shares the Canvas-level loader cache with every GltfProp3D. The
   // later performer mounts therefore receive the parsed source immediately.
-  const fireStaff = useGltf(fireStaffEntry.modelUrl);
+  const gltfLoader = useGltf();
+  const fireStaff = gltfLoader.load(fireStaffEntry.modelUrl);
+  const ledBaton = gltfLoader.load(ledBatonEntry.modelUrl);
   const fireStaffScene = $derived($fireStaff?.scene.clone(true) ?? null);
+  const ledBatonScene = $derived($ledBaton?.scene.clone(true) ?? null);
   const threlte = useThrelte();
 
   onMount(() => {
@@ -40,10 +46,11 @@
 
     void (async () => {
       try {
-        const gltf = await fireStaff;
+        const [fireGltf, ledGltf] = await Promise.all([fireStaff, ledBaton]);
         if (cancelled) return;
         const handles = resolveThrelteHandles(threlte);
         if (!handles) throw new Error("Threlte renderer was not ready");
+        const compileScene = handles.scene as Scene;
 
         // compileAsync only sees objects that exist when it traverses. The
         // scene-level Fire manager is loaded asynchronously, so compile a tiny
@@ -61,22 +68,36 @@
           if (typeof handles.renderer.compileAsync === "function") {
             await Promise.all([
               handles.renderer.compileAsync(
-                gltf.scene,
+                fireGltf.scene,
                 handles.camera,
-                handles.scene
+                compileScene
+              ),
+              handles.renderer.compileAsync(
+                ledGltf.scene,
+                handles.camera,
+                compileScene
               ),
               handles.renderer.compileAsync(
                 fireWarmupRoot,
                 handles.camera,
-                handles.scene
+                compileScene
               ),
             ]);
           } else {
-            handles.renderer.compile(gltf.scene, handles.camera, handles.scene);
+            handles.renderer.compile(
+              fireGltf.scene,
+              handles.camera,
+              compileScene
+            );
+            handles.renderer.compile(
+              ledGltf.scene,
+              handles.camera,
+              compileScene
+            );
             handles.renderer.compile(
               fireWarmupRoot,
               handles.camera,
-              handles.scene
+              compileScene
             );
           }
         } finally {
@@ -103,5 +124,10 @@
 {#if fireStaffScene}
   <T.Group scale={[0, 0, 0]}>
     <T is={fireStaffScene} dispose={false} />
+  </T.Group>
+{/if}
+{#if ledBatonScene}
+  <T.Group scale={[0, 0, 0]}>
+    <T is={ledBatonScene} dispose={false} />
   </T.Group>
 {/if}

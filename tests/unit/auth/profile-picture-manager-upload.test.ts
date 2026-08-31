@@ -51,6 +51,8 @@ describe("profile picture manager uploads", () => {
       blob: new Blob([new Uint8Array([1])], { type: "image/webp" }),
       width: 512,
       height: 384,
+      contentType: "image/webp",
+      fileExtension: "webp",
     });
     mocks.ref.mockImplementation((_storage, path: string) => ({
       fullPath: path.includes("old.webp") ? "avatars/user-1/old.webp" : path,
@@ -89,6 +91,32 @@ describe("profile picture manager uploads", () => {
     expect(
       mocks.uploadBytes.mock.calls[0]?.[2]?.customMetadata
     ).not.toHaveProperty("originalName");
+  });
+
+  it("uploads Safari's PNG fallback with a matching path and content type", async () => {
+    const png = new Blob([new Uint8Array([1])], { type: "image/png" });
+    mocks.prepareProfilePhoto.mockResolvedValue({
+      blob: png,
+      width: 448,
+      height: 336,
+      contentType: "image/png",
+      fileExtension: "png",
+    });
+    const file = new File([new Uint8Array([1, 2, 3])], "camera.heic", {
+      type: "image/heic",
+    });
+
+    await uploadProfilePhoto(user, file);
+
+    expect(mocks.ref).toHaveBeenCalledWith(
+      { bucket: "avatars" },
+      "avatars/user-1/1234.png"
+    );
+    expect(mocks.uploadBytes).toHaveBeenCalledWith(
+      expect.anything(),
+      png,
+      expect.objectContaining({ contentType: "image/png" })
+    );
   });
 
   it("deletes only a replaced avatar owned by the same user", async () => {

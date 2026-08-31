@@ -1,10 +1,17 @@
 const WEBP_CONTENT_TYPE = "image/webp";
+const PNG_CONTENT_TYPE = "image/png";
 
 export const PROFILE_PHOTO_INPUT_MAX_BYTES = 5 * 1024 * 1024;
 export const PROFILE_PHOTO_MAX_UPLOAD_BYTES = 1024 * 1024;
 export const PROFILE_PHOTO_MAX_DIMENSION = 512;
 
 const WEBP_QUALITIES = [0.86, 0.76, 0.66] as const;
+// PNG has no lossy quality control, so Safari's fallback is bounded by pixels.
+const PNG_FALLBACK_DIMENSIONS = [448, 384, 320, 256, 192, 128] as const;
+
+export type ProfilePhotoContentType =
+  | typeof WEBP_CONTENT_TYPE
+  | typeof PNG_CONTENT_TYPE;
 
 export type ProfilePhotoErrorCode =
   | "signed-out"
@@ -48,6 +55,8 @@ export interface PreparedProfilePhoto {
   blob: Blob;
   width: number;
   height: number;
+  contentType: ProfilePhotoContentType;
+  fileExtension: "webp" | "png";
 }
 
 export function assertProfilePhotoInput(file: File): void {
@@ -65,7 +74,8 @@ export function assertProfilePhotoInput(file: File): void {
 
 export function fitProfilePhotoDimensions(
   width: number,
-  height: number
+  height: number,
+  maxDimension = PROFILE_PHOTO_MAX_DIMENSION
 ): { width: number; height: number } {
   if (
     !Number.isFinite(width) ||
@@ -79,11 +89,7 @@ export function fitProfilePhotoDimensions(
     );
   }
 
-  const scale = Math.min(
-    1,
-    PROFILE_PHOTO_MAX_DIMENSION / width,
-    PROFILE_PHOTO_MAX_DIMENSION / height
-  );
+  const scale = Math.min(1, maxDimension / width, maxDimension / height);
 
   return {
     width: Math.max(1, Math.round(width * scale)),
@@ -142,7 +148,8 @@ function createBrowserCanvas(): ProfilePhotoCanvas {
 
 function encodeCanvas(
   canvas: ProfilePhotoCanvas,
-  quality: number
+  contentType: ProfilePhotoContentType,
+  quality?: number
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -153,10 +160,89 @@ function encodeCanvas(
           reject(new Error("Browser image encoding failed"));
         }
       },
-      WEBP_CONTENT_TYPE,
+      contentType,
       quality
     );
   });
+}
+
+function drawProfilePhoto(
+  canvas: ProfilePhotoCanvas,
+  context: CanvasRenderingContext2D,
+  decoded: DecodedProfilePhoto,
+  maxDimension: number
+): { width: number; height: number } {
+  const dimensions = fitProfilePhotoDimensions(
+    decoded.width,
+    decoded.height,
+    maxDimension
+  );
+  canvas.width = dimensions.width;
+  canvas.height = dimensions.height;
+  context.drawImage(decoded.source, 0, 0, dimensions.width, dimensions.height);
+  return dimensions;
+}
+
+function preparedPhoto(
+  blob: Blob,
+  dimensions: { width: number; height: number },
+  contentType: ProfilePhotoContentType
+): PreparedProfilePhoto {
+  return {
+    blob,
+    ...dimensions,
+    contentType,
+    fileExtension: contentType === WEBP_CONTENT_TYPE ? "webp" : "png",
+  };
+}
+
+async function encodePngFallback(
+  canvas: ProfilePhotoCanvas,
+  context: CanvasRenderingContext2D,
+  decoded: DecodedProfilePhoto,
+  dimensions: { width: number; height: number },
+  browserFallback?: Blob
+): Promise<PreparedProfilePhoto> {
+  let blob = browserFallback;
+  if (!blob || blob.type !== PNG_CONTENT_TYPE) {
+    blob = await encodeCanvas(canvas, PNG_CONTENT_TYPE);
+  }
+
+  if (blob.type !== PNG_CONTENT_TYPE) {
+    throw new Error(`Browser returned unsupported image type: ${blob.type}`);
+  }
+
+  if (blob.size < PROFILE_PHOTO_MAX_UPLOAD_BYTES) {
+    return preparedPhoto(blob, dimensions, PNG_CONTENT_TYPE);
+  }
+
+  for (const maxDimension of PNG_FALLBACK_DIMENSIONS) {
+    const nextDimensions = fitProfilePhotoDimensions(
+      decoded.width,
+      decoded.height,
+      maxDimension
+    );
+    if (
+      nextDimensions.width === dimensions.width &&
+      nextDimensions.height === dimensions.height
+    ) {
+      continue;
+    }
+
+    dimensions = drawProfilePhoto(canvas, context, decoded, maxDimension);
+    blob = await encodeCanvas(canvas, PNG_CONTENT_TYPE);
+    if (blob.type !== PNG_CONTENT_TYPE) {
+      throw new Error(`Browser returned unsupported image type: ${blob.type}`);
+    }
+    if (blob.size < PROFILE_PHOTO_MAX_UPLOAD_BYTES) {
+      return preparedPhoto(blob, dimensions, PNG_CONTENT_TYPE);
+    }
+  }
+
+  throw new ProfilePhotoError(
+    "output-too-large",
+    "That photo is too detailed to upload. Try a different image."
+  );
 }
 
 export async function prepareProfilePhoto(
@@ -180,11 +266,7 @@ export async function prepareProfilePhoto(
   }
 
   try {
-    const dimensions = fitProfilePhotoDimensions(decoded.width, decoded.height);
     const canvas = dependencies.createCanvas();
-    canvas.width = dimensions.width;
-    canvas.height = dimensions.height;
-
     const context = canvas.getContext("2d");
     if (!context) {
       throw new ProfilePhotoError(
@@ -193,44 +275,58 @@ export async function prepareProfilePhoto(
       );
     }
 
-    context.drawImage(
-      decoded.source,
-      0,
-      0,
-      dimensions.width,
-      dimensions.height
+    const dimensions = drawProfilePhoto(
+      canvas,
+      context,
+      decoded,
+      PROFILE_PHOTO_MAX_DIMENSION
     );
 
-    for (const quality of WEBP_QUALITIES) {
-      let blob: Blob;
-      try {
-        blob = await encodeCanvas(canvas, quality);
-      } catch (error) {
-        throw new ProfilePhotoError(
-          "encode-unsupported",
-          "This browser could not prepare the photo. Try a JPEG, PNG, or WebP image.",
-          { cause: error }
-        );
+    try {
+      for (const quality of WEBP_QUALITIES) {
+        let blob: Blob;
+        try {
+          blob = await encodeCanvas(canvas, WEBP_CONTENT_TYPE, quality);
+        } catch {
+          return await encodePngFallback(canvas, context, decoded, dimensions);
+        }
+
+        // Safari stable returns PNG when asked for WebP. That is an expected
+        // capability fallback, and avatars/{uid} already permits either type.
+        if (blob.type === PNG_CONTENT_TYPE) {
+          return await encodePngFallback(
+            canvas,
+            context,
+            decoded,
+            dimensions,
+            blob
+          );
+        }
+
+        if (blob.type !== WEBP_CONTENT_TYPE) {
+          throw new ProfilePhotoError(
+            "encode-unsupported",
+            "This browser could not prepare the photo. Try a JPEG, PNG, or WebP image."
+          );
+        }
+
+        if (blob.size < PROFILE_PHOTO_MAX_UPLOAD_BYTES) {
+          return preparedPhoto(blob, dimensions, WEBP_CONTENT_TYPE);
+        }
       }
 
-      // Browsers fall back to PNG when they cannot encode the requested type.
-      // Storage accepts only the formats this pipeline deliberately produces.
-      if (blob.type !== WEBP_CONTENT_TYPE) {
-        throw new ProfilePhotoError(
-          "encode-unsupported",
-          "This browser could not prepare the photo. Try a JPEG, PNG, or WebP image."
-        );
-      }
-
-      if (blob.size < PROFILE_PHOTO_MAX_UPLOAD_BYTES) {
-        return { blob, ...dimensions };
-      }
+      throw new ProfilePhotoError(
+        "output-too-large",
+        "That photo is too detailed to upload. Try a different image."
+      );
+    } catch (error) {
+      if (error instanceof ProfilePhotoError) throw error;
+      throw new ProfilePhotoError(
+        "encode-unsupported",
+        "This browser could not prepare the photo. Try a JPEG, PNG, or WebP image.",
+        { cause: error }
+      );
     }
-
-    throw new ProfilePhotoError(
-      "output-too-large",
-      "That photo is too detailed to upload. Try a different image."
-    );
   } finally {
     decoded.close?.();
   }

@@ -320,15 +320,41 @@
         >Blank motion frames: {summary.motionBlankFrames}</span
       >
       <span data-problem={summary.motionUnready3DFrames > 0}
-        >Unready 3D frames: {summary.motionUnready3DFrames}</span
+        >Unprotected 3D frames: {summary.motionUnready3DFrames}</span
       >
-      <span data-problem={summary.motionCurtainFrames > 0}
-        >Visible loading-curtain frames: {summary.motionCurtainFrames}</span
+      <span
+        data-problem={summary.motionPreparationFrames > 0 &&
+          summary.motionCurtainFrames < summary.motionPreparationFrames}
+        >Protected preparation frames: {summary.motionCurtainFrames} / {summary.motionPreparationFrames}</span
+      >
+      <span data-problem={summary.motionMisidentified3DFrames > 0}
+        >Misidentified 3D frames: {summary.motionMisidentified3DFrames}</span
+      >
+      <span data-problem={summary.motionPreparationProgressRegressions > 0}
+        >Progress regressions: {summary.motionPreparationProgressRegressions}</span
+      >
+      <span
+        >Preparation phases: {summary.motionPreparationLabels.join(" → ") ||
+          "n/a"}</span
       >
       <span data-dissolve={summary.motionCrossfadeFrames > 0}
         >Crossfade frames: {summary.motionCrossfadeFrames}</span
       >
-      <span>Preparing frames: {summary.motionPreparationFrames}</span>
+      <span
+        >Sharp 2D exit frames: {summary.motionPreparationGeometryHeldFrames}</span
+      >
+      <span data-problem={summary.motionMagnifiedPreparationFrames > 0}
+        >Placeholder raster growth: {summary.motionPreparationRasterGrowthMaximum ===
+        null
+          ? "n/a"
+          : `${summary.motionPreparationRasterGrowthMaximum.toFixed(2)}×`} · peak
+        scale {summary.motionPreparationRasterScaleMaximum === null
+          ? "n/a"
+          : `${summary.motionPreparationRasterScaleMaximum.toFixed(2)}×`}</span
+      >
+      <span data-problem={summary.motionMagnifiedPreparationFrames > 0}
+        >Magnified placeholder frames: {summary.motionMagnifiedPreparationFrames}</span
+      >
       <span data-problem={summary.motionLate2DBackingChanges > 0}
         >Late 2D backing changes: {summary.motionLate2DBackingChanges}</span
       >
