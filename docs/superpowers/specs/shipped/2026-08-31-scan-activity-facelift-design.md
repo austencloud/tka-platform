@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-31
 **Module:** Choreo Cards > Scan Activity
-**Status:** Approved for implementation
+**Status:** Shipped
 
 ## Problem
 

@@ -258,8 +258,24 @@
     ) {
       if (performance.now() - startedAt > 20_000) {
         throw new Error(
-          `${surface.toUpperCase()} did not present a ready frame.`
+          `${surface.toUpperCase()} did not present within the motion gate.`
         );
+      }
+      await wait(16);
+    }
+    return version === replayVersion;
+  }
+
+  async function waitFor3DReady(version: number): Promise<boolean> {
+    const startedAt = performance.now();
+    while (
+      version === replayVersion &&
+      !document.querySelector<HTMLElement>(
+        '[data-motion-surface="3d"][data-scene-ready="true"]'
+      )
+    ) {
+      if (performance.now() - startedAt > 20_000) {
+        throw new Error("3D did not produce a ready frame within the motion gate.");
       }
       await wait(16);
     }
@@ -335,12 +351,22 @@
       activeTunnelCanvas.width > 0 &&
       activeTunnelCanvas.height > 0
     );
+    const selectedMode = selectedViewerMode();
+    const motion3DSurface = document.querySelector<HTMLElement>(
+      '[data-motion-surface="3d"]'
+    );
+    const scenePreparation = document.querySelector<HTMLElement>(
+      '[data-motion-surface="3d"][data-presented="true"] [data-scene-preparation]'
+    );
+    const scenePreparationProgress = scenePreparation?.dataset
+      .scenePreparationProgress;
+    const motion3DReady = motion3DSurface?.dataset.sceneReady === "true";
     const sample: TransitionGeometrySample = {
       time: Math.round((performance.now() - traceStartedAt) * 10) / 10,
       phase: tracePhase,
       direction,
       focusedPane: splitView?.dataset.focused || null,
-      selectedMode: selectedViewerMode(),
+      selectedMode,
       outerDirection: outerPanelGroup?.classList.contains("vertical")
         ? "vertical"
         : "horizontal",
@@ -433,21 +459,18 @@
         '[data-motion-surface="3d"]',
         "presented"
       ),
-      motion3DReady: elementDataFlag(
-        '[data-motion-surface="3d"]',
-        "sceneReady"
-      ),
-      motion3DPreparing: Boolean(
-        document.querySelector(".viewer-3d-handoff-status")
-      ),
+      motion3DReady,
+      motion3DPreparing: selectedMode === "animation-3d" && !motion3DReady,
       motion2DPreparationHeld: Boolean(
         document.querySelector('[data-3d-preparation-held="true"]')
       ),
-      sceneCurtainVisible: Boolean(
-        document.querySelector(
-          '[data-motion-surface="3d"][data-presented="true"] .curtain'
-        )
-      ),
+      sceneCurtainVisible: Boolean(scenePreparation),
+      scenePreparationProgress:
+        scenePreparationProgress && scenePreparationProgress !== "indeterminate"
+          ? Number(scenePreparationProgress)
+          : null,
+      scenePreparationLabel:
+        scenePreparation?.dataset.scenePreparationLabel ?? null,
       tunnelOpacity: tunnelBlend,
       tunnelPresented: Boolean(activeTunnelSurface) || tunnelBlend > 0,
       tunnelCanvasReady,
@@ -581,6 +604,7 @@
         beginGeometryTrace(command, "prepare-3d");
         if (!(await chooseMode("3D Animation", version, false))) return;
         if (!(await waitForMotionPresentation("3d", version))) return;
+        if (!(await waitFor3DReady(version))) return;
         setTracePhase("show-3d");
         await wait(DURATION.emphasis + 90);
         setTracePhase("return-2d");
@@ -588,12 +612,14 @@
       } else if (command === "3d-repeat") {
         if (!(await chooseMode("3D Animation", version, false))) return;
         if (!(await waitForMotionPresentation("3d", version))) return;
+        if (!(await waitFor3DReady(version))) return;
         await wait(DURATION.emphasis + 90);
         if (!(await chooseMode("2D Animation", version))) return;
 
         beginGeometryTrace(command, "repeat-3d");
         if (!(await chooseMode("3D Animation", version, false))) return;
         if (!(await waitForMotionPresentation("3d", version))) return;
+        if (!(await waitFor3DReady(version))) return;
         await wait(DURATION.emphasis + 90);
         setTracePhase("return-2d");
         if (!(await chooseMode("2D Animation", version))) return;
@@ -619,6 +645,7 @@
       } else if (command === "tunnel-3d") {
         if (!(await chooseMode("3D Animation", version, false))) return;
         if (!(await waitForMotionPresentation("3d", version))) return;
+        if (!(await waitFor3DReady(version))) return;
         await wait(motionDuration(DURATION.emphasis) + 90);
 
         beginGeometryTrace(command, "prepare-tunnel-from-3d");
@@ -629,6 +656,7 @@
         setTracePhase("return-3d");
         if (!(await chooseMode("3D Animation", version, false))) return;
         if (!(await waitForMotionPresentation("3d", version))) return;
+        if (!(await waitFor3DReady(version))) return;
         await wait(motionDuration(DURATION.emphasis) + 90);
       } else {
         beginGeometryTrace(command, "interrupt-tunnel");

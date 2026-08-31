@@ -8,6 +8,7 @@
   import SceneControlWorkspace from "$lib/shared/3d/components/controls/SceneControlWorkspace.svelte";
   import type { SceneControlLayout } from "$lib/shared/3d/domain/scene-control-layout";
   import ContactViewerRequired from "$lib/shared/3d/components/ContactViewerRequired.svelte";
+  import ScenePreparationSurface from "$lib/shared/3d/scene-features/components/ScenePreparationSurface.svelte";
   import { sceneNeedsContactViewer } from "$lib/shared/3d/domain/prop-motion-discipline";
   import VisualSequenceSaveContextMenuHost from "$lib/shared/library/components/VisualSequenceSaveContextMenuHost.svelte";
   import Viewer3DRailHint from "$lib/shared/3d/components/onboarding/Viewer3DRailHint.svelte";
@@ -16,11 +17,7 @@
     isViewer3DIntroReplayRequested,
     shouldShowViewer3DIntro,
   } from "$lib/shared/onboarding/state/viewer3d-intro-state";
-  import {
-    flyFade,
-    motionDuration,
-    reducedMotion,
-  } from "$lib/shared/transitions/motion";
+  import { motionDuration } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { Tween } from "svelte/motion";
   import { cubicInOut } from "svelte/easing";
@@ -175,17 +172,14 @@
   const keep3DUntilTunnelPaints = $derived(
     isTunnelActive && retainedMotionPane === "animation-3d" && !animatorReady
   );
-  // First activation loads the 3D stage behind the live 2D frame. Repeated
-  // switches use the same presentation gate, but the latched ready state makes
-  // them immediate. A direct 3D page load has no prior 2D frame to preserve,
-  // so it keeps the scene's own loading curtain.
+  // Selecting 3D presents a 3D-owned surface immediately. Its preparation
+  // screen can then report the real engine, asset, performer, and shader phases
+  // instead of leaving the old 2D mode on screen for an unknowable wait.
   const is3DPresented = $derived(
-    (is3DActive && (scene3DReady || !is2DMounted)) || keep3DUntilTunnelPaints
+    is3DActive || keep3DUntilTunnelPaints
   );
   const is2DPresented = $derived(
-    is2DActive ||
-      (isTunnelActive && !keep3DUntilTunnelPaints) ||
-      (is3DActive && is2DMounted && !scene3DReady)
+    is2DActive || (isTunnelActive && !keep3DUntilTunnelPaints)
   );
   const is2DRailPresented = $derived(isAnimatorActive);
   const is3DRailPresented = $derived(is3DActive && scene3DReady);
@@ -213,9 +207,8 @@
   let previousPresentedPane = $state(presentedPane);
   let presentationWidthReleaseTimer: ReturnType<typeof setTimeout> | undefined;
   let preparationCanvasWidth = $state<number | null>(null);
-  let preparationCanvasWidthReleaseTimer:
-    | ReturnType<typeof setTimeout>
-    | undefined;
+  let preparationCanvasWidthReleaseFrame: number | undefined;
+  let leasedCurrent3DEntry = false;
   let contactBoundaryReportedReady = $state(false);
   let saveMenuHost: VisualSequenceSaveContextMenuHost | undefined = $state();
   let sceneControlLayout = $state<SceneControlLayout>({
@@ -298,46 +291,72 @@
   // that raster and makes otherwise crisp prop artwork look badly compressed.
   //
   // Capture the last authored 2D width before the mode update paints. The live
-  // canvas then glides to the center at that exact size while 3D prepares
-  // behind it. Keep the lease through the surface dissolve and release only
-  // after 2D is fully covered.
-  $effect.pre(() => {
-    if (side !== "left" || !is3DPreparing) return;
+  // canvas then glides to the center at that exact size during the short exit
+  // dissolve. Release as soon as 2D is covered, giving its hidden backing store
+  // the rest of 3D preparation to settle before any return.
+  function schedulePreparationCanvasWidthRelease(): void {
+    if (preparationCanvasWidthReleaseFrame !== undefined) {
+      cancelAnimationFrame(preparationCanvasWidthReleaseFrame);
+    }
 
-    // A reversal may have armed the release while the 3D boot continues in
-    // the keep-alive layer. Re-entering 3D renews the existing lease instead
-    // of letting that stale timer drop it halfway through preparation.
-    clearTimeout(preparationCanvasWidthReleaseTimer);
-    preparationCanvasWidthReleaseTimer = undefined;
-    if (preparationCanvasWidth !== null || !pane2D) return;
+    const releaseWhenCovered = () => {
+      preparationCanvasWidthReleaseFrame = undefined;
+      const outgoingOpacity = pane2D
+        ? Number.parseFloat(getComputedStyle(pane2D).opacity)
+        : 0;
+
+      // Scene startup can briefly occupy the main thread. A wall-clock timer
+      // may therefore expire before the browser has painted the outgoing
+      // dissolve, exposing a stretched backing store for one late frame. Tie
+      // the lease to what was actually painted: release only once 2D is hidden
+      // (or once a reversal makes it the destination again).
+      if (!is2DPresented && outgoingOpacity > 0.05) {
+        preparationCanvasWidthReleaseFrame = requestAnimationFrame(
+          releaseWhenCovered
+        );
+        return;
+      }
+
+      preparationCanvasWidth = null;
+    };
+
+    preparationCanvasWidthReleaseFrame = requestAnimationFrame(
+      releaseWhenCovered
+    );
+  }
+
+  $effect.pre(() => {
+    if (side !== "left") return;
+    if (!is3DPreparing) {
+      leasedCurrent3DEntry = false;
+      return;
+    }
+    if (leasedCurrent3DEntry) return;
+    leasedCurrent3DEntry = true;
+
+    // Re-entering while a reversal is still dissolving renews the same lease so
+    // the sharp outgoing frame never changes size halfway through its fade.
+    if (preparationCanvasWidth !== null) {
+      schedulePreparationCanvasWidthRelease();
+      return;
+    }
+    if (!pane2D) return;
 
     const width = lastReadable2DWidth || pane2D.getBoundingClientRect().width;
     if (width <= 0) return;
     preparationCanvasWidth = width;
+    schedulePreparationCanvasWidthRelease();
   });
 
   $effect(() => {
-    if (is3DPreparing || preparationCanvasWidth === null) return;
-
-    clearTimeout(preparationCanvasWidthReleaseTimer);
-    const releaseWidth = () => {
-      preparationCanvasWidthReleaseTimer = undefined;
-      preparationCanvasWidth = null;
-    };
-    // Reduced motion still owns one quiet opacity dissolve between these two
-    // co-located surfaces, so its sharp frame lease follows that CSS clock.
-    const duration = reducedMotion()
-      ? DURATION.normal
-      : motionDuration(DURATION.emphasis);
-    if (duration === 0) {
-      releaseWidth();
-    } else {
-      preparationCanvasWidthReleaseTimer = setTimeout(releaseWidth, duration);
-    }
+    if (is3DActive || preparationCanvasWidth === null) return;
+    schedulePreparationCanvasWidthRelease();
   });
 
   $effect(() => () => {
-    clearTimeout(preparationCanvasWidthReleaseTimer);
+    if (preparationCanvasWidthReleaseFrame !== undefined) {
+      cancelAnimationFrame(preparationCanvasWidthReleaseFrame);
+    }
   });
 
   function handleCloseClick(event: MouseEvent | KeyboardEvent): void {
@@ -366,13 +385,7 @@
 </script>
 
 {#snippet viewer3DLoading()}
-  <div
-    class="loading-state viewer-3d-load-state"
-    role="status"
-    aria-label="Loading 3D viewer"
-  >
-    <ProgressRing percent={-1} size={32} strokeWidth={3} />
-  </div>
+  <ScenePreparationSurface statusText="Opening 3D" />
 {/snippet}
 
 {#snippet viewer3DError(_error: unknown, retry: () => void)}
@@ -462,8 +475,7 @@
               scene3DReady = ready;
               onSceneReadyChange?.(ready);
             },
-            initialRevealMode:
-              side === "left" && is2DMounted ? "streaming" : "gated",
+            initialRevealMode: "gated",
           }}
         />
       {/if}
@@ -595,20 +607,6 @@
           {onSaveToLibrary}
         />
       </div>
-      {#if is3DPreparing}
-        <div class="viewer-3d-handoff-anchor">
-          <div
-            class="viewer-3d-handoff-status"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            transition:flyFade={{ duration: DURATION.fast, y: -4 }}
-          >
-            <ProgressRing percent={-1} size={18} strokeWidth={2.5} />
-            <span>Preparing 3D</span>
-          </div>
-        </div>
-      {/if}
     {/if}
   </div>
 {/if}
