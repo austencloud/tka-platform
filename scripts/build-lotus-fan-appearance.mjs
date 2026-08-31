@@ -92,7 +92,7 @@ export async function buildLotusFanAppearance() {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 207" data-generated-from="scripts/assets/lotus-fire-reference.svg" data-source-version="${reference.version}">
   <title>Home of Poi Medium Lotus fire fan</title>
   <desc>Generated from the measured, hand-traced Lotus geometry used by the 3D fan model.</desc>
-  <g transform="translate(${DISPLAY_PIVOT.x} ${DISPLAY_PIVOT.y}) rotate(90) scale(${DISPLAY_SCALE.x} ${DISPLAY_SCALE.y}) translate(-${SOURCE_PIVOT.x} -${SOURCE_PIVOT.y})" fill="none" stroke="#2E3192" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+  <g data-fan-frame="" transform="translate(${DISPLAY_PIVOT.x} ${DISPLAY_PIVOT.y}) rotate(90) scale(${DISPLAY_SCALE.x} ${DISPLAY_SCALE.y}) translate(-${SOURCE_PIVOT.x} -${SOURCE_PIVOT.y})" fill="none" stroke="#2E3192" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
 ${rails}
     <circle data-lotus-grip-ring="" cx="${format(gripRing.x)}" cy="${format(
       gripRing.y
@@ -104,7 +104,7 @@ ${rails}
     )}"/>
     <path data-lotus-lower-cradle="" d="${cradlePath(geometry)}"/>
   </g>
-  <g transform="translate(${DISPLAY_PIVOT.x} ${DISPLAY_PIVOT.y}) rotate(90) scale(${DISPLAY_SCALE.x} ${DISPLAY_SCALE.y}) translate(-${SOURCE_PIVOT.x} -${SOURCE_PIVOT.y})" fill="#2E3192">
+  <g data-fan-wicks="" transform="translate(${DISPLAY_PIVOT.x} ${DISPLAY_PIVOT.y}) rotate(90) scale(${DISPLAY_SCALE.x} ${DISPLAY_SCALE.y}) translate(-${SOURCE_PIVOT.x} -${SOURCE_PIVOT.y})" fill="#f5e6b8">
 ${wicks}
   </g>
 </svg>

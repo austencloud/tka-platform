@@ -19,6 +19,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import PropPickerReview from "./PropPickerReview.svelte";
+  import FireFanFidelityReview from "./FireFanFidelityReview.svelte";
   import CompactStageComparison from "./CompactStageComparison.svelte";
   import { VIEWBOX_SIZE } from "$lib/shared/render/core/constants/viewbox";
   import { getPropDimensions } from "$lib/shared/animation-engine/services/IPropTextureLoader";
@@ -85,6 +86,9 @@
   const reviewingPicker = $derived(
     page.url.searchParams.get("review") === "picker"
   );
+  const reviewingFireFans = $derived(
+    page.url.searchParams.get("review") === "fire-fans"
+  );
   const visible = $derived(
     showBig ? rows : rows.filter((r) => !r.type.toString().startsWith("big"))
   );
@@ -99,15 +103,22 @@
 </script>
 
 <svelte:head
-  ><title>{reviewingPicker ? "Prop Picker Review" : "Prop size audit"}</title
+  ><title
+    >{reviewingPicker
+      ? "Prop Picker Review"
+      : reviewingFireFans
+        ? "Fire Fan Fidelity Review"
+        : "Prop size audit"}</title
   ></svelte:head
 >
 
 {#if reviewingPicker}
   <PropPickerReview />
+{:else if reviewingFireFans}
+  <FireFanFidelityReview />
 {/if}
 
-<div class="page" class:review-hidden={reviewingPicker}>
+<div class="page" class:review-hidden={reviewingPicker || reviewingFireFans}>
   <header>
     <h1>Prop size audit</h1>
     <p>
