@@ -7,6 +7,8 @@ type SocketTargetProbe = {
   rightGripAxisLocal: Vector3 | null;
   leftPalmLocal: Vector3 | null;
   rightPalmLocal: Vector3 | null;
+  leftPalmWorldLength: number;
+  rightPalmWorldLength: number;
   _bodyFrame: { lateral: Vector3 };
   targetPose: {
     leftHand: { targetPosition: Vector3 } | null;
@@ -64,6 +66,8 @@ describe("avatar wrist-side clearance", () => {
 
     animator.leftPalmLocal = new Vector3(palmLength, 0, 0);
     animator.rightPalmLocal = new Vector3(palmLength, 0, 0);
+    animator.leftPalmWorldLength = 0.01;
+    animator.rightPalmWorldLength = 0.01;
     animator._bodyFrame.lateral.copy(anatomicalRight);
 
     const leftGrip = anatomicalRight.clone().multiplyScalar(-0.03);
