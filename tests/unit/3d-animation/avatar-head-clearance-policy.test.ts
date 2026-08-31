@@ -21,13 +21,9 @@ const animatorRuntime = readFileSync(
 );
 
 describe("avatar head-clearance policy", () => {
-  it("keeps unreachable-target posture compensation within four degrees", () => {
-    expect(animatorSource).toContain(
-      "const MAX_REACH_LEAN = (4 * Math.PI) / 180"
-    );
-    expect(animatorRuntime).toContain(
-      "const MAX_REACH_LEAN = (4 * Math.PI) / 180"
-    );
+  it("keeps unreachable arm targets from pulling the spine into their path", () => {
+    expect(animatorSource).toContain("const MAX_REACH_LEAN = 0");
+    expect(animatorRuntime).toContain("const MAX_REACH_LEAN = 0");
     expect(animatorSource).toContain(
       "const ARM_CLEARANCE_REACH_RATIOS = [0.92, 0.84, 0.76, 0.68, 0.6]"
     );
@@ -71,7 +67,14 @@ describe("avatar head-clearance policy", () => {
   ])("retries only measured body intersections in %s", (_label, animator) => {
     expect(animator).toMatch(/this\.solveArmWithBodyClearance\(\s*"left"/);
     expect(animator).toMatch(/this\.solveArmWithBodyClearance\(\s*"right"/);
-    expect(animator).toContain("this.armClearsBody(chain, context)");
+    expect(animator).toContain("this.solveArmAtClearPole(chain, target, context)");
+    expect(animator).toContain("this.armBodyClearanceMargin(chain, context)");
+    expect(animator).toMatch(
+      /!this\.armClearsBody\(leftChain, leftClearanceContext\)/
+    );
+    expect(animator).toMatch(
+      /!this\.armClearsBody\(rightChain, rightClearanceContext\)/
+    );
     expect(animator).not.toContain("limitArmExtensionForClearance");
   });
 });
