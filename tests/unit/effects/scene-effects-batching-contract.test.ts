@@ -136,6 +136,25 @@ describe("scene-level particle batching contract", () => {
     );
   });
 
+  it("routes Coal through one scene pool and prepares interactive rig effects", () => {
+    expect(ORCHESTRATOR).toContain('effect !== "charcoal"');
+    expect(ORCHESTRATOR).toContain("params: resolvedCharcoal");
+    expect(ORCHESTRATOR).toContain(
+      'effect === "charcoal" && sceneEffectsManager === null'
+    );
+    expect(ORCHESTRATOR).toContain("prepareInteractiveRenderers");
+    expect(ORCHESTRATOR).toContain("primeTipCapacity(2)");
+  });
+
+  it("keeps Trails, Zap, and Ghost mounted before selection", () => {
+    expect(ORCHESTRATOR).toContain(
+      'enabled={tip.effect === "trails" && isPlaying}'
+    );
+    expect(LAYER).toContain("enabled={zapEnabled && isPlaying}");
+    expect(LAYER).toContain("{#if ghost3D}");
+    expect(ZAP).not.toContain("<T.PointLight");
+  });
+
   it("does not leave the retired duplicate fire emitter in the tree", () => {
     expect(
       existsSync(
