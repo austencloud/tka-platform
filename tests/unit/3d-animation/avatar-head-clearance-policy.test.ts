@@ -20,6 +20,14 @@ const animatorRuntime = readFileSync(
   "utf8"
 );
 
+const spineTwisterSource = readFileSync(
+  resolve(
+    packageRoot,
+    "src/lib/services/implementations/SpineTwister.ts"
+  ),
+  "utf8"
+);
+
 describe("avatar head-clearance policy", () => {
   it("keeps unreachable arm targets from pulling the spine into their path", () => {
     expect(animatorSource).toContain("const MAX_REACH_LEAN = 0");
@@ -30,6 +38,7 @@ describe("avatar head-clearance policy", () => {
     expect(animatorRuntime).toContain(
       "const ARM_CLEARANCE_REACH_RATIOS = [0.92, 0.84, 0.76, 0.68, 0.6]"
     );
+    expect(spineTwisterSource).toContain("const MAX_FORWARD_PITCH = 0");
   });
 
   it.each([
@@ -71,6 +80,10 @@ describe("avatar head-clearance policy", () => {
     expect(animator).not.toMatch(
       /this\.stanceYawSmoothedRad \+=\s*\(this\.stanceYawTargetRad/
     );
+    expect(animator).toContain("const stanceTrackActive = maxIKWeight > 0.001");
+    expect(animator).toContain(
+      "const stanceCorrectionActive = Math.abs(stanceYawCorrectionRad) > 0.001"
+    );
   });
 
   it.each([
@@ -79,8 +92,9 @@ describe("avatar head-clearance policy", () => {
   ])("retries only measured body intersections in %s", (_label, animator) => {
     expect(animator).toMatch(/this\.solveArmWithBodyClearance\(\s*"left"/);
     expect(animator).toMatch(/this\.solveArmWithBodyClearance\(\s*"right"/);
-    expect(animator).toContain("this.solveArmAtClearPole(chain, target, context)");
+    expect(animator).toContain("this.armClearsBody(chain, context)");
     expect(animator).toContain("this.armBodyClearanceMargin(chain, context)");
+    expect(animator).not.toContain("ARM_CLEARANCE_POLE_SEARCH_STEPS");
     expect(animator).toMatch(
       /!this\.armClearsBody\(leftChain, leftClearanceContext\)/
     );
