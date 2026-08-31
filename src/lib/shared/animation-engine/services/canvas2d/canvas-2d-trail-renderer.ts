@@ -87,7 +87,8 @@ function createSmoothCurve(
     const t3 = getT(t2, p2, p3);
 
     // Linear interpolation helper with safe division
-    const safeDivide = (num: number, den: number) => den === 0 ? 0 : num / den;
+    const safeDivide = (num: number, den: number) =>
+      den === 0 ? 0 : num / den;
     const lerp = (pa: Point2D, pb: Point2D, t: number): Point2D => {
       const ct = Math.max(0, Math.min(1, t));
       return { x: pa.x + (pb.x - pa.x) * ct, y: pa.y + (pb.y - pa.y) * ct };
@@ -110,8 +111,6 @@ function createSmoothCurve(
 
   return result;
 }
-
-
 
 /** Exponent for fade curve - holds brightness longer, then drops sharply */
 const FADE_EXPONENT = 2.5;
@@ -196,6 +195,8 @@ export class Canvas2DTrailRenderer {
     // Render additional tunnel layer trails
     if (additionalLayers) {
       for (const layer of additionalLayers) {
+        ctx.save();
+        ctx.globalAlpha *= layer.opacity;
         if (layer.hasBlue && layer.blueTrailPoints.length >= 2) {
           this.renderTrailSegments(
             ctx,
@@ -218,6 +219,7 @@ export class Canvas2DTrailRenderer {
             qualityHints
           );
         }
+        ctx.restore();
       }
     }
   }
@@ -288,14 +290,13 @@ export class Canvas2DTrailRenderer {
     }
 
     // Adaptive subdivision based on point count AND quality tier
-    const targetTotal = qualityHints?.targetSubdivisions ?? TARGET_TOTAL_SUBDIVISIONS;
-    const maxPerSegment = qualityHints?.maxSubdivisionsPerSegment ?? MAX_SPLINE_SUBDIVISIONS;
+    const targetTotal =
+      qualityHints?.targetSubdivisions ?? TARGET_TOTAL_SUBDIVISIONS;
+    const maxPerSegment =
+      qualityHints?.maxSubdivisionsPerSegment ?? MAX_SPLINE_SUBDIVISIONS;
     const subdivisionsPerSegment = Math.max(
       MIN_SPLINE_SUBDIVISIONS,
-      Math.min(
-        maxPerSegment,
-        Math.floor(targetTotal / points.length)
-      )
+      Math.min(maxPerSegment, Math.floor(targetTotal / points.length))
     );
 
     const smoothPoints = createSmoothCurve(controlPoints, {
@@ -307,17 +308,37 @@ export class Canvas2DTrailRenderer {
 
     // Respect quality hints for glow: if hints say no glow, force NONE
     const glowEnabled = qualityHints?.glowEnabled ?? true;
-    const effect = !glowEnabled ? TrailEffect.NONE : (settings.effect ?? TrailEffect.GLOW);
+    const effect = !glowEnabled
+      ? TrailEffect.NONE
+      : (settings.effect ?? TrailEffect.GLOW);
 
     // Always use tapered rendering (thick at head, thin at tail)
     const needsSegmentedRendering = true;
 
     if (needsSegmentedRendering) {
       // Segmented rendering for tapered trails
-      this.renderTaperedSmoothTrail(ctx, smoothPoints, points, color, settings, currentTime, effect, sizeScale);
+      this.renderTaperedSmoothTrail(
+        ctx,
+        smoothPoints,
+        points,
+        color,
+        settings,
+        currentTime,
+        effect,
+        sizeScale
+      );
     } else {
       // Single path rendering (faster, no tapering)
-      this.renderUniformSmoothTrail(ctx, smoothPoints, points, color, settings, currentTime, effect, sizeScale);
+      this.renderUniformSmoothTrail(
+        ctx,
+        smoothPoints,
+        points,
+        color,
+        settings,
+        currentTime,
+        effect,
+        sizeScale
+      );
     }
   }
 
@@ -344,12 +365,18 @@ export class Canvas2DTrailRenderer {
     // Apply glow effect once
     const isGlow = effect === TrailEffect.GLOW;
     if (isGlow) {
-      const rawBlur = settings.glowBlur > 0 ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER : FALLBACK_GLOW_BLUR;
+      const rawBlur =
+        settings.glowBlur > 0
+          ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER
+          : FALLBACK_GLOW_BLUR;
       ctx.shadowBlur = Math.max(MIN_SCALED_GLOW_BLUR, rawBlur * sizeScale);
       ctx.shadowColor = color;
     }
     ctx.strokeStyle = color;
-    const scaledWidth = Math.max(MIN_SCALED_LINE_WIDTH, settings.lineWidth * sizeScale);
+    const scaledWidth = Math.max(
+      MIN_SCALED_LINE_WIDTH,
+      settings.lineWidth * sizeScale
+    );
     ctx.lineWidth = scaledWidth;
 
     // Draw trail in segments to allow per-segment opacity
@@ -408,7 +435,8 @@ export class Canvas2DTrailRenderer {
     for (let i = 0; i < smoothPoints.length; i++) {
       const curr = smoothPoints[i]!;
       const progress = i / (smoothPoints.length - 1);
-      const halfWidth = this.calculateLineWidth(progress, settings, sizeScale) / 2;
+      const halfWidth =
+        this.calculateLineWidth(progress, settings, sizeScale) / 2;
 
       // Calculate perpendicular direction from path tangent
       let dx: number, dy: number;
@@ -440,20 +468,29 @@ export class Canvas2DTrailRenderer {
         leftEdge[i]!.x = curr.x + perpX * halfWidth;
         leftEdge[i]!.y = curr.y + perpY * halfWidth;
       } else {
-        leftEdge[i] = { x: curr.x + perpX * halfWidth, y: curr.y + perpY * halfWidth };
+        leftEdge[i] = {
+          x: curr.x + perpX * halfWidth,
+          y: curr.y + perpY * halfWidth,
+        };
       }
       if (rightEdge[i]) {
         rightEdge[i]!.x = curr.x - perpX * halfWidth;
         rightEdge[i]!.y = curr.y - perpY * halfWidth;
       } else {
-        rightEdge[i] = { x: curr.x - perpX * halfWidth, y: curr.y - perpY * halfWidth };
+        rightEdge[i] = {
+          x: curr.x - perpX * halfWidth,
+          y: curr.y - perpY * halfWidth,
+        };
       }
     }
 
     // Apply glow effect once for all segments
     const isGlow = effect === TrailEffect.GLOW;
     if (isGlow) {
-      const rawBlur = settings.glowBlur > 0 ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER : FALLBACK_GLOW_BLUR;
+      const rawBlur =
+        settings.glowBlur > 0
+          ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER
+          : FALLBACK_GLOW_BLUR;
       ctx.shadowBlur = Math.max(MIN_SCALED_GLOW_BLUR, rawBlur * sizeScale);
       ctx.shadowColor = color;
     }
@@ -505,7 +542,10 @@ export class Canvas2DTrailRenderer {
 
     // Apply glow/shadow if using glow effect
     if (effect === TrailEffect.GLOW) {
-      const rawBlur = settings.glowBlur > 0 ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER : FALLBACK_GLOW_BLUR;
+      const rawBlur =
+        settings.glowBlur > 0
+          ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER
+          : FALLBACK_GLOW_BLUR;
       ctx.shadowBlur = Math.max(MIN_SCALED_GLOW_BLUR, rawBlur * sizeScale);
       ctx.shadowColor = color;
       ctx.shadowOffsetX = 0;
@@ -534,7 +574,10 @@ export class Canvas2DTrailRenderer {
 
       if (settings.mode === TrailMode.FADE) {
         const age = currentTime - point.timestamp;
-        const rawProgress = Math.min(1, Math.max(0, age / settings.fadeDurationMs));
+        const rawProgress = Math.min(
+          1,
+          Math.max(0, age / settings.fadeDurationMs)
+        );
 
         // Exponential fade to zero - holds brightness longer, then drops sharply.
         // Fades all the way to 0 so stationary trails disappear completely.
@@ -582,7 +625,10 @@ export class Canvas2DTrailRenderer {
 
       if (originalPoint) {
         const age = currentTime - originalPoint.timestamp;
-        const progress = Math.min(1, Math.max(0, age / settings.fadeDurationMs));
+        const progress = Math.min(
+          1,
+          Math.max(0, age / settings.fadeDurationMs)
+        );
 
         // Exponential fade to zero - holds brightness longer, then drops sharply.
         // Fades all the way to 0 so stationary trails disappear completely.
@@ -616,7 +662,11 @@ export class Canvas2DTrailRenderer {
     sizeScale: number
   ): number {
     // Always tapered: thick at head (progress=1), thin at tail (progress=0)
-    const widthRatio = MIN_TAIL_WIDTH_RATIO + (1 - MIN_TAIL_WIDTH_RATIO) * progress;
-    return Math.max(MIN_SCALED_LINE_WIDTH, settings.lineWidth * widthRatio * sizeScale);
+    const widthRatio =
+      MIN_TAIL_WIDTH_RATIO + (1 - MIN_TAIL_WIDTH_RATIO) * progress;
+    return Math.max(
+      MIN_SCALED_LINE_WIDTH,
+      settings.lineWidth * widthRatio * sizeScale
+    );
   }
 }

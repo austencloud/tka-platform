@@ -1,10 +1,9 @@
-<!-- Look coordinates the preset browser and the primitive tuner. -->
+<!-- Formation coordinates the preset browser and the primitive tuner. -->
 <script lang="ts">
   import type { TunnelViewController } from "../../tunnel/tunnel-view-controller.svelte";
   import TunnelPresetBrowser from "./TunnelPresetBrowser.svelte";
   import TunnelPrimitiveTuner from "./TunnelPrimitiveTuner.svelte";
   import TunnelConfigurationSummary from "./TunnelConfigurationSummary.svelte";
-  import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import type { ArtSettingChangeHandler } from "./art-settings-types";
 
   interface Props {
@@ -13,8 +12,6 @@
     onSaveTunnel?: () => void;
     saveTunnelLabel?: string;
     onArtSettingChange?: ArtSettingChangeHandler;
-    bpm: number;
-    playbackMode: PlaybackMode;
   }
 
   let {
@@ -23,8 +20,6 @@
     onSaveTunnel,
     saveTunnelLabel = "Save tunnel",
     onArtSettingChange,
-    bpm,
-    playbackMode,
   }: Props = $props();
 
   function openTuner(source: "custom_card" | "customize_button"): void {
@@ -41,11 +36,7 @@
 
   // An analytics sink must never strand somebody in the preset surface. The
   // controller owns the edit state; telemetry is only an observer.
-  function reportDrill(
-    previous: string,
-    value: string,
-    source: string
-  ): void {
+  function reportDrill(previous: string, value: string, source: string): void {
     try {
       onArtSettingChange?.(
         "art_navigation",
@@ -56,13 +47,16 @@
         source
       );
     } catch (error) {
-      console.warn("[TunnelLookSettings] Could not record tunnel drill:", error);
+      console.warn(
+        "[TunnelLookSettings] Could not record tunnel drill:",
+        error
+      );
     }
   }
 </script>
 
 <div class="section-pad">
-  <TunnelConfigurationSummary {controller} {bpm} {playbackMode} {dense} />
+  <TunnelConfigurationSummary {controller} {dense} />
   {#if controller.lookEditorOpen}
     <TunnelPrimitiveTuner
       {controller}

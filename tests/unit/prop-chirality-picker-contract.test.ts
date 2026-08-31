@@ -44,6 +44,8 @@ const HOSTS: Record<string, string> = {
     "src/lib/features/create/tunnel/components/TunnelLayout.svelte",
   "viewer tunnel art settings":
     "src/lib/shared/sequence-viewer/components/art-settings/TunnelArtSettings.svelte",
+  "3D viewer prop adapter":
+    "src/lib/shared/3d/components/controls/ScenePropPicker.svelte",
 };
 
 /**
@@ -71,7 +73,9 @@ describe("buugeng chirality is owned by the prop picker", () => {
     expect(grid).toContain("chirality?: PropChiralitySeam");
     // Gated on the prop actually being buugeng-family, so staff users never
     // see a control that would do nothing.
-    expect(grid).toMatch(/\{#if chirality && isBuugengFamilyProp\(/);
+    expect(grid).toMatch(
+      /\{#if chirality && selectedPropType !== null && isBuugengFamilyProp\(/
+    );
   });
 
   it("the row routes to SegmentedControl rather than a hand-rolled toggle", () => {

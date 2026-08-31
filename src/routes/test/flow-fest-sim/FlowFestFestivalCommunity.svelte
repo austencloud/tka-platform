@@ -93,7 +93,7 @@
     {#if person.role === "spectator"}
       <Avatar3D
         id={`flow-fest-${person.id}`}
-        avatarId={person.avatarId}
+        characterId={person.avatarId}
         bluePropState={null}
         redPropState={null}
         visible={true}

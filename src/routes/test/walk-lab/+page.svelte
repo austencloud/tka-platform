@@ -39,9 +39,9 @@
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import {
-    createAvatarInstanceState,
+    createCharacterInstanceState,
     makeStandaloneDeps,
-  } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  } from "$lib/shared/3d/state/character-instance-state.svelte";
   import GaitProbe from "$lib/shared/3d/diagnostics/gait/GaitProbe.svelte";
   import GaitOverlay from "$lib/shared/3d/diagnostics/gait/GaitOverlay.svelte";
   import { gaitProbeState } from "$lib/shared/3d/diagnostics/gait/gait-probe-state.svelte";
@@ -54,6 +54,11 @@
     createTerminalStepPlan,
   } from "$lib/shared/3d/locomotion/destination-walk-plan";
   import {
+    MAX_EXACT_STEPS,
+    MIN_EXACT_STEPS,
+    exactStepRange as supportedExactStepRange,
+  } from "$lib/shared/3d/locomotion/straight-travel-constraints";
+  import {
     createCountedGaitTimingPlan,
     type CountedGaitSchedule,
   } from "$lib/shared/3d/locomotion/gait-timing-plan";
@@ -62,18 +67,14 @@
 
   const MANUAL = "manual";
   const EXACT_MARK = "exact-mark";
-  const MIN_EXACT_STEP_LENGTH = 0.55;
-  const MAX_EXACT_STEP_LENGTH = 0.85;
-  const MAX_EXACT_STEPS = 16;
   const TEMPO_OPTIONS = [90, 120, 150] as const;
-
   function exactStepRange(distance: number): { min: number; max: number } {
-    const min = Math.max(3, Math.ceil(distance / MAX_EXACT_STEP_LENGTH));
-    const max = Math.max(
-      min,
-      Math.min(MAX_EXACT_STEPS, Math.floor(distance / MIN_EXACT_STEP_LENGTH))
+    return (
+      supportedExactStepRange(distance) ?? {
+        min: MIN_EXACT_STEPS,
+        max: MAX_EXACT_STEPS,
+      }
     );
-    return { min, max };
   }
 
   function clampExactSteps(distance: number, steps: number): number {
@@ -303,11 +304,11 @@
    */
   const groundOffset = $derived(-userProportionsState.groundY);
 
-  let avatarState = $state<ReturnType<typeof createAvatarInstanceState> | null>(
+  let avatarState = $state<ReturnType<typeof createCharacterInstanceState> | null>(
     null
   );
   try {
-    avatarState = createAvatarInstanceState(
+    avatarState = createCharacterInstanceState(
       {
         id: "walk-lab-performer",
         positionX: 0,

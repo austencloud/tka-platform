@@ -25,12 +25,11 @@
  * - Canvas2DGridFadeManager: Grid visibility toggle transitions
  * - Canvas2DVisibilityFadeManager: Props and trails visibility transitions
  */
+import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/fire-types";
 import type { RenderedPropSprite } from "$lib/shared/animation-engine/domain/types/rendered-prop-sprite";
-import type {
-  RenderSceneParams,
-} from "$lib/shared/animation-engine/domain/types/animation-render-types";
+import type { RenderSceneParams } from "$lib/shared/animation-engine/domain/types/animation-render-types";
 
 export type {
   AdditionalLayerRenderData,
@@ -45,7 +44,10 @@ import { Canvas2DFadeManager } from "$lib/shared/animation-engine/services/canva
 import { Canvas2DGridFadeManager } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-grid-fade-manager";
 import { Canvas2DVisibilityFadeManager } from "./canvas2d/canvas-2d-visibility-fade-manager";
 import { DURATION } from "$lib/shared/transitions/transitions";
-import { lerp, lerpAngle } from "$lib/shared/animation-engine/services/angle-calculator";
+import {
+  lerp,
+  lerpAngle,
+} from "$lib/shared/animation-engine/services/angle-calculator";
 import { wsEase } from "$lib/shared/transitions/ws-ease";
 
 // Constants matching AnimatorCanvas EXACTLY
@@ -268,7 +270,12 @@ export class Canvas2DAnimationRenderer {
     backgroundAlpha: number = 1,
     paintBackground: boolean = true
   ): Promise<void> {
-    await this.appManager.initialize(container, size, backgroundAlpha, paintBackground);
+    await this.appManager.initialize(
+      container,
+      size,
+      backgroundAlpha,
+      paintBackground
+    );
   }
 
   async resize(newSize: number): Promise<void> {
@@ -285,12 +292,14 @@ export class Canvas2DAnimationRenderer {
   async loadPerColorPropTextures(
     bluePropType: string,
     redPropType: string,
-    darkMode?: boolean
+    darkMode?: boolean,
+    colors?: TunnelPropColorPair | null
   ): Promise<void> {
     await this.imageLoader.loadPerColorPropImages(
       bluePropType,
       redPropType,
-      darkMode
+      darkMode,
+      colors
     );
   }
 
@@ -367,10 +376,17 @@ export class Canvas2DAnimationRenderer {
     );
   }
 
-  async loadGridTexture(gridMode: string, showNonRadialPoints: boolean = true): Promise<void> {
+  async loadGridTexture(
+    gridMode: string,
+    showNonRadialPoints: boolean = true
+  ): Promise<void> {
     this.currentGridMode = gridMode;
     const canvasSize = this.appManager.getCurrentSize();
-    await this.imageLoader.loadGridImage(gridMode, canvasSize, showNonRadialPoints);
+    await this.imageLoader.loadGridImage(
+      gridMode,
+      canvasSize,
+      showNonRadialPoints
+    );
   }
 
   /**
@@ -591,7 +607,7 @@ export class Canvas2DAnimationRenderer {
             : this.imageLoader.getBluePropDimensions();
           const displayedBlueType = blueTextureMatchesRequest
             ? params.bluePropType
-            : loadedBlueType ?? params.bluePropType;
+            : (loadedBlueType ?? params.bluePropType);
           this.renderPropAtTransform(
             ctx,
             bluePropImage,
@@ -639,7 +655,10 @@ export class Canvas2DAnimationRenderer {
             const layerImages = this.imageLoader.getAdditionalLayerImages(i);
             if (layerImages.blue) {
               const dims = this.imageLoader.getAdditionalLayerDimensions(i);
-              ctx.globalAlpha = blueAlpha * spotlightFactor(selectedLayer, i + 1);
+              ctx.globalAlpha =
+                blueAlpha *
+                layer.opacity *
+                spotlightFactor(selectedLayer, i + 1);
               this.renderProp(
                 ctx,
                 layer.blueProp,
@@ -747,15 +766,13 @@ export class Canvas2DAnimationRenderer {
             : this.imageLoader.getRedPropDimensions();
           const displayedRedType = redTextureMatchesRequest
             ? params.redPropType
-            : loadedRedType ?? params.redPropType;
+            : (loadedRedType ?? params.redPropType);
           this.renderPropAtTransform(
             ctx,
             redPropImage,
             displayedRedDimensions,
             redSharedTransform,
-            redTextureMatchesRequest
-              ? redFlipped
-              : this.previousRedPropFlipped,
+            redTextureMatchesRequest ? redFlipped : this.previousRedPropFlipped,
             displayedRedType
           );
           if (displayedRedType) {
@@ -790,7 +807,10 @@ export class Canvas2DAnimationRenderer {
             const layerImages = this.imageLoader.getAdditionalLayerImages(i);
             if (layerImages.red) {
               const dims = this.imageLoader.getAdditionalLayerDimensions(i);
-              ctx.globalAlpha = redAlpha * spotlightFactor(selectedLayer, i + 1);
+              ctx.globalAlpha =
+                redAlpha *
+                layer.opacity *
+                spotlightFactor(selectedLayer, i + 1);
               this.renderProp(
                 ctx,
                 layer.redProp,
@@ -812,7 +832,10 @@ export class Canvas2DAnimationRenderer {
     this.renderGlyph(ctx, params.currentTime, canvasSize);
   }
 
-  getLastPropTransforms(): { blue: RenderedPropTransform | null; red: RenderedPropTransform | null } {
+  getLastPropTransforms(): {
+    blue: RenderedPropTransform | null;
+    red: RenderedPropTransform | null;
+  } {
     return { blue: this.lastBlueTransform, red: this.lastRedTransform };
   }
 
@@ -821,7 +844,10 @@ export class Canvas2DAnimationRenderer {
   }
 
   /** Current prop sprite images — the echo overlay ghosts these at past poses. */
-  getPropImages(): { blue: HTMLImageElement | null; red: HTMLImageElement | null } {
+  getPropImages(): {
+    blue: HTMLImageElement | null;
+    red: HTMLImageElement | null;
+  } {
     return {
       blue: this.imageLoader.getBluePropImage(),
       red: this.imageLoader.getRedPropImage(),
@@ -913,13 +939,7 @@ export class Canvas2DAnimationRenderer {
       ctx.scale(-1, 1);
     }
 
-    ctx.drawImage(
-      image,
-      -width / 2,
-      -height / 2,
-      width,
-      height
-    );
+    ctx.drawImage(image, -width / 2, -height / 2, width, height);
 
     ctx.restore();
   }

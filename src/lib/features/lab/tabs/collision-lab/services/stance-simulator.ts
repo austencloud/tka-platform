@@ -46,6 +46,7 @@ import type { StancePose } from "../domain/types";
 // simulator and the live readout agree on whether a stance is clear.
 const PROP_BODY_THRESHOLD = 0.02;
 const ARM_ARM_THRESHOLD = 0.06;
+const NECK_RADIUS = 0.07;
 
 // --- Joint comfort ranges (radians). Beyond these, we flag the pose as
 // "uncomfortable" - not physically impossible but visibly strained.
@@ -130,6 +131,8 @@ export class StanceSimulator {
   private readonly _torsoForward = new Vector3();
   private readonly _segClosest = new Vector3();
   private readonly _sep = new Vector3();
+  private readonly _leftUpperBodyStart = new Vector3();
+  private readonly _rightUpperBodyStart = new Vector3();
 
   constructor(restPose: RestPoseGeometry) {
     this.restPose = restPose;
@@ -187,7 +190,9 @@ export class StanceSimulator {
       if (
         c.zone === "prop-through-head" ||
         c.zone === "prop-through-torso" ||
-        c.zone === "arm-through-face"
+        c.zone === "arm-through-face" ||
+        c.zone === "arm-through-neck" ||
+        c.zone === "arm-through-torso"
       ) {
         if (c.depth > hardFaceOrBodyDepth) hardFaceOrBodyDepth = c.depth;
       }
@@ -276,7 +281,9 @@ export class StanceSimulator {
       if (
         c.zone === "prop-through-head" ||
         c.zone === "prop-through-torso" ||
-        c.zone === "arm-through-face"
+        c.zone === "arm-through-face" ||
+        c.zone === "arm-through-neck" ||
+        c.zone === "arm-through-torso"
       ) {
         if (c.depth > hardBodyDepth) hardBodyDepth = c.depth;
       }
@@ -647,6 +654,43 @@ export class StanceSimulator {
         depth: leftArmThresh - rightArmD,
         description: "R forearm → face",
       });
+    }
+
+    // 5b. Arms through neck/torso. Match the live detector's padded sphere
+    // chain and ignore the shoulder-adjacent 35% of each upper arm.
+    this._leftUpperBodyStart.lerpVectors(sk.leftShoulder, sk.leftElbow, 0.35);
+    this._rightUpperBodyStart.lerpVectors(sk.rightShoulder, sk.rightElbow, 0.35);
+    const bodyArmSegs: Array<{ name: string; a: Vector3; b: Vector3 }> = [
+      { name: "L upper arm", a: this._leftUpperBodyStart, b: sk.leftElbow },
+      { name: "L forearm", a: sk.leftElbow, b: sk.leftHand },
+      { name: "R upper arm", a: this._rightUpperBodyStart, b: sk.rightElbow },
+      { name: "R forearm", a: sk.rightElbow, b: sk.rightHand },
+    ];
+    const neckThreshold = NECK_RADIUS + rp.armRadius + PROP_BODY_THRESHOLD;
+    const torsoThreshold = rp.torsoRadius + rp.armRadius;
+    const torsoCenters = [sk.spine1, sk.spine2];
+    for (const arm of bodyArmSegs) {
+      const neckDistance = this.pointToSegmentDistance(sk.neck, arm.a, arm.b);
+      if (neckDistance < neckThreshold) {
+        collisions.push({
+          zone: "arm-through-neck",
+          depth: neckThreshold - neckDistance,
+          description: `${arm.name} → neck`,
+        });
+      }
+
+      let worstTorsoDepth = 0;
+      for (const center of torsoCenters) {
+        const distance = this.pointToSegmentDistance(center, arm.a, arm.b);
+        worstTorsoDepth = Math.max(worstTorsoDepth, torsoThreshold - distance);
+      }
+      if (worstTorsoDepth > 0) {
+        collisions.push({
+          zone: "arm-through-torso",
+          depth: worstTorsoDepth,
+          description: `${arm.name} → torso`,
+        });
+      }
     }
 
     // 6. Arms through each other (forearms).

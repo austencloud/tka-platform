@@ -68,6 +68,22 @@ the pronunciation-feedback handoff): *"I absolutely cannot announce to the user
 that something is now ready for visual feedback unless I put the visual
 feedback in his fucking face."*
 
+## Use `preview_start`, not `navigate`
+
+`mcp__Claude_Browser__navigate` only points a tab that is already there. It
+does NOT open or surface the pane, so a delivery that "opened the pane" with
+`navigate` lands exactly like a bare link. **`preview_start({url})` is the call
+that opens it** (it reuses an existing pane, so it is safe to call every time).
+
+Neither call can expand a pane Austen has collapsed. When `tabs_context`
+reports *"The Browser pane is currently hidden"*, or a probe returns
+`document.visibilityState === "hidden"`, pointer clicks fail with *"the press
+at (0, 0) could not be attributed to a frame"* because collapsed elements have
+no layout box. In that case: drive the page with `javascript_tool` `.click()`
+so it is already on the right view when he expands it, and lead the message
+with the one sentence that tells him the pane is collapsed. A pointed-but-blank
+pane reported as delivered is the same failure this rule exists to stop.
+
 ## Point it at the REAL surface, not the harness
 
 The pane must open on the thing the change actually ships in — the app route,

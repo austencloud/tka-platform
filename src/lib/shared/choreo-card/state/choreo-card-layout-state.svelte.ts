@@ -11,16 +11,23 @@ import {
   pickBestFitLayout,
   pickScrollColumns,
   type FitLayout,
+  type ResolvedAutoLayout,
 } from "$lib/shared/render/services/container-aware-layout";
 import { getMandalaPlacements } from "$lib/shared/sequence-viewer/services/get-mandala-placements";
 import { simplifyAndTruncate } from "$lib/shared/foundation/utils/word-simplifier";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 import {
-  HEADER_HEIGHT_DIVISOR, FOOTER_HEIGHT_DIVISOR,
-  BADGE_SIZE_SCALE, BADGE_PADDING_SCALE, BADGE_NUMBER_FONT_SCALE,
-  HEADER_WORD_FONT_SCALE, HEADER_WORD_FONT_MIN_SCALE,
-  FOOTER_FONT_SCALE, FOOTER_MARGIN_SCALE,
-  STEP_NUMBER_FONT_RATIO, STEP_NUMBER_FONT_MAX,
+  HEADER_HEIGHT_DIVISOR,
+  FOOTER_HEIGHT_DIVISOR,
+  BADGE_SIZE_SCALE,
+  BADGE_PADDING_SCALE,
+  BADGE_NUMBER_FONT_SCALE,
+  HEADER_WORD_FONT_SCALE,
+  HEADER_WORD_FONT_MIN_SCALE,
+  FOOTER_FONT_SCALE,
+  FOOTER_MARGIN_SCALE,
+  STEP_NUMBER_FONT_RATIO,
+  STEP_NUMBER_FONT_MAX,
 } from "@tka/render-composition";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
@@ -61,9 +68,17 @@ export interface ChoreoCardLayoutDeps {
   readonly containerWidth: number;
   /** Raw container height (px) for container-aware Auto layout. 0 = not measured. */
   readonly containerHeight: number;
+  /**
+   * The last readable Auto shape, held while a parent workspace recomposes.
+   * Auto remains container-aware at rest; this only prevents a transient
+   * container from changing the identity of the Card mid-transition.
+   */
+  readonly autoLayoutOverride: ResolvedAutoLayout | null;
 }
 
-export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps) {
+export function createChoreoCardLayoutState(
+  getDeps: () => ChoreoCardLayoutDeps
+) {
   const compositionManager = getImageCompositionManager();
 
   const SCROLL_THRESHOLD = 16;
@@ -74,7 +89,9 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
   const HEADER_MIN_PX = 24;
 
   // Whether the sequence exceeds scroll threshold (independent of forceContain)
-  const isLongSequence = $derived((getDeps().sequence?.steps?.length ?? 0) > SCROLL_THRESHOLD);
+  const isLongSequence = $derived(
+    (getDeps().sequence?.steps?.length ?? 0) > SCROLL_THRESHOLD
+  );
   const needsScroll = $derived(!getDeps().forceContain && isLongSequence);
 
   const usesAutomaticColumns = $derived.by(() => {
@@ -97,6 +114,9 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
     const stepCount = deps.sequence?.steps?.length ?? 0;
     if (!usesAutomaticColumns) return null;
     if (isLongSequence && !deps.forceContain) return null; // scroll path handled below
+    if (deps.autoLayoutOverride?.stepCount === stepCount) {
+      return deps.autoLayoutOverride;
+    }
     const cw = deps.containerWidth;
     const ch = deps.containerHeight;
     if (!(cw > 0) || !(ch > 0)) return null; // not measured yet → table fallback
@@ -117,7 +137,8 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
   // placement for the container; otherwise the composition setting applies.
   const startPositionLayout = $derived.by<"row" | "column">(() => {
     const deps = getDeps();
-    if (deps.startPositionLayoutOverride) return deps.startPositionLayoutOverride;
+    if (deps.startPositionLayoutOverride)
+      return deps.startPositionLayoutOverride;
     const af = autoFit;
     if (af && deps.includeStartPosition && af.startPlacement !== "none") {
       return af.startPlacement;
@@ -140,18 +161,24 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
     const spl = startPositionLayout;
 
     if (deps.columnCount !== null && deps.columnCount > 0) {
-      return deps.includeStartPosition && spl === "column" ? deps.columnCount + 1 : deps.columnCount;
+      return deps.includeStartPosition && spl === "column"
+        ? deps.columnCount + 1
+        : deps.columnCount;
     }
     // Check the per-length column count from global composition settings.
-    const compositionCols = compositionManager.getColumnCountForStepCount(stepCount);
+    const compositionCols =
+      compositionManager.getColumnCountForStepCount(stepCount);
     if (compositionCols !== null && compositionCols > 0) {
-      return deps.includeStartPosition && spl === "column" ? compositionCols + 1 : compositionCols;
+      return deps.includeStartPosition && spl === "column"
+        ? compositionCols + 1
+        : compositionCols;
     }
     // Long scrolling sequences adapt to width. A contained card only reaches
     // this five-column fallback before its container has been measured; Auto
     // replaces it with the exhaustive winner immediately afterward.
     if (isLongSequence) {
-      if (needsScroll && deps.containerWidth > 0) return pickScrollColumns(deps.containerWidth);
+      if (needsScroll && deps.containerWidth > 0)
+        return pickScrollColumns(deps.containerWidth);
       return 5;
     }
     const [cols] = calculateLayout(stepCount, deps.includeStartPosition, spl);
@@ -172,7 +199,10 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
     const hasCompositionOverride =
       compositionManager.getColumnCountForStepCount(stepCount) !== null;
 
-    if (cols > 0 && (deps.columnCount !== null || isLongSequence || hasCompositionOverride)) {
+    if (
+      cols > 0 &&
+      (deps.columnCount !== null || isLongSequence || hasCompositionOverride)
+    ) {
       if (deps.includeStartPosition && spl === "row") {
         return 1 + Math.ceil(stepCount / cols);
       }
@@ -186,12 +216,12 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
 
     // Column layout only: mandala fill needs at least one col-1 empty between
     if (
-      deps.showMandala
-      && deps.showQRCode
-      && deps.includeStartPosition
-      && spl === "column"
-      && stepCount === 6
-      && rws === 2
+      deps.showMandala &&
+      deps.showQRCode &&
+      deps.includeStartPosition &&
+      spl === "column" &&
+      stepCount === 6 &&
+      rws === 2
     ) {
       return 3;
     }
@@ -261,13 +291,17 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
     if (!cw || !Number.isFinite(cw)) return 0;
     const cols = containModel.cols;
     if (cols >= 3) return cw;
-    return cw * cols / 3;
+    return (cw * cols) / 3;
   });
 
   const scaledHeaderHeight = $derived.by(() => {
     if (!headerFooterRefWidth) return 0;
-    const proportional = Math.floor(headerFooterRefWidth / HEADER_HEIGHT_DIVISOR);
-    return getDeps().forceContain ? proportional : Math.max(proportional, HEADER_MIN_PX);
+    const proportional = Math.floor(
+      headerFooterRefWidth / HEADER_HEIGHT_DIVISOR
+    );
+    return getDeps().forceContain
+      ? proportional
+      : Math.max(proportional, HEADER_MIN_PX);
   });
 
   const scaledFooterHeight = $derived.by(() => {
@@ -276,16 +310,25 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
   });
 
   const stepNumFontSize = $derived(
-    getDeps().cellWidth ? Math.min(Math.round(getDeps().cellWidth * STEP_NUMBER_FONT_RATIO), STEP_NUMBER_FONT_MAX) : 0
+    getDeps().cellWidth
+      ? Math.min(
+          Math.round(getDeps().cellWidth * STEP_NUMBER_FONT_RATIO),
+          STEP_NUMBER_FONT_MAX
+        )
+      : 0
   );
 
   const badgeSize = $derived(scaledHeaderHeight * BADGE_SIZE_SCALE);
   const badgePadding = $derived(scaledHeaderHeight * BADGE_PADDING_SCALE);
-  const badgeNumberFontSize = $derived(Math.round(badgeSize * BADGE_NUMBER_FONT_SCALE));
+  const badgeNumberFontSize = $derived(
+    Math.round(badgeSize * BADGE_NUMBER_FONT_SCALE)
+  );
 
   // Word title font size: shrinks for longer words
   const wordTitleFontSize = $derived.by(() => {
-    const baseFontSize = Math.floor(scaledHeaderHeight * HEADER_WORD_FONT_SCALE);
+    const baseFontSize = Math.floor(
+      scaledHeaderHeight * HEADER_WORD_FONT_SCALE
+    );
     const word = getDeps().sequence.word;
     if (!word) return baseFontSize;
 
@@ -296,11 +339,18 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
       if (ch !== "-" && ch !== "." && ch !== " ") letterCount++;
     }
     if (letterCount <= 10) return baseFontSize;
-    return Math.max(Math.floor(baseFontSize * (10 / letterCount)), Math.floor(scaledHeaderHeight * HEADER_WORD_FONT_MIN_SCALE));
+    return Math.max(
+      Math.floor(baseFontSize * (10 / letterCount)),
+      Math.floor(scaledHeaderHeight * HEADER_WORD_FONT_MIN_SCALE)
+    );
   });
 
-  const footerFontSize = $derived(Math.floor(scaledFooterHeight * FOOTER_FONT_SCALE));
-  const footerMargin = $derived(Math.floor(scaledFooterHeight * FOOTER_MARGIN_SCALE));
+  const footerFontSize = $derived(
+    Math.floor(scaledFooterHeight * FOOTER_FONT_SCALE)
+  );
+  const footerMargin = $derived(
+    Math.floor(scaledFooterHeight * FOOTER_MARGIN_SCALE)
+  );
 
   // QR code grid position
   const qrGridPosition = $derived.by(() => {
@@ -321,30 +371,78 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
   });
 
   return {
-    get isLongSequence() { return isLongSequence; },
-    get needsScroll() { return needsScroll; },
-    get usesAutomaticColumns() { return usesAutomaticColumns; },
-    get autoFit() { return autoFit; },
-    get startPositionLayout() { return startPositionLayout; },
-    get baseColumns() { return baseColumns; },
-    get baseRows() { return baseRows; },
-    get effectiveColumns() { return effectiveColumns; },
-    get effectiveRows() { return effectiveRows; },
-    get mandalaLayoutOverride() { return mandalaLayoutOverride; },
-    get mandalaPlacements() { return mandalaPlacements; },
-    get containModel() { return containModel; },
-    get previewAspectRatio() { return previewAspectRatio; },
-    get headerFooterRefWidth() { return headerFooterRefWidth; },
-    get scaledHeaderHeight() { return scaledHeaderHeight; },
-    get scaledFooterHeight() { return scaledFooterHeight; },
-    get stepNumFontSize() { return stepNumFontSize; },
-    get badgeSize() { return badgeSize; },
-    get badgePadding() { return badgePadding; },
-    get badgeNumberFontSize() { return badgeNumberFontSize; },
-    get wordTitleFontSize() { return wordTitleFontSize; },
-    get footerFontSize() { return footerFontSize; },
-    get footerMargin() { return footerMargin; },
-    get qrGridPosition() { return qrGridPosition; },
+    get isLongSequence() {
+      return isLongSequence;
+    },
+    get needsScroll() {
+      return needsScroll;
+    },
+    get usesAutomaticColumns() {
+      return usesAutomaticColumns;
+    },
+    get autoFit() {
+      return autoFit;
+    },
+    get startPositionLayout() {
+      return startPositionLayout;
+    },
+    get baseColumns() {
+      return baseColumns;
+    },
+    get baseRows() {
+      return baseRows;
+    },
+    get effectiveColumns() {
+      return effectiveColumns;
+    },
+    get effectiveRows() {
+      return effectiveRows;
+    },
+    get mandalaLayoutOverride() {
+      return mandalaLayoutOverride;
+    },
+    get mandalaPlacements() {
+      return mandalaPlacements;
+    },
+    get containModel() {
+      return containModel;
+    },
+    get previewAspectRatio() {
+      return previewAspectRatio;
+    },
+    get headerFooterRefWidth() {
+      return headerFooterRefWidth;
+    },
+    get scaledHeaderHeight() {
+      return scaledHeaderHeight;
+    },
+    get scaledFooterHeight() {
+      return scaledFooterHeight;
+    },
+    get stepNumFontSize() {
+      return stepNumFontSize;
+    },
+    get badgeSize() {
+      return badgeSize;
+    },
+    get badgePadding() {
+      return badgePadding;
+    },
+    get badgeNumberFontSize() {
+      return badgeNumberFontSize;
+    },
+    get wordTitleFontSize() {
+      return wordTitleFontSize;
+    },
+    get footerFontSize() {
+      return footerFontSize;
+    },
+    get footerMargin() {
+      return footerMargin;
+    },
+    get qrGridPosition() {
+      return qrGridPosition;
+    },
     SCROLL_THRESHOLD,
   } as const;
 }

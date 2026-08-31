@@ -15,7 +15,7 @@
    *
    * Drop-in replacement for AnimatorCanvas in 3D render mode.
    * Wraps a Threlte <Canvas> with Viewer3DScene (scene geometry + puppet loop)
-   * and Viewer3DCamera (orbit controls). Reads avatarState from the shared
+   * and Viewer3DCamera (orbit controls). Reads character state from the shared
    * viewer-3d context - the parent must have called setViewer3DContext() before
    * mounting this component.
    *
@@ -49,7 +49,7 @@
     releaseBackground,
   } from "$lib/shared/background/shared/state/background-hold.svelte";
   import SceneShaderWarmup from "./SceneShaderWarmup.svelte";
-  import { createAvatarPlaybackAdapter } from "$lib/shared/timeline/adapters/avatar-playback-adapter.svelte";
+  import { createCharacterPlaybackAdapter } from "$lib/shared/timeline/adapters/character-playback-adapter.svelte";
   import type { PlaybackMode } from "$lib/shared/timeline/unified-playback-context";
   import { sceneLoadingPlaybackTransition } from "../domain/scene-loading-playback";
   import { selectBeatPlaneStep } from "../domain/beat-plane-step-selection";
@@ -78,7 +78,7 @@
     bluePropType?: string | null;
     redPropType?: string | null;
     hideOverlays?: boolean;
-    /** Hide in-world review markers while keeping the avatar and effects. */
+    /** Hide in-world review markers while keeping the character and effects. */
     hideSceneMarkers?: boolean;
     /** Hide performer numbers without suppressing plane grids. */
     hidePerformerBadges?: boolean;
@@ -116,7 +116,7 @@
     enablePerformerLocomotion?: boolean;
     /** Cap expensive prop effects when one shot contains a large ensemble. */
     effectQualityTier?: QualityTier;
-    /** Keep the first-load curtain up until every active avatar is visible. */
+    /** Keep the first-load curtain up until every active character is visible. */
     waitForPerformersOnInitialReveal?: boolean;
     /** Per-performer count offsets for directed canon/ripple performances. */
     performerStepOffsets?: readonly number[];
@@ -216,7 +216,7 @@
   const environmentTransitionVisual = createEnvironmentTransitionVisualState();
   setEnvironmentTransitionVisualContext(environmentTransitionVisual);
   const playbackAdapter = $derived.by(() =>
-    createAvatarPlaybackAdapter(
+    createCharacterPlaybackAdapter(
       () => viewer3DState.performerManager.performers[0] ?? null,
       onPlaybackToggle && onProgressBarSeek
         ? {
@@ -282,11 +282,11 @@
   // Primary performer - gates the Canvas on performer[0] existing. Multi-
   // performer rendering iterates inside Viewer3DScene itself, but the Canvas
   // still waits on this to avoid mounting WebGL before any performer exists.
-  const avatarState = $derived(
+  const characterState = $derived(
     viewer3DState.performerManager.performers[0] ?? null
   );
   const canRenderScene = $derived(
-    renderEmptyScene || Boolean(avatarState && sequenceData)
+    renderEmptyScene || Boolean(characterState && sequenceData)
   );
   const shaderWarmupCacheKey = $derived(
     retainedEnvironmentTypes.length > 0
@@ -309,7 +309,7 @@
   $effect(() => {
     if (
       initialRevealMode === "gated" &&
-      avatarState &&
+      characterState &&
       sequenceData &&
       !canvasMountReady
     ) {
@@ -317,7 +317,7 @@
         canvasMountReady = true;
       });
     }
-    if (!avatarState || !sequenceData) {
+    if (!characterState || !sequenceData) {
       canvasMountReady = false;
     }
   });
@@ -488,7 +488,7 @@
   });
 
   function handleBeatPlaneStepClick(targetStep: number): void {
-    const performer = avatarState;
+    const performer = characterState;
     if (!performer) return;
     selectBeatPlaneStep({
       currentStep: performer.currentStepIndex,
@@ -542,7 +542,7 @@
                 {sequenceData}
                 {currentStep}
                 {isPlaying}
-                {avatarState}
+                {characterState}
                 bluePropTypeOverride={bluePropType}
                 redPropTypeOverride={redPropType}
                 {hideSceneMarkers}
@@ -576,13 +576,13 @@
         {#await loadSceneAudioPlayer() then { default: SceneAudioPlayer }}
           <SceneAudioPlayer />
         {/await}
-        {#if avatarState && avatarState.totalSteps > 1 && avatarState.beatEditMode}
+        {#if characterState && characterState.totalSteps > 1 && characterState.beatEditMode}
           <div class="beat-strip-container">
             {#await loadStepPlaneStrip() then { default: StepPlaneStrip }}
               <StepPlaneStrip
-                totalSteps={avatarState.totalSteps}
-                currentStepIndex={avatarState.currentStepIndex}
-                beatPlaneOverrides={avatarState.beatPlaneOverrides}
+                totalSteps={characterState.totalSteps}
+                currentStepIndex={characterState.currentStepIndex}
+                beatPlaneOverrides={characterState.beatPlaneOverrides}
                 onStepClick={handleBeatPlaneStepClick}
               />
             {/await}

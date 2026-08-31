@@ -14,9 +14,10 @@
 
   interface Props {
     editMode: StageEditMode;
+    onRemoveSet: (formationId: string) => void;
   }
 
-  let { editMode }: Props = $props();
+  let { editMode, onRemoveSet }: Props = $props();
 
   const stageState = getStageChoreographyContext();
   const choreography = $derived(stageState.choreography);
@@ -77,9 +78,7 @@
 
   function removeSet() {
     if (!set) return;
-    const id = set.id;
-    editMode.clearSelection();
-    stageState.removeFormation(id);
+    onRemoveSet(set.id);
   }
 </script>
 
@@ -92,7 +91,8 @@
 
     {#if setIndex > 0}
       <div class="property-row">
-        <span class="property-label" id="walk-counts-label">Counts to get there</span
+        <span class="property-label" id="walk-counts-label"
+          >Counts to get there</span
         >
         <CountStepper
           value={set.transitionBeats}
@@ -102,7 +102,11 @@
           onchange={setTransition}
         />
       </div>
-      <div class="quick-counts" role="group" aria-labelledby="walk-counts-label">
+      <div
+        class="quick-counts"
+        role="group"
+        aria-labelledby="walk-counts-label"
+      >
         {#each QUICK_COUNTS as count}
           <FilterChipBase
             label="{count} counts"

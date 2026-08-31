@@ -30,13 +30,25 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { createMotionData, type MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-  import { getGuideSequenceClick, getGuidePrintMode } from "../_data/guide-data-context";
+  import {
+    createMotionData,
+    type MotionData,
+  } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import {
+    getGuideSequenceClick,
+    getGuidePrintMode,
+  } from "../_data/guide-data-context";
   import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideCodexState } from "../_data/guide-codex-state.svelte";
   import { registerCodexCellTrigger } from "../_data/guide-scan-intent";
+  import { buildCanonicalLetterExplorerHref } from "../../../glossary/_components/codex-boards/letter-explorer-url";
   import CodexSheet from "../../codex/_components/CodexSheet.svelte";
-  import { SHEET1, SHEET2, type CodexCellDef, type CodexSheetDef } from "../../codex/_data/codex-groups";
+  import {
+    SHEET1,
+    SHEET2,
+    type CodexCellDef,
+    type CodexSheetDef,
+  } from "../../codex/_data/codex-groups";
 
   let { sheet }: { sheet: CodexSheetDef } = $props();
 
@@ -55,7 +67,9 @@
   // human label (`W-`, `Σ`, `α`…) without re-deriving it from the raw id.
   const CELLS_BY_ID: Map<string, CodexCellDef> = new Map(
     [SHEET1, SHEET2].flatMap((s) =>
-      s.types.flatMap((type) => type.boxes.flatMap((box) => box.cells.map((c) => [c.id, c] as const)))
+      s.types.flatMap((type) =>
+        type.boxes.flatMap((box) => box.cells.map((c) => [c.id, c] as const))
+      )
     )
   );
 
@@ -77,17 +91,23 @@
   // selections this page owns, so with both codex pages mounted exactly one
   // of them (the one rendering the cell) emits the animation strip.
   const SHEET_IDS: Set<string> = new Set(
-    sheet.types.flatMap((type) => type.boxes.flatMap((box) => box.cells.map((c) => c.id)))
+    sheet.types.flatMap((type) =>
+      type.boxes.flatMap((box) => box.cells.map((c) => c.id))
+    )
   );
 
-  // Selecting a cell (tap or scan intent) only records the selection; the
-  // $effect below builds and emits the strip. Because the effect re-runs when
-  // anything dataFor() reads changes (turns, prop family, rotate/mirror/swap),
-  // adjusting a turn while the companion is playing re-emits the strip and the
-  // animation updates live - not just the static cells.
-  function handleCellSelect(id: string) {
+  // A scan arrives here specifically to play the referenced letter beside the
+  // guide. Directly choosing a Codex cell is different: readers are asking to
+  // explore that letter, so the sheet sends them to the canonical Atlas owner
+  // instead of opening the guide's generic sequence companion.
+  function handleScannedCell(id: string) {
     if (!state) return;
     state.selectedCellId = id;
+  }
+
+  function letterExplorerHref(id: string) {
+    const cell = CELLS_BY_ID.get(id);
+    return cell ? buildCanonicalLetterExplorerHref(cell.label) : undefined;
   }
 
   $effect(() => {
@@ -135,14 +155,11 @@
     });
   }
 
-  // Register this page's cell-select handler so a consumed guide-scan intent
-  // (see guide-scan-intent.ts) can fire a cell by id, reproducing what a tap
-  // would do. The handler is sheet-agnostic (CELLS_BY_ID + state cover both
-  // sheets), so with both codex pages mounted in the reader, whichever registers
-  // last can still animate any cell. Only the interactive branch registers
-  // (print/book never do - state is null there).
+  // Register the scan-only playback handler. It is sheet-agnostic, so with both
+  // Codex pages mounted, whichever registers last can still animate any letter.
+  // Direct cell selection uses a canonical Letter Explorer link instead.
   onMount(() => {
-    if (state) registerCodexCellTrigger((id) => handleCellSelect(id));
+    if (state) registerCodexCellTrigger((id) => handleScannedCell(id));
     return () => registerCodexCellTrigger(null);
   });
 </script>
@@ -165,7 +182,7 @@
       propType={state.propType}
       visibility={state.visibility}
       getData={(id) => state.dataFor(id)}
-      onCellSelect={handleCellSelect}
+      getCellHref={letterExplorerHref}
     />
   </div>
 {/if}

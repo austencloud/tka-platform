@@ -14,9 +14,16 @@
 
   interface Props {
     persistence?: ShapeMatrixAppPersistence;
+    /**
+     * "standalone" hosts (the public /notation/shape-matrix route) carry the
+     * app's own identity block in the header. "embedded" hosts (the Toys tab)
+     * already name the surface through module chrome, so the header drops the
+     * title and leads with the controls.
+     */
+    variant?: "standalone" | "embedded";
   }
 
-  let { persistence }: Props = $props();
+  let { persistence, variant = "standalone" }: Props = $props();
   let host: HTMLDivElement;
   const state = createShapeMatrixAppState(
     {
@@ -63,7 +70,7 @@
 </script>
 
 <div class="shape-matrix-app-host" bind:this={host}>
-  <ShapeMatrixAppShell />
+  <ShapeMatrixAppShell {variant} />
   <ShapeMatrixAboutModal />
   <ShapeMatrixPropPickerModal />
 </div>

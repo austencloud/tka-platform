@@ -78,12 +78,32 @@ export type SheetGrid = {
   rowFor: number[];
 };
 
-export type GuideBlock =
+export type GuideFlowArea =
+  | "grid-overview"
+  | "grid-hands"
+  | "grid-points"
+  | "grid-combination"
+  | "grid-explorer"
+  | "grid-closing";
+
+type GuideBlockContent =
   | { kind: "heading"; level: 1 | 2 | 3; text: string; sheet?: PtHint }
   | { kind: "prose"; html: string; sheet?: PtHint }
-  | { kind: "glyphImage"; src: string; alt: string; heightPt: number; sheet?: PtHint }
+  | {
+      kind: "glyphImage";
+      src: string;
+      alt: string;
+      heightPt: number;
+      sheet?: PtHint;
+    }
   | { kind: "rule"; sheet: PtHint }
-  | { kind: "pictograph"; data: PictographData; caption?: string; render?: PictographRender; sheet?: PtHint }
+  | {
+      kind: "pictograph";
+      data: PictographData;
+      caption?: string;
+      render?: PictographRender;
+      sheet?: PtHint;
+    }
   | {
       kind: "pictographGroup";
       /** Real pictographs, in reading order. */
@@ -153,6 +173,20 @@ export type GuideBlock =
       caption?: string;
     }
   | {
+      /**
+       * A compact, inspectable grid-mode comparison for the web reference.
+       * FlowFrame delegates the visuals to the canonical GridSvg owner. The
+       * authored print page keeps its measured three-figure composition.
+       */
+      kind: "gridExplorer";
+      modes: {
+        mode: "diamond" | "box" | "merged";
+        label: string;
+        ariaLabel: string;
+      }[];
+      initialMode: "diamond" | "box" | "merged";
+    }
+  | {
       /** Bespoke print artifact (flattened raster / measured vector). Sheet renders
        *  `sheetHtml`; flow renders the semantic `flow` fallback. */
       kind: "printOnly";
@@ -161,10 +195,19 @@ export type GuideBlock =
       sheet: PtHint;
     };
 
+export type GuideBlock = GuideBlockContent & {
+  /** Optional semantic placement used by a named FlowFrame composition. */
+  flowArea?: GuideFlowArea;
+};
+
 /** Concatenated human-readable text of a page's prose + headings - the drift-guard
  *  input. Strips HTML tags so `<strong>`/`<span>` markup doesn't affect equality. */
 export function blockProseText(blocks: GuideBlock[]): string {
-  const strip = (html: string) => html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  const strip = (html: string) =>
+    html
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
   const out: string[] = [];
   for (const b of blocks) {
     if (b.kind === "heading") out.push(strip(b.text));

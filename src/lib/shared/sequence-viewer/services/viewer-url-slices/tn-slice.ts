@@ -10,22 +10,14 @@
  * It is simpler than `t3`'s MIXED pattern: `t3` splits seed (orchestrator,
  * where `viewer3DState` lives) from capture (`Viewer3DCanvas`, where the pane
  * state lives) because those two live in different scopes. Here both the
- * config and the chrome (`gridVisible`/`spectrum`/`section`/`presetRecipe`)
+ * config and the chrome (`gridVisible`/`colors`/`section`/`presetRecipe`)
  * live on the one `TunnelViewController` instance, and that instance is
- * constructed in `ArtPane.svelte` — the viewer's tunnel pane host — so seed
- * and capture both belong there. See `TunnelControllerSources.initialViewState`
+ * constructed in `ViewerSplitPane.svelte` — the shared controller both pane
+ * surfaces and the persistent 2D canvas adopt — so seed and capture both
+ * belong there. See `TunnelControllerSources.initialViewState`
  * in `tunnel-view-controller.svelte.ts` for the constructor-time seam this
  * slice feeds (mirrors Task 5's `createViewerState({ initialMode, persist })`).
  *
- * `ArtPane.svelte` mounts twice per viewer — once with `artType="mandala"`,
- * once with `artType="tunnel"` — and BOTH construct a `TunnelViewController`
- * (the mandala instance stays inert via `controller.active = artType ===
- * "tunnel"`, a pre-existing compat shim, not something this task changes).
- * Seeding and capture-registration are gated to the `artType === "tunnel"`
- * instance only: the session's `registerSlice` map holds one entry per slice
- * id, so registering from both panes would just let whichever mounts second
- * silently shadow the other's capture, and seeding the inert mandala-side
- * instance would have no visible effect while wasting a disk-shaped read.
  *
  * Preset-by-value (the task's core constraint): `tka_tunnel_user_presets`
  * (`tunnel-user-presets.svelte.ts`) is the sender's own private preset list —
@@ -46,7 +38,10 @@
  *
  * ENCODED: `config` (as a `Partial<TunnelConfig>` patch — only the fields
  * that differ from `DEFAULT_TUNNEL_VIEW_STATE.config`), `gridVisible`,
- * `spectrum`, `section`, `presetRecipe` (whole, only when non-null).
+ * `colors` (whole `TunnelPropColorState`, only when it differs from the
+ * default — seeding runs it back through `resolveTunnelPropColorState`, so a
+ * malformed or legacy payload normalizes instead of crashing), `section`,
+ * `presetRecipe` (whole, only when non-null).
  *
  * EXCLUDED, with reasons — every `TunnelViewController` field NOT in
  * `TunnelViewState` (cross-checked against the controller's own persistence
@@ -77,6 +72,10 @@ import {
   type TunnelConfig,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
 import {
+  resolveTunnelPropColorState,
+  type TunnelPropColorState,
+} from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
+import {
   cloneTunnelPresetRecipe,
   type TunnelPresetRecipe,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-preset-recipe";
@@ -87,7 +86,7 @@ export type TnConfigPatch = Partial<TunnelConfig>;
 export interface TnSlicePayload {
   config?: TnConfigPatch;
   gridVisible?: boolean;
-  spectrum?: boolean;
+  colors?: TunnelPropColorState;
   section?: TunnelViewState["section"];
   presetRecipe?: TunnelPresetRecipe | null;
 }
@@ -96,7 +95,7 @@ export interface TnSlicePayload {
 export interface TnSliceSource {
   config: TunnelConfig;
   gridVisible: boolean;
-  spectrum: boolean;
+  colors: TunnelPropColorState;
   section: TunnelViewState["section"];
   presetRecipe: TunnelPresetRecipe | null;
 }
@@ -122,7 +121,14 @@ export function captureTnSlice(source: TnSliceSource): TnSlicePayload | null {
   if (source.gridVisible !== defaults.gridVisible) {
     payload.gridVisible = source.gridVisible;
   }
-  if (source.spectrum !== defaults.spectrum) payload.spectrum = source.spectrum;
+  // Compare in normalized space: the palette constants behind the default
+  // state carry UPPERCASE hex while `resolveTunnelPropColorState` lowercases
+  // any stored string, so a raw-constant compare would flag every loaded
+  // state as non-default (the fx/t3 baseline trap, in casing form).
+  const sourceColors = resolveTunnelPropColorState(source.colors);
+  if (!deepEqual(sourceColors, resolveTunnelPropColorState(defaults.colors))) {
+    payload.colors = sourceColors;
+  }
   if (source.section !== defaults.section) payload.section = source.section;
   // Verbatim — see the module doc comment: the recipe's config is already a
   // frozen clone of concrete values, never a live reference into the user's
@@ -158,7 +164,10 @@ export function seedFromTnSlice(payload: TnSlicePayload): TunnelViewState {
   return {
     config,
     gridVisible: payload.gridVisible ?? defaults.gridVisible,
-    spectrum: payload.spectrum ?? defaults.spectrum,
+    // Normalizes an absent, legacy, or malformed pair to a complete state,
+    // routing the absent case through the default state so the result is
+    // lowercase-normalized either way (see the capture-side comment).
+    colors: resolveTunnelPropColorState(payload.colors ?? defaults.colors),
     section: payload.section ?? defaults.section,
     presetRecipe: payload.presetRecipe
       ? cloneTunnelPresetRecipe(payload.presetRecipe)

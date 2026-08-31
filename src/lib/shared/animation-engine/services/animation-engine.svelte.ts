@@ -21,6 +21,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import { type TrailSettings } from "../domain/types/trail-types";
 import type { AdditionalLayerProps } from "../domain/types/trail-capture-types";
+import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import {
   getAnimationVisibilityManager,
   type AnimationVisibilityStateManager,
@@ -106,6 +107,8 @@ export interface AnimationEngineProps {
    *  takes its own spectrum color; when false layers inherit the base/preset
    *  colors. Only meaningful when additionalLayers is non-empty. */
   tunnelSpectrum?: boolean;
+  /** Exact Left/Right colors for Custom Tunnel mode. */
+  tunnelPropColors?: TunnelPropColorPair | null;
   /** Tunnel performer spotlight: the selected performer (0 = base, k = copy arm
    *  k), or null. When set, every other copy dims in the render. Default null. */
   tunnelSelectedLayer?: number | readonly number[] | null;
@@ -454,7 +457,8 @@ export class AnimationEngine {
   async prepareExportPropTypes(
     blue: string,
     red: string,
-    darkMode: boolean
+    darkMode: boolean,
+    colors: TunnelPropColorPair | null = null
   ): Promise<void> {
     const ptm = this.propSystem.propTypeManager;
     // Register overrides so loadPropTextures uses these exact types (not settings).
@@ -465,7 +469,11 @@ export class AnimationEngine {
     this.state.setRedPropType(red);
     this.state.setLegacyPropType(blue);
     // Load textures + sync dimensions into state via the canonical manager path.
-    await this.propSystem.propPipeline.loadTextures(this.state, darkMode);
+    await this.propSystem.propPipeline.loadTextures(
+      this.state,
+      darkMode,
+      colors
+    );
   }
 
   /**
@@ -478,12 +486,15 @@ export class AnimationEngine {
    */
   async prepareExportAdditionalLayers(
     layerCount: number,
-    spectrum: boolean
+    spectrum: boolean,
+    colors: TunnelPropColorPair | null = null
   ): Promise<void> {
     await this.propSystem.propTypeManager.preloadAdditionalLayerTextures(
       layerCount,
       spectrum,
-      this.state.currentBluePropType
+      this.state.currentBluePropType,
+      undefined,
+      colors
     );
   }
 

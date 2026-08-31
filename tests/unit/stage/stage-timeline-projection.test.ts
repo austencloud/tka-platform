@@ -57,12 +57,20 @@ describe("stage timeline projection", () => {
   it("projects the authored travel window and physical distance", () => {
     expect(projectPerformerFloorTravel(choreography, "a")).toEqual([
       {
-        id: "two",
+        id: "a:two",
+        formationId: "two",
+        performerId: "a",
         setIndex: 1,
         label: "Wide line",
         startBeat: 4,
         endBeat: 8,
+        minimumStartBeat: 0,
+        maximumEndBeat: 8,
         distanceMeters: 5,
+        requestedStepCount: null,
+        resolvedStepCount: null,
+        supportedStepRange: null,
+        exact: false,
       },
     ]);
   });

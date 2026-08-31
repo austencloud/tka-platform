@@ -11,32 +11,53 @@
 -->
 <script lang="ts">
   import CodexBox from "../../../guide/codex/_components/CodexBox.svelte";
-  import { CODEX_BOXES, typeName, typeColor, type TaggedBox } from "./codex-letters";
+  import CodexTransitionGlyph from "../../../guide/codex/_components/CodexTransitionGlyph.svelte";
+  import {
+    CODEX_BOXES,
+    typeName,
+    typeColor,
+    type TaggedBox,
+  } from "./codex-letters";
 
   let {
     onSelect,
     /** Which boxes to flow. Defaults to the whole codex in sheet order; a
      *  type-banded board passes one type's boxes per band. */
     boxes = CODEX_BOXES,
-  }: { onSelect: (id: string) => void; boxes?: TaggedBox[] } = $props();
+    /** A transition shared by the complete flow rather than its first box.
+     *  Atlas uses this for the Type 1 gamma land, where the printed sheet only
+     *  repeats the caption over M-O even though it describes M-V. */
+    flowHeader,
+  }: {
+    onSelect: (id: string) => void;
+    boxes?: TaggedBox[];
+    flowHeader?: string;
+  } = $props();
+
+  function boxForFlow(tagged: TaggedBox, index: number) {
+    if (index !== 0 || tagged.box.header !== flowHeader) return tagged.box;
+    return { ...tagged.box, header: undefined };
+  }
 </script>
 
 <div class="flow">
-  {#each boxes as tagged (tagged.key)}
+  {#if flowHeader}
+    <div class="flow-head">
+      <CodexTransitionGlyph text={flowHeader} />
+    </div>
+  {/if}
+  {#each boxes as tagged, index (tagged.key)}
     <div
       class="abox"
       style:--type-c={typeColor(tagged.type)}
       aria-label={typeName(tagged.type)}
     >
-      <!-- A box captions itself one of two ways: one header above the box, or
-           one caption inside the single cell a split strip leaves behind.
-           Reserve the header row only for the first kind, so both land their
-           pictographs at the same height instead of one sitting 20px high and
-           the other 20px low. -->
+      <!-- Flat-board captions all occupy this same reserved header slot. The
+           print sheet keeps its original per-cell placement. -->
       <CodexBox
-        box={tagged.box}
+        box={boxForFlow(tagged, index)}
         theme="dark"
-        reserveHead={!tagged.box.cells.some((cell) => cell.top)}
+        reserveHead
         showName={false}
         onCellSelect={onSelect}
       />
@@ -51,32 +72,37 @@
      makes every box in a row the same height, which lands the rules on one
      continuous line under the row. */
   .flow {
+    position: relative;
     display: flex;
     flex-wrap: wrap;
     align-items: stretch;
     justify-content: var(--codex-flow-justify, flex-start);
     gap: var(--codex-flow-row-gap, 0.4rem) var(--abox-gap, 0.4rem);
+    /* A dense reference grid needs a stable cell matrix. Keep the shared
+       selected ring, but do not enlarge one pictograph beyond its neighbors. */
+    --selection-selected-transform: none;
   }
 
-  /* A box captions itself above its cells (one shared header) or inside them
-     (one caption per cell). Those two elements are naturally 5px apart in
-     height, which offsets the pictographs of neighbouring boxes by 5px. Pin
-     both to one height and every pictograph in a row starts on the same line. */
+  /* Some sheet captions describe a complete position land even though print
+     places them over its first box. The flat Atlas gives that relationship one
+     centered owner while every box keeps the same reserved header geometry. */
+  .flow-head {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1.25rem;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    color: var(--codex-transition, #1a1a1a);
+    pointer-events: none;
+  }
+
+  /* Every flat-board box reserves the same header height. Grouped transitions
+     fill it once; the split Type 4-6 boxes each fill their own header. */
   .flow :global(.box-head) {
     height: 1.25rem;
     min-height: 0;
   }
-  /* Types 4-6 caption every cell with its own transition; the reserve above
-     pins that caption to the same height as a box header so the pictographs of
-     both kinds of box start on one line. Caption SIZE is not set here - it is
-     --codex-caption-size in codex-dark.css, so all three boards agree. */
-  .flow :global(.cell-top) {
-    display: block;
-    height: 1.25rem;
-    min-height: 0;
-    overflow: hidden;
-  }
-
   /* The type rule runs under the whole box, so a box belongs to exactly one
      type even when two types share a wrapped row. */
   .abox {

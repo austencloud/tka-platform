@@ -5,7 +5,7 @@
  *
  * Grammar:
  *
- *   <concept>.<reference>.<ratio>.<shape>.<variant>
+ *   <concept>.<reference>.<ratio>.<shape>.<variant>[.o<degrees>]
  *
  * - concept:   vtg | qtr | 8stp
  * - reference: vtg/qtr `[1-6]-[1-6]`; 8stp `[1-8]-(aa|ae|ai|ea|ee|ei|ia|ie|ii)`
@@ -16,17 +16,36 @@
  *              always `1x1`.
  * - shape:     diamond | box
  * - variant:   base | anti  (anti ⇔ `isAnti: true` in the transcription)
+ * - o<degrees>: optional pattern orientation — SpiroAnim's "Pattern rotation"
+ *              angle, one of o-90 | o-45 | o0 | o45 | o90 | o180. Position in
+ *              the trailing fields does not matter; the `o` prefix identifies
+ *              it. vtg/qtr only: 8stp has no orientation axis, so any `o` token
+ *              on an 8stp key is a foreign field and is ignored like the rest.
+ *              A key WITHOUT the token means "whatever SpiroAnim shows by
+ *              default", which is 0 for every bridged ratio — NOT the -90 the
+ *              transcription was captured at (see orientation-rotation.ts).
  *
  * Two rules keep the contract durable across independent releases of the two
- * apps: the key is all-lowercase, and dot-separated fields beyond the fifth are
- * IGNORED rather than rejected, so a future SpiroAnim may append an axis
- * without breaking every existing Composer build. Anything malformed returns
- * null — the route shows an honest "no bridge entry" card. Never a guess.
+ * apps: the key is all-lowercase, and unrecognised dot-separated fields beyond
+ * the fifth are IGNORED rather than rejected, so a future SpiroAnim may append
+ * an axis without breaking every existing Composer build. A RECOGNISED trailing
+ * field is parsed strictly: an `o` token with a value outside the set above is
+ * a wrong coordinate, not an unknown axis, and fails the parse. Anything
+ * malformed returns null — the route shows an honest "no bridge entry" card.
+ * Never a guess.
  */
 
 export type BridgeConcept = "vtg" | "qtr" | "8stp";
 export type BridgeShape = "diamond" | "box";
 export type BridgeSpeedRatio = "1:1" | "1:3" | "1:5";
+
+/** SpiroAnim's pattern-orientation axis (its "Pattern rotation" control). */
+export const SPIROANIM_ORIENTATIONS = [-90, -45, 0, 45, 90, 180] as const;
+export type SpiroAnimOrientation = (typeof SPIROANIM_ORIENTATIONS)[number];
+
+function isSpiroAnimOrientation(value: number): value is SpiroAnimOrientation {
+  return (SPIROANIM_ORIENTATIONS as readonly number[]).includes(value);
+}
 
 export interface ParsedCellKey {
   concept: BridgeConcept;
@@ -35,6 +54,13 @@ export interface ParsedCellKey {
   speedRatio: BridgeSpeedRatio;
   shape: BridgeShape;
   isAnti: boolean;
+  /**
+   * The orientation the key carries, or null when it carries none (an older
+   * link, or 8stp — which has no orientation axis). Null does NOT mean the
+   * transcription baseline; it means SpiroAnim's default view. The resolver
+   * owns that distinction.
+   */
+  orientation: SpiroAnimOrientation | null;
 }
 
 const VTG_REFERENCE = /^[1-6]-[1-6]$/;
@@ -56,7 +82,8 @@ export function parseCellKey(raw: string): ParsedCellKey | null {
   const parts = raw.split(".");
   if (parts.length < 5) return null;
 
-  // Extra fields beyond the fifth are deliberately ignored (forward compat).
+  // Unrecognised fields beyond the fifth are deliberately ignored (forward
+  // compat); recognised ones are parsed strictly below.
   const [concept, reference, ratio, shape, variant] = parts as [
     string,
     string,
@@ -82,12 +109,28 @@ export function parseCellKey(raw: string): ParsedCellKey | null {
   if (shape !== "diamond" && shape !== "box") return null;
   if (variant !== "base" && variant !== "anti") return null;
 
+  let orientation: SpiroAnimOrientation | null = null;
+  // 8stp has no orientation axis: an `o` token there is a foreign field and is
+  // ignored, matching what every already-deployed build does with it.
+  if (concept !== "8stp") {
+    for (const field of parts.slice(5)) {
+      const token = /^o(-?\d{1,3})$/.exec(field);
+      if (!token) continue;
+      const value = Number(token[1]);
+      // A second orientation token, or a value outside the axis, is a wrong
+      // coordinate — fail the parse rather than picking one.
+      if (orientation !== null || !isSpiroAnimOrientation(value)) return null;
+      orientation = value;
+    }
+  }
+
   return {
     concept,
     reference,
     speedRatio,
     shape,
     isAnti: variant === "anti",
+    orientation,
   };
 }
 

@@ -16,6 +16,14 @@
     isViewer3DIntroReplayRequested,
     shouldShowViewer3DIntro,
   } from "$lib/shared/onboarding/state/viewer3d-intro-state";
+  import { flyFade, motionDuration } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+  import { Tween } from "svelte/motion";
+  import { cubicInOut } from "svelte/easing";
+  import { getViewerTunnelStageContext } from "../context/viewer-tunnel-stage-context";
+  import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
+  import { resolveTunnelLayerOpacity } from "../tunnel/tunnel-layer-reveal";
 
   let {
     side,
@@ -51,6 +59,11 @@
   );
   const is2DActive = $derived(selectedPane === "animation");
   const is3DActive = $derived(selectedPane === "animation-3d");
+  const isTunnelActive = $derived(selectedPane === "tunnel");
+  const isAnimatorActive = $derived(is2DActive || isTunnelActive);
+  const tunnelStage = getViewerTunnelStageContext();
+  const tunnelController = tunnelStage.controller;
+  const effectsConfig = getEffectsConfigContext();
   const requiresContactViewer = $derived(
     sceneNeedsContactViewer(
       propRendering.bluePropType,
@@ -60,11 +73,22 @@
 
   // Both 2D canvases and the primary 3D stage are keep-alive surfaces. The
   // companion-side 3D stage preserves its prior conditional-mount contract.
-  let is2DMounted = $state(selectedPane === "animation");
+  let is2DMounted = $state(
+    selectedPane === "animation" || selectedPane === "tunnel"
+  );
   let is3DMounted = $state(selectedPane === "animation-3d");
+  let retainedMotionPane = $state<"animation" | "animation-3d">(
+    selectedPane === "animation-3d" ? "animation-3d" : "animation"
+  );
   $effect(() => {
-    if (is2DActive) is2DMounted = true;
-    if (is3DActive) is3DMounted = true;
+    if (isAnimatorActive) {
+      is2DMounted = true;
+      if (is2DActive) retainedMotionPane = "animation";
+    }
+    if (is3DActive) {
+      is3DMounted = true;
+      retainedMotionPane = "animation-3d";
+    }
   });
   const shouldRender3D = $derived(side === "left" ? is3DMounted : is3DActive);
 
@@ -78,6 +102,95 @@
     warmSelectedSceneAssets();
   });
   let scene3DReady = $state(false);
+  let animatorReady = $state(false);
+  let animatorReadyFrame = 0;
+  const tunnelReveal = new Tween(isTunnelActive ? 1 : 0, {
+    easing: cubicInOut,
+  });
+  let tunnelRevealResetTimer: ReturnType<typeof setTimeout> | undefined;
+  $effect(() => {
+    clearTimeout(tunnelRevealResetTimer);
+    tunnelRevealResetTimer = undefined;
+
+    if (isTunnelActive) {
+      // 2D and Tunnel are one renderer, so their change reads as layers
+      // blooming onto the live base. 3D is a distinct renderer: arrive at a
+      // fully composed Tunnel before the canonical surface crossfade begins,
+      // keeping that handoff to one opacity owner.
+      void tunnelReveal.set(1, {
+        duration:
+          retainedMotionPane === "animation-3d"
+            ? 0
+            : motionDuration(DURATION.emphasis),
+        easing: cubicInOut,
+      });
+      return;
+    }
+
+    if (is3DActive && tunnelReveal.current > 0.001) {
+      const resetDelay = motionDuration(DURATION.emphasis);
+      if (resetDelay === 0) {
+        void tunnelReveal.set(0, { duration: 0 });
+      } else {
+        // Hold the outgoing Tunnel intact until 3D has finished crossing over.
+        // The hidden canvas can then reset without creating a second fade.
+        tunnelRevealResetTimer = setTimeout(() => {
+          tunnelRevealResetTimer = undefined;
+          void tunnelReveal.set(0, { duration: 0 });
+        }, resetDelay);
+      }
+      return;
+    }
+
+    void tunnelReveal.set(0, {
+      duration: motionDuration(DURATION.emphasis),
+      easing: cubicInOut,
+    });
+  });
+  $effect(() => () => clearTimeout(tunnelRevealResetTimer));
+  const tunnelVisualActive = $derived(tunnelReveal.current > 0.001);
+  const tunnelLayers = $derived.by(() => {
+    if (!tunnelVisualActive) return [];
+    const layers = tunnelController.additionalLayersAt(playback.currentStep);
+    return layers.map((layer, index) => ({
+      ...layer,
+      opacity: resolveTunnelLayerOpacity(
+        tunnelReveal.current,
+        index,
+        layers.length
+      ),
+    }));
+  });
+  const activeEffect = $derived(effectsConfig?.activeEffect ?? "none");
+  const tunnelTipEffectMap = $derived<TipEffectMap | undefined>(
+    tunnelVisualActive && activeEffect !== "none"
+      ? { "*": { effect: activeEffect } }
+      : undefined
+  );
+  const tunnelFireConfig = { disableFrameCache: true } as const;
+  const keep3DUntilTunnelPaints = $derived(
+    isTunnelActive && retainedMotionPane === "animation-3d" && !animatorReady
+  );
+  // First activation loads the 3D stage behind the live 2D frame. Repeated
+  // switches use the same presentation gate, but the latched ready state makes
+  // them immediate. A direct 3D page load has no prior 2D frame to preserve,
+  // so it keeps the scene's own loading curtain.
+  const is3DPresented = $derived(
+    (is3DActive && (scene3DReady || !is2DMounted)) || keep3DUntilTunnelPaints
+  );
+  const is2DPresented = $derived(
+    is2DActive ||
+      (isTunnelActive && !keep3DUntilTunnelPaints) ||
+      (is3DActive && is2DMounted && !scene3DReady)
+  );
+  const is2DRailPresented = $derived(isAnimatorActive);
+  const is3DRailPresented = $derived(is3DActive && scene3DReady);
+  const is3DPreparing = $derived(
+    side === "left" && is3DActive && is2DMounted && !scene3DReady
+  );
+  const presentedPane = $derived<"animation" | "animation-3d" | null>(
+    is3DPresented ? "animation-3d" : is2DPresented ? "animation" : null
+  );
   // The viewer can never be unconfigured, so its first-open guidance points at
   // the rail rather than walking a setup it already completed to draw a frame.
   // Building a scene from nothing lives in the 3D Studio (Scene3DSetupGuide).
@@ -91,7 +204,8 @@
   let pane3D: HTMLDivElement | undefined = $state();
   let rail2D: HTMLDivElement | undefined = $state();
   let rail3D: HTMLDivElement | undefined = $state();
-  let previousPane = $state(selectedPane);
+  let previousPresentedPane = $state(presentedPane);
+  let presentationWidthReleaseTimer: ReturnType<typeof setTimeout> | undefined;
   let contactBoundaryReportedReady = $state(false);
   let saveMenuHost: VisualSequenceSaveContextMenuHost | undefined = $state();
   let sceneControlLayout = $state<SceneControlLayout>({
@@ -126,10 +240,11 @@
   // Freeze the outgoing primary surface for the crossfade so its canvas and
   // rail do not remeasure while their replacement becomes active.
   $effect(() => {
-    const current = selectedPane;
-    if (side !== "left" || current === previousPane) return;
-    const from = previousPane;
-    previousPane = current;
+    const current = presentedPane;
+    if (current === previousPresentedPane) return;
+    const from = previousPresentedPane;
+    previousPresentedPane = current;
+    if (side !== "left" || !from || !current) return;
 
     const outgoingPane =
       from === "animation" ? pane2D : from === "animation-3d" ? pane3D : null;
@@ -141,18 +256,45 @@
     outgoingPane.style.width = width;
     if (outgoingRail) outgoingRail.style.width = width;
 
-    setTimeout(() => {
+    const releaseWidth = () => {
+      presentationWidthReleaseTimer = undefined;
       if (outgoingPane.isConnected) outgoingPane.style.width = "";
       if (outgoingRail?.isConnected) outgoingRail.style.width = "";
-    }, 250);
+    };
+    clearTimeout(presentationWidthReleaseTimer);
+    const duration = motionDuration(DURATION.emphasis);
+    if (duration === 0) {
+      releaseWidth();
+    } else {
+      presentationWidthReleaseTimer = setTimeout(releaseWidth, duration);
+    }
   });
+
+  $effect(() => () => clearTimeout(presentationWidthReleaseTimer));
 
   function handleCloseClick(event: MouseEvent | KeyboardEvent): void {
     event.stopPropagation();
     onUnfocusPane();
   }
 
-  function ignoreCompanionCanvas(_canvas: HTMLCanvasElement | null): void {}
+  function handleAnimatorCanvasReady(canvas: HTMLCanvasElement | null): void {
+    cancelAnimationFrame(animatorReadyFrame);
+    if (side === "left") onCanvasReady(canvas);
+    if (!canvas) {
+      animatorReady = false;
+      if (side === "left") tunnelStage.setCanvas(null);
+      return;
+    }
+
+    animatorReadyFrame = requestAnimationFrame(() => {
+      animatorReadyFrame = requestAnimationFrame(() => {
+        animatorReady = true;
+        if (side === "left") tunnelStage.setCanvas(canvas);
+      });
+    });
+  }
+
+  $effect(() => () => cancelAnimationFrame(animatorReadyFrame));
 </script>
 
 {#snippet viewer3DLoading()}
@@ -182,7 +324,12 @@
     class="media-pane animation-pane"
     class:persistent-3d={side === "left"}
     class:content-overlay={side === "right"}
-    class:persistent-3d-hidden={side === "left" && !is3DActive}
+    class:persistent-3d-hidden={side === "left" && !is3DPresented}
+    data-motion-surface="3d"
+    data-presented={is3DPresented}
+    data-scene-ready={scene3DReady}
+    inert={!is3DActive}
+    aria-hidden={!is3DActive}
     data-scene-inspector-docked={sceneControlLayout.reservedWidth > 0 ||
       undefined}
     style:--scene-control-reserved-width="{sceneControlLayout.reservedWidth}px"
@@ -247,6 +394,8 @@
               scene3DReady = ready;
               onSceneReadyChange?.(ready);
             },
+            initialRevealMode:
+              side === "left" && is2DMounted ? "streaming" : "gated",
           }}
         />
       {/if}
@@ -258,7 +407,14 @@
   <div
     bind:this={pane2D}
     class="media-pane animation-pane persistent-2d"
-    class:persistent-2d-hidden={!is2DActive}
+    class:persistent-2d-hidden={!is2DPresented}
+    data-motion-surface="2d"
+    data-persistent-animator
+    data-renderer-mode={isTunnelActive ? "tunnel" : "2d"}
+    data-tunnel-blend={tunnelReveal.current.toFixed(3)}
+    data-presented={is2DPresented}
+    inert={!isAnimatorActive}
+    aria-hidden={!isAnimatorActive}
   >
     {#if side === "left" && is2DActive && layout.focusedPane === "animation" && !layout.isMobile && !layout.suppressCloseButton}
       <div
@@ -295,11 +451,11 @@
         class="canvas-layer canvas-2d-layer"
         style="opacity:1;pointer-events:auto;"
       >
-        <!-- Focused 2D keeps the full transport. In the phone's split view the
-             card already owns seeking and the canvas owns play/pause, so the
-             duplicate transport disappears and its height returns to the stage.
-             Practice keeps the transport because its read-ahead lane is not a
-             card navigator. -->
+        <!-- Focused 2D and Tunnel keep the same full transport. In the phone's
+             split view the card already owns seeking and the canvas owns
+             play/pause, so the duplicate transport disappears and its height
+             returns to the stage. Practice keeps the transport because its
+             read-ahead lane is not a card navigator. -->
         <AnimatorCanvas
           sequenceData={playback.animationState.sequenceData}
           currentStep={playback.currentStep}
@@ -307,7 +463,14 @@
           virtualTime={playback.animationState.virtualTime}
           blueProp={playback.animationState.bluePropState}
           redProp={playback.animationState.redPropState}
+          additionalLayers={tunnelLayers}
+          tunnelSpectrum={tunnelController.spectrum}
+          tunnelPropColors={tunnelController.exactPropColors}
+          tunnelSelectedLayer={tunnelVisualActive
+            ? tunnelController.spotlightLayers
+            : null}
           gridMode={sequence?.gridMode}
+          gridVisible={tunnelVisualActive ? tunnelController.gridVisible : true}
           letter={playback.currentLetter}
           stepData={playback.currentStepData}
           word={sequence?.word}
@@ -319,9 +482,7 @@
             ? 0
             : 1}
           {trailSettings}
-          onCanvasReady={side === "left"
-            ? onCanvasReady
-            : ignoreCompanionCanvas}
+          onCanvasReady={handleAnimatorCanvasReady}
           {onPlaybackToggle}
           onProgressBarSeek={onProgressBarSeek ?? null}
           onProgressBarScrubStart={onProgressBarScrubStart ?? null}
@@ -331,10 +492,17 @@
           fillContainer
           hideProgressBar={side === "left"
             ? suppressProgress ||
-              (!practiceActive && layout.isMobile && layout.focusedPane === null)
+              (!practiceActive &&
+                layout.isMobile &&
+                layout.focusedPane === null)
             : true}
           hideHeader
+          hideTkaGlyph={tunnelVisualActive}
+          hideStepNumbers={tunnelVisualActive}
+          hidePathLines={tunnelVisualActive}
           tapToToggle={side === "left"}
+          hoverHint={isTunnelActive ? "badge" : undefined}
+          cornerToggle={isTunnelActive}
           hidePlay={false}
           progressLine={false}
           bpm={side === "left" ? bpm : undefined}
@@ -344,9 +512,28 @@
             ? onPlaybackModeChange
             : undefined}
           resizePaused={practiceResizePaused}
+          tipEffectMap={tunnelTipEffectMap}
+          fireConfig={tunnelVisualActive ? tunnelFireConfig : undefined}
+          extraContextMenuItems={isTunnelActive
+            ? tunnelStage.saveMenuItems
+            : []}
           {onSaveToLibrary}
         />
       </div>
+      {#if is3DPreparing}
+        <div class="viewer-3d-handoff-anchor">
+          <div
+            class="viewer-3d-handoff-status"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            transition:flyFade={{ duration: DURATION.fast, y: -4 }}
+          >
+            <ProgressRing percent={-1} size={18} strokeWidth={2.5} />
+            <span>Preparing 3D</span>
+          </div>
+        </div>
+      {/if}
     {/if}
   </div>
 {/if}
@@ -361,7 +548,9 @@
   <div
     bind:this={rail2D}
     class="persistent-rail"
-    class:persistent-rail-hidden={!is2DActive}
+    class:persistent-rail-hidden={!is2DRailPresented}
+    inert={!is2DActive}
+    aria-hidden={!is2DActive}
   ></div>
 {/if}
 
@@ -369,7 +558,9 @@
   <div
     bind:this={rail3D}
     class="persistent-rail"
-    class:persistent-rail-hidden={!is3DActive || !scene3DReady}
+    class:persistent-rail-hidden={!is3DRailPresented}
+    inert={!is3DActive}
+    aria-hidden={!is3DActive}
   >
     <SceneControlWorkspace
       {bpm}

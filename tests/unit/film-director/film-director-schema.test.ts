@@ -5,6 +5,7 @@ import { sampleFilmDirector } from "../../../src/routes/test/film-director/_lib/
 import {
   FILM_DIRECTOR_DIRECTIVE_AXES,
   FILM_DIRECTOR_SCHEMA_VERSION_3,
+  FILM_DIRECTOR_SCHEMA_VERSION_4,
   FilmDirectorInputSchema,
 } from "../../../src/routes/test/film-director/_lib/film-director-schema";
 
@@ -46,13 +47,13 @@ describe("film director scene language", () => {
     expect(() =>
       resolveFilmDirectorSpec({
         version: 1,
-        id: "bad-avatar",
-        title: "Bad avatar",
+        id: "bad-character",
+        title: "Bad character",
         scenes: [
           {
             id: "scene",
             title: "Scene",
-            performance: { performers: [{ avatarId: "astronaut" }] },
+            performance: { performers: [{ characterId: "astronaut" }] },
           },
         ],
       })
@@ -136,6 +137,57 @@ describe("film director scene language", () => {
       scenes: [{ id: "s1", title: "S1" }],
     });
     expect(parsed.version).toBe(3);
+  });
+
+  it("uses characterId in schema version 4", () => {
+    const parsed = FilmDirectorInputSchema.parse({
+      version: FILM_DIRECTOR_SCHEMA_VERSION_4,
+      id: "v4-film",
+      title: "V4",
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: { performers: [{ characterId: "ch01" }] },
+        },
+      ],
+    });
+    expect(parsed.scenes[0]?.performance?.performers?.[0]).toMatchObject({
+      characterId: "ch01",
+    });
+  });
+
+  it("migrates avatarId only for legacy film versions", () => {
+    const legacy = FilmDirectorInputSchema.parse({
+      version: FILM_DIRECTOR_SCHEMA_VERSION_3,
+      id: "legacy-character-field",
+      title: "Legacy character field",
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: { performers: [{ avatarId: "ch01" }] },
+        },
+      ],
+    });
+    expect(legacy.scenes[0]?.performance?.performers?.[0]).toMatchObject({
+      characterId: "ch01",
+    });
+
+    expect(() =>
+      FilmDirectorInputSchema.parse({
+        version: FILM_DIRECTOR_SCHEMA_VERSION_4,
+        id: "v4-legacy-field",
+        title: "V4 legacy field",
+        scenes: [
+          {
+            id: "s1",
+            title: "S1",
+            performance: { performers: [{ avatarId: "ch01" }] },
+          },
+        ],
+      })
+    ).toThrow(/avatarId/);
   });
 
   it("upgrades legacy scene units and location fields before validation", () => {
@@ -228,5 +280,156 @@ describe("film director scene language", () => {
     ).toThrow();
     expect(FILM_DIRECTOR_DIRECTIVE_AXES).toContain("prop");
     expect(FILM_DIRECTOR_DIRECTIVE_AXES).toContain("environmentId");
+  });
+});
+
+describe("beats as a time unit", () => {
+  const beatsFilm = (scene: Record<string, unknown>) => ({
+    version: FILM_DIRECTOR_SCHEMA_VERSION_4,
+    id: "beats-film",
+    title: "Beats",
+    scenes: [{ id: "s1", title: "S1", ...scene }],
+  });
+
+  it("accepts version 4", () => {
+    const parsed = FilmDirectorInputSchema.parse(beatsFilm({}));
+    expect(parsed.version).toBe(4);
+  });
+
+  it("accepts durationBeats on a scene and rejects both units at once", () => {
+    const parsed = FilmDirectorInputSchema.parse(
+      beatsFilm({ durationBeats: 16 })
+    );
+    expect(parsed.scenes[0]!.durationBeats).toBe(16);
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        beatsFilm({ durationSeconds: 8, durationBeats: 16 })
+      )
+    ).toThrow(/exactly one of/i);
+  });
+
+  it("accepts durationBeats on transitions, blocking moves, scene blocking, and camera moves", () => {
+    const parsed = FilmDirectorInputSchema.parse(
+      beatsFilm({
+        durationBeats: 16,
+        transition: { kind: "cut", durationBeats: 2 },
+        performance: {
+          bpm: 120,
+          blocking: { endFormation: "line", durationBeats: 8 },
+          cast: {
+            count: 2,
+            performers: [
+              {
+                id: "performer-2",
+                blocking: [
+                  { move: "walk", to: { x: 1, z: 0 }, durationBeats: 4 },
+                  { move: "stand" },
+                ],
+              },
+            ],
+          },
+        },
+        camera: {
+          shotSize: "medium",
+          moves: [
+            { move: "push-in", durationBeats: 8 },
+            { move: "hold", durationBeats: 8 },
+          ],
+        },
+      })
+    );
+    expect(parsed.scenes[0]!.transition?.durationBeats).toBe(2);
+    expect(parsed.scenes[0]!.performance?.blocking?.durationBeats).toBe(8);
+    expect(
+      parsed.scenes[0]!.performance?.cast?.performers?.[0]?.blocking?.[0]
+        ?.durationBeats
+    ).toBe(4);
+    expect(parsed.scenes[0]!.camera?.moves?.[0]?.durationBeats).toBe(8);
+  });
+
+  it("rejects stating both units on a transition, a blocking move, a scene blocking, or a camera move", () => {
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        beatsFilm({
+          transition: { kind: "cut", durationSeconds: 1, durationBeats: 2 },
+        })
+      )
+    ).toThrow(/exactly one of/i);
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        beatsFilm({
+          performance: {
+            performers: [
+              {
+                blocking: [
+                  {
+                    move: "walk",
+                    to: { x: 1, z: 0 },
+                    durationSeconds: 2,
+                    durationBeats: 4,
+                  },
+                ],
+              },
+            ],
+          },
+        })
+      )
+    ).toThrow(/exactly one of/i);
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        beatsFilm({
+          performance: {
+            cast: { count: 2 },
+            blocking: {
+              endFormation: "line",
+              durationSeconds: 4,
+              durationBeats: 8,
+            },
+          },
+        })
+      )
+    ).toThrow(/exactly one of/i);
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        beatsFilm({
+          camera: {
+            shotSize: "medium",
+            moves: [
+              { move: "push-in", durationSeconds: 4, durationBeats: 8 },
+            ],
+          },
+        })
+      )
+    ).toThrow(/exactly one of/i);
+  });
+
+  it("accepts atBeats on a camera keyframe and demands exactly one time unit", () => {
+    const parsed = FilmDirectorInputSchema.parse(
+      beatsFilm({
+        camera: {
+          keyframes: [
+            { atSeconds: 0, position: [0, 1, -4] },
+            { atBeats: 8, position: [0, 1, -2] },
+          ],
+        },
+      })
+    );
+    expect(parsed.scenes[0]!.camera?.keyframes?.[1]?.atBeats).toBe(8);
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        beatsFilm({
+          camera: {
+            keyframes: [
+              { atSeconds: 1, atBeats: 8, position: [0, 1, -4] },
+            ],
+          },
+        })
+      )
+    ).toThrow(/exactly one of/i);
+    expect(() =>
+      FilmDirectorInputSchema.parse(
+        beatsFilm({ camera: { keyframes: [{ position: [0, 1, -4] }] } })
+      )
+    ).toThrow(/exactly one of/i);
   });
 });

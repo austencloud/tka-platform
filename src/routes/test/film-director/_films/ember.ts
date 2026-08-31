@@ -26,7 +26,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * explicitly: the ignition is the film's turn, not a side effect.
  */
 export const emberFilm: FilmDirectorInput = {
-  version: 3,
+  version: 4,
   id: "ember-r1",
   title: "Ember",
   brief:
@@ -48,7 +48,7 @@ export const emberFilm: FilmDirectorInput = {
           {
             id: "master",
             name: "Master",
-            avatarId: "ch10",
+            characterId: "ch10",
             prop: PropType.STAFF,
             staffLengthCm: 150,
             effect: "charcoal",
@@ -109,7 +109,7 @@ export const emberFilm: FilmDirectorInput = {
           {
             id: "master",
             name: "Master",
-            avatarId: "ch10",
+            characterId: "ch10",
             prop: PropType.STAFF,
             staffLengthCm: 150,
             effect: "charcoal",
@@ -129,7 +129,7 @@ export const emberFilm: FilmDirectorInput = {
           {
             id: "apprentice",
             name: "Apprentice",
-            avatarId: "ch34",
+            characterId: "ch34",
             prop: PropType.STAFF,
             staffLengthCm: 120,
             effect: "none",
@@ -205,7 +205,7 @@ export const emberFilm: FilmDirectorInput = {
           {
             id: "apprentice",
             name: "Apprentice",
-            avatarId: "ch34",
+            characterId: "ch34",
             prop: PropType.STAFF,
             staffLengthCm: 120,
             effect: "sparkles",
@@ -240,7 +240,7 @@ export const emberFilm: FilmDirectorInput = {
           {
             id: "master",
             name: "Master",
-            avatarId: "ch10",
+            characterId: "ch10",
             prop: PropType.STAFF,
             staffLengthCm: 150,
             effect: "charcoal",
@@ -318,7 +318,7 @@ export const emberFilm: FilmDirectorInput = {
           {
             id: "apprentice",
             name: "Apprentice",
-            avatarId: "ch34",
+            characterId: "ch34",
             // Cast explicitly, not left to the fire auto-equip: the film's
             // whole turn is this prop change.
             prop: PropType.FIRE_DOUBLE_STAFF,
@@ -340,7 +340,7 @@ export const emberFilm: FilmDirectorInput = {
           {
             id: "master",
             name: "Master",
-            avatarId: "ch10",
+            characterId: "ch10",
             prop: PropType.STAFF,
             staffLengthCm: 150,
             effect: "smoke",

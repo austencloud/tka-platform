@@ -25,7 +25,11 @@ import {
   calculatePropCenter,
   type PropEndpointConfig,
 } from "./prop-position-calculator";
-import { tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
+import {
+  tunnelColorFromHex,
+  tunnelPropColor,
+  type TunnelPropColorPair,
+} from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 export interface LedSamplerConfig {
   canvasSize: number;
@@ -39,10 +43,15 @@ export interface LedSamplerConfig {
    * kaleidoscope. Layers share the base dimensions/types and use the fallback
    * position path. Absent = the plain two-prop case.
    */
-  additionalLayers?: Array<{ blueProp: PropState | null; redProp: PropState | null }>;
+  additionalLayers?: Array<{
+    blueProp: PropState | null;
+    redProp: PropState | null;
+    opacity?: number;
+  }>;
   /** Tunnel rainbow spectrum. When false, overlaid layers take the pattern's
    *  own colors instead of a distinct per-copy spectrum color. Default true. */
   tunnelSpectrum?: boolean;
+  tunnelPropColors?: TunnelPropColorPair | null;
 }
 
 /**
@@ -93,7 +102,11 @@ export class LedSampler {
     const ledCount = Math.max(1, Math.round(ledConfig.device.ledCount));
     const pattern = this.materializer.resolve(ledConfig.pattern, ledCount);
     const frameIndex = pattern
-      ? patternFrameIndex(currentTime, ledConfig.cycleDuration, pattern.frameCount)
+      ? patternFrameIndex(
+          currentTime,
+          ledConfig.cycleDuration,
+          pattern.frameCount
+        )
       : 0;
     // Brightness is a flux term, applied once by the renderer's photometry
     // (PROP_REFERENCE_FLUX x level). Applying it here too would square it.
@@ -103,14 +116,36 @@ export class LedSampler {
     let count = 0;
     if (blueProp) {
       count = this.emitProp(
-        blueProp, config, config.bluePropDimensions, config.bluePropType ?? null,
-        0, ledCount, pattern, frameIndex, gain, null, count
+        blueProp,
+        config,
+        config.bluePropDimensions,
+        config.bluePropType ?? null,
+        0,
+        ledCount,
+        pattern,
+        frameIndex,
+        gain,
+        config.tunnelPropColors
+          ? tunnelColorFromHex(config.tunnelPropColors.blue).rgb01
+          : null,
+        count
       );
     }
     if (redProp) {
       count = this.emitProp(
-        redProp, config, config.redPropDimensions, config.redPropType ?? null,
-        1, ledCount, pattern, frameIndex, gain, null, count
+        redProp,
+        config,
+        config.redPropDimensions,
+        config.redPropType ?? null,
+        1,
+        ledCount,
+        pattern,
+        frameIndex,
+        gain,
+        config.tunnelPropColors
+          ? tunnelColorFromHex(config.tunnelPropColors.red).rgb01
+          : null,
+        count
       );
     }
 
@@ -118,25 +153,55 @@ export class LedSampler {
     // color so the copies stay distinguishable, exactly as they did in v1.
     const layers = config.additionalLayers;
     if (layers && layers.length > 0) {
-      const spectrum = config.tunnelSpectrum ?? true;
-      for (let li = 0; li < layers.length && count < LED_SAMPLER_MAX_LEDS; li++) {
+      const spectrum =
+        (config.tunnelSpectrum ?? true) && !config.tunnelPropColors;
+      const exact = config.tunnelPropColors;
+      for (
+        let li = 0;
+        li < layers.length && count < LED_SAMPLER_MAX_LEDS;
+        li++
+      ) {
         const layer = layers[li]!;
         if (layer.blueProp) {
           const propIndex = 2 + li * 2;
           count = this.emitProp(
-            layer.blueProp, config, config.bluePropDimensions,
-            config.bluePropType ?? null, propIndex, ledCount, pattern, frameIndex,
-            gain, spectrum ? tunnelPropColor(propIndex, layers.length).rgb01 : null,
-            count
+            layer.blueProp,
+            config,
+            config.bluePropDimensions,
+            config.bluePropType ?? null,
+            propIndex,
+            ledCount,
+            pattern,
+            frameIndex,
+            gain,
+            exact
+              ? tunnelColorFromHex(exact.blue).rgb01
+              : spectrum
+                ? tunnelPropColor(propIndex, layers.length).rgb01
+                : null,
+            count,
+            layer.opacity ?? 1
           );
         }
         if (layer.redProp) {
           const propIndex = 3 + li * 2;
           count = this.emitProp(
-            layer.redProp, config, config.redPropDimensions,
-            config.redPropType ?? null, propIndex, ledCount, pattern, frameIndex,
-            gain, spectrum ? tunnelPropColor(propIndex, layers.length).rgb01 : null,
-            count
+            layer.redProp,
+            config,
+            config.redPropDimensions,
+            config.redPropType ?? null,
+            propIndex,
+            ledCount,
+            pattern,
+            frameIndex,
+            gain,
+            exact
+              ? tunnelColorFromHex(exact.red).rgb01
+              : spectrum
+                ? tunnelPropColor(propIndex, layers.length).rgb01
+                : null,
+            count,
+            layer.opacity ?? 1
           );
         }
       }
@@ -166,8 +231,10 @@ export class LedSampler {
     frameIndex: number,
     gain: number,
     overrideColor: { r: number; g: number; b: number } | null,
-    outputStartIndex: number
+    outputStartIndex: number,
+    brightnessScale = 1
   ): number {
+    const clampedBrightness = Math.max(0, Math.min(1, brightnessScale));
     const points = getTipPoints(propType).points;
     if (points.length === 0) return outputStartIndex;
 
@@ -193,8 +260,12 @@ export class LedSampler {
     let outputIndex = outputStartIndex;
     for (let i = 0; i < emitCount && outputIndex < LED_SAMPLER_MAX_LEDS; i++) {
       const t = emitCount > 1 ? i / (emitCount - 1) : 0;
-      const dx = spanStrip ? first.dx + (last.dx - first.dx) * t : points[i]!.dx;
-      const dy = spanStrip ? first.dy + (last.dy - first.dy) * t : points[i]!.dy;
+      const dx = spanStrip
+        ? first.dx + (last.dx - first.dx) * t
+        : points[i]!.dx;
+      const dy = spanStrip
+        ? first.dy + (last.dy - first.dy) * t
+        : points[i]!.dy;
 
       const x = center.x + (dx * cosA - dy * sinA) * gridScaleFactor;
       const y = center.y + (dx * sinA + dy * cosA) * gridScaleFactor;
@@ -209,7 +280,16 @@ export class LedSampler {
           ? scale(getPixel(pattern, frameIndex, i % pattern.ledCount), gain)
           : BLACK;
 
-      this.emitLed(x, y, propIndex, i, endpointIndex, color, outputIndex);
+      this.emitLed(
+        x,
+        y,
+        propIndex,
+        i,
+        endpointIndex,
+        color,
+        outputIndex,
+        clampedBrightness
+      );
       outputIndex++;
     }
 
@@ -223,7 +303,8 @@ export class LedSampler {
     ledIndex: number,
     endpointIndex: number,
     color: { r: number; g: number; b: number },
-    outputIndex: number
+    outputIndex: number,
+    brightness: number
   ): void {
     const existing = this.outputLeds[outputIndex];
     if (existing) {
@@ -232,7 +313,7 @@ export class LedSampler {
       existing.propIndex = propIndex;
       existing.ledIndex = ledIndex;
       existing.endpointIndex = endpointIndex;
-      existing.brightness = 1;
+      existing.brightness = brightness;
       existing.r = color.r;
       existing.g = color.g;
       existing.b = color.b;
@@ -243,7 +324,7 @@ export class LedSampler {
         propIndex,
         ledIndex,
         endpointIndex,
-        brightness: 1,
+        brightness,
         r: color.r,
         g: color.g,
         b: color.b,
@@ -263,7 +344,7 @@ export function patternFrameIndex(
 ): number {
   if (frameCount <= 0) return 0;
   const seconds = Math.max(0.001, cycleDuration);
-  const phase = ((currentTime / 1000 / seconds) % 1 + 1) % 1;
+  const phase = (((currentTime / 1000 / seconds) % 1) + 1) % 1;
   return Math.min(frameCount - 1, Math.floor(phase * frameCount));
 }
 

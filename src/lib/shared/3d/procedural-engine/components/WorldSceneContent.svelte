@@ -182,7 +182,7 @@
 
     /** Performer state for sequence playback (optional) */
     performerState?:
-      | import("$lib/shared/3d/state/avatar-instance-state.svelte").AvatarInstanceState
+      | import("$lib/shared/3d/state/character-instance-state.svelte").CharacterInstanceState
       | null;
 
     /** Validated real-world terrain data for Earth destinations.

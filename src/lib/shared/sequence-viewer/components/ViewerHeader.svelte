@@ -139,6 +139,9 @@
       showOpenAppAction ||
       !!onDeleteRequest
   );
+  const hasRightActions = $derived(
+    (hasAccountEntry && !!openAppHref) || !!exportSettings || !embedded
+  );
 
   let shareMenuOpen = $state(false);
 
@@ -153,6 +156,7 @@
   class:compact={compactChrome}
   class:labelled={labelledChrome}
   class:with-navigation={!!navigation}
+  class:word-roomy={!hasRightActions}
   data-hidden={hidden}
 >
   <div class="header-side header-left">
@@ -897,6 +901,14 @@
 
     .viewer-header:not(.with-navigation) .header-word-slot {
       width: clamp(72px, calc(100vw - 292px), 132px);
+    }
+
+    /* Embedded viewers do not render account/share/close actions on the right.
+       Spend that genuinely free space on the sequence identity instead of
+       applying the full-header reservation and shrinking a normal word to a
+       five-pixel glyph size. */
+    .viewer-header.word-roomy .header-word-slot {
+      width: clamp(136px, 40vw, 156px);
     }
   }
 

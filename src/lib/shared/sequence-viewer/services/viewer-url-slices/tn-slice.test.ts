@@ -12,6 +12,9 @@ const { DEFAULT_CONFIG } = await import(
 const { savedTunnelPresetRecipe } = await import(
   "$lib/shared/sequence-viewer/tunnel/tunnel-preset-recipe"
 );
+const { resolveTunnelPropColorState } = await import(
+  "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors"
+);
 const { createRootedTunnelViewController } = await import(
   "./tn-slice-test-harness.svelte"
 );
@@ -21,7 +24,8 @@ type TunnelControllerSources = Parameters<
 
 const STORAGE_KEY = "tka_tunnel_view_state";
 const USER_PRESETS_KEY = "tka_tunnel_user_presets";
-const ENCODED_KEYS = [STORAGE_KEY, USER_PRESETS_KEY];
+const CUSTOM_COLORS_KEY = "tka_viewer_custom_colors";
+const ENCODED_KEYS = [STORAGE_KEY, USER_PRESETS_KEY, CUSTOM_COLORS_KEY];
 
 const disposals: Array<() => void> = [];
 
@@ -38,13 +42,23 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+const defaultColors = () => ({
+  mode: DEFAULT_TUNNEL_VIEW_STATE.colors.mode,
+  custom: { ...DEFAULT_TUNNEL_VIEW_STATE.colors.custom },
+});
+// What the slice emits: the palette constants carry uppercase hex, but both
+// capture and seed run colors through resolveTunnelPropColorState, which
+// lowercases every string.
+const normalizedDefaultColors = () =>
+  resolveTunnelPropColorState(DEFAULT_TUNNEL_VIEW_STATE.colors);
+
 describe("tn slice", () => {
   it("returns null at post-normalize defaults", () => {
     expect(
       captureTnSlice({
         config: { ...DEFAULT_CONFIG },
         gridVisible: false,
-        spectrum: true,
+        colors: defaultColors(),
         section: "tunnel",
         presetRecipe: null,
       })
@@ -66,7 +80,7 @@ describe("tn slice", () => {
     const slice = captureTnSlice({
       config: { ...DEFAULT_CONFIG, fold: 4, mirror: true },
       gridVisible: false,
-      spectrum: true,
+      colors: defaultColors(),
       section: "tunnel",
       presetRecipe: null,
     });
@@ -77,7 +91,7 @@ describe("tn slice", () => {
     const slice = captureTnSlice({
       config: { ...DEFAULT_CONFIG, speedOverrides: { 1: 2 } },
       gridVisible: false,
-      spectrum: true,
+      colors: defaultColors(),
       section: "tunnel",
       presetRecipe: null,
     });
@@ -88,13 +102,13 @@ describe("tn slice", () => {
     const slice = captureTnSlice({
       config: { ...DEFAULT_CONFIG },
       gridVisible: true,
-      spectrum: false,
+      colors: { mode: "hands", custom: defaultColors().custom },
       section: "speed",
       presetRecipe: null,
     });
     expect(slice).toEqual({
       gridVisible: true,
-      spectrum: false,
+      colors: { mode: "hands", custom: normalizedDefaultColors().custom },
       section: "speed",
     });
   });
@@ -105,7 +119,7 @@ describe("tn slice", () => {
     const slice = captureTnSlice({
       config: { ...DEFAULT_CONFIG },
       gridVisible: false,
-      spectrum: true,
+      colors: defaultColors(),
       section: "tunnel",
       presetRecipe: recipe,
     });
@@ -126,7 +140,7 @@ describe("tn slice", () => {
     const slice = captureTnSlice({
       config: { ...DEFAULT_CONFIG, fold: 4, mirror: true, staggerSteps: 2 },
       gridVisible: true,
-      spectrum: false,
+      colors: { mode: "custom", custom: { blue: "#123456", red: "#abcdef" } },
       section: "speed",
       presetRecipe: recipe,
     });
@@ -143,13 +157,17 @@ describe("tn slice", () => {
     const seeded = seedFromTnSlice({ gridVisible: true });
     expect(seeded).toEqual({
       ...DEFAULT_TUNNEL_VIEW_STATE,
+      colors: normalizedDefaultColors(),
       gridVisible: true,
     });
   });
 
   it("always seeds a COMPLETE config, even from an empty payload", () => {
     const seeded = seedFromTnSlice({});
-    expect(seeded).toEqual(DEFAULT_TUNNEL_VIEW_STATE);
+    expect(seeded).toEqual({
+      ...DEFAULT_TUNNEL_VIEW_STATE,
+      colors: normalizedDefaultColors(),
+    });
     // A null preset override must not fall back to a stored user preset —
     // there is nothing further for the controller to read.
     expect(seeded.presetRecipe).toBeNull();
@@ -213,7 +231,9 @@ describe("tn slice", () => {
         .map((call) => String(call[0]))
         .filter((key) => ENCODED_KEYS.includes(key))
     );
-    expect([...touched]).toEqual([STORAGE_KEY]);
+    expect([...touched].sort()).toEqual(
+      [STORAGE_KEY, CUSTOM_COLORS_KEY].sort()
+    );
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).config.fold).toBe(4);
   });
 

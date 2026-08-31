@@ -8,7 +8,7 @@
  */
 
 import type CameraControls from "camera-controls";
-import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+import type { CharacterInstanceState } from "$lib/shared/3d/state/character-instance-state.svelte";
 
 export type PerformerCountRule =
   | { kind: "exactly"; count: number }
@@ -16,7 +16,7 @@ export type PerformerCountRule =
   | { kind: "any" };
 
 export interface CameraPresetContext {
-  performers: AvatarInstanceState[];
+  performers: CharacterInstanceState[];
   /** One loop of the sequence, in seconds. */
   sequenceDurationSec: number;
   /**

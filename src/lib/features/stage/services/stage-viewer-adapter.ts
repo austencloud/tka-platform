@@ -8,7 +8,7 @@ import type { StageChoreography } from "../domain/stage-types";
 /**
  * The Stage's write seam onto the canonical viewer.
  *
- * Following the Film Director's rule, edits split by kind. Look edits — avatar,
+ * Following the Film Director's rule, edits split by kind. Look edits — character,
  * prop, effort, effect, staff length — belong to the performer manager and are
  * never touched here, so the rail's Performer tool keeps working exactly as it
  * does on every other 3D surface. Document edits — how many performers there
@@ -91,6 +91,8 @@ export function applyStagePerformerMotion(
       speed: frame.speedMetersPerSecond,
       // A paused stage is a held pose, not a performer walking in place.
       moving: isPlaying && frame.isMoving,
+      gaitTimingSample: frame.gaitTimingSample ?? null,
+      terminalStepPlan: frame.terminalStepPlan ?? null,
     });
   }
 }

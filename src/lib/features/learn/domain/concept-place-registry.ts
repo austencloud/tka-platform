@@ -161,6 +161,19 @@ export const CONCEPT_RESOURCE_BINDINGS: Readonly<
     ],
     applications: [{ href: "/create", label: "Open Composer" }],
   },
+  "1.6": {
+    lessonIds: [],
+    guideRefs: [
+      {
+        slug: "staff-positions",
+        label: "Staff Positions",
+        coverage: "partial",
+      },
+    ],
+    exploration: null,
+    practice: [],
+    applications: [],
+  },
 };
 
 function toPlace(concept: KnowledgeConcept): LearnConceptPlace {

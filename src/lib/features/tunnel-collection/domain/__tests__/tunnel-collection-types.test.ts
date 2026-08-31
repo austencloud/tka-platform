@@ -27,7 +27,10 @@ const snapshot = {
   tunnel: {
     config: DEFAULT_CONFIG,
     gridVisible: false,
-    spectrum: true,
+    colors: {
+      mode: "custom",
+      custom: { blue: "#123456", red: "#abcdef" },
+    },
     section: "tunnel",
   },
   effects: { activeEffect: "none" },
@@ -172,7 +175,11 @@ describe("CollectedTunnelSchema", () => {
   it("does not mint a v2 choreography revision when only a canonical poster refreshes", async () => {
     const first = await prepareTunnelRevision(valid as CollectedTunnel);
     const refreshed = await prepareTunnelRevision(
-      { ...first, poster: "data:image/webp;base64,CANONICAL", posterRenderVersion: 1 },
+      {
+        ...first,
+        poster: "data:image/webp;base64,CANONICAL",
+        posterRenderVersion: 1,
+      },
       first
     );
 
@@ -182,11 +189,17 @@ describe("CollectedTunnelSchema", () => {
   });
 
   it("retains a v1 revision when legacy presentation changes, then advances to v2 only for choreography", async () => {
-    const legacyPayload = { ...valid, poster: "data:image/webp;base64,old" } as CollectedTunnel;
-    const legacyDigest = await createTunnelRevision({
-      ...legacyPayload,
-      currentRevisionSchemaVersion: 1,
-    }, 123);
+    const legacyPayload = {
+      ...valid,
+      poster: "data:image/webp;base64,old",
+    } as CollectedTunnel;
+    const legacyDigest = await createTunnelRevision(
+      {
+        ...legacyPayload,
+        currentRevisionSchemaVersion: 1,
+      },
+      123
+    );
     const previous = {
       ...legacyPayload,
       currentRevisionId: legacyDigest.revisionId,
@@ -195,11 +208,21 @@ describe("CollectedTunnelSchema", () => {
       currentRevisionSchemaVersion: 1 as const,
     };
     const posterOnly = await prepareTunnelRevision(
-      { ...previous, poster: "data:image/webp;base64,new", posterRenderVersion: 1 },
+      {
+        ...previous,
+        poster: "data:image/webp;base64,new",
+        posterRenderVersion: 1,
+      },
       previous
     );
     const changed = await prepareTunnelRevision(
-      { ...posterOnly, snapshot: { ...posterOnly.snapshot, playback: { ...posterOnly.snapshot.playback, bpm: 90 } } },
+      {
+        ...posterOnly,
+        snapshot: {
+          ...posterOnly.snapshot,
+          playback: { ...posterOnly.snapshot.playback, bpm: 90 },
+        },
+      },
       posterOnly
     );
 
@@ -212,7 +235,10 @@ describe("CollectedTunnelSchema", () => {
   });
 
   it("migrates the envelope without inventing a cast or calling an unknown poster current", () => {
-    const legacy = { ...valid, snapshot: { ...snapshot, version: 1 } } as CollectedTunnel;
+    const legacy = {
+      ...valid,
+      snapshot: { ...snapshot, version: 1 },
+    } as CollectedTunnel;
     const migrated = migrateTunnelArtifact(legacy);
 
     expect(migrated.changed).toBe(true);

@@ -40,6 +40,14 @@ describe("resolveFire3D", () => {
     ).toBeGreaterThan(resolveFire3D({ ...base, intensity: 0 }).emissionRate);
   });
 
+  it("keeps the moving fire light below the facial-detail washout range", () => {
+    const dim = resolveFire3D({ ...base, intensity: 0.45, brightness: 0 });
+    const hot = resolveFire3D({ ...base, intensity: 1, brightness: 1 });
+
+    expect(hot.lightIntensity).toBeGreaterThan(dim.lightIntensity);
+    expect(hot.lightIntensity).toBeLessThanOrEqual(0.5);
+  });
+
   it("turbulence still drives vortex strength", () => {
     expect(
       resolveFire3D({ ...base, turbulence: 1 }).vortexStrength

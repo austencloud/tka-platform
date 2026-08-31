@@ -55,8 +55,9 @@ describe("Stage keyboard ownership", () => {
   it("lets a focused drill-chart spot keep the arrow keys", () => {
     // The spots nudge a performer a quarter metre with the arrows; the playhead
     // shortcuts claim the same keys. The marker is how the widget wins.
-    expect(read("src/lib/features/stage/components/FormationOverlay.svelte"))
-      .toContain("data-keyboard-shortcuts-ignore");
+    expect(
+      read("src/lib/features/stage/components/FormationOverlay.svelte")
+    ).toContain("data-keyboard-shortcuts-ignore");
   });
 
   it("binds every declared handler and nothing outside the stage context", () => {
@@ -76,7 +77,7 @@ describe("Stage keyboard ownership", () => {
       shortcut.action(new KeyboardEvent("keydown"));
     }
 
-    // Two ids share removeSelectedSet (Delete and Backspace), so every handler
+    // Two ids share deleteSelection (Delete and Backspace), so every handler
     // is reachable even though the counts differ.
     expect(new Set(called)).toEqual(
       new Set(Object.keys(createInertStageHandlers()))

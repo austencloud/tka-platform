@@ -91,13 +91,13 @@ export const entries: CorpusEntry[] = [
     expect: { outcome: "rejects", messageIncludes: 'Unrecognized key: \\"dancers\\"' },
   },
   {
-    id: "unknown-axis-scene-avatarScale",
-    utterance: "Scale up everyone's avatar by 20 percent.",
-    film: corpusFilm("unknown-axis-scene-avatarScale", {
-      location: { avatarScale: 1.2 },
+    id: "unknown-axis-scene-characterScale",
+    utterance: "Scale up everyone's character by 20 percent.",
+    film: corpusFilm("unknown-axis-scene-characterScale", {
+      location: { characterScale: 1.2 },
       performance: { cast: { count: 1 } },
     }),
-    expect: { outcome: "rejects", messageIncludes: 'Unrecognized key: \\"avatarScale\\"' },
+    expect: { outcome: "rejects", messageIncludes: 'Unrecognized key: \\"characterScale\\"' },
   },
   {
     id: "unknown-axis-scene-oceanVariant",

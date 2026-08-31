@@ -35,7 +35,14 @@ import {
   type TunnelPresetRecipe,
 } from "./tunnel-preset-recipe";
 import { performerRing } from "./performer-ring-model";
-import { tunnelPropColor } from "./tunnel-prop-colors";
+import {
+  activeTunnelPropColorPair,
+  resolveTunnelPropColorState,
+  tunnelPropColor,
+  type TunnelPropColorMode,
+  type TunnelPropColorPair,
+  type TunnelPropColorState,
+} from "./tunnel-prop-colors";
 import { getBaseMotionColors } from "$lib/shared/animation-engine/services/svg-generator";
 import {
   createIndependentTunnelPerformer,
@@ -48,6 +55,16 @@ import {
   saveTunnelViewState,
   type TunnelViewState,
 } from "./tunnel-view-state";
+import {
+  consumeStagedViewerCustomColors,
+  ensureViewerCustomColorPreference,
+  loadViewerCustomColorPreference,
+  saveViewerCustomColorPreference,
+} from "../services/viewer-custom-color-preferences";
+import {
+  createViewerCustomColorState,
+  type ViewerCustomColorState,
+} from "../state/viewer-custom-colors-state.svelte";
 
 const DEFAULT_PROP_STATE: PropState = {
   centerPathAngle: 0,
@@ -71,6 +88,8 @@ export interface TunnelControllerSources {
    *  `persistViewState: false` — the seam only replaces the read; it does not
    *  itself suppress the write. */
   initialViewState?: TunnelViewState;
+  /** A parent-scoped pair shared with another art controller. */
+  customColorState?: ViewerCustomColorState;
 }
 
 /** Reduced motion caps a dense ring so a heavy kaleidoscope doesn't spin for
@@ -123,10 +142,49 @@ export class TunnelViewController {
    *  the grid is clutter behind a dense overlay. */
   gridVisible = $state(false);
 
-  /** Per-prop rainbow spectrum coloring. On (default) = every copy takes its own
-   *  spectrum color; off = layers inherit the base/preset colors so the Effects
-   *  panel's colors drive every prop. Persisted with the view state. */
-  spectrum = $state(true);
+  /** One explicit appearance mode plus the last authored exact pair. Keeping
+   * the pair while another mode is active lets authors compare looks without
+   * losing their values. */
+  colorMode = $state<TunnelPropColorMode>("spectrum");
+  readonly customColorState: ViewerCustomColorState;
+
+  get customPropColors(): TunnelPropColorPair {
+    return this.customColorState.colors;
+  }
+
+  get colors(): TunnelPropColorState {
+    return {
+      mode: this.colorMode,
+      custom: { ...this.customPropColors },
+    };
+  }
+
+  set colors(value: TunnelPropColorState) {
+    const resolved = resolveTunnelPropColorState(value);
+    this.colorMode = resolved.mode;
+    this.customColorState.hydrate(resolved.custom);
+  }
+
+  /** Compatibility for older preview/test callers. New Tunnel authoring code
+   * uses `colorMode` so Custom cannot be collapsed into a boolean. */
+  get spectrum(): boolean {
+    return this.colorMode === "spectrum";
+  }
+
+  set spectrum(value: boolean) {
+    this.colorMode = value ? "spectrum" : "hands";
+  }
+
+  exactPropColors = $derived.by(() =>
+    activeTunnelPropColorPair({
+      mode: this.colorMode,
+      custom: this.customPropColors,
+    })
+  );
+
+  setCustomPropColor(hand: "blue" | "red", value: string): void {
+    this.customColorState.setColor(hand, value);
+  }
 
   /** Active rail section in the Art settings panel, persisted with the view
    *  state so the panel reopens on the section the user last used. */
@@ -151,6 +209,26 @@ export class TunnelViewController {
     // `tn`-slice seed replaces the disk read outright — never merged with it —
     // so a shared link never picks up the recipient's own leftover state.
     const view = sources.initialViewState ?? loadTunnelViewState();
+    const persistViewState = sources.persistViewState ?? true;
+    if (sources.customColorState) {
+      this.customColorState = sources.customColorState;
+    } else {
+      const stagedColors = consumeStagedViewerCustomColors();
+      const preferenceColors = persistViewState
+        ? ensureViewerCustomColorPreference()
+        : loadViewerCustomColorPreference(undefined, false);
+      this.customColorState = createViewerCustomColorState(
+        stagedColors ?? preferenceColors,
+        persistViewState ? saveViewerCustomColorPreference : undefined
+      );
+    }
+    if (sources.initialViewState && !sources.customColorState) {
+      // A seeded link carries the sender's exact pair; the freshly built
+      // (non-saving, given persistViewState:false) custom-color state must
+      // show it instead of the recipient's preference. A caller-supplied
+      // shared state is never overwritten from a seed.
+      this.customColorState.hydrate(sources.initialViewState.colors.custom);
+    }
     const requestedConfig =
       sources.getComposition?.()?.formation ?? view.config;
     const cfg = clampConfig(requestedConfig, this.#maxImages());
@@ -162,17 +240,17 @@ export class TunnelViewController {
     this.staggerSteps = cfg.staggerSteps;
     this.speedOverrides = { ...cfg.speedOverrides };
     this.gridVisible = view.gridVisible;
-    this.spectrum = view.spectrum;
+    this.colorMode = view.colors.mode;
     this.section = view.section;
     this.presetRecipe = cloneTunnelPresetRecipe(view.presetRecipe);
 
     // Persist the live view state on change.
-    if (sources.persistViewState ?? true) {
+    if (persistViewState) {
       $effect(() => {
         const snapshot: TunnelViewState = {
           config: this.config,
           gridVisible: this.gridVisible,
-          spectrum: this.spectrum,
+          colors: this.colors,
           section: this.section,
           presetRecipe: this.presetRecipe,
         };
@@ -465,16 +543,19 @@ export class TunnelViewController {
     const cfg = this.config;
     const layerCount = Math.max(0, imageCount(cfg) - 1);
     const handColors = getBaseMotionColors();
+    const exactColors = this.exactPropColors;
     return performerRing(cfg).map((_p, i) => ({
       arm: i,
       label: this.#layers[i]?.performerLabel ?? (i === 0 ? "You" : `Copy ${i}`),
       rate: effectiveSpeed(cfg, i),
-      blueHex:
-        i === 0 || !this.spectrum
+      blueHex: exactColors
+        ? exactColors.blue
+        : i === 0 || !this.spectrum
           ? handColors.blue
           : tunnelPropColor(i * 2, layerCount).hex,
-      redHex:
-        i === 0 || !this.spectrum
+      redHex: exactColors
+        ? exactColors.red
+        : i === 0 || !this.spectrum
           ? handColors.red
           : tunnelPropColor(i * 2 + 1, layerCount).hex,
     }));

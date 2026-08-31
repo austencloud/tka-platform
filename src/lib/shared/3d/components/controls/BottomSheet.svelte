@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { fly, fade } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
   import type { Snippet } from "svelte";
+  import { flyFade } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import { createSheetDismiss } from "./sheet-dismiss";
 
   interface Props {
@@ -45,7 +45,6 @@
     class="sheet-layer"
     class:has-backdrop={backdrop}
     onpointerdown={dismiss.onBackdropPointerDown}
-    transition:fade={{ duration: 120 }}
   >
     <div
       bind:this={panelEl}
@@ -54,7 +53,7 @@
       role="dialog"
       aria-modal="false"
       aria-label={title}
-      transition:fly={{ y: 320, duration: 260, easing: cubicOut }}
+      transition:flyFade={{ y: 24, duration: DURATION.emphasis }}
     >
       <div class="grab-handle" aria-hidden="true"></div>
       <header class="sheet-header">
@@ -83,7 +82,7 @@
     position: absolute;
     top: 0;
     right: 0;
-    bottom: max(6.875rem, calc(env(safe-area-inset-bottom) + 6.875rem));
+    bottom: var(--scene-controls-bottom, 0);
     left: 0;
     z-index: 40;
     display: flex;
@@ -165,7 +164,48 @@
 
   @media (max-height: 34rem) {
     .sheet-layer {
-      bottom: max(3.875rem, calc(env(safe-area-inset-bottom) + 3.875rem));
+      bottom: 0;
+    }
+
+    /* Short viewports need the whole stage while the sheet is open. The
+       compact action bar already leaves with the sheet, and exposing only the
+       bottom slice of a taller host transport is neither useful nor clear. */
+    .sheet-panel {
+      max-height: 100%;
+      background:
+        linear-gradient(var(--theme-panel-bg), var(--theme-panel-bg)),
+        var(--theme-page-bg, #0c0e16);
+    }
+
+    .grab-handle {
+      display: none;
+    }
+
+    .sheet-header {
+      min-height: 44px;
+      padding: 0 10px 0 14px;
+    }
+
+    .sheet-body {
+      flex: 1 1 auto;
+      padding: 6px 14px 8px;
+    }
+  }
+
+  /* On the smallest portrait screens the host transport wraps into two rows.
+     Leaving that whole dock visible gives the editor less than one touch
+     target of usable height. The sheet temporarily owns the stage instead;
+     its always-visible close control returns the transport immediately. */
+  @media (max-width: 47.999rem) and (max-height: 36rem) {
+    .sheet-layer {
+      bottom: 0;
+    }
+
+    .sheet-panel {
+      max-height: 100%;
+      background:
+        linear-gradient(var(--theme-panel-bg), var(--theme-panel-bg)),
+        var(--theme-page-bg, #0c0e16);
     }
   }
 
@@ -200,6 +240,37 @@
     }
     .close-panel {
       display: inline-block;
+    }
+  }
+
+  /* In a short landscape the dialog's accessible name already identifies the
+     sheet, while a visible title row would take nearly a quarter of the useful
+     height. Keep the close affordance, overlay it, and give that room to the
+     actual editor. */
+  @media (min-width: 48rem) and (max-height: 34rem) {
+    .sheet-panel {
+      position: relative;
+    }
+    .grab-handle,
+    .sheet-title {
+      display: none;
+    }
+    .sheet-header {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      z-index: 2;
+      padding: 0;
+      border: 0;
+    }
+    .close-bottom {
+      display: none;
+    }
+    .close-panel {
+      display: inline-block;
+    }
+    .sheet-body {
+      padding-top: 0.75rem;
     }
   }
 

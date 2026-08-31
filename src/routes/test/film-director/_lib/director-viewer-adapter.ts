@@ -53,6 +53,7 @@ export function buildDirectorViewerSeed(
       timestamp: 0,
     },
     performers: scene.performance.performers.map((performer) => ({
+      characterId: performer.characterId,
       position: { ...performer.position },
       facingAngle: performer.facingAngle,
       customBluePlane: performer.bluePlane,
@@ -127,7 +128,7 @@ export function applyDirectorSceneToViewer(
       performer.position.z = directed.position.z;
       performer.snapFacingAngle(directed.facingAngle);
       performer.setDisplayName(directed.name);
-      performer.setAvatarModel(directed.avatarId);
+      performer.setCharacter(directed.characterId);
       performer.setProp(directed.prop, { equipBuild: false });
       performer.setEffect(directed.effect, { equipBuild: false });
       performer.setEffort(directed.effort);

@@ -2,6 +2,7 @@ import type { TrailPoint, TrailSettings } from "../domain/types/trail-types";
 import type { AdditionalLayerRenderData } from "../domain/types/animation-render-types";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import type { TipEffectMap } from "../domain/types/tip-effect-types";
+import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 export interface TrailOverlayRenderParams {
   blueTrailPoints: TrailPoint[];
@@ -15,6 +16,7 @@ export interface TrailOverlayRenderParams {
   /** Tunnel rainbow spectrum. When false, overlaid layer trails inherit the base
    *  blue/red trail color instead of a per-layer spectrum hue. Default true. */
   tunnelSpectrum?: boolean;
+  tunnelPropColors?: TunnelPropColorPair | null;
   /** Spotlight: the selected performer (0 = base "you", k = copy arm k), or null.
    *  When set, every other layer's trail dims. Default null (no spotlight). */
   tunnelSelectedLayer?: number | readonly number[] | null;

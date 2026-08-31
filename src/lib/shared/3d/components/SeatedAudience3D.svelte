@@ -2,7 +2,7 @@
   /**
    * SeatedAudience3D
    *
-   * Renders an arc of real Mixamo avatars on the downstage (+Z) side
+   * Renders an arc of real Mixamo characters on the downstage (+Z) side
    * of the stage, each playing a sitting-idle animation. Variety comes
    * from six different character GLBs, two idle animation variants
    * alternated per seat, per-seat time offsets for desync, and mild
@@ -22,7 +22,7 @@
   import { getSceneFeatureContext } from "../scene-features/context/scene-feature-context";
   import {
     SEATED_AUDIENCE_ANIMATION_URLS,
-    SEATED_AUDIENCE_AVATAR_URLS,
+    SEATED_AUDIENCE_CHARACTER_URLS,
   } from "../config/seated-audience-assets";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 
@@ -76,7 +76,9 @@
         yaw: Math.PI + angle,
         sizeScale: 0.92 + ((i * 37) % 10) * 0.016,
         modelUrl:
-          SEATED_AUDIENCE_AVATAR_URLS[i % SEATED_AUDIENCE_AVATAR_URLS.length]!,
+          SEATED_AUDIENCE_CHARACTER_URLS[
+            i % SEATED_AUDIENCE_CHARACTER_URLS.length
+          ]!,
         animationUrl:
           SEATED_AUDIENCE_ANIMATION_URLS[
             i % SEATED_AUDIENCE_ANIMATION_URLS.length
@@ -103,7 +105,7 @@
       for (let attempt = 1; attempt <= MAX_PRELOAD_ATTEMPTS; attempt += 1) {
         try {
           await seatedAudienceLoader.preloadAll(
-            SEATED_AUDIENCE_AVATAR_URLS,
+            SEATED_AUDIENCE_CHARACTER_URLS,
             SEATED_AUDIENCE_ANIMATION_URLS
           );
           if (cancelled) return;

@@ -295,6 +295,7 @@
   <dialog
     bind:this={dialogElement}
     class="base-modal {className}"
+    data-keyboard-shortcuts-ignore
     data-size={size}
     data-position={position}
     data-animation={animation}

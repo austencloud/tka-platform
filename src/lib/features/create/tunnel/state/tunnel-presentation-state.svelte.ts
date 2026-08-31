@@ -18,6 +18,7 @@ import {
   type TunnelConfig,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
 import type { TunnelViewController } from "$lib/shared/sequence-viewer/tunnel/tunnel-view-controller.svelte";
+import { DEFAULT_TUNNEL_CUSTOM_PROP_COLORS } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import type {
   ChiralityHand,
   PropChiralitySeam,
@@ -80,10 +81,14 @@ export function createTunnelPresentationState(
         DEFAULT_CONFIG
     ),
     gridVisible: initialSnapshot?.tunnel.gridVisible ?? false,
-    // New Tunnel choreography starts with the same blue-Left/red-Right palette
-    // its pictographs use. A saved snapshot still wins exactly, including an
-    // authored spectrum appearance from an older tunnel.
-    spectrum: initialSnapshot?.tunnel.spectrum ?? false,
+    // New Tunnel choreography starts with the pictograph pair. Saved snapshots
+    // still win exactly, including migrated Spectrum and authored Custom pairs.
+    colors: clone(
+      initialSnapshot?.tunnel.colors ?? {
+        mode: "hands" as const,
+        custom: DEFAULT_TUNNEL_CUSTOM_PROP_COLORS,
+      }
+    ),
     section: initialSnapshot?.tunnel.section ?? ("tunnel" as const),
     presetRecipe: clone(initialSnapshot?.tunnel.presetRecipe ?? null),
   });
@@ -168,13 +173,13 @@ export function createTunnelPresentationState(
     } else {
       next.applyConfig(unattachedTunnel.config, unattachedTunnel.presetRecipe);
       next.gridVisible = unattachedTunnel.gridVisible;
-      next.spectrum = unattachedTunnel.spectrum;
+      next.colors = unattachedTunnel.colors;
       next.section = unattachedTunnel.section;
     }
     unattachedTunnel = {
       config: clone(next.config),
       gridVisible: next.gridVisible,
-      spectrum: next.spectrum,
+      colors: next.colors,
       section: next.section,
       presetRecipe: clone(next.presetRecipe),
     };

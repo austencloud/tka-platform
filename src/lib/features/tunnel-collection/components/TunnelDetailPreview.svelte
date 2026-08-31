@@ -66,7 +66,7 @@
   const controller = new TunnelViewController({ getSequence: () => sequence });
   controller.applyConfig(snap.tunnel.config);
   controller.gridVisible = snap.tunnel.gridVisible;
-  controller.spectrum = snap.tunnel.spectrum;
+  controller.colors = snap.tunnel.colors;
   controller.active = true;
 
   // Minimal stub playback: TunnelArtView only reads
@@ -153,7 +153,8 @@
     /* Ambient accent glow lifts the stage off the page. */
     box-shadow:
       0 0 0 1px var(--theme-stroke, rgba(255, 255, 255, 0.08)),
-      0 12px 60px color-mix(in srgb, var(--theme-accent, #22d3ee) 14%, transparent);
+      0 12px 60px
+        color-mix(in srgb, var(--theme-accent, #22d3ee) 14%, transparent);
   }
 
   .art {

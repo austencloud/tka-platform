@@ -24,7 +24,10 @@ export class SceneUndoManager {
 
   registerDomain<K extends DomainKey>(
     key: K,
-    handler: { capture: () => SceneUndoSnapshot[K]; restore: (s: NonNullable<SceneUndoSnapshot[K]>) => void },
+    handler: {
+      capture: () => SceneUndoSnapshot[K];
+      restore: (s: NonNullable<SceneUndoSnapshot[K]>) => void;
+    }
   ): void {
     this.domains.set(key, handler as DomainHandler);
   }
@@ -84,7 +87,7 @@ export class SceneUndoManager {
 
   commitStateCoalescing(
     coalescingKey: string,
-    windowMs: number = DEFAULT_COALESCING_WINDOW_MS,
+    windowMs: number = DEFAULT_COALESCING_WINDOW_MS
   ): void {
     if (!this.pendingEntry || this.undoDisabled) return;
 
@@ -115,7 +118,7 @@ export class SceneUndoManager {
   pushSelfRestoringEntry(
     type: SceneUndoOperationType,
     description: string,
-    customRestore: { undo: () => void; redo: () => void },
+    customRestore: { undo: () => void; redo: () => void }
   ): void {
     if (this.undoDisabled) return;
 
@@ -142,7 +145,7 @@ export class SceneUndoManager {
     description: string,
     customRestore: { undo: () => void; redo: () => void },
     coalescingKey: string,
-    windowMs: number = DEFAULT_COALESCING_WINDOW_MS,
+    windowMs: number = DEFAULT_COALESCING_WINDOW_MS
   ): void {
     if (this.undoDisabled) return;
 
@@ -153,7 +156,10 @@ export class SceneUndoManager {
       lastEntry?.coalescingKey === coalescingKey &&
       now - lastEntry.timestamp < windowMs
     ) {
-      lastEntry.customRestore = { undo: lastEntry.customRestore!.undo, redo: customRestore.redo };
+      lastEntry.customRestore = {
+        undo: lastEntry.customRestore!.undo,
+        redo: customRestore.redo,
+      };
       lastEntry.description = description;
       lastEntry.timestamp = now;
       this.redoStack = [];
@@ -215,7 +221,10 @@ export class SceneUndoManager {
     });
     this.notifySubscribers();
 
-    return { snapshot: entry.afterState ?? entry.beforeState, description: entry.description };
+    return {
+      snapshot: entry.afterState ?? entry.beforeState,
+      description: entry.description,
+    };
   }
 
   // =========================================================================
@@ -300,6 +309,7 @@ function domainsForOperationType(type: SceneUndoOperationType): DomainKey[] {
     case "spatial-edit":
       return ["viewer"];
     case "change-prop":
+    case "change-character":
     case "change-staff-length":
     case "change-effort":
     case "set-hand-plane":

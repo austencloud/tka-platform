@@ -80,7 +80,7 @@
   const environmentTransitionVisual = createEnvironmentTransitionVisualState();
   setEnvironmentTransitionVisualContext(environmentTransitionVisual);
 
-  const avatarState = $derived(
+  const characterState = $derived(
     viewer3DState.performerManager.performers[0] ?? null
   );
   const cameraPlayer = createViewerCameraPlayerState({ spawnY: -1.5 });
@@ -91,12 +91,12 @@
     if (cameraMode === "orthographic-2d") {
       canvasMountReady = true;
     } else {
-      if (avatarState && sequenceData && !canvasMountReady) {
+      if (characterState && sequenceData && !canvasMountReady) {
         requestAnimationFrame(() => {
           canvasMountReady = true;
         });
       }
-      if (!avatarState || !sequenceData) {
+      if (!characterState || !sequenceData) {
         canvasMountReady = false;
       }
     }
@@ -106,7 +106,7 @@
 </script>
 
 <div class="unified-viewer-canvas" data-mode={cameraMode}>
-  {#if is2D || (avatarState && sequenceData)}
+  {#if is2D || (characterState && sequenceData)}
     {#if canvasMountReady}
       <Canvas
         createRenderer={(canvas) => {
@@ -141,12 +141,12 @@
             cameraPlayerAvatar={cameraPlayer.avatarState}
             cameraPlayerPhysics={cameraPlayer.physicsProvider}
           />
-          {#if avatarState}
+          {#if characterState}
             <Viewer3DScene
               {sequenceData}
               {currentStep}
               {isPlaying}
-              {avatarState}
+              {characterState}
             />
           {/if}
         {/if}

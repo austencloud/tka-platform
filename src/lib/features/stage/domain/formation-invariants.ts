@@ -77,8 +77,46 @@ export function normalizeFormations(
 
   return unique.map((formation, index) => {
     const previous = unique[index - 1];
+    const earliestDeparture = previous?.atBeat ?? 0;
+    const spots = Object.fromEntries(
+      Object.entries(formation.spots).map(([performerId, spot]) => {
+        if (index === 0 || !spot.travel) {
+          return [performerId, { ...spot, travel: undefined }];
+        }
+
+        const departureBeat = clamp(
+          Math.round(
+            finiteOr(spot.travel.departureBeat, earliestDeparture) * 4
+          ) / 4,
+          earliestDeparture,
+          formation.atBeat
+        );
+        const arrivalBeat = clamp(
+          Math.round(finiteOr(spot.travel.arrivalBeat, formation.atBeat) * 4) /
+            4,
+          departureBeat,
+          formation.atBeat
+        );
+        const stepCount = Number.isFinite(spot.travel.stepCount)
+          ? Math.max(1, Math.min(16, Math.round(spot.travel.stepCount!)))
+          : undefined;
+
+        return [
+          performerId,
+          {
+            ...spot,
+            travel: {
+              departureBeat,
+              arrivalBeat,
+              ...(stepCount !== undefined && { stepCount }),
+            },
+          },
+        ];
+      })
+    );
     return {
       ...formation,
+      spots,
       transitionBeats:
         index === 0
           ? 0

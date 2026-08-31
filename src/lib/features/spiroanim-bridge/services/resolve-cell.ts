@@ -33,6 +33,11 @@
  */
 
 import { formatCellKey, parseCellKey } from "../domain/cell-key";
+import {
+  effectiveOrientation,
+  rotatePositionName,
+  rotationStepsFor,
+} from "../domain/orientation-rotation";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -224,6 +229,29 @@ function isCanonicalReading(entry: TranscriptionEntry): boolean {
 }
 
 /**
+ * The transcription was captured at pattern orientation -90, and the key
+ * requests some other view — 0 (SpiroAnim's default) when it carries no `o`
+ * token. Rotate every step's positions clockwise before the dataframe lookup
+ * so the resolved pictographs show what SpiroAnim actually renders. Turns are
+ * per-hand scalars and survive rotation unchanged. Null when any position
+ * cannot be rotated — unresolvable, never a guess.
+ */
+function withRequestedOrientation(
+  entry: TranscriptionEntry,
+  clockwiseSteps: number
+): TranscriptionEntry | null {
+  if (clockwiseSteps === 0) return entry;
+  const rotated: TranscriptionStep[] = [];
+  for (const step of entry.steps) {
+    const startPosition = rotatePositionName(step.startPosition, clockwiseSteps);
+    const endPosition = rotatePositionName(step.endPosition, clockwiseSteps);
+    if (!startPosition || !endPosition) return null;
+    rotated.push({ ...step, startPosition, endPosition });
+  }
+  return { ...entry, steps: rotated };
+}
+
+/**
  * Resolve a cellKey against the transcription. Returns null — never throws and
  * never guesses — for a malformed key, an unknown cell, or a cell whose steps
  * have no pictograph.
@@ -244,8 +272,11 @@ export async function resolveCell(
   );
   if (!entry) return null;
 
+  const oriented = withRequestedOrientation(entry, rotationStepsFor(parsed));
+  if (!oriented) return null;
+
   const index = await getRowIndex();
-  const rows = chooseRows(entry, index);
+  const rows = chooseRows(oriented, index);
   if (!rows || rows.length === 0) return null;
 
   const built = createSequenceData({
@@ -253,13 +284,16 @@ export async function resolveCell(
     // display/save field, so it carries the smallest form of a repeating word
     // (every cell in this catalogue repeats by construction).
     name: simplifyRepeatedWord(entry.word),
-    steps: buildSteps(entry, rows),
+    steps: buildSteps(oriented, rows),
     gridMode: rows[0]!.gridMode,
     metadata: {
       source: "spiroanim-bridge",
       cellKey: formatCellKey(parsed),
       concept: entry.concept,
       reference: entry.reference,
+      ...(parsed.concept === "8stp"
+        ? {}
+        : { spiroanimOrientation: effectiveOrientation(parsed) }),
       attribution:
         "Concept catalogues and generated geometry by Ryan Girard (spiroanim)",
     },

@@ -464,7 +464,8 @@
         displays={performerDisplays}
         {bluePropType}
         {redPropType}
-        spectrum={controller.spectrum}
+        colorMode={controller.colorMode}
+        customPropColors={controller.customPropColors}
         renderedInstanceCount={controller.performerCount}
         onChoose={(performerId) => creator.openPicker(performerId)}
         onChooseShapeMatrix={(performerId) => (shapeMatrixTarget = performerId)}
@@ -488,9 +489,11 @@
             rendered instances · {controller.propCount} props
           </p>
           <p>
-            {controller.spectrum
-              ? "Spectrum stage colors"
-              : "Pictograph hand colors"}
+            {controller.colorMode === "custom"
+              ? `Custom pair ${controller.customPropColors.blue.toUpperCase()} / ${controller.customPropColors.red.toUpperCase()}`
+              : controller.colorMode === "spectrum"
+                ? "Spectrum stage colors"
+                : "Pictograph hand colors"}
           </p>
         </div>
       </header>

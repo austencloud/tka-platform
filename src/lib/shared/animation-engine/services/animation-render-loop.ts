@@ -510,9 +510,12 @@ export class AnimationRenderLoop {
     params: RenderFrameParams
   ): EmitterTip[] {
     const layerCount = params.props.additionalLayers.length;
-    const spectrum = params.props.tunnelSpectrum ?? true;
-    const baseBlue = params.trailSettings.blueColor;
-    const baseRed = params.trailSettings.redColor;
+    const spectrum =
+      (params.props.tunnelSpectrum ?? true) && !params.props.tunnelPropColors;
+    const baseBlue =
+      params.props.tunnelPropColors?.blue ?? params.trailSettings.blueColor;
+    const baseRed =
+      params.props.tunnelPropColors?.red ?? params.trailSettings.redColor;
     const out: EmitterTip[] = [];
     for (const t of tips) {
       if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== effect)
@@ -595,9 +598,12 @@ export class AnimationRenderLoop {
     velocityY?: number;
   }[] {
     const layerCount = params.props.additionalLayers.length;
-    const spectrum = params.props.tunnelSpectrum ?? true;
-    const baseBlue = params.trailSettings.blueColor;
-    const baseRed = params.trailSettings.redColor;
+    const spectrum =
+      (params.props.tunnelSpectrum ?? true) && !params.props.tunnelPropColors;
+    const baseBlue =
+      params.props.tunnelPropColors?.blue ?? params.trailSettings.blueColor;
+    const baseRed =
+      params.props.tunnelPropColors?.red ?? params.trailSettings.redColor;
     const result: {
       x: number;
       y: number;
@@ -1262,6 +1268,7 @@ export class AnimationRenderLoop {
             : [],
         hasBlue: !!layer.blueProp && effectiveBlueMotionVisible,
         hasRed: !!layer.redProp && effectiveRedMotionVisible,
+        opacity: Math.max(0, Math.min(1, layer.opacity ?? 1)),
         blueColor: colors?.blue ?? "#8b5cf6",
         redColor: colors?.red ?? "#f97316",
         bluePropType: layer.bluePropType,
@@ -1379,6 +1386,7 @@ export class AnimationRenderLoop {
               ? additionalLayerRenderData
               : undefined,
           tunnelSpectrum: props.tunnelSpectrum,
+          tunnelPropColors: props.tunnelPropColors,
           tunnelSelectedLayer: props.tunnelSelectedLayer ?? null,
           blueProp: params.props.blueProp,
           redProp: params.props.redProp,
@@ -1509,6 +1517,7 @@ export class AnimationRenderLoop {
             ? props.additionalLayers.map((l) => ({
                 blueProp: effectiveBlueMotionVisible ? l.blueProp : null,
                 redProp: effectiveRedMotionVisible ? l.redProp : null,
+                opacity: l.opacity,
               }))
             : undefined,
       };
@@ -1668,9 +1677,11 @@ export class AnimationRenderLoop {
               ? props.additionalLayers.map((l) => ({
                   blueProp: effectiveBlueMotionVisible ? l.blueProp : null,
                   redProp: effectiveRedMotionVisible ? l.redProp : null,
+                  opacity: l.opacity,
                 }))
               : undefined,
           tunnelSpectrum: props.tunnelSpectrum ?? true,
+          tunnelPropColors: props.tunnelPropColors,
         };
 
         const allLeds = this.ledSampler.update(

@@ -16,6 +16,8 @@ export interface SceneControlLayout {
 
 const COMPACT_WIDTH = 768;
 const COMPACT_HEIGHT = 544;
+const COMPACT_LANDSCAPE_WIDTH = 1100;
+const CRITICALLY_SHALLOW_HEIGHT = 500;
 const DOCK_MIN_WIDTH = 1680;
 const PANEL_MIN_WIDTH = 520;
 const PANEL_MAX_WIDTH = 1100;
@@ -52,7 +54,10 @@ export function resolveSceneControlLayout(
   if (
     workspaceWidth > 0 &&
     workspaceHeight > 0 &&
-    (workspaceWidth < COMPACT_WIDTH || workspaceHeight < COMPACT_HEIGHT)
+    (workspaceHeight <= CRITICALLY_SHALLOW_HEIGHT ||
+      workspaceWidth < COMPACT_WIDTH ||
+      (workspaceWidth < COMPACT_LANDSCAPE_WIDTH &&
+        workspaceHeight < COMPACT_HEIGHT))
   ) {
     return { presentation: "compact", panelWidth, reservedWidth: 0 };
   }

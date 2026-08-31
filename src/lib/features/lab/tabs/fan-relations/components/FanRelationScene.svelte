@@ -100,7 +100,7 @@
     backgroundType={BackgroundType.VOID}
     customCameraPosition={camera.position}
     customCameraTarget={camera.target}
-    avatarPositions={[{ x: 0, y: STAGE.STAGE_DECK_HEIGHT, z: 0 }]}
+    characterPositions={[{ x: 0, y: STAGE.STAGE_DECK_HEIGHT, z: 0 }]}
   >
     {#snippet children()}
       <T.Group position={[0, STAGE.STAGE_DECK_HEIGHT, 0]}>

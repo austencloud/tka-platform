@@ -12,12 +12,21 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { RenderFrameParams } from "./IAnimationRenderLoop";
-import { type TrailSettings, DEFAULT_TRAIL_SETTINGS, TrailMode } from "../domain/types/trail-types";
+import {
+  type TrailSettings,
+  DEFAULT_TRAIL_SETTINGS,
+  TrailMode,
+} from "../domain/types/trail-types";
 import { TrackingMode } from "../domain/types/trail-types";
 import { DEFAULT_PROP_DIMENSIONS } from "./IPropTextureLoader";
 import { DEFAULT_PROP_FLAME_COLORS } from "../domain/types/fire-types";
 import type { PropFlameColor } from "../domain/types/fire-types";
-import { spotlightFactor, tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
+import {
+  spotlightFactor,
+  tunnelColorFromHex,
+  tunnelPropColor,
+  type TunnelPropColorPair,
+} from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import type { AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
 import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
 import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
@@ -77,31 +86,51 @@ import type { EffectRendererManager } from "./effect-renderer-manager";
 
 export class FrameParameterBuilder {
   private zapConfig: Zap2DParams = resolveZap2D(DEFAULT_EFFECTS_CONFIG.zap);
-  private sparklesConfig: Sparkles2DParams = resolveSparkles2D(DEFAULT_EFFECTS_CONFIG.sparkles);
+  private sparklesConfig: Sparkles2DParams = resolveSparkles2D(
+    DEFAULT_EFFECTS_CONFIG.sparkles
+  );
   private prevSparklesIntentRef: SparklesIntent | null = null;
-  private ghostConfig: Ghost2DParams = resolveGhost2D(DEFAULT_EFFECTS_CONFIG.ghost);
+  private ghostConfig: Ghost2DParams = resolveGhost2D(
+    DEFAULT_EFFECTS_CONFIG.ghost
+  );
   private prevGhostIntentRef: GhostIntent | null = null;
-  private bloomConfig: Bloom2DParams = resolveBloom2D(DEFAULT_EFFECTS_CONFIG.bloom);
+  private bloomConfig: Bloom2DParams = resolveBloom2D(
+    DEFAULT_EFFECTS_CONFIG.bloom
+  );
   private prevBloomIntentRef: BloomIntent | null = null;
   private gooConfig: GooParams = resolveGoo2D(DEFAULT_EFFECTS_CONFIG.goo);
   private prevGooIntentRef: GooIntent | null = null;
-  private bubblesConfig: Bubbles2DParams = resolveBubbles2D(DEFAULT_EFFECTS_CONFIG.bubbles);
+  private bubblesConfig: Bubbles2DParams = resolveBubbles2D(
+    DEFAULT_EFFECTS_CONFIG.bubbles
+  );
   private prevBubblesIntentRef: BubblesIntent | null = null;
-  private petalsConfig: Petals2DParams = resolvePetals2D(DEFAULT_EFFECTS_CONFIG.petals);
+  private petalsConfig: Petals2DParams = resolvePetals2D(
+    DEFAULT_EFFECTS_CONFIG.petals
+  );
   private prevPetalsIntentRef: PetalsIntent | null = null;
-  private smokeConfig: Smoke2DParams = resolveSmoke2D(DEFAULT_EFFECTS_CONFIG.smoke);
+  private smokeConfig: Smoke2DParams = resolveSmoke2D(
+    DEFAULT_EFFECTS_CONFIG.smoke
+  );
   private prevSmokeIntentRef: SmokeIntent | null = null;
   private inkConfig: Ink2DParams = resolveInk2D(DEFAULT_EFFECTS_CONFIG.ink);
   private prevInkIntentRef: InkIntent | null = null;
-  private frostConfig: Frost2DParams = resolveFrost2D(DEFAULT_EFFECTS_CONFIG.frost);
+  private frostConfig: Frost2DParams = resolveFrost2D(
+    DEFAULT_EFFECTS_CONFIG.frost
+  );
   private prevFrostIntentRef: FrostIntent | null = null;
   private silkConfig: Silk2DParams = resolveSilk2D(DEFAULT_EFFECTS_CONFIG.silk);
   private prevSilkIntentRef: SilkIntent | null = null;
-  private animalConfig: Animal2DParams = resolveAnimal2D(DEFAULT_EFFECTS_CONFIG.animal);
+  private animalConfig: Animal2DParams = resolveAnimal2D(
+    DEFAULT_EFFECTS_CONFIG.animal
+  );
   private prevAnimalIntentRef: AnimalIntent | null = null;
-  private pulseConfig: Pulse2DParams = resolvePulse2D(DEFAULT_EFFECTS_CONFIG.pulse);
+  private pulseConfig: Pulse2DParams = resolvePulse2D(
+    DEFAULT_EFFECTS_CONFIG.pulse
+  );
   private prevPulseIntentRef: PulseIntent | null = null;
-  private prevZapIntentJson: string = JSON.stringify(DEFAULT_EFFECTS_CONFIG.zap);
+  private prevZapIntentJson: string = JSON.stringify(
+    DEFAULT_EFFECTS_CONFIG.zap
+  );
 
   private cachedIsSeamlesslyLoopable: boolean = false;
   private loopabilityCacheHash: string | null = null;
@@ -121,6 +150,8 @@ export class FrameParameterBuilder {
   private extendedPropColorsBaseRef: PropFlameColor[] | null = null;
   private extendedPropColorsSpectrum = true;
   private extendedPropColorsSelected: number | null = null;
+  private customPropColorsSignature = "";
+  private customPropFlamePair: PropFlameColor[] | null = null;
 
   // Reusable frame params object to avoid GC pressure (created once, mutated each frame)
   private readonly frameParams: RenderFrameParams = {
@@ -137,6 +168,7 @@ export class FrameParameterBuilder {
       bluePropDimensions: DEFAULT_PROP_DIMENSIONS,
       redPropDimensions: DEFAULT_PROP_DIMENSIONS,
       tunnelSpectrum: true,
+      tunnelPropColors: null,
       tunnelSelectedLayer: null,
     },
     visibility: {
@@ -215,7 +247,10 @@ export class FrameParameterBuilder {
     fp.stepData = props.stepData ?? null;
     fp.currentStep = props.currentStep ?? 0;
     fp.virtualTime = props.virtualTime;
-    fp.trailSettings = this.getEffectiveTrailSettings(state, trailsSuppressedUntilTextureLoad);
+    fp.trailSettings = this.getEffectiveTrailSettings(
+      state,
+      trailsSuppressedUntilTextureLoad
+    );
     // Raw flag alongside the mode-OFF trailSettings above — see the field doc
     // on RenderFrameParams for why AnimationRenderLoop needs both.
     fp.trailsSuppressedUntilTextureLoad = trailsSuppressedUntilTextureLoad;
@@ -236,6 +271,7 @@ export class FrameParameterBuilder {
     fp.props.bluePropDimensions = state.bluePropDimensions;
     fp.props.redPropDimensions = state.redPropDimensions;
     fp.props.tunnelSpectrum = props.tunnelSpectrum ?? true;
+    fp.props.tunnelPropColors = props.tunnelPropColors ?? null;
     fp.props.tunnelSelectedLayer = props.tunnelSelectedLayer ?? null;
 
     // Mutate nested visibility object
@@ -275,21 +311,26 @@ export class FrameParameterBuilder {
     fp.redPropType = redPropType;
 
     // Fire/charcoal overlay config - pass when either effect is active
-    fp.fireConfig = (prevHasFireTips || prevHasCharcoalTips) ? erm.fireConfig : null;
+    fp.fireConfig =
+      prevHasFireTips || prevHasCharcoalTips ? erm.fireConfig : null;
     fp.darkMode = prevDarkMode;
     // Prop colors for colored flames - read from EffectsConfigState, else default blue/red.
     // The fire splat indexes this by tip.propIndex, so when the tunnel overlays
     // layers (propIndex >= 2) we extend the 2-entry base array with a distinct
     // spectrum color per layer end (tunnelPropColor) so each kaleidoscope copy's
     // flame matches its prop. No layers → the plain base pair, unchanged.
-    const basePropColors = effectsConfigState?.fire.propColors ?? DEFAULT_PROP_FLAME_COLORS;
+    const authoredPropColors =
+      effectsConfigState?.fire.propColors ?? DEFAULT_PROP_FLAME_COLORS;
+    const basePropColors = fp.props.tunnelPropColors
+      ? this.getCustomPropFlamePair(fp.props.tunnelPropColors)
+      : authoredPropColors;
     const layerCount = fp.props.additionalLayers.length;
     if (layerCount > 0) {
       fp.propColors = this.getExtendedPropColors(
         basePropColors,
         layerCount,
         fp.props.tunnelSpectrum ?? true,
-        fp.props.tunnelSelectedLayer ?? null,
+        fp.props.tunnelSelectedLayer ?? null
       );
     } else {
       fp.propColors = basePropColors;
@@ -441,7 +482,8 @@ export class FrameParameterBuilder {
 
     // Per-tip effect assignments for filtering tips by effect type.
     // Cell-level map (from compose grid) takes priority over the global map.
-    fp.tipEffectMap = erm.cellTipEffectMap ?? effectsConfigState?.tipEffectMap ?? {};
+    fp.tipEffectMap =
+      erm.cellTipEffectMap ?? effectsConfigState?.tipEffectMap ?? {};
 
     // Suppress 2D effect overlays when 3D mode is active
     fp.suppress2DOverlays = state.suppress2DOverlays ?? false;
@@ -468,8 +510,9 @@ export class FrameParameterBuilder {
     } else if (props.sequenceData) {
       const hash = this.lastSequenceContentHash;
       if (hash !== this.loopabilityCacheHash) {
-        this.cachedIsSeamlesslyLoopable =
-          isSeamlesslyLoopable(props.sequenceData);
+        this.cachedIsSeamlesslyLoopable = isSeamlesslyLoopable(
+          props.sequenceData
+        );
         this.loopabilityCacheHash = hash;
       }
       fp.isSeamlesslyLoopable = this.cachedIsSeamlesslyLoopable;
@@ -489,19 +532,20 @@ export class FrameParameterBuilder {
     // Build a compact fingerprint of each step's motion data.
     // Transforms change startLocation, endLocation, rotationDirection, orientations -
     // we must detect these changes to re-precompute path caches.
-    const motionFingerprint = seq.steps
-      ?.map((s) => {
-        const b = s.motions?.blue;
-        const r = s.motions?.red;
-        const bPart = b
-          ? `${b.startLocation}${b.endLocation}${b.motionType}${b.rotationDirection}${b.turns}`
-          : "_";
-        const rPart = r
-          ? `${r.startLocation}${r.endLocation}${r.motionType}${r.rotationDirection}${r.turns}`
-          : "_";
-        return `${bPart}|${rPart}`;
-      })
-      .join(";") || "";
+    const motionFingerprint =
+      seq.steps
+        ?.map((s) => {
+          const b = s.motions?.blue;
+          const r = s.motions?.red;
+          const bPart = b
+            ? `${b.startLocation}${b.endLocation}${b.motionType}${b.rotationDirection}${b.turns}`
+            : "_";
+          const rPart = r
+            ? `${r.startLocation}${r.endLocation}${r.motionType}${r.rotationDirection}${r.turns}`
+            : "_";
+          return `${bPart}|${rPart}`;
+        })
+        .join(";") || "";
     return `${seq.id || seq.word || "unknown"}-${stepCount}-${motionFingerprint}`;
   }
 
@@ -512,7 +556,9 @@ export class FrameParameterBuilder {
    */
   updateHandPresenceCache(seq: SequenceData | null): void {
     const steps = seq?.steps;
-    const cacheKey = seq ? (seq.id || seq.word || "") + "-" + (steps?.length ?? 0) : null;
+    const cacheKey = seq
+      ? (seq.id || seq.word || "") + "-" + (steps?.length ?? 0)
+      : null;
 
     if (cacheKey === this.handPresenceCacheKey) return;
     this.handPresenceCacheKey = cacheKey;
@@ -619,8 +665,12 @@ export class FrameParameterBuilder {
     const out: PropFlameColor[] = [dim(base[0]!, 0), dim(base[1]!, 0)];
     for (let li = 0; li < layerCount; li++) {
       const family = li + 1;
-      const blue = spectrum ? tunnelPropColor(2 + li * 2, layerCount).rgb01 : base[0]!;
-      const red = spectrum ? tunnelPropColor(3 + li * 2, layerCount).rgb01 : base[1]!;
+      const blue = spectrum
+        ? tunnelPropColor(2 + li * 2, layerCount).rgb01
+        : base[0]!;
+      const red = spectrum
+        ? tunnelPropColor(3 + li * 2, layerCount).rgb01
+        : base[1]!;
       out[2 + li * 2] = dim(blue, family);
       out[3 + li * 2] = dim(red, family);
     }
@@ -631,6 +681,24 @@ export class FrameParameterBuilder {
     this.extendedPropColorsSpectrum = spectrum;
     this.extendedPropColorsSelected = selectedLayer;
     return out;
+  }
+
+  private getCustomPropFlamePair(
+    colors: TunnelPropColorPair
+  ): PropFlameColor[] {
+    const signature = `${colors.blue}:${colors.red}`;
+    if (
+      signature === this.customPropColorsSignature &&
+      this.customPropFlamePair
+    ) {
+      return this.customPropFlamePair;
+    }
+    this.customPropColorsSignature = signature;
+    this.customPropFlamePair = [
+      tunnelColorFromHex(colors.blue).rgb01,
+      tunnelColorFromHex(colors.red).rgb01,
+    ];
+    return this.customPropFlamePair;
   }
 
   /** Reset cached hand presence (called on dispose). */
