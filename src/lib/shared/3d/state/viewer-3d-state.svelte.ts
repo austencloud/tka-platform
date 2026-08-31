@@ -304,17 +304,17 @@ function persistPerformers(snapshots: StoredPerformerSnapshot[]): void {
   }
 }
 
-function loadPersistedActiveFormation(): FormationPreset | "manual" | null {
+function loadPersistedActiveFormation(): FormationPreset | "manual" | "custom" | null {
   if (typeof localStorage === "undefined") return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY_ACTIVE_FORMATION);
-    return raw as FormationPreset | "manual" | null;
+    return raw as FormationPreset | "manual" | "custom" | null;
   } catch {
     return null;
   }
 }
 
-function persistActiveFormation(value: FormationPreset | "manual"): void {
+function persistActiveFormation(value: FormationPreset | "manual" | "custom"): void {
   if (typeof localStorage === "undefined") return;
   try {
     localStorage.setItem(STORAGE_KEY_ACTIVE_FORMATION, value);
@@ -968,7 +968,7 @@ function buildViewer3DState(
 
   // Track the most recently applied formation preset so undo snapshots can
   // record it. Starts as "manual" until the user picks a preset.
-  let activeFormation = $state<FormationPreset | "manual">("manual");
+  let activeFormation = $state<FormationPreset | "manual" | "custom">("manual");
 
   function captureViewerSnapshot(): ViewerDomainSnapshot {
     const performerSnapshots: PerformerPositionSnapshot[] =
@@ -1179,6 +1179,14 @@ function buildViewer3DState(
       300
     );
     _spatialBeforeSnapshot = null;
+  }
+
+  function cancelSpatialEdit(): void {
+    _spatialBeforeSnapshot = null;
+  }
+
+  function markFormationCustom(): void {
+    activeFormation = "custom";
   }
 
   sceneUndo.registerDomain("viewer", {
@@ -1838,6 +1846,8 @@ function buildViewer3DState(
     applyFormationFromUI,
     beginSpatialEdit,
     endSpatialEdit,
+    cancelSpatialEdit,
+    markFormationCustom,
     sceneUndo,
     undo,
     redo,
@@ -2103,7 +2113,7 @@ export interface Viewer3DPersistConfig {
   camera: CameraStateSnapshot | null;
   performers: StoredPerformerSnapshot[];
   selectedPerformerIndex: number | null;
-  activeFormation: FormationPreset | "manual";
+  activeFormation: FormationPreset | "manual" | "custom";
   defaultProp: string;
   oceanVariant: string;
   navMode: ViewerNavMode;
