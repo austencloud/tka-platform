@@ -74,7 +74,16 @@ Flag rules:
 - `--loop-type X` — add when loop type is known (from input metadata or detection)
 - `--notes "text"` — add when user provides a tagline or description
 - `--visibility` — `private` by default; `unlisted` is allowed when explicitly requested
-- Public publishing is not supported by this script. Publish through the app so the owner record, public projection, and content-hash claim commit together.
+- For a public request, import privately first, then immediately run:
+
+```powershell
+pnpm sequence:publish -- <sequenceId>
+```
+
+The publisher promotes the owner record and writes the public projection,
+retained revision, content-hash claim, and parity stamps in one guarded
+transaction. Use `--owner <uid>` only when the sequence belongs to someone
+other than the default library owner.
 
 ### 6. Report result
 
@@ -83,6 +92,7 @@ On success, report:
 - Firestore path: `users/{uid}/sequences/{id}`
 - Sequence ID
 - Metadata applied (circularity, loop type, grid mode)
+- Public URL when public publishing was requested
 
 On failure, show error and suggest fixes.
 
