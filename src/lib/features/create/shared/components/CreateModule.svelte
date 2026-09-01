@@ -1096,15 +1096,21 @@
   .create-method-bar {
     position: relative;
     z-index: 1;
+    display: none;
     flex: 0 0 auto;
     min-height: var(--min-touch-target, 44px);
-    display: flex;
     align-items: center;
     gap: 8px;
     padding: 4px clamp(8px, 1.2cqi, 16px);
     box-sizing: border-box;
     border-bottom: 1px solid var(--theme-stroke);
     background: var(--theme-panel-bg);
+  }
+
+  @media (min-width: 1280px) {
+    .create-method-bar {
+      display: flex;
+    }
   }
 
   .all-methods-button {
