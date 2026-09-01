@@ -407,11 +407,14 @@
     viewerState.setViewerMode(initialViewerMode);
     viewerState.setExportContext(null);
   }
-  // The capture reads the EFFECTIVE (viewport-coerced) mode and split, so a
-  // link records the surface the sender was actually looking at — a 3D pane
-  // coerced to 2D on a small screen shares as 2D.
+  // The capture reads the RAW (pre-coercion) mode and split. The address bar
+  // rewrites within 400 ms of any change, so capturing the viewport-coerced
+  // getters would turn a 3D link into a 2D one the moment it opened on a
+  // folded phone, and `wants3D`'s "unfolding re-enters 3D" promise would not
+  // survive a reload. The recipient's own viewport gate still coerces at
+  // render time, and the own-link comparison above reads raw disk values too.
   urlSession.registerSlice("vw", () =>
-    viewSlice(viewerState.viewerMode, viewerState.splitConfig)
+    viewSlice(viewerState.rawViewerMode, viewerState.rawSplitConfig)
   );
   // playOnOpen means "open already moving" - it does NOT choose a surface.
   // It used to call enterExport("animation-export", "animation"), which both
