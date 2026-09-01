@@ -8,7 +8,7 @@
 
   - prop:   scene-3d PropType value (staff, triad, quiad, trigeng, ...)
   - finish: fire | day (props with finish variants)
-  - fanBuild: pictograph | fire | lotus | day
+  - fanBuild: pictograph | fire | lotus | day | moon
   - fanFrameColor: black | white
   - fanCover: bare | covered
   - rx/ry/rz: presentation rotation in degrees
@@ -68,7 +68,8 @@
       fanBuild === "pictograph" ||
       fanBuild === "fire" ||
       fanBuild === "lotus" ||
-      fanBuild === "day"
+      fanBuild === "day" ||
+      fanBuild === "moon"
     ) {
       propFinishState.setFanBuild(fanBuild satisfies FanBuild);
     }

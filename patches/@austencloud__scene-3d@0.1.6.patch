@@ -2914,7 +2914,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
  
    let {
      propState,
-@@ -33,156 +56,115 @@
+@@ -33,156 +56,121 @@
      thickness,
      isActivePlayer = false,
      scale = 1,
@@ -3043,10 +3043,12 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
 +    const fire = scene.getObjectByName("Fan_Fire");
 +    const lotus = scene.getObjectByName("Fan_Lotus");
 +    const day = scene.getObjectByName("Fan_Day");
++    const moon = scene.getObjectByName("Fan_Moon");
 +    const cover = scene.getObjectByName("Fan_Cover");
 +    const isFire = build.fanBuild === "fire";
 +    const isLotus = build.fanBuild === "lotus";
 +    const isDay = build.fanBuild === "day";
++    const isMoon = build.fanBuild === "moon";
 +    const isCovered =
 +      (isFire || isDay) &&
 +      build.fanCover === "covered";
@@ -3054,12 +3056,16 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
 +    if (fire) fire.visible = isFire;
 +    if (lotus) lotus.visible = isLotus;
 +    if (day) day.visible = isDay;
++    if (moon) moon.visible = isMoon;
 +    if (cover) cover.visible = isCovered;
 +
 +    forEachMaterial(scene, "TKA_Fan_Day_Frame", (material) => {
 +      material.color?.set(DAY_FRAME_COLORS[build.fanFrameColor]);
 +    });
 +    forEachMaterial(scene, "TKA_Fan_Cover_Solid_Recolor", (material) => {
++      material.color?.set(PROP_COLORS[color].main);
++    });
++    forEachMaterial(scene, "TKA_Fan_Moon_Frame", (material) => {
 +      material.color?.set(PROP_COLORS[color].main);
 +    });
 +  });
@@ -16168,7 +16174,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
  
    let {
      propState,
-@@ -33,156 +56,115 @@
+@@ -33,156 +56,121 @@
      thickness,
      isActivePlayer = false,
      scale = 1,
@@ -16297,10 +16303,12 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
 +    const fire = scene.getObjectByName("Fan_Fire");
 +    const lotus = scene.getObjectByName("Fan_Lotus");
 +    const day = scene.getObjectByName("Fan_Day");
++    const moon = scene.getObjectByName("Fan_Moon");
 +    const cover = scene.getObjectByName("Fan_Cover");
 +    const isFire = build.fanBuild === "fire";
 +    const isLotus = build.fanBuild === "lotus";
 +    const isDay = build.fanBuild === "day";
++    const isMoon = build.fanBuild === "moon";
 +    const isCovered =
 +      (isFire || isDay) &&
 +      build.fanCover === "covered";
@@ -16308,12 +16316,16 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
 +    if (fire) fire.visible = isFire;
 +    if (lotus) lotus.visible = isLotus;
 +    if (day) day.visible = isDay;
++    if (moon) moon.visible = isMoon;
 +    if (cover) cover.visible = isCovered;
 +
 +    forEachMaterial(scene, "TKA_Fan_Day_Frame", (material) => {
 +      material.color?.set(DAY_FRAME_COLORS[build.fanFrameColor]);
 +    });
 +    forEachMaterial(scene, "TKA_Fan_Cover_Solid_Recolor", (material) => {
++      material.color?.set(PROP_COLORS[color].main);
++    });
++    forEachMaterial(scene, "TKA_Fan_Moon_Frame", (material) => {
 +      material.color?.set(PROP_COLORS[color].main);
 +    });
 +  });
@@ -30411,7 +30423,7 @@ index 0000000000000000000000000000000000000000..525b1b46458e2aae1c4110ab138eb859
 +import { PropType } from "../domain/enums/PropType";
 +
 +export type PropFinish = "fire" | "day";
-+export type FanBuild = "pictograph" | "fire" | "lotus" | "day";
++export type FanBuild = "pictograph" | "fire" | "lotus" | "day" | "moon";
 +export type FanFrameColor = "black" | "white";
 +export type FanCover = "bare" | "covered";
 +

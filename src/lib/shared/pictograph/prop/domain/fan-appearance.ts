@@ -1,6 +1,12 @@
 import { PropType } from "./enums/prop-type";
 
-export const FAN_BUILDS = ["pictograph", "fire", "lotus", "day"] as const;
+export const FAN_BUILDS = [
+  "pictograph",
+  "fire",
+  "lotus",
+  "day",
+  "moon",
+] as const;
 export type FanBuild = (typeof FAN_BUILDS)[number];
 
 export const FAN_FRAME_COLORS = ["black", "white"] as const;
@@ -83,6 +89,9 @@ export function resolveFanRenderKey(
   if (appearance.build === "day") {
     return `${normalized}__day_${appearance.frameColor}_${appearance.cover}`;
   }
+  if (appearance.build === "moon") {
+    return `${normalized}__moon`;
+  }
   return `${normalized}__lotus`;
 }
 
@@ -115,6 +124,16 @@ export function parseFanRenderKey(value: string): FanRenderKey | null {
     };
   }
 
+  const moon = /^(fan|bigfan)__moon$/.exec(normalized);
+  if (moon) {
+    return {
+      propType: moon[1] as FanRenderKey["propType"],
+      build: "moon",
+      frameColor: DEFAULT_FAN_APPEARANCE.frameColor,
+      cover: DEFAULT_FAN_APPEARANCE.cover,
+    };
+  }
+
   const day = /^(fan|bigfan)__day_(black|white)_(bare|covered)$/.exec(
     normalized
   );
@@ -136,6 +155,9 @@ export function fanAppearanceArtwork(
     const file = cover === "covered" ? "fan-fire-covered.svg" : "fan-fire.svg";
     return `/images/props/appearances/${file}?v=2`;
   }
+  if (build === "moon") {
+    return "/images/props/appearances/fan-moon.svg?v=1";
+  }
   const revision = build === "lotus" ? "?v=7" : "";
   return `/images/props/appearances/fan-${build}.svg${revision}`;
 }
@@ -155,6 +177,9 @@ function fanPreviewImage(appearance: FanAppearance): string {
   }
   if (appearance.build === "lotus") {
     return `${previewImage("fan-lotus-bare-complete.webp")}?v=6`;
+  }
+  if (appearance.build === "moon") {
+    return previewImage("fan-moon-complete.webp");
   }
   return previewImage(
     `fan-day-${appearance.frameColor}-${appearance.cover}-complete.webp`
@@ -196,6 +221,15 @@ export function fanBuildPreviewOptions(
       designCredit: {
         originator: "Doodle",
         sourceUrl: "https://flowtoys.com/products/doodlegrip-practice-fans",
+      },
+    },
+    {
+      id: "moon",
+      label: "Moon LED",
+      image: fanPreviewImage({ ...appearance, build: "moon" }),
+      designCredit: {
+        originator: "Lighttoys",
+        sourceUrl: "https://www.lighttoys.cz/product/moon-fans-ft/",
       },
     },
   ];
