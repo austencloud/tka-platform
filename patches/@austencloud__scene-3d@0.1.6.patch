@@ -24935,7 +24935,7 @@ index 0b10e18f5606c70eae1b5f61a7322173ad38e1d3..276e7f05b2821f5b3099af0aba57b17c
 --- a/src/lib/services/implementations/FingerAnimator.ts
 +++ b/src/lib/services/implementations/FingerAnimator.ts
 @@ -11,6 +11,7 @@ import { STAFF_GRIP_POSES } from "../../data/grip-poses/staff-grip-poses";
-
+ 
  interface HandState {
    targetGrip: GripType;
 +  restRotations: Quaternion[];
@@ -24947,16 +24947,16 @@ index 0b10e18f5606c70eae1b5f61a7322173ad38e1d3..276e7f05b2821f5b3099af0aba57b17c
    private ready = false;
    private readonly scratchQuat = new Quaternion();
 +  private readonly scratchDelta = new Quaternion();
-
+ 
    initialize(fingerChains: FingerChains): void {
      this.leftHand = this.createHandState(fingerChains.left);
- @@ -71,6 +73,7 @@ export class FingerAnimator implements IFingerAnimator {
-
+@@ -71,6 +73,7 @@ export class FingerAnimator implements IFingerAnimator {
+ 
    private createHandState(boneMap: Map<FingerBoneName, Bone>): HandState {
      const bones: Bone[] = [];
 +    const restRotations: Quaternion[] = [];
      const currentRotations: Quaternion[] = [];
-
+ 
      for (const boneName of FINGER_BONES) {
 @@ -79,19 +82,23 @@ export class FingerAnimator implements IFingerAnimator {
          throw new Error(`Missing finger bone: ${boneName}`);
@@ -24966,7 +24966,7 @@ index 0b10e18f5606c70eae1b5f61a7322173ad38e1d3..276e7f05b2821f5b3099af0aba57b17c
 +      restRotations.push(bone.quaternion.clone());
 +      currentRotations.push(bone.quaternion.clone());
      }
-
+ 
      return {
        targetGrip: GripType.IDLE,
 +      restRotations,
@@ -24974,7 +24974,7 @@ index 0b10e18f5606c70eae1b5f61a7322173ad38e1d3..276e7f05b2821f5b3099af0aba57b17c
        bones,
      };
    }
-
+ 
 -  // Writes the target rotation for boneIndex into scratchQuat, mirroring for right hand.
 -  // Right-hand mirror negates Y and Z to reflect across the YZ plane.
 +  // Grip poses are joint deltas, not replacement local rotations. Keeping each
@@ -25000,11 +25000,11 @@ index 0b10e18f5606c70eae1b5f61a7322173ad38e1d3..276e7f05b2821f5b3099af0aba57b17c
 +      .multiply(this.scratchDelta)
 +      .normalize();
    }
-
+ 
    private updateHand(
 @@ -115,7 +126,7 @@ export class FingerAnimator implements IFingerAnimator {
      const alpha = Math.min(1, this.blendSpeed * deltaTime);
-
+ 
      for (let i = 0; i < FINGER_BONES.length; i++) {
 -      this.writeTargetRotation(state.targetGrip, i, hand);
 +      this.writeTargetRotation(state, state.targetGrip, i, hand);
