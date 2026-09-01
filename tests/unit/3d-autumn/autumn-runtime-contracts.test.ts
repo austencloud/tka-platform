@@ -96,6 +96,7 @@ describe("Autumn shadow budget", () => {
     // Every depth tier sits outside the +/-20 shadow camera, so casting from it
     // would pay a depth pass that can never darken a performance-space pixel.
     for (const name of [
+      "Autumn_Terrain_Apron",
       "DistantBirch_02",
       "DistantLarch_01",
       "DistantSnag_05",

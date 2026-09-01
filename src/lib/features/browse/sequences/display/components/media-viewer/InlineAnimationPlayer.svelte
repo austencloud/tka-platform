@@ -25,6 +25,7 @@
   import type { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { QualityTier } from "$lib/shared/animation-engine/domain/types/quality-types";
+  import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   // Per-instance playback stack imports (avoid shared singleton)
   import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
@@ -137,6 +138,7 @@
     onCanvasInitialized = undefined,
     onLoadError = undefined,
     visibilityManagerOverride = undefined,
+    propElementalType = null,
     initialQualityTier = undefined,
     initialStep = null,
   }: {
@@ -304,6 +306,8 @@
      *  visitor's in-app settings nor mutates them. Forwarded to AnimatorCanvas
      *  so the engine-side reads scope the same way. */
     visibilityManagerOverride?: AnimationVisibilityStateManager;
+    /** Optional prop timing/direction relationship for the canvas's top-right corner. */
+    propElementalType?: ElementalType | null;
     /** Optional adaptive-quality ceiling for performance-sensitive embeds. */
     initialQualityTier?: QualityTier;
     /** Fractional playback position applied immediately after each load. */
@@ -775,6 +779,7 @@
         {leftPropType}
         {rightPropType}
         positionGlyphVisible={showPositionGlyph}
+        {propElementalType}
         tapToToggle={minimal && interactive}
         progressLine={minimal && interactive}
         hoverHint={minimal && interactive ? hoverHint : "none"}

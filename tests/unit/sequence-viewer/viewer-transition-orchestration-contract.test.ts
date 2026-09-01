@@ -17,6 +17,12 @@ const shell = read(
 const workspacePanels = read(
   "src/lib/shared/sequence-viewer/components/ViewerWorkspacePanels.svelte"
 );
+const contentRail = read(
+  "src/lib/shared/sequence-viewer/components/ViewerContentRail.svelte"
+);
+const modeBottomBar = read(
+  "src/lib/shared/sequence-viewer/components/ViewerModeBottomBar.svelte"
+);
 const shellLayoutState = read(
   "src/lib/shared/sequence-viewer/state/viewer-shell-layout-state.svelte.ts"
 );
@@ -57,6 +63,11 @@ const sequenceVideos = read(
 );
 
 describe("Sequence Viewer transition orchestration contract", () => {
+  it("names both responsive switchers as Sequence views", () => {
+    expect(contentRail).toContain('aria-label="Sequence views"');
+    expect(modeBottomBar).toContain('aria-label="Sequence views"');
+  });
+
   it("routes split geometry through the canonical PanelGroup owner", () => {
     expect(splitPane).toContain(
       'import PanelGroup from "$lib/shared/panels/PanelGroup.svelte"'
@@ -323,7 +334,7 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(geometryTrace).toContain("Non-singleton canvas frames:");
   });
 
-  it("hands one persistent stage allocation to Performances without background work", () => {
+  it("hands one persistent viewer-stage allocation to Performances without background work", () => {
     expect(shell).toContain("data-persistent-viewer-stage");
     expect(shell).toContain("data-persistent-performance-gallery");
     expect(shell).toContain("data-active={!layout.showVideoGallery}");
@@ -342,7 +353,7 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(reviewFrame).toContain(
       'message.command === "performances-interrupt"'
     );
-    expect(geometryTrace).toContain("Stage remounts:");
+    expect(geometryTrace).toContain("Viewer stage remounts:");
     expect(geometryTrace).toContain("Gallery remounts:");
     expect(geometryTrace).toContain("Opacity complement drift:");
   });

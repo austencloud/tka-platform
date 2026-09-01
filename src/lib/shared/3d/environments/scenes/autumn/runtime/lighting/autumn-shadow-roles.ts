@@ -42,6 +42,9 @@ const CAST_AND_RECEIVE: AutumnShadowRole = { cast: true, receive: true };
 
 /** Owned by AutumnWind, or too far out to reach the shadow camera. */
 const EXCLUDED_PREFIXES = [
+  // Starts beyond the +/-20m shadow camera. Sampling that map on the 1,024m
+  // fog apron creates false diagonal seams without receiving any real caster.
+  "Autumn_Terrain_Apron",
   "Autumn_Grass_",
   "DistantBirch",
   "DistantLarch",
