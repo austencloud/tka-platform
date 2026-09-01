@@ -27,6 +27,7 @@
     currentModule,
     currentModuleName,
     currentSection,
+    handleCreateFrontDoor,
     handleModuleChange,
     handleSectionChange,
     initializeNavigationHistory,
@@ -51,7 +52,10 @@
   import { deepLinker } from "./navigation/services/deep-linker";
   import { useDesktopSidebarVisibility } from "./navigation/services/desktop-sidebar-visibility.svelte";
   import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
-  import type { ModuleId } from "./navigation/domain/types";
+  import type {
+    ModuleId,
+    SectionHomeDestination,
+  } from "./navigation/domain/types";
   import { navigationState } from "./navigation/state/navigation-state.svelte";
   import { hasOpenDrawers } from "./foundation/ui/drawer/drawer-stack";
   import { keyboardShortcutState } from "./keyboard/state/keyboard-shortcut-state.svelte";
@@ -81,6 +85,24 @@
   import { adminToolbarState } from "./debug/state/admin-toolbar-state.svelte";
   import { featureFlagService } from "./auth/services/post-hog-feature-flag-service.svelte";
   import ToastContainer from "./toast/components/ToastContainer.svelte";
+
+  const sectionHome = $derived.by<SectionHomeDestination | null>(() => {
+    if (currentModule() !== "create") return null;
+
+    const createModule = moduleDefinitions.find(
+      (definition) => definition.id === "create",
+    );
+    return {
+      label: "Create",
+      optionLabel: "All methods",
+      ariaLabel: "All creation methods",
+      icon:
+        createModule?.icon ?? '<i class="fas fa-tools" aria-hidden="true"></i>',
+      color: createModule?.color,
+      gradient: createModule?.color,
+      active: navigationState.isCreateFrontDoorOpen,
+    };
+  });
 
   // LAN Sync
   import NearbySyncBanner from "./lan-sync/components/NearbySyncBanner.svelte";
@@ -167,6 +189,12 @@
   // Handle reveal navigation from peek indicator
   function handleRevealNav() {
     browseScrollState.forceShowUI();
+  }
+
+  function handleSectionHomeSelect() {
+    if (currentModule() === "create") {
+      handleCreateFrontDoor("navigation");
+    }
   }
 
   // 🚀 Prefetch likely next modules when current module changes
@@ -300,6 +328,8 @@
         sections={moduleSections()}
         currentSection={currentSection()}
         onSectionChange={handleSectionChange}
+        {sectionHome}
+        onSectionHomeSelect={handleSectionHomeSelect}
         onModuleSwitcherTap={() => {
           // Open module switcher drawer directly
           window.dispatchEvent(new CustomEvent("module-switcher-toggle"));
