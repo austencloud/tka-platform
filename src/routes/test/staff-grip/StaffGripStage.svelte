@@ -53,6 +53,7 @@
   const RED_HOME_ANGLE = Math.PI;
   const PATH_SWING = Math.PI / 10;
   const STAFF_SWING = Math.PI / 9;
+  const VERTICAL_STAFF_ANGLE = Math.PI / 2;
   const MOTION_RATE = (Math.PI * 2) / 7;
 
   let phase = $state(0);
@@ -88,12 +89,14 @@
   // prop system; these are the two PropState3D inputs production playback owns.
   const bluePropState = $derived.by(() => {
     const travel = Math.sin(phase) * PATH_SWING;
-    const staff = Math.sin(phase + Math.PI / 2) * STAFF_SWING;
+    const staff =
+      VERTICAL_STAFF_ANGLE + Math.sin(phase + Math.PI / 2) * STAFF_SWING;
     return makeStaffState(BLUE_HOME_ANGLE - travel, staff);
   });
   const redPropState = $derived.by(() => {
     const travel = Math.sin(phase) * PATH_SWING;
-    const staff = -Math.sin(phase + Math.PI / 2) * STAFF_SWING;
+    const staff =
+      VERTICAL_STAFF_ANGLE - Math.sin(phase + Math.PI / 2) * STAFF_SWING;
     return makeStaffState(RED_HOME_ANGLE + travel, staff);
   });
 
