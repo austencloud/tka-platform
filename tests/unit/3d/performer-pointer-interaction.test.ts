@@ -1,10 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
-import { BoxGeometry, Mesh, MeshBasicMaterial, PerspectiveCamera } from "three";
+import {
+  BoxGeometry,
+  Mesh,
+  MeshBasicMaterial,
+  PerspectiveCamera,
+  Raycaster,
+  Vector2,
+  Vector3,
+} from "three";
 import {
   clampPerformerPosition,
   createPerformerPointerInteraction,
   getPointerIntent,
-  intersectGroundPlane,
+  intersectHorizontalPlane,
   isWithinMinimumTouchTarget,
   resolveCameraRelativeNudge,
   resolvePerformerDragPosition,
@@ -52,9 +60,9 @@ describe("performer pointer interaction", () => {
     );
   });
 
-  it("intersects the stage plane and preserves the original grab offset", () => {
+  it("intersects a horizontal drag plane and preserves the original grab offset", () => {
     expect(
-      intersectGroundPlane(
+      intersectHorizontalPlane(
         { x: 0, y: 4, z: 0 },
         { x: 0.5, y: -1, z: 0.25 },
         0,
@@ -65,7 +73,7 @@ describe("performer pointer interaction", () => {
 
   it("rejects grazing rays instead of sending a performer toward infinity", () => {
     expect(
-      intersectGroundPlane(
+      intersectHorizontalPlane(
         { x: 0, y: 4, z: 0 },
         { x: 1, y: -0.00001, z: 0 },
         0,
@@ -184,15 +192,17 @@ describe("performer press vs camera-controls listener ordering", () => {
       getBoundingClientRect: () =>
         ({ left: 0, top: 0, width: 100, height: 100 }) as DOMRect,
       setPointerCapture: () => {},
+      hasPointerCapture: () => false,
       releasePointerCapture: () => {},
     });
 
     const camera = new PerspectiveCamera(50, 1, 0.1, 100);
     camera.position.set(0, 2, 8);
-    camera.lookAt(0, 0, 0);
+    camera.lookAt(0, 1, 0);
     camera.updateMatrixWorld(true);
 
     const proxy = new Mesh(new BoxGeometry(2, 2, 2), new MeshBasicMaterial());
+    proxy.position.y = 1;
     proxy.userData = { performerIndex: 0, performerPickTarget: true };
     proxy.updateMatrixWorld(true);
 
@@ -228,8 +238,35 @@ describe("performer press vs camera-controls listener ordering", () => {
     });
     interaction.registerPickTarget(proxy);
     const detach = interaction.attach();
-    return { canvas, viewer, orbitDown, interaction, detach };
+    return { canvas, viewer, orbitDown, interaction, detach, camera, proxy };
   }
+
+  it("keeps the point grabbed on the character attached to the pointer", () => {
+    const { canvas, viewer, detach, camera, proxy } = buildHarness();
+    const raycaster = new Raycaster();
+    raycaster.setFromCamera(new Vector2(0, 0), camera);
+    const grabbedPoint = raycaster.intersectObject(proxy)[0]?.point;
+    expect(grabbedPoint).toBeDefined();
+
+    firePointer(canvas, "pointerdown", { clientX: 50, clientY: 50 });
+    firePointer(canvas, "pointermove", { clientX: 65, clientY: 50 });
+
+    const nextPosition = viewer.performerManager.handleDrag.mock.lastCall?.[1];
+    expect(nextPosition).toBeDefined();
+    const movedGrabPoint = grabbedPoint!
+      .clone()
+      .add(new Vector3(nextPosition!.x, 0, nextPosition!.z))
+      .project(camera);
+    const projectedPointer = {
+      x: ((movedGrabPoint.x + 1) * 100) / 2,
+      y: ((1 - movedGrabPoint.y) * 100) / 2,
+    };
+
+    expect(projectedPointer.x).toBeCloseTo(65, 5);
+    expect(projectedPointer.y).toBeCloseTo(50, 5);
+    firePointer(canvas, "pointerup", { clientX: 65, clientY: 50 });
+    detach();
+  });
 
   it("selects a performer even though the camera listener registered first", () => {
     const { canvas, viewer, orbitDown, detach } = buildHarness();
