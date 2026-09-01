@@ -511,7 +511,7 @@
 
   @media (hover: hover) and (pointer: fine) {
     @container create-module-workspace (min-width: 1180px) {
-      .sequence-actions-workspace-trigger {
+      .right-zone > .sequence-actions-workspace-trigger {
         display: none;
       }
     }
