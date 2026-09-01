@@ -98,7 +98,7 @@
   const acceptanceItems = $derived(
     review.activeGateId === "2d-3d"
       ? [
-          "3D owns the stage immediately after selection; 2D never masquerades as the chosen mode",
+          "3D owns the viewer stage immediately after selection; 2D never masquerades as the chosen mode",
           "engine, scene, cast, and warmup phases disclose the real preparation state",
           "progress only moves forward and the first ready frame replaces the preparation surface cleanly",
           "repeat switches crossfade on the same clock in both directions",
@@ -109,20 +109,20 @@
             "2D and Tunnel retain the same Animator canvas and backing store",
             "Tunnel performers and effects bloom into the live 2D base without a surface crossfade",
             "the outer inspector stays mounted while its 2D and Tunnel controls trade places",
-            "3D, rapid reversals, and reduced motion retain a ready continuous stage",
+            "3D, rapid reversals, and reduced motion retain a ready, continuous viewer stage",
           ]
         : review.activeGateId === "card-stage"
           ? [
               "Card, Animator, and desktop inspector keep one DOM identity through every round trip",
-              "Card and stage exchange the workspace directly, without a Side-by-Side intermediate frame",
+              "Card and motion views exchange the workspace directly, without a Side-by-Side intermediate frame",
               "both directions travel monotonically on one structural clock without squashed or transformed Card cells",
-              "Card, 2D, and Tunnel controls trade places inside one inspector; 3D releases that track into its stage on the same clock",
+              "Card, 2D, and Tunnel controls trade places inside one inspector; 3D releases that track into the viewer stage on the same clock",
               "rapid reversals and reduced motion never expose a blank workspace",
             ]
           : review.activeGateId === "performances"
             ? [
-                "the production stage and Performances gallery retain one DOM identity for every round trip",
-                "the gallery inherits the exact stage allocation while the inspector departs or returns on the same clock",
+                "the production viewer stage and Performances gallery retain one DOM identity for every round trip",
+                "the gallery inherits the exact viewer-stage allocation while the inspector departs or returns on the same clock",
                 "the two full-workspace surfaces crossfade without a blank or double-opaque frame",
                 "an inactive gallery does not fetch, play video, or drive the shared sequence playhead",
                 "2D, ready 3D, rapid reversals, mobile layout, and reduced motion all remain stable",
@@ -253,19 +253,19 @@
           : command === "3d-repeat"
             ? "Replaying the warmed 2D and 3D round trip…"
             : command === "tunnel-first"
-              ? "Preparing the first Tunnel behind the live 2D stage, then returning…"
+              ? "Preparing the first Tunnel behind the live 2D view, then returning…"
               : command === "tunnel-3d"
-                ? "Moving from the ready 3D stage into Tunnel and back…"
+                ? "Moving from the ready 3D view into Tunnel and back…"
                 : command === "card-2d"
                   ? "Moving directly from Card into 2D and back…"
                   : command === "card-3d"
-                    ? "Moving directly from Card into a ready 3D stage and back…"
+                    ? "Moving directly from Card into a ready 3D view and back…"
                     : command === "card-tunnel"
-                      ? "Moving directly from Card into the shared Tunnel stage and back…"
+                      ? "Moving directly from Card into the Tunnel view and back…"
                       : command === "performances-2d"
-                        ? "Letting Performances inherit the 2D stage and returning…"
+                        ? "Letting Performances inherit the 2D viewer stage and returning…"
                         : command === "performances-3d"
-                          ? "Letting Performances inherit the ready 3D stage and returning…"
+                          ? "Letting Performances inherit the ready 3D viewer stage and returning…"
                           : `Replaying the ${command === "2d" ? "2D" : "Card"} round trip…`;
     frameElement.contentWindow.postMessage(
       {
@@ -584,7 +584,7 @@
           <p class="viewport-gate-note">
             The 3D-to-Tunnel replay is intentionally withheld at this viewport.
             The first-Tunnel and reversal replays remain available against the
-            production 2D stage.
+            production 2D view.
           </p>
         {:else if review.activeGateId === "card-stage" && !selectedViewportFits3D}
           <p class="viewport-gate-note">

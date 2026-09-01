@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   BoxGeometry,
+  Group,
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
@@ -189,6 +190,7 @@ describe("performer press vs camera-controls listener ordering", () => {
     const canvas = new EventTarget() as unknown as HTMLCanvasElement;
     Object.assign(canvas, {
       style: {},
+      dataset: {},
       getBoundingClientRect: () =>
         ({ left: 0, top: 0, width: 100, height: 100 }) as DOMRect,
       setPointerCapture: () => {},
@@ -205,6 +207,22 @@ describe("performer press vs camera-controls listener ordering", () => {
     proxy.position.y = 1;
     proxy.userData = { performerIndex: 0, performerPickTarget: true };
     proxy.updateMatrixWorld(true);
+
+    // The proxy is deliberately nearer and taller than the visible knee.
+    // A drag anchored to the proxy can look plausible while the rendered
+    // surface separates from the cursor under this perspective camera.
+    const visualRoot = new Group();
+    visualRoot.userData = {
+      performerIndex: 0,
+      performerVisualPickTarget: true,
+    };
+    const visibleKnee = new Mesh(
+      new BoxGeometry(1.2, 1.6, 1),
+      new MeshBasicMaterial()
+    );
+    visibleKnee.position.set(0, 0.7, -1);
+    visualRoot.add(visibleKnee);
+    visualRoot.updateMatrixWorld(true);
 
     const viewer = {
       selectedPerformerIndex: null as number | null,
@@ -237,33 +255,86 @@ describe("performer press vs camera-controls listener ordering", () => {
       stageBounds: () => ({ width: 10, depth: 10, zOffset: 0 }),
     });
     interaction.registerPickTarget(proxy);
+    interaction.registerVisualPickTarget(0, visualRoot);
     const detach = interaction.attach();
-    return { canvas, viewer, orbitDown, interaction, detach, camera, proxy };
+    return {
+      canvas,
+      viewer,
+      orbitDown,
+      interaction,
+      detach,
+      camera,
+      proxy,
+      visualRoot,
+      visibleKnee,
+    };
   }
 
-  it("keeps the point grabbed on the character attached to the pointer", () => {
-    const { canvas, viewer, detach, camera, proxy } = buildHarness();
+  it.each([35, 65])(
+    "keeps the rendered grab point attached when dragging to x=%i",
+    (pointerX) => {
+      const { canvas, viewer, detach, camera, visibleKnee } = buildHarness();
+      const raycaster = new Raycaster();
+      raycaster.setFromCamera(new Vector2(0, 0), camera);
+      const grabbedPoint = raycaster.intersectObject(visibleKnee)[0]?.point;
+      expect(grabbedPoint).toBeDefined();
+
+      firePointer(canvas, "pointerdown", { clientX: 50, clientY: 50 });
+      expect(canvas.dataset.performerDragAnchorSource).toBe("visual");
+      firePointer(canvas, "pointermove", { clientX: pointerX, clientY: 50 });
+
+      const nextPosition =
+        viewer.performerManager.handleDrag.mock.lastCall?.[1];
+      expect(nextPosition).toBeDefined();
+      const movedGrabPoint = grabbedPoint!
+        .clone()
+        .add(new Vector3(nextPosition!.x, 0, nextPosition!.z))
+        .project(camera);
+      const projectedPointer = {
+        x: ((movedGrabPoint.x + 1) * 100) / 2,
+        y: ((1 - movedGrabPoint.y) * 100) / 2,
+      };
+
+      expect(projectedPointer.x).toBeCloseTo(pointerX, 5);
+      expect(projectedPointer.y).toBeCloseTo(50, 5);
+      firePointer(canvas, "pointerup", { clientX: pointerX, clientY: 50 });
+      detach();
+    }
+  );
+
+  it("falls back to the forgiving proxy when no visible surface is hit", () => {
+    const { canvas, detach, visualRoot } = buildHarness();
+    visualRoot.visible = false;
+    firePointer(canvas, "pointerdown", { clientX: 50, clientY: 50 });
+    expect(canvas.dataset.performerDragAnchorSource).toBe("proxy");
+    firePointer(canvas, "pointerup", { clientX: 50, clientY: 50 });
+    detach();
+  });
+
+  it("compensates when the anchored surface deforms during the drag", () => {
+    const { canvas, viewer, detach, camera, visibleKnee } = buildHarness();
     const raycaster = new Raycaster();
     raycaster.setFromCamera(new Vector2(0, 0), camera);
-    const grabbedPoint = raycaster.intersectObject(proxy)[0]?.point;
+    const grabbedPoint = raycaster.intersectObject(visibleKnee)[0]?.point;
     expect(grabbedPoint).toBeDefined();
 
     firePointer(canvas, "pointerdown", { clientX: 50, clientY: 50 });
+    const positions = visibleKnee.geometry.getAttribute("position");
+    expect(positions).toBeDefined();
+    if (!positions) throw new Error("The visible knee needs vertex positions");
+    for (let index = 0; index < positions.count; index += 1)
+      positions.setX(index, positions.getX(index) + 0.2);
+    positions.needsUpdate = true;
     firePointer(canvas, "pointermove", { clientX: 65, clientY: 50 });
 
     const nextPosition = viewer.performerManager.handleDrag.mock.lastCall?.[1];
     expect(nextPosition).toBeDefined();
     const movedGrabPoint = grabbedPoint!
       .clone()
-      .add(new Vector3(nextPosition!.x, 0, nextPosition!.z))
+      .add(new Vector3(0.2 + nextPosition!.x, 0, nextPosition!.z))
       .project(camera);
-    const projectedPointer = {
-      x: ((movedGrabPoint.x + 1) * 100) / 2,
-      y: ((1 - movedGrabPoint.y) * 100) / 2,
-    };
-
-    expect(projectedPointer.x).toBeCloseTo(65, 5);
-    expect(projectedPointer.y).toBeCloseTo(50, 5);
+    expect(((movedGrabPoint.x + 1) * 100) / 2).toBeCloseTo(65, 5);
+    expect(((1 - movedGrabPoint.y) * 100) / 2).toBeCloseTo(50, 5);
     firePointer(canvas, "pointerup", { clientX: 65, clientY: 50 });
     detach();
   });

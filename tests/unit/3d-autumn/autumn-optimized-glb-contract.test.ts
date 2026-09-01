@@ -14,6 +14,8 @@ interface OptimizedAutumnGltf {
     alphaMode?: string;
     alphaCutoff?: number;
     doubleSided?: boolean;
+    normalTexture?: unknown;
+    metallicRoughnessTexture?: unknown;
   }>;
   accessors?: Array<{ count?: number }>;
   meshes?: Array<{
@@ -64,6 +66,8 @@ describe("optimized Autumn GLB contracts", () => {
     expect(buildSource).not.toContain(
       "faces.append((base + i, base + j, nxt + j, nxt + i))"
     );
+    expect(buildSource).toContain("((0, 1, 2, 3),)");
+    expect(buildSource).toContain('"Autumn_Terrain_Apron", plane_mesh');
   });
 
   function nodeMaterialNames(node: NonNullable<typeof gltf.nodes>[number]) {
@@ -204,6 +208,13 @@ describe("optimized Autumn GLB contracts", () => {
     expect(
       Number(apron?.extras?.tka_ground_visible_extent)
     ).toBeGreaterThanOrEqual(1_024);
+
+    const fogMaterial = (gltf.materials ?? []).find(
+      (material) => material.name === "Autumn Fog Apron"
+    );
+    expect(fogMaterial, "Autumn fog apron material disappeared").toBeDefined();
+    expect(fogMaterial?.normalTexture).toBeUndefined();
+    expect(fogMaterial?.metallicRoughnessTexture).toBeUndefined();
   });
 
   it("contains no authored shadow impostors", () => {
@@ -245,13 +256,15 @@ describe("optimized Autumn GLB contracts", () => {
     }
   });
 
-  it("keeps optimizer-surviving grass outside both shadow roles", () => {
+  it("keeps the off-camera apron and grass outside both shadow roles", () => {
     const excludedNames = meshNodeNames.filter((name) => {
       const role = resolveAutumnShadowRole(name);
       return !role.cast && !role.receive;
     });
 
     expect(excludedNames).toEqual([
+      "Autumn_Terrain_Apron_Transition",
+      "Autumn_Terrain_Apron",
       "Autumn_Grass_Base",
       "Autumn_Grass_Medium",
       "Autumn_Grass_High",

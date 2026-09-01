@@ -139,6 +139,19 @@ function makeQuarterTurnPictograph(turns = 0.25): PictographData {
 }
 
 describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
+  it("rekeys visible-motion cells after canonical hand arrows are restored", () => {
+    const key = deriver.deriveCacheKey(
+      makeStartPosition(),
+      undefined,
+      false,
+      makeOptions()
+    );
+
+    expect(key).toContain(
+      '"arrowRenderRevision":"canonical-hand-arrows-v1"'
+    );
+  });
+
   it("preserves lsp11 keys for fully-visible pictographs", () => {
     const key = deriver.deriveCacheKey(
       makeStartPosition(),

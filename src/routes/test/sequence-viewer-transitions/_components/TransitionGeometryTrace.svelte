@@ -248,9 +248,9 @@
       <span>Measured geometry</span>
       <h3 id="geometry-trace-title">
         {isPerformanceTrace
-          ? "Stage and Performances through the last replay"
+          ? "Viewer stage and Performances through the last replay"
           : isCardStageTrace
-            ? "Card and motion stage through the last replay"
+            ? "Card and motion views through the last replay"
             : isMotionTrace
               ? "2D and 3D through the last replay"
               : isTunnelTrace
@@ -261,9 +261,9 @@
     <div class="trace-legend" aria-label="Geometry trace legend">
       <span class="animation"
         >{isPerformanceTrace
-          ? "Stage opacity"
+          ? "Viewer stage opacity"
           : isCardStageTrace
-            ? "Stage allocation"
+            ? "Viewer stage allocation"
             : isMotionTrace
               ? "2D opacity"
               : isTunnelTrace
@@ -279,14 +279,14 @@
               ? "Tunnel layer blend"
               : "Card visual"}</span
       >
-      <span class="stage">Stage</span>
+      <span class="stage">Viewer stage</span>
     </div>
   </header>
 
   <div class="trace-summary">
     {#if isPerformanceTrace}
       <span data-problem={summary.performanceStageIdentityChanges > 0}
-        >Stage remounts: {summary.performanceStageIdentityChanges}</span
+        >Viewer stage remounts: {summary.performanceStageIdentityChanges}</span
       >
       <span data-problem={summary.performanceGalleryIdentityChanges > 0}
         >Gallery remounts: {summary.performanceGalleryIdentityChanges}</span
@@ -323,12 +323,16 @@
       <span
         data-problem={(summary.performanceStageExit?.backtrack ?? 0) > 1 ||
           (summary.performanceStageExit?.overshoot ?? 0) > 1}
-        >Stage expands: {formatTravel(summary.performanceStageExit)}</span
+        >Viewer stage expands: {formatTravel(
+          summary.performanceStageExit
+        )}</span
       >
       <span
         data-problem={(summary.performanceStageEntry?.backtrack ?? 0) > 1 ||
           (summary.performanceStageEntry?.overshoot ?? 0) > 1}
-        >Stage contracts: {formatTravel(summary.performanceStageEntry)}</span
+        >Viewer stage contracts: {formatTravel(
+          summary.performanceStageEntry
+        )}</span
       >
       <span
         data-problem={(summary.performanceInspectorExit?.backtrack ?? 0) > 1 ||
@@ -395,12 +399,16 @@
       <span
         data-problem={(summary.cardStageExitAllocation?.backtrack ?? 0) > 1 ||
           (summary.cardStageExitAllocation?.overshoot ?? 0) > 1}
-        >Stage entrance: {formatTravel(summary.cardStageExitAllocation)}</span
+        >Viewer stage entrance: {formatTravel(
+          summary.cardStageExitAllocation
+        )}</span
       >
       <span
         data-problem={(summary.cardStageEntryAllocation?.backtrack ?? 0) > 1 ||
           (summary.cardStageEntryAllocation?.overshoot ?? 0) > 1}
-        >Stage exit: {formatTravel(summary.cardStageEntryAllocation)}</span
+        >Viewer stage exit: {formatTravel(
+          summary.cardStageEntryAllocation
+        )}</span
       >
       <span
         data-problem={(summary.cardStageInspectorExit?.backtrack ?? 0) > 1 ||
@@ -459,7 +467,9 @@
       >
       <span>Surface path: {summary.tunnelSurfacePath.join(" → ") || "n/a"}</span
       >
-      <span>Stage allocation: {formatRange(summary.tunnelStageSize)}</span>
+      <span
+        >Viewer stage allocation: {formatRange(summary.tunnelStageSize)}</span
+      >
       <span>Tunnel display: {formatRange(summary.tunnelDisplaySize)}</span>
       <span data-dissolve={summary.dissolveFrames > 0}
         >Workspace dissolve frames: {summary.dissolveFrames}</span
@@ -519,7 +529,9 @@
       >
       <span>Surface path: {summary.motionSurfacePath.join(" → ") || "n/a"}</span
       >
-      <span>Stage allocation: {formatRange(summary.motionStageSize)}</span>
+      <span
+        >Viewer stage allocation: {formatRange(summary.motionStageSize)}</span
+      >
       <span
         >Inspector allocation: {formatRange(summary.motionInspectorSize)}</span
       >
@@ -769,9 +781,9 @@
     viewBox={`0 0 ${chartWidth} ${chartHeight}`}
     role="img"
     aria-label={isCardStageTrace
-      ? `Card and motion-stage allocations during the ${trace.command} replay. ${summary.cardStageBlankFrames} blank workspace frames were sampled.`
+      ? `Card and motion-view geometry during the ${trace.command} replay. ${summary.cardStageBlankFrames} blank workspace frames were sampled.`
       : isPerformanceTrace
-        ? `Stage and Performances opacity during the ${trace.command} replay. ${summary.performanceBlankFrames} blank frames were sampled.`
+        ? `Viewer stage and Performances opacity during the ${trace.command} replay. ${summary.performanceBlankFrames} blank frames were sampled.`
         : isMotionTrace
           ? `2D and 3D opacity during the ${trace.command} replay. ${summary.motionBlankFrames} blank frames were sampled.`
           : isTunnelTrace

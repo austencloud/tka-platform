@@ -2,16 +2,17 @@
   import { onMount } from "svelte";
   import { Canvas, T } from "@threlte/core";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
+  import { FALG } from "$lib/shared/combination/domain/demo-fixtures";
   import StaffGripStage from "./StaffGripStage.svelte";
 
   let playing = $state(true);
-  let ready = $state(false);
   let portraitFraming = $state(false);
+  const sequence = FALG;
 
   const cameraPosition = $derived<[number, number, number]>(
-    portraitFraming ? [0, 1.28, 4.65] : [0, 1.28, 2.65]
+    portraitFraming ? [0, 1.98, 4.5] : [0, 1.98, 3.4]
   );
-  const cameraFov = $derived(portraitFraming ? 48 : 40);
+  const cameraFov = $derived(portraitFraming ? 48 : 42);
 
   onMount(() => {
     const syncCameraFraming = () => {
@@ -30,13 +31,14 @@
 
 <svelte:head>
   <title>Staff Grip Test</title>
-  <meta
-    name="description"
-    content="Focused production-rig test with one character, two staffs, and the canonical wall grid."
-  />
+  <meta name="description" content="Test one character holding two staffs." />
 </svelte:head>
 
-<main class="grip-test">
+<main
+  class="grip-test"
+  data-sequence-source="validated-production-fixture"
+  data-sequence-id={sequence.id}
+>
   <section class="stage" aria-label="Animated two-staff grip test">
     <Canvas shadows>
       <T.Color attach="background" args={["#0a101a"]} />
@@ -49,42 +51,26 @@
           enableDamping
           enablePan={false}
           rightDragAction="rotate"
-          target={[0, 1.22, 0.22]}
+          target={[0, 1.92, 0.22]}
           minDistance={0.65}
           maxDistance={7}
           maxPolarAngle={Math.PI / 2}
         />
       </T.PerspectiveCamera>
 
-      <StaffGripStage {playing} onready={() => (ready = true)} />
+      <StaffGripStage {playing} {sequence} />
     </Canvas>
   </section>
-
-  <header class="scene-label">
-    <p class="eyebrow">Production grip test</p>
-    <h1>Two staffs. One real rig.</h1>
-    <p class="description">
-      Current intake character, production staffs, and the canonical wall grid.
-    </p>
-  </header>
-
-  <div class="status" class:ready role="status" aria-live="polite">
-    <span class="status-dot" aria-hidden="true"></span>
-    {ready ? "Character ready" : "Loading character"}
-  </div>
 
   <button
     type="button"
     class="transport"
-    aria-label={playing ? "Pause grip motion" : "Play grip motion"}
+    aria-label={playing ? "Pause" : "Play"}
     aria-pressed={playing}
     onclick={() => (playing = !playing)}
   >
     <span aria-hidden="true">{playing ? "Ⅱ" : "▶"}</span>
-    {playing ? "Pause" : "Play"}
   </button>
-
-  <p class="orbit-hint">Left or right drag to orbit · wheel or pinch to zoom</p>
 </main>
 
 <style>
@@ -109,74 +95,9 @@
     touch-action: none;
   }
 
-  .scene-label,
-  .status,
-  .transport,
-  .orbit-hint {
+  .transport {
     position: absolute;
     z-index: 2;
-  }
-
-  .scene-label {
-    top: clamp(1rem, 3cqi, 2rem);
-    left: clamp(1rem, 3cqi, 2rem);
-    max-width: min(26rem, calc(100% - 2rem));
-    pointer-events: none;
-    text-shadow: 0 2px 16px rgb(0 0 0 / 70%);
-  }
-
-  .eyebrow {
-    margin: 0 0 0.35rem;
-    color: #6fe7ff;
-    font-size: 0.75rem;
-    font-weight: 750;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-  }
-
-  h1 {
-    margin: 0;
-    font-size: clamp(1.5rem, 3.2cqi, 2.65rem);
-    line-height: 1.05;
-    letter-spacing: -0.035em;
-  }
-
-  .description {
-    margin: 0.55rem 0 0;
-    color: rgb(230 239 250 / 78%);
-    font-size: clamp(0.875rem, 1.25cqi, 1rem);
-    line-height: 1.45;
-  }
-
-  .status {
-    top: clamp(1rem, 3cqi, 2rem);
-    right: clamp(1rem, 3cqi, 2rem);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-height: 2.25rem;
-    padding: 0.45rem 0.75rem;
-    border: 1px solid rgb(255 255 255 / 13%);
-    border-radius: 999px;
-    background: rgb(8 14 24 / 76%);
-    box-shadow: 0 12px 32px rgb(0 0 0 / 28%);
-    backdrop-filter: blur(12px);
-    color: rgb(230 239 250 / 82%);
-    font-size: 0.8125rem;
-    font-weight: 650;
-  }
-
-  .status-dot {
-    width: 0.55rem;
-    height: 0.55rem;
-    border-radius: 50%;
-    background: #fbbf24;
-    box-shadow: 0 0 0 0.2rem rgb(251 191 36 / 15%);
-  }
-
-  .status.ready .status-dot {
-    background: #4ade80;
-    box-shadow: 0 0 0 0.2rem rgb(74 222 128 / 15%);
   }
 
   .transport {
@@ -185,10 +106,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.55rem;
-    min-width: 7.5rem;
-    min-height: 2.75rem;
-    padding: 0.7rem 1rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
     border: 1px solid rgb(111 231 255 / 48%);
     border-radius: 999px;
     background: rgb(12 28 43 / 88%);
@@ -197,7 +117,7 @@
       inset 0 0 0 1px rgb(255 255 255 / 6%);
     color: #eafcff;
     font: inherit;
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 720;
     cursor: pointer;
     transform: translateX(-50%);
@@ -217,25 +137,7 @@
     outline-offset: 3px;
   }
 
-  .orbit-hint {
-    right: clamp(1rem, 3cqi, 2rem);
-    bottom: clamp(1.25rem, 3cqi, 2rem);
-    margin: 0;
-    color: rgb(230 239 250 / 56%);
-    font-size: 0.75rem;
-    pointer-events: none;
-  }
-
   @container (max-width: 42rem) {
-    .scene-label {
-      max-width: calc(100% - 8rem);
-    }
-
-    .description,
-    .orbit-hint {
-      display: none;
-    }
-
     .transport {
       bottom: 1rem;
     }

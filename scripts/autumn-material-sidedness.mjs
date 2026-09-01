@@ -1,6 +1,7 @@
 /** Opaque, closed, outward-wound solids proven safe for front-side rasterization. */
 export const AUTUMN_FRONT_SIDE_MATERIAL_PREFIXES = [
   "Autumn Living Forest Floor",
+  "Autumn Fog Apron",
   "Damp Pond Bank",
   "Autumn Woodland Cabin PBR",
   "Autumn Fallen Log PBR",

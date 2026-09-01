@@ -11,7 +11,7 @@ describe("Construct option controls presentation", () => {
         hasControls: true,
         wideInlineEligible: false,
         containerHeight: 1847,
-        hasTurnRows: true,
+        canShowTurnRows: true,
       })
     ).toBe("compact-inline");
   });
@@ -28,7 +28,7 @@ describe("Construct option controls presentation", () => {
         hasControls: true,
         wideInlineEligible: false,
         containerHeight: withoutTurns - 1,
-        hasTurnRows: false,
+        canShowTurnRows: false,
       })
     ).toBe("disclosed");
     expect(
@@ -36,7 +36,7 @@ describe("Construct option controls presentation", () => {
         hasControls: true,
         wideInlineEligible: false,
         containerHeight: withoutTurns,
-        hasTurnRows: false,
+        canShowTurnRows: false,
       })
     ).toBe("compact-inline");
     expect(
@@ -44,7 +44,7 @@ describe("Construct option controls presentation", () => {
         hasControls: true,
         wideInlineEligible: false,
         containerHeight: withTurns - 1,
-        hasTurnRows: true,
+        canShowTurnRows: true,
       })
     ).toBe("disclosed");
     expect(
@@ -52,7 +52,7 @@ describe("Construct option controls presentation", () => {
         hasControls: true,
         wideInlineEligible: false,
         containerHeight: withTurns,
-        hasTurnRows: true,
+        canShowTurnRows: true,
       })
     ).toBe("compact-inline");
   });
@@ -63,7 +63,7 @@ describe("Construct option controls presentation", () => {
         hasControls: true,
         wideInlineEligible: true,
         containerHeight: 360,
-        hasTurnRows: true,
+        canShowTurnRows: true,
       })
     ).toBe("wide-inline");
   });
@@ -74,7 +74,7 @@ describe("Construct option controls presentation", () => {
         hasControls: false,
         wideInlineEligible: false,
         containerHeight: 1200,
-        hasTurnRows: false,
+        canShowTurnRows: false,
       })
     ).toBe("hidden");
   });

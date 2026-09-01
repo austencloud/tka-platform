@@ -164,7 +164,7 @@
   class:collapsed
   class:dragging
   role="group"
-  aria-label="Content switcher"
+  aria-label="Sequence views"
   bind:this={navEl}
   style:width="{displayWidth}px"
 >
