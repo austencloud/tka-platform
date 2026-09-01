@@ -246,7 +246,7 @@
 
   .stages {
     display: grid;
-    grid-template-columns: minmax(0, 1.45fr) minmax(20rem, 0.72fr);
+    grid-template-columns: minmax(0, 1.28fr) minmax(26rem, 0.92fr);
     gap: 0;
   }
 
@@ -255,14 +255,14 @@
      artifacts have enough room to explain themselves. */
   .stage {
     min-width: 0;
-    height: clamp(22rem, 30cqw, 34rem);
+    height: clamp(20rem, 27cqw, 31rem);
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     gap: 0.75rem;
   }
 
   .movement-stage {
-    padding-left: clamp(1.25rem, 2.4cqw, 2.5rem);
+    padding-left: clamp(1rem, 1.8cqw, 1.75rem);
     border-left: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
   }
 
@@ -270,19 +270,20 @@
     min-height: 1.5rem;
     display: flex;
     align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
+    justify-content: flex-start;
+    gap: 0.625rem;
     color: var(--theme-text, #fff);
   }
 
   .stage-heading strong {
-    font-size: var(--font-size-min, 0.875rem);
+    font-size: var(--font-size-base, 1rem);
     font-weight: 650;
   }
 
   .stage-heading span {
     color: var(--theme-text-dim, oklch(0.7 0.018 270));
     font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 600;
   }
 
   .stage-content {
@@ -291,8 +292,15 @@
     display: grid;
     place-items: stretch;
     overflow: hidden;
+    box-sizing: border-box;
+    border: 1px solid
+      color-mix(in srgb, var(--theme-stroke, #fff) 72%, transparent);
     border-radius: 1rem;
-    background: var(--theme-card-bg, oklch(0.16 0.018 270 / 0.45));
+    background: color-mix(
+      in srgb,
+      var(--theme-card-bg, oklch(0.16 0.018 270 / 0.45)) 92%,
+      var(--theme-panel-bg, oklch(0.13 0.025 270 / 0.92))
+    );
   }
 
   .stage-content > :global(*) {
