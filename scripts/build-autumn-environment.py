@@ -741,6 +741,7 @@ GROUND_ATLAS_HALF_SIZE = float(GROUND_LAYOUT["worldExtent"])
 APRON_OUTER_HALF_SIZE = 1_024.0
 APRON_FLAT_HALF_SIZE = 256.0
 FAR_GROUND_HEIGHT = -8.5
+FOG_PLANE_HEIGHT = -12.0
 
 
 def chaikin_path(points, iterations=2):
@@ -947,9 +948,9 @@ def create_terrain_apron():
     beyond that the texture edge is extended under accumulating fog. At the
     scene's density, the outer edge has effectively zero transmittance.
 
-    It is deliberately cheap: logarithmic quad rings on the same perimeter
-    parametrisation as the terrain boundary, ~7.7k triangles total, one
-    material, no textures of its own.
+    It is deliberately cheap: detailed transition rings stop at 256m, then a
+    single two-triangle plane continues beneath them to the fog-opaque edge.
+    The overlap prevents a horizon crack without stacking coplanar surfaces.
     """
     ring_half_sizes = (
         TERRAIN_HALF_SIZE,
@@ -959,10 +960,6 @@ def create_terrain_apron():
         112.0,
         GROUND_ATLAS_HALF_SIZE,
         256.0,
-        384.0,
-        512.0,
-        768.0,
-        APRON_OUTER_HALF_SIZE,
     )
     segments = TERRAIN_SEGMENTS
 
@@ -983,7 +980,7 @@ def create_terrain_apron():
             # optimized asset makes the shared ground material front-sided.
             faces.append((base + i, nxt + i, nxt + j, base + j))
 
-    mesh = bpy.data.meshes.new("Autumn Terrain Apron Mesh")
+    mesh = bpy.data.meshes.new("Autumn Terrain Transition Mesh")
     mesh.from_pydata(vertices, [], faces)
     mesh.update()
     mesh.materials.append(EARTH)
@@ -999,13 +996,41 @@ def create_terrain_apron():
             vertex = mesh.vertices[mesh.loops[loop_index].vertex_index]
             detail_uv.data[loop_index].uv = autumn_ground_uv(vertex.co.x, vertex.co.y)
             macro_uv.data[loop_index].uv = autumn_ground_macro_uv(vertex.co.x, vertex.co.y)
-    apron = bpy.data.objects.new("Autumn_Terrain_Apron", mesh)
+    transition = bpy.data.objects.new("Autumn_Terrain_Apron_Transition", mesh)
+    bpy.context.scene.collection.objects.link(transition)
+    transition["tka_ground_treatment"] = "baked-living-floor-transition"
+    transition["tka_ground_layout_version"] = int(GROUND_LAYOUT["version"])
+    transition["tka_ground_layout_sha256"] = GROUND_LAYOUT_SHA256
+
+    plane_size = APRON_OUTER_HALF_SIZE
+    plane_mesh = bpy.data.meshes.new("Autumn Fog Ground Mesh")
+    plane_mesh.from_pydata(
+        (
+            (-plane_size, -plane_size, FOG_PLANE_HEIGHT),
+            (plane_size, -plane_size, FOG_PLANE_HEIGHT),
+            (plane_size, plane_size, FOG_PLANE_HEIGHT),
+            (-plane_size, plane_size, FOG_PLANE_HEIGHT),
+        ),
+        [],
+        ((0, 1, 2, 3),),
+    )
+    plane_mesh.update()
+    plane_mesh.materials.append(FOG_APRON_EARTH)
+    plane_uv = plane_mesh.uv_layers.new(name="Autumn Ground Macro UV")
+    for polygon in plane_mesh.polygons:
+        for loop_index in polygon.loop_indices:
+            vertex = plane_mesh.vertices[plane_mesh.loops[loop_index].vertex_index]
+            plane_uv.data[loop_index].uv = autumn_ground_macro_uv(
+                vertex.co.x, vertex.co.y
+            )
+
+    apron = bpy.data.objects.new("Autumn_Terrain_Apron", plane_mesh)
     bpy.context.scene.collection.objects.link(apron)
-    apron["tka_ground_treatment"] = "baked-living-floor"
+    apron["tka_ground_treatment"] = "fog-hidden-infinite-floor"
     apron["tka_ground_layout_version"] = int(GROUND_LAYOUT["version"])
     apron["tka_ground_layout_sha256"] = GROUND_LAYOUT_SHA256
     apron["tka_ground_visible_extent"] = APRON_OUTER_HALF_SIZE
-    return len(faces)
+    return len(faces) + 1
 
 
 def create_path_contract(name, path_points, role, destination):
