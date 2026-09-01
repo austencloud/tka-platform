@@ -501,6 +501,16 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     }
   }
 
+  // v36 → v37: the factory trail narrows by one pixel so it supports the prop
+  // path instead of covering the mandala beneath it. Only the former factory
+  // width moves; deliberate thinner or thicker choices stay untouched.
+  if (version < 37 && input.trails?.thickness === 5) {
+    input.trails = {
+      ...input.trails,
+      thickness: DEFAULT_EFFECTS_CONFIG.trails.thickness,
+    };
+  }
+
   const out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,

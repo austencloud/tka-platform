@@ -4,6 +4,7 @@ import {
   SILK_INTENSITY_DEFAULT,
 } from "./effects-config";
 import { DEFAULT_LED_INTENT } from "$lib/shared/animation-engine/domain/types/led-types";
+import { DEFAULT_TRAIL_LINE_WIDTH } from "$lib/shared/animation-engine/domain/types/trail-types";
 
 export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   version: EFFECTS_CONFIG_VERSION,
@@ -13,7 +14,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
 
   trails: {
     trackingMode: "both_ends",
-    thickness: 5,
+    thickness: DEFAULT_TRAIL_LINE_WIDTH,
     brightness: 1.0,
     // The colour-matched prop blue/red (bright "dark mode" prop colours). This is
     // the trail Default look — matches the blue/red props on the dark canvas.
