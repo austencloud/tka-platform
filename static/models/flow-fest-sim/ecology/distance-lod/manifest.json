@@ -1,96 +1,724 @@
 {
-  "schemaVersion": 1,
-  "purpose": "Geometry-only distance tiers for Flow Fest trees. Runtime reuses the accepted near-tree materials and textures.",
+  "schemaVersion": 2,
+  "purpose": "Textured distance tiers for Flow Fest trees: geometry + UVs + original material names, no textures. Runtime re-binds the accepted near-tier materials by name. Wood is meshopt-simplified; foliage cutout cards are kept whole or dropped whole, survivors scaled to preserve silhouette.",
   "tiers": {
     "mid": {
-      "ratio": 0.2,
-      "error": 0.1
+      "woodRatio": 0.22,
+      "woodError": 0.25,
+      "foliageKeepRatio": 0.12,
+      "survivorScale": 2.2
     },
     "far": {
-      "ratio": 0.1,
-      "error": 0.15
+      "woodRatio": 0.08,
+      "woodError": 0.6,
+      "foliageKeepRatio": 0.035,
+      "survivorScale": 3.2
     }
   },
-  "assets": [
+  "families": [
     {
+      "id": "island-tree-01",
       "source": "island-tree-01-flow-lod-512.glb",
       "sourceSha256": "c130634d19e6ae2d6156f67f2bac14c95d1cf81d7d5fe9ee99baaafc8e4e1439",
       "sourceTriangles": 22639,
-      "tier": "mid",
-      "output": "island-tree-01-mid.glb",
-      "outputSha256": "ed57dcd5f4f75e1c6f773dbc437204ea2546df5cb32f60d19314cb391c78fa93",
-      "outputBytes": 144668,
-      "outputTriangles": 4535
+      "sourceHeightMeters": 4.99,
+      "trunkRadiusMeters": 0.27,
+      "tiers": {
+        "mid": {
+          "output": "island-tree-01-mid.glb",
+          "outputSha256": "70bbed40e3933fd41c667828113c807ac41d2dcf75fce625f827058c6a53911f",
+          "outputBytes": 89784,
+          "outputTriangles": 3470,
+          "foliageCardsTotal": 11695,
+          "foliageCardsKept": 1404,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 7375,
+          "woodTrianglesAfter": 1645
+        },
+        "far": {
+          "output": "island-tree-01-far.glb",
+          "outputSha256": "ad393baea77ff4543c8505ce51b2ea00a918d3e7d92591a9dbf931d3ca3808dd",
+          "outputBytes": 36440,
+          "outputTriangles": 1295,
+          "foliageCardsTotal": 11695,
+          "foliageCardsKept": 410,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 7375,
+          "woodTrianglesAfter": 764
+        }
+      }
     },
     {
-      "source": "island-tree-01-flow-lod-512.glb",
-      "sourceSha256": "c130634d19e6ae2d6156f67f2bac14c95d1cf81d7d5fe9ee99baaafc8e4e1439",
-      "sourceTriangles": 22639,
-      "tier": "far",
-      "output": "island-tree-01-far.glb",
-      "outputSha256": "380482ea87370abdcfcb0238704b3010e4097b0cbf51a4f3345f17cc04b051ba",
-      "outputBytes": 80636,
-      "outputTriangles": 2456
-    },
-    {
+      "id": "island-tree-02",
       "source": "island-tree-02-flow-lod-512.glb",
       "sourceSha256": "426ca53a19ce3d5963c2b6033cf8aac051a8efd5843ba874d74d6abd7a88ff6e",
       "sourceTriangles": 18797,
-      "tier": "mid",
-      "output": "island-tree-02-mid.glb",
-      "outputSha256": "61cf9d6f595c972c024e5ba61fa851f7efa10b0bae4b8a3d418bc4c3e844f74f",
-      "outputBytes": 117408,
-      "outputTriangles": 3678
+      "sourceHeightMeters": 3.41,
+      "trunkRadiusMeters": 0.204,
+      "tiers": {
+        "mid": {
+          "output": "island-tree-02-mid.glb",
+          "outputSha256": "c8e454c961e328332b346b22d443855772549048c71878461e8cb7d79f038345",
+          "outputBytes": 73660,
+          "outputTriangles": 2780,
+          "foliageCardsTotal": 9896,
+          "foliageCardsKept": 1188,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 6218,
+          "woodTrianglesAfter": 1270
+        },
+        "far": {
+          "output": "island-tree-02-far.glb",
+          "outputSha256": "d64a93d6a7ba6a3b5bcccc45e544be5851b13719448029f4baf1b54a0b24535f",
+          "outputBytes": 29468,
+          "outputTriangles": 995,
+          "foliageCardsTotal": 9896,
+          "foliageCardsKept": 347,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 6218,
+          "woodTrianglesAfter": 552
+        }
+      }
     },
     {
-      "source": "island-tree-02-flow-lod-512.glb",
-      "sourceSha256": "426ca53a19ce3d5963c2b6033cf8aac051a8efd5843ba874d74d6abd7a88ff6e",
-      "sourceTriangles": 18797,
-      "tier": "far",
-      "output": "island-tree-02-far.glb",
-      "outputSha256": "2bec9dbeca720dcdad8a34a5674c2e11dd2bba9d15b918050350b1ec9ffd062a",
-      "outputBytes": 64920,
-      "outputTriangles": 1923
-    },
-    {
+      "id": "island-tree-03",
       "source": "island-tree-03-flow-lod-512.glb",
       "sourceSha256": "1989b812490c0b16dc2d8fb1082d27a0312e2fe112224283f14528a1ee01ccab",
       "sourceTriangles": 23086,
-      "tier": "mid",
-      "output": "island-tree-03-mid.glb",
-      "outputSha256": "c9111b54b9ae6c0f5d0174bb978506cf23488e4072ad78ae83dc0d0577724655",
-      "outputBytes": 143156,
-      "outputTriangles": 4535
+      "sourceHeightMeters": 2.61,
+      "trunkRadiusMeters": 0.373,
+      "tiers": {
+        "mid": {
+          "output": "island-tree-03-mid.glb",
+          "outputSha256": "d7ad1a081eaee1d588e032fe81bce31ad0c96b47e293a80dc13d47341d090569",
+          "outputBytes": 89884,
+          "outputTriangles": 3441,
+          "foliageCardsTotal": 12213,
+          "foliageCardsKept": 1466,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 7309,
+          "woodTrianglesAfter": 1540
+        },
+        "far": {
+          "output": "island-tree-03-far.glb",
+          "outputSha256": "0a27478ba7c132671cf14d3fd36102f0dda4f047e5caccea6ab300440b853c06",
+          "outputBytes": 34596,
+          "outputTriangles": 1172,
+          "foliageCardsTotal": 12213,
+          "foliageCardsKept": 428,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 7309,
+          "woodTrianglesAfter": 616
+        }
+      }
     },
     {
-      "source": "island-tree-03-flow-lod-512.glb",
-      "sourceSha256": "1989b812490c0b16dc2d8fb1082d27a0312e2fe112224283f14528a1ee01ccab",
-      "sourceTriangles": 23086,
-      "tier": "far",
-      "output": "island-tree-03-far.glb",
-      "outputSha256": "46230406d001229737c8e4b81102dd3af08a05956d3b54090bb3576f3aefcfd9",
-      "outputBytes": 74268,
-      "outputTriangles": 2331
-    },
-    {
+      "id": "tree-small-02",
       "source": "tree-small-02-flow-lod-512.glb",
       "sourceSha256": "36ab6796be5a74a1a4bebf8267c32eff6434698f8028dfd57b527385c51572b8",
       "sourceTriangles": 23044,
-      "tier": "mid",
-      "output": "tree-small-02-mid.glb",
-      "outputSha256": "17d444ab70c773de3c47bad29813cb44868af1bf76380a0f7860fe458684548c",
-      "outputBytes": 136608,
-      "outputTriangles": 4701
+      "sourceHeightMeters": 4.54,
+      "trunkRadiusMeters": null,
+      "tiers": {
+        "mid": {
+          "output": "tree-small-02-mid.glb",
+          "outputSha256": "7329d3cdcc301a840eaa267bd1cf49ffd918ee93a5f65f3c09ad8343953d5b8c",
+          "outputBytes": 63376,
+          "outputTriangles": 3161,
+          "foliageCardsTotal": 5166,
+          "foliageCardsKept": 620,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 1324,
+          "woodTrianglesAfter": 378
+        },
+        "far": {
+          "output": "tree-small-02-far.glb",
+          "outputSha256": "df0ac4bcdfbc083f89c7770f28168c150c3ea512a6ac886fe583830bc02604a4",
+          "outputBytes": 24672,
+          "outputTriangles": 1026,
+          "foliageCardsTotal": 5166,
+          "foliageCardsKept": 181,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 1324,
+          "woodTrianglesAfter": 255
+        }
+      }
     },
     {
-      "source": "tree-small-02-flow-lod-512.glb",
-      "sourceSha256": "36ab6796be5a74a1a4bebf8267c32eff6434698f8028dfd57b527385c51572b8",
-      "sourceTriangles": 23044,
-      "tier": "far",
-      "output": "tree-small-02-far.glb",
-      "outputSha256": "3d927d6c6d38617ee1f80154f1eb95e6c53a954afa89721f5035fe9d957bf233",
-      "outputBytes": 75956,
-      "outputTriangles": 2447
+      "id": "plantcatalog-aesculus-carnea",
+      "source": "aesculus-carnea-ld-s23.glb",
+      "sourceSha256": "1e05899d6e90f9b0cae3abeffb06330c5f199ebdbedb9110ce5f89efb182d7a7",
+      "sourceTriangles": 115275,
+      "sourceHeightMeters": 12.5,
+      "trunkRadiusMeters": 1.266,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-aesculus-carnea-mid.glb",
+          "outputSha256": "7e1100cd347a0098491ebebadafa677c69d37d93c55e843aebf9c4bee0e54717",
+          "outputBytes": 370364,
+          "outputTriangles": 14903,
+          "foliageCardsTotal": 25463,
+          "foliageCardsKept": 3059,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 11707,
+          "woodTrianglesAfter": 2425
+        },
+        "far": {
+          "output": "plantcatalog-aesculus-carnea-far.glb",
+          "outputSha256": "7ac13a31137006030cfa0e165b4b6bfbfef9f344378455756ca3fea3e3270459",
+          "outputBytes": 133568,
+          "outputTriangles": 4479,
+          "foliageCardsTotal": 25463,
+          "foliageCardsKept": 895,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 11707,
+          "woodTrianglesAfter": 835
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-oak-urban",
+      "source": "quercus-robur-urban-ld-s13.glb",
+      "sourceSha256": "4099d97f8594efdde23c0b93e4e69554e84a8a19e3227900649ba2e2fac9f8df",
+      "sourceTriangles": 128598,
+      "sourceHeightMeters": 11.5,
+      "trunkRadiusMeters": 0.156,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-oak-urban-mid.glb",
+          "outputSha256": "962a4bb780be9ad1e70e6c691d9d61ff513a9c90cdde487a00bd769d36aedd4f",
+          "outputBytes": 760376,
+          "outputTriangles": 19990,
+          "foliageCardsTotal": 69350,
+          "foliageCardsKept": 8326,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 59218,
+          "woodTrianglesAfter": 11634
+        },
+        "far": {
+          "output": "plantcatalog-oak-urban-far.glb",
+          "outputSha256": "403881ad03f69751b90b5bb5d4c473105647679fd75a0e38353189aa697115b2",
+          "outputBytes": 176760,
+          "outputTriangles": 3936,
+          "foliageCardsTotal": 69350,
+          "foliageCardsKept": 2431,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 59218,
+          "woodTrianglesAfter": 1475
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-oak-colonised",
+      "source": "quercus-robur-colonised-ld-s29.glb",
+      "sourceSha256": "e16dfe2f1acc4e94899a3bc37d328b14df01fdcc4209a02551bfd3790086b9f3",
+      "sourceTriangles": 146389,
+      "sourceHeightMeters": 15,
+      "trunkRadiusMeters": 0.335,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-oak-colonised-mid.glb",
+          "outputSha256": "eff258042c8988526cb85ddf0301a8b8317c2832c668869ef79806375ffbe97c",
+          "outputBytes": 634796,
+          "outputTriangles": 19739,
+          "foliageCardsTotal": 59129,
+          "foliageCardsKept": 7103,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 48001,
+          "woodTrianglesAfter": 7929
+        },
+        "far": {
+          "output": "plantcatalog-oak-colonised-far.glb",
+          "outputSha256": "22d4eee215ac0e66b551187ae4b0bb0920c4ce92c4c1b643fb9bb3a892a4f505",
+          "outputBytes": 183076,
+          "outputTriangles": 4833,
+          "foliageCardsTotal": 59129,
+          "foliageCardsKept": 2077,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 48001,
+          "woodTrianglesAfter": 1376
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-willow",
+      "source": "salix-alba-ld-s11.glb",
+      "sourceSha256": "7b047b4ab6f75975fbca16f480d890a64a98415b00397e2a73a7891af0804b7e",
+      "sourceTriangles": 42748,
+      "sourceHeightMeters": 15.5,
+      "trunkRadiusMeters": 0.266,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-willow-mid.glb",
+          "outputSha256": "01d04303465c555bb8b5f7d2c2f574e4b0b8af400276c49343b883f71edb82a0",
+          "outputBytes": 253064,
+          "outputTriangles": 6374,
+          "foliageCardsTotal": 30186,
+          "foliageCardsKept": 3626,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 12447,
+          "woodTrianglesAfter": 2633
+        },
+        "far": {
+          "output": "plantcatalog-willow-far.glb",
+          "outputSha256": "3688733d91b9e9376f48e069d25cace8ab8a91f3c2d8d1ca5d17900df980d376",
+          "outputBytes": 101748,
+          "outputTriangles": 2021,
+          "foliageCardsTotal": 30186,
+          "foliageCardsKept": 1060,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 12447,
+          "woodTrianglesAfter": 846
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-buckeye-31",
+      "source": "aesculus-pavia-ld-s31.glb",
+      "sourceSha256": "df8f480406696c2813140b4912953fac5bf87cdebe471e5c71f5d43196cc9514",
+      "sourceTriangles": 26381,
+      "sourceHeightMeters": 9.46,
+      "trunkRadiusMeters": 1.916,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-buckeye-31-mid.glb",
+          "outputSha256": "7f585f8ad4865a3bff43f8eedfb4a687d504b6d13ca39b8f0c3ddc30c4f705df",
+          "outputBytes": 102068,
+          "outputTriangles": 3366,
+          "foliageCardsTotal": 5382,
+          "foliageCardsKept": 649,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 3907,
+          "woodTrianglesAfter": 617
+        },
+        "far": {
+          "output": "plantcatalog-buckeye-31-far.glb",
+          "outputSha256": "7d9f8f5816f75b1c09fae9ff63fcb07ec7ec8b6506bc3938e036e56a772913e2",
+          "outputBytes": 47824,
+          "outputTriangles": 1048,
+          "foliageCardsTotal": 5382,
+          "foliageCardsKept": 192,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 3907,
+          "woodTrianglesAfter": 261
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-buckeye-79",
+      "source": "aesculus-pavia-ld-s79.glb",
+      "sourceSha256": "44fd77bc4fd87c76298c4645e5b08cffc65618e4b9c286618f8434a1aced6807",
+      "sourceTriangles": 44896,
+      "sourceHeightMeters": 11,
+      "trunkRadiusMeters": 2.244,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-buckeye-79-mid.glb",
+          "outputSha256": "1fe17af41bf7f6bfdd5ba94ba3f0ee3944559ccb9ba7591f0814768c8f3d5ae9",
+          "outputBytes": 165204,
+          "outputTriangles": 5865,
+          "foliageCardsTotal": 9586,
+          "foliageCardsKept": 1154,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 5892,
+          "woodTrianglesAfter": 1221
+        },
+        "far": {
+          "output": "plantcatalog-buckeye-79-far.glb",
+          "outputSha256": "3af1baad3348a8e15130b0a29c9c0cd159ef5189f333eb95eec719a7cd0ae8c3",
+          "outputBytes": 66484,
+          "outputTriangles": 1768,
+          "foliageCardsTotal": 9586,
+          "foliageCardsKept": 339,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 5892,
+          "woodTrianglesAfter": 393
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-habitat-snag",
+      "source": "quercus-robur-dead-ld-s37.glb",
+      "sourceSha256": "7a002ab8a38bfa43f405e20cf2949b89fdbe4e392c941efb077be0e3347cf6e2",
+      "sourceTriangles": 3337,
+      "sourceHeightMeters": 13.5,
+      "trunkRadiusMeters": 1.641,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-habitat-snag-mid.glb",
+          "outputSha256": "7876c9a8613027cd5ba04742f8fe122fcce10e58bd09227809e1c80c6bd610dc",
+          "outputBytes": 21072,
+          "outputTriangles": 716,
+          "foliageCardsTotal": 0,
+          "foliageCardsKept": 0,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 3337,
+          "woodTrianglesAfter": 716
+        },
+        "far": {
+          "output": "plantcatalog-habitat-snag-far.glb",
+          "outputSha256": "d7035cdeadb7c62aba5fefaf4e843ed5e548d14d3e46e5bf349d31f633c128d7",
+          "outputBytes": 12328,
+          "outputTriangles": 245,
+          "foliageCardsTotal": 0,
+          "foliageCardsKept": 0,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 3337,
+          "woodTrianglesAfter": 245
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-oak-forest-41",
+      "source": "quercus-robur-forest-ld-s41.glb",
+      "sourceSha256": "0ba1d7b4b7c9f0d19d0ea0ea68b71adfae84bb28a8b13a738ca3f8bc0f10c3ec",
+      "sourceTriangles": 98612,
+      "sourceHeightMeters": 16,
+      "trunkRadiusMeters": 0.289,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-oak-forest-41-mid.glb",
+          "outputSha256": "2e51932c306a9b7ed7c3f3844f5011cc79a0ef96449886b0ff6ce3c2ccfefbdf",
+          "outputBytes": 586036,
+          "outputTriangles": 15372,
+          "foliageCardsTotal": 52480,
+          "foliageCardsKept": 6300,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 46132,
+          "woodTrianglesAfter": 9072
+        },
+        "far": {
+          "output": "plantcatalog-oak-forest-41-far.glb",
+          "outputSha256": "532d7ecbc93a058dcda8b2657f40e80b1901a0b6e892baa7126e305fd752c71b",
+          "outputBytes": 159160,
+          "outputTriangles": 3497,
+          "foliageCardsTotal": 52480,
+          "foliageCardsKept": 1841,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 46132,
+          "woodTrianglesAfter": 1656
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-oak-forest-67",
+      "source": "quercus-robur-forest-ld-s67.glb",
+      "sourceSha256": "cfdf135a82c78f1c7a82043dbf1511702d11f9300e5abd7466f9069f60c0dc28",
+      "sourceTriangles": 99894,
+      "sourceHeightMeters": 16,
+      "trunkRadiusMeters": 0.287,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-oak-forest-67-mid.glb",
+          "outputSha256": "310db0af70747178e05451cb3c965d90538ed5c87603434eda962fe55d39345c",
+          "outputBytes": 581400,
+          "outputTriangles": 15317,
+          "foliageCardsTotal": 53078,
+          "foliageCardsKept": 6373,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 46816,
+          "woodTrianglesAfter": 8944
+        },
+        "far": {
+          "output": "plantcatalog-oak-forest-67-far.glb",
+          "outputSha256": "0b45828e95fab375c915f69d7bbaf1764746162ada19cc18e27ff00b626c8001",
+          "outputBytes": 151820,
+          "outputTriangles": 3361,
+          "foliageCardsTotal": 53078,
+          "foliageCardsKept": 1862,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 46816,
+          "woodTrianglesAfter": 1499
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-oak-forest-89",
+      "source": "quercus-robur-forest-ld-s89.glb",
+      "sourceSha256": "cbd8556d0e6a250136f6dd273ad047e8d715010654df2e3e452e63b542deb4fe",
+      "sourceTriangles": 87250,
+      "sourceHeightMeters": 14.5,
+      "trunkRadiusMeters": 0.222,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-oak-forest-89-mid.glb",
+          "outputSha256": "35597498312963c5aee02aeecedf72cc4f6983cc04f837e9370d3dc8529306e6",
+          "outputBytes": 362644,
+          "outputTriangles": 9347,
+          "foliageCardsTotal": 46385,
+          "foliageCardsKept": 5571,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 40865,
+          "woodTrianglesAfter": 3776
+        },
+        "far": {
+          "output": "plantcatalog-oak-forest-89-far.glb",
+          "outputSha256": "80a98dce627e8e7759447888f43c4816c14de1b98245b5762ca863f1c66d78f8",
+          "outputBytes": 158460,
+          "outputTriangles": 3473,
+          "foliageCardsTotal": 46385,
+          "foliageCardsKept": 1627,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 40865,
+          "woodTrianglesAfter": 1846
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-oak-forest-101",
+      "source": "quercus-robur-forest-ld-s101.glb",
+      "sourceSha256": "d8de281da8eba799993b0602eceab3d6a88437f65791fbb954741993423a7c2c",
+      "sourceTriangles": 83382,
+      "sourceHeightMeters": 16.5,
+      "trunkRadiusMeters": 0.336,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-oak-forest-101-mid.glb",
+          "outputSha256": "67db17a6bd0602b521c0c176832e97a9a3b8efff8d257e834b145a70fcb1d12e",
+          "outputBytes": 437288,
+          "outputTriangles": 11512,
+          "foliageCardsTotal": 43588,
+          "foliageCardsKept": 5235,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 39794,
+          "woodTrianglesAfter": 6277
+        },
+        "far": {
+          "output": "plantcatalog-oak-forest-101-far.glb",
+          "outputSha256": "dd3264413048b7a213eb21cd91b87e24b418435059474f808f4200c1de5d24b1",
+          "outputBytes": 127232,
+          "outputTriangles": 2682,
+          "foliageCardsTotal": 43588,
+          "foliageCardsKept": 1530,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 39794,
+          "woodTrianglesAfter": 1152
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-oak-forest-113",
+      "source": "quercus-robur-forest-ld-s113.glb",
+      "sourceSha256": "e270e78f5a8140e3d7478a5cb40a0631f325bc6365c21441c560b84f0c6f5ea9",
+      "sourceTriangles": 67838,
+      "sourceHeightMeters": 13,
+      "trunkRadiusMeters": 0.195,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-oak-forest-113-mid.glb",
+          "outputSha256": "a722e48ead9c166d2de74b2c4ccdc9884bc5e611d63a6ff925a22ecb27d842d5",
+          "outputBytes": 363864,
+          "outputTriangles": 9254,
+          "foliageCardsTotal": 35941,
+          "foliageCardsKept": 4318,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 31897,
+          "woodTrianglesAfter": 4936
+        },
+        "far": {
+          "output": "plantcatalog-oak-forest-113-far.glb",
+          "outputSha256": "93b91ebc6fad108bf1941648d9f1f6779af6a232f89a94ef9023b85058caa59d",
+          "outputBytes": 109464,
+          "outputTriangles": 2199,
+          "foliageCardsTotal": 35941,
+          "foliageCardsKept": 1262,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 31897,
+          "woodTrianglesAfter": 937
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-oak-lone-57",
+      "source": "quercus-robur-lone-ld-s57.glb",
+      "sourceSha256": "31958d9d42dc8d53dd05dcec1bdddfdabc9e2b050d0a0456db98c124f44bb303",
+      "sourceTriangles": 112723,
+      "sourceHeightMeters": 15,
+      "trunkRadiusMeters": 0.297,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-oak-lone-57-mid.glb",
+          "outputSha256": "422598601f8b51c7f3bc003b0a14c54db72590fa1934e3c11d1f304dbd7c43a8",
+          "outputBytes": 453392,
+          "outputTriangles": 12050,
+          "foliageCardsTotal": 59893,
+          "foliageCardsKept": 7192,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 52830,
+          "woodTrianglesAfter": 4858
+        },
+        "far": {
+          "output": "plantcatalog-oak-lone-57-far.glb",
+          "outputSha256": "6a828fdd669b587d406ed5b5aafe729b359b77dffe692fd140105eada2640337",
+          "outputBytes": 193008,
+          "outputTriangles": 4495,
+          "foliageCardsTotal": 59893,
+          "foliageCardsKept": 2100,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 52830,
+          "woodTrianglesAfter": 2395
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-oak-urban-71",
+      "source": "quercus-robur-urban-ld-s71.glb",
+      "sourceSha256": "d23cf21a8969cb5bbb6d7f2d5039c5dac658189946a55798122622d80953f287",
+      "sourceTriangles": 215971,
+      "sourceHeightMeters": 12,
+      "trunkRadiusMeters": 0.171,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-oak-urban-71-mid.glb",
+          "outputSha256": "ec50dd503f78bcd60fc90db90a813d3ebf8c386a9c5f7b966724a95b88340f24",
+          "outputBytes": 712016,
+          "outputTriangles": 18526,
+          "foliageCardsTotal": 117327,
+          "foliageCardsKept": 11134,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 98523,
+          "woodTrianglesAfter": 7271
+        },
+        "far": {
+          "output": "plantcatalog-oak-urban-71-far.glb",
+          "outputSha256": "85b0c11a75f87479b10dc8233022dbae3ab2eb1a16f3788e38bce6447be86cf4",
+          "outputBytes": 208436,
+          "outputTriangles": 4871,
+          "foliageCardsTotal": 117327,
+          "foliageCardsKept": 1811,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 98523,
+          "woodTrianglesAfter": 2939
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-oak-colonised-61",
+      "source": "quercus-robur-colonised-ld-s61.glb",
+      "sourceSha256": "2c1b9fa69a7ac119a24151e4a9ed6ea4ae3b0b86f4fee8d7ce4d59dbacb14a0c",
+      "sourceTriangles": 95250,
+      "sourceHeightMeters": 15,
+      "trunkRadiusMeters": 0.268,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-oak-colonised-61-mid.glb",
+          "outputSha256": "3bc1e12545b0a15b07872fd30a72b6e1748f5296405c3a397e80dc378003cd71",
+          "outputBytes": 516524,
+          "outputTriangles": 13636,
+          "foliageCardsTotal": 50361,
+          "foliageCardsKept": 6047,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 44889,
+          "woodTrianglesAfter": 7589
+        },
+        "far": {
+          "output": "plantcatalog-oak-colonised-61-far.glb",
+          "outputSha256": "9e0011dd918260f8715c92ab56a56adff4635b0eed5afa8579a85da2f9d46d11",
+          "outputBytes": 140308,
+          "outputTriangles": 3024,
+          "foliageCardsTotal": 50361,
+          "foliageCardsKept": 1768,
+          "foliageScaled": false,
+          "woodTrianglesBefore": 44889,
+          "woodTrianglesAfter": 1256
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-carnea-47",
+      "source": "aesculus-carnea-ld-s47.glb",
+      "sourceSha256": "37eb4619b949204e232756b42bf7040edc7985279b57aa066194ebd50a982283",
+      "sourceTriangles": 285769,
+      "sourceHeightMeters": 11.5,
+      "trunkRadiusMeters": 0.367,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-carnea-47-mid.glb",
+          "outputSha256": "a861087cc0486239f811db61003b7eff2751fd60811d3a8b29d93a4a048f0b2a",
+          "outputBytes": 301164,
+          "outputTriangles": 17916,
+          "foliageCardsTotal": 17196,
+          "foliageCardsKept": 1064,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 8169,
+          "woodTrianglesAfter": 812
+        },
+        "far": {
+          "output": "plantcatalog-carnea-47-far.glb",
+          "outputSha256": "363a2b3e86e74fb2545f53bb1c765041f14a378b93f85b3d1e3e65a7b5e2b93d",
+          "outputBytes": 98108,
+          "outputTriangles": 4497,
+          "foliageCardsTotal": 17196,
+          "foliageCardsKept": 266,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 8169,
+          "woodTrianglesAfter": 225
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-buckeye-103",
+      "source": "aesculus-pavia-ld-s103.glb",
+      "sourceSha256": "ac7dac4c31257b23866c065fc1c5d4e2401b0628354d122f01ff457b46904072",
+      "sourceTriangles": 114831,
+      "sourceHeightMeters": 10,
+      "trunkRadiusMeters": 2.758,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-buckeye-103-mid.glb",
+          "outputSha256": "ed0b5eadb6dc657340a1b4ab2c6417c0672a8585a2fdeab58b6813fbc9e5b770",
+          "outputBytes": 244880,
+          "outputTriangles": 14062,
+          "foliageCardsTotal": 6826,
+          "foliageCardsKept": 824,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 4719,
+          "woodTrianglesAfter": 862
+        },
+        "far": {
+          "output": "plantcatalog-buckeye-103-far.glb",
+          "outputSha256": "54c57f52a990eb2c7a7aa3d190e5cd2718d5780f3fdebc6a2715835ead81238d",
+          "outputBytes": 93588,
+          "outputTriangles": 4399,
+          "foliageCardsTotal": 6826,
+          "foliageCardsKept": 244,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 4719,
+          "woodTrianglesAfter": 319
+        }
+      }
+    },
+    {
+      "id": "plantcatalog-willow-53",
+      "source": "salix-alba-ld-s53.glb",
+      "sourceSha256": "d1102ff8cc2fe13cb45d1988873d218bb2a7e0905de6bbdc202f897a7c285e04",
+      "sourceTriangles": 64010,
+      "sourceHeightMeters": 14.5,
+      "trunkRadiusMeters": 0.318,
+      "tiers": {
+        "mid": {
+          "output": "plantcatalog-willow-53-mid.glb",
+          "outputSha256": "7cd38fbed817034dc9b7f5bdc46060c74c2b73d6dadef355a321dbf2e9ced16b",
+          "outputBytes": 363088,
+          "outputTriangles": 9407,
+          "foliageCardsTotal": 46864,
+          "foliageCardsKept": 5625,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 17058,
+          "woodTrianglesAfter": 3694
+        },
+        "far": {
+          "output": "plantcatalog-willow-53-far.glb",
+          "outputSha256": "9741dfd96c9473fbebb9ab66bded103530171f7350f5da93ddea4f102e39a336",
+          "outputBytes": 136256,
+          "outputTriangles": 2975,
+          "foliageCardsTotal": 46864,
+          "foliageCardsKept": 1643,
+          "foliageScaled": true,
+          "woodTrianglesBefore": 17058,
+          "woodTrianglesAfter": 1244
+        }
+      }
     }
   ]
 }

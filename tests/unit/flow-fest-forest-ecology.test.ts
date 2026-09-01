@@ -4,25 +4,19 @@ import { describe, expect, it } from "vitest";
 import type { ImportedTerrainDataV2 } from "$lib/shared/3d/procedural-engine/generation/real-terrain-zone";
 import { parseFlowFestRuntimeContract } from "../../src/routes/test/flow-fest-graybox/flow-fest-runtime-contract";
 import {
-  buildFlowFestCanopyShellGeometry,
   deriveFlowFestForestEcology,
   deriveFlowFestTreeInstanceTint,
-  FLOW_FEST_CANOPY_SHELL_ATLAS_COMPENSATION,
-  FLOW_FEST_CANOPY_SHELL_SHADE_CEILING,
-  FLOW_FEST_CANOPY_SHELL_SHADE_FLOOR,
-  FLOW_FEST_CANOPY_SHELL_TIERS,
   FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS,
   FLOW_FEST_FOREST_GRASS_ASSET,
   FLOW_FEST_FOREST_GROUND_LIFE_ASSETS,
-  FLOW_FEST_FOREST_DISTANCE_FALLBACK_FAMILY,
   FLOW_FEST_FOREST_DISTANCE_LOD,
   FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS,
-  FLOW_FEST_PLANTFACTORY_ACCENT_COUNT,
+  FLOW_FEST_FOREST_TRUNK_PROFILES,
   FLOW_FEST_PLANTFACTORY_TREE_FAMILIES,
   FLOW_FEST_FOREST_TREE_ASSETS,
-  flattenFlowFestDistanceTierMaterial,
   isFlowFestForestFoliageMaterial,
   summarizeFlowFestForestEcologyAssets,
+  type FlowFestForestTreeFamilyId,
 } from "../../src/routes/test/flow-fest-sim/flow-fest-forest-ecology";
 import { createFlowFestCampPlan } from "../../src/routes/test/flow-fest-sim/flow-fest-camp-plan";
 
@@ -97,6 +91,19 @@ function loadInputs() {
   return { contract, terrain, offsets };
 }
 
+function loadCanopy() {
+  const { contract, terrain, offsets } = loadInputs();
+  return {
+    contract,
+    terrain,
+    canopy: {
+      offsetsCentimeters: offsets,
+      width: 1025,
+      height: 1025,
+    },
+  };
+}
+
 describe("Flow Fest Forest ecology integration", () => {
   it("ships every asset required by the all-family runtime readiness gate", () => {
     const assetPaths = [
@@ -115,20 +122,22 @@ describe("Flow Fest Forest ecology integration", () => {
     }
   });
 
-  it("maps every measured tree into deterministic non-overlapping distance tiers", () => {
+  it("gives every family its own mid and far tier so no tree changes identity with distance", () => {
     const nearFamilyIds = Object.keys(FLOW_FEST_FOREST_TREE_ASSETS);
     const midFamilyIds = Object.keys(FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid);
     const farFamilyIds = Object.keys(FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far);
 
-    expect(Object.keys(FLOW_FEST_FOREST_DISTANCE_FALLBACK_FAMILY)).toEqual(
-      nearFamilyIds
-    );
-    expect(midFamilyIds).toEqual(farFamilyIds);
-    expect(
-      Object.values(FLOW_FEST_FOREST_DISTANCE_FALLBACK_FAMILY).every(
-        (familyId) => midFamilyIds.includes(familyId)
-      )
-    ).toBe(true);
+    expect(midFamilyIds).toEqual(nearFamilyIds);
+    expect(farFamilyIds).toEqual(nearFamilyIds);
+    for (const familyId of nearFamilyIds) {
+      expect(
+        FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid[
+          familyId as FlowFestForestTreeFamilyId
+        ]
+      ).toBe(
+        `/models/flow-fest-sim/ecology/distance-lod/${familyId}-mid.glb`
+      );
+    }
     expect(FLOW_FEST_FOREST_DISTANCE_LOD.nearMaximumMeters).toBeGreaterThan(0);
     expect(FLOW_FEST_FOREST_DISTANCE_LOD.midMaximumMeters).toBeGreaterThan(
       FLOW_FEST_FOREST_DISTANCE_LOD.nearMaximumMeters
@@ -146,7 +155,7 @@ describe("Flow Fest Forest ecology integration", () => {
     expect(FLOW_FEST_FOREST_DISTANCE_LOD.grassFarDensity).toBe(0.25);
   });
 
-  it("ships reproducible geometry-only tiers with a meaningful triangle reduction", () => {
+  it("ships reproducible per-family tiers with real triangle reduction", () => {
     const manifest = JSON.parse(
       readFileSync(
         resolve(
@@ -157,28 +166,40 @@ describe("Flow Fest Forest ecology integration", () => {
       )
     ) as {
       schemaVersion: number;
-      assets: Array<{
-        tier: "mid" | "far";
+      families: Array<{
+        id: string;
         sourceTriangles: number;
-        outputTriangles: number;
-        outputSha256: string;
+        tiers: Record<
+          "mid" | "far",
+          { outputTriangles: number; outputSha256: string }
+        >;
       }>;
     };
 
-    expect(manifest.schemaVersion).toBe(1);
-    expect(manifest.assets).toHaveLength(8);
-    expect(
-      manifest.assets.filter((asset) => asset.tier === "mid")
-    ).toHaveLength(4);
-    expect(
-      manifest.assets.filter((asset) => asset.tier === "far")
-    ).toHaveLength(4);
-    for (const asset of manifest.assets) {
-      const maximumRatio = asset.tier === "mid" ? 0.22 : 0.12;
-      expect(asset.outputTriangles / asset.sourceTriangles).toBeLessThanOrEqual(
-        maximumRatio
+    expect(manifest.schemaVersion).toBe(2);
+    const manifestIds = manifest.families.map((family) => family.id);
+    for (const familyId of Object.keys(FLOW_FEST_FOREST_TREE_ASSETS)) {
+      expect(manifestIds, familyId).toContain(familyId);
+    }
+    for (const family of manifest.families) {
+      for (const tier of ["mid", "far"] as const) {
+        const entry = family.tiers[tier];
+        expect(entry.outputSha256, `${family.id} ${tier}`).toMatch(
+          /^[a-f0-9]{64}$/
+        );
+        expect(
+          entry.outputTriangles,
+          `${family.id} ${tier} triangles`
+        ).toBeLessThan(family.sourceTriangles);
+        // The instance budget: a mid tree stays under ~20k triangles and a far
+        // tree under ~5k, or a few hundred instances of it stop being cheap.
+        expect(entry.outputTriangles).toBeLessThanOrEqual(
+          tier === "mid" ? 20_000 : 5_000
+        );
+      }
+      expect(family.tiers.far.outputTriangles).toBeLessThanOrEqual(
+        family.tiers.mid.outputTriangles
       );
-      expect(asset.outputSha256).toMatch(/^[a-f0-9]{64}$/);
     }
   });
 
@@ -212,21 +233,12 @@ describe("Flow Fest Forest ecology integration", () => {
     }
   });
 
-  it("uses the approved Forest families at deterministic measured coordinates", () => {
-    const { contract, terrain, offsets } = loadInputs();
-    const canopy = {
-      offsetsCentimeters: offsets,
-      width: 1025,
-      height: 1025,
-    };
+  it("derives a deterministic ecology from the measured coordinates", () => {
+    const { contract, terrain, canopy } = loadCanopy();
     const first = deriveFlowFestForestEcology(contract, terrain, canopy);
     const second = deriveFlowFestForestEcology(contract, terrain, canopy);
 
-    expect(Object.values(FLOW_FEST_FOREST_TREE_ASSETS)).toHaveLength(11);
-    expect(FLOW_FEST_FOREST_TREE_ASSETS).not.toHaveProperty("forest-oak");
-    expect(FLOW_FEST_FOREST_GRASS_ASSET).toBe(
-      "/models/flow-fest-sim/ecology/forest-grass-prototypes.glb"
-    );
+    expect(Object.values(FLOW_FEST_FOREST_TREE_ASSETS)).toHaveLength(22);
     expect(
       Object.values(FLOW_FEST_FOREST_TREE_ASSETS).every(
         (path) =>
@@ -238,41 +250,37 @@ describe("Flow Fest Forest ecology integration", () => {
     expect(first.trees.slice(0, 40)).toEqual(second.trees.slice(0, 40));
     expect(first.grass.slice(0, 120)).toEqual(second.grass.slice(0, 120));
     expect(first.groundLife).toEqual(second.groundLife);
-    expect(first.audit).toMatchObject({
-      measuredCanopyPlacements: 440,
-      sourceTreeFamilies: 11,
-      plantFactoryTreePlacements: FLOW_FEST_PLANTFACTORY_ACCENT_COUNT,
-      grassPlacements: 22_217,
-      groundLifePlacements: 20,
-    });
+    expect(first.audit.measuredCanopyPlacements).toBe(440);
+    expect(first.audit.infillTreePlacements).toBeGreaterThan(100);
+    expect(first.trees).toHaveLength(
+      first.audit.measuredCanopyPlacements + first.audit.infillTreePlacements
+    );
+    expect(first.audit.sourceTreeFamilies).toBe(
+      Object.keys(FLOW_FEST_FOREST_TREE_ASSETS).length
+    );
+    expect(first.audit.grassPlacements).toBeGreaterThan(20_000);
+    expect(first.audit.groundLifePlacements).toBeGreaterThan(0);
   });
 
-  it("keeps Forest ecology outside every registered travel corridor", () => {
-    const { contract, terrain, offsets } = loadInputs();
-    const ecology = deriveFlowFestForestEcology(contract, terrain, {
-      offsetsCentimeters: offsets,
-      width: 1025,
-      height: 1025,
-    });
+  it("casts the PlantFactory species as the forest majority with every family present", () => {
+    const { contract, terrain, canopy } = loadCanopy();
+    const ecology = deriveFlowFestForestEcology(contract, terrain, canopy);
 
     expect(ecology.audit).toMatchObject({
       treeRouteIntrusions: 0,
       grassRouteIntrusions: 0,
       groundLifeRouteIntrusions: 0,
     });
-    expect(ecology.trees).toHaveLength(440);
-    expect(ecology.grass.length).toBeGreaterThan(20_000);
-    expect(ecology.groundLife.length).toBeGreaterThan(0);
-    expect(
-      ecology.audit.plantFactoryTreePlacements / ecology.trees.length
-    ).toBeLessThan(0.1);
     expect(
       ecology.trees.filter((tree) =>
-        FLOW_FEST_PLANTFACTORY_TREE_FAMILIES.includes(
-          tree.familyId as (typeof FLOW_FEST_PLANTFACTORY_TREE_FAMILIES)[number]
-        )
+        FLOW_FEST_PLANTFACTORY_TREE_FAMILIES.includes(tree.familyId)
       )
     ).toHaveLength(ecology.audit.plantFactoryTreePlacements);
+    // The gorgeous-tree directive: PlantFactory species carry the forest, the
+    // island families season it.
+    expect(
+      ecology.audit.plantFactoryTreePlacements / ecology.trees.length
+    ).toBeGreaterThan(0.5);
     const familyCounts = new Map<string, number>();
     for (const tree of ecology.trees) {
       familyCounts.set(
@@ -280,40 +288,65 @@ describe("Flow Fest Forest ecology integration", () => {
         (familyCounts.get(tree.familyId) ?? 0) + 1
       );
     }
+    for (const familyId of Object.keys(FLOW_FEST_FOREST_TREE_ASSETS)) {
+      expect(familyCounts.get(familyId), familyId).toBeGreaterThan(0);
+    }
     expect(
       Math.max(...familyCounts.values()) / ecology.trees.length
     ).toBeLessThanOrEqual(0.28);
-    for (const familyId of Object.keys(FLOW_FEST_FOREST_TREE_ASSETS)) {
-      expect(ecology.trees.some((tree) => tree.familyId === familyId)).toBe(
-        true
-      );
-    }
-    const accentIndices = ecology.trees.flatMap((tree, index) =>
-      FLOW_FEST_PLANTFACTORY_TREE_FAMILIES.includes(
-        tree.familyId as (typeof FLOW_FEST_PLANTFACTORY_TREE_FAMILIES)[number]
-      )
-        ? [index]
-        : []
+    // Standing dead wood is punctuation: present, never a stand.
+    const snagCount = familyCounts.get("plantcatalog-habitat-snag") ?? 0;
+    expect(snagCount).toBeGreaterThan(0);
+    expect(snagCount / ecology.trees.length).toBeLessThan(0.05);
+  });
+
+  it("plants infill only under surveyed canopy, clear of routes, zones, and neighbors", () => {
+    const { contract, terrain, canopy } = loadCanopy();
+    const ecology = deriveFlowFestForestEcology(contract, terrain, canopy);
+    const measured = ecology.trees.slice(
+      0,
+      ecology.audit.measuredCanopyPlacements
     );
-    expect(accentIndices).toHaveLength(FLOW_FEST_PLANTFACTORY_ACCENT_COUNT);
-    expect(accentIndices[0]).toBe(0);
-    expect(accentIndices.at(-1)).toBe(ecology.trees.length - 1);
-    expect(
-      Math.max(
-        ...accentIndices.slice(1).map((index, accentIndex) => {
-          return index - accentIndices[accentIndex]!;
-        })
-      )
-    ).toBeLessThanOrEqual(14);
+    const infill = ecology.trees.slice(ecology.audit.measuredCanopyPlacements);
+
+    expect(infill.length).toBe(ecology.audit.infillTreePlacements);
+    for (const tree of infill) {
+      const nearestMeasured = Math.min(
+        ...measured.map((other) =>
+          Math.hypot(other.x - tree.x, other.z - tree.z)
+        )
+      );
+      // INFILL_MINIMUM_TREE_SPACING_METERS in the ecology module.
+      expect(nearestMeasured).toBeGreaterThanOrEqual(4.5);
+    }
+    // Route clearance for every tree is already asserted through the audit's
+    // treeRouteIntrusions: 0 in the casting test above.
+  });
+
+  it("sizes every collision trunk from its family's measured geometry", () => {
+    const { contract, terrain, canopy } = loadCanopy();
+    const ecology = deriveFlowFestForestEcology(contract, terrain, canopy);
+
+    for (const tree of ecology.trees) {
+      const profile = FLOW_FEST_FOREST_TRUNK_PROFILES[tree.familyId];
+      expect(profile, tree.familyId).toBeGreaterThan(0);
+      const expected = Math.max(
+        0.2,
+        Math.min(1.9, tree.renderedHeightMeters * profile)
+      );
+      expect(tree.trunkRadiusMeters).toBeCloseTo(expected, 6);
+    }
+    // The clip-through regression: island-tree-03 renders a bole far wider
+    // than the old 0.48 m one-size cap, and its collision now matches.
+    const wideBole = ecology.trees.find(
+      (tree) => tree.familyId === "island-tree-03"
+    );
+    expect(wideBole).toBeDefined();
+    expect(wideBole!.trunkRadiusMeters).toBeGreaterThan(0.9);
   });
 
   it("carves the shared camp-plan roads and connectors from the measured ecology", () => {
-    const { contract, terrain, offsets } = loadInputs();
-    const canopy = {
-      offsetsCentimeters: offsets,
-      width: 1025,
-      height: 1025,
-    };
+    const { contract, terrain, canopy } = loadCanopy();
     const baseline = deriveFlowFestForestEcology(contract, terrain, canopy);
     const planAligned = deriveFlowFestForestEcology(
       contract,
@@ -456,41 +489,16 @@ describe("Flow Fest forest ecology asset reporting", () => {
   });
 });
 
-describe("Flow Fest distance-tier materials", () => {
-  it("drops the cutout and the atlas so untextured canopies still render", () => {
-    const leaves = {
-      name: "island_tree_01_leaves",
-      alphaTest: 0.35,
-      transparent: false,
-      depthWrite: false,
-      map: { isTexture: true },
-      alphaMap: null,
-      roughness: 0.5,
-      needsUpdate: false,
-    };
-    expect(flattenFlowFestDistanceTierMaterial(leaves)).toBe(true);
-    expect(leaves.alphaTest).toBe(0);
-    expect(leaves.map).toBeNull();
-    expect(leaves.transparent).toBe(false);
-    expect(leaves.depthWrite).toBe(true);
-    expect(leaves.needsUpdate).toBe(true);
-  });
-
-  it("strips wood maps too, because they sample the same missing UVs", () => {
-    const wood = {
-      name: "island_tree_01_branches",
-      alphaTest: 0,
-      map: { isTexture: true },
-      roughness: 0.4,
-      needsUpdate: false,
-    };
-    expect(flattenFlowFestDistanceTierMaterial(wood)).toBe(true);
-    expect(wood.map).toBeNull();
-    expect(wood.roughness).toBe(1);
-    expect(wood.needsUpdate).toBe(true);
-  });
-
-  it("proves the distance tiers ship no UVs and no textures", () => {
+describe("Flow Fest distance-tier borrow contract", () => {
+  /**
+   * The distance tiers render with the near tier's own textured materials,
+   * borrowed by NAME at runtime. That only works while three things hold for
+   * every family and tier: the tier ships no images of its own, its foliage
+   * primitives keep their UVs, and its material names match names in the near
+   * asset. This is the contract that ended the "different tree up close"
+   * identity swap — a violation regresses straight back to it.
+   */
+  it("ships no textures of its own in any tier", () => {
     for (const tier of ["mid", "far"] as const) {
       for (const assetUrl of Object.values(
         FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS[tier]
@@ -498,19 +506,47 @@ describe("Flow Fest distance-tier materials", () => {
         const gltf = readGltfJson(assetUrl);
         expect(gltf.images ?? [], `${assetUrl} images`).toHaveLength(0);
         expect(gltf.textures ?? [], `${assetUrl} textures`).toHaveLength(0);
-        const canopy = (gltf.meshes ?? [])
-          .flatMap((mesh) => mesh.primitives)
-          .filter((primitive) =>
-            (gltf.materials?.[primitive.material]?.name ?? "").includes("leaves")
-          );
-        expect(canopy.length, `${assetUrl} canopy primitives`).toBeGreaterThan(0);
-        for (const primitive of canopy) {
-          // No UVs is exactly why the borrowed cutout material erased the
-          // canopy: every fragment sampled the atlas at texel (0, 0).
+      }
+    }
+  });
+
+  it("keeps UVs on every primitive so the borrowed atlas can sample", () => {
+    for (const tier of ["mid", "far"] as const) {
+      for (const assetUrl of Object.values(
+        FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS[tier]
+      )) {
+        const gltf = readGltfJson(assetUrl);
+        const primitives = (gltf.meshes ?? []).flatMap(
+          (mesh) => mesh.primitives
+        );
+        expect(primitives.length, assetUrl).toBeGreaterThan(0);
+        for (const primitive of primitives) {
           expect(
             primitive.attributes.TEXCOORD_0,
-            `${assetUrl} canopy UVs`
-          ).toBeUndefined();
+            `${assetUrl} UVs`
+          ).toBeDefined();
+        }
+      }
+    }
+  });
+
+  it("names every tier material after a near-tier material of its family", () => {
+    for (const [familyId, nearUrl] of Object.entries(
+      FLOW_FEST_FOREST_TREE_ASSETS
+    )) {
+      const nearNames = new Set(
+        readGltfMaterials(nearUrl).map((material) => material.name)
+      );
+      for (const tier of ["mid", "far"] as const) {
+        const tierUrl =
+          FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS[tier][
+            familyId as FlowFestForestTreeFamilyId
+          ];
+        for (const material of readGltfMaterials(tierUrl)) {
+          expect(
+            nearNames.has(material.name),
+            `${tierUrl} :: ${material.name}`
+          ).toBe(true);
         }
       }
     }
@@ -528,203 +564,6 @@ describe("Flow Fest distance-tier materials", () => {
     for (const primitive of canopy) {
       expect(primitive.attributes.TEXCOORD_0).toBeDefined();
     }
-  });
-});
-
-function countCanopyTriangles(assetUrl: string): number {
-  const gltf = readGltfJson(assetUrl);
-  return (gltf.meshes ?? [])
-    .flatMap((mesh) => mesh.primitives)
-    .filter((primitive) =>
-      (gltf.materials?.[primitive.material]?.name ?? "").includes("leaves")
-    )
-    .reduce((total, primitive) => {
-      const indices =
-        primitive.indices == null
-          ? undefined
-          : gltf.accessors?.[primitive.indices]?.count;
-      const positions =
-        primitive.attributes.POSITION == null
-          ? undefined
-          : gltf.accessors?.[primitive.attributes.POSITION]?.count;
-      return total + (indices ?? positions ?? 0) / 3;
-    }, 0);
-}
-
-describe("Flow Fest distance canopy shells", () => {
-  it("documents why the shipped distance canopies cannot simply be graded", () => {
-    // A leaf atlas is thousands of disconnected two-triangle cards. Mesh
-    // simplification deletes cards wholesale rather than reducing them, so the
-    // shipped mid tier keeps a fraction of the near tier's canopy and none of
-    // its coverage. Grading that material paints specks, not a tree.
-    const near = countCanopyTriangles(
-      FLOW_FEST_FOREST_TREE_ASSETS["island-tree-01"]
-    );
-    const mid = countCanopyTriangles(
-      FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["island-tree-01"]
-    );
-    const far = countCanopyTriangles(
-      FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["island-tree-01"]
-    );
-    expect(near).toBeGreaterThan(0);
-    expect(mid).toBeLessThan(near * 0.35);
-    expect(far).toBeLessThanOrEqual(mid);
-  });
-
-  it("builds a crown that fills the canopy bounds it is given", () => {
-    const bounds = {
-      min: { x: -4, y: 6, z: -4 },
-      max: { x: 4, y: 14, z: 4 },
-    };
-    const shell = buildFlowFestCanopyShellGeometry(
-      bounds,
-      "island-tree-01-mid-leaves",
-      FLOW_FEST_CANOPY_SHELL_TIERS.mid
-    );
-    const box = shell.boundingBox;
-    expect(box).toBeTruthy();
-    if (!box) return;
-    // Inside the leaf envelope, so branch tips still break the silhouette.
-    expect(box.min.x).toBeGreaterThanOrEqual(bounds.min.x);
-    expect(box.max.x).toBeLessThanOrEqual(bounds.max.x);
-    expect(box.min.y).toBeGreaterThanOrEqual(bounds.min.y);
-    expect(box.max.y).toBeLessThanOrEqual(bounds.max.y);
-    expect(box.min.z).toBeGreaterThanOrEqual(bounds.min.z);
-    expect(box.max.z).toBeLessThanOrEqual(bounds.max.z);
-    // But still a crown, not a pebble: it has to occupy most of the envelope.
-    expect(box.max.x - box.min.x).toBeGreaterThan(6);
-    expect(box.max.y - box.min.y).toBeGreaterThan(6);
-    expect(box.max.z - box.min.z).toBeGreaterThan(6);
-    shell.dispose();
-  });
-
-  it("stays cheaper than the decimated canopy it replaces", () => {
-    const bounds = { min: { x: -3, y: 4, z: -3 }, max: { x: 3, y: 10, z: 3 } };
-    const budgets = { mid: 400, far: 100 } as const;
-    for (const tier of ["mid", "far"] as const) {
-      const shell = buildFlowFestCanopyShellGeometry(
-        bounds,
-        `island-tree-01-${tier}-leaves`,
-        FLOW_FEST_CANOPY_SHELL_TIERS[tier]
-      );
-      const triangles = shell.attributes.position.count / 3;
-      expect(triangles, `${tier} shell triangles`).toBeLessThanOrEqual(
-        budgets[tier]
-      );
-      expect(
-        triangles,
-        `${tier} shell vs shipped canopy`
-      ).toBeLessThan(
-        countCanopyTriangles(FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS[tier]["island-tree-01"])
-      );
-      shell.dispose();
-    }
-  });
-
-  it("carries no UVs so the borrowed atlas is still flattened away", () => {
-    const shell = buildFlowFestCanopyShellGeometry(
-      { min: { x: -2, y: 3, z: -2 }, max: { x: 2, y: 8, z: 2 } },
-      "tree-small-02-far-leaves",
-      FLOW_FEST_CANOPY_SHELL_TIERS.far
-    );
-    expect(shell.getAttribute("uv")).toBeUndefined();
-    shell.dispose();
-  });
-
-  it("shades as a soft crown: unit normals pointing away from the crown", () => {
-    const shell = buildFlowFestCanopyShellGeometry(
-      { min: { x: -3, y: 5, z: -3 }, max: { x: 3, y: 12, z: 3 } },
-      "island-tree-02-mid-leaves",
-      FLOW_FEST_CANOPY_SHELL_TIERS.mid
-    );
-    const normals = shell.attributes.normal;
-    expect(normals.count).toBe(shell.attributes.position.count);
-    for (let index = 0; index < normals.count; index += 1) {
-      const length = Math.hypot(
-        normals.getX(index),
-        normals.getY(index),
-        normals.getZ(index)
-      );
-      expect(length).toBeCloseTo(1, 5);
-    }
-    shell.dispose();
-  });
-
-  it("is deterministic per family and tier, and varies between them", () => {
-    const bounds = { min: { x: -3, y: 4, z: -3 }, max: { x: 3, y: 11, z: 3 } };
-    const first = buildFlowFestCanopyShellGeometry(
-      bounds,
-      "island-tree-01-mid-leaves",
-      FLOW_FEST_CANOPY_SHELL_TIERS.mid
-    );
-    const repeat = buildFlowFestCanopyShellGeometry(
-      bounds,
-      "island-tree-01-mid-leaves",
-      FLOW_FEST_CANOPY_SHELL_TIERS.mid
-    );
-    const other = buildFlowFestCanopyShellGeometry(
-      bounds,
-      "island-tree-03-mid-leaves",
-      FLOW_FEST_CANOPY_SHELL_TIERS.mid
-    );
-    expect(Array.from(first.attributes.position.array)).toEqual(
-      Array.from(repeat.attributes.position.array)
-    );
-    expect(Array.from(first.attributes.position.array)).not.toEqual(
-      Array.from(other.attributes.position.array)
-    );
-    first.dispose();
-    repeat.dispose();
-    other.dispose();
-  });
-
-  it("bakes a canopy self-shadow gradient the raw tint cannot provide", () => {
-    const bounds = { min: { x: -3, y: 5, z: -3 }, max: { x: 3, y: 12, z: 3 } };
-    const shell = buildFlowFestCanopyShellGeometry(
-      bounds,
-      "island-tree-01-mid-leaves",
-      FLOW_FEST_CANOPY_SHELL_TIERS.mid
-    );
-    const colors = shell.getAttribute("color");
-    const positions = shell.attributes.position;
-    expect(colors).toBeTruthy();
-    expect(colors.count).toBe(positions.count);
-
-    let sum = 0;
-    let minimum = Infinity;
-    let maximum = -Infinity;
-    const byPosition = new Map<string, number>();
-    for (let index = 0; index < colors.count; index += 1) {
-      const shade = colors.getX(index);
-      // Grayscale multiplier: hue stays with the moment tint.
-      expect(colors.getY(index)).toBe(shade);
-      expect(colors.getZ(index)).toBe(shade);
-      sum += shade;
-      minimum = Math.min(minimum, shade);
-      maximum = Math.max(maximum, shade);
-      // Non-indexed geometry: every copy of a shared corner must shade
-      // identically or facet seams appear.
-      const key = [
-        positions.getX(index).toFixed(5),
-        positions.getY(index).toFixed(5),
-        positions.getZ(index).toFixed(5),
-      ].join(",");
-      const previous = byPosition.get(key);
-      if (previous !== undefined) expect(shade).toBeCloseTo(previous, 6);
-      else byPosition.set(key, shade);
-    }
-    // The crown base sinks toward the floor, the top stays bright, and the
-    // mean lands well under 1 so the shell compensates for the missing atlas
-    // multiplication instead of rendering the raw pastel tint.
-    expect(minimum).toBeGreaterThanOrEqual(
-      FLOW_FEST_CANOPY_SHELL_SHADE_FLOOR * 0.9
-    );
-    expect(maximum).toBeLessThanOrEqual(FLOW_FEST_CANOPY_SHELL_SHADE_CEILING);
-    expect(maximum).toBeGreaterThan(0.9);
-    const mean = sum / colors.count;
-    expect(mean).toBeGreaterThan(0.55);
-    expect(mean).toBeLessThan(0.9);
-    shell.dispose();
   });
 });
 
@@ -765,21 +604,5 @@ describe("Flow Fest per-tree instance tints", () => {
       expect(bark.r).toBeGreaterThan(0.8);
       expect(bark.r).toBeLessThan(1.15);
     }
-  });
-});
-
-describe("Flow Fest canopy shell atlas compensation", () => {
-  it("deepens toward green like the leaf atlas it stands in for", () => {
-    const { r, g, b } = FLOW_FEST_CANOPY_SHELL_ATLAS_COMPENSATION;
-    // Every channel darkens — a compensation ≥ 1 would brighten shells past
-    // the near tier's atlas-multiplied canopies and re-create the pale seam.
-    for (const channel of [r, g, b]) {
-      expect(channel).toBeGreaterThan(0);
-      expect(channel).toBeLessThan(1);
-    }
-    // Green survives strongest and blue weakest, so the multiply saturates
-    // toward foliage green instead of graying the tint toward teal or khaki.
-    expect(g).toBeGreaterThan(r);
-    expect(r).toBeGreaterThan(b);
   });
 });

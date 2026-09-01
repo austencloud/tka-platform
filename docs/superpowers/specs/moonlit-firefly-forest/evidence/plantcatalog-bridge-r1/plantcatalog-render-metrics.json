@@ -1,11 +1,11 @@
 [
   {
-    "id": "aesculus-pavia-ld-s31",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/aesculus-pavia-ld-s31-proof.glb",
+    "id": "quercus-robur-forest-ld-s101",
+    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-forest-ld-s101-proof.glb",
     "dimensionsMetres": [
-      14.159605979919434,
-      14.213394165039062,
-      9.457088470458984
+      7.408810615539551,
+      7.400753498077393,
+      16.5
     ],
     "views": [
       "front",
@@ -17,12 +17,12 @@
     ]
   },
   {
-    "id": "aesculus-pavia-ld-s79",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/aesculus-pavia-ld-s79-proof.glb",
+    "id": "quercus-robur-forest-ld-s113",
+    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-forest-ld-s113-proof.glb",
     "dimensionsMetres": [
-      13.984679222106934,
-      15.19198989868164,
-      11.000248908996582
+      6.446476936340332,
+      6.248111248016357,
+      12.999673843383789
     ],
     "views": [
       "front",
@@ -34,12 +34,97 @@
     ]
   },
   {
-    "id": "quercus-robur-dead-ld-s37",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-dead-ld-s37-proof.glb",
+    "id": "quercus-robur-lone-ld-s57",
+    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-lone-ld-s57-proof.glb",
     "dimensionsMetres": [
-      9.656089782714844,
-      12.19102954864502,
-      13.499492645263672
+      6.991637229919434,
+      6.782890796661377,
+      15.0
+    ],
+    "views": [
+      "front",
+      "three-quarter",
+      "silhouette",
+      "human-height",
+      "bark-close",
+      "canopy"
+    ]
+  },
+  {
+    "id": "quercus-robur-urban-ld-s71",
+    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-urban-ld-s71-proof.glb",
+    "dimensionsMetres": [
+      9.293693542480469,
+      8.664935111999512,
+      11.999151229858398
+    ],
+    "views": [
+      "front",
+      "three-quarter",
+      "silhouette",
+      "human-height",
+      "bark-close",
+      "canopy"
+    ]
+  },
+  {
+    "id": "quercus-robur-colonised-ld-s61",
+    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-colonised-ld-s61-proof.glb",
+    "dimensionsMetres": [
+      6.762749195098877,
+      6.987975597381592,
+      15.0
+    ],
+    "views": [
+      "front",
+      "three-quarter",
+      "silhouette",
+      "human-height",
+      "bark-close",
+      "canopy"
+    ]
+  },
+  {
+    "id": "aesculus-carnea-ld-s47",
+    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/aesculus-carnea-ld-s47-proof.glb",
+    "dimensionsMetres": [
+      10.591708183288574,
+      10.72507381439209,
+      11.5
+    ],
+    "views": [
+      "front",
+      "three-quarter",
+      "silhouette",
+      "human-height",
+      "bark-close",
+      "canopy"
+    ]
+  },
+  {
+    "id": "aesculus-pavia-ld-s103",
+    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/aesculus-pavia-ld-s103-proof.glb",
+    "dimensionsMetres": [
+      12.939141273498535,
+      14.931390762329102,
+      10.000436782836914
+    ],
+    "views": [
+      "front",
+      "three-quarter",
+      "silhouette",
+      "human-height",
+      "bark-close",
+      "canopy"
+    ]
+  },
+  {
+    "id": "salix-alba-ld-s53",
+    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/salix-alba-ld-s53-proof.glb",
+    "dimensionsMetres": [
+      9.286690711975098,
+      8.65831470489502,
+      14.499999046325684
     ],
     "views": [
       "front",
