@@ -151,10 +151,10 @@ describe("OptionPickerContent desktop layout", () => {
     await expect
       .element(page.getByRole("status"))
       .toHaveTextContent(
-        "6 options hidden by the clockwise and counterclockwise settings"
+        "Every option would reverse a hand, so Continuous mode hides them"
       );
     expect(
       document.querySelector(".availability-status")?.textContent
-    ).toContain("0 shown · 6 hidden by CW/CCW to avoid reversals");
+    ).toContain("No options shown · every option would reverse a hand");
   });
 });

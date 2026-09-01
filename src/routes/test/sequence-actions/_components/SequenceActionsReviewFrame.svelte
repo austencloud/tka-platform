@@ -9,6 +9,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { ActionHelpId } from "$lib/features/create/shared/domain/transforms/transform-help-content";
   import type { DirectionDrillRoute } from "$lib/features/create/shared/components/sequence-actions/direction-drill-route";
+  import { createSequenceTransformActionDispatcher } from "$lib/features/create/shared/services/sequence-transform-action-dispatcher";
   import {
     SEQUENCE_ACTIONS_EXTENSION_ANALYSIS,
     SEQUENCE_ACTIONS_REVIEW_SEQUENCE,
@@ -110,6 +111,14 @@
     setInputMode: () => {},
   };
 
+  const sequenceTransformActions = createSequenceTransformActionDispatcher({
+    getSequenceState: () => activeSequenceState,
+    getCreateMode: () => "sequence-actions-review",
+    pushUndoSnapshot: () => {},
+    hapticService: null,
+    setGridRotationDirection: () => {},
+  });
+
   setCreateModuleContext({
     CreateModuleState: createModuleState,
     constructTabState,
@@ -121,6 +130,7 @@
     libraryRepository: null,
     layout,
     handlers: { onError: () => {} },
+    getSequenceTransformActions: () => sequenceTransformActions,
   } as unknown as CreateModuleContext);
 
   const initialSubView = $derived(
