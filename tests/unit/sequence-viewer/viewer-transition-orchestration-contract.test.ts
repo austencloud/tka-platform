@@ -106,16 +106,25 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(workspacePanels).toContain('if (direction === "horizontal")');
     expect(workspacePanels).toContain("else if (inspectorActive)");
     expect(workspacePanels).toContain("fixedSize:");
+    expect(workspacePanels).toContain("preferredSize:");
+    expect(workspacePanels).toContain("resizable: inspectorResizable");
+    expect(workspacePanels).toContain(
+      "gap={inspectorResizable ? VIEWER_INSPECTOR_HANDLE_SIZE : 0}"
+    );
     expect(workspacePanels).toContain(
       "if (inspectorActive) workspaceDirection = direction;"
     );
     expect(workspacePanels).toContain(
-      "<PanelGroup direction={workspaceDirection}"
+      "<PanelGroup\n  direction={workspaceDirection}"
     );
     expect(panelGroup).toContain("style={getFlexStyle(panel, i)}");
     expect(panelGroup).toContain("const fixedSize = panel.fixedSize;");
+    expect(panelGroup).toContain("data-manually-sized=");
+    expect(panelGroup).toContain("panel.resizeLabel ??");
     expect(shell).toContain("data-effects-inspector");
     expect(shell).toContain("> :global(.export-panel.sidebar)");
+    expect(shell).toContain("--card-sidebar-width: clamp(480px, 28vw, 640px)");
+    expect(shell).toContain('panel-wrapper[data-manually-sized="true"]');
     expect(geometryTrace).toContain("Card → Effects seam");
   });
 
