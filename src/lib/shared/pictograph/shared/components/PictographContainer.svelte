@@ -44,7 +44,10 @@ with pre-prepared data for better performance.
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
   import PictographRenderer from "./PictographRenderer.svelte";
   import { globalAdjustmentVersion } from "../../arrow/positioning/global/state/global-adjustment-version.svelte";
-  import type { HandSide } from "../domain/enums/pictograph-enums";
+  import type {
+    ElementalType,
+    HandSide,
+  } from "../domain/enums/pictograph-enums";
 
   // Props - accepts either StepData (with beat context) or PictographData
   let {
@@ -65,6 +68,7 @@ with pre-prepared data for better performance.
     // Extended glyph visibility overrides
     showTnD = undefined,
     showElemental = undefined,
+    propElementalType = null,
     showPositions = undefined,
     // Preview mode for visibility settings
     previewMode = false,
@@ -142,6 +146,8 @@ with pre-prepared data for better performance.
     showHandPoints?: boolean;
     showTnD?: boolean;
     showElemental?: boolean;
+    /** Optional prop-path TnD element for the top-right sister glyph. */
+    propElementalType?: ElementalType | null;
     showPositions?: boolean;
     previewMode?: boolean;
     visibleHand?: HandSide | null;
@@ -659,6 +665,7 @@ with pre-prepared data for better performance.
         showNonRadialPoints={effectiveShowNonRadialPoints}
         showTnD={effectiveShowVTG}
         showElemental={effectiveShowElemental}
+        {propElementalType}
         showPositions={effectiveShowPositions}
         handPointVisibility={effectiveHandPointVisibility}
         {activeLocations}
@@ -707,6 +714,7 @@ with pre-prepared data for better performance.
             showNonRadialPoints={effectiveShowNonRadialPoints}
             showTnD={effectiveShowVTG}
             showElemental={effectiveShowElemental}
+            {propElementalType}
             showPositions={effectiveShowPositions}
             handPointVisibility={effectiveHandPointVisibility}
             {activeLocations}

@@ -14,6 +14,8 @@ interface OptimizedAutumnGltf {
     alphaMode?: string;
     alphaCutoff?: number;
     doubleSided?: boolean;
+    normalTexture?: unknown;
+    metallicRoughnessTexture?: unknown;
   }>;
   accessors?: Array<{ count?: number }>;
   meshes?: Array<{
@@ -51,6 +53,20 @@ describe("optimized Autumn GLB contracts", () => {
   const meshNodeNames = (gltf.nodes ?? [])
     .filter((node) => Number.isInteger(node.mesh))
     .map((node) => node.name ?? "");
+
+  it("authors the extended terrain apron with upward-facing winding", () => {
+    const buildSource = readFileSync(
+      resolve(process.cwd(), "scripts/build-autumn-environment.py"),
+      "utf8"
+    );
+
+    expect(buildSource).toContain(
+      "faces.append((base + i, nxt + i, nxt + j, base + j))"
+    );
+    expect(buildSource).not.toContain(
+      "faces.append((base + i, base + j, nxt + j, nxt + i))"
+    );
+  });
 
   function nodeMaterialNames(node: NonNullable<typeof gltf.nodes>[number]) {
     if (!Number.isInteger(node.mesh)) return [];
@@ -190,6 +206,13 @@ describe("optimized Autumn GLB contracts", () => {
     expect(
       Number(apron?.extras?.tka_ground_visible_extent)
     ).toBeGreaterThanOrEqual(1_024);
+
+    const fogMaterial = (gltf.materials ?? []).find(
+      (material) => material.name === "Autumn Fog Apron"
+    );
+    expect(fogMaterial, "Autumn fog apron material disappeared").toBeDefined();
+    expect(fogMaterial?.normalTexture).toBeUndefined();
+    expect(fogMaterial?.metallicRoughnessTexture).toBeUndefined();
   });
 
   it("contains no authored shadow impostors", () => {
@@ -238,6 +261,7 @@ describe("optimized Autumn GLB contracts", () => {
     });
 
     expect(excludedNames).toEqual([
+      "Autumn_Terrain_Apron",
       "Autumn_Grass_Base",
       "Autumn_Grass_Medium",
       "Autumn_Grass_High",
