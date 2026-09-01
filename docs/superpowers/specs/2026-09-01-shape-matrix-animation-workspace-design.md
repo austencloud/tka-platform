@@ -201,10 +201,10 @@ grid, PanelGroup, readiness crossfade, and animation engine into a second
 rendering system. The proposed composition produces the continuous-object
 effect without creating a competing mandala owner.
 
-## Proposed release-boundary follow-up
+## Approved release-boundary follow-up
 
-This phase records Austen's second 2026-09-01 branch review and is not yet
-approved for implementation.
+Austen approved this phase during the second 2026-09-01 branch review. It is
+implemented in the current task branch.
 
 ### One relationship bridge
 
@@ -222,6 +222,12 @@ bridge directly below the six canonical Hand choices:
 Remove the duplicate caption below the hero. Keep play/pause, but move it into
 the dock's compact trailing-action slot instead of giving it a separate
 full-width row.
+
+The pane header is the return path to this relationship workspace. Opening
+Effects, Props, Effort, Playback, or Display hides the relationship controls
+and pictograph rail; choosing `Element relationships` in the header closes the
+active settings tray and restores both. The active settings destination is
+named beside the return control.
 
 ### Prop selection owns a drawer
 
@@ -247,7 +253,7 @@ Sequence Viewer release surface. Keep the renderer capability available only
 in a dedicated study/lab surface while the noncanonical outcomes are
 enumerated.
 
-The public canonical interpolation policy should be:
+The Shape Matrix initializes the public canonical interpolation policy as:
 
 - Shift, including both Pro and Anti: Arc;
 - Dash: Linear;
@@ -257,6 +263,11 @@ Three-, five-, six-, and ten-point systems belong to a separate grid-topology
 and nomenclature project. They must not be smuggled in as playback path styles.
 The current multi-grid package composes diamond, box, and skewed grids; it does
 not yet encode those polygon families or their letter analogues.
+
+Arc, Linear, Concave, and By Motion remain implemented in the renderer for a
+future study and nomenclature surface. Ordinary Shape Matrix and Sequence
+Viewer controls do not expose them. Dash behavior is unchanged because its
+animator geometry is already linear by definition.
 
 ## Implementation checklist
 
@@ -273,16 +284,16 @@ not yet encode those polygon families or their letter analogues.
 - [x] Coordinate tray, relationship-picker, rail, and disassembly transitions.
 - [x] Remove redundant header prop control only after the dock covers empty and
       selected detail states.
-- [ ] Update About copy and accessible labels for the new relationship model.
+- [x] Update About copy and accessible labels for the new relationship model.
 - [x] Run focused relationship, URL, app-state, and animation-state tests.
 - [ ] Clear or formally baseline the full project check/build gates.
-- [ ] Verify transitions and final composition at 375×667, 960×412, 820×1180,
+- [x] Verify transitions and final composition at 375×667, 960×412, 820×1180,
       1440×900, 1920×1080, 2560×1440, and 3840×2160, plus 200% zoom.
 - [ ] Obtain approval for the mobile turn editor and shared-mandala transition.
 - [ ] Implement and verify the approved mobile continuity phase.
-- [ ] Obtain approval for the unified relationship bridge, responsive prop
+- [x] Obtain approval for the unified relationship bridge, responsive prop
       drawer, compact play/pause action, and canonical-path release boundary.
-- [ ] Implement and verify the approved release-boundary follow-up.
+- [x] Implement and verify the approved release-boundary follow-up.
 - [ ] Integrate the verified branch into local `main` with `wt:finish`.
 
 ## Risks

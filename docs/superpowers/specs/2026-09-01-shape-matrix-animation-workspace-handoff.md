@@ -2,8 +2,8 @@
 
 ## Mission
 
-Finish and integrate the coordinated relationship selector and animation
-workspace described in
+Finish and integrate the coordinated relationship selector, animation
+workspace, and approved release-boundary pass described in
 [the design spec](./2026-09-01-shape-matrix-animation-workspace-design.md),
 then implement the mobile continuity phase only after Austen approves that
 composition.
@@ -12,7 +12,8 @@ composition.
 
 - Worktree: `E:/tka-platform-shape-matrix-animation-workspace`
 - Branch: `codex/shape-matrix-animation-workspace`
-- Durable design checkpoint commits: `b4b31ae756`, `8a47d1c018`
+- Durable design and implementation checkpoints: `b4b31ae756`, `8a47d1c018`,
+  `dead6c994e`, `0671ead0b7`
 - The primary checkout has unrelated `human-generator/` work. Do not edit,
   stage, revert, or commit it.
 
@@ -35,18 +36,39 @@ composition.
   a sidecar only for genuinely landscape containers.
 - The initial trails are one additional notch quieter and use right-end
   tracking without creating undo history during workspace initialization.
+- The old Prop result row and Hands-to-Props footer are now one full-width
+  relationship bridge under the six Hand choices. Deterministic results fill
+  the Prop half; genuine phase branches retain two equal choices.
+- The pane header is an explicit `Element relationships` return control. Only
+  the relationship workspace or one animation-settings workspace is visible at
+  a time, and the header names the active settings destination.
+- Props opens the canonical `PropSelectionSheet`, which is a right drawer on
+  side-by-side layouts and a bottom sheet on phone layouts. The catalogue is no
+  longer compressed into the dock tray.
+- Play/pause occupies the dock's compact trailing slot. The duplicate full-row
+  action is gone.
+- Shape Matrix uses the canonical Arc policy for Shift. The ordinary Shape
+  Matrix and Sequence Viewer panels hide experimental path-shape controls,
+  while Arc, Linear, Concave, and By Motion remain available to future study
+  surfaces. Dash animator behavior was not changed; it is already linear.
+- The About dialog and accessible pane label now describe the canonical Hand
+  selection and derived Prop result.
 
 ## Verified
 
-- Focused Vitest suite: 4 files, 35 tests passed.
+- Focused Vitest suite: 5 files, 51 tests passed.
 - Command:
-  `pnpm exec vitest run --config tests/config/vitest.config.ts tests/unit/shape-matrix/shape-matrix-app-state.test.ts tests/unit/shape-matrix/shape-matrix-url.test.ts tests/unit/shape-matrix/shape-matrix-animation-state.test.ts src/lib/shared/shape-matrix/services/__tests__/solve-prop-relationship-phase.test.ts`
+  `pnpm exec vitest run --config tests/config/vitest.config.ts tests/unit/animation-panel/pill-resolution.test.ts tests/unit/shape-matrix/shape-matrix-app-state.test.ts tests/unit/shape-matrix/shape-matrix-url.test.ts tests/unit/shape-matrix/shape-matrix-animation-state.test.ts src/lib/shared/shape-matrix/services/__tests__/solve-prop-relationship-phase.test.ts`
 - The graph sweep still proves six exact Hand × Prop edges outside quarter
   bands and eight at quarter bands.
 - `git diff --check` was clean before the latest test/doc checkpoint.
-- A task-server runtime at 1920×1080 showed the new six-choice relationship
-  presentation, contextual two-result branch, hero, H-to-P footer, control dock,
-  and removed header prop control with no console errors.
+- The task server at port 5175 verified the unified relationship bridge,
+  settings-to-relationship header return, responsive Prop drawer/sheet, compact
+  Pause action, and Playback tray without Motion paths. Checks covered the
+  375×667, 960×412, 820×1180, 1440×900, 1920×1080, 2560×1440, 3840×2160,
+  an effective 200% layout, and Austen's level-four Fan URL. The current console
+  contains no application errors; only the expected local PostHog-key warning
+  remains.
 - `vite build` compiled the changed Svelte client and server bundles. Project
   postbuild then stopped on the existing missing `#lineage` prerender id for
   `/notation`; the ordinary build command also requires the absent local
@@ -55,15 +77,6 @@ composition.
   errors. Do not rerun the full check in this turn.
 
 ## Approval still needed
-
-### Relationship help copy
-
-The existing About text still describes choosing Hands versus Props. Proposed
-replacement:
-
-> Choose a hand timing and direction. The prop result follows automatically.
-> When the selected flowers support two exact prop phases, both choices appear
-> so you can pick the result you want.
 
 ### Mobile continuity phase
 
@@ -87,46 +100,41 @@ mandala and the hero. Repository tracing supports this composition:
 This produces the visual continuity of one object without physically
 reparenting a live canvas between two layout owners.
 
-### Relationship, prop picker, and motion-path release boundary
+## Implemented release boundary
 
-Austen's branch review exposed three connected composition problems:
+Austen approved the following connected composition changes:
 
-1. `PropRelationshipChipRow` and the caption below the hero repeat the same
-   Hand-to-Prop derivation. Replace them with one full-width relationship bridge
+1. `PropRelationshipChipRow` now owns one full-width relationship bridge
    beneath the six Hand choices. Its Prop side is a centered passive result for
-   one edge and two equal buttons for a genuine phase branch. Remove `Derived`
-   and the duplicate hero caption.
-2. The Props tab currently compresses `BentoPropGrid` into the dense, 250px
-   dock tray. Route it through the existing `PropSelectionSheet`, which already
+   one edge and two equal buttons for a genuine phase branch. `Derived` and the
+   duplicate hero caption are gone.
+2. The Props tab now routes through the existing `PropSelectionSheet`, which
    opens as a bottom sheet on narrow layouts and a right drawer on side-by-side
-   layouts. Move play/pause into the dock's compact trailing slot instead of a
+   layouts. Play/pause occupies the dock's compact trailing slot instead of a
    separate full-width row.
-3. Hide Motion paths from the ordinary release surface. MCP ground truth says
+3. Motion paths are hidden from the ordinary release surface. MCP ground truth says
    Shift uses a curved arc for both Pro and Anti, Dash is straight, and Static
    does not travel. The current `By Motion` policy maps Anti to Concave and
    therefore conflates prop rotation behavior with hand-path geometry. Public
    playback should use Shift→Arc, Dash→Linear, Static→no path; arbitrary Arc,
    Linear, Concave, and experimental topology work belong in a study/lab.
 
-The existing multi-grid package composes diamond, box, and skewed grids. It
-does not yet model Austen's three-, five-, six-, or ten-point nomenclature, so
-that work should become its own topology/enumeration specification rather than
-a playback toggle.
+The renderer still owns all experimental path values so they can support a
+future study and nomenclature page. The existing multi-grid package composes
+diamond, box, and skewed grids. It does not yet model Austen's three-, five-,
+six-, or ten-point nomenclature, so that work remains a separate
+topology/enumeration specification rather than a playback toggle.
 
 ## Remaining work in order
 
-1. Receive explicit approval for the help copy, mobile continuity phase,
-   unified relationship bridge, responsive prop drawer, compact play/pause,
-   and canonical-path release boundary.
-2. Implement the approved compact turn tray, shared-mandala transition,
-   relationship/control recomposition, and path-policy restriction.
-3. Add focused state/motion tests for turn edits that remain in detail, unique
-   shared-element ownership, conditional Prop branching, prop-drawer routing,
-   and canonical Shift/Dash/Static interpolation.
-4. With browser-test permission, complete the screenshot sweep at 375×667,
-   960×412, 820×1180, 1440×900, 1920×1080, 2560×1440, 3840×2160, and 200%
-   zoom. Exercise assembled/disassembled category changes and settings trays.
-5. Fix task-owned regressions found by that sweep. Treat the documented
+1. Receive explicit approval for the mobile turn editor and shared-mandala
+   transition.
+2. Implement the approved compact turn tray and shared-mandala transition.
+3. Add focused state/motion tests for turn edits that remain in detail and
+   unique shared-element ownership.
+4. Exercise assembled/disassembled category changes through the remaining
+   mobile continuity work.
+5. Fix task-owned regressions found by that phase. Treat the documented
    `#lineage`, Maps key, and global check failures as baseline unless this diff
    is proven to cause them.
 6. Commit only explicit task paths, bring the branch current with `main`, run
