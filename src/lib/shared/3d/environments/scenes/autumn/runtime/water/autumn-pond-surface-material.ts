@@ -1,6 +1,6 @@
 import { Color, MeshPhysicalMaterial, Vector2, type Texture } from "three";
 
-const WATER_BODY_COLOR = "#324553";
+const WATER_BODY_COLOR = "#283650";
 
 /**
  * Owns the authored Autumn pond surface response.
@@ -16,17 +16,17 @@ export function createAutumnPondSurfaceMaterial(
 ): MeshPhysicalMaterial {
   return new MeshPhysicalMaterial({
     color: new Color(WATER_BODY_COLOR),
-    emissive: new Color("#12333a"),
-    emissiveIntensity: 0.22,
-    roughness: 0.36,
+    emissive: new Color("#0b1d2d"),
+    emissiveIntensity: 0.18,
+    roughness: 0.46,
     metalness: 0.04,
     transparent: true,
-    opacity: 0.64,
+    opacity: 0.76,
     transmission: 0,
-    clearcoat: 0.14,
-    clearcoatRoughness: 0.4,
-    specularIntensity: 0.38,
-    specularColor: new Color("#91a5c4"),
+    clearcoat: 0.1,
+    clearcoatRoughness: 0.48,
+    specularIntensity: 0.24,
+    specularColor: new Color("#7786a8"),
     normalMap: bodyNormal,
     normalScale: new Vector2(0.16, 0.16),
     clearcoatNormalMap: coatNormal,
