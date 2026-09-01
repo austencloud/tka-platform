@@ -306,9 +306,11 @@ export async function generatePropSvg(
   const fanRenderKey = parseFanRenderKey(propTypeLower);
   const fetchedSvg = await fetchPropSvg(path);
   const semanticPropType = fanRenderKey?.propType ?? propTypeLower;
-  const isPhysicalFireFan =
-    fanRenderKey?.build === "fire" || fanRenderKey?.build === "lotus";
-  const coloredSvg = isPhysicalFireFan
+  const isMaterialColoredFan =
+    fanRenderKey?.build === "fire" ||
+    fanRenderKey?.build === "lotus" ||
+    fanRenderKey?.build === "moon";
+  const coloredSvg = isMaterialColoredFan
     ? applyFanFrameColor(fetchedSvg, color)
     : applyColorToPropSvg(fetchedSvg, color, semanticPropType);
   const detailedSvg = fanRenderKey

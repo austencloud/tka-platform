@@ -52,7 +52,8 @@ export const TRANSITION_REVIEW_GATES = [
   {
     id: "performances",
     title: "2D / 3D ⇄ Performances",
-    summary: "The full-body gallery handoff keeps spatial continuity.",
+    summary:
+      "One stage changes its moving source while one inspector changes its information.",
     fromGrade: "D",
     availability: "ready",
   },
