@@ -355,7 +355,7 @@
   /* Counterweight centering is useful only while there is room to spend on an
      empty third column. Below that point the level rail borrows the space and
      every control keeps the same icon, colour, surface, and interaction model. */
-  @container (width < 860px) {
+  @container (width < 1000px) {
     .oph:not(.compact) .oph-bar:not(.filter-only) {
       grid-template-columns:
         calc(var(--min-touch-target, 44px) * 2 + 10px)
