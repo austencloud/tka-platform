@@ -1,157 +1,113 @@
-/** Standalone autumn environment configuration and production defaults. */
+/** Controls for the shipped Blender-authored Autumn environment. */
 
-import type {
-  FallingParticlesConfig,
-  SkyGradientConfig,
-} from "../environment-models";
-import type {
-  FogConfig,
-  GroundConfig,
-  HemisphereLightConfig,
-  TreeRingConfig,
-} from "./shared-scene-config";
+import type { SkyGradientConfig } from "../environment-models";
+import type { FogConfig } from "./shared-scene-config";
 
-export interface AutumnStreamConfig {
+export interface AutumnStarfieldConfig {
   enabled: boolean;
-  color: string;
-  width: number;
-}
-
-export interface AutumnMushroomConfig {
-  enabled: boolean;
-  count: number;
-  ringRadius: number;
-  capColors: string[];
-  stemColor: string;
-  glowColor: string;
-  glowIntensity: number;
-}
-
-export interface AutumnMistConfig {
-  enabled: boolean;
-  count: number;
-  area: number;
-  color: string;
-  opacity: number;
-  speed: number;
+  countScale: number;
+  sizeScale: number;
+  intensity: number;
 }
 
 export interface AutumnSceneConfig {
   sky: SkyGradientConfig;
   fog: FogConfig;
-  ground: GroundConfig;
-  leaves: FallingParticlesConfig;
-  distantLeaves: FallingParticlesConfig | null;
-  treeRings: TreeRingConfig[];
-  clearingRadius: number;
-  stream: AutumnStreamConfig;
-  mushrooms: AutumnMushroomConfig;
-  mist: AutumnMistConfig;
-  sunLight: {
-    enabled: boolean;
-    color: string;
-    intensity: number;
-    position: [number, number, number];
-  } | null;
-  hemisphereLight: HemisphereLightConfig;
+  stars: AutumnStarfieldConfig;
+  groundDetailStrength: number;
+  magicIntensity: number;
 }
-
-const AUTUMN_TREE_RINGS: TreeRingConfig[] = [
-  {
-    radius: 10,
-    count: 8,
-    scaleBase: 1.2,
-    scaleVariation: 0.3,
-    radiusJitter: 1.0,
-  },
-  {
-    radius: 14,
-    count: 14,
-    scaleBase: 1.0,
-    scaleVariation: 0.25,
-    radiusJitter: 1.5,
-  },
-  {
-    radius: 18,
-    count: 20,
-    scaleBase: 0.85,
-    scaleVariation: 0.2,
-    radiusJitter: 1.75,
-  },
-  {
-    radius: 23,
-    count: 28,
-    scaleBase: 0.7,
-    scaleVariation: 0.2,
-    radiusJitter: 2.0,
-  },
-];
 
 export function createDefaultAutumnConfig(): AutumnSceneConfig {
   return {
     sky: {
-      topColor: "#1a0f30",
-      midColor: "#c45a2a",
-      bottomColor: "#d4903a",
+      topColor: "#120b2b",
+      midColor: "#38265a",
+      bottomColor: "#633f68",
     },
-    fog: { color: "#1a1008", density: 0.022 },
-    ground: {
-      color: "#2a1f15",
-      size: 50,
-      textured: false,
-    },
-    leaves: {
-      type: "leaves",
-      count: 300,
-      area: { width: 30, height: 6, depth: 30 },
-      speed: 0.1,
-      colors: ["#d4a030", "#d97706", "#c2410c", "#b91c1c", "#92400e"],
-      sizeRange: [0.1, 0.25],
-      spin: true,
-    },
-    distantLeaves: {
-      type: "leaves",
-      count: 120,
-      area: { width: 50, height: 8, depth: 50 },
-      speed: 0.06,
-      colors: ["#d4a030", "#d97706", "#c2410c", "#7c2d12"],
-      sizeRange: [0.05, 0.12],
-      spin: true,
-    },
-    treeRings: AUTUMN_TREE_RINGS,
-    clearingRadius: 10,
-    stream: {
+    fog: { color: "#2b172f", density: 0.016 },
+    stars: {
       enabled: true,
-      color: "#1a3a4a",
-      width: 1.8,
+      countScale: 1,
+      sizeScale: 1,
+      intensity: 1.35,
     },
-    mushrooms: {
-      enabled: true,
-      count: 8,
-      ringRadius: 7,
-      capColors: ["#b5651d", "#8b4513", "#cd853f", "#a0522d"],
-      stemColor: "#e8dcc8",
-      glowColor: "#d4a040",
-      glowIntensity: 0.15,
+    groundDetailStrength: 0.9,
+    magicIntensity: 1,
+  };
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function asColor(value: unknown, fallback: string): string {
+  return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value)
+    ? value
+    : fallback;
+}
+
+function asNumber(
+  value: unknown,
+  fallback: number,
+  minimum: number,
+  maximum: number
+): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.min(maximum, Math.max(minimum, value))
+    : fallback;
+}
+
+export function normalizeAutumnConfig(value: unknown): AutumnSceneConfig {
+  const defaults = createDefaultAutumnConfig();
+  const candidate = asRecord(value);
+  if (!candidate) return defaults;
+  const stars = asRecord(candidate.stars);
+
+  // Legacy Scene Lab configs described the deleted procedural tree-ring scene.
+  // `stars` is the discriminant for the production GLB-era shape.
+  if (!stars) return defaults;
+
+  const sky = asRecord(candidate.sky);
+  const fog = asRecord(candidate.fog);
+
+  return {
+    sky: {
+      topColor: asColor(sky?.topColor, defaults.sky.topColor),
+      midColor: asColor(sky?.midColor, defaults.sky.midColor ?? "#000000"),
+      bottomColor: asColor(sky?.bottomColor, defaults.sky.bottomColor),
     },
-    mist: {
-      enabled: true,
-      count: 25,
-      area: 30,
-      color: "#c8b8a0",
-      opacity: 0.06,
-      speed: 0.15,
+    fog: {
+      color: asColor(fog?.color, defaults.fog.color),
+      density: asNumber(fog?.density, defaults.fog.density, 0.004, 0.035),
     },
-    sunLight: {
-      enabled: true,
-      color: "#ffb060",
-      intensity: 0.8,
-      position: [-20, 8, -15],
+    stars: {
+      enabled:
+        typeof stars.enabled === "boolean"
+          ? stars.enabled
+          : defaults.stars.enabled,
+      countScale: asNumber(
+        stars.countScale,
+        defaults.stars.countScale,
+        0.25,
+        1.5
+      ),
+      sizeScale: asNumber(stars.sizeScale, defaults.stars.sizeScale, 0.5, 1.5),
+      intensity: asNumber(stars.intensity, defaults.stars.intensity, 0.3, 2.5),
     },
-    hemisphereLight: {
-      skyColor: "#ff9944",
-      groundColor: "#331a08",
-      intensity: 0.5,
-    },
+    groundDetailStrength: asNumber(
+      candidate.groundDetailStrength,
+      defaults.groundDetailStrength,
+      0,
+      1.4
+    ),
+    magicIntensity: asNumber(
+      candidate.magicIntensity,
+      defaults.magicIntensity,
+      0,
+      2
+    ),
   };
 }

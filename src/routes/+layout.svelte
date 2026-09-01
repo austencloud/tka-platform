@@ -182,7 +182,7 @@
     // uses the persistent root chrome. Deeper /guide pages keep GuideShell's
     // standalone header/footer and book canvas.
     "/guide",
-    "/glossary",
+    "/atlas",
     "/faq",
     "/learn/staff-spinning-choreography",
   ]);

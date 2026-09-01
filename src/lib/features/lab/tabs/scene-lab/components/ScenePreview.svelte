@@ -295,7 +295,7 @@
       {:else if labState.sceneId === "forest"}
         <ForestScene variant="firefly" config={labState.forestConfig} />
       {:else if labState.sceneId === "autumn"}
-        <AutumnScene />
+        <AutumnScene config={labState.autumnConfig} />
       {:else if labState.sceneId === "cosmic"}
         <CosmicScene
           variant={labState.cosmicVariant}

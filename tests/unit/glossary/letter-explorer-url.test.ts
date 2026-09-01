@@ -4,8 +4,8 @@ import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pi
 import {
   parseLetterExplorerRoute,
   writeLetterExplorerRoute,
-} from "../../../src/routes/(public)/glossary/_components/codex-boards/letter-explorer-url";
-import { buildComposerDraftHref } from "../../../src/routes/(public)/glossary/_components/codex-boards/letter-explorer-draft";
+} from "../../../src/routes/(public)/atlas/_components/codex-boards/letter-explorer-url";
+import { buildComposerDraftHref } from "../../../src/routes/(public)/atlas/_components/codex-boards/letter-explorer-draft";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { parseDeepLink } from "$lib/shared/navigation/services/sequence-encoder";
 
@@ -13,7 +13,7 @@ const letters = new Set(["A", "B", "W-"]);
 
 describe("letter explorer URL state", () => {
   it("round-trips the selected grid, variation, and unsaved turn edits", () => {
-    const url = new URL("https://tkaflowarts.com/glossary?board=atlas");
+    const url = new URL("https://tkaflowarts.com/atlas?board=atlas");
 
     writeLetterExplorerRoute(url, {
       letter: "B",
@@ -57,8 +57,8 @@ describe("letter explorer URL state", () => {
     expect(parseLetterExplorerRoute(legacy, letters)?.leftTurns).toBe(1.5);
   });
 
-  it("keeps canonical links compact when the beat is unedited", () => {
-    const url = new URL("https://tkaflowarts.com/glossary");
+  it("keeps canonical links compact when the pictograph is unedited", () => {
+    const url = new URL("https://tkaflowarts.com/atlas");
 
     writeLetterExplorerRoute(url, {
       letter: "W-",
@@ -93,7 +93,7 @@ describe("letter explorer URL state", () => {
 
   it("removes only explorer-owned parameters when the destination closes", () => {
     const url = new URL(
-      "https://tkaflowarts.com/glossary?board=atlas&letter=B&grid=box&variation=3"
+      "https://tkaflowarts.com/atlas?board=atlas&letter=B&grid=box&variation=3"
     );
 
     writeLetterExplorerRoute(url, null);

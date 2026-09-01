@@ -58,25 +58,32 @@ describe("route-scoped URL parameters", () => {
     expect(profileUrl.search).toBe("");
   });
 
-  it("keeps letter state only on its glossary and Gallery destinations", () => {
-    const glossaryUrl = new URL(
-      "https://tkaflowarts.com/glossary?letter=B&grid=box&variation=6&leftTurns=0.5"
+  it("keeps letter state only on its Atlas and Gallery destinations", () => {
+    const atlasUrl = new URL(
+      "https://tkaflowarts.com/atlas?letter=B&grid=box&variation=6&leftTurns=0.5"
     );
     const galleryUrl = new URL(
       "https://tkaflowarts.com/browse/explore/sequences?letter=B"
+    );
+    const legacyAtlasUrl = new URL(
+      "https://tkaflowarts.com/glossary?letter=B&grid=diamond&variation=2&blueTurns=0.5"
     );
     const unrelatedUrl = new URL(
       "https://tkaflowarts.com/create/construct?letter=B&grid=box&variation=6"
     );
 
-    pruneRouteScopedParams(glossaryUrl, glossaryUrl.pathname);
+    pruneRouteScopedParams(atlasUrl, atlasUrl.pathname);
     pruneRouteScopedParams(galleryUrl, galleryUrl.pathname);
+    pruneRouteScopedParams(legacyAtlasUrl, legacyAtlasUrl.pathname);
     pruneRouteScopedParams(unrelatedUrl, unrelatedUrl.pathname);
 
-    expect(glossaryUrl.search).toBe(
+    expect(atlasUrl.search).toBe(
       "?letter=B&grid=box&variation=6&leftTurns=0.5"
     );
     expect(galleryUrl.search).toBe("?letter=B");
+    expect(legacyAtlasUrl.search).toBe(
+      "?letter=B&grid=diamond&variation=2&blueTurns=0.5"
+    );
     expect(unrelatedUrl.search).toBe("");
   });
 });

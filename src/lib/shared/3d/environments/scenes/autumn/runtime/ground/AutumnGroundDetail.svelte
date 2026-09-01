@@ -1,7 +1,7 @@
 <script lang="ts">
   import { useThrelte } from "@threlte/core";
   import { useKtx2 } from "@threlte/extras";
-  import { onMount } from "svelte";
+  import { untrack } from "svelte";
   import {
     RepeatWrapping,
     SRGBColorSpace,
@@ -15,22 +15,36 @@
     patchAutumnGroundDetailMaterial,
     type AutumnGroundDetailPatch,
   } from "./autumn-ground-detail";
+  import type { AutumnBootStatus } from "../autumn-boot-state";
 
   interface Props {
     scene?: Object3D | null;
     strength?: number;
+    retryRequest?: number;
+    onStatus?: (status: AutumnBootStatus) => void;
   }
 
-  let { scene = null, strength = 0.9 }: Props = $props();
+  let {
+    scene = null,
+    strength = 0.9,
+    retryRequest = 0,
+    onStatus,
+  }: Props = $props();
 
   const { renderer } = useThrelte();
   const ktx2 = useKtx2("/basis/");
   let detailMap = $state<Texture | null>(null);
 
-  onMount(() => {
+  function reportStatus(status: AutumnBootStatus): void {
+    untrack(() => onStatus?.(status));
+  }
+
+  $effect(() => {
+    const retry = retryRequest;
     let cancelled = false;
+    reportStatus("pending");
     ktx2.load(
-      "/textures/autumn-floor/ground-detail-modulation.ktx2",
+      `/textures/autumn-floor/ground-detail-modulation.ktx2${retry > 0 ? `?retry=${retry}` : ""}`,
       (texture) => {
         if (cancelled) {
           texture.dispose();
@@ -45,13 +59,18 @@
         );
         texture.needsUpdate = true;
         detailMap = texture;
+        reportStatus("ready");
       },
       undefined,
       (error) => {
         // The macro atlas still contains the paths and ecological zones. A
         // failed detail texture should leave that usable floor visible rather
         // than taking the entire Autumn environment down.
-        console.warn("[AutumnGroundDetail] detail texture failed to load", error);
+        console.warn(
+          "[AutumnGroundDetail] detail texture failed to load",
+          error
+        );
+        if (!cancelled) reportStatus("failed");
       }
     );
 

@@ -13,6 +13,7 @@
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
   import { getStageCoordinateFrame } from "../domain/stage-coordinate-frame";
   import { tryGetEnvironmentTransitionVisualContext } from "../context/environment-transition-visual-context";
+  import { loadAutumnSceneModule } from "../scenes/autumn/runtime/autumn-scene-module";
   import type { ForestSceneConfig } from "../domain/models/scene-configs/forest-scene-config";
   import {
     DEFAULT_ENVIRONMENT_TRANSITION_TIMING,
@@ -29,6 +30,8 @@
     backgroundType: BackgroundType;
     /** Number of performers on stage. Scenes use this to size platforms. */
     performerCount?: number;
+    /** Live X/Z stage positions for environments that respond to presence. */
+    performerPositions?: readonly { x: number; z: number }[];
     /** Computed stage width from performer bounding box. */
     stageWidth?: number;
     /** Computed stage depth from performer bounding box. */
@@ -59,6 +62,7 @@
   let {
     backgroundType,
     performerCount = 1,
+    performerPositions = [],
     stageWidth = 6,
     stageDepth = 6,
     stageRadius = 3,
@@ -175,13 +179,26 @@
     mountedBackgroundType !== null &&
       retainedEnvironments.has(mountedBackgroundType)
   );
+  const autumnRetryRequest = $derived(
+    sceneFeatures.getRetryRequest("environment")
+  );
+  const autumnSceneModule = $derived.by(() => {
+    // A retry must create a fresh await promise even when the browser already
+    // cached the module. That remounts Autumn after either a chunk failure or a
+    // later scene-owned asset failure requested the shared retry action.
+    void autumnRetryRequest;
+    return loadAutumnSceneModule(
+      () => import("../scenes/AutumnScene.svelte"),
+      (message) => sceneFeatures.reportFailed("environment", message)
+    );
+  });
 
-  // Threlte's scene can be a CurrentWritable ({current: Scene}) or the Scene directly
   function getScene() {
-    return (scene as any)?.current ?? (scene as any);
+    return scene;
   }
+
   function getRenderer() {
-    return (renderer as any)?.current ?? (renderer as any);
+    return renderer;
   }
 
   function clearSceneGlobals(): void {
@@ -307,15 +324,20 @@
     position.y={frame.environmentYOffset}
     visible={mountedBackgroundType === BackgroundType.AUTUMN}
   >
-    {#await import("../scenes/AutumnScene.svelte") then { default: AutumnScene }}
-      <AutumnScene
-        active={mountedBackgroundType === BackgroundType.AUTUMN}
-        {stageWidth}
-        {stageDepth}
-        {stageZOffset}
-        showDirectionCues={sceneFeatures.isEnabled("stage")}
-      />
-    {/await}
+    {#key autumnRetryRequest}
+      {#await autumnSceneModule then { default: AutumnScene }}
+        <AutumnScene
+          active={mountedBackgroundType === BackgroundType.AUTUMN}
+          {performerPositions}
+          {stageWidth}
+          {stageDepth}
+          {stageZOffset}
+          showDirectionCues={sceneFeatures.isEnabled("stage")}
+        />
+      {:catch}
+        <!-- The viewer's scene-feature boundary owns the retry UI. -->
+      {/await}
+    {/key}
   </T.Group>
 {/if}
 
@@ -398,9 +420,18 @@
         />
       {/await}
     {:else if config.scene === "autumn"}
-      {#await import("../scenes/AutumnScene.svelte") then { default: AutumnScene }}
-        <AutumnScene {stageWidth} {stageDepth} {stageZOffset} />
-      {/await}
+      {#key autumnRetryRequest}
+        {#await autumnSceneModule then { default: AutumnScene }}
+          <AutumnScene
+            {performerPositions}
+            {stageWidth}
+            {stageDepth}
+            {stageZOffset}
+          />
+        {:catch}
+          <!-- The viewer's scene-feature boundary owns the retry UI. -->
+        {/await}
+      {/key}
     {:else if config.scene === "cosmic"}
       {#await import("../scenes/CosmicScene.svelte") then { default: CosmicScene }}
         <CosmicScene

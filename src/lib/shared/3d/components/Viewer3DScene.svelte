@@ -571,6 +571,11 @@
       visiblePerformerCount ?? performerManager.performers.length
     )
   );
+  const environmentPerformerPositions = $derived(
+    performerManager.performers
+      .slice(0, performerCount)
+      .map((performer) => performer.position)
+  );
 
   // The deck is a property of the venue, not of where the cast happens to be
   // standing this frame. Measuring live positions made the floor grow as a
@@ -644,6 +649,7 @@
   <Environment3D
     {backgroundType}
     {performerCount}
+    performerPositions={environmentPerformerPositions}
     stageWidth={stageDimensions.width}
     stageDepth={stageDimensions.depth}
     stageRadius={stageDimensions.radius}

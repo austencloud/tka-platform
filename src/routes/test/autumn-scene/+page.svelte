@@ -14,6 +14,7 @@
    */
   import { Canvas } from "@threlte/core";
   import { page } from "$app/state";
+  import { onDestroy } from "svelte";
   import { WebGLRenderer } from "three";
   import { BackgroundType } from "@austencloud/backgrounds";
 
@@ -65,6 +66,11 @@
       target: [0, 2, 0],
       fov: 52,
     },
+    reverse: {
+      position: [0, 9, -30],
+      target: [0, 2, 2],
+      fov: 48,
+    },
     depth: {
       position: [0, 9, 29],
       target: [0, 2, -42],
@@ -76,33 +82,48 @@
       fov: 48,
     },
     shack: {
-      position: [-10, 4, -40],
-      target: [-10, 1.5, -56],
-      fov: 50,
+      position: [-8.6, 3.8, -43],
+      target: [-11.05, 1.92, -53.92],
+      fov: 46,
     },
     fungi: {
-      position: [4, 2.1, -7.2],
-      target: [4, 0.08, -12],
+      position: [4, 0.35, -7.8],
+      target: [4, -1.2, -12],
       fov: 46,
     },
     ferns: {
-      position: [-15.6, 1.65, 1.2],
-      target: [-15.6, 0.35, -3.5],
-      fov: 46,
+      position: [-11.8, 0.4, -0.2],
+      target: [-15.6, -1.05, -3.5],
+      fov: 44,
     },
     rootContact: {
-      position: [-3, 2.4, 7.5],
-      target: [-12.8, 0.7, -6.5],
+      position: [-3, 1.2, 7.5],
+      target: [-12.8, -0.9, -6.5],
       fov: 52,
     },
     owlRootContact: {
-      position: [0, 2.4, -2],
-      target: [6.2, 0.7, -18.3],
+      position: [0, 1.2, -2],
+      target: [6.2, -0.9, -18.3],
       fov: 52,
+    },
+    owl: {
+      position: [1.8, 6.2, -10.3],
+      target: [5.7, 5.25, -17.7],
+      fov: 38,
     },
   } as const;
 
   type ViewName = keyof typeof VIEW_PRESETS;
+  interface RenderSample {
+    fps: number;
+    peakFrameMs: number;
+    drawCalls: number;
+    triangles: number;
+    geometries: number;
+    textures: number;
+    programs: number;
+  }
+
   const requestedView = $derived(page.url.searchParams.get("view"));
   const replayPose = $derived(parseViewParam(page.url.search));
   const view = $derived(
@@ -133,6 +154,7 @@
   });
 
   let reading = $state<EnvironmentReviewReading | null>(null);
+  let renderSample = $state<RenderSample | null>(null);
   let captureNote = $state<string | null>(null);
   let captureNoteTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -166,6 +188,10 @@
       autumnQualityOverride.tier = "auto";
     };
   });
+
+  onDestroy(() => {
+    if (captureNoteTimer) clearTimeout(captureNoteTimer);
+  });
 </script>
 
 <svelte:head>
@@ -182,7 +208,11 @@
     <!-- Match the real viewer's ScenePostProcessing tone mapping (AgX, 1.0)
          so colors read the same here as in the sequence viewer. -->
     <HarnessToneMapping />
-    <PerfMonitor visible={showPerf} active={showPerf} />
+    <PerfMonitor
+      visible={showPerf}
+      active={showPerf}
+      onSample={(sample) => (renderSample = sample)}
+    />
 
     {#key cameraKey}
       <EnvironmentReviewCamera
@@ -248,6 +278,17 @@
       >
     {/if}
   </aside>
+
+  {#if showPerf && renderSample}
+    <aside class="perf-readout" aria-label="Autumn renderer performance">
+      <span>{renderSample.fps} FPS</span>
+      <span>{renderSample.drawCalls} draws</span>
+      <span>{(renderSample.triangles / 1_000_000).toFixed(3)}M tris</span>
+      <span>{renderSample.geometries} geo</span>
+      <span>{renderSample.textures} tex</span>
+      <span>{renderSample.programs} programs</span>
+    </aside>
+  {/if}
 </div>
 
 <style>
@@ -277,6 +318,29 @@
     box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.32);
     color: #fff7ed;
     font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    backdrop-filter: blur(0.7rem);
+  }
+
+  .perf-readout {
+    position: absolute;
+    inset-block-start: clamp(0.75rem, 1.5vw, 1.5rem);
+    inset-inline-end: clamp(0.75rem, 1.5vw, 1.5rem);
+    z-index: 20;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.35rem 0.75rem;
+    max-inline-size: min(32rem, calc(100vw - 1.5rem));
+    padding: 0.55rem 0.7rem;
+    border: 1px solid rgba(255, 210, 153, 0.18);
+    border-radius: 0.7rem;
+    background: rgba(20, 10, 8, 0.78);
+    color: #ffedd5;
+    font:
+      700 0.72rem/1.35 ui-monospace,
+      "SFMono-Regular",
+      Consolas,
+      monospace;
     backdrop-filter: blur(0.7rem);
   }
 
@@ -432,6 +496,11 @@
 
     dl {
       grid-template-columns: 1fr;
+    }
+
+    .perf-readout {
+      justify-content: flex-start;
+      font-size: 0.65rem;
     }
   }
 </style>

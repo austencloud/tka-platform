@@ -5,12 +5,12 @@ import { describe, expect, it } from "vitest";
 const readSource = (path: string): string =>
   readFileSync(resolve(process.cwd(), path), "utf-8");
 
-const route = readSource("src/routes/(public)/glossary/+page.svelte");
+const route = readSource("src/routes/(public)/atlas/+page.svelte");
 const draft = readSource(
-  "src/routes/(public)/glossary/_components/KineticAtlasDraft.svelte"
+  "src/routes/(public)/atlas/_components/KineticAtlasDraft.svelte"
 );
 const overview = readSource(
-  "src/routes/(public)/glossary/_components/KineticAtlasOverview.svelte"
+  "src/routes/(public)/atlas/_components/KineticAtlasOverview.svelte"
 );
 const sitemap = readSource("src/routes/sitemap.xml/+server.ts");
 
@@ -41,6 +41,6 @@ describe("Kinetic Atlas production gate", () => {
   });
 
   it("keeps the gated Atlas out of the sitemap", () => {
-    expect(sitemap).not.toMatch(/\{\s*url:\s*"glossary"\s*\}/);
+    expect(sitemap).not.toMatch(/\{\s*url:\s*"atlas"\s*\}/);
   });
 });
