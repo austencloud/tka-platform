@@ -1,7 +1,9 @@
 # Create Alt Keytips — Design Spec
 
-**Date:** 2026-09-01  
-**Status:** Approved  
+**Date:** 2026-09-01
+
+**Status:** Approved
+
 **Supersedes:** `2026-04-04-alt-hotkey-overlay-design.md` presentation and
 disclosure behavior. The registered shortcuts remain unchanged.
 
