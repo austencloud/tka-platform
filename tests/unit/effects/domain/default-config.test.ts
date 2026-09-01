@@ -25,6 +25,7 @@ describe("DEFAULT_EFFECTS_CONFIG", () => {
   it("has valid trails intent", () => {
     const t = DEFAULT_EFFECTS_CONFIG.trails;
     expect(t.trackingMode).toBe("both_ends");
+    expect(t.thickness).toBe(4);
     expect(t.thickness).toBeGreaterThanOrEqual(1);
     expect(t.thickness).toBeLessThanOrEqual(12);
     expect(t.brightness).toBeGreaterThanOrEqual(0.3);
