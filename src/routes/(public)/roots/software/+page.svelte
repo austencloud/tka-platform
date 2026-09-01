@@ -141,6 +141,17 @@
     },
   ];
 
+  const composerImages = [
+    {
+      src: "/roots/software/flow-arts-composer.webp",
+      alt: "Flow Arts Composer in Construct mode, showing alpha, beta, and gamma move presets on the eight-point grid",
+      caption: "Flow Arts Composer, Construct mode",
+      width: 1440,
+      height: 900,
+      shape: "wide" as const,
+    },
+  ];
+
   const eraLinks = [
     {
       href: "#printed-foundations",
@@ -175,8 +186,14 @@
     {
       href: "#tka-chapter",
       number: "06",
+      title: "Notation system",
+      detail: "TKA supplies the grammar",
+    },
+    {
+      href: "#flow-arts-composer",
+      number: "07",
       title: "Current chapter",
-      detail: "Notation joins the lineage",
+      detail: "Composer becomes the studio",
     },
   ];
 
@@ -201,10 +218,23 @@
         description: DESCRIPTION,
         inLanguage: "en-US",
         datePublished: "2026-07-16",
-        dateModified: "2026-08-31",
+        dateModified: "2026-09-01",
         image: "https://tkaflowarts.com/branding/og-image.png",
         author: { "@id": PERSON_ID },
         publisher: { "@id": ORGANIZATION_ID },
+        isPartOf: { "@id": WEBSITE_ID },
+        about: { "@id": `${URL}#flow-arts-composer` },
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": `${URL}#flow-arts-composer`,
+        name: "Flow Arts Composer",
+        url: "https://tkaflowarts.com/composer",
+        applicationCategory: "MultimediaApplication",
+        operatingSystem: "Web",
+        description:
+          "Browser software for writing, generating, animating, saving, and sharing flow arts choreography with The Kinetic Alphabet.",
+        creator: { "@id": PERSON_ID },
         isPartOf: { "@id": WEBSITE_ID },
       },
       {
@@ -270,20 +300,20 @@
           <span aria-hidden="true">·</span>
           Published July 16, 2026
           <span aria-hidden="true">·</span>
-          Updated August 31, 2026
+          Updated September 1, 2026
         </p>
         <dl class="hero-facts">
           <div>
-            <dt>7</dt>
+            <dt>8</dt>
             <dd>chapters</dd>
           </div>
           <div>
-            <dt>11</dt>
+            <dt>12</dt>
             <dd>documentary screenshots</dd>
           </div>
           <div>
             <dt>Living</dt>
-            <dd>links checked August 2026</dd>
+            <dd>links checked September 2026</dd>
           </div>
         </dl>
       </div>
@@ -667,7 +697,7 @@
       <HistoryEra
         id="tka-chapter"
         number="06"
-        period="The current chapter"
+        period="The notation system"
         title="Where The Kinetic Alphabet fits"
       >
         {#snippet children()}
@@ -685,13 +715,51 @@
             </p>
             <p>
               TKA takes a different route: a pictograph for each beat and a
-              pronounceable label for the sequence. Flow Arts Composer is the
-              <a href="/composer">flow arts software</a> built on it, with sequences
-              written as notation, composed step by step, animated with supported
-              props, and shared with artists who know the conventions.
+              pronounceable label for the sequence. That grammar now has a
+              working studio of its own.
             </p>
           </div>
         {/snippet}
+      </HistoryEra>
+
+      <HistoryEra
+        id="flow-arts-composer"
+        number="07"
+        period="Browser choreography platform · active development"
+        title="Flow Arts Composer turns notation into a working studio"
+      >
+        {#snippet children()}
+          <div class="prose">
+            <p>
+              <strong>Flow Arts Composer</strong> is Austen Cloud's browser-based
+              workspace for The Kinetic Alphabet. An artist can construct a move,
+              generate a longer sequence, and watch the same choreography as pictographs
+              or animated props without translating it into another format.
+            </p>
+            <p>
+              The work continues past the editor. Sequences can be saved to a
+              personal library, published for other artists, and shared by link
+              or QR code. Composer also imports SpiroAnim patterns, bringing
+              that earlier tool's sequences into the same library.
+            </p>
+            <div class="resource-row">
+              <a href="/composer" class="resource-chip">
+                <span>About Flow Arts Composer</span>
+              </a>
+              <a href="/create" class="resource-chip">
+                <span>Open the Composer</span>
+              </a>
+              <a href="/browse" class="resource-chip">
+                <span>Browse public sequences</span>
+              </a>
+            </div>
+          </div>
+        {/snippet}
+        {#snippet media()}<SoftwareGallery
+            label="Flow Arts Composer screenshot"
+            images={composerImages}
+            variant="wide"
+          />{/snippet}
       </HistoryEra>
     </div>
 
@@ -706,7 +774,7 @@
             gets reviewed, and anything that belongs in the archive gets added
             with credit.
           </p>
-          <p>Statuses on this page were last checked in August 2026.</p>
+          <p>Statuses on this page were last checked in September 2026.</p>
         </div>
       </div>
       <SoftwareSubmitForm source="roots-software" />
