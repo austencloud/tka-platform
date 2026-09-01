@@ -387,7 +387,7 @@ export function createScanActivityState({
     //
     // Every other decoded-shortcode surface (/q/[code], /sequence/[id], the
     // viewer drawer, the scan-cell warmer) runs the canonical hydrator, which
-    // derives letters before render. Scan Activity was the one that didn't.
+    // derives letters before render. Scan Atlas was the one that didn't.
     // The local render hydrator still runs after it to keep the step/motion
     // placement shape this module's preview path expects.
     const withLetters = await hydrateDecodedForRender(decoded, {

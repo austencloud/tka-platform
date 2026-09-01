@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Scan Activity renders decoded shortcodes with letters.
+ * Scan Atlas renders decoded shortcodes with letters.
  *
  * A decoded QR payload is letterless by construction — `decodeSequence`
  * stamps `letter: null` on every step because the wire format carries motions,
@@ -11,7 +11,7 @@
  * a bare motion-type key, so the lookup returns (0,0) and every arrow renders
  * on its raw hand point.
  *
- * Scan Activity's card peek was the one decoded-shortcode surface that skipped
+ * Scan Atlas's card peek was the one decoded-shortcode surface that skipped
  * the canonical hydrator (/q, /sequence/[id], the viewer drawer and the
  * scan-cell warmer all run it), which is why the bug showed there and nowhere
  * else.

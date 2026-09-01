@@ -1,9 +1,9 @@
 /**
  * Scan-notification target.
  *
- * Coordinates a click on an admin QR-scan notification with the Scan Activity
- * tab: the InboxNotificationItem sets the scanned code + coordinates here, then
- * navigates to choreo_card/scan-activity, and ScanActivityTab consumes it to
+ * Coordinates a click on an admin QR-scan notification with Scan Atlas: the
+ * InboxNotificationItem sets the scanned code + coordinates here, then
+ * navigates to choreo_card/scan-atlas, and ScanActivityTab consumes it to
  * fly the map to the pin and open the card peek. Mirrors the feedback deep-link
  * handoff (notification-action-state).
  */
@@ -18,7 +18,7 @@ export interface ScanNotificationTarget {
 
 let target = $state<ScanNotificationTarget | null>(null);
 
-/** Set the card the Scan Activity tab should fly to and peek. */
+/** Set the card Scan Atlas should fly to and peek. */
 export function setScanNotificationTarget(next: ScanNotificationTarget): void {
   target = next;
 }
