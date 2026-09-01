@@ -804,15 +804,24 @@
                     cardAutoLayoutOverride={layout.cardAutoLayoutOverride}
                     cardContainSizeMotion={layout.cardContainSizeMotion}
                     onAutoLayoutResolved={(resolved, width, height) => {
+                      const cardOwnsReadablePane =
+                        ctx.viewerState.viewerMode === "card" ||
+                        (ctx.viewerState.viewerMode === "split" &&
+                          ctx.editingPane !== "animation");
                       // Keep the last Card box that was large enough to read.
                       // A collapsing hidden Card must not replace that shape
                       // with the wide, shallow grid its exit briefly measures.
-                      layout.rememberReadableCardAutoLayout(
-                        resolved,
-                        width,
-                        height
-                      );
-                      if (resolved || layout.isImageExportActive) {
+                      if (cardOwnsReadablePane) {
+                        layout.rememberReadableCardAutoLayout(
+                          resolved,
+                          width,
+                          height
+                        );
+                      }
+                      if (
+                        cardOwnsReadablePane &&
+                        (resolved || layout.isImageExportActive)
+                      ) {
                         ctx.setResolvedCardAutoLayout(resolved);
                       }
                     }}
@@ -1003,29 +1012,35 @@
                   bind:this={artInspectorTarget}
                   data-viewer-art-inspector-target
                 ></div>
-                {#if layout.isImageExportActive && !isMobile}
-                  <!-- No onClose on desktop widths: the card settings shape what
-                     Share hands over and must stay put. Leave the Card pane via
-                     the content rail. Below the sidebar threshold the panel
-                     stacks under the hero (layout="bottom") while the rail
-                     column persists. -->
-                  <ExportImagePanel
-                    exportOptions={ctx.exportOptions}
-                    stepCount={ctx.effectiveSequence?.steps?.length ?? 0}
-                    resolvedAutoLayout={ctx.resolvedCardAutoLayout}
-                    layout={layout.effectiveMobile ? "bottom" : "sidebar"}
-                    onSettingChange={interactions.handleCardSettingChange}
-                    cardPresentation={cardPresentation.value}
-                    onCardPresentationChange={cardPresentation.set}
-                    onSaveCardPresentation={ctx.isOwned &&
-                    ctx.isOwnedLibraryRecord
-                      ? async () => {
-                          await persistCardPresentation();
-                        }
-                      : undefined}
-                    cardPresentationDirty={cardPresentation.dirty}
-                    cardPresentationSaving={cardPresentation.saving}
-                  />
+                {#if !isMobile}
+                  <div
+                    class="inspector-content-layer card-settings-layer"
+                    data-active={layout.isImageExportActive}
+                    inert={!layout.isImageExportActive || undefined}
+                    aria-hidden={!layout.isImageExportActive}
+                  >
+                    <!-- Card settings share the persistent inspector layers on
+                         desktop. A direct Card-to-Motion switch can now fade
+                         these controls against the incoming settings instead
+                         of removing one panel before the other becomes visible. -->
+                    <ExportImagePanel
+                      exportOptions={ctx.exportOptions}
+                      stepCount={ctx.effectiveSequence?.steps?.length ?? 0}
+                      resolvedAutoLayout={ctx.resolvedCardAutoLayout}
+                      layout={layout.effectiveMobile ? "bottom" : "sidebar"}
+                      onSettingChange={interactions.handleCardSettingChange}
+                      cardPresentation={cardPresentation.value}
+                      onCardPresentationChange={cardPresentation.set}
+                      onSaveCardPresentation={ctx.isOwned &&
+                      ctx.isOwnedLibraryRecord
+                        ? async () => {
+                            await persistCardPresentation();
+                          }
+                        : undefined}
+                      cardPresentationDirty={cardPresentation.dirty}
+                      cardPresentationSaving={cardPresentation.saving}
+                    />
+                  </div>
                 {/if}
               </div>
             {/snippet}
@@ -1449,6 +1464,12 @@
     justify-content: flex-start;
     overflow-x: hidden;
     overflow-y: auto;
+  }
+
+  .card-settings-layer {
+    display: flex;
+    justify-content: flex-end;
+    overflow: hidden;
   }
 
   /* The persistent Effects workspace is already composed at its destination

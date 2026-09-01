@@ -60,6 +60,7 @@ function sample(
     cardSettingsHeight: 0,
     cardSettingsCenterY: 0,
     cardSettingsOpacity: 0,
+    cardIdentity: 1,
     dissolveActive: false,
     animationOpacity,
     cardOpacity: 1,
@@ -79,6 +80,7 @@ function sample(
     animatorIdentity: 1,
     animatorCanvasCount: 1,
     activeArtSettingsCount: 0,
+    artSettingsOpacity: 0,
     tunnelBackingWidth: 0,
     tunnelBackingHeight: 0,
     tunnelDisplayWidth: 0,
@@ -91,6 +93,169 @@ function trace(samples: TransitionGeometrySample[]): TransitionGeometryTrace {
 }
 
 describe("Sequence Viewer geometry trace", () => {
+  it("accepts one continuous Card and stage exchange with a stable inspector", () => {
+    const cardStart = {
+      ...sample(0, 0, 0),
+      phase: "card-to-stage" as const,
+      selectedMode: "card" as const,
+      cardPanelCenterX: 600,
+      cardContentCenterX: 600,
+      cardSettingsOpacity: 1,
+      inspectorSize: 560,
+    };
+    const crossing = {
+      ...cardStart,
+      time: 120,
+      selectedMode: "animation" as const,
+      animationSize: 450,
+      animationOpacity: 1,
+      cardPanelCenterX: 750,
+      cardContentCenterX: 750,
+      cardSettingsOpacity: 0.5,
+      effectsInspectorOpacity: 0.5,
+    };
+    const stage = {
+      ...crossing,
+      time: 280,
+      animationSize: 900,
+      cardPanelCenterX: 900,
+      cardContentCenterX: 900,
+      cardOpacity: 0,
+      cardSettingsOpacity: 0,
+      effectsInspectorOpacity: 1,
+    };
+    const returnCrossing = {
+      ...crossing,
+      phase: "stage-to-card" as const,
+      time: 400,
+    };
+    const cardEnd = {
+      ...cardStart,
+      phase: "stage-to-card" as const,
+      time: 560,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "card-2d",
+      duration: 560,
+      samples: [cardStart, crossing, stage, returnCrossing, cardEnd],
+      modeCommits: [],
+    });
+
+    expect(summary.cardStageCardIdentityChanges).toBe(0);
+    expect(summary.cardStageAnimatorIdentityChanges).toBe(0);
+    expect(summary.cardStageInspectorIdentityChanges).toBe(0);
+    expect(summary.cardStageSplitFrames).toBe(0);
+    expect(summary.cardStageBlankFrames).toBe(0);
+    expect(summary.cardStageSettingsBlankFrames).toBe(0);
+    expect(summary.cardStageSettingsCrossfadeFrames).toBe(2);
+    expect(summary.cardStageExitTravel).toMatchObject({
+      backtrack: 0,
+      overshoot: 0,
+    });
+    expect(summary.cardStageEntryTravel).toMatchObject({
+      backtrack: 0,
+      overshoot: 0,
+    });
+    expect(summary.cardStageInspectorSize?.variation).toBe(0);
+    expect(summary.cardStageInspectorExit).toMatchObject({
+      start: 560,
+      end: 560,
+      backtrack: 0,
+      overshoot: 0,
+    });
+    expect(summary.cardStageInspectorEntry).toMatchObject({
+      start: 560,
+      end: 560,
+      backtrack: 0,
+      overshoot: 0,
+    });
+  });
+
+  it("accepts an intentional monotonic inspector release for 3D", () => {
+    const card = {
+      ...sample(0, 0, 0),
+      phase: "card-to-stage" as const,
+      selectedMode: "card" as const,
+      inspectorSize: 560,
+    };
+    const closing = {
+      ...card,
+      time: 120,
+      selectedMode: "animation-3d" as const,
+      inspectorSize: 280,
+    };
+    const stage = { ...closing, time: 280, inspectorSize: 4 };
+    const opening = {
+      ...closing,
+      phase: "stage-to-card" as const,
+      time: 400,
+    };
+    const restored = {
+      ...card,
+      phase: "stage-to-card" as const,
+      time: 560,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "card-3d",
+      duration: 560,
+      samples: [card, closing, stage, opening, restored],
+      modeCommits: [],
+    });
+
+    expect(summary.cardStageInspectorExit).toMatchObject({
+      start: 560,
+      end: 4,
+      backtrack: 0,
+      overshoot: 0,
+    });
+    expect(summary.cardStageInspectorEntry).toMatchObject({
+      start: 280,
+      end: 560,
+      backtrack: 0,
+      overshoot: 0,
+    });
+  });
+
+  it("flags remounts, transformed cells, and an intermediate split during a Card handoff", () => {
+    const start = {
+      ...sample(0, 0, 0),
+      phase: "card-to-stage" as const,
+      selectedMode: "card" as const,
+      cardIdentity: 1,
+    };
+    const broken = {
+      ...start,
+      time: 100,
+      selectedMode: "split" as const,
+      cardIdentity: 2,
+      cardOpacity: 0,
+      animationOpacity: 0,
+    };
+    const transformed = {
+      ...start,
+      time: 50,
+      selectedMode: "animation" as const,
+      cardTransformedCellCount: 8,
+      cardOpacity: 0.5,
+      animationOpacity: 1,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "card-2d",
+      duration: 100,
+      samples: [start, transformed, broken],
+      modeCommits: [],
+    });
+
+    expect(summary.cardStageCardIdentityChanges).toBe(1);
+    expect(summary.cardStageSplitFrames).toBe(1);
+    expect(summary.cardStageBlankFrames).toBe(1);
+    expect(summary.transformedCardCellFrames).toBe(1);
+    expect(summary.maximumTransformedCardCells).toBe(8);
+  });
+
   it("flags a returning animation surface that becomes visible as a sliver", () => {
     const summary = summarizeTransitionGeometry(
       trace([sample(0, 0, 0), sample(80, 147, 0.2), sample(280, 450, 1)])

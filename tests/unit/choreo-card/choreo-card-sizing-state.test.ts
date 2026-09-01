@@ -68,5 +68,12 @@ describe("ChoreoCard contained sizing motion", () => {
 
     expect([sizing.containedWidth, sizing.containedHeight]).toEqual([322, 280]);
     expect(sizing.flipSuppressed).toBe(true);
+
+    phase = null;
+    update(322, 280);
+    phase = "restore";
+    update(8, 280);
+    expect([sizing.containedWidth, sizing.containedHeight]).toEqual([322, 280]);
+    expect(sizing.flipSuppressed).toBe(true);
   });
 });

@@ -26,6 +26,7 @@
   const maxCardClockSkew = 34;
   const isMotionTrace = $derived(trace.command.startsWith("3d"));
   const isTunnelTrace = $derived(trace.command.startsWith("tunnel"));
+  const isCardStageTrace = $derived(trace.command.startsWith("card-"));
   const summary = $derived(summarizeTransitionGeometry(trace));
   const maximumSize = $derived(
     Math.max(
@@ -243,20 +244,24 @@
     <div>
       <span>Measured geometry</span>
       <h3 id="geometry-trace-title">
-        {isMotionTrace
-          ? "2D and 3D through the last replay"
-          : isTunnelTrace
-            ? "One canvas becoming Tunnel through the last replay"
-            : "Pane size through the last replay"}
+        {isCardStageTrace
+          ? "Card and motion stage through the last replay"
+          : isMotionTrace
+            ? "2D and 3D through the last replay"
+            : isTunnelTrace
+              ? "One canvas becoming Tunnel through the last replay"
+              : "Pane size through the last replay"}
       </h3>
     </div>
     <div class="trace-legend" aria-label="Geometry trace legend">
       <span class="animation"
-        >{isMotionTrace
-          ? "2D opacity"
-          : isTunnelTrace
-            ? "2D base"
-            : "Animation"}</span
+        >{isCardStageTrace
+          ? "Stage allocation"
+          : isMotionTrace
+            ? "2D opacity"
+            : isTunnelTrace
+              ? "2D base"
+              : "Animation"}</span
       >
       <span class="card"
         >{isMotionTrace
@@ -270,7 +275,78 @@
   </header>
 
   <div class="trace-summary">
-    {#if isTunnelTrace}
+    {#if isCardStageTrace}
+      <span data-problem={summary.cardStageCardIdentityChanges > 0}
+        >Card remounts: {summary.cardStageCardIdentityChanges}</span
+      >
+      <span data-problem={summary.cardStageAnimatorIdentityChanges > 0}
+        >Animator remounts: {summary.cardStageAnimatorIdentityChanges}</span
+      >
+      <span data-problem={summary.cardStageInspectorIdentityChanges > 0}
+        >Inspector remounts: {summary.cardStageInspectorIdentityChanges}</span
+      >
+      <span data-problem={summary.cardStageSplitFrames > 0}
+        >Side-by-Side intermediate frames: {summary.cardStageSplitFrames}</span
+      >
+      <span data-problem={summary.cardStageBlankFrames > 0}
+        >Blank workspace frames: {summary.cardStageBlankFrames}</span
+      >
+      <span data-problem={summary.squashedCardFrames > 0}
+        >Squashed Card frames: {summary.squashedCardFrames}</span
+      >
+      <span data-problem={summary.transformedCardCellFrames > 0}
+        >Transformed Card cell frames: {summary.transformedCardCellFrames} · max
+        {summary.maximumTransformedCardCells} cells</span
+      >
+      <span data-problem={summary.cardStageSettingsBlankFrames > 0}
+        >Blank inspector frames: {summary.cardStageSettingsBlankFrames}</span
+      >
+      <span data-dissolve={summary.cardStageSettingsCrossfadeFrames > 0}
+        >Settings crossfade frames: {summary.cardStageSettingsCrossfadeFrames}</span
+      >
+      <span
+        data-problem={(summary.cardStageExitTravel?.backtrack ?? 0) > 1 ||
+          (summary.cardStageExitTravel?.overshoot ?? 0) > 1}
+        >Card exit travel: {formatTravel(summary.cardStageExitTravel)}</span
+      >
+      <span
+        data-problem={(summary.cardStageEntryTravel?.backtrack ?? 0) > 1 ||
+          (summary.cardStageEntryTravel?.overshoot ?? 0) > 1}
+        >Card entry travel: {formatTravel(summary.cardStageEntryTravel)}</span
+      >
+      <span
+        data-problem={(summary.cardStageExitAllocation?.backtrack ?? 0) > 1 ||
+          (summary.cardStageExitAllocation?.overshoot ?? 0) > 1}
+        >Stage entrance: {formatTravel(summary.cardStageExitAllocation)}</span
+      >
+      <span
+        data-problem={(summary.cardStageEntryAllocation?.backtrack ?? 0) > 1 ||
+          (summary.cardStageEntryAllocation?.overshoot ?? 0) > 1}
+        >Stage exit: {formatTravel(summary.cardStageEntryAllocation)}</span
+      >
+      <span
+        data-problem={(summary.cardStageInspectorExit?.backtrack ?? 0) > 1 ||
+          (summary.cardStageInspectorExit?.overshoot ?? 0) > 1}
+        >Inspector departure: {formatTravel(
+          summary.cardStageInspectorExit
+        )}</span
+      >
+      <span
+        data-problem={(summary.cardStageInspectorEntry?.backtrack ?? 0) > 1 ||
+          (summary.cardStageInspectorEntry?.overshoot ?? 0) > 1}
+        >Inspector return: {formatTravel(summary.cardStageInspectorEntry)}</span
+      >
+      <span data-dissolve={summary.dissolveFrames > 0}
+        >Workspace dissolve frames: {summary.dissolveFrames}</span
+      >
+      <span>Mode path: {summary.modePath.join(" → ") || "n/a"}</span>
+      <span data-problem={slowModeCommit}
+        >Mode commit: {modeCommitSummary || "n/a"}</span
+      >
+      <span>Panel axis: {summary.panelDirectionPath.join(" → ") || "n/a"}</span>
+      <span>Outer axis: {summary.outerDirectionPath.join(" → ") || "n/a"}</span>
+      <span>Card layout: {summary.cardLayoutPath.join(" → ") || "n/a"}</span>
+    {:else if isTunnelTrace}
       <span data-problem={summary.tunnelUnreadyFrames > 0}
         >Unready Tunnel frames: {summary.tunnelUnreadyFrames}</span
       >
@@ -614,11 +690,13 @@
   <svg
     viewBox={`0 0 ${chartWidth} ${chartHeight}`}
     role="img"
-    aria-label={isMotionTrace
-      ? `2D and 3D opacity during the ${trace.command} replay. ${summary.motionBlankFrames} blank frames were sampled.`
-      : isTunnelTrace
-        ? `The persistent 2D base and Tunnel layer blend during the ${trace.command} replay. ${summary.tunnelAnimatorIdentityChanges} Animator remounts were sampled.`
-        : `Pane sizes during the ${trace.command} replay. The Card pane was visibly smaller than ${READABLE_PANE_SIZE} pixels for ${summary.tinyCardFrames} sampled frames.`}
+    aria-label={isCardStageTrace
+      ? `Card and motion-stage allocations during the ${trace.command} replay. ${summary.cardStageBlankFrames} blank workspace frames were sampled.`
+      : isMotionTrace
+        ? `2D and 3D opacity during the ${trace.command} replay. ${summary.motionBlankFrames} blank frames were sampled.`
+        : isTunnelTrace
+          ? `The persistent 2D base and Tunnel layer blend during the ${trace.command} replay. ${summary.tunnelAnimatorIdentityChanges} Animator remounts were sampled.`
+          : `Pane sizes during the ${trace.command} replay. The Card pane was visibly smaller than ${READABLE_PANE_SIZE} pixels for ${summary.tinyCardFrames} sampled frames.`}
   >
     {#if !isMotionTrace && !isTunnelTrace}
       <line
