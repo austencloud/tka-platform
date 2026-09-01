@@ -323,11 +323,12 @@
     display: none;
   }
 
-  /* Two genuine 44px targets plus the control's padding. This must derive from
-     the touch-target token rather than rem: the app intentionally scales its
-     root type size, which made rem-based filter buttons narrower than 44px. */
+  /* Two genuine 44px targets plus the control's padding, gap, and border. This
+     must derive from the touch-target token rather than rem: the app
+     intentionally scales its root type size, which made rem-based filter
+     buttons narrower than 44px. */
   .filter-seg {
-    width: calc(var(--min-touch-target, 44px) * 2 + 8px);
+    width: calc(var(--min-touch-target, 44px) * 2 + 10px);
   }
 
   /* The wide picker starts at 750px, before the full 608px level rail can sit
@@ -338,8 +339,8 @@
   @container (width < 900px) {
     .oph:not(.compact) .oph-bar:not(.filter-only) {
       grid-template-columns:
-        minmax(calc(var(--min-touch-target, 44px) * 2 + 8px), 1fr) auto
-        minmax(calc(var(--min-touch-target, 44px) * 2 + 8px), 1fr);
+        minmax(calc(var(--min-touch-target, 44px) * 2 + 10px), 1fr) auto
+        minmax(calc(var(--min-touch-target, 44px) * 2 + 10px), 1fr);
     }
 
     .oph:not(.compact) :global(.level-selector) {
