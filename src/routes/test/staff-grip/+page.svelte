@@ -9,7 +9,7 @@
   let portraitFraming = $state(false);
 
   const cameraPosition = $derived<[number, number, number]>(
-    portraitFraming ? [0, 1.02, 5.15] : [0, 1.08, 3.15]
+    portraitFraming ? [0, 1.28, 4.65] : [0, 1.28, 2.65]
   );
   const cameraFov = $derived(portraitFraming ? 48 : 40);
 
@@ -48,8 +48,9 @@
         <OrbitControls
           enableDamping
           enablePan={false}
-          target={[0, 0.82, 0.22]}
-          minDistance={portraitFraming ? 3.5 : 2.1}
+          rightDragAction="rotate"
+          target={[0, 1.22, 0.22]}
+          minDistance={0.65}
           maxDistance={7}
           maxPolarAngle={Math.PI / 2}
         />
@@ -83,7 +84,7 @@
     {playing ? "Pause" : "Play"}
   </button>
 
-  <p class="orbit-hint">Drag to orbit · wheel or pinch to zoom</p>
+  <p class="orbit-hint">Left or right drag to orbit · wheel or pinch to zoom</p>
 </main>
 
 <style>
