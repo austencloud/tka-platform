@@ -74,6 +74,7 @@
     stableColumnCount = null,
     narrowMaxColumns = null,
     preferWidthSizingOnNarrow = false,
+    allowFewStepOverflowOnNarrow = true,
     fitAllSteps = false,
     selectedStepNumbers = new Set<number>(),
     isMultiSelectMode = false,
@@ -118,6 +119,7 @@
     stableColumnCount?: number | null;
     narrowMaxColumns?: number | null;
     preferWidthSizingOnNarrow?: boolean;
+    allowFewStepOverflowOnNarrow?: boolean;
     /** Fit the whole sequence in the container instead of scrolling it. */
     fitAllSteps?: boolean;
     selectedStepNumbers?: Set<number>;
@@ -242,6 +244,7 @@
         narrowMaxColumns: responsiveNarrowMaxColumns,
         preferWidthSizingOnNarrow:
           isNarrowAssemble || preferWidthSizingOnNarrow,
+        allowFewStepOverflowOnNarrow,
         fitAllSteps,
       }
     );
