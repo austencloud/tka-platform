@@ -31,7 +31,10 @@ import {
   type MigrationWrite,
 } from "../domain/setup-migration";
 import type { UIGenerationConfig } from "../state/generate-config.svelte";
-import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
+import {
+  normalizePersistedGenerationConfig,
+  normalizePersistedStartEndOptions,
+} from "../domain/generator-persistence-normalizer";
 
 const USERS_COLLECTION = "users";
 const SETUP_REPOSITORY_NAME = "favorites";
@@ -142,9 +145,10 @@ export async function loadPersonal(
   const setups: SavedGeneratorSetup[] = setupDocs.map((setup) => ({
     id: setup.id,
     name: setup.name,
-    config: setup.config as unknown as UIGenerationConfig,
-    startEndOptions:
-      (setup.startEndOptions as unknown as StartEndOptions | null) ?? null,
+    config: normalizePersistedGenerationConfig(
+      setup.config
+    ) as UIGenerationConfig,
+    startEndOptions: normalizePersistedStartEndOptions(setup.startEndOptions),
     createdAt: setup.createdAt ?? new Date(),
     updatedAt: setup.updatedAt ?? new Date(),
   }));
@@ -193,9 +197,12 @@ export async function loadCommunity(
       userId: user.id,
       displayName: user.displayName ?? "Unknown",
       avatar: user.photoURL ?? undefined,
-      config: favorite.config as unknown as UIGenerationConfig,
-      startEndOptions:
-        (favorite.startEndOptions as unknown as StartEndOptions | null) ?? null,
+      config: normalizePersistedGenerationConfig(
+        favorite.config
+      ) as UIGenerationConfig,
+      startEndOptions: normalizePersistedStartEndOptions(
+        favorite.startEndOptions
+      ),
       setAt: favorite.setAt ?? new Date(),
     });
   }

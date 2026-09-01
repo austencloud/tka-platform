@@ -126,6 +126,9 @@ const fernNodes = meshNodes.filter((node) =>
   meshUsesMaterial(gltf, node.mesh, "Autumn Fern PBR")
 );
 const terrainNode = meshNodes.find((node) => node.name === "Autumn_Terrain");
+const terrainApronNode = meshNodes.find(
+  (node) => node.name === "Autumn_Terrain_Apron"
+);
 const owlTreeNode = meshNodes.find((node) => node.name === "HeroTreeA_03_0");
 const groundMaterial = (gltf.materials ?? []).find(
   (material) => material.name === "Autumn Living Forest Floor"
@@ -144,6 +147,7 @@ const importedTreeMaterialMatches = Object.fromEntries(
 );
 
 invariant(terrainNode, "Autumn terrain node is missing");
+invariant(terrainApronNode, "Autumn terrain horizon apron is missing");
 invariant(owlTreeNode, "Owl tree node HeroTreeA_03_0 is missing");
 invariant(groundMaterial, "Autumn living forest floor material is missing");
 for (const prefix of importedTreeMaterialPrefixes) {
@@ -183,6 +187,15 @@ invariant(
 invariant(
   terrainNode.extras?.tka_ground_treatment === "baked-living-floor",
   "Terrain lost its baked living-floor contract"
+);
+invariant(
+  terrainApronNode.extras?.tka_ground_treatment ===
+    "fog-dissolved-rolling-horizon",
+  "Terrain apron regressed to a flat or unauthored horizon"
+);
+invariant(
+  meshTriangles(gltf, terrainApronNode.mesh) >= 3_500,
+  "Terrain horizon lost the authored rolling-ring topology"
 );
 invariant(
   groundMaterial.pbrMetallicRoughness.baseColorTexture.texCoord === 1,

@@ -60,7 +60,7 @@ describe("Tunnel exact color state", () => {
     expect(
       resolveTunnelPropColorState({
         mode: "custom",
-        custom: { left: "#123ABC", right: "#fedcba" },
+        custom: { blue: "#123ABC", red: "#fedcba" },
       })
     ).toEqual({
       mode: "custom",

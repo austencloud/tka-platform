@@ -163,9 +163,14 @@
   }
 
   function elementOpacity(selector: string): number {
-    const element = document.querySelector<HTMLElement>(selector);
+    let element = document.querySelector<HTMLElement>(selector);
     if (!element) return 0;
-    return Number.parseFloat(getComputedStyle(element).opacity) || 0;
+    let opacity = 1;
+    while (element) {
+      opacity *= Number.parseFloat(getComputedStyle(element).opacity) || 0;
+      element = element.parentElement;
+    }
+    return opacity;
   }
 
   function elementBounds(selector: string): {
@@ -372,7 +377,7 @@
         ? "vertical"
         : "horizontal";
     const outerPanelGroup = document.querySelector<HTMLElement>(
-      ".viewer-and-export > .panel-group"
+      ".viewer-motion-stage-layer .panel-group"
     );
     const inspectorPanelSelector =
       '[data-panel-id="export-inspector"], [data-panel-id="export-inspector-stacked"]';
@@ -399,6 +404,15 @@
     const activeTunnelCanvas = tunnelCanvas();
     const stageLayer = elementBounds(".viewer-motion-stage-layer");
     const performanceLayer = elementBounds(".performance-gallery-layer");
+    const performanceWorkspace = document.querySelector<HTMLElement>(
+      ".performance-gallery-layer .video-workspace"
+    );
+    const performanceLayoutColumns = performanceWorkspace
+      ? getComputedStyle(performanceWorkspace)
+          .gridTemplateColumns.trim()
+          .split(/\s+/)
+          .filter(Boolean).length
+      : 0;
     const persistentAnimator = document.querySelector<HTMLElement>(
       "[data-persistent-animator]"
     );
@@ -566,6 +580,7 @@
         document
           .querySelector(".sequence-videos")
           ?.getAttribute("data-gallery-state") === "ready",
+      performanceLayoutColumns,
       stageLayerWidth: stageLayer.width,
       performanceLayerWidth: performanceLayer.width,
     };

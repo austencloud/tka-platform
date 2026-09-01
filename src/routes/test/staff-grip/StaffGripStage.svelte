@@ -7,6 +7,11 @@
     STAGE,
   } from "@austencloud/scene-3d";
   import type { AvatarDefinition, AvatarId } from "@austencloud/scene-3d";
+  import type {
+    AvatarGripDiagnostics,
+    AvatarPoseDiagnostics,
+    CollisionEvent,
+  } from "@austencloud/scene-3d";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { CharacterId } from "$lib/shared/3d/domain/character-model";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -14,11 +19,17 @@
   import LiveSequencePerformer3D from "$lib/shared/3d/performers/LiveSequencePerformer3D.svelte";
 
   interface Props {
-    playing: boolean;
+    id: string;
+    phase: number;
     sequence: SequenceData;
+    onCollisionEvents?: (
+      events: CollisionEvent[],
+      diagnostics: AvatarPoseDiagnostics,
+      gripDiagnostics: AvatarGripDiagnostics
+    ) => void;
   }
 
-  let { playing, sequence }: Props = $props();
+  let { id, phase, sequence, onCollisionEvents }: Props = $props();
 
   const INTAKE_CHARACTER_ID = "intake-current" as AvatarId;
   const INTAKE_CHARACTER: AvatarDefinition = {
@@ -54,17 +65,18 @@
 </T.Group>
 
 <LiveSequencePerformer3D
-  id="staff-grip-performer"
+  {id}
   position={{ x: 0, y: 0, z: 0 }}
   facingAngle={0}
   characterId={INTAKE_CHARACTER_ID as CharacterId}
   propType={PropType.STAFF}
   {sequence}
   effectId="led"
-  playbackSpeed={0.7}
-  active={playing}
+  phaseOffsetSteps={phase}
+  active={false}
   weldGrip={true}
   showEffects={false}
   enableLocomotion={false}
   enableFootPlanting={false}
+  {onCollisionEvents}
 />

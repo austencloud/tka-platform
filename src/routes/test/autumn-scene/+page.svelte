@@ -31,6 +31,7 @@
   import { setEnvironmentTransitionVisualContext } from "$lib/shared/3d/environments/context/environment-transition-visual-context";
   import ScenePostProcessing from "$lib/shared/3d/effects/post-processing/ScenePostProcessing.svelte";
   import PerfMonitor from "$lib/shared/3d/components/PerfMonitor.svelte";
+  import SceneShaderWarmup from "$lib/shared/3d/components/SceneShaderWarmup.svelte";
   import InteractiveCanvasFrameBridge from "$lib/shared/3d/components/InteractiveCanvasFrameBridge.svelte";
   import type { RendererPerformanceSample } from "$lib/shared/3d/components/renderer-performance-window";
   import AutumnProductionHarness from "./AutumnProductionHarness.svelte";
@@ -160,12 +161,15 @@
   });
   let reading = $state<EnvironmentReviewReading | null>(null);
   let renderSample = $state<RendererPerformanceSample | null>(null);
+  let productionReady = $state(false);
   let captureNote = $state<string | null>(null);
   let captureNoteTimer: ReturnType<typeof setTimeout> | null = null;
   const reviewReady = $derived(
-    sceneFeatureState.allInitialRevealFeaturesSettled &&
-      sceneFeatureState.warmupProgress >= 1 &&
-      reading !== null
+    productionGraph
+      ? productionReady
+      : sceneFeatureState.allEnabledReady &&
+          sceneFeatureState.warmupProgress >= 1 &&
+          reading !== null
   );
 
   function recordRenderSample(sample: RendererPerformanceSample): void {
@@ -225,7 +229,11 @@
 <div class="page" data-autumn-ready={reviewReady ? "true" : "false"}>
   {#if productionGraph}
     {#key cameraKey}
-      <AutumnProductionHarness onSample={recordRenderSample} {cameraPreset} />
+      <AutumnProductionHarness
+        onSample={recordRenderSample}
+        onReadyChange={(ready) => (productionReady = ready)}
+        {cameraPreset}
+      />
     {/key}
   {:else}
     <Canvas
@@ -235,6 +243,7 @@
         new WebGLRenderer({ canvas, preserveDrawingBuffer: false })}
     >
       <InteractiveCanvasFrameBridge />
+      <SceneShaderWarmup waitForAllFeatures={true} cacheKey="autumn-review" />
       <ScenePostProcessing
         backgroundType={BackgroundType.AUTUMN}
         forceBloom={requestedQuality !== "low"}

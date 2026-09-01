@@ -309,9 +309,11 @@
       <span data-problem={summary.performanceUnreadyFrames > 0}
         >Unready gallery frames: {summary.performanceUnreadyFrames}</span
       >
-      <span
-        data-problem={summary.performanceOpacityComplementDriftMaximum > 0.04}
-        >Opacity complement drift: {summary.performanceOpacityComplementDriftMaximum.toFixed(
+      <span data-problem={summary.performanceLayoutChanges > 0}
+        >Visible gallery layout changes: {summary.performanceLayoutChanges}</span
+      >
+      <span data-dissolve={summary.performanceOpacityComplementDriftMaximum > 0}
+        >Shared-background dip: {summary.performanceOpacityComplementDriftMaximum.toFixed(
           3
         )}</span
       >

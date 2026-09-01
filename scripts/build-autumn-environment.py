@@ -741,7 +741,18 @@ GROUND_ATLAS_HALF_SIZE = float(GROUND_LAYOUT["worldExtent"])
 APRON_OUTER_HALF_SIZE = 1_024.0
 APRON_FLAT_HALF_SIZE = 256.0
 FAR_GROUND_HEIGHT = -8.5
-FOG_PLANE_HEIGHT = -12.0
+APRON_HORIZON_RING_HALF_SIZES = (
+    APRON_FLAT_HALF_SIZE,
+    304.0,
+    360.0,
+    424.0,
+    496.0,
+    576.0,
+    672.0,
+    784.0,
+    912.0,
+    APRON_OUTER_HALF_SIZE,
+)
 
 
 def chaikin_path(points, iterations=2):
@@ -852,6 +863,47 @@ def world_surface_height(x, y):
     return authored_surface * (1.0 - flatten) + FAR_GROUND_HEIGHT * flatten
 
 
+def fog_horizon_height(x, y):
+    """Turn the fog apron into a distant landscape instead of a flat slab.
+
+    The inner edge exactly matches ``world_surface_height`` at 256m. Beyond it,
+    broad deterministic ridges rise through the fog, then the outer two rings
+    descend below every supported sightline. The changing silhouette prevents
+    high and reverse cameras from exposing a ruler-straight ground/sky boundary
+    while the dense fog keeps this cheap mesh from reading as a new mountain
+    range behind the authored forest.
+    """
+    half_size = max(abs(x), abs(y))
+    if half_size <= APRON_FLAT_HALF_SIZE:
+        return world_surface_height(x, y)
+
+    amount = min(
+        1.0,
+        (half_size - APRON_FLAT_HALF_SIZE)
+        / (APRON_OUTER_HALF_SIZE - APRON_FLAT_HALF_SIZE),
+    )
+    angle = math.atan2(y, x)
+    ridge_envelope = smoothstep(0.0, 0.18, amount) * (
+        1.0 - smoothstep(0.62, 0.88, amount)
+    )
+    ridge_profile = (
+        34.0
+        + 15.0 * math.sin(angle * 3.0 + 0.45)
+        + 10.0 * math.cos(angle * 5.0 - 1.1)
+        + 7.0 * math.sin(angle * 7.0 + 0.6)
+        + 5.0 * math.sin(x * 0.010 + y * 0.014)
+        + 3.0 * math.cos(x * 0.017 - y * 0.008)
+    )
+    base_descent = 2.0 * smoothstep(0.45, 1.0, amount)
+    outer_drop = 36.0 * smoothstep(0.78, 1.0, amount)
+    return (
+        FAR_GROUND_HEIGHT
+        - base_descent
+        + ridge_profile * ridge_envelope
+        - outer_drop
+    )
+
+
 def autumn_ground_uv(x, y):
     """Repeat close surface response without exposing a square texture grid."""
     macro_u = 0.075 * math.sin(y * 0.29) + 0.032 * math.sin(x * 0.73 + y * 0.18)
@@ -948,9 +1000,10 @@ def create_terrain_apron():
     beyond that the texture edge is extended under accumulating fog. At the
     scene's density, the outer edge has effectively zero transmittance.
 
-    It is deliberately cheap: detailed transition rings stop at 256m, then a
-    single two-triangle plane continues beneath them to the fog-opaque edge.
-    The overlap prevents a horizon crack without stacking coplanar surfaces.
+    It is deliberately cheap: detailed transition rings stop at 256m, then ten
+    broad rings form a rolling horizon before descending below the fog-opaque
+    edge. This costs fewer than 7,000 triangles while avoiding the geometric
+    horizon line created by one viewport-sized quad.
     """
     ring_half_sizes = (
         TERRAIN_HALF_SIZE,
@@ -1002,35 +1055,45 @@ def create_terrain_apron():
     transition["tka_ground_layout_version"] = int(GROUND_LAYOUT["version"])
     transition["tka_ground_layout_sha256"] = GROUND_LAYOUT_SHA256
 
-    plane_size = APRON_OUTER_HALF_SIZE
-    plane_mesh = bpy.data.meshes.new("Autumn Fog Ground Mesh")
-    plane_mesh.from_pydata(
-        (
-            (-plane_size, -plane_size, FOG_PLANE_HEIGHT),
-            (plane_size, -plane_size, FOG_PLANE_HEIGHT),
-            (plane_size, plane_size, FOG_PLANE_HEIGHT),
-            (-plane_size, plane_size, FOG_PLANE_HEIGHT),
-        ),
-        [],
-        ((0, 1, 2, 3),),
-    )
-    plane_mesh.update()
-    plane_mesh.materials.append(FOG_APRON_EARTH)
-    plane_uv = plane_mesh.uv_layers.new(name="Autumn Ground Macro UV")
-    for polygon in plane_mesh.polygons:
+    horizon_vertices = []
+    for half_size in APRON_HORIZON_RING_HALF_SIZES:
+        for x, y in square_perimeter_points(half_size, segments):
+            horizon_vertices.append((x, y, fog_horizon_height(x, y)))
+
+    horizon_faces = []
+    for ring_index in range(len(APRON_HORIZON_RING_HALF_SIZES) - 1):
+        base = ring_index * perimeter
+        nxt = (ring_index + 1) * perimeter
+        for i in range(perimeter):
+            j = (i + 1) % perimeter
+            horizon_faces.append((base + i, nxt + i, nxt + j, base + j))
+
+    horizon_mesh = bpy.data.meshes.new("Autumn Fog Horizon Mesh")
+    horizon_mesh.from_pydata(horizon_vertices, [], horizon_faces)
+    horizon_mesh.update()
+    horizon_mesh.materials.append(FOG_APRON_EARTH)
+    horizon_detail_uv = horizon_mesh.uv_layers.new(name="Autumn Ground Detail UV")
+    horizon_macro_uv = horizon_mesh.uv_layers.new(name="Autumn Ground Macro UV")
+    for polygon in horizon_mesh.polygons:
+        polygon.use_smooth = True
         for loop_index in polygon.loop_indices:
-            vertex = plane_mesh.vertices[plane_mesh.loops[loop_index].vertex_index]
-            plane_uv.data[loop_index].uv = autumn_ground_macro_uv(
+            vertex = horizon_mesh.vertices[
+                horizon_mesh.loops[loop_index].vertex_index
+            ]
+            horizon_detail_uv.data[loop_index].uv = autumn_ground_uv(
+                vertex.co.x, vertex.co.y
+            )
+            horizon_macro_uv.data[loop_index].uv = autumn_ground_macro_uv(
                 vertex.co.x, vertex.co.y
             )
 
-    apron = bpy.data.objects.new("Autumn_Terrain_Apron", plane_mesh)
+    apron = bpy.data.objects.new("Autumn_Terrain_Apron", horizon_mesh)
     bpy.context.scene.collection.objects.link(apron)
-    apron["tka_ground_treatment"] = "fog-hidden-infinite-floor"
+    apron["tka_ground_treatment"] = "fog-dissolved-rolling-horizon"
     apron["tka_ground_layout_version"] = int(GROUND_LAYOUT["version"])
     apron["tka_ground_layout_sha256"] = GROUND_LAYOUT_SHA256
     apron["tka_ground_visible_extent"] = APRON_OUTER_HALF_SIZE
-    return len(faces) + 1
+    return len(faces) + len(horizon_faces)
 
 
 def create_path_contract(name, path_points, role, destination):

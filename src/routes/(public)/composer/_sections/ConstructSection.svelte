@@ -69,15 +69,16 @@
     createConstructAttractAct,
     type ConstructAttractAct,
   } from "./construct-attract-act.svelte";
+  import { isVisitorOwnedConstructSequence } from "../_components/composer-sequence-ownership";
 
   type ConstructPresentationMode = "full" | "guided-build";
 
   let {
     presentationMode = "full",
-    onComposed,
+    onVisitorComposed,
   }: {
     presentationMode?: ConstructPresentationMode;
-    onComposed?: (sequence: SequenceData) => void;
+    onVisitorComposed?: (sequence: SequenceData) => void;
   } = $props();
 
   const isGuidedBuild = $derived(presentationMode === "guided-build");
@@ -148,6 +149,7 @@
   let bandEl = $state<HTMLElement | null>(null);
   let act: ConstructAttractAct | null = $state(null);
   let tookOver = $state(false);
+  let visitorOwnsBuild = $state(false);
   let io: IntersectionObserver | null = null;
 
   onMount(() => {
@@ -211,6 +213,7 @@
   // resume button lives inside the section and would otherwise re-pause).
   function takeover(e?: Event) {
     if ((e?.target as HTMLElement | null)?.closest?.(".ghost")) return;
+    visitorOwnsBuild = true;
     if (act && !act.dead && !act.paused) {
       act.pause();
       tookOver = true;
@@ -222,6 +225,7 @@
     if (act && !act.dead) {
       act.resume();
       tookOver = false;
+      visitorOwnsBuild = false;
     }
   }
 
@@ -299,9 +303,9 @@
     }))
   );
 
-  // The public story carries exactly what the visitor has built into the
-  // demonstrations below it. Keeping this sequence live also gives StepGrid
-  // the complete frame it needs to animate a picked pictograph into place.
+  // StepGrid needs the complete live frame for its arrival animation. The
+  // attract act may update that local frame, but only visitor-owned work is
+  // allowed to leave this panel and replace the examples below it.
   const composedSequence = $derived<SequenceData | null>(
     startStepData && stepData.length > 0
       ? createSequenceData({
@@ -316,12 +320,15 @@
       : null
   );
 
-  let lastComposedSequenceId = "";
+  let lastObservedSequenceId = "";
   $effect(() => {
-    if (!composedSequence || composedSequence.id === lastComposedSequenceId)
+    if (!composedSequence || composedSequence.id === lastObservedSequenceId) {
       return;
-    lastComposedSequenceId = composedSequence.id;
-    onComposed?.(composedSequence);
+    }
+    lastObservedSequenceId = composedSequence.id;
+    if (!isVisitorOwnedConstructSequence(visitorOwnsBuild, composedSequence))
+      return;
+    onVisitorComposed?.(composedSequence);
   });
 
   let wsW = $state(0);
@@ -666,26 +673,28 @@
                 <ClearSequenceButton onclick={reset} />
               {/if}
             </div>
-            <Crossfade key={phase} duration={DURATION.normal}>
-              {#if phase === "add-step"}
-                <span
-                  data-demo-play
-                  style:visibility={steps.length > 0 ? "visible" : "hidden"}
-                >
-                  <ViewSequenceButton
-                    purpose="play"
-                    onclick={() => {
-                      playing = true;
-                      compactPane = "build";
-                    }}
-                  />
-                </span>
-              {:else if phase === "play"}
-                {#if !isCompactDemo}
-                  {@render playPhaseActions()}
-                {/if}
-              {/if}
-            </Crossfade>
+            <div class="action-swap">
+              <Crossfade key={phase} duration={DURATION.normal} mode="swap">
+                <div class="action-swap-state">
+                  {#if phase === "add-step"}
+                    <span
+                      data-demo-play
+                      style:visibility={steps.length > 0 ? "visible" : "hidden"}
+                    >
+                      <ViewSequenceButton
+                        purpose="play"
+                        onclick={() => {
+                          playing = true;
+                          compactPane = "build";
+                        }}
+                      />
+                    </span>
+                  {:else if phase === "play" && !isCompactDemo}
+                    {@render playPhaseActions()}
+                  {/if}
+                </div>
+              </Crossfade>
+            </div>
             <!-- Right zone: step-by-step history. Always mounted and merely
              disabled when a direction is empty — the app's own undo button does
              the same, and a slot that appeared on the first pick would shove
@@ -1277,6 +1286,31 @@
     --min-touch-target: max(44px, 2.75rem);
   }
 
+  /* Play and the wider playback actions are one control state, not two boxes.
+     Reserving their shared width keeps the outgoing Play button centered while
+     the replacement arrives; swap mode then prevents two actionable labels
+     from becoming readable at the same time. */
+  .action-swap {
+    min-inline-size: var(--min-touch-target);
+  }
+
+  .action-swap-state {
+    min-block-size: var(--min-touch-target);
+    display: grid;
+    place-items: center;
+  }
+
+  .action-swap-state [data-demo-play] {
+    display: grid;
+    place-items: center;
+  }
+
+  @container (min-width: 1100px) {
+    .action-swap {
+      inline-size: 21rem;
+    }
+  }
+
   .slot-side {
     display: flex;
     align-items: center;
@@ -1514,8 +1548,8 @@
     font-weight: 600;
     cursor: pointer;
     transition:
-      background 0.16s ease,
-      transform 0.16s ease;
+      background var(--transition-fast),
+      transform var(--transition-fast);
   }
 
   .cta-btn:hover {

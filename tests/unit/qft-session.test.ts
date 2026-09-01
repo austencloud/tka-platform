@@ -47,8 +47,8 @@ describe("QfT session persistence", () => {
       JSON.stringify({
         entered: true,
         appMode: "matrix",
-        leftIndex: 2,
-        rightIndex: 9,
+        blueIndex: 2,
+        redIndex: 9,
         vtgMode: "QO",
         cursor: 7.25,
         playing: false,
@@ -63,6 +63,28 @@ describe("QfT session persistence", () => {
     expect(migrated?.right.source).toEqual({ kind: "flower", index: 9 });
     expect(migrated?.vtgMode).toBe("QO");
     expect(migrated?.cursor).toBe(7.25);
+  });
+
+  it("restores a literal blue/red v3 hand pair", () => {
+    localStorage.setItem(
+      QFT_SESSION_KEY,
+      JSON.stringify({
+        entered: true,
+        handCount: "two",
+        blue: { source: { kind: "flower", index: 2 }, radius: 1.2 },
+        red: { source: { kind: "flower", index: 9 }, radius: 0.8 },
+      })
+    );
+
+    const restored = loadQftSession();
+    expect(restored?.left).toMatchObject({
+      source: { kind: "flower", index: 2 },
+      radius: 1.2,
+    });
+    expect(restored?.right).toMatchObject({
+      source: { kind: "flower", index: 9 },
+      radius: 0.8,
+    });
   });
 
   it("migrates a guide session to its canonical preset", () => {

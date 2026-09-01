@@ -9,11 +9,11 @@ describe("Construct option controls presentation", () => {
     expect(
       selectOptionControlsPresentation({
         hasControls: true,
-        wideInlineEligible: false,
+        fullInlineEligible: false,
         containerHeight: 1847,
         canShowTurnRows: true,
       })
-    ).toBe("compact-inline");
+    ).toBe("inline");
   });
 
   it("uses disclosure only when the option surface would become too short", () => {
@@ -26,7 +26,7 @@ describe("Construct option controls presentation", () => {
     expect(
       selectOptionControlsPresentation({
         hasControls: true,
-        wideInlineEligible: false,
+        fullInlineEligible: false,
         containerHeight: withoutTurns - 1,
         canShowTurnRows: false,
       })
@@ -34,15 +34,15 @@ describe("Construct option controls presentation", () => {
     expect(
       selectOptionControlsPresentation({
         hasControls: true,
-        wideInlineEligible: false,
+        fullInlineEligible: false,
         containerHeight: withoutTurns,
         canShowTurnRows: false,
       })
-    ).toBe("compact-inline");
+    ).toBe("inline");
     expect(
       selectOptionControlsPresentation({
         hasControls: true,
-        wideInlineEligible: false,
+        fullInlineEligible: false,
         containerHeight: withTurns - 1,
         canShowTurnRows: true,
       })
@@ -50,29 +50,29 @@ describe("Construct option controls presentation", () => {
     expect(
       selectOptionControlsPresentation({
         hasControls: true,
-        wideInlineEligible: false,
+        fullInlineEligible: false,
         containerHeight: withTurns,
         canShowTurnRows: true,
       })
-    ).toBe("compact-inline");
+    ).toBe("inline");
   });
 
   it("preserves the full desktop header when its width contract is met", () => {
     expect(
       selectOptionControlsPresentation({
         hasControls: true,
-        wideInlineEligible: true,
+        fullInlineEligible: true,
         containerHeight: 360,
         canShowTurnRows: true,
       })
-    ).toBe("wide-inline");
+    ).toBe("inline");
   });
 
   it("renders no settings surface when the host exposes no controls", () => {
     expect(
       selectOptionControlsPresentation({
         hasControls: false,
-        wideInlineEligible: false,
+        fullInlineEligible: false,
         containerHeight: 1200,
         canShowTurnRows: false,
       })
