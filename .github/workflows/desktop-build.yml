@@ -96,7 +96,15 @@ jobs:
       - name: Create .env from example
         run: cp .env.example .env
 
-      - uses: tauri-apps/tauri-action@v0
+      - name: Build unsigned desktop packages
+        if: github.ref_type != 'tag'
+        uses: tauri-apps/tauri-action@v0
+        with:
+          args: ${{ matrix.args }} --config src-tauri/tauri.ci.conf.json
+
+      - name: Build and publish signed desktop release
+        if: github.ref_type == 'tag'
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
