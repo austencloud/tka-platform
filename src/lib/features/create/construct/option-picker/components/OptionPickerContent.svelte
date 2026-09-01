@@ -416,7 +416,9 @@ Uses organizer and sizer services for section grouping and sizing.
   // Height to subtract when calculating available space for content.
   // The compact type header owns a fixed row above the carousel without
   // changing the workspace dimensions as panels change.
-  const TYPE_NAVIGATION_HEIGHT = 40;
+  // The navigation shell reserves a 44px touch target plus 4px of shell
+  // chrome. Keep the carousel's height budget aligned with that real row.
+  const TYPE_NAVIGATION_HEIGHT = 48;
 
   // Calculate effective height for swipe layout accounting for UI chrome
   const effectiveSwipeHeight = $derived(() => {

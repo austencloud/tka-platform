@@ -691,6 +691,10 @@ Features:
     min-width: 0;
   }
 
+  .type-navigation-selector :global(.segmented-control) {
+    box-sizing: border-box;
+  }
+
   .letter-type-group-label {
     display: flex;
     min-width: 0;

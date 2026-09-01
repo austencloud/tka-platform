@@ -43,7 +43,8 @@ describe("OptionPickerContent desktop layout", () => {
     const settingsBounds = settings.element().getBoundingClientRect();
     const tabsBounds = tabs.element().getBoundingClientRect();
     const infoBounds = info.element().getBoundingClientRect();
-    expect(headerBounds.height).toBeLessThanOrEqual(40);
+    expect(headerBounds.height).toBeGreaterThanOrEqual(44);
+    expect(headerBounds.height).toBeLessThanOrEqual(48);
     expect(settingsBounds.right).toBeLessThanOrEqual(tabsBounds.left);
     expect(tabsBounds.right).toBeLessThanOrEqual(infoBounds.left);
     expect(

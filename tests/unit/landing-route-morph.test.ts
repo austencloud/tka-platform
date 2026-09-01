@@ -248,7 +248,7 @@ describe("landing shared-element contract", () => {
     expect(guideShell).toContain("{#if ownsStandaloneChrome}");
     expect(guidePage).not.toContain("joinWaitlist");
     expect(guidePage).toContain('href="/learn/concepts"');
-    expect(guidePage).toContain("Start learning");
+    expect(guidePage).toContain("Start with {firstTopicLabel}");
     expect(guideCss).toContain("html:has(.guide-layout):not(:has(.mkt-shell))");
   });
 

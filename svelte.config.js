@@ -111,6 +111,11 @@ const config = {
         // matching DOM ids would trigger a native jump before hydration and
         // leave the viewport stranded inside the overflow-hidden archive.
         if (path === "/notation" && id.startsWith("archive-record-")) return;
+        // Atlas hashes select a category or term after hydration. They are URL
+        // state, not scroll targets, so rendering matching ids would make the
+        // browser jump inside the full-viewport workspace before Atlas can
+        // restore the requested view.
+        if (path === "/atlas") return;
         throw new Error(`Missing id "#${id}" on ${path}`);
       },
     },
