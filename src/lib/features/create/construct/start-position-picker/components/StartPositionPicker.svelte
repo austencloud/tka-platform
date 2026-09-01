@@ -167,6 +167,8 @@ Controls moved below the grid for better UX
         orientation?: string; // legacy single orientation
         leftOrientation?: string;
         rightOrientation?: string;
+        blueOrientation?: string;
+        redOrientation?: string;
       };
 
       // Restore advanced/simple view preference
@@ -188,34 +190,26 @@ Controls moved below the grid for better UX
         Orientation.OUT,
         Orientation.COUNTER,
       ] as string[];
+      const leftOrientation = prefs.leftOrientation ?? prefs.blueOrientation;
+      const rightOrientation = prefs.rightOrientation ?? prefs.redOrientation;
 
-      if (
-        prefs.leftOrientation &&
-        validOrientations.includes(prefs.leftOrientation)
-      ) {
-        void pickerState.setLeftOrientation(
-          prefs.leftOrientation as Orientation
-        );
+      if (leftOrientation && validOrientations.includes(leftOrientation)) {
+        void pickerState.setLeftOrientation(leftOrientation as Orientation);
       } else if (
         prefs.orientation &&
         validOrientations.includes(prefs.orientation)
       ) {
-        // Legacy: single orientation applied to blue
+        // Legacy: single orientation applied to the left hand
         void pickerState.setLeftOrientation(prefs.orientation as Orientation);
       }
 
-      if (
-        prefs.rightOrientation &&
-        validOrientations.includes(prefs.rightOrientation)
-      ) {
-        void pickerState.setRightOrientation(
-          prefs.rightOrientation as Orientation
-        );
+      if (rightOrientation && validOrientations.includes(rightOrientation)) {
+        void pickerState.setRightOrientation(rightOrientation as Orientation);
       } else if (
         prefs.orientation &&
         validOrientations.includes(prefs.orientation)
       ) {
-        // Legacy: single orientation applied to red
+        // Legacy: single orientation applied to the right hand
         void pickerState.setRightOrientation(prefs.orientation as Orientation);
       }
 

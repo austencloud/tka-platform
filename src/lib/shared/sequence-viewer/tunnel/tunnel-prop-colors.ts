@@ -21,6 +21,7 @@ import {
   normalizeViewerHexColor,
   type ViewerCustomColorPair,
 } from "../domain/viewer-custom-colors";
+import { normalizeLegacyHandPair } from "@tka/tka-types";
 
 export type TunnelPropColorMode = "hands" | "spectrum" | "custom";
 
@@ -62,6 +63,7 @@ export function resolveTunnelPropColorState(
           custom?: { left?: unknown; right?: unknown } | null;
         })
       : null;
+  const custom = normalizeLegacyHandPair(candidate?.custom);
   const mode: TunnelPropColorMode =
     candidate?.mode === "hands" ||
     candidate?.mode === "spectrum" ||
@@ -74,11 +76,11 @@ export function resolveTunnelPropColorState(
     mode,
     custom: {
       left: normalizeTunnelHexColor(
-        candidate?.custom?.left,
+        custom?.left,
         DEFAULT_TUNNEL_CUSTOM_PROP_COLORS.left
       ),
       right: normalizeTunnelHexColor(
-        candidate?.custom?.right,
+        custom?.right,
         DEFAULT_TUNNEL_CUSTOM_PROP_COLORS.right
       ),
     },

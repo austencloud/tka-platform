@@ -12,6 +12,7 @@ import {
   MODE_ORDER,
   type VtgMode,
 } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
+import { normalizeLegacyHandPair } from "@tka/tka-types";
 
 export const QFT_SESSION_KEY = "qft:session:v3";
 export const QFT_LEGACY_SESSION_KEY = "qft:session:v2";
@@ -47,12 +48,12 @@ export interface QftSession {
   layers: QftLayers;
 }
 
-const DEFAULT_BLUE: QftSessionHand = {
+const DEFAULT_LEFT: QftSessionHand = {
   source: { kind: "flower", index: 6 },
   radius: 1,
 };
 
-const DEFAULT_RED: QftSessionHand = {
+const DEFAULT_RIGHT: QftSessionHand = {
   source: { kind: "flower", index: 7 },
   radius: 1,
 };
@@ -142,12 +143,13 @@ function readHand(value: unknown, fallback: QftSessionHand): QftSessionHand {
 function readV3(raw: unknown): QftSession | null {
   if (!raw || typeof raw !== "object") return null;
   const session = raw as Record<string, unknown>;
+  const handPair = normalizeLegacyHandPair(session);
 
   return {
     entered: session.entered === true,
     handCount: session.handCount === "one" ? "one" : "two",
-    left: readHand(session.left, DEFAULT_BLUE),
-    right: readHand(session.right, DEFAULT_RED),
+    left: readHand(handPair.left, DEFAULT_LEFT),
+    right: readHand(handPair.right, DEFAULT_RIGHT),
     originPhase: normalizedPhase(session.originPhase),
     vtgMode: MODE_ORDER.includes(session.vtgMode as VtgMode)
       ? (session.vtgMode as VtgMode)
@@ -198,7 +200,9 @@ function readV2(raw: unknown): QftSession | null {
         ? legacyInstrumentSource(session)
         : {
             kind: "flower",
-            index: Math.floor(num(session.leftIndex, 0, AXIS_LENGTH - 1, 6)),
+            index: Math.floor(
+              num(session.leftIndex ?? session.blueIndex, 0, AXIS_LENGTH - 1, 6)
+            ),
           };
 
   return {
@@ -208,7 +212,9 @@ function readV2(raw: unknown): QftSession | null {
     right: {
       source: {
         kind: "flower",
-        index: Math.floor(num(session.rightIndex, 0, AXIS_LENGTH - 1, 7)),
+        index: Math.floor(
+          num(session.rightIndex ?? session.redIndex, 0, AXIS_LENGTH - 1, 7)
+        ),
       },
       radius: 1,
     },

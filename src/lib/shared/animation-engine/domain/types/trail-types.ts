@@ -15,6 +15,8 @@
 /**
  * Single point in the trail path
  */
+import { normalizeLegacyHandPair } from "@tka/tka-types";
+
 export interface TrailPoint {
   x: number;
   y: number;
@@ -90,6 +92,24 @@ export interface TrailSettings {
    * LEADING_EDGE constant.
    */
   tailLength: number;
+}
+
+/** Restores trail color pairs written before physical hand identity was canonical. */
+export function normalizeLegacyTrailSettings<T>(value: T): T {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+
+  const source = value as Record<string, unknown>;
+  const normalized: Record<string, unknown> = { ...source };
+  normalized.leftColor ??= source.blueColor;
+  normalized.rightColor ??= source.redColor;
+  delete normalized.blueColor;
+  delete normalized.redColor;
+  if (Array.isArray(source.additionalLayerColors)) {
+    normalized.additionalLayerColors = source.additionalLayerColors.map(
+      normalizeLegacyHandPair
+    );
+  }
+  return normalized as T;
 }
 
 import { getMotionColor } from "../../../utils/svg-color-utils";

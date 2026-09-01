@@ -9,6 +9,7 @@
  */
 
 import type { TurnAllocation } from "./TurnAllocator.js";
+import { normalizeLegacyHandPair } from "@tka/tka-types";
 
 /**
  * Derived from the allocator rather than declared again. There are already
@@ -29,9 +30,10 @@ export interface TurnSource {
 
 /** Fixed-length allocation. Runs out past its end, which is today's behaviour. */
 export function allocationSource(lanes: TurnLanes): TurnSource {
+  const normalizedLanes = normalizeLegacyHandPair(lanes);
   return {
     at(stepIndex, hand) {
-      const lane = lanes[hand];
+      const lane = normalizedLanes[hand];
       if (stepIndex < 0 || stepIndex >= lane.length) return undefined;
       return lane[stepIndex];
     },
@@ -40,9 +42,10 @@ export function allocationSource(lanes: TurnLanes): TurnSource {
 
 /** Repeating period. Never runs out. */
 export function patternSource(lanes: TurnLanes): TurnSource {
+  const normalizedLanes = normalizeLegacyHandPair(lanes);
   return {
     at(stepIndex, hand) {
-      const lane = lanes[hand];
+      const lane = normalizedLanes[hand];
       if (lane.length === 0 || stepIndex < 0) return undefined;
       return lane[stepIndex % lane.length];
     },

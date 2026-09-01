@@ -3,7 +3,10 @@ import type { TunnelConfig } from "./tunnel-config";
 import type { TunnelViewState } from "./tunnel-view-state";
 import type { EffectsConfig } from "$lib/shared/effects/domain/effects-config";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
-import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
+import {
+  normalizeLegacyTrailSettings,
+  type TrailSettings,
+} from "$lib/shared/animation-engine/domain/types/trail-types";
 import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { TunnelPresetRecipe } from "./tunnel-preset-recipe";
 import type { TunnelComposition, TunnelSaveTarget } from "./tunnel-composition";
@@ -88,7 +91,9 @@ function normalizeLegacyTunnelHands(value: unknown): unknown {
     hasOwn(props, "blueBuugengFlipped") ||
     hasOwn(props, "redBuugengFlipped");
 
-  if (!snapshot || !hasLegacyFields) return value;
+  if (!snapshot) return value;
+  const trailRender = normalizeLegacyTrailSettings(snapshot.trailRender);
+  if (!hasLegacyFields && trailRender === snapshot.trailRender) return value;
 
   return {
     ...snapshot,
@@ -137,6 +142,7 @@ function normalizeLegacyTunnelHands(value: unknown): unknown {
           },
         }
       : {}),
+    trailRender,
   };
 }
 

@@ -680,4 +680,24 @@ describe("migrateEffectsConfig", () => {
 
     expect(migrateEffectsConfig(current).bloom.coreStrength).toBe(0.82);
   });
+
+  it("restores literal blue/red trail and ghost colors from v37", () => {
+    const out = migrateEffectsConfig({
+      version: 37,
+      trails: { blueColor: "#112233", redColor: "#445566" },
+      ghost: { blueColor: "#778899", redColor: "#aabbcc" },
+    });
+
+    expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
+    expect(out.trails).toMatchObject({
+      leftColor: "#112233",
+      rightColor: "#445566",
+    });
+    expect(out.ghost).toMatchObject({
+      leftColor: "#778899",
+      rightColor: "#aabbcc",
+    });
+    expect(out.trails).not.toHaveProperty("blueColor");
+    expect(out.ghost).not.toHaveProperty("redColor");
+  });
 });

@@ -6,6 +6,10 @@
  * source recovery directly testable.
  */
 import type { SavedGeneratorSetup } from "./models/favorite-config";
+import {
+  normalizePersistedGenerationConfig,
+  normalizePersistedStartEndOptions,
+} from "./generator-persistence-normalizer";
 
 export const LEGACY_FAVORITE_SETUP_ID = "legacy-favorite";
 
@@ -53,18 +57,18 @@ export function planPersonalMigration(
   const recovered: SavedGeneratorSetup = {
     id: setupId,
     name: "My Favorite",
-    config: favorite.config as unknown as SavedGeneratorSetup["config"],
-    startEndOptions: (favorite.startEndOptions ??
-      null) as SavedGeneratorSetup["startEndOptions"],
+    config: normalizePersistedGenerationConfig(
+      favorite.config
+    ) as SavedGeneratorSetup["config"],
+    startEndOptions: normalizePersistedStartEndOptions(
+      favorite.startEndOptions
+    ),
     createdAt: favorite.setAt ?? now,
     updatedAt: now,
   };
 
   return {
-    setups: [
-      ...setups.filter((setup) => setup.id !== setupId),
-      recovered,
-    ],
+    setups: [...setups.filter((setup) => setup.id !== setupId), recovered],
     sharedSetupId: setupId,
     write: {
       setup: recovered,
