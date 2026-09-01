@@ -15,17 +15,30 @@ import { getCreateModuleRef } from "$lib/shared/create/state/create-module-state
 import { getAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
 import { executeClearSequenceWorkflow } from "$lib/shared/create/utils/clear-sequence-workflow";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
 import {
   getSettings,
   updateSettings,
 } from "$lib/shared/application/state/app-state.svelte";
-import { shiftStartPosition } from "$lib/shared/create/services/sequence-transforms";
+import type { SequenceTransformCommandId } from "$lib/shared/create/domain/sequence-action-types";
 import { getAllPropTypes } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 import { filterPremiumCosmeticProps } from "$lib/shared/subscription/domain/premium-prop-access";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 const debug = createComponentLogger("CreateShortcuts");
+
+async function executeSequenceShortcut(
+  action: SequenceTransformCommandId,
+  stepNumber?: number
+): Promise<void> {
+  const ref = getCreateModuleRef();
+  if (!ref) return;
+
+  await ref.executeSequenceAction(action, {
+    source: "keyboard",
+    targetHand: "both",
+    ...(stepNumber === undefined ? {} : { stepNumber }),
+  });
+}
 
 /**
  * Apply a prop preset from settings by index
@@ -424,15 +437,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       return sequenceState?.hasSequence() ?? false;
     },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      if (!sequenceState?.hasSequence()) return;
-
-      await sequenceState.mirrorSequence();
-    },
+    action: () => executeSequenceShortcut("mirror"),
   });
 
   // Alt+V - Flip sequence
@@ -451,15 +456,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       return sequenceState?.hasSequence() ?? false;
     },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      if (!sequenceState?.hasSequence()) return;
-
-      await sequenceState.flipSequence();
-    },
+    action: () => executeSequenceShortcut("flip"),
   });
 
   // Alt+X - Swap hands. Was Alt+S but Chrome/extensions steal it.
@@ -478,15 +475,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       return sequenceState?.hasSequence() ?? false;
     },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      if (!sequenceState?.hasSequence()) return;
-
-      await sequenceState.swapHands();
-    },
+    action: () => executeSequenceShortcut("swap"),
   });
 
   // Alt+I - Invert sequence
@@ -505,15 +494,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       return sequenceState?.hasSequence() ?? false;
     },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      if (!sequenceState?.hasSequence()) return;
-
-      await sequenceState.invertSequence();
-    },
+    action: () => executeSequenceShortcut("invert"),
   });
 
   // Alt+F - Shift start (move first beat to end)
@@ -532,15 +513,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       return sequenceState?.hasSequence() ?? false;
     },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      const sequence = sequenceState?.currentSequence;
-      if (!sequence || sequence.steps.length <= 1) return;
-      const shifted = shiftStartPosition(sequence, 2);
-      sequenceState.setCurrentSequence(shifted);
-    },
+    action: () => executeSequenceShortcut("shift_start", 2),
   });
 
   // Alt+W - Rewind/Reverse sequence
@@ -559,15 +532,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       return sequenceState?.hasSequence() ?? false;
     },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      if (!sequenceState?.hasSequence()) return;
-
-      await sequenceState.rewindSequence();
-    },
+    action: () => executeSequenceShortcut("rewind"),
   });
 
   // Alt+] - Rotate sequence clockwise (45°)
@@ -586,16 +551,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       return sequenceState?.hasSequence() ?? false;
     },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      if (!sequenceState?.hasSequence()) return;
-
-      setGridRotationDirection(1);
-      await sequenceState.rotateSequence("clockwise");
-    },
+    action: () => executeSequenceShortcut("rotate_clockwise"),
   });
 
   // Alt+[ - Rotate sequence counter-clockwise (45°)
@@ -614,16 +570,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       return sequenceState?.hasSequence() ?? false;
     },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      if (!sequenceState?.hasSequence()) return;
-
-      setGridRotationDirection(-1);
-      await sequenceState.rotateSequence("counterclockwise");
-    },
+    action: () => executeSequenceShortcut("rotate_counterclockwise"),
   });
 
   // ==================== Prop Presets ====================

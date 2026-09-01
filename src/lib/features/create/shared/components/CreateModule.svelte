@@ -108,6 +108,12 @@
   import { logConstructOptionApplied } from "../../construct/services/construct-analytics";
   import { tryGetAccountSetupContext } from "$lib/shared/onboarding/context/account-setup-context";
   import { logCreateFrontDoorReturned } from "../services/create-entry-analytics";
+  import {
+    createSequenceTransformActionDispatcher,
+    type SequenceTransformActionDispatcher,
+  } from "../services/sequence-transform-action-dispatcher";
+  import type { SequenceTransformCommandId } from "$lib/shared/create/domain/sequence-action-types";
+  import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
 
   const logger = createComponentLogger("CreateModule");
   const accountSetupState = tryGetAccountSetupContext();
@@ -131,6 +137,7 @@
   let panelPersistenceService: PanelPersister | null = $state(null);
   let CreateModuleState: CreateModuleState | null = $state(null);
   let constructTabState: ConstructTabState | null = $state(null);
+  let sequenceTransformActions: SequenceTransformActionDispatcher | null = null;
 
   // Session management services
   let sessionManager: SessionManager | null = $state(null);
@@ -208,6 +215,9 @@
     CreateModuleState?.isPersistenceInitialized === true &&
       CreateModuleState.canShowActionButtons()
   );
+  const canShowHeaderSequenceActions = $derived(
+    CreateModuleState?.canShowSequenceActionsButton() ?? false
+  );
 
   setContext("panelState", panelState);
 
@@ -241,6 +251,7 @@
     },
     constructTutorialState,
     panelState,
+    getSequenceTransformActions: () => sequenceTransformActions,
     get services() {
       if (!services) {
         throw new Error("Services not yet initialized");
@@ -264,6 +275,20 @@
       requestClearSequence: () => handleClearSequence(),
     },
   });
+
+  async function handleHeaderSequenceAction(
+    action: SequenceTransformCommandId
+  ): Promise<void> {
+    const result = await sequenceTransformActions?.execute(action, {
+      source: "header",
+      targetHand: "both",
+    });
+    if (result?.status === "failed") toast.error(result.message);
+  }
+
+  function handleOpenHeaderSequenceActions(): void {
+    panelState.openSequenceActionsPanel("header");
+  }
 
   let entryTutorialWasActive = false;
   let tutorialWorkspacePrepared = false;
@@ -454,11 +479,22 @@
           );
         }
 
+        sequenceTransformActions = createSequenceTransformActionDispatcher({
+          getSequenceState: () =>
+            CreateModuleState?.getActiveTabSequenceState() ?? null,
+          getCreateMode: () => navigationState.activeTab,
+          pushUndoSnapshot: (type) => CreateModuleState?.pushUndoSnapshot(type),
+          hapticService: getHapticFeedback(),
+          setGridRotationDirection,
+        });
+
         // Set global reference for keyboard shortcuts
         setCreateModuleStateRef({
           CreateModuleState,
           constructTabState,
           panelState,
+          executeSequenceAction: (action, options) =>
+            sequenceTransformActions!.execute(action, options),
           requestClearSequence: () => handleClearSequence(),
         });
 
@@ -606,6 +642,7 @@
         window.removeEventListener("resize", checkIsMobile);
       }
       setCreateModuleStateRef(null);
+      sequenceTransformActions = null;
 
       // Cleanup effect coordinator
       if (effectCleanup) {
@@ -931,7 +968,11 @@
         <span class="active-method">{activeCreateMethod.label}</span>
       {/if}
 
-      <CreateShortcutHeader />
+      <CreateShortcutHeader
+        hasSequenceActions={canShowHeaderSequenceActions}
+        onSequenceAction={handleHeaderSequenceAction}
+        onOpenSequenceActions={handleOpenHeaderSequenceActions}
+      />
     </nav>
 
     <div class="create-workspace-body">
@@ -1091,6 +1132,7 @@
     flex-direction: column;
     overflow: hidden;
     container-type: inline-size;
+    container-name: create-module-workspace;
   }
 
   .create-method-bar {

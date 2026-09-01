@@ -16,20 +16,15 @@ import type {
   ExtensionFlowStart,
 } from "./sequence-extender";
 import { UndoOperationType } from "./undo-manager";
+import type {
+  SequenceTransformCommandId,
+  SequenceTransformCommandOptions,
+  SequenceTransformCommandResult,
+} from "$lib/shared/create/domain/sequence-action-types";
+import type { SequenceTransformActionState } from "./sequence-transform-action-dispatcher";
 
-export interface SequenceActionsSequenceState {
-  currentSequence: SequenceData | null;
-  mirrorSequence(targetHand: TargetHand): Promise<void>;
-  swapHands(): Promise<void>;
-  rewindSequence(targetHand: TargetHand): Promise<void>;
-  flipSequence(targetHand: TargetHand): Promise<void>;
-  invertSequence(targetHand: TargetHand): Promise<void>;
-  rotateSequence(
-    direction: "clockwise" | "counterclockwise",
-    targetHand: TargetHand
-  ): Promise<void>;
+export interface SequenceActionsSequenceState extends SequenceTransformActionState {
   setCurrentSequence(sequence: SequenceData): void;
-  shiftStartPosition(stepNumber: number): Promise<void>;
 }
 
 export interface SequenceActionsBusyState {
@@ -44,9 +39,12 @@ export interface SequenceActionsOrchestratorDeps {
   getTargetHand: () => TargetHand;
   hapticService: HapticFeedback | null;
   pushUndoSnapshot: (type: UndoOperationType) => void;
+  executeTransformAction: (
+    action: SequenceTransformCommandId,
+    options: SequenceTransformCommandOptions
+  ) => Promise<SequenceTransformCommandResult>;
   busyState: SequenceActionsBusyState;
   extensionFlowCoordinator: ExtensionFlowCoordinator | null;
-  setGridRotationDirection?: (direction: 1 | -1) => void;
   finishShiftStart: () => void;
   copySequenceJson?: (sequence: SequenceData) => Promise<boolean>;
 }
@@ -69,9 +67,8 @@ export function createSequenceActionsOrchestrator(
   deps: SequenceActionsOrchestratorDeps
 ) {
   async function executeTransform(
-    undoType: UndoOperationType,
-    action: (state: SequenceActionsSequenceState) => Promise<void>,
-    beforeAction?: () => void
+    action: SequenceTransformCommandId,
+    stepNumber?: number
   ): Promise<SequenceActionResult> {
     const state = deps.getSequenceState();
     if (!state.currentSequence) {
@@ -79,12 +76,12 @@ export function createSequenceActionsOrchestrator(
     }
     if (!deps.busyState.beginTransform()) return { status: "busy" };
 
-    deps.hapticService?.trigger("selection");
     try {
-      deps.pushUndoSnapshot(undoType);
-      beforeAction?.();
-      await action(state);
-      return completed();
+      return await deps.executeTransformAction(action, {
+        source: "panel",
+        targetHand: deps.getTargetHand(),
+        ...(stepNumber === undefined ? {} : { stepNumber }),
+      });
     } finally {
       deps.busyState.finishTransform();
     }
@@ -235,20 +232,13 @@ export function createSequenceActionsOrchestrator(
     if (!sequence) {
       return { status: "unavailable", message: "No active sequence" };
     }
-    if (!deps.busyState.beginTransform()) return { status: "busy" };
-
     try {
-      deps.pushUndoSnapshot(UndoOperationType.SHIFT_START);
-      await state.shiftStartPosition(stepNumber);
+      const execution = await executeTransform("shift_start", stepNumber);
+      if (execution.status !== "completed") return execution;
       const result = getResultMessage(sequence, stepNumber);
       deps.hapticService?.trigger("success");
       return completedWith(result);
-    } catch (error) {
-      console.error("[ShiftStart] Failed:", error);
-      deps.hapticService?.trigger("error");
-      return { status: "failed", message: "Could not shift start position" };
     } finally {
-      deps.busyState.finishTransform();
       deps.finishShiftStart();
     }
   }
@@ -267,39 +257,13 @@ export function createSequenceActionsOrchestrator(
   }
 
   return {
-    mirror: () =>
-      executeTransform(UndoOperationType.MIRROR_SEQUENCE, (state) =>
-        state.mirrorSequence(deps.getTargetHand())
-      ),
-    swap: () =>
-      executeTransform(UndoOperationType.SWAP_HANDS, (state) =>
-        state.swapHands()
-      ),
-    rewind: () =>
-      executeTransform(UndoOperationType.REWIND_SEQUENCE, (state) =>
-        state.rewindSequence(deps.getTargetHand())
-      ),
-    flip: () =>
-      executeTransform(UndoOperationType.FLIP_SEQUENCE, (state) =>
-        state.flipSequence(deps.getTargetHand())
-      ),
-    invert: () =>
-      executeTransform(UndoOperationType.INVERT_SEQUENCE, (state) =>
-        state.invertSequence(deps.getTargetHand())
-      ),
-    rotateClockwise: () =>
-      executeTransform(
-        UndoOperationType.ROTATE_SEQUENCE,
-        (state) => state.rotateSequence("clockwise", deps.getTargetHand()),
-        () => deps.setGridRotationDirection?.(1)
-      ),
-    rotateCounterclockwise: () =>
-      executeTransform(
-        UndoOperationType.ROTATE_SEQUENCE,
-        (state) =>
-          state.rotateSequence("counterclockwise", deps.getTargetHand()),
-        () => deps.setGridRotationDirection?.(-1)
-      ),
+    mirror: () => executeTransform("mirror"),
+    swap: () => executeTransform("swap"),
+    rewind: () => executeTransform("rewind"),
+    flip: () => executeTransform("flip"),
+    invert: () => executeTransform("invert"),
+    rotateClockwise: () => executeTransform("rotate_clockwise"),
+    rotateCounterclockwise: () => executeTransform("rotate_counterclockwise"),
     applyPattern,
     startExtension,
     appendBridge,
