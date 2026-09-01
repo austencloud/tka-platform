@@ -255,7 +255,7 @@ describe("roots-to-notation route migration", () => {
       /name:\s*"Notation",\s*item:\s*"https:\/\/tkaflowarts\.com\/notation"/
     );
     expect(softwareCopy).toMatch(
-      /href="\/notation#lineage">Notation lineage<\/a\s*>/
+      /href="\/notation#archive-record-vtg">Notation lineage<\/a\s*>/
     );
     expect(componentManifest).not.toContain(
       '"file": "routes/(public)/roots/+page.svelte"'
