@@ -1,6 +1,7 @@
 import { Bone, Quaternion, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { AvatarAnimator } from "../../../node_modules/@austencloud/scene-3d/src/lib/services/implementations/AvatarAnimator";
+import { measureCylindricalGripChannel } from "../../../node_modules/@austencloud/scene-3d/src/lib/services/geometry/CylindricalGripGeometry";
 import type {
   BoneChain,
   SkeletonState,
@@ -106,6 +107,80 @@ function createMeasuredPowerGripArm(side: "left" | "right"): {
 }
 
 describe("avatar wrist-side clearance", () => {
+  it("centers the shaft in the channel enclosed by the posed finger bones", () => {
+    // Hand-local joint positions measured from the intake character after its
+    // production square-grip pose has settled. The old flat-palm socket sits
+    // roughly 3.6 cm away from the center enclosed by this curl.
+    const proximal = new Vector3(
+      0.004682549275458081,
+      0.11543878167867638,
+      0.015113381668925285
+    );
+    const middle = new Vector3(
+      0.04166010773337514,
+      0.12182967460591965,
+      0.014960976489048011
+    );
+    const distal = new Vector3(
+      0.047819779833990994,
+      0.09235807884145475,
+      0.015664886632557974
+    );
+    const longitudinal = new Vector3(
+      0.04018733413271062,
+      0.9907374419973749,
+      0.12970851629636446
+    );
+    const palmNormal = new Vector3(
+      0.9991921105031336,
+      -0.03988927935863452,
+      -0.0048960903323762225
+    );
+    const transverse = new Vector3(
+      0.000323239230053185,
+      0.12980048696652563,
+      -0.9915400794217313
+    );
+    const fallback = proximal.clone().multiplyScalar(0.65);
+    const channel = new Vector3();
+
+    const confidence = measureCylindricalGripChannel(
+      proximal,
+      middle,
+      distal,
+      longitudinal,
+      palmNormal,
+      transverse,
+      fallback,
+      channel
+    );
+
+    expect(confidence).toBe(1);
+    expect(channel.x).toBeCloseTo(0.0258038, 5);
+    expect(channel.y).toBeCloseTo(0.1031784, 5);
+    expect(channel.z).toBeCloseTo(0.0143679, 5);
+    expect(channel.distanceTo(fallback)).toBeGreaterThan(0.035);
+  });
+
+  it("keeps the neutral-palm fallback when an open finger has no channel", () => {
+    const fallback = new Vector3(0, 0.075, 0);
+    const channel = new Vector3();
+
+    const confidence = measureCylindricalGripChannel(
+      new Vector3(0, 0.115, 0),
+      new Vector3(0, 0.15, 0),
+      new Vector3(0, 0.18, 0),
+      new Vector3(0, 1, 0),
+      new Vector3(1, 0, 0),
+      new Vector3(0, 0, 1),
+      fallback,
+      channel
+    );
+
+    expect(confidence).toBe(0);
+    expect(channel).toEqual(fallback);
+  });
+
   it("places each wrist outside its own grip instead of between adjacent staffs", () => {
     const animator = new AvatarAnimator(
       {} as never,

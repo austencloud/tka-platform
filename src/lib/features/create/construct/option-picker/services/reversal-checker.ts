@@ -76,6 +76,33 @@ export function countDirectionReversals(
   return analyzeSequenceContext(option, sequence);
 }
 
+export interface DirectionContinuityFilterResult {
+  options: PictographData[];
+  totalCount: number;
+  hiddenCount: number;
+}
+
+/**
+ * Keep the options that preserve the established spin direction and report
+ * exactly how many this one filter removed. The picker needs the count from
+ * this boundary so it does not blame the CW/CCW controls for options that
+ * Continuous mode had already excluded upstream.
+ */
+export function filterDirectionContinuousOptions(
+  options: PictographData[],
+  sequence: PictographData[] = []
+): DirectionContinuityFilterResult {
+  const continuousOptions = options.filter(
+    (option) => countDirectionReversals(option, sequence) === 0
+  );
+
+  return {
+    options: continuousOptions,
+    totalCount: options.length,
+    hiddenCount: options.length - continuousOptions.length,
+  };
+}
+
 /**
  * Analyze a single motion for reversal patterns using the heuristics from the
  * previous monolithic service implementation.
@@ -88,10 +115,7 @@ function analyzeMotionForReversals(motion: Motion): number {
 
   if (motionTypeStr.includes("pro") && motionTypeStr.includes("anti")) {
     reversalCount = Math.max(reversalCount, 1);
-  } else if (
-    motionTypeStr.includes("bi") ||
-    motionTypeStr.includes("switch")
-  ) {
+  } else if (motionTypeStr.includes("bi") || motionTypeStr.includes("switch")) {
     reversalCount = Math.max(reversalCount, 2);
   }
 
