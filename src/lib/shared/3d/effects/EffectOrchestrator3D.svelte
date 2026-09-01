@@ -642,19 +642,19 @@
     ledCount: number
   ): void {
     if (!interactiveRenderersPrepared) {
-      blueLedRenderer = new LedRenderer3D(qualityTier);
-      redLedRenderer = new LedRenderer3D(qualityTier);
-      blueLedRenderer.initialize(parent);
-      redLedRenderer.initialize(parent);
-      blueLedRenderer.primeTipCapacity(2);
-      redLedRenderer.primeTipCapacity(2);
+      leftLedRenderer = new LedRenderer3D(qualityTier);
+      rightLedRenderer = new LedRenderer3D(qualityTier);
+      leftLedRenderer.initialize(parent);
+      rightLedRenderer.initialize(parent);
+      leftLedRenderer.primeTipCapacity(2);
+      rightLedRenderer.primeTipCapacity(2);
       interactiveRenderersPrepared = true;
     }
-    if (ledDeviceKind === "pixel-staff" && !bluePovRenderer) {
-      bluePovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
-      redPovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
-      bluePovRenderer.initialize(parent);
-      redPovRenderer.initialize(parent);
+    if (ledDeviceKind === "pixel-staff" && !leftPovRenderer) {
+      leftPovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
+      rightPovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
+      leftPovRenderer.initialize(parent);
+      rightPovRenderer.initialize(parent);
     }
   }
 

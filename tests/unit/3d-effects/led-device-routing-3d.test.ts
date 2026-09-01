@@ -99,6 +99,22 @@ describe("LED 3D look plumbing", () => {
 });
 
 describe("LED 3D device changes", () => {
+  it("prepares the declared left and right renderer instances", () => {
+    const start = source.indexOf("function prepareInteractiveRenderers");
+    expect(start).toBeGreaterThan(0);
+    const body = source.slice(start, source.indexOf("\n  }", start));
+
+    for (const renderer of [
+      "leftLedRenderer",
+      "rightLedRenderer",
+      "leftPovRenderer",
+      "rightPovRenderer",
+    ]) {
+      expect(body).toContain(renderer);
+    }
+    expect(body).not.toMatch(/\b(?:blue|red)(?:Led|Pov)Renderer\b/);
+  });
+
   it("keys the live renderers to the device kind and LED count", () => {
     expect(source).toMatch(
       /syncLedDevice\(resolvedLed\.device\.kind, ledCount\)/
