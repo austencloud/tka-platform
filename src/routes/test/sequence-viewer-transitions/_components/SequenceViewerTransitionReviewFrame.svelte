@@ -329,11 +329,11 @@
     while (
       version === replayVersion &&
       !document.querySelector<HTMLElement>(
-        '.sequence-videos[data-gallery-state="ready"]'
+        '[data-performance-stage][data-performance-ready="true"]'
       )
     ) {
       if (performance.now() - startedAt > DURATION.dramatic * 3) {
-        throw new Error("Performances did not present a ready gallery.");
+        throw new Error("Performances did not present a ready stage.");
       }
       await wait(16);
     }
@@ -402,10 +402,10 @@
       : 0;
     const activeTunnelSurface = tunnelSurface();
     const activeTunnelCanvas = tunnelCanvas();
-    const stageLayer = elementBounds(".viewer-motion-stage-layer");
-    const performanceLayer = elementBounds(".performance-gallery-layer");
+    const stageLayer = elementBounds(".viewer-motion-content-layer");
+    const performanceLayer = elementBounds(".performance-stage-layer");
     const performanceWorkspace = document.querySelector<HTMLElement>(
-      ".performance-gallery-layer .video-workspace"
+      ".performance-inspector-layer .performance-list-items"
     );
     const performanceLayoutColumns = performanceWorkspace
       ? getComputedStyle(performanceWorkspace)
@@ -567,20 +567,26 @@
         : 0,
       tunnelDisplayWidth: tunnelBounds?.width ?? 0,
       tunnelDisplayHeight: tunnelBounds?.height ?? 0,
-      stageLayerOpacity: elementOpacity(".viewer-motion-stage-layer"),
-      performanceLayerOpacity: elementOpacity(".performance-gallery-layer"),
-      stageLayerIdentity: elementIdentity(".viewer-motion-stage-layer"),
-      performanceLayerIdentity: elementIdentity(".performance-gallery-layer"),
-      stageLayerActive: elementDataFlag(".viewer-motion-stage-layer", "active"),
+      stageLayerOpacity: elementOpacity(".viewer-motion-content-layer"),
+      performanceLayerOpacity: elementOpacity(".performance-stage-layer"),
+      stageLayerIdentity: elementIdentity("[data-persistent-viewer-stage]"),
+      performanceLayerIdentity: elementIdentity(".performance-stage-layer"),
+      stageLayerActive: elementDataFlag(
+        ".viewer-motion-content-layer",
+        "active"
+      ),
       performanceLayerActive: elementDataFlag(
-        ".performance-gallery-layer",
+        ".performance-stage-layer",
         "active"
       ),
       performanceGalleryReady:
         document
-          .querySelector(".sequence-videos")
-          ?.getAttribute("data-gallery-state") === "ready",
+          .querySelector("[data-performance-stage]")
+          ?.getAttribute("data-performance-ready") === "true",
       performanceLayoutColumns,
+      performancePlayerCount: document.querySelectorAll(
+        ".performance-stage-layer video.performance-player"
+      ).length,
       stageLayerWidth: stageLayer.width,
       performanceLayerWidth: performanceLayer.width,
     };

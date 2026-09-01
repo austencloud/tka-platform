@@ -120,14 +120,29 @@ export function createViewerShellLayoutState(
       !isMobile &&
       bodyWidth < resolveExportSidebarMinWidth(persistedRailWidth, "art")
   );
+  const performanceInspectorNarrow = $derived(
+    showVideoGallery &&
+      !isMobile &&
+      bodyWidth < resolveExportSidebarMinWidth(persistedRailWidth, "motion")
+  );
   const effectiveMobile = $derived(
-    isMobile || cardExportNarrow || videoExportNarrow || artInspectorNarrow
+    isMobile ||
+      cardExportNarrow ||
+      videoExportNarrow ||
+      artInspectorNarrow ||
+      performanceInspectorNarrow
   );
   const inspectorProfile = $derived<ViewerInspectorProfile>(
-    isImageExportActive ? "card" : isVideoExportActive ? "motion" : "art"
+    isImageExportActive
+      ? "card"
+      : isVideoExportActive || showVideoGallery
+        ? "motion"
+        : "art"
   );
   const isWorkspaceInspectorActive = $derived(
-    isSidebarExportActive || (isArtInspectorActive && !effectiveMobile)
+    isSidebarExportActive ||
+      showVideoGallery ||
+      (isArtInspectorActive && !effectiveMobile)
   );
   const showRail = $derived(!isMobile);
   const stackedExportWithRail = $derived(
@@ -435,9 +450,9 @@ export function createViewerShellLayoutState(
         } else if (mode === "card") {
           ctx.enterEditMode("image");
         } else if (mode === "videos") {
-          // Video is a gallery view. Close a previous export inspector before
-          // showing it so the gallery, rather than the old inspector, owns the
-          // viewer body.
+          // Performances has its own stage and inspector contents. Close the
+          // previous editor state so both persistent tracks can change from
+          // the same viewer-mode commit.
           if (ctx.editingPane) ctx.exitEditMode();
           else ctx.viewerState.exitExport();
           ctx.viewerState.setViewerMode(mode);

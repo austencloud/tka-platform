@@ -289,7 +289,7 @@
         >Viewer stage remounts: {summary.performanceStageIdentityChanges}</span
       >
       <span data-problem={summary.performanceGalleryIdentityChanges > 0}
-        >Gallery remounts: {summary.performanceGalleryIdentityChanges}</span
+        >Performance stage remounts: {summary.performanceGalleryIdentityChanges}</span
       >
       <span data-problem={summary.performanceInspectorIdentityChanges > 0}
         >Inspector remounts: {summary.performanceInspectorIdentityChanges}</span
@@ -307,10 +307,13 @@
         >Workspace dissolve frames: {summary.dissolveFrames}</span
       >
       <span data-problem={summary.performanceUnreadyFrames > 0}
-        >Unready gallery frames: {summary.performanceUnreadyFrames}</span
+        >Unready performance frames: {summary.performanceUnreadyFrames}</span
       >
       <span data-problem={summary.performanceLayoutChanges > 0}
-        >Visible gallery layout changes: {summary.performanceLayoutChanges}</span
+        >Visible inspector layout changes: {summary.performanceLayoutChanges}</span
+      >
+      <span data-problem={summary.performancePlayerCountMaximum > 1}
+        >Maximum performance players: {summary.performancePlayerCountMaximum}</span
       >
       <span data-dissolve={summary.performanceOpacityComplementDriftMaximum > 0}
         >Shared-background dip: {summary.performanceOpacityComplementDriftMaximum.toFixed(

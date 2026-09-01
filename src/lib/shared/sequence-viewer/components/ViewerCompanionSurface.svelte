@@ -136,6 +136,7 @@
     <SequenceVideos
       {sequence}
       isOwned={false}
+      active={videos.shown}
       {isLoggedIn}
       {onSaveToLibrary}
       canUpload={!!onVideoUpload}
