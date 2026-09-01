@@ -50,7 +50,6 @@ Uses organizer and sizer services for section grouping and sizing.
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import { selectOptionInteractionHintPresentation } from "../services/option-interaction-hint-presentation";
   import { selectOptionControlsPresentation } from "../services/option-controls-presentation";
-  import OptionAvailabilityStatus from "./OptionAvailabilityStatus.svelte";
 
   interface Props {
     options: PreparedPictographData[];
@@ -198,19 +197,6 @@ Uses organizer and sizer services for section grouping and sizing.
         : optionAvailability.shownCount + optionAvailability.hiddenCount;
     return availableBeforeDirectionFiltering > 0 && currentSequence.length >= 2;
   });
-
-  const availability = $derived(
-    optionAvailability ?? { shownCount: options.length, hiddenCount: 0 }
-  );
-  const hasPendingTurns = $derived(leftTurns !== 0 || rightTurns !== 0);
-  const showAvailabilityStatus = $derived(
-    isContinuousOnly &&
-      !hideFilters &&
-      turnControlsEditable &&
-      currentSequence.length >= 2 &&
-      hasPendingTurns &&
-      availability.shownCount + availability.hiddenCount > 0
-  );
 
   // Organize options into sections
   const organizedSections = $derived(() => {
@@ -570,14 +556,6 @@ Uses organizer and sizer services for section grouping and sizing.
           {@render inlineControls()}
         </div>
       {/if}
-
-      <OptionAvailabilityStatus
-        active={showAvailabilityStatus}
-        shownCount={availability.shownCount}
-        hiddenCount={availability.hiddenCount}
-        sharesSettingsTrigger={useDisclosedCompactControls &&
-          !shouldUseSwipeLayout()}
-      />
 
       <!-- Continuous mode has no letter-type header, so its settings trigger
            keeps the established corner position. Swipe mode places the same
