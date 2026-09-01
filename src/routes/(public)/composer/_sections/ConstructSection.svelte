@@ -673,26 +673,28 @@
                 <ClearSequenceButton onclick={reset} />
               {/if}
             </div>
-            <Crossfade key={phase} duration={DURATION.normal}>
-              {#if phase === "add-step"}
-                <span
-                  data-demo-play
-                  style:visibility={steps.length > 0 ? "visible" : "hidden"}
-                >
-                  <ViewSequenceButton
-                    purpose="play"
-                    onclick={() => {
-                      playing = true;
-                      compactPane = "build";
-                    }}
-                  />
-                </span>
-              {:else if phase === "play"}
-                {#if !isCompactDemo}
-                  {@render playPhaseActions()}
-                {/if}
-              {/if}
-            </Crossfade>
+            <div class="action-swap">
+              <Crossfade key={phase} duration={DURATION.normal} mode="swap">
+                <div class="action-swap-state">
+                  {#if phase === "add-step"}
+                    <span
+                      data-demo-play
+                      style:visibility={steps.length > 0 ? "visible" : "hidden"}
+                    >
+                      <ViewSequenceButton
+                        purpose="play"
+                        onclick={() => {
+                          playing = true;
+                          compactPane = "build";
+                        }}
+                      />
+                    </span>
+                  {:else if phase === "play" && !isCompactDemo}
+                    {@render playPhaseActions()}
+                  {/if}
+                </div>
+              </Crossfade>
+            </div>
             <!-- Right zone: step-by-step history. Always mounted and merely
              disabled when a direction is empty — the app's own undo button does
              the same, and a slot that appeared on the first pick would shove
@@ -1284,6 +1286,31 @@
     --min-touch-target: max(44px, 2.75rem);
   }
 
+  /* Play and the wider playback actions are one control state, not two boxes.
+     Reserving their shared width keeps the outgoing Play button centered while
+     the replacement arrives; swap mode then prevents two actionable labels
+     from becoming readable at the same time. */
+  .action-swap {
+    min-inline-size: var(--min-touch-target);
+  }
+
+  .action-swap-state {
+    min-block-size: var(--min-touch-target);
+    display: grid;
+    place-items: center;
+  }
+
+  .action-swap-state [data-demo-play] {
+    display: grid;
+    place-items: center;
+  }
+
+  @container (min-width: 1100px) {
+    .action-swap {
+      inline-size: 21rem;
+    }
+  }
+
   .slot-side {
     display: flex;
     align-items: center;
@@ -1521,8 +1548,8 @@
     font-weight: 600;
     cursor: pointer;
     transition:
-      background 0.16s ease,
-      transform 0.16s ease;
+      background var(--transition-fast),
+      transform var(--transition-fast);
   }
 
   .cta-btn:hover {
