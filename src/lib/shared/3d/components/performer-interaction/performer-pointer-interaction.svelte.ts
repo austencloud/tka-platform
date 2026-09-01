@@ -8,6 +8,8 @@ export const TOUCH_MOVE_TOLERANCE_PX = 5;
 export const MIN_TOUCH_TARGET_PX = 44;
 export const PERFORMER_CLEARANCE_METRES = 0.5;
 const GRAZING_RAY_EPSILON = 0.001;
+const EIGHT_DIRECTION_STEP_RADIANS = Math.PI / 4;
+const POSITION_EPSILON = 1e-10;
 
 export type PointerIntent = "click" | "drag";
 export type TouchIntent = "tap" | "drag" | "camera";
@@ -88,6 +90,73 @@ export function clampPerformerPosition(
     x: Math.max(-halfWidth, Math.min(halfWidth, position.x)),
     z: Math.max(centerZ - halfDepth, Math.min(centerZ + halfDepth, position.z)),
   };
+}
+
+export function snapStagePositionToEightDirections(
+  origin: StagePosition,
+  target: StagePosition
+): StagePosition {
+  const deltaX = target.x - origin.x;
+  const deltaZ = target.z - origin.z;
+  if (Math.hypot(deltaX, deltaZ) < POSITION_EPSILON) return { ...origin };
+
+  const snappedAngle =
+    Math.round(Math.atan2(deltaZ, deltaX) / EIGHT_DIRECTION_STEP_RADIANS) *
+    EIGHT_DIRECTION_STEP_RADIANS;
+  const directionX = cleanPositionValue(Math.cos(snappedAngle));
+  const directionZ = cleanPositionValue(Math.sin(snappedAngle));
+  const projectedDistance = Math.max(
+    0,
+    deltaX * directionX + deltaZ * directionZ
+  );
+
+  return {
+    x: cleanPositionValue(origin.x + directionX * projectedDistance),
+    z: cleanPositionValue(origin.z + directionZ * projectedDistance),
+  };
+}
+
+export function resolvePerformerDragPosition(
+  start: StagePosition,
+  target: StagePosition,
+  bounds: StageBounds,
+  constrainToEightDirections: boolean,
+  clearance = PERFORMER_CLEARANCE_METRES
+): StagePosition {
+  if (!constrainToEightDirections)
+    return clampPerformerPosition(target, bounds, clearance);
+
+  const origin = clampPerformerPosition(start, bounds, clearance);
+  const snapped = snapStagePositionToEightDirections(origin, target);
+  const deltaX = snapped.x - origin.x;
+  const deltaZ = snapped.z - origin.z;
+  const halfWidth = Math.max(0, bounds.width / 2 - clearance);
+  const halfDepth = Math.max(0, bounds.depth / 2 - clearance);
+  const centerZ = bounds.zOffset ?? 0;
+  const minX = -halfWidth;
+  const maxX = halfWidth;
+  const minZ = centerZ - halfDepth;
+  const maxZ = centerZ + halfDepth;
+  let scale = 1;
+
+  if (deltaX > POSITION_EPSILON)
+    scale = Math.min(scale, (maxX - origin.x) / deltaX);
+  else if (deltaX < -POSITION_EPSILON)
+    scale = Math.min(scale, (minX - origin.x) / deltaX);
+  if (deltaZ > POSITION_EPSILON)
+    scale = Math.min(scale, (maxZ - origin.z) / deltaZ);
+  else if (deltaZ < -POSITION_EPSILON)
+    scale = Math.min(scale, (minZ - origin.z) / deltaZ);
+
+  const boundedScale = Math.max(0, Math.min(1, scale));
+  return {
+    x: cleanPositionValue(origin.x + deltaX * boundedScale),
+    z: cleanPositionValue(origin.z + deltaZ * boundedScale),
+  };
+}
+
+function cleanPositionValue(value: number): number {
+  return Math.abs(value) < POSITION_EPSILON ? 0 : value;
 }
 
 export function resolveCameraRelativeNudge(
@@ -374,10 +443,15 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
       if (draggingIndex !== null) {
         event.preventDefault();
         const target = groundTarget();
-        if (target)
+        if (target && pressed)
           options.viewer.performerManager.handleDrag(
             draggingIndex,
-            clampPerformerPosition(target, options.stageBounds())
+            resolvePerformerDragPosition(
+              pressed.startPosition,
+              target,
+              options.stageBounds(),
+              event.shiftKey
+            )
           );
       }
       return;
