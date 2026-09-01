@@ -54,6 +54,7 @@ Controls moved below the grid for better UX
     validationMessage = null,
     onPositionSubmitted = () => {},
     heading,
+    suppressHeading = false,
   } = $props<{
     startPositionState?: SimplifiedStartPositionState | null;
     onNavigateToAdvanced?: () => void;
@@ -76,6 +77,9 @@ Controls moved below the grid for better UX
       path: StartPositionPath
     ) => void;
     heading?: Snippet;
+    /** The active Construct guide owns this instruction band. Keep the wrapper
+     *  mounted so its height can collapse on the same clock as the guide. */
+    suppressHeading?: boolean;
   }>();
 
   // Create simplified state - use $derived to handle prop changes
@@ -204,7 +208,9 @@ Controls moved below the grid for better UX
         prefs.rightOrientation &&
         validOrientations.includes(prefs.rightOrientation)
       ) {
-        void pickerState.setRightOrientation(prefs.rightOrientation as Orientation);
+        void pickerState.setRightOrientation(
+          prefs.rightOrientation as Orientation
+        );
       } else if (
         prefs.orientation &&
         validOrientations.includes(prefs.orientation)
@@ -348,11 +354,13 @@ Controls moved below the grid for better UX
   data-testid="start-position-picker"
 >
   {#if !embedded}
-    <div class="workspace-heading">
-      {#if heading}
-        {@render heading()}
-      {:else}
-        <p class="workspace-hint">Choose your start position</p>
+    <div class="workspace-heading" class:heading-suppressed={suppressHeading}>
+      {#if !suppressHeading}
+        {#if heading}
+          {@render heading()}
+        {:else}
+          <p class="workspace-hint">Choose your start position</p>
+        {/if}
       {/if}
     </div>
   {/if}
@@ -502,6 +510,10 @@ Controls moved below the grid for better UX
     padding: clamp(12px, 4vh, 52px)
       calc(1rem + var(--picker-leading-action-offset, 0px)) 0;
     box-sizing: border-box;
+    overflow: hidden;
+    transition:
+      height var(--duration-emphasis) var(--transition-easing, ease),
+      padding var(--duration-emphasis) var(--transition-easing, ease);
   }
 
   .workspace-hint {
@@ -863,6 +875,18 @@ Controls moved below the grid for better UX
     .control-icon {
       width: 16px;
       height: 16px;
+    }
+  }
+
+  .start-pos-picker .workspace-heading.heading-suppressed,
+  .start-pos-picker.build-path .workspace-heading.heading-suppressed {
+    height: 0;
+    padding: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .workspace-heading {
+      transition: none;
     }
   }
 </style>

@@ -310,12 +310,6 @@ export interface PanelCoordinationState {
   setLoopSelectedComponents(components: Set<LOOPComponent>): void;
   closeLOOPPanel(): void;
 
-  // Creation Method Panel State
-  get isCreationMethodPanelOpen(): boolean;
-
-  openCreationMethodPanel(): void;
-  closeCreationMethodPanel(): void;
-
   // Sequence Viewer State (triggers SequenceViewerDrawerHost on mobile, /sequence/[id] on desktop)
   get isSequenceViewerOpen(): boolean;
 
@@ -458,9 +452,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let loopCurrentType = $state<LOOPType | null>(null);
   let loopOnChange = $state<((loopType: LOOPType) => void) | null>(null);
 
-  // Creation method panel state
-  let isCreationMethodPanelOpen = $state(false);
-
   // Duration preview mode state (for live preview in duration pattern drawer)
   let isDurationPreviewMode = $state(false);
   let previewSequence = $state<SequenceData | null>(null);
@@ -512,8 +503,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     loopSelectedComponents = null;
     loopCurrentType = null;
     loopOnChange = null;
-
-    isCreationMethodPanelOpen = false;
 
     isCustomizeOverlayOpen = false;
     customizeOverlayProps = null;
@@ -922,20 +911,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       isPresetDrawerOpen = false;
     },
 
-    // Creation Method Panel Getters
-    get isCreationMethodPanelOpen() {
-      return isCreationMethodPanelOpen;
-    },
-
-    openCreationMethodPanel() {
-      closeAllPanels();
-      isCreationMethodPanelOpen = true;
-    },
-
-    closeCreationMethodPanel() {
-      isCreationMethodPanelOpen = false;
-    },
-
     // Sequence Viewer Getters
     get isSequenceViewerOpen() {
       return isSequenceViewerOpen;
@@ -954,7 +929,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     closeAllPanels,
 
     // Derived: Check if any modal/slide panel is open
-    // NOTE: Creation Method Panel is NOT included here because it should not hide navigation tabs
     get isAnyPanelOpen() {
       return (
         isEditPanelOpen ||
