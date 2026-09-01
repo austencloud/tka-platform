@@ -3,6 +3,7 @@
     accent,
     icon = null,
     code,
+    compactCode = code,
     label,
     active = false,
     disabled = false,
@@ -12,6 +13,7 @@
     accent: string;
     icon?: string | null;
     code: string;
+    compactCode?: string;
     label: string;
     active?: boolean;
     disabled?: boolean;
@@ -36,7 +38,10 @@
     <span class="choice-dot" aria-hidden="true"></span>
   {/if}
   <span class="choice-copy">
-    <strong>{code}</strong>
+    <strong>
+      <span class="code-compact">{compactCode}</span>
+      <span class="code-wide">{code}</span>
+    </strong>
     <small>{label}</small>
   </span>
 </button>
@@ -120,6 +125,23 @@
     color: color-mix(in srgb, var(--choice-accent) 80%, white);
     font-size: var(--font-size-compact, 0.75rem);
     letter-spacing: 0.035em;
+  }
+
+  .code-wide {
+    display: none;
+  }
+
+  /* Six choices are tighter at ordinary desktop split widths than they are on
+     a full-width phone row. Spell the relationship out only when the drill has
+     enough room for every family; otherwise the shared VTG code stays intact. */
+  @container shape-matrix-drill (min-width: 48rem) {
+    .code-compact {
+      display: none;
+    }
+
+    .code-wide {
+      display: inline;
+    }
   }
 
   .choice-copy small {

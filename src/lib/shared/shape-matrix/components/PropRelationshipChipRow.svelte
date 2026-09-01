@@ -150,6 +150,7 @@
         accent={group.color}
         icon={group.icon}
         code={group.detail}
+        compactCode={group.mode ?? group.detail}
         label={group.label}
         active={selectedGroup?.key === group.key}
         disabled={disabled || unavailable}
