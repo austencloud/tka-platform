@@ -252,18 +252,18 @@ function formatBetaAnalysis(
   const actualRightProp = settings.rightPropType ?? storedRightProp;
 
   lines.push(
-    `  Stored Prop Types: blue=${storedLeftProp}, red=${storedRightProp}`
+    `  Stored Prop Types: left=${storedLeftProp}, right=${storedRightProp}`
   );
   lines.push(
-    `  Actual Prop Types: blue=${actualLeftProp}, red=${actualRightProp}`
+    `  Actual Prop Types: left=${actualLeftProp}, right=${actualRightProp}`
   );
 
   // Buugeng family check
   const leftIsBuugeng = isBuugengFamilyProp(actualLeftProp);
   const rightIsBuugeng = isBuugengFamilyProp(actualRightProp);
   const bothBuugeng = leftIsBuugeng && rightIsBuugeng;
-  lines.push(`  Blue is Buugeng Family: ${leftIsBuugeng}`);
-  lines.push(`  Red is Buugeng Family: ${rightIsBuugeng}`);
+  lines.push(`  Left is Buugeng Family: ${leftIsBuugeng}`);
+  lines.push(`  Right is Buugeng Family: ${rightIsBuugeng}`);
   lines.push(`  Both are Buugeng Family: ${bothBuugeng}`);
 
   // Chirality: which mirror-image form of the asymmetric Buugeng is used
@@ -272,14 +272,14 @@ function formatBetaAnalysis(
   const leftChirality = settings.leftBuugengFlipped ?? false;
   const rightChirality = settings.rightBuugengFlipped ?? false;
   const oppositeChirality = leftChirality !== rightChirality;
-  lines.push(`  Blue Buugeng Chirality: ${leftChirality ? "B" : "A"}`);
-  lines.push(`  Red Buugeng Chirality: ${rightChirality ? "B" : "A"}`);
+  lines.push(`  Left Buugeng Chirality: ${leftChirality ? "B" : "A"}`);
+  lines.push(`  Right Buugeng Chirality: ${rightChirality ? "B" : "A"}`);
   lines.push(`  Opposite Chirality: ${oppositeChirality}`);
 
   // End locations
   const sameEndLocation = leftMotion.endLocation === rightMotion.endLocation;
   lines.push(
-    `  Same End Location: ${sameEndLocation} (blue=${leftMotion.endLocation}, red=${rightMotion.endLocation})`
+    `  Same End Location: ${sameEndLocation} (left=${leftMotion.endLocation}, right=${rightMotion.endLocation})`
   );
 
   // Orientation analysis
@@ -303,8 +303,10 @@ function formatBetaAnalysis(
   const sameTypeButDifferent =
     (bothRadial || bothNonRadial) && leftEndOri !== rightEndOri;
 
-  lines.push(`  Blue End Orientation: ${leftEndOri} (radial=${leftIsRadial})`);
-  lines.push(`  Red End Orientation: ${rightEndOri} (radial=${rightIsRadial})`);
+  lines.push(`  Left End Orientation: ${leftEndOri} (radial=${leftIsRadial})`);
+  lines.push(
+    `  Right End Orientation: ${rightEndOri} (radial=${rightIsRadial})`
+  );
   lines.push(`  Both Radial (IN/OUT): ${bothRadial}`);
   lines.push(`  Both Non-Radial (CLOCK/COUNTER): ${bothNonRadial}`);
   lines.push(`  Hybrid (one radial, one not): ${hybridOrientation}`);
@@ -339,7 +341,7 @@ function formatBetaAnalysis(
     `    Buugeng nesting (both buugeng + opposite chirality): ${buugengNestSkip ? "✓" : "✗"}`
   );
   lines.push(
-    `    Unilateral one-ended + same-type/different-orientation: ${unilateralSkip ? "✓" : "✗"} (blue=${leftUnilateral}, red=${rightUnilateral})`
+    `    Unilateral one-ended + same-type/different-orientation: ${unilateralSkip ? "✓" : "✗"} (left=${leftUnilateral}, right=${rightUnilateral})`
   );
   lines.push(
     `    Trigeng + same-type/different-orientation: ${trigengSkip ? "✓" : "✗"}`
@@ -354,9 +356,11 @@ function formatBetaAnalysis(
   // Orientation analysis (for reference, not part of nesting decision)
   lines.push(``, `  ORIENTATION ANALYSIS (for reference):`);
   lines.push(
-    `    Blue End Orientation: ${leftEndOri} (radial=${leftIsRadial})`
+    `    Left End Orientation: ${leftEndOri} (radial=${leftIsRadial})`
   );
-  lines.push(`    Red End Orientation: ${rightEndOri} (radial=${rightIsRadial})`);
+  lines.push(
+    `    Right End Orientation: ${rightEndOri} (radial=${rightIsRadial})`
+  );
   lines.push(`    Same Type But Different: ${sameTypeButDifferent}`);
 
   return lines.join("\n");

@@ -88,7 +88,8 @@ export class ContinuityConstraint implements IVariationConstraint {
       };
     }
 
-    const previousStep = context.previousSteps[context.previousSteps.length - 1];
+    const previousStep =
+      context.previousSteps[context.previousSteps.length - 1];
     if (!previousStep) {
       return {
         score: 1,
@@ -114,9 +115,9 @@ export class ContinuityConstraint implements IVariationConstraint {
     } else if (avgScore === 0) {
       reason = "Both hands reversed";
     } else if (leftScore < 1 && rightScore === 1) {
-      reason = "Blue hand reversal";
+      reason = "Left hand reversal";
     } else if (rightScore < 1 && leftScore === 1) {
-      reason = "Red hand reversal";
+      reason = "Right hand reversal";
     } else {
       reason = "Partial continuity";
     }

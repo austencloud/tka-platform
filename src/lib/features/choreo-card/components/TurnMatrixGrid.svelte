@@ -12,7 +12,12 @@
         when a single shared legend lives outside the matrix. */
     showAxes?: boolean;
   }
-  const { cell, header, ariaLabel = "Turn combination matrix", showAxes = true }: Props = $props();
+  const {
+    cell,
+    header,
+    ariaLabel = "Turn combination matrix",
+    showAxes = true,
+  }: Props = $props();
 
   function formatTurn(v: number): string {
     return Number.isInteger(v) ? String(v) : v.toFixed(1);
@@ -23,7 +28,12 @@
   {#if header}{@render header()}{/if}
 
   <div class="matrix-grid-wrapper">
-    <div class="matrix-grid" class:no-axes={!showAxes} role="grid" aria-label={ariaLabel}>
+    <div
+      class="matrix-grid"
+      class:no-axes={!showAxes}
+      role="grid"
+      aria-label={ariaLabel}
+    >
       {#if showAxes}
         <div class="header-cell corner" role="presentation">
           <span class="corner-blue">B</span>
@@ -32,7 +42,11 @@
         </div>
 
         {#each TURN_VALUES as right (right)}
-          <div class="header-cell col-header" role="columnheader" aria-label="Red {right} turns">
+          <div
+            class="header-cell col-header"
+            role="columnheader"
+            aria-label="Right {right} turns"
+          >
             <span class="header-val red-val">{formatTurn(right)}</span>
           </div>
         {/each}
@@ -40,7 +54,11 @@
 
       {#each TURN_VALUES as left (left)}
         {#if showAxes}
-          <div class="header-cell row-header" role="rowheader" aria-label="Blue {left} turns">
+          <div
+            class="header-cell row-header"
+            role="rowheader"
+            aria-label="Left {left} turns"
+          >
             <span class="header-val blue-val">{formatTurn(left)}</span>
           </div>
         {/if}
@@ -92,20 +110,39 @@
     display: flex;
     align-items: baseline;
   }
-  .corner-blue { color: #60a5fa; }
-  .corner-sep { color: rgba(255, 255, 255, 0.2); font-weight: 400; }
-  .corner-red { color: #f87171; }
+  .corner-blue {
+    color: #60a5fa;
+  }
+  .corner-sep {
+    color: rgba(255, 255, 255, 0.2);
+    font-weight: 400;
+  }
+  .corner-red {
+    color: #f87171;
+  }
   .header-val {
     font-size: clamp(11px, 2.5cqi, 15px);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
-  .red-val { color: #f87171; }
-  .blue-val { color: #60a5fa; }
-  .col-header { border-bottom: 1px solid rgba(248, 113, 113, 0.15); }
-  .row-header { border-right: 1px solid rgba(96, 165, 250, 0.15); }
+  .red-val {
+    color: #f87171;
+  }
+  .blue-val {
+    color: #60a5fa;
+  }
+  .col-header {
+    border-bottom: 1px solid rgba(248, 113, 113, 0.15);
+  }
+  .row-header {
+    border-right: 1px solid rgba(96, 165, 250, 0.15);
+  }
   @media (max-width: 640px) {
-    .matrix-container { padding: 12px; }
-    .matrix-grid-wrapper { width: clamp(280px, 90vw, 480px); }
+    .matrix-container {
+      padding: 12px;
+    }
+    .matrix-grid-wrapper {
+      width: clamp(280px, 90vw, 480px);
+    }
   }
 </style>

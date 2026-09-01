@@ -108,7 +108,9 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   // prevent polygon-edge seams on the stamp pass.
   private bufferCanvas: OffscreenCanvas | null = null;
   private bufferCtx:
-    CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null = null;
+    | CanvasRenderingContext2D
+    | OffscreenCanvasRenderingContext2D
+    | null = null;
   private trailRenderer = new Canvas2DTrailRenderer();
   private width = 0;
   private height = 0;
@@ -472,7 +474,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       (rightRightTrails ? 8 : 0);
     if (tipMask !== this.prevTipTrailMask) {
       const leftBitsChanged = (tipMask & 0x3) !== (this.prevTipTrailMask & 0x3);
-      const rightBitsChanged = (tipMask & 0xc) !== (this.prevTipTrailMask & 0xc);
+      const rightBitsChanged =
+        (tipMask & 0xc) !== (this.prevTipTrailMask & 0xc);
       if (leftBitsChanged) {
         this.leftLeftRing = [];
         this.leftRightRing = [];
@@ -605,7 +608,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       currentTime,
       canvasSize,
       fadeAmount,
-      /* isBlue */ true,
+      /* isLeft */ true,
       this.leftLayerRings,
       additionalLayers?.map((layer) => layer.opacity) ?? []
     );
@@ -619,7 +622,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       currentTime,
       canvasSize,
       fadeAmount,
-      /* isBlue */ false,
+      /* isLeft */ false,
       this.rightLayerRings,
       additionalLayers?.map((layer) => layer.opacity) ?? []
     );
@@ -676,7 +679,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     currentTime: number,
     canvasSize: number,
     fadeAmount: number,
-    isBlue: boolean,
+    isLeft: boolean,
     extraRings: Array<{ left: TrailPoint[]; right: TrailPoint[] }> = [],
     extraRingOpacities: number[] = []
   ): void {
@@ -693,7 +696,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     accumCtx.fillRect(0, 0, this.width, this.height);
     accumCtx.restore();
 
-    this.smoothAlphaDecay(accumCtx, isBlue);
+    this.smoothAlphaDecay(accumCtx, isLeft);
 
     if (!hasColor) return; // frozen trail fades out via the steps above
 
@@ -729,12 +732,12 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       bCtx.globalAlpha = pass.opacity;
       this.trailRenderer.renderTrails(
         bCtx as CanvasRenderingContext2D,
-        isBlue ? pass.points : [],
-        isBlue ? [] : pass.points,
+        isLeft ? pass.points : [],
+        isLeft ? [] : pass.points,
         overlaySettings,
         currentTime,
-        isBlue,
-        !isBlue,
+        isLeft,
+        !isLeft,
         canvasSize
       );
       bCtx.restore();
@@ -841,7 +844,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     currentTime: number
   ): void {
     const leftRing = propIndex === 0 ? this.leftLeftRing : this.rightLeftRing;
-    const rightRing = propIndex === 0 ? this.leftRightRing : this.rightRightRing;
+    const rightRing =
+      propIndex === 0 ? this.leftRightRing : this.rightRightRing;
     this.capturePropTipsInto(
       prop,
       canvasSize,
@@ -1015,7 +1019,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
    */
   private smoothAlphaDecay(
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-    isBlue: boolean
+    isLeft: boolean
   ): void {
     if (
       typeof window !== "undefined" &&
@@ -1025,7 +1029,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       return;
     }
 
-    if (isBlue) {
+    if (isLeft) {
       this.leftAlphaDecayFrameCounter++;
       if (
         this.leftAlphaDecayFrameCounter <

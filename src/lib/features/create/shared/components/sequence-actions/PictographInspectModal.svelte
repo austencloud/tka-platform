@@ -47,7 +47,7 @@
   let pictographDataState = $state<PictographData | null>(null);
   let isCalculating = $state(false);
 
-  // Rotation override status for each color (only applies to STATIC/DASH)
+  // Rotation override status for each hand (only applies to STATIC/DASH)
   let leftRotationOverride = $state<{ hasOverride: boolean } | null>(null);
   let rightRotationOverride = $state<{ hasOverride: boolean } | null>(null);
 
@@ -71,15 +71,15 @@
   // Driven imperatively via the selection observer (same pattern ArrowSvg uses),
   // NOT a reactive $effect — reading the global selection inside an effect that
   // also writes open-state participates in cross-component update loops.
-  let lastSelectedColor: HandSideValue | null = null;
+  let lastSelectedHand: HandSideValue | null = null;
   $effect(() => {
     const unsubscribe = selectedArrowState.subscribe(() => {
-      const color = selectedArrowState.selectedArrow?.color ?? null;
-      if (color === lastSelectedColor) return;
-      lastSelectedColor = color;
-      if (color === HandSide.LEFT) {
+      const hand = selectedArrowState.selectedArrow?.hand ?? null;
+      if (hand === lastSelectedHand) return;
+      lastSelectedHand = hand;
+      if (hand === HandSide.LEFT) {
         leftOpen = true;
-      } else if (color === HandSide.RIGHT) {
+      } else if (hand === HandSide.RIGHT) {
         rightOpen = true;
       }
     });
@@ -184,7 +184,7 @@
           HandSide.LEFT
         );
       } catch (err) {
-        console.error("Blue diagnostics failed:", err);
+        console.error("Left diagnostics failed:", err);
         leftDiagnostics = null;
       }
     }
@@ -203,7 +203,7 @@
           HandSide.RIGHT
         );
       } catch (err) {
-        console.error("Red diagnostics failed:", err);
+        console.error("Right diagnostics failed:", err);
         rightDiagnostics = null;
       }
     }
@@ -312,19 +312,17 @@
     }
   }
 
-  // The currently-selected arrow color, used to dim the non-selected motion
+  // The currently-selected arrow hand, used to dim the non-selected motion
   // so focus sits on the one being edited. Pure read — safe in a $derived
   // (the warned-against case is reading selection inside an effect that writes).
-  const selectedColor = $derived(
-    selectedArrowState.selectedArrow?.color ?? null
-  );
+  const selectedHand = $derived(selectedArrowState.selectedArrow?.hand ?? null);
 
   // Select a motion by clicking anywhere in its column — easier than hitting the
   // small arrow in the pictograph. Mirrors what an arrow-click selects (same
   // motionData + pictographData), so isSelected() stays consistent.
-  function selectMotion(color: HandSideValue) {
+  function selectMotion(hand: HandSideValue) {
     if (!stepData) return;
-    const motion = color === HandSide.LEFT ? leftMotion : rightMotion;
+    const motion = hand === HandSide.LEFT ? leftMotion : rightMotion;
     if (!motion) return;
     const pictographData: PictographData = pictographDataState ?? {
       id: stepData.id,
@@ -333,13 +331,13 @@
       endPosition: stepData.endPosition,
       motions: stepData.motions,
     };
-    selectedArrowState.selectArrow(motion, color, pictographData);
+    selectedArrowState.selectArrow(motion, hand, pictographData);
   }
 
-  function handleRailKeydown(e: KeyboardEvent, color: HandSideValue) {
+  function handleRailKeydown(e: KeyboardEvent, hand: HandSideValue) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      selectMotion(color);
+      selectMotion(hand);
     }
   }
 
@@ -450,11 +448,11 @@
                small arrow in the pictograph). -->
           <div
             class="motion-rail"
-            class:dimmed={selectedColor === HandSide.RIGHT}
-            class:selected={selectedColor === HandSide.LEFT}
+            class:dimmed={selectedHand === HandSide.RIGHT}
+            class:selected={selectedHand === HandSide.LEFT}
             role="button"
             tabindex="0"
-            aria-pressed={selectedColor === HandSide.LEFT}
+            aria-pressed={selectedHand === HandSide.LEFT}
             aria-label="Select left motion"
             onclick={() => selectMotion(HandSide.LEFT)}
             onkeydown={(e) => handleRailKeydown(e, HandSide.LEFT)}
@@ -487,11 +485,11 @@
 
           <div
             class="motion-rail"
-            class:dimmed={selectedColor === HandSide.LEFT}
-            class:selected={selectedColor === HandSide.RIGHT}
+            class:dimmed={selectedHand === HandSide.LEFT}
+            class:selected={selectedHand === HandSide.RIGHT}
             role="button"
             tabindex="0"
-            aria-pressed={selectedColor === HandSide.RIGHT}
+            aria-pressed={selectedHand === HandSide.RIGHT}
             aria-label="Select right motion"
             onclick={() => selectMotion(HandSide.RIGHT)}
             onkeydown={(e) => handleRailKeydown(e, HandSide.RIGHT)}

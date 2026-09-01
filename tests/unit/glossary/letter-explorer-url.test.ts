@@ -27,6 +27,10 @@ describe("letter explorer URL state", () => {
 
     expect(url.hash).toBe("#cat-letter");
     expect(url.searchParams.get("board")).toBe("atlas");
+    expect(url.searchParams.get("leftTurns")).toBe("1.5");
+    expect(url.searchParams.get("rightTurns")).toBe("fl");
+    expect(url.searchParams.has("blueTurns")).toBe(false);
+    expect(url.searchParams.has("redTurns")).toBe(false);
     expect(parseLetterExplorerRoute(url.searchParams, letters)).toEqual({
       letter: "B",
       gridMode: GridMode.BOX,
@@ -36,6 +40,21 @@ describe("letter explorer URL state", () => {
       leftRotation: RotationDirection.COUNTER_CLOCKWISE,
       rightRotation: RotationDirection.CLOCKWISE,
     });
+  });
+
+  it("reads published palette-keyed links but prefers current hand keys", () => {
+    const legacy = new URLSearchParams(
+      "letter=A&blueTurns=0.5&redTurns=1&blueRotation=ccw&redRotation=cw"
+    );
+    expect(parseLetterExplorerRoute(legacy, letters)).toMatchObject({
+      leftTurns: 0.5,
+      rightTurns: 1,
+      leftRotation: RotationDirection.COUNTER_CLOCKWISE,
+      rightRotation: RotationDirection.CLOCKWISE,
+    });
+
+    legacy.set("leftTurns", "1.5");
+    expect(parseLetterExplorerRoute(legacy, letters)?.leftTurns).toBe(1.5);
   });
 
   it("keeps canonical links compact when the beat is unedited", () => {

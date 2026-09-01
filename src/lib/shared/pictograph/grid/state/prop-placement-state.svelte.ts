@@ -11,7 +11,7 @@ import { normalizeOrientationForLocation } from "../domain/orientation-from-drag
 interface PlacementSnapshot {
   leftLocation: GridLocation | null;
   rightLocation: GridLocation | null;
-  activeColor: HandSide | null;
+  activeHand: HandSide | null;
   leftOrientation: Orientation;
   rightOrientation: Orientation;
 }
@@ -56,8 +56,10 @@ export function createPropPlacementState(
   let leftLocation = $state<GridLocation | null>(
     inputs.getInitialLeftLocation()
   );
-  let rightLocation = $state<GridLocation | null>(inputs.getInitialRightLocation());
-  let activeColor = $state<HandSide | null>(
+  let rightLocation = $state<GridLocation | null>(
+    inputs.getInitialRightLocation()
+  );
+  let activeHand = $state<HandSide | null>(
     inputs.getInitialLeftLocation()
       ? inputs.getInitialRightLocation()
         ? null
@@ -84,7 +86,7 @@ export function createPropPlacementState(
     dependencies.onChange({
       leftLocation,
       rightLocation,
-      activeColor,
+      activeHand,
       complete: isComplete(),
       canUndo: changeCanUndo(),
     });
@@ -106,7 +108,7 @@ export function createPropPlacementState(
       {
         leftLocation,
         rightLocation,
-        activeColor,
+        activeHand,
         leftOrientation: leftLocation
           ? normalizeOrientationForLocation(
               inputs.getLeftOrientation(),
@@ -143,7 +145,7 @@ export function createPropPlacementState(
 
   function selectPoint(
     location: GridLocation,
-    color: HandSide | null = activeColor
+    color: HandSide | null = activeHand
   ): void {
     if (inputs.getDisabled() || color === null) return;
 
@@ -153,7 +155,7 @@ export function createPropPlacementState(
 
     if (color === HandSide.LEFT) {
       leftLocation = location;
-      activeColor = rightLocation === null ? HandSide.RIGHT : null;
+      activeHand = rightLocation === null ? HandSide.RIGHT : null;
       dependencies.triggerHaptic();
       liveAnnouncement =
         rightLocation === null
@@ -161,7 +163,7 @@ export function createPropPlacementState(
           : `${inputs.getLeftNoun()} moved to ${label}. Position ready.`;
     } else {
       rightLocation = location;
-      activeColor = leftLocation === null ? HandSide.LEFT : null;
+      activeHand = leftLocation === null ? HandSide.LEFT : null;
       dependencies.triggerHaptic();
       liveAnnouncement =
         leftLocation === null
@@ -174,7 +176,7 @@ export function createPropPlacementState(
 
   function edit(color: HandSide): void {
     if (inputs.getDisabled() || !inputs.getEditAfterCompletion()) return;
-    activeColor = color;
+    activeHand = color;
     const noun =
       color === HandSide.LEFT ? inputs.getLeftNoun() : inputs.getRightNoun();
     liveAnnouncement = `Choose a new location for the ${noun}.`;
@@ -188,13 +190,10 @@ export function createPropPlacementState(
 
     leftLocation = previous.leftLocation;
     rightLocation = previous.rightLocation;
-    activeColor = previous.activeColor;
+    activeHand = previous.activeHand;
     history = history.slice(0, -1);
     if (inputs.getLeftOrientation() !== previous.leftOrientation) {
-      dependencies.onOrientationChange(
-        HandSide.LEFT,
-        previous.leftOrientation
-      );
+      dependencies.onOrientationChange(HandSide.LEFT, previous.leftOrientation);
     }
     if (inputs.getRightOrientation() !== previous.rightOrientation) {
       dependencies.onOrientationChange(
@@ -204,9 +203,9 @@ export function createPropPlacementState(
     }
     dependencies.triggerHaptic();
     liveAnnouncement =
-      activeColor === HandSide.RIGHT
+      activeHand === HandSide.RIGHT
         ? `${inputs.getLeftNoun()} placement restored. Place the ${inputs.getRightNoun()}.`
-        : activeColor === HandSide.LEFT
+        : activeHand === HandSide.LEFT
           ? `Place the ${inputs.getLeftNoun()}.`
           : "Previous position restored.";
     publishChange();
@@ -215,7 +214,7 @@ export function createPropPlacementState(
   function reset(): void {
     leftLocation = null;
     rightLocation = null;
-    activeColor = HandSide.LEFT;
+    activeHand = HandSide.LEFT;
     history = [];
     liveAnnouncement = "";
     publishChange();
@@ -229,7 +228,7 @@ export function createPropPlacementState(
       initializationKey = nextInitializationKey;
       leftLocation = inputs.getInitialLeftLocation();
       rightLocation = inputs.getInitialRightLocation();
-      activeColor = inputs.getInitialLeftLocation()
+      activeHand = inputs.getInitialLeftLocation()
         ? inputs.getInitialRightLocation()
           ? null
           : HandSide.RIGHT
@@ -246,14 +245,14 @@ export function createPropPlacementState(
     get rightLocation() {
       return rightLocation;
     },
-    get activeColor() {
-      return activeColor;
+    get activeHand() {
+      return activeHand;
     },
     get isComplete() {
       return isComplete();
     },
     get canPlace() {
-      return !inputs.getDisabled() && activeColor !== null;
+      return !inputs.getDisabled() && activeHand !== null;
     },
     get canUndo() {
       return inputs.getShowUndo() && changeCanUndo();

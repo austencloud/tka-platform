@@ -293,7 +293,7 @@ export class FrameParameterBuilder {
     const leftPropType = state.currentLeftPropType.toLowerCase();
     const rightPropType = state.currentRightPropType.toLowerCase();
 
-    // Blue prop: Buugeng family uses user preference, hand is never flipped (it's the left hand)
+    // Left prop: Buugeng family uses the user's left-hand flip preference.
     fp.leftPropFlipped = buugengFamily.includes(leftPropType)
       ? (props.leftBuugengFlipped ?? settings?.leftBuugengFlipped ?? false)
       : false;
@@ -303,7 +303,9 @@ export class FrameParameterBuilder {
       rightPropType === "hand"
         ? true
         : buugengFamily.includes(rightPropType)
-          ? (props.rightBuugengFlipped ?? settings?.rightBuugengFlipped ?? false)
+          ? (props.rightBuugengFlipped ??
+            settings?.rightBuugengFlipped ??
+            false)
           : false;
 
     // Pass prop types for prop-specific rendering rules (e.g., hands never rotate)

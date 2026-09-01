@@ -2,8 +2,14 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
-  import { isVisibleMotion, type MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-  import { MotionType, HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import {
+    isVisibleMotion,
+    type MotionData,
+  } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import {
+    MotionType,
+    HandSide,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { getPathD } from "$lib/features/hand-paths/hand-path-builder/services/hand-path-animator";
   import {
     getAnimationVisibilityManager,
@@ -36,7 +42,9 @@
     vm?: AnimationVisibilityStateManager | null;
   } = $props();
 
-  function resolvePathTypeForMotion(motion: MotionData): "arc" | "linear" | "concave" {
+  function resolvePathTypeForMotion(
+    motion: MotionData
+  ): "arc" | "linear" | "concave" {
     if (motion.pathShape) return motion.pathShape;
     if (motion.motionType === MotionType.DASH) return "linear";
     if (motion.motionType === MotionType.STATIC) return "arc";
@@ -67,7 +75,8 @@
     if (stepData) {
       const idx = sequenceData.steps.indexOf(stepData as StepData);
       if (idx >= 0) return sequenceData.steps[idx] ?? null;
-      if (sequenceData.startPosition && stepData === sequenceData.startPosition) return null;
+      if (sequenceData.startPosition && stepData === sequenceData.startPosition)
+        return null;
     }
     if (stepIndex < 0 || stepIndex >= sequenceData.steps.length) return null;
     return sequenceData.steps[stepIndex] ?? null;
@@ -89,7 +98,7 @@
   const drawRight = $derived(showRight && rightPathD !== null);
 </script>
 
-<!-- Gate the overlay on the TOGGLE intent (showBlue/showRed), not on whether
+<!-- Gate the overlay on the TOGGLE intent (showLeft/showRight), not on whether
      this step happens to have path geometry — so turning Paths on/off fades the
      whole overlay once, while per-step geometry swaps (drawBlue/drawRed) stay
      instant and never trigger a fade mid-playback. -->
@@ -98,7 +107,10 @@
     class="path-lines-overlay"
     viewBox="0 0 950 950"
     preserveAspectRatio="xMidYMid meet"
-    transition:fade={{ duration: motionDuration(DURATION.normal), easing: cubicOut }}
+    transition:fade={{
+      duration: motionDuration(DURATION.normal),
+      easing: cubicOut,
+    }}
   >
     {#if drawLeft}
       <path

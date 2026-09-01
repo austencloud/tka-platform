@@ -9,10 +9,7 @@ import {
 } from "../../domain/constants/transformation-maps";
 import { checkRotations } from "./rotation-comparer";
 import { checkReflections } from "./reflection-comparer";
-import {
-  checkRepeated,
-  checkSwapInvert,
-} from "./swap-invert-comparer";
+import { checkRepeated, checkSwapInvert } from "./swap-invert-comparer";
 import { formatBeatPairTransformations } from "../candidate-formatter";
 
 /**
@@ -20,7 +17,6 @@ import { formatBeatPairTransformations } from "../candidate-formatter";
  */
 export class StepComparisonOrchestrator {
   constructor() {}
-
 
   extractBeats(sequence: SequenceEntry): ExtractedStep[] {
     const raw = sequence.fullMetadata?.sequence;
@@ -95,9 +91,7 @@ export class StepComparisonOrchestrator {
       const step2 = steps[halfLength + i]!;
       const rawTransformations = this.compareStepPair(step1, step2);
       const { primary, all } =
-        formatBeatPairTransformations(
-          rawTransformations
-        );
+        formatBeatPairTransformations(rawTransformations);
 
       stepPairs.push({
         keyStep: step1.stepNumber,
@@ -123,9 +117,7 @@ export class StepComparisonOrchestrator {
       const step2 = steps[(i + quarterLength) % steps.length]!;
       const rawTransformations = this.compareStepPair(step1, step2);
       const { primary, all } =
-        formatBeatPairTransformations(
-          rawTransformations
-        );
+        formatBeatPairTransformations(rawTransformations);
 
       stepPairs.push({
         keyStep: step1.stepNumber,
@@ -151,14 +143,14 @@ export class StepComparisonOrchestrator {
     if (!b0 || !b1 || !b2 || !b3) return null;
 
     const quarterBeats = [b0, b1, b2, b3];
-    const blueStartLocs = quarterBeats.map((b) => b.left?.startLoc);
+    const leftStartLocs = quarterBeats.map((b) => b.left?.startLoc);
 
     let ccwMatches = 0;
     let cwMatches = 0;
 
     for (let i = 0; i < 4; i++) {
-      const current = blueStartLocs[i];
-      const next = blueStartLocs[(i + 1) % 4];
+      const current = leftStartLocs[i];
+      const next = leftStartLocs[(i + 1) % 4];
       if (!current || !next) continue;
 
       if (ROTATE_90_CCW[current] === next) ccwMatches++;
@@ -171,6 +163,5 @@ export class StepComparisonOrchestrator {
     return null;
   }
 }
-
 
 export const stepComparisonOrchestrator = new StepComparisonOrchestrator();

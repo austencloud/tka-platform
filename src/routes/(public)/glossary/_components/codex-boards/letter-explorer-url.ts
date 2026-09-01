@@ -25,6 +25,11 @@ export const LETTER_EXPLORER_PARAMS = [
   "letter",
   "grid",
   "variation",
+  "leftTurns",
+  "rightTurns",
+  "leftRotation",
+  "rightRotation",
+  // Published links may still carry the legacy palette-keyed names.
   "blueTurns",
   "redTurns",
   "blueRotation",
@@ -69,10 +74,18 @@ export function parseLetterExplorerRoute(
         ? GridMode.BOX
         : GridMode.DIAMOND,
     variation,
-    leftTurns: parseTurn(searchParams.get("blueTurns")),
-    rightTurns: parseTurn(searchParams.get("redTurns")),
-    leftRotation: parseRotation(searchParams.get("blueRotation")),
-    rightRotation: parseRotation(searchParams.get("redRotation")),
+    leftTurns: parseTurn(
+      searchParams.get("leftTurns") ?? searchParams.get("blueTurns")
+    ),
+    rightTurns: parseTurn(
+      searchParams.get("rightTurns") ?? searchParams.get("redTurns")
+    ),
+    leftRotation: parseRotation(
+      searchParams.get("leftRotation") ?? searchParams.get("blueRotation")
+    ),
+    rightRotation: parseRotation(
+      searchParams.get("rightRotation") ?? searchParams.get("redRotation")
+    ),
   };
 }
 
@@ -90,12 +103,12 @@ export function writeLetterExplorerRoute(
   url.searchParams.set("grid", state.gridMode);
   url.searchParams.set("variation", String(state.variation));
   if (state.leftTurns !== 0) {
-    url.searchParams.set("blueTurns", String(state.leftTurns));
-    url.searchParams.set("blueRotation", state.leftRotation);
+    url.searchParams.set("leftTurns", String(state.leftTurns));
+    url.searchParams.set("leftRotation", state.leftRotation);
   }
   if (state.rightTurns !== 0) {
-    url.searchParams.set("redTurns", String(state.rightTurns));
-    url.searchParams.set("redRotation", state.rightRotation);
+    url.searchParams.set("rightTurns", String(state.rightTurns));
+    url.searchParams.set("rightRotation", state.rightRotation);
   }
   url.hash = "cat-letter";
 }

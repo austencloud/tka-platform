@@ -29,8 +29,8 @@ type Step = {
   letter: string;
   startPos: string;
   endPos: string;
-  left: Hand;
-  right: Hand;
+  blue: Hand;
+  red: Hand;
 };
 type Cell = { reference: string; word: string; steps: Step[] };
 
@@ -114,8 +114,8 @@ describe("SpiroAnim Eight Step base cells", () => {
         letter: null,
         gridPosition: cell.steps[0]!.startPos,
         motions: {
-          left: motionBlob(cell.steps[0]!.left, "left", true),
-          right: motionBlob(cell.steps[0]!.right, "right", true),
+          left: motionBlob(cell.steps[0]!.blue, "left", true),
+          right: motionBlob(cell.steps[0]!.red, "right", true),
         },
       },
       steps: cell.steps.map((s, i) => ({
@@ -125,8 +125,8 @@ describe("SpiroAnim Eight Step base cells", () => {
         endPosition: s.endPos,
         duration: 1,
         motions: {
-          left: motionBlob(s.left, "left"),
-          right: motionBlob(s.right, "right"),
+          left: motionBlob(s.blue, "left"),
+          right: motionBlob(s.red, "right"),
         },
       })),
     }));

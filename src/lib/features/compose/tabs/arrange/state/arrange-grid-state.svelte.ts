@@ -16,19 +16,39 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
-  type TunnelLayerConfig, type TransformType, type AppliedTransform, type CellEffect, getTunnelLayerColors, } from "$lib/shared/animation-engine/domain/compose-types";
+  type TunnelLayerConfig,
+  type TransformType,
+  type AppliedTransform,
+  type CellEffect,
+  getTunnelLayerColors,
+} from "$lib/shared/animation-engine/domain/compose-types";
 
-import type { CellMediaType, PropColors } from "$lib/shared/animation-engine/domain/compose-types";
+import type {
+  CellMediaType,
+  PropColors,
+} from "$lib/shared/animation-engine/domain/compose-types";
 import type { Composition } from "$lib/shared/animation-engine/domain/compose-types";
 import type { TrailMode } from "$lib/shared/animation-engine/domain/types/trail-types";
-import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
+import type {
+  TipEffectMap,
+  TipEffortMap,
+} from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 // compose-arrange-container dissolved - services accessed via module singleton getters
 import type {
-  ArrangeUndoOperationType, ArrangeGridSnapshot } from "../services/types";
+  ArrangeUndoOperationType,
+  ArrangeGridSnapshot,
+} from "../services/types";
 
 import { serializeGrid } from "../services/arrange-grid-serializer";
-import { gridCellsToComposition, compositionToGridState } from "../services/arrange-composition-converter";
-import { loadGrid, saveGrid, migrateLocalStorageCompositions } from "../services/arrange-grid-persister";
+import {
+  gridCellsToComposition,
+  compositionToGridState,
+} from "../services/arrange-composition-converter";
+import {
+  loadGrid,
+  saveGrid,
+  migrateLocalStorageCompositions,
+} from "../services/arrange-grid-persister";
 import { calculateTotalBeats } from "../services/arrange-step-calculator";
 import { applyTransform } from "../services/arrange-layer-transformer";
 import { compositionSyncer } from "../../../services/composition-syncer";
@@ -139,7 +159,9 @@ function createArrangeGridState() {
     }[];
     mediaType: CellMediaType;
   } | null>(null);
-  let transformingLayer = $state<{ cellId: string; layerIndex: number } | null>(null);
+  let transformingLayer = $state<{ cellId: string; layerIndex: number } | null>(
+    null
+  );
 
   // Reactive mirrors of playback engine state
   let isPlaying = $state(false);
@@ -191,7 +213,11 @@ function createArrangeGridState() {
 
   migrateLocalStorageCompositions();
 
-  function withUndo(type: ArrangeUndoOperationType, description: string, fn: () => void): void {
+  function withUndo(
+    type: ArrangeUndoOperationType,
+    description: string,
+    fn: () => void
+  ): void {
     undoManager.captureState(type, description);
     try {
       fn();
@@ -203,7 +229,10 @@ function createArrangeGridState() {
   }
 
   function withCoalescingUndo(
-    type: ArrangeUndoOperationType, description: string, coalescingKey: string, fn: () => void
+    type: ArrangeUndoOperationType,
+    description: string,
+    coalescingKey: string,
+    fn: () => void
   ): void {
     undoManager.captureState(type, description);
     try {
@@ -238,7 +267,9 @@ function createArrangeGridState() {
 
   function computeOccupiedPositions(): Map<string, string> {
     const occupied = new Map<string, string>();
-    for (const cell of cells.filter((c) => c.row < gridRows && c.col < gridCols)) {
+    for (const cell of cells.filter(
+      (c) => c.row < gridRows && c.col < gridCols
+    )) {
       for (let r = cell.row; r < cell.row + cell.rowSpan; r++) {
         for (let c = cell.col; c < cell.col + cell.colSpan; c++) {
           if (r === cell.row && c === cell.col) continue;
@@ -253,52 +284,98 @@ function createArrangeGridState() {
     return calculateTotalBeats(cells, skipStartPosition, gridRows, gridCols);
   }
 
-  function applySpanningPreset(preset: "hero-thumbs" | "main-banner" | "pip" | "split-half" | "quad" | "gallery"): void {
+  function applySpanningPreset(
+    preset:
+      | "hero-thumbs"
+      | "main-banner"
+      | "pip"
+      | "split-half"
+      | "quad"
+      | "gallery"
+  ): void {
     const newCells = cells.map((cell) => ({
-      ...cell, colSpan: 1, rowSpan: 1, layers: [] as TunnelLayerConfig[],
+      ...cell,
+      colSpan: 1,
+      rowSpan: 1,
+      layers: [] as TunnelLayerConfig[],
     }));
 
     switch (preset) {
       case "hero-thumbs": {
-        gridRows = 6; gridCols = 5;
+        gridRows = 6;
+        gridCols = 5;
         const heroCell = newCells[getCellIndex(0, 0)];
-        if (heroCell) newCells[getCellIndex(0, 0)] = { ...heroCell, colSpan: 5, rowSpan: 5 };
+        if (heroCell)
+          newCells[getCellIndex(0, 0)] = {
+            ...heroCell,
+            colSpan: 5,
+            rowSpan: 5,
+          };
         break;
       }
       case "main-banner": {
-        gridRows = 6; gridCols = 6;
+        gridRows = 6;
+        gridCols = 6;
         const mainCell = newCells[getCellIndex(0, 0)];
-        if (mainCell) newCells[getCellIndex(0, 0)] = { ...mainCell, colSpan: 6, rowSpan: 5 };
+        if (mainCell)
+          newCells[getCellIndex(0, 0)] = {
+            ...mainCell,
+            colSpan: 6,
+            rowSpan: 5,
+          };
         break;
       }
       case "pip": {
-        gridRows = 6; gridCols = 6;
+        gridRows = 6;
+        gridCols = 6;
         const mainCell = newCells[getCellIndex(0, 0)];
-        if (mainCell) newCells[getCellIndex(0, 0)] = { ...mainCell, colSpan: 5, rowSpan: 6 };
+        if (mainCell)
+          newCells[getCellIndex(0, 0)] = {
+            ...mainCell,
+            colSpan: 5,
+            rowSpan: 6,
+          };
         break;
       }
       case "split-half": {
-        gridRows = 4; gridCols = 2;
+        gridRows = 4;
+        gridCols = 2;
         const leftCell = newCells[getCellIndex(0, 0)];
-        if (leftCell) newCells[getCellIndex(0, 0)] = { ...leftCell, colSpan: 1, rowSpan: 4 };
+        if (leftCell)
+          newCells[getCellIndex(0, 0)] = {
+            ...leftCell,
+            colSpan: 1,
+            rowSpan: 4,
+          };
         const rightCell = newCells[getCellIndex(0, 1)];
-        if (rightCell) newCells[getCellIndex(0, 1)] = { ...rightCell, colSpan: 1, rowSpan: 4 };
+        if (rightCell)
+          newCells[getCellIndex(0, 1)] = {
+            ...rightCell,
+            colSpan: 1,
+            rowSpan: 4,
+          };
         break;
       }
       case "quad": {
-        gridRows = 6; gridCols = 6;
+        gridRows = 6;
+        gridCols = 6;
         const tl = newCells[getCellIndex(0, 0)];
-        if (tl) newCells[getCellIndex(0, 0)] = { ...tl, colSpan: 3, rowSpan: 3 };
+        if (tl)
+          newCells[getCellIndex(0, 0)] = { ...tl, colSpan: 3, rowSpan: 3 };
         const tr = newCells[getCellIndex(0, 3)];
-        if (tr) newCells[getCellIndex(0, 3)] = { ...tr, colSpan: 3, rowSpan: 3 };
+        if (tr)
+          newCells[getCellIndex(0, 3)] = { ...tr, colSpan: 3, rowSpan: 3 };
         const bl = newCells[getCellIndex(3, 0)];
-        if (bl) newCells[getCellIndex(3, 0)] = { ...bl, colSpan: 3, rowSpan: 3 };
+        if (bl)
+          newCells[getCellIndex(3, 0)] = { ...bl, colSpan: 3, rowSpan: 3 };
         const br = newCells[getCellIndex(3, 3)];
-        if (br) newCells[getCellIndex(3, 3)] = { ...br, colSpan: 3, rowSpan: 3 };
+        if (br)
+          newCells[getCellIndex(3, 3)] = { ...br, colSpan: 3, rowSpan: 3 };
         break;
       }
       case "gallery": {
-        gridRows = 3; gridCols = 3;
+        gridRows = 3;
+        gridCols = 3;
         break;
       }
     }
@@ -309,27 +386,59 @@ function createArrangeGridState() {
   }
 
   return {
-    get cells() { return cells; },
-    get gridRows() { return gridRows; },
-    get gridCols() { return gridCols; },
-    get isPlaying() { return isPlaying; },
-    get currentStep() { return currentStep; },
-    get selectedCellId() { return selectedCellId; },
-    get showSequencePicker() { return showSequencePicker; },
-    get clipboard() { return clipboard; },
-    get transformingLayer() { return transformingLayer; },
-    get canUndo() { return canUndo; },
-    get canRedo() { return canRedo; },
-    get undoDescription() { return undoDescription; },
-    get redoDescription() { return redoDescription; },
+    get cells() {
+      return cells;
+    },
+    get gridRows() {
+      return gridRows;
+    },
+    get gridCols() {
+      return gridCols;
+    },
+    get isPlaying() {
+      return isPlaying;
+    },
+    get currentStep() {
+      return currentStep;
+    },
+    get selectedCellId() {
+      return selectedCellId;
+    },
+    get showSequencePicker() {
+      return showSequencePicker;
+    },
+    get clipboard() {
+      return clipboard;
+    },
+    get transformingLayer() {
+      return transformingLayer;
+    },
+    get canUndo() {
+      return canUndo;
+    },
+    get canRedo() {
+      return canRedo;
+    },
+    get undoDescription() {
+      return undoDescription;
+    },
+    get redoDescription() {
+      return redoDescription;
+    },
 
     get visibleCells() {
       return cells.filter((c) => c.row < gridRows && c.col < gridCols);
     },
-    get totalSteps() { return getTotalBeats(); },
-    get skipStartPosition() { return skipStartPosition; },
+    get totalSteps() {
+      return getTotalBeats();
+    },
+    get skipStartPosition() {
+      return skipStartPosition;
+    },
     get hasAnyLayers() {
-      return cells.some((c) => c.row < gridRows && c.col < gridCols && c.layers.length > 0);
+      return cells.some(
+        (c) => c.row < gridRows && c.col < gridCols && c.layers.length > 0
+      );
     },
     get selectedCell() {
       if (selectedCellId === null) return null;
@@ -343,78 +452,120 @@ function createArrangeGridState() {
 
     getCellDisplayIndex(cellId: string): number {
       const visible = cells.filter((c) => c.row < gridRows && c.col < gridCols);
-      const sorted = [...visible].sort((a, b) => a.row !== b.row ? a.row - b.row : a.col - b.col);
+      const sorted = [...visible].sort((a, b) =>
+        a.row !== b.row ? a.row - b.row : a.col - b.col
+      );
       return sorted.findIndex((c) => c.id === cellId) + 1;
     },
 
-    get occupiedPositions(): Map<string, string> { return computeOccupiedPositions(); },
-
-    get gridBounds() {
-      return { minRow: 0, maxRow: gridRows - 1, minCol: 0, maxCol: gridCols - 1, rows: gridRows, cols: gridCols };
+    get occupiedPositions(): Map<string, string> {
+      return computeOccupiedPositions();
     },
 
-    get rows() { return gridRows; },
-    get cols() { return gridCols; },
+    get gridBounds() {
+      return {
+        minRow: 0,
+        maxRow: gridRows - 1,
+        minCol: 0,
+        maxCol: gridCols - 1,
+        rows: gridRows,
+        cols: gridCols,
+      };
+    },
+
+    get rows() {
+      return gridRows;
+    },
+    get cols() {
+      return gridCols;
+    },
 
     // Grid dimension setters
     setGridRows(n: number) {
       const clamped = clampDimension(n);
       if (clamped === gridRows) return;
-      withUndo("SET_GRID_ROWS" as ArrangeUndoOperationType, `Set rows to ${clamped}`, () => {
-        gridRows = clamped;
-        cells = cells.map((cell) =>
-          cell.row + cell.rowSpan > clamped ? { ...cell, rowSpan: Math.max(1, clamped - cell.row) } : cell
-        );
-        if (selectedCellId) {
-          const cell = cells.find((c) => c.id === selectedCellId);
-          if (cell && cell.row >= gridRows) selectedCellId = null;
+      withUndo(
+        "SET_GRID_ROWS" as ArrangeUndoOperationType,
+        `Set rows to ${clamped}`,
+        () => {
+          gridRows = clamped;
+          cells = cells.map((cell) =>
+            cell.row + cell.rowSpan > clamped
+              ? { ...cell, rowSpan: Math.max(1, clamped - cell.row) }
+              : cell
+          );
+          if (selectedCellId) {
+            const cell = cells.find((c) => c.id === selectedCellId);
+            if (cell && cell.row >= gridRows) selectedCellId = null;
+          }
+          save();
         }
-        save();
-      });
+      );
     },
 
     setGridCols(n: number) {
       const clamped = clampDimension(n);
       if (clamped === gridCols) return;
-      withUndo("SET_GRID_COLS" as ArrangeUndoOperationType, `Set columns to ${clamped}`, () => {
-        gridCols = clamped;
-        cells = cells.map((cell) =>
-          cell.col + cell.colSpan > clamped ? { ...cell, colSpan: Math.max(1, clamped - cell.col) } : cell
-        );
-        if (selectedCellId) {
-          const cell = cells.find((c) => c.id === selectedCellId);
-          if (cell && cell.col >= gridCols) selectedCellId = null;
+      withUndo(
+        "SET_GRID_COLS" as ArrangeUndoOperationType,
+        `Set columns to ${clamped}`,
+        () => {
+          gridCols = clamped;
+          cells = cells.map((cell) =>
+            cell.col + cell.colSpan > clamped
+              ? { ...cell, colSpan: Math.max(1, clamped - cell.col) }
+              : cell
+          );
+          if (selectedCellId) {
+            const cell = cells.find((c) => c.id === selectedCellId);
+            if (cell && cell.col >= gridCols) selectedCellId = null;
+          }
+          save();
         }
-        save();
-      });
+      );
     },
 
     setGridDimensions(rows: number, cols: number) {
       const clampedRows = clampDimension(rows);
       const clampedCols = clampDimension(cols);
       if (clampedRows === gridRows && clampedCols === gridCols) return;
-      withUndo("SET_PRESET_LAYOUT" as ArrangeUndoOperationType, `Set grid to ${clampedRows}x${clampedCols}`, () => {
-        gridRows = clampedRows;
-        gridCols = clampedCols;
-        cells = cells.map((cell) => {
-          let { colSpan, rowSpan } = cell;
-          if (cell.col + colSpan > clampedCols) colSpan = Math.max(1, clampedCols - cell.col);
-          if (cell.row + rowSpan > clampedRows) rowSpan = Math.max(1, clampedRows - cell.row);
-          return (colSpan !== cell.colSpan || rowSpan !== cell.rowSpan) ? { ...cell, colSpan, rowSpan } : cell;
-        });
-        if (selectedCellId) {
-          const cell = cells.find((c) => c.id === selectedCellId);
-          if (cell && (cell.row >= gridRows || cell.col >= gridCols)) selectedCellId = null;
+      withUndo(
+        "SET_PRESET_LAYOUT" as ArrangeUndoOperationType,
+        `Set grid to ${clampedRows}x${clampedCols}`,
+        () => {
+          gridRows = clampedRows;
+          gridCols = clampedCols;
+          cells = cells.map((cell) => {
+            let { colSpan, rowSpan } = cell;
+            if (cell.col + colSpan > clampedCols)
+              colSpan = Math.max(1, clampedCols - cell.col);
+            if (cell.row + rowSpan > clampedRows)
+              rowSpan = Math.max(1, clampedRows - cell.row);
+            return colSpan !== cell.colSpan || rowSpan !== cell.rowSpan
+              ? { ...cell, colSpan, rowSpan }
+              : cell;
+          });
+          if (selectedCellId) {
+            const cell = cells.find((c) => c.id === selectedCellId);
+            if (cell && (cell.row >= gridRows || cell.col >= gridCols))
+              selectedCellId = null;
+          }
+          save();
         }
-        save();
-      });
+      );
     },
 
     getOccupyingCell(row: number, col: number): string | null {
       return computeOccupiedPositions().get(`${row}-${col}`) ?? null;
     },
 
-    setCellSpan(cellId: string, colSpan: number, rowSpan: number, newCol?: number, newRow?: number): boolean {
+    setCellSpan(
+      cellId: string,
+      colSpan: number,
+      rowSpan: number,
+      newCol?: number,
+      newRow?: number
+    ): boolean {
       const cellIndex = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIndex];
       if (!cell) return false;
@@ -422,8 +573,14 @@ function createArrangeGridState() {
       colSpan = Math.max(1, Math.min(colSpan, gridCols));
       rowSpan = Math.max(1, Math.min(rowSpan, gridRows));
 
-      const targetCol = newCol !== undefined ? Math.max(0, Math.min(newCol, gridCols - 1)) : cell.col;
-      const targetRow = newRow !== undefined ? Math.max(0, Math.min(newRow, gridRows - 1)) : cell.row;
+      const targetCol =
+        newCol !== undefined
+          ? Math.max(0, Math.min(newCol, gridCols - 1))
+          : cell.col;
+      const targetRow =
+        newRow !== undefined
+          ? Math.max(0, Math.min(newRow, gridRows - 1))
+          : cell.row;
 
       if (targetCol + colSpan > gridCols) return false;
       if (targetRow + rowSpan > gridRows) return false;
@@ -439,7 +596,14 @@ function createArrangeGridState() {
           const newOriginCell = newCells[newOriginIdx];
 
           if (newOriginCell) {
-            newCells[newOriginIdx] = { ...cell, id: newOriginCell.id, row: newOriginCell.row, col: newOriginCell.col, colSpan, rowSpan };
+            newCells[newOriginIdx] = {
+              ...cell,
+              id: newOriginCell.id,
+              row: newOriginCell.row,
+              col: newOriginCell.col,
+              colSpan,
+              rowSpan,
+            };
           }
           if (oldOriginIdx !== newOriginIdx) {
             newCells[oldOriginIdx] = createCell(cell.row, cell.col);
@@ -449,17 +613,20 @@ function createArrangeGridState() {
               const idx = getCellIndex(r, c);
               if (idx === newOriginIdx || idx === oldOriginIdx) continue;
               const t = newCells[idx];
-              if (t && t.layers.length > 0) newCells[idx] = { ...t, layers: [], colSpan: 1, rowSpan: 1 };
+              if (t && t.layers.length > 0)
+                newCells[idx] = { ...t, layers: [], colSpan: 1, rowSpan: 1 };
             }
           }
-          if (selectedCellId === cellId) selectedCellId = newOriginCell?.id ?? null;
+          if (selectedCellId === cellId)
+            selectedCellId = newOriginCell?.id ?? null;
         } else {
           for (let r = cell.row; r < cell.row + rowSpan; r++) {
             for (let c = cell.col; c < cell.col + colSpan; c++) {
               if (r === cell.row && c === cell.col) continue;
               const idx = getCellIndex(r, c);
               const t = newCells[idx];
-              if (t && t.layers.length > 0) newCells[idx] = { ...t, layers: [], colSpan: 1, rowSpan: 1 };
+              if (t && t.layers.length > 0)
+                newCells[idx] = { ...t, layers: [], colSpan: 1, rowSpan: 1 };
             }
           }
           newCells[cellIndex] = { ...cell, colSpan, rowSpan };
@@ -472,22 +639,67 @@ function createArrangeGridState() {
       return true;
     },
 
-    resetCellSpan(cellId: string) { this.setCellSpan(cellId, 1, 1); },
+    resetCellSpan(cellId: string) {
+      this.setCellSpan(cellId, 1, 1);
+    },
 
-    setPresetLayout(preset: "single" | "vertical" | "horizontal" | "line" | "square" | "filmstrip" | "tower" | "hero-thumbs" | "main-banner" | "pip" | "split-half" | "quad" | "gallery") {
+    setPresetLayout(
+      preset:
+        | "single"
+        | "vertical"
+        | "horizontal"
+        | "line"
+        | "square"
+        | "filmstrip"
+        | "tower"
+        | "hero-thumbs"
+        | "main-banner"
+        | "pip"
+        | "split-half"
+        | "quad"
+        | "gallery"
+    ) {
       withUndo("SET_PRESET_LAYOUT", `Set layout: ${preset}`, () => {
-        if (preset === "hero-thumbs" || preset === "main-banner" || preset === "pip" || preset === "split-half" || preset === "quad" || preset === "gallery") {
+        if (
+          preset === "hero-thumbs" ||
+          preset === "main-banner" ||
+          preset === "pip" ||
+          preset === "split-half" ||
+          preset === "quad" ||
+          preset === "gallery"
+        ) {
           applySpanningPreset(preset);
           return;
         }
         switch (preset) {
-          case "single": gridRows = 1; gridCols = 1; break;
-          case "vertical": gridRows = 2; gridCols = 1; break;
-          case "horizontal": gridRows = 1; gridCols = 2; break;
-          case "line": gridRows = 1; gridCols = 6; break;
-          case "square": gridRows = 2; gridCols = 2; break;
-          case "filmstrip": gridRows = 1; gridCols = 4; break;
-          case "tower": gridRows = 4; gridCols = 1; break;
+          case "single":
+            gridRows = 1;
+            gridCols = 1;
+            break;
+          case "vertical":
+            gridRows = 2;
+            gridCols = 1;
+            break;
+          case "horizontal":
+            gridRows = 1;
+            gridCols = 2;
+            break;
+          case "line":
+            gridRows = 1;
+            gridCols = 6;
+            break;
+          case "square":
+            gridRows = 2;
+            gridCols = 2;
+            break;
+          case "filmstrip":
+            gridRows = 1;
+            gridCols = 4;
+            break;
+          case "tower":
+            gridRows = 4;
+            gridCols = 1;
+            break;
         }
         cells = cells.map((cell) => ({ ...cell, colSpan: 1, rowSpan: 1 }));
         selectedCellId = null;
@@ -495,21 +707,35 @@ function createArrangeGridState() {
       });
     },
 
-    setSpanningPreset(preset: "hero-thumbs" | "main-banner" | "pip" | "split-half" | "quad" | "gallery") {
-      withUndo("SET_PRESET_LAYOUT", `Set layout: ${preset}`, () => { applySpanningPreset(preset); });
+    setSpanningPreset(
+      preset:
+        | "hero-thumbs"
+        | "main-banner"
+        | "pip"
+        | "split-half"
+        | "quad"
+        | "gallery"
+    ) {
+      withUndo("SET_PRESET_LAYOUT", `Set layout: ${preset}`, () => {
+        applySpanningPreset(preset);
+      });
     },
 
     selectCell(cellId: string) {
       const cell = cells.find((c) => c.id === cellId);
-      if (cell && cell.row < gridRows && cell.col < gridCols) selectedCellId = cellId;
+      if (cell && cell.row < gridRows && cell.col < gridCols)
+        selectedCellId = cellId;
     },
 
     selectCellAt(row: number, col: number) {
       const cell = getCellAt(row, col);
-      if (cell && cell.row < gridRows && cell.col < gridCols) selectedCellId = cell.id;
+      if (cell && cell.row < gridRows && cell.col < gridCols)
+        selectedCellId = cell.id;
     },
 
-    deselectCell() { selectedCellId = null; },
+    deselectCell() {
+      selectedCellId = null;
+    },
 
     getRequiredBeatCount(): number | null {
       for (const cell of cells) {
@@ -522,22 +748,36 @@ function createArrangeGridState() {
     },
 
     // Layer operations
-    addLayerToCell(cellId: string, sequence: SequenceData): { success: boolean; error?: string } {
+    addLayerToCell(
+      cellId: string,
+      sequence: SequenceData
+    ): { success: boolean; error?: string } {
       const cellIndex = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIndex];
       if (!cell || cell.layers.length >= MAX_LAYERS_PER_CELL) {
-        return { success: false, error: "Cannot add layer - cell full or invalid" };
+        return {
+          success: false,
+          error: "Cannot add layer - cell full or invalid",
+        };
       }
 
       const requiredBeats = this.getRequiredBeatCount();
       const sequenceBeats = sequence.steps?.length ?? 0;
       if (requiredBeats !== null && sequenceBeats !== requiredBeats) {
-        return { success: false, error: `Sequence has ${sequenceBeats} beats but composition requires ${requiredBeats} beats. All sequences must be the same length.` };
+        return {
+          success: false,
+          error: `Sequence has ${sequenceBeats} beats but composition requires ${requiredBeats} beats. All sequences must be the same length.`,
+        };
       }
 
       const word = sequence.word || sequence.name || "sequence";
       withUndo("ADD_LAYER", `Add ${word}`, () => {
-        const newLayer: TunnelLayerConfig = { sequence, beatOffset: 0, propColors: getTunnelLayerColors(cell.layers.length), transformStack: [] };
+        const newLayer: TunnelLayerConfig = {
+          sequence,
+          beatOffset: 0,
+          propColors: getTunnelLayerColors(cell.layers.length),
+          transformStack: [],
+        };
         const newCells = [...cells];
         newCells[cellIndex] = { ...cell, layers: [...cell.layers, newLayer] };
         cells = newCells;
@@ -554,7 +794,9 @@ function createArrangeGridState() {
       const layer = cell.layers[layerIndex];
       const word = layer?.sequence.word || layer?.sequence.name || "layer";
       withUndo("REMOVE_LAYER", `Remove ${word}`, () => {
-        const newLayers = cell.layers.filter((_, i) => i !== layerIndex).map((l, i) => ({ ...l, propColors: getTunnelLayerColors(i) }));
+        const newLayers = cell.layers
+          .filter((_, i) => i !== layerIndex)
+          .map((l, i) => ({ ...l, propColors: getTunnelLayerColors(i) }));
         const newCells = [...cells];
         newCells[cellIndex] = { ...cell, layers: newLayers };
         cells = newCells;
@@ -569,14 +811,22 @@ function createArrangeGridState() {
       const existingLayer = cell.layers[layerIndex];
       if (!existingLayer) return;
 
-      withCoalescingUndo("UPDATE_LAYER_OFFSET", `Change layer offset to ${offset}`, `layer-offset-${cellId}-${layerIndex}`, () => {
-        const newLayers = [...cell.layers];
-        newLayers[layerIndex] = { ...existingLayer, beatOffset: Math.max(0, offset) };
-        const newCells = [...cells];
-        newCells[cellIndex] = { ...cell, layers: newLayers };
-        cells = newCells;
-        save();
-      });
+      withCoalescingUndo(
+        "UPDATE_LAYER_OFFSET",
+        `Change layer offset to ${offset}`,
+        `layer-offset-${cellId}-${layerIndex}`,
+        () => {
+          const newLayers = [...cell.layers];
+          newLayers[layerIndex] = {
+            ...existingLayer,
+            beatOffset: Math.max(0, offset),
+          };
+          const newCells = [...cells];
+          newCells[cellIndex] = { ...cell, layers: newLayers };
+          cells = newCells;
+          save();
+        }
+      );
     },
 
     updateCellBeatOffset(cellId: string, offset: number) {
@@ -584,12 +834,17 @@ function createArrangeGridState() {
       const cell = cells[cellIndex];
       if (!cell) return;
 
-      withCoalescingUndo("UPDATE_CELL_OFFSET", `Change cell offset to ${offset}`, `cell-offset-${cellId}`, () => {
-        const newCells = [...cells];
-        newCells[cellIndex] = { ...cell, beatOffset: Math.max(0, offset) };
-        cells = newCells;
-        save();
-      });
+      withCoalescingUndo(
+        "UPDATE_CELL_OFFSET",
+        `Change cell offset to ${offset}`,
+        `cell-offset-${cellId}`,
+        () => {
+          const newCells = [...cells];
+          newCells[cellIndex] = { ...cell, beatOffset: Math.max(0, offset) };
+          cells = newCells;
+          save();
+        }
+      );
     },
 
     clearCell(cellId: string) {
@@ -621,82 +876,114 @@ function createArrangeGridState() {
       const cellIndex = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIndex];
       if (!cell) return;
-      withCoalescingUndo("SET_CELL_SPEED" as ArrangeUndoOperationType, `Set speed to ${speed}x`, `speed-${cellId}`, () => {
-        const newCells = [...cells];
-        newCells[cellIndex] = { ...cell, speedMultiplier: Math.max(0.25, Math.min(2.0, speed)) };
-        cells = newCells;
-        save();
-      });
+      withCoalescingUndo(
+        "SET_CELL_SPEED" as ArrangeUndoOperationType,
+        `Set speed to ${speed}x`,
+        `speed-${cellId}`,
+        () => {
+          const newCells = [...cells];
+          newCells[cellIndex] = {
+            ...cell,
+            speedMultiplier: Math.max(0.25, Math.min(2.0, speed)),
+          };
+          cells = newCells;
+          save();
+        }
+      );
     },
 
     setCellEffect(cellId: string, effect: CellEffect) {
       const cellIndex = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIndex];
       if (!cell) return;
-      withUndo("SET_CELL_EFFECT" as ArrangeUndoOperationType, `Set effect to ${effect}`, () => {
-        const newCells = [...cells];
-        newCells[cellIndex] = { ...cell, effect };
-        cells = newCells;
-        save();
-      });
+      withUndo(
+        "SET_CELL_EFFECT" as ArrangeUndoOperationType,
+        `Set effect to ${effect}`,
+        () => {
+          const newCells = [...cells];
+          newCells[cellIndex] = { ...cell, effect };
+          cells = newCells;
+          save();
+        }
+      );
     },
 
     setCellTrailMode(cellId: string, mode: TrailMode) {
       const cellIndex = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIndex];
       if (!cell) return;
-      withUndo("SET_CELL_TRAIL" as ArrangeUndoOperationType, `Set trail mode to ${mode}`, () => {
-        const newCells = [...cells];
-        newCells[cellIndex] = { ...cell, trailMode: mode };
-        cells = newCells;
-        save();
-      });
+      withUndo(
+        "SET_CELL_TRAIL" as ArrangeUndoOperationType,
+        `Set trail mode to ${mode}`,
+        () => {
+          const newCells = [...cells];
+          newCells[cellIndex] = { ...cell, trailMode: mode };
+          cells = newCells;
+          save();
+        }
+      );
     },
 
     setCellEffort(cellId: string, effort: string) {
       const cellIndex = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIndex];
       if (!cell) return;
-      withUndo("SET_CELL_EFFORT" as ArrangeUndoOperationType, `Set effort to ${effort}`, () => {
-        const newCells = [...cells];
-        newCells[cellIndex] = { ...cell, effort };
-        cells = newCells;
-        save();
-      });
+      withUndo(
+        "SET_CELL_EFFORT" as ArrangeUndoOperationType,
+        `Set effort to ${effort}`,
+        () => {
+          const newCells = [...cells];
+          newCells[cellIndex] = { ...cell, effort };
+          cells = newCells;
+          save();
+        }
+      );
     },
 
     setCellTipEffectMap(cellId: string, map: TipEffectMap) {
       const cellIndex = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIndex];
       if (!cell) return;
-      withUndo("SET_TIP_EFFECT_MAP" as ArrangeUndoOperationType, "Update effects", () => {
-        const newCells = [...cells];
-        newCells[cellIndex] = { ...cell, tipEffectMap: map };
-        cells = newCells;
-        save();
-      });
+      withUndo(
+        "SET_TIP_EFFECT_MAP" as ArrangeUndoOperationType,
+        "Update effects",
+        () => {
+          const newCells = [...cells];
+          newCells[cellIndex] = { ...cell, tipEffectMap: map };
+          cells = newCells;
+          save();
+        }
+      );
     },
 
     setCellTipEffortMap(cellId: string, map: TipEffortMap) {
       const cellIndex = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIndex];
       if (!cell) return;
-      withUndo("SET_TIP_EFFORT_MAP" as ArrangeUndoOperationType, "Update efforts", () => {
-        const newCells = [...cells];
-        newCells[cellIndex] = { ...cell, tipEffortMap: map };
-        cells = newCells;
-        save();
-      });
+      withUndo(
+        "SET_TIP_EFFORT_MAP" as ArrangeUndoOperationType,
+        "Update efforts",
+        () => {
+          const newCells = [...cells];
+          newCells[cellIndex] = { ...cell, tipEffortMap: map };
+          cells = newCells;
+          save();
+        }
+      );
     },
 
-    setCellMotionVisibility(cellId: string, color: 'blue' | 'red', visible: boolean) {
+    setCellMotionVisibility(
+      cellId: string,
+      hand: "left" | "right",
+      visible: boolean
+    ) {
       const cellIndex = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIndex];
       if (!cell) return;
-      const label = `${visible ? 'Show' : 'Hide'} ${color} motion`;
+      const label = `${visible ? "Show" : "Hide"} ${hand} motion`;
       withUndo("SET_CELL_VISIBILITY" as ArrangeUndoOperationType, label, () => {
         const newCells = [...cells];
-        if (color === 'blue') {
+        if (hand === "left") {
           newCells[cellIndex] = { ...cell, leftMotionVisible: visible };
         } else {
           newCells[cellIndex] = { ...cell, rightMotionVisible: visible };
@@ -710,30 +997,46 @@ function createArrangeGridState() {
       const cellIndex = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIndex];
       if (!cell) return;
-      withCoalescingUndo("SET_BEAT_OFFSET" as ArrangeUndoOperationType, `Set beat offset to ${offset}`, `offset-${cellId}`, () => {
-        const newCells = [...cells];
-        newCells[cellIndex] = { ...cell, beatOffset: Math.max(0, offset) };
-        cells = newCells;
-        save();
-      });
+      withCoalescingUndo(
+        "SET_BEAT_OFFSET" as ArrangeUndoOperationType,
+        `Set beat offset to ${offset}`,
+        `offset-${cellId}`,
+        () => {
+          const newCells = [...cells];
+          newCells[cellIndex] = { ...cell, beatOffset: Math.max(0, offset) };
+          cells = newCells;
+          save();
+        }
+      );
     },
 
     setCellPropColors(cellId: string, colors: PropColors) {
       const cellIndex = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIndex];
       if (!cell || cell.layers.length === 0) return;
-      withUndo("SET_PROP_COLORS" as ArrangeUndoOperationType, `Change prop colors`, () => {
-        const newLayers = cell.layers.map((l, i) => i === 0 ? { ...l, propColors: colors } : l);
-        const newCells = [...cells];
-        newCells[cellIndex] = { ...cell, layers: newLayers };
-        cells = newCells;
-        save();
-      });
+      withUndo(
+        "SET_PROP_COLORS" as ArrangeUndoOperationType,
+        `Change prop colors`,
+        () => {
+          const newLayers = cell.layers.map((l, i) =>
+            i === 0 ? { ...l, propColors: colors } : l
+          );
+          const newCells = [...cells];
+          newCells[cellIndex] = { ...cell, layers: newLayers };
+          cells = newCells;
+          save();
+        }
+      );
     },
 
     // Playback (delegated to ArrangePlaybackEngine)
     play() {
-      if (!cells.some((c) => c.row < gridRows && c.col < gridCols && c.layers.length > 0)) return;
+      if (
+        !cells.some(
+          (c) => c.row < gridRows && c.col < gridCols && c.layers.length > 0
+        )
+      )
+        return;
       playbackEngine.play(getTotalBeats);
       startPlaybackPolling();
     },
@@ -755,7 +1058,11 @@ function createArrangeGridState() {
         playbackEngine.pause();
         isPlaying = playbackEngine.isPlaying;
         currentStep = playbackEngine.currentStep;
-      } else if (cells.some((c) => c.row < gridRows && c.col < gridCols && c.layers.length > 0)) {
+      } else if (
+        cells.some(
+          (c) => c.row < gridRows && c.col < gridCols && c.layers.length > 0
+        )
+      ) {
         playbackEngine.play(getTotalBeats);
         startPlaybackPolling();
       }
@@ -768,7 +1075,10 @@ function createArrangeGridState() {
     stepFullBack() {
       const floored = Math.floor(playbackEngine.currentStep);
       if (playbackEngine.currentStep - floored > 0.01) {
-        playbackEngine.animateStep(floored - playbackEngine.currentStep, getTotalBeats());
+        playbackEngine.animateStep(
+          floored - playbackEngine.currentStep,
+          getTotalBeats()
+        );
       } else {
         playbackEngine.animateStep(-1, getTotalBeats());
       }
@@ -794,8 +1104,12 @@ function createArrangeGridState() {
       playbackEngine.setCurrentBeat(0);
     },
 
-    get bpm() { return playbackBpm; },
-    setBpm(bpm: number) { playbackEngine.setBpm(bpm); },
+    get bpm() {
+      return playbackBpm;
+    },
+    setBpm(bpm: number) {
+      playbackEngine.setBpm(bpm);
+    },
 
     // Clipboard
     copyLayerSequence(cellId: string, layerIndex: number) {
@@ -805,7 +1119,9 @@ function createArrangeGridState() {
         clipboard = {
           layers: [
             {
-              sequence: structuredClone($state.snapshot(layer.sequence)) as SequenceData,
+              sequence: structuredClone(
+                $state.snapshot(layer.sequence)
+              ) as SequenceData,
               transformStack: [...(layer.transformStack ?? [])],
             },
           ],
@@ -819,7 +1135,9 @@ function createArrangeGridState() {
       if (cell && cell.layers.length > 0) {
         clipboard = {
           layers: cell.layers.map((layer) => ({
-            sequence: structuredClone($state.snapshot(layer.sequence)) as SequenceData,
+            sequence: structuredClone(
+              $state.snapshot(layer.sequence)
+            ) as SequenceData,
             transformStack: [...(layer.transformStack ?? [])],
           })),
           mediaType: cell.mediaType,
@@ -827,7 +1145,11 @@ function createArrangeGridState() {
       }
     },
 
-    pasteSequenceToCell(cellId: string): { success: boolean; error?: string; pastedCount?: number } {
+    pasteSequenceToCell(cellId: string): {
+      success: boolean;
+      error?: string;
+      pastedCount?: number;
+    } {
       if (!clipboard) return { success: false, error: "Nothing copied" };
 
       const cellIndex = cells.findIndex((c) => c.id === cellId);
@@ -835,7 +1157,8 @@ function createArrangeGridState() {
       if (!cell) return { success: false, error: "Invalid cell" };
 
       const availableSlots = MAX_LAYERS_PER_CELL - cell.layers.length;
-      if (availableSlots <= 0) return { success: false, error: "Cell is full (max 4 layers)" };
+      if (availableSlots <= 0)
+        return { success: false, error: "Cell is full (max 4 layers)" };
 
       const layersToPaste = clipboard.layers.slice(0, availableSlots);
 
@@ -844,26 +1167,38 @@ function createArrangeGridState() {
         for (const clipLayer of layersToPaste) {
           const sequenceBeats = clipLayer.sequence.steps?.length ?? 0;
           if (sequenceBeats !== requiredBeats) {
-            return { success: false, error: `Sequence has ${sequenceBeats} beats but composition requires ${requiredBeats} beats. All sequences must be the same length.` };
+            return {
+              success: false,
+              error: `Sequence has ${sequenceBeats} beats but composition requires ${requiredBeats} beats. All sequences must be the same length.`,
+            };
           }
         }
       }
 
       const count = layersToPaste.length;
       const firstLayer = layersToPaste[0]!;
-      const label = count === 1
-        ? `Paste ${firstLayer.sequence.word || firstLayer.sequence.name || "sequence"}`
-        : `Paste ${count} sequences`;
+      const label =
+        count === 1
+          ? `Paste ${firstLayer.sequence.word || firstLayer.sequence.name || "sequence"}`
+          : `Paste ${count} sequences`;
 
       withUndo("PASTE_SEQUENCE", label, () => {
-        const newLayers: TunnelLayerConfig[] = layersToPaste.map((clipLayer, i) => ({
-          sequence: structuredClone($state.snapshot(clipLayer.sequence)) as SequenceData,
-          beatOffset: 0,
-          propColors: getTunnelLayerColors(cell.layers.length + i),
-          transformStack: [...(clipLayer.transformStack ?? [])],
-        }));
+        const newLayers: TunnelLayerConfig[] = layersToPaste.map(
+          (clipLayer, i) => ({
+            sequence: structuredClone(
+              $state.snapshot(clipLayer.sequence)
+            ) as SequenceData,
+            beatOffset: 0,
+            propColors: getTunnelLayerColors(cell.layers.length + i),
+            transformStack: [...(clipLayer.transformStack ?? [])],
+          })
+        );
         const newCells = [...cells];
-        newCells[cellIndex] = { ...cell, layers: [...cell.layers, ...newLayers], mediaType: clipboard!.mediaType };
+        newCells[cellIndex] = {
+          ...cell,
+          layers: [...cell.layers, ...newLayers],
+          mediaType: clipboard!.mediaType,
+        };
         cells = newCells;
         save();
       });
@@ -871,17 +1206,25 @@ function createArrangeGridState() {
     },
 
     // Transform (delegated to ArrangeLayerTransformer)
-    async transformLayer(cellId: string, layerIndex: number, transformType: TransformType): Promise<{ success: boolean; error?: string }> {
+    async transformLayer(
+      cellId: string,
+      layerIndex: number,
+      transformType: TransformType
+    ): Promise<{ success: boolean; error?: string }> {
       const cellIdx = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIdx];
       const layer = cell?.layers[layerIndex];
-      if (!cell || !layer) return { success: false, error: "Invalid cell or layer" };
+      if (!cell || !layer)
+        return { success: false, error: "Invalid cell or layer" };
 
       const sequenceSnapshot = $state.snapshot(layer.sequence) as SequenceData;
       const layerSnapshot = $state.snapshot(layer) as TunnelLayerConfig;
       const cellSnapshot = $state.snapshot(cell) as GridCell;
 
-      undoManager.captureState("TRANSFORM_LAYER", `Transform: ${transformType}`);
+      undoManager.captureState(
+        "TRANSFORM_LAYER",
+        `Transform: ${transformType}`
+      );
       transformingLayer = { cellId, layerIndex };
 
       try {
@@ -893,8 +1236,16 @@ function createArrangeGridState() {
 
         const newLayers = [...cellSnapshot.layers];
         const prevStack = layerSnapshot.transformStack ?? [];
-        const newTransform: AppliedTransform = { type: transformType, hand: "both", timestamp: Date.now() };
-        newLayers[layerIndex] = { ...layerSnapshot, sequence: result.transformed, transformStack: [...prevStack, newTransform] };
+        const newTransform: AppliedTransform = {
+          type: transformType,
+          hand: "both",
+          timestamp: Date.now(),
+        };
+        newLayers[layerIndex] = {
+          ...layerSnapshot,
+          sequence: result.transformed,
+          transformStack: [...prevStack, newTransform],
+        };
         const newCells = [...($state.snapshot(cells) as GridCell[])];
         newCells[cellIdx] = { ...cellSnapshot, layers: newLayers };
         cells = newCells;
@@ -912,8 +1263,12 @@ function createArrangeGridState() {
     },
 
     // UI
-    openSequencePicker() { showSequencePicker = true; },
-    closeSequencePicker() { showSequencePicker = false; },
+    openSequencePicker() {
+      showSequencePicker = true;
+    },
+    closeSequencePicker() {
+      showSequencePicker = false;
+    },
 
     // =========================================================================
     // Serialize / Save / Load
@@ -946,14 +1301,23 @@ function createArrangeGridState() {
     serializeState(): string {
       return serializeGrid({
         cells: this.visibleCells.filter((c) => c.layers.length > 0),
-        bpm: playbackBpm, skipStartPosition, gridRows, gridCols,
+        bpm: playbackBpm,
+        skipStartPosition,
+        gridRows,
+        gridCols,
       });
     },
 
     async saveComposition(name: string): Promise<string> {
       const id = `comp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const snapshot = $state.snapshot(cells) as GridCell[];
-      const composition = gridCellsToComposition(id, name, { cells: snapshot, gridRows, gridCols, bpm: playbackBpm, skipStartPosition });
+      const composition = gridCellsToComposition(id, name, {
+        cells: snapshot,
+        gridRows,
+        gridCols,
+        bpm: playbackBpm,
+        skipStartPosition,
+      });
       await compositionSyncer.saveComposition(composition);
       return id;
     },
@@ -1010,7 +1374,9 @@ function createArrangeGridState() {
       return result.description;
     },
 
-    clearUndoHistory() { undoManager.clear(); },
+    clearUndoHistory() {
+      undoManager.clear();
+    },
   };
 }
 
@@ -1023,13 +1389,18 @@ function getArrangeGridState() {
   return _instance;
 }
 
-export const arrangeGridState = new Proxy({} as ReturnType<typeof createArrangeGridState>, {
-  get(_target, prop) {
-    return (getArrangeGridState() as Record<string | symbol, unknown>)[prop];
-  },
-});
+export const arrangeGridState = new Proxy(
+  {} as ReturnType<typeof createArrangeGridState>,
+  {
+    get(_target, prop) {
+      return (getArrangeGridState() as Record<string | symbol, unknown>)[prop];
+    },
+  }
+);
 export type ArrangeGridState = ReturnType<typeof createArrangeGridState>;
 
 if (import.meta.hot) {
-  import.meta.hot.accept(() => { import.meta.hot?.invalidate(); });
+  import.meta.hot.accept(() => {
+    import.meta.hot?.invalidate();
+  });
 }

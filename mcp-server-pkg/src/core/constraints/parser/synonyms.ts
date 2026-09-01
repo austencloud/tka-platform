@@ -13,28 +13,90 @@ export const SYNONYMS: Record<string, string[]> = {
   pro: ["prospin", "isolation", "iso", "same", "same-direction"],
   anti: ["antispin", "opposite", "opp"],
   static: ["stationary", "still", "no-motion", "no motion"],
-  dash: ["dashing", "across", "dashes", "dash-motion", "dash-motions", "type-4", "type-5", "dual-dash"],
+  dash: [
+    "dashing",
+    "across",
+    "dashes",
+    "dash-motion",
+    "dash-motions",
+    "type-4",
+    "type-5",
+    "dual-dash",
+  ],
 
   // Rotation directions
   cw: ["clockwise", "clock", "right"],
-  ccw: ["counterclockwise", "counter-clockwise", "counter", "left", "anticlockwise", "anti-clockwise"],
+  ccw: [
+    "counterclockwise",
+    "counter-clockwise",
+    "counter",
+    "left",
+    "anticlockwise",
+    "anti-clockwise",
+  ],
 
-  // Hands/colors
-  blue: ["left", "lead", "blue-hand", "blue hand"],
-  red: ["right", "follow", "red-hand", "red hand"],
+  // Performer-relative hands. Blue/red remain accepted as legacy palette aliases.
+  left: ["left", "left-hand", "left hand", "blue", "blue-hand", "blue hand"],
+  right: ["right", "right-hand", "right hand", "red", "red-hand", "red hand"],
   both: ["all", "either", "any"],
 
   // Constraint modes
-  maximize: ["max", "more", "most", "prefer", "high", "increase", "favour", "favor"],
-  minimize: ["min", "less", "least", "reduce", "low", "decrease", "fewer", "avoid"],
+  maximize: [
+    "max",
+    "more",
+    "most",
+    "prefer",
+    "high",
+    "increase",
+    "favour",
+    "favor",
+  ],
+  minimize: [
+    "min",
+    "less",
+    "least",
+    "reduce",
+    "low",
+    "decrease",
+    "fewer",
+    "avoid",
+  ],
   require: ["must", "only", "all", "force", "enforce", "always", "strict"],
   exclude: ["no", "none", "never", "ban", "block", "forbid", "without"],
 
   // Constraint concepts
-  continuity: ["continuous", "flow", "smooth", "flowing", "seamless", "unbroken"],
-  reversal: ["reversals", "direction-change", "break", "breaks", "flip", "flips"],
-  handpath: ["hand-path", "hand path", "hand reversal", "handpath reversals", "path reversal", "path reversals", "hand direction"],
-  propreversal: ["prop reversal", "prop reversals", "spin reversal", "spin reversals", "rotation reversal"],
+  continuity: [
+    "continuous",
+    "flow",
+    "smooth",
+    "flowing",
+    "seamless",
+    "unbroken",
+  ],
+  reversal: [
+    "reversals",
+    "direction-change",
+    "break",
+    "breaks",
+    "flip",
+    "flips",
+  ],
+  handpath: [
+    "hand-path",
+    "hand path",
+    "hand reversal",
+    "handpath reversals",
+    "path reversal",
+    "path reversals",
+    "hand direction",
+  ],
+  propreversal: [
+    "prop reversal",
+    "prop reversals",
+    "spin reversal",
+    "spin reversals",
+    "rotation reversal",
+  ],
 
   // Positions
   alpha: ["opposite", "split", "across"],

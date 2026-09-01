@@ -146,8 +146,10 @@ export class TikaPictographLoader {
       );
       this.boxPictographs = this.loadCsvFile(boxPath, "box");
 
-      this.allPictographs = [...this.diamondPictographs, ...this.boxPictographs];
-
+      this.allPictographs = [
+        ...this.diamondPictographs,
+        ...this.boxPictographs,
+      ];
     } catch (error) {
       console.error("[TikaPictographLoader] Failed to load dataframe:", error);
     }
@@ -184,14 +186,14 @@ export class TikaPictographLoader {
           direction: row["direction"] ?? "",
           gridMode,
           leftMotion: {
-            color: "blue",
+            hand: "left",
             startLocation: row["blueStartLocation"] ?? "",
             endLocation: row["blueEndLocation"] ?? "",
             motionType: row["blueMotionType"] ?? "",
             rotationDirection: row["blueRotationDirection"] ?? "",
           },
           rightMotion: {
-            color: "red",
+            hand: "right",
             startLocation: row["redStartLocation"] ?? "",
             endLocation: row["redEndLocation"] ?? "",
             motionType: row["redMotionType"] ?? "",
@@ -278,7 +280,6 @@ export class TikaPictographLoader {
         lettersByTransition[transition].push(letter);
       }
       this.bridgeLettersByTransition = lettersByTransition;
-
     } catch (error) {
       console.error(
         "[TikaPictographLoader] Failed to load letter-mappings.json:",

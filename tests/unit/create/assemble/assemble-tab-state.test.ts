@@ -118,8 +118,8 @@ describe("Assemble tab document synchronization", () => {
     const initial = makeBlueSequence();
 
     sequenceState.setCurrentSequence(initial);
-    expect(tabState.assembleBuilderState.blueSteps).toHaveLength(1);
-    expect(tabState.assembleBuilderState.blueSteps[0]?.endPosition).toBe(
+    expect(tabState.assembleBuilderState.leftSteps).toHaveLength(1);
+    expect(tabState.assembleBuilderState.leftSteps[0]?.endPosition).toBe(
       GridLocation.EAST
     );
 
@@ -135,7 +135,7 @@ describe("Assemble tab document synchronization", () => {
     };
     sequenceState.setCurrentSequence({ ...initial, steps: [editedStep] });
 
-    expect(tabState.assembleBuilderState.blueSteps[0]?.endPosition).toBe(
+    expect(tabState.assembleBuilderState.leftSteps[0]?.endPosition).toBe(
       GridLocation.SOUTH
     );
     await Promise.resolve();
@@ -151,7 +151,7 @@ describe("Assemble tab document synchronization", () => {
     expect(sequenceState.animationState.historyTransition).toEqual(
       expect.objectContaining({ direction: "undo", kind: "content" })
     );
-    expect(tabState.assembleBuilderState.blueSteps[0]?.endPosition).toBe(
+    expect(tabState.assembleBuilderState.leftSteps[0]?.endPosition).toBe(
       GridLocation.EAST
     );
 
@@ -160,7 +160,7 @@ describe("Assemble tab document synchronization", () => {
     expect(sequenceState.animationState.historyTransition).toEqual(
       expect.objectContaining({ direction: "redo", kind: "content" })
     );
-    expect(tabState.assembleBuilderState.blueSteps[0]?.endPosition).toBe(
+    expect(tabState.assembleBuilderState.leftSteps[0]?.endPosition).toBe(
       GridLocation.SOUTH
     );
 
@@ -252,8 +252,8 @@ describe("Assemble tab document synchronization", () => {
 
     expect(tabState.sequenceState?.currentSequence?.id).toBe(saved.id);
     expect(tabState.sequenceState?.currentSequence?.steps).toHaveLength(1);
-    expect(tabState.assembleBuilderState.blueSteps).toHaveLength(1);
-    expect(tabState.assembleBuilderState.blueSteps[0]?.endPosition).toBe(
+    expect(tabState.assembleBuilderState.leftSteps).toHaveLength(1);
+    expect(tabState.assembleBuilderState.leftSteps[0]?.endPosition).toBe(
       GridLocation.EAST
     );
   });
@@ -268,7 +268,7 @@ describe("Assemble tab document synchronization", () => {
     sequenceState.removeStep(0);
 
     expect(sequenceState.currentSequence?.steps).toHaveLength(0);
-    expect(tabState.assembleBuilderState.blueSteps).toHaveLength(0);
+    expect(tabState.assembleBuilderState.leftSteps).toHaveLength(0);
     expect(tabState.assembleBuilderState.phase).toBe("placing");
 
     tabState.assembleBuilderState.handlePointClick(GridLocation.SOUTH);

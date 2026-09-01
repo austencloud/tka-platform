@@ -39,32 +39,61 @@
   import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
   import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-  import { MotionType, HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    MotionType,
+    HandSide,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import {
+    GridMode,
+    GridLocation,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { describePictograph } from "$lib/shared/pictograph/shared/domain/utils/pictograph-description";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
+  import {
+    guideEdit,
+    ptDrag,
+    pt,
+    editText,
+    registerEditSource,
+  } from "../_data/guide-edit.svelte";
   import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
   import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
-  const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W, SOUTHEAST: SE, CENTER: C } = GridLocation;
+  const {
+    NORTH: N,
+    EAST: E,
+    SOUTH: SO_,
+    WEST: W,
+    SOUTHEAST: SE,
+    CENTER: C,
+  } = GridLocation;
 
   // Golden step ring: which strip cell the companion is currently animating
   // (null outside the reader - /print + /book render no ring).
   const activeStep = getGuideActiveStep();
   const selection = getSequenceSelection();
-  const OPP: Partial<Record<GridLocation, GridLocation>> = { [N]: SO_, [SO_]: N, [E]: W, [W]: E };
+  const OPP: Partial<Record<GridLocation, GridLocation>> = {
+    [N]: SO_,
+    [SO_]: N,
+    [E]: W,
+    [W]: E,
+  };
 
   // Motion type from the location pair: same → STATIC, opposite cardinals → DASH,
   // otherwise (adjacent) → PRO shift (hand-path mode floats it).
   const motion = (color: HandSide, from: GridLocation, to: GridLocation) =>
     createMotionData({
-      motionType: from === to ? MotionType.STATIC : OPP[from] === to ? MotionType.DASH : MotionType.PRO,
+      motionType:
+        from === to
+          ? MotionType.STATIC
+          : OPP[from] === to
+            ? MotionType.DASH
+            : MotionType.PRO,
       startLocation: from,
       endLocation: to,
       color,
@@ -82,7 +111,7 @@
     }
   };
 
-  // [blueFrom, blueTo, redFrom, redTo]
+  // [leftFrom, leftTo, rightFrom, rightTo]
   type Move = [GridLocation, GridLocation, GridLocation, GridLocation];
   const box = (m: Move, step: number | null, id: string): StepData =>
     ({
@@ -107,11 +136,35 @@
   const c = (m: Move, step: number): Cell => ({ m, step });
 
   // ── Breakdown: one Cross-Shift decomposed (blue dashes S→N, red shifts S→E) ──
-  type BD = { key: string; label: string | null; m: Move; arrows: boolean; connector?: string };
+  type BD = {
+    key: string;
+    label: string | null;
+    m: Move;
+    arrows: boolean;
+    connector?: string;
+  };
   const BREAKDOWN: BD[] = [
-    { key: "start", label: "start", m: [SO_, SO_, SO_, SO_], arrows: false, connector: "→" },
-    { key: "half", label: "halfway", m: [C, C, SE, SE], arrows: false, connector: "→" },
-    { key: "end", label: "end", m: [N, N, E, E], arrows: false, connector: "=" },
+    {
+      key: "start",
+      label: "start",
+      m: [SO_, SO_, SO_, SO_],
+      arrows: false,
+      connector: "→",
+    },
+    {
+      key: "half",
+      label: "halfway",
+      m: [C, C, SE, SE],
+      arrows: false,
+      connector: "→",
+    },
+    {
+      key: "end",
+      label: "end",
+      m: [N, N, E, E],
+      arrows: false,
+      connector: "=",
+    },
     { key: "combined", label: null, m: [SO_, N, SO_, E], arrows: true },
   ];
   // Measured from the proof artboard (20px/pt): 4 × 100pt boxes, connectors in
@@ -220,14 +273,19 @@
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
     registerEditSource("Type 3 Cross-Shifts (p7)", () => {
-      const P = PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n");
-      const L = LABELS.map((l) => `  ${JSON.stringify(l.t)}: x: ${r1(l.x)}, y: ${r1(l.y)}`).join("\n");
+      const P = PARAS.map(
+        (p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`
+      ).join("\n");
+      const L = LABELS.map(
+        (l) => `  ${JSON.stringify(l.t)}: x: ${r1(l.x)}, y: ${r1(l.y)}`
+      ).join("\n");
       return `PARAS\n${P}\n\nLABELS\n${L}`;
     })
   );
 
   // Shared pictograph data builder for every box.
-  const boxData = (m: Move, step: number | null, key: string) => box(m, step, `t3-${key}`);
+  const boxData = (m: Move, step: number | null, key: string) =>
+    box(m, step, `t3-${key}`);
 
   // Reader companion handoff: present ONLY inside GuideReader (null on /print,
   // /book), so the printable pages stay pristine and gain no click affordance.
@@ -277,8 +335,11 @@
     <div
       class="bdbox"
       class:combined={b.key === "combined"}
-      style="left:{BD_X[i]! * S}px; top:{BD_Y * S}px; width:{BD_BOX * S}px; height:{BD_BOX * S}px"
-      title={b.arrows ? describePictograph(boxData(b.m, null, b.key)) : undefined}
+      style="left:{BD_X[i]! * S}px; top:{BD_Y * S}px; width:{BD_BOX *
+        S}px; height:{BD_BOX * S}px"
+      title={b.arrows
+        ? describePictograph(boxData(b.m, null, b.key))
+        : undefined}
     >
       <PictographContainer
         pictographData={boxData(b.m, null, b.key)}
@@ -300,7 +361,11 @@
       />
     </div>
     {#if b.connector}
-      <span class="connector" style="left:{CONN_X[i]! * S}px; top:{(BD_Y + BD_BOX / 2 - 9) * S}px">{b.connector}</span>
+      <span
+        class="connector"
+        style="left:{CONN_X[i]! * S}px; top:{(BD_Y + BD_BOX / 2 - 9) * S}px"
+        >{b.connector}</span
+      >
     {/if}
   {/each}
 
@@ -310,7 +375,9 @@
       class="strip-wrap tka-seq-cell"
       class:is-hovered={selection?.isHovered(`t3-${si}`)}
       class:is-selected={selection?.isSelected(`t3-${si}`)}
-      style="left:{strip.x * S}px; top:{strip.y1 * S}px; width:{5 * BOX * S}px; height:{(strip.y2 - strip.y1 + BOX) * S}px"
+      style="left:{strip.x * S}px; top:{strip.y1 * S}px; width:{5 *
+        BOX *
+        S}px; height:{(strip.y2 - strip.y1 + BOX) * S}px"
     >
       {#each strip.rows as row, ri (ri)}
         {#each row as cell, ci (ci)}
@@ -318,8 +385,12 @@
             {@const sd = RESOLVED[si]![ri]![ci]!}
             <div
               class="cell"
-              class:guide-step-active={activeStep?.key === `t3-${si}` && activeStep.ringStep === sd.stepNumber}
-              style="left:{ci * BOX * S}px; top:{(ri === 0 ? 0 : strip.y2 - strip.y1) * S}px; width:{BOX * S}px; height:{BOX * S}px"
+              class:guide-step-active={activeStep?.key === `t3-${si}` &&
+                activeStep.ringStep === sd.stepNumber}
+              style="left:{ci * BOX * S}px; top:{(ri === 0
+                ? 0
+                : strip.y2 - strip.y1) * S}px; width:{BOX * S}px; height:{BOX *
+                S}px"
               title={describePictograph(sd)}
             >
               <PictographContainer
@@ -348,7 +419,14 @@
         groupId={`t3-${si}`}
         isGroupStart
         label={`Animate the ${SEQ_WORDS[si]} sequence`}
-        onselect={() => emitSequence?.({ strip: RESOLVED[si]!.flat().filter((sd): sd is StepData => sd !== null), word: SEQ_WORDS[si], key: `t3-${si}` })}
+        onselect={() =>
+          emitSequence?.({
+            strip: RESOLVED[si]!.flat().filter(
+              (sd): sd is StepData => sd !== null
+            ),
+            word: SEQ_WORDS[si],
+            key: `t3-${si}`,
+          })}
       />
     </div>
   {/each}
@@ -359,7 +437,8 @@
       class="label"
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `t3-label-${i}`}
-      style="left:{l.x * S}px; top:{l.y * S}px; width:{l.w * S}px; font-size:{16 * S}px"
+      style="left:{l.x * S}px; top:{l.y * S}px; width:{l.w *
+        S}px; font-size:{16 * S}px"
       use:ptDrag={pt(`t3-label-${i}`, l.t, l)}>{l.t}</span
     >
   {/each}
@@ -370,9 +449,15 @@
       class="para"
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `t3-para-${i}`}
-      style="transform: translateX({p.x * S}px); top:{p.y * S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px"
+      style="transform: translateX({p.x * S}px); top:{p.y *
+        S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px"
       use:ptDrag={pt(`t3-para-${i}`, "paragraph", p)}
-      use:editText={{ id: `t3-para-${i}`, label: "paragraph", get: () => p.html, set: (h) => (p.html = h) }}
+      use:editText={{
+        id: `t3-para-${i}`,
+        label: "paragraph",
+        get: () => p.html,
+        set: (h) => (p.html = h),
+      }}
     >
       {@html p.html}
     </p>

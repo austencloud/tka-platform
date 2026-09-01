@@ -161,10 +161,10 @@
     const leftPropType = settings.leftPropType ?? PropType.STAFF;
     const rightPropType = settings.rightPropType ?? PropType.STAFF;
 
-    // Load blue prop SVG
+    // Load left-hand prop SVG
     const leftMotion = createMotionData({
       propType: leftPropType,
-      color: HandSide.LEFT,
+      hand: HandSide.LEFT,
     });
     propSvgLoader
       .loadPropSvg(
@@ -179,10 +179,10 @@
         /* SVG unavailable; fallback circle renders */
       });
 
-    // Load red prop SVG
+    // Load right-hand prop SVG
     const rightMotion = createMotionData({
       propType: rightPropType,
-      color: HandSide.RIGHT,
+      hand: HandSide.RIGHT,
     });
     propSvgLoader
       .loadPropSvg(
@@ -502,9 +502,7 @@
     });
   });
 
-  const activePhaseColor = $derived<"blue" | "red">(
-    builderState.activeHand === HandSide.LEFT ? "blue" : "red"
-  );
+  const activePhaseHand = $derived(builderState.activeHand);
   const currentStepNumber = $derived(
     (builderState.activeHand === HandSide.LEFT
       ? builderState.leftSteps.length
@@ -516,7 +514,7 @@
   );
 
   // Blue's final orientation (for complete-phase rendering)
-  const blueFinalOrientation = $derived.by(() => {
+  const leftFinalOrientation = $derived.by(() => {
     const steps = builderState.leftSteps;
     if (steps.length === 0) return Orientation.IN;
     return steps[steps.length - 1]!.endOrientation;
@@ -808,10 +806,10 @@
 
     <!-- When complete, show both hands at their final positions -->
     {#if builderState.phase === "complete"}
-      <!-- Blue final -->
-      {@const blueFinalLoc = getFinalPosition(builderState.leftSteps)}
-      {#if blueFinalLoc}
-        {@const leftFinalT = findTarget(blueFinalLoc)}
+      <!-- Left-hand final -->
+      {@const leftFinalLocation = getFinalPosition(builderState.leftSteps)}
+      {#if leftFinalLocation}
+        {@const leftFinalT = findTarget(leftFinalLocation)}
         {#if leftFinalT}
           {#if leftPropData?.svgData}
             <g
@@ -820,8 +818,8 @@
                 leftFinalT.x,
                 leftFinalT.y,
                 getRotation(
-                  blueFinalLoc,
-                  blueFinalOrientation,
+                  leftFinalLocation,
+                  leftFinalOrientation,
                   currentLeftPropType
                 ),
                 leftPropData.svgData.center
@@ -839,11 +837,11 @@
           {/if}
         {/if}
       {/if}
-      <!-- Red final -->
-      {@const redFinal = getFinalPosition(builderState.rightSteps)}
-      {#if redFinal}
-        {@const rightFinalT = findTarget(redFinal)}
-        {@const redFinalOri =
+      <!-- Right-hand final -->
+      {@const rightFinalLocation = getFinalPosition(builderState.rightSteps)}
+      {#if rightFinalLocation}
+        {@const rightFinalT = findTarget(rightFinalLocation)}
+        {@const rightFinalOrientation =
           builderState.rightSteps.length > 0
             ? builderState.rightSteps[builderState.rightSteps.length - 1]!
                 .endOrientation
@@ -855,7 +853,11 @@
               style="transform: {propTransform(
                 rightFinalT.x,
                 rightFinalT.y,
-                getRotation(redFinal, redFinalOri, currentRightPropType),
+                getRotation(
+                  rightFinalLocation,
+                  rightFinalOrientation,
+                  currentRightPropType
+                ),
                 rightPropData.svgData.center
               )}"
             >
@@ -876,7 +878,7 @@
   <HitTargetOverlay
     gridMode={builderState.gridMode}
     showCenter={builderState.showCenter}
-    {activePhaseColor}
+    {activePhaseHand}
     currentPosition={builderState.currentPosition}
     disabled={targetsDisabled}
     pulseTargets={false}

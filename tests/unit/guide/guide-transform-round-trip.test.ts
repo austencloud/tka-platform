@@ -47,7 +47,7 @@ vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
 
 import { saveOverride } from "../../../src/routes/(public)/guide/level-1/_data/guide-overrides.svelte";
 import { sequenceToStrip } from "../../../src/routes/(public)/guide/level-1/_data/guide-sequence-adapter";
-import { colorSwapSequence } from "../../../src/lib/shared/create/services/sequence-transforms";
+import { handSwapSequence } from "../../../src/lib/shared/create/services/sequence-transforms";
 import { rotateSequenceGeometry } from "../../../src/lib/shared/create/services/sequence-derived-fields";
 import type { SequenceData } from "../../../src/lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "../../../src/lib/shared/foundation/domain/models/step-data";
@@ -127,10 +127,10 @@ describe("guide companion transform round trip (P2)", () => {
     mockSetDoc.mockResolvedValue(undefined);
   });
 
-  it("colorSwapSequence -> sequenceToStrip -> saveOverride persists blue/red-swapped, JSON-serializable steps", async () => {
+  it("handSwapSequence -> sequenceToStrip -> saveOverride persists left/right-swapped, JSON-serializable steps", async () => {
     const sequence = makeSequence();
 
-    const swapped = colorSwapSequence(sequence);
+    const swapped = handSwapSequence(sequence);
     const strip = sequenceToStrip(swapped);
     await saveOverride("t1l-transform-test", strip, swapped.word);
 
@@ -186,7 +186,7 @@ describe("guide companion transform round trip (P2)", () => {
   it("saveOverride throws (transform not persisted) when the caller is not admin", async () => {
     mockIsAdmin = false;
     const sequence = makeSequence();
-    const swapped = colorSwapSequence(sequence);
+    const swapped = handSwapSequence(sequence);
     const strip = sequenceToStrip(swapped);
 
     await expect(

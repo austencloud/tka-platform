@@ -26,7 +26,7 @@ export class StartPositionDeriver {
     // Invisible placeholder = hand not really there (both-required Step shape).
     if (!isVisibleMotion(leftMotion) || !isVisibleMotion(rightMotion)) {
       throw new Error(
-        "Cannot derive start position: first beat missing blue or red motion"
+        "Cannot derive start position: first beat missing left or right motion"
       );
     }
 
@@ -96,9 +96,7 @@ export class StartPositionDeriver {
       candidate: StartPositionData | null | undefined
     ): candidate is StartPositionData => {
       if (!candidate) return false;
-      const leftVisible = isVisibleMotion(
-        candidate.motions?.[HandSide.LEFT]
-      );
+      const leftVisible = isVisibleMotion(candidate.motions?.[HandSide.LEFT]);
       const rightVisible = isVisibleMotion(candidate.motions?.[HandSide.RIGHT]);
       if (profile.kind === "solo") {
         return profile.hand === HandSide.LEFT

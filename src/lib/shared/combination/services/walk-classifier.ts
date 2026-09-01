@@ -497,7 +497,7 @@ export function samplerSlice(
 // ---------------------------------------------------------------------------
 
 function variantKey(variant: VariantDescriptor): string {
-  return `${variant.rotation}|${variant.mirrored}|${variant.colorSwapped}|${variant.rotationFaithful}`;
+  return `${variant.rotation}|${variant.mirrored}|${variant.handsSwapped}|${variant.rotationFaithful}`;
 }
 
 /**

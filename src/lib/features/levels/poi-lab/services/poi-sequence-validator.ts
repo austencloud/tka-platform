@@ -25,7 +25,7 @@ export class PoiSequenceValidator {
       const leftMotion = pictograph.motions?.left;
       const rightMotion = pictograph.motions?.right;
 
-      // Validate blue motion if it's poi
+      // Validate left motion if it's poi
       if (leftMotion?.propType === PropType.POI) {
         const leftResult = validateMotion(leftMotion);
         violations.push(...leftResult.violations);
@@ -35,16 +35,13 @@ export class PoiSequenceValidator {
           const prevPictograph = sequence[i - 1];
           const prevLeft = prevPictograph?.motions?.left;
           if (prevLeft?.propType === PropType.POI) {
-            const transitionResult = validateTransition(
-              prevLeft,
-              leftMotion
-            );
+            const transitionResult = validateTransition(prevLeft, leftMotion);
             violations.push(...transitionResult.violations);
           }
         }
       }
 
-      // Validate red motion if it's poi
+      // Validate right motion if it's poi
       if (rightMotion?.propType === PropType.POI) {
         const rightResult = validateMotion(rightMotion);
         violations.push(...rightResult.violations);
@@ -54,10 +51,7 @@ export class PoiSequenceValidator {
           const prevPictograph = sequence[i - 1];
           const prevRight = prevPictograph?.motions?.right;
           if (prevRight?.propType === PropType.POI) {
-            const transitionResult = validateTransition(
-              prevRight,
-              rightMotion
-            );
+            const transitionResult = validateTransition(prevRight, rightMotion);
             violations.push(...transitionResult.violations);
           }
         }

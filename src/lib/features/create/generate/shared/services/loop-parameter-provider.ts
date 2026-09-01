@@ -28,7 +28,6 @@ type PictographFilter = typeof PictographFilterSingleton;
 export class LOOPParameterProvider {
   constructor(private PictographFilter: PictographFilter) {}
 
-
   /**
    * Get the inverted letter for a given letter
    * @param letter - The input letter
@@ -38,7 +37,6 @@ export class LOOPParameterProvider {
   getInvertedLetter(letter: string): string {
     return getInvertedLetter(letter);
   }
-
 
   /**
    * Convert DifficultyLevel enum to numeric value
@@ -76,11 +74,10 @@ export class LOOPParameterProvider {
     }
   }
 
-
   /**
-   * Determine rotation directions for blue and red props based on prop continuity
+   * Determine rotation directions for left and right props based on prop continuity
    * @param propContinuity - Continuous or random prop continuity
-   * @returns Rotation directions for blue and red props
+   * @returns Rotation directions for left and right props
    */
   determineRotationDirections(
     propContinuity?: PropContinuity
@@ -100,7 +97,6 @@ export class LOOPParameterProvider {
 
     return { leftRotationDirection: "", rightRotationDirection: "" };
   }
-
 
   /**
    * Get allowed turn intensity values for UI display
@@ -122,13 +118,12 @@ export class LOOPParameterProvider {
   }
 
   /**
-   * Allocate turns for blue and red props during sequence generation
-   * Direct port from legacy TurnIntensityManager.allocate_turns_for_blue_and_red()
+   * Allocate turns for left and right props during sequence generation.
    *
    * @param wordLength - Number of steps in the sequence
    * @param level - Difficulty level (1-3)
    * @param maxTurnIntensity - Maximum turn intensity allowed
-   * @returns Turn allocations for blue and red props
+   * @returns Turn allocations for left and right props
    */
   allocateTurns(
     wordLength: number,
@@ -167,7 +162,9 @@ export class LOOPParameterProvider {
     enforcePeriod4Parity: boolean
   ): (number | "fl")[] {
     const result: (number | "fl")[] = [];
-    const beatsToPreallocate = enforcePeriod4Parity ? wordLength - 1 : wordLength;
+    const beatsToPreallocate = enforcePeriod4Parity
+      ? wordLength - 1
+      : wordLength;
 
     for (let i = 0; i < beatsToPreallocate; i++) {
       result.push(this.randomChoice(turnsPool));
@@ -198,7 +195,6 @@ export class LOOPParameterProvider {
     return Math.round(turn * 2) % 4;
   }
 
-
   private randomChoice<T>(array: T[]): T {
     if (array.length === 0) {
       throw new Error("Cannot choose from empty array");
@@ -209,4 +205,6 @@ export class LOOPParameterProvider {
 
 import { pictographFilter } from "./pictograph-filter";
 
-export const loopParameterProvider = new LOOPParameterProvider(pictographFilter);
+export const loopParameterProvider = new LOOPParameterProvider(
+  pictographFilter
+);

@@ -134,7 +134,7 @@ describe("buildHalvedStep — real motion families", () => {
     expect(result!.motions.right.segment).toEqual({ t0: 0, t1: 0.5 });
   });
 
-  it("blue-hand case: proves the hand's own MotionColor is passed to calculateOrientationAt (not a hardcoded RED)", () => {
+  it("left-hand case: passes the hand's own HandSide to calculateOrientationAt instead of hardcoding right", () => {
     const leftMotion = createMotionData({
       hand: HandSide.LEFT,
       motionType: MotionType.ANTI,

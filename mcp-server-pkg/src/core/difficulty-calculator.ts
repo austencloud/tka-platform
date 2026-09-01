@@ -36,10 +36,12 @@ export function calculateDifficultyLevel(steps: SequenceStep[]): number {
     if (step.stepNumber === 0) continue; // Skip start position
 
     // Check for non-radial orientations
-    if (isNonRadialOrientation(step.blueMotion?.startOrientation) ||
-        isNonRadialOrientation(step.blueMotion?.endOrientation) ||
-        isNonRadialOrientation(step.redMotion?.startOrientation) ||
-        isNonRadialOrientation(step.redMotion?.endOrientation)) {
+    if (
+      isNonRadialOrientation(step.leftMotion?.startOrientation) ||
+      isNonRadialOrientation(step.leftMotion?.endOrientation) ||
+      isNonRadialOrientation(step.rightMotion?.startOrientation) ||
+      isNonRadialOrientation(step.rightMotion?.endOrientation)
+    ) {
       hasNonRadialOrientation = true;
     }
 

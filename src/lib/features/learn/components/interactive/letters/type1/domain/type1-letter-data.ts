@@ -142,8 +142,8 @@ export const ANTISPIN_LETTERS: Type1LetterData[] = [
 /**
  * Hybrid Letters: C, F, I, L, O, R, U, V
  * Hands spin in different directions (one prospin, one antispin)
- * Most hybrids: blue antispin + red prospin
- * V is the exception: blue prospin + red antispin (reverse hybrid)
+ * Most hybrids: left antispin + right prospin
+ * V is the exception: left prospin + right antispin (reverse hybrid)
  */
 export const HYBRID_LETTERS: Type1LetterData[] = [
   {
@@ -152,7 +152,7 @@ export const HYBRID_LETTERS: Type1LetterData[] = [
     rightMotion: MotionType.PRO,
     startPositionGroup: GridPositionGroup.ALPHA,
     endPositionGroup: GridPositionGroup.ALPHA,
-    description: "Alpha to Alpha, blue antispin, red prospin",
+    description: "Alpha to Alpha, left antispin, right prospin",
   },
   {
     letter: Letter.F,
@@ -160,7 +160,7 @@ export const HYBRID_LETTERS: Type1LetterData[] = [
     rightMotion: MotionType.PRO,
     startPositionGroup: GridPositionGroup.BETA,
     endPositionGroup: GridPositionGroup.ALPHA,
-    description: "Beta to Alpha, blue antispin, red prospin",
+    description: "Beta to Alpha, left antispin, right prospin",
   },
   {
     letter: Letter.I,
@@ -168,7 +168,7 @@ export const HYBRID_LETTERS: Type1LetterData[] = [
     rightMotion: MotionType.PRO,
     startPositionGroup: GridPositionGroup.BETA,
     endPositionGroup: GridPositionGroup.BETA,
-    description: "Beta to Beta, blue antispin, red prospin",
+    description: "Beta to Beta, left antispin, right prospin",
   },
   {
     letter: Letter.L,
@@ -176,7 +176,7 @@ export const HYBRID_LETTERS: Type1LetterData[] = [
     rightMotion: MotionType.PRO,
     startPositionGroup: GridPositionGroup.ALPHA,
     endPositionGroup: GridPositionGroup.BETA,
-    description: "Alpha to Beta, blue antispin, red prospin",
+    description: "Alpha to Beta, left antispin, right prospin",
   },
   {
     letter: Letter.O,
@@ -184,7 +184,7 @@ export const HYBRID_LETTERS: Type1LetterData[] = [
     rightMotion: MotionType.PRO,
     startPositionGroup: GridPositionGroup.GAMMA,
     endPositionGroup: GridPositionGroup.GAMMA,
-    description: "Gamma to Gamma, blue antispin, red prospin",
+    description: "Gamma to Gamma, left antispin, right prospin",
   },
   {
     letter: Letter.R,
@@ -192,7 +192,7 @@ export const HYBRID_LETTERS: Type1LetterData[] = [
     rightMotion: MotionType.PRO,
     startPositionGroup: GridPositionGroup.GAMMA,
     endPositionGroup: GridPositionGroup.GAMMA,
-    description: "Gamma to Gamma, blue antispin, red prospin",
+    description: "Gamma to Gamma, left antispin, right prospin",
   },
   {
     letter: Letter.U,
@@ -200,7 +200,7 @@ export const HYBRID_LETTERS: Type1LetterData[] = [
     rightMotion: MotionType.PRO,
     startPositionGroup: GridPositionGroup.GAMMA,
     endPositionGroup: GridPositionGroup.GAMMA,
-    description: "Gamma to Gamma, blue antispin, red prospin",
+    description: "Gamma to Gamma, left antispin, right prospin",
     leaderRotation: "pro",
   },
   {
@@ -209,7 +209,8 @@ export const HYBRID_LETTERS: Type1LetterData[] = [
     rightMotion: MotionType.ANTI,
     startPositionGroup: GridPositionGroup.GAMMA,
     endPositionGroup: GridPositionGroup.GAMMA,
-    description: "Gamma to Gamma, blue prospin, red antispin (reverse hybrid)",
+    description:
+      "Gamma to Gamma, left prospin, right antispin (reverse hybrid)",
     leaderRotation: "anti",
   },
 ];

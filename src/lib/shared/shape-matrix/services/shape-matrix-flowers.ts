@@ -91,13 +91,13 @@ async function build(propType: PropType): Promise<ShapeMatrixData> {
     if (!f) return undefined;
     const startedAt = import.meta.env.DEV ? performance.now() : 0;
     const arch = f.style === "anti" ? antiArch : proArch;
-    // ONE canonical locus per flower descriptor (computed from the blue hand),
+    // ONE canonical locus per flower descriptor (computed from the left hand),
     // reused on both axes so the row header, the column header, and the diagonal
     // cell are geometrically identical — only the stroke color differs.
-    // Computing the red axis from its own hand point-reflects the shape (the
+    // Computing the right axis from its own hand point-reflects the shape (the
     // hands are anchored at opposite points), which desyncs the two axes and
     // stops the diagonal from overlapping into a clean purple pictograph.
-    const seq = buildFlowerSequence(arch, f, "blue", edges, propType);
+    const seq = buildFlowerSequence(arch, f, "left", edges, propType);
     const paths = calculateMandalaGeometry(
       seq.steps,
       undefined,

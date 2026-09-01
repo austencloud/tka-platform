@@ -63,8 +63,8 @@
   ];
 
   const handColors = [
-    { id: "blue" as const, label: "Blue prop", color: HandSide.LEFT },
-    { id: "red" as const, label: "Red prop", color: HandSide.RIGHT },
+    { id: "blue" as const, label: "Left prop (blue)", color: HandSide.LEFT },
+    { id: "red" as const, label: "Right prop (red)", color: HandSide.RIGHT },
   ];
 
   let rendered = $state<Record<string, RenderedPreview>>({});
@@ -138,22 +138,17 @@
           const rawSvg = await response.text();
           const preview: RenderedPreview = {
             dark: {
-              left: renderEditorProp(
-                rawSvg,
-                definition,
-                HandSide.LEFT,
-                true
-              ),
+              left: renderEditorProp(rawSvg, definition, HandSide.LEFT, true),
               right: renderEditorProp(rawSvg, definition, HandSide.RIGHT, true),
             },
             light: {
-              left: renderEditorProp(
+              left: renderEditorProp(rawSvg, definition, HandSide.LEFT, false),
+              right: renderEditorProp(
                 rawSvg,
                 definition,
-                HandSide.LEFT,
+                HandSide.RIGHT,
                 false
               ),
-              right: renderEditorProp(rawSvg, definition, HandSide.RIGHT, false),
             },
           };
 

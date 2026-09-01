@@ -21,7 +21,7 @@ const singleDescriptions: Partial<Record<LOOPComponent, string>> = {
   [LOOPComponent.FLIPPED]:
     "Flips the sequence across the horizontal axis. Top becomes Bottom and vice versa. Creates a vertical reflection of your original movement pattern.",
   [LOOPComponent.SWAPPED]:
-    "Exchanges which hand performs each movement. Your blue hand does what red was doing, and red does what blue was doing. The spatial positions stay the same.",
+    "Exchanges which hand performs each movement. Your left hand does what the right was doing, and the right does what the left was doing. The spatial positions stay the same.",
   [LOOPComponent.INVERTED]:
     "Inverts each motion's rotation relative to its path. Pro becomes anti, and anti becomes pro. Base motion types (static, dash) remain unchanged.",
   [LOOPComponent.REWOUND]:
@@ -43,7 +43,7 @@ const twoComponentDescriptions: Record<string, string> = {
 
   // Mirrored + Swapped
   mirrored_swapped:
-    "Reflects the sequence across the selected axis and swaps the Blue and Red hand roles.",
+    "Reflects the sequence across the selected axis and swaps the left and right hand roles.",
 
   // Rotated + Inverted
   inverted_rotated:
@@ -51,11 +51,11 @@ const twoComponentDescriptions: Record<string, string> = {
 
   // Rotated + Swapped
   rotated_swapped:
-    "Applies 180° rotation and swaps hand roles (Blue ↔ Red). Each hand performs the other's rotated movement.",
+    "Applies 180° rotation and swaps hand roles (left ↔ right). Each hand performs the other's rotated movement.",
 
   // Swapped + Inverted
   inverted_swapped:
-    "Swaps hand roles (Blue ↔ Red) and inverts motion types (Pro ↔ Anti). Each hand performs the other's inverted movement.",
+    "Swaps hand roles (left ↔ right) and inverts motion types (Pro ↔ Anti). Each hand performs the other's inverted movement.",
 };
 
 /**
@@ -68,22 +68,22 @@ const threeComponentDescriptions: Record<string, string> = {
 
   // Mirrored + Rotated + Swapped
   mirrored_rotated_swapped:
-    "Combines the selected reflection axis, 180° rotation, and a Blue/Red hand swap.",
+    "Combines the selected reflection axis, 180° rotation, and a left/right hand swap.",
 
   // Mirrored + Swapped + Inverted
   inverted_mirrored_swapped:
-    "Combines the selected reflection axis, a Blue/Red hand swap, and Pro/Anti inversion.",
+    "Combines the selected reflection axis, a left/right hand swap, and Pro/Anti inversion.",
 
   // Rotated + Swapped + Inverted
   inverted_rotated_swapped:
-    "Applies 180° rotation, swaps hand roles (Blue ↔ Red), and inverts motion types (Pro ↔ Anti).",
+    "Applies 180° rotation, swaps hand roles (left ↔ right), and inverts motion types (Pro ↔ Anti).",
 };
 
 /**
  * Description for all four components.
  */
 const fourComponentDescription =
-  "Combines the selected reflection axis, 180° rotation, a Blue/Red hand swap, and Pro/Anti inversion.";
+  "Combines the selected reflection axis, 180° rotation, a left/right hand swap, and Pro/Anti inversion.";
 
 /**
  * Generate a unique key for a set of components (sorted alphabetically).
@@ -95,7 +95,9 @@ function getComponentKey(components: LOOPComponent[]): string {
 /**
  * Generate explanation text based on selected components.
  */
-export function generateExplanationText(selectedComponents: Set<LOOPComponent>): string {
+export function generateExplanationText(
+  selectedComponents: Set<LOOPComponent>
+): string {
   const selected = Array.from(selectedComponents);
 
   if (selected.length === 0) {

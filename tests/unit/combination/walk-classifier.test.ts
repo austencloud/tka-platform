@@ -699,7 +699,7 @@ const SOURCES: WalkSource[] = [
     variant: {
       rotation: 0,
       mirrored: false,
-      colorSwapped: false,
+      handsSwapped: false,
       rotationFaithful: false,
     },
     sequence: GGGG_CW,
@@ -710,7 +710,7 @@ const SOURCES: WalkSource[] = [
     variant: {
       rotation: 0,
       mirrored: false,
-      colorSwapped: false,
+      handsSwapped: false,
       rotationFaithful: false,
     },
     sequence: HHHH_CCW,
@@ -721,7 +721,7 @@ const SOURCES: WalkSource[] = [
     variant: {
       rotation: 0,
       mirrored: true,
-      colorSwapped: false,
+      handsSwapped: false,
       rotationFaithful: false,
     },
     sequence: HHHH_CCW,

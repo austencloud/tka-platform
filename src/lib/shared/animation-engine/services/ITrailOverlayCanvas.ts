@@ -60,7 +60,7 @@ export interface TrailOverlayRenderParams {
    * — zero behavior change for callers that don't pass it.
    */
   leftPropSwapSuppressed?: boolean;
-  /** Red-hand counterpart of bluePropSwapSuppressed. */
+  /** Right-hand counterpart of leftPropSwapSuppressed. */
   rightPropSwapSuppressed?: boolean;
 }
 

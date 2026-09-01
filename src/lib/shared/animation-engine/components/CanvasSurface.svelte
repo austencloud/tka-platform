@@ -516,7 +516,7 @@ captureEffectDiagnostics to the context menu.
         currentStep >= (sequenceData.steps?.length ?? 0) + 0.99}
     />
 
-    <!-- Always mounted: PathLinesOverlay self-gates on showBlue/showRed and owns
+    <!-- Always mounted: PathLinesOverlay self-gates on showLeft/showRight and owns
          its own fade in/out, so the overlay must stay in the tree for its
          out-transition to play when the Paths toggle flips off. -->
     <PathLinesOverlay

@@ -2,7 +2,7 @@
  * Backfill Deck Release Metadata
  *
  * Older deck-release manifests predate the `name`/`description` fields and the
- * `bluePropType`/`redPropType` render snapshot. Without a pinned prop snapshot,
+ * `leftPropType`/`rightPropType` render snapshot. Without a pinned prop snapshot,
  * the print-preview content-hash cache misses on every view (the key falls back
  * to the viewer's live settings), forcing a full re-render. This backfill writes
  * the missing fields so existing decks render from cache on the first view after
@@ -10,8 +10,8 @@
  *
  * Defaults (only written where the field is currently missing):
  *   name          <- existing `notes` if non-empty, else "Deck #NNN"
- *   bluePropType  <- "staff"  (PropType.STAFF — the deck-standard prop)
- *   redPropType   <- "staff"
+ *   leftPropType  <- "staff"  (PropType.STAFF — the deck-standard prop)
+ *   rightPropType <- "staff"
  *
  * Manifests live at: deckReleases/counter/manifests/{NNN}
  *
@@ -30,7 +30,11 @@ const DEFAULT_PROP = "staff";
 let db;
 
 try {
-  const serviceAccountPath = path.join(__dirname, "..", "serviceAccountKey.json");
+  const serviceAccountPath = path.join(
+    __dirname,
+    "..",
+    "serviceAccountKey.json"
+  );
   const serviceAccount = require(serviceAccountPath);
 
   if (!admin.apps.length) {
@@ -102,10 +106,14 @@ async function backfill() {
         const batch = db.batch();
         const slice = changes.slice(i, i + BATCH_SIZE);
         for (const c of slice) {
-          batch.set(db.collection(MANIFESTS_COLLECTION).doc(c.id), c.patch, { merge: true });
+          batch.set(db.collection(MANIFESTS_COLLECTION).doc(c.id), c.patch, {
+            merge: true,
+          });
         }
         await batch.commit();
-        console.log(`  Batch ${Math.floor(i / BATCH_SIZE) + 1}: updated ${slice.length} manifest(s)`);
+        console.log(
+          `  Batch ${Math.floor(i / BATCH_SIZE) + 1}: updated ${slice.length} manifest(s)`
+        );
       }
       console.log();
     }
@@ -115,7 +123,9 @@ async function backfill() {
     console.log(`  Total manifests:    ${snapshot.size}`);
     console.log(`  Updated:            ${changes.length}`);
     console.log(`  Skipped (complete): ${skipped}`);
-    console.log(`  Status:             ${DRY_RUN ? "DRY RUN - no changes applied" : "Changes applied"}`);
+    console.log(
+      `  Status:             ${DRY_RUN ? "DRY RUN - no changes applied" : "Changes applied"}`
+    );
     console.log(`${"=".repeat(80)}\n`);
   } catch (error) {
     console.error("Error during backfill:", error);

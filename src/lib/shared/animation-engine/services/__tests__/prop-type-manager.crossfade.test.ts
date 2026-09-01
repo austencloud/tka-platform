@@ -124,7 +124,7 @@ describe("PropTypeManager.handleOverrides crossfade trigger", () => {
     renderer.startLeftPropCrossfade.mockClear();
     renderer.startRightPropCrossfade.mockClear();
 
-    // Blue changes fan -> club; red stays fan.
+    // Left changes fan -> club; right stays fan.
 
     ptm.handleOverrides(
       { leftPropType: "club", rightPropType: "fan" } as any,
@@ -178,8 +178,8 @@ describe("PropTypeManager.handleOverrides crossfade trigger", () => {
   it("crossfades a fan build without changing the choreography prop type", async () => {
     const propTextureService = {
       state: {
-        blueDimensions: { width: 260, height: 207 },
-        redDimensions: { width: 260, height: 207 },
+        leftDimensions: { width: 260, height: 207 },
+        rightDimensions: { width: 260, height: 207 },
       },
       loadPropTextures: vi.fn().mockResolvedValue(undefined),
     };
@@ -188,8 +188,8 @@ describe("PropTypeManager.handleOverrides crossfade trigger", () => {
 
     ptm.handleOverrides(
       {
-        bluePropType: "fan",
-        redPropType: "fan",
+        leftPropType: "fan",
+        rightPropType: "fan",
         fanAppearance: {
           build: "pictograph",
           frameColor: "black",
@@ -201,16 +201,16 @@ describe("PropTypeManager.handleOverrides crossfade trigger", () => {
       false
     );
     await flushHotSwap();
-    renderer.prepareBluePropCrossfade.mockClear();
-    renderer.prepareRedPropCrossfade.mockClear();
-    renderer.startBluePropCrossfade.mockClear();
-    renderer.startRedPropCrossfade.mockClear();
+    renderer.prepareLeftPropCrossfade.mockClear();
+    renderer.prepareRightPropCrossfade.mockClear();
+    renderer.startLeftPropCrossfade.mockClear();
+    renderer.startRightPropCrossfade.mockClear();
     propTextureService.loadPropTextures.mockClear();
 
     const changed = ptm.handleOverrides(
       {
-        bluePropType: "fan",
-        redPropType: "fan",
+        leftPropType: "fan",
+        rightPropType: "fan",
         fanAppearance: {
           build: "fire",
           frameColor: "black",
@@ -224,28 +224,29 @@ describe("PropTypeManager.handleOverrides crossfade trigger", () => {
     await flushHotSwap();
 
     expect(changed).toBe(true);
-    expect(state.currentBluePropType).toBe("fan");
-    expect(state.currentRedPropType).toBe("fan");
+    expect(state.currentLeftPropType).toBe("fan");
+    expect(state.currentRightPropType).toBe("fan");
     expect(propTextureService.loadPropTextures).toHaveBeenCalledWith(
       "fan__fire_bare",
       "fan__fire_bare",
-      false
+      false,
+      null
     );
-    expect(renderer.prepareBluePropCrossfade).toHaveBeenCalledTimes(1);
-    expect(renderer.prepareRedPropCrossfade).toHaveBeenCalledTimes(1);
-    expect(renderer.startBluePropCrossfade).toHaveBeenCalledTimes(1);
-    expect(renderer.startRedPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.prepareLeftPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.prepareRightPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.startLeftPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.startRightPropCrossfade).toHaveBeenCalledTimes(1);
 
-    renderer.prepareBluePropCrossfade.mockClear();
-    renderer.prepareRedPropCrossfade.mockClear();
-    renderer.startBluePropCrossfade.mockClear();
-    renderer.startRedPropCrossfade.mockClear();
+    renderer.prepareLeftPropCrossfade.mockClear();
+    renderer.prepareRightPropCrossfade.mockClear();
+    renderer.startLeftPropCrossfade.mockClear();
+    renderer.startRightPropCrossfade.mockClear();
     propTextureService.loadPropTextures.mockClear();
 
     ptm.handleOverrides(
       {
-        bluePropType: "fan",
-        redPropType: "fan",
+        leftPropType: "fan",
+        rightPropType: "fan",
         fanAppearance: {
           build: "fire",
           frameColor: "black",
@@ -261,12 +262,13 @@ describe("PropTypeManager.handleOverrides crossfade trigger", () => {
     expect(propTextureService.loadPropTextures).toHaveBeenCalledWith(
       "fan__fire_covered",
       "fan__fire_covered",
-      false
+      false,
+      null
     );
-    expect(renderer.prepareBluePropCrossfade).toHaveBeenCalledTimes(1);
-    expect(renderer.prepareRedPropCrossfade).toHaveBeenCalledTimes(1);
-    expect(renderer.startBluePropCrossfade).toHaveBeenCalledTimes(1);
-    expect(renderer.startRedPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.prepareLeftPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.prepareRightPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.startLeftPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.startRightPropCrossfade).toHaveBeenCalledTimes(1);
   });
 
   it("does not fade when nothing actually changed (handleOverrides returns false)", async () => {

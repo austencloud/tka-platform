@@ -1,17 +1,33 @@
 import type { GuideBlock } from "../guide-content-blocks";
-import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionType, HandSide, Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  createMotionData,
+  createPlaceholderMotion,
+} from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  MotionType,
+  HandSide,
+  Orientation,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  GridMode,
+  GridLocation,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 
 // Single-hand pictograph builder - copied verbatim from _pages/HandMotionsPage.svelte
-// (blue hand only; the renderer's hand-path mode floats the shifts into the
+// (left hand only; the renderer's hand-path mode floats the shifts into the
 // canonical float arrows, dash gets the system dash arrow, static shows the
 // resting hand).
-const singleHand = (id: string, type: MotionType, from: GridLocation, to: GridLocation, stepNumber?: number) => ({
+const singleHand = (
+  id: string,
+  type: MotionType,
+  from: GridLocation,
+  to: GridLocation,
+  stepNumber?: number
+) => ({
   id: `hm-${id}`,
   letter: null,
   gridMode: GridMode.DIAMOND,
@@ -45,16 +61,30 @@ const DEMOS = [
  * an invisible placeholder (createPlaceholderMotion) satisfies it without
  * rendering a second hand, same recipe negative-space.content.ts uses.
  */
-const motionDemo = (id: string, type: MotionType, from: GridLocation, to: GridLocation, caption: string) => {
+const motionDemo = (
+  id: string,
+  type: MotionType,
+  from: GridLocation,
+  to: GridLocation,
+  caption: string
+) => {
   const withRedPlaceholder = (step: ReturnType<typeof singleHand>) => ({
     ...step,
-    motions: { ...step.motions, right: createPlaceholderMotion(HandSide.RIGHT, { location: from, orientation: Orientation.IN }) },
+    motions: {
+      ...step.motions,
+      right: createPlaceholderMotion(HandSide.RIGHT, {
+        location: from,
+        orientation: Orientation.IN,
+      }),
+    },
   });
   return {
     id,
     caption,
     items: [
-      withRedPlaceholder(singleHand(`${id}-start`, MotionType.STATIC, from, from, 0)),
+      withRedPlaceholder(
+        singleHand(`${id}-start`, MotionType.STATIC, from, from, 0)
+      ),
       withRedPlaceholder(singleHand(`${id}-step`, type, from, to, 1)),
     ] as unknown as PictographData[],
   };

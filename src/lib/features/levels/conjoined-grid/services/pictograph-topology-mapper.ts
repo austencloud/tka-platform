@@ -5,10 +5,10 @@ import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-
 import type { GridLocation } from "$lib/shared/render/core/types";
 
 /**
- * Maps a pictograph's blue and red prop end positions onto a multi-grid topology.
+ * Maps a pictograph's left and right prop end positions onto a multi-grid topology.
  *
  * For 2-grid topologies the convention is: blue prop belongs to the first grid,
- * red prop belongs to the second grid. The mapper reads each motion's endLocation
+ * right prop belongs to the second grid. The mapper reads each motion's endLocation
  * (a compass point like "n", "se", etc.) and pairs it with the corresponding
  * grid ID from the topology.
  *
@@ -17,7 +17,7 @@ import type { GridLocation } from "$lib/shared/render/core/types";
  */
 export function mapToTopology(
   pictograph: PictographData,
-  topology: GridTopology,
+  topology: GridTopology
 ): PropPlacement | null {
   if (topology.grids.length < 2) return null;
 

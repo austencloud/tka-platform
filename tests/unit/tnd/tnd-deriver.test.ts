@@ -122,14 +122,24 @@ describe("deriveTnDFromPictograph", () => {
 
   it("returns null when a motion is static (start-position pictograph)", () => {
     const p = pictograph(
-      { motionType: MotionType.STATIC, startLocation: SOUTH, endLocation: SOUTH },
-      { motionType: MotionType.STATIC, startLocation: NORTH, endLocation: NORTH }
+      {
+        motionType: MotionType.STATIC,
+        startLocation: SOUTH,
+        endLocation: SOUTH,
+      },
+      {
+        motionType: MotionType.STATIC,
+        startLocation: NORTH,
+        endLocation: NORTH,
+      }
     );
     expect(deriveTnDFromPictograph(p).tndMode).toBeNull();
   });
 
   it("returns null for missing motions", () => {
-    expect(deriveTnDFromPictograph({ id: "x", motions: {} }).tndMode).toBeNull();
+    expect(
+      deriveTnDFromPictograph({ id: "x", motions: {} }).tndMode
+    ).toBeNull();
   });
 });
 
@@ -177,8 +187,8 @@ describe("golden snapshot: deriveTnD reproduces the calculateTnD table", () => {
       for (const row of rows) {
         // Type-1 (shift + shift) rows only: both hands arc.
         if (
-          !SHIFTS.has(row.leftMotionType as MotionType) ||
-          !SHIFTS.has(row.rightMotionType as MotionType)
+          !SHIFTS.has(row.blueMotionType as MotionType) ||
+          !SHIFTS.has(row.redMotionType as MotionType)
         )
           continue;
         const expected = calculateTnD(
@@ -189,15 +199,15 @@ describe("golden snapshot: deriveTnD reproduces the calculateTnD table", () => {
         if (!expected) continue; // not a TnD letter
         checked++;
         const got = deriveTnD(
-          row.leftStartLocation as GridLocation,
-          row.leftEndLocation as GridLocation,
-          row.rightStartLocation as GridLocation,
-          row.rightEndLocation as GridLocation
+          row.blueStartLocation as GridLocation,
+          row.blueEndLocation as GridLocation,
+          row.redStartLocation as GridLocation,
+          row.redEndLocation as GridLocation
         );
         if (got.tndMode !== expected) {
           mismatches.push(
-            `${row.letter} ${row.startPosition}: blue ${row.leftStartLocation}→${row.leftEndLocation} ` +
-              `red ${row.rightStartLocation}→${row.rightEndLocation} table=${expected} derived=${got.tndMode}`
+            `${row.letter} ${row.startPosition}: left ${row.blueStartLocation}→${row.blueEndLocation} ` +
+              `right ${row.redStartLocation}→${row.redEndLocation} table=${expected} derived=${got.tndMode}`
           );
         }
       }

@@ -113,7 +113,8 @@ export async function bakeGuideMotion(
     }
 
     const canvas = renderer.getCanvas();
-    if (!canvas) throw new Error(`No canvas available for config "${config.id}"`);
+    if (!canvas)
+      throw new Error(`No canvas available for config "${config.id}"`);
 
     // ── Manual video exporter (WebCodecs H.264 / WASM fallback) ──────────
     manual = await exporter.createManualExporter(size, size, {
@@ -166,8 +167,8 @@ export async function bakeGuideMotion(
         trailSettings,
         // Baked frames must show fully-settled visibility, never a transitional
         // fade. The renderer's Canvas2DVisibilityFadeManager initializes visible
-        // and fades OUT when blueMotionVisible flips false on frame 0 — at ~0ms
-        // elapsed that fade hasn't settled, so the blue hand flashes for the
+        // and fades OUT when leftMotionVisible flips false on frame 0 — at ~0ms
+        // elapsed that fade hasn't settled, so the left hand flashes for the
         // opening frames (visible on hm-shift-wn). Pushing currentTime far past
         // the max fade duration forces elapsed ≥ duration every frame, so all
         // fades read as complete and no transitional alpha is ever drawn.
@@ -176,7 +177,7 @@ export async function bakeGuideMotion(
           gridVisible: true,
           propsVisible: true,
           trailsVisible: false,
-          leftMotionVisible: config.showBlue,
+          leftMotionVisible: config.showLeft,
           rightMotionVisible: true,
         },
         // Mirror the canonical FrameParameterBuilder: the red hand is the right

@@ -59,7 +59,6 @@ const DATE_FIELD_NAMES = [
 ] as const;
 
 export class BrowseMetadataExtractor {
-
   async extractMetadata(
     sequenceName: string,
     thumbnailPath?: string
@@ -70,8 +69,7 @@ export class BrowseMetadataExtractor {
         thumbnailPath
       );
 
-      const result =
-        await extractUniversalMetadata(sequenceWithVersion);
+      const result = await extractUniversalMetadata(sequenceWithVersion);
 
       if (!result.success || !result.data) {
         return getDefaultMetadata();
@@ -165,8 +163,8 @@ export class BrowseMetadataExtractor {
 
     return beatElements.map((step: unknown, index: number) => {
       const stepData = step as Record<string, unknown>;
-      const leftAttrs = stepData["blue_attributes"] as Record<string, unknown>;
-      const rightAttrs = stepData["red_attributes"] as Record<string, unknown>;
+      const leftAttrs = this.parseHandAttributes(stepData, HandSide.LEFT);
+      const rightAttrs = this.parseHandAttributes(stepData, HandSide.RIGHT);
 
       return {
         // PictographData properties
@@ -203,7 +201,9 @@ export class BrowseMetadataExtractor {
                 motionType: this.parseMotionType(rightAttrs["motion_type"]),
                 startLocation: this.parseLocation(rightAttrs["start_loc"]),
                 endLocation: this.parseLocation(rightAttrs["end_loc"]),
-                startOrientation: this.parseOrientation(rightAttrs["start_ori"]),
+                startOrientation: this.parseOrientation(
+                  rightAttrs["start_ori"]
+                ),
                 endOrientation: this.parseOrientation(rightAttrs["end_ori"]),
                 rotationDirection: this.parseRotationDirection(
                   rightAttrs["prop_rot_dir"]
@@ -245,11 +245,8 @@ export class BrowseMetadataExtractor {
       return undefined;
     }
 
-    const leftAttrs = firstElement["blue_attributes"] as Record<
-      string,
-      unknown
-    >;
-    const rightAttrs = firstElement["red_attributes"] as Record<string, unknown>;
+    const leftAttrs = this.parseHandAttributes(firstElement, HandSide.LEFT);
+    const rightAttrs = this.parseHandAttributes(firstElement, HandSide.RIGHT);
     const gridPosition = this.parseGridPosition(
       firstElement["sequence_start_position"]
     );
@@ -297,12 +294,30 @@ export class BrowseMetadataExtractor {
               isVisible: true,
               propType: PropType.STAFF,
               arrowLocation:
-                this.parseLocation(rightAttrs["start_loc"]) || GridLocation.SOUTH,
+                this.parseLocation(rightAttrs["start_loc"]) ||
+                GridLocation.SOUTH,
               gridMode: GridMode.DIAMOND,
             })
           : undefined,
       },
     };
+  }
+
+  /**
+   * Browse metadata now writes performer-relative hand keys. Historical
+   * sidecars remain readable because published sequences can outlive a schema.
+   */
+  private parseHandAttributes(
+    record: Record<string, unknown>,
+    hand: HandSide
+  ): Record<string, unknown> | undefined {
+    const currentKey = `${hand}_attributes`;
+    const legacyKey =
+      hand === HandSide.LEFT ? "blue_attributes" : "red_attributes";
+    const value = record[currentKey] ?? record[legacyKey];
+    return value && typeof value === "object"
+      ? (value as Record<string, unknown>)
+      : undefined;
   }
 
   /**

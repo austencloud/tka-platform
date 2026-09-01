@@ -60,7 +60,7 @@ describe("route-scoped URL parameters", () => {
 
   it("keeps letter state only on its glossary and Gallery destinations", () => {
     const glossaryUrl = new URL(
-      "https://tkaflowarts.com/glossary?letter=B&grid=box&variation=6&blueTurns=0.5"
+      "https://tkaflowarts.com/glossary?letter=B&grid=box&variation=6&leftTurns=0.5"
     );
     const galleryUrl = new URL(
       "https://tkaflowarts.com/browse/explore/sequences?letter=B"
@@ -74,7 +74,7 @@ describe("route-scoped URL parameters", () => {
     pruneRouteScopedParams(unrelatedUrl, unrelatedUrl.pathname);
 
     expect(glossaryUrl.search).toBe(
-      "?letter=B&grid=box&variation=6&blueTurns=0.5"
+      "?letter=B&grid=box&variation=6&leftTurns=0.5"
     );
     expect(galleryUrl.search).toBe("?letter=B");
     expect(unrelatedUrl.search).toBe("");

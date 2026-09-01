@@ -64,14 +64,8 @@
       right: GridLocation;
     } | null;
     onChange?: (change: PropPlacementChange) => void;
-    onPlacementComplete?: (
-      leftLocation,
-      rightLocation
-    ) => void;
-    onOrientationChange?: (
-      color: HandSide,
-      orientation: Orientation
-    ) => void;
+    onPlacementComplete?: (leftLocation, rightLocation) => void;
+    onOrientationChange?: (color: HandSide, orientation: Orientation) => void;
   }
 
   let {
@@ -180,10 +174,10 @@
       disabled,
       isComplete: placement.isComplete,
       canAim,
-      activeColor: placement.activeColor,
-      dragColor: aim.dragColor,
+      activeHand: placement.activeHand,
+      dragHand: aim.dragHand,
       dragAim: aim.dragAim,
-      hoverColor: aim.hoverColor,
+      hoverHand: aim.hoverHand,
       leftLocation: placement.leftLocation,
       rightLocation: placement.rightLocation,
       leftNoun,
@@ -206,7 +200,7 @@
   );
 
   const pulseColor = $derived(
-    placement.activeColor === HandSide.RIGHT
+    placement.activeHand === HandSide.RIGHT
       ? "var(--prop-red, #ef4444)"
       : "var(--prop-blue, #3b82f6)"
   );
@@ -257,7 +251,7 @@
   class:disabled
   class:complete={placement.isComplete}
   class:has-tray={renderTray}
-  class:aiming={aim.dragColor !== null}
+  class:aiming={aim.dragHand !== null}
 >
   {#if prompt.text}
     <p class="prompt-text" data-testid="placement-prompt">
@@ -325,9 +319,9 @@
       {#if placement.isComplete && editAfterCompletion && !disabled}
         <button
           class="edit-button blue"
-          class:active={placement.activeColor === HandSide.LEFT}
+          class:active={placement.activeHand === HandSide.LEFT}
           onclick={() => placement.edit(HandSide.LEFT)}
-          aria-pressed={placement.activeColor === HandSide.LEFT}
+          aria-pressed={placement.activeHand === HandSide.LEFT}
           aria-label={`Move ${leftNoun}`}
         >
           <span class="label-full" aria-hidden="true">Move left</span>
@@ -335,9 +329,9 @@
         </button>
         <button
           class="edit-button red"
-          class:active={placement.activeColor === HandSide.RIGHT}
+          class:active={placement.activeHand === HandSide.RIGHT}
           onclick={() => placement.edit(HandSide.RIGHT)}
-          aria-pressed={placement.activeColor === HandSide.RIGHT}
+          aria-pressed={placement.activeHand === HandSide.RIGHT}
           aria-label={`Move ${rightNoun}`}
         >
           <span class="label-full" aria-hidden="true">Move right</span>

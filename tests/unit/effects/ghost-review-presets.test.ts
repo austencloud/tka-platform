@@ -41,12 +41,12 @@ describe("Ghost preset review candidates", () => {
     }
   });
 
-  it("exposes direct blue and red color controls", () => {
+  it("exposes direct left- and right-hand color controls", () => {
     expect(EFFECT_CONTROLS.ghost).toContainEqual(
       expect.objectContaining({
         id: "ghost-color",
         type: "colorPair",
-        pairFields: ["blueColor", "redColor"],
+        pairFields: ["leftColor", "rightColor"],
       })
     );
   });

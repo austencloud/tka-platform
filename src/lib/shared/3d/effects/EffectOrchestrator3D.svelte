@@ -810,10 +810,9 @@
     let leftLedAssigned = false;
     let rightLedAssigned = false;
 
-    // PerformerRig renders the blue-colored prop using bluePropState at
-    // blueHandPos, and the red-colored prop using redPropState at redHandPos.
-    // Effects must follow that same mapping or the blue trail ends up on the
-    // red prop and vice versa.
+    // PerformerRig's external compatibility API renders the left prop through
+    // bluePropState/blueHandPos and the right through redPropState/redHandPos.
+    // Effects must preserve that mapping until the scene package migrates too.
     const visualLeftProp = leftPropState;
     const visualRightProp = rightPropState;
 

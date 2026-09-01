@@ -89,7 +89,7 @@
         endLocation: GridLocation.WEST,
         turns: 0,
         endOrientation: Orientation.IN,
-        color: HandSide.LEFT,
+        hand: HandSide.LEFT,
         arrowLocation: GridLocation.SOUTHWEST,
         gridMode: GridMode.DIAMOND,
       }),
@@ -101,7 +101,7 @@
         endLocation: GridLocation.EAST,
         turns: 1,
         endOrientation: Orientation.OUT,
-        color: HandSide.RIGHT,
+        hand: HandSide.RIGHT,
         arrowLocation: GridLocation.EAST,
         gridMode: GridMode.DIAMOND,
       }),
@@ -123,7 +123,7 @@
         endLocation: GridLocation.EAST,
         turns: 0,
         endOrientation: Orientation.IN,
-        color: HandSide.LEFT,
+        hand: HandSide.LEFT,
         arrowLocation: GridLocation.NORTHEAST,
         gridMode: GridMode.DIAMOND,
       }),
@@ -135,7 +135,7 @@
         endLocation: GridLocation.WEST,
         turns: 1,
         endOrientation: Orientation.OUT,
-        color: HandSide.RIGHT,
+        hand: HandSide.RIGHT,
         arrowLocation: GridLocation.WEST,
         gridMode: GridMode.DIAMOND,
       }),
@@ -157,7 +157,7 @@
         endLocation: GridLocation.SOUTH,
         turns: 0,
         endOrientation: Orientation.IN,
-        color: HandSide.LEFT,
+        hand: HandSide.LEFT,
         arrowLocation: GridLocation.SOUTHEAST,
         gridMode: GridMode.DIAMOND,
       }),
@@ -169,7 +169,7 @@
         endLocation: GridLocation.NORTH,
         turns: 1,
         endOrientation: Orientation.IN,
-        color: HandSide.RIGHT,
+        hand: HandSide.RIGHT,
         arrowLocation: GridLocation.NORTH,
         gridMode: GridMode.DIAMOND,
       }),
@@ -177,7 +177,7 @@
   };
 
   // Θ (box) — the disputed instance: blue static SE turns=1 (in→out), red pro SE→NE ccw.
-  // Blue arrow shows rotationAngle 45° with "Rotation Override: YES".
+  // Left arrow shows rotationAngle 45° with "Rotation Override: YES".
   // Normal staticRadialCounterClockwise map at SE = 135°; the (s,0,1) special-placement
   // override forces 45° instead — the 90° swing the user is questioning.
   const thetaBoxSE: PictographData = {
@@ -194,7 +194,7 @@
         endLocation: GridLocation.SOUTHEAST,
         turns: 1,
         endOrientation: Orientation.OUT,
-        color: HandSide.LEFT,
+        hand: HandSide.LEFT,
         arrowLocation: GridLocation.SOUTHEAST,
         gridMode: GridMode.BOX,
       }),
@@ -206,7 +206,7 @@
         endLocation: GridLocation.NORTHEAST,
         turns: 0,
         endOrientation: Orientation.IN,
-        color: HandSide.RIGHT,
+        hand: HandSide.RIGHT,
         arrowLocation: GridLocation.EAST,
         gridMode: GridMode.BOX,
       }),
@@ -228,7 +228,7 @@
         endLocation: GridLocation.SOUTHWEST,
         turns: 1,
         endOrientation: Orientation.OUT,
-        color: HandSide.LEFT,
+        hand: HandSide.LEFT,
         arrowLocation: GridLocation.SOUTHWEST,
         gridMode: GridMode.BOX,
       }),
@@ -240,7 +240,7 @@
         endLocation: GridLocation.SOUTHEAST,
         turns: 0,
         endOrientation: Orientation.IN,
-        color: HandSide.RIGHT,
+        hand: HandSide.RIGHT,
         arrowLocation: GridLocation.SOUTH,
         gridMode: GridMode.BOX,
       }),
@@ -262,7 +262,7 @@
         endLocation: GridLocation.NORTHEAST,
         turns: 1,
         endOrientation: Orientation.OUT,
-        color: HandSide.LEFT,
+        hand: HandSide.LEFT,
         arrowLocation: GridLocation.NORTHEAST,
         gridMode: GridMode.BOX,
       }),
@@ -274,7 +274,7 @@
         endLocation: GridLocation.NORTHWEST,
         turns: 0,
         endOrientation: Orientation.IN,
-        color: HandSide.RIGHT,
+        hand: HandSide.RIGHT,
         arrowLocation: GridLocation.NORTH,
         gridMode: GridMode.BOX,
       }),
@@ -296,7 +296,7 @@
         endLocation: GridLocation.NORTHWEST,
         turns: 1,
         endOrientation: Orientation.OUT,
-        color: HandSide.LEFT,
+        hand: HandSide.LEFT,
         arrowLocation: GridLocation.NORTHWEST,
         gridMode: GridMode.BOX,
       }),
@@ -308,7 +308,7 @@
         endLocation: GridLocation.SOUTHWEST,
         turns: 0,
         endOrientation: Orientation.IN,
-        color: HandSide.RIGHT,
+        hand: HandSide.RIGHT,
         arrowLocation: GridLocation.WEST,
         gridMode: GridMode.BOX,
       }),
@@ -334,7 +334,7 @@
       pictograph: xAtEast,
       staticLocation: "e",
       expectedAngle: expectedAngles.e,
-      description: "Red static CW at East, Blue anti CCW S→W",
+      description: "Right static CW at East, Left anti CCW S→W",
     },
     {
       id: "west",
@@ -342,7 +342,7 @@
       pictograph: xAtWest,
       staticLocation: "w",
       expectedAngle: expectedAngles.w,
-      description: "Red static CW at West, Blue anti CCW N→E",
+      description: "Right static CW at West, Left anti CCW N→E",
     },
     {
       id: "north",
@@ -350,7 +350,7 @@
       pictograph: xAtNorth,
       staticLocation: "n",
       expectedAngle: expectedAngles.n,
-      description: "Red static CW at North, Blue anti CCW E→S",
+      description: "Right static CW at North, Left anti CCW E→S",
     },
     {
       id: "theta-box-se",
@@ -358,7 +358,7 @@
       pictograph: thetaBoxSE,
       staticLocation: "se",
       expectedAngle: 315,
-      description: "Blue static SE turns=1 in→out (ccw). Override now 315°.",
+      description: "Left static SE turns=1 in→out (ccw). Override now 315°.",
     },
     {
       id: "theta-box-sw",
@@ -366,7 +366,8 @@
       pictograph: thetaBoxSW,
       staticLocation: "sw",
       expectedAngle: 45,
-      description: "Blue static SW turns=1 in→out (ccw). Override 315→45° (CW 90).",
+      description:
+        "Left static SW turns=1 in→out (ccw). Override 315→45° (CW 90).",
     },
     {
       id: "theta-box-ne",
@@ -374,7 +375,8 @@
       pictograph: thetaBoxNE,
       staticLocation: "ne",
       expectedAngle: 225,
-      description: "Blue static NE turns=1 in→out (ccw). Override 135→225° (CW 90).",
+      description:
+        "Left static NE turns=1 in→out (ccw). Override 135→225° (CW 90).",
     },
     {
       id: "theta-box-nw",
@@ -382,7 +384,8 @@
       pictograph: thetaBoxNW,
       staticLocation: "nw",
       expectedAngle: 135,
-      description: "Blue static NW turns=1 in→out (ccw). Override 225→135° (CCW 90).",
+      description:
+        "Left static NW turns=1 in→out (ccw). Override 225→135° (CCW 90).",
     },
   ];
 </script>

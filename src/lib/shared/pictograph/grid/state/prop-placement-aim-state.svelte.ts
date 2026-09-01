@@ -50,12 +50,12 @@ export function createPropPlacementAimState(
   let overlayElement: SVGSVGElement | null = null;
   let gridWrapper: HTMLDivElement | null = null;
   let dragPointerId: number | null = null;
-  let dragColor = $state<HandSide | null>(null);
+  let dragHand = $state<HandSide | null>(null);
   let dragLocation = $state<GridLocation | null>(null);
   let dragAim = $state<Orientation | null>(null);
   let pendingOrientation = $state<PendingOrientation | null>(null);
   let pointerHandledPress = false;
-  let hoverColor = $state<HandSide | null>(null);
+  let hoverHand = $state<HandSide | null>(null);
   let hoverOutline = $state<string | null>(null);
 
   function committedOrientationFor(color: HandSide): Orientation {
@@ -197,7 +197,7 @@ export function createPropPlacementAimState(
     location: GridLocation,
     event: PointerEvent | null = null
   ): HandSide | null {
-    if (placement.activeColor !== null) return placement.activeColor;
+    if (placement.activeHand !== null) return placement.activeHand;
     if (!inputs.getEditAfterCompletion()) return null;
 
     const leftHere = placement.leftLocation === location;
@@ -228,7 +228,7 @@ export function createPropPlacementAimState(
   }
 
   function clearHover(): void {
-    hoverColor = null;
+    hoverHand = null;
     hoverOutline = null;
   }
 
@@ -242,7 +242,7 @@ export function createPropPlacementAimState(
     }
 
     const color = resolvePressColor(location, event);
-    hoverColor = color;
+    hoverHand = color;
     hoverOutline = color === null ? null : propOutline(color);
   }
 
@@ -258,7 +258,7 @@ export function createPropPlacementAimState(
     pointerHandledPress = true;
     placement.selectPoint(location, color);
     dragPointerId = event.pointerId;
-    dragColor = color;
+    dragHand = color;
     dragLocation = location;
     dragAim = normalizeOrientationForLocation(
       committedOrientationFor(color),
@@ -268,7 +268,7 @@ export function createPropPlacementAimState(
 
   function handlePointerMove(event: PointerEvent): void {
     if (event.pointerId !== dragPointerId) return;
-    if (dragColor === null || dragLocation === null) return;
+    if (dragHand === null || dragLocation === null) return;
 
     const pointer = toSvgPoint(event);
     const origin = inputs
@@ -285,17 +285,17 @@ export function createPropPlacementAimState(
     if (!aimed || aimed === dragAim) return;
 
     dragAim = aimed;
-    pendingOrientation = { color: dragColor, orientation: aimed };
+    pendingOrientation = { color: dragHand, orientation: aimed };
     dependencies.triggerHaptic();
   }
 
   function handlePointerUp(event: PointerEvent): void {
     if (event.pointerId !== dragPointerId) return;
-    const color = dragColor;
+    const color = dragHand;
     const aimed = dragAim;
 
     dragPointerId = null;
-    dragColor = null;
+    dragHand = null;
     dragLocation = null;
     dragAim = null;
 
@@ -308,7 +308,7 @@ export function createPropPlacementAimState(
   function handlePointerCancel(event: PointerEvent): void {
     if (event.pointerId !== dragPointerId) return;
     dragPointerId = null;
-    dragColor = null;
+    dragHand = null;
     dragLocation = null;
     dragAim = null;
     pendingOrientation = null;
@@ -348,8 +348,8 @@ export function createPropPlacementAimState(
     set gridWrapper(value: HTMLDivElement | null) {
       gridWrapper = value;
     },
-    get dragColor() {
-      return dragColor;
+    get dragHand() {
+      return dragHand;
     },
     get dragAim() {
       return dragAim;
@@ -377,22 +377,22 @@ export function createPropPlacementAimState(
       );
     },
     get highlightColor() {
-      return dragColor ?? hoverColor;
+      return dragHand ?? hoverHand;
     },
     get highlightCenter() {
-      const color = dragColor ?? hoverColor;
+      const color = dragHand ?? hoverHand;
       return color === null ? null : propCenter(color);
     },
     get highlightStroke() {
-      return (dragColor ?? hoverColor) === HandSide.RIGHT
+      return (dragHand ?? hoverHand) === HandSide.RIGHT
         ? "var(--prop-red, #ef4444)"
         : "var(--prop-blue, #3b82f6)";
     },
     get hoverOutline() {
       return hoverOutline;
     },
-    get hoverColor() {
-      return hoverColor;
+    get hoverHand() {
+      return hoverHand;
     },
     get aimDirections() {
       return dragLocation === null

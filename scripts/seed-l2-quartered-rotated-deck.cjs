@@ -33,16 +33,21 @@ const DEFAULT_STARTS = ["alpha1", "beta5", "gamma11"];
 // CSV Loading
 
 const CSV_PATH = path.join(
-  __dirname, "..", "static", "data", "pictographs", "DiamondPictographDataframe.csv"
+  __dirname,
+  "..",
+  "static",
+  "data",
+  "pictographs",
+  "DiamondPictographDataframe.csv"
 );
 
 const csvContent = fs.readFileSync(CSV_PATH, "utf-8");
 const csvLines = csvContent.split("\n");
-const headers = csvLines[0].split(",").map(h => h.trim());
+const headers = csvLines[0].split(",").map((h) => h.trim());
 
 const edges = [];
 for (let i = 1; i < csvLines.length; i++) {
-  const cols = csvLines[i].split(",").map(c => c.trim());
+  const cols = csvLines[i].split(",").map((c) => c.trim());
   if (cols.length < 13 || !cols[0]) continue;
   edges.push({
     letter: cols[0],
@@ -74,20 +79,62 @@ console.log(`Loaded ${edges.length} edges from CSV`);
 // ============================================================================
 
 const TYPES = {
-  'A': 1, 'B': 1, 'C': 1, 'D': 1, 'E': 1, 'F': 1,
-  'G': 1, 'H': 1, 'I': 1, 'J': 1, 'K': 1, 'L': 1,
-  'M': 1, 'N': 1, 'O': 1, 'P': 1, 'Q': 1, 'R': 1,
-  'S': 1, 'T': 1, 'U': 1, 'V': 1,
-  'W': 2, 'X': 2, 'Y': 2, 'Z': 2, 'Σ': 2, 'Δ': 2, 'Θ': 2, 'Ω': 2,
-  'W-': 3, 'X-': 3, 'Y-': 3, 'Z-': 3, 'Σ-': 3, 'Δ-': 3, 'Θ-': 3, 'Ω-': 3,
-  'Φ': 4, 'Ψ': 4, 'Λ': 4,
-  'Φ-': 5, 'Ψ-': 5, 'Λ-': 5,
-  'α': 6, 'β': 6, 'γ': 6,
+  A: 1,
+  B: 1,
+  C: 1,
+  D: 1,
+  E: 1,
+  F: 1,
+  G: 1,
+  H: 1,
+  I: 1,
+  J: 1,
+  K: 1,
+  L: 1,
+  M: 1,
+  N: 1,
+  O: 1,
+  P: 1,
+  Q: 1,
+  R: 1,
+  S: 1,
+  T: 1,
+  U: 1,
+  V: 1,
+  W: 2,
+  X: 2,
+  Y: 2,
+  Z: 2,
+  Σ: 2,
+  Δ: 2,
+  Θ: 2,
+  Ω: 2,
+  "W-": 3,
+  "X-": 3,
+  "Y-": 3,
+  "Z-": 3,
+  "Σ-": 3,
+  "Δ-": 3,
+  "Θ-": 3,
+  "Ω-": 3,
+  Φ: 4,
+  Ψ: 4,
+  Λ: 4,
+  "Φ-": 5,
+  "Ψ-": 5,
+  "Λ-": 5,
+  α: 6,
+  β: 6,
+  γ: 6,
 };
 
 const TYPE_NAMES = {
-  1: 'Dual-Shift', 2: 'Shift', 3: 'Cross-Shift',
-  4: 'Dash', 5: 'Dual-Dash', 6: 'Static',
+  1: "Dual-Shift",
+  2: "Shift",
+  3: "Cross-Shift",
+  4: "Dash",
+  5: "Dual-Dash",
+  6: "Static",
 };
 
 // ============================================================================
@@ -95,28 +142,29 @@ const TYPE_NAMES = {
 // ============================================================================
 
 function hasReversals(beatSteps) {
-  function getRotDir(step, color) {
-    const m = step.motions[color];
+  function getRotDir(step, hand) {
+    const m = step.motions[hand];
     if (!m) return null;
-    if (m.rotationDirection && m.rotationDirection !== 'noRotation') return m.rotationDirection;
-    if (m.motionType === 'static' || m.motionType === 'dash') return null;
+    if (m.rotationDirection && m.rotationDirection !== "noRotation")
+      return m.rotationDirection;
+    if (m.motionType === "static" || m.motionType === "dash") return null;
     return m.rotationDirection || null;
   }
 
-  function getLastValidDir(steps, endIdx, color) {
+  function getLastValidDir(steps, endIdx, hand) {
     for (let offset = 1; offset <= steps.length; offset++) {
       const idx = (endIdx - offset + steps.length) % steps.length;
-      const dir = getRotDir(steps[idx], color);
+      const dir = getRotDir(steps[idx], hand);
       if (dir) return dir;
     }
     return null;
   }
 
   for (let i = 0; i < beatSteps.length; i++) {
-    for (const color of ['blue', 'red']) {
-      const current = getRotDir(beatSteps[i], color);
+    for (const hand of ["left", "right"]) {
+      const current = getRotDir(beatSteps[i], hand);
       if (!current) continue;
-      const prev = getLastValidDir(beatSteps, i, color);
+      const prev = getLastValidDir(beatSteps, i, hand);
       if (prev && prev !== current) return true;
     }
   }
@@ -155,11 +203,14 @@ function canonicalFingerprint(letterArray) {
 // ============================================================================
 
 (async function main() {
-  const circularMaps = await import("../packages/sequence-engine/dist/loop/position-maps/circular-position-maps.js");
+  const circularMaps =
+    await import("../packages/sequence-engine/dist/loop/position-maps/circular-position-maps.js");
   const { QUARTERED_LOOPS } = circularMaps;
 
-  const { loopExecutorSelector } = await import("../packages/sequence-engine/dist/loop/execution/LOOPExecutorSelector.js");
-  const { calculateEndOrientation } = await import("../packages/sequence-engine/dist/core/orientation/OrientationCalculator.js");
+  const { loopExecutorSelector } =
+    await import("../packages/sequence-engine/dist/loop/execution/LOOPExecutorSelector.js");
+  const { calculateEndOrientation } =
+    await import("../packages/sequence-engine/dist/core/orientation/OrientationCalculator.js");
   const executor = loopExecutorSelector.getExecutor("rotated");
 
   // Build start→valid-ends map from QUARTERED_LOOPS
@@ -201,8 +252,10 @@ function canonicalFingerprint(letterArray) {
       }
     }
     totalRaw += rawCount;
-    const posSeeds = allSeeds.filter(s => s.startPos === startPos).length;
-    console.log(`  ${startPos}: ${rawCount} edges checked → ${posSeeds} valid seeds`);
+    const posSeeds = allSeeds.filter((s) => s.startPos === startPos).length;
+    console.log(
+      `  ${startPos}: ${rawCount} edges checked → ${posSeeds} valid seeds`
+    );
   }
 
   console.log(`\nTotal edges checked: ${totalRaw}`);
@@ -230,7 +283,7 @@ function canonicalFingerprint(letterArray) {
           startOrientation: "in",
           endOrientation: "in",
           turns: 0,
-          color: "blue",
+          hand: "left",
         },
         right: {
           motionType: edge.rightMotionType,
@@ -240,7 +293,7 @@ function canonicalFingerprint(letterArray) {
           startOrientation: "in",
           endOrientation: "in",
           turns: 0,
-          color: "red",
+          hand: "right",
         },
       },
     };
@@ -279,7 +332,11 @@ function canonicalFingerprint(letterArray) {
     const edge = seed.edge;
     const startStep = {
       id: `start`,
-      letter: seed.startPos.startsWith("alpha") ? "α" : seed.startPos.startsWith("beta") ? "β" : "γ",
+      letter: seed.startPos.startsWith("alpha")
+        ? "α"
+        : seed.startPos.startsWith("beta")
+          ? "β"
+          : "γ",
       startPosition: seed.startPos,
       endPosition: seed.startPos,
       beatIndex: 0,
@@ -287,14 +344,24 @@ function canonicalFingerprint(letterArray) {
       duration: 1,
       motions: {
         left: {
-          motionType: "static", rotationDirection: "noRotation",
-          startLocation: edge.leftStartLoc, endLocation: edge.leftStartLoc,
-          startOrientation: "in", endOrientation: "in", turns: 0, color: "blue",
+          motionType: "static",
+          rotationDirection: "noRotation",
+          startLocation: edge.leftStartLoc,
+          endLocation: edge.leftStartLoc,
+          startOrientation: "in",
+          endOrientation: "in",
+          turns: 0,
+          hand: "left",
         },
         right: {
-          motionType: "static", rotationDirection: "noRotation",
-          startLocation: edge.rightStartLoc, endLocation: edge.rightStartLoc,
-          startOrientation: "in", endOrientation: "in", turns: 0, color: "red",
+          motionType: "static",
+          rotationDirection: "noRotation",
+          startLocation: edge.rightStartLoc,
+          endLocation: edge.rightStartLoc,
+          startOrientation: "in",
+          endOrientation: "in",
+          turns: 0,
+          hand: "right",
         },
       },
     };
@@ -307,14 +374,17 @@ function canonicalFingerprint(letterArray) {
       fullSteps = executor.executeLOOP([...seedSteps], "quartered");
     } catch (err) {
       loopErrors++;
-      if (loopErrors <= 5) console.warn(`  LOOP error for ${seed.startPos}/${seed.seedWord}: ${err.message}`);
+      if (loopErrors <= 5)
+        console.warn(
+          `  LOOP error for ${seed.startPos}/${seed.seedWord}: ${err.message}`
+        );
       continue;
     }
 
     const beatSteps = fullSteps.slice(1);
     if (hasReversals(beatSteps)) continue;
 
-    const letterArray = beatSteps.map(s => s.letter);
+    const letterArray = beatSteps.map((s) => s.letter);
     const fullWord = letterArray.join("");
 
     fullSequences.push({
@@ -329,7 +399,9 @@ function canonicalFingerprint(letterArray) {
   }
 
   if (loopErrors) console.log(`  ${loopErrors} LOOP execution errors`);
-  console.log(`After LOOP execution + reversal filter: ${fullSequences.length} valid sequences`);
+  console.log(
+    `After LOOP execution + reversal filter: ${fullSequences.length} valid sequences`
+  );
 
   // ========================================================================
   // Phase 3: Canonical Fingerprinting + Dedup
@@ -346,7 +418,11 @@ function canonicalFingerprint(letterArray) {
   const canonicals = [];
 
   for (const [fp, members] of canonicalGroups) {
-    members.sort((a, b) => (START_PRIORITY[a.seed.startPos] ?? 99) - (START_PRIORITY[b.seed.startPos] ?? 99));
+    members.sort(
+      (a, b) =>
+        (START_PRIORITY[a.seed.startPos] ?? 99) -
+        (START_PRIORITY[b.seed.startPos] ?? 99)
+    );
     const rep = members[0];
     canonicals.push({
       fingerprint: fp,
@@ -431,10 +507,14 @@ function canonicalFingerprint(letterArray) {
       }
     }
 
-    return bestAssignment || [
-      { left: 0, right: 0 }, { left: 0, right: 0 },
-      { left: 0, right: 0 }, { left: 0, right: 0 },
-    ];
+    return (
+      bestAssignment || [
+        { left: 0, right: 0 },
+        { left: 0, right: 0 },
+        { left: 0, right: 0 },
+        { left: 0, right: 0 },
+      ]
+    );
   }
 
   // ========================================================================
@@ -443,17 +523,23 @@ function canonicalFingerprint(letterArray) {
 
   console.log(`\n╔${"═".repeat(63)}╗`);
   console.log(`║   L2 QUARTERED ROTATED LOOP DECK (max T1)`);
-  console.log(`║   diamond grid · 4 steps · ${canonicals.length} canonical hand paths`);
+  console.log(
+    `║   diamond grid · 4 steps · ${canonicals.length} canonical hand paths`
+  );
   console.log(`╚${"═".repeat(63)}╝\n`);
 
-  for (const [typeName, count] of Object.entries(byType).sort((a, b) => a[0].localeCompare(b[0]))) {
+  for (const [typeName, count] of Object.entries(byType).sort((a, b) =>
+    a[0].localeCompare(b[0])
+  )) {
     console.log(`  ═══ ${typeName} ═══ ${count} canonical ═══`);
-    const group = canonicals.filter(c => c.typeName === typeName);
+    const group = canonicals.filter((c) => c.typeName === typeName);
     for (const c of group) {
       const turns = findBestTurnAssignment(c);
-      const turnStr = turns.map(t => `${t.left}${t.right}`).join(" ");
+      const turnStr = turns.map((t) => `${t.left}${t.right}`).join(" ");
       const totalTurns = turns.reduce((s, t) => s + t.left + t.right, 0);
-      console.log(`  ${c.representative.seed.seedWord.padEnd(6)} from ${c.representative.seed.startPos.padEnd(9)} turns=[${turnStr}] total=${totalTurns} (${c.memberCount} variant${c.memberCount > 1 ? "s" : ""})`);
+      console.log(
+        `  ${c.representative.seed.seedWord.padEnd(6)} from ${c.representative.seed.startPos.padEnd(9)} turns=[${turnStr}] total=${totalTurns} (${c.memberCount} variant${c.memberCount > 1 ? "s" : ""})`
+      );
     }
     console.log();
   }
@@ -462,7 +548,9 @@ function canonicalFingerprint(letterArray) {
   console.log(`  DECK SUMMARY`);
   console.log(`  Total canonical hand paths: ${canonicals.length}`);
   console.log(`  By type:`);
-  for (const [name, count] of Object.entries(byType).sort((a, b) => a[0].localeCompare(b[0]))) {
+  for (const [name, count] of Object.entries(byType).sort((a, b) =>
+    a[0].localeCompare(b[0])
+  )) {
     console.log(`    ${name}: ${count}`);
   }
   console.log(`${"═".repeat(60)}`);
@@ -494,7 +582,10 @@ function canonicalFingerprint(letterArray) {
 
   if (seedFirestore) {
     const admin = require("firebase-admin");
-    const serviceAccountPath = path.resolve(__dirname, "../serviceAccountKey.json");
+    const serviceAccountPath = path.resolve(
+      __dirname,
+      "../serviceAccountKey.json"
+    );
     let serviceAccount;
     try {
       serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
@@ -504,7 +595,9 @@ function canonicalFingerprint(letterArray) {
     }
 
     if (!admin.apps.length) {
-      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
     }
     const db = admin.firestore();
 
@@ -582,7 +675,10 @@ function canonicalFingerprint(letterArray) {
             turns: step.motions.left.turns,
             startOrientation: step.motions.left.startOrientation,
             endOrientation: step.motions.left.endOrientation,
-            isVisible: true, propType: "staff", color: "blue", gridMode: GRID_MODE,
+            isVisible: true,
+            propType: "staff",
+            hand: "left",
+            gridMode: GRID_MODE,
           },
           right: {
             motionType: step.motions.right.motionType,
@@ -592,7 +688,10 @@ function canonicalFingerprint(letterArray) {
             turns: step.motions.right.turns,
             startOrientation: step.motions.right.startOrientation,
             endOrientation: step.motions.right.endOrientation,
-            isVisible: true, propType: "staff", color: "red", gridMode: GRID_MODE,
+            isVisible: true,
+            propType: "staff",
+            hand: "right",
+            gridMode: GRID_MODE,
           },
         },
       }));
@@ -609,8 +708,12 @@ function canonicalFingerprint(letterArray) {
             startLocation: sp.motions.left.startLocation,
             endLocation: sp.motions.left.endLocation,
             turns: 0,
-            startOrientation: "in", endOrientation: "in",
-            isVisible: true, propType: "staff", color: "blue", gridMode: GRID_MODE,
+            startOrientation: "in",
+            endOrientation: "in",
+            isVisible: true,
+            propType: "staff",
+            hand: "left",
+            gridMode: GRID_MODE,
           },
           right: {
             motionType: sp.motions.right.motionType,
@@ -618,8 +721,12 @@ function canonicalFingerprint(letterArray) {
             startLocation: sp.motions.right.startLocation,
             endLocation: sp.motions.right.endLocation,
             turns: 0,
-            startOrientation: "in", endOrientation: "in",
-            isVisible: true, propType: "staff", color: "red", gridMode: GRID_MODE,
+            startOrientation: "in",
+            endOrientation: "in",
+            isVisible: true,
+            propType: "staff",
+            hand: "right",
+            gridMode: GRID_MODE,
           },
         },
       };
@@ -668,21 +775,24 @@ function canonicalFingerprint(letterArray) {
 
     if (batchCount > 0) await batch.commit();
 
-    const allSequenceIds = canonicals.map(c =>
-      `${c.representative.seed.startPos}_${c.representative.fullWord}`
+    const allSequenceIds = canonicals.map(
+      (c) => `${c.representative.seed.startPos}_${c.representative.fullWord}`
     );
 
-    const families = [{
-      id: "family-0",
-      label: "Dual-Shift",
-      typeCombo: "Dual-Shift",
-      sequenceIds: allSequenceIds,
-    }];
+    const families = [
+      {
+        id: "family-0",
+        label: "Dual-Shift",
+        typeCombo: "Dual-Shift",
+        sequenceIds: allSequenceIds,
+      },
+    ];
 
     const deckData = {
       id: DECK_ID,
       name: `Level 2: Quartered Rotated LOOP (T1)`,
-      canonicalName: "Quartered Rotated · 4-Step · Max 1T · Continuous · Diamond",
+      canonicalName:
+        "Quartered Rotated · 4-Step · Max 1T · Continuous · Diamond",
       description: `${canonicals.length} canonical hand paths for 4-step quartered rotated LOOPs. Single letter rotated 90° four times. All Dual-Shift. Max 1 turn per step.`,
       families,
       totalSequences: totalWritten,
@@ -700,10 +810,14 @@ function canonicalFingerprint(letterArray) {
     };
 
     await db.doc(`catalogs/${DECK_ID}`).set(deckData);
-    console.log(`  Deck doc written. ${totalWritten} sequences in decks/${DECK_ID}/`);
+    console.log(
+      `  Deck doc written. ${totalWritten} sequences in decks/${DECK_ID}/`
+    );
   }
 
   if (!outPath && !seedFirestore) {
-    console.log(`\nUse --out <path> for JSON or --seed-firestore to write to Firestore.`);
+    console.log(
+      `\nUse --out <path> for JSON or --seed-firestore to write to Firestore.`
+    );
   }
 })();

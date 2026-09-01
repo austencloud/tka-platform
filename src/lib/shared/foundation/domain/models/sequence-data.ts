@@ -47,7 +47,7 @@ export interface SequenceData {
    * Example: "CABΔKE" (CAKE with bridge letters Δ inserted)
    */
   readonly word: string;
-  /** Derived at load time from compositional fields (blueSoloProp + redSoloProp + stepPairings).
+  /** Derived at load time from compositional fields (leftSoloProp + rightSoloProp + stepPairings).
    * Never persisted to Firestore - the hydrator re-derives it on every load.
    * Consumers read this for iteration, counting, and display. */
   readonly steps: readonly StepData[];
@@ -352,13 +352,19 @@ export function createSequenceData(
     }),
     // Compositional structure passthrough
     ...(data.leftSoloProp !== undefined && { leftSoloProp: data.leftSoloProp }),
-    ...(data.rightSoloProp !== undefined && { rightSoloProp: data.rightSoloProp }),
+    ...(data.rightSoloProp !== undefined && {
+      rightSoloProp: data.rightSoloProp,
+    }),
     ...(data.stepPairings !== undefined && { stepPairings: data.stepPairings }),
     // Content hash passthrough
     ...(data.leftPathHash !== undefined && { leftPathHash: data.leftPathHash }),
-    ...(data.rightPathHash !== undefined && { rightPathHash: data.rightPathHash }),
+    ...(data.rightPathHash !== undefined && {
+      rightPathHash: data.rightPathHash,
+    }),
     ...(data.leftSoloHash !== undefined && { leftSoloHash: data.leftSoloHash }),
-    ...(data.rightSoloHash !== undefined && { rightSoloHash: data.rightSoloHash }),
+    ...(data.rightSoloHash !== undefined && {
+      rightSoloHash: data.rightSoloHash,
+    }),
   };
   return result;
 }

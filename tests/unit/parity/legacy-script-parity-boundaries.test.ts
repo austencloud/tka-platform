@@ -29,6 +29,16 @@ const importer = require(
     options?: { visibility?: string }
   ): BuiltSequence;
 };
+const composer = require(
+  path.join(projectRoot, "scripts/lib/compose-sequence.cjs")
+) as {
+  decomposeSequence(sequence: RawSequence): {
+    leftSoloProp: { steps: Array<{ motionType: string }> };
+    rightSoloProp: { steps: Array<{ motionType: string }> };
+    leftSoloHash: string;
+    rightSoloHash: string;
+  };
+};
 
 function readProjectFile(relativePath: string): string {
   return readFileSync(path.join(projectRoot, relativePath), "utf8");
@@ -102,6 +112,31 @@ describe("legacy sequence script parity boundaries", () => {
     expect(normalized.sequenceLength).toBe(raw.steps.length);
     expect(normalized.hydratedLength).toBe(raw.steps.length);
     expect(normalized.hasStoredSteps).toBe(false);
+  });
+
+  it("decomposes current and legacy hand keys into the same solo props", () => {
+    const current = composer.decomposeSequence(raw);
+    const legacy = JSON.parse(JSON.stringify(raw)) as RawSequence & {
+      startPosition?: { motions?: Record<string, unknown> };
+      steps: Array<{ motions?: Record<string, unknown> }>;
+    };
+
+    const remap = (motions?: Record<string, unknown>) => {
+      if (!motions) return;
+      motions.blue = motions.left;
+      motions.red = motions.right;
+      delete motions.left;
+      delete motions.right;
+    };
+    remap(legacy.startPosition?.motions);
+    legacy.steps.forEach((step) => remap(step.motions));
+
+    const fromLegacy = composer.decomposeSequence(legacy);
+
+    expect(current.leftSoloProp.steps[0]?.motionType).not.toBe("static");
+    expect(current.rightSoloProp.steps[0]?.motionType).not.toBe("static");
+    expect(fromLegacy.leftSoloHash).toBe(current.leftSoloHash);
+    expect(fromLegacy.rightSoloHash).toBe(current.rightSoloHash);
   });
 
   it("keeps owner-only repair scripts away from public sequences", () => {

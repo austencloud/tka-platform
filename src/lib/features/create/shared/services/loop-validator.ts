@@ -72,7 +72,7 @@ const LOOP_OPTION_CONFIG: Record<
   },
   [LOOPType.SWAPPED]: {
     icon: "fa-shuffle",
-    description: "Swaps blue and red props",
+    description: "Swaps left and right props",
   },
   [LOOPType.INVERTED]: {
     icon: "fa-arrows-up-down",
@@ -108,15 +108,15 @@ const LOOP_OPTION_CONFIG: Record<
   },
   [LOOPType.MIRRORED_SWAPPED_INVERTED]: {
     icon: "fa-arrows-spin",
-    description: "Mirror, swap colors, and invert motion",
+    description: "Mirror, swap hands, and invert motion",
   },
   [LOOPType.ROTATED_SWAPPED_INVERTED]: {
     icon: "fa-arrows-spin",
-    description: "Rotate, swap colors, and invert motion",
+    description: "Rotate, swap hands, and invert motion",
   },
   [LOOPType.MIRRORED_ROTATED_SWAPPED]: {
     icon: "fa-object-group",
-    description: "Mirror, rotate, and swap colors",
+    description: "Mirror, rotate, and swap hands",
   },
   [LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED]: {
     icon: "fa-circle-nodes",
@@ -242,7 +242,8 @@ export class LOOPValidator {
       // and swap (beta1/beta5) — elsewhere the mirror degrades to a flip
       case LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED:
         return (
-          (positionPair.startsWith("beta1,") || positionPair.startsWith("beta5,")) &&
+          (positionPair.startsWith("beta1,") ||
+            positionPair.startsWith("beta5,")) &&
           MIRRORED_LOOP_VALIDATION_SET.has(positionPair) &&
           rotationSet.has(positionPair)
         );
@@ -261,7 +262,8 @@ export class LOOPValidator {
       // swap (beta1/beta5); elsewhere the mirror degrades to a flip
       case LOOPType.MIRRORED_SWAPPED_INVERTED:
         return (
-          (positionPair.startsWith("beta1,") || positionPair.startsWith("beta5,")) &&
+          (positionPair.startsWith("beta1,") ||
+            positionPair.startsWith("beta5,")) &&
           INVERTED_LOOP_VALIDATION_SET.has(positionPair)
         );
 

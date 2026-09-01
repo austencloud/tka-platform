@@ -10,7 +10,7 @@ import {
 import {
   mirrorSequence,
   rotateSequence,
-  swapColors,
+  swapHands,
 } from "$lib/shared/create/services/sequence-transformer";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -26,19 +26,19 @@ import { getAllLetterVariants } from "../../helpers/real-pictograph-loader";
 import { FALG, GGGG_CW, HHHH_CW, PHI_PSI_LOOP } from "./fixtures";
 import { loadPictographDatasetForTests } from "./pictograph-dataset";
 
-const COLORS = [HandSide.LEFT, HandSide.RIGHT] as const;
+const HANDS = [HandSide.LEFT, HandSide.RIGHT] as const;
 
 const ALL: VariantLiberties = {
   allowMirror: true,
   allowRotation: true,
-  allowColorSwap: true,
+  allowHandSwap: true,
   exploreRotationFaithful: true,
 };
 
 const NONE: VariantLiberties = {
   allowMirror: false,
   allowRotation: false,
-  allowColorSwap: false,
+  allowHandSwap: false,
   exploreRotationFaithful: false,
 };
 
@@ -52,9 +52,9 @@ function spatialKey(step: StepData): string {
     step.startPosition,
     ">",
     step.endPosition,
-    ...COLORS.map((color) => {
-      const m = step.motions[color];
-      return `${color}:${m.motionType}/${m.rotationDirection}/${m.startLocation}>${m.endLocation}`;
+    ...HANDS.map((hand) => {
+      const m = step.motions[hand];
+      return `${hand}:${m.motionType}/${m.rotationDirection}/${m.startLocation}>${m.endLocation}`;
     }),
   ].join(" ");
 }
@@ -172,11 +172,11 @@ describe("variant generator — enumeration and collapse", () => {
     expect(variants[0]!.variant).toEqual({
       rotation: 0,
       mirrored: false,
-      colorSwapped: false,
+      handsSwapped: false,
       rotationFaithful: false,
     });
     for (const variant of variants) {
-      expect(variant.variant.colorSwapped).toBe(false);
+      expect(variant.variant.handsSwapped).toBe(false);
       expect(variant.variant.rotation).toBe(0);
     }
   });
@@ -211,7 +211,7 @@ describe("variant generator — enumeration and collapse", () => {
       for (const key of [
         "allowRotation",
         "allowMirror",
-        "allowColorSwap",
+        "allowHandSwap",
         "exploreRotationFaithful",
       ] as const) {
         const widened = (await buildVariants(card, { ...NONE, [key]: true }))
@@ -288,18 +288,18 @@ describe("variant generator — enumeration and collapse", () => {
         v.variant.rotationFaithful &&
         (v.variant.rotation !== 0 ||
           v.variant.mirrored ||
-          v.variant.colorSwapped)
+          v.variant.handsSwapped)
     );
     expect(
       compound,
       "expected a compound twin source to survive dedup"
     ).toBeDefined();
 
-    const { rotation, mirrored, colorSwapped } = compound!.variant;
+    const { rotation, mirrored, handsSwapped } = compound!.variant;
     let spatial: SequenceData = FALG;
     if (rotation) spatial = await rotateSequence(spatial, rotation);
     if (mirrored) spatial = await mirrorSequence(spatial);
-    if (colorSwapped) spatial = swapColors(spatial);
+    if (handsSwapped) spatial = swapHands(spatial);
 
     const expected = await buildRotationFaithfulTwin(spatial);
     expect(spatialKeys(compound!.sequence)).toEqual(spatialKeys(expected));
@@ -341,9 +341,9 @@ describe("rotation-faithful twin — ground truth", () => {
 
     for (const step of twin.steps) {
       expect(step.letter).toBe("H");
-      for (const color of COLORS) {
-        expect(step.motions[color].rotationDirection).toBe("cw");
-        expect(step.motions[color].motionType).toBe("anti");
+      for (const hand of HANDS) {
+        expect(step.motions[hand].rotationDirection).toBe("cw");
+        expect(step.motions[hand].motionType).toBe("anti");
       }
     }
     expect(twin.word).toBe("HHHH");
@@ -367,15 +367,15 @@ describe("rotation-faithful twin — ground truth", () => {
       expect(step.stepNumber).toBe(i + 1);
       expect(step.startPosition).toBe(origin.endPosition);
       expect(step.endPosition).toBe(origin.startPosition);
-      for (const color of COLORS) {
-        expect(step.motions[color].startLocation).toBe(
-          origin.motions[color].endLocation
+      for (const hand of HANDS) {
+        expect(step.motions[hand].startLocation).toBe(
+          origin.motions[hand].endLocation
         );
-        expect(step.motions[color].endLocation).toBe(
-          origin.motions[color].startLocation
+        expect(step.motions[hand].endLocation).toBe(
+          origin.motions[hand].startLocation
         );
-        expect(step.motions[color].rotationDirection).toBe(
-          origin.motions[color].rotationDirection
+        expect(step.motions[hand].rotationDirection).toBe(
+          origin.motions[hand].rotationDirection
         );
       }
     });
@@ -386,11 +386,11 @@ describe("rotation-faithful twin — ground truth", () => {
     const first = twin.steps[0]!;
     expect(twin.startPosition?.startPosition).toBe(first.startPosition);
     expect(twin.startPosition?.gridPosition).toBe(first.startPosition);
-    for (const color of COLORS) {
-      const hold = twin.startPosition!.motions[color]!;
+    for (const hand of HANDS) {
+      const hold = twin.startPosition!.motions[hand]!;
       expect(hold.motionType).toBe("static");
-      expect(hold.startLocation).toBe(first.motions[color].startLocation);
-      expect(hold.endLocation).toBe(first.motions[color].startLocation);
+      expect(hold.startLocation).toBe(first.motions[hand].startLocation);
+      expect(hold.endLocation).toBe(first.motions[hand].startLocation);
     }
   });
 
@@ -463,7 +463,7 @@ describe("rotation-faithful twin — dash and static material", () => {
     expect(spatialKeys(twin)).not.toEqual(spatialKeys(PHI_PSI_LOOP));
 
     for (const step of twin.steps) {
-      const types = COLORS.map((c) => step.motions[c].motionType).sort();
+      const types = HANDS.map((hand) => step.motions[hand].motionType).sort();
       expect(types, `step ${step.stepNumber}`).toEqual([
         MotionType.DASH,
         MotionType.STATIC,
@@ -488,12 +488,12 @@ describe("rotation-faithful twin — dash and static material", () => {
     const twin = await buildRotationFaithfulTwin(PHI_PSI_LOOP);
     let dashesChecked = 0;
     for (const step of twin.steps) {
-      for (const color of COLORS) {
-        const m = step.motions[color];
+      for (const hand of HANDS) {
+        const m = step.motions[hand];
         if (m.motionType === MotionType.DASH) {
           expect(
             m.arrowLocation,
-            `twin step ${step.stepNumber} ${color} dash ${m.startLocation}>${m.endLocation}`
+            `twin step ${step.stepNumber} ${hand} dash ${m.startLocation}>${m.endLocation}`
           ).toBe(DASH_ARROW[`${m.startLocation}>${m.endLocation}`]);
           dashesChecked++;
         } else {
@@ -510,12 +510,12 @@ describe("rotation-faithful twin — dash and static material", () => {
     const source = [...PHI_PSI_LOOP.steps].reverse();
     twin.steps.forEach((step, i) => {
       const origin = source[i]!;
-      for (const color of COLORS) {
-        if (step.motions[color].motionType !== MotionType.DASH) continue;
+      for (const hand of HANDS) {
+        if (step.motions[hand].motionType !== MotionType.DASH) continue;
         expect(
-          step.motions[color].arrowLocation,
-          `twin step ${step.stepNumber} ${color} vs origin step ${origin.stepNumber}`
-        ).not.toBe(origin.motions[color].arrowLocation);
+          step.motions[hand].arrowLocation,
+          `twin step ${step.stepNumber} ${hand} vs origin step ${origin.stepNumber}`
+        ).not.toBe(origin.motions[hand].arrowLocation);
       }
     });
   });

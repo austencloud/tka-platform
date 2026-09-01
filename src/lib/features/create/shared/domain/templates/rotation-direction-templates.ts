@@ -122,16 +122,16 @@ const TEMPLATE_DEFINITIONS: readonly RotationDirectionTemplateDefinition[] = [
   // ===== SPLIT BY HAND =====
   {
     id: "blue-cw-red-ccw",
-    name: "Blue CW / Red CCW",
-    description: "Blue hand clockwise, red counter-clockwise",
+    name: "Left CW / Right CCW",
+    description: "Left hand clockwise, right counter-clockwise",
     category: "split-hand",
     minSteps: 1,
     generator: (stepCount) => generateUniformPattern(stepCount, "cw", "ccw"),
   },
   {
     id: "blue-ccw-red-cw",
-    name: "Blue CCW / Red CW",
-    description: "Blue hand counter-clockwise, red clockwise",
+    name: "Left CCW / Right CW",
+    description: "Left hand counter-clockwise, right clockwise",
     category: "split-hand",
     minSteps: 1,
     generator: (stepCount) => generateUniformPattern(stepCount, "ccw", "cw"),

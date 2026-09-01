@@ -18,7 +18,6 @@ import { MotionType } from "../../../../shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../../../shared/domain/models/motion-data";
 import { calculateDashLocationFromPictographData } from "./dash-location-calculator";
 
-
 export class ArrowLocationCalculator {
   /**
    * Pure algorithmic service for calculating arrow locations.
@@ -96,7 +95,6 @@ export class ArrowLocationCalculator {
       GridLocation.WEST, // W→NW or NW→W
   };
 
-
   calculateLocation(
     motion: MotionData,
     pictographData?: PictographData
@@ -168,7 +166,6 @@ export class ArrowLocationCalculator {
     const calculatedLocation =
       this.shiftDirectionPairs[locationPairKey] ?? motion.startLocation;
 
-
     return calculatedLocation;
   }
 
@@ -192,9 +189,9 @@ export class ArrowLocationCalculator {
      * Throws:
      *     Error: If pictograph data is required but not provided
      */
-    const isBlueArrow = this.isBlueArrowMotion(motion, pictographData);
+    const isLeftArrow = this.isLeftArrowMotion(motion, pictographData);
 
-    return calculateDashLocationFromPictographData(pictographData, isBlueArrow);
+    return calculateDashLocationFromPictographData(pictographData, isLeftArrow);
   }
 
   getSupportedMotionTypes(): MotionType[] {
@@ -231,20 +228,19 @@ export class ArrowLocationCalculator {
     return true;
   }
 
-  isBlueArrowMotion(
+  isLeftArrowMotion(
     motion: MotionData,
     pictographData: PictographData
   ): boolean {
-    /**Determine if the given motion belongs to the blue arrow.*/
-    // Compare the motion with blue and red motions in pictograph data
+    /** Determine if the given motion belongs to the left-hand arrow. */
     if (pictographData.motions.left === motion) {
       return true;
     }
     if (pictographData.motions.right === motion) {
       return false;
     }
-    // Fallback: if we can't determine, assume blue
-    console.warn("Could not determine arrow color for motion, assuming blue");
+    // Fallback: if we can't determine, assume the canonical first hand.
+    console.warn("Could not determine arrow hand for motion, assuming left");
     return true;
   }
 

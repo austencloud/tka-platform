@@ -132,7 +132,9 @@ function checkPropertyConsistency(
   for (const group of positionGroups) {
     const values = group.map((stepNum) => {
       const matchingStep = steps.find((b) => b.step === stepNum);
-      return matchingStep ? getPropertyValue(matchingStep, property) : "unknown";
+      return matchingStep
+        ? getPropertyValue(matchingStep, property)
+        : "unknown";
     });
 
     if (!allSame(values)) {
@@ -171,14 +173,14 @@ function analyzePeriod(
   }
 
   const propertiesToCheck = [
-    "blueMotionType",
-    "redMotionType",
-    "blueRotDir",
-    "redRotDir",
-    "blueStartLoc",
-    "redStartLoc",
-    "blueEndLoc",
-    "redEndLoc",
+    "leftMotionType",
+    "rightMotionType",
+    "leftRotDir",
+    "rightRotDir",
+    "leftStartLoc",
+    "rightStartLoc",
+    "leftEndLoc",
+    "rightEndLoc",
     "timing",
     "letterType",
   ];
@@ -268,17 +270,13 @@ export function detectPolyrhythmic(
   const length = steps.length;
 
   if (length < 4) {
-    return noPolyrhythmResult(
-      "Sequence too short for polyrhythmic analysis"
-    );
+    return noPolyrhythmResult("Sequence too short for polyrhythmic analysis");
   }
 
   const factors = getProperFactors(length);
 
   if (factors.length < 2) {
-    return noPolyrhythmResult(
-      "Sequence length has insufficient factors"
-    );
+    return noPolyrhythmResult("Sequence length has insufficient factors");
   }
 
   const analyses: PeriodAnalysis[] = [];

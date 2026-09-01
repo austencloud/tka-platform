@@ -274,8 +274,8 @@ describe("syncToPublicIndex — first publication", () => {
     expect(written["encoderHash"]).toBe("encoder-hash-test");
     expect(written["ownerDisplayName"]).toBe("Austen");
     // Self-containment payload present.
-    expect(written["blueSoloProp"]).toBeTruthy();
-    expect(written["redSoloProp"]).toBeTruthy();
+    expect(written["leftSoloProp"]).toBeTruthy();
+    expect(written["rightSoloProp"]).toBeTruthy();
     expect(written["stepPairings"]).toHaveLength(4);
     expect(written["startPosition"]).toBeTruthy();
     const retained = revisionWrite();

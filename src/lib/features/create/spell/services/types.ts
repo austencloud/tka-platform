@@ -13,8 +13,8 @@ import type { SpellPreferences } from "../domain/models/spell-models";
 export interface OrientationContinuityError {
   /** The step index where the error occurs */
   stepIndex: number;
-  /** The color that has the orientation break */
-  color: HandSide;
+  /** The hand that has the orientation break */
+  hand: HandSide;
   /** Expected start orientation (from previous beat's end) */
   expectedStartOrientation: string;
   /** Actual start orientation in the beat */

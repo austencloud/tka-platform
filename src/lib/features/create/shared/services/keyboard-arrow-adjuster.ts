@@ -72,7 +72,7 @@ export function handleWASDMovement(
   increment: number,
   selectedArrow: {
     motionData: MotionData;
-    color: string;
+    hand: HandSide;
     pictographData: PictographData;
   },
   stepData: StepData
@@ -80,12 +80,12 @@ export function handleWASDMovement(
   const adjustment = calculateAdjustment(key, increment);
 
   logger.log(
-    `🎯 WASD adjustment: ${key} → (${adjustment.x}, ${adjustment.y})px for ${selectedArrow.color} arrow`
+    `🎯 WASD adjustment: ${key} → (${adjustment.x}, ${adjustment.y})px for ${selectedArrow.hand} arrow`
   );
 
-  const currentMotion = stepData.motions[selectedArrow.color as HandSide];
+  const currentMotion = stepData.motions[selectedArrow.hand];
   if (!currentMotion) {
-    logger.warn(`No motion data found for ${selectedArrow.color} arrow`);
+    logger.warn(`No motion data found for ${selectedArrow.hand} arrow`);
     return stepData;
   }
 
@@ -97,9 +97,7 @@ export function handleWASDMovement(
   const newAdjustX = currentAdjustX + adjustment.x;
   const newAdjustY = currentAdjustY + adjustment.y;
 
-  logger.log(
-    `  Previous adjustment: (${currentAdjustX}, ${currentAdjustY})`
-  );
+  logger.log(`  Previous adjustment: (${currentAdjustX}, ${currentAdjustY})`);
   logger.log(`  New total adjustment: (${newAdjustX}, ${newAdjustY})`);
 
   const updatedArrowPlacementData = createArrowPlacementData({
@@ -117,13 +115,11 @@ export function handleWASDMovement(
     ...stepData,
     motions: {
       ...stepData.motions,
-      [selectedArrow.color]: updatedMotion,
+      [selectedArrow.hand]: updatedMotion,
     },
   };
 
-  logger.success(
-    `✅ Applied manual adjustment to ${selectedArrow.color} arrow`
-  );
+  logger.success(`✅ Applied manual adjustment to ${selectedArrow.hand} arrow`);
 
   return updatedStepData;
 }

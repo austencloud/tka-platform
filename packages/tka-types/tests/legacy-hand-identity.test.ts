@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  normalizeLegacyHandPair,
   normalizeLegacyHandSide,
   normalizeLegacySequence,
   normalizeLegacyStep,
@@ -7,6 +8,12 @@ import {
 } from "../src/legacy-hand-identity.js";
 
 describe("legacy hand identity normalization", () => {
+  it("preserves canonical hand-pair object identity", () => {
+    const canonical = { left: { turns: 1 }, right: { turns: 2 } };
+
+    expect(normalizeLegacyHandPair(canonical)).toBe(canonical);
+  });
+
   it("maps canonical palette names to performer-relative hands", () => {
     expect(normalizeLegacyHandSide("blue")).toBe("left");
     expect(normalizeLegacyHandSide("red")).toBe("right");
@@ -43,8 +50,12 @@ describe("legacy hand identity normalization", () => {
   });
 
   it("normalizes arrays without mutating their legacy source", () => {
-    const source = [{ motions: { blue: { color: "blue" }, red: { color: "red" } } }];
-    const normalized = normalizeLegacySteps(source) as Array<Record<string, any>>;
+    const source = [
+      { motions: { blue: { color: "blue" }, red: { color: "red" } } },
+    ];
+    const normalized = normalizeLegacySteps(source) as Array<
+      Record<string, any>
+    >;
 
     expect(normalized[0]?.motions.left.hand).toBe("left");
     expect(source[0]?.motions.blue.color).toBe("blue");

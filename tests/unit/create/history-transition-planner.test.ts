@@ -90,7 +90,7 @@ describe("history transition planner", () => {
       motions: {
         ...original.motions,
         [HandSide.LEFT]: createMotionData({
-          ...original.motions.blue,
+          ...original.motions.left,
           hand: HandSide.LEFT,
           endOrientation: Orientation.OUT,
         }),

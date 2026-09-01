@@ -5,9 +5,7 @@
   Expands to reveal quick-apply preset grid + scope selector + channel matrix.
 -->
 <script lang="ts">
-  import type {
-    TipEffortMap,
-  } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
+  import type { TipEffortMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import type { EffortId } from "$lib/shared/effort/domain/effort-types";
   import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
   import { getTipPoints } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
@@ -50,8 +48,11 @@
 
   const activeEffortMeta = $derived(
     EFFORTS.find((e) => e.id === currentEffort) ??
-    EFFORTS.find(() => true) ??
-    { id: "linear", label: "Linear", color: "#a855f7" }
+      EFFORTS.find(() => true) ?? {
+        id: "linear",
+        label: "Linear",
+        color: "#a855f7",
+      }
   );
 
   interface ChannelRow {
@@ -62,12 +63,18 @@
 
   const channels: ChannelRow[] = $derived.by(() => {
     if (scope === "cell") {
-      return [{ key: "*", color: "linear-gradient(135deg, #3b82f6, #ef4444)", label: "Both" }];
+      return [
+        {
+          key: "*",
+          color: "linear-gradient(135deg, #3b82f6, #ef4444)",
+          label: "Both",
+        },
+      ];
     }
     if (scope === "hand") {
       return [
-        { key: "0", color: "#3b82f6", label: "Blue" },
-        { key: "1", color: "#ef4444", label: "Red" },
+        { key: "0", color: "#3b82f6", label: "Left" },
+        { key: "1", color: "#ef4444", label: "Right" },
       ];
     }
     const rows: ChannelRow[] = [];
@@ -75,20 +82,24 @@
       rows.push({
         key: `0-${t}`,
         color: "#3b82f6",
-        label: `Blue ${getTipLabel(leftPropType, t, leftTipCount)}`,
+        label: `Left ${getTipLabel(leftPropType, t, leftTipCount)}`,
       });
     }
     for (let t = 0; t < rightTipCount; t++) {
       rows.push({
         key: `1-${t}`,
         color: "#ef4444",
-        label: `Red ${getTipLabel(rightPropType, t, rightTipCount)}`,
+        label: `Right ${getTipLabel(rightPropType, t, rightTipCount)}`,
       });
     }
     return rows;
   });
 
-  function getTipLabel(propType: string, tipIndex: number, tipCount: number): string {
+  function getTipLabel(
+    propType: string,
+    tipIndex: number,
+    tipCount: number
+  ): string {
     if (tipCount === 1) return "tip";
     if (tipCount === 2) return tipIndex === 0 ? "thumb" : "pinky";
     return `tip ${tipIndex + 1}`;
@@ -123,8 +134,12 @@
       newMap["*"] = { effort: most };
     } else if (newScope === "hand") {
       if (oldScope === "tip") {
-        const leftKeys = Object.keys(localMap).filter((k) => k.startsWith("0-"));
-        const rightKeys = Object.keys(localMap).filter((k) => k.startsWith("1-"));
+        const leftKeys = Object.keys(localMap).filter((k) =>
+          k.startsWith("0-")
+        );
+        const rightKeys = Object.keys(localMap).filter((k) =>
+          k.startsWith("1-")
+        );
         newMap["0"] = { effort: mostCommonEffort(leftKeys) };
         newMap["1"] = { effort: mostCommonEffort(rightKeys) };
       } else {
@@ -135,13 +150,17 @@
     } else {
       if (oldScope === "cell") {
         const base = localMap["*"]?.effort ?? "linear";
-        for (let t = 0; t < leftTipCount; t++) newMap[`0-${t}`] = { effort: base };
-        for (let t = 0; t < rightTipCount; t++) newMap[`1-${t}`] = { effort: base };
+        for (let t = 0; t < leftTipCount; t++)
+          newMap[`0-${t}`] = { effort: base };
+        for (let t = 0; t < rightTipCount; t++)
+          newMap[`1-${t}`] = { effort: base };
       } else {
         const leftEffort = localMap["0"]?.effort ?? "linear";
         const rightEffort = localMap["1"]?.effort ?? "linear";
-        for (let t = 0; t < leftTipCount; t++) newMap[`0-${t}`] = { effort: leftEffort };
-        for (let t = 0; t < rightTipCount; t++) newMap[`1-${t}`] = { effort: rightEffort };
+        for (let t = 0; t < leftTipCount; t++)
+          newMap[`0-${t}`] = { effort: leftEffort };
+        for (let t = 0; t < rightTipCount; t++)
+          newMap[`1-${t}`] = { effort: rightEffort };
       }
     }
 
@@ -172,7 +191,8 @@
 
   function inferScope(map: TipEffortMap): Scope {
     const keys = Object.keys(map);
-    if (keys.length === 0 || (keys.length === 1 && keys[0] === "*")) return "cell";
+    if (keys.length === 0 || (keys.length === 1 && keys[0] === "*"))
+      return "cell";
     if (keys.some((k) => k.includes("-"))) return "tip";
     if (keys.includes("0") || keys.includes("1")) return "hand";
     return "cell";
@@ -190,10 +210,7 @@
     aria-expanded={expanded}
     onclick={() => (expanded = !expanded)}
   >
-    <span
-      class="current-dot"
-      style:background={activeEffortMeta.color}
-    ></span>
+    <span class="current-dot" style:background={activeEffortMeta.color}></span>
     <span class="current-label">{activeEffortMeta.label}</span>
     <i class="fas fa-chevron-right chevron" aria-hidden="true"></i>
   </button>
@@ -221,7 +238,11 @@
       <!-- Scope selector -->
       <div class="scope-section">
         <span class="scope-label" id="effort-scope-label">SCOPE</span>
-        <div class="scope-strip" role="radiogroup" aria-labelledby="effort-scope-label">
+        <div
+          class="scope-strip"
+          role="radiogroup"
+          aria-labelledby="effort-scope-label"
+        >
           {#each scopes as s}
             <button
               class="scope-seg"
@@ -254,7 +275,8 @@
                   onclick={() => setEffort(ch.key, effort.id)}
                   style:--effort-color={effort.color}
                 >
-                  <span class="effort-dot" style:background={effort.color}></span>
+                  <span class="effort-dot" style:background={effort.color}
+                  ></span>
                   <span class="effort-label">{effort.label}</span>
                 </button>
               {/each}
@@ -292,7 +314,9 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: 8px;
     cursor: pointer;
-    transition: background 150ms ease, border-color 150ms ease;
+    transition:
+      background 150ms ease,
+      border-color 150ms ease;
     text-align: left;
   }
 
@@ -346,8 +370,14 @@
   }
 
   @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-4px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .chip-grid {
@@ -379,8 +409,16 @@
   }
 
   .chip.active {
-    background: color-mix(in srgb, var(--chip-color, #a855f7) var(--surface-active-pct, 12%), transparent);
-    border-color: color-mix(in srgb, var(--chip-color, #a855f7) var(--stroke-active-pct, 35%), transparent);
+    background: color-mix(
+      in srgb,
+      var(--chip-color, #a855f7) var(--surface-active-pct, 12%),
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--chip-color, #a855f7) var(--stroke-active-pct, 35%),
+      transparent
+    );
     color: var(--chip-color, #a855f7);
   }
 
@@ -433,14 +471,25 @@
     transition: all 150ms ease;
   }
 
-  .scope-seg:last-child { border-right: none; }
-  .scope-seg:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05)); color: rgba(255, 255, 255, 0.7); }
+  .scope-seg:last-child {
+    border-right: none;
+  }
+  .scope-seg:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
+    color: rgba(255, 255, 255, 0.7);
+  }
   .scope-seg.active {
-    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 15%,
+      transparent
+    );
     color: var(--theme-accent-light, #c084fc);
     box-shadow: inset 0 -2px 0 var(--theme-accent-strong, #a855f7);
   }
-  .scope-seg i { font-size: 14px; }
+  .scope-seg i {
+    font-size: 14px;
+  }
 
   .matrix-rows {
     display: flex;
@@ -460,14 +509,16 @@
     transition: border-color 150ms ease;
   }
 
-  .channel:hover { border-color: var(--theme-stroke, rgba(255, 255, 255, 0.12)); }
+  .channel:hover {
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.12));
+  }
 
   .channel-id {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    /* Wide enough for the 12px channel name to wrap cleanly ("Blue thumb") */
+    /* Wide enough for the 12px channel name to wrap cleanly ("Right thumb") */
     min-width: 48px;
     padding-top: 8px;
   }
@@ -543,12 +594,18 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .accordion-body { animation: none; }
-    .chevron { transition: none; }
+    .accordion-body {
+      animation: none;
+    }
+    .chevron {
+      transition: none;
+    }
     .accordion-row,
     .chip,
     .scope-seg,
     .effort-btn,
-    .channel { transition: none; }
+    .channel {
+      transition: none;
+    }
   }
 </style>

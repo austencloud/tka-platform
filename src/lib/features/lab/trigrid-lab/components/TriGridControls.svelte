@@ -130,10 +130,15 @@
       {#each positions as pos}
         <button
           class="position-btn"
-          class:active={leftLocation === pos.leftLocation && rightLocation === pos.rightLocation}
+          class:active={leftLocation === pos.leftLocation &&
+            rightLocation === pos.rightLocation}
           onclick={() => onPositionChange(pos.leftLocation, pos.rightLocation)}
         >
-          <span class="pos-group" class:beta={pos.group === "beta"} class:gamma={pos.group === "gamma"}>
+          <span
+            class="pos-group"
+            class:beta={pos.group === "beta"}
+            class:gamma={pos.group === "gamma"}
+          >
             {pos.group === "beta" ? "B" : "G"}{pos.index}
           </span>
           <span class="pos-label">{pos.label}</span>
@@ -144,7 +149,7 @@
 
   <!-- Orientation pickers -->
   <section class="control-section">
-    <h3>Blue Orientation</h3>
+    <h3>Left Orientation</h3>
     <div class="orientation-grid">
       {#each TRIGRID_ORIENTATIONS as ori}
         <button
@@ -161,7 +166,7 @@
   </section>
 
   <section class="control-section">
-    <h3>Red Orientation</h3>
+    <h3>Right Orientation</h3>
     <div class="orientation-grid">
       {#each TRIGRID_ORIENTATIONS as ori}
         <button

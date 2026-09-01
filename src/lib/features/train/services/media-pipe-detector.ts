@@ -32,7 +32,11 @@ import type {
 import type { HandLandmarker } from "./hand-landmarker";
 import type { HandTrackingStabilizer } from "./hand-tracking-stabilizer";
 import { analyzeHandedness } from "./handedness-analyzer";
-import { analyzeHandState, calculatePalmCenter, getReferencePoint } from "./hand-state-analyzer";
+import {
+  analyzeHandState,
+  calculatePalmCenter,
+  getReferencePoint,
+} from "./hand-state-analyzer";
 import { mapToQuadrant, isValidForMode } from "./quadrant-mapper";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
@@ -63,10 +67,7 @@ export class MediaPipeDetector {
   private _leftFramesMissing = 0;
   private _rightFramesMissing = 0;
 
-  constructor(
-    landmarker: HandLandmarker,
-    stabilizer: HandTrackingStabilizer
-  ) {
+  constructor(landmarker: HandLandmarker, stabilizer: HandTrackingStabilizer) {
     this._landmarker = landmarker;
     this._stabilizer = stabilizer;
   }
@@ -178,14 +179,8 @@ export class MediaPipeDetector {
         const stateResult = analyzeHandState(landmarks);
         const handState = stateResult.state;
 
-        const palmCenter = calculatePalmCenter(
-          landmarks,
-          handState
-        );
-        const referencePoint = getReferencePoint(
-          landmarks,
-          handState
-        );
+        const palmCenter = calculatePalmCenter(landmarks, handState);
+        const referencePoint = getReferencePoint(landmarks, handState);
 
         // Transform debug landmarks from full video space to crop space
         const wristTransformed = this._transformCropCoordinates(
@@ -218,8 +213,7 @@ export class MediaPipeDetector {
         };
 
         // Use HandednessAnalyzer for anatomical detection
-        const handednessResult =
-          analyzeHandedness(landmarks);
+        const handednessResult = analyzeHandedness(landmarks);
         const anatomicalHandedness = handednessResult.anatomicalHandedness;
 
         // Determine final handedness
@@ -447,7 +441,7 @@ export class MediaPipeDetector {
     let left = currentLeft;
     let right = currentRight;
 
-    // Blue hand persistence
+    // Left-hand persistence
     if (left) {
       this._lastLeftPosition = left;
       this._leftFramesMissing = 0;
@@ -461,7 +455,7 @@ export class MediaPipeDetector {
       this._lastLeftPosition = null;
     }
 
-    // Red hand persistence
+    // Right-hand persistence
     if (right) {
       this._lastRightPosition = right;
       this._rightFramesMissing = 0;

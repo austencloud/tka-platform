@@ -372,7 +372,7 @@ describe("scan activity state", () => {
     const decoded = state.codes[0]?.decoded;
     expect(decoded?.steps[0]?.motions.left).toMatchObject({
       propType: "staff",
-      color: "blue",
+      hand: "left",
     });
     expect(decoded?.steps[0]?.motions.left.arrowPlacementData).toBeDefined();
     expect(decoded?.steps[0]?.motions.left.propPlacementData).toBeDefined();
@@ -381,7 +381,9 @@ describe("scan activity state", () => {
     expect(
       decoded?.startPosition?.motions.left.propPlacementData
     ).toBeDefined();
-    expect(decoded?.startPosition?.motions.right.propPlacementData).toBeDefined();
+    expect(
+      decoded?.startPosition?.motions.right.propPlacementData
+    ).toBeDefined();
     expect(sequenceForScanPreview(state.codes[0] ?? null)?.id).toBe(
       "scan-activity-embedded-v1-LEGACY"
     );
@@ -909,37 +911,39 @@ describe("scan activity state", () => {
 
   it("hydrates decoded shortcode motions before rendering their scanned props", async () => {
     let pushEvents: (events: ScanEventRow[]) => void = () => {};
-    const decodeSequence = vi.fn(async () =>
-      ({
-        id: "decoded-prop-card",
-        word: "PROP",
-        steps: [
-          {
-            id: "decoded-step",
-            stepNumber: 1,
-            duration: 1,
-            motions: {
-              left: {
-                color: "blue",
-                motionType: "static",
-                rotationDirection: "noRotation",
-                startLocation: "s",
-                endLocation: "s",
-                turns: 0,
-                startOrientation: "in",
-                endOrientation: "in",
-                propType: PropType.POI,
-              },
-              right: {
-                color: "red",
-                motionType: "static",
-                rotationDirection: "noRotation",
-                startLocation: "n",
-                endLocation: "n",
-                turns: 0,
-                startOrientation: "in",
-                endOrientation: "in",
-                propType: PropType.FAN,
+    const decodeSequence = vi.fn(
+      async () =>
+        ({
+          id: "decoded-prop-card",
+          word: "PROP",
+          steps: [
+            {
+              id: "decoded-step",
+              stepNumber: 1,
+              duration: 1,
+              motions: {
+                left: {
+                  color: "blue",
+                  motionType: "static",
+                  rotationDirection: "noRotation",
+                  startLocation: "s",
+                  endLocation: "s",
+                  turns: 0,
+                  startOrientation: "in",
+                  endOrientation: "in",
+                  propType: PropType.POI,
+                },
+                right: {
+                  color: "red",
+                  motionType: "static",
+                  rotationDirection: "noRotation",
+                  startLocation: "n",
+                  endLocation: "n",
+                  turns: 0,
+                  startOrientation: "in",
+                  endOrientation: "in",
+                  propType: PropType.FAN,
+                },
               },
             },
           ],
@@ -1080,25 +1084,23 @@ describe("scan activity state", () => {
 describe("ScanActivityWatcher", () => {
   it("publishes the prop configuration stored on each scan event", async () => {
     const receiveEvents = vi.fn();
-    vi.mocked(onSnapshot).mockImplementationOnce(
-      ((...args: unknown[]) => {
-        const onNext = args[1] as (snapshot: unknown) => void;
-        onNext({
-          docs: [
-            {
-              ref: { path: "shortcodes/PROP/scanEvents/event-1" },
-              data: () => ({
-                timestamp: "2026-07-20T12:00:00.000Z",
-                leftPropType: "P",
-                rightPropType: "fan",
-                catDogMode: true,
-              }),
-            },
-          ],
-        });
-        return vi.fn();
-      }) as never
-    );
+    vi.mocked(onSnapshot).mockImplementationOnce(((...args: unknown[]) => {
+      const onNext = args[1] as (snapshot: unknown) => void;
+      onNext({
+        docs: [
+          {
+            ref: { path: "shortcodes/PROP/scanEvents/event-1" },
+            data: () => ({
+              timestamp: "2026-07-20T12:00:00.000Z",
+              leftPropType: "P",
+              rightPropType: "fan",
+              catDogMode: true,
+            }),
+          },
+        ],
+      });
+      return vi.fn();
+    }) as never);
 
     const watcher = new ScanActivityWatcher();
     await watcher.watchRecentEvents(receiveEvents, vi.fn());

@@ -435,10 +435,10 @@ export class AnimationEngine {
    * export engine is driven only through renderFrame(), which never touches
    * PlaybackSync, so that sync never happens. Without this the engine state
    * stays at the boot default ("staff", staff dimensions) and:
-   *   - frame-parameter-builder reads the prop TYPE from state.currentBluePropType
-   *     /currentRedPropType (frame-parameter-builder.ts:227-228,244-245), so a
+   *   - frame-parameter-builder reads the prop TYPE from state.currentLeftPropType
+   *     /currentRightPropType (frame-parameter-builder.ts:227-228,244-245), so a
    *     non-staff export drew the staff body.
-   *   - it reads prop DIMENSIONS from state.bluePropDimensions/redPropDimensions
+   *   - it reads prop DIMENSIONS from state.leftPropDimensions/rightPropDimensions
    *     (frame-parameter-builder.ts:209-210), so a non-staff prop drew at staff
    *     size.
    * A bare renderer.loadPerColorPropTextures() (the prior partial fix) loaded
@@ -449,8 +449,8 @@ export class AnimationEngine {
    * exact types), writes the types into AnimatorState, then runs the manager's
    * loadPropTextures — which loads the per-color textures via the prop texture
    * service AND syncs the resolved dimensions back into state (prop-type-manager.ts
-   * :305-308). End state after this resolves: state.currentBluePropType/RedPropType
-   * === the resolved types, state.bluePropDimensions/redPropDimensions === the
+   * :305-308). End state after this resolves: state.currentLeftPropType/currentRightPropType
+   * === the resolved types, state.leftPropDimensions/rightPropDimensions === the
    * loaded prop's real dimensions, and the image is present in the image loader.
    *
    * `darkMode` selects the prop color set (matches the renderer.setDarkMode that

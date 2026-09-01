@@ -1,12 +1,18 @@
 import type { GuideBlock } from "../guide-content-blocks";
-import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  createMotionData,
+  createPlaceholderMotion,
+} from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
   HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  GridMode,
+  GridLocation,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -26,68 +32,126 @@ const CCW = RotationDirection.COUNTER_CLOCKWISE;
 const NOROT = RotationDirection.NO_ROTATION;
 
 // ── Single-staff step authoring (other hand = invisible placeholder) ───────
-type M = { t: "pro" | "anti" | "static"; from: GridLocation; to: GridLocation; rot: RotationDirection; so: Orientation; eo: Orientation };
-const m = (t: M["t"], from: GridLocation, to: GridLocation, rot: RotationDirection, so: Orientation, eo: Orientation): M =>
-  ({ t, from, to, rot, so, eo });
+type M = {
+  t: "pro" | "anti" | "static";
+  from: GridLocation;
+  to: GridLocation;
+  rot: RotationDirection;
+  so: Orientation;
+  eo: Orientation;
+};
+const m = (
+  t: M["t"],
+  from: GridLocation,
+  to: GridLocation,
+  rot: RotationDirection,
+  so: Orientation,
+  eo: Orientation
+): M => ({ t, from, to, rot, so, eo });
 
-const motionOf = (color: HandSide, x: M) =>
+const motionOf = (hand: HandSide, x: M) =>
   createMotionData({
-    motionType: x.t === "pro" ? MotionType.PRO : x.t === "anti" ? MotionType.ANTI : MotionType.STATIC,
+    motionType:
+      x.t === "pro"
+        ? MotionType.PRO
+        : x.t === "anti"
+          ? MotionType.ANTI
+          : MotionType.STATIC,
     rotationDirection: x.t === "static" ? NOROT : x.rot,
     startLocation: x.from,
     endLocation: x.to,
     startOrientation: x.so,
     endOrientation: x.eo,
     turns: 0,
-    hand: color,
+    hand,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
 
-type StripDef = { key: string; label: string; color: "red" | "blue"; steps: M[]; revStep?: number };
+type StripDef = {
+  key: string;
+  label: string;
+  hand: HandSide;
+  steps: M[];
+  revStep?: number;
+};
 const STRIPS: StripDef[] = [
   // Hand-reversal: prop keeps its spin, hand comes back. No R.
-  { key: "rev-hand-pro", label: "Pro→Anti", color: "red",
-    steps: [m("pro", N, E, CW, IN, IN), m("anti", E, N, CW, IN, OUT)] },
-  { key: "rev-hand-anti", label: "Anti→Pro", color: "blue",
-    steps: [m("anti", N, W, CW, IN, OUT), m("pro", W, N, CW, OUT, OUT)] },
+  {
+    key: "rev-hand-pro",
+    label: "Pro→Anti",
+    hand: HandSide.RIGHT,
+    steps: [m("pro", N, E, CW, IN, IN), m("anti", E, N, CW, IN, OUT)],
+  },
+  {
+    key: "rev-hand-anti",
+    label: "Anti→Pro",
+    hand: HandSide.LEFT,
+    steps: [m("anti", N, W, CW, IN, OUT), m("pro", W, N, CW, OUT, OUT)],
+  },
   // Prop-reversal: hand continues, prop flips. R on step 2.
-  { key: "rev-prop-pro", label: "Pro→Anti", color: "red", revStep: 2,
-    steps: [m("pro", N, E, CW, IN, IN), m("anti", E, SO_, CCW, IN, OUT)] },
-  { key: "rev-prop-anti", label: "Anti→Pro", color: "blue", revStep: 2,
-    steps: [m("anti", N, W, CW, IN, OUT), m("pro", W, SO_, CCW, OUT, OUT)] },
+  {
+    key: "rev-prop-pro",
+    label: "Pro→Anti",
+    hand: HandSide.RIGHT,
+    revStep: 2,
+    steps: [m("pro", N, E, CW, IN, IN), m("anti", E, SO_, CCW, IN, OUT)],
+  },
+  {
+    key: "rev-prop-anti",
+    label: "Anti→Pro",
+    hand: HandSide.LEFT,
+    revStep: 2,
+    steps: [m("anti", N, W, CW, IN, OUT), m("pro", W, SO_, CCW, OUT, OUT)],
+  },
   // Full-reversal: prop and hand retrace. R on step 2.
-  { key: "rev-full-pro", label: "Pro→Pro", color: "red", revStep: 2,
-    steps: [m("pro", N, E, CW, IN, IN), m("pro", E, N, CCW, IN, IN)] },
-  { key: "rev-full-anti", label: "Anti→Anti", color: "blue", revStep: 2,
-    steps: [m("anti", N, W, CW, IN, OUT), m("anti", W, N, CCW, OUT, IN)] },
+  {
+    key: "rev-full-pro",
+    label: "Pro→Pro",
+    hand: HandSide.RIGHT,
+    revStep: 2,
+    steps: [m("pro", N, E, CW, IN, IN), m("pro", E, N, CCW, IN, IN)],
+  },
+  {
+    key: "rev-full-anti",
+    label: "Anti→Anti",
+    hand: HandSide.LEFT,
+    revStep: 2,
+    steps: [m("anti", N, W, CW, IN, OUT), m("anti", W, N, CCW, OUT, IN)],
+  },
 ];
 
 const stepData = (s: StripDef, i: number): StepData => {
-  const isRed = s.color === "red";
-  const live = motionOf(isRed ? HandSide.RIGHT : HandSide.LEFT, s.steps[i]!);
-  const ghost = createPlaceholderMotion(isRed ? HandSide.LEFT : HandSide.RIGHT, { location: SO_, orientation: IN });
+  const isRight = s.hand === HandSide.RIGHT;
+  const live = motionOf(s.hand, s.steps[i]!);
+  const ghost = createPlaceholderMotion(
+    isRight ? HandSide.LEFT : HandSide.RIGHT,
+    { location: SO_, orientation: IN }
+  );
   return {
     id: `${s.key}-${i + 1}`,
     letter: null,
     gridMode: GridMode.DIAMOND,
     stepNumber: i + 1,
-    leftReversal: !isRed && s.revStep === i + 1,
-    rightReversal: isRed && s.revStep === i + 1,
-    motions: { left: isRed ? ghost : live, right: isRed ? live : ghost },
+    leftReversal: !isRight && s.revStep === i + 1,
+    rightReversal: isRight && s.revStep === i + 1,
+    motions: { left: isRight ? ghost : live, right: isRight ? live : ghost },
   } as unknown as StepData;
 };
 
 const startBox = (s: StripDef): StepData => {
-  const isRed = s.color === "red";
-  const live = motionOf(isRed ? HandSide.RIGHT : HandSide.LEFT, m("static", N, N, NOROT, IN, IN));
-  const ghost = createPlaceholderMotion(isRed ? HandSide.LEFT : HandSide.RIGHT, { location: SO_, orientation: IN });
+  const isRight = s.hand === HandSide.RIGHT;
+  const live = motionOf(s.hand, m("static", N, N, NOROT, IN, IN));
+  const ghost = createPlaceholderMotion(
+    isRight ? HandSide.LEFT : HandSide.RIGHT,
+    { location: SO_, orientation: IN }
+  );
   return {
     id: `${s.key}-0`,
     letter: null,
     gridMode: GridMode.DIAMOND,
     stepNumber: 0,
-    motions: { left: isRed ? ghost : live, right: isRed ? live : ghost },
+    motions: { left: isRight ? ghost : live, right: isRight ? live : ghost },
   } as unknown as StepData;
 };
 
@@ -96,14 +160,21 @@ const startBox = (s: StripDef): StepData => {
 // ReversalsPage.svelte's resolvedStripSteps (minus the admin-override seam).
 const stripSteps = (s: StripDef): PictographData[] => {
   const authored = [startBox(s), stepData(s, 0), stepData(s, 1)];
-  return [authored[0], ...bakeReversals(authored.slice(1))] as unknown as PictographData[];
+  return [
+    authored[0],
+    ...bakeReversals(authored.slice(1)),
+  ] as unknown as PictographData[];
 };
 
 const byKey = (key: string) => STRIPS.find((s) => s.key === key)!;
-const captionFor = (s: StripDef) => `${s.label} (${s.color})`;
+const captionFor = (s: StripDef) => `${s.label} (${s.hand})`;
 
 /** STAFF props with reversal dots, TKA glyph off - matching ReversalsPage's PICTO_FLAGS. */
-const RENDER = { propType: PropType.STAFF, showTKA: false, showReversals: true } as const;
+const RENDER = {
+  propType: PropType.STAFF,
+  showTKA: false,
+  showReversals: true,
+} as const;
 
 export const reversalsContent: GuideBlock[] = [
   { kind: "heading", level: 1, text: "Reversals" },

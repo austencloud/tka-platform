@@ -27,7 +27,7 @@ import type { CollectedTunnel } from "./tunnel-collection-types";
 /** The sequence a saved tunnel was built from.
  *
  *  The steps were captured from a live, already-hydrated viewer sequence, so
- *  each carries motions.blue/red — the orchestrator's hydrateSequence
+ *  each carries motions.left/right — the orchestrator's hydrateSequence
  *  short-circuits on hasMotionData() and uses them verbatim rather than
  *  re-deriving from compositional fields the collection does not store.
  *  gridMode is recovered off the steps so the right grid renders.

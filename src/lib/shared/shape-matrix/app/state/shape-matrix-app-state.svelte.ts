@@ -30,7 +30,7 @@ export interface ShapeMatrixCompactFocusRequest {
   id: number;
   target: ShapeMatrixAppView;
 }
-export type ShapeMatrixAxisTarget = "blue" | "both" | "red";
+export type ShapeMatrixAxisTarget = "left" | "both" | "right";
 export type ShapeMatrixRelationshipDriver = "hands" | "props";
 
 export interface ShapeMatrixAppSnapshot {
@@ -218,8 +218,8 @@ export function createShapeMatrixAppState(
       };
     }
 
-    const nextLeftTurn = activeAxis === "red" ? leftTurn : nextTurn;
-    const nextRightTurn = activeAxis === "blue" ? rightTurn : nextTurn;
+    const nextLeftTurn = activeAxis === "right" ? leftTurn : nextTurn;
+    const nextRightTurn = activeAxis === "left" ? rightTurn : nextTurn;
     if (nextLeftTurn === leftTurn && nextRightTurn === rightTurn) return;
 
     if (selectedPair) {
@@ -395,7 +395,7 @@ export function createShapeMatrixAppState(
       return activeAxis;
     },
     get activeTurn() {
-      return activeAxis === "red" ? rightTurn : leftTurn;
+      return activeAxis === "right" ? rightTurn : leftTurn;
     },
     get labelMode() {
       return labelMode;

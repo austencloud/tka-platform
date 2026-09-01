@@ -41,6 +41,7 @@ import {
 // #3 — app class detector (hydration path)
 import { loopDetector as appLoopDetector } from "$lib/shared/create/services/loop-detector";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { normalizeLegacySteps } from "@tka/tka-types";
 
 // #4 — loop-labeler pipeline
 import { loopDetector as labelerLoopDetector } from "$lib/features/loop-labeler/services/loop-detector";
@@ -51,9 +52,13 @@ const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../../..");
 
-const autoLabelCjs = require(path.join(repoRoot, "scripts/auto-label-loops.cjs"));
+const autoLabelCjs = require(
+  path.join(repoRoot, "scripts/auto-label-loops.cjs")
+);
 
-const validateCjs = require(path.join(repoRoot, "scripts/validate-loop-detection.cjs"));
+const validateCjs = require(
+  path.join(repoRoot, "scripts/validate-loop-detection.cjs")
+);
 
 // Fixtures
 
@@ -83,12 +88,25 @@ interface FixtureSample {
   steps: FixtureStep[];
 }
 
-const FIXTURES: Record<string, FixtureSample[]> = JSON.parse(
-  readFileSync(
-    path.join(repoRoot, "tests/fixtures/loop-audit/real-loop-fixtures.json"),
-    "utf8",
-  ),
-);
+const FIXTURES = Object.fromEntries(
+  Object.entries(
+    JSON.parse(
+      readFileSync(
+        path.join(
+          repoRoot,
+          "tests/fixtures/loop-audit/real-loop-fixtures.json"
+        ),
+        "utf8"
+      )
+    ) as Record<string, FixtureSample[]>
+  ).map(([loopType, samples]) => [
+    loopType,
+    samples.map((sample) => ({
+      ...sample,
+      steps: normalizeLegacySteps(sample.steps),
+    })),
+  ])
+) as Record<string, FixtureSample[]>;
 
 // Adapters — each detector takes a different input shape
 
@@ -109,8 +127,8 @@ function toSequenceData(sample: FixtureSample): SequenceData {
       startPosition: s.startPosition,
       endPosition: s.endPosition,
       motions: {
-        left: { ...s.motions.left, color: "blue" },
-        right: { ...s.motions.right, color: "red" },
+        left: { ...s.motions.left, hand: "left" },
+        right: { ...s.motions.right, hand: "right" },
       },
     }));
 
@@ -191,7 +209,9 @@ function normalize(tokens: readonly string[]): string[] {
 }
 
 function functionalComponents(sample: FixtureSample): string[] {
-  return normalize(detectLOOPFromSteps(toEngineSteps(sample) as never).components);
+  return normalize(
+    detectLOOPFromSteps(toEngineSteps(sample) as never).components
+  );
 }
 
 function engineClassComponents(sample: FixtureSample): string[] {
@@ -326,7 +346,9 @@ function runAudit(): Row[] {
 }
 
 /** Majority verdict for a (type, detector) cell across samples. */
-function cellVerdicts(rows: Row[]): Map<string, { verdicts: Verdict[]; actuals: string[] }> {
+function cellVerdicts(
+  rows: Row[]
+): Map<string, { verdicts: Verdict[]; actuals: string[] }> {
   const cells = new Map<string, { verdicts: Verdict[]; actuals: string[] }>();
   for (const r of rows) {
     const key = `${r.type}|${r.detector}`;
@@ -345,7 +367,7 @@ describe("real-loop detector audit (all 5 detectors)", () => {
   it("prints the recovery table", () => {
     /* eslint-disable no-console */
     console.log(
-      "\n=========== REAL-LOOP RECOVERY TABLE (production-generated fixtures) ===========",
+      "\n=========== REAL-LOOP RECOVERY TABLE (production-generated fixtures) ==========="
     );
     const header = `${"LOOPType".padEnd(36)} ${"detector".padEnd(15)} ${"expected".padEnd(28)} sample actuals -> verdicts`;
     console.log(header);
@@ -357,14 +379,19 @@ describe("real-loop detector audit (all 5 detectors)", () => {
       printed.add(key);
       const cell = cells.get(key)!;
       console.log(
-        `${r.type.padEnd(36)} ${r.detector.padEnd(15)} ${r.expected.padEnd(28)} [${cell.actuals.join(" | ")}] -> ${cell.verdicts.join(",")}`,
+        `${r.type.padEnd(36)} ${r.detector.padEnd(15)} ${r.expected.padEnd(28)} [${cell.actuals.join(" | ")}] -> ${cell.verdicts.join(",")}`
       );
     }
-    const tally: Record<Verdict, number> = { PASS: 0, PARTIAL: 0, EXTRA: 0, FAIL: 0 };
+    const tally: Record<Verdict, number> = {
+      PASS: 0,
+      PARTIAL: 0,
+      EXTRA: 0,
+      FAIL: 0,
+    };
     for (const r of rows) tally[r.verdict]++;
     console.log(
       `\nTotals across ${rows.length} (type x sample x detector) runs: ` +
-        `PASS=${tally.PASS} PARTIAL=${tally.PARTIAL} EXTRA=${tally.EXTRA} FAIL=${tally.FAIL}`,
+        `PASS=${tally.PASS} PARTIAL=${tally.PARTIAL} EXTRA=${tally.EXTRA} FAIL=${tally.FAIL}`
     );
     /* eslint-enable no-console */
     expect(rows.length).toBeGreaterThan(0);
@@ -381,12 +408,24 @@ describe("real-loop detector audit (all 5 detectors)", () => {
   // asserted, so fixing them later cannot break this suite.
   // -------------------------------------------------------------------------
 
-  function lock(detector: DetectorId, type: string, sampleIdx: number, expected: string[]) {
+  function lock(
+    detector: DetectorId,
+    type: string,
+    sampleIdx: number,
+    expected: string[]
+  ) {
     const sample = FIXTURES[type]![sampleIdx]!;
-    expect(DETECTORS[detector](sample), `${detector} on ${type}[${sampleIdx}]`).toEqual(expected);
+    expect(
+      DETECTORS[detector](sample),
+      `${detector} on ${type}[${sampleIdx}]`
+    ).toEqual(expected);
   }
 
-  function lockAllSamples(detector: DetectorId, type: string, expected: string[]) {
+  function lockAllSamples(
+    detector: DetectorId,
+    type: string,
+    expected: string[]
+  ) {
     FIXTURES[type]!.forEach((_, i) => lock(detector, type, i, expected));
   }
 
@@ -398,9 +437,16 @@ describe("real-loop detector audit (all 5 detectors)", () => {
     lockAllSamples("3-app-class", "flipped", ["flipped"]);
     lockAllSamples("3-app-class", "inverted", ["inverted"]);
     lockAllSamples("3-app-class", "rotated_inverted", ["inverted", "rotated"]);
-    lockAllSamples("3-app-class", "mirrored_inverted", ["inverted", "mirrored"]);
+    lockAllSamples("3-app-class", "mirrored_inverted", [
+      "inverted",
+      "mirrored",
+    ]);
     lockAllSamples("3-app-class", "mirrored_rotated", ["mirrored", "rotated"]);
-    lockAllSamples("3-app-class", "mirrored_inverted_rotated", ["inverted", "mirrored", "rotated"]);
+    lockAllSamples("3-app-class", "mirrored_inverted_rotated", [
+      "inverted",
+      "mirrored",
+      "rotated",
+    ]);
     lockAllSamples("3-app-class", "rewound", ["rewound"]);
     // Orientation-closed samples of the swap family (the others are gated).
     lock("3-app-class", "swapped", 1, ["swapped"]);
@@ -423,8 +469,12 @@ describe("real-loop detector audit (all 5 detectors)", () => {
       ["rotated_swapped", 1],
       ["rotated_swapped", 2],
     ] as const) {
-      const r = appLoopDetector.detectLOOPType(toSequenceData(FIXTURES[type]![idx]!));
-      expect(r.isCircular, `${type}[${idx}] must fail the seamless gate`).toBe(false);
+      const r = appLoopDetector.detectLOOPType(
+        toSequenceData(FIXTURES[type]![idx]!)
+      );
+      expect(r.isCircular, `${type}[${idx}] must fail the seamless gate`).toBe(
+        false
+      );
     }
   });
 
@@ -434,10 +484,22 @@ describe("real-loop detector audit (all 5 detectors)", () => {
     lockAllSamples("4-loop-labeler", "flipped", ["flipped"]);
     lockAllSamples("4-loop-labeler", "swapped", ["swapped"]);
     lockAllSamples("4-loop-labeler", "inverted", ["inverted"]);
-    lockAllSamples("4-loop-labeler", "swapped_inverted", ["inverted", "swapped"]);
-    lockAllSamples("4-loop-labeler", "rotated_inverted", ["inverted", "rotated"]);
-    lockAllSamples("4-loop-labeler", "mirrored_swapped", ["mirrored", "swapped"]);
-    lockAllSamples("4-loop-labeler", "mirrored_inverted", ["inverted", "mirrored"]);
+    lockAllSamples("4-loop-labeler", "swapped_inverted", [
+      "inverted",
+      "swapped",
+    ]);
+    lockAllSamples("4-loop-labeler", "rotated_inverted", [
+      "inverted",
+      "rotated",
+    ]);
+    lockAllSamples("4-loop-labeler", "mirrored_swapped", [
+      "mirrored",
+      "swapped",
+    ]);
+    lockAllSamples("4-loop-labeler", "mirrored_inverted", [
+      "inverted",
+      "mirrored",
+    ]);
     // The fix: a pure rewound loop used to fall through to the freeform
     // fallback and lose its (correct) rewound candidate.
     lockAllSamples("4-loop-labeler", "rewound", ["rewound"]);
@@ -473,7 +535,10 @@ describe("real-loop detector audit (all 5 detectors)", () => {
       lockAllSamples(d, "inverted", ["inverted"]);
       lockAllSamples(d, "mirrored_swapped", ["mirrored", "swapped"]);
     }
-    lockAllSamples("5a-auto-label", "rotated_inverted", ["inverted", "rotated"]);
+    lockAllSamples("5a-auto-label", "rotated_inverted", [
+      "inverted",
+      "rotated",
+    ]);
     lockAllSamples("5a-auto-label", "swapped", ["swapped"]);
   });
 });

@@ -22,10 +22,10 @@ describe("prop placement view model", () => {
       disabled: false,
       isComplete: false,
       canAim: true,
-      activeColor: HandSide.LEFT as HandSide | null,
-      dragColor: null as HandSide | null,
+      activeHand: HandSide.LEFT as HandSide | null,
+      dragHand: null as HandSide | null,
       dragAim: null as Orientation | null,
-      hoverColor: null as HandSide | null,
+      hoverHand: null as HandSide | null,
       leftLocation: null,
       rightLocation: null,
       leftNoun: "left prop",
@@ -38,14 +38,14 @@ describe("prop placement view model", () => {
     expect(
       buildPlacementPrompt({
         ...base,
-        activeColor: null,
-        hoverColor: HandSide.RIGHT,
+        activeHand: null,
+        hoverHand: HandSide.RIGHT,
       }).text
     ).toBe("Drag to aim the right prop");
     expect(
       buildPlacementPrompt({
         ...base,
-        dragColor: HandSide.LEFT,
+        dragHand: HandSide.LEFT,
         dragAim: Orientation.COUNTER,
       }).text
     ).toBe("Aiming the left prop: Counter");
@@ -53,7 +53,7 @@ describe("prop placement view model", () => {
       buildPlacementPrompt({
         ...base,
         isComplete: true,
-        activeColor: null,
+        activeHand: null,
       }).text
     ).toBe("Drag a prop to aim it");
   });

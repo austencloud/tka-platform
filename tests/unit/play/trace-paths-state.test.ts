@@ -27,7 +27,10 @@ function twoHandRound() {
 }
 
 /** Walk the canonical route as if a finger followed it exactly. */
-function samplesAlong(points: readonly { x: number; y: number }[], t0 = 0): TraceSample[] {
+function samplesAlong(
+  points: readonly { x: number; y: number }[],
+  t0 = 0
+): TraceSample[] {
   return points.map((p, i) => ({ x: p.x, y: p.y, t: t0 + i * 10 }));
 }
 
@@ -54,12 +57,18 @@ describe("trace paths state", () => {
     state.loadRound(twoHandRound());
     state.beginArming();
 
-    const rightStart = segmentStartPoint(state.currentSegments[HandSide.RIGHT]!);
+    const rightStart = segmentStartPoint(
+      state.currentSegments[HandSide.RIGHT]!
+    );
     const leftStart = segmentStartPoint(state.currentSegments[HandSide.LEFT]!);
 
     // The FIRST pointer lands on red's grid. Pointer order would make it blue.
-    expect(state.pointerDown(101, rightStart, HandSide.RIGHT)).toBe(HandSide.RIGHT);
-    expect(state.pointerDown(102, leftStart, HandSide.LEFT)).toBe(HandSide.LEFT);
+    expect(state.pointerDown(101, rightStart, HandSide.RIGHT)).toBe(
+      HandSide.RIGHT
+    );
+    expect(state.pointerDown(102, leftStart, HandSide.LEFT)).toBe(
+      HandSide.LEFT
+    );
   });
 
   it("ignores a third pointer with a cue and never reassigns an armed hand", () => {
@@ -68,7 +77,9 @@ describe("trace paths state", () => {
     state.beginArming();
 
     const leftStart = segmentStartPoint(state.currentSegments[HandSide.LEFT]!);
-    const rightStart = segmentStartPoint(state.currentSegments[HandSide.RIGHT]!);
+    const rightStart = segmentStartPoint(
+      state.currentSegments[HandSide.RIGHT]!
+    );
     state.pointerDown(1, leftStart, HandSide.LEFT);
     state.pointerDown(2, rightStart, HandSide.RIGHT);
 
@@ -79,13 +90,16 @@ describe("trace paths state", () => {
 
   it("completes a clean two-hand round and scores it", () => {
     const scored: unknown[] = [];
-    const state = createTracePathsState({ onRoundScored: (o) => scored.push(o) });
+    const state = createTracePathsState({
+      onRoundScored: (o) => scored.push(o),
+    });
     state.loadRound(twoHandRound());
     state.beginArming();
 
     const leftSeg = state.currentSegments[HandSide.LEFT]!;
     const rightSeg = state.currentSegments[HandSide.RIGHT]!;
-    if (leftSeg.kind !== "move" || rightSeg.kind !== "move") throw new Error("expected moves");
+    if (leftSeg.kind !== "move" || rightSeg.kind !== "move")
+      throw new Error("expected moves");
 
     state.pointerDown(1, leftSeg.expectedPath[0]!, HandSide.LEFT);
     state.pointerDown(2, rightSeg.expectedPath[0]!, HandSide.RIGHT);
@@ -161,7 +175,7 @@ describe("trace paths state", () => {
     const state = createTracePathsState();
     state.loadRound(twoHandRound());
     expect(state.previewText).toContain("Beat 1");
-    expect(state.previewText).toContain("Blue");
+    expect(state.previewText).toContain("Left");
     state.stepPreview(-1);
     expect(state.previewBeat).toBe(0);
     state.completeStepThrough();

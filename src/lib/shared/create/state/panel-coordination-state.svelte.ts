@@ -72,7 +72,6 @@ export interface MandalaViewerSelection {
   pathShape: MandalaPathShape;
 }
 
-
 const sequenceActionsPanelPersistence = createPersistenceHelper({
   key: "tka_sequence_actions_panel_open",
   defaultValue: false,
@@ -135,14 +134,14 @@ export interface StartEndOptions {
   mustContainLetters: Letter[];
   mustNotContainLetters: Letter[];
   /**
-   * Starting orientation for the blue prop. Defaults to IN ("in/in").
-   * Feeds the engine's blueStartOrientation override (seeds beat 0 +
+   * Starting orientation for the left prop. Defaults to IN ("in/in").
+   * Feeds the engine's leftStartOrientation override (seeds beat 0 +
    * propagates forward). Undefined = engine default (IN).
    */
   leftStartOrientation?: Orientation;
   /**
-   * Starting orientation for the red prop. Defaults to IN ("in/in").
-   * Feeds the engine's redStartOrientation override.
+   * Starting orientation for the right prop. Defaults to IN ("in/in").
+   * Feeds the engine's rightStartOrientation override.
    */
   rightStartOrientation?: Orientation;
 }

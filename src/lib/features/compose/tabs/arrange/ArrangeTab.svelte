@@ -1,6 +1,8 @@
 <script lang="ts">
-
-import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/features/compose/tabs/arrange/services/arrange-keyboard-handler";
+  import {
+    handleKeyDown as arrangeHandleKeyDown,
+    findAdjacentCell,
+  } from "$lib/features/compose/tabs/arrange/services/arrange-keyboard-handler";
   import EditHistoryShortcutBridge from "$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte";
   /**
    * ArrangeTab - Grid-based composition builder
@@ -20,7 +22,10 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
    * Desktop-first. Mobile gets attention in Phase B.
    */
 
-  import { arrangeGridState, type GridCell } from "./state/arrange-grid-state.svelte";
+  import {
+    arrangeGridState,
+    type GridCell,
+  } from "./state/arrange-grid-state.svelte";
   import CompositionGrid from "./components/grid/CompositionGrid.svelte";
   import CellEditorPanel from "./components/grid/cell-editor/CellEditorPanel.svelte";
   import PlaybackBar from "./components/shared/PlaybackBar.svelte";
@@ -95,7 +100,13 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
     }
   }
 
-  function handleSetCellSpan(cellId: string, colSpan: number, rowSpan: number, newCol?: number, newRow?: number) {
+  function handleSetCellSpan(
+    cellId: string,
+    colSpan: number,
+    rowSpan: number,
+    newCol?: number,
+    newRow?: number
+  ) {
     gridState.setCellSpan(cellId, colSpan, rowSpan, newCol, newRow);
   }
 
@@ -142,7 +153,11 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
 
   function handleSaveLayerOffset(offset: number) {
     if (selectedCellId !== null && editingLayerIndex !== null) {
-      gridState.updateLayerBeatOffset(selectedCellId, editingLayerIndex, offset);
+      gridState.updateLayerBeatOffset(
+        selectedCellId,
+        editingLayerIndex,
+        offset
+      );
     }
   }
 
@@ -173,12 +188,15 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
 
   function handleCopyCell() {
     if (selectedCellId !== null) {
-      const cell = gridState.cells.find((c: GridCell) => c.id === selectedCellId);
+      const cell = gridState.cells.find(
+        (c: GridCell) => c.id === selectedCellId
+      );
       if (cell && cell.layers.length > 0) {
         gridState.copyCellLayers(selectedCellId);
         const count = cell.layers.length;
         showToast({
-          message: count === 1 ? "Sequence copied" : `${count} sequences copied`,
+          message:
+            count === 1 ? "Sequence copied" : `${count} sequences copied`,
           type: "info",
           duration: 2000,
         });
@@ -192,7 +210,8 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
       if (result.success) {
         const count = result.pastedCount ?? 1;
         showToast({
-          message: count === 1 ? "Sequence pasted" : `${count} sequences pasted`,
+          message:
+            count === 1 ? "Sequence pasted" : `${count} sequences pasted`,
           type: "success",
           duration: 2000,
         });
@@ -332,7 +351,11 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
     deselectCell: () => gridState.deselectCell(),
     selectCell: (directionOrId: string) => {
       // When called from keyboard handler, directionOrId is an arrow key direction
-      const direction = directionOrId as "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight";
+      const direction = directionOrId as
+        | "ArrowUp"
+        | "ArrowDown"
+        | "ArrowLeft"
+        | "ArrowRight";
       const targetId = findAdjacentCell(
         direction,
         selectedCell,
@@ -354,7 +377,8 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
 
     const onKeyDown = (e: KeyboardEvent) => {
       const context: KeyboardContext = {
-        isModalOpen: gridState.showSequencePicker || showStaggerControls || showSaveModal,
+        isModalOpen:
+          gridState.showSequencePicker || showStaggerControls || showSaveModal,
         isMobile,
         selectedCell,
         selectedCellId,
@@ -458,7 +482,9 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
         onSetDimensions={handleSetDimensions}
         onPresetLayout={handlePresetLayout}
         cell={selectedCell}
-        cellIndex={selectedCell ? gridState.getCellDisplayIndex(selectedCell.id) : 0}
+        cellIndex={selectedCell
+          ? gridState.getCellDisplayIndex(selectedCell.id)
+          : 0}
         clipboardHasData={gridState.clipboard !== null}
         transformingLayer={gridState.transformingLayer}
         onAddSequence={handleAddSequence}
@@ -470,16 +496,46 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
         onCopyCell={handleCopyCell}
         onPasteLayer={handlePasteLayer}
         onTransformLayer={handleTransformLayer}
-        onSetSpeed={selectedCell ? (speed) => gridState.setCellSpeed(selectedCell.id, speed) : undefined}
-        onSetEffect={selectedCell ? (effect) => gridState.setCellEffect(selectedCell.id, effect) : undefined}
-        onSetTrailMode={selectedCell ? (mode) => gridState.setCellTrailMode(selectedCell.id, mode) : undefined}
-        onSetEffort={selectedCell ? (effort) => gridState.setCellEffort(selectedCell.id, effort) : undefined}
-        onSetLeftVisible={selectedCell ? (visible) => gridState.setCellMotionVisibility(selectedCell.id, 'blue', visible) : undefined}
-        onSetRightVisible={selectedCell ? (visible) => gridState.setCellMotionVisibility(selectedCell.id, 'red', visible) : undefined}
-        onSetOffset={selectedCell ? (offset) => gridState.setCellBeatOffset(selectedCell.id, offset) : undefined}
-        onSetColors={selectedCell ? (colors) => gridState.setCellPropColors(selectedCell.id, colors) : undefined}
-        onSetTipEffectMap={selectedCell ? (map) => gridState.setCellTipEffectMap(selectedCell.id, map) : undefined}
-        onSetTipEffortMap={selectedCell ? (map) => gridState.setCellTipEffortMap(selectedCell.id, map) : undefined}
+        onSetSpeed={selectedCell
+          ? (speed) => gridState.setCellSpeed(selectedCell.id, speed)
+          : undefined}
+        onSetEffect={selectedCell
+          ? (effect) => gridState.setCellEffect(selectedCell.id, effect)
+          : undefined}
+        onSetTrailMode={selectedCell
+          ? (mode) => gridState.setCellTrailMode(selectedCell.id, mode)
+          : undefined}
+        onSetEffort={selectedCell
+          ? (effort) => gridState.setCellEffort(selectedCell.id, effort)
+          : undefined}
+        onSetLeftVisible={selectedCell
+          ? (visible) =>
+              gridState.setCellMotionVisibility(
+                selectedCell.id,
+                "left",
+                visible
+              )
+          : undefined}
+        onSetRightVisible={selectedCell
+          ? (visible) =>
+              gridState.setCellMotionVisibility(
+                selectedCell.id,
+                "right",
+                visible
+              )
+          : undefined}
+        onSetOffset={selectedCell
+          ? (offset) => gridState.setCellBeatOffset(selectedCell.id, offset)
+          : undefined}
+        onSetColors={selectedCell
+          ? (colors) => gridState.setCellPropColors(selectedCell.id, colors)
+          : undefined}
+        onSetTipEffectMap={selectedCell
+          ? (map) => gridState.setCellTipEffectMap(selectedCell.id, map)
+          : undefined}
+        onSetTipEffortMap={selectedCell
+          ? (map) => gridState.setCellTipEffortMap(selectedCell.id, map)
+          : undefined}
       />
     </div>
   {/if}
@@ -620,7 +676,7 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
     outline-offset: 2px;
   }
 
-/* Larger screens: wider sidebar */
+  /* Larger screens: wider sidebar */
   @media (min-width: 1200px) {
     .desktop-content {
       grid-template-columns: 1fr clamp(300px, 20vw, 360px);
@@ -648,5 +704,4 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
       display: none;
     }
   }
-
 </style>

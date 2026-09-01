@@ -16,14 +16,20 @@
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
   import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
-  import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import {
+    createMotionData,
+    createPlaceholderMotion,
+  } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
     HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    GridLocation,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { bakeReversals } from "../../level-1/_data/guide-sequence-adapter";
@@ -41,7 +47,7 @@
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
 
-  const redStaff = (
+  const rightStaff = (
     id: string,
     type: MotionType,
     from: GridLocation,
@@ -63,14 +69,14 @@
         startOrientation: startOri,
         endOrientation: endOri,
         turns,
-        color: HandSide.RIGHT,
+        hand: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
     },
   });
   const stat = (id: string, loc: GridLocation, ori: Orientation) =>
-    redStaff(id, MotionType.STATIC, loc, loc, ori, ori, NOROT);
+    rightStaff(id, MotionType.STATIC, loc, loc, ori, ori, NOROT);
   const bareGrid = (id: string) => ({
     id: `l2ds-${id}`,
     letter: null,
@@ -88,10 +94,10 @@
   type Halfway = { x: number; y: number; deg: number };
   type RowDef = {
     y: number;
-    start: ReturnType<typeof redStaff>;
+    start: ReturnType<typeof rightStaff>;
     halfway: Halfway;
-    end: ReturnType<typeof redStaff>;
-    combined: ReturnType<typeof redStaff>;
+    end: ReturnType<typeof rightStaff>;
+    combined: ReturnType<typeof rightStaff>;
   };
   // E hand point = (475 + 143.1, 475).
   const ROWS: RowDef[] = [
@@ -102,7 +108,16 @@
       start: stat("dash-start", SO_, IN),
       halfway: { x: 475, y: 475, deg: 180 },
       end: stat("dash-end", N, IN),
-      combined: redStaff("dash-full", MotionType.DASH, SO_, N, IN, IN, CCW, 1),
+      combined: rightStaff(
+        "dash-full",
+        MotionType.DASH,
+        SO_,
+        N,
+        IN,
+        IN,
+        CCW,
+        1
+      ),
     },
     {
       // Static + 1 turn at E: prop pivots in place; halfway T up. CCW here draws
@@ -111,7 +126,16 @@
       start: stat("static-start", E, IN),
       halfway: { x: 618.1, y: 475, deg: -90 },
       end: stat("static-end", E, OUT),
-      combined: redStaff("static-full", MotionType.STATIC, E, E, IN, OUT, CCW, 1),
+      combined: rightStaff(
+        "static-full",
+        MotionType.STATIC,
+        E,
+        E,
+        IN,
+        OUT,
+        CCW,
+        1
+      ),
     },
   ];
   const bareGrids = ["dash-half", "static-half"].map(bareGrid);
@@ -119,19 +143,29 @@
   const ROW_KEYS = ["l2ds-dash", "l2ds-static"];
   const ROW_WORDS = ["Dash with a turn", "Static turn"];
   const ROW_START_LOC = [SO_, E];
-  const animStep = (data: ReturnType<typeof redStaff>, stepNumber: number, blueLoc: GridLocation): StepData =>
+  const animStep = (
+    data: ReturnType<typeof rightStaff>,
+    stepNumber: number,
+    leftLoc: GridLocation
+  ): StepData =>
     ({
       ...data,
       id: `${data.id}-anim-${stepNumber}`,
       stepNumber,
       motions: {
-        left: createPlaceholderMotion(HandSide.LEFT, { location: blueLoc, orientation: IN }),
+        left: createPlaceholderMotion(HandSide.LEFT, {
+          location: leftLoc,
+          orientation: IN,
+        }),
         right: data.motions.right,
       },
     }) as unknown as StepData;
   const rowSteps = (row: RowDef, ri: number): StepData[] => {
     const loc = ROW_START_LOC[ri]!;
-    const [start, ...steps] = [animStep(row.start, 0, loc), animStep(row.combined, 1, loc)];
+    const [start, ...steps] = [
+      animStep(row.start, 0, loc),
+      animStep(row.combined, 1, loc),
+    ];
     return [start!, ...bakeReversals(steps)];
   };
 
@@ -151,7 +185,16 @@
 
   // Bottom compare boxes: static turn vs shift turn (real pictographs).
   const NOTE_STATIC = ROWS[1]!.combined;
-  const NOTE_SHIFT = redStaff("note-shift", MotionType.PRO, E, SO_, IN, OUT, CW, 1);
+  const NOTE_SHIFT = rightStaff(
+    "note-shift",
+    MotionType.PRO,
+    E,
+    SO_,
+    IN,
+    OUT,
+    CW,
+    1
+  );
   const NOTE_Y = 682;
   const NOTE_SIZE = 92;
 
@@ -193,10 +236,21 @@
       lh: 19,
       html: "This can be executed at any hand point, starting from either<br>thumb orientation, turning in either direction.",
     },
-    { y: 645, fs: 15.5, lh: 19, html: "Note the differences between the arrow for static turns and the arrow for prospin turns:" },
+    {
+      y: 645,
+      fs: 15.5,
+      lh: 19,
+      html: "Note the differences between the arrow for static turns and the arrow for prospin turns:",
+    },
   ];
 
-  type Run = { x: number; y: number; fs: number; style: "mode" | "frame" | "cap" | "vtg"; t: string };
+  type Run = {
+    x: number;
+    y: number;
+    fs: number;
+    style: "mode" | "frame" | "cap" | "vtg";
+    t: string;
+  };
   const RUNS: Run[] = [
     { x: 24, y: 22, fs: 30, style: "mode", t: "Dashes" },
     { x: 516, y: 30, fs: 20, style: "vtg", t: "VTG: 1:1" },
@@ -225,8 +279,18 @@
   ];
 
   const NOTE_TEXT = [
-    { x: 162, y: 690, w: 130, html: "Prop remains at its start position. The arrow forms a half circle with that position." },
-    { x: 452, y: 690, w: 140, html: "Prop ends at an adjacent position. The arrow forms a half-circle around the empty start position." },
+    {
+      x: 162,
+      y: 690,
+      w: 130,
+      html: "Prop remains at its start position. The arrow forms a half circle with that position.",
+    },
+    {
+      x: 452,
+      y: 690,
+      w: 140,
+      html: "Prop ends at an adjacent position. The arrow forms a half-circle around the empty start position.",
+    },
   ];
 
   const PICTO_FLAGS = {
@@ -245,23 +309,58 @@
 </script>
 
 <div class="ds-page">
-  <div class="rule heavy" style="left:0; top:{HEAVY_RULE * S}px; width:{612 * S}px"></div>
-  <div class="rule hair" style="left:{40 * S}px; top:{HAIRLINE * S}px; width:{532 * S}px"></div>
+  <div
+    class="rule heavy"
+    style="left:0; top:{HEAVY_RULE * S}px; width:{612 * S}px"
+  ></div>
+  <div
+    class="rule hair"
+    style="left:{40 * S}px; top:{HAIRLINE * S}px; width:{532 * S}px"
+  ></div>
 
   {#each ROWS as row, ri (ri)}
-    <div class="mini" style="left:{COLS[0]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={row.start} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+    <div
+      class="mini"
+      style="left:{COLS[0]! * S}px; top:{row.y * S}px; width:{SIZE *
+        S}px; height:{SIZE * S}px"
+    >
+      <PictographContainer
+        pictographData={row.start}
+        gridMode={GridMode.DIAMOND}
+        rightPropTypeOverride={PropType.STAFF}
+        {...PICTO_FLAGS}
+      />
     </div>
-    <div class="mini" style="left:{COLS[1]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={bareGrids[ri]} gridMode={GridMode.DIAMOND} {...PICTO_FLAGS} />
+    <div
+      class="mini"
+      style="left:{COLS[1]! * S}px; top:{row.y * S}px; width:{SIZE *
+        S}px; height:{SIZE * S}px"
+    >
+      <PictographContainer
+        pictographData={bareGrids[ri]}
+        gridMode={GridMode.DIAMOND}
+        {...PICTO_FLAGS}
+      />
       <svg class="halfway-staff" viewBox="0 0 950 950" aria-hidden="true">
-        <g transform="translate({row.halfway.x}, {row.halfway.y}) rotate({row.halfway.deg}) translate(-126.4, -38.9)">
+        <g
+          transform="translate({row.halfway.x}, {row.halfway.y}) rotate({row
+            .halfway.deg}) translate(-126.4, -38.9)"
+        >
           <path d={STAFF_D} fill={RED} />
         </g>
       </svg>
     </div>
-    <div class="mini" style="left:{COLS[2]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={row.end} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+    <div
+      class="mini"
+      style="left:{COLS[2]! * S}px; top:{row.y * S}px; width:{SIZE *
+        S}px; height:{SIZE * S}px"
+    >
+      <PictographContainer
+        pictographData={row.end}
+        gridMode={GridMode.DIAMOND}
+        rightPropTypeOverride={PropType.STAFF}
+        {...PICTO_FLAGS}
+      />
     </div>
     {@const key = ROW_KEYS[ri]!}
     <div
@@ -269,14 +368,26 @@
       class:is-hovered={selection?.isHovered(key)}
       class:is-selected={selection?.isSelected(key)}
       class:guide-step-active={activeStep?.key === key}
-      style="left:{COLS[3]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px"
+      style="left:{COLS[3]! * S}px; top:{row.y * S}px; width:{SIZE *
+        S}px; height:{SIZE * S}px"
     >
-      <PictographContainer pictographData={row.combined} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+      <PictographContainer
+        pictographData={row.combined}
+        gridMode={GridMode.DIAMOND}
+        rightPropTypeOverride={PropType.STAFF}
+        {...PICTO_FLAGS}
+      />
       <SelectionHit
         groupId={key}
         isGroupStart
         label={`Animate: ${ROW_WORDS[ri]}`}
-        onselect={() => emitSequence?.({ strip: rowSteps(row, ri), word: ROW_WORDS[ri]!, key, propType: "staff" })}
+        onselect={() =>
+          emitSequence?.({
+            strip: rowSteps(row, ri),
+            word: ROW_WORDS[ri]!,
+            key,
+            propType: "staff",
+          })}
       />
     </div>
   {/each}
@@ -284,12 +395,23 @@
   {#each FLOW_ARROWS as a (a.x + "-" + a.y)}
     <svg
       class="flow-arrow"
-      style="left:{a.x * S}px; top:{(a.y - 5) * S}px; width:{ARROW_W * S}px; height:{10 * S}px"
+      style="left:{a.x * S}px; top:{(a.y - 5) * S}px; width:{ARROW_W *
+        S}px; height:{10 * S}px"
       viewBox="0 0 {ARROW_W} 10"
       aria-hidden="true"
     >
-      <line x1="0" y1="5" x2={ARROW_W - 7} y2="5" stroke="#141414" stroke-width="2" />
-      <polygon points="{ARROW_W - 8},1.3 {ARROW_W},5 {ARROW_W - 8},8.7" fill="#141414" />
+      <line
+        x1="0"
+        y1="5"
+        x2={ARROW_W - 7}
+        y2="5"
+        stroke="#141414"
+        stroke-width="2"
+      />
+      <polygon
+        points="{ARROW_W - 8},1.3 {ARROW_W},5 {ARROW_W - 8},8.7"
+        fill="#141414"
+      />
     </svg>
   {/each}
   {#each EQUALS as eq, i (i)}
@@ -297,22 +419,57 @@
   {/each}
 
   <!-- Bottom compare: static-turn arrow vs shift-turn arrow. -->
-  <div class="note-divider" style="left:{306 * S}px; top:{660 * S}px; height:{116 * S}px"></div>
-  <div class="mini" style="left:{60 * S}px; top:{NOTE_Y * S}px; width:{NOTE_SIZE * S}px; height:{NOTE_SIZE * S}px">
-    <PictographContainer pictographData={NOTE_STATIC} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+  <div
+    class="note-divider"
+    style="left:{306 * S}px; top:{660 * S}px; height:{116 * S}px"
+  ></div>
+  <div
+    class="mini"
+    style="left:{60 * S}px; top:{NOTE_Y * S}px; width:{NOTE_SIZE *
+      S}px; height:{NOTE_SIZE * S}px"
+  >
+    <PictographContainer
+      pictographData={NOTE_STATIC}
+      gridMode={GridMode.DIAMOND}
+      rightPropTypeOverride={PropType.STAFF}
+      {...PICTO_FLAGS}
+    />
   </div>
-  <div class="mini" style="left:{344 * S}px; top:{NOTE_Y * S}px; width:{NOTE_SIZE * S}px; height:{NOTE_SIZE * S}px">
-    <PictographContainer pictographData={NOTE_SHIFT} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+  <div
+    class="mini"
+    style="left:{344 * S}px; top:{NOTE_Y * S}px; width:{NOTE_SIZE *
+      S}px; height:{NOTE_SIZE * S}px"
+  >
+    <PictographContainer
+      pictographData={NOTE_SHIFT}
+      gridMode={GridMode.DIAMOND}
+      rightPropTypeOverride={PropType.STAFF}
+      {...PICTO_FLAGS}
+    />
   </div>
   {#each NOTE_TEXT as n (n.x)}
-    <p class="note-text" style="left:{n.x * S}px; top:{n.y * S}px; width:{n.w * S}px">{@html n.html}</p>
+    <p
+      class="note-text"
+      style="left:{n.x * S}px; top:{n.y * S}px; width:{n.w * S}px"
+    >
+      {@html n.html}
+    </p>
   {/each}
 
   {#each PARAS as p, i (i)}
-    <p class="para" style="top:{p.y * S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px">{@html p.html}</p>
+    <p
+      class="para"
+      style="top:{p.y * S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px"
+    >
+      {@html p.html}
+    </p>
   {/each}
   {#each RUNS as r, i (i)}
-    <span class="run {r.style}" style="left:{r.x * S}px; top:{r.y * S}px; font-size:{r.fs * S}px">{r.t}</span>
+    <span
+      class="run {r.style}"
+      style="left:{r.x * S}px; top:{r.y * S}px; font-size:{r.fs * S}px"
+      >{r.t}</span
+    >
   {/each}
 </div>
 

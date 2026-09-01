@@ -269,10 +269,10 @@ export async function debugSequenceMetadata(sequenceName: string): Promise<{
         step["letter"] && !step["sequence_start_position"]
     );
   const steps = realBeats.map((step: Record<string, unknown>) => {
-    const leftAttrs = step["blueAttributes"] as
+    const leftAttrs = (step["leftAttributes"] ?? step["blueAttributes"]) as
       | Record<string, unknown>
       | undefined;
-    const rightAttrs = step["redAttributes"] as
+    const rightAttrs = (step["rightAttributes"] ?? step["redAttributes"]) as
       | Record<string, unknown>
       | undefined;
     return {

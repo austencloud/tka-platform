@@ -22,29 +22,32 @@
  * display and filtering rather than something enforced at the code level.
  */
 const REVERSAL_PATTERNS = {
-  "continuous":    { sequence: "----", period: 1 },
-  "book":          { sequence: "PPPP", period: 1 },
-  "red-book":      { sequence: "RRRR", period: 1 },
-  "blue-book":     { sequence: "BBBB", period: 1 },
+  continuous: { sequence: "----", period: 1 },
+  book: { sequence: "PPPP", period: 1 },
+  "red-book": { sequence: "RRRR", period: 1 },
+  "blue-book": { sequence: "BBBB", period: 1 },
 
   // ── 2-beat period ──────────────────────────────────────────────────────
-  "long-book":     { sequence: "P-P-",   period: 2 },
-  "alternating":   { sequence: "RBRB",   period: 2 },
+  "long-book": { sequence: "P-P-", period: 2 },
+  alternating: { sequence: "RBRB", period: 2 },
 
   // ── Solo weave family (8 / 16 / 32-beat) ───────────────────────────────
-  "solo-1":        { sequence: "RBBRBRRB",                                 period: 8  },
-  "solo-2":        { sequence: "RBBRBRRBBRRBRBBR",                         period: 16 },
-  "solo-3":        { sequence: "RBBRBRRBBRRBRBBRBRRBRBBRRBBRBRRB",          period: 32 },
+  "solo-1": { sequence: "RBBRBRRB", period: 8 },
+  "solo-2": { sequence: "RBBRBRRBBRRBRBBR", period: 16 },
+  "solo-3": { sequence: "RBBRBRRBBRRBRBBRBRRBRBBRRBBRBRRB", period: 32 },
 
   // ── Dense weave family (8 / 16 / 32-beat) ──────────────────────────────
-  "dense-weave-1": { sequence: "RPBPRPBP",                                 period: 8  },
-  "dense-weave-2": { sequence: "RPBPRPBPBPRPBPRP",                         period: 16 },
-  "dense-weave-3": { sequence: "RPBPRPBPBPRPBPRPBPRPBPRPRPBPRPBP",          period: 32 },
+  "dense-weave-1": { sequence: "RPBPRPBP", period: 8 },
+  "dense-weave-2": { sequence: "RPBPRPBPBPRPBPRP", period: 16 },
+  "dense-weave-3": { sequence: "RPBPRPBPBPRPBPRPBPRPBPRPRPBPRPBP", period: 32 },
 
   // ── Sparse weave family (8 / 16 / 32-beat) ─────────────────────────────
-  "sparse-weave-1": { sequence: "RBRPBRBP",                                period: 8  },
-  "sparse-weave-2": { sequence: "RBRPBRBPBRBPRBRP",                        period: 16 },
-  "sparse-weave-3": { sequence: "RBRPBRBPBRBPRBRPBRBPRBRPRBRPBRBP",         period: 32 },
+  "sparse-weave-1": { sequence: "RBRPBRBP", period: 8 },
+  "sparse-weave-2": { sequence: "RBRPBRBPBRBPRBRP", period: 16 },
+  "sparse-weave-3": {
+    sequence: "RBRPBRBPBRBPRBRPBRBPRBRPRBRPBRBP",
+    period: 32,
+  },
 };
 
 // applyReversalToMotion
@@ -65,11 +68,16 @@ function applyReversalToMotion(motionType, isReversed) {
   if (!isReversed) return motionType;
 
   switch (motionType) {
-    case "pro":    return "anti";
-    case "anti":   return "pro";
-    case "static": return "static"; // no rotation to reverse
-    case "dash":   return "dash";   // directionless arc, reversal is a no-op
-    default:       return motionType;
+    case "pro":
+      return "anti";
+    case "anti":
+      return "pro";
+    case "static":
+      return "static"; // no rotation to reverse
+    case "dash":
+      return "dash"; // directionless arc, reversal is a no-op
+    default:
+      return motionType;
   }
 }
 
@@ -83,43 +91,46 @@ function applyReversalToMotion(motionType, isReversed) {
  *
  * Symbol meanings:
  *   P — both hands reversed (both Pro flip)
- *   R — red hand reversed only
- *   B — blue hand reversed only
+ *   R — right hand reversed only (canonical red)
+ *   B — left hand reversed only (canonical blue)
  *   - — neither hand reversed (continuous motion)
  *
  * @param {string} patternSequence - sequence string (e.g. 'RBRB')
  * @param {number} beatIndex       - 0-based index into the sequence
- * @returns {{ blueReversal: boolean, redReversal: boolean }}
+ * @returns {{ leftReversal: boolean, rightReversal: boolean }}
  * @throws {Error} if the symbol at the resolved index is not P, R, B, or -
  */
 function getReversalFlagsForBeat(patternSequence, beatIndex) {
   const symbol = patternSequence[beatIndex % patternSequence.length];
 
   switch (symbol) {
-    case "P": return { leftReversal: true,  rightReversal: true  };
-    case "R": return { leftReversal: false, rightReversal: true  };
-    case "B": return { leftReversal: true,  rightReversal: false };
-    case "-": return { leftReversal: false, rightReversal: false };
+    case "P":
+      return { leftReversal: true, rightReversal: true };
+    case "R":
+      return { leftReversal: false, rightReversal: true };
+    case "B":
+      return { leftReversal: true, rightReversal: false };
+    case "-":
+      return { leftReversal: false, rightReversal: false };
     default:
       throw new Error(
         `Unknown reversal symbol "${symbol}" at position ${beatIndex % patternSequence.length} ` +
-        `in pattern "${patternSequence}". Valid symbols are P, R, B, -.`
+          `in pattern "${patternSequence}". Valid symbols are P, R, B, -.`
       );
   }
 }
 
-
 /**
  * Applies a named reversal pattern to an array of step objects in-place.
  *
- * For each step, this sets blueReversal and redReversal flags based on the
- * pattern symbol for that beat, then flips blueMotionType and/or redMotionType
+ * For each step, this sets leftReversal and rightReversal flags based on the
+ * pattern symbol for that beat, then flips leftMotionType and/or rightMotionType
  * if the corresponding hand is reversed.
  *
  * The mutation is intentional — callers typically build steps, then layer
  * reversal on top, then persist. Returning the same array makes this chainable.
  *
- * @param {Array<{beatIndex: number, blueMotionType: string, redMotionType: string, blueReversal: boolean, redReversal: boolean}>} steps
+ * @param {Array<{beatIndex: number, leftMotionType: string, rightMotionType: string, leftReversal: boolean, rightReversal: boolean}>} steps
  * @param {string} patternId - key from REVERSAL_PATTERNS (e.g. 'book', 'alternating')
  * @returns {typeof steps} the mutated steps array
  * @throws {Error} if patternId is not found in REVERSAL_PATTERNS
@@ -129,7 +140,7 @@ function applyReversalPattern(steps, patternId) {
   if (!pattern) {
     throw new Error(
       `Unknown reversal pattern id "${patternId}". ` +
-      `Valid ids: ${Object.keys(REVERSAL_PATTERNS).join(", ")}`
+        `Valid ids: ${Object.keys(REVERSAL_PATTERNS).join(", ")}`
     );
   }
 
@@ -143,15 +154,24 @@ function applyReversalPattern(steps, patternId) {
   let rightParity = false;
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
-    const { leftReversal, rightReversal } = getReversalFlagsForBeat(pattern.sequence, i);
+    const { leftReversal, rightReversal } = getReversalFlagsForBeat(
+      pattern.sequence,
+      i
+    );
 
     if (leftReversal) leftParity = !leftParity;
-    if (rightReversal)  rightParity  = !rightParity;
+    if (rightReversal) rightParity = !rightParity;
 
     step.leftReversal = leftReversal;
-    step.rightReversal  = rightReversal;
-    step.leftMotionType = applyReversalToMotion(step.leftMotionType, leftParity);
-    step.rightMotionType  = applyReversalToMotion(step.rightMotionType,  rightParity);
+    step.rightReversal = rightReversal;
+    step.leftMotionType = applyReversalToMotion(
+      step.leftMotionType,
+      leftParity
+    );
+    step.rightMotionType = applyReversalToMotion(
+      step.rightMotionType,
+      rightParity
+    );
   }
 
   return steps;

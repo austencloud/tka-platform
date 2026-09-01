@@ -5,7 +5,7 @@
  * Shortcuts are only active when the animation panel is open.
  */
 
-import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/keyboard-shortcut-manager'
+import type { KeyboardShortcutManager } from "$lib/shared/keyboard/services/keyboard-shortcut-manager";
 export interface AnimationShortcutHandlers {
   onPlaybackToggle: () => void;
   onStepHalfBeatForward: () => void;
@@ -26,13 +26,37 @@ export interface AnimationShortcutDefinition {
 
 export class AnimationShortcutRegistrar {
   readonly shortcuts: readonly AnimationShortcutDefinition[] = [
-    { key: "Space", label: "Play / Pause", description: "Toggle animation playback" },
-    { key: "←", label: "Previous Beat", description: "Move backward one full beat" },
+    {
+      key: "Space",
+      label: "Play / Pause",
+      description: "Toggle animation playback",
+    },
+    {
+      key: "←",
+      label: "Previous Beat",
+      description: "Move backward one full beat",
+    },
     { key: "→", label: "Next Beat", description: "Move forward one full beat" },
-    { key: "Shift + ←", label: "Half Beat Back", description: "Move backward half a beat" },
-    { key: "Shift + →", label: "Half Beat Forward", description: "Move forward half a beat" },
-    { key: "B", label: "Toggle Blue", description: "Show/hide blue motion path" },
-    { key: "R", label: "Toggle Red", description: "Show/hide red motion path" },
+    {
+      key: "Shift + ←",
+      label: "Half Beat Back",
+      description: "Move backward half a beat",
+    },
+    {
+      key: "Shift + →",
+      label: "Half Beat Forward",
+      description: "Move forward half a beat",
+    },
+    {
+      key: "B",
+      label: "Toggle Left",
+      description: "Show/hide left motion path",
+    },
+    {
+      key: "R",
+      label: "Toggle Right",
+      description: "Show/hide right motion path",
+    },
     { key: "Esc", label: "Close", description: "Close the animation viewer" },
     { key: "?", label: "Help", description: "Show this help panel" },
   ] as const;
@@ -131,8 +155,8 @@ export class AnimationShortcutRegistrar {
     unregisterFns.push(
       service.register({
         id: "animation.toggle-blue",
-        label: "Toggle Blue Motion",
-        description: "Show or hide blue prop motion path",
+        label: "Toggle Left Motion",
+        description: "Show or hide left prop motion path",
         key: "b",
         modifiers: [],
         context: "animation-panel",
@@ -148,8 +172,8 @@ export class AnimationShortcutRegistrar {
     unregisterFns.push(
       service.register({
         id: "animation.toggle-red",
-        label: "Toggle Red Motion",
-        description: "Show or hide red prop motion path",
+        label: "Toggle Right Motion",
+        description: "Show or hide right prop motion path",
         key: "r",
         modifiers: [],
         context: "animation-panel",

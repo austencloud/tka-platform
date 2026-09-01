@@ -5,7 +5,7 @@ DOM pointer events.
 Why GridSvg and not InteractiveCanvas
 -------------------------------------
 InteractiveCanvas is the right shell when you need PROPS on a grid: it requires
-`blueProp`/`redProp` PropState and mounts AnimatorCanvas, which is the full
+left/right PropState and mounts AnimatorCanvas, which is the full
 Canvas2D animation engine with its own render loop, prop sprites, and glyph
 overlay. This game renders no props and plays no animation — it needs a grid and
 a route. In split mode it would mount TWO animation engines to draw two static

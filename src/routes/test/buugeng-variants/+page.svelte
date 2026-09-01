@@ -81,7 +81,7 @@
     <h1>Buugeng variants</h1>
     <p>
       Each row rendered through the real <code>applyMotionColorToSvg</code>
-      pipeline (selective mode = {String(selective)}). Blue / Red show the
+      pipeline (selective mode = {String(selective)}). Left / Right show the
       recolored body; the sheen / spine / glow overlays are preserved across
       recolor (url() gradients + white strokes survive).
     </p>
@@ -110,13 +110,13 @@
             <div class="stage">
               {@html r.left}
             </div>
-            <figcaption>blue prop</figcaption>
+            <figcaption>left prop</figcaption>
           </figure>
           <figure>
             <div class="stage">
               {@html r.right}
             </div>
-            <figcaption>red prop</figcaption>
+            <figcaption>right prop</figcaption>
           </figure>
         </div>
       {:else}

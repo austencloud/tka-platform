@@ -79,9 +79,9 @@ export class BrowserVariationProvider {
   /**
    * Map the app's rich PictographData to the engine's minimal PictographData.
    *
-   * The app stores motions as `motions: { blue?: MotionData, red?: MotionData }`
+   * The app stores motions as `motions: { left?: MotionData, right?: MotionData }`
    * with enum-typed fields and embedded placement/rendering data.
-   * The engine needs `blueMotion` / `redMotion` with plain string fields.
+   * The engine needs `leftMotion` / `rightMotion` with plain string fields.
    */
   private mapToEngineType(
     appPicto: AppPictographData
@@ -111,10 +111,7 @@ export class BrowserVariationProvider {
    * with the tka-types literal unions, but the runtime values are identical.
    * Data is trusted (validated via letter CSV + enum constructors upstream).
    */
-  private mapMotion(
-    appMotion: AppMotion,
-    color: string
-  ): EngineMotionData {
+  private mapMotion(appMotion: AppMotion, color: string): EngineMotionData {
     return {
       motionType: String(appMotion.motionType),
       startLocation: String(appMotion.startLocation),

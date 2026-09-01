@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { motionDataToConfig3D, stepDataToConfigs } from "$lib/shared/3d/services/sequence-converter";
+import {
+  motionDataToConfig3D,
+  stepDataToConfigs,
+} from "$lib/shared/3d/services/sequence-converter";
 import { Plane } from "@austencloud/scene-3d";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -22,8 +25,8 @@ describe("SequenceConverter plane passthrough", () => {
     const motion = createMotionData({ plane: Plane.FLOOR });
     const modeConfig = {
       facingAngle: 0,
-      leftPlane: Plane.WHEEL,
-      rightPlane: Plane.WHEEL,
+      bluePlane: Plane.WHEEL,
+      redPlane: Plane.WHEEL,
       rotationPlane: Plane.WALL,
       leftLateralOffset: 0,
       rightLateralOffset: 0,
@@ -47,8 +50,14 @@ describe("SequenceConverter plane passthrough", () => {
   });
 
   it("uses motion.plane per-hand when modeConfig is absent", () => {
-    const leftMotion = createMotionData({ plane: Plane.FLOOR, hand: HandSide.LEFT });
-    const rightMotion = createMotionData({ plane: Plane.WHEEL, hand: HandSide.RIGHT });
+    const leftMotion = createMotionData({
+      plane: Plane.FLOOR,
+      hand: HandSide.LEFT,
+    });
+    const rightMotion = createMotionData({
+      plane: Plane.WHEEL,
+      hand: HandSide.RIGHT,
+    });
 
     const beat = {
       stepNumber: 1,

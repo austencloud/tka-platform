@@ -187,7 +187,7 @@
         class="hand-half blue"
         class:has-spin={hasLeftTurns}
         role="group"
-        aria-label="Blue turns"
+        aria-label="Left turns"
         in:flyFade={{ y: 6 }}
       >
         <div class="hand-meta">
@@ -204,7 +204,7 @@
                 class="spin-inline edge"
                 transition:popIn
                 title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
-                aria-label="Toggle blue dash/static spin (currently {dirLabel(
+                aria-label="Toggle left dash/static spin (currently {dirLabel(
                   leftRotation
                 )})"
                 onclick={() => onLeftRotationChange(opposite(leftRotation))}
@@ -232,7 +232,7 @@
         class="hand-half red"
         class:has-spin={hasRightTurns}
         role="group"
-        aria-label="Red turns"
+        aria-label="Right turns"
         in:flyFade={{ y: 6, delay: STAGGER.micro }}
       >
         <div class="hand-meta">
@@ -242,7 +242,7 @@
                 class="spin-inline edge"
                 transition:popIn
                 title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
-                aria-label="Toggle red dash/static spin (currently {dirLabel(
+                aria-label="Toggle right dash/static spin (currently {dirLabel(
                   rightRotation
                 )})"
                 onclick={() => onRightRotationChange(opposite(rightRotation))}

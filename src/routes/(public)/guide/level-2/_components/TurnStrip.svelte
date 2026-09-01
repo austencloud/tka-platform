@@ -26,7 +26,12 @@
    *     needed beyond the same optional chaining the artboards already use).
    */
   export type TurnStripFrame =
-    | { kind: "start" | "end"; step: StepData; frameLabel?: string; thumbLabel?: string }
+    | {
+        kind: "start" | "end";
+        step: StepData;
+        frameLabel?: string;
+        thumbLabel?: string;
+      }
     | {
         kind: "half";
         step: StepData | null;
@@ -79,7 +84,10 @@
   import { getGuideSequenceClick } from "../../level-1/_data/guide-data-context";
   import { getGuideActiveStep } from "../../level-1/_data/guide-active-step.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { MotionType, HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import {
+    MotionType,
+    HandSide,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   let {
     frames,
@@ -153,7 +161,8 @@
   function isFrameActive(frame: TurnStripFrame, i: number): boolean {
     // Companion click (open-the-drawer) rings the combined frame regardless of
     // the scrub playhead; the scrub itself only rings breakdown frames.
-    if (frame.kind === "combined" && activeStep?.key === frame.animKey) return true;
+    if (frame.kind === "combined" && activeStep?.key === frame.animKey)
+      return true;
     return activeCheckpointIndex === i;
   }
 
@@ -192,23 +201,44 @@
     const where = from === to ? `at ${from}` : `from ${from} to ${to}`;
     return `Staff pose at the ${fractionWord(t)} point of the ${verb} motion ${where}.`;
   };
-  const dualPoseAriaLabel = (poses: { motion: HalfwayMotion; color: HandSide; t: number }[]): string =>
+  const dualPoseAriaLabel = (
+    poses: { motion: HalfwayMotion; color: HandSide; t: number }[]
+  ): string =>
     poses
-      .map((p) => `${p.color === HandSide.LEFT ? "Blue" : "Red"} ${poseAriaLabel(p.motion, p.t).charAt(0).toLowerCase()}${poseAriaLabel(p.motion, p.t).slice(1)}`)
+      .map(
+        (p) =>
+          `${p.color === HandSide.LEFT ? "Left" : "Right"} ${poseAriaLabel(p.motion, p.t).charAt(0).toLowerCase()}${poseAriaLabel(p.motion, p.t).slice(1)}`
+      )
       .join(" ");
 </script>
 
-<div class="turn-strip" role="group" aria-label={caption ?? "Turn breakdown diagram"}>
+<div
+  class="turn-strip"
+  role="group"
+  aria-label={caption ?? "Turn breakdown diagram"}
+>
   {#each frames as frame, i (i)}
     <div class="turn-frame">
       <span class="frame-cap top">{frame.frameLabel ?? ""}</span>
       <div class="frame-box" class:guide-step-active={isFrameActive(frame, i)}>
         {#if frame.kind === "pose"}
-          <div class="pose-box" role="img" aria-label={poseAriaLabel(frame.motion, frame.t)}>
-            <PoseFrame motion={frame.motion} t={frame.t} arrow={{ tStart: frame.arrowStart, tEnd: frame.t }} />
+          <div
+            class="pose-box"
+            role="img"
+            aria-label={poseAriaLabel(frame.motion, frame.t)}
+          >
+            <PoseFrame
+              motion={frame.motion}
+              t={frame.t}
+              arrow={{ tStart: frame.arrowStart, tEnd: frame.t }}
+            />
           </div>
         {:else if frame.kind === "dual-pose"}
-          <div class="pose-box dual" role="img" aria-label={dualPoseAriaLabel(frame.poses)}>
+          <div
+            class="pose-box dual"
+            role="img"
+            aria-label={dualPoseAriaLabel(frame.poses)}
+          >
             {#each frame.poses as p, pi (pi)}
               <div class="pose-layer">
                 <PoseFrame motion={p.motion} t={p.t} color={p.color} />
@@ -216,8 +246,16 @@
             {/each}
           </div>
         {:else if frame.kind === "half" && !frame.step}
-          <div class="pose-box" role="img" aria-label={poseAriaLabel(frame.fallbackMotion, 0.5)}>
-            <PoseFrame motion={frame.fallbackMotion} t={0.5} arrow={{ tStart: 0, tEnd: 0.5 }} />
+          <div
+            class="pose-box"
+            role="img"
+            aria-label={poseAriaLabel(frame.fallbackMotion, 0.5)}
+          >
+            <PoseFrame
+              motion={frame.fallbackMotion}
+              t={0.5}
+              arrow={{ tStart: 0, tEnd: 0.5 }}
+            />
           </div>
         {:else if frame.kind === "combined"}
           <div
@@ -225,7 +263,13 @@
             class:is-hovered={selection?.isHovered(frame.animKey)}
             class:is-selected={selection?.isSelected(frame.animKey)}
           >
-            <GuidePictograph data={frame.step} size="md" eager forceTheme={picTheme} propType={PropType.STAFF} />
+            <GuidePictograph
+              data={frame.step}
+              size="md"
+              eager
+              forceTheme={picTheme}
+              propType={PropType.STAFF}
+            />
             <SelectionHit
               groupId={frame.animKey}
               isGroupStart
@@ -260,7 +304,14 @@
             <span class="equals">=</span>
           {:else}
             <svg class="flow-arrow" viewBox="0 0 14.5 10">
-              <line x1="0" y1="5" x2="7.5" y2="5" stroke="currentColor" stroke-width="2" />
+              <line
+                x1="0"
+                y1="5"
+                x2="7.5"
+                y2="5"
+                stroke="currentColor"
+                stroke-width="2"
+              />
               <polygon points="6.5,1.3 14.5,5 6.5,8.7" fill="currentColor" />
             </svg>
           {/if}
@@ -346,7 +397,8 @@
     border-radius: 12px;
     overflow: hidden;
     background: color-mix(in oklab, var(--ink, #ececf2) 5%, transparent);
-    box-shadow: 0 1px 4px color-mix(in oklab, var(--ink, #ececf2) 7%, transparent);
+    box-shadow: 0 1px 4px
+      color-mix(in oklab, var(--ink, #ececf2) 7%, transparent);
   }
   .pose-box {
     width: 100%;

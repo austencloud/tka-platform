@@ -73,12 +73,12 @@
   const isContextualMessage = $derived.by(() => {
     const contextualPhrases = [
       "Configure Your Settings",
-      "Drawing Blue Hand Path",
-      "Drawing Red Hand Path",
+      "Drawing Left Hand Path",
+      "Drawing Right Hand Path",
       "Sequence Complete!",
       "Draw Hand Path",
       "Choose your start position!",
-      "Choose the blue starting location",
+      "Choose the left-hand starting location",
       "Configure sequence parameters",
       "Select your first step!",
       "Choose your 1st pictograph!",

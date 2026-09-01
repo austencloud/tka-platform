@@ -7,8 +7,13 @@
    */
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
   import SequenceShowcase from "../../../level-1/_components/SequenceShowcase.svelte";
-  import TurnStrip, { type TurnStripFrame } from "../../_components/TurnStrip.svelte";
-  import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import TurnStrip, {
+    type TurnStripFrame,
+  } from "../../_components/TurnStrip.svelte";
+  import {
+    createMotionData,
+    createPlaceholderMotion,
+  } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
   import {
     MotionType,
@@ -16,16 +21,22 @@
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    GridLocation,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { bakeReversals, stripToSequence } from "../../../level-1/_data/guide-sequence-adapter";
+  import {
+    bakeReversals,
+    stripToSequence,
+  } from "../../../level-1/_data/guide-sequence-adapter";
 
   const { NORTH: N, SOUTH: SO_ } = GridLocation;
   const { IN } = Orientation;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  const redStaff = (
+  const rightStaff = (
     id: string,
     type: MotionType,
     from: GridLocation,
@@ -47,15 +58,23 @@
         startOrientation: startOri,
         endOrientation: endOri,
         turns,
-        color: HandSide.RIGHT,
+        hand: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
     },
   });
   const stat = (id: string, loc: GridLocation, ori: Orientation) =>
-    redStaff(id, MotionType.STATIC, loc, loc, ori, ori, RotationDirection.NO_ROTATION);
-  const toHM = (m: ReturnType<typeof redStaff>["motions"]["right"]) => ({
+    rightStaff(
+      id,
+      MotionType.STATIC,
+      loc,
+      loc,
+      ori,
+      ori,
+      RotationDirection.NO_ROTATION
+    );
+  const toHM = (m: ReturnType<typeof rightStaff>["motions"]["right"]) => ({
     type: m.motionType,
     from: m.startLocation,
     to: m.endLocation,
@@ -67,33 +86,64 @@
 
   // ── Motion data (verbatim from DashStaticTurnsPage.svelte's dash row) ────
   // Dash: S→N IN→IN CCW turns=1 - a vertical dash returning to thumb in.
-  const dashCombined = redStaff("dash-full", MotionType.DASH, SO_, N, IN, IN, CCW, 1);
+  const dashCombined = rightStaff(
+    "dash-full",
+    MotionType.DASH,
+    SO_,
+    N,
+    IN,
+    IN,
+    CCW,
+    1
+  );
 
   const ANIM = {
-    "l2td1-dash": { data: dashCombined, word: "Dash with a turn", startLoc: SO_ },
+    "l2td1-dash": {
+      data: dashCombined,
+      word: "Dash with a turn",
+      startLoc: SO_,
+    },
   } as const;
-  const animStep = (data: ReturnType<typeof redStaff>, stepNumber: number, startLoc: GridLocation): StepData =>
+  const animStep = (
+    data: ReturnType<typeof rightStaff>,
+    stepNumber: number,
+    startLoc: GridLocation
+  ): StepData =>
     ({
       ...data,
       id: `${data.id}-anim-${stepNumber}`,
       stepNumber,
       motions: {
-        left: createPlaceholderMotion(HandSide.LEFT, { location: startLoc, orientation: IN }),
+        left: createPlaceholderMotion(HandSide.LEFT, {
+          location: startLoc,
+          orientation: IN,
+        }),
         right: data.motions.right,
       },
     }) as unknown as StepData;
   const rowSteps = (key: keyof typeof ANIM): StepData[] => {
     const cfg = ANIM[key];
-    const start = animStep(stat(`${key}-start`, cfg.startLoc, IN), 0, cfg.startLoc);
+    const start = animStep(
+      stat(`${key}-start`, cfg.startLoc, IN),
+      0,
+      cfg.startLoc
+    );
     const combined = animStep(cfg.data, 1, cfg.startLoc);
     return [start, ...bakeReversals([combined])];
   };
-  const halfOf = (combined: ReturnType<typeof redStaff>, startLoc: GridLocation) =>
-    buildHalvedStep(animStep(combined, 1, startLoc), 0.5);
+  const halfOf = (
+    combined: ReturnType<typeof rightStaff>,
+    startLoc: GridLocation
+  ) => buildHalvedStep(animStep(combined, 1, startLoc), 0.5);
 
   const dashHM = toHM(dashCombined.motions.right);
   const dashFrames: TurnStripFrame[] = [
-    { kind: "start", step: animStep(stat("start", SO_, IN), 0, SO_), frameLabel: "start", thumbLabel: "in" },
+    {
+      kind: "start",
+      step: animStep(stat("start", SO_, IN), 0, SO_),
+      frameLabel: "start",
+      thumbLabel: "in",
+    },
     {
       kind: "half",
       step: halfOf(dashCombined, SO_),
@@ -102,7 +152,11 @@
     },
     {
       kind: "end",
-      step: animStep(stat("end", N, dashCombined.motions.right.endOrientation), 0, N),
+      step: animStep(
+        stat("end", N, dashCombined.motions.right.endOrientation),
+        0,
+        N
+      ),
       frameLabel: "end",
       thumbLabel: "in",
     },
@@ -123,25 +177,43 @@
 <GuideSection id="turn-dashes" title="Dashes" subtitle="VTG: 1:1">
   <div class="section-body">
     <p>
-      You can also add a turn to a dash. During the prop rotation, move the hand directly in a straight line. Pause at the halfway point while learning to ensure that your hand is in the center point and the staff is perpendicular to your starting position.
+      You can also add a turn to a dash. During the prop rotation, move the hand
+      directly in a straight line. Pause at the halfway point while learning to
+      ensure that your hand is in the center point and the staff is
+      perpendicular to your starting position.
     </p>
   </div>
 
   <div class="showcase-wrap">
-    <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={dashSequence} items={[]} bpm={60}>
+    <SequenceShowcase
+      variant="compact"
+      render={{ propType: PropType.STAFF }}
+      sequence={dashSequence}
+      items={[]}
+      bpm={60}
+    >
       {#snippet strip(t)}
-        <TurnStrip frames={dashFrames} activeT={t} caption="The staff crosses straight through the center from south to north, flipping its thumb reference along the way" />
+        <TurnStrip
+          frames={dashFrames}
+          activeT={t}
+          caption="The staff crosses straight through the center from south to north, flipping its thumb reference along the way"
+        />
       {/snippet}
     </SequenceShowcase>
   </div>
 
   <div class="section-body">
     <p>
-      A base dash has 1 thumb switch (in → out), therefore a dash with a turn has 2 thumb switches (in → in).
+      A base dash has 1 thumb switch (in → out), therefore a dash with a turn
+      has 2 thumb switches (in → in).
     </p>
 
     <p>
-      Executing this move on repeat is commonly called a linear extension. It feels peculiar to execute with staves because one end is in pro and the other end is in anti. It helps to focus on the half that's in antispin. This will ensure that you pass your hand directly through the center point.
+      Executing this move on repeat is commonly called a linear extension. It
+      feels peculiar to execute with staves because one end is in pro and the
+      other end is in anti. It helps to focus on the half that's in antispin.
+      This will ensure that you pass your hand directly through the center
+      point.
     </p>
   </div>
 </GuideSection>

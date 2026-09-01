@@ -44,8 +44,8 @@ describe("curated LOOP seed hydration", () => {
       for (const step of sequence.steps) {
         expect(step.startPosition).not.toBeNull();
         expect(step.endPosition).not.toBeNull();
-        expect(step.motions.left.hand).toBe("blue");
-        expect(step.motions.right.hand).toBe("red");
+        expect(step.motions.left.hand).toBe("left");
+        expect(step.motions.right.hand).toBe("right");
         expect(step.motions.left.isVisible).toBe(true);
         expect(step.motions.right.isVisible).toBe(true);
       }

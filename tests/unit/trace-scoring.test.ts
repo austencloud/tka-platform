@@ -35,7 +35,12 @@ const S = GridLocation.SOUTH;
 const W = GridLocation.WEST;
 
 function move(start: GridLocation, end: GridLocation): TraceSegment {
-  return { kind: "move", start, end, expectedPath: sampleSegmentPath(start, end) };
+  return {
+    kind: "move",
+    start,
+    end,
+    expectedPath: sampleSegmentPath(start, end),
+  };
 }
 
 function beat(index: number, segments: TraceBeat["segments"]): TraceBeat {
@@ -101,11 +106,11 @@ describe("one-hand scoring carries no hidden synchrony penalty", () => {
     };
 
     const solo = createTraceEvaluator(soloRound);
-    solo.ingest("blue", perfectTrace(N, E));
+    solo.ingest("left", perfectTrace(N, E));
 
     const duo = createTraceEvaluator(duoRound);
-    duo.ingest("blue", perfectTrace(N, E));
-    duo.ingest("red", perfectTrace(S, W));
+    duo.ingest("left", perfectTrace(N, E));
+    duo.ingest("right", perfectTrace(S, W));
 
     const soloScore = scoreTraceRound(solo.finish());
     const duoScore = scoreTraceRound(duo.finish());
@@ -116,7 +121,6 @@ describe("one-hand scoring carries no hidden synchrony penalty", () => {
     expect(Math.abs(soloScore.points - duoScore.points)).toBeLessThanOrEqual(1);
   });
 });
-
 describe("completion is a gate, not a weight", () => {
   it("a beautiful line that skipped a checkpoint scores nothing", () => {
     const gated = scoreTraceRound(
@@ -138,7 +142,7 @@ describe("completion is a gate, not a weight", () => {
     const last = path[path.length - 1]!;
 
     const evaluator = createTraceEvaluator(round);
-    evaluator.ingest("blue", [
+    evaluator.ingest("left", [
       { x: first.x, y: first.y, t: 0 },
       { x: last.x, y: last.y, t: 150 },
     ]);

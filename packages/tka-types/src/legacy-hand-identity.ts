@@ -70,10 +70,16 @@ export function normalizeLegacyStep<T>(value: T): T {
     normalized.motions = normalizeLegacyMotionRecord(value.motions);
   }
 
-  if (normalized.leftReversal === undefined && value.blueReversal !== undefined) {
+  if (
+    normalized.leftReversal === undefined &&
+    value.blueReversal !== undefined
+  ) {
     normalized.leftReversal = value.blueReversal;
   }
-  if (normalized.rightReversal === undefined && value.redReversal !== undefined) {
+  if (
+    normalized.rightReversal === undefined &&
+    value.redReversal !== undefined
+  ) {
     normalized.rightReversal = value.redReversal;
   }
   delete normalized.blueReversal;
@@ -103,14 +109,29 @@ export function normalizeLegacyPropConfig<T>(value: T): T {
   const normalized: UnknownRecord = { ...value };
   moveLegacyField(normalized, value, "leftPropType", "bluePropType");
   moveLegacyField(normalized, value, "rightPropType", "redPropType");
-  moveLegacyField(normalized, value, "leftPropDimensions", "bluePropDimensions");
-  moveLegacyField(normalized, value, "rightPropDimensions", "redPropDimensions");
+  moveLegacyField(
+    normalized,
+    value,
+    "leftPropDimensions",
+    "bluePropDimensions"
+  );
+  moveLegacyField(
+    normalized,
+    value,
+    "rightPropDimensions",
+    "redPropDimensions"
+  );
   return normalized as T;
 }
 
 /** Converts a generic legacy `{ blue, red }` hand pair into `{ left, right }`. */
 export function normalizeLegacyHandPair<T>(value: T): T {
   if (!isRecord(value)) return value;
+
+  const hasLegacyKey =
+    Object.prototype.hasOwnProperty.call(value, "blue") ||
+    Object.prototype.hasOwnProperty.call(value, "red");
+  if (!hasLegacyKey) return value;
 
   const normalized: UnknownRecord = { ...value };
   moveLegacyField(normalized, value, "left", "blue");
@@ -143,7 +164,9 @@ export function normalizeLegacySequence<T>(value: T): T {
     normalized.startingPosition = normalizeLegacyStep(value.startingPosition);
   }
   if (Array.isArray(value.stepPairings)) {
-    normalized.stepPairings = value.stepPairings.map(normalizeLegacyStepPairing);
+    normalized.stepPairings = value.stepPairings.map(
+      normalizeLegacyStepPairing
+    );
   }
   if (value.loopSpec !== undefined) {
     normalized.loopSpec = normalizeLegacyHandPair(value.loopSpec);

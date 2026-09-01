@@ -7,7 +7,7 @@
       "startPosition": "gamma3",
       "endPosition": "gamma13",
       "stepNumber": 1,
-      "blueMotion": {
+      "leftMotion": {
         "motionType": "pro",
         "startLocation": "n",
         "endLocation": "w",
@@ -17,7 +17,7 @@
         "turns": 1.5,
         "plane": "wall"
       },
-      "redMotion": {
+      "rightMotion": {
         "motionType": "pro",
         "startLocation": "e",
         "endLocation": "s",
@@ -33,7 +33,7 @@
       "startPosition": "gamma13",
       "endPosition": "alpha7",
       "stepNumber": 2,
-      "blueMotion": {
+      "leftMotion": {
         "motionType": "dash",
         "startLocation": "w",
         "endLocation": "e",
@@ -43,7 +43,7 @@
         "turns": 2,
         "plane": "wall"
       },
-      "redMotion": {
+      "rightMotion": {
         "motionType": "pro",
         "startLocation": "s",
         "endLocation": "w",
@@ -59,7 +59,7 @@
       "startPosition": "alpha7",
       "endPosition": "alpha1",
       "stepNumber": 3,
-      "blueMotion": {
+      "leftMotion": {
         "motionType": "anti",
         "startLocation": "e",
         "endLocation": "s",
@@ -69,7 +69,7 @@
         "turns": 3,
         "plane": "wall"
       },
-      "redMotion": {
+      "rightMotion": {
         "motionType": "pro",
         "startLocation": "w",
         "endLocation": "n",
@@ -85,7 +85,7 @@
       "startPosition": "alpha1",
       "endPosition": "gamma1",
       "stepNumber": 4,
-      "blueMotion": {
+      "leftMotion": {
         "motionType": "anti",
         "startLocation": "s",
         "endLocation": "w",
@@ -95,7 +95,7 @@
         "turns": 1.5,
         "plane": "wall"
       },
-      "redMotion": {
+      "rightMotion": {
         "motionType": "static",
         "startLocation": "n",
         "endLocation": "n",
@@ -111,7 +111,7 @@
       "startPosition": "gamma1",
       "endPosition": "gamma11",
       "stepNumber": 5,
-      "blueMotion": {
+      "leftMotion": {
         "motionType": "pro",
         "startLocation": "w",
         "endLocation": "s",
@@ -121,7 +121,7 @@
         "turns": 1.5,
         "plane": "wall"
       },
-      "redMotion": {
+      "rightMotion": {
         "motionType": "pro",
         "startLocation": "n",
         "endLocation": "e",
@@ -137,7 +137,7 @@
       "startPosition": "gamma11",
       "endPosition": "alpha5",
       "stepNumber": 6,
-      "blueMotion": {
+      "leftMotion": {
         "motionType": "dash",
         "startLocation": "s",
         "endLocation": "n",
@@ -147,7 +147,7 @@
         "turns": 2,
         "plane": "wall"
       },
-      "redMotion": {
+      "rightMotion": {
         "motionType": "pro",
         "startLocation": "e",
         "endLocation": "s",
@@ -163,7 +163,7 @@
       "startPosition": "alpha5",
       "endPosition": "alpha7",
       "stepNumber": 7,
-      "blueMotion": {
+      "leftMotion": {
         "motionType": "anti",
         "startLocation": "n",
         "endLocation": "e",
@@ -173,7 +173,7 @@
         "turns": 3,
         "plane": "wall"
       },
-      "redMotion": {
+      "rightMotion": {
         "motionType": "pro",
         "startLocation": "s",
         "endLocation": "w",
@@ -189,7 +189,7 @@
       "startPosition": "alpha7",
       "endPosition": "gamma7",
       "stepNumber": 8,
-      "blueMotion": {
+      "leftMotion": {
         "motionType": "anti",
         "startLocation": "e",
         "endLocation": "s",
@@ -199,7 +199,7 @@
         "turns": 1.5,
         "plane": "wall"
       },
-      "redMotion": {
+      "rightMotion": {
         "motionType": "static",
         "startLocation": "w",
         "endLocation": "w",
@@ -215,7 +215,7 @@
       "startPosition": "gamma7",
       "endPosition": "gamma9",
       "stepNumber": 9,
-      "blueMotion": {
+      "leftMotion": {
         "motionType": "pro",
         "startLocation": "s",
         "endLocation": "e",
@@ -225,7 +225,7 @@
         "turns": 1.5,
         "plane": "wall"
       },
-      "redMotion": {
+      "rightMotion": {
         "motionType": "pro",
         "startLocation": "w",
         "endLocation": "n",
@@ -241,7 +241,7 @@
       "startPosition": "gamma9",
       "endPosition": "alpha3",
       "stepNumber": 10,
-      "blueMotion": {
+      "leftMotion": {
         "motionType": "dash",
         "startLocation": "e",
         "endLocation": "w",
@@ -251,7 +251,7 @@
         "turns": 2,
         "plane": "wall"
       },
-      "redMotion": {
+      "rightMotion": {
         "motionType": "pro",
         "startLocation": "n",
         "endLocation": "e",
@@ -267,7 +267,7 @@
       "startPosition": "alpha3",
       "endPosition": "alpha5",
       "stepNumber": 11,
-      "blueMotion": {
+      "leftMotion": {
         "motionType": "anti",
         "startLocation": "w",
         "endLocation": "n",
@@ -277,7 +277,7 @@
         "turns": 3,
         "plane": "wall"
       },
-      "redMotion": {
+      "rightMotion": {
         "motionType": "pro",
         "startLocation": "e",
         "endLocation": "s",
@@ -293,7 +293,7 @@
       "startPosition": "alpha5",
       "endPosition": "gamma5",
       "stepNumber": 12,
-      "blueMotion": {
+      "leftMotion": {
         "motionType": "anti",
         "startLocation": "n",
         "endLocation": "e",
@@ -303,7 +303,7 @@
         "turns": 1.5,
         "plane": "wall"
       },
-      "redMotion": {
+      "rightMotion": {
         "motionType": "static",
         "startLocation": "s",
         "endLocation": "s",
@@ -319,7 +319,7 @@
       "startPosition": "gamma5",
       "endPosition": "gamma15",
       "stepNumber": 13,
-      "blueMotion": {
+      "leftMotion": {
         "motionType": "pro",
         "startLocation": "e",
         "endLocation": "n",
@@ -329,7 +329,7 @@
         "turns": 1.5,
         "plane": "wall"
       },
-      "redMotion": {
+      "rightMotion": {
         "motionType": "pro",
         "startLocation": "s",
         "endLocation": "w",
@@ -345,7 +345,7 @@
       "startPosition": "gamma15",
       "endPosition": "alpha1",
       "stepNumber": 14,
-      "blueMotion": {
+      "leftMotion": {
         "motionType": "dash",
         "startLocation": "n",
         "endLocation": "s",
@@ -355,7 +355,7 @@
         "turns": 2,
         "plane": "wall"
       },
-      "redMotion": {
+      "rightMotion": {
         "motionType": "pro",
         "startLocation": "w",
         "endLocation": "n",
@@ -371,7 +371,7 @@
       "startPosition": "alpha1",
       "endPosition": "alpha3",
       "stepNumber": 15,
-      "blueMotion": {
+      "leftMotion": {
         "motionType": "anti",
         "startLocation": "s",
         "endLocation": "w",
@@ -381,7 +381,7 @@
         "turns": 3,
         "plane": "wall"
       },
-      "redMotion": {
+      "rightMotion": {
         "motionType": "pro",
         "startLocation": "n",
         "endLocation": "e",
@@ -397,7 +397,7 @@
       "startPosition": "alpha3",
       "endPosition": "gamma3",
       "stepNumber": 16,
-      "blueMotion": {
+      "leftMotion": {
         "motionType": "anti",
         "startLocation": "w",
         "endLocation": "n",
@@ -407,7 +407,7 @@
         "turns": 1.5,
         "plane": "wall"
       },
-      "redMotion": {
+      "rightMotion": {
         "motionType": "static",
         "startLocation": "e",
         "endLocation": "e",

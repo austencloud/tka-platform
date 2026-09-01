@@ -6,7 +6,7 @@
   the REAL diamond hand points. Press Next → hands slide between alpha/beta/gamma.
 
   Hands keep FIXED orientation (no prop-style rotation-angle map) — only position
-  changes. Red hand mirrored, same as PropSvg. Size = asset native size in the
+  changes. Right hand mirrored, same as PropSvg. Size = asset native size in the
   950 grid space (loader applies no scale), placed via translate(-center).
 -->
 <script lang="ts">
@@ -20,7 +20,11 @@
   import type { PropPlacementData } from "$lib/shared/pictograph/prop/domain/models/prop-placement-data";
   import LessonGridDisplay from "$lib/shared/pictograph/grid/components/LessonGridDisplay.svelte";
 
-  type SvgData = { svgContent: string; viewBox: { width: number; height: number }; center: { x: number; y: number } };
+  type SvgData = {
+    svgContent: string;
+    viewBox: { width: number; height: number };
+    center: { x: number; y: number };
+  };
 
   type Pt = { x: number; y: number };
 
@@ -48,17 +52,32 @@
   type PosStep = { name: string; vtg: string; kind: PosKind; caption: string };
   // vtg = old-school VTG timing word (split/together/quarter), subtle nod.
   const steps: PosStep[] = [
-    { name: "Alpha", vtg: "Split", kind: "alpha", caption: "Hands at opposite points on the grid." },
-    { name: "Beta", vtg: "Together", kind: "beta", caption: "Both hands at the same point." },
-    { name: "Gamma", vtg: "Quarter", kind: "gamma", caption: "Hands at neighboring points, a right angle apart." },
+    {
+      name: "Alpha",
+      vtg: "Split",
+      kind: "alpha",
+      caption: "Hands at opposite points on the grid.",
+    },
+    {
+      name: "Beta",
+      vtg: "Together",
+      kind: "beta",
+      caption: "Both hands at the same point.",
+    },
+    {
+      name: "Gamma",
+      vtg: "Quarter",
+      kind: "gamma",
+      caption: "Hands at neighboring points, a right angle apart.",
+    },
   ];
-  // Canonical bases (blue,red), grounded in generate-skewed-dataframe.ts + MCP.
-  // Blue anchors at SOUTH for all three; red animates N → S → E across the walkthrough.
-  //   alpha1 = blue S, red N | beta5 = blue S, red S | gamma11 = blue S, red E
+  // Canonical bases (left, right), grounded in generate-skewed-dataframe.ts + MCP.
+  // Left anchors at SOUTH for all three; right animates N → S → E across the walkthrough.
+  //   alpha1 = left S, right N | beta5 = left S, right S | gamma11 = left S, right E
   const BASE: Record<PosKind, { right: number; left: number }> = {
-    alpha: { right: 0, left: 4 }, // red N, blue S
-    beta: { right: 4, left: 4 }, //  red S, blue S
-    gamma: { right: 2, left: 4 }, // red E, blue S
+    alpha: { right: 0, left: 4 }, // right N, left S
+    beta: { right: 4, left: 4 }, // right S, left S
+    gamma: { right: 2, left: 4 }, // right E, left S
   };
 
   // Canonical letter glyph, bottom-left at x=50 y=800 in the 950 space (per TKAGlyph).
@@ -70,7 +89,7 @@
   };
 
   // Resolve a position's two hand points for a given rotation / color-swap / mirror.
-  // `cell` = geometric state id (red's point index BEFORE color swap), for the discovery tray.
+  // `cell` = geometric state id (right's point index before hand swap), for the discovery tray.
   // Hands from explicit current point indices. Transforms mutate these directly
   // (one-shot algebra), so rotation stays clockwise no matter what came before.
   function handsFor(kind: PosKind, rightIdx, leftIdx) {
@@ -79,7 +98,7 @@
     let left = PTS[leftIdx]!;
     if (kind === "beta") {
       // both hands share one grid point: constant offset so both props read.
-      // red = right hand → right; blue = left hand → left.
+      // Offset the right hand rightward and the left hand leftward.
       right = { x: rp.x + BETA_DX, y: rp.y };
       left = { x: rp.x - BETA_DX, y: rp.y };
     }
@@ -87,7 +106,7 @@
     //  alpha = 4 pairs × 2 colorings, beta = 8 points → 8; gamma = 8 pairs × 2 → 16.
     let cell: number, total: number;
     if (kind === "gamma") {
-      const diff = wrap8(leftIdx - rightIdx); // 2 (red leads) or 6 (blue leads)
+      const diff = wrap8(leftIdx - rightIdx); // 2 (right leads) or 6 (left leads)
       cell = rightIdx + (diff === 2 ? 0 : 8);
       total = 16;
     } else {
@@ -96,7 +115,8 @@
     }
     return { right, left, diamond: isDiamondPt(rightIdx), cell, total };
   }
-  const baseHands = (kind: PosKind) => handsFor(kind, BASE[kind].right, BASE[kind].left);
+  const baseHands = (kind: PosKind) =>
+    handsFor(kind, BASE[kind].right, BASE[kind].left);
 
   const COMPARE = steps.length; // index of the compare-row stage
   const TOTAL = steps.length + 1;
@@ -118,23 +138,39 @@
   let leftHand = $state<SvgData | null>(null);
 
   async function loadHand(color: HandSide): Promise<SvgData | null> {
-    const motionData = { propType: PropType.HAND, color } as unknown as MotionData;
+    const motionData = {
+      propType: PropType.HAND,
+      color,
+    } as unknown as MotionData;
     const propData = {
-      positionX: 0, positionY: 0, rotationAngle: 0,
-      coordinates: null, svgCenter: null, svgMirrored: false,
-      manualAdjustmentX: 0, manualAdjustmentY: 0,
+      positionX: 0,
+      positionY: 0,
+      rotationAngle: 0,
+      coordinates: null,
+      svgCenter: null,
+      svgMirrored: false,
+      manualAdjustmentX: 0,
+      manualAdjustmentY: 0,
     } as unknown as PropPlacementData;
     // useGridVersion=true → the grid-centered animated hand asset (built for movement).
-    const r = await propSvgLoader.loadPropSvg(propData, motionData, true, { themeMode: "light" });
+    const r = await propSvgLoader.loadPropSvg(propData, motionData, true, {
+      themeMode: "light",
+    });
     return r.svgData as SvgData | null;
   }
 
   onMount(async () => {
-    [rightHand, leftHand] = await Promise.all([loadHand(HandSide.RIGHT), loadHand(HandSide.LEFT)]);
+    [rightHand, leftHand] = await Promise.all([
+      loadHand(HandSide.RIGHT),
+      loadHand(HandSide.LEFT),
+    ]);
   });
 
   function prefersReduced() {
-    return typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    return (
+      typeof matchMedia !== "undefined" &&
+      matchMedia("(prefers-reduced-motion: reduce)").matches
+    );
   }
 
   // FLIP: animate `el` from a previously-measured rect to its current spot.
@@ -150,14 +186,18 @@
         },
         { transformOrigin: "top left", transform: "none" },
       ],
-      { duration: FLIP_MS, easing: EASE },
+      { duration: FLIP_MS, easing: EASE }
     );
   }
 
   // alpha/beta peel: slides between own slot and gamma's column + fades.
   // Runs on BOTH mount (in) and unmount (out), so Back animates out symmetrically.
   // Gamma's own figure is a no-op here — it morphs via the WAAPI FLIP instead.
-  function peelTransition(node: Element, params: { slots: number }, opts?: { direction?: string }) {
+  function peelTransition(
+    node: Element,
+    params: { slots: number },
+    opts?: { direction?: string }
+  ) {
     if (prefersReduced() || node === figureEls[lastIdx]) return { duration: 0 };
     const me = node.getBoundingClientRect();
     const g = squareEls[lastIdx]?.getBoundingClientRect();
@@ -178,13 +218,15 @@
 
   // ---- Stage 3: tap a position → expand a focus panel that proves invariance ----
   let focus = $state<number | null>(null); // which compare card is expanded (0/1/2)
-  let rightIdx = $state(0); // current red hand point index (live state the actions mutate)
+  let rightIdx = $state(0); // current right-hand point index (live state the actions mutate)
   let leftIdx = $state(0);
   let visited = $state<Set<number>>(new Set());
   let lastAction = $state("");
 
   const focusStep = $derived(focus === null ? null : steps[focus]);
-  const focusHands = $derived(focusStep ? handsFor(focusStep.kind, rightIdx, leftIdx) : null);
+  const focusHands = $derived(
+    focusStep ? handsFor(focusStep.kind, rightIdx, leftIdx) : null
+  );
   // which discovery state is on screen + how many total for this position (8 or 16)
   const currentCell = $derived(focusHands ? focusHands.cell : 0);
   const focusTotal = $derived(focusHands ? focusHands.total : 8);
@@ -196,22 +238,29 @@
   });
 
   function openFocus(idx: number) {
-    if (focus === idx) { focus = null; return; } // tap the open card again to close
+    if (focus === idx) {
+      focus = null;
+      return;
+    } // tap the open card again to close
     focus = idx;
     const k = steps[idx]!.kind;
-    rightIdx = BASE[k].right; leftIdx = BASE[k].left;
+    rightIdx = BASE[k].right;
+    leftIdx = BASE[k].left;
     visited = new Set();
     lastAction = "";
   }
   function doRotate() {
     // clockwise step applied to the live state (PTS ordered clockwise from N → +1)
-    rightIdx = wrap8(rightIdx + 1); leftIdx = wrap8(leftIdx + 1);
+    rightIdx = wrap8(rightIdx + 1);
+    leftIdx = wrap8(leftIdx + 1);
     lastAction = `Rotated clockwise — still ${steps[focus!]!.name}.`;
   }
   function doMirror() {
-    const nr = wrap8(8 - rightIdx), nb = wrap8(8 - leftIdx); // reflect across the vertical axis
+    const nr = wrap8(8 - rightIdx),
+      nb = wrap8(8 - leftIdx); // reflect across the vertical axis
     const noChange = nr === rightIdx && nb === leftIdx;
-    rightIdx = nr; leftIdx = nb;
+    rightIdx = nr;
+    leftIdx = nb;
     lastAction = noChange
       ? `Mirror does nothing here — this one's symmetric. Still ${steps[focus!]!.name}.`
       : `Mirrored — still ${steps[focus!]!.name}.`;
@@ -235,7 +284,8 @@
 
     let firstRect: DOMRect | null = null;
     if (entering && heroEl) firstRect = heroEl.getBoundingClientRect();
-    else if (leaving && squareEls[lastIdx]) firstRect = squareEls[lastIdx]!.getBoundingClientRect();
+    else if (leaving && squareEls[lastIdx])
+      firstRect = squareEls[lastIdx]!.getBoundingClientRect();
     if (leaving && firstRect) {
       stackOriginLeft = firstRect.left;
       // hide the small gamma card immediately so only the morphing hero shows
@@ -260,7 +310,9 @@
   <!-- same transform as PropSvg, minus rotation: translate(point) [mirror] translate(-center) -->
   <g
     class="hand"
-    style="transform: translate({p.x}px, {p.y}px) {mirror ? 'scaleX(-1) ' : ''}translate({-sd.center.x}px, {-sd.center.y}px);"
+    style="transform: translate({p.x}px, {p.y}px) {mirror
+      ? 'scaleX(-1) '
+      : ''}translate({-sd.center.x}px, {-sd.center.y}px);"
   >
     {@html sd.svgContent}
   </g>
@@ -296,107 +348,148 @@
   <div class="stage">
     {#if isCompare}
       <div class="pane">
-      <div class="compare">
-        {#each steps as s, idx (s.name)}
-          <figure
-            class="card"
-            class:selected={focus === idx}
-            style="z-index:{idx};"
-            bind:this={figureEls[idx]}
-            transition:peelTransition|global={{ slots: steps.length - 1 - idx }}
-          >
-            <button
-              type="button"
-              class="card-square"
-              bind:this={squareEls[idx]}
-              onclick={() => openFocus(idx)}
-              aria-pressed={focus === idx}
-              aria-label={`Explore ${s.name}`}
+        <div class="compare">
+          {#each steps as s, idx (s.name)}
+            <figure
+              class="card"
+              class:selected={focus === idx}
+              style="z-index:{idx};"
+              bind:this={figureEls[idx]}
+              transition:peelTransition|global={{
+                slots: steps.length - 1 - idx,
+              }}
             >
-              {@render squareInner(s)}
-            </button>
-            <figcaption>
-              <span class="eyebrow">{s.vtg}</span>
-              <b>{s.name}</b>
-            </figcaption>
-          </figure>
-        {/each}
-      </div>
-      <div class="label"><p>These are the three basic positions. Tap one to play with it.</p></div>
-
-      {#if focus !== null && focusStep && focusHands}
-        <div class="focus" transition:slide={{ duration: 320 }}>
-          <div class="focus-head">
-            <span class="eyebrow">{focusStep.vtg}</span>
-            <h2>{focusStep.name}</h2>
-          </div>
-
-          <div class="focus-pic">
-            <div class="grid-layer">
-              <LessonGridDisplay type={focusHands.diamond ? "diamond" : "box"} showLabels={false} size="large" />
-            </div>
-            <svg class="hand-layer" viewBox="0 0 950 950" aria-hidden="true">
-              {@render letterGlyph(focusStep.kind)}
-              {#if rightHand}{@render hand(rightHand, focusHands.right, true)}{/if}
-              {#if leftHand}{@render hand(leftHand, focusHands.left, false)}{/if}
-            </svg>
-          </div>
-
-          <p class="focus-caption">
-            {lastAction || `Rotate, mirror, or swap colors — it stays ${focusStep.name}.`}
-          </p>
-
-          <div class="focus-controls">
-            <button type="button" class="tbtn" onclick={doRotate}>⟳ Rotate</button>
-            <button type="button" class="tbtn" onclick={doMirror}>⇄ Mirror</button>
-            <button type="button" class="tbtn" onclick={doSwap}>◐ Swap colors</button>
-          </div>
-
-          <div class="tray">
-            <div class="tray-grid" style="grid-template-columns: repeat({focusTotal > 8 ? 8 : 4}, auto);">
-              {#each Array(focusTotal) as _, c}
-                <span class="cell" class:lit={visited.has(c)}></span>
-              {/each}
-            </div>
-            <span class="tray-count">Discovered {visited.size} of {focusTotal}</span>
-          </div>
+              <button
+                type="button"
+                class="card-square"
+                bind:this={squareEls[idx]}
+                onclick={() => openFocus(idx)}
+                aria-pressed={focus === idx}
+                aria-label={`Explore ${s.name}`}
+              >
+                {@render squareInner(s)}
+              </button>
+              <figcaption>
+                <span class="eyebrow">{s.vtg}</span>
+                <b>{s.name}</b>
+              </figcaption>
+            </figure>
+          {/each}
         </div>
-      {/if}
+        <div class="label">
+          <p>These are the three basic positions. Tap one to play with it.</p>
+        </div>
+
+        {#if focus !== null && focusStep && focusHands}
+          <div class="focus" transition:slide={{ duration: 320 }}>
+            <div class="focus-head">
+              <span class="eyebrow">{focusStep.vtg}</span>
+              <h2>{focusStep.name}</h2>
+            </div>
+
+            <div class="focus-pic">
+              <div class="grid-layer">
+                <LessonGridDisplay
+                  type={focusHands.diamond ? "diamond" : "box"}
+                  showLabels={false}
+                  size="large"
+                />
+              </div>
+              <svg class="hand-layer" viewBox="0 0 950 950" aria-hidden="true">
+                {@render letterGlyph(focusStep.kind)}
+                {#if rightHand}{@render hand(
+                    rightHand,
+                    focusHands.right,
+                    true
+                  )}{/if}
+                {#if leftHand}{@render hand(
+                    leftHand,
+                    focusHands.left,
+                    false
+                  )}{/if}
+              </svg>
+            </div>
+
+            <p class="focus-caption">
+              {lastAction ||
+                `Rotate, mirror, or swap hands — it stays ${focusStep.name}.`}
+            </p>
+
+            <div class="focus-controls">
+              <button type="button" class="tbtn" onclick={doRotate}
+                >⟳ Rotate</button
+              >
+              <button type="button" class="tbtn" onclick={doMirror}
+                >⇄ Mirror</button
+              >
+              <button type="button" class="tbtn" onclick={doSwap}
+                >◐ Swap colors</button
+              >
+            </div>
+
+            <div class="tray">
+              <div
+                class="tray-grid"
+                style="grid-template-columns: repeat({focusTotal > 8
+                  ? 8
+                  : 4}, auto);"
+              >
+                {#each Array(focusTotal) as _, c}
+                  <span class="cell" class:lit={visited.has(c)}></span>
+                {/each}
+              </div>
+              <span class="tray-count"
+                >Discovered {visited.size} of {focusTotal}</span
+              >
+            </div>
+          </div>
+        {/if}
       </div>
     {:else}
       {@const hb = baseHands(step.kind)}
       <div class="pane pane-front">
-      <div class="hero" bind:this={heroEl}>
-        <div class="grid-layer">
-          <LessonGridDisplay type="diamond" showLabels={false} size="large" />
+        <div class="hero" bind:this={heroEl}>
+          <div class="grid-layer">
+            <LessonGridDisplay type="diamond" showLabels={false} size="large" />
+          </div>
+
+          <svg class="hand-layer" viewBox="0 0 950 950" aria-hidden="true">
+            {@render letterGlyph(step.kind)}
+            {#if rightHand}{@render hand(rightHand, hb.right, true)}{/if}
+            {#if leftHand}{@render hand(leftHand, hb.left, false)}{/if}
+          </svg>
         </div>
 
-        <svg class="hand-layer" viewBox="0 0 950 950" aria-hidden="true">
-          {@render letterGlyph(step.kind)}
-          {#if rightHand}{@render hand(rightHand, hb.right, true)}{/if}
-          {#if leftHand}{@render hand(leftHand, hb.left, false)}{/if}
-        </svg>
-      </div>
-
-      {#key i}
-        <div class="label">
-          <span class="eyebrow">{step.vtg}</span>
-          <h1>{step.name}</h1>
-          <p>{step.caption}</p>
-        </div>
-      {/key}
+        {#key i}
+          <div class="label">
+            <span class="eyebrow">{step.vtg}</span>
+            <h1>{step.name}</h1>
+            <p>{step.caption}</p>
+          </div>
+        {/key}
       </div>
     {/if}
   </div>
 
   <footer class="nav">
-    <button class="navbtn" disabled={i === 0} onclick={() => go(i - 1)}>‹ Back</button>
+    <button class="navbtn" disabled={i === 0} onclick={() => go(i - 1)}
+      >‹ Back</button
+    >
     <div class="ticks">
       {#each Array(TOTAL) as _, idx}
-        <button class="tick" class:on={idx === i} onclick={() => go(idx)} aria-label={`Stage ${idx + 1}`}></button>
+        <button
+          class="tick"
+          class:on={idx === i}
+          onclick={() => go(idx)}
+          aria-label={`Stage ${idx + 1}`}
+        ></button>
       {/each}
     </div>
-    <button class="navbtn primary" disabled={i === TOTAL - 1} onclick={() => go(i + 1)}>Next ›</button>
+    <button
+      class="navbtn primary"
+      disabled={i === TOTAL - 1}
+      onclick={() => go(i + 1)}>Next ›</button
+    >
   </footer>
 </div>
 
@@ -437,19 +530,42 @@
     width: 100%;
   }
   /* hero pane stacks above the row, so the back-morph flies toward you in front */
-  .pane-front { z-index: 2; }
+  .pane-front {
+    z-index: 2;
+  }
 
-  .hero { position: relative; width: min(70vh, 560px); aspect-ratio: 1; }
-  .grid-layer { position: absolute; inset: 0; }
-  .grid-layer :global(.lesson-grid-display) { width: 100%; }
-  .grid-layer :global(.grid-svg) { max-width: 100% !important; }
+  .hero {
+    position: relative;
+    width: min(70vh, 560px);
+    aspect-ratio: 1;
+  }
+  .grid-layer {
+    position: absolute;
+    inset: 0;
+  }
+  .grid-layer :global(.lesson-grid-display) {
+    width: 100%;
+  }
+  .grid-layer :global(.grid-svg) {
+    max-width: 100% !important;
+  }
 
-  .hand-layer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .hand-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
 
-  .hand { transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+  .hand {
+    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
 
   /* letter glyph: black source recolored to off-white (#d9d9d9) for the dark bg */
-  .glyph { filter: invert(0.85); }
+  .glyph {
+    filter: invert(0.85);
+  }
 
   /* compare-row stage */
   .compare {
@@ -475,17 +591,49 @@
     background: transparent;
     padding: 0;
     cursor: pointer;
-    transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+    transition:
+      border-color 0.2s ease,
+      background 0.2s ease,
+      transform 0.2s ease;
   }
-  .card-square:hover { border-color: rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.03); }
-  .card-square:focus-visible { outline: 2px solid #4ea7e8; outline-offset: 2px; }
-  .card.selected .card-square { border-color: #4ea7e8; background: rgba(78, 167, 232, 0.08); }
-  .card-grid { position: absolute; inset: 0; }
-  .card-grid :global(.lesson-grid-display) { width: 100%; }
-  .card-grid :global(.grid-svg) { max-width: 100% !important; }
-  .card-hands { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-  .card figcaption { text-align: center; }
-  .card figcaption b { display: block; font-size: 1.4rem; font-style: italic; font-weight: 600; }
+  .card-square:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .card-square:focus-visible {
+    outline: 2px solid #4ea7e8;
+    outline-offset: 2px;
+  }
+  .card.selected .card-square {
+    border-color: #4ea7e8;
+    background: rgba(78, 167, 232, 0.08);
+  }
+  .card-grid {
+    position: absolute;
+    inset: 0;
+  }
+  .card-grid :global(.lesson-grid-display) {
+    width: 100%;
+  }
+  .card-grid :global(.grid-svg) {
+    max-width: 100% !important;
+  }
+  .card-hands {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .card figcaption {
+    text-align: center;
+  }
+  .card figcaption b {
+    display: block;
+    font-size: 1.4rem;
+    font-style: italic;
+    font-weight: 600;
+  }
 
   /* Stage 3 focus panel */
   .focus {
@@ -497,9 +645,19 @@
     max-width: 520px;
     padding: 1.5rem 1rem 0;
   }
-  .focus-head { text-align: center; }
-  .focus-head h2 { font-size: 2.2rem; font-style: italic; margin: 0; }
-  .focus-pic { position: relative; width: min(52vh, 380px); aspect-ratio: 1; }
+  .focus-head {
+    text-align: center;
+  }
+  .focus-head h2 {
+    font-size: 2.2rem;
+    font-style: italic;
+    margin: 0;
+  }
+  .focus-pic {
+    position: relative;
+    width: min(52vh, 380px);
+    aspect-ratio: 1;
+  }
   .focus-caption {
     font-size: 1rem;
     color: #c4c4d4;
@@ -507,7 +665,12 @@
     min-height: 1.4em; /* reserve space so the row doesn't shift when caption changes */
     text-align: center;
   }
-  .focus-controls { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
+  .focus-controls {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
   .tbtn {
     display: inline-flex;
     align-items: center;
@@ -521,24 +684,54 @@
     cursor: pointer;
     min-height: 44px;
   }
-  .tbtn:hover { background: rgba(255, 255, 255, 0.1); }
-  .tbtn:active { transform: scale(0.96); }
-  .tbtn:focus-visible { outline: 2px solid #4ea7e8; outline-offset: 2px; }
+  .tbtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .tbtn:active {
+    transform: scale(0.96);
+  }
+  .tbtn:focus-visible {
+    outline: 2px solid #4ea7e8;
+    outline-offset: 2px;
+  }
 
-  .tray { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
-  .tray-grid { display: grid; gap: 0.4rem; justify-content: center; }
+  .tray {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .tray-grid {
+    display: grid;
+    gap: 0.4rem;
+    justify-content: center;
+  }
   .cell {
     width: 16px;
     height: 16px;
     border-radius: 4px;
     border: 1px solid rgba(255, 255, 255, 0.22);
     background: transparent;
-    transition: background 0.3s ease, border-color 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition:
+      background 0.3s ease,
+      border-color 0.3s ease,
+      transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-  .cell.lit { background: #4ea7e8; border-color: #4ea7e8; transform: scale(1.12); }
-  .tray-count { font-size: 0.8rem; letter-spacing: 0.04em; color: #8a8aa0; }
+  .cell.lit {
+    background: #4ea7e8;
+    border-color: #4ea7e8;
+    transform: scale(1.12);
+  }
+  .tray-count {
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    color: #8a8aa0;
+  }
 
-  .label { text-align: center; max-width: 600px; }
+  .label {
+    text-align: center;
+    max-width: 600px;
+  }
   .eyebrow {
     display: block;
     font-size: 0.8rem;
@@ -553,11 +746,22 @@
     margin: 0 0 0.4rem;
     animation: pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-  .label p { font-size: 1.1rem; color: #c4c4d4; margin: 0; line-height: 1.5; }
+  .label p {
+    font-size: 1.1rem;
+    color: #c4c4d4;
+    margin: 0;
+    line-height: 1.5;
+  }
 
   @keyframes pop {
-    0% { opacity: 0; transform: scale(0.7) translateY(8px); }
-    100% { opacity: 1; transform: scale(1) translateY(0); }
+    0% {
+      opacity: 0;
+      transform: scale(0.7) translateY(8px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
   }
 
   .nav {
@@ -582,32 +786,76 @@
     cursor: pointer;
     min-height: 44px;
   }
-  .navbtn.primary { background: #4ea7e8; border-color: #4ea7e8; color: #06121d; font-weight: 600; }
-  .navbtn:disabled { opacity: 0.35; cursor: default; }
-  .ticks { display: flex; gap: 0.5rem; }
-  .tick {
-    width: 12px; height: 12px; border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    background: transparent; cursor: pointer; padding: 0;
+  .navbtn.primary {
+    background: #4ea7e8;
+    border-color: #4ea7e8;
+    color: #06121d;
+    font-weight: 600;
   }
-  .tick.on { background: #4ea7e8; border-color: #4ea7e8; }
+  .navbtn:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .ticks {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .tick {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+  }
+  .tick.on {
+    background: #4ea7e8;
+    border-color: #4ea7e8;
+  }
 
   @media (prefers-reduced-motion: reduce) {
-    .hand { transition: none; }
-    .card { transition: none; }
-    .label h1 { animation: none; }
+    .hand {
+      transition: none;
+    }
+    .card {
+      transition: none;
+    }
+    .label h1 {
+      animation: none;
+    }
   }
 
   /* ---- mobile (portrait): stack the compare row vertically ---- */
   @media (max-width: 640px) {
-    .stage { padding: 1.25rem 1rem; }
-    .hero { width: min(86vw, 460px); }
-    .label h1 { font-size: 2.2rem; }
-    .compare { flex-direction: column; align-items: center; }
-    .focus { max-width: 100%; padding-top: 1rem; }
-    .focus-pic { width: min(82vw, 360px); }
-    .focus-head h2 { font-size: 1.9rem; }
-    .nav { gap: 1rem; }
-    .navbtn { padding: 0.6rem 1.1rem; }
+    .stage {
+      padding: 1.25rem 1rem;
+    }
+    .hero {
+      width: min(86vw, 460px);
+    }
+    .label h1 {
+      font-size: 2.2rem;
+    }
+    .compare {
+      flex-direction: column;
+      align-items: center;
+    }
+    .focus {
+      max-width: 100%;
+      padding-top: 1rem;
+    }
+    .focus-pic {
+      width: min(82vw, 360px);
+    }
+    .focus-head h2 {
+      font-size: 1.9rem;
+    }
+    .nav {
+      gap: 1rem;
+    }
+    .navbtn {
+      padding: 0.6rem 1.1rem;
+    }
   }
 </style>

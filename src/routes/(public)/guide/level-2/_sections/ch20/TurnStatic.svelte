@@ -16,8 +16,13 @@
    */
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
   import SequenceShowcase from "../../../level-1/_components/SequenceShowcase.svelte";
-  import TurnStrip, { type TurnStripFrame } from "../../_components/TurnStrip.svelte";
-  import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import TurnStrip, {
+    type TurnStripFrame,
+  } from "../../_components/TurnStrip.svelte";
+  import {
+    createMotionData,
+    createPlaceholderMotion,
+  } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
   import {
     MotionType,
@@ -25,16 +30,22 @@
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    GridLocation,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { bakeReversals, stripToSequence } from "../../../level-1/_data/guide-sequence-adapter";
+  import {
+    bakeReversals,
+    stripToSequence,
+  } from "../../../level-1/_data/guide-sequence-adapter";
 
   const { EAST: E } = GridLocation;
   const { IN, OUT } = Orientation;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  const redStaff = (
+  const rightStaff = (
     id: string,
     type: MotionType,
     from: GridLocation,
@@ -56,15 +67,23 @@
         startOrientation: startOri,
         endOrientation: endOri,
         turns,
-        color: HandSide.RIGHT,
+        hand: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
     },
   });
   const stat = (id: string, loc: GridLocation, ori: Orientation) =>
-    redStaff(id, MotionType.STATIC, loc, loc, ori, ori, RotationDirection.NO_ROTATION);
-  const toHM = (m: ReturnType<typeof redStaff>["motions"]["right"]) => ({
+    rightStaff(
+      id,
+      MotionType.STATIC,
+      loc,
+      loc,
+      ori,
+      ori,
+      RotationDirection.NO_ROTATION
+    );
+  const toHM = (m: ReturnType<typeof rightStaff>["motions"]["right"]) => ({
     type: m.motionType,
     from: m.startLocation,
     to: m.endLocation,
@@ -76,32 +95,59 @@
 
   // ── Motion data (verbatim from DashStaticTurnsPage.svelte's static row) ──
   // Static: E→E IN→OUT CCW turns=1 - a 180° turn in place (in → out).
-  const staticCombined = redStaff("static-full", MotionType.STATIC, E, E, IN, OUT, CCW, 1);
+  const staticCombined = rightStaff(
+    "static-full",
+    MotionType.STATIC,
+    E,
+    E,
+    IN,
+    OUT,
+    CCW,
+    1
+  );
 
   const ANIM = {
     "l2tst1-static": { data: staticCombined, word: "Static turn", startLoc: E },
   } as const;
-  const animStep = (data: ReturnType<typeof redStaff>, stepNumber: number, startLoc: GridLocation): StepData =>
+  const animStep = (
+    data: ReturnType<typeof rightStaff>,
+    stepNumber: number,
+    startLoc: GridLocation
+  ): StepData =>
     ({
       ...data,
       id: `${data.id}-anim-${stepNumber}`,
       stepNumber,
       motions: {
-        left: createPlaceholderMotion(HandSide.LEFT, { location: startLoc, orientation: IN }),
+        left: createPlaceholderMotion(HandSide.LEFT, {
+          location: startLoc,
+          orientation: IN,
+        }),
         right: data.motions.right,
       },
     }) as unknown as StepData;
   const rowSteps = (key: keyof typeof ANIM): StepData[] => {
     const cfg = ANIM[key];
-    const start = animStep(stat(`${key}-start`, cfg.startLoc, IN), 0, cfg.startLoc);
+    const start = animStep(
+      stat(`${key}-start`, cfg.startLoc, IN),
+      0,
+      cfg.startLoc
+    );
     const combined = animStep(cfg.data, 1, cfg.startLoc);
     return [start, ...bakeReversals([combined])];
   };
-  const halfOf = (combined: ReturnType<typeof redStaff>, startLoc: GridLocation) =>
-    buildHalvedStep(animStep(combined, 1, startLoc), 0.5);
+  const halfOf = (
+    combined: ReturnType<typeof rightStaff>,
+    startLoc: GridLocation
+  ) => buildHalvedStep(animStep(combined, 1, startLoc), 0.5);
 
   const staticFrames: TurnStripFrame[] = [
-    { kind: "start", step: animStep(stat("start", E, IN), 0, E), frameLabel: "start", thumbLabel: "in" },
+    {
+      kind: "start",
+      step: animStep(stat("start", E, IN), 0, E),
+      frameLabel: "start",
+      thumbLabel: "in",
+    },
     {
       kind: "half",
       step: halfOf(staticCombined, E),
@@ -110,7 +156,11 @@
     },
     {
       kind: "end",
-      step: animStep(stat("end", E, staticCombined.motions.right.endOrientation), 0, E),
+      step: animStep(
+        stat("end", E, staticCombined.motions.right.endOrientation),
+        0,
+        E
+      ),
       frameLabel: "end",
       thumbLabel: "out",
     },
@@ -131,34 +181,49 @@
 <GuideSection id="turn-static" title="Static">
   <div class="section-body">
     <p>
-      Finally, we'll look at static turns. Here is a breakdown of a static turn starting from thumb in:
+      Finally, we'll look at static turns. Here is a breakdown of a static turn
+      starting from thumb in:
     </p>
   </div>
 
   <div class="showcase-wrap">
-    <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={staticSequence} items={[]} bpm={60}>
+    <SequenceShowcase
+      variant="compact"
+      render={{ propType: PropType.STAFF }}
+      sequence={staticSequence}
+      items={[]}
+      bpm={60}
+    >
       {#snippet strip(t)}
-        <TurnStrip frames={staticFrames} activeT={t} caption="The staff never leaves east - only its thumb reference flips as it turns in place, in to out" />
+        <TurnStrip
+          frames={staticFrames}
+          activeT={t}
+          caption="The staff never leaves east - only its thumb reference flips as it turns in place, in to out"
+        />
       {/snippet}
     </SequenceShowcase>
   </div>
 
   <div class="section-body">
     <p>
-      This can be executed at any hand point, starting from either thumb orientation, turning in either direction.
+      This can be executed at any hand point, starting from either thumb
+      orientation, turning in either direction.
     </p>
 
     <p>
-      Note the differences between the arrow for static turns and the arrow for prospin turns:
+      Note the differences between the arrow for static turns and the arrow for
+      prospin turns:
     </p>
 
     <!-- TODO: add diagram - comparison of static turn arrow vs prospin turn arrow -->
 
     <p>
-      <strong>Static:</strong> Prop remains at its start position. The arrow forms a half circle with that position.
+      <strong>Static:</strong> Prop remains at its start position. The arrow forms
+      a half circle with that position.
     </p>
     <p>
-      <strong>Shift:</strong> Prop ends at an adjacent position. The arrow forms a half-circle around the empty start position.
+      <strong>Shift:</strong> Prop ends at an adjacent position. The arrow forms a
+      half-circle around the empty start position.
     </p>
   </div>
 </GuideSection>

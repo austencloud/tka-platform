@@ -32,7 +32,7 @@ export interface FireTipTrackerConfig {
   };
   /**
    * Overlaid tunnel layers (rotated/mirrored copies of the base sequence). When
-   * present, the tracker also emits tips for each layer's blue/red props at
+   * present, the tracker also emits tips for each layer's left/right props at
    * propIndex >= 2, so per-tip effects (which filter by propIndex, with "*"
    * matching any) decorate the whole kaleidoscope instead of just the base
    * pair. Layers share the base blue/red dimensions + types and use the

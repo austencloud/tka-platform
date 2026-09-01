@@ -11,7 +11,7 @@
  * auto-detects LOOP type, generates required metadata, and writes to
  * users/{uid}/sequences/{id}.
  *
- * Compositional fields (blueSoloProp, redSoloProp, stepPairings) are
+ * Compositional fields (leftSoloProp, rightSoloProp, stepPairings) are
  * computed automatically at import time — no manual migration needed.
  */
 
@@ -55,7 +55,9 @@ function parseCliArgs() {
     console.error(
       "Usage: node scripts/import-sequence.cjs <file.json> [--notes 'tagline'] [--circular] [--loop-type mirrored_swapped] [--visibility private|unlisted] [--dry-run]"
     );
-    console.error("       echo '{...}' | node scripts/import-sequence.cjs --stdin");
+    console.error(
+      "       echo '{...}' | node scripts/import-sequence.cjs --stdin"
+    );
     process.exit(1);
   }
 }
@@ -80,8 +82,7 @@ function loadPersistenceNormalizer() {
 }
 
 async function normalizeFirestoreDoc(built) {
-  const { normalizeSequenceForPersistence } =
-    await loadPersistenceNormalizer();
+  const { normalizeSequenceForPersistence } = await loadPersistenceNormalizer();
   const normalized = await normalizeSequenceForPersistence({
     ...built.data,
     id: built.id,
@@ -116,18 +117,18 @@ const COMPONENT_TO_LOOP_TYPE = {
 };
 
 /**
- * Convert a raw step (app format with motions.blue/red) to the
+ * Convert a raw step (current motions.left/right or legacy motions.blue/red) to the
  * SequenceStep format expected by the sequence-engine's LOOP detector.
  */
 function convertToEngineStep(step, index) {
-  const left = step.motions?.left || {};
-  const right = step.motions?.right || {};
+  const left = step.motions?.left || step.motions?.blue || {};
+  const right = step.motions?.right || step.motions?.red || {};
   return {
     letter: step.letter,
     startPosition: step.startPosition,
     endPosition: step.endPosition,
-    // The detector's sameLOOPSignal reads `motions.{blue,red}`; the transform
-    // comparators read `blueMotion`/`redMotion`. Emit both.
+    // The detector reads `motions.{left,right}` while transform comparators use
+    // flat `leftMotion`/`rightMotion`. Emit both current shapes.
     motions: { left, right },
     leftMotion: {
       motionType: left.motionType,
@@ -158,7 +159,9 @@ function convertToEngineStep(step, index) {
  */
 function detectLoop(raw) {
   try {
-    const { detectLOOPFromSteps } = require("../packages/sequence-engine/dist/loop/detection/LOOPDetector.js");
+    const {
+      detectLOOPFromSteps,
+    } = require("../packages/sequence-engine/dist/loop/detection/LOOPDetector.js");
 
     const steps = raw.steps || [];
     const startPos = raw.startPosition || raw.startingPosition;
@@ -211,7 +214,8 @@ function detectLoop(raw) {
     // Map the first detected component to a loopType enum value
     let loopType = null;
     if (result.components && result.components.length > 0) {
-      loopType = COMPONENT_TO_LOOP_TYPE[result.components[0]] || result.components[0];
+      loopType =
+        COMPONENT_TO_LOOP_TYPE[result.components[0]] || result.components[0];
     }
 
     return {
@@ -249,8 +253,8 @@ async function readInput() {
 /**
  * Build a complete startPosition object. Two input shapes are tolerated:
  *
- *   1. Rich object (from the app or a prior export): already has .motions.blue
- *      and .motions.red — we just normalize and pass through.
+ *   1. Rich object (from the app or a prior export): has current
+ *      .motions.left/right or legacy .motions.blue/red. Normalize it here.
  *   2. Bare string or stub (from MCP generate_sequence, which returns
  *      startPosition as a grid-position string like "beta5"): synthesize a
  *      static startPosition object from the first step's start-side motion
@@ -261,8 +265,8 @@ function buildStartPositionObject(startPosInput, steps, sequenceId) {
   if (
     startPosInput &&
     typeof startPosInput === "object" &&
-    startPosInput.motions?.left &&
-    startPosInput.motions?.right
+    (startPosInput.motions?.left || startPosInput.motions?.blue) &&
+    (startPosInput.motions?.right || startPosInput.motions?.red)
   ) {
     const gridPos =
       startPosInput.gridPosition ||
@@ -276,13 +280,16 @@ function buildStartPositionObject(startPosInput, steps, sequenceId) {
       letter: startPosInput.letter,
       startPosition: startPosInput.startPosition || gridPos,
       endPosition: startPosInput.endPosition || gridPos,
-      motions: startPosInput.motions,
+      motions: {
+        left: startPosInput.motions.left || startPosInput.motions.blue,
+        right: startPosInput.motions.right || startPosInput.motions.red,
+      },
     };
   }
 
   const firstStep = steps?.[0];
-  const leftMotion = firstStep?.motions?.left;
-  const rightMotion = firstStep?.motions?.right;
+  const leftMotion = firstStep?.motions?.left || firstStep?.motions?.blue;
+  const rightMotion = firstStep?.motions?.right || firstStep?.motions?.red;
   if (!leftMotion || !rightMotion) return null;
 
   const gridPos =
@@ -290,12 +297,16 @@ function buildStartPositionObject(startPosInput, steps, sequenceId) {
     firstStep.startPosition ||
     null;
 
-  const letter = typeof gridPos === "string"
-    ? gridPos.startsWith("alpha") ? "α"
-    : gridPos.startsWith("beta") ? "β"
-    : gridPos.startsWith("gamma") ? "γ"
-    : null
-    : null;
+  const letter =
+    typeof gridPos === "string"
+      ? gridPos.startsWith("alpha")
+        ? "α"
+        : gridPos.startsWith("beta")
+          ? "β"
+          : gridPos.startsWith("gamma")
+            ? "γ"
+            : null
+      : null;
 
   return {
     isStartPosition: true,
@@ -306,7 +317,7 @@ function buildStartPositionObject(startPosInput, steps, sequenceId) {
     endPosition: gridPos,
     motions: {
       left: {
-        color: "blue",
+        hand: "left",
         motionType: "static",
         startLocation: leftMotion.startLocation,
         endLocation: leftMotion.startLocation,
@@ -317,7 +328,7 @@ function buildStartPositionObject(startPosInput, steps, sequenceId) {
         isVisible: leftMotion.isVisible !== false,
       },
       right: {
-        color: "red",
+        hand: "right",
         motionType: "static",
         startLocation: rightMotion.startLocation,
         endLocation: rightMotion.startLocation,
@@ -372,14 +383,14 @@ function buildFirestoreDoc(raw, fieldValue, loopInfo, opts = {}) {
     startPos?.startPosition ||
     startPos?.gridPosition;
   const lastStep = steps[steps.length - 1];
-  const manualCircular = lastStep && startGridPos
-    ? lastStep.endPosition === startGridPos
-    : false;
-  const isCircular = optForceCircular != null
-    ? optForceCircular
-    : loopInfo != null
-      ? loopInfo.isCircular
-      : manualCircular;
+  const manualCircular =
+    lastStep && startGridPos ? lastStep.endPosition === startGridPos : false;
+  const isCircular =
+    optForceCircular != null
+      ? optForceCircular
+      : loopInfo != null
+        ? loopInfo.isCircular
+        : manualCircular;
 
   // Determine starting position group (alpha, beta, gamma)
   let startingPositionGroup = null;
@@ -434,7 +445,7 @@ function buildFirestoreDoc(raw, fieldValue, loopInfo, opts = {}) {
     doc.notes = optNotes;
   }
 
-  // Compute compositional fields (blueSoloProp, redSoloProp, stepPairings)
+  // Compute compositional fields (leftSoloProp, rightSoloProp, stepPairings)
   const compositional = decomposeSequence(doc);
   if (compositional) {
     Object.assign(doc, compositional);
@@ -483,7 +494,9 @@ async function main() {
     const localClock = { serverTimestamp: () => new Date() };
     const built = buildFirestoreDoc(raw, localClock, loopInfo);
     const { id, data } = await normalizeFirestoreDoc(built);
-    console.log(`\n[DRY RUN] Would save as: users/${AUSTEN_UID}/sequences/${id}`);
+    console.log(
+      `\n[DRY RUN] Would save as: users/${AUSTEN_UID}/sequences/${id}`
+    );
     console.log(`Fields: ${Object.keys(data).join(", ")}`);
     console.log(`Visibility: ${data.visibility}`);
     console.log(`isCircular: ${data.isCircular}`);
@@ -500,7 +513,9 @@ async function main() {
     serviceAccount = JSON.parse(readFileSync(serviceAccountPath, "utf8"));
   } catch {
     console.error("Missing serviceAccountKey.json in project root.");
-    console.error("Place your Firebase service account key there to use this script.");
+    console.error(
+      "Place your Firebase service account key there to use this script."
+    );
     process.exit(1);
   }
 

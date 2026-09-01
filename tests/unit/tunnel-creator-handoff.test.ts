@@ -48,8 +48,13 @@ const snapshot = {
 };
 const migratedSnapshot = {
   ...snapshot,
-  version: 2,
-  tunnel: { ...snapshot.tunnel, presetRecipe: null },
+  version: 3,
+  tunnel: {
+    config: snapshot.tunnel.config,
+    gridVisible: snapshot.tunnel.gridVisible,
+    section: snapshot.tunnel.section,
+    presetRecipe: null,
+  },
 };
 
 function savedTunnel(

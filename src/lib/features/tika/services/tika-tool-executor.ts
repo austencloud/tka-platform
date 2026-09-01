@@ -35,7 +35,9 @@ export interface PictographExample {
 export type MotionExampleHand = "left" | "right" | "both";
 export type MotionExampleHandInput = MotionExampleHand | "blue" | "red";
 
-function normalizeMotionExampleHand(hand: MotionExampleHandInput): MotionExampleHand {
+function normalizeMotionExampleHand(
+  hand: MotionExampleHandInput
+): MotionExampleHand {
   return hand === "blue" ? "left" : hand === "red" ? "right" : hand;
 }
 export interface LetterExplanationResult {
@@ -178,7 +180,7 @@ export class TikaToolExecutor {
 
     const explanation = `**${letter}** is a Type ${typeNum} (${
       fullTypeInfo?.name || typeInfo?.name
-    }) letter. Blue hand ${varData.leftMotion.motionType}${leftRot}, red hand ${
+    }) letter. Left hand ${varData.leftMotion.motionType}${leftRot}, right hand ${
       varData.rightMotion.motionType
     }${rightRot}. Moves from ${varData.startPosition} to ${varData.endPosition}.`;
 
@@ -294,10 +296,10 @@ ${entry.examples.map((e) => `- ${e}`).join("\n")}
 
     let explanation = `**${letter1}** (Type ${typeNum1} - ${
       typeDef1?.name || "?"
-    }): blue ${rep1.leftMotion.motionType}, red ${rep1.rightMotion.motionType}.
-**${letter2}** (Type ${typeNum2} - ${typeDef2?.name || "?"}): blue ${
+    }): left ${rep1.leftMotion.motionType}, right ${rep1.rightMotion.motionType}.
+**${letter2}** (Type ${typeNum2} - ${typeDef2?.name || "?"}): left ${
       rep2.leftMotion.motionType
-    }, red ${rep2.rightMotion.motionType}.`;
+    }, right ${rep2.rightMotion.motionType}.`;
 
     if (typeNum1 !== typeNum2) {
       explanation += ` Key difference: ${typeDef1?.description || ""} vs ${
@@ -359,7 +361,7 @@ ${entry.examples.map((e) => `- ${e}`).join("\n")}
       );
     const exampleLetters: string[] = (typeInfo?.letters as string[]) || letters;
 
-    const explanation = `**Type ${type} (${canonicalDef.name})**: ${canonicalDef.description}. Blue hand ${canonicalDef.motionPattern.left}, red hand ${canonicalDef.motionPattern.right}.`;
+    const explanation = `**Type ${type} (${canonicalDef.name})**: ${canonicalDef.description}. Left hand ${canonicalDef.motionPattern.left}, right hand ${canonicalDef.motionPattern.right}.`;
 
     let galleryItems: Array<{
       letter: string;
@@ -455,7 +457,7 @@ In TKA, **position** describes where your two hands are relative to each other o
 - **Beta** - hands at the same point (together)
 - **Gamma** - hands form a right angle (L-shape)
 
-**Alpha** means your hands are at **opposite grid points**. In the pictographs below, notice how the blue and red hands are always directly across from each other, no matter which way the grid is oriented.`,
+**Alpha** means your hands are at **opposite grid points**. In the pictographs below, notice how the left and right hands are always directly across from each other, no matter which way the grid is oriented.`,
 
       beta: `## Beta
 
@@ -467,7 +469,7 @@ In TKA, **position** describes where your two hands are relative to each other o
 - **Beta** - hands at the same point (together)
 - **Gamma** - hands form a right angle (L-shape)
 
-**Beta** means your hands are at the **same grid point**. In the pictographs below, notice how the blue and red hands overlap at one location.`,
+**Beta** means your hands are at the **same grid point**. In the pictographs below, notice how the left and right hands overlap at one location.`,
 
       gamma: `## Gamma
 
@@ -543,7 +545,9 @@ In TKA, **position** describes where your two hands are relative to each other o
     };
   }
 
-  async explainSequence(word: string): Promise<ToolExecutorSequenceResult | string> {
+  async explainSequence(
+    word: string
+  ): Promise<ToolExecutorSequenceResult | string> {
     try {
       const letters = this.sequenceValidator.parseWordToLetters(
         word.toUpperCase()
@@ -702,10 +706,10 @@ In TKA, **position** describes where your two hands are relative to each other o
     }
 
     if (hand === "right" || hand === "both") {
-      const redMatches = allPictographs.filter(
+      const rightMatches = allPictographs.filter(
         (p) => p.rightMotion.motionType.toLowerCase() === normalizedMotion
       );
-      matches = hand === "both" ? [...matches, ...redMatches] : redMatches;
+      matches = hand === "both" ? [...matches, ...rightMatches] : rightMatches;
     }
 
     const examples: PictographExample[] = [];

@@ -136,7 +136,7 @@ export interface CombinatorLabState {
   maxAmbientRun: number;
   allowMirror: boolean;
   allowRotation: boolean;
-  allowColorSwap: boolean;
+  allowHandSwap: boolean;
   exploreRotationFaithful: boolean;
   allowAmbient: boolean;
   wholeUnitsOnly: boolean;
@@ -276,7 +276,7 @@ export function createCombinatorLabState(): CombinatorLabState {
   let maxAmbientRun = $state(2);
   let allowMirror = $state(true);
   let allowRotation = $state(true);
-  let allowColorSwap = $state(true);
+  let allowHandSwap = $state(true);
   let exploreRotationFaithful = $state(true);
   let allowAmbient = $state(true);
   let wholeUnitsOnly = $state(false);
@@ -439,7 +439,7 @@ export function createCombinatorLabState(): CombinatorLabState {
       maxAmbientRun,
       allowMirror,
       allowRotation,
-      allowColorSwap,
+      allowHandSwap,
       exploreRotationFaithful,
       allowAmbient,
       wholeUnitsOnly,
@@ -495,11 +495,11 @@ export function createCombinatorLabState(): CombinatorLabState {
     set allowRotation(value: boolean) {
       allowRotation = value;
     },
-    get allowColorSwap() {
-      return allowColorSwap;
+    get allowHandSwap() {
+      return allowHandSwap;
     },
-    set allowColorSwap(value: boolean) {
-      allowColorSwap = value;
+    set allowHandSwap(value: boolean) {
+      allowHandSwap = value;
     },
     get exploreRotationFaithful() {
       return exploreRotationFaithful;

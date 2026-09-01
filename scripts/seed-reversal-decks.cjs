@@ -51,11 +51,13 @@ const gridMode = getArg("gridMode") || "diamond";
 const DRY_RUN = args.includes("--dry-run");
 
 if (!sourceDeckId || !patternsArg) {
-  console.error("Usage: node seed-reversal-decks.cjs --source <deckId> --patterns <p1,p2,...> [--dry-run] [--gridMode diamond]");
+  console.error(
+    "Usage: node seed-reversal-decks.cjs --source <deckId> --patterns <p1,p2,...> [--dry-run] [--gridMode diamond]"
+  );
   process.exit(1);
 }
 
-const patternIds = patternsArg.split(",").map(s => s.trim());
+const patternIds = patternsArg.split(",").map((s) => s.trim());
 
 // Validate patterns
 for (const pid of patternIds) {
@@ -71,8 +73,22 @@ for (const pid of patternIds) {
 // ============================================================================
 
 const CSV_PATHS = {
-  diamond: path.join(__dirname, "..", "static", "data", "pictographs", "DiamondPictographDataframe.csv"),
-  box: path.join(__dirname, "..", "static", "data", "pictographs", "BoxPictographDataframe.csv"),
+  diamond: path.join(
+    __dirname,
+    "..",
+    "static",
+    "data",
+    "pictographs",
+    "DiamondPictographDataframe.csv"
+  ),
+  box: path.join(
+    __dirname,
+    "..",
+    "static",
+    "data",
+    "pictographs",
+    "BoxPictographDataframe.csv"
+  ),
 };
 
 function loadCsvEdges() {
@@ -81,12 +97,23 @@ function loadCsvEdges() {
     console.error(`CSV not found for grid mode: ${gridMode}`);
     process.exit(1);
   }
-  const lines = fs.readFileSync(csvPath, "utf8").split("\n").filter(l => l.trim());
-  const headers = lines[0].split(",").map(h => h.trim());
-  return lines.slice(1).map(line => {
-    const cols = line.split(",").map(c => c.trim());
+  const lines = fs
+    .readFileSync(csvPath, "utf8")
+    .split("\n")
+    .filter((l) => l.trim());
+  const headers = lines[0].split(",").map((h) => h.trim());
+  return lines.slice(1).map((line) => {
+    const cols = line.split(",").map((c) => c.trim());
     const edge = {};
     headers.forEach((h, i) => (edge[h] = cols[i]));
+    edge.leftMotionType ||= edge.blueMotionType;
+    edge.leftRotationDirection ||= edge.blueRotationDirection;
+    edge.leftStartLocation ||= edge.blueStartLocation;
+    edge.leftEndLocation ||= edge.blueEndLocation;
+    edge.rightMotionType ||= edge.redMotionType;
+    edge.rightRotationDirection ||= edge.redRotationDirection;
+    edge.rightStartLocation ||= edge.redStartLocation;
+    edge.rightEndLocation ||= edge.redEndLocation;
     return edge;
   });
 }
@@ -95,36 +122,23 @@ const csvEdges = loadCsvEdges();
 console.log(`Loaded ${csvEdges.length} CSV edges for ${gridMode} grid\n`);
 
 /**
- * Look up the letter for a motion after reversal using the CSV.
- * Matches on positions + motion types (but not rotation direction,
- * which can vary within a letter family).
- */
-function lookupReversedLetter(motion, color, startPos, endPos) {
-  const leftKey = color === "blue" ? "blueMotionType" : null;
-  const rightKey = color === "red" ? "redMotionType" : null;
-
-  // We need to match the full step, not individual motions.
-  // This function is called per-step with both motions already set.
-  return null; // Placeholder — actual lookup is per-step below
-}
-
-/**
- * Find the letter from CSV given a step's blue and red motion types + locations.
+ * Find the letter from CSV given a step's left and right motion types + locations.
  */
 function lookupLetterForStep(step) {
   const left = step.motions?.left;
   const right = step.motions?.right;
   if (!left || !right) return null;
 
-  const match = csvEdges.find(e =>
-    e.startPosition === step.startPosition &&
-    e.endPosition === step.endPosition &&
-    e.leftMotionType === left.motionType &&
-    e.leftStartLocation === left.startLocation &&
-    e.leftEndLocation === left.endLocation &&
-    e.rightMotionType === right.motionType &&
-    e.rightStartLocation === right.startLocation &&
-    e.rightEndLocation === right.endLocation
+  const match = csvEdges.find(
+    (e) =>
+      e.startPosition === step.startPosition &&
+      e.endPosition === step.endPosition &&
+      e.leftMotionType === left.motionType &&
+      e.leftStartLocation === left.startLocation &&
+      e.leftEndLocation === left.endLocation &&
+      e.rightMotionType === right.motionType &&
+      e.rightStartLocation === right.startLocation &&
+      e.rightEndLocation === right.endLocation
   );
   return match ? match.letter : null;
 }
@@ -184,8 +198,12 @@ function applyReversalToSequence(steps, patternId, startPosition) {
       if (right.motionType === "pro" || right.motionType === "anti") {
         right.motionType = right.motionType === "pro" ? "anti" : "pro";
       }
-      if (right.rotationDirection === "cw" || right.rotationDirection === "ccw") {
-        right.rotationDirection = right.rotationDirection === "cw" ? "ccw" : "cw";
+      if (
+        right.rotationDirection === "cw" ||
+        right.rotationDirection === "ccw"
+      ) {
+        right.rotationDirection =
+          right.rotationDirection === "cw" ? "ccw" : "cw";
       }
     }
 
@@ -269,9 +287,16 @@ async function main() {
   const sourceDeck = sourceDeckDoc.data();
 
   // Load source sequences
-  const seqSnapshot = await db.collection(`catalogs/${sourceDeckId}/sequences`).get();
-  const sourceSequences = seqSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-  console.log(`Loaded ${sourceSequences.length} sequences from ${sourceDeckId}\n`);
+  const seqSnapshot = await db
+    .collection(`catalogs/${sourceDeckId}/sequences`)
+    .get();
+  const sourceSequences = seqSnapshot.docs.map((d) => ({
+    id: d.id,
+    ...d.data(),
+  }));
+  console.log(
+    `Loaded ${sourceSequences.length} sequences from ${sourceDeckId}\n`
+  );
 
   for (const patternId of patternIds) {
     const newDeckId = `${sourceDeckId}-${patternId}`;
@@ -289,8 +314,8 @@ async function main() {
       applyReversalToSequence(steps, patternId, cloned.startPosition);
 
       // Recompute word from new letters
-      const beatSteps = steps.filter(s => !s.isStartPosition);
-      const word = beatSteps.map(s => s.letter).join("");
+      const beatSteps = steps.filter((s) => !s.isStartPosition);
+      const word = beatSteps.map((s) => s.letter).join("");
 
       cloned.word = word;
       cloned.name = word;
@@ -309,8 +334,15 @@ async function main() {
       sequenceIds: (f.sequenceIds ?? []).filter((id) => transformedIds.has(id)),
     }));
 
-    console.log(`  ${transformedSequences.length} sequences in ${families.length} families`);
-    console.log(`  Sample words: ${transformedSequences.slice(0, 3).map(s => s.word).join(", ")}`);
+    console.log(
+      `  ${transformedSequences.length} sequences in ${families.length} families`
+    );
+    console.log(
+      `  Sample words: ${transformedSequences
+        .slice(0, 3)
+        .map((s) => s.word)
+        .join(", ")}`
+    );
 
     if (DRY_RUN) {
       console.log("  [dry run — not written]\n");
@@ -358,8 +390,12 @@ async function main() {
       totalSequences: transformedSequences.length,
       // Explicitly set metadata so variant decks always have these fields,
       // even when the source deck was written before backfill-deck-metadata ran.
-      ...(resolvedLoopType !== null && resolvedLoopType !== undefined ? { loopType: resolvedLoopType } : {}),
-      ...(resolvedBeatCount !== null && resolvedBeatCount !== undefined ? { beatCount: resolvedBeatCount } : {}),
+      ...(resolvedLoopType !== null && resolvedLoopType !== undefined
+        ? { loopType: resolvedLoopType }
+        : {}),
+      ...(resolvedBeatCount !== null && resolvedBeatCount !== undefined
+        ? { beatCount: resolvedBeatCount }
+        : {}),
       ...(resolvedTurns !== undefined ? { turns: resolvedTurns } : {}),
     });
 
@@ -380,7 +416,7 @@ async function main() {
   console.log("Done!");
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error("Fatal error:", err);
   process.exit(1);
 });

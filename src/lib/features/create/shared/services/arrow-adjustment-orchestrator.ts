@@ -39,7 +39,7 @@ import {
 export interface SelectedArrowContext {
   motionData: MotionData;
   pictographData: PictographData;
-  color: HandSideValue;
+  hand: HandSideValue;
 }
 
 /**
@@ -84,21 +84,21 @@ export class ArrowAdjustmentOrchestrator {
    */
   private overridePictographPropTypes(
     pictographData: PictographData,
-    arrowColor: HandSideValue,
+    arrowHand: HandSideValue,
     thisPropType: string,
     otherPropType: string
   ): PictographData {
-    const otherColor =
-      arrowColor === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
+    const otherHand =
+      arrowHand === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
     return {
       ...pictographData,
       motions: {
         ...pictographData.motions,
-        [arrowColor]: pictographData.motions[arrowColor]
-          ? { ...pictographData.motions[arrowColor], propType: thisPropType }
+        [arrowHand]: pictographData.motions[arrowHand]
+          ? { ...pictographData.motions[arrowHand], propType: thisPropType }
           : undefined,
-        [otherColor]: pictographData.motions[otherColor]
-          ? { ...pictographData.motions[otherColor], propType: otherPropType }
+        [otherHand]: pictographData.motions[otherHand]
+          ? { ...pictographData.motions[otherHand], propType: otherPropType }
           : undefined,
       },
     } as PictographData;
@@ -137,10 +137,10 @@ export class ArrowAdjustmentOrchestrator {
           ? { propType: thisPropType, otherPropType } // Layer 3: both prop types
           : { propType: thisPropType }; // Layer 2: just this prop
 
-    const arrowColor = selectedArrow.color;
+    const arrowHand = selectedArrow.hand;
     const pictographWithPropOverrides = this.overridePictographPropTypes(
       selectedArrow.pictographData,
-      arrowColor,
+      arrowHand,
       thisPropType,
       otherPropType || thisPropType
     );
@@ -148,7 +148,7 @@ export class ArrowAdjustmentOrchestrator {
     return this.keyGenerator.generateKey(
       selectedArrow.motionData,
       pictographWithPropOverrides,
-      arrowColor,
+      arrowHand,
       keyOptions
     );
   }
@@ -161,10 +161,10 @@ export class ArrowAdjustmentOrchestrator {
     const repo = getGlobalAdjustmentRepository();
     if (!repo) return null;
 
-    const arrowColor = selectedArrow.color;
+    const arrowHand = selectedArrow.hand;
     const pictographWithPropOverrides = this.overridePictographPropTypes(
       selectedArrow.pictographData,
-      arrowColor,
+      arrowHand,
       thisPropType,
       otherPropType
     );
@@ -173,7 +173,7 @@ export class ArrowAdjustmentOrchestrator {
     const baseKey = this.keyGenerator.generateKey(
       selectedArrow.motionData,
       pictographWithPropOverrides,
-      arrowColor
+      arrowHand
     );
 
     // Use cascading lookup to find adjustment at any layer
@@ -197,8 +197,7 @@ export class ArrowAdjustmentOrchestrator {
       };
     }
 
-    const { motionData, pictographData, color } = selectedArrow;
-    const arrowColor = color;
+    const { motionData, pictographData, hand: arrowHand } = selectedArrow;
 
     // Calculate WASD direction (screen space - what user wants to see)
     const screenSpaceAdjustment = calculateAdjustment(key, increment);
@@ -254,7 +253,7 @@ export class ArrowAdjustmentOrchestrator {
       selectedArrow,
       thisPropType,
       otherPropType,
-      arrowColor
+      arrowHand
     );
 
     // Calculate new total using reference-transformed adjustment
@@ -338,7 +337,7 @@ export class ArrowAdjustmentOrchestrator {
     selectedArrow: SelectedArrowContext,
     thisPropType: string,
     otherPropType: string,
-    arrowColor: HandSide
+    arrowHand: HandSide
   ): Promise<{ currentX: number; currentY: number }> {
     const repo = getGlobalAdjustmentRepository();
     if (!repo) {
@@ -359,14 +358,14 @@ export class ArrowAdjustmentOrchestrator {
     const { motionData, pictographData } = selectedArrow;
     const pictographWithPropOverrides = this.overridePictographPropTypes(
       pictographData,
-      arrowColor,
+      arrowHand,
       thisPropType,
       otherPropType
     );
     const baseKey = this.keyGenerator.generateKey(
       motionData,
       pictographWithPropOverrides,
-      arrowColor
+      arrowHand
     );
     const cascadingResult = repo.getAdjustmentCascading(
       baseKey,
@@ -400,16 +399,16 @@ export class ArrowAdjustmentOrchestrator {
 
       // Also override the other motion's propType in pictographData so the
       // SpecialPlacer reads the same otherPropType the renderer would use.
-      const otherColor =
-        arrowColor === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
-      const otherMotion = pictographData.motions?.[otherColor];
+      const otherHand =
+        arrowHand === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
+      const otherMotion = pictographData.motions?.[otherHand];
       const pictographWithPropOverrides = otherMotion
         ? {
             ...pictographData,
             motions: {
               ...pictographData.motions,
-              [arrowColor]: motionWithPropOverride,
-              [otherColor]: { ...otherMotion, propType: otherPropType },
+              [arrowHand]: motionWithPropOverride,
+              [otherHand]: { ...otherMotion, propType: otherPropType },
             },
           }
         : pictographData;
@@ -419,7 +418,7 @@ export class ArrowAdjustmentOrchestrator {
           pictographWithPropOverrides,
           motionWithPropOverride,
           pictographData.letter || "",
-          arrowColor
+          arrowHand
         );
       return { currentX: baseAdjustment.x, currentY: baseAdjustment.y };
     } catch (error) {

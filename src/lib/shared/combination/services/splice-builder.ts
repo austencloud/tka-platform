@@ -58,7 +58,7 @@
 import { deriveReversals } from "@tka/sequence-engine";
 
 import {
-  propagateOrientationsForColor,
+  propagateOrientationsForHand,
   recalculateAllOrientations,
 } from "$lib/shared/create/services/orientation-propagation";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
@@ -80,7 +80,7 @@ import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/sta
 
 import type { WalkBlock } from "../domain/types";
 
-const COLORS = [HandSide.LEFT, HandSide.RIGHT] as const;
+const HANDS = [HandSide.LEFT, HandSide.RIGHT] as const;
 
 /**
  * Passes to simulate before giving up on orientation closure. The orientation
@@ -99,7 +99,7 @@ function seedOf(sequence: SequenceData): OrientationSeed {
   const hold = sequence.startPosition;
   if (!hold) return {};
   return Object.fromEntries(
-    COLORS.map((color) => [color, hold.motions[color]?.endOrientation])
+    HANDS.map((hand) => [hand, hold.motions[hand]?.endOrientation])
   ) as OrientationSeed;
 }
 
@@ -115,17 +115,17 @@ function playOnePass(
   seed: OrientationSeed
 ): OrientationSeed {
   const next: OrientationSeed = {};
-  for (const color of COLORS) {
-    const start = seed[color];
+  for (const hand of HANDS) {
+    const start = seed[hand];
     if (start === undefined) continue;
-    const played = propagateOrientationsForColor([...steps], color, start);
-    next[color] = played.at(-1)?.motions[color]?.endOrientation ?? start;
+    const played = propagateOrientationsForHand([...steps], hand, start);
+    next[hand] = played.at(-1)?.motions[hand]?.endOrientation ?? start;
   }
   return next;
 }
 
 function sameSeed(a: OrientationSeed, b: OrientationSeed): boolean {
-  return COLORS.every((color) => a[color] === b[color]);
+  return HANDS.every((hand) => a[hand] === b[hand]);
 }
 
 /**

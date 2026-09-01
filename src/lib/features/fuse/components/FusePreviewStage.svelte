@@ -49,16 +49,16 @@
   const leftName = $derived.by(() =>
     fuseState.left.sequence
       ? simplifyRepeatedWord(getSequenceDisplayName(fuseState.left.sequence))
-      : "Blue path"
+      : "Left path"
   );
   const rightName = $derived.by(() =>
     fuseState.right.sequence
       ? simplifyRepeatedWord(getSequenceDisplayName(fuseState.right.sequence))
-      : "Red path"
+      : "Right path"
   );
   const previewDescription = $derived(
     fuseState.previewSequence && fuseState.appliedLength
-      ? `Combined preview of Blue path ${leftName} and Red path ${rightName}, ${fuseState.appliedLength} steps at ${fuseState.bpm} BPM.`
+      ? `Combined preview of Left path ${leftName} and Right path ${rightName}, ${fuseState.appliedLength} steps at ${fuseState.bpm} BPM.`
       : "Combined preview is loading."
   );
   const previewRevision = $derived(

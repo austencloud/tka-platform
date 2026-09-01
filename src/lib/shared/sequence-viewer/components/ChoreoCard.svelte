@@ -112,7 +112,7 @@
     onRenderProgress?: (loaded: number, total: number) => void;
     // Increment to force a full re-render (clears caches and re-renders all cells)
     rerenderTrigger?: number;
-    // Suppress solo mode header ("Blue Prop Path" / "Red Hand Path")
+    // Suppress solo mode header ("Left Prop Path" / "Right Hand Path")
     hideSoloHeader?: boolean;
     // Right-click context menu callback
     onContextMenu?: (x: number, y: number) => void;
@@ -510,7 +510,9 @@
   const leftBuugengFlipped = $derived(
     getSettings().leftBuugengFlipped ?? false
   );
-  const rightBuugengFlipped = $derived(getSettings().rightBuugengFlipped ?? false);
+  const rightBuugengFlipped = $derived(
+    getSettings().rightBuugengFlipped ?? false
+  );
 
   /**
    * Build render options from current component state (delegates to extracted pure function)

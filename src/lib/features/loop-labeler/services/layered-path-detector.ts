@@ -1,4 +1,9 @@
-import type { LayeredPathResult, HandPathCycle, ZoneCoverageAnalysis, PositionalCategory } from "./types";
+import type {
+  LayeredPathResult,
+  HandPathCycle,
+  ZoneCoverageAnalysis,
+  PositionalCategory,
+} from "./types";
 
 function getProperFactors(n: number): number[] {
   const factors: number[] = [];
@@ -99,12 +104,12 @@ function buildDescription(
 
   if (leftCycle) {
     parts.push(
-      `Blue: ${leftCycle.cycleLength}-beat cycle × ${leftCycle.repeatCount}`
+      `Left: ${leftCycle.cycleLength}-beat cycle × ${leftCycle.repeatCount}`
     );
   }
   if (rightCycle) {
     parts.push(
-      `Red: ${rightCycle.cycleLength}-beat cycle × ${rightCycle.repeatCount}`
+      `Right: ${rightCycle.cycleLength}-beat cycle × ${rightCycle.repeatCount}`
     );
   }
 
@@ -130,7 +135,9 @@ function noLayeredPathResult(reason: string): LayeredPathResult {
   };
 }
 
-export function detectLayeredPath(rawSequence: Record<string, unknown>[]): LayeredPathResult {
+export function detectLayeredPath(
+  rawSequence: Record<string, unknown>[]
+): LayeredPathResult {
   const stepRecords = rawSequence.filter(
     (item) => typeof item.beat === "number" && item.beat > 0
   );
@@ -138,9 +145,7 @@ export function detectLayeredPath(rawSequence: Record<string, unknown>[]): Layer
   const length = stepRecords.length;
 
   if (length < 4) {
-    return noLayeredPathResult(
-      "Sequence too short for layered path analysis"
-    );
+    return noLayeredPathResult("Sequence too short for layered path analysis");
   }
 
   const leftCycle = analyzeHandPath(rawSequence, "left");
@@ -200,11 +205,11 @@ export function analyzeHandPath(
 
   if (stepRecords.length < 4) return null;
 
-  // Raw labeler imports still use the historical attribute keys.
-  const attrKey = hand === "left" ? "blueAttributes" : "redAttributes";
-
   const pathData = stepRecords.map((step) => {
-    const attrs = (step[attrKey] as Record<string, unknown>) || {};
+    const currentKey = hand === "left" ? "leftAttributes" : "rightAttributes";
+    const legacyKey = hand === "left" ? "blueAttributes" : "redAttributes";
+    const attrs =
+      ((step[currentKey] ?? step[legacyKey]) as Record<string, unknown>) || {};
     return {
       startLoc: (attrs.startLoc as string) || "unknown",
       endLoc: (attrs.endLoc as string) || "unknown",
@@ -340,8 +345,7 @@ export function analyzeZoneCoverage(
     summary =
       "Perfect Latin Square: each half has exactly one of each positional category";
   } else if (hasCompleteCoverage) {
-    summary =
-      "Complete coverage: each half visits all 4 positional categories";
+    summary = "Complete coverage: each half visits all 4 positional categories";
   } else {
     const missingFirst = Object.entries(firstHalf)
       .filter(([, count]) => count === 0)

@@ -11,7 +11,10 @@ import type {
   ContextMenuItem,
 } from "$lib/shared/components/context-menu/context-menu-types";
 import type { GridCell } from "../../../../state/arrange-grid-state.svelte";
-import type { TransformType, CellEffect } from "$lib/shared/animation-engine/domain/compose-types";
+import type {
+  TransformType,
+  CellEffect,
+} from "$lib/shared/animation-engine/domain/compose-types";
 import { buildVisualSequenceSaveMenuItem } from "$lib/shared/library/services/visual-sequence-save-menu-item";
 import { TrailMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
@@ -48,7 +51,9 @@ function buildTransformChildren(
       icon: "fa-hand",
       checked: currentHand === "left",
       keepOpen: true,
-      action: () => { currentHand = "left"; },
+      action: () => {
+        currentHand = "left";
+      },
     },
     {
       id: "apply-to-both",
@@ -56,7 +61,9 @@ function buildTransformChildren(
       icon: "fa-hands",
       checked: currentHand === "both",
       keepOpen: true,
-      action: () => { currentHand = "both"; },
+      action: () => {
+        currentHand = "both";
+      },
     },
     {
       id: "apply-to-right",
@@ -64,7 +71,9 @@ function buildTransformChildren(
       icon: "fa-hand",
       checked: currentHand === "right",
       keepOpen: true,
-      action: () => { currentHand = "right"; },
+      action: () => {
+        currentHand = "right";
+      },
     },
     // Separator after Apply To group
     { id: "transform-sep-1", label: "", disabled: true } as ContextMenuItem,
@@ -100,7 +109,7 @@ function buildTransformChildren(
       id: "swap",
       label: "Swap",
       icon: "fa-arrow-right-arrow-left",
-      action: () => callbacks.onTransform("swapColors", currentHand),
+      action: () => callbacks.onTransform("swapHands", currentHand),
     },
     {
       id: "invert",
@@ -195,7 +204,8 @@ function buildEffectChildren(
         {
           id: "trail-persistent",
           label: "Persistent",
-          checked: currentTrailMode === TrailMode.OFF && currentEffect === "trails",
+          checked:
+            currentTrailMode === TrailMode.OFF && currentEffect === "trails",
           action: () => {
             callbacks.onSetEffect("trails");
             callbacks.onSetTrailMode(TrailMode.OFF);
@@ -232,7 +242,7 @@ function buildVisibilityChildren(
   return [
     {
       id: "vis-blue",
-      label: "Blue Motion",
+      label: "Left Motion",
       icon: "fa-circle",
       iconColor: "#3b82f6",
       checked: leftVisible,
@@ -241,7 +251,7 @@ function buildVisibilityChildren(
     },
     {
       id: "vis-red",
-      label: "Red Motion",
+      label: "Right Motion",
       icon: "fa-circle",
       iconColor: "#ef4444",
       checked: rightVisible,
@@ -272,7 +282,7 @@ function buildEffortChildren(
       label: "Customize...",
       icon: "fa-sliders",
       action: () => callbacks.onOpenEffortMatrix?.(),
-    },
+    }
   );
 
   return items;
@@ -293,10 +303,9 @@ export function buildCellContextMenuItems(
   if (hasLayers) {
     const primarySequence = cell.layers[0]?.sequence;
     if (primarySequence) {
-      items.push(
-        buildVisualSequenceSaveMenuItem(primarySequence),
-        { type: "separator" as const },
-      );
+      items.push(buildVisualSequenceSaveMenuItem(primarySequence), {
+        type: "separator" as const,
+      });
     }
 
     items.push(
@@ -336,7 +345,7 @@ export function buildCellContextMenuItems(
         label: "Copy Cell",
         icon: "fa-copy",
         action: () => callbacks.onCopyCell(),
-      },
+      }
     );
   }
 

@@ -68,7 +68,9 @@
   );
 
   const rightPlane = $derived(
-    isAllMode ? sharedPlane("right") : (selected?.effectiveRightPlane ?? Plane.WALL)
+    isAllMode
+      ? sharedPlane("right")
+      : (selected?.effectiveRightPlane ?? Plane.WALL)
   );
 
   const isOverridden = $derived(
@@ -215,8 +217,8 @@
 
   <div class="planes-header">
     <p class="planes-hint">
-      Each hand spins in one plane. Tap <strong>Blue</strong> or
-      <strong>Red</strong> to move that hand; the eye shows or hides a plane's guide
+      Each hand spins in one plane. Tap <strong>Left</strong> or
+      <strong>Right</strong> to move that hand; the eye shows or hides a plane's guide
       ring.
     </p>
     <button
@@ -314,18 +316,18 @@
             class:filled={leftPlane === plane}
             onclick={(e) => handleHandSlotClick(e, "left", plane)}
             aria-pressed={leftPlane === plane}
-            aria-label={`Blue hand on ${label}`}
+            aria-label={`Left hand on ${label}`}
           >
-            Blue
+            Left
           </button>
           <button
             class="hand-chip red"
             class:filled={rightPlane === plane}
             onclick={(e) => handleHandSlotClick(e, "right", plane)}
             aria-pressed={rightPlane === plane}
-            aria-label={`Red hand on ${label}`}
+            aria-label={`Right hand on ${label}`}
           >
-            Red
+            Right
           </button>
         </div>
       </div>

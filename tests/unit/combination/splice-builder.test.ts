@@ -44,7 +44,7 @@ beforeAll(async () => {
   await loadPictographDatasetForTests();
 }, 60_000);
 
-const COLORS = [HandSide.LEFT, HandSide.RIGHT] as const;
+const HANDS = [HandSide.LEFT, HandSide.RIGHT] as const;
 
 /**
  * The hand-assembled 2-block walk: all of GGGG, then all of HHHH_CCW.
@@ -202,16 +202,16 @@ describe("splice builder", () => {
     const hold = result.startPosition!;
     expect(result.period).toBe(1);
 
-    for (const color of COLORS) {
-      expect(hold.motions[color]!.endOrientation).toBe(
-        GGGG_CW.steps[0]!.motions[color].startOrientation
+    for (const hand of HANDS) {
+      expect(hold.motions[hand]!.endOrientation).toBe(
+        GGGG_CW.steps[0]!.motions[hand].startOrientation
       );
-      expect(result.steps.at(-1)!.motions[color].endOrientation).toBe(
-        hold.motions[color]!.endOrientation
+      expect(result.steps.at(-1)!.motions[hand].endOrientation).toBe(
+        hold.motions[hand]!.endOrientation
       );
     }
 
-    expect(result.steps.map((s) => s.motions.blue.startOrientation)).toEqual([
+    expect(result.steps.map((s) => s.motions.left.startOrientation)).toEqual([
       "in",
       "in",
       "in",
@@ -267,8 +267,8 @@ describe("splice builder", () => {
     expect(result.isCircular).toBe(false);
     // Closure was NOT forced: the last step really does end `out` against a
     // hold that started `in`.
-    expect(result.startPosition!.motions.blue!.endOrientation).toBe("in");
-    expect(result.steps.at(-1)!.motions.blue.endOrientation).toBe("out");
+    expect(result.startPosition!.motions.left!.endOrientation).toBe("in");
+    expect(result.steps.at(-1)!.motions.left.endOrientation).toBe("out");
   });
 
   it("flags an incomplete word rather than emitting a plausible short one", async () => {
@@ -276,7 +276,7 @@ describe("splice builder", () => {
     // moves. `deriveSequenceLetters` cannot resolve it and leaves the letter
     // null, so the word silently loses a token — the exact "GI" defect
     // `word-deriver`'s strict API exists to stop.
-    const stuck = (color: HandSide) =>
+    const stuck = (hand: HandSide) =>
       createMotionData({
         motionType: MotionType.PRO,
         rotationDirection: RotationDirection.CLOCKWISE,
@@ -285,7 +285,7 @@ describe("splice builder", () => {
         startOrientation: Orientation.IN,
         endOrientation: Orientation.IN,
         turns: 0,
-        hand: color,
+        hand,
         arrowLocation: GridLocation.NORTH,
       });
     const unresolvable = createStepData({

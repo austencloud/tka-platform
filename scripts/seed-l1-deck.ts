@@ -27,7 +27,10 @@ import {
   type PictographData,
   type MotionData as McpMotionData,
 } from "../packages/sequence-engine/src/loop/execution/LOOPExecutor.js";
-import { LOOPType, Period } from "../packages/sequence-engine/src/loop/loop-types.js";
+import {
+  LOOPType,
+  Period,
+} from "../packages/sequence-engine/src/loop/loop-types.js";
 import { QUARTERED_LOOPS } from "../packages/sequence-engine/src/loop/validation/LOOPValidator.js";
 
 /**
@@ -35,14 +38,29 @@ import { QUARTERED_LOOPS } from "../packages/sequence-engine/src/loop/validation
  * Including both CW and CCW would double the deck with mirrored variants.
  */
 const ROTATE_POS_90_CW: Record<string, string> = {
-  alpha1: "alpha3", alpha3: "alpha5", alpha5: "alpha7", alpha7: "alpha1",
-  beta1: "beta3", beta3: "beta5", beta5: "beta7", beta7: "beta1",
-  gamma1: "gamma3", gamma3: "gamma5", gamma5: "gamma7", gamma7: "gamma9",
-  gamma9: "gamma11", gamma11: "gamma13", gamma13: "gamma15", gamma15: "gamma1",
+  alpha1: "alpha3",
+  alpha3: "alpha5",
+  alpha5: "alpha7",
+  alpha7: "alpha1",
+  beta1: "beta3",
+  beta3: "beta5",
+  beta5: "beta7",
+  beta7: "beta1",
+  gamma1: "gamma3",
+  gamma3: "gamma5",
+  gamma5: "gamma7",
+  gamma7: "gamma9",
+  gamma9: "gamma11",
+  gamma11: "gamma13",
+  gamma13: "gamma15",
+  gamma15: "gamma1",
 };
-import { calculateOrientations, calculateEndOrientation, getHandpathDirection } from "../packages/sequence-engine/src/core/orientation/OrientationCalculator.js";
+import {
+  calculateOrientations,
+  calculateEndOrientation,
+  getHandpathDirection,
+} from "../packages/sequence-engine/src/core/orientation/OrientationCalculator.js";
 import type { SequenceStep } from "../packages/sequence-engine/src/core/types/sequence-engine-types.js";
-
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,21 +69,61 @@ const CSV_PATH = path.resolve(
   PROJECT_ROOT,
   "static/data/pictographs/DiamondPictographDataframe.csv"
 );
-const SERVICE_ACCOUNT_PATH = path.resolve(PROJECT_ROOT, "serviceAccountKey.json");
+const SERVICE_ACCOUNT_PATH = path.resolve(
+  PROJECT_ROOT,
+  "serviceAccountKey.json"
+);
 const DECK_ID = "l1-quartered-loop";
 const DRY_RUN = process.argv.includes("--dry-run");
 
-
 const LETTER_TYPES: Record<string, number> = {
-  A: 1, B: 1, C: 1, D: 1, E: 1, F: 1,
-  G: 1, H: 1, I: 1, J: 1, K: 1, L: 1,
-  M: 1, N: 1, O: 1, P: 1, Q: 1, R: 1,
-  S: 1, T: 1, U: 1, V: 1,
-  W: 2, X: 2, Y: 2, Z: 2, "Σ": 2, "Δ": 2, "Θ": 2, "Ω": 2,
-  "W-": 3, "X-": 3, "Y-": 3, "Z-": 3, "Σ-": 3, "Δ-": 3, "Θ-": 3, "Ω-": 3,
-  "Φ": 4, "Ψ": 4, "Λ": 4,
-  "Φ-": 5, "Ψ-": 5, "Λ-": 5,
-  "α": 6, "β": 6, "γ": 6,
+  A: 1,
+  B: 1,
+  C: 1,
+  D: 1,
+  E: 1,
+  F: 1,
+  G: 1,
+  H: 1,
+  I: 1,
+  J: 1,
+  K: 1,
+  L: 1,
+  M: 1,
+  N: 1,
+  O: 1,
+  P: 1,
+  Q: 1,
+  R: 1,
+  S: 1,
+  T: 1,
+  U: 1,
+  V: 1,
+  W: 2,
+  X: 2,
+  Y: 2,
+  Z: 2,
+  Σ: 2,
+  Δ: 2,
+  Θ: 2,
+  Ω: 2,
+  "W-": 3,
+  "X-": 3,
+  "Y-": 3,
+  "Z-": 3,
+  "Σ-": 3,
+  "Δ-": 3,
+  "Θ-": 3,
+  "Ω-": 3,
+  Φ: 4,
+  Ψ: 4,
+  Λ: 4,
+  "Φ-": 5,
+  "Ψ-": 5,
+  "Λ-": 5,
+  α: 6,
+  β: 6,
+  γ: 6,
 };
 
 const TYPE_NAMES: Record<number, string> = {
@@ -95,6 +153,17 @@ function loadDiamondDataframe(): PictographData[] {
       row[header] = values[index] || "";
     });
 
+    // The checked-in dataframes keep their published color-keyed headers.
+    // Normalize once here so all deck construction below is hand-relative.
+    row.leftMotionType ||= row.blueMotionType;
+    row.leftRotationDirection ||= row.blueRotationDirection;
+    row.leftStartLocation ||= row.blueStartLocation;
+    row.leftEndLocation ||= row.blueEndLocation;
+    row.rightMotionType ||= row.redMotionType;
+    row.rightRotationDirection ||= row.redRotationDirection;
+    row.rightStartLocation ||= row.redStartLocation;
+    row.rightEndLocation ||= row.redEndLocation;
+
     if (!row.letter || row.letter.trim() === "") continue;
 
     const leftOrientations = calculateOrientations({
@@ -122,7 +191,7 @@ function loadDiamondDataframe(): PictographData[] {
       timing: row.timing,
       direction: row.direction,
       leftMotion: {
-        color: "blue",
+        hand: "left",
         startLocation: row.leftStartLocation,
         endLocation: row.leftEndLocation,
         motionType: row.leftMotionType,
@@ -131,7 +200,7 @@ function loadDiamondDataframe(): PictographData[] {
         endOrientation: leftOrientations.endOrientation,
       },
       rightMotion: {
-        color: "red",
+        hand: "right",
         startLocation: row.rightStartLocation,
         endLocation: row.rightEndLocation,
         motionType: row.rightMotionType,
@@ -184,7 +253,7 @@ function buildStartPositionStep(edge: PictographData): SequenceStep {
     startPosition: edge.startPosition,
     endPosition: edge.startPosition,
     leftMotion: {
-      color: "blue",
+      hand: "left",
       motionType: "static",
       rotationDirection: "noRotation",
       startLocation: edge.leftMotion.startLocation,
@@ -193,7 +262,7 @@ function buildStartPositionStep(edge: PictographData): SequenceStep {
       endOrientation: "in",
     },
     rightMotion: {
-      color: "red",
+      hand: "right",
       motionType: "static",
       rotationDirection: "noRotation",
       startLocation: edge.rightMotion.startLocation,
@@ -207,10 +276,9 @@ function buildStartPositionStep(edge: PictographData): SequenceStep {
   };
 }
 
-
 /**
  * The MCP executor's derivePositionFromLocations is a simplified heuristic
- * that gets position NAMES wrong (e.g., maps blue@s/red@n → alpha5 instead
+ * that gets position NAMES wrong (e.g., maps left@s/right@n → alpha5 instead
  * of alpha1). Fix this by looking up each generated beat's motions in the
  * CSV to find the correct start/end position names.
  */
@@ -224,10 +292,12 @@ function findMatchingPictograph(
   for (const p of allPictographs) {
     if (
       p.leftMotion.motionType.toLowerCase() === bm.motionType.toLowerCase() &&
-      p.leftMotion.startLocation.toLowerCase() === bm.startLocation.toLowerCase() &&
+      p.leftMotion.startLocation.toLowerCase() ===
+        bm.startLocation.toLowerCase() &&
       p.leftMotion.endLocation.toLowerCase() === bm.endLocation.toLowerCase() &&
       p.rightMotion.motionType.toLowerCase() === rm.motionType.toLowerCase() &&
-      p.rightMotion.startLocation.toLowerCase() === rm.startLocation.toLowerCase() &&
+      p.rightMotion.startLocation.toLowerCase() ===
+        rm.startLocation.toLowerCase() &&
       p.rightMotion.endLocation.toLowerCase() === rm.endLocation.toLowerCase()
     ) {
       return p;
@@ -284,10 +354,10 @@ function traceHandPath(steps: SequenceStep[]): { left: string; right: string } {
 }
 
 /**
- * Compute a color-canonical hand path key from the full 8-beat location trace.
+ * Compute a hand-canonical path key from the full 8-beat location trace.
  *
  * Traces exactly where each hand goes (e.g., s→w→w→n→n→e→e→s→s),
- * then sorts the two hands for color invariance (blue↔red swap = same pattern).
+ * then sorts the two hands for assignment invariance (left↔right = same pattern).
  */
 function computeHandPathKey(steps: SequenceStep[]): string {
   const trace = traceHandPath(steps);
@@ -393,11 +463,29 @@ function enumerateAndExecute(
         a === "noRotation" || b === "noRotation" || a === b;
 
       // Beat 1 → Beat 2 continuity
-      if (!rotOk(b1.leftMotion.rotationDirection, b2.leftMotion.rotationDirection)) continue;
-      if (!rotOk(b1.rightMotion.rotationDirection, b2.rightMotion.rotationDirection)) continue;
+      if (
+        !rotOk(b1.leftMotion.rotationDirection, b2.leftMotion.rotationDirection)
+      )
+        continue;
+      if (
+        !rotOk(
+          b1.rightMotion.rotationDirection,
+          b2.rightMotion.rotationDirection
+        )
+      )
+        continue;
       // Quarter boundary: Beat 2 → Beat 1 (of next quarter) continuity
-      if (!rotOk(b2.leftMotion.rotationDirection, b1.leftMotion.rotationDirection)) continue;
-      if (!rotOk(b2.rightMotion.rotationDirection, b1.rightMotion.rotationDirection)) continue;
+      if (
+        !rotOk(b2.leftMotion.rotationDirection, b1.leftMotion.rotationDirection)
+      )
+        continue;
+      if (
+        !rotOk(
+          b2.rightMotion.rotationDirection,
+          b1.rightMotion.rotationDirection
+        )
+      )
+        continue;
 
       // Build the 3-step input: [startPosition, beat1, beat2]
       const startStep = buildStartPositionStep(b1);
@@ -435,7 +523,7 @@ function enumerateAndExecute(
       // Build a motion-type + direction suffix for unique IDs.
       // Motion type alone isn't enough — two sequences can share the same
       // letters and motion types but differ in hand direction (CW vs CCW).
-      // Include blue hand's start→end locations from both beats as disambiguator.
+      // Include left hand's start→end locations from both beats as disambiguator.
       const suffix = [
         b1.leftMotion.motionType[0],
         b1.rightMotion.motionType[0],
@@ -475,7 +563,7 @@ function enumerateAndExecute(
  *
  * Three layers of dedup:
  *
- * 1. One per word per starting position (color/rotation variants are same concept)
+ * 1. One per word per starting position (hand-assignment/rotation variants are the same concept)
  * 2. Circular equivalence: word XY from position A is the same LOOP as word YX
  *    from position B, just entered one beat later. A LOOP has no beginning.
  *    Use canonical key = sorted letter pair so XY and YX collapse.
@@ -510,7 +598,7 @@ function deduplicateSequences(sequences: DeckSequence[]): DeckSequence[] {
 // ============================================================================
 
 /** Build the Firestore-ready motion object from a SequenceStep motion */
-function buildFirestoreMotion(motion: McpMotionData, color: string) {
+function buildFirestoreMotion(motion: McpMotionData, hand: "left" | "right") {
   return {
     motionType: motion.motionType,
     rotationDirection: motion.rotationDirection,
@@ -519,7 +607,7 @@ function buildFirestoreMotion(motion: McpMotionData, color: string) {
     turns: 0,
     startOrientation: motion.startOrientation,
     endOrientation: motion.endOrientation,
-    color,
+    hand,
     propType: "staff",
     gridMode: "diamond",
     isVisible: true,
@@ -542,8 +630,8 @@ function buildFirestoreStep(step: SequenceStep, stepNumber: number) {
     rightReversal: false,
     isBlank: false,
     motions: {
-      left: buildFirestoreMotion(step.leftMotion, "blue"),
-      right: buildFirestoreMotion(step.rightMotion, "red"),
+      left: buildFirestoreMotion(step.leftMotion, "left"),
+      right: buildFirestoreMotion(step.rightMotion, "right"),
     },
   };
 }
@@ -556,8 +644,8 @@ function buildFirestoreStartPosition(step: SequenceStep) {
     gridPosition: step.startPosition,
     gridMode: "diamond",
     motions: {
-      left: buildFirestoreMotion(step.leftMotion, "blue"),
-      right: buildFirestoreMotion(step.rightMotion, "red"),
+      left: buildFirestoreMotion(step.leftMotion, "left"),
+      right: buildFirestoreMotion(step.rightMotion, "right"),
     },
   };
 }
@@ -583,7 +671,10 @@ function groupIntoFamilies(sequences: DeckSequence[]): Family[] {
     // Circular equivalence: sort type pair so Dual-Shift+Dash and Dash+Dual-Shift
     // merge into one family. A LOOP has no start, so beat order is arbitrary.
     const sortedTypes = [seq.t1, seq.t2].sort((a, b) => a - b);
-    const canonicalId = `${TYPE_NAMES[sortedTypes[0]]}+${TYPE_NAMES[sortedTypes[1]]}`.toLowerCase().replace(/\s+/g, "-");
+    const canonicalId =
+      `${TYPE_NAMES[sortedTypes[0]]}+${TYPE_NAMES[sortedTypes[1]]}`
+        .toLowerCase()
+        .replace(/\s+/g, "-");
     const canonicalLabel = `${TYPE_NAMES[sortedTypes[0]]}+${TYPE_NAMES[sortedTypes[1]]}`;
     const canonicalCombo = `Type ${sortedTypes[0]} + Type ${sortedTypes[1]}`;
 
@@ -602,13 +693,15 @@ function groupIntoFamilies(sequences: DeckSequence[]): Family[] {
 
   // Sort by type combo
   return Array.from(familyMap.values()).sort((a, b) => {
-    const [aT1, aT2] = a.sequences[0].t1 <= a.sequences[0].t2
-      ? [a.sequences[0].t1, a.sequences[0].t2]
-      : [a.sequences[0].t2, a.sequences[0].t1];
-    const [bT1, bT2] = b.sequences[0].t1 <= b.sequences[0].t2
-      ? [b.sequences[0].t1, b.sequences[0].t2]
-      : [b.sequences[0].t2, b.sequences[0].t1];
-    return (aT1 * 10 + aT2) - (bT1 * 10 + bT2);
+    const [aT1, aT2] =
+      a.sequences[0].t1 <= a.sequences[0].t2
+        ? [a.sequences[0].t1, a.sequences[0].t2]
+        : [a.sequences[0].t2, a.sequences[0].t1];
+    const [bT1, bT2] =
+      b.sequences[0].t1 <= b.sequences[0].t2
+        ? [b.sequences[0].t1, b.sequences[0].t2]
+        : [b.sequences[0].t2, b.sequences[0].t1];
+    return aT1 * 10 + aT2 - (bT1 * 10 + bT2);
   });
 }
 
@@ -774,7 +867,9 @@ async function main(): Promise<void> {
 
   console.log(`\nOrganized into ${families.length} families:`);
   for (const f of families) {
-    console.log(`  ${f.label} (${f.typeCombo}): ${f.sequences.length} sequences`);
+    console.log(
+      `  ${f.label} (${f.typeCombo}): ${f.sequences.length} sequences`
+    );
   }
 
   // Phase 5b: Compute hand path statistics
@@ -785,19 +880,25 @@ async function main(): Promise<void> {
     group.push(seq);
     handPathGroups.set(seq.handPathId, group);
   }
-  console.log(`  ${handPathGroups.size} unique hand paths across ${unique.length} sequences`);
+  console.log(
+    `  ${handPathGroups.size} unique hand paths across ${unique.length} sequences`
+  );
 
   // Phase 6: Write to Firestore
   if (DRY_RUN) {
     console.log("\n--- DRY RUN — Skipping Firestore write ---");
-    console.log(`Would write ${unique.length} sequences in ${families.length} families`);
+    console.log(
+      `Would write ${unique.length} sequences in ${families.length} families`
+    );
 
     // Hand path breakdown by family
-    console.log(`\n  ┌────────────────────────────┬───────────┬──────────────┐`);
+    console.log(
+      `\n  ┌────────────────────────────┬───────────┬──────────────┐`
+    );
     console.log(`  │ Family                     │ Sequences │ Hand Paths   │`);
     console.log(`  ├────────────────────────────┼───────────┼──────────────┤`);
     for (const f of families) {
-      const familyHPs = new Set(f.sequences.map(s => s.handPathId));
+      const familyHPs = new Set(f.sequences.map((s) => s.handPathId));
       console.log(
         `  │ ${f.label.padEnd(27)}│ ${String(f.sequences.length).padStart(9)} │ ${String(familyHPs.size).padStart(12)} │`
       );
@@ -813,10 +914,13 @@ async function main(): Promise<void> {
     let hpNum = 1;
     for (const [hpId, seqs] of [...handPathGroups.entries()].sort()) {
       const familyTypes = [seqs[0].t1, seqs[0].t2].sort((a, b) => a - b);
-      const family = TYPE_NAMES[familyTypes[0]] + "+" + TYPE_NAMES[familyTypes[1]];
+      const family =
+        TYPE_NAMES[familyTypes[0]] + "+" + TYPE_NAMES[familyTypes[1]];
       const trace = traceHandPath(seqs[0].steps);
-      const words = seqs.map(s => s.word).join(", ");
-      console.log(`\n    Hand Path #${hpNum} [${family}] — ${seqs.length} sequences`);
+      const words = seqs.map((s) => s.word).join(", ");
+      console.log(
+        `\n    Hand Path #${hpNum} [${family}] — ${seqs.length} sequences`
+      );
       console.log(`      Hand A: ${trace.left}`);
       console.log(`      Hand B: ${trace.right}`);
       console.log(`      Words: ${words}`);
@@ -824,19 +928,26 @@ async function main(): Promise<void> {
     }
 
     // Print sample sequences — pick one with anti motions to verify orientation chaining
-    const antiSample = unique.find(s =>
-      s.steps.some(st => st.leftMotion.motionType === "anti" || st.rightMotion.motionType === "anti")
-    ) ?? unique[0];
+    const antiSample =
+      unique.find((s) =>
+        s.steps.some(
+          (st) =>
+            st.leftMotion.motionType === "anti" ||
+            st.rightMotion.motionType === "anti"
+        )
+      ) ?? unique[0];
 
-    for (const sample of [unique[0], antiSample].filter((s, i, a) => a.indexOf(s) === i)) {
+    for (const sample of [unique[0], antiSample].filter(
+      (s, i, a) => a.indexOf(s) === i
+    )) {
       console.log(`\nSample: ${sample.seqId}`);
       console.log(`  Word: ${sample.loopWord} | Start: ${sample.startPos}`);
       for (const step of sample.steps) {
         console.log(
           `    Beat ${step.stepNumber}: ${step.letter} ` +
-            `blue=${step.leftMotion.motionType}[${step.leftMotion.startLocation}→${step.leftMotion.endLocation}] ` +
+            `left=${step.leftMotion.motionType}[${step.leftMotion.startLocation}→${step.leftMotion.endLocation}] ` +
             `ori=${step.leftMotion.startOrientation}→${step.leftMotion.endOrientation} | ` +
-            `red=${step.rightMotion.motionType}[${step.rightMotion.startLocation}→${step.rightMotion.endLocation}] ` +
+            `right=${step.rightMotion.motionType}[${step.rightMotion.startLocation}→${step.rightMotion.endLocation}] ` +
             `ori=${step.rightMotion.startOrientation}→${step.rightMotion.endOrientation}`
         );
       }

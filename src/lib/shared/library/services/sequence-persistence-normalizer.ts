@@ -120,7 +120,9 @@ export type SequenceWritePayload<T extends SequenceData = SequenceData> = Omit<
 export type LibrarySequenceWriteData = SequenceWritePayload<LibrarySequence>;
 
 /** Everything a caller needs to write an owner document and derive a mirror. */
-export interface NormalizedSequenceWrite<T extends SequenceData = SequenceData> {
+export interface NormalizedSequenceWrite<
+  T extends SequenceData = SequenceData,
+> {
   /**
    * The fully normalized in-memory sequence, steps included. This is what the
    * content hash was computed from and what a projection builder should read.
@@ -145,7 +147,7 @@ export type SequenceNormalizationFailureCode =
   /**
    * Pairings exist but hydration produced no steps, so there is no motion data
    * to validate, count, or hash. Almost always a document whose
-   * `blueSoloProp` / `redSoloProp` are missing. Failing here is deliberate:
+   * `leftSoloProp` / `rightSoloProp` are missing. Failing here is deliberate:
    * hashing zero steps would mint a plausible identity for an empty movement.
    */
   | "UNHYDRATABLE_SEQUENCE"
@@ -341,7 +343,9 @@ export async function normalizeSequenceForPersistence<T extends SequenceData>(
     pendingSyncMetadata: undefined,
   } as unknown as Record<string, unknown>;
 
-  const ownerData = stripUndefinedDeep(payload) as unknown as SequenceWritePayload<T>;
+  const ownerData = stripUndefinedDeep(
+    payload
+  ) as unknown as SequenceWritePayload<T>;
 
   return {
     hydrated: counted,

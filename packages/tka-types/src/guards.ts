@@ -125,9 +125,9 @@ export function isStep(value: unknown): value is Step {
   if (!isMotion(motions.left)) return false;
   if (!isMotion(motions.right)) return false;
   // `hand` is optional; if present it must match the channel.
-  const blueColor = (motions.left as Motion).hand;
-  if (blueColor !== undefined && blueColor !== "left") return false;
-  const redColor = (motions.right as Motion).hand;
-  if (redColor !== undefined && redColor !== "right") return false;
+  const leftHand = (motions.left as Motion).hand;
+  if (leftHand !== undefined && leftHand !== "left") return false;
+  const rightHand = (motions.right as Motion).hand;
+  if (rightHand !== undefined && rightHand !== "right") return false;
   return true;
 }

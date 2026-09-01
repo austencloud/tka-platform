@@ -52,9 +52,13 @@
   // If the restored prop is a staff, collapse a persisted club orientation
   // (out/counter) back into the staff 2-option set so it stays selectable.
   const initialLeftOri =
-    initialProp === "staff" ? radialize(getStoredOri(BLUE_ORI_STORAGE_KEY)) : getStoredOri(BLUE_ORI_STORAGE_KEY);
+    initialProp === "staff"
+      ? radialize(getStoredOri(BLUE_ORI_STORAGE_KEY))
+      : getStoredOri(BLUE_ORI_STORAGE_KEY);
   const initialRightOri =
-    initialProp === "staff" ? radialize(getStoredOri(RED_ORI_STORAGE_KEY)) : getStoredOri(RED_ORI_STORAGE_KEY);
+    initialProp === "staff"
+      ? radialize(getStoredOri(RED_ORI_STORAGE_KEY))
+      : getStoredOri(RED_ORI_STORAGE_KEY);
 
   let matrices = $state<RotationStyleMatrix[]>([]);
   let loading = $state(true);
@@ -63,10 +67,18 @@
   let prop = $state<PropKind>(initialProp);
 
   // Open picker context (null = closed).
-  let picker = $state<{ variations: StyleVariation[]; turnPattern: string; accent: string } | null>(null);
+  let picker = $state<{
+    variations: StyleVariation[];
+    turnPattern: string;
+    accent: string;
+  } | null>(null);
 
   const gridOptions = [
-    { value: "diamond" as LabGridMode, label: "Diamond", icon: "fas fa-diamond" },
+    {
+      value: "diamond" as LabGridMode,
+      label: "Diamond",
+      icon: "fas fa-diamond",
+    },
     { value: "box" as LabGridMode, label: "Box", icon: "fas fa-square" },
   ];
 
@@ -96,7 +108,7 @@
           { value: Orientation.OUT, label: "Out" },
           { value: Orientation.CLOCK, label: "Clock" },
           { value: Orientation.COUNTER, label: "Counter" },
-        ],
+        ]
   );
 
   /** Collapse a club orientation to its staff representative (in/out→Radial, clock/counter→Nonradial). */
@@ -138,7 +150,8 @@
         if (g === grid && ori === startOri) matrices = res;
       })
       .catch((e) => {
-        if (g === grid && ori === startOri) error = e instanceof Error ? e.message : "Failed to load";
+        if (g === grid && ori === startOri)
+          error = e instanceof Error ? e.message : "Failed to load";
       })
       .finally(() => {
         if (g === grid && ori === startOri) loading = false;
@@ -163,26 +176,51 @@
 <div class="explorer">
   <div class="topbar">
     <p class="intro">
-      Each cell shows the <strong>archetype</strong> rosette for a prop-spin and turn count. Every letter
-      in a panel shares that rosette; they differ only in how the two hands phase together (VTG mode —
-      timing and direction). Pick a cell to drill into those letters.
+      Each cell shows the <strong>archetype</strong> rosette for a prop-spin and turn
+      count. Every letter in a panel shares that rosette; they differ only in how
+      the two hands phase together (VTG mode — timing and direction). Pick a cell
+      to drill into those letters.
     </p>
     <div class="controls">
       <div class="ctl">
         <span class="ctl-label">Grid</span>
-        <SegmentedControl options={gridOptions} value={grid} onchange={setGrid} color="accent" size="sm" />
+        <SegmentedControl
+          options={gridOptions}
+          value={grid}
+          onchange={setGrid}
+          color="accent"
+          size="sm"
+        />
       </div>
       <div class="ctl">
         <span class="ctl-label">Prop</span>
-        <SegmentedControl options={propOptions} value={prop} onchange={setProp} color="accent" size="sm" />
+        <SegmentedControl
+          options={propOptions}
+          value={prop}
+          onchange={setProp}
+          color="accent"
+          size="sm"
+        />
       </div>
       <div class="ctl ctl-wide">
-        <span class="ctl-label">Blue start</span>
-        <SegmentedControl options={oriOptions} value={leftOri} onchange={(v) => (leftOri = v)} color="blue" size="sm" />
+        <span class="ctl-label">Left start</span>
+        <SegmentedControl
+          options={oriOptions}
+          value={leftOri}
+          onchange={(v) => (leftOri = v)}
+          color="blue"
+          size="sm"
+        />
       </div>
       <div class="ctl ctl-wide">
-        <span class="ctl-label">Red start</span>
-        <SegmentedControl options={oriOptions} value={rightOri} onchange={(v) => (rightOri = v)} color="red" size="sm" />
+        <span class="ctl-label">Right start</span>
+        <SegmentedControl
+          options={oriOptions}
+          value={rightOri}
+          onchange={(v) => (rightOri = v)}
+          color="red"
+          size="sm"
+        />
       </div>
     </div>
   </div>
@@ -190,12 +228,15 @@
   {#if loading}
     <div class="status" role="status">Loading sequences…</div>
   {:else if error}
-    <div class="status err" role="alert"><i class="fas fa-triangle-exclamation"></i> {error}</div>
+    <div class="status err" role="alert">
+      <i class="fas fa-triangle-exclamation"></i>
+      {error}
+    </div>
   {:else}
     <div class="axis-key" aria-hidden="true">
-      <span class="ak blue"><i class="fas fa-arrow-down"></i> Blue (VTG)</span>
+      <span class="ak blue"><i class="fas fa-arrow-down"></i> Left (VTG)</span>
       <span class="scale">{vtgRatios.join(" · ")}</span>
-      <span class="ak red">Red (VTG) <i class="fas fa-arrow-right"></i></span>
+      <span class="ak red">Right (VTG) <i class="fas fa-arrow-right"></i></span>
     </div>
     <div class="panels">
       {#each matrices as m (m.style)}
@@ -210,13 +251,28 @@
                   class="cell"
                   class:diag={left === right}
                   style="--bloom: {(left + right) / 6};"
-                  aria-label="{m.label} blue {left} red {right} — pick a letter"
-                  onclick={() => (picker = { variations: m.variations, turnPattern: turnKey(left, right), accent: m.accent })}
+                  aria-label="{m.label} left {left} right {right} — pick a letter"
+                  onclick={() =>
+                    (picker = {
+                      variations: m.variations,
+                      turnPattern: turnKey(left, right),
+                      accent: m.accent,
+                    })}
                 >
-                  <SequenceMandala sequence={seq} mode="gallery" show="both" size={120} {tipEnds} darkMode />
+                  <SequenceMandala
+                    sequence={seq}
+                    mode="gallery"
+                    show="both"
+                    size={120}
+                    {tipEnds}
+                    darkMode
+                  />
                 </button>
               {:else}
-                <div class="empty" aria-label="No sequence for {left}|{right}"></div>
+                <div
+                  class="empty"
+                  aria-label="No sequence for {left}|{right}"
+                ></div>
               {/if}
             {/snippet}
           </TurnMatrixGrid>
@@ -238,49 +294,179 @@
 {/if}
 
 <style>
-  .explorer { display: flex; flex-direction: column; gap: 1rem; }
-  .topbar {
-    display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;
-    padding-bottom: 0.85rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  .explorer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
   }
-  .intro { margin: 0; font-size: var(--font-size-min, 14px); color: var(--theme-text-secondary, #9fb2bd); max-width: 56ch; }
-  .intro strong { color: var(--theme-text, #fff); }
-  .controls { display: flex; gap: 0.85rem; flex-shrink: 0; flex-wrap: wrap; }
-  .ctl { display: flex; flex-direction: column; gap: 0.3rem; min-width: 150px; }
-  .ctl-wide { min-width: 220px; }
+  .topbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .intro {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-secondary, #9fb2bd);
+    max-width: 56ch;
+  }
+  .intro strong {
+    color: var(--theme-text, #fff);
+  }
+  .controls {
+    display: flex;
+    gap: 0.85rem;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .ctl {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 150px;
+  }
+  .ctl-wide {
+    min-width: 220px;
+  }
   .ctl-label {
-    font-size: var(--font-size-compact, 11px); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    font-size: var(--font-size-compact, 11px);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
     color: var(--theme-text-secondary, #7e93a0);
   }
-  .status { padding: 2rem; text-align: center; color: var(--theme-text-secondary, #888); font-size: var(--font-size-min, 14px); }
-  .status.err { color: var(--semantic-warning, #fbbf24); }
-
-  .axis-key { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; font-size: var(--font-size-compact, 12px); color: var(--theme-text-secondary, #888); }
-  .ak { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 600; }
-  .ak.blue { color: #60a5fa; }
-  .ak.red { color: #f87171; }
-  .scale { font-variant-numeric: tabular-nums; opacity: 0.7; letter-spacing: 0.04em; }
-
-  .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; align-items: start; }
-  .panel {
-    display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; padding: 0.9rem; border-radius: 16px;
-    background: rgba(255, 255, 255, 0.035);
-    border: 1px solid color-mix(in srgb, var(--accent) 32%, rgba(255, 255, 255, 0.08));
-    box-shadow: 0 2px 24px color-mix(in srgb, var(--accent) 12%, transparent);
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  .status {
+    padding: 2rem;
+    text-align: center;
+    color: var(--theme-text-secondary, #888);
+    font-size: var(--font-size-min, 14px);
   }
-  .panel h3 { display: flex; align-items: center; gap: 0.45rem; margin: 0; font-size: var(--font-size-min, 14px); font-weight: 700; letter-spacing: 0.08em; color: var(--theme-text, #fff); }
-  .dot { width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 70%, transparent); flex-shrink: 0; }
+  .status.err {
+    color: var(--semantic-warning, #fbbf24);
+  }
+
+  .axis-key {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-secondary, #888);
+  }
+  .ak {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-weight: 600;
+  }
+  .ak.blue {
+    color: #60a5fa;
+  }
+  .ak.red {
+    color: #f87171;
+  }
+  .scale {
+    font-variant-numeric: tabular-nums;
+    opacity: 0.7;
+    letter-spacing: 0.04em;
+  }
+
+  .panels {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.25rem;
+    align-items: start;
+  }
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    min-width: 0;
+    padding: 0.9rem;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid
+      color-mix(in srgb, var(--accent) 32%, rgba(255, 255, 255, 0.08));
+    box-shadow: 0 2px 24px color-mix(in srgb, var(--accent) 12%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .panel h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--theme-text, #fff);
+  }
+  .dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 70%, transparent);
+    flex-shrink: 0;
+  }
 
   .cell {
-    width: 100%; aspect-ratio: 1; padding: 2px; border: none; background: transparent; cursor: pointer;
-    border-radius: clamp(4px, 1cqi, 8px); transition: transform 0.12s ease, background 0.12s ease;
-    display: flex; align-items: center; justify-content: center;
+    width: 100%;
+    aspect-ratio: 1;
+    padding: 2px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: clamp(4px, 1cqi, 8px);
+    transition:
+      transform 0.12s ease,
+      background 0.12s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  .cell :global(svg) { width: 100%; height: 100%; filter: drop-shadow(0 0 calc(var(--bloom, 0) * 7px) color-mix(in srgb, var(--accent) calc(var(--bloom, 0) * 55%), transparent)); }
-  .cell.diag { background: radial-gradient(circle, color-mix(in srgb, var(--accent) 20%, transparent), transparent 70%); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent); }
-  .cell:hover { transform: scale(1.1); background: color-mix(in srgb, var(--accent) 18%, transparent); }
-  .cell:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 70%, transparent); outline-offset: 1px; }
-  @media (prefers-reduced-motion: reduce) { .cell { transition: none; } }
-  .empty { width: 100%; aspect-ratio: 1; border-radius: clamp(4px, 1cqi, 8px); background: rgba(255, 255, 255, 0.012); }
+  .cell :global(svg) {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(
+      0 0 calc(var(--bloom, 0) * 7px)
+        color-mix(
+          in srgb,
+          var(--accent) calc(var(--bloom, 0) * 55%),
+          transparent
+        )
+    );
+  }
+  .cell.diag {
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--accent) 20%, transparent),
+      transparent 70%
+    );
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  .cell:hover {
+    transform: scale(1.1);
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+  .cell:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+    outline-offset: 1px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cell {
+      transition: none;
+    }
+  }
+  .empty {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: clamp(4px, 1cqi, 8px);
+    background: rgba(255, 255, 255, 0.012);
+  }
 </style>

@@ -884,7 +884,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
     {
       "id": "distinct-everything",
       "title": "Distinct everything",
-      "intent": "Five performers where the distinct draws guarantee no repeats: five different props exactly saturate the pool, and effects, efforts, and blue planes each differ across the cast.",
+      "intent": "Five performers where the distinct draws guarantee no repeats: five different props exactly saturate the pool, and effects, efforts, and left planes each differ across the cast.",
       "startSeconds": 9,
       "durationSeconds": 10,
       "transition": {
@@ -7666,7 +7666,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
     {
       "id": "no-two-alike",
       "title": "No two alike",
-      "intent": "A line of eight where every performer's blue hand draws a different plane from the nine-plane catalog, and every red hand draws its own as well.",
+      "intent": "A line of eight where every performer's left hand draws a different plane from the nine-plane catalog, and every right hand draws its own as well.",
       "startSeconds": 9,
       "durationSeconds": 9,
       "transition": {
@@ -9430,7 +9430,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
   "version": 5,
   "id": "proving-grounds-r1",
   "title": "Proving Grounds",
-  "brief": "One scene per closed gap. Three performers draw distinct blue and red planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing.",
+  "brief": "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing.",
   "format": {
     "width": 1920,
     "height": 1080,
@@ -9444,7 +9444,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
     {
       "id": "combined-draw",
       "title": "Combined Draw",
-      "intent": "Gap 9: three performers draw DISTINCT blue planes and DISTINCT red planes, and none of the six is ever the wall plane.",
+      "intent": "Gap 9: three performers draw DISTINCT left planes and DISTINCT right planes, and none of the six is ever the wall plane.",
       "startSeconds": 0,
       "durationSeconds": 12,
       "transition": {

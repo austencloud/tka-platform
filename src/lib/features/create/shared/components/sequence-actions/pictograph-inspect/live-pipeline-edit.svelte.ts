@@ -16,7 +16,7 @@ export type PipelineEditTier =
   | "default";
 
 export interface LivePipelineEdit {
-  color: HandSide;
+  hand: HandSide;
   tier: PipelineEditTier;
   x: number;
   y: number;

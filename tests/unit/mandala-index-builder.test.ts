@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { buildIndex, type IndexInput } from "$lib/shared/mandala/services/mandala-index-builder";
+import {
+  buildIndex,
+  type IndexInput,
+} from "$lib/shared/mandala/services/mandala-index-builder";
 import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
 
 function paths(left: string[], right: string[]): MandalaPaths {
@@ -32,13 +35,17 @@ describe("buildIndex", () => {
     ];
     const index = buildIndex(inputs);
     const ref = Object.values(index.byShape)[0]![0]!;
-    expect(ref.colorSig.blueOnly).toBe(true);
+    expect(ref.colorSig.leftOnly).toBe(true);
     expect(typeof ref.orbitKey).toBe("string");
-    expect(Object.values(index.byOrbit)[0]).toContain(Object.keys(index.byShape)[0]);
+    expect(Object.values(index.byOrbit)[0]).toContain(
+      Object.keys(index.byShape)[0]
+    );
   });
 
   it("skips empty-path sequences", () => {
-    const index = buildIndex([{ ref: { seqId: "x", word: "", deck: "d" }, paths: paths([], []) }]);
+    const index = buildIndex([
+      { ref: { seqId: "x", word: "", deck: "d" }, paths: paths([], []) },
+    ]);
     expect(Object.keys(index.byShape)).toHaveLength(0);
   });
 });

@@ -32,14 +32,24 @@
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    GridLocation,
+    GridPosition,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import { LETTER_TYPE_COLORS } from "$lib/shared/pictograph/shared/domain/constants/pictograph-constants";
   import { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import {
+    pt,
+    ptDrag,
+    editText,
+    guideEdit,
+    registerEditSource,
+  } from "../_data/guide-edit.svelte";
   import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
@@ -58,8 +68,14 @@
   const emitSequence = getGuideSequenceClick();
 
   const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
-  const hpDir = (from: GridLocation, to: GridLocation) => (HP_CW.has(`${from}-${to}`) ? CW : CCW);
-  const redShift = (from: GridLocation, to: GridLocation, anti: boolean, so: Orientation) => {
+  const hpDir = (from: GridLocation, to: GridLocation) =>
+    HP_CW.has(`${from}-${to}`) ? CW : CCW;
+  const rightShift = (
+    from: GridLocation,
+    to: GridLocation,
+    anti: boolean,
+    so: Orientation
+  ) => {
     const dir = hpDir(from, to);
     return createMotionData({
       motionType: anti ? MotionType.ANTI : MotionType.PRO,
@@ -69,7 +85,7 @@
       startOrientation: so,
       endOrientation: anti ? (so === IN ? OUT : IN) : so,
       turns: 0,
-      color: HandSide.RIGHT,
+      hand: HandSide.RIGHT,
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     });
@@ -86,7 +102,15 @@
       gridMode: GridMode.DIAMOND,
     });
 
-  type CellDef = { letter: Letter; name: string; leftLoc: GridLocation; from: GridLocation; to: GridLocation; anti: boolean; so?: Orientation };
+  type CellDef = {
+    letter: Letter;
+    name: string;
+    leftLoc: GridLocation;
+    from: GridLocation;
+    to: GridLocation;
+    anti: boolean;
+    so?: Orientation;
+  };
   const step = (c: CellDef, id: string, stepNumber: number | null): StepData =>
     ({
       id,
@@ -97,11 +121,16 @@
       stepNumber,
       motions: {
         left: staticHand(HandSide.LEFT, c.leftLoc),
-        right: redShift(c.from, c.to, c.anti, c.so ?? IN),
+        right: rightShift(c.from, c.to, c.anti, c.so ?? IN),
       },
     }) as unknown as StepData;
 
-  const startFor = (leftLoc, rightLoc, id: string, letter: Letter | null = null): StepData =>
+  const startFor = (
+    leftLoc,
+    rightLoc,
+    id: string,
+    letter: Letter | null = null
+  ): StepData =>
     ({
       id,
       letter,
@@ -116,38 +145,108 @@
     }) as unknown as StepData;
 
   // ── The four letter boxes ───────────────────────────────────────────────────
-  type BoxDef = { x: number; y: number; label: { start: GridPosition; end: GridPosition; t: string }; tag: "OPEN" | "CLOSE"; cells: CellDef[] };
+  type BoxDef = {
+    x: number;
+    y: number;
+    label: { start: GridPosition; end: GridPosition; t: string };
+    tag: "OPEN" | "CLOSE";
+    cells: CellDef[];
+  };
   const BOXES: BoxDef[] = [
     {
-      x: 97, y: 193.6,
-      label: { start: GridPosition.GAMMA1, end: GridPosition.ALPHA1, t: "γ→α" }, tag: "OPEN",
+      x: 97,
+      y: 193.6,
+      label: { start: GridPosition.GAMMA1, end: GridPosition.ALPHA1, t: "γ→α" },
+      tag: "OPEN",
       cells: [
-        { letter: Letter.W, name: "W", leftLoc: W, from: SO_, to: E, anti: false },
-        { letter: Letter.X, name: "X", leftLoc: W, from: SO_, to: E, anti: true },
+        {
+          letter: Letter.W,
+          name: "W",
+          leftLoc: W,
+          from: SO_,
+          to: E,
+          anti: false,
+        },
+        {
+          letter: Letter.X,
+          name: "X",
+          leftLoc: W,
+          from: SO_,
+          to: E,
+          anti: true,
+        },
       ],
     },
     {
-      x: 334.9, y: 193.6,
-      label: { start: GridPosition.GAMMA1, end: GridPosition.BETA1, t: "γ→β" }, tag: "CLOSE",
+      x: 334.9,
+      y: 193.6,
+      label: { start: GridPosition.GAMMA1, end: GridPosition.BETA1, t: "γ→β" },
+      tag: "CLOSE",
       cells: [
-        { letter: Letter.Y, name: "Y", leftLoc: SO_, from: W, to: SO_, anti: false },
-        { letter: Letter.Z, name: "Z", leftLoc: SO_, from: W, to: SO_, anti: true },
+        {
+          letter: Letter.Y,
+          name: "Y",
+          leftLoc: SO_,
+          from: W,
+          to: SO_,
+          anti: false,
+        },
+        {
+          letter: Letter.Z,
+          name: "Z",
+          leftLoc: SO_,
+          from: W,
+          to: SO_,
+          anti: true,
+        },
       ],
     },
     {
-      x: 97, y: 325.5,
-      label: { start: GridPosition.ALPHA1, end: GridPosition.GAMMA1, t: "α→γ" }, tag: "CLOSE",
+      x: 97,
+      y: 325.5,
+      label: { start: GridPosition.ALPHA1, end: GridPosition.GAMMA1, t: "α→γ" },
+      tag: "CLOSE",
       cells: [
-        { letter: Letter.SIGMA, name: "Σ", leftLoc: W, from: E, to: SO_, anti: false },
-        { letter: Letter.DELTA, name: "Δ", leftLoc: W, from: E, to: SO_, anti: true },
+        {
+          letter: Letter.SIGMA,
+          name: "Σ",
+          leftLoc: W,
+          from: E,
+          to: SO_,
+          anti: false,
+        },
+        {
+          letter: Letter.DELTA,
+          name: "Δ",
+          leftLoc: W,
+          from: E,
+          to: SO_,
+          anti: true,
+        },
       ],
     },
     {
-      x: 334.9, y: 325.5,
-      label: { start: GridPosition.BETA1, end: GridPosition.GAMMA1, t: "β→γ" }, tag: "OPEN",
+      x: 334.9,
+      y: 325.5,
+      label: { start: GridPosition.BETA1, end: GridPosition.GAMMA1, t: "β→γ" },
+      tag: "OPEN",
       cells: [
-        { letter: Letter.THETA, name: "Θ", leftLoc: SO_, from: SO_, to: E, anti: false },
-        { letter: Letter.OMEGA, name: "Ω", leftLoc: SO_, from: SO_, to: E, anti: true },
+        {
+          letter: Letter.THETA,
+          name: "Θ",
+          leftLoc: SO_,
+          from: SO_,
+          to: E,
+          anti: false,
+        },
+        {
+          letter: Letter.OMEGA,
+          name: "Ω",
+          leftLoc: SO_,
+          from: SO_,
+          to: E,
+          anti: true,
+        },
       ],
     },
   ];
@@ -159,11 +258,37 @@
   ];
 
   // ── Word rows: red cycles CCW e→n→w→s→e from the shared γ Start ─────────────
-  const RED_CCW: [GridLocation, GridLocation][] = [[E, N], [N, W], [W, SO_], [SO_, E]];
-  type RowDef = { key: string; word: string; letters: Letter[]; names: string[]; y: number; anti: boolean };
+  const RED_CCW: [GridLocation, GridLocation][] = [
+    [E, N],
+    [N, W],
+    [W, SO_],
+    [SO_, E],
+  ];
+  type RowDef = {
+    key: string;
+    word: string;
+    letters: Letter[];
+    names: string[];
+    y: number;
+    anti: boolean;
+  };
   const ROWS: RowDef[] = [
-    { key: "t2w-pro", word: "WΣYΘ", letters: [Letter.W, Letter.SIGMA, Letter.Y, Letter.THETA], names: ["W", "Σ", "Y", "Θ"], y: 494.3, anti: false },
-    { key: "t2w-anti", word: "XΔZΩ", letters: [Letter.X, Letter.DELTA, Letter.Z, Letter.OMEGA], names: ["X", "Δ", "Z", "Ω"], y: 594.2, anti: true },
+    {
+      key: "t2w-pro",
+      word: "WΣYΘ",
+      letters: [Letter.W, Letter.SIGMA, Letter.Y, Letter.THETA],
+      names: ["W", "Σ", "Y", "Θ"],
+      y: 494.3,
+      anti: false,
+    },
+    {
+      key: "t2w-anti",
+      word: "XΔZΩ",
+      letters: [Letter.X, Letter.DELTA, Letter.Z, Letter.OMEGA],
+      names: ["X", "Δ", "Z", "Ω"],
+      y: 594.2,
+      anti: true,
+    },
   ];
   const rowCell = (r: RowDef, i: number): CellDef => ({
     letter: r.letters[i]!,
@@ -176,7 +301,9 @@
   });
   const rowSteps = (r: RowDef): StepData[] => [
     startFor(SO_, E, `t2w-start`),
-    ...[0, 1, 2, 3].map((i) => step(rowCell(r, i), `${r.key}-s-${i + 1}`, i + 1)),
+    ...[0, 1, 2, 3].map((i) =>
+      step(rowCell(r, i), `${r.key}-s-${i + 1}`, i + 1)
+    ),
   ];
   const boxCellSteps = (c: CellDef, key: string): StepData[] => [
     startFor(c.leftLoc, c.from, `${key}-start`),
@@ -204,7 +331,12 @@
   };
   const RESOLVED_BOX: Record<string, StepData[]> = $derived(
     Object.fromEntries(
-      BOXES.flatMap((box) => box.cells.map((c) => [`t2-${c.name}`, resolvedBoxCellSteps(c, `t2-${c.name}`)]))
+      BOXES.flatMap((box) =>
+        box.cells.map((c) => [
+          `t2-${c.name}`,
+          resolvedBoxCellSteps(c, `t2-${c.name}`),
+        ])
+      )
     )
   );
   const RESOLVED_ROWS: Record<string, StepData[]> = $derived(
@@ -219,7 +351,14 @@
   const ROW_KEYS = ["t2w-pro", "t2w-anti"];
 
   // ── Text at proof coords (Γ→γ facelift) ─────────────────────────────────────
-  type Para = { x: number; y: number; fs: number; lh: number; bold?: boolean; html: string };
+  type Para = {
+    x: number;
+    y: number;
+    fs: number;
+    lh: number;
+    bold?: boolean;
+    html: string;
+  };
   let PARAS: Para[] = $state([
     {
       x: 0,
@@ -240,7 +379,13 @@
         "Their letters are organized by end position: α, β, then γ.<br>" +
         "These can also be categorized by opening or closing.",
     },
-    { x: 0, y: 449.9, fs: 16, lh: 19.2, html: "When we arrange them in continuous motions, we get the words WΣYΘ and XΔZΩ." },
+    {
+      x: 0,
+      y: 449.9,
+      fs: 16,
+      lh: 19.2,
+      html: "When we arrange them in continuous motions, we get the words WΣYΘ and XΔZΩ.",
+    },
     {
       x: 0,
       y: 720.8,
@@ -255,7 +400,9 @@
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
     registerEditSource("Type 2 Shift letters (lt2-wxyz)", () =>
-      PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n")
+      PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join(
+        "\n"
+      )
     )
   );
 
@@ -276,16 +423,34 @@
 
 <div class="t2-letters">
   <!-- selfTitled: the calligraphic title with the canonical Type-2 purple. -->
-  <div class="guide-title">Type 2 - <span style="color:{T2_PURPLE}">Shift</span></div>
+  <div class="guide-title">
+    Type 2 - <span style="color:{T2_PURPLE}">Shift</span>
+  </div>
 
   <!-- The four letter boxes with position labels + OPEN/CLOSE tags. -->
   {#each BOXES as box, bi (bi)}
-    <span class="box-label glyph" style="left:{box.x * S}px; top:{(box.y - 18) * S}px">
-      <svg class="pos-glyph" viewBox="360 50 230 75" role="img" aria-label={box.label.t} style="height:{15 * S}px">
-        <PositionGlyph startPosition={box.label.start} endPosition={box.label.end} />
+    <span
+      class="box-label glyph"
+      style="left:{box.x * S}px; top:{(box.y - 18) * S}px"
+    >
+      <svg
+        class="pos-glyph"
+        viewBox="360 50 230 75"
+        role="img"
+        aria-label={box.label.t}
+        style="height:{15 * S}px"
+      >
+        <PositionGlyph
+          startPosition={box.label.start}
+          endPosition={box.label.end}
+        />
       </svg>
     </span>
-    <span class="box-tag" style="left:{(box.x + BCELL * 2 - 60) * S}px; top:{(box.y - 16) * S}px; width:{60 * S}px; font-size:{12 * S}px">{box.tag}</span>
+    <span
+      class="box-tag"
+      style="left:{(box.x + BCELL * 2 - 60) * S}px; top:{(box.y - 16) *
+        S}px; width:{60 * S}px; font-size:{12 * S}px">{box.tag}</span
+    >
     {#each box.cells as c, ci (ci)}
       {@const key = `t2-${c.name}`}
       <div
@@ -293,7 +458,8 @@
         class:is-hovered={selection?.isHovered(key)}
         class:is-selected={selection?.isSelected(key)}
         class:guide-step-active={activeStep?.key === key}
-        style="left:{(box.x + ci * BCELL) * S}px; top:{box.y * S}px; width:{BCELL * S}px; height:{BCELL * S}px"
+        style="left:{(box.x + ci * BCELL) * S}px; top:{box.y *
+          S}px; width:{BCELL * S}px; height:{BCELL * S}px"
       >
         <PictographContainer
           pictographData={RESOLVED_BOX[key]![1]}
@@ -306,7 +472,13 @@
           groupId={key}
           isGroupStart
           label={`Animate letter ${c.name}`}
-          onselect={() => emitSequence?.({ strip: RESOLVED_BOX[key]!, word: `Letter ${c.name}`, key, propType: "staff" })}
+          onselect={() =>
+            emitSequence?.({
+              strip: RESOLVED_BOX[key]!,
+              word: `Letter ${c.name}`,
+              key,
+              propType: "staff",
+            })}
         />
       </div>
     {/each}
@@ -314,14 +486,21 @@
 
   <!-- Greek letter names under the second box row. -->
   {#each NAMES as nm (nm.t)}
-    <span class="name" style="left:{(nm.cx - 40) * S}px; top:{416 * S}px; width:{80 * S}px; font-size:{13 * S}px">{nm.t}</span>
+    <span
+      class="name"
+      style="left:{(nm.cx - 40) * S}px; top:{416 * S}px; width:{80 *
+        S}px; font-size:{13 * S}px">{nm.t}</span
+    >
   {/each}
 
   <!-- Shared γ Start box (rings while either word plays). -->
   <div
     class="mini"
-    class:guide-step-active={activeStep?.key != null && ROW_KEYS.includes(activeStep.key) && activeStep.ringStep === 0}
-    style="left:{START_BOX.x * S}px; top:{START_BOX.y * S}px; width:{WCELL * S}px; height:{WCELL * S}px"
+    class:guide-step-active={activeStep?.key != null &&
+      ROW_KEYS.includes(activeStep.key) &&
+      activeStep.ringStep === 0}
+    style="left:{START_BOX.x * S}px; top:{START_BOX.y * S}px; width:{WCELL *
+      S}px; height:{WCELL * S}px"
   >
     <PictographContainer
       pictographData={startFor(SO_, E, "t2w-startbox", Letter.GAMMA)}
@@ -339,13 +518,17 @@
       class="strip-wrap tka-seq-cell"
       class:is-hovered={selection?.isHovered(r.key)}
       class:is-selected={selection?.isSelected(r.key)}
-      style="left:{WORD_X * S}px; top:{r.y * S}px; width:{WCELL * 4 * S}px; height:{WCELL * S}px"
+      style="left:{WORD_X * S}px; top:{r.y * S}px; width:{WCELL *
+        4 *
+        S}px; height:{WCELL * S}px"
     >
       {#each RESOLVED_ROWS[r.key]!.slice(1) as sd, i (i)}
         <div
           class="mini cell"
-          class:guide-step-active={activeStep?.key === r.key && activeStep.ringStep === i + 1}
-          style="left:{i * WCELL * S}px; top:0; width:{WCELL * S}px; height:{WCELL * S}px"
+          class:guide-step-active={activeStep?.key === r.key &&
+            activeStep.ringStep === i + 1}
+          style="left:{i * WCELL * S}px; top:0; width:{WCELL *
+            S}px; height:{WCELL * S}px"
         >
           <PictographContainer
             pictographData={sd}
@@ -361,7 +544,13 @@
         groupId={r.key}
         isGroupStart
         label={`Animate the word ${r.word}`}
-        onselect={() => emitSequence?.({ strip: RESOLVED_ROWS[r.key]!, word: r.word, key: r.key, propType: "staff" })}
+        onselect={() =>
+          emitSequence?.({
+            strip: RESOLVED_ROWS[r.key]!,
+            word: r.word,
+            key: r.key,
+            propType: "staff",
+          })}
       />
     </div>
   {/each}
@@ -374,7 +563,12 @@
       class:selected={guideEdit.selectedId === `t2w-para-${i}`}
       style="top:{p.y * S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px"
       use:ptDrag={pt(`t2w-para-${i}`, "para", p)}
-      use:editText={{ id: `t2w-para-${i}`, label: "para", get: () => p.html, set: (h) => (p.html = h) }}
+      use:editText={{
+        id: `t2w-para-${i}`,
+        label: "para",
+        get: () => p.html,
+        set: (h) => (p.html = h),
+      }}
     >
       {@html p.html}
     </p>

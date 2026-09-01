@@ -13,6 +13,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   PROP_PICKER_SECTIONS,
   PREMIUM_COSMETIC_PROP_TYPES,
@@ -256,8 +257,8 @@ describe("energy prop motion coloring", () => {
   const BLUE = "#3575E2";
   const RED = "#ED1C24";
 
-  function colorize(svg: string, color: "blue" | "red", prop: string) {
-    return applyMotionColorToSvg(svg, color, {
+  function colorize(svg: string, hand: HandSide, prop: string) {
+    return applyMotionColorToSvg(svg, hand, {
       makeClassNamesUnique: true,
       selectiveColorMode: (
         SELECTIVE_COLOR_PROP_TYPES as readonly string[]
@@ -273,8 +274,8 @@ describe("energy prop motion coloring", () => {
 
   it.each(ENERGY_PROPS)("%s blade takes the motion color", (prop) => {
     const svg = readPropSvg(prop);
-    const left = colorize(svg, "blue", prop);
-    const right = colorize(svg, "red", prop);
+    const left = colorize(svg, HandSide.LEFT, prop);
+    const right = colorize(svg, HandSide.RIGHT, prop);
 
     expect(left).toContain(BLUE);
     expect(right).toContain(RED);
@@ -292,16 +293,16 @@ describe("energy prop motion coloring", () => {
       // A pure #FFFFFF core would be recolored in selective mode. The warm
       // near-white clears the saturation threshold and is preserved.
       expect(svg).toContain("#FFF6E8");
-      expect(colorize(svg, "blue", prop)).toContain("#FFF6E8");
-      expect(colorize(svg, "red", prop)).toContain("#FFF6E8");
+      expect(colorize(svg, HandSide.LEFT, prop)).toContain("#FFF6E8");
+      expect(colorize(svg, HandSide.RIGHT, prop)).toContain("#FFF6E8");
     }
   );
 
   it.each(ENERGY_PROPS)("%s hilt stays neutral in both colors", (prop) => {
     const svg = readPropSvg(prop);
     const hiltFills = ["#24272E", "#3A3F49", "#4A505B", "#5C6470"];
-    for (const color of ["blue", "red"] as const) {
-      const out = colorize(svg, color, prop);
+    for (const hand of [HandSide.LEFT, HandSide.RIGHT] as const) {
+      const out = colorize(svg, hand, prop);
       for (const fill of hiltFills) {
         if (!svg.includes(fill)) continue;
         expect(out, `${fill} was recolored`).toContain(fill);
@@ -311,24 +312,26 @@ describe("energy prop motion coloring", () => {
 
   it.each(ENERGY_PROPS)("%s blue and red renders actually differ", (prop) => {
     const svg = readPropSvg(prop);
-    expect(colorize(svg, "blue", prop)).not.toBe(colorize(svg, "red", prop));
+    expect(colorize(svg, HandSide.LEFT, prop)).not.toBe(
+      colorize(svg, HandSide.RIGHT, prop)
+    );
   });
 
   it.each(ENERGY_PROPS)(
     "%s scopes every gradient and filter id per color, so two copies in one document cannot collide",
     (prop) => {
       const svg = readPropSvg(prop);
-      for (const color of ["blue", "red"] as const) {
-        const out = colorize(svg, color, prop);
+      for (const hand of [HandSide.LEFT, HandSide.RIGHT] as const) {
+        const out = colorize(svg, hand, prop);
         const ids = [...out.matchAll(/id="([^"]+)"/g)].map((m) => m[1]!);
         expect(ids.length).toBeGreaterThan(0);
         for (const id of ids) {
-          expect(id.endsWith(`-${color}`), `${id} not scoped`).toBe(true);
+          expect(id.endsWith(`-${hand}`), `${id} not scoped`).toBe(true);
         }
         const refs = [...out.matchAll(/url\(#([^)]+)\)/g)].map((m) => m[1]!);
         expect(refs.length).toBeGreaterThan(0);
         for (const ref of refs) {
-          expect(ref.endsWith(`-${color}`), `url(#${ref}) not scoped`).toBe(
+          expect(ref.endsWith(`-${hand}`), `url(#${ref}) not scoped`).toBe(
             true
           );
         }

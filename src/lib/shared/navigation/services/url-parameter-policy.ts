@@ -15,6 +15,11 @@ const ROUTE_SCOPED_PARAMETERS: readonly RouteScopedParameter[] = [
   },
   { name: "grid", isValidForPath: startsWith("/glossary") },
   { name: "variation", isValidForPath: startsWith("/glossary") },
+  { name: "leftTurns", isValidForPath: startsWith("/glossary") },
+  { name: "rightTurns", isValidForPath: startsWith("/glossary") },
+  { name: "leftRotation", isValidForPath: startsWith("/glossary") },
+  { name: "rightRotation", isValidForPath: startsWith("/glossary") },
+  // Preserve published legacy links until the route parser normalizes them.
   { name: "blueTurns", isValidForPath: startsWith("/glossary") },
   { name: "redTurns", isValidForPath: startsWith("/glossary") },
   { name: "blueRotation", isValidForPath: startsWith("/glossary") },

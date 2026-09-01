@@ -125,9 +125,9 @@ export interface EngineGenerationParams {
   reflectionAxis?: ReflectionAxis;
   /** Beam search width */
   beamWidth?: number;
-  /** Override starting orientation for blue prop (e.g. "in", "out", "clock", "counter") */
+  /** Override starting orientation for the left prop (e.g. "in", "out", "clock", "counter") */
   leftStartOrientation?: string;
-  /** Override starting orientation for red prop (e.g. "in", "out", "clock", "counter") */
+  /** Override starting orientation for the right prop (e.g. "in", "out", "clock", "counter") */
   rightStartOrientation?: string;
 }
 

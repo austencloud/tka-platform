@@ -178,7 +178,7 @@ export class MotionQueryHandler implements IMotionQueryHandler {
         try {
           const pictograph = this.csvPictographParser.parseCSVRowToPictograph(
             row as unknown as CSVRow,
-            effectiveMode 
+            effectiveMode
           );
           if (pictograph) {
             allPictographs.push(pictograph);
@@ -189,7 +189,6 @@ export class MotionQueryHandler implements IMotionQueryHandler {
             parseError
           );
         }
-
       }
 
       if (!sequence || sequence.length === 0) {
@@ -234,7 +233,6 @@ export class MotionQueryHandler implements IMotionQueryHandler {
 
           transformedPictographs.push(transformedPictograph);
         }
-
       }
 
       if (transformedPictographs.length === 0) {
@@ -250,7 +248,7 @@ export class MotionQueryHandler implements IMotionQueryHandler {
         "❌ MotionQueryHandler: Error in getNextOptionsForSequence:",
         error
       );
-      throw error; 
+      throw error;
     }
   }
 
@@ -309,18 +307,15 @@ export class MotionQueryHandler implements IMotionQueryHandler {
       startLocation: originalMotion.startLocation,
       endLocation: originalMotion.endLocation,
       turns: originalMotion.turns,
-      startOrientation: newStartOrientation, 
-      endOrientation: originalMotion.endOrientation, 
+      startOrientation: newStartOrientation,
+      endOrientation: originalMotion.endOrientation,
       isVisible: originalMotion.isVisible,
       hand: color,
       propType: originalMotion.propType,
       arrowLocation: originalMotion.arrowLocation,
     });
 
-    return calculateEndOrientation(
-      transformedMotionData,
-      color
-    );
+    return calculateEndOrientation(transformedMotionData, color);
   }
 
   async findLetterByMotionConfiguration(
@@ -378,7 +373,8 @@ export class MotionQueryHandler implements IMotionQueryHandler {
       motionType: getSearchMotionType(rightMotion),
       rotationDirection: isFabricatedPrefloat(rightMotion)
         ? rightMotion.rotationDirection
-        : rightMotion.prefloatRotationDirection || rightMotion.rotationDirection,
+        : rightMotion.prefloatRotationDirection ||
+          rightMotion.rotationDirection,
     };
 
     const leftIsFloatWithoutPrefloat =
@@ -442,7 +438,7 @@ export class MotionQueryHandler implements IMotionQueryHandler {
       ? `${rightMotion.motionType}(was ${rightMotion.prefloatMotionType}) ${rightMotion.startLocation}->${rightMotion.endLocation} ${rightSearchMotion.rotationDirection}`
       : `${rightMotion.motionType} ${rightMotion.startLocation}->${rightMotion.endLocation} ${rightSearchMotion.rotationDirection}`;
     console.warn(
-      `⚠️ No letter found for motion configuration: Blue(${leftDesc}), Red(${rightDesc})`
+      `⚠️ No letter found for motion configuration: Left(${leftDesc}), Right(${rightDesc})`
     );
     return null;
   }

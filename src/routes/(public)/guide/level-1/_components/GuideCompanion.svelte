@@ -18,7 +18,7 @@
    * bits-ui Popover menu - same wrapping pattern as the BPM popover above -
    * and reuses the existing pure transform services (decoupled from
    * CreateModuleContext, so safe to call from a guide route):
-   *   - mirrorSequence / swapColors from sequence-transformer.ts (module-level
+   *   - mirrorSequence / swapHands from sequence-transformer.ts (module-level
    *     functions binding the shared motionQueryHandler singleton)
    *   - rotateSequenceGeometry from sequence-derived-fields.ts (pure geometry
    *     rotation; `steps` is in 45° increments, so 90° = 2)
@@ -71,7 +71,7 @@
   } from "../_data/guide-inline-edit";
   import {
     mirrorSequence,
-    swapColors,
+    swapHands,
   } from "$lib/shared/create/services/sequence-transformer";
   import { rotateSequenceGeometry } from "$lib/shared/create/services/sequence-derived-fields";
   import OptionPicker from "$lib/features/create/construct/option-picker/components/OptionPicker.svelte";
@@ -83,7 +83,7 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
   const PENDING_EDIT_SEQUENCE_KEY = "tka-pending-edit-sequence";
-  type TransformKind = "mirror" | "colorSwap" | "rotateCw" | "rotateCcw";
+  type TransformKind = "mirror" | "handSwap" | "rotateCw" | "rotateCcw";
 
   let {
     sequence,
@@ -208,7 +208,7 @@
     }
   }
 
-  /** Mirror / Color Swap / Rotate - pure transform services, decoupled from
+  /** Mirror / Hand Swap / Rotate - pure transform services, decoupled from
    *  CreateModuleContext, so callable directly from this public guide route.
    *  rotateSequenceGeometry's `steps` unit is 45°; 90° = 2 steps. */
   async function runTransform(kind: TransformKind) {
@@ -220,8 +220,8 @@
         case "mirror":
           result = await mirrorSequence(sequence, "both");
           break;
-        case "colorSwap":
-          result = swapColors(sequence);
+        case "handSwap":
+          result = swapHands(sequence);
           break;
         case "rotateCw":
           result = rotateSequenceGeometry(sequence, 2);
@@ -450,10 +450,10 @@
                 role="menuitem"
                 class="transform-item"
                 disabled={transformBusy}
-                onclick={() => runTransform("colorSwap")}
+                onclick={() => runTransform("handSwap")}
               >
                 <i class="fas fa-palette" aria-hidden="true"></i>
-                <span>Color Swap</span>
+                <span>Hand Swap</span>
               </button>
               <button
                 type="button"

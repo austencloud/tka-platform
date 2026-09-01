@@ -79,13 +79,15 @@ describe("MotionColorChips", () => {
     });
 
     await expect
-      .element(page.getByRole("button", { name: "Hide blue motion" }))
+      .element(page.getByRole("button", { name: "Hide left motion" }))
       .toHaveAttribute("aria-pressed", "true");
     await expect
-      .element(page.getByRole("button", { name: "Show red motion" }))
+      .element(page.getByRole("button", { name: "Show right motion" }))
       .toHaveAttribute("aria-pressed", "false");
     expect(
-      document.querySelector(".motion-color-chips")?.classList.contains("column")
+      document
+        .querySelector(".motion-color-chips")
+        ?.classList.contains("column")
     ).toBe(true);
     expect(document.querySelectorAll(".motion-color-chips i")).toHaveLength(2);
   });

@@ -32,10 +32,19 @@
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    GridLocation,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import {
+    pt,
+    ptDrag,
+    editText,
+    guideEdit,
+    registerEditSource,
+  } from "../_data/guide-edit.svelte";
   import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
@@ -71,7 +80,10 @@
     gridMode: GridMode.DIAMOND,
     stepNumber: c.step,
     motions: {
-      left: createPlaceholderMotion(HandSide.LEFT, { location: SO_, orientation: IN }),
+      left: createPlaceholderMotion(HandSide.LEFT, {
+        location: SO_,
+        orientation: IN,
+      }),
       right: createMotionData({
         motionType: c.type,
         rotationDirection: c.rot,
@@ -80,7 +92,7 @@
         startOrientation: c.so,
         endOrientation: c.eo,
         turns: 0,
-        color: HandSide.RIGHT,
+        hand: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
@@ -91,7 +103,13 @@
   const stripSteps = (s: Strip): StepData[] =>
     s.cells.map((c) => cellData(s.id, c) as unknown as StepData);
 
-  type Strip = { id: string; word: string; x: number; y: number; cells: Cell[] };
+  type Strip = {
+    id: string;
+    word: string;
+    x: number;
+    y: number;
+    cells: Cell[];
+  };
 
   // Override-resolving strip: an admin override (guide-overrides.svelte) replaces
   // the WHOLE strip when present; reversal dots stay derived either way
@@ -113,11 +131,51 @@
       x: 52.2,
       y: 240.5,
       cells: [
-        { step: 0, type: MotionType.STATIC, from: SO_, to: SO_, so: IN, eo: IN, rot: NOROT },
-        { step: 1, type: MotionType.PRO, from: SO_, to: E, so: IN, eo: IN, rot: CCW },
-        { step: 2, type: MotionType.PRO, from: E, to: N, so: IN, eo: IN, rot: CCW },
-        { step: 3, type: MotionType.PRO, from: N, to: W, so: IN, eo: IN, rot: CCW },
-        { step: 4, type: MotionType.PRO, from: W, to: SO_, so: IN, eo: IN, rot: CCW },
+        {
+          step: 0,
+          type: MotionType.STATIC,
+          from: SO_,
+          to: SO_,
+          so: IN,
+          eo: IN,
+          rot: NOROT,
+        },
+        {
+          step: 1,
+          type: MotionType.PRO,
+          from: SO_,
+          to: E,
+          so: IN,
+          eo: IN,
+          rot: CCW,
+        },
+        {
+          step: 2,
+          type: MotionType.PRO,
+          from: E,
+          to: N,
+          so: IN,
+          eo: IN,
+          rot: CCW,
+        },
+        {
+          step: 3,
+          type: MotionType.PRO,
+          from: N,
+          to: W,
+          so: IN,
+          eo: IN,
+          rot: CCW,
+        },
+        {
+          step: 4,
+          type: MotionType.PRO,
+          from: W,
+          to: SO_,
+          so: IN,
+          eo: IN,
+          rot: CCW,
+        },
       ],
     },
     {
@@ -127,11 +185,51 @@
       x: 48.3,
       y: 522.4,
       cells: [
-        { step: 0, type: MotionType.STATIC, from: SO_, to: SO_, so: IN, eo: IN, rot: NOROT },
-        { step: 1, type: MotionType.ANTI, from: SO_, to: E, so: IN, eo: OUT, rot: CW },
-        { step: 2, type: MotionType.ANTI, from: E, to: N, so: OUT, eo: IN, rot: CW },
-        { step: 3, type: MotionType.ANTI, from: N, to: W, so: IN, eo: OUT, rot: CW },
-        { step: 4, type: MotionType.ANTI, from: W, to: SO_, so: OUT, eo: IN, rot: CW },
+        {
+          step: 0,
+          type: MotionType.STATIC,
+          from: SO_,
+          to: SO_,
+          so: IN,
+          eo: IN,
+          rot: NOROT,
+        },
+        {
+          step: 1,
+          type: MotionType.ANTI,
+          from: SO_,
+          to: E,
+          so: IN,
+          eo: OUT,
+          rot: CW,
+        },
+        {
+          step: 2,
+          type: MotionType.ANTI,
+          from: E,
+          to: N,
+          so: OUT,
+          eo: IN,
+          rot: CW,
+        },
+        {
+          step: 3,
+          type: MotionType.ANTI,
+          from: N,
+          to: W,
+          so: IN,
+          eo: OUT,
+          rot: CW,
+        },
+        {
+          step: 4,
+          type: MotionType.ANTI,
+          from: W,
+          to: SO_,
+          so: OUT,
+          eo: IN,
+          rot: CW,
+        },
       ],
     },
   ];
@@ -148,7 +246,16 @@
   const HAIRLINES = [189.6, 467.2];
 
   // ── Text at proof coords ────────────────────────────────────────────────────
-  type Para = { x: number; y: number; fs: number; lh: number; left?: boolean; indent?: number; bold?: boolean; html: string };
+  type Para = {
+    x: number;
+    y: number;
+    fs: number;
+    lh: number;
+    left?: boolean;
+    indent?: number;
+    bold?: boolean;
+    html: string;
+  };
   let PARAS: Para[] = $state([
     {
       x: 0,
@@ -162,7 +269,13 @@
         "Each method is equally important, and learning both will maximize capability.<br>" +
         "This guide will assume some knowledge of these fundamental concepts.",
     },
-    { x: 0, y: 160.3, fs: 14, lh: 16.8, html: "To make the most of the Alphabet, it’s highly recommended that you learn the following." },
+    {
+      x: 0,
+      y: 160.3,
+      fs: 14,
+      lh: 16.8,
+      html: "To make the most of the Alphabet, it’s highly recommended that you learn the following.",
+    },
     {
       x: 12.9,
       y: 350.9,
@@ -183,7 +296,13 @@
       bold: true,
       html: "Practice in reverse, then do both directions in the other hand.<br>Then practice it with the thumb out, isolating the pinky end.",
     },
-    { x: 0, y: 626.9, fs: 14, lh: 16.8, html: "To execute this in wall plane, you must do one of the following on step 2:" },
+    {
+      x: 0,
+      y: 626.9,
+      fs: 14,
+      lh: 16.8,
+      html: "To execute this in wall plane, you must do one of the following on step 2:",
+    },
     {
       x: 11.7,
       y: 660.5,
@@ -213,8 +332,12 @@
 
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
-    registerEditSource("Negative Space (p11)", () =>
-      PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n") + `\n  vtg: x: ${r1(vtg.x)}, y: ${r1(vtg.y)}`
+    registerEditSource(
+      "Negative Space (p11)",
+      () =>
+        PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join(
+          "\n"
+        ) + `\n  vtg: x: ${r1(vtg.x)}, y: ${r1(vtg.y)}`
     )
   );
 </script>
@@ -226,7 +349,10 @@
   {/each}
 
   {#each HAIRLINES as hy (hy)}
-    <div class="rule hair" style="left:{20 * S}px; top:{hy * S}px; width:{572 * S}px"></div>
+    <div
+      class="rule hair"
+      style="left:{20 * S}px; top:{hy * S}px; width:{572 * S}px"
+    ></div>
   {/each}
 
   <!-- The two staff sequences: Start + 4 steps, all system-rendered. In the
@@ -238,18 +364,23 @@
       class="strip-wrap tka-seq-cell"
       class:is-hovered={selection?.isHovered(key)}
       class:is-selected={selection?.isSelected(key)}
-      style="left:{strip.x * S}px; top:{strip.y * S}px; width:{strip.cells.length * SIZE * S}px; height:{SIZE * S}px"
+      style="left:{strip.x * S}px; top:{strip.y * S}px; width:{strip.cells
+        .length *
+        SIZE *
+        S}px; height:{SIZE * S}px"
     >
       {#each strip.cells as c, i (c.step)}
         <div
           class="mini"
-          class:guide-step-active={activeStep?.key === key && activeStep.ringStep === c.step}
-          style="left:{c.step * SIZE * S}px; top:0; width:{SIZE * S}px; height:{SIZE * S}px"
+          class:guide-step-active={activeStep?.key === key &&
+            activeStep.ringStep === c.step}
+          style="left:{c.step * SIZE * S}px; top:0; width:{SIZE *
+            S}px; height:{SIZE * S}px"
         >
           <PictographContainer
             pictographData={RESOLVED[strip.id]![i]}
             gridMode={GridMode.DIAMOND}
-            redPropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
             showGrid={true}
             showTKA={false}
             showPositions={false}
@@ -270,7 +401,12 @@
         isGroupStart
         label={`Animate the ${strip.word} sequence`}
         onselect={() =>
-          emitSequence?.({ strip: RESOLVED[strip.id]!, word: strip.word, key, propType: "staff" })}
+          emitSequence?.({
+            strip: RESOLVED[strip.id]!,
+            word: strip.word,
+            key,
+            propType: "staff",
+          })}
       />
     </div>
   {/each}
@@ -282,11 +418,17 @@
       class:bold={p.bold}
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `ns-para-${i}`}
-      style="top:{p.y * S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px; {p.left
+      style="top:{p.y * S}px; font-size:{p.fs * S}px; line-height:{p.lh *
+        S}px; {p.left
         ? `left:${p.x * S}px; right:${p.x * S}px; text-align:left;`
         : ''} {p.indent ? `text-indent:${p.indent * S}px;` : ''}"
       use:ptDrag={pt(`ns-para-${i}`, "para", p)}
-      use:editText={{ id: `ns-para-${i}`, label: "para", get: () => p.html, set: (h) => (p.html = h) }}
+      use:editText={{
+        id: `ns-para-${i}`,
+        label: "para",
+        get: () => p.html,
+        set: (h) => (p.html = h),
+      }}
     >
       {@html p.html}
     </p>

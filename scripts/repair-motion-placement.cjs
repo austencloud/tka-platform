@@ -15,7 +15,8 @@
  * stored startPosition is passed through verbatim.
  *
  * Not the same defect as repair-broken-start-positions.cjs, which rebuilds a
- * startPosition whose `motions.blue` / `motions.red` are missing ENTIRELY. This
+ * startPosition whose canonical `motions.left` / `motions.right` are missing
+ * entirely. Historical blue/red keys are still accepted at the repair boundary.
  * one handles motions that are present but placement-less. Run both; they are
  * disjoint.
  *

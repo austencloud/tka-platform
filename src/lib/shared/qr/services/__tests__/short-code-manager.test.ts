@@ -495,7 +495,7 @@ describe("ShortCodeManager allocation", () => {
 
   it("blocks mixed paired and single-hand choreography before minting", async () => {
     const soloSequence = soloPropToSequence(SOLO_PROP, "left");
-    const blueMotion = soloSequence.steps[0]!.motions.left;
+    const leftMotion = soloSequence.steps[0]!.motions.left;
     const mixed = {
       ...soloSequence,
       steps: [
@@ -503,7 +503,7 @@ describe("ShortCodeManager allocation", () => {
           ...soloSequence.steps[0],
           motions: {
             ...soloSequence.steps[0]!.motions,
-            right: { ...blueMotion, color: "red" },
+            right: { ...leftMotion, hand: "right" },
           },
         },
         {

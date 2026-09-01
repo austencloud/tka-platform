@@ -4,9 +4,9 @@
  * Determines which color (blue or red) to apply to top and bottom turn numbers
  * based on the letter type and motion arrangement.
  *
- * Color is determined by which key ("blue"/"red") a motion lives under in
- * pictographData.motions - NOT by the motion.color property, which is often
- * undefined when data is deserialized from storage.
+ * Color is determined by which performer hand ("left"/"right") owns the
+ * motion in pictographData.motions. The canonical palette then maps left to
+ * blue and right to red.
  *
  * Ported from legacy TurnsTupleInterpreter logic.
  */
@@ -41,16 +41,19 @@ function determineLetterType(letter: string): LetterType {
   if (letter.endsWith("-")) return "TYPE3";
   if (["Φ", "Ψ", "Λ"].includes(letter)) return "TYPE4";
   if (["W", "X", "Y", "Z", "Σ", "Δ", "Θ", "Ω"].includes(letter)) return "TYPE2";
-  if (["C", "F", "I", "L", "O", "R", "U", "V"].includes(letter)) return "TYPE1_HYBRID";
+  if (["C", "F", "I", "L", "O", "R", "U", "V"].includes(letter))
+    return "TYPE1_HYBRID";
   return "TYPE1_NON_HYBRID";
 }
 
 function getActualMotionType(motion: MotionData): string {
   const motionType = (motion as unknown as Record<string, unknown>).motionType;
-  const motionTypeStr = typeof motionType === "string" ? motionType.toLowerCase() : "";
+  const motionTypeStr =
+    typeof motionType === "string" ? motionType.toLowerCase() : "";
 
   if (motionTypeStr === "float") {
-    const prefloatType = (motion as unknown as Record<string, unknown>).prefloatMotionType;
+    const prefloatType = (motion as unknown as Record<string, unknown>)
+      .prefloatMotionType;
     if (typeof prefloatType === "string") {
       return prefloatType.toLowerCase();
     }
@@ -60,16 +63,16 @@ function getActualMotionType(motion: MotionData): string {
 
 function isShiftMotion(motion: MotionData): boolean {
   const motionType = (motion as unknown as Record<string, unknown>).motionType;
-  const motionTypeStr = typeof motionType === "string" ? motionType.toLowerCase() : "";
+  const motionTypeStr =
+    typeof motionType === "string" ? motionType.toLowerCase() : "";
   return ["pro", "anti", "float"].includes(motionTypeStr);
 }
 
 /**
  * Determine the colors for top and bottom turn numbers.
  *
- * Color assignment is based on which motions object key ("blue"/"red")
- * the motion was extracted from - NOT motion.color, which is unreliable
- * for data loaded from storage.
+ * Color assignment is based on which canonical motions key ("left"/"right")
+ * the motion was extracted from, not on duplicated presentation metadata.
  */
 export function interpretTurnColors(
   letter: string | null | undefined,
@@ -101,9 +104,9 @@ export function interpretTurnColors(
     }
 
     case "TYPE1_HYBRID": {
-      const blueActualType = getActualMotionType(leftMotion);
-      const proMotion = blueActualType === "pro" ? leftMotion : rightMotion;
-      const antiMotion = blueActualType === "anti" ? leftMotion : rightMotion;
+      const leftActualType = getActualMotionType(leftMotion);
+      const proMotion = leftActualType === "pro" ? leftMotion : rightMotion;
+      const antiMotion = leftActualType === "anti" ? leftMotion : rightMotion;
       return {
         top: colorOf(proMotion),
         bottom: colorOf(antiMotion),
@@ -111,9 +114,9 @@ export function interpretTurnColors(
     }
 
     case "TYPE3": {
-      const isDashBlue = leftMotion.motionType.toLowerCase() === "dash";
-      const shiftMotion = isDashBlue ? rightMotion : leftMotion;
-      const dashMotion = isDashBlue ? leftMotion : rightMotion;
+      const leftIsDash = leftMotion.motionType.toLowerCase() === "dash";
+      const shiftMotion = leftIsDash ? rightMotion : leftMotion;
+      const dashMotion = leftIsDash ? leftMotion : rightMotion;
       return {
         top: colorOf(shiftMotion),
         bottom: colorOf(dashMotion),
@@ -121,9 +124,9 @@ export function interpretTurnColors(
     }
 
     case "TYPE4": {
-      const isDashBlue = leftMotion.motionType.toLowerCase() === "dash";
-      const dashMotion = isDashBlue ? leftMotion : rightMotion;
-      const staticMotion = isDashBlue ? rightMotion : leftMotion;
+      const leftIsDash = leftMotion.motionType.toLowerCase() === "dash";
+      const dashMotion = leftIsDash ? leftMotion : rightMotion;
+      const staticMotion = leftIsDash ? rightMotion : leftMotion;
       return {
         top: colorOf(dashMotion),
         bottom: colorOf(staticMotion),

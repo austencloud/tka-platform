@@ -45,14 +45,26 @@
   import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
   import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-  import { MotionType, HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    MotionType,
+    HandSide,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import {
+    GridMode,
+    GridLocation,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { describePictograph } from "$lib/shared/pictograph/shared/domain/utils/pictograph-description";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import {
+    pt,
+    ptDrag,
+    editText,
+    guideEdit,
+    registerEditSource,
+  } from "../_data/guide-edit.svelte";
   import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
@@ -60,7 +72,12 @@
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
-  const OPP: Partial<Record<GridLocation, GridLocation>> = { [N]: SO_, [SO_]: N, [E]: W, [W]: E };
+  const OPP: Partial<Record<GridLocation, GridLocation>> = {
+    [N]: SO_,
+    [SO_]: N,
+    [E]: W,
+    [W]: E,
+  };
 
   // Golden step ring: which strip cell the companion is currently animating (null
   // outside the reader - /print + /book render no ring).
@@ -72,7 +89,12 @@
   // Motion type from the location pair: same → STATIC, opposite cardinals → DASH.
   const motion = (color: HandSide, from: GridLocation, to: GridLocation) =>
     createMotionData({
-      motionType: from === to ? MotionType.STATIC : OPP[from] === to ? MotionType.DASH : MotionType.PRO,
+      motionType:
+        from === to
+          ? MotionType.STATIC
+          : OPP[from] === to
+            ? MotionType.DASH
+            : MotionType.PRO,
       startLocation: from,
       endLocation: to,
       color,
@@ -89,9 +111,14 @@
     }
   };
 
-  // [blueFrom, blueTo, redFrom, redTo]
+  // [leftFrom, leftTo, rightFrom, rightTo]
   type Move = [GridLocation, GridLocation, GridLocation, GridLocation];
-  const box = (m: Move, step: number | null, id: string, letter: Letter | null = null): StepData =>
+  const box = (
+    m: Move,
+    step: number | null,
+    id: string,
+    letter: Letter | null = null
+  ): StepData =>
     ({
       id,
       letter,
@@ -237,7 +264,8 @@
   ];
 
   // Flatten a strip into ordered StepData for the animation companion.
-  const stripSteps = (s: Strip): StepData[] => s.cells.map((c, i) => box(c.m, c.step, `seq-${i}`, c.letter ?? null));
+  const stripSteps = (s: Strip): StepData[] =>
+    s.cells.map((c, i) => box(c.m, c.step, `seq-${i}`, c.letter ?? null));
 
   // Override-resolving strip: an admin override (guide-overrides.svelte) replaces
   // the WHOLE strip when present; reversal dots stay derived either way
@@ -265,7 +293,14 @@
   const RULES = [336, 587];
 
   // ── Grouped centred paragraphs (proof coords, pt) ─────────────────────────────
-  type Para = { x: number; y: number; fs: number; lh: number; bold?: boolean; html: string };
+  type Para = {
+    x: number;
+    y: number;
+    fs: number;
+    lh: number;
+    bold?: boolean;
+    html: string;
+  };
   const DASH = (s: string) => `<span class="k-dash">${s}</span>`;
   const DUAL = (s: string) => `<span class="k-dual">${s}</span>`;
   const CROSS = (s: string) => `<span class="k-cross">${s}</span>`;
@@ -283,7 +318,13 @@
         `With a ${DASH("Dash")}, one hand executes a dash while the other hand remains static.<br>` +
         "With alpha → beta, this creates a two-step sequence:",
     },
-    { x: 0, y: 201, fs: 14, lh: 17, html: "And with gamma → gamma, it creates a 4-step sequence:" },
+    {
+      x: 0,
+      y: 201,
+      fs: 14,
+      lh: 17,
+      html: "And with gamma → gamma, it creates a 4-step sequence:",
+    },
     {
       x: 0,
       y: 395,
@@ -308,12 +349,22 @@
       lh: 18,
       html: `Finally, ${STATIC("Static")} motions are indicated by no arrow:`,
     },
-    { x: 0, y: 765, fs: 15, lh: 18, html: "Later on, static sequences gain complexity when adding prop rotations." },
+    {
+      x: 0,
+      y: 765,
+      fs: 15,
+      lh: 18,
+      html: "Later on, static sequences gain complexity when adding prop rotations.",
+    },
   ]);
 
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
-    registerEditSource("Type 4/5/6 (p8)", () => PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n"))
+    registerEditSource("Type 4/5/6 (p8)", () =>
+      PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join(
+        "\n"
+      )
+    )
   );
 </script>
 
@@ -334,13 +385,17 @@
       class="strip-wrap tka-seq-cell"
       class:is-hovered={selection?.isHovered(s.key)}
       class:is-selected={selection?.isSelected(s.key)}
-      style="left:{s.x * S}px; top:{s.y * S}px; width:{s.cells.length * s.box * S}px; height:{s.box * S}px"
+      style="left:{s.x * S}px; top:{s.y * S}px; width:{s.cells.length *
+        s.box *
+        S}px; height:{s.box * S}px"
     >
       {#each s.cells as cell, i (i)}
         <div
           class="cell"
-          class:guide-step-active={activeStep?.key === s.key && activeStep.ringStep === cell.step}
-          style="left:{i * s.box * S}px; top:0; width:{s.box * S}px; height:{s.box * S}px"
+          class:guide-step-active={activeStep?.key === s.key &&
+            activeStep.ringStep === cell.step}
+          style="left:{i * s.box * S}px; top:0; width:{s.box *
+            S}px; height:{s.box * S}px"
           title={describePictograph(RESOLVED[s.key]![i]!)}
         >
           <PictographContainer
@@ -368,7 +423,12 @@
           groupId={s.key}
           isGroupStart
           label={`Animate the ${s.word} sequence`}
-          onselect={() => emitSequence?.({ strip: RESOLVED[s.key]!, word: s.word, key: s.key })}
+          onselect={() =>
+            emitSequence?.({
+              strip: RESOLVED[s.key]!,
+              word: s.word,
+              key: s.key,
+            })}
         />
       {/if}
     </div>
@@ -381,9 +441,15 @@
       class:strong={p.bold}
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `t456-para-${i}`}
-      style="transform: translateX({p.x * S}px); top:{p.y * S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px"
+      style="transform: translateX({p.x * S}px); top:{p.y *
+        S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px"
       use:ptDrag={pt(`t456-para-${i}`, "paragraph", p)}
-      use:editText={{ id: `t456-para-${i}`, label: "paragraph", get: () => p.html, set: (h) => (p.html = h) }}
+      use:editText={{
+        id: `t456-para-${i}`,
+        label: "paragraph",
+        get: () => p.html,
+        set: (h) => (p.html = h),
+      }}
     >
       {@html p.html}
     </p>

@@ -34,13 +34,13 @@ export interface TrailPoint {
  * Complete trail data for a sequence
  */
 export interface GeneratedTrailData {
-  /** Trail points for blue prop's left end */
+  /** Trail points for the left prop's left end */
   leftLeft: TrailPoint[];
-  /** Trail points for blue prop's right end */
+  /** Trail points for the left prop's right end */
   leftRight: TrailPoint[];
-  /** Trail points for red prop's left end */
+  /** Trail points for the right prop's left end */
   rightLeft: TrailPoint[];
-  /** Trail points for red prop's right end */
+  /** Trail points for the right prop's right end */
   rightRight: TrailPoint[];
   /** Total number of steps in the sequence */
   totalSteps: number;
@@ -63,7 +63,6 @@ export interface TrailGenerationConfig {
   /** Red prop dimensions */
   rightPropDimensions: { width: number; height: number };
 }
-
 
 /**
  * Generate complete trail data for a sequence
@@ -157,7 +156,12 @@ export function generateTrailsForSequence(
       beat: playbackPosition,
       timestamp,
     });
-    rightLeft.push({ x: rightEnds.left.x, y: rightEnds.left.y, beat: playbackPosition, timestamp });
+    rightLeft.push({
+      x: rightEnds.left.x,
+      y: rightEnds.left.y,
+      beat: playbackPosition,
+      timestamp,
+    });
     rightRight.push({
       x: rightEnds.right.x,
       y: rightEnds.right.y,

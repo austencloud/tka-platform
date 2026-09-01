@@ -33,10 +33,10 @@
   interface Props {
     open: boolean;
     stepData: StepData;
-    arrowColor: HandSideValue;
+    arrowHand: HandSideValue;
   }
 
-  let { open = $bindable(), stepData, arrowColor }: Props = $props();
+  let { open = $bindable(), stepData, arrowHand }: Props = $props();
 
   // Services
   let adjustmentOrchestrator: ArrowAdjustmentOrchestrator | null = null;
@@ -56,12 +56,12 @@
   let snapshotValue: { x: number; y: number } | null = null;
   let snapshotLayer: 1 | 2 | 3 = 2;
 
-  // Build the SelectedArrowContext from stepData + color. Invisible
+  // Build the SelectedArrowContext from stepData + hand. Invisible
   // placeholder hands keep the modal inert — adjusting a fabricated motion
   // would write special-placement overrides keyed off placeholder data
   // (Wave 0 straggler fix: dead presence gate).
   const selectedArrowContext = $derived.by((): SelectedArrowContext | null => {
-    const motion = stepData.motions?.[arrowColor];
+    const motion = stepData.motions?.[arrowHand];
     if (!isVisibleMotion(motion)) return null;
 
     // Build pictograph data from step
@@ -75,7 +75,7 @@
 
     return {
       motionData: motion,
-      color: arrowColor,
+      hand: arrowHand,
       pictographData,
     };
   });
@@ -84,22 +84,22 @@
   const thisPropType = $derived.by(() => {
     const settings = getSettings();
     const settingsPropType =
-      arrowColor === HandSide.LEFT
+      arrowHand === HandSide.LEFT
         ? settings.leftPropType
         : settings.rightPropType;
-    const motion = stepData.motions?.[arrowColor];
+    const motion = stepData.motions?.[arrowHand];
     return (settingsPropType ?? motion?.propType)?.toLowerCase() || "staff";
   });
 
   const otherPropType = $derived.by(() => {
     const settings = getSettings();
-    const otherColor =
-      arrowColor === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
+    const otherHand =
+      arrowHand === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
     const settingsPropType =
-      otherColor === HandSide.LEFT
+      otherHand === HandSide.LEFT
         ? settings.leftPropType
         : settings.rightPropType;
-    const otherMotion = stepData.motions?.[otherColor];
+    const otherMotion = stepData.motions?.[otherHand];
     return (
       (settingsPropType ?? otherMotion?.propType)?.toLowerCase() || "staff"
     );
@@ -342,7 +342,7 @@
   }
 
   const modalTitle = $derived(
-    `Adjust ${arrowColor === HandSide.LEFT ? "Left" : "Right"} Arrow - ${stepData.letter || "Start"}`
+    `Adjust ${arrowHand === HandSide.LEFT ? "Left" : "Right"} Arrow - ${stepData.letter || "Start"}`
   );
 </script>
 
@@ -360,7 +360,11 @@
   {#snippet header()}
     <div class="modal-header">
       <div class="title-row">
-        <span class="color-dot {arrowColor}"></span>
+        <span
+          class="color-dot"
+          class:blue={arrowHand === HandSide.LEFT}
+          class:red={arrowHand === HandSide.RIGHT}
+        ></span>
         <h3>{modalTitle}</h3>
       </div>
     </div>

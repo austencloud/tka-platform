@@ -51,7 +51,7 @@
     setCurrentSequence: (sequence: SequenceData) =>
       (currentSequence = sequence),
     mirrorSequence: async () => {},
-    swapColors: async () => {},
+    swapHands: async () => {},
     rewindSequence: async () => {},
     flipSequence: async () => {},
     invertSequence: async () => {},

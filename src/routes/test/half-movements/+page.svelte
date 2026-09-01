@@ -95,7 +95,7 @@
           startOrientation: startOri,
           endOrientation: endOri,
           turns: turns as number,
-          color: HandSide.RIGHT,
+          hand: HandSide.RIGHT,
           propType: PropType.STAFF,
           gridMode: GridMode.DIAMOND,
         }),
@@ -682,7 +682,7 @@
                 <PictographContainer
                   pictographData={withAdjustment(cell.step, cell.meta)}
                   gridMode={GridMode.DIAMOND}
-                  redPropTypeOverride={PropType.STAFF}
+                  rightPropTypeOverride={PropType.STAFF}
                   {...PICTO_FLAGS}
                 />
               {/if}
@@ -737,7 +737,7 @@
                 <PictographContainer
                   pictographData={withAdjustment(cell.step, cell.meta)}
                   gridMode={GridMode.DIAMOND}
-                  redPropTypeOverride={PropType.STAFF}
+                  rightPropTypeOverride={PropType.STAFF}
                   {...PICTO_FLAGS}
                 />
               {:else}
@@ -761,7 +761,7 @@
           <PictographContainer
             pictographData={cell.step}
             gridMode={GridMode.DIAMOND}
-            redPropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
             {...PICTO_FLAGS}
           />
         </div>

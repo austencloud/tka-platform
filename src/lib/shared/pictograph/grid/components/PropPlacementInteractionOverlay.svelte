@@ -76,7 +76,7 @@
     {/each}
   </g>
 
-  {#if aim.highlightColor && aim.dragColor === null && aim.hoverOutline}
+  {#if aim.highlightColor && aim.dragHand === null && aim.hoverOutline}
     <polygon
       points={aim.hoverOutline}
       fill="none"
@@ -91,13 +91,13 @@
       r={aim.isBeta ? 44 : 56}
       fill="none"
       class="aim-halo"
-      class:resting={aim.dragColor === null}
+      class:resting={aim.dragHand === null}
       stroke={aim.highlightStroke}
       aria-hidden="true"
     />
   {/if}
 
-  {#if aim.dragPoint && aim.dragColor}
+  {#if aim.dragPoint && aim.dragHand}
     <g class="aim-ticks" aria-hidden="true">
       {#each aim.aimDirections as direction (direction.orientation)}
         {@const radians = (direction.angle * Math.PI) / 180}
@@ -110,7 +110,7 @@
           y2={aim.dragPoint.y + sin * 138}
           class="aim-tick"
           class:aimed={direction.orientation === aim.dragAim}
-          stroke={aim.dragColor === HandSide.RIGHT
+          stroke={aim.dragHand === HandSide.RIGHT
             ? "var(--prop-red, #ef4444)"
             : "var(--prop-blue, #3b82f6)"}
         />

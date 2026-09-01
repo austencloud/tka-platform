@@ -115,7 +115,7 @@ export class FirebaseSettingsPersister {
   /**
    * Mirror the selected prop onto users/{uid}.activeProp so the publicly
    * readable user doc carries the creator's prop identity (browse creators
-   * queries can't reach the settings subcollection). Blue hand is the
+   * queries can't reach the settings subcollection). The left hand is the
    * tiebreaker; in practice both hands match. Non-fatal: a failed mirror
    * leaves a stale badge, not broken settings.
    */

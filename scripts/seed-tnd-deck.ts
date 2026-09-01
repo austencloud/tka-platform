@@ -10,20 +10,20 @@
  * CANONICAL SOURCE: static/data/pictographs/DiamondPictographDataframe.csv.
  * The CSV already contains every rotated beat of every TnD motion, so this
  * seeder walks the CSV directly — it does NOT route through any rotation
- * executor. Each of the 4 beats is one (letter, startPos, endPos[, blueDir])
+ * executor. Each of the 4 beats is one (letter, startPos, endPos[, leftDir])
  * CSV row; orientations chain through the engine's OrientationCalculator.
  *
  * This is the single canonical seeder for decks/l1-tnd-motions. It folds in the
  * former scripts/seed-vtg-togopp.ts (the tog-opp mirror-chirality re-seed): the
  * 3 tog-opp sequences (DJDJ/EKEK/FLFL) walk beta5→alpha3→beta1→alpha7→beta5
- * with blue=anti (EK/FL) / blue=pro (DJ), reproducing the live mirror chirality.
+ * with left=anti (EK/FL) / left=pro (DJ), reproducing the live mirror chirality.
  * The other 16 reproduce the original old-engine output byte-for-byte.
  *
  * Why no rotation executor: the function-based executeLOOP →
  * executeStrictRotated → createRotatedStep in
  * packages/sequence-engine/src/loop/execution/LOOPExecutor.ts reads
- * step.motions.{blue,red} while seeders build flat blueMotion/redMotion steps,
- * so it threw "Cannot read properties of undefined (reading 'blue')" for all 19
+ * step.motions.{left,right} while seeders built flat leftMotion/rightMotion steps,
+ * so it threw on the missing nested motion structure for all 19
  * seeds. That function path is dead for the app (the app uses the class-based
  * StrictRotatedExecutor) but is still imported by scripts/seed-l1-deck.ts, so it
  * is left in place; this seeder simply no longer depends on it.
@@ -39,7 +39,6 @@ import { fileURLToPath } from "url";
 
 import { calculateEndOrientation } from "../packages/sequence-engine/src/core/orientation/OrientationCalculator.js";
 
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, "..");
@@ -47,7 +46,10 @@ const CSV_PATH = path.resolve(
   PROJECT_ROOT,
   "static/data/pictographs/DiamondPictographDataframe.csv"
 );
-const SERVICE_ACCOUNT_PATH = path.resolve(PROJECT_ROOT, "serviceAccountKey.json");
+const SERVICE_ACCOUNT_PATH = path.resolve(
+  PROJECT_ROOT,
+  "serviceAccountKey.json"
+);
 const DECK_ID = "l1-tnd-motions";
 const DRY_RUN = process.argv.includes("--dry-run");
 
@@ -55,7 +57,6 @@ const DRY_RUN = process.argv.includes("--dry-run");
 const PERIOD_QUARTERED = "quartered";
 const PERIOD_HALVED = "halved";
 type PeriodLabel = typeof PERIOD_QUARTERED | typeof PERIOD_HALVED;
-
 
 interface CsvMotion {
   motionType: string;
@@ -95,8 +96,18 @@ function loadCsv(): CsvRow[] {
       endPosition: v[2],
       timing: v[3],
       direction: v[4],
-      left: { motionType: v[5], rotationDirection: v[6], startLocation: v[7], endLocation: v[8] },
-      right: { motionType: v[9], rotationDirection: v[10], startLocation: v[11], endLocation: v[12] },
+      left: {
+        motionType: v[5],
+        rotationDirection: v[6],
+        startLocation: v[7],
+        endLocation: v[8],
+      },
+      right: {
+        motionType: v[9],
+        rotationDirection: v[10],
+        startLocation: v[11],
+        endLocation: v[12],
+      },
     });
   }
   return rows;
@@ -106,7 +117,7 @@ function loadCsv(): CsvRow[] {
 //
 // Each TnD motion is a 4-beat walk. Every beat is one explicit
 // (letter, startPos, endPos) triple resolving to exactly one CSV row, plus an
-// optional blueDir discriminator for hybrid letters (F, L) that have two
+// optional leftDir discriminator for hybrid letters (F, L) that have two
 // pictographs per triple differing in which hand is anti vs pro.
 //
 // The 16 non-tog-opp walks reproduce the original old-engine output:
@@ -118,8 +129,8 @@ interface BeatRef {
   letter: string;
   startPos: string;
   endPos: string;
-  /** Blue rotationDirection discriminator for hybrid (F/L) ties. */
-  blueDir?: string;
+  /** Left-hand rotationDirection discriminator for hybrid (F/L) ties. */
+  leftDir?: string;
 }
 
 interface TnDMotionDef {
@@ -143,7 +154,7 @@ interface TnDMotionDef {
  * so the positions are taken directly from the canonical production data rather
  * than computed. findRow resolves each triple to the FIRST matching CSV row
  * (verified: every live beat is triple-index 0); for the hybrid F/L beats a
- * blueDir discriminator pins the blue=anti / red=pro pictograph.
+ * leftDir discriminator pins the left=anti / right=pro pictograph.
  *
  * The 16 same-dir + split-opp + quarter-opp walks reproduce the original
  * old-engine output (the 13 of them already in production are byte-identical;
@@ -154,7 +165,13 @@ interface TnDMotionDef {
 const TND_MOTIONS: TnDMotionDef[] = [
   // Same-Direction Quartered — Split-Same (alpha1, walks alpha1→alpha3→alpha5→alpha7)
   {
-    id: 1, word: "AAAA", vtg: "Split-Same", familyId: "split-same", startPos: "alpha1", period: PERIOD_QUARTERED, seed: ["A"],
+    id: 1,
+    word: "AAAA",
+    vtg: "Split-Same",
+    familyId: "split-same",
+    startPos: "alpha1",
+    period: PERIOD_QUARTERED,
+    seed: ["A"],
     beats: [
       { letter: "A", startPos: "alpha1", endPos: "alpha3" },
       { letter: "A", startPos: "alpha3", endPos: "alpha5" },
@@ -163,7 +180,13 @@ const TND_MOTIONS: TnDMotionDef[] = [
     ],
   },
   {
-    id: 2, word: "BBBB", vtg: "Split-Same", familyId: "split-same", startPos: "alpha1", period: PERIOD_QUARTERED, seed: ["B"],
+    id: 2,
+    word: "BBBB",
+    vtg: "Split-Same",
+    familyId: "split-same",
+    startPos: "alpha1",
+    period: PERIOD_QUARTERED,
+    seed: ["B"],
     beats: [
       { letter: "B", startPos: "alpha1", endPos: "alpha3" },
       { letter: "B", startPos: "alpha3", endPos: "alpha5" },
@@ -172,18 +195,30 @@ const TND_MOTIONS: TnDMotionDef[] = [
     ],
   },
   {
-    id: 3, word: "CCCC", vtg: "Split-Same", familyId: "split-same", startPos: "alpha1", period: PERIOD_QUARTERED, seed: ["C"],
+    id: 3,
+    word: "CCCC",
+    vtg: "Split-Same",
+    familyId: "split-same",
+    startPos: "alpha1",
+    period: PERIOD_QUARTERED,
+    seed: ["C"],
     beats: [
-      { letter: "C", startPos: "alpha1", endPos: "alpha3", blueDir: "ccw" },
-      { letter: "C", startPos: "alpha3", endPos: "alpha5", blueDir: "ccw" },
-      { letter: "C", startPos: "alpha5", endPos: "alpha7", blueDir: "ccw" },
-      { letter: "C", startPos: "alpha7", endPos: "alpha1", blueDir: "ccw" },
+      { letter: "C", startPos: "alpha1", endPos: "alpha3", leftDir: "ccw" },
+      { letter: "C", startPos: "alpha3", endPos: "alpha5", leftDir: "ccw" },
+      { letter: "C", startPos: "alpha5", endPos: "alpha7", leftDir: "ccw" },
+      { letter: "C", startPos: "alpha7", endPos: "alpha1", leftDir: "ccw" },
     ],
   },
 
   // Same-Direction Quartered — Tog-Same (beta5, walks beta5→beta7→beta1→beta3)
   {
-    id: 4, word: "GGGG", vtg: "Tog-Same", familyId: "tog-same", startPos: "beta5", period: PERIOD_QUARTERED, seed: ["G"],
+    id: 4,
+    word: "GGGG",
+    vtg: "Tog-Same",
+    familyId: "tog-same",
+    startPos: "beta5",
+    period: PERIOD_QUARTERED,
+    seed: ["G"],
     beats: [
       { letter: "G", startPos: "beta5", endPos: "beta7" },
       { letter: "G", startPos: "beta7", endPos: "beta1" },
@@ -192,7 +227,13 @@ const TND_MOTIONS: TnDMotionDef[] = [
     ],
   },
   {
-    id: 5, word: "HHHH", vtg: "Tog-Same", familyId: "tog-same", startPos: "beta5", period: PERIOD_QUARTERED, seed: ["H"],
+    id: 5,
+    word: "HHHH",
+    vtg: "Tog-Same",
+    familyId: "tog-same",
+    startPos: "beta5",
+    period: PERIOD_QUARTERED,
+    seed: ["H"],
     beats: [
       { letter: "H", startPos: "beta5", endPos: "beta7" },
       { letter: "H", startPos: "beta7", endPos: "beta1" },
@@ -201,19 +242,31 @@ const TND_MOTIONS: TnDMotionDef[] = [
     ],
   },
   {
-    id: 6, word: "IIII", vtg: "Tog-Same", familyId: "tog-same", startPos: "beta5", period: PERIOD_QUARTERED, seed: ["I"],
+    id: 6,
+    word: "IIII",
+    vtg: "Tog-Same",
+    familyId: "tog-same",
+    startPos: "beta5",
+    period: PERIOD_QUARTERED,
+    seed: ["I"],
     beats: [
-      { letter: "I", startPos: "beta5", endPos: "beta7", blueDir: "ccw" },
-      { letter: "I", startPos: "beta7", endPos: "beta1", blueDir: "ccw" },
-      { letter: "I", startPos: "beta1", endPos: "beta3", blueDir: "ccw" },
-      { letter: "I", startPos: "beta3", endPos: "beta5", blueDir: "ccw" },
+      { letter: "I", startPos: "beta5", endPos: "beta7", leftDir: "ccw" },
+      { letter: "I", startPos: "beta7", endPos: "beta1", leftDir: "ccw" },
+      { letter: "I", startPos: "beta1", endPos: "beta3", leftDir: "ccw" },
+      { letter: "I", startPos: "beta3", endPos: "beta5", leftDir: "ccw" },
     ],
   },
 
   // Same-Direction Quartered — Quarter-Same (gamma11). S/T walk
   // gamma11→gamma9→gamma15→gamma13; U/V walk gamma11→gamma13→gamma15→gamma9.
   {
-    id: 7, word: "SSSS", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", period: PERIOD_QUARTERED, seed: ["S"],
+    id: 7,
+    word: "SSSS",
+    vtg: "Quarter-Same",
+    familyId: "quarter-same",
+    startPos: "gamma11",
+    period: PERIOD_QUARTERED,
+    seed: ["S"],
     beats: [
       { letter: "S", startPos: "gamma11", endPos: "gamma9" },
       { letter: "S", startPos: "gamma9", endPos: "gamma15" },
@@ -222,7 +275,13 @@ const TND_MOTIONS: TnDMotionDef[] = [
     ],
   },
   {
-    id: 8, word: "TTTT", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", period: PERIOD_QUARTERED, seed: ["T"],
+    id: 8,
+    word: "TTTT",
+    vtg: "Quarter-Same",
+    familyId: "quarter-same",
+    startPos: "gamma11",
+    period: PERIOD_QUARTERED,
+    seed: ["T"],
     beats: [
       { letter: "T", startPos: "gamma11", endPos: "gamma9" },
       { letter: "T", startPos: "gamma9", endPos: "gamma15" },
@@ -231,7 +290,13 @@ const TND_MOTIONS: TnDMotionDef[] = [
     ],
   },
   {
-    id: 9, word: "UUUU", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", period: PERIOD_QUARTERED, seed: ["U"],
+    id: 9,
+    word: "UUUU",
+    vtg: "Quarter-Same",
+    familyId: "quarter-same",
+    startPos: "gamma11",
+    period: PERIOD_QUARTERED,
+    seed: ["U"],
     beats: [
       { letter: "U", startPos: "gamma11", endPos: "gamma13" },
       { letter: "U", startPos: "gamma13", endPos: "gamma15" },
@@ -240,7 +305,13 @@ const TND_MOTIONS: TnDMotionDef[] = [
     ],
   },
   {
-    id: 10, word: "VVVV", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", period: PERIOD_QUARTERED, seed: ["V"],
+    id: 10,
+    word: "VVVV",
+    vtg: "Quarter-Same",
+    familyId: "quarter-same",
+    startPos: "gamma11",
+    period: PERIOD_QUARTERED,
+    seed: ["V"],
     beats: [
       { letter: "V", startPos: "gamma11", endPos: "gamma13" },
       { letter: "V", startPos: "gamma13", endPos: "gamma15" },
@@ -251,7 +322,13 @@ const TND_MOTIONS: TnDMotionDef[] = [
 
   // Opposite-Direction Halved — Split-Opp (alpha1, walks alpha1→beta3→alpha5→beta7)
   {
-    id: 11, word: "JDJD", vtg: "Split-Opp", familyId: "split-opp", startPos: "alpha1", period: PERIOD_HALVED, seed: ["J", "D"],
+    id: 11,
+    word: "JDJD",
+    vtg: "Split-Opp",
+    familyId: "split-opp",
+    startPos: "alpha1",
+    period: PERIOD_HALVED,
+    seed: ["J", "D"],
     beats: [
       { letter: "J", startPos: "alpha1", endPos: "beta3" },
       { letter: "D", startPos: "beta3", endPos: "alpha5" },
@@ -260,7 +337,13 @@ const TND_MOTIONS: TnDMotionDef[] = [
     ],
   },
   {
-    id: 12, word: "KEKE", vtg: "Split-Opp", familyId: "split-opp", startPos: "alpha1", period: PERIOD_HALVED, seed: ["K", "E"],
+    id: 12,
+    word: "KEKE",
+    vtg: "Split-Opp",
+    familyId: "split-opp",
+    startPos: "alpha1",
+    period: PERIOD_HALVED,
+    seed: ["K", "E"],
     beats: [
       { letter: "K", startPos: "alpha1", endPos: "beta3" },
       { letter: "E", startPos: "beta3", endPos: "alpha5" },
@@ -269,20 +352,32 @@ const TND_MOTIONS: TnDMotionDef[] = [
     ],
   },
   {
-    id: 13, word: "LFLF", vtg: "Split-Opp", familyId: "split-opp", startPos: "alpha1", period: PERIOD_HALVED, seed: ["L", "F"],
+    id: 13,
+    word: "LFLF",
+    vtg: "Split-Opp",
+    familyId: "split-opp",
+    startPos: "alpha1",
+    period: PERIOD_HALVED,
+    seed: ["L", "F"],
     beats: [
-      { letter: "L", startPos: "alpha1", endPos: "beta3", blueDir: "cw" },
-      { letter: "F", startPos: "beta3", endPos: "alpha5", blueDir: "cw" },
-      { letter: "L", startPos: "alpha5", endPos: "beta7", blueDir: "cw" },
-      { letter: "F", startPos: "beta7", endPos: "alpha1", blueDir: "cw" },
+      { letter: "L", startPos: "alpha1", endPos: "beta3", leftDir: "cw" },
+      { letter: "F", startPos: "beta3", endPos: "alpha5", leftDir: "cw" },
+      { letter: "L", startPos: "alpha5", endPos: "beta7", leftDir: "cw" },
+      { letter: "F", startPos: "beta7", endPos: "alpha1", leftDir: "cw" },
     ],
   },
 
   // tog-opp: MIRROR chirality (beta5→alpha3→beta1→alpha7→beta5). DJ leads
-  // blue=pro, EK/FL lead blue=anti. Hybrid F/L need blueDir to pick the
-  // blue=anti, red=pro pictograph. These reproduce the live mirror state.
+  // left=pro; EK/FL use left=anti. Hybrid F/L need leftDir to pick the
+  // left=anti, right=pro pictograph. These reproduce the live mirror state.
   {
-    id: 14, word: "DJDJ", vtg: "Tog-Opp", familyId: "tog-opp", startPos: "beta5", period: PERIOD_HALVED, seed: ["D", "J"],
+    id: 14,
+    word: "DJDJ",
+    vtg: "Tog-Opp",
+    familyId: "tog-opp",
+    startPos: "beta5",
+    period: PERIOD_HALVED,
+    seed: ["D", "J"],
     beats: [
       { letter: "D", startPos: "beta5", endPos: "alpha3" },
       { letter: "J", startPos: "alpha3", endPos: "beta1" },
@@ -291,7 +386,13 @@ const TND_MOTIONS: TnDMotionDef[] = [
     ],
   },
   {
-    id: 15, word: "EKEK", vtg: "Tog-Opp", familyId: "tog-opp", startPos: "beta5", period: PERIOD_HALVED, seed: ["E", "K"],
+    id: 15,
+    word: "EKEK",
+    vtg: "Tog-Opp",
+    familyId: "tog-opp",
+    startPos: "beta5",
+    period: PERIOD_HALVED,
+    seed: ["E", "K"],
     beats: [
       { letter: "E", startPos: "beta5", endPos: "alpha3" },
       { letter: "K", startPos: "alpha3", endPos: "beta1" },
@@ -300,18 +401,30 @@ const TND_MOTIONS: TnDMotionDef[] = [
     ],
   },
   {
-    id: 16, word: "FLFL", vtg: "Tog-Opp", familyId: "tog-opp", startPos: "beta5", period: PERIOD_HALVED, seed: ["F", "L"],
+    id: 16,
+    word: "FLFL",
+    vtg: "Tog-Opp",
+    familyId: "tog-opp",
+    startPos: "beta5",
+    period: PERIOD_HALVED,
+    seed: ["F", "L"],
     beats: [
-      { letter: "F", startPos: "beta5", endPos: "alpha3", blueDir: "ccw" },
-      { letter: "L", startPos: "alpha3", endPos: "beta1", blueDir: "ccw" },
-      { letter: "F", startPos: "beta1", endPos: "alpha7", blueDir: "ccw" },
-      { letter: "L", startPos: "alpha7", endPos: "beta5", blueDir: "ccw" },
+      { letter: "F", startPos: "beta5", endPos: "alpha3", leftDir: "ccw" },
+      { letter: "L", startPos: "alpha3", endPos: "beta1", leftDir: "ccw" },
+      { letter: "F", startPos: "beta1", endPos: "alpha7", leftDir: "ccw" },
+      { letter: "L", startPos: "alpha7", endPos: "beta5", leftDir: "ccw" },
     ],
   },
 
   // Opposite-Direction Halved — Quarter-Opp (gamma11, walks gamma11→gamma1→gamma15→gamma5)
   {
-    id: 17, word: "MPMP", vtg: "Quarter-Opp", familyId: "quarter-opp", startPos: "gamma11", period: PERIOD_HALVED, seed: ["M", "P"],
+    id: 17,
+    word: "MPMP",
+    vtg: "Quarter-Opp",
+    familyId: "quarter-opp",
+    startPos: "gamma11",
+    period: PERIOD_HALVED,
+    seed: ["M", "P"],
     beats: [
       { letter: "M", startPos: "gamma11", endPos: "gamma1" },
       { letter: "P", startPos: "gamma1", endPos: "gamma15" },
@@ -320,7 +433,13 @@ const TND_MOTIONS: TnDMotionDef[] = [
     ],
   },
   {
-    id: 18, word: "NQNQ", vtg: "Quarter-Opp", familyId: "quarter-opp", startPos: "gamma11", period: PERIOD_HALVED, seed: ["N", "Q"],
+    id: 18,
+    word: "NQNQ",
+    vtg: "Quarter-Opp",
+    familyId: "quarter-opp",
+    startPos: "gamma11",
+    period: PERIOD_HALVED,
+    seed: ["N", "Q"],
     beats: [
       { letter: "N", startPos: "gamma11", endPos: "gamma1" },
       { letter: "Q", startPos: "gamma1", endPos: "gamma15" },
@@ -329,12 +448,18 @@ const TND_MOTIONS: TnDMotionDef[] = [
     ],
   },
   {
-    id: 19, word: "OROR", vtg: "Quarter-Opp", familyId: "quarter-opp", startPos: "gamma11", period: PERIOD_HALVED, seed: ["O", "R"],
+    id: 19,
+    word: "OROR",
+    vtg: "Quarter-Opp",
+    familyId: "quarter-opp",
+    startPos: "gamma11",
+    period: PERIOD_HALVED,
+    seed: ["O", "R"],
     beats: [
-      { letter: "O", startPos: "gamma11", endPos: "gamma1", blueDir: "ccw" },
-      { letter: "R", startPos: "gamma1", endPos: "gamma15", blueDir: "ccw" },
-      { letter: "O", startPos: "gamma15", endPos: "gamma5", blueDir: "ccw" },
-      { letter: "R", startPos: "gamma5", endPos: "gamma11", blueDir: "ccw" },
+      { letter: "O", startPos: "gamma11", endPos: "gamma1", leftDir: "ccw" },
+      { letter: "R", startPos: "gamma1", endPos: "gamma15", leftDir: "ccw" },
+      { letter: "O", startPos: "gamma15", endPos: "gamma5", leftDir: "ccw" },
+      { letter: "R", startPos: "gamma5", endPos: "gamma11", leftDir: "ccw" },
     ],
   },
   // Gamma SPLIT half (spec §4.2) — the mirror of MPMP/NQNQ/OROR. Lead letter
@@ -343,7 +468,13 @@ const TND_MOTIONS: TnDMotionDef[] = [
   // lands in GAMMA_DIAG → split-opp (Fire). familyId is the diamond classification;
   // the deck releaser recomputes box at runtime (deck-composer TnD classification).
   {
-    id: 20, word: "PMPM", vtg: "Quarter-Opp", familyId: "quarter-opp", startPos: "gamma9", period: PERIOD_HALVED, seed: ["P", "M"],
+    id: 20,
+    word: "PMPM",
+    vtg: "Quarter-Opp",
+    familyId: "quarter-opp",
+    startPos: "gamma9",
+    period: PERIOD_HALVED,
+    seed: ["P", "M"],
     beats: [
       { letter: "P", startPos: "gamma9", endPos: "gamma3" },
       { letter: "M", startPos: "gamma3", endPos: "gamma13" },
@@ -352,7 +483,13 @@ const TND_MOTIONS: TnDMotionDef[] = [
     ],
   },
   {
-    id: 21, word: "QNQN", vtg: "Quarter-Opp", familyId: "quarter-opp", startPos: "gamma9", period: PERIOD_HALVED, seed: ["Q", "N"],
+    id: 21,
+    word: "QNQN",
+    vtg: "Quarter-Opp",
+    familyId: "quarter-opp",
+    startPos: "gamma9",
+    period: PERIOD_HALVED,
+    seed: ["Q", "N"],
     beats: [
       { letter: "Q", startPos: "gamma9", endPos: "gamma3" },
       { letter: "N", startPos: "gamma3", endPos: "gamma13" },
@@ -361,12 +498,18 @@ const TND_MOTIONS: TnDMotionDef[] = [
     ],
   },
   {
-    id: 22, word: "RORO", vtg: "Quarter-Opp", familyId: "quarter-opp", startPos: "gamma9", period: PERIOD_HALVED, seed: ["R", "O"],
+    id: 22,
+    word: "RORO",
+    vtg: "Quarter-Opp",
+    familyId: "quarter-opp",
+    startPos: "gamma9",
+    period: PERIOD_HALVED,
+    seed: ["R", "O"],
     beats: [
-      { letter: "R", startPos: "gamma9", endPos: "gamma3", blueDir: "ccw" },
-      { letter: "O", startPos: "gamma3", endPos: "gamma13", blueDir: "ccw" },
-      { letter: "R", startPos: "gamma13", endPos: "gamma7", blueDir: "ccw" },
-      { letter: "O", startPos: "gamma7", endPos: "gamma9", blueDir: "ccw" },
+      { letter: "R", startPos: "gamma9", endPos: "gamma3", leftDir: "ccw" },
+      { letter: "O", startPos: "gamma3", endPos: "gamma13", leftDir: "ccw" },
+      { letter: "R", startPos: "gamma13", endPos: "gamma7", leftDir: "ccw" },
+      { letter: "O", startPos: "gamma7", endPos: "gamma9", leftDir: "ccw" },
     ],
   },
 ];
@@ -374,21 +517,20 @@ const TND_MOTIONS: TnDMotionDef[] = [
 // TnD FAMILY DEFINITIONS (for Firestore deck metadata)
 
 const TND_FAMILIES = [
-  { id: "split-same",   label: "Split-Same",   typeCombo: "Quartered" },
-  { id: "tog-same",     label: "Tog-Same",     typeCombo: "Quartered" },
+  { id: "split-same", label: "Split-Same", typeCombo: "Quartered" },
+  { id: "tog-same", label: "Tog-Same", typeCombo: "Quartered" },
   { id: "quarter-same", label: "Quarter-Same", typeCombo: "Quartered" },
-  { id: "split-opp",    label: "Split-Opp",    typeCombo: "Halved" },
-  { id: "tog-opp",      label: "Tog-Opp",      typeCombo: "Halved" },
-  { id: "quarter-opp",  label: "Quarter-Opp",  typeCombo: "Halved" },
+  { id: "split-opp", label: "Split-Opp", typeCombo: "Halved" },
+  { id: "tog-opp", label: "Tog-Opp", typeCombo: "Halved" },
+  { id: "quarter-opp", label: "Quarter-Opp", typeCombo: "Halved" },
 ];
-
 
 /**
  * Resolve a single beat to a CSV row by (letter, startPos, endPos) and, when
- * given, blue rotationDirection. When the triple has two pictographs (hybrid
+ * given, left-hand rotationDirection. When the triple has two pictographs (hybrid
  * letters C/F/L share an endPos across two variants), the FIRST CSV row in
  * canonical order is taken — verified against the live deck, every production
- * beat is exactly the first triple-match (and where a blueDir is supplied it
+ * beat is exactly the first triple-match (and where a leftDir is supplied it
  * already selects that same first row). Throws only when nothing matches, so a
  * bad walk fails loudly rather than silently picking a wrong position.
  */
@@ -398,11 +540,13 @@ function findRow(rows: CsvRow[], b: BeatRef): CsvRow {
       r.letter === b.letter &&
       r.startPosition === b.startPos &&
       r.endPosition === b.endPos &&
-      (b.blueDir === undefined || r.left.rotationDirection === b.blueDir)
+      (b.leftDir === undefined || r.left.rotationDirection === b.leftDir)
   );
   if (matches.length === 0) {
-    const dir = b.blueDir ? ` blueDir=${b.blueDir}` : "";
-    throw new Error(`No CSV row for ${b.letter} ${b.startPos}>${b.endPos}${dir}`);
+    const dir = b.leftDir ? ` leftDir=${b.leftDir}` : "";
+    throw new Error(
+      `No CSV row for ${b.letter} ${b.startPos}>${b.endPos}${dir}`
+    );
   }
   return matches[0];
 }
@@ -459,7 +603,11 @@ function chainOrientations(rows: CsvRow[]): BuiltBeat[] {
       startPosition: r.startPosition,
       endPosition: r.endPosition,
       left: { ...r.left, startOrientation: leftStart, endOrientation: leftEnd },
-      right: { ...r.right, startOrientation: rightStart, endOrientation: rightEnd },
+      right: {
+        ...r.right,
+        startOrientation: rightStart,
+        endOrientation: rightEnd,
+      },
     };
   });
 }
@@ -469,15 +617,27 @@ function chainOrientations(rows: CsvRow[]): BuiltBeat[] {
 // ============================================================================
 
 function computeHandPathId(beats: BuiltBeat[]): string {
-  const left = [beats[0].left.startLocation, ...beats.map((b) => b.left.endLocation)].join("→");
-  const right = [beats[0].right.startLocation, ...beats.map((b) => b.right.endLocation)].join("→");
+  const left = [
+    beats[0].left.startLocation,
+    ...beats.map((b) => b.left.endLocation),
+  ].join("→");
+  const right = [
+    beats[0].right.startLocation,
+    ...beats.map((b) => b.right.endLocation),
+  ].join("→");
   return [left, right].sort().join("|");
 }
 
 function traceHandPath(beats: BuiltBeat[]): { left: string; right: string } {
   return {
-    left: [beats[0].left.startLocation, ...beats.map((b) => b.left.endLocation)].join("→"),
-    right: [beats[0].right.startLocation, ...beats.map((b) => b.right.endLocation)].join("→"),
+    left: [
+      beats[0].left.startLocation,
+      ...beats.map((b) => b.left.endLocation),
+    ].join("→"),
+    right: [
+      beats[0].right.startLocation,
+      ...beats.map((b) => b.right.endLocation),
+    ].join("→"),
   };
 }
 
@@ -519,7 +679,7 @@ function buildTnDSequence(def: TnDMotionDef, rows: CsvRow[]): TnDSequence {
 // FIRESTORE SHAPE
 // ============================================================================
 
-function buildFirestoreMotion(m: BuiltMotion, color: string) {
+function buildFirestoreMotion(m: BuiltMotion, hand: "left" | "right") {
   return {
     motionType: m.motionType,
     rotationDirection: m.rotationDirection,
@@ -528,7 +688,7 @@ function buildFirestoreMotion(m: BuiltMotion, color: string) {
     turns: 0,
     startOrientation: m.startOrientation,
     endOrientation: m.endOrientation,
-    color,
+    hand,
     propType: "staff",
     gridMode: "diamond",
     isVisible: true,
@@ -550,8 +710,8 @@ function buildFirestoreStep(beat: BuiltBeat, stepNumber: number) {
     rightReversal: false,
     isBlank: false,
     motions: {
-      left: buildFirestoreMotion(beat.left, "blue"),
-      right: buildFirestoreMotion(beat.right, "red"),
+      left: buildFirestoreMotion(beat.left, "left"),
+      right: buildFirestoreMotion(beat.right, "right"),
     },
   };
 }
@@ -562,7 +722,7 @@ function buildFirestoreStep(beat: BuiltBeat, stepNumber: number) {
  */
 function buildFirestoreStartPosition(seq: TnDSequence) {
   const first = seq.beats[0];
-  const staticMotion = (loc: string, color: string) =>
+  const staticMotion = (loc: string, hand: "left" | "right") =>
     buildFirestoreMotion(
       {
         motionType: "static",
@@ -572,7 +732,7 @@ function buildFirestoreStartPosition(seq: TnDSequence) {
         startOrientation: "in",
         endOrientation: "in",
       },
-      color
+      hand
     );
   return {
     isStartPosition: true,
@@ -580,8 +740,8 @@ function buildFirestoreStartPosition(seq: TnDSequence) {
     gridPosition: first.startPosition,
     gridMode: "diamond",
     motions: {
-      left: staticMotion(first.left.startLocation, "blue"),
-      right: staticMotion(first.right.startLocation, "red"),
+      left: staticMotion(first.left.startLocation, "left"),
+      right: staticMotion(first.right.startLocation, "right"),
     },
   };
 }
@@ -596,7 +756,9 @@ interface FamilyMeta {
 async function writeToFirestore(sequences: TnDSequence[]): Promise<void> {
   const admin = await import("firebase-admin");
 
-  const serviceAccount = JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, "utf8"));
+  const serviceAccount = JSON.parse(
+    fs.readFileSync(SERVICE_ACCOUNT_PATH, "utf8")
+  );
 
   if (!admin.default.apps.length) {
     admin.default.initializeApp({
@@ -628,7 +790,9 @@ async function writeToFirestore(sequences: TnDSequence[]): Promise<void> {
     ids.push(seq.seqId);
     familySequenceIds.set(seq.familyId, ids);
 
-    const firestoreSteps = seq.beats.map((beat, i) => buildFirestoreStep(beat, i + 1));
+    const firestoreSteps = seq.beats.map((beat, i) =>
+      buildFirestoreStep(beat, i + 1)
+    );
 
     const seqRef = db.doc(`catalogs/${DECK_ID}/sequences/${seq.seqId}`);
     batch.set(seqRef, {
@@ -708,7 +872,9 @@ async function main(): Promise<void> {
   console.log("\nFamilies:");
   for (const family of TND_FAMILIES) {
     const familySeqs = sequences.filter((s) => s.familyId === family.id);
-    console.log(`  ${family.label} (${family.typeCombo}): ${familySeqs.length} sequences`);
+    console.log(
+      `  ${family.label} (${family.typeCombo}): ${familySeqs.length} sequences`
+    );
     for (const seq of familySeqs) console.log(`    ${seq.word}`);
   }
 
@@ -718,14 +884,18 @@ async function main(): Promise<void> {
     group.push(seq);
     handPaths.set(seq.handPathId, group);
   }
-  console.log(`\n${handPaths.size} unique hand paths across ${sequences.length} sequences`);
+  console.log(
+    `\n${handPaths.size} unique hand paths across ${sequences.length} sequences`
+  );
 
   console.log("\nHand path traces:");
   let hpNum = 1;
   for (const [, seqs] of [...handPaths.entries()].sort()) {
     const trace = traceHandPath(seqs[0].beats);
     const words = seqs.map((s) => s.word).join(", ");
-    console.log(`  #${hpNum} [${seqs[0].vtg}] — ${seqs.length} sequence(s): ${words}`);
+    console.log(
+      `  #${hpNum} [${seqs[0].vtg}] — ${seqs.length} sequence(s): ${words}`
+    );
     console.log(`    Hand A: ${trace.left}`);
     console.log(`    Hand B: ${trace.right}`);
     hpNum++;
@@ -734,13 +904,15 @@ async function main(): Promise<void> {
   if (sequences.length > 0) {
     const sample = sequences[0];
     console.log(`\nSample: ${sample.seqId}`);
-    console.log(`  Word: ${sample.word} | VTG: ${sample.vtg} | Start: ${sample.startPos}`);
+    console.log(
+      `  Word: ${sample.word} | VTG: ${sample.vtg} | Start: ${sample.startPos}`
+    );
     sample.beats.forEach((b, i) => {
       console.log(
         `    Beat ${i + 1}: ${b.letter} ` +
-          `blue=${b.left.motionType}[${b.left.startLocation}→${b.left.endLocation}] ` +
+          `left=${b.left.motionType}[${b.left.startLocation}→${b.left.endLocation}] ` +
           `ori=${b.left.startOrientation}→${b.left.endOrientation} | ` +
-          `red=${b.right.motionType}[${b.right.startLocation}→${b.right.endLocation}] ` +
+          `right=${b.right.motionType}[${b.right.startLocation}→${b.right.endLocation}] ` +
           `ori=${b.right.startOrientation}→${b.right.endOrientation}`
       );
     });
@@ -748,7 +920,9 @@ async function main(): Promise<void> {
 
   if (DRY_RUN) {
     console.log("\n--- DRY RUN — Skipping Firestore write ---");
-    console.log(`Would write ${sequences.length} sequences in ${TND_FAMILIES.length} families`);
+    console.log(
+      `Would write ${sequences.length} sequences in ${TND_FAMILIES.length} families`
+    );
     console.log(`Firestore path: decks/${DECK_ID}`);
   } else {
     console.log("\nWriting to Firestore...");
@@ -782,7 +956,10 @@ export type { TnDSequence, TnDMotionDef, BuiltBeat };
 const isDirectRun = (() => {
   try {
     const invoked = process.argv[1] ? path.resolve(process.argv[1]) : "";
-    return path.resolve(__filename) === invoked || invoked.endsWith("seed-tnd-deck.ts");
+    return (
+      path.resolve(__filename) === invoked ||
+      invoked.endsWith("seed-tnd-deck.ts")
+    );
   } catch {
     return true;
   }

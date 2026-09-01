@@ -20,9 +20,9 @@ export interface DirectRenderOptions {
   size: number;
   /** Visibility settings for glyphs, indicators, etc. */
   visibility: PictographVisibilityOptions;
-  /** Optional blue prop type override */
+  /** Optional left-hand prop type override */
   leftPropType?: string;
-  /** Optional red prop type override */
+  /** Optional right-hand prop type override */
   rightPropType?: string;
 }
 

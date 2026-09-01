@@ -32,23 +32,23 @@ export interface PictographVisibilityOptions {
   /** Print Mode - pure white background for professional printing (overrides darkMode) */
   printMode?: boolean;
   /**
-   * Explicit prop type for blue hand.
+   * Explicit prop type for the left hand.
    * When provided, passed through to PictographPreparer to ensure consistency
    * during async rendering. Export/thumbnail rendering always provides this.
    */
   leftPropType?: PropType;
   /**
-   * Explicit prop type for red hand.
+   * Explicit prop type for the right hand.
    * When provided, passed through to PictographPreparer for consistency.
    */
   rightPropType?: PropType;
   /**
-   * Buugeng chirality for the blue prop. An S-shaped prop is rotation-invariant,
+   * Buugeng chirality for the left prop. An S-shaped prop is rotation-invariant,
    * so only a mirror changes its handedness — the raster path applies the same
    * scaleX(-1) that PropSvg applies in the live DOM. Ignored for other props.
    */
   leftBuugengFlipped?: boolean;
-  /** Buugeng chirality for the red prop. See blueBuugengFlipped. */
+  /** Buugeng chirality for the right prop. See leftBuugengFlipped. */
   rightBuugengFlipped?: boolean;
   /**
    * Hand point visibility setting for grid rendering.

@@ -36,8 +36,8 @@ describe("shape matrix URL state", () => {
     });
 
     expect(url.searchParams.get("ref")).toBe("promo");
-    expect(url.searchParams.get("blue")).toBe(flowerKey(left));
-    expect(url.searchParams.get("red")).toBe(flowerKey(right));
+    expect(url.searchParams.get("left")).toBe(flowerKey(left));
+    expect(url.searchParams.get("right")).toBe(flowerKey(right));
     expect(readShapeMatrixRouteState(url.search)).toEqual({
       level: 3,
       leftTurn: 0,
@@ -82,8 +82,8 @@ describe("shape matrix URL state", () => {
 
     expect(url.searchParams.get("blue")).toBeNull();
     expect(url.searchParams.get("red")).toBeNull();
-    expect(url.searchParams.get("blueTurn")).toBe("0");
-    expect(url.searchParams.get("redTurn")).toBe("0");
+    expect(url.searchParams.get("leftTurn")).toBe("0");
+    expect(url.searchParams.get("rightTurn")).toBe("0");
   });
 
   it("migrates the old cumulative size links onto their outer turn band", () => {
@@ -100,14 +100,14 @@ describe("shape matrix URL state", () => {
 
   it("round-trips independent axis bands and the prop-first driver", () => {
     const state = readShapeMatrixRouteState(
-      "?level=4&blueTurn=0.75&redTurn=1.5&axis=red&labels=ratios&prop=fan&driver=props"
+      "?level=4&leftTurn=0.75&rightTurn=1.5&axis=right&labels=ratios&prop=fan&driver=props"
     );
 
     expect(state).toEqual({
       level: 4,
       leftTurn: 0.75,
       rightTurn: 1.5,
-      activeAxis: "red",
+      activeAxis: "right",
       labelMode: "ratios",
       propType: PropType.FAN,
       relationshipDriver: "props",
@@ -115,6 +115,16 @@ describe("shape matrix URL state", () => {
       mode: null,
       propMode: null,
     });
+  });
+
+  it("reads legacy color-keyed axis links as performer-relative hands", () => {
+    const state = readShapeMatrixRouteState(
+      "?level=4&blueTurn=0.75&redTurn=1.5&axis=red"
+    );
+
+    expect(state.leftTurn).toBe(0.75);
+    expect(state.rightTurn).toBe(1.5);
+    expect(state.activeAxis).toBe("right");
   });
 
   it("round-trips an explicit prop relationship for an equal rotating pair", () => {
@@ -145,7 +155,7 @@ describe("shape matrix URL state", () => {
 
   it("rejects timed prop state for unequal turns", () => {
     const state = readShapeMatrixRouteState(
-      "?level=4&blueTurn=0.25&redTurn=1&propMode=SS"
+      "?level=4&leftTurn=0.25&rightTurn=1&propMode=SS"
     );
     expect(state.propMode).toBeNull();
   });

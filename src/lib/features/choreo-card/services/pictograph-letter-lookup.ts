@@ -32,6 +32,18 @@ export function parseCsvEdges(csvText: string): CsvEdge[] {
     const cols = line.split(",").map((c) => c.trim());
     const edge: Record<string, string> = {};
     headers.forEach((h, i) => (edge[h] = cols[i] ?? ""));
+
+    // The checked-in dataframes are a long-lived interchange format used by
+    // cards and external tooling. Translate their legacy color-keyed headers
+    // at this ingestion boundary so the rest of the app speaks in hands.
+    edge.leftMotionType ??= edge.blueMotionType ?? "";
+    edge.leftRotationDirection ??= edge.blueRotationDirection ?? "";
+    edge.leftStartLocation ??= edge.blueStartLocation ?? "";
+    edge.leftEndLocation ??= edge.blueEndLocation ?? "";
+    edge.rightMotionType ??= edge.redMotionType ?? "";
+    edge.rightRotationDirection ??= edge.redRotationDirection ?? "";
+    edge.rightStartLocation ??= edge.redStartLocation ?? "";
+    edge.rightEndLocation ??= edge.redEndLocation ?? "";
     return edge as CsvEdge;
   });
 }
@@ -39,7 +51,7 @@ export function parseCsvEdges(csvText: string): CsvEdge[] {
 /** Find the letter for a transformed step by exact edge match. Null when none. */
 export function lookupLetter(
   edges: CsvEdge[],
-  q: StepMotionQuery,
+  q: StepMotionQuery
 ): string | null {
   const match = edges.find(
     (e) =>
@@ -50,7 +62,7 @@ export function lookupLetter(
       e.leftEndLocation === q.left.endLocation &&
       e.rightMotionType === q.right.motionType &&
       e.rightStartLocation === q.right.startLocation &&
-      e.rightEndLocation === q.right.endLocation,
+      e.rightEndLocation === q.right.endLocation
   );
   return match ? match.letter : null;
 }
@@ -61,8 +73,7 @@ let cachedDiamondEdges: CsvEdge[] | null = null;
 export async function loadDiamondEdges(): Promise<CsvEdge[]> {
   if (cachedDiamondEdges) return cachedDiamondEdges;
   const res = await fetch("/data/pictographs/DiamondPictographDataframe.csv");
-  if (!res.ok)
-    throw new Error(`Failed to load pictograph CSV: ${res.status}`);
+  if (!res.ok) throw new Error(`Failed to load pictograph CSV: ${res.status}`);
   cachedDiamondEdges = parseCsvEdges(await res.text());
   return cachedDiamondEdges;
 }

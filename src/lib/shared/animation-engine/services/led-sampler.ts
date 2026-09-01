@@ -39,7 +39,7 @@ export interface LedSamplerConfig {
   rightPropType?: string;
   /**
    * Overlaid tunnel layers. When present, LEDs are also emitted for each
-   * layer's blue/red props (propIndex >= 2) so the LED effect covers the whole
+   * layer's left/right props (propIndex >= 2) so the LED effect covers the whole
    * kaleidoscope. Layers share the base dimensions/types and use the fallback
    * position path. Absent = the plain two-prop case.
    */

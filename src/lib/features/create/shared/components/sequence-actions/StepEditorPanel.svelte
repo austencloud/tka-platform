@@ -148,9 +148,7 @@
     displayedStepNumber !== null && displayedStepData !== null
   );
   const isStartPositionSelected = $derived(displayedStepNumber === 0);
-  const startLeftMotion = $derived(
-    displayedStepData?.motions?.[HandSide.LEFT]
-  );
+  const startLeftMotion = $derived(displayedStepData?.motions?.[HandSide.LEFT]);
   const startRightMotion = $derived(
     displayedStepData?.motions?.[HandSide.RIGHT]
   );
@@ -178,7 +176,9 @@
   );
   const startRightPropType = $derived.by(
     () =>
-      getSettings().rightPropType ?? startRightMotion?.propType ?? PropType.STAFF
+      getSettings().rightPropType ??
+      startRightMotion?.propType ??
+      PropType.STAFF
   );
   const canAimStartPosition = $derived(
     isStartPositionSelected &&
@@ -190,7 +190,7 @@
       startRightLocation === GridLocation.CENTER
   );
   let placementGrid = $state<ReturnType<typeof PropPlacementGrid> | null>(null);
-  let activeMoveColor = $state<HandSide | null>(null);
+  let activeMoveHand = $state<HandSide | null>(null);
   let isRepositioning = $state(false);
   let placementResetEpoch = $state(0);
   let placementMotionMove = $state<PlacementMotionMove | null>(null);
@@ -229,7 +229,8 @@
       const right = step?.motions?.[HandSide.RIGHT];
       const leftTurnsNum =
         left?.turns === "fl" ? -0.5 : Number(left?.turns ?? 0);
-      const rightTurnsNum = right?.turns === "fl" ? -0.5 : Number(right?.turns ?? 0);
+      const rightTurnsNum =
+        right?.turns === "fl" ? -0.5 : Number(right?.turns ?? 0);
       return acc + idx * 1000 + leftTurnsNum * 100 + rightTurnsNum * 10;
     }, sequence.steps.length);
   });
@@ -350,7 +351,7 @@
   }
 
   function handlePlacementChange(change: PropPlacementChange) {
-    activeMoveColor = change.activeColor;
+    activeMoveHand = change.activeHand;
   }
 
   function handleMoveProp(color: HandSide) {
@@ -377,7 +378,7 @@
     const targetHand = color === HandSide.LEFT ? "left" : "right";
     const directionStep = direction === "clockwise" ? 1 : -1;
     isRepositioning = true;
-    activeMoveColor = null;
+    activeMoveHand = null;
     CreateModuleState.pushUndoSnapshot(UndoOperationType.ROTATE_SEQUENCE);
     setGridRotationDirection(directionStep);
 
@@ -439,10 +440,7 @@
     );
   }
 
-  async function handlePlacementComplete(
-    leftLocation,
-    rightLocation
-  ) {
+  async function handlePlacementComplete(leftLocation, rightLocation) {
     if (
       !isStartPositionSelected ||
       isRepositioning ||
@@ -464,7 +462,9 @@
     }
 
     const targetColor = leftChanged ? HandSide.LEFT : HandSide.RIGHT;
-    const previousLocation = leftChanged ? startLeftLocation : startRightLocation;
+    const previousLocation = leftChanged
+      ? startLeftLocation
+      : startRightLocation;
     const targetLocation = leftChanged ? leftLocation : rightLocation;
     const rotationSteps = getShortestRotationStepsBetweenLocations(
       previousLocation,
@@ -656,7 +656,7 @@
           stacked={!isSideBySideLayout}
           compact={!isSideBySideLayout || isShortWideEditor}
           focused={isShortWideEditor}
-          {activeMoveColor}
+          {activeMoveHand}
           repositionDisabled={startPositionUsesCenter}
           {isRepositioning}
           {onOrientationChange}
@@ -701,7 +701,6 @@
 />
 
 <style>
-
   .editor-panel {
     display: flex;
     flex-direction: column;
@@ -736,7 +735,6 @@
   :global(.drawer-content.dragging) .editor-panel :global(*) {
     cursor: grabbing;
   }
-
 
   .panel-header {
     display: flex;
@@ -862,7 +860,6 @@
       flex-wrap: wrap;
     }
   }
-
 
   .icon-btn {
     display: flex;
@@ -1025,7 +1022,6 @@
     font-size: 0.9rem;
   }
 
-
   /* Small container height (< 600px) - tighter padding */
   @container step-editor (max-height: 600px) {
     .controls-section.mobile {
@@ -1045,8 +1041,6 @@
       }
     }
   }
-
-
 
   .tour-section {
     border-radius: 8px;
@@ -1072,7 +1066,6 @@
       opacity 0.3s ease,
       box-shadow 0.3s ease;
   }
-
 
   @media (prefers-reduced-motion: reduce) {
     .icon-btn {

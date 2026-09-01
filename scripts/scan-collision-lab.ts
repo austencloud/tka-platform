@@ -200,8 +200,8 @@ function main() {
   const infeasible: Array<{
     id: string;
     index: number;
-    leftHand: PoseDefinition["blueHand"];
-    rightHand: PoseDefinition["redHand"];
+    leftHand: PoseDefinition["leftHand"];
+    rightHand: PoseDefinition["rightHand"];
     loss: number;
     evaluations: number;
     reachShortfallCm: { left: number; right: number };

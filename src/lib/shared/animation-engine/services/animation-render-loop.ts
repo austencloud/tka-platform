@@ -127,7 +127,10 @@ interface EffectDispatchContext {
   params: RenderFrameParams;
   currentTime: number;
   renderedTransforms:
-    | { left: RenderedPropTransform | null; right: RenderedPropTransform | null }
+    | {
+        left: RenderedPropTransform | null;
+        right: RenderedPropTransform | null;
+      }
     | undefined;
   /** Live prop sprite images — echo ghosts these at past poses. */
   propImages:
@@ -541,13 +544,13 @@ export class AnimationRenderLoop {
 
   /**
    * Build array-of-tips input for bloom and pulse (effects that need
-   * {x, y, propIndex, tipIndex, blueColor, redColor}[] with center fallback).
+   * {x, y, propIndex, tipIndex, leftColor, rightColor}[] with center fallback).
    */
   /**
    * Resolve a tip's prop color the way the trail overlay does: the base pair
    * (propIndex 0/1) uses the trail colors; overlaid tunnel layers (propIndex >= 2)
    * fan across the spectrum when the rainbow toggle is on, base colors by parity
-   * (even = blue family, odd = red) when off. Shared by buildEmitterTips and
+   * (even = left family, odd = right) when off. Shared by buildEmitterTips and
    * buildArrayTips so every per-tip effect — bloom and pulse included —
    * color-matches the staff it sits on instead of collapsing every copy to red.
    */
@@ -559,15 +562,15 @@ export class AnimationRenderLoop {
     baseRight: string,
     selectedLayer: number | null = null
   ): string {
-    const isBlue = propIndex % 2 === 0;
+    const isLeft = propIndex % 2 === 0;
     const raw =
       propIndex <= 1
-        ? isBlue
+        ? isLeft
           ? baseLeft
           : baseRight
         : spectrum
           ? tunnelPropColor(propIndex, layerCount).hex
-          : isBlue
+          : isLeft
             ? baseLeft
             : baseRight;
     // Spotlight: dim the tip's color when another performer is selected.
@@ -1374,7 +1377,9 @@ export class AnimationRenderLoop {
 
         trailOverlay.renderFrame({
           leftTrailPoints: effectiveLeftMotionVisible ? trailPoints.left : [],
-          rightTrailPoints: effectiveRightMotionVisible ? trailPoints.right : [],
+          rightTrailPoints: effectiveRightMotionVisible
+            ? trailPoints.right
+            : [],
           trailSettings,
           deltaTime: dt,
           currentTime: currentTime,
@@ -1414,7 +1419,7 @@ export class AnimationRenderLoop {
     // NOTE: Props are passed regardless of visibility so the renderer can fade them out.
     // The renderer's fade managers handle visibility transition animations for:
     // - Overall props toggle (propsFadeManager)
-    // - Individual blue/red motion toggles (bluePropFadeManager, redPropFadeManager)
+    // - Individual left/right motion toggles (leftPropFadeManager, rightPropFadeManager)
     this.renderer.renderScene({
       leftProp: props.leftProp,
       rightProp: props.rightProp,
@@ -1664,7 +1669,9 @@ export class AnimationRenderLoop {
         const visibleLeftProp = effectiveLeftMotionVisible
           ? props.leftProp
           : null;
-        const visibleRightProp = effectiveRightMotionVisible ? props.rightProp : null;
+        const visibleRightProp = effectiveRightMotionVisible
+          ? props.rightProp
+          : null;
         const ledSamplerConfig: LedSamplerConfig = {
           canvasSize: this.canvasSize,
           leftPropDimensions: props.leftPropDimensions,

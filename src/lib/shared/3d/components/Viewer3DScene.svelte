@@ -389,7 +389,7 @@
     // prop `currentStep` (which is frozen because playback is paused).
     // This keeps state distribution inside useTask - the same code path
     // as live playback - so the $derived chain (currentStepIndex →
-    // bluePropState → Avatar3D props) resolves within the same frame.
+    // leftPropState → Avatar3D props) resolves within the same frame.
     const step = viewer3DState.isExporting
       ? (viewer3DState.exportCurrentStep ?? currentStep)
       : currentStep;

@@ -6,9 +6,9 @@
  *
  * Three quotients, applied in this order:
  *
- *   1. **Whole-unit symmetry.** The D4 x colour-swap group acting on both
+ *   1. **Whole-unit symmetry.** The D4 x hand-swap group acting on both
  *      hands' locations: four quarter rotations, an optional reflection, an
- *      optional blue/red swap. A loop and its rotated/mirrored/colour-swapped
+ *      optional left/right swap. A loop and its rotated/mirrored/hand-swapped
  *      selves are one idea.
  *   2. **Cyclic rotation.** A closed unit has no first step; entering it at a
  *      different step is the same loop. (Necklace-minimal string.)
@@ -82,8 +82,8 @@ function handFields(motion: MotionData): readonly [string, string] {
 /**
  * The eight-field tuple of one step under a symmetry.
  *
- * Under a colour swap the hands exchange wholesale: the new blue hand carries
- * the old red hand's motion type and rotation direction as well as its
+ * Under a hand swap the hands exchange wholesale: the new left hand carries
+ * the old right hand's motion type and rotation direction as well as its
  * locations. Transforming only the locations would describe a step nobody can
  * perform.
  */

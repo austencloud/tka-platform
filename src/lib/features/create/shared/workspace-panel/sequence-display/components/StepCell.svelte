@@ -62,9 +62,9 @@
     widthMultiplier?: number;
     // Animation epoch - increments when a new sequence animation starts
     animationEpoch?: number;
-    /** Override prop type for blue hand. Bypasses global settings for demo/preview rendering. */
+    /** Override prop type for left hand. Bypasses global settings for demo/preview rendering. */
     leftPropTypeOverride?: PropType;
-    /** Override prop type for red hand. Bypasses global settings for demo/preview rendering. */
+    /** Override prop type for right hand. Bypasses global settings for demo/preview rendering. */
     rightPropTypeOverride?: PropType;
     /** Display-only color for the blue-hand prop and arrow. */
     leftColorOverride?: string;
@@ -126,15 +126,15 @@
 
   // Arrow layer adjustment modal state
   let arrowModalOpen = $state(false);
-  let arrowModalColor = $state<HandSide>(HandSide.LEFT);
+  let arrowModalHand = $state<HandSide>(HandSide.LEFT);
 
   // Show arrow adjustment in context menu for admin users on non-blank beats
   const showArrowAdjustment = $derived(
     isAdmin() && !step.isBlank && step.stepNumber !== 0
   );
 
-  function handleAdjustArrow(color: HandSide) {
-    arrowModalColor = color;
+  function handleAdjustArrow(hand: HandSide) {
+    arrowModalHand = hand;
     arrowModalOpen = true;
   }
 
@@ -366,7 +366,7 @@
   <ArrowLayerModal
     bind:open={arrowModalOpen}
     stepData={step}
-    arrowColor={arrowModalColor}
+    arrowHand={arrowModalHand}
   />
 {/if}
 

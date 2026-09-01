@@ -53,7 +53,17 @@ export type { PoolEntry };
 // (only `gridMode` is read today; the rest is provenance for humans, not the
 // adapter).
 type RawHand = { type: string; dir: string; turns?: number; ori: string };
-type RawStep = { step: number; letter: string; pos: string; left: RawHand; right: RawHand };
+type RawStep = {
+  step: number;
+  letter: string;
+  pos: string;
+  left?: RawHand;
+  right?: RawHand;
+  /** @deprecated Legacy pool vocabulary accepted at this import boundary. */
+  blue?: RawHand;
+  /** @deprecated Legacy pool vocabulary accepted at this import boundary. */
+  red?: RawHand;
+};
 export type RawEntry = {
   word: string;
   loopType: string;
@@ -87,7 +97,10 @@ const ROT_DIR: Record<string, RotationDirection> = {
   ccw: RotationDirection.COUNTER_CLOCKWISE,
   noRotation: RotationDirection.NO_ROTATION,
 };
-const ORI: Record<string, Orientation> = { in: Orientation.IN, out: Orientation.OUT };
+const ORI: Record<string, Orientation> = {
+  in: Orientation.IN,
+  out: Orientation.OUT,
+};
 
 // The Letter const-union's VALUES ARE the display strings ("G", "Θ", "W-",
 // "Ψ-", "Σ-", "β", …), so a membership check IS the lookup. Greek start letters
@@ -97,11 +110,13 @@ const LETTER_VALUES = new Set<string>(Object.values(Letter));
 const POSITION_VALUES = new Set<string>(Object.values(GridPosition));
 
 function toLetter(s: string): Letter {
-  if (!LETTER_VALUES.has(s)) throw new Error(`pool-adapter: unmapped letter "${s}"`);
+  if (!LETTER_VALUES.has(s))
+    throw new Error(`pool-adapter: unmapped letter "${s}"`);
   return s as Letter;
 }
 function toPosition(s: string): GridPosition {
-  if (!POSITION_VALUES.has(s)) throw new Error(`pool-adapter: unknown position "${s}"`);
+  if (!POSITION_VALUES.has(s))
+    throw new Error(`pool-adapter: unknown position "${s}"`);
   return s as GridPosition;
 }
 function req<T>(v: T | undefined, msg: string): T {
@@ -123,7 +138,7 @@ function resolveGridMode(raw: string | undefined): GridMode {
 
 /**
  * Init-time invariant. The canonical inverse (getGridLocationsFromPosition) is
- * what the adapter uses to turn a position NAME back into a (blue, red) location
+ * what the adapter uses to turn a position NAME back into a (left, right) location
  * pair - the deriver is the canon, so we reuse its inverse rather than
  * hand-author a table. This assertion enumerates EVERY GridLocation pair through
  * the canonical forward deriver and proves the property the pool relies on: the
@@ -138,7 +153,10 @@ function assertPositionInverseIsUnique(): void {
     for (const right of locations) {
       let pos: GridPosition;
       try {
-        pos = getGridPositionFromLocations(left as GridLocation, right as GridLocation);
+        pos = getGridPositionFromLocations(
+          left as GridLocation,
+          right as GridLocation
+        );
       } catch {
         continue; // not a valid position pair - skip
       }
@@ -158,13 +176,18 @@ function assertPositionInverseIsUnique(): void {
       throw new Error(`pool-adapter: inverse round-trip failed for ${pos}`);
     }
     if (`${b},${r}` !== key) {
-      throw new Error(`pool-adapter: inverse mismatch for ${pos}: canon ${b},${r} vs forward ${key}`);
+      throw new Error(
+        `pool-adapter: inverse mismatch for ${pos}: canon ${b},${r} vs forward ${key}`
+      );
     }
   }
 }
 assertPositionInverseIsUnique();
 
-function locationsOf(posName: string): { left: GridLocation; right: GridLocation } {
+function locationsOf(posName: string): {
+  left: GridLocation;
+  right: GridLocation;
+} {
   const [left, right] = getGridLocationsFromPosition(toPosition(posName));
   return { left, right };
 }
@@ -172,7 +195,8 @@ function locationsOf(posName: string): { left: GridLocation; right: GridLocation
 /** "beta7→beta1" → { start: "beta7", end: "beta1" }. */
 function parsePair(raw: string, label: string): { start: string; end: string } {
   const parts = raw.split("→").map((s) => s.trim());
-  if (parts.length !== 2) throw new Error(`pool-adapter: malformed ${label} "${raw}"`);
+  if (parts.length !== 2)
+    throw new Error(`pool-adapter: malformed ${label} "${raw}"`);
   return { start: parts[0]!, end: parts[1]! };
 }
 
@@ -188,7 +212,10 @@ function handMotion(
   const { start: so, end: eo } = parsePair(h.ori, "orientation");
   return createMotionData({
     motionType: req(MOTION_TYPE[h.type], `unknown motion type "${h.type}"`),
-    rotationDirection: req(ROT_DIR[h.dir], `unknown rotation direction "${h.dir}"`),
+    rotationDirection: req(
+      ROT_DIR[h.dir],
+      `unknown rotation direction "${h.dir}"`
+    ),
     startLocation: from,
     endLocation: to,
     startOrientation: req(ORI[so], `unknown orientation "${so}"`),
@@ -200,6 +227,14 @@ function handMotion(
   });
 }
 
+function rawHand(step: RawStep, hand: HandSide): RawHand {
+  const motion =
+    hand === HandSide.LEFT
+      ? (step.left ?? step.blue)
+      : (step.right ?? step.red);
+  return req(motion, `step ${step.step} is missing its ${hand} motion`);
+}
+
 /**
  * A curated entry → its PictographData strip: start box from step 0, then one
  * StepData per step 1..n (locations from the inverted positions, motion fields
@@ -209,9 +244,13 @@ function handMotion(
  * `gridMode` defaults to diamond (every rollout slot uses diamond); a factory
  * caller can pass the pool's resolved `generationDefaults.gridMode` instead.
  */
-export function entryToStrip(entry: RawEntry, gridMode: GridMode = GridMode.DIAMOND): PictographData[] {
+export function entryToStrip(
+  entry: RawEntry,
+  gridMode: GridMode = GridMode.DIAMOND
+): PictographData[] {
   const steps = entry.steps;
-  if (!steps.length) throw new Error(`pool-adapter: ${entry.word} has no steps`);
+  if (!steps.length)
+    throw new Error(`pool-adapter: ${entry.word} has no steps`);
 
   const s0 = steps.find((s) => s.step === 0) ?? steps[0]!;
   const startLoc = locationsOf(parsePair(s0.pos, "position").start);
@@ -223,8 +262,20 @@ export function entryToStrip(entry: RawEntry, gridMode: GridMode = GridMode.DIAM
     startPosition: getGridPositionFromLocations(startLoc.left, startLoc.right),
     endPosition: getGridPositionFromLocations(startLoc.left, startLoc.right),
     motions: {
-      left: handMotion(HandSide.LEFT, s0.left, startLoc.left, startLoc.left, gridMode),
-      right: handMotion(HandSide.RIGHT, s0.right, startLoc.right, startLoc.right, gridMode),
+      left: handMotion(
+        HandSide.LEFT,
+        rawHand(s0, HandSide.LEFT),
+        startLoc.left,
+        startLoc.left,
+        gridMode
+      ),
+      right: handMotion(
+        HandSide.RIGHT,
+        rawHand(s0, HandSide.RIGHT),
+        startLoc.right,
+        startLoc.right,
+        gridMode
+      ),
     },
   } as unknown as StepData;
 
@@ -242,8 +293,20 @@ export function entryToStrip(entry: RawEntry, gridMode: GridMode = GridMode.DIAM
         startPosition: getGridPositionFromLocations(from.left, from.right),
         endPosition: getGridPositionFromLocations(to.left, to.right),
         motions: {
-          left: handMotion(HandSide.LEFT, s.left, from.left, to.left, gridMode),
-          right: handMotion(HandSide.RIGHT, s.right, from.right, to.right, gridMode),
+          left: handMotion(
+            HandSide.LEFT,
+            rawHand(s, HandSide.LEFT),
+            from.left,
+            to.left,
+            gridMode
+          ),
+          right: handMotion(
+            HandSide.RIGHT,
+            rawHand(s, HandSide.RIGHT),
+            from.right,
+            to.right,
+            gridMode
+          ),
         },
       } as unknown as StepData;
     });
@@ -262,7 +325,12 @@ export function entryToStrip(entry: RawEntry, gridMode: GridMode = GridMode.DIAM
 export function loopLabel(entry: RawEntry): string {
   if (entry.label) return entry.label;
   if (entry.loopType === "rotated") {
-    const deg = entry.period === "halved" ? "180°" : entry.period === "quartered" ? "90°" : "";
+    const deg =
+      entry.period === "halved"
+        ? "180°"
+        : entry.period === "quartered"
+          ? "90°"
+          : "";
     return deg ? `Rotated ${deg}` : "Rotated";
   }
   if (entry.loopType === "mirrored") return "Mirrored";

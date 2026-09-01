@@ -34,7 +34,7 @@ import type {
   HandSide,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { swapMotionColor } from "$lib/shared/create/services/motion-transforms";
+import { reassignMotionHand } from "$lib/shared/create/services/motion-transforms";
 import {
   asTurnLevel,
   clampMaxTurnIntensity,
@@ -798,7 +798,8 @@ export function createFuseState({
     length: FuseLength
   ): SequenceData {
     if (selection.origin && selection.solo) {
-      const solo = side === "left" ? rebuilt.leftSoloProp : rebuilt.rightSoloProp;
+      const solo =
+        side === "left" ? rebuilt.leftSoloProp : rebuilt.rightSoloProp;
       if (solo) setInjectedOrigin(side, selection.origin, solo);
       return lengthMatchedInjectedSide(side, rebuilt, preview, length);
     }
@@ -1405,7 +1406,8 @@ export function createFuseState({
       }
 
       const left = side === "left" ? candidate.sequence : counterpart.sequence;
-      const right = side === "right" ? candidate.sequence : counterpart.sequence;
+      const right =
+        side === "right" ? candidate.sequence : counterpart.sequence;
       const preview = createPreview(left, right, appliedLength);
       if (!isCurrentSideGeneration(side, generation)) return;
 
@@ -1508,9 +1510,7 @@ export function createFuseState({
         effectiveOrigin = { ...origin, loopSpec: closed.loopSpec };
       } else if (
         origin.kind === "custom"
-          ? !isSeamlesslyLoopable(
-              soloPropToSequence(solo, side)
-            )
+          ? !isSeamlesslyLoopable(soloPropToSequence(solo, side))
           : !isStructuredSoloLoop(solo)
       ) {
         throw new Error(
@@ -1698,7 +1698,8 @@ export function createFuseState({
     if (nextRule.rotationSteps > 0) {
       result = await rotateSequence(result, nextRule.rotationSteps, hand);
     }
-    if (nextRule.reflect === "mirror") result = await mirrorSequence(result, hand);
+    if (nextRule.reflect === "mirror")
+      result = await mirrorSequence(result, hand);
     if (nextRule.reflect === "flip") result = await flipSequence(result, hand);
     if (nextRule.invert) result = await invertSequence(result, hand);
     if (nextRule.rewind) result = await rewindSequence(result, hand);
@@ -1707,10 +1708,10 @@ export function createFuseState({
 
   /**
    * Derive the follower's solo path from the driver's sequence: transform the
-   * driver hand in place, recolor those transformed motions to the follower via
-   * swapMotionColor, then extract the follower solo from the recolored steps. The
-   * resulting solo path is color-agnostic; fuseSequences re-stamps the color when
-   * it fuses, but recoloring here keeps the extraction reading the right slot.
+   * driver hand in place, reassign those transformed motions to the follower via
+   * reassignMotionHand, then extract the follower solo from the reassigned steps.
+   * fuseSequences re-stamps the hand when it fuses, but reassignment here keeps
+   * the extraction reading the right slot.
    */
   async function deriveFollowerSolo(
     driverSequence: SequenceData,
@@ -1721,16 +1722,16 @@ export function createFuseState({
     const transformed = await applyDriverRule(driverSequence, nextRule, driver);
 
     // Only the driver hand was transformed, so `transformed`'s start position and
-    // its other-color (follower-color) motions still hold the original source's
-    // untouched follower hand. Recolor the transformed driver motions into the
+    // its other-hand (follower) motions still hold the original source's
+    // untouched follower hand. Reassign the transformed driver motions into the
     // follower slot on every step, and drop the start position so extraction
-    // reads the path start from the recolored first step (not the stale source
+    // reads the path start from the reassigned first step (not the stale source
     // follower hand that would otherwise sit in startPosition.motions[follower]).
-    const recolored = updateSequenceData(transformed, {
+    const reassigned = updateSequenceData(transformed, {
       steps: transformed.steps.map((step) => {
         const driverMotion = step.motions[driver];
         if (!isVisibleMotion(driverMotion)) return step;
-        const followerMotion = swapMotionColor(
+        const followerMotion = reassignMotionHand(
           driverMotion,
           follower as HandSide
         );
@@ -1747,8 +1748,8 @@ export function createFuseState({
     });
 
     return follower === "left"
-      ? extractLeftSoloProp(recolored)
-      : extractRightSoloProp(recolored);
+      ? extractLeftSoloProp(reassigned)
+      : extractRightSoloProp(reassigned);
   }
 
   function symmetryReadyMessage(): string {
@@ -1797,11 +1798,7 @@ export function createFuseState({
     const generation = ++symmetryGeneration;
     isDeriving = true;
     try {
-      const preview = await createRelationshipPreview(
-        driverSide,
-        rule,
-        length
-      );
+      const preview = await createRelationshipPreview(driverSide, rule, length);
       if (!preview) return;
       if (
         disposed ||
@@ -1961,10 +1958,7 @@ export function createFuseState({
   /** Commit the whole pairing decision together. The relationship composer
    * keeps its draft local, so the result does not flicker through a temporary
    * driver or transform while the user is still deciding. */
-  function setRelationship(
-    nextDriver: FuseSide,
-    nextRule: FuseRule
-  ): void {
+  function setRelationship(nextDriver: FuseSide, nextRule: FuseRule): void {
     relationshipDraftKey = null;
     relationshipDraft = null;
     relationshipPreviewBaseline = null;

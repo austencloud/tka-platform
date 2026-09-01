@@ -13,7 +13,10 @@
 
 const fs = require("fs");
 const path = require("path");
-const { REVERSAL_PATTERNS, applyReversalPattern } = require("./apply-reversal-pattern.cjs");
+const {
+  REVERSAL_PATTERNS,
+  applyReversalPattern,
+} = require("./apply-reversal-pattern.cjs");
 const {
   buildLocationToPositionMap,
   twinSequence,
@@ -55,15 +58,27 @@ const allowReversals = hasFlag("allow-reversals");
 
 // All LOOP type values (hardcoded to avoid ES module import issues)
 const ALL_LOOP_TYPES = new Set([
-  "rotated", "mirrored", "swapped", "inverted",
-  "swapped_inverted", "rotated_inverted", "mirrored_swapped", "mirrored_inverted",
-  "rotated_swapped", "mirrored_rotated", "mirrored_inverted_rotated",
-  "mirrored_swapped_inverted", "mirrored_rotated_inverted_swapped",
-  "flipped", "rewound",
+  "rotated",
+  "mirrored",
+  "swapped",
+  "inverted",
+  "swapped_inverted",
+  "rotated_inverted",
+  "mirrored_swapped",
+  "mirrored_inverted",
+  "rotated_swapped",
+  "mirrored_rotated",
+  "mirrored_inverted_rotated",
+  "mirrored_swapped_inverted",
+  "mirrored_rotated_inverted_swapped",
+  "flipped",
+  "rewound",
 ]);
 
 if (!loopType || !ALL_LOOP_TYPES.has(loopType)) {
-  console.error(`Invalid --loopType. Must be one of: ${[...ALL_LOOP_TYPES].join(", ")}`);
+  console.error(
+    `Invalid --loopType. Must be one of: ${[...ALL_LOOP_TYPES].join(", ")}`
+  );
   process.exit(1);
 }
 
@@ -84,26 +99,33 @@ if (level < 1 || level > 3) {
 
 // Validate LOOP type + slice size combination
 const QUARTERED_CAPABLE = new Set([
-  "rotated", "rotated_swapped", "rotated_inverted",
-  "mirrored_rotated", "mirrored_inverted_rotated",
+  "rotated",
+  "rotated_swapped",
+  "rotated_inverted",
+  "mirrored_rotated",
+  "mirrored_inverted_rotated",
   "mirrored_rotated_inverted_swapped",
 ]);
 
 if (slice === "quartered" && !QUARTERED_CAPABLE.has(loopType)) {
-  console.error(`LOOP type "${loopType}" only supports halved mode, not quartered.`);
+  console.error(
+    `LOOP type "${loopType}" only supports halved mode, not quartered.`
+  );
   process.exit(1);
 }
 
 if (reversalPattern) {
   if (!REVERSAL_PATTERNS[reversalPattern]) {
     console.error(`Unknown reversal pattern: ${reversalPattern}`);
-    console.error(`Available: ${Object.keys(REVERSAL_PATTERNS).join(', ')}`);
+    console.error(`Available: ${Object.keys(REVERSAL_PATTERNS).join(", ")}`);
     process.exit(1);
   }
   const patternDef = REVERSAL_PATTERNS[reversalPattern];
-  const totalBeats = seedLength * (slice === 'quartered' ? 4 : 2);
+  const totalBeats = seedLength * (slice === "quartered" ? 4 : 2);
   if (totalBeats % patternDef.period !== 0) {
-    console.error(`Pattern "${reversalPattern}" (period ${patternDef.period}) incompatible with ${totalBeats}-beat sequences`);
+    console.error(
+      `Pattern "${reversalPattern}" (period ${patternDef.period}) incompatible with ${totalBeats}-beat sequences`
+    );
     process.exit(1);
   }
 }
@@ -114,8 +136,8 @@ console.log(`  Slice: ${slice}`);
 console.log(`  Seed length: ${seedLength} beats`);
 console.log(`  Level: ${level}`);
 console.log(`  Grid: ${gridMode}`);
-console.log(`  Reversal: ${reversalPattern || 'continuous'}`);
-  console.log(`  Twin (mirror+swap): ${twin}`);
+console.log(`  Reversal: ${reversalPattern || "continuous"}`);
+console.log(`  Twin (mirror+swap): ${twin}`);
 console.log(`  Dry run: ${dryRun}`);
 if (outPath) console.log(`  Output: ${outPath}`);
 console.log("");
@@ -130,29 +152,30 @@ console.log("");
  * Skips noRotation beats (static/dash) when looking backwards.
  */
 function hasReversals(beatSteps) {
-  function getRotDir(step, color) {
-    const m = step.motions[color];
+  function getRotDir(step, hand) {
+    const m = step.motions[hand];
     if (!m) return null;
-    if (m.rotationDirection && m.rotationDirection !== 'noRotation') return m.rotationDirection;
-    if (m.motionType === 'static' || m.motionType === 'dash') return null;
+    if (m.rotationDirection && m.rotationDirection !== "noRotation")
+      return m.rotationDirection;
+    if (m.motionType === "static" || m.motionType === "dash") return null;
     return m.rotationDirection || null;
   }
 
-  function getLastValidDir(steps, endIdx, color) {
+  function getLastValidDir(steps, endIdx, hand) {
     // Walk backwards (with wrapping) to find last non-null rotation direction
     for (let offset = 1; offset <= steps.length; offset++) {
       const idx = (endIdx - offset + steps.length) % steps.length;
-      const dir = getRotDir(steps[idx], color);
+      const dir = getRotDir(steps[idx], hand);
       if (dir) return dir;
     }
     return null;
   }
 
   for (let i = 0; i < beatSteps.length; i++) {
-    for (const color of ['blue', 'red']) {
-      const current = getRotDir(beatSteps[i], color);
+    for (const hand of ["left", "right"]) {
+      const current = getRotDir(beatSteps[i], hand);
       if (!current) continue;
-      const prev = getLastValidDir(beatSteps, i, color);
+      const prev = getLastValidDir(beatSteps, i, hand);
       if (prev && prev !== current) return true;
     }
   }
@@ -164,9 +187,30 @@ function hasReversals(beatSteps) {
 // ---------------------------------------------------------------------------
 
 const CSV_PATHS = {
-  diamond: path.join(__dirname, "..", "static", "data", "pictographs", "DiamondPictographDataframe.csv"),
-  box: path.join(__dirname, "..", "static", "data", "pictographs", "BoxPictographDataframe.csv"),
-  skewed: path.join(__dirname, "..", "static", "data", "pictographs", "SkewedPictographDataframe.csv"),
+  diamond: path.join(
+    __dirname,
+    "..",
+    "static",
+    "data",
+    "pictographs",
+    "DiamondPictographDataframe.csv"
+  ),
+  box: path.join(
+    __dirname,
+    "..",
+    "static",
+    "data",
+    "pictographs",
+    "BoxPictographDataframe.csv"
+  ),
+  skewed: path.join(
+    __dirname,
+    "..",
+    "static",
+    "data",
+    "pictographs",
+    "SkewedPictographDataframe.csv"
+  ),
 };
 
 const csvPath = CSV_PATHS[gridMode];
@@ -177,11 +221,11 @@ if (!csvPath || !fs.existsSync(csvPath)) {
 
 const csvContent = fs.readFileSync(csvPath, "utf-8");
 const csvLines = csvContent.split("\n");
-const headers = csvLines[0].split(",").map(h => h.trim());
+const headers = csvLines[0].split(",").map((h) => h.trim());
 
 const edges = [];
 for (let i = 1; i < csvLines.length; i++) {
-  const cols = csvLines[i].split(",").map(c => c.trim());
+  const cols = csvLines[i].split(",").map((c) => c.trim());
   if (cols.length < 13 || !cols[0]) continue;
 
   const edge = {
@@ -226,14 +270,13 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
 // consume ES modules from a CJS script.
 
 (async function main() {
-  const circularMaps = await import("../packages/sequence-engine/dist/loop/position-maps/circular-position-maps.js");
-  const strictMaps = await import("../packages/sequence-engine/dist/loop/position-maps/strict-loop-position-maps.js");
+  const circularMaps =
+    await import("../packages/sequence-engine/dist/loop/position-maps/circular-position-maps.js");
+  const strictMaps =
+    await import("../packages/sequence-engine/dist/loop/position-maps/strict-loop-position-maps.js");
 
-  const {
-    HALVED_LOOPS,
-    QUARTERED_LOOPS,
-    QUARTER_POSITION_MAP_CW,
-  } = circularMaps;
+  const { HALVED_LOOPS, QUARTERED_LOOPS, QUARTER_POSITION_MAP_CW } =
+    circularMaps;
 
   // For quartered LOOPs, CW-only validation set.
   // The full QUARTERED_LOOPS includes both CW and CCW. Using CW-only matches
@@ -323,7 +366,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     mirrored_rotated_inverted_swapped: ["beta1", "beta5"],
   };
   const requestedStarts = startPositionsArg
-    ? startPositionsArg.split(",").map(s => s.trim())
+    ? startPositionsArg.split(",").map((s) => s.trim())
     : (START_OVERRIDES[loopType] ?? DEFAULT_STARTS);
 
   // Build start -> requiredEnds map from validation set.
@@ -339,7 +382,9 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
 
   const validStarts = Object.keys(startEndMap);
   if (validStarts.length === 0) {
-    console.error("No valid start positions found for this LOOP type + slice combination.");
+    console.error(
+      "No valid start positions found for this LOOP type + slice combination."
+    );
     console.error(`Requested: ${requestedStarts.join(", ")}`);
     process.exit(1);
   }
@@ -355,20 +400,62 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
   // ---------------------------------------------------------------------------
 
   const TYPES = {
-    'A': 1, 'B': 1, 'C': 1, 'D': 1, 'E': 1, 'F': 1,
-    'G': 1, 'H': 1, 'I': 1, 'J': 1, 'K': 1, 'L': 1,
-    'M': 1, 'N': 1, 'O': 1, 'P': 1, 'Q': 1, 'R': 1,
-    'S': 1, 'T': 1, 'U': 1, 'V': 1,
-    'W': 2, 'X': 2, 'Y': 2, 'Z': 2, 'Σ': 2, 'Δ': 2, 'Θ': 2, 'Ω': 2,
-    'W-': 3, 'X-': 3, 'Y-': 3, 'Z-': 3, 'Σ-': 3, 'Δ-': 3, 'Θ-': 3, 'Ω-': 3,
-    'Φ': 4, 'Ψ': 4, 'Λ': 4,
-    'Φ-': 5, 'Ψ-': 5, 'Λ-': 5,
-    'α': 6, 'β': 6, 'γ': 6,
+    A: 1,
+    B: 1,
+    C: 1,
+    D: 1,
+    E: 1,
+    F: 1,
+    G: 1,
+    H: 1,
+    I: 1,
+    J: 1,
+    K: 1,
+    L: 1,
+    M: 1,
+    N: 1,
+    O: 1,
+    P: 1,
+    Q: 1,
+    R: 1,
+    S: 1,
+    T: 1,
+    U: 1,
+    V: 1,
+    W: 2,
+    X: 2,
+    Y: 2,
+    Z: 2,
+    Σ: 2,
+    Δ: 2,
+    Θ: 2,
+    Ω: 2,
+    "W-": 3,
+    "X-": 3,
+    "Y-": 3,
+    "Z-": 3,
+    "Σ-": 3,
+    "Δ-": 3,
+    "Θ-": 3,
+    "Ω-": 3,
+    Φ: 4,
+    Ψ: 4,
+    Λ: 4,
+    "Φ-": 5,
+    "Ψ-": 5,
+    "Λ-": 5,
+    α: 6,
+    β: 6,
+    γ: 6,
   };
 
   const TYPE_NAMES = {
-    1: 'Dual-Shift', 2: 'Shift', 3: 'Cross-Shift',
-    4: 'Dash', 5: 'Dual-Dash', 6: 'Static',
+    1: "Dual-Shift",
+    2: "Shift",
+    3: "Cross-Shift",
+    4: "Dash",
+    5: "Dual-Dash",
+    6: "Static",
   };
 
   // ---------------------------------------------------------------------------
@@ -380,18 +467,29 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
    */
   function rotationCompatible(prevEdge, nextEdge) {
     // noRotation is compatible with anything
-    if (prevEdge.leftRotDir === "noRotation" || nextEdge.leftRotDir === "noRotation") {
-      // Check red independently
-      if (prevEdge.rightRotDir !== "noRotation" && nextEdge.rightRotDir !== "noRotation") {
+    if (
+      prevEdge.leftRotDir === "noRotation" ||
+      nextEdge.leftRotDir === "noRotation"
+    ) {
+      // Check the right hand independently
+      if (
+        prevEdge.rightRotDir !== "noRotation" &&
+        nextEdge.rightRotDir !== "noRotation"
+      ) {
         return prevEdge.rightRotDir === nextEdge.rightRotDir;
       }
       return true;
     }
-    if (prevEdge.rightRotDir === "noRotation" || nextEdge.rightRotDir === "noRotation") {
+    if (
+      prevEdge.rightRotDir === "noRotation" ||
+      nextEdge.rightRotDir === "noRotation"
+    ) {
       return prevEdge.leftRotDir === nextEdge.leftRotDir;
     }
-    return prevEdge.leftRotDir === nextEdge.leftRotDir &&
-           prevEdge.rightRotDir === nextEdge.rightRotDir;
+    return (
+      prevEdge.leftRotDir === nextEdge.leftRotDir &&
+      prevEdge.rightRotDir === nextEdge.rightRotDir
+    );
   }
 
   /**
@@ -418,7 +516,10 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       const neighbors = adjacency[currentPos] || [];
       for (const edge of neighbors) {
         // Check rotation continuity with previous beat
-        if (pathSoFar.length > 0 && !rotationCompatible(pathSoFar[pathSoFar.length - 1], edge)) {
+        if (
+          pathSoFar.length > 0 &&
+          !rotationCompatible(pathSoFar[pathSoFar.length - 1], edge)
+        ) {
           continue;
         }
         pathSoFar.push(edge);
@@ -441,9 +542,9 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     totalRawSeeds += seeds.length;
 
     for (const edgeList of seeds) {
-      const seedWord = edgeList.map(e => e.letter).join("");
+      const seedWord = edgeList.map((e) => e.letter).join("");
       const handPathFamily = edgeList
-        .map(e => TYPE_NAMES[TYPES[e.letter] || 0] || "Unknown")
+        .map((e) => TYPE_NAMES[TYPES[e.letter] || 0] || "Unknown")
         .join("+");
 
       allSeeds.push({ startPos, edges: edgeList, seedWord, handPathFamily });
@@ -458,7 +559,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
   // Deduplication: one representative per (startPosition, seedWord, motionTypeSignature)
   //
   // The same letter pair can be executed with different motion type allocations
-  // (e.g. blue=shift/red=static vs blue=static/red=shift for the same letter).
+  // (e.g. left=shift/right=static vs left=static/right=shift for the same letter).
   // These are physically distinct sequences that belong as separate deck entries.
   // This matches the L1 deck's counting method.
   // ---------------------------------------------------------------------------
@@ -474,7 +575,9 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     deduped.push(seed);
   }
 
-  console.log(`After dedup: ${deduped.length} unique sequences (from ${totalRawSeeds} raw)`);
+  console.log(
+    `After dedup: ${deduped.length} unique sequences (from ${totalRawSeeds} raw)`
+  );
 
   // ---------------------------------------------------------------------------
   // Curation (--curate N): select N sequences with even coverage across
@@ -503,7 +606,9 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       // so the sample spans the whole family×start spread (not just the
       // alphabetically-first N cells). One card per sampled cell.
       for (let i = 0; i < curateN; i++) {
-        selected.push(cellLists[Math.floor((i * cellLists.length) / curateN)][0]);
+        selected.push(
+          cellLists[Math.floor((i * cellLists.length) / curateN)][0]
+        );
       }
     } else {
       // Fewer cells than cards: round-robin by depth across all cells.
@@ -522,7 +627,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     deduped.length = 0;
     deduped.push(...selected);
     console.log(
-      `Curated to ${deduped.length} sequences (even coverage across ${cells.size} family×start cells)`,
+      `Curated to ${deduped.length} sequences (even coverage across ${cells.size} family×start cells)`
     );
   }
 
@@ -533,50 +638,62 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
   // The Firestore path does its own reversal on engine steps (for orientation calc).
   // ---------------------------------------------------------------------------
 
-  if (reversalPattern && reversalPattern !== 'continuous') {
+  if (reversalPattern && reversalPattern !== "continuous") {
     const patternDef = REVERSAL_PATTERNS[reversalPattern];
     for (const entry of deduped) {
       // Clone edges so mutations don't affect the global edges array or other entries
-      entry.edges = entry.edges.map(e => ({ ...e }));
+      entry.edges = entry.edges.map((e) => ({ ...e }));
       for (let i = 0; i < entry.edges.length; i++) {
         const e = entry.edges[i];
         const symbol = patternDef.sequence[i % patternDef.sequence.length];
-        const leftReversed = symbol === 'P' || symbol === 'B';
-        const rightReversed  = symbol === 'P' || symbol === 'R';
+        const leftReversed = symbol === "P" || symbol === "B";
+        const rightReversed = symbol === "P" || symbol === "R";
 
         // Compute the reversed motion types WITHOUT mutating yet
         const newLeft = leftReversed
-          ? (e.leftMotionType === 'pro' ? 'anti' : e.leftMotionType === 'anti' ? 'pro' : e.leftMotionType)
+          ? e.leftMotionType === "pro"
+            ? "anti"
+            : e.leftMotionType === "anti"
+              ? "pro"
+              : e.leftMotionType
           : e.leftMotionType;
         const newRight = rightReversed
-          ? (e.rightMotionType === 'pro' ? 'anti' : e.rightMotionType === 'anti' ? 'pro' : e.rightMotionType)
+          ? e.rightMotionType === "pro"
+            ? "anti"
+            : e.rightMotionType === "anti"
+              ? "pro"
+              : e.rightMotionType
           : e.rightMotionType;
 
         // Look up the new letter from the UNMODIFIED global edges array
-        const match = edges.find(csvEdge =>
-          csvEdge.startPos === e.startPos &&
-          csvEdge.endPos === e.endPos &&
-          csvEdge.leftMotionType === newLeft &&
-          csvEdge.leftStartLoc === e.leftStartLoc &&
-          csvEdge.leftEndLoc === e.leftEndLoc &&
-          csvEdge.rightMotionType === newRight &&
-          csvEdge.rightStartLoc === e.rightStartLoc &&
-          csvEdge.rightEndLoc === e.rightEndLoc
+        const match = edges.find(
+          (csvEdge) =>
+            csvEdge.startPos === e.startPos &&
+            csvEdge.endPos === e.endPos &&
+            csvEdge.leftMotionType === newLeft &&
+            csvEdge.leftStartLoc === e.leftStartLoc &&
+            csvEdge.leftEndLoc === e.leftEndLoc &&
+            csvEdge.rightMotionType === newRight &&
+            csvEdge.rightStartLoc === e.rightStartLoc &&
+            csvEdge.rightEndLoc === e.rightEndLoc
         );
 
         // Mutate motion types and rotation directions
         e.leftMotionType = newLeft;
         e.rightMotionType = newRight;
-        if (leftReversed && (e.leftRotDir === 'cw' || e.leftRotDir === 'ccw')) {
-          e.leftRotDir = e.leftRotDir === 'cw' ? 'ccw' : 'cw';
+        if (leftReversed && (e.leftRotDir === "cw" || e.leftRotDir === "ccw")) {
+          e.leftRotDir = e.leftRotDir === "cw" ? "ccw" : "cw";
         }
-        if (rightReversed && (e.rightRotDir === 'cw' || e.rightRotDir === 'ccw')) {
-          e.rightRotDir = e.rightRotDir === 'cw' ? 'ccw' : 'cw';
+        if (
+          rightReversed &&
+          (e.rightRotDir === "cw" || e.rightRotDir === "ccw")
+        ) {
+          e.rightRotDir = e.rightRotDir === "cw" ? "ccw" : "cw";
         }
         if (match) e.letter = match.letter;
       }
 
-      entry.seedWord = entry.edges.map(e => e.letter).join('');
+      entry.seedWord = entry.edges.map((e) => e.letter).join("");
     }
   }
 
@@ -592,8 +709,8 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
 
   // Sort groups by type combination (lower types first)
   const sortedGroups = Object.entries(groups).sort((a, b) => {
-    const aTypes = a[1][0].edges.map(e => TYPES[e.letter] || 99);
-    const bTypes = b[1][0].edges.map(e => TYPES[e.letter] || 99);
+    const aTypes = a[1][0].edges.map((e) => TYPES[e.letter] || 99);
+    const bTypes = b[1][0].edges.map((e) => TYPES[e.letter] || 99);
     for (let i = 0; i < Math.max(aTypes.length, bTypes.length); i++) {
       const diff = (aTypes[i] || 0) - (bTypes[i] || 0);
       if (diff !== 0) return diff;
@@ -608,11 +725,19 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
   const posLabels = { alpha1: "α1", beta5: "β5", gamma11: "γ11" };
 
   console.log("");
-  console.log("╔═══════════════════════════════════════════════════════════════╗");
-  console.log(`║   LEVEL ${level} · ${slice.toUpperCase()} ${loopType.toUpperCase()} LOOP DECK`);
-  console.log(`║   ${gridMode} grid · ${seedLength}-beat seed · ${seedLength * (slice === "quartered" ? 4 : 2)} total beats`);
+  console.log(
+    "╔═══════════════════════════════════════════════════════════════╗"
+  );
+  console.log(
+    `║   LEVEL ${level} · ${slice.toUpperCase()} ${loopType.toUpperCase()} LOOP DECK`
+  );
+  console.log(
+    `║   ${gridMode} grid · ${seedLength}-beat seed · ${seedLength * (slice === "quartered" ? 4 : 2)} total beats`
+  );
   console.log(`║   Start positions: ${validStarts.join(", ")}`);
-  console.log("╚═══════════════════════════════════════════════════════════════╝");
+  console.log(
+    "╚═══════════════════════════════════════════════════════════════╝"
+  );
 
   let deckNum = 1;
   for (const [family, items] of sortedGroups) {
@@ -620,7 +745,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     console.log(`  ╔═══ ${family} ═══ ${items.length} sequences ═══╗`);
 
     for (const startPos of validStarts) {
-      const subset = items.filter(i => i.startPos === startPos);
+      const subset = items.filter((i) => i.startPos === startPos);
       if (subset.length === 0) continue;
 
       const label = posLabels[startPos] || startPos;
@@ -639,7 +764,9 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
   // Summary table
   console.log("");
   console.log("═".repeat(62));
-  console.log(`  TOTAL: ${deduped.length} unique sequences in the Level ${level} ${slice} ${loopType} Deck`);
+  console.log(
+    `  TOTAL: ${deduped.length} unique sequences in the Level ${level} ${slice} ${loopType} Deck`
+  );
   if (twin) {
     console.log(
       `  TWIN: deck will seed up to ${deduped.length * 2} cards ` +
@@ -651,24 +778,45 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
 
   // Per-start-position summary
   console.log("");
-  const colWidth = Math.max(...validStarts.map(s => (posLabels[s] || s).length)) + 2;
-  const headerRow = validStarts.map(s => (posLabels[s] || s).padStart(colWidth)).join(" │");
-  console.log(`  ┌${"─".repeat(28)}┬${validStarts.map(() => "─".repeat(colWidth + 1)).join("┬")}┬${"─".repeat(7)}┐`);
+  const colWidth =
+    Math.max(...validStarts.map((s) => (posLabels[s] || s).length)) + 2;
+  const headerRow = validStarts
+    .map((s) => (posLabels[s] || s).padStart(colWidth))
+    .join(" │");
+  console.log(
+    `  ┌${"─".repeat(28)}┬${validStarts.map(() => "─".repeat(colWidth + 1)).join("┬")}┬${"─".repeat(7)}┐`
+  );
   console.log(`  │ Hand Path${" ".repeat(18)}│${headerRow} │ Total │`);
-  console.log(`  ├${"─".repeat(28)}┼${validStarts.map(() => "─".repeat(colWidth + 1)).join("┼")}┼${"─".repeat(7)}┤`);
+  console.log(
+    `  ├${"─".repeat(28)}┼${validStarts.map(() => "─".repeat(colWidth + 1)).join("┼")}┼${"─".repeat(7)}┤`
+  );
 
   for (const [family, items] of sortedGroups) {
-    const counts = validStarts.map(s => items.filter(i => i.startPos === s).length);
+    const counts = validStarts.map(
+      (s) => items.filter((i) => i.startPos === s).length
+    );
     const total = counts.reduce((a, b) => a + b, 0);
-    const countCols = counts.map(c => String(c).padStart(colWidth)).join(" │");
-    console.log(`  │ ${family.padEnd(27)}│${countCols} │ ${String(total).padStart(5)} │`);
+    const countCols = counts
+      .map((c) => String(c).padStart(colWidth))
+      .join(" │");
+    console.log(
+      `  │ ${family.padEnd(27)}│${countCols} │ ${String(total).padStart(5)} │`
+    );
   }
 
-  const totals = validStarts.map(s => deduped.filter(i => i.startPos === s).length);
-  const totalCols = totals.map(c => String(c).padStart(colWidth)).join(" │");
-  console.log(`  ├${"─".repeat(28)}┼${validStarts.map(() => "─".repeat(colWidth + 1)).join("┼")}┼${"─".repeat(7)}┤`);
-  console.log(`  │ TOTAL${" ".repeat(22)}│${totalCols} │ ${String(deduped.length).padStart(5)} │`);
-  console.log(`  └${"─".repeat(28)}┴${validStarts.map(() => "─".repeat(colWidth + 1)).join("┴")}┴${"─".repeat(7)}┘`);
+  const totals = validStarts.map(
+    (s) => deduped.filter((i) => i.startPos === s).length
+  );
+  const totalCols = totals.map((c) => String(c).padStart(colWidth)).join(" │");
+  console.log(
+    `  ├${"─".repeat(28)}┼${validStarts.map(() => "─".repeat(colWidth + 1)).join("┼")}┼${"─".repeat(7)}┤`
+  );
+  console.log(
+    `  │ TOTAL${" ".repeat(22)}│${totalCols} │ ${String(deduped.length).padStart(5)} │`
+  );
+  console.log(
+    `  └${"─".repeat(28)}┴${validStarts.map(() => "─".repeat(colWidth + 1)).join("┴")}┴${"─".repeat(7)}┘`
+  );
 
   // ---------------------------------------------------------------------------
   // JSON Output
@@ -682,7 +830,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         seedLength,
         level,
         gridMode,
-        reversalPattern: reversalPattern || 'continuous',
+        reversalPattern: reversalPattern || "continuous",
         totalSequences: deduped.length,
         startPositions: validStarts,
         generatedAt: new Date().toISOString(),
@@ -690,12 +838,14 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       families: sortedGroups.map(([family, items]) => ({
         name: family,
         count: items.length,
-        sequences: items.map(item => ({
+        sequences: items.map((item) => ({
           seedWord: item.seedWord,
           startPosition: item.startPos,
           handPathFamily: item.handPathFamily,
-          path: item.edges.map(e => e.startPos).concat(item.edges[item.edges.length - 1].endPos),
-          beats: item.edges.map(e => ({
+          path: item.edges
+            .map((e) => e.startPos)
+            .concat(item.edges[item.edges.length - 1].endPos),
+          beats: item.edges.map((e) => ({
             letter: e.letter,
             startPos: e.startPos,
             endPos: e.endPos,
@@ -733,14 +883,18 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     }
 
     if (!admin.apps.length) {
-      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
     }
     const db = admin.firestore();
 
     const totalBeats = seedLength * (slice === "quartered" ? 4 : 2);
     const deckId = `l${level}-${slice}-${loopType.replace(/_/g, "-")}${twin ? "-twin" : ""}-${totalBeats}beat${curateN > 0 ? `-c${curateN}` : ""}`;
     const sliceLabel = slice === "quartered" ? "Quartered" : "Halved";
-    const loopLabel = loopType.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    const loopLabel = loopType
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
 
     // Track which sequences survive filtering so deck metadata is accurate.
     // Maps family index → set of written sequence IDs.
@@ -759,11 +913,21 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     console.log(`\nSeeding deck "${deckId}" to Firestore...`);
 
     // Execute LOOP on each seed to produce full circular sequences
-    const { loopExecutorSelector } = require("../packages/sequence-engine/dist/loop/execution/LOOPExecutorSelector.js");
-    const { deriveReversals } = require("../packages/sequence-engine/dist/analysis/deriveReversals.js");
-    const { calculateEndOrientation } = require("../packages/sequence-engine/dist/core/orientation/OrientationCalculator.js");
-    const { reduceToMinimalLoop } = require("../packages/sequence-engine/dist/loop/reduction/minimal-loop-reducer.js");
-    const { loopDetectorClass } = require("../packages/sequence-engine/dist/loop/detection/LOOPDetector.js");
+    const {
+      loopExecutorSelector,
+    } = require("../packages/sequence-engine/dist/loop/execution/LOOPExecutorSelector.js");
+    const {
+      deriveReversals,
+    } = require("../packages/sequence-engine/dist/analysis/deriveReversals.js");
+    const {
+      calculateEndOrientation,
+    } = require("../packages/sequence-engine/dist/core/orientation/OrientationCalculator.js");
+    const {
+      reduceToMinimalLoop,
+    } = require("../packages/sequence-engine/dist/loop/reduction/minimal-loop-reducer.js");
+    const {
+      loopDetectorClass,
+    } = require("../packages/sequence-engine/dist/loop/detection/LOOPDetector.js");
     // A printed deck card must unambiguously BE its declared LOOP type. Detection
     // is the round-trip check: execute the seed, then confirm the full sequence
     // classifies back as `loopType`. Rejects sequences that alias to a sibling
@@ -771,7 +935,9 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     // in the curation pre-pass so curation only ever samples genuine cards.
     const detectsAsTarget = (fullSteps) => {
       try {
-        return loopDetectorClass.detectLOOPType(fullSteps)?.loopType === loopType;
+        return (
+          loopDetectorClass.detectLOOPType(fullSteps)?.loopType === loopType
+        );
       } catch {
         return false;
       }
@@ -825,7 +991,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
             startOrientation: "in",
             endOrientation: "in",
             turns: 0,
-            color: "blue",
+            hand: "left",
           },
           right: {
             motionType: edge.rightMotionType,
@@ -835,7 +1001,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
             startOrientation: "in",
             endOrientation: "in",
             turns: 0,
-            color: "red",
+            hand: "right",
           },
         },
       };
@@ -879,7 +1045,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
 
     /**
      * Convert an engine SequenceStep to the Firestore step format
-     * (with motions.blue/red nested structure).
+     * (with motions.left/right nested structure).
      */
     function engineStepToFirestore(step, beat) {
       return {
@@ -900,7 +1066,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
             endOrientation: step.motions.left.endOrientation ?? "in",
             isVisible: true,
             propType: "staff",
-            color: "blue",
+            hand: "left",
             gridMode,
           },
           right: {
@@ -913,7 +1079,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
             endOrientation: step.motions.right.endOrientation ?? "in",
             isVisible: true,
             propType: "staff",
-            color: "red",
+            hand: "right",
             gridMode,
           },
         },
@@ -929,26 +1095,27 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
      *
      * The edges array is the full CSV loaded at startup. We match on all six
      * fields that uniquely identify a pictograph row: startPos, endPos,
-     * blueMotionType, blueStartLoc, blueEndLoc, redMotionType, redStartLoc,
-     * redEndLoc. Rotation direction is excluded because it can legitimately
+     * leftMotionType, leftStartLoc, leftEndLoc, rightMotionType, rightStartLoc,
+     * rightEndLoc. Rotation direction is excluded because it can legitimately
      * vary within a letter family and is not part of the letter identity.
      *
      * Returns null if no match is found (e.g. the reversal produced a
      * physically invalid combination — caller should keep the original letter).
      *
-     * @param {{ startPosition: string, endPosition: string, motions: { blue: object, red: object } }} step
+     * @param {{ startPosition: string, endPosition: string, motions: { left: object, right: object } }} step
      * @returns {string|null}
      */
     function lookupLetterFromMotions(step) {
-      const match = edges.find(e =>
-        e.startPos === step.startPosition &&
-        e.endPos   === step.endPosition &&
-        e.leftMotionType === step.motions.left.motionType &&
-        e.leftStartLoc   === step.motions.left.startLocation &&
-        e.leftEndLoc     === step.motions.left.endLocation &&
-        e.rightMotionType  === step.motions.right.motionType &&
-        e.rightStartLoc    === step.motions.right.startLocation &&
-        e.rightEndLoc      === step.motions.right.endLocation
+      const match = edges.find(
+        (e) =>
+          e.startPos === step.startPosition &&
+          e.endPos === step.endPosition &&
+          e.leftMotionType === step.motions.left.motionType &&
+          e.leftStartLoc === step.motions.left.startLocation &&
+          e.leftEndLoc === step.motions.left.endLocation &&
+          e.rightMotionType === step.motions.right.motionType &&
+          e.rightStartLoc === step.motions.right.startLocation &&
+          e.rightEndLoc === step.motions.right.endLocation
       );
       return match ? match.letter : null;
     }
@@ -983,11 +1150,32 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
           stepNumber: 0,
           duration: 1,
           motions: {
-            left: { motionType: "static", rotationDirection: "noRotation", startLocation: fe.leftStartLoc, endLocation: fe.leftStartLoc, startOrientation: "in", endOrientation: "in", turns: 0, color: "blue" },
-            right: { motionType: "static", rotationDirection: "noRotation", startLocation: fe.rightStartLoc, endLocation: fe.rightStartLoc, startOrientation: "in", endOrientation: "in", turns: 0, color: "red" },
+            left: {
+              motionType: "static",
+              rotationDirection: "noRotation",
+              startLocation: fe.leftStartLoc,
+              endLocation: fe.leftStartLoc,
+              startOrientation: "in",
+              endOrientation: "in",
+              turns: 0,
+              hand: "left",
+            },
+            right: {
+              motionType: "static",
+              rotationDirection: "noRotation",
+              startLocation: fe.rightStartLoc,
+              endLocation: fe.rightStartLoc,
+              startOrientation: "in",
+              endOrientation: "in",
+              turns: 0,
+              hand: "right",
+            },
           },
         };
-        const ppSeed = [ppStart, ...item.edges.map((e, i) => edgeToEngineStep(e, i + 1))];
+        const ppSeed = [
+          ppStart,
+          ...item.edges.map((e, i) => edgeToEngineStep(e, i + 1)),
+        ];
         propagateOrientations(ppSeed);
         let ppFull;
         try {
@@ -995,7 +1183,11 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         } catch {
           continue;
         }
-        if (!allowReversals && (!reversalPattern || reversalPattern === "continuous") && hasReversals(ppFull.slice(1))) {
+        if (
+          !allowReversals &&
+          (!reversalPattern || reversalPattern === "continuous") &&
+          hasReversals(ppFull.slice(1))
+        ) {
           continue;
         }
         if (reduceToMinimalLoop(ppFull).reduced) continue; // literal-repeat
@@ -1015,7 +1207,9 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       const chosen = [];
       if (cellLists.length >= curateN) {
         for (let i = 0; i < curateN; i++) {
-          chosen.push(cellLists[Math.floor((i * cellLists.length) / curateN)][0]);
+          chosen.push(
+            cellLists[Math.floor((i * cellLists.length) / curateN)][0]
+          );
         }
       } else {
         for (let depth = 0; chosen.length < curateN; depth++) {
@@ -1032,7 +1226,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       }
       chosenKeys = new Set(chosen);
       console.log(
-        `Curated to ${chosenKeys.size} of ${survivors.length} ${allowReversals ? "sequences" : "continuous survivors"} (from ${deduped.length} seeds)`,
+        `Curated to ${chosenKeys.size} of ${survivors.length} ${allowReversals ? "sequences" : "continuous survivors"} (from ${deduped.length} seeds)`
       );
     }
 
@@ -1045,7 +1239,11 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       const firstEdge = item.edges[0];
       const startStep = {
         id: `start-${seqId}`,
-        letter: item.startPos.startsWith("alpha") ? "α" : item.startPos.startsWith("beta") ? "β" : "γ",
+        letter: item.startPos.startsWith("alpha")
+          ? "α"
+          : item.startPos.startsWith("beta")
+            ? "β"
+            : "γ",
         startPosition: item.startPos,
         endPosition: item.startPos,
         beatIndex: 0,
@@ -1060,7 +1258,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
             startOrientation: "in",
             endOrientation: "in",
             turns: 0,
-            color: "blue",
+            hand: "left",
           },
           right: {
             motionType: "static",
@@ -1070,12 +1268,15 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
             startOrientation: "in",
             endOrientation: "in",
             turns: 0,
-            color: "red",
+            hand: "right",
           },
         },
       };
 
-      const seedSteps = [startStep, ...item.edges.map((e, i) => edgeToEngineStep(e, i + 1))];
+      const seedSteps = [
+        startStep,
+        ...item.edges.map((e, i) => edgeToEngineStep(e, i + 1)),
+      ];
 
       // Propagate orientations through the seed before LOOP extension
       propagateOrientations(seedSteps);
@@ -1086,7 +1287,8 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         fullSteps = executor.executeLOOP([...seedSteps], slice);
       } catch (err) {
         loopErrors++;
-        if (loopErrors <= 5) console.warn(`  LOOP error for ${seqId}: ${err.message}`);
+        if (loopErrors <= 5)
+          console.warn(`  LOOP error for ${seqId}: ${err.message}`);
         continue;
       }
 
@@ -1101,7 +1303,10 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
 
       // For continuous decks, reject sequences that contain reversals.
       const beatStepsForReversal = fullSteps.slice(1);
-      if (!allowReversals && (!reversalPattern || reversalPattern === 'continuous')) {
+      if (
+        !allowReversals &&
+        (!reversalPattern || reversalPattern === "continuous")
+      ) {
         if (hasReversals(beatStepsForReversal)) {
           continue;
         }
@@ -1109,51 +1314,74 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
 
       // Natural-reversal marking (--allow-reversals): inverted/mirrored LOOPs
       // reverse prop spin at the transformation seam. That reversal is real and
-      // must render as a dot — but catalog-loader TRUSTS stored blueReversal/
-      // redReversal flags (it only derives when they are absent, and
+      // must render as a dot — but catalog-loader TRUSTS stored leftReversal/
+      // rightReversal flags (it only derives when they are absent, and
       // engineStepToFirestore always writes them). So mark the natural reversals
       // here with the canonical detector (deriveReversals; prop channel = the dot
       // channel) so the stored flags are correct. No imposed pattern — the
       // reversals come from the executed sequence itself.
-      if (allowReversals && (!reversalPattern || reversalPattern === 'continuous')) {
+      if (
+        allowReversals &&
+        (!reversalPattern || reversalPattern === "continuous")
+      ) {
         const revFlags = deriveReversals(fullSteps, { loop: true });
         for (let i = 0; i < beatStepsForReversal.length; i++) {
           const f = revFlags[i + 1];
-          beatStepsForReversal[i].leftReversal = f ? f.left.propReversal : false;
-          beatStepsForReversal[i].rightReversal = f ? f.right.propReversal : false;
+          beatStepsForReversal[i].leftReversal = f
+            ? f.left.propReversal
+            : false;
+          beatStepsForReversal[i].rightReversal = f
+            ? f.right.propReversal
+            : false;
         }
       }
 
       // Apply reversal pattern to the beat steps (all steps after the start position).
-      if (reversalPattern && reversalPattern !== 'continuous') {
+      if (reversalPattern && reversalPattern !== "continuous") {
         const patternDef = REVERSAL_PATTERNS[reversalPattern];
         for (let i = 0; i < beatStepsForReversal.length; i++) {
           const step = beatStepsForReversal[i];
 
           const symbol = patternDef.sequence[i % patternDef.sequence.length];
-          const leftReversed = symbol === 'P' || symbol === 'B';
-          const rightReversed  = symbol === 'P' || symbol === 'R';
+          const leftReversed = symbol === "P" || symbol === "B";
+          const rightReversed = symbol === "P" || symbol === "R";
 
           step.leftReversal = leftReversed;
-          step.rightReversal  = rightReversed;
+          step.rightReversal = rightReversed;
 
           // Apply reversal based on the CURRENT beat's motion type:
           // - pro/anti: flip motion type AND rotation direction
           // - static/dash: only flip rotation direction (type stays)
           if (leftReversed) {
-            if (step.motions.left.motionType === 'pro' || step.motions.left.motionType === 'anti') {
-              step.motions.left.motionType = step.motions.left.motionType === 'pro' ? 'anti' : 'pro';
+            if (
+              step.motions.left.motionType === "pro" ||
+              step.motions.left.motionType === "anti"
+            ) {
+              step.motions.left.motionType =
+                step.motions.left.motionType === "pro" ? "anti" : "pro";
             }
-            if (step.motions.left.rotationDirection === 'cw' || step.motions.left.rotationDirection === 'ccw') {
-              step.motions.left.rotationDirection = step.motions.left.rotationDirection === 'cw' ? 'ccw' : 'cw';
+            if (
+              step.motions.left.rotationDirection === "cw" ||
+              step.motions.left.rotationDirection === "ccw"
+            ) {
+              step.motions.left.rotationDirection =
+                step.motions.left.rotationDirection === "cw" ? "ccw" : "cw";
             }
           }
           if (rightReversed) {
-            if (step.motions.right.motionType === 'pro' || step.motions.right.motionType === 'anti') {
-              step.motions.right.motionType = step.motions.right.motionType === 'pro' ? 'anti' : 'pro';
+            if (
+              step.motions.right.motionType === "pro" ||
+              step.motions.right.motionType === "anti"
+            ) {
+              step.motions.right.motionType =
+                step.motions.right.motionType === "pro" ? "anti" : "pro";
             }
-            if (step.motions.right.rotationDirection === 'cw' || step.motions.right.rotationDirection === 'ccw') {
-              step.motions.right.rotationDirection = step.motions.right.rotationDirection === 'cw' ? 'ccw' : 'cw';
+            if (
+              step.motions.right.rotationDirection === "cw" ||
+              step.motions.right.rotationDirection === "ccw"
+            ) {
+              step.motions.right.rotationDirection =
+                step.motions.right.rotationDirection === "cw" ? "ccw" : "cw";
             }
           }
 
@@ -1188,7 +1416,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
             endOrientation: sp.motions.left.endOrientation ?? "in",
             isVisible: true,
             propType: "staff",
-            color: "blue",
+            hand: "left",
             gridMode,
           },
           right: {
@@ -1201,7 +1429,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
             endOrientation: sp.motions.right.endOrientation ?? "in",
             isVisible: true,
             propType: "staff",
-            color: "red",
+            hand: "right",
             gridMode,
           },
         },
@@ -1210,8 +1438,10 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       // Steps are everything after the start position.
       // beatStepsForReversal already has reversed motion types and re-derived
       // letters applied (if --reversalPattern was passed), so we use it directly.
-      const steps = beatStepsForReversal.map((step, i) => engineStepToFirestore(step, i));
-      const fullWord = steps.map(s => s.letter).join("");
+      const steps = beatStepsForReversal.map((step, i) =>
+        engineStepToFirestore(step, i)
+      );
+      const fullWord = steps.map((s) => s.letter).join("");
 
       const seqData = {
         id: seqId,
@@ -1221,7 +1451,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         isCircular: true,
         loopType: loopType,
         orientationCycleCount: slice === "quartered" ? 4 : 2,
-        reversalPattern: reversalPattern || 'continuous',
+        reversalPattern: reversalPattern || "continuous",
         sequenceLength: steps.length,
         level,
         isFavorite: false,
@@ -1229,7 +1459,10 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         thumbnails: [],
         steps,
         startPosition,
-        metadata: { seedWord: item.seedWord, handPathFamily: item.handPathFamily },
+        metadata: {
+          seedWord: item.seedWord,
+          handPathFamily: item.handPathFamily,
+        },
         author: "TKA Enumerator",
         notes: "",
       };
@@ -1311,7 +1544,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
                   endOrientation: tsp.motions.left.endOrientation ?? "in",
                   isVisible: true,
                   propType: "staff",
-                  color: "blue",
+                  hand: "left",
                   gridMode,
                 },
                 right: {
@@ -1324,7 +1557,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
                   endOrientation: tsp.motions.right.endOrientation ?? "in",
                   isVisible: true,
                   propType: "staff",
-                  color: "red",
+                  hand: "right",
                   gridMode,
                 },
               },
@@ -1381,7 +1614,9 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         // Guard the mid-loop flush too — without this, --no-write still wrote
         // every full batch and only spared the final partial one.
         if (!noWrite) await batch.commit();
-        console.log(`  ${noWrite ? "[no-write] would write" : "Written"} ${totalWritten}/${deduped.length} sequences...`);
+        console.log(
+          `  ${noWrite ? "[no-write] would write" : "Written"} ${totalWritten}/${deduped.length} sequences...`
+        );
         batch = db.batch();
         batchCount = 0;
       }
@@ -1393,10 +1628,17 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     }
 
     // Build deck metadata with only the sequences that survived filtering
-    const familyDocs = sortedGroups.map(([family], idx) => {
-      const ids = [...writtenByFamily.get(idx)];
-      return { id: `family-${idx}`, label: family, typeCombo: family, sequenceIds: ids };
-    }).filter(f => f.sequenceIds.length > 0);
+    const familyDocs = sortedGroups
+      .map(([family], idx) => {
+        const ids = [...writtenByFamily.get(idx)];
+        return {
+          id: `family-${idx}`,
+          label: family,
+          typeCombo: family,
+          sequenceIds: ids,
+        };
+      })
+      .filter((f) => f.sequenceIds.length > 0);
 
     // Fold twin cards into family docs: same-label families merge; new labels
     // become additional family docs so the Decks UI surfaces every twin.
@@ -1426,22 +1668,32 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       totalSequences: totalWritten,
       gridMode,
       level,
-      collection: 'LOOPs',
+      collection: "LOOPs",
       loopType,
       sliceType: slice,
-      stepCount: seedLength * (slice === 'quartered' ? 4 : 2),
-      turnPattern: '0-turn',
-      reversalPattern: reversalPattern || 'continuous',
+      stepCount: seedLength * (slice === "quartered" ? 4 : 2),
+      turnPattern: "0-turn",
+      reversalPattern: reversalPattern || "continuous",
     };
 
     if (!noWrite) await db.doc(`catalogs/${deckId}`).set(deckData);
-    console.log(noWrite ? `  [no-write] deck doc NOT written (preview)` : `  Deck document written`);
-    console.log(`  Done! ${totalWritten} sequences written to decks/${deckId}/sequences/`);
+    console.log(
+      noWrite
+        ? `  [no-write] deck doc NOT written (preview)`
+        : `  Deck document written`
+    );
+    console.log(
+      `  Done! ${totalWritten} sequences written to decks/${deckId}/sequences/`
+    );
     if (totalWritten < deduped.length) {
-      console.log(`  Filtered out ${deduped.length - totalWritten} sequences with reversals (continuous deck)`);
+      console.log(
+        `  Filtered out ${deduped.length - totalWritten} sequences with reversals (continuous deck)`
+      );
     }
     if (redundantSkipped > 0) {
-      console.log(`  Skipped ${redundantSkipped} redundant literal-repeat sequence(s) (collapse to a shorter closing loop)`);
+      console.log(
+        `  Skipped ${redundantSkipped} redundant literal-repeat sequence(s) (collapse to a shorter closing loop)`
+      );
     }
     if (twin) {
       console.log(
@@ -1454,6 +1706,8 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
   }
 
   if (!outPath && !seedFirestore) {
-    console.log("\nUse --out <path> to save as JSON or --seed-firestore to write to Firestore.");
+    console.log(
+      "\nUse --out <path> to save as JSON or --seed-firestore to write to Firestore."
+    );
   }
 })();

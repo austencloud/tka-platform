@@ -21,7 +21,7 @@
   const speedLabel = $derived(
     state.playbackSpeed >= 1000
       ? `${(state.playbackSpeed / 1000).toFixed(1)}s`
-      : `${state.playbackSpeed}ms`,
+      : `${state.playbackSpeed}ms`
   );
 
   // 1-based position within the overlapping subset
@@ -160,7 +160,10 @@
           disabled={state.allPairs.length === 0}
           title={state.isPlaying ? "Pause" : "Play"}
         >
-          <i class="fas {state.isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
+          <i
+            class="fas {state.isPlaying ? 'fa-pause' : 'fa-play'}"
+            aria-hidden="true"
+          ></i>
         </button>
         <button
           class="control-button"
@@ -187,7 +190,8 @@
           max="2000"
           step="100"
           value={state.playbackSpeed}
-          oninput={(e) => state.setSpeed(Number((e.target as HTMLInputElement).value))}
+          oninput={(e) =>
+            state.setSpeed(Number((e.target as HTMLInputElement).value))}
           class="speed-slider"
           aria-label="Playback speed"
         />
@@ -213,7 +217,7 @@
           <div class="placement-row">
             <span class="placement-dot blue-dot"></span>
             <span class="placement-text">
-              Blue: {state.manualLeftRef
+              Left: {state.manualLeftRef
                 ? `${state.manualLeftRef.gridId}:${state.manualLeftRef.location}`
                 : "Click to place"}
             </span>
@@ -221,7 +225,7 @@
           <div class="placement-row">
             <span class="placement-dot red-dot"></span>
             <span class="placement-text">
-              Red: {state.manualRightRef
+              Right: {state.manualRightRef
                 ? `${state.manualRightRef.gridId}:${state.manualRightRef.location}`
                 : "Click to place"}
             </span>
@@ -234,7 +238,10 @@
   <!-- 5. Junction Overlaps (always visible) -->
   <div class="section-label">Junction Overlaps</div>
   <div class="overlaps-section">
-    <div class="overlap-count" class:has-overlaps={state.junctionOverlaps.length > 0}>
+    <div
+      class="overlap-count"
+      class:has-overlaps={state.junctionOverlaps.length > 0}
+    >
       {state.junctionOverlaps.length}
       {state.junctionOverlaps.length === 1 ? "overlap" : "overlaps"}
     </div>
@@ -243,7 +250,9 @@
         {#each state.junctionOverlaps as overlap}
           <div class="overlap-chip">
             <span class="overlap-junction">
-              {overlap.junction.refs.map((r) => `${r.gridId}:${r.location}`).join(" = ")}
+              {overlap.junction.refs
+                .map((r) => `${r.gridId}:${r.location}`)
+                .join(" = ")}
             </span>
           </div>
         {/each}
@@ -290,7 +299,9 @@
     border-radius: 8px;
     color: var(--theme-text, #ffffff);
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
     font-size: var(--font-size-compact, 12px);
   }
 
@@ -301,7 +312,11 @@
 
   .preset-button.active {
     border-color: var(--theme-accent, #10b981);
-    background: color-mix(in srgb, var(--theme-accent, #10b981) 10%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #10b981) 10%,
+      transparent
+    );
   }
 
   .preset-button i {
@@ -338,7 +353,9 @@
     cursor: pointer;
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
-    transition: background 0.15s, color 0.15s;
+    transition:
+      background 0.15s,
+      color 0.15s;
   }
 
   .mode-button:hover {
@@ -384,7 +401,9 @@
     border-radius: 8px;
     color: var(--theme-text, #ffffff);
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
     font-size: 14px;
   }
 
@@ -412,7 +431,9 @@
     color: var(--theme-text, #ffffff);
     cursor: pointer;
     font-size: var(--font-size-sm, 14px);
-    transition: border-color 0.15s, background 0.15s;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
   }
 
   .toggle-button:hover {
@@ -421,7 +442,11 @@
 
   .toggle-button.active {
     border-color: var(--theme-accent, #10b981);
-    background: color-mix(in srgb, var(--theme-accent, #10b981) 10%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #10b981) 10%,
+      transparent
+    );
     color: var(--theme-accent, #10b981);
   }
 
@@ -466,7 +491,11 @@
 
   .play-button.playing {
     border-color: var(--theme-accent, #10b981);
-    background: color-mix(in srgb, var(--theme-accent, #10b981) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #10b981) 15%,
+      transparent
+    );
     color: var(--theme-accent, #10b981);
   }
 
@@ -578,8 +607,13 @@
 
   .overlap-chip {
     padding: 4px 8px;
-    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 8%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-warning, #f59e0b) 20%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-warning, #f59e0b) 8%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-warning, #f59e0b) 20%, transparent);
     border-radius: 6px;
   }
 

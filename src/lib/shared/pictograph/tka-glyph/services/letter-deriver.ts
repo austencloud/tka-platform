@@ -24,15 +24,15 @@ function buildLetterPatterns(): Map<string, Letter> {
   const patterns = new Map<string, Letter>();
 
   patterns.set(
-    "blue:static|red:static|blueStart:south|blueEnd:south|redStart:north|redEnd:north|blueRot:no_rotation|redRot:no_rotation|blueTurns:0|redTurns:0|grid:diamond",
+    "left:static|right:static|leftStart:south|leftEnd:south|rightStart:north|rightEnd:north|leftRot:no_rotation|rightRot:no_rotation|leftTurns:0|rightTurns:0|grid:diamond",
     Letter.ALPHA
   );
   patterns.set(
-    "blue:static|red:static|blueStart:south|blueEnd:south|redStart:south|redEnd:south|blueRot:no_rotation|redRot:no_rotation|blueTurns:0|redTurns:0|grid:diamond",
+    "left:static|right:static|leftStart:south|leftEnd:south|rightStart:south|rightEnd:south|leftRot:no_rotation|rightRot:no_rotation|leftTurns:0|rightTurns:0|grid:diamond",
     Letter.BETA
   );
   patterns.set(
-    "blue:static|red:static|blueStart:south|blueEnd:south|redStart:east|redEnd:east|blueRot:no_rotation|redRot:no_rotation|blueTurns:0|redTurns:0|grid:diamond",
+    "left:static|right:static|leftStart:south|leftEnd:south|rightStart:east|rightEnd:east|leftRot:no_rotation|rightRot:no_rotation|leftTurns:0|rightTurns:0|grid:diamond",
     Letter.GAMMA
   );
 
@@ -45,22 +45,26 @@ function createMotionSignature(
   gridMode: GridMode
 ): string {
   return [
-    `blue:${leftMotion.motionType}`,
-    `red:${rightMotion.motionType}`,
-    `blueStart:${leftMotion.startLocation}`,
-    `blueEnd:${leftMotion.endLocation}`,
-    `redStart:${rightMotion.startLocation}`,
-    `redEnd:${rightMotion.endLocation}`,
-    `blueRot:${leftMotion.rotationDirection}`,
-    `redRot:${rightMotion.rotationDirection}`,
-    `blueTurns:${leftMotion.turns}`,
-    `redTurns:${rightMotion.turns}`,
+    `left:${leftMotion.motionType}`,
+    `right:${rightMotion.motionType}`,
+    `leftStart:${leftMotion.startLocation}`,
+    `leftEnd:${leftMotion.endLocation}`,
+    `rightStart:${rightMotion.startLocation}`,
+    `rightEnd:${rightMotion.endLocation}`,
+    `leftRot:${leftMotion.rotationDirection}`,
+    `rightRot:${rightMotion.rotationDirection}`,
+    `leftTurns:${leftMotion.turns}`,
+    `rightTurns:${rightMotion.turns}`,
     `grid:${gridMode}`,
   ].join("|");
 }
 
 function isShiftMotion(motionType: MotionType): boolean {
-  const shiftTypes: MotionType[] = [MotionType.PRO, MotionType.ANTI, MotionType.FLOAT];
+  const shiftTypes: MotionType[] = [
+    MotionType.PRO,
+    MotionType.ANTI,
+    MotionType.FLOAT,
+  ];
   return shiftTypes.includes(motionType);
 }
 
@@ -84,11 +88,18 @@ function findPartialMatch(
     const letter = staticLetterMap[positionKey];
     if (letter) {
       matchedParams.push("position_mapping");
-      return { letter, confidence: "partial", matchedParameters: matchedParams };
+      return {
+        letter,
+        confidence: "partial",
+        matchedParameters: matchedParams,
+      };
     }
   }
 
-  if (isShiftMotion(leftMotion.motionType) && isShiftMotion(rightMotion.motionType)) {
+  if (
+    isShiftMotion(leftMotion.motionType) &&
+    isShiftMotion(rightMotion.motionType)
+  ) {
     matchedParams.push("dual_shift");
     if (
       leftMotion.motionType === MotionType.PRO &&
@@ -113,7 +124,11 @@ export function deriveLetterFromMotions(
   const signature = createMotionSignature(leftMotion, rightMotion, gridMode);
   const exactMatch = letterPatterns.get(signature);
   if (exactMatch) {
-    return { letter: exactMatch, confidence: "exact", matchedParameters: ["all"] };
+    return {
+      letter: exactMatch,
+      confidence: "exact",
+      matchedParameters: ["all"],
+    };
   }
 
   const partialMatch = findPartialMatch(leftMotion, rightMotion);
@@ -128,7 +143,10 @@ export function deriveLetterFromPictograph(
   if (!pictograph.motions.left || !pictograph.motions.right) {
     return { letter: null, confidence: "none", matchedParameters: [] };
   }
-  return deriveLetterFromMotions(pictograph.motions.left, pictograph.motions.right);
+  return deriveLetterFromMotions(
+    pictograph.motions.left,
+    pictograph.motions.right
+  );
 }
 
 export function validateLetterMatch(

@@ -75,9 +75,9 @@ export interface SequenceExportOptions {
     showGrid?: boolean;
     /** Hand point visibility: "all" | "active" | "none" */
     handPointVisibility?: "all" | "active" | "none";
-    /** Blue prop type override (for cache key consistency) */
+    /** Left-hand prop type override (for cache key consistency) */
     leftPropType?: PropType;
-    /** Red prop type override (for cache key consistency) */
+    /** Right-hand prop type override (for cache key consistency) */
     rightPropType?: PropType;
     /** Buugeng chirality (buugeng-family props only). Omitted = unflipped,
      *  which is the canonical look for locked deck/print cards. */

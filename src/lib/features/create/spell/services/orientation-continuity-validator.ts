@@ -5,7 +5,10 @@
  * Each beat's start orientation must match the previous beat's end orientation.
  */
 
-import type { OrientationContinuityError, TransitionValidationResult } from "./types";
+import type {
+  OrientationContinuityError,
+  TransitionValidationResult,
+} from "./types";
 
 /**
  * Interface describing the shape of the orientation continuity validator module.
@@ -33,7 +36,9 @@ type OrientationCalculatorDep = {
   calculateEndOrientation: (...args: never[]) => unknown;
 };
 
-export function validateSequence(sequence: SequenceData): OrientationContinuityError[] {
+export function validateSequence(
+  sequence: SequenceData
+): OrientationContinuityError[] {
   const errors: OrientationContinuityError[] = [];
 
   if (sequence.steps.length === 0) {
@@ -47,14 +52,12 @@ export function validateSequence(sequence: SequenceData): OrientationContinuityE
 
     // Get the previous beat (or start position for first beat)
     const previousBeat =
-      i === 0
-        ? sequence.startPosition
-        : sequence.steps[i - 1];
+      i === 0 ? sequence.startPosition : sequence.steps[i - 1];
 
     if (!previousBeat?.motions) continue;
 
-    // Validate blue prop orientation continuity
-    const leftError = validateColorContinuity(
+    // Validate left-hand prop orientation continuity
+    const leftError = validateHandContinuity(
       currentStep,
       previousBeat,
       HandSide.LEFT,
@@ -64,8 +67,8 @@ export function validateSequence(sequence: SequenceData): OrientationContinuityE
       errors.push(leftError);
     }
 
-    // Validate red prop orientation continuity
-    const rightError = validateColorContinuity(
+    // Validate right-hand prop orientation continuity
+    const rightError = validateHandContinuity(
       currentStep,
       previousBeat,
       HandSide.RIGHT,
@@ -86,7 +89,7 @@ export function validateTransition(
 ): TransitionValidationResult {
   const errors: OrientationContinuityError[] = [];
 
-  // Check blue prop orientation
+  // Check left-hand prop orientation
   const leftMotion = nextPictograph.motions[HandSide.LEFT];
   const lastLeftMotion = lastStep.motions[HandSide.LEFT];
   // Invisible placeholder = hand not really there (both-required Step shape):
@@ -98,15 +101,15 @@ export function validateTransition(
     if (expectedStartOrientation !== actualStartOrientation) {
       errors.push({
         stepIndex: lastStep.stepNumber,
-        color: HandSide.LEFT,
+        hand: HandSide.LEFT,
         expectedStartOrientation: expectedStartOrientation || "unknown",
         actualStartOrientation: actualStartOrientation || "unknown",
-        message: `Blue prop orientation break: expected ${expectedStartOrientation} but got ${actualStartOrientation}`,
+        message: `Left prop orientation break: expected ${expectedStartOrientation} but got ${actualStartOrientation}`,
       });
     }
   }
 
-  // Check red prop orientation
+  // Check right-hand prop orientation
   const rightMotion = nextPictograph.motions[HandSide.RIGHT];
   const lastRightMotion = lastStep.motions[HandSide.RIGHT];
   if (isVisibleMotion(rightMotion) && isVisibleMotion(lastRightMotion)) {
@@ -116,10 +119,10 @@ export function validateTransition(
     if (expectedStartOrientation !== actualStartOrientation) {
       errors.push({
         stepIndex: lastStep.stepNumber,
-        color: HandSide.RIGHT,
+        hand: HandSide.RIGHT,
         expectedStartOrientation: expectedStartOrientation || "unknown",
         actualStartOrientation: actualStartOrientation || "unknown",
-        message: `Red prop orientation break: expected ${expectedStartOrientation} but got ${actualStartOrientation}`,
+        message: `Right prop orientation break: expected ${expectedStartOrientation} but got ${actualStartOrientation}`,
       });
     }
   }
@@ -135,19 +138,19 @@ export function validateTransition(
 // ============================================================================
 
 /**
- * Helper: Validate orientation continuity for a single color
+ * Helper: Validate orientation continuity for one hand.
  */
-function validateColorContinuity(
+function validateHandContinuity(
   currentStep: StepData | PictographData,
   previousBeat: StepData | PictographData,
-  color: HandSide,
+  hand: HandSide,
   stepIndex: number
 ): OrientationContinuityError | null {
-  const currentMotion = currentStep.motions[color];
-  const previousMotion = previousBeat.motions[color];
+  const currentMotion = currentStep.motions[hand];
+  const previousMotion = previousBeat.motions[hand];
 
   if (!isVisibleMotion(currentMotion) || !isVisibleMotion(previousMotion)) {
-    return null; // Skip if either beat doesn't really have this color
+    return null; // Skip if either beat doesn't really have this hand
   }
 
   const expectedStartOrientation = previousMotion.endOrientation;
@@ -156,10 +159,10 @@ function validateColorContinuity(
   if (expectedStartOrientation !== actualStartOrientation) {
     return {
       stepIndex,
-      color,
+      hand,
       expectedStartOrientation: expectedStartOrientation || "unknown",
       actualStartOrientation: actualStartOrientation || "unknown",
-      message: `${color === HandSide.LEFT ? "Blue" : "Red"} prop orientation break at step ${stepIndex + 1}: expected ${expectedStartOrientation} but got ${actualStartOrientation}`,
+      message: `${hand === HandSide.LEFT ? "Left" : "Right"} prop orientation break at step ${stepIndex + 1}: expected ${expectedStartOrientation} but got ${actualStartOrientation}`,
     };
   }
 

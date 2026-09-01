@@ -32,7 +32,7 @@ import {
   mirrorMotion,
   flipMotion,
   rotateMotion,
-  swapMotionColor,
+  reassignMotionHand,
   invertMotion,
   rewindMotion,
 } from "$lib/shared/create/services/motion-transforms";
@@ -42,10 +42,7 @@ import type { TargetHand } from "$lib/shared/create/state/panel-coordination-sta
 /**
  * Check if a specific hand should be transformed.
  */
-function shouldTransformHand(
-  hand: HandSide,
-  targetHand: TargetHand
-): boolean {
+function shouldTransformHand(hand: HandSide, targetHand: TargetHand): boolean {
   if (targetHand === "both") return true;
   if (targetHand === "left" && hand === HandSide.LEFT) return true;
   if (targetHand === "right" && hand === HandSide.RIGHT) return true;
@@ -218,19 +215,19 @@ export async function rotateBeat(
 }
 
 /**
- * Swap colors in a beat (blue ↔ red).
+ * Swap hand roles in a beat (left ↔ right).
  */
-export function colorSwapBeat(step: StepData): StepData {
+export function handSwapBeat(step: StepData): StepData {
   if (step.isBlank || !step) return step;
 
   const stepLeft = step.motions[HandSide.LEFT];
   const stepRight = step.motions[HandSide.RIGHT];
   const swappedMotions = {
     [HandSide.LEFT]: stepRight
-      ? swapMotionColor(stepRight, HandSide.LEFT)
+      ? reassignMotionHand(stepRight, HandSide.LEFT)
       : undefined,
     [HandSide.RIGHT]: stepLeft
-      ? swapMotionColor(stepLeft, HandSide.RIGHT)
+      ? reassignMotionHand(stepLeft, HandSide.RIGHT)
       : undefined,
   };
 

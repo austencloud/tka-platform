@@ -16,6 +16,7 @@ import corpusFixture from "../fixtures/layer-signature-corpus.json";
 // does to an orientation, this test is where it surfaces.
 import { calculateEndOrientation } from "$lib/shared/render/core/calculations/orientation";
 import { RADIAL_CW_CYCLE } from "@tka/sequence-engine/core";
+import { normalizeLegacySteps } from "@tka/tka-types";
 import {
   applyFlip,
   collapseLayer,
@@ -38,7 +39,20 @@ import {
 } from "$lib/shared/foundation/domain/layer-signature";
 
 const MOTION_TYPES = ["pro", "anti", "static", "dash", "float"];
-const TURN_VALUES = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, "fl"] as const;
+const TURN_VALUES = [
+  0,
+  0.25,
+  0.5,
+  0.75,
+  1,
+  1.25,
+  1.5,
+  1.75,
+  2,
+  2.5,
+  3,
+  "fl",
+] as const;
 const HANDPATHS = {
   cw: ["s", "w"],
   ccw: ["w", "s"],
@@ -53,9 +67,19 @@ const motion = (
   startLocation: string,
   endLocation: string,
   startOrientation = "in"
-) => ({ motionType, turns, rotationDirection, startLocation, endLocation, startOrientation });
+) => ({
+  motionType,
+  turns,
+  rotationDirection,
+  startLocation,
+  endLocation,
+  startOrientation,
+});
 
-const step = (left: ReturnType<typeof motion>, right: ReturnType<typeof motion>): LayerStepInput => ({
+const step = (
+  left: ReturnType<typeof motion>,
+  right: ReturnType<typeof motion>
+): LayerStepInput => ({
   motions: { left, right },
 });
 
@@ -67,7 +91,9 @@ describe("layerClassDelta agrees with the end-orientation calculator", () => {
       for (const motionType of MOTION_TYPES) {
         for (const turns of TURN_VALUES) {
           for (const rotationDirection of ["cw", "ccw"]) {
-            for (const [startLocation, endLocation] of Object.values(HANDPATHS)) {
+            for (const [startLocation, endLocation] of Object.values(
+              HANDPATHS
+            )) {
               const input = {
                 motionType,
                 turns,
@@ -103,7 +129,9 @@ describe("what moves a prop between radial and non-radial", () => {
   it("whole turns never do, whatever the motion type", () => {
     for (const motionType of ["pro", "anti", "static", "dash"]) {
       for (const turns of [0, 1, 2, 3]) {
-        expect(flipsLayer(motion(motionType, turns, "cw", "s", "w"))).toBe(false);
+        expect(flipsLayer(motion(motionType, turns, "cw", "s", "w"))).toBe(
+          false
+        );
       }
     }
   });
@@ -111,7 +139,9 @@ describe("what moves a prop between radial and non-radial", () => {
   it("half turns always do", () => {
     for (const motionType of ["pro", "anti", "static", "dash"]) {
       for (const turns of [0.5, 1.5, 2.5]) {
-        expect(flipsLayer(motion(motionType, turns, "cw", "s", "w"))).toBe(true);
+        expect(flipsLayer(motion(motionType, turns, "cw", "s", "w"))).toBe(
+          true
+        );
       }
     }
   });
@@ -148,7 +178,9 @@ describe("reading a layer from two orientations", () => {
   });
 
   it("collapses the two mirror-image layers for display", () => {
-    expect([1, 2, 3, 4].map((l) => collapseLayer(l as LayerId))).toEqual([1, 2, 3, 3]);
+    expect([1, 2, 3, 4].map((l) => collapseLayer(l as LayerId))).toEqual([
+      1, 2, 3, 3,
+    ]);
   });
 });
 
@@ -169,7 +201,9 @@ describe("moving between layers", () => {
       expect(applyFlip(layer, ".")).toBe(layerOf(left, right));
       expect(applyFlip(layer, "B")).toBe(layerOf(flipOri(left), right));
       expect(applyFlip(layer, "R")).toBe(layerOf(left, flipOri(right)));
-      expect(applyFlip(layer, "X")).toBe(layerOf(flipOri(left), flipOri(right)));
+      expect(applyFlip(layer, "X")).toBe(
+        layerOf(flipOri(left), flipOri(right))
+      );
     }
   });
 
@@ -206,12 +240,24 @@ describe("signatures of real sequences", () => {
   ];
 
   const chainA = abbPhiPattern([
-    ["s", "w"], ["n", "e"], ["w", "s"], ["e", "n"],
-    ["s", "e"], ["n", "w"], ["e", "w"], ["w", "e"],
+    ["s", "w"],
+    ["n", "e"],
+    ["w", "s"],
+    ["e", "n"],
+    ["s", "e"],
+    ["n", "w"],
+    ["e", "w"],
+    ["w", "e"],
   ]);
   const chainB = abbPhiPattern([
-    ["n", "e"], ["s", "w"], ["e", "s"], ["w", "n"],
-    ["n", "w"], ["s", "e"], ["n", "s"], ["s", "n"],
+    ["n", "e"],
+    ["s", "w"],
+    ["e", "s"],
+    ["w", "n"],
+    ["n", "w"],
+    ["s", "e"],
+    ["n", "s"],
+    ["s", "n"],
   ]);
 
   it("reads the first quarter of the published sequence", () => {
@@ -223,7 +269,12 @@ describe("signatures of real sequences", () => {
   });
 
   it("gives the same reading from any all-radial starting pair", () => {
-    for (const [left, right] of [["in", "in"], ["in", "out"], ["out", "in"], ["out", "out"]]) {
+    for (const [left, right] of [
+      ["in", "in"],
+      ["in", "out"],
+      ["out", "in"],
+      ["out", "out"],
+    ]) {
       const started = chainA.map((s, i) =>
         i === 0
           ? step(
@@ -250,9 +301,18 @@ describe("signatures of real sequences", () => {
 
   it("never changes when there are no half turns and no floats", () => {
     const wholeTurnsOnly = [
-      step(motion("pro", 1, "cw", "s", "w"), motion("anti", 2, "ccw", "n", "e")),
-      step(motion("dash", 0, "no_rot", "w", "e"), motion("static", 3, "cw", "e", "e")),
-      step(motion("anti", 0, "ccw", "e", "n"), motion("pro", 1, "cw", "w", "s")),
+      step(
+        motion("pro", 1, "cw", "s", "w"),
+        motion("anti", 2, "ccw", "n", "e")
+      ),
+      step(
+        motion("dash", 0, "no_rot", "w", "e"),
+        motion("static", 3, "cw", "e", "e")
+      ),
+      step(
+        motion("anti", 0, "ccw", "e", "n"),
+        motion("pro", 1, "cw", "w", "s")
+      ),
     ];
     const metrics = layerMetrics(layerSignature(wholeTurnsOnly));
     expect(metrics.frozen).toBe(true);
@@ -261,7 +321,10 @@ describe("signatures of real sequences", () => {
 });
 
 describe("turn patterns as their own thing", () => {
-  const pattern = { startLayer: 1 as LayerId, flips: [".", "X", "B", "."] as const };
+  const pattern = {
+    startLayer: 1 as LayerId,
+    flips: [".", "X", "B", "."] as const,
+  };
 
   it("survives a round trip through text", () => {
     expect(formatPattern(pattern)).toBe("1:.XB.");
@@ -274,22 +337,30 @@ describe("turn patterns as their own thing", () => {
   });
 
   it("comes back out of a sequence unchanged", () => {
-    const extracted = layerPatternOf(
-      abbPhiChain()
-    );
+    const extracted = layerPatternOf(abbPhiChain());
     expect(formatPattern(extracted)).toBe("1:.XB.");
     expect(formatSignature(signatureFromPattern(extracted))).toBe("1233");
   });
 
   it("knows when a pattern brings both props home", () => {
-    expect(isLayerClosed({ startLayer: 1, flips: [".", "X", "X", "."] })).toBe(true);
-    expect(isLayerClosed({ startLayer: 1, flips: [".", "X", "B", "."] })).toBe(false);
+    expect(isLayerClosed({ startLayer: 1, flips: [".", "X", "X", "."] })).toBe(
+      true
+    );
+    expect(isLayerClosed({ startLayer: 1, flips: [".", "X", "B", "."] })).toBe(
+      false
+    );
   });
 
   it("swaps the props when mirrored, and mirroring twice is a no-op", () => {
-    const mirrored = mirrorPattern({ startLayer: 3, flips: ["B", "R", "X", "."] });
+    const mirrored = mirrorPattern({
+      startLayer: 3,
+      flips: ["B", "R", "X", "."],
+    });
     expect(formatPattern(mirrored)).toBe("4:RBX.");
-    expect(mirrorPattern(mirrored)).toEqual({ startLayer: 3, flips: ["B", "R", "X", "."] });
+    expect(mirrorPattern(mirrored)).toEqual({
+      startLayer: 3,
+      flips: ["B", "R", "X", "."],
+    });
   });
 
   function abbPhiChain() {
@@ -299,8 +370,14 @@ describe("turn patterns as their own thing", () => {
         motion("float", 0, "noRotation", "w", "s"),
         motion("float", 0, "noRotation", "e", "n")
       ),
-      step(motion("anti", 0.5, "cw", "s", "e"), motion("anti", 0, "cw", "n", "w")),
-      step(motion("dash", 0, "noRotation", "e", "w"), motion("dash", 1, "cw", "w", "e")),
+      step(
+        motion("anti", 0.5, "cw", "s", "e"),
+        motion("anti", 0, "cw", "n", "w")
+      ),
+      step(
+        motion("dash", 0, "noRotation", "e", "w"),
+        motion("dash", 1, "cw", "w", "e")
+      ),
     ];
   }
 });
@@ -309,11 +386,16 @@ describe("real published sequences", () => {
   // Six sequences pulled straight out of publicSequences, trimmed to the motion
   // fields this module reads. Their signatures are what the app already shows
   // when you look at the props in each pictograph.
-  const corpus = corpusFixture as ReadonlyArray<{
-    word: string;
-    level: number;
-    steps: LayerStepInput[];
-  }>;
+  const corpus = (
+    corpusFixture as ReadonlyArray<{
+      word: string;
+      level: number;
+      steps: LayerStepInput[];
+    }>
+  ).map((sequence) => ({
+    ...sequence,
+    steps: normalizeLegacySteps(sequence.steps),
+  }));
 
   const expected: Record<string, string> = {
     "VPY-ΩVPY-ΩVPY-ΩVPY-Ω": "1233341112333411",
@@ -327,7 +409,9 @@ describe("real published sequences", () => {
   it.each(corpus.map((s) => [s.word, s] as const))(
     "reads %s the way the saved orientations do",
     (word, sequence) => {
-      expect(formatSignature(layerSignature(sequence.steps))).toBe(expected[word]);
+      expect(formatSignature(layerSignature(sequence.steps))).toBe(
+        expected[word]
+      );
     }
   );
 
@@ -336,7 +420,9 @@ describe("real published sequences", () => {
     // turns, not by the letters or the stored orientations.
     for (const sequence of corpus) {
       const fromPattern = signatureFromPattern(layerPatternOf(sequence.steps));
-      expect(formatSignature(fromPattern)).toBe(formatSignature(layerSignature(sequence.steps)));
+      expect(formatSignature(fromPattern)).toBe(
+        formatSignature(layerSignature(sequence.steps))
+      );
     }
   });
 
@@ -360,7 +446,13 @@ describe("measuring a signature", () => {
 
   it("scores a flat sequence as frozen", () => {
     const m = layerMetrics(sig("1111111111111111"));
-    expect(m).toMatchObject({ breadth: 1, switchRate: 0, desync: 0, period: 1, frozen: true });
+    expect(m).toMatchObject({
+      breadth: 1,
+      switchRate: 0,
+      desync: 0,
+      period: 1,
+      frozen: true,
+    });
   });
 
   it("counts only the steps where the props disagree as busy", () => {

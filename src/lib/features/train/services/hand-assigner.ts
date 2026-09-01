@@ -109,7 +109,11 @@ export class HandAssigner {
       "left",
       timestamp
     );
-    rightPosition = this._applySmoothingToPosition(rightPosition, "right", timestamp);
+    rightPosition = this._applySmoothingToPosition(
+      rightPosition,
+      "right",
+      timestamp
+    );
 
     return { left: leftPosition, right: rightPosition };
   }
@@ -232,7 +236,7 @@ export class HandAssigner {
     let left = currentLeft;
     let right = currentRight;
 
-    // Blue hand persistence
+    // Left-hand persistence
     if (left) {
       this._lastLeftPosition = left;
       this._leftFramesMissing = 0;
@@ -246,7 +250,7 @@ export class HandAssigner {
       this._lastLeftPosition = null;
     }
 
-    // Red hand persistence
+    // Right-hand persistence
     if (right) {
       this._lastRightPosition = right;
       this._rightFramesMissing = 0;

@@ -100,7 +100,7 @@
       <header>
         <div class="matrix-heading">
           <strong>Shape cells</strong>
-          <span>Blue rows · red columns</span>
+          <span>Left rows · right columns</span>
         </div>
         <div class="size-control">
           <SegmentedControl

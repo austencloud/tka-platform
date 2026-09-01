@@ -34,7 +34,7 @@ export interface PedestalFaceOptions {
   propType: string;
   /**
    * Wing tint. The figure is drawn in one colour per wing rather than in the
-   * app's blue/red prop identity — a pedestal is architecture, not a pictograph,
+   * app's left/right prop identity — a pedestal is architecture, not a pictograph,
    * and two prop colours on a stone face reads as decoration.
    */
   tint: string;

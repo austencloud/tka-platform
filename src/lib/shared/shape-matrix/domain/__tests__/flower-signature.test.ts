@@ -111,7 +111,7 @@ describe("flower-signature", () => {
     expect(ratioLabel(3)).toBe("7:1");
     expect(ratioLabel(0.25)).toBe("3:2");
     expect(ratioLabel(1.25)).toBe("7:2");
-    expect(hybridRatioLabel(1, 0)).toBe("Blue 3:1 × Red 1:1");
+    expect(hybridRatioLabel(1, 0)).toBe("Left 3:1 × Right 1:1");
     expect(hybridRatioLabel(1, 1)).toBe("3:1");
   });
 

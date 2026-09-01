@@ -7,10 +7,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import {
-  ensureDataLoaded,
-  LETTER_TYPES,
-} from "../shared/server-context.js";
+import { ensureDataLoaded, LETTER_TYPES } from "../shared/server-context.js";
 
 export function registerDataTools(server: McpServer): void {
   // Tool: list_letter_variations
@@ -18,8 +15,17 @@ export function registerDataTools(server: McpServer): void {
     "list_letter_variations",
     "List all variations of a TKA letter. Each letter can have multiple variations with different motion combinations.",
     {
-      letter: z.string().describe("Letter to list variations for (A-Z, or Greek: α, β, γ, Δ, Θ, Λ, Σ, Φ, Ψ, Ω)"),
-      limit: z.number().optional().describe("Max variations to return (default: all). Use 5-10 for quick overview."),
+      letter: z
+        .string()
+        .describe(
+          "Letter to list variations for (A-Z, or Greek: α, β, γ, Δ, Θ, Λ, Σ, Φ, Ψ, Ω)"
+        ),
+      limit: z
+        .number()
+        .optional()
+        .describe(
+          "Max variations to return (default: all). Use 5-10 for quick overview."
+        ),
     },
     async ({ letter, limit }) => {
       const allPictographs = ensureDataLoaded();
@@ -28,7 +34,10 @@ export function registerDataTools(server: McpServer): void {
       if (variations.length === 0) {
         return {
           content: [
-            { type: "text" as const, text: `No variations found for letter: ${letter}` },
+            {
+              type: "text" as const,
+              text: `No variations found for letter: ${letter}`,
+            },
           ],
         };
       }
@@ -39,8 +48,8 @@ export function registerDataTools(server: McpServer): void {
       const variationList = toShow
         .map((v, i) => {
           return `[${i}] ${v.startPosition} → ${v.endPosition}
-   Blue: ${v.leftMotion.startLocation}→${v.leftMotion.endLocation} (${v.leftMotion.motionType}, ${v.leftMotion.rotationDirection})
-   Red: ${v.rightMotion.startLocation}→${v.rightMotion.endLocation} (${v.rightMotion.motionType}, ${v.rightMotion.rotationDirection})`;
+   Left hand: ${v.leftMotion.startLocation}→${v.leftMotion.endLocation} (${v.leftMotion.motionType}, ${v.leftMotion.rotationDirection})
+   Right hand: ${v.rightMotion.startLocation}→${v.rightMotion.endLocation} (${v.rightMotion.motionType}, ${v.rightMotion.rotationDirection})`;
         })
         .join("\n\n");
 
@@ -65,7 +74,11 @@ export function registerDataTools(server: McpServer): void {
     "Get detailed data for a specific pictograph variation. Returns all motion parameters.",
     {
       letter: z.string().describe("The letter (A-Z or Greek)"),
-      variation: z.number().optional().default(0).describe("Variation index (0-based)"),
+      variation: z
+        .number()
+        .optional()
+        .default(0)
+        .describe("Variation index (0-based)"),
     },
     async ({ letter, variation = 0 }) => {
       const allPictographs = ensureDataLoaded();
@@ -74,7 +87,10 @@ export function registerDataTools(server: McpServer): void {
       if (variations.length === 0) {
         return {
           content: [
-            { type: "text" as const, text: `No pictograph found for letter: ${letter}` },
+            {
+              type: "text" as const,
+              text: `No pictograph found for letter: ${letter}`,
+            },
           ],
           isError: true,
         };
@@ -97,7 +113,10 @@ export function registerDataTools(server: McpServer): void {
 
       return {
         content: [
-          { type: "text" as const, text: `Pictograph ${letter} (variation ${variation}):\n\n${data}` },
+          {
+            type: "text" as const,
+            text: `Pictograph ${letter} (variation ${variation}):\n\n${data}`,
+          },
         ],
       };
     }
@@ -108,14 +127,39 @@ export function registerDataTools(server: McpServer): void {
     "search_pictographs",
     "Search for pictographs matching specific criteria. Filter by position, motion type, or location.",
     {
-      startPosition: z.string().optional().describe("Filter by start position (e.g., alpha1, alpha3, beta1)"),
+      startPosition: z
+        .string()
+        .optional()
+        .describe("Filter by start position (e.g., alpha1, alpha3, beta1)"),
       endPosition: z.string().optional().describe("Filter by end position"),
-      motionType: z.enum(["pro", "anti", "static", "dash"]).optional().describe("Filter by motion type"),
-      startLocation: z.string().optional().describe("Filter by motion start location (n, e, s, w, ne, se, sw, nw)"),
-      endLocation: z.string().optional().describe("Filter by motion end location"),
-      limit: z.number().optional().default(10).describe("Max results to return"),
+      motionType: z
+        .enum(["pro", "anti", "static", "dash"])
+        .optional()
+        .describe("Filter by motion type"),
+      startLocation: z
+        .string()
+        .optional()
+        .describe(
+          "Filter by motion start location (n, e, s, w, ne, se, sw, nw)"
+        ),
+      endLocation: z
+        .string()
+        .optional()
+        .describe("Filter by motion end location"),
+      limit: z
+        .number()
+        .optional()
+        .default(10)
+        .describe("Max results to return"),
     },
-    async ({ startPosition, endPosition, motionType, startLocation, endLocation, limit = 10 }) => {
+    async ({
+      startPosition,
+      endPosition,
+      motionType,
+      startLocation,
+      endLocation,
+      limit = 10,
+    }) => {
       const allPictographs = ensureDataLoaded();
       let results = [...allPictographs];
 
@@ -160,14 +204,17 @@ export function registerDataTools(server: McpServer): void {
       if (limited.length === 0) {
         return {
           content: [
-            { type: "text" as const, text: "No pictographs found matching criteria" },
+            {
+              type: "text" as const,
+              text: "No pictographs found matching criteria",
+            },
           ],
         };
       }
 
       const resultList = limited
         .map((p) => {
-          return `${p.letter}: ${p.startPosition}→${p.endPosition} | Blue: ${p.leftMotion.startLocation}→${p.leftMotion.endLocation} (${p.leftMotion.motionType}) | Red: ${p.rightMotion.startLocation}→${p.rightMotion.endLocation} (${p.rightMotion.motionType})`;
+          return `${p.letter}: ${p.startPosition}→${p.endPosition} | Left hand: ${p.leftMotion.startLocation}→${p.leftMotion.endLocation} (${p.leftMotion.motionType}) | Right hand: ${p.rightMotion.startLocation}→${p.rightMotion.endLocation} (${p.rightMotion.motionType})`;
         })
         .join("\n");
 
@@ -187,7 +234,13 @@ export function registerDataTools(server: McpServer): void {
     "list_available_letters",
     "List all letters available in the TKA alphabet dataframe",
     {
-      compact: z.boolean().optional().default(false).describe("Compact output (just letter lists, no descriptions - saves ~800 tokens)"),
+      compact: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe(
+          "Compact output (just letter lists, no descriptions - saves ~800 tokens)"
+        ),
     },
     async ({ compact = false }) => {
       const allPictographs = ensureDataLoaded();
@@ -201,14 +254,20 @@ export function registerDataTools(server: McpServer): void {
         const byType: string[] = [];
         const registeredExtensions: string[] = [];
         for (const [_typeKey, typeInfo] of Object.entries(LETTER_TYPES)) {
-          const presentLetters = typeInfo.letters.filter((l) => availableLetters.has(l));
+          const presentLetters = typeInfo.letters.filter((l) =>
+            availableLetters.has(l)
+          );
           if (presentLetters.length > 0) {
-            byType.push(`${typeInfo.name.split(":")[0]}: ${presentLetters.join(",")}`);
+            byType.push(
+              `${typeInfo.name.split(":")[0]}: ${presentLetters.join(",")}`
+            );
           }
           registeredExtensions.push(...(typeInfo.extendedLetters ?? []));
         }
         if (registeredExtensions.length > 0) {
-          byType.push(`Registered extensions without dataframe variations: ${registeredExtensions.join(",")}`);
+          byType.push(
+            `Registered extensions without dataframe variations: ${registeredExtensions.join(",")}`
+          );
         }
         return {
           content: [{ type: "text" as const, text: byType.join("\n") }],
@@ -223,19 +282,27 @@ export function registerDataTools(server: McpServer): void {
       ];
 
       for (const [_typeKey, typeInfo] of Object.entries(LETTER_TYPES)) {
-        const presentLetters = typeInfo.letters.filter((l) => availableLetters.has(l));
+        const presentLetters = typeInfo.letters.filter((l) =>
+          availableLetters.has(l)
+        );
         if (presentLetters.length > 0) {
           output.push(`## ${typeInfo.name}`);
           output.push(`${typeInfo.description}`);
-          output.push(`Level 1/dataframe letters: ${presentLetters.join(", ")}`);
+          output.push(
+            `Level 1/dataframe letters: ${presentLetters.join(", ")}`
+          );
           if (typeInfo.extendedLetters?.length) {
-            output.push(`Registered higher-level extensions without dataframe variations: ${typeInfo.extendedLetters.join(", ")}`);
+            output.push(
+              `Registered higher-level extensions without dataframe variations: ${typeInfo.extendedLetters.join(", ")}`
+            );
           }
           output.push("");
         }
       }
 
-      output.push(`Total available in the pictograph dataframe: ${availableLetters.size} letters`);
+      output.push(
+        `Total available in the pictograph dataframe: ${availableLetters.size} letters`
+      );
 
       return {
         content: [

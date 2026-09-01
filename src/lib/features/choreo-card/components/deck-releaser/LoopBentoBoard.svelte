@@ -213,7 +213,7 @@
   // ── start position + orientation (ported from the unified-generation prototype)
   // Positions follow the deck's active grid mode (set in Transform). Selection is
   // stored as GridPosition strings; empty ⇒ any. Orientation is per-hand and
-  // baked into every generated card's beat 0 via blue/redStartOrientation.
+  // baked into every generated card's beat 0 via left/rightStartOrientation.
   let posShowAll = $state(false);
   const posGridMode = $derived(
     ([...rs.selectedGridModes][0] ?? "diamond") as GridMode

@@ -62,7 +62,7 @@ export const ninePlanesFilm: FilmDirectorInput = {
       id: "no-two-alike",
       title: "No two alike",
       intent:
-        "A line of eight where every performer's blue hand draws a different plane from the nine-plane catalog, and every red hand draws its own as well.",
+        "A line of eight where every performer's left hand draws a different plane from the nine-plane catalog, and every right hand draws its own as well.",
       durationSeconds: 9,
       transition: { kind: "environment-dissolve", durationSeconds: 0.9 },
       location: { environmentId: "celestial", showStage: true },

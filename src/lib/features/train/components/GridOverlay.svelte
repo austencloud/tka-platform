@@ -146,7 +146,10 @@
         const elapsed = now - rightAnimStartTime;
         const progress = Math.min(elapsed / duration, 1.0);
 
-        const delta = shortestAngleDelta(rightAnimStartAngle, rightAnimTargetAngle);
+        const delta = shortestAngleDelta(
+          rightAnimStartAngle,
+          rightAnimTargetAngle
+        );
         rightCurrentAngle = rightAnimStartAngle + delta * progress;
         animatedRightPos = angleToCoords(rightCurrentAngle);
 
@@ -282,7 +285,7 @@
 >
   <!-- Debug overlay - matches camera coordinates exactly (0-100%) -->
   <svg class="debug-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
-    <!-- Detected blue hand (left hand) debug landmarks -->
+    <!-- Detected left-hand debug landmarks -->
     {#if leftPosition?.debug}
       {@const wrist = leftPosition.debug.wrist}
       {@const finger = leftPosition.debug.middleFingerTip}
@@ -355,7 +358,7 @@
       >
     {/if}
 
-    <!-- Detected red hand (right hand) debug landmarks -->
+    <!-- Detected right-hand debug landmarks -->
     {#if rightPosition?.debug}
       {@const wrist = rightPosition.debug.wrist}
       {@const finger = rightPosition.debug.middleFingerTip}
@@ -485,7 +488,7 @@
       {/if}
     {/if}
 
-    <!-- Detected blue hand - Quadrant indicator at the hand point -->
+    <!-- Detected left hand - Quadrant indicator at the hand point -->
     {#if leftPosition}
       {@const quadrantPos = locationCoords[leftPosition.quadrant]}
       <circle
@@ -509,7 +512,7 @@
       </text>
     {/if}
 
-    <!-- Detected red hand - Quadrant indicator at the hand point -->
+    <!-- Detected right hand - Quadrant indicator at the hand point -->
     {#if rightPosition}
       {@const quadrantPos = locationCoords[rightPosition.quadrant]}
       <circle
@@ -628,5 +631,4 @@
       opacity 0.3s ease,
       stroke-dasharray 0.3s ease;
   }
-
 </style>

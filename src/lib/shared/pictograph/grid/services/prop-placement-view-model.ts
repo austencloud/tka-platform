@@ -28,10 +28,10 @@ interface PlacementPromptInput {
   disabled: boolean;
   isComplete: boolean;
   canAim: boolean;
-  activeColor: HandSide | null;
-  dragColor: HandSide | null;
+  activeHand: HandSide | null;
+  dragHand: HandSide | null;
   dragAim: Orientation | null;
-  hoverColor: HandSide | null;
+  hoverHand: HandSide | null;
   leftLocation: GridLocation | null;
   rightLocation: GridLocation | null;
   leftNoun: string;
@@ -67,20 +67,20 @@ export function buildPlacementPrompt(input: PlacementPromptInput): {
   let parts: PlacementPromptParts | null = null;
 
   if (!input.disabled) {
-    if (input.dragColor !== null && input.dragAim !== null) {
+    if (input.dragHand !== null && input.dragAim !== null) {
       const noun =
-        input.dragColor === HandSide.LEFT ? input.leftNoun : input.rightNoun;
+        input.dragHand === HandSide.LEFT ? input.leftNoun : input.rightNoun;
       parts = build(
         noun,
-        input.dragColor,
+        input.dragHand,
         "Aiming the",
         AIM_LABELS[input.dragAim] ?? null
       );
-    } else if (input.activeColor === null && input.hoverColor !== null) {
+    } else if (input.activeHand === null && input.hoverHand !== null) {
       const noun =
-        input.hoverColor === HandSide.LEFT ? input.leftNoun : input.rightNoun;
-      parts = build(noun, input.hoverColor, "Drag to aim the");
-    } else if (input.activeColor === HandSide.LEFT) {
+        input.hoverHand === HandSide.LEFT ? input.leftNoun : input.rightNoun;
+      parts = build(noun, input.hoverHand, "Drag to aim the");
+    } else if (input.activeHand === HandSide.LEFT) {
       parts = build(
         input.leftNoun,
         HandSide.LEFT,
@@ -90,7 +90,7 @@ export function buildPlacementPrompt(input: PlacementPromptInput): {
             ? "Press a point and drag to aim the"
             : "Place the"
       );
-    } else if (input.activeColor === HandSide.RIGHT) {
+    } else if (input.activeHand === HandSide.RIGHT) {
       parts = build(
         input.rightNoun,
         HandSide.RIGHT,
@@ -241,8 +241,12 @@ export function buildPlacementTransition(
     startLocation: input.fromLocation,
     endLocation: input.toLocation,
     turns: 0,
-    startOrientation: isBlueMoving ? input.leftOrientation : input.rightOrientation,
-    endOrientation: isBlueMoving ? input.leftOrientation : input.rightOrientation,
+    startOrientation: isBlueMoving
+      ? input.leftOrientation
+      : input.rightOrientation,
+    endOrientation: isBlueMoving
+      ? input.leftOrientation
+      : input.rightOrientation,
     isVisible: true,
     propType: isBlueMoving ? input.leftPropType : input.rightPropType,
     arrowLocation: input.toLocation,
@@ -379,7 +383,9 @@ export function getPlacementGuideCoordinates(
   const left = allGuidePoints.find(
     (point) => point.location === locations.left
   );
-  const right = allGuidePoints.find((point) => point.location === locations.right);
+  const right = allGuidePoints.find(
+    (point) => point.location === locations.right
+  );
   return left && right ? { left, right } : null;
 }
 

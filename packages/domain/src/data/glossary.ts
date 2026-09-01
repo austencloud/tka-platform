@@ -362,7 +362,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     examples: [
       "Λ(0,1,cl): Lambda with 1-turn static hand whose trajectory would resolve to beta",
       "Λ-(1,1,cl,cl): Lambda-Dash with both hands closing (both trajectories resolve to beta)",
-      "γ(cl,op): gamma with blue closing (toward beta), red opening (toward alpha)",
+      "γ(cl,op): gamma with the left hand closing (toward beta), right hand opening (toward alpha)",
     ],
     relatedTerms: ["opening", "glyph", "beta", "rotational-relationship"],
     category: "notation",
@@ -450,11 +450,18 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     definition:
       "Which of two mirror-image forms an asymmetric prop takes. A chiral prop is not superimposable on its own mirror image, so the shape has a handedness that rotation cannot change: orientation turns the prop, chirality decides which of the two shapes is being turned. Chirality is set per hand, so the left and right props can differ. In TKA it applies to the buugeng family, where the pair's relative chirality is what matters: two props of the same chirality stay visibly apart at a shared hand point, while two of opposite chirality nest into a single combined shape and take no separation offset. Neither form is the canonical one, so TKA names them A and B rather than treating one as a mirrored version of the other.",
     examples: [
-      "Blue A beside red B is the pairing that nests at a beta position",
-      "Blue A beside red A stays separated, the same as any other matched pair",
+      "Left A beside right B is the pairing that nests at a beta position",
+      "Left A beside right A stays separated, the same as any other matched pair",
       "Flipping one hand's chirality changes the shape drawn, not its rotation angle",
     ],
-    relatedTerms: ["buugeng", "trigeng", "prop", "orientation", "beta", "bilateral"],
+    relatedTerms: [
+      "buugeng",
+      "trigeng",
+      "prop",
+      "orientation",
+      "beta",
+      "bilateral",
+    ],
     category: "general",
   },
 
@@ -465,7 +472,13 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
       "A buugeng pictograph tracks orientation and chirality separately",
       "Trigeng is the three-armed member of the same family",
     ],
-    relatedTerms: ["chirality", "trigeng", "prop", "bilateral", "staff-reference"],
+    relatedTerms: [
+      "chirality",
+      "trigeng",
+      "prop",
+      "bilateral",
+      "staff-reference",
+    ],
     category: "general",
   },
   trigeng: {
@@ -1151,7 +1164,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     definition:
       "A LOOP transformation where the left and right hands swap roles. What the left hand did, the right hand now does (and vice versa). Changes body motion significantly.",
     examples: [
-      "Blue was at N doing pro, now red is at N doing pro",
+      "The left hand was at N doing pro; now the right hand is at N doing pro",
       "Body has to reorganize to execute the swapped version",
     ],
     relatedTerms: ["loop", "mirrored", "inverted"],
@@ -1260,6 +1273,26 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     relatedTerms: ["sequence", "pictograph", "word"],
     category: "notation",
   },
+  "left-hand": {
+    definition:
+      "The performer's physical left hand. It is the canonical left motion channel in TKA data and uses blue in the default notation palette.",
+    examples: [
+      "The left hand starts at N and shifts to E",
+      "Changing the left-hand color changes its prop, arrow, and mandala path together",
+    ],
+    relatedTerms: ["right-hand", "blue", "motion-type", "pictograph"],
+    category: "general",
+  },
+  "right-hand": {
+    definition:
+      "The performer's physical right hand. It is the canonical right motion channel in TKA data and uses red in the default notation palette.",
+    examples: [
+      "The right hand starts at S and shifts to W",
+      "Changing the right-hand color changes its prop, arrow, and mandala path together",
+    ],
+    relatedTerms: ["left-hand", "red", "motion-type", "pictograph"],
+    category: "general",
+  },
   blue: {
     definition:
       "The canonical display color for the performer's left hand and prop in TKA notation. The underlying motion identity is left; pictographs traditionally render its prop and arrow in blue.",
@@ -1267,7 +1300,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
       "The left hand starts at N and shifts to E",
       "The left prop and arrow use canonical blue in the default palette",
     ],
-    relatedTerms: ["red", "left hand", "prop", "pictograph"],
+    relatedTerms: ["red", "left-hand", "prop", "pictograph"],
     category: "general",
   },
   red: {
@@ -1277,7 +1310,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
       "The right hand starts at S and shifts to W",
       "The right prop and arrow use canonical red in the default palette",
     ],
-    relatedTerms: ["blue", "right hand", "prop", "pictograph"],
+    relatedTerms: ["blue", "right-hand", "prop", "pictograph"],
     category: "general",
   },
   constraint: {
@@ -1286,7 +1319,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     examples: [
       "constraintPreset: 'smooth' minimizes reversals",
       "constraintPreset: 'isolation' forces all pro motions",
-      "Natural language: 'maximize flow with blue clockwise'",
+      "Natural language: 'maximize flow with the left hand clockwise'",
     ],
     relatedTerms: ["sequence", "word", "pro", "anti", "reversal"],
     category: "sequence",

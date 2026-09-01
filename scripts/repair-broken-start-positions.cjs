@@ -3,7 +3,7 @@
  * Repair Broken Start Positions
  *
  * Finds user-library sequences where `startPosition` EXISTS but is missing
- * `motions.blue` or `motions.red`, and rebuilds the motions block from
+ * canonical `motions.left` or `motions.right`, and rebuilds the motions block from
  * the first step's start-side motion data.
  *
  * This fixes docs produced by an older `import-sequence.cjs` that passed
@@ -53,13 +53,13 @@ function letterFromGrid(gridPos) {
 
 function synthesizeMotionsFromSteps(steps) {
   const firstStep = steps?.[0];
-  const leftMotion = firstStep?.motions?.left;
-  const rightMotion = firstStep?.motions?.right;
+  const leftMotion = firstStep?.motions?.left || firstStep?.motions?.blue;
+  const rightMotion = firstStep?.motions?.right || firstStep?.motions?.red;
   if (!leftMotion || !rightMotion) return null;
 
   return {
     left: {
-      color: "blue",
+      hand: "left",
       motionType: "static",
       startLocation: leftMotion.startLocation,
       endLocation: leftMotion.startLocation,
@@ -71,7 +71,7 @@ function synthesizeMotionsFromSteps(steps) {
       propType: leftMotion.propType,
     },
     right: {
-      color: "red",
+      hand: "right",
       motionType: "static",
       startLocation: rightMotion.startLocation,
       endLocation: rightMotion.startLocation,
@@ -97,16 +97,13 @@ function repairStartPosition(data, sequenceId) {
   const derivedGridPos = firstStep?.startPosition || null;
 
   const gridPos =
-    existing.gridPosition ||
-    existing.startPosition ||
-    derivedGridPos ||
-    null;
+    existing.gridPosition || existing.startPosition || derivedGridPos || null;
 
-  const motionsOk =
-    existing.motions?.left?.startLocation &&
-    existing.motions?.right?.startLocation;
+  const existingLeft = existing.motions?.left || existing.motions?.blue;
+  const existingRight = existing.motions?.right || existing.motions?.red;
+  const motionsOk = existingLeft?.startLocation && existingRight?.startLocation;
   const motions = motionsOk
-    ? existing.motions
+    ? { left: existingLeft, right: existingRight }
     : synthesizeMotionsFromSteps(data.steps || data.beats || []);
 
   if (!gridPos || !motions) return null;
@@ -151,14 +148,20 @@ async function processDoc(docSnap, stats) {
   const repaired = repairStartPosition(data, docSnap.id);
   if (!repaired) {
     stats.unrepairable++;
-    console.log(`  [unrepairable] ${docSnap.ref.path} — cannot derive gridPosition or motions`);
+    console.log(
+      `  [unrepairable] ${docSnap.ref.path} — cannot derive gridPosition or motions`
+    );
     return;
   }
 
   stats.willRepair++;
-  console.log(`  [${isCommit ? "REPAIR" : "dry-run"}] ${docSnap.ref.path} (word: ${data.word || data.name || "?"})`);
+  console.log(
+    `  [${isCommit ? "REPAIR" : "dry-run"}] ${docSnap.ref.path} (word: ${data.word || data.name || "?"})`
+  );
   console.log(`    old: ${JSON.stringify(data.startPosition).slice(0, 160)}`);
-  console.log(`    new.gridPosition=${repaired.gridPosition} blue=${repaired.motions.left.startLocation}/${repaired.motions.left.startOrientation} red=${repaired.motions.right.startLocation}/${repaired.motions.right.startOrientation}`);
+  console.log(
+    `    new.gridPosition=${repaired.gridPosition} blue=${repaired.motions.left.startLocation}/${repaired.motions.left.startOrientation} red=${repaired.motions.right.startLocation}/${repaired.motions.right.startOrientation}`
+  );
 
   if (isCommit) {
     await docSnap.ref.update({ startPosition: repaired });
@@ -167,7 +170,9 @@ async function processDoc(docSnap, stats) {
 }
 
 async function main() {
-  console.log(`Repair Broken Start Positions ${isCommit ? "(COMMIT)" : "(dry-run)"}`);
+  console.log(
+    `Repair Broken Start Positions ${isCommit ? "(COMMIT)" : "(dry-run)"}`
+  );
   const stats = {
     ok: 0,
     willRepair: 0,
@@ -195,7 +200,9 @@ async function main() {
   } else {
     const usersSnapshot = await db.collection("users").get();
     for (const userDoc of usersSnapshot.docs) {
-      const libSnap = await db.collection(`users/${userDoc.id}/sequences`).get();
+      const libSnap = await db
+        .collection(`users/${userDoc.id}/sequences`)
+        .get();
       for (const d of libSnap.docs) await processDoc(d, stats);
     }
   }

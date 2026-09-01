@@ -13,13 +13,13 @@ import type { QuizRepoManager } from "../../quiz/services/quiz-repo-manager";
 import type {
   rotateAllPictographs,
   mirrorAllPictographs,
-  colorSwapAllPictographs,
+  handSwapAllPictographs,
 } from "./codex-pictograph-updater";
 
 interface ICodexPictographUpdater {
   rotateAllPictographs: typeof rotateAllPictographs;
   mirrorAllPictographs: typeof mirrorAllPictographs;
-  colorSwapAllPictographs: typeof colorSwapAllPictographs;
+  handSwapAllPictographs: typeof handSwapAllPictographs;
 }
 
 import type { CodexLetterMappingRepo } from "$lib/shared/learn/services/codex-letter-mapping-repo";
@@ -161,14 +161,14 @@ export class Codex {
   }
 
   /**
-   * Apply color swap operation to all pictographs
+   * Apply hand swap operation to all pictographs
    */
-  async colorSwapAllPictographs(
+  async handSwapAllPictographs(
     pictographs: PictographData[]
   ): Promise<PictographData[]> {
     await this.initialize();
 
-    return this.operationsService.colorSwapAllPictographs(pictographs);
+    return this.operationsService.handSwapAllPictographs(pictographs);
   }
 
   /**

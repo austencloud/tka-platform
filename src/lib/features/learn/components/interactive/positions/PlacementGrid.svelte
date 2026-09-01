@@ -78,8 +78,8 @@
   {gridMode}
   leftPropType={PropType.HAND}
   rightPropType={PropType.HAND}
-  leftNoun="blue hand"
-  rightNoun="red hand"
+  leftNoun="left hand"
+  rightNoun="right hand"
   editAfterCompletion={false}
   {disabled}
   {showGuideLines}

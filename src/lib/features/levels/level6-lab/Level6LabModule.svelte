@@ -29,12 +29,10 @@
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
-
   let selectedGroup = $state<"all" | "alpha" | "beta" | "gamma">("all");
   let gravityMode = $state(false);
   let leftOrientation = $state<Orientation>(Orientation.CLOCK_IN);
   let rightOrientation = $state<Orientation>(Orientation.CLOCK_IN);
-
 
   const RADIAL_ORIENTATIONS = [
     { value: Orientation.IN, label: "In", icon: "fa-compress-arrows-alt" },
@@ -44,14 +42,36 @@
   ] as const;
 
   const INTERRADIAL_ORIENTATIONS = [
-    { value: Orientation.CLOCK_IN, label: "CW-In", icon: "fa-arrow-up", rotation: 45 },
-    { value: Orientation.CLOCK_OUT, label: "CW-Out", icon: "fa-arrow-down", rotation: -45 },
-    { value: Orientation.COUNTER_IN, label: "CCW-In", icon: "fa-arrow-up", rotation: -45 },
-    { value: Orientation.COUNTER_OUT, label: "CCW-Out", icon: "fa-arrow-down", rotation: 45 },
+    {
+      value: Orientation.CLOCK_IN,
+      label: "CW-In",
+      icon: "fa-arrow-up",
+      rotation: 45,
+    },
+    {
+      value: Orientation.CLOCK_OUT,
+      label: "CW-Out",
+      icon: "fa-arrow-down",
+      rotation: -45,
+    },
+    {
+      value: Orientation.COUNTER_IN,
+      label: "CCW-In",
+      icon: "fa-arrow-up",
+      rotation: -45,
+    },
+    {
+      value: Orientation.COUNTER_OUT,
+      label: "CCW-Out",
+      icon: "fa-arrow-down",
+      rotation: 45,
+    },
   ] as const;
 
-  const ALL_ORIENTATIONS = [...RADIAL_ORIENTATIONS, ...INTERRADIAL_ORIENTATIONS];
-
+  const ALL_ORIENTATIONS = [
+    ...RADIAL_ORIENTATIONS,
+    ...INTERRADIAL_ORIENTATIONS,
+  ];
 
   /** Physically correct resting orientation per grid location (poi gravity) */
   const GRAVITY_MAP: Partial<Record<GridLocation, Orientation>> = {
@@ -68,7 +88,7 @@
   // POSITION DATA (Box mode = intercardinal locations)
 
   /**
-   * Box mode positions with intercardinal locations: [blueLocation, redLocation]
+   * Box mode positions with intercardinal locations: [leftLocation, rightLocation]
    * Sourced from GridPositionDeriver.POSITIONS_MAP (canonical)
    */
   const BOX_POSITIONS: Record<string, [GridLocation, GridLocation]> = {
@@ -93,24 +113,42 @@
     [GridPosition.GAMMA16]: [GridLocation.NORTHEAST, GridLocation.NORTHWEST],
   };
 
-  const ALPHA_POSITIONS = [GridPosition.ALPHA2, GridPosition.ALPHA4, GridPosition.ALPHA6, GridPosition.ALPHA8];
-  const BETA_POSITIONS = [GridPosition.BETA2, GridPosition.BETA4, GridPosition.BETA6, GridPosition.BETA8];
-  const GAMMA_POSITIONS = [
-    GridPosition.GAMMA2, GridPosition.GAMMA4, GridPosition.GAMMA6, GridPosition.GAMMA8,
-    GridPosition.GAMMA10, GridPosition.GAMMA12, GridPosition.GAMMA14, GridPosition.GAMMA16,
+  const ALPHA_POSITIONS = [
+    GridPosition.ALPHA2,
+    GridPosition.ALPHA4,
+    GridPosition.ALPHA6,
+    GridPosition.ALPHA8,
   ];
-
+  const BETA_POSITIONS = [
+    GridPosition.BETA2,
+    GridPosition.BETA4,
+    GridPosition.BETA6,
+    GridPosition.BETA8,
+  ];
+  const GAMMA_POSITIONS = [
+    GridPosition.GAMMA2,
+    GridPosition.GAMMA4,
+    GridPosition.GAMMA6,
+    GridPosition.GAMMA8,
+    GridPosition.GAMMA10,
+    GridPosition.GAMMA12,
+    GridPosition.GAMMA14,
+    GridPosition.GAMMA16,
+  ];
 
   const leftPropType = $derived.by(() => {
     const settings = getSettings();
-    return (settings.leftPropType ?? settings.propType ?? PropType.STAFF) as PropType;
+    return (settings.leftPropType ??
+      settings.propType ??
+      PropType.STAFF) as PropType;
   });
 
   const rightPropType = $derived.by(() => {
     const settings = getSettings();
-    return (settings.rightPropType ?? settings.propType ?? PropType.STAFF) as PropType;
+    return (settings.rightPropType ??
+      settings.propType ??
+      PropType.STAFF) as PropType;
   });
-
 
   interface PositionSection {
     label: string;
@@ -131,8 +169,10 @@
     return sections;
   });
 
-
-  function getOrientation(location: GridLocation, manualOri: Orientation): Orientation {
+  function getOrientation(
+    location: GridLocation,
+    manualOri: Orientation
+  ): Orientation {
     if (gravityMode) {
       return GRAVITY_MAP[location] ?? manualOri;
     }
@@ -157,7 +197,7 @@
       endOrientation: leftOri,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: HandSide.LEFT,
+      hand: HandSide.LEFT,
       isVisible: true,
       propType: leftPropType,
       arrowLocation: leftLocation,
@@ -172,7 +212,7 @@
       endOrientation: rightOri,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: HandSide.RIGHT,
+      hand: HandSide.RIGHT,
       isVisible: true,
       propType: rightPropType,
       arrowLocation: rightLocation,
@@ -203,10 +243,16 @@
     return loc.toUpperCase();
   }
 
-  const totalCount = $derived(ALPHA_POSITIONS.length + BETA_POSITIONS.length + GAMMA_POSITIONS.length);
+  const totalCount = $derived(
+    ALPHA_POSITIONS.length + BETA_POSITIONS.length + GAMMA_POSITIONS.length
+  );
 
   const groupOptions = $derived<
-    { value: "all" | "alpha" | "beta" | "gamma"; label: string; count: number }[]
+    {
+      value: "all" | "alpha" | "beta" | "gamma";
+      label: string;
+      count: number;
+    }[]
   >([
     { value: "all", label: "All", count: totalCount },
     { value: "alpha", label: "Alpha", count: ALPHA_POSITIONS.length },
@@ -222,7 +268,8 @@
       <span class="badge">Admin</span>
     </div>
     <p class="description">
-      Interradial orientations (clockIn, clockOut, counterIn, counterOut) at intercardinal positions in box mode.
+      Interradial orientations (clockIn, clockOut, counterIn, counterOut) at
+      intercardinal positions in box mode.
     </p>
   </header>
 
@@ -239,13 +286,14 @@
   <div class="controls-row">
     <div class="orientation-controls">
       <div class="orientation-group blue">
-        <span class="group-label">Blue</span>
+        <span class="group-label">Left</span>
         <div class="orientation-chips">
           {#each ALL_ORIENTATIONS as ori}
             <button
               class="ori-chip"
               class:active={!gravityMode && leftOrientation === ori.value}
-              class:interradial={ori.value.includes("clock") || ori.value.includes("counter")}
+              class:interradial={ori.value.includes("clock") ||
+                ori.value.includes("counter")}
               aria-pressed={!gravityMode && leftOrientation === ori.value}
               aria-label={ori.label}
               disabled={gravityMode}
@@ -255,7 +303,9 @@
               <i
                 class="fas {ori.icon}"
                 aria-hidden="true"
-                style={('rotation' in ori && ori.rotation) ? `transform: rotate(${ori.rotation}deg)` : ''}
+                style={"rotation" in ori && ori.rotation
+                  ? `transform: rotate(${ori.rotation}deg)`
+                  : ""}
               ></i>
               <span>{ori.label}</span>
             </button>
@@ -263,13 +313,14 @@
         </div>
       </div>
       <div class="orientation-group red">
-        <span class="group-label">Red</span>
+        <span class="group-label">Right</span>
         <div class="orientation-chips">
           {#each ALL_ORIENTATIONS as ori}
             <button
               class="ori-chip"
               class:active={!gravityMode && rightOrientation === ori.value}
-              class:interradial={ori.value.includes("clock") || ori.value.includes("counter")}
+              class:interradial={ori.value.includes("clock") ||
+                ori.value.includes("counter")}
               aria-pressed={!gravityMode && rightOrientation === ori.value}
               aria-label={ori.label}
               disabled={gravityMode}
@@ -279,7 +330,9 @@
               <i
                 class="fas {ori.icon}"
                 aria-hidden="true"
-                style={('rotation' in ori && ori.rotation) ? `transform: rotate(${ori.rotation}deg)` : ''}
+                style={"rotation" in ori && ori.rotation
+                  ? `transform: rotate(${ori.rotation}deg)`
+                  : ""}
               ></i>
               <span>{ori.label}</span>
             </button>
@@ -325,8 +378,12 @@
               <footer class="card-footer">
                 <span class="position-name">{formatPosition(position)}</span>
                 <div class="ori-labels">
-                  <span class="ori-label blue" title="Blue orientation">{formatLocation(leftLoc)}: {leftOri}</span>
-                  <span class="ori-label red" title="Red orientation">{formatLocation(rightLoc)}: {rightOri}</span>
+                  <span class="ori-label blue" title="Left orientation"
+                    >{formatLocation(leftLoc)}: {leftOri}</span
+                  >
+                  <span class="ori-label red" title="Right orientation"
+                    >{formatLocation(rightLoc)}: {rightOri}</span
+                  >
                 </div>
               </footer>
             </article>
@@ -423,8 +480,12 @@
     min-width: 2.5rem;
   }
 
-  .orientation-group.blue .group-label { color: #60a5fa; }
-  .orientation-group.red .group-label { color: #f87171; }
+  .orientation-group.blue .group-label {
+    color: #60a5fa;
+  }
+  .orientation-group.red .group-label {
+    color: #f87171;
+  }
 
   .orientation-chips {
     display: flex;

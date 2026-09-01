@@ -27,9 +27,9 @@ export type RotationDirectionValue = "cw" | "ccw" | "none";
 export interface RotationDirectionPatternEntry {
   /** 0-based index into the sequence steps array */
   readonly stepIndex: number;
-  /** Blue motion rotation direction, or null if no blue motion on this beat */
+  /** Left motion rotation direction, or null if no left motion on this beat */
   readonly left: RotationDirectionValue | null;
-  /** Red motion rotation direction, or null if no red motion on this beat */
+  /** Right motion rotation direction, or null if no right motion on this beat */
   readonly right: RotationDirectionValue | null;
 }
 

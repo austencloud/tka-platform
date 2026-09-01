@@ -54,22 +54,43 @@
 
   // Load hand SVGs on mount
   $effect(() => {
-    const leftMotion = createMotionData({ propType: PropType.HAND, color: HandSide.LEFT });
-    propSvgLoader.loadPropSvg(
-      { positionX: 0, positionY: 0, rotationAngle: 0 }, leftMotion, false,
-    ).then(data => { leftHandData = data; }).catch(console.error);
+    const leftMotion = createMotionData({
+      propType: PropType.HAND,
+      hand: HandSide.LEFT,
+    });
+    propSvgLoader
+      .loadPropSvg(
+        { positionX: 0, positionY: 0, rotationAngle: 0 },
+        leftMotion,
+        false
+      )
+      .then((data) => {
+        leftHandData = data;
+      })
+      .catch(console.error);
 
-    const rightMotion = createMotionData({ propType: PropType.HAND, color: HandSide.RIGHT });
-    propSvgLoader.loadPropSvg(
-      { positionX: 0, positionY: 0, rotationAngle: 0 }, rightMotion, false,
-    ).then(data => { rightHandData = data; }).catch(console.error);
+    const rightMotion = createMotionData({
+      propType: PropType.HAND,
+      hand: HandSide.RIGHT,
+    });
+    propSvgLoader
+      .loadPropSvg(
+        { positionX: 0, positionY: 0, rotationAngle: 0 },
+        rightMotion,
+        false
+      )
+      .then((data) => {
+        rightHandData = data;
+      })
+      .catch(console.error);
   });
 
   // Register animation callback so builder.addLocation() can animate the hand
   $effect(() => {
     builder.setAnimationCallback(async (move: HandMove) => {
       const handData = builder.phase === "left" ? leftHandData : rightHandData;
-      const handRef = builder.phase === "left" ? activeLeftHandRef : activeRightHandRef;
+      const handRef =
+        builder.phase === "left" ? activeLeftHandRef : activeRightHandRef;
       if (!handRef || !handData?.svgData) return;
 
       const animator = builder.phase === "left" ? leftAnimator : rightAnimator;
@@ -83,11 +104,13 @@
     });
   });
 
-  // Map builder phase to the color the HitTargetOverlay should use
-  const activePhaseColor = $derived(
-    builder.phase === "left" ? "blue" as const
-    : builder.phase === "right" ? "red" as const
-    : null
+  // Map builder phase to the hand the HitTargetOverlay should present.
+  const activePhaseHand = $derived(
+    builder.phase === "left"
+      ? HandSide.LEFT
+      : builder.phase === "right"
+        ? HandSide.RIGHT
+        : null
   );
 
   // Build SVG path "d" strings that follow the actual movement path
@@ -107,7 +130,9 @@
 <div class="hand-path-builder">
   <header class="lab-header">
     <h2 class="lab-title">Hand Path Builder</h2>
-    <p class="lab-subtitle">Tap grid points to draw spatial paths for each hand.</p>
+    <p class="lab-subtitle">
+      Tap grid points to draw spatial paths for each hand.
+    </p>
   </header>
 
   <div class="mode-bar">
@@ -121,7 +146,7 @@
       gridMode={builder.gridMode}
       gridVisible={false}
       interactive={builder.phase !== "complete"}
-      {activePhaseColor}
+      {activePhaseHand}
       currentPosition={builder.lastLocation}
       disabled={builder.isAnimating}
       onPointClick={(loc) => builder.addLocation(loc)}
@@ -129,35 +154,74 @@
       {#snippet animationLayer()}
         <!-- Hand points and center - rendered here instead of Canvas2D grid
              to avoid outer points and layer 2 clutter -->
-        <circle cx="475" cy="475" r="6" fill="var(--dm-grid-color, #d0d0d0)" opacity="0.6" />
+        <circle
+          cx="475"
+          cy="475"
+          r="6"
+          fill="var(--dm-grid-color, #d0d0d0)"
+          opacity="0.6"
+        />
         {#each gridHandPoints as pt (pt.location)}
-          <circle cx={pt.x} cy={pt.y} r="4.7" fill="var(--dm-grid-color, #d0d0d0)" />
+          <circle
+            cx={pt.x}
+            cy={pt.y}
+            r="4.7"
+            fill="var(--dm-grid-color, #d0d0d0)"
+          />
         {/each}
 
         <!-- Path trace lines following actual movement geometry -->
         {#each leftPathDs as d, i (i)}
-          <path {d} fill="none" stroke={leftColor} stroke-width="4" stroke-linecap="round" opacity="0.7" />
+          <path
+            {d}
+            fill="none"
+            stroke={leftColor}
+            stroke-width="4"
+            stroke-linecap="round"
+            opacity="0.7"
+          />
         {/each}
         {#each rightPathDs as d, i (i)}
-          <path {d} fill="none" stroke={rightColor} stroke-width="4" stroke-linecap="round" opacity="0.7" />
+          <path
+            {d}
+            fill="none"
+            stroke={rightColor}
+            stroke-width="4"
+            stroke-linecap="round"
+            opacity="0.7"
+          />
         {/each}
 
         <!-- Animated hand SVGs (positioned via HandPathAnimator.animate()) -->
         {#if builder.leftLocations.length > 0 && leftHandData?.svgData}
-          <g bind:this={activeLeftHandRef} class="hand-anim-group" aria-hidden="true">
+          <g
+            bind:this={activeLeftHandRef}
+            class="hand-anim-group"
+            aria-hidden="true"
+          >
             {@html leftHandData.svgData.svgContent}
           </g>
         {/if}
         {#if builder.rightLocations.length > 0 && rightHandData?.svgData}
-          <g bind:this={activeRightHandRef} class="hand-anim-group" aria-hidden="true">
+          <g
+            bind:this={activeRightHandRef}
+            class="hand-anim-group"
+            aria-hidden="true"
+          >
             {@html rightHandData.svgData.svgContent}
           </g>
         {/if}
 
         <!-- Complete state -->
         {#if builder.phase === "complete"}
-          <text x="475" y="475" text-anchor="middle" dominant-baseline="middle"
-            font-size="20" fill="rgba(255,255,255,0.45)">Paths complete</text>
+          <text
+            x="475"
+            y="475"
+            text-anchor="middle"
+            dominant-baseline="middle"
+            font-size="20"
+            fill="rgba(255,255,255,0.45)">Paths complete</text
+          >
         {/if}
       {/snippet}
     </InteractiveCanvas>
@@ -223,7 +287,6 @@
     transform: scale(1.85);
     transform-origin: center center;
   }
-
 
   .preview-area {
     width: 100%;

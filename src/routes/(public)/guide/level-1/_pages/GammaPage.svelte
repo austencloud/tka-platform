@@ -51,12 +51,22 @@
     MotionType,
     HandSide,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    GridLocation,
+    GridPosition,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
-  import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
+  import {
+    guideEdit,
+    ptDrag,
+    pt,
+    editText,
+    registerEditSource,
+  } from "../_data/guide-edit.svelte";
   import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
@@ -82,7 +92,7 @@
       gridMode: GridMode.DIAMOND,
     });
 
-  // [blueFrom, blueTo, redFrom, redTo]; Start boxes hold (from === to).
+  // [leftFrom, leftTo, rightFrom, rightTo]; Start boxes hold (from === to).
   type Move = [GridLocation, GridLocation, GridLocation, GridLocation];
   const box = (m: Move, step: number, letter: Letter | null = null): StepData =>
     ({
@@ -113,7 +123,11 @@
   // strip has a same-edge box (QS's one-point lead keeps hands off a shared edge).
   type Cell = { m: Move; step: number; letter?: Letter | null } | null;
   type Strip = { x: number; y: number; rows: Cell[][] };
-  const c = (m: Move, step: number, letter: Letter | null = null): Cell => ({ m, step, letter });
+  const c = (m: Move, step: number, letter: Letter | null = null): Cell => ({
+    m,
+    step,
+    letter,
+  });
 
   const STRIPS: Strip[] = [
     // γ→γ Quarter-Opp - opposite spin, hands 90° apart the whole loop.
@@ -211,7 +225,7 @@
       fs: 16,
       lh: 19.2,
       html:
-        "<strong>Practice using <span class=\"cy\">Dual</span><span class=\"pu\">-Shifts</span> " +
+        '<strong>Practice using <span class="cy">Dual</span><span class="pu">-Shifts</span> ' +
         "to create other non-continuous γ→γ variations!</strong>",
     },
   ]);
@@ -229,9 +243,23 @@
     pos?: { start: GridPosition; end: GridPosition };
   };
   let LABELS: Label[] = $state([
-    { x: 8, y: 183.3, w: 72, fs: 18, t: "γ→γ", pos: { start: GridPosition.GAMMA1, end: GridPosition.GAMMA1 } },
+    {
+      x: 8,
+      y: 183.3,
+      w: 72,
+      fs: 18,
+      t: "γ→γ",
+      pos: { start: GridPosition.GAMMA1, end: GridPosition.GAMMA1 },
+    },
     { x: 8, y: 203.3, w: 72, fs: 13, i: true, t: "Quarter-Opp" },
-    { x: 8, y: 325.6, w: 72, fs: 18, t: "γ→γ", pos: { start: GridPosition.GAMMA1, end: GridPosition.GAMMA1 } },
+    {
+      x: 8,
+      y: 325.6,
+      w: 72,
+      fs: 18,
+      t: "γ→γ",
+      pos: { start: GridPosition.GAMMA1, end: GridPosition.GAMMA1 },
+    },
     { x: 8, y: 345.6, w: 72, fs: 13, i: true, t: "Quarter-Same" },
     { x: 190.6, y: 139.5, w: 100, fs: 14, i: true, t: "Parallel" },
     { x: 290.6, y: 139.5, w: 100, fs: 14, i: true, t: "Antiparallel" },
@@ -242,11 +270,18 @@
   // Reader companion handoff: present ONLY inside GuideReader (null on /print,
   // /book), so the printable pages stay pristine and gain no click affordance.
   const emitSequence = getGuideSequenceClick();
-  const SEQ_WORDS = ["γ→γ Quarter-Opp", "γ→γ Quarter-Same", "Quarter-Opp / Same switch"];
+  const SEQ_WORDS = [
+    "γ→γ Quarter-Opp",
+    "γ→γ Quarter-Same",
+    "Quarter-Opp / Same switch",
+  ];
   const stripSteps = (strip: Strip): StepData[] =>
     strip.rows
       .flat()
-      .filter((cell): cell is { m: Move; step: number; letter?: Letter | null } => cell !== null)
+      .filter(
+        (cell): cell is { m: Move; step: number; letter?: Letter | null } =>
+          cell !== null
+      )
       .map((cell) => box(cell.m, cell.step, cell.letter ?? null));
 
   // Override-resolving rows: an admin override (guide-overrides.svelte) replaces
@@ -279,8 +314,12 @@
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
     registerEditSource("Gamma (p5)", () => {
-      const P = PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n");
-      const L = LABELS.map((l) => `  ${JSON.stringify(l.t)}: x: ${r1(l.x)}, y: ${r1(l.y)}`).join("\n");
+      const P = PARAS.map(
+        (p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`
+      ).join("\n");
+      const L = LABELS.map(
+        (l) => `  ${JSON.stringify(l.t)}: x: ${r1(l.x)}, y: ${r1(l.y)}`
+      ).join("\n");
       return `PARAS\n${P}\n\nLABELS\n${L}`;
     })
   );
@@ -294,7 +333,9 @@
       class="strip-wrap tka-seq-cell"
       class:is-hovered={selection?.isHovered(`gamma-${si}`)}
       class:is-selected={selection?.isSelected(`gamma-${si}`)}
-      style="left:{strip.x * S}px; top:{strip.y * S}px; width:{BOX * 5 * S}px; height:{strip.rows.length * BOX * S}px"
+      style="left:{strip.x * S}px; top:{strip.y * S}px; width:{BOX *
+        5 *
+        S}px; height:{strip.rows.length * BOX * S}px"
     >
       {#each strip.rows as row, ri (ri)}
         {#each row as cell, ci (ci)}
@@ -302,8 +343,10 @@
             {@const sd = RESOLVED[si]![ri]![ci]!}
             <div
               class="pbox"
-              class:guide-step-active={activeStep?.key === `gamma-${si}` && activeStep.ringStep === sd.stepNumber}
-              style="left:{ci * BOX * S}px; top:{ri * BOX * S}px; width:{BOX * S}px; height:{BOX * S}px"
+              class:guide-step-active={activeStep?.key === `gamma-${si}` &&
+                activeStep.ringStep === sd.stepNumber}
+              style="left:{ci * BOX * S}px; top:{ri * BOX * S}px; width:{BOX *
+                S}px; height:{BOX * S}px"
             >
               <PictographContainer
                 pictographData={sd}
@@ -331,7 +374,14 @@
         groupId={`gamma-${si}`}
         isGroupStart
         label={`Animate the ${SEQ_WORDS[si]} sequence`}
-        onselect={() => emitSequence?.({ strip: RESOLVED[si]!.flat().filter((sd): sd is StepData => sd !== null), word: SEQ_WORDS[si], key: `gamma-${si}` })}
+        onselect={() =>
+          emitSequence?.({
+            strip: RESOLVED[si]!.flat().filter(
+              (sd): sd is StepData => sd !== null
+            ),
+            word: SEQ_WORDS[si],
+            key: `gamma-${si}`,
+          })}
       />
     </div>
   {/each}
@@ -342,10 +392,15 @@
       class="para"
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `gamma-para-${i}`}
-      style="transform: translateX({p.x * S}px); top:{p.y * S}px; font-size:{p.fs *
-        S}px; line-height:{p.lh * S}px"
+      style="transform: translateX({p.x * S}px); top:{p.y *
+        S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px"
       use:ptDrag={pt(`gamma-para-${i}`, "paragraph", p)}
-      use:editText={{ id: `gamma-para-${i}`, label: "paragraph", get: () => p.html, set: (h) => (p.html = h) }}
+      use:editText={{
+        id: `gamma-para-${i}`,
+        label: "paragraph",
+        get: () => p.html,
+        set: (h) => (p.html = h),
+      }}
     >
       {@html p.html}
     </p>
@@ -360,11 +415,18 @@
       class:glyph={l.pos}
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `gamma-label-${i}`}
-      style="left:{l.x * S}px; top:{l.y * S}px; width:{l.w * S}px; font-size:{l.fs * S}px"
+      style="left:{l.x * S}px; top:{l.y * S}px; width:{l.w *
+        S}px; font-size:{l.fs * S}px"
       use:ptDrag={pt(`gamma-label-${i}`, l.t, l)}
     >
       {#if l.pos}
-        <svg class="pos-glyph" viewBox="360 50 230 75" role="img" aria-label={l.t} style="height:{l.fs * S}px">
+        <svg
+          class="pos-glyph"
+          viewBox="360 50 230 75"
+          role="img"
+          aria-label={l.t}
+          style="height:{l.fs * S}px"
+        >
           <PositionGlyph startPosition={l.pos.start} endPosition={l.pos.end} />
         </svg>
       {:else}{l.t}{/if}

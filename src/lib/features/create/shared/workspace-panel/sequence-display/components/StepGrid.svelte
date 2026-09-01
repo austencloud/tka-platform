@@ -129,9 +129,9 @@
       pathShape: MandalaPathShape
     ) => void;
     timeSignature?: TimeSignatureKey;
-    /** Override prop type for blue hand. Used by demos/previews to bypass global settings. */
+    /** Override prop type for left hand. Used by demos/previews to bypass global settings. */
     leftPropTypeOverride?: PropType;
-    /** Override prop type for red hand. Used by demos/previews to bypass global settings. */
+    /** Override prop type for right hand. Used by demos/previews to bypass global settings. */
     rightPropTypeOverride?: PropType;
     /** Display-only color for the blue-hand prop and arrow. */
     leftColorOverride?: string;

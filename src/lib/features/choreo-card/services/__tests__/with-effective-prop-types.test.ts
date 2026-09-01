@@ -14,14 +14,22 @@ function makeStep(): StepData {
     rightReversal: false,
     isBlank: false,
     motions: {
-      [HandSide.LEFT]: { motionType: "pro", rotationDirection: "cw", propType: "staff" } as never,
-      [HandSide.RIGHT]: { motionType: "anti", rotationDirection: "ccw", propType: "staff" } as never,
+      [HandSide.LEFT]: {
+        motionType: "pro",
+        rotationDirection: "cw",
+        propType: "staff",
+      } as never,
+      [HandSide.RIGHT]: {
+        motionType: "anti",
+        rotationDirection: "ccw",
+        propType: "staff",
+      } as never,
     },
   } as unknown as StepData;
 }
 
 describe("withEffectivePropTypes", () => {
-  it("sets blue and red motion propType to the effective prop types", () => {
+  it("sets left and right motion propType to the effective prop types", () => {
     const out = withEffectivePropTypes(makeStep(), PropType.FAN, PropType.CLUB);
     expect(out.motions?.[HandSide.LEFT]?.propType).toBe(PropType.FAN);
     expect(out.motions?.[HandSide.RIGHT]?.propType).toBe(PropType.CLUB);

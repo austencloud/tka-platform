@@ -20,9 +20,9 @@ export interface HandState {
 export interface PoseDefinition {
   /**
    * Stable id encoding both hands' (plane, position, orientation).
-   * Format: `{bluePlaneLetter}{bluePos}{blueOri}-{redPlaneLetter}{redPos}{redOri}`
+   * Format: `{leftPlaneLetter}{leftPos}{leftOri}-{rightPlaneLetter}{rightPos}{rightOri}`
    * where plane letter is w=wall, h=wheel, f=floor.
-   * Example: `wNi-hEo` = blue on wall at N (in), red on wheel at E (out).
+   * Example: `wNi-hEo` = left on wall at N (in), right on wheel at E (out).
    */
   id: string;
   leftHand: HandState;

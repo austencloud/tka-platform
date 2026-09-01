@@ -40,7 +40,12 @@ const W = GridLocation.WEST;
 
 /** A move segment carrying the same route the renderer draws. */
 function move(start: GridLocation, end: GridLocation): TraceSegment {
-  return { kind: "move", start, end, expectedPath: sampleSegmentPath(start, end) };
+  return {
+    kind: "move",
+    start,
+    end,
+    expectedPath: sampleSegmentPath(start, end),
+  };
 }
 
 function hold(location: GridLocation): TraceSegment {
@@ -93,10 +98,7 @@ function holdTrace(
   }));
 }
 
-function endpointsOnly(
-  from: GridLocation,
-  to: GridLocation
-): TraceSample[] {
+function endpointsOnly(from: GridLocation, to: GridLocation): TraceSample[] {
   const path = sampleSegmentPath(from, to);
   const first = path[0]!;
   const last = path[path.length - 1]!;
@@ -106,7 +108,10 @@ function endpointsOnly(
   ];
 }
 
-function qualityOf(round: TraceRoundGeometry, feed: (e: ReturnType<typeof createTraceEvaluator>) => void) {
+function qualityOf(
+  round: TraceRoundGeometry,
+  feed: (e: ReturnType<typeof createTraceEvaluator>) => void
+) {
   const evaluator = createTraceEvaluator(round);
   feed(evaluator);
   return scoreTraceRound(evaluator.finish());
@@ -134,20 +139,20 @@ describe("geometry helpers", () => {
 
   it("normalizes distances by the stage's shorter side", () => {
     expect(normalizeStageDistance(0.25)).toBeCloseTo(0.25, 12);
-    expect(
-      normalizeStageDistance(50, { width: 800, height: 400 })
-    ).toBeCloseTo(0.125, 12);
+    expect(normalizeStageDistance(50, { width: 800, height: 400 })).toBeCloseTo(
+      0.125,
+      12
+    );
   });
 });
-
 describe("event frequency does not change the score", () => {
   it("30 Hz and 120 Hz traces of the same gesture score equivalently", () => {
     // One second of travel either way; only the event rate differs.
     const slow = qualityOf(ONE_HAND_ROUND, (e) =>
-      e.ingest("blue", perfectTrace(N, E, 30, 0, 1000 / 30))
+      e.ingest("left", perfectTrace(N, E, 30, 0, 1000 / 30))
     );
     const fast = qualityOf(ONE_HAND_ROUND, (e) =>
-      e.ingest("blue", perfectTrace(N, E, 120, 0, 1000 / 120))
+      e.ingest("left", perfectTrace(N, E, 120, 0, 1000 / 120))
     );
 
     expect(slow.coverage).toBe(1);
@@ -171,7 +176,7 @@ describe("stage size does not change a normalized score", () => {
         const p = normalizeStagePoint(clientX, clientY, rect);
         return { x: p.x, y: p.y, t: s.t };
       });
-      return qualityOf(ONE_HAND_ROUND, (e) => e.ingest("blue", samples));
+      return qualityOf(ONE_HAND_ROUND, (e) => e.ingest("left", samples));
     };
 
     const small = replayAt(400, 37, 91);
@@ -191,12 +196,14 @@ describe("order and direction", () => {
       y: s.y,
       t: i * 16,
     }));
-    evaluator.ingest("blue", reversed);
+    evaluator.ingest("left", reversed);
     const metrics = evaluator.finish();
 
     expect(metrics.coverage).toBeLessThan(1);
     expect(metrics.divergence?.reason).toBe("wrong-order");
-    expect(evaluator.state.divergences.map((d) => d.reason)).toContain("wrong-order");
+    expect(evaluator.state.divergences.map((d) => d.reason)).toContain(
+      "wrong-order"
+    );
     expect(scoreTraceRound(metrics).points).toBe(0);
   });
 
@@ -204,7 +211,7 @@ describe("order and direction", () => {
     const evaluator = createTraceEvaluator(ONE_HAND_ROUND);
     // Starts in the right place and finishes in the right place, but takes the
     // chord instead of the curve.
-    evaluator.ingest("blue", endpointsOnly(N, E));
+    evaluator.ingest("left", endpointsOnly(N, E));
     const metrics = evaluator.finish();
 
     expect(metrics.checkpointsTotal).toBe(
@@ -222,7 +229,7 @@ describe("order and direction", () => {
     // events passes through every checkpoint. A point-in-circle test would
     // have told this player they missed all of them.
     const evaluator = createTraceEvaluator(DASH_ROUND);
-    evaluator.ingest("blue", endpointsOnly(N, S));
+    evaluator.ingest("left", endpointsOnly(N, S));
     const metrics = evaluator.finish();
 
     expect(metrics.checkpointsHit).toBe(metrics.checkpointsTotal);
@@ -235,22 +242,24 @@ describe("continuity", () => {
   it("an explicit lift fails strict continuity", () => {
     const samples = perfectTrace(N, E, 40);
     const evaluator = createTraceEvaluator(ONE_HAND_ROUND);
-    evaluator.ingest("blue", samples.slice(0, 20));
-    evaluator.notifyLift("blue");
-    evaluator.ingest("blue", samples.slice(20));
+    evaluator.ingest("left", samples.slice(0, 20));
+    evaluator.notifyLift("left");
+    evaluator.ingest("left", samples.slice(20));
     const metrics = evaluator.finish();
 
     expect(metrics.coverage).toBe(1);
     expect(metrics.continuity).toBeLessThan(1);
-    expect(evaluator.state.divergences.map((d) => d.reason)).toContain("lifted");
+    expect(evaluator.state.divergences.map((d) => d.reason)).toContain(
+      "lifted"
+    );
   });
 
   it("an interruption is a pause, not a failure", () => {
     const samples = perfectTrace(N, E, 40);
     const evaluator = createTraceEvaluator(ONE_HAND_ROUND);
-    evaluator.ingest("blue", samples.slice(0, 20));
-    evaluator.notifyInterruption("blue");
-    evaluator.ingest("blue", samples.slice(20));
+    evaluator.ingest("left", samples.slice(0, 20));
+    evaluator.notifyInterruption("left");
+    evaluator.ingest("left", samples.slice(20));
     const metrics = evaluator.finish();
 
     expect(metrics.coverage).toBe(1);
@@ -263,12 +272,12 @@ describe("two-hand beat gating", () => {
   it("waits for the second hand instead of failing the first", () => {
     const evaluator = createTraceEvaluator(TWO_HAND_ROUND);
 
-    evaluator.ingest("blue", perfectTrace(N, E, 40));
+    evaluator.ingest("left", perfectTrace(N, E, 40));
     expect(evaluator.state.beatIndex).toBe(0);
     expect(evaluator.state.satisfied.left).toBe(true);
     expect(evaluator.state.satisfied.right).toBe(false);
 
-    evaluator.ingest("red", perfectTrace(S, W, 40));
+    evaluator.ingest("right", perfectTrace(S, W, 40));
     expect(evaluator.state.completedBeats).toBe(1);
 
     const metrics = evaluator.finish();
@@ -278,13 +287,13 @@ describe("two-hand beat gating", () => {
 
   it("scores synchrony from arrival times once both paths are valid", () => {
     const together = createTraceEvaluator(TWO_HAND_ROUND);
-    together.ingest("blue", perfectTrace(N, E, 40, 0, 16));
-    together.ingest("red", perfectTrace(S, W, 40, 0, 16));
+    together.ingest("left", perfectTrace(N, E, 40, 0, 16));
+    together.ingest("right", perfectTrace(S, W, 40, 0, 16));
     const tight = together.finish();
 
     const apart = createTraceEvaluator(TWO_HAND_ROUND);
-    apart.ingest("blue", perfectTrace(N, E, 40, 0, 16));
-    apart.ingest("red", perfectTrace(S, W, 40, 900, 16));
+    apart.ingest("left", perfectTrace(N, E, 40, 0, 16));
+    apart.ingest("right", perfectTrace(S, W, 40, 900, 16));
     const loose = apart.finish();
 
     expect(tight.synchrony).toBe(1);
@@ -294,23 +303,25 @@ describe("two-hand beat gating", () => {
 
   it("holds the beat while a holding hand stays put, and blocks it when it drifts", () => {
     const staying = createTraceEvaluator(HOLD_ROUND);
-    staying.ingest("red", holdTrace(S, 10));
-    staying.ingest("blue", perfectTrace(N, E, 40));
+    staying.ingest("right", holdTrace(S, 10));
+    staying.ingest("left", perfectTrace(N, E, 40));
     expect(staying.state.completedBeats).toBe(1);
     expect(staying.finish().coverage).toBe(1);
 
     const drifting = createTraceEvaluator(HOLD_ROUND);
     const southPoint = sampleSegmentPath(S, S, 1)[0]!;
-    drifting.ingest("red", [
+    drifting.ingest("right", [
       { x: southPoint.x, y: southPoint.y, t: 0 },
       // Well outside the hold zone.
       { x: southPoint.x - 0.3, y: southPoint.y - 0.3, t: 100 },
     ]);
-    drifting.ingest("blue", perfectTrace(N, E, 40));
+    drifting.ingest("left", perfectTrace(N, E, 40));
 
     expect(drifting.state.completedBeats).toBe(0);
     const metrics = drifting.finish();
-    expect(drifting.state.divergences.map((d) => d.reason)).toContain("hold-broken");
+    expect(drifting.state.divergences.map((d) => d.reason)).toContain(
+      "hold-broken"
+    );
     expect(metrics.coverage).toBeLessThan(1);
   });
 });
@@ -324,11 +335,11 @@ describe("corridor excursions", () => {
     );
 
     const evaluator = createTraceEvaluator(ONE_HAND_ROUND);
-    evaluator.ingest("blue", detoured);
+    evaluator.ingest("left", detoured);
     const metrics = evaluator.finish();
 
     expect(metrics.corridorExcursions).toHaveLength(1);
-    expect(metrics.corridorExcursions[0]!.hand).toBe("blue");
+    expect(metrics.corridorExcursions[0]!.hand).toBe("left");
     expect(metrics.corridorExcursions[0]!.beatIndex).toBe(0);
     expect(metrics.corridorExcursions[0]!.sampleCount).toBeGreaterThan(0);
     expect(metrics.corridorExcursions[0]!.maxDistance).toBeGreaterThan(
@@ -401,7 +412,9 @@ describe("regression: the physical touch floor bounds the checkpoint shrink", ()
    * so a player well inside the corridor still missed it, coverage fell under
    * the hard gate, and a correct round scored zero.
    */
-  const ARC_ROUND: TraceRoundGeometry = { beats: [beat(0, { left: move(N, E) })] };
+  const ARC_ROUND: TraceRoundGeometry = {
+    beats: [beat(0, { left: move(N, E) })],
+  };
 
   /** The route, nudged a constant distance to the outside of its own curve. */
   function offsetTrace(offset: number): TraceSample[] {
@@ -433,7 +446,7 @@ describe("regression: the physical touch floor bounds the checkpoint shrink", ()
     });
     // Half the corridor off the spine: inside the band the player is told to
     // stay in, and outside the un-floored checkpoint radius.
-    evaluator.ingest("blue", offsetTrace(PHONE_FLOOR * 0.5));
+    evaluator.ingest("left", offsetTrace(PHONE_FLOOR * 0.5));
     const metrics = evaluator.finish();
 
     expect(metrics.coverage).toBe(1);
@@ -450,7 +463,7 @@ describe("regression: the physical touch floor bounds the checkpoint shrink", ()
       endZoneRadius: PHONE_FLOOR,
       corridorRadius: PHONE_FLOOR,
     });
-    unfloored.ingest("blue", offsetTrace(PHONE_FLOOR * 0.5));
+    unfloored.ingest("left", offsetTrace(PHONE_FLOOR * 0.5));
     const unflooredMetrics = unfloored.finish();
     expect(unflooredMetrics.coverage).toBeLessThan(1);
     expect(scoreTraceRound(unflooredMetrics).points).toBe(0);
@@ -460,7 +473,7 @@ describe("regression: the physical touch floor bounds the checkpoint shrink", ()
     // touchFloorRadius 0 is the standalone evaluator: discrimination is free to
     // go as tight as the geometry allows, exactly as before.
     const evaluator = createTraceEvaluator(ARC_ROUND);
-    evaluator.ingest("blue", perfectTrace(N, E, 40));
+    evaluator.ingest("left", perfectTrace(N, E, 40));
     expect(evaluator.finish().coverage).toBe(1);
   });
 });
@@ -488,11 +501,11 @@ describe("regression: a hold does not eat the next beat's samples", () => {
     // gesture land in the SAME ingest, which is the failing shape — the hold
     // used to be judged against blue's beat-1 departure and report a break the
     // player never made.
-    evaluator.ingest("blue", [
+    evaluator.ingest("left", [
       ...holdTrace(S, 20, 0, 16),
       ...perfectTrace(S, W, 20, 320, 16),
     ]);
-    evaluator.ingest("red", [
+    evaluator.ingest("right", [
       ...perfectTrace(N, E, 20, 0, 16),
       ...holdTrace(E, 20, 320, 16),
     ]);
@@ -507,16 +520,22 @@ describe("regression: a hold does not eat the next beat's samples", () => {
   it("grades the same gesture identically however it is batched", () => {
     // The invariant behind the fix: how the browser chopped the stroke into
     // frames is not something the player did, so it cannot change the grade.
-    const left = [...holdTrace(S, 20, 0, 16), ...perfectTrace(S, W, 20, 320, 16)];
-    const right = [...perfectTrace(N, E, 20, 0, 16), ...holdTrace(E, 20, 320, 16)];
+    const left = [
+      ...holdTrace(S, 20, 0, 16),
+      ...perfectTrace(S, W, 20, 320, 16),
+    ];
+    const right = [
+      ...perfectTrace(N, E, 20, 0, 16),
+      ...holdTrace(E, 20, 320, 16),
+    ];
 
     const batched = createTraceEvaluator(HOLD_THEN_MOVE);
-    batched.ingest("blue", left);
-    batched.ingest("red", right);
+    batched.ingest("left", left);
+    batched.ingest("right", right);
 
     const trickled = createTraceEvaluator(HOLD_THEN_MOVE);
-    for (const sample of left) trickled.ingest("blue", [sample]);
-    for (const sample of right) trickled.ingest("red", [sample]);
+    for (const sample of left) trickled.ingest("left", [sample]);
+    for (const sample of right) trickled.ingest("right", [sample]);
 
     expect(batched.state.completedBeats).toBe(trickled.state.completedBeats);
     expect(batched.state.divergences.map((d) => d.reason)).toEqual(
@@ -528,11 +547,11 @@ describe("regression: a hold does not eat the next beat's samples", () => {
     const evaluator = createTraceEvaluator(HOLD_THEN_MOVE);
     // Blue leaves S while red is still travelling — a real break. Red's samples
     // run past blue's departure, so the horizon does not hide it.
-    evaluator.ingest("blue", [
+    evaluator.ingest("left", [
       ...holdTrace(S, 3, 0, 16),
       ...perfectTrace(S, W, 10, 48, 16),
     ]);
-    evaluator.ingest("red", perfectTrace(N, E, 40, 0, 16));
+    evaluator.ingest("right", perfectTrace(N, E, 40, 0, 16));
 
     expect(
       evaluator.state.divergences.some((d) => d.reason === "hold-broken")

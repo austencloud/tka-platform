@@ -29,7 +29,7 @@
 
   const S = 816 / 612; // pt → px (4/3)
 
-  // The labelled diagram's two hands ARE a real pictograph: ALPHA3 (blue hand at
+  // The labelled diagram's two hands ARE a real pictograph: ALPHA3 (left hand at
   // West, red hand at East) rendered with the prop forced to HAND, so the hand
   // size and the red right-hand mirror come from the canonical renderer instead
   // of a hand-rolled SVG path.

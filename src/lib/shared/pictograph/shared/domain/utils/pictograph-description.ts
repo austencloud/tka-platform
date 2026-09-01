@@ -37,7 +37,7 @@ const LOCATION_NAME: Record<string, string> = {
   c: "center",
 };
 const locName = (l: string | null | undefined): string =>
-  l ? LOCATION_NAME[l.toLowerCase()] ?? l : "";
+  l ? (LOCATION_NAME[l.toLowerCase()] ?? l) : "";
 
 // α = hands at opposite points, β = same point, γ = right angle (TKA canon).
 const GROUP_NAME: Record<string, string> = {
@@ -68,16 +68,22 @@ const TND_NAME: Record<TnDMode, string> = {
   [TnDMode.QUARTER_OPP]: "Quarter-Opposite timing",
 };
 
-function motionPhrase(hand: "Blue" | "Red", m: MotionData | null | undefined): string | null {
+function motionPhrase(
+  hand: "Left" | "Right",
+  m: MotionData | null | undefined
+): string | null {
   if (!isVisibleMotion(m)) return null;
   // A hand can't spin, so a hand shift IS a float (the renderer draws float
   // arrows for it); "fl" turns or an explicit FLOAT type also mean float.
-  const isShift = m.motionType === MotionType.PRO || m.motionType === MotionType.ANTI;
+  const isShift =
+    m.motionType === MotionType.PRO || m.motionType === MotionType.ANTI;
   const isFloat =
     m.motionType === MotionType.FLOAT ||
     (m.turns as unknown) === "fl" ||
     (m.propType === PropType.HAND && isShift);
-  const verb = isFloat ? "float" : MOTION_VERB[m.motionType] ?? String(m.motionType);
+  const verb = isFloat
+    ? "float"
+    : (MOTION_VERB[m.motionType] ?? String(m.motionType));
   const from = locName(m.startLocation);
   const to = locName(m.endLocation);
   const n = typeof m.turns === "number" ? m.turns : 0;
@@ -99,21 +105,32 @@ export function describePictograph(
 ): string {
   const left = p?.motions?.left;
   const right = p?.motions?.right;
-  if (!isVisibleMotion(left) && !isVisibleMotion(right)) return "Pictograph (empty)";
+  if (!isVisibleMotion(left) && !isVisibleMotion(right))
+    return "Pictograph (empty)";
 
   const startG = groupOf(p?.startPosition);
   const endG = groupOf(p?.endPosition);
-  const startFull = startG ? GROUP_NAME[startG] ?? startG : null;
-  const endFull = endG ? GROUP_NAME[endG] ?? endG : null;
+  const startFull = startG ? (GROUP_NAME[startG] ?? startG) : null;
+  const endFull = endG ? (GROUP_NAME[endG] ?? endG) : null;
   const posPhrase =
-    startFull && endFull ? (startG === endG ? startFull : `${startFull} to ${endFull}`) : null;
+    startFull && endFull
+      ? startG === endG
+        ? startFull
+        : `${startFull} to ${endFull}`
+      : null;
 
   const letterPart = p?.letter ? `Letter ${p.letter}` : "Hand pictograph";
-  const tndMode = opts && "tndMode" in opts ? opts.tndMode : deriveTnDFromPictograph(p as never).tndMode;
+  const tndMode =
+    opts && "tndMode" in opts
+      ? opts.tndMode
+      : deriveTnDFromPictograph(p as never).tndMode;
   const tndPart = tndMode ? TND_NAME[tndMode] : null;
 
   const head = [letterPart, posPhrase, tndPart].filter(Boolean).join(", ");
-  const motions = [motionPhrase("Blue", left), motionPhrase("Red", right)].filter(Boolean);
+  const motions = [
+    motionPhrase("Left", left),
+    motionPhrase("Right", right),
+  ].filter(Boolean);
   const motionSentence = motions.length ? motions.join("; ") + "." : "";
 
   return [head + ".", motionSentence].filter(Boolean).join(" ").trim();

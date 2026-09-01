@@ -143,10 +143,15 @@ function createTestSequence() {
           motionType: MotionType.ANTI,
           rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
         }),
-        right: makeMotion(GridLocation.WEST, GridLocation.NORTH, HandSide.RIGHT, {
-          motionType: MotionType.ANTI,
-          rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
-        }),
+        right: makeMotion(
+          GridLocation.WEST,
+          GridLocation.NORTH,
+          HandSide.RIGHT,
+          {
+            motionType: MotionType.ANTI,
+            rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+          }
+        ),
       },
     }
   );
@@ -222,7 +227,7 @@ describe("SequenceDecomposer — extractBlueSoloProp", () => {
     );
     const sequence = createSequenceData({ steps: [step], word: "A" });
     const left = extractLeftSoloProp(sequence);
-    // Falls back to step[0].motions.blue.startLocation
+    // Falls back to step[0].motions.left.startLocation
     expect(left.startLocation).toBe(GridLocation.EAST);
   });
 });
@@ -321,22 +326,46 @@ describe("SequenceDecomposer — round-trip", () => {
       expect(deriv.rightReversal).toBe(orig.rightReversal);
 
       // Blue motion geometry
-      expect(deriv.motions.left?.startLocation).toBe(orig.motions.left?.startLocation);
-      expect(deriv.motions.left?.endLocation).toBe(orig.motions.left?.endLocation);
-      expect(deriv.motions.left?.motionType).toBe(orig.motions.left?.motionType);
-      expect(deriv.motions.left?.rotationDirection).toBe(orig.motions.left?.rotationDirection);
+      expect(deriv.motions.left?.startLocation).toBe(
+        orig.motions.left?.startLocation
+      );
+      expect(deriv.motions.left?.endLocation).toBe(
+        orig.motions.left?.endLocation
+      );
+      expect(deriv.motions.left?.motionType).toBe(
+        orig.motions.left?.motionType
+      );
+      expect(deriv.motions.left?.rotationDirection).toBe(
+        orig.motions.left?.rotationDirection
+      );
       expect(deriv.motions.left?.turns).toBe(orig.motions.left?.turns);
-      expect(deriv.motions.left?.startOrientation).toBe(orig.motions.left?.startOrientation);
-      expect(deriv.motions.left?.endOrientation).toBe(orig.motions.left?.endOrientation);
+      expect(deriv.motions.left?.startOrientation).toBe(
+        orig.motions.left?.startOrientation
+      );
+      expect(deriv.motions.left?.endOrientation).toBe(
+        orig.motions.left?.endOrientation
+      );
 
       // Red motion geometry
-      expect(deriv.motions.right?.startLocation).toBe(orig.motions.right?.startLocation);
-      expect(deriv.motions.right?.endLocation).toBe(orig.motions.right?.endLocation);
-      expect(deriv.motions.right?.motionType).toBe(orig.motions.right?.motionType);
-      expect(deriv.motions.right?.rotationDirection).toBe(orig.motions.right?.rotationDirection);
+      expect(deriv.motions.right?.startLocation).toBe(
+        orig.motions.right?.startLocation
+      );
+      expect(deriv.motions.right?.endLocation).toBe(
+        orig.motions.right?.endLocation
+      );
+      expect(deriv.motions.right?.motionType).toBe(
+        orig.motions.right?.motionType
+      );
+      expect(deriv.motions.right?.rotationDirection).toBe(
+        orig.motions.right?.rotationDirection
+      );
       expect(deriv.motions.right?.turns).toBe(orig.motions.right?.turns);
-      expect(deriv.motions.right?.startOrientation).toBe(orig.motions.right?.startOrientation);
-      expect(deriv.motions.right?.endOrientation).toBe(orig.motions.right?.endOrientation);
+      expect(deriv.motions.right?.startOrientation).toBe(
+        orig.motions.right?.startOrientation
+      );
+      expect(deriv.motions.right?.endOrientation).toBe(
+        orig.motions.right?.endOrientation
+      );
     }
   });
 
@@ -375,16 +404,26 @@ describe("SequenceDecomposer — round-trip", () => {
       GridLocation.SOUTH,
       {
         motions: {
-          left: makeMotion(GridLocation.NORTH, GridLocation.NORTH, HandSide.LEFT, {
-            motionType: MotionType.STATIC,
-            rotationDirection: RotationDirection.NO_ROTATION,
-            turns: 0,
-          }),
-          right: makeMotion(GridLocation.SOUTH, GridLocation.SOUTH, HandSide.RIGHT, {
-            motionType: MotionType.STATIC,
-            rotationDirection: RotationDirection.NO_ROTATION,
-            turns: 0,
-          }),
+          left: makeMotion(
+            GridLocation.NORTH,
+            GridLocation.NORTH,
+            HandSide.LEFT,
+            {
+              motionType: MotionType.STATIC,
+              rotationDirection: RotationDirection.NO_ROTATION,
+              turns: 0,
+            }
+          ),
+          right: makeMotion(
+            GridLocation.SOUTH,
+            GridLocation.SOUTH,
+            HandSide.RIGHT,
+            {
+              motionType: MotionType.STATIC,
+              rotationDirection: RotationDirection.NO_ROTATION,
+              turns: 0,
+            }
+          ),
         },
       }
     );

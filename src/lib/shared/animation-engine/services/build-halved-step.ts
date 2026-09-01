@@ -17,8 +17,8 @@
  *     v1 (spec §9) — halving is restricted to non-skew motions.
  *   - `calculateOrientationAt` is the keystone (see ./orientation-at.ts) and
  *     is the ONLY source of the halfway orientation. It is called with the
- *     hand's own `MotionColor` explicitly (the function defaults to RED, so
- *     a blue hand passed without the 3rd arg would silently compute red's
+ *     hand's own `HandSide` explicitly (the function defaults to RIGHT, so
+ *     a left hand passed without the 3rd arg would silently compute the right
  *     angle). A null result means the physical staff angle at t is off the
  *     45deg lattice (no legal Orientation exists there — e.g. an L4
  *     quarter-turn) and bails the whole step.
@@ -60,7 +60,10 @@ import {
   type Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { StepData, StepMotions } from "$lib/shared/foundation/domain/models/step-data";
+import type {
+  StepData,
+  StepMotions,
+} from "$lib/shared/foundation/domain/models/step-data";
 
 /**
  * Order-independent lookup: the arc midpoint between two 45deg-adjacent grid
@@ -94,14 +97,18 @@ function centerOrientationAt(
 ): Orientation | null {
   const staffAngle = calculateStaffAngleAt(input, t, color);
   if (staffAngle === null) return null;
-  return (staffAngleToCenterOrientation(staffAngle) as Orientation | null) ?? null;
+  return (
+    (staffAngleToCenterOrientation(staffAngle) as Orientation | null) ?? null
+  );
 }
 
 /** Halfway grid location for a shift (pro/anti) — the named arc midpoint, or
  *  null when the start/end pair isn't a single 45deg-adjacent hop (unknown
  *  pair → don't guess, bail). */
 function shiftHalfwayLocation(motion: MotionData): GridLocation | null {
-  return SHIFT_MIDPOINTS[pairKey(motion.startLocation, motion.endLocation)] ?? null;
+  return (
+    SHIFT_MIDPOINTS[pairKey(motion.startLocation, motion.endLocation)] ?? null
+  );
 }
 
 /** Halfway grid location for one hand's motion, or null when the motion
@@ -194,10 +201,14 @@ export function buildHalvedStep(step: StepData, t = 0.5): StepData | null {
   const leftMotion = step.motions.left;
   const rightMotion = step.motions.right;
 
-  const halvedLeft = isVisibleMotion(leftMotion) ? halveMotion(leftMotion, t) : leftMotion;
+  const halvedLeft = isVisibleMotion(leftMotion)
+    ? halveMotion(leftMotion, t)
+    : leftMotion;
   if (halvedLeft === null) return null;
 
-  const halvedRight = isVisibleMotion(rightMotion) ? halveMotion(rightMotion, t) : rightMotion;
+  const halvedRight = isVisibleMotion(rightMotion)
+    ? halveMotion(rightMotion, t)
+    : rightMotion;
   if (halvedRight === null) return null;
 
   const motions: StepMotions = { left: halvedLeft, right: halvedRight };
@@ -217,7 +228,9 @@ export function buildHalvedStep(step: StepData, t = 0.5): StepData | null {
     leftReversal: step.leftReversal,
     rightReversal: step.rightReversal,
     isBlank: step.isBlank,
-    ...(step.betaSwapped !== undefined ? { betaSwapped: step.betaSwapped } : {}),
+    ...(step.betaSwapped !== undefined
+      ? { betaSwapped: step.betaSwapped }
+      : {}),
     ...(step.category !== undefined ? { category: step.category } : {}),
   };
 }

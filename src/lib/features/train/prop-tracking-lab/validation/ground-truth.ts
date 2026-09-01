@@ -1,5 +1,9 @@
-import { MotionType, RotationDirection, Orientation } from '../domain/tka-enums';
-import type { GridLocation } from '../domain/models';
+import {
+  MotionType,
+  RotationDirection,
+  Orientation,
+} from "../domain/tka-enums";
+import type { GridLocation } from "../domain/models";
 
 /**
  * Ground-truth labels for validating the real-flow notation pipeline.
@@ -17,7 +21,7 @@ export interface GroundTruthMotion {
   startLocation?: GridLocation;
   endLocation?: GridLocation;
   /** Turn count, or 'fl' for a float (which has no turn count). */
-  turns?: number | 'fl';
+  turns?: number | "fl";
   rotationDirection?: RotationDirection;
   startOrientation?: Orientation;
   endOrientation?: Orientation;
@@ -35,7 +39,6 @@ export interface GroundTruthSequence {
   beats: GroundTruthBeat[];
 }
 
-
 /** Case-insensitive lookup: lowercased spelling -> canonical enum value. */
 function buildLookup(values: readonly string[]): Map<string, string> {
   const map = new Map<string, string>();
@@ -47,36 +50,46 @@ const MOTION_TYPE_LOOKUP = buildLookup(Object.values(MotionType));
 
 const ROTATION_LOOKUP = buildLookup(Object.values(RotationDirection));
 // Spelled-out aliases, because hand-written labels say "clockwise" as often as "cw".
-ROTATION_LOOKUP.set('clockwise', RotationDirection.CLOCKWISE);
-ROTATION_LOOKUP.set('counterclockwise', RotationDirection.COUNTER_CLOCKWISE);
-ROTATION_LOOKUP.set('counter-clockwise', RotationDirection.COUNTER_CLOCKWISE);
+ROTATION_LOOKUP.set("clockwise", RotationDirection.CLOCKWISE);
+ROTATION_LOOKUP.set("counterclockwise", RotationDirection.COUNTER_CLOCKWISE);
+ROTATION_LOOKUP.set("counter-clockwise", RotationDirection.COUNTER_CLOCKWISE);
 
 const ORIENTATION_LOOKUP = buildLookup(Object.values(Orientation));
 
-const GRID_LOCATIONS: readonly GridLocation[] = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
+const GRID_LOCATIONS: readonly GridLocation[] = [
+  "n",
+  "ne",
+  "e",
+  "se",
+  "s",
+  "sw",
+  "w",
+  "nw",
+];
 const LOCATION_LOOKUP = buildLookup(GRID_LOCATIONS);
 // Full compass names map onto the short forms.
-LOCATION_LOOKUP.set('north', 'n');
-LOCATION_LOOKUP.set('northeast', 'ne');
-LOCATION_LOOKUP.set('east', 'e');
-LOCATION_LOOKUP.set('southeast', 'se');
-LOCATION_LOOKUP.set('south', 's');
-LOCATION_LOOKUP.set('southwest', 'sw');
-LOCATION_LOOKUP.set('west', 'w');
-LOCATION_LOOKUP.set('northwest', 'nw');
-
+LOCATION_LOOKUP.set("north", "n");
+LOCATION_LOOKUP.set("northeast", "ne");
+LOCATION_LOOKUP.set("east", "e");
+LOCATION_LOOKUP.set("southeast", "se");
+LOCATION_LOOKUP.set("south", "s");
+LOCATION_LOOKUP.set("southwest", "sw");
+LOCATION_LOOKUP.set("west", "w");
+LOCATION_LOOKUP.set("northwest", "nw");
 
 /** Throw a validation error that names exactly where the bad value lives. */
 function invalid(
   beat: number,
-  hand: 'blue' | 'red' | null,
+  hand: "left" | "right" | null,
   field: string,
   value: unknown,
-  allowed?: readonly string[],
+  allowed?: readonly string[]
 ): never {
   const where = hand === null ? `beat ${beat}` : `beat ${beat}, ${hand} hand`;
-  const hint = allowed ? ` (expected one of: ${allowed.join(', ')})` : '';
-  throw new Error(`Ground truth ${where}: invalid ${field} ${JSON.stringify(value)}${hint}`);
+  const hint = allowed ? ` (expected one of: ${allowed.join(", ")})` : "";
+  throw new Error(
+    `Ground truth ${where}: invalid ${field} ${JSON.stringify(value)}${hint}`
+  );
 }
 
 // --- Field normalizers ------------------------------------------------------
@@ -85,10 +98,10 @@ function lookupEnum(
   raw: unknown,
   lookup: Map<string, string>,
   beat: number,
-  hand: 'blue' | 'red',
-  field: string,
+  hand: "left" | "right",
+  field: string
 ): string {
-  if (typeof raw !== 'string') {
+  if (typeof raw !== "string") {
     invalid(beat, hand, field, raw, [...new Set(lookup.values())]);
   }
   const hit = lookup.get(raw.trim().toLowerCase());
@@ -99,29 +112,33 @@ function lookupEnum(
 }
 
 /** Turns: a number, a numeric string, or 'fl' (any casing) for a float. */
-function normalizeTurns(raw: unknown, beat: number, hand: 'blue' | 'red'): number | 'fl' {
-  if (typeof raw === 'number') {
-    if (!Number.isFinite(raw)) invalid(beat, hand, 'turns', raw);
+function normalizeTurns(
+  raw: unknown,
+  beat: number,
+  hand: "left" | "right"
+): number | "fl" {
+  if (typeof raw === "number") {
+    if (!Number.isFinite(raw)) invalid(beat, hand, "turns", raw);
     return raw;
   }
-  if (typeof raw === 'string') {
+  if (typeof raw === "string") {
     const trimmed = raw.trim();
-    if (trimmed.toLowerCase() === 'fl') return 'fl';
+    if (trimmed.toLowerCase() === "fl") return "fl";
     const n = Number(trimmed);
-    if (trimmed !== '' && Number.isFinite(n)) return n;
+    if (trimmed !== "" && Number.isFinite(n)) return n;
   }
-  invalid(beat, hand, 'turns', raw, ['a number', 'a numeric string', "'fl'"]);
+  invalid(beat, hand, "turns", raw, ["a number", "a numeric string", "'fl'"]);
 }
 
 /** Normalize one hand's motion, keeping only the fields we know how to score. */
 function normalizeMotion(
   raw: unknown,
   beat: number,
-  hand: 'blue' | 'red',
+  hand: "left" | "right"
 ): GroundTruthMotion | undefined {
   if (raw === null || raw === undefined) return undefined;
-  if (typeof raw !== 'object' || Array.isArray(raw)) {
-    invalid(beat, hand, 'motion', raw);
+  if (typeof raw !== "object" || Array.isArray(raw)) {
+    invalid(beat, hand, "motion", raw);
   }
   const m = raw as Record<string, unknown>;
   const out: GroundTruthMotion = {};
@@ -130,49 +147,81 @@ function normalizeMotion(
   // placement data, ...) are deliberately ignored — pasted app sequence data
   // carries plenty of render-only baggage we don't score.
   if (m.motionType != null) {
-    out.motionType = lookupEnum(m.motionType, MOTION_TYPE_LOOKUP, beat, hand, 'motionType') as MotionType;
+    out.motionType = lookupEnum(
+      m.motionType,
+      MOTION_TYPE_LOOKUP,
+      beat,
+      hand,
+      "motionType"
+    ) as MotionType;
   }
   if (m.startLocation != null) {
-    out.startLocation = lookupEnum(m.startLocation, LOCATION_LOOKUP, beat, hand, 'startLocation') as GridLocation;
+    out.startLocation = lookupEnum(
+      m.startLocation,
+      LOCATION_LOOKUP,
+      beat,
+      hand,
+      "startLocation"
+    ) as GridLocation;
   }
   if (m.endLocation != null) {
-    out.endLocation = lookupEnum(m.endLocation, LOCATION_LOOKUP, beat, hand, 'endLocation') as GridLocation;
+    out.endLocation = lookupEnum(
+      m.endLocation,
+      LOCATION_LOOKUP,
+      beat,
+      hand,
+      "endLocation"
+    ) as GridLocation;
   }
   if (m.turns != null) {
     out.turns = normalizeTurns(m.turns, beat, hand);
   }
   if (m.rotationDirection != null) {
     out.rotationDirection = lookupEnum(
-      m.rotationDirection, ROTATION_LOOKUP, beat, hand, 'rotationDirection',
+      m.rotationDirection,
+      ROTATION_LOOKUP,
+      beat,
+      hand,
+      "rotationDirection"
     ) as RotationDirection;
   }
   if (m.startOrientation != null) {
     out.startOrientation = lookupEnum(
-      m.startOrientation, ORIENTATION_LOOKUP, beat, hand, 'startOrientation',
+      m.startOrientation,
+      ORIENTATION_LOOKUP,
+      beat,
+      hand,
+      "startOrientation"
     ) as Orientation;
   }
   if (m.endOrientation != null) {
     out.endOrientation = lookupEnum(
-      m.endOrientation, ORIENTATION_LOOKUP, beat, hand, 'endOrientation',
+      m.endOrientation,
+      ORIENTATION_LOOKUP,
+      beat,
+      hand,
+      "endOrientation"
     ) as Orientation;
   }
   return out;
 }
 
 function normalizeBeat(raw: unknown, index: number): GroundTruthBeat {
-  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
-    throw new Error(`Ground truth beat ${index}: expected an object, got ${JSON.stringify(raw)}`);
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error(
+      `Ground truth beat ${index}: expected an object, got ${JSON.stringify(raw)}`
+    );
   }
   const b = raw as Record<string, unknown>;
   const out: GroundTruthBeat = {};
 
   if (b.letter != null) {
-    if (typeof b.letter !== 'string') invalid(index, null, 'letter', b.letter);
+    if (typeof b.letter !== "string") invalid(index, null, "letter", b.letter);
     out.letter = b.letter;
   }
-  const left = normalizeMotion(b.left, index, 'blue');
+  const left = normalizeMotion(b.left ?? b.blue, index, "left");
   if (left) out.left = left;
-  const right = normalizeMotion(b.right, index, 'red');
+  const right = normalizeMotion(b.right ?? b.red, index, "right");
   if (right) out.right = right;
   return out;
 }
@@ -181,33 +230,37 @@ function normalizeBeat(raw: unknown, index: number): GroundTruthBeat {
 
 /**
  * Pull { word, rawBeats } out of any of the three accepted shapes:
- * 1. Harness-native: { word?, beats: [{ letter?, blue, red }] }
- * 2. App sequence data: { word?, steps: [{ letter?, motions: { blue, red } }] }
+ * 1. Harness-native: { word?, beats: [{ letter?, left, right }] }
+ * 2. App sequence data: { word?, steps: [{ letter?, motions: { left, right } }] }
  *    (what get_sequence_data / saved app sequences produce)
- * 3. Bare array of beats: [{ blue, red }, ...]
+ * 3. Bare array of beats: [{ left, right }, ...]
  */
 function extractShape(data: unknown): { word?: string; rawBeats: unknown[] } {
   if (Array.isArray(data)) return { rawBeats: data };
 
-  if (data !== null && typeof data === 'object') {
+  if (data !== null && typeof data === "object") {
     const obj = data as Record<string, unknown>;
-    const word = typeof obj.word === 'string' ? obj.word : undefined;
+    const word = typeof obj.word === "string" ? obj.word : undefined;
 
     if (Array.isArray(obj.beats)) return { word, rawBeats: obj.beats };
 
     if (Array.isArray(obj.steps)) {
       const rawBeats = obj.steps.map((step) => {
-        if (step === null || typeof step !== 'object') return step; // beat normalizer reports it
+        if (step === null || typeof step !== "object") return step; // beat normalizer reports it
         const s = step as Record<string, unknown>;
         const motions = (s.motions ?? {}) as Record<string, unknown>;
-        return { letter: s.letter, left: motions.left, right: motions.right };
+        return {
+          letter: s.letter,
+          left: motions.left ?? motions.blue,
+          right: motions.right ?? motions.red,
+        };
       });
       return { word, rawBeats };
     }
   }
 
   throw new Error(
-    'Unrecognized ground truth shape — expected { beats: [...] }, an app sequence { steps: [...] }, or a bare array of beats.',
+    "Unrecognized ground truth shape — expected { beats: [...] }, an app sequence { steps: [...] }, or a bare array of beats."
   );
 }
 
@@ -230,7 +283,7 @@ export function parseGroundTruth(json: string): GroundTruthSequence {
 
   const { word, rawBeats } = extractShape(data);
   if (rawBeats.length === 0) {
-    throw new Error('Ground truth has zero beats — nothing to score against.');
+    throw new Error("Ground truth has zero beats — nothing to score against.");
   }
 
   const beats = rawBeats.map(normalizeBeat);

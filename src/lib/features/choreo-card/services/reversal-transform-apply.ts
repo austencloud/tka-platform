@@ -12,10 +12,7 @@
  */
 
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import {
-  lookupLetter,
-  type CsvEdge,
-} from "./pictograph-letter-lookup";
+import { lookupLetter, type CsvEdge } from "./pictograph-letter-lookup";
 import {
   getReversalFlagsForBeat,
   applyReversalToMotion,
@@ -43,7 +40,10 @@ export interface MutableMotion {
  *   - motionType pro↔anti (static/dash unchanged — delegated to the domain helper)
  *   - rotationDirection cw↔ccw (noRotation / undefined unchanged)
  */
-function flipMotion(motion: MutableMotion | undefined, reversed: boolean): void {
+function flipMotion(
+  motion: MutableMotion | undefined,
+  reversed: boolean
+): void {
   if (!motion || !reversed) return;
   if (typeof motion.motionType === "string") {
     motion.motionType = applyReversalToMotion(motion.motionType, true);
@@ -62,7 +62,7 @@ function flipMotion(motion: MutableMotion | undefined, reversed: boolean): void 
 export function transformSequence(
   seq: SequenceData,
   pattern: ResolvedReversalPattern,
-  edges: CsvEdge[],
+  edges: CsvEdge[]
 ): SequenceData {
   const clone = JSON.parse(JSON.stringify(seq)) as SequenceData;
   const steps = (clone.steps ?? []) as readonly StepData[];
@@ -75,10 +75,8 @@ export function transformSequence(
   // which the detector reads back as "continuous" — the bug this replaces.
   const parities = cumulativeParities(pattern.sequence, steps.length);
   const transformedSteps = steps.map((step, stepIndex) => {
-    const { leftReversal: leftToggle, rightReversal: rightToggle } = getReversalFlagsForBeat(
-      pattern.sequence,
-      stepIndex,
-    );
+    const { leftReversal: leftToggle, rightReversal: rightToggle } =
+      getReversalFlagsForBeat(pattern.sequence, stepIndex);
     const leftParity = parities.left[stepIndex] ?? false;
     const rightParity = parities.right[stepIndex] ?? false;
 
@@ -172,7 +170,7 @@ function spinOf(motion: MutableMotion | undefined): Spin | null {
  */
 export function solveHandFlips(
   motions: (MutableMotion | undefined)[],
-  desired: boolean[],
+  desired: boolean[]
 ): boolean[] {
   const len = motions.length;
   const flips = new Array<boolean>(len).fill(false);
@@ -200,7 +198,7 @@ export function solveHandFlips(
 /**
  * Apply a reversal matrix to a live sequence, idempotently.
  *
- * `blueReversals` / `redReversals` are per-step "reverse here" flags (already
+ * `leftReversals` / `rightReversals` are per-step "reverse here" flags (already
  * tiled to the sequence length). Unlike {@link transformSequence} (which toggles
  * relative to the current motions and is therefore designed to run once on a
  * clean catalog base), this solves for an absolute target spin and flips only
@@ -213,16 +211,18 @@ export function applyReversalMatrix(
   seq: SequenceData,
   leftReversals: boolean[],
   rightReversals: boolean[],
-  edges: CsvEdge[],
+  edges: CsvEdge[]
 ): SequenceData {
   const clone = JSON.parse(JSON.stringify(seq)) as SequenceData;
   const steps = (clone.steps ?? []) as readonly StepData[];
 
   const leftMotions = steps.map(
-    (s) => (s as unknown as { motions?: { left?: MutableMotion } }).motions?.left,
+    (s) =>
+      (s as unknown as { motions?: { left?: MutableMotion } }).motions?.left
   );
   const rightMotions = steps.map(
-    (s) => (s as unknown as { motions?: { right?: MutableMotion } }).motions?.right,
+    (s) =>
+      (s as unknown as { motions?: { right?: MutableMotion } }).motions?.right
   );
 
   const leftFlips = solveHandFlips(leftMotions, leftReversals);

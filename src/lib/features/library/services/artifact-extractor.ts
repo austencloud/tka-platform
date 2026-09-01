@@ -7,7 +7,7 @@
  * sequence itself is already safe.
  *
  * Each sequence contributes up to 4 artifacts:
- * - Blue hand path (the spatial trajectory of the blue performer's hand)
+ * - Left hand path (the spatial trajectory of the performer's left hand)
  * - Red hand path (same for red)
  * - Blue solo prop (hand path + orientation data for blue)
  * - Red solo prop (same for red)
@@ -61,7 +61,10 @@ export class ArtifactExtractor {
     // Log any individual failures without throwing - the sequence is already saved
     for (const result of results) {
       if (result.status === "rejected") {
-        console.warn("[ArtifactExtractor] Artifact save failed:", result.reason);
+        console.warn(
+          "[ArtifactExtractor] Artifact save failed:",
+          result.reason
+        );
       }
     }
   }

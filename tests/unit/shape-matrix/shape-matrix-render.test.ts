@@ -5,15 +5,15 @@ import {
   renderHeader,
 } from "$lib/shared/shape-matrix/services/shape-matrix-render";
 
-const blue: MandalaPaths = {
-  blue: [{ d: "M 0 0 C 10 0 10 10 20 10", tipIndex: 0 }],
-  red: [],
+const left: MandalaPaths = {
+  left: [{ d: "M 0 0 C 10 0 10 10 20 10", tipIndex: 0 }],
+  right: [],
   purple: [],
 };
 
-const red: MandalaPaths = {
-  blue: [],
-  red: [{ d: "M 0 0 C -10 0 -10 -10 -20 -10", tipIndex: 0 }],
+const right: MandalaPaths = {
+  left: [],
+  right: [{ d: "M 0 0 C -10 0 -10 -10 -20 -10", tipIndex: 0 }],
   purple: [],
 };
 
@@ -25,17 +25,17 @@ function decodeSvg(dataUrl: string): string {
 
 describe("shape matrix image rendering", () => {
   it("keeps combined cells resolution-independent", () => {
-    const svg = decodeSvg(renderCell(blue, red, 128, 100));
+    const svg = decodeSvg(renderCell(left, right, 128, 100));
 
     expect(svg).toContain('viewBox="0 0 128 128"');
-    expect(svg).toContain(blue.blue[0]!.d);
-    expect(svg).toContain(red.red[0]!.d);
+    expect(svg).toContain(left.left[0]!.d);
+    expect(svg).toContain(right.right[0]!.d);
   });
 
   it("keeps axis headers resolution-independent", () => {
-    const svg = decodeSvg(renderHeader(blue, "blue", 128, 100));
+    const svg = decodeSvg(renderHeader(left, "left", 128, 100));
 
     expect(svg).toContain('viewBox="0 0 128 128"');
-    expect(svg).toContain(blue.blue[0]!.d);
+    expect(svg).toContain(left.left[0]!.d);
   });
 });

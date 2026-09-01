@@ -11,6 +11,7 @@ import {
   MANDALA_GRID_RADIUS,
   BASE_SAMPLES_PER_BEAT,
 } from "$lib/shared/mandala/domain/mandala-constants";
+import { normalizeLegacySteps } from "@tka/tka-types";
 
 /**
  * Extract all curve endpoint coordinates from an SVG path "d" string.
@@ -30,7 +31,8 @@ function parseSVGEndpoints(d: string): Array<{ x: number; y: number }> {
 
   // Match each C command: C cx1 cy1, cx2 cy2, x y
   // The endpoint (third pair) is the only on-curve point.
-  const cRegex = /C\s+[-\d.]+\s+[-\d.]+,\s+[-\d.]+\s+[-\d.]+,\s+([-\d.]+)\s+([-\d.]+)/g;
+  const cRegex =
+    /C\s+[-\d.]+\s+[-\d.]+,\s+[-\d.]+\s+[-\d.]+,\s+([-\d.]+)\s+([-\d.]+)/g;
   let cMatch: RegExpExecArray | null;
   while ((cMatch = cRegex.exec(d)) !== null) {
     points.push({ x: parseFloat(cMatch[1]!), y: parseFloat(cMatch[2]!) });
@@ -74,7 +76,11 @@ function dist(
  * distances along a curve can be arbitrarily large. Instead we check only the
  * specific junction indices.
  */
-function maxBeatJunctionGap(d: string, samplesPerBeat: number, stepCount: number): number {
+function maxBeatJunctionGap(
+  d: string,
+  samplesPerBeat: number,
+  stepCount: number
+): number {
   const pts = parseSVGEndpoints(d);
   // Points per beat in the SVG: samplesPerBeat + 1 on-curve points from M + C commands.
   // The M command is point[0] (first point of first beat).
@@ -424,7 +430,7 @@ const fixtureJson = JSON.parse(
   readFileSync(join(__dirname, "../../scripts/test-sequence.json"), "utf-8")
 ) as { steps: StepLike[] };
 
-const SIXTEEN_BEAT_STEPS = fixtureJson.steps.filter(
+const SIXTEEN_BEAT_STEPS = normalizeLegacySteps(fixtureJson.steps).filter(
   (s) => s.motions?.left || s.motions?.right
 );
 
@@ -745,7 +751,9 @@ describe("MandalaGeometryCalculator", () => {
 
       const path = result.left[1]!; // right tip (tipIndex 1, dx = +MANDALA_STANDARD_TIP_DX)
       const pts = parseSVGEndpoints(path.d);
-      const maxDist = Math.max(...pts.map((p) => Math.sqrt(p.x ** 2 + p.y ** 2)));
+      const maxDist = Math.max(
+        ...pts.map((p) => Math.sqrt(p.x ** 2 + p.y ** 2))
+      );
 
       // Expected max reach = gridRadius + MANDALA_STANDARD_TIP_DX * scale
       const scale = MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS;
@@ -781,7 +789,11 @@ describe("MandalaGeometryCalculator", () => {
         // All junctions should be continuous — including the critical beat 2→3
         expect(countMoveToCommands(path.d)).toBe(1);
         // Check only beat junction indices, not all consecutive pairs
-        const gap = maxBeatJunctionGap(path.d, BASE_SAMPLES_PER_BEAT, ALPHI_BEATS.length);
+        const gap = maxBeatJunctionGap(
+          path.d,
+          BASE_SAMPLES_PER_BEAT,
+          ALPHI_BEATS.length
+        );
         expect(gap).toBeLessThan(0.02);
       }
     });
@@ -790,7 +802,11 @@ describe("MandalaGeometryCalculator", () => {
       const result = calc.calculate(ALPHI_BEATS);
       for (const path of result.right) {
         expect(countMoveToCommands(path.d)).toBe(1);
-        const gap = maxBeatJunctionGap(path.d, BASE_SAMPLES_PER_BEAT, ALPHI_BEATS.length);
+        const gap = maxBeatJunctionGap(
+          path.d,
+          BASE_SAMPLES_PER_BEAT,
+          ALPHI_BEATS.length
+        );
         expect(gap).toBeLessThan(0.02);
       }
     });
@@ -815,7 +831,11 @@ describe("MandalaGeometryCalculator", () => {
       const stepCount = SIXTEEN_BEAT_STEPS.length;
 
       for (const path of allPaths) {
-        const gap = maxBeatJunctionGap(path.d, BASE_SAMPLES_PER_BEAT, stepCount);
+        const gap = maxBeatJunctionGap(
+          path.d,
+          BASE_SAMPLES_PER_BEAT,
+          stepCount
+        );
         expect(gap).toBeLessThan(0.02);
       }
     });
@@ -960,7 +980,6 @@ describe("MandalaGeometryCalculator", () => {
       expect(pairTipEnds("bigchicken", "bigchicken")).toBe(2);
       expect(pairTipEnds("chicken", "chicken")).toBe(1);
     });
-
 
     it("a mixed pair keeps the staff hand's second tip (→ 2)", () => {
       expect(pairTipEnds("club", "staff")).toBe(2);

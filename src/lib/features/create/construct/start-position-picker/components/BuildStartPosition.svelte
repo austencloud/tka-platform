@@ -44,7 +44,9 @@
     initialRightLocation?: GridLocation | null;
     showCenter?: boolean;
     onLeftOrientationChange: (orientation: Orientation) => void | Promise<void>;
-    onRightOrientationChange: (orientation: Orientation) => void | Promise<void>;
+    onRightOrientationChange: (
+      orientation: Orientation
+    ) => void | Promise<void>;
     onGridModeChange?: (gridMode: GridMode) => void | Promise<void>;
     onApply?: (position: PictographData) => void | Promise<void>;
     onApplyPlacement?: (
@@ -55,7 +57,7 @@
   let leftLocation = $state<GridLocation | null>(initialLeftLocation);
   let rightLocation = $state<GridLocation | null>(initialRightLocation);
   let isApplying = $state(false);
-  let activeColor = $state<HandSide | null>(null);
+  let activeHand = $state<HandSide | null>(null);
   let canUndo = $state(false);
   let grid = $state<ReturnType<typeof PropPlacementGrid> | null>(null);
 
@@ -130,16 +132,13 @@
   function handlePlacementChange(change: PropPlacementChange) {
     leftLocation = change.leftLocation;
     rightLocation = change.rightLocation;
-    activeColor = change.activeColor;
+    activeHand = change.activeHand;
     canUndo = change.canUndo;
   }
 
   /** A drag on the grid commits through the same per-hand handlers the cyclers
    *  use, so the cyclers stay in step with whatever the drag just aimed. */
-  function handleOrientationChange(
-    color: HandSide,
-    orientation: Orientation
-  ) {
+  function handleOrientationChange(color: HandSide, orientation: Orientation) {
     if (color === HandSide.LEFT) {
       void onLeftOrientationChange(orientation);
     } else {
@@ -201,8 +200,8 @@
           {#if builtPlacement}
             <button
               class="move-button blue"
-              class:active={activeColor === HandSide.LEFT}
-              aria-pressed={activeColor === HandSide.LEFT}
+              class:active={activeHand === HandSide.LEFT}
+              aria-pressed={activeHand === HandSide.LEFT}
               aria-label="Move left prop"
               onclick={() => grid?.moveProp(HandSide.LEFT)}
             >
@@ -214,8 +213,8 @@
             </button>
             <button
               class="move-button red"
-              class:active={activeColor === HandSide.RIGHT}
-              aria-pressed={activeColor === HandSide.RIGHT}
+              class:active={activeHand === HandSide.RIGHT}
+              aria-pressed={activeHand === HandSide.RIGHT}
               aria-label="Move right prop"
               onclick={() => grid?.moveProp(HandSide.RIGHT)}
             >

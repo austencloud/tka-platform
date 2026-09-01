@@ -18,7 +18,7 @@
  *   3. Every motion's `motionType` equals `deriveMotionType` of its own
  *      locations + rotation direction + turns. motionType is not free data; it
  *      is a function of the other three.
- *   4. Every step is a real (letter, positions, blue motion, red motion) row of
+ *   4. Every step is a real (letter, positions, left motion, right motion) row of
  *      the diamond dataframe, and each loop is an orientation fixpoint under
  *      `recalculateAllOrientations`.
  *
@@ -65,7 +65,7 @@ export interface MotionSpec {
   readonly endOri: Orientation;
 }
 
-function makeMotion(spec: MotionSpec, color: HandSide): MotionData {
+function makeMotion(spec: MotionSpec, hand: HandSide): MotionData {
   return createMotionData({
     motionType: spec.type,
     rotationDirection: spec.rot,
@@ -74,7 +74,7 @@ function makeMotion(spec: MotionSpec, color: HandSide): MotionData {
     startOrientation: spec.startOri,
     endOrientation: spec.endOri,
     turns: 0,
-    hand: color,
+    hand,
     gridMode: GridMode.DIAMOND,
     // Provisional. The real value is computed by withCalculatedArrowLocations
     // below, once BOTH hands exist — a dash's canonical arrow location depends
@@ -106,7 +106,7 @@ export function makeStep(
   });
   // Production's documented arrow-location seam — it delegates to
   // ArrowLocationCalculator, which routes DASH through the pictograph-aware
-  // dash calculator. Without it Ψ's red dash and Φ's blue dash both land on
+  // dash calculator. Without it Ψ's right dash and Φ's left dash both land on
   // "s" instead of the canonical "w".
   return withCalculatedArrowLocations(step);
 }
@@ -249,10 +249,10 @@ export const HHHH_CW: SequenceData = makeLoop("fx-hhhh-cw", "HHHH", [
 
 /**
  * GHGH — Austen's 4-step GG+HH fusion card, transcribed verbatim:
- *   1 G beta5>beta7  blue pro cw s>w in>in    red pro cw s>w in>in
- *   2 H beta7>beta5  blue anti cw w>s in>out  red anti cw w>s in>out
- *   3 G beta5>beta3  blue pro ccw s>e out>out red pro ccw s>e out>out
- *   4 H beta3>beta5  blue anti ccw e>s out>in red anti ccw e>s out>in
+ *   1 G beta5>beta7  left pro cw s>w in>in    right pro cw s>w in>in
+ *   2 H beta7>beta5  left anti cw w>s in>out  right anti cw w>s in>out
+ *   3 G beta5>beta3  left pro ccw s>e out>out right pro ccw s>e out>out
+ *   4 H beta3>beta5  left anti ccw e>s out>in right anti ccw e>s out>in
  */
 // prettier-ignore
 export const GHGH: SequenceData = makeLoop("fx-ghgh", "GHGH", [
@@ -266,8 +266,8 @@ export const GHGH: SequenceData = makeLoop("fx-ghgh", "GHGH", [
  * AAAA — counter-clockwise pro cycle through the alpha world (hands 180° apart).
  *
  * Step 1 is literal from Austen's FALG card:
- *   A alpha3>alpha1: blue pro ccw w>s, red pro ccw e>n
- * The rest continues the location cycle blue w→s→e→n→w with red always
+ *   A alpha3>alpha1: left pro ccw w>s, right pro ccw e>n
+ * The rest continues the location cycle left w→s→e→n→w with right always
  * opposite. Every alpha label was READ OFF `getGridPositionFromLocations`.
  *
  * Its whole seam set is alpha; GGGG's is entirely beta. That disjointness is
@@ -283,18 +283,18 @@ export const AAAA_CCW: SequenceData = makeLoop("fx-aaaa", "AAAA", [
 
 /**
  * FALG — Austen's 8-beat mirrored card, transcribed verbatim:
- *   1 F beta5>alpha3  blue anti ccw s>w in>out   red pro ccw s>e in>in
- *   2 A alpha3>alpha1 blue pro ccw w>s out>out   red pro ccw e>n in>in
- *   3 L alpha1>beta7  blue anti ccw s>w out>in   red pro ccw n>w in>in
- *   4 G beta7>beta5   blue pro ccw w>s in>in     red pro ccw w>s in>in
- *   5 F beta5>alpha3  blue pro cw s>w in>in      red anti cw s>e in>out
- *   6 A alpha3>alpha5 blue pro cw w>n in>in      red pro cw e>s out>out
- *   7 L alpha5>beta3  blue pro cw n>e in>in      red anti cw s>e out>in
- *   8 G beta3>beta5   blue pro cw e>s in>in      red pro cw e>s in>in
+ *   1 F beta5>alpha3  left anti ccw s>w in>out   right pro ccw s>e in>in
+ *   2 A alpha3>alpha1 left pro ccw w>s out>out   right pro ccw e>n in>in
+ *   3 L alpha1>beta7  left anti ccw s>w out>in   right pro ccw n>w in>in
+ *   4 G beta7>beta5   left pro ccw w>s in>in     right pro ccw w>s in>in
+ *   5 F beta5>alpha3  left pro cw s>w in>in      right anti cw s>e in>out
+ *   6 A alpha3>alpha5 left pro cw w>n in>in      right pro cw e>s out>out
+ *   7 L alpha5>beta3  left pro cw n>e in>in      right anti cw s>e out>in
+ *   8 G beta3>beta5   left pro cw e>s in>in      right pro cw e>s in>in
  *
  * The asymmetric fixture: it crosses alpha↔beta four times, uses four letters,
- * and its two halves are colour-mirrors of each other. Rotations, mirrors and
- * colour swaps are OBSERVABLE on this one and invisible on the fully symmetric
+ * and its two halves are hand-role mirrors of each other. Rotations, mirrors and
+ * hand swaps are OBSERVABLE on this one and invisible on the fully symmetric
  * cycles above — which is why Task 5+ needs it.
  */
 // prettier-ignore
@@ -315,10 +315,10 @@ export const FALG: SequenceData = makeLoop("fx-falg", "FALG", [
  * and alpha1. This is the vocabulary the engine reaches for when two cards share
  * no seam (Task 10).
  *
- *   1 Φ beta5>alpha5  blue dash s>n in>out    red static s>s in>in
- *   2 Ψ alpha5>beta1  blue static n>n out>out red dash s>n in>out
- *   3 Φ beta1>alpha1  blue dash n>s out>in    red static n>n out>out
- *   4 Ψ alpha1>beta5  blue static s>s in>in   red dash n>s out>in
+ *   1 Φ beta5>alpha5  left dash s>n in>out    right static s>s in>in
+ *   2 Ψ alpha5>beta1  left static n>n out>out right dash s>n in>out
+ *   3 Φ beta1>alpha1  left dash n>s out>in    right static n>n out>out
+ *   4 Ψ alpha1>beta5  left static s>s in>in   right dash n>s out>in
  */
 // prettier-ignore
 export const PHI_PSI_LOOP: SequenceData = makeLoop("fx-phi-psi", "ΦΨΦΨ", [

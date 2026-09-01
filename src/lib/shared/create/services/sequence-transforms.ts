@@ -5,8 +5,8 @@
  * Composes beat and start position transforms.
  *
  * Supports targetHand parameter to transform only specific hand(s):
- * - "blue": Only transform blue motion
- * - "red": Only transform red motion
+ * - "left": Only transform left motion
+ * - "right": Only transform right motion
  * - "both": Transform both motions (default, original behavior)
  */
 
@@ -35,7 +35,7 @@ import {
   mirrorBeat,
   flipBeat,
   rotateBeat,
-  colorSwapBeat,
+  handSwapBeat,
   invertBeat,
   rewindBeat,
 } from "$lib/shared/create/services/step-transforms";
@@ -45,7 +45,7 @@ import {
   mirrorStartPosition,
   flipStartPosition,
   rotateStartPosition,
-  colorSwapStartPosition,
+  handSwapStartPosition,
   invertStartPosition,
 } from "$lib/shared/create/services/start-position-transforms";
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
@@ -172,13 +172,7 @@ export async function rotateSequence(
 
   const rotatedBeats = await Promise.all(
     sequence.steps.map((step) =>
-      rotateBeat(
-        step,
-        rotationAmount,
-        gridMode,
-        motionQueryHandler,
-        targetHand
-      )
+      rotateBeat(step, rotationAmount, gridMode, motionQueryHandler, targetHand)
     )
   );
 
@@ -208,18 +202,18 @@ export async function rotateSequence(
 }
 
 /**
- * Swap colors in sequence (blue ↔ red).
+ * Swap performer-hand assignments in the sequence (left ↔ right).
  */
-export function colorSwapSequence(sequence: SequenceData): SequenceData {
-  const swappedBeats = sequence.steps.map(colorSwapBeat);
+export function handSwapSequence(sequence: SequenceData): SequenceData {
+  const swappedBeats = sequence.steps.map(handSwapBeat);
 
   // Transform start positions (always StartPositionData, never StepData)
   const swappedStartPosition = sequence.startPosition
-    ? colorSwapStartPosition(sequence.startPosition)
+    ? handSwapStartPosition(sequence.startPosition)
     : undefined;
 
   const swappedStartingPositionStep = sequence.startingPosition
-    ? colorSwapStartPosition(sequence.startingPosition)
+    ? handSwapStartPosition(sequence.startingPosition)
     : undefined;
 
   return updateSequenceData(sequence, {
@@ -282,7 +276,7 @@ export async function invertSequence(
  * each beat (both hands), with the new start position taken from the old final
  * end.
  *
- * "blue"/"red": rewind ONE hand's path while the other hand plays forward. This
+ * "left"/"right": rewind ONE hand's path while the other hand plays forward. This
  * is an independent, valid operation — the target hand retraces its own path and
  * the other hand is untouched, so both hands stay continuous. The result is a
  * legitimate sequence with new letters and a different feel. See
@@ -350,8 +344,7 @@ async function rewindSingleHand(
 ): Promise<SequenceData> {
   const steps = sequence.steps;
   const n = steps.length;
-  const targetSide =
-    targetHand === "left" ? HandSide.LEFT : HandSide.RIGHT;
+  const targetSide = targetHand === "left" ? HandSide.LEFT : HandSide.RIGHT;
 
   const newSteps: StepData[] = [];
   for (let i = 0; i < n; i++) {
@@ -552,7 +545,8 @@ export async function deriveSequenceLetters(
       // Invisible placeholder = hand not really there (both-required Step
       // shape): keep the existing letter, exactly like the old absent-hand skip
       // (a dataframe lookup against a placeholder would rewrite the word).
-      if (!isVisibleMotion(leftMotion) || !isVisibleMotion(rightMotion)) return step;
+      if (!isVisibleMotion(leftMotion) || !isVisibleMotion(rightMotion))
+        return step;
 
       // Derive gridMode per-step from the motions — never trust the stale
       // sequence-level value (a box step inside a diamond-labelled sequence
@@ -591,7 +585,9 @@ export async function deriveSequenceLetters(
  * Create a start position from a beat's end state.
  * Returns StartPositionData (not StepData) - start positions are semantically distinct from steps.
  */
-export function createStartPositionFromStepEnd(step: StepData): StartPositionData {
+export function createStartPositionFromStepEnd(
+  step: StepData
+): StartPositionData {
   const leftMotion = step.motions[HandSide.LEFT];
   const rightMotion = step.motions[HandSide.RIGHT];
 
@@ -641,7 +637,9 @@ export function createStartPositionFromStepEnd(step: StepData): StartPositionDat
  * from beat 1's starting configuration.
  * Returns StartPositionData (not StepData) - start positions are semantically distinct from steps.
  */
-export function createStartPositionFromBeatStart(step: StepData): StartPositionData {
+export function createStartPositionFromBeatStart(
+  step: StepData
+): StartPositionData {
   const leftMotion = step.motions[HandSide.LEFT];
   const rightMotion = step.motions[HandSide.RIGHT];
 

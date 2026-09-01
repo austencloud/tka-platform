@@ -79,8 +79,8 @@ export function relateTrajectories(
 ): { left: QftTrajectory; right: QftTrajectory } {
   const timing = mode[0] as keyof typeof TIMING_OFFSET;
   const opposed = mode[1] === "O";
-  const relatedRed = withTrajectoryPhase(right, TIMING_OFFSET[timing]);
-  const redDirection: 1 | -1 = opposed
+  const relatedRight = withTrajectoryPhase(right, TIMING_OFFSET[timing]);
+  const rightDirection: 1 | -1 = opposed
     ? left.handDirection === 1
       ? -1
       : 1
@@ -89,8 +89,8 @@ export function relateTrajectories(
   return {
     left,
     right: {
-      ...relatedRed,
-      handDirection: redDirection,
+      ...relatedRight,
+      handDirection: rightDirection,
     },
   };
 }
@@ -117,7 +117,7 @@ export function realizationToTrajectories(
  * this needs no knobs beyond the two the model already grew.
  *
  * Timing is the hand offset: together = same point, quarter = a right angle,
- * split = opposite points. Direction is the sign on the red hand's travel.
+ * split = opposite points. Direction is the sign on the right hand's travel.
  * Blue is left where it is and red carries the whole relationship, so the blue
  * reading of a cell is the same in all six modes — which is what makes the six
  * comparable at a glance.

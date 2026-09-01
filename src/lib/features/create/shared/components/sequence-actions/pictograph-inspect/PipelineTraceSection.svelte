@@ -24,7 +24,7 @@
   // the value being dragged live (before Save) — a plain reactive read off the
   // shared editor signal, no async pipeline rerun.
   const liveEdit = $derived(
-    livePipelineEdit.current?.color === hand ? livePipelineEdit.current : null
+    livePipelineEdit.current?.hand === hand ? livePipelineEdit.current : null
   );
 
   function tierLabel(tier: PipelineTier): string {

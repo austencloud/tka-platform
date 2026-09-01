@@ -73,7 +73,10 @@ function calculateMotionEndpoints(motion) {
   const endOri = motion.endOrientation || "out";
 
   const startStaffAngle = mapOrientationToAngle(startOri, startCenterAngle);
-  const targetStaffAngleFromOri = mapOrientationToAngle(endOri, targetCenterAngle);
+  const targetStaffAngleFromOri = mapOrientationToAngle(
+    endOri,
+    targetCenterAngle
+  );
 
   const turns = motion.turns ?? 0;
   const dir = motion.rotDir === "ccw" ? -1 : 1;
@@ -82,13 +85,17 @@ function calculateMotionEndpoints(motion) {
 
   switch (motion.motionType) {
     case "pro": {
-      const centerMovement = normalizeAngleSigned(targetCenterAngle - startCenterAngle);
+      const centerMovement = normalizeAngleSigned(
+        targetCenterAngle - startCenterAngle
+      );
       const propRotation = dir * turns * PI;
       staffRotationDelta = centerMovement + propRotation; // PRO: same direction
       break;
     }
     case "anti": {
-      const centerMovement = normalizeAngleSigned(targetCenterAngle - startCenterAngle);
+      const centerMovement = normalizeAngleSigned(
+        targetCenterAngle - startCenterAngle
+      );
       const propRotation = dir * turns * PI;
       staffRotationDelta = -centerMovement + propRotation; // ANTI: opposite direction
       break;
@@ -97,7 +104,9 @@ function calculateMotionEndpoints(motion) {
       if (turns > 0 && motion.rotDir !== "noRotation") {
         staffRotationDelta = dir * turns * PI;
       } else {
-        staffRotationDelta = normalizeAngleSigned(targetStaffAngleFromOri - startStaffAngle);
+        staffRotationDelta = normalizeAngleSigned(
+          targetStaffAngleFromOri - startStaffAngle
+        );
       }
       break;
     }
@@ -105,7 +114,9 @@ function calculateMotionEndpoints(motion) {
       if (turns > 0) {
         staffRotationDelta = dir * turns * PI;
       } else {
-        staffRotationDelta = normalizeAngleSigned(targetStaffAngleFromOri - startStaffAngle);
+        staffRotationDelta = normalizeAngleSigned(
+          targetStaffAngleFromOri - startStaffAngle
+        );
       }
       break;
     }
@@ -129,9 +140,17 @@ function calculateMotionEndpoints(motion) {
 // ─── Interpolation (from PropInterpolator.ts) ──────────────────────────────
 
 function interpolate(endpoints, t) {
-  const { startCenterAngle, targetCenterAngle, startStaffAngle, staffRotationDelta, motionType } = endpoints;
+  const {
+    startCenterAngle,
+    targetCenterAngle,
+    startStaffAngle,
+    staffRotationDelta,
+    motionType,
+  } = endpoints;
 
-  const staffAngle = normalizeAnglePositive(startStaffAngle + staffRotationDelta * t);
+  const staffAngle = normalizeAnglePositive(
+    startStaffAngle + staffRotationDelta * t
+  );
 
   if (motionType === "dash") {
     // Cartesian lerp (straight line through center)
@@ -183,8 +202,13 @@ function computeTipPosition(handPos, staffAngle, tipOffset, gridRadius) {
   return { x: tipX, y: tipY };
 }
 
-
-function generateMandalaPath(beats, color, tipOffset, gridRadius, samplesPerBeat) {
+function generateMandalaPath(
+  beats,
+  hand,
+  tipOffset,
+  gridRadius,
+  samplesPerBeat
+) {
   const points = [];
 
   // Chain staff angles across beats: each beat's start staff angle =
@@ -192,25 +216,26 @@ function generateMandalaPath(beats, color, tipOffset, gridRadius, samplesPerBeat
   let prevEndStaffAngle = null;
 
   for (const beat of beats) {
-    const motion = color === "blue"
-      ? {
-          motionType: beat.leftMotionType,
-          rotDir: beat.leftRotDir,
-          startLoc: beat.leftStartLoc,
-          endLoc: beat.leftEndLoc,
-          startOrientation: beat.leftStartOri || "out",
-          endOrientation: beat.leftEndOri || "out",
-          turns: beat.leftTurns ?? 0,
-        }
-      : {
-          motionType: beat.rightMotionType,
-          rotDir: beat.rightRotDir,
-          startLoc: beat.rightStartLoc,
-          endLoc: beat.rightEndLoc,
-          startOrientation: beat.rightStartOri || "out",
-          endOrientation: beat.rightEndOri || "out",
-          turns: beat.rightTurns ?? 0,
-        };
+    const motion =
+      hand === "left"
+        ? {
+            motionType: beat.leftMotionType,
+            rotDir: beat.leftRotDir,
+            startLoc: beat.leftStartLoc,
+            endLoc: beat.leftEndLoc,
+            startOrientation: beat.leftStartOri || "out",
+            endOrientation: beat.leftEndOri || "out",
+            turns: beat.leftTurns ?? 0,
+          }
+        : {
+            motionType: beat.rightMotionType,
+            rotDir: beat.rightRotDir,
+            startLoc: beat.rightStartLoc,
+            endLoc: beat.rightEndLoc,
+            startOrientation: beat.rightStartOri || "out",
+            endOrientation: beat.rightEndOri || "out",
+            turns: beat.rightTurns ?? 0,
+          };
 
     // Skip float (no movement, no rotation = single point)
     if (motion.motionType === "float") continue;
@@ -230,10 +255,14 @@ function generateMandalaPath(beats, color, tipOffset, gridRadius, samplesPerBeat
         const dir = motion.rotDir === "ccw" ? -1 : 1;
         const turnsRotation = dir * (motion.turns ?? 0) * PI;
         if (motion.motionType === "pro") {
-          const centerMovement = normalizeAngleSigned(endpoints.targetCenterAngle - endpoints.startCenterAngle);
+          const centerMovement = normalizeAngleSigned(
+            endpoints.targetCenterAngle - endpoints.startCenterAngle
+          );
           endpoints.staffRotationDelta = centerMovement + turnsRotation;
         } else if (motion.motionType === "anti") {
-          const centerMovement = normalizeAngleSigned(endpoints.targetCenterAngle - endpoints.startCenterAngle);
+          const centerMovement = normalizeAngleSigned(
+            endpoints.targetCenterAngle - endpoints.startCenterAngle
+          );
           endpoints.staffRotationDelta = -centerMovement + turnsRotation;
         } else {
           endpoints.staffRotationDelta = turnsRotation;
@@ -253,12 +282,20 @@ function generateMandalaPath(beats, color, tipOffset, gridRadius, samplesPerBeat
 
     // Adaptive sampling: more samples for high-turn motions
     const turnCount = motion.turns ?? 0;
-    const samples = Math.max(samplesPerBeat, samplesPerBeat * Math.ceil(Math.max(1, turnCount)));
+    const samples = Math.max(
+      samplesPerBeat,
+      samplesPerBeat * Math.ceil(Math.max(1, turnCount))
+    );
 
     for (let i = 0; i <= samples; i++) {
       const t = i / samples;
       const handPos = interpolate(endpoints, t);
-      const tip = computeTipPosition(handPos, handPos.staffAngle, tipOffset, gridRadius);
+      const tip = computeTipPosition(
+        handPos,
+        handPos.staffAngle,
+        tipOffset,
+        gridRadius
+      );
       points.push(tip);
     }
   }
@@ -309,10 +346,34 @@ function generateMandalaSVG(sequence, options = {}) {
   const beats = sequence.beats;
 
   // Generate paths for each hand + tip combination
-  const leftLeftPoints = generateMandalaPath(beats, "blue", tipLeft, gridRadius, samplesPerBeat);
-  const leftRightPoints = generateMandalaPath(beats, "blue", tipRight, gridRadius, samplesPerBeat);
-  const rightLeftPoints = generateMandalaPath(beats, "red", tipLeft, gridRadius, samplesPerBeat);
-  const rightRightPoints = generateMandalaPath(beats, "red", tipRight, gridRadius, samplesPerBeat);
+  const leftLeftPoints = generateMandalaPath(
+    beats,
+    "left",
+    tipLeft,
+    gridRadius,
+    samplesPerBeat
+  );
+  const leftRightPoints = generateMandalaPath(
+    beats,
+    "left",
+    tipRight,
+    gridRadius,
+    samplesPerBeat
+  );
+  const rightLeftPoints = generateMandalaPath(
+    beats,
+    "right",
+    tipLeft,
+    gridRadius,
+    samplesPerBeat
+  );
+  const rightRightPoints = generateMandalaPath(
+    beats,
+    "right",
+    tipRight,
+    gridRadius,
+    samplesPerBeat
+  );
 
   const leftLeftD = pointsToSVGPath(leftLeftPoints);
   const leftRightD = pointsToSVGPath(leftRightPoints);
@@ -322,21 +383,32 @@ function generateMandalaSVG(sequence, options = {}) {
   const center = size / 2;
 
   // Grid dot positions
-  const gridDots = showGridDots ? Object.entries(LOCATION_ANGLES).map(([loc, angle]) => {
-    if (loc === "center") return { x: 0, y: 0 };
-    return { x: Math.cos(angle) * gridRadius, y: Math.sin(angle) * gridRadius };
-  }) : [];
+  const gridDots = showGridDots
+    ? Object.entries(LOCATION_ANGLES).map(([loc, angle]) => {
+        if (loc === "center") return { x: 0, y: 0 };
+        return {
+          x: Math.cos(angle) * gridRadius,
+          y: Math.sin(angle) * gridRadius,
+        };
+      })
+    : [];
 
   const leftColor = "#2e3192";
   const rightColor = "#ed1c24";
 
-  const fillLeft = style === "filled" ? `fill="rgba(46,49,146,0.15)" stroke="${leftColor}"` : `fill="none" stroke="${leftColor}"`;
-  const fillRight = style === "filled" ? `fill="rgba(237,28,36,0.15)" stroke="${rightColor}"` : `fill="none" stroke="${rightColor}"`;
+  const fillLeft =
+    style === "filled"
+      ? `fill="rgba(46,49,146,0.15)" stroke="${leftColor}"`
+      : `fill="none" stroke="${leftColor}"`;
+  const fillRight =
+    style === "filled"
+      ? `fill="rgba(237,28,36,0.15)" stroke="${rightColor}"`
+      : `fill="none" stroke="${rightColor}"`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
   <rect width="${size}" height="${size}" fill="#0d0d1a" rx="8"/>
   <g transform="translate(${center}, ${center})">
-    ${gridDots.map(d => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="3" fill="rgba(255,255,255,0.3)"/>`).join("\n    ")}
+    ${gridDots.map((d) => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="3" fill="rgba(255,255,255,0.3)"/>`).join("\n    ")}
     ${leftLeftD ? `<path d="${leftLeftD}" ${fillLeft} stroke-width="${strokeWidth}" stroke-linecap="round"/>` : ""}
     ${leftRightD ? `<path d="${leftRightD}" ${fillLeft} stroke-width="${strokeWidth}" stroke-linecap="round"/>` : ""}
     ${rightLeftD ? `<path d="${rightLeftD}" ${fillRight} stroke-width="${strokeWidth}" stroke-linecap="round"/>` : ""}
@@ -349,8 +421,14 @@ function generateMandalaSVG(sequence, options = {}) {
 
 // For a halved rotated LOOP: rotate all grid locations by 180° for the second half
 const ROTATION_180 = {
-  n: "s", s: "n", e: "w", w: "e",
-  ne: "sw", sw: "ne", nw: "se", se: "nw",
+  n: "s",
+  s: "n",
+  e: "w",
+  w: "e",
+  ne: "sw",
+  sw: "ne",
+  nw: "se",
+  se: "nw",
   center: "center",
 };
 
@@ -360,7 +438,7 @@ function rotateLoc(loc) {
 
 function expandHalvedRotatedLoop(seedBeats) {
   // Full cycle = seed beats + same beats with all locations rotated 180°
-  const rotatedBeats = seedBeats.map(beat => ({
+  const rotatedBeats = seedBeats.map((beat) => ({
     ...beat,
     leftStartLoc: rotateLoc(beat.leftStartLoc),
     leftEndLoc: rotateLoc(beat.leftEndLoc),
@@ -370,7 +448,7 @@ function expandHalvedRotatedLoop(seedBeats) {
   return [...seedBeats, ...rotatedBeats];
 }
 
-// ─── Generate decomposed SVG (blue only, red only, or combined) ───────────
+// ─── Generate decomposed SVG (left only, right only, or combined) ──────────
 
 function generateDecomposedSVG(sequence, options = {}) {
   const {
@@ -379,7 +457,7 @@ function generateDecomposedSVG(sequence, options = {}) {
     strokeWidth = 2,
     samplesPerBeat = 64,
     showGridDots = true,
-    show = "both", // "blue", "red", or "both"
+    show = "both", // "left", "right", or "both"
   } = options;
 
   const tipLeft = { dx: -150, dy: 0 };
@@ -393,34 +471,75 @@ function generateDecomposedSVG(sequence, options = {}) {
   // Generate paths
   const paths = [];
 
-  if (show === "blue" || show === "both") {
-    const leftLeftPoints = generateMandalaPath(beats, "blue", tipLeft, gridRadius, samplesPerBeat);
-    const leftRightPoints = generateMandalaPath(beats, "blue", tipRight, gridRadius, samplesPerBeat);
+  if (show === "left" || show === "both") {
+    const leftLeftPoints = generateMandalaPath(
+      beats,
+      "left",
+      tipLeft,
+      gridRadius,
+      samplesPerBeat
+    );
+    const leftRightPoints = generateMandalaPath(
+      beats,
+      "left",
+      tipRight,
+      gridRadius,
+      samplesPerBeat
+    );
     const leftLeftD = pointsToSVGPath(leftLeftPoints);
     const leftRightD = pointsToSVGPath(leftRightPoints);
-    if (leftLeftD) paths.push(`<path d="${leftLeftD}" fill="none" stroke="${leftColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
-    if (leftRightD) paths.push(`<path d="${leftRightD}" fill="none" stroke="${leftColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+    if (leftLeftD)
+      paths.push(
+        `<path d="${leftLeftD}" fill="none" stroke="${leftColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`
+      );
+    if (leftRightD)
+      paths.push(
+        `<path d="${leftRightD}" fill="none" stroke="${leftColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`
+      );
   }
 
-  if (show === "red" || show === "both") {
-    const rightLeftPoints = generateMandalaPath(beats, "red", tipLeft, gridRadius, samplesPerBeat);
-    const rightRightPoints = generateMandalaPath(beats, "red", tipRight, gridRadius, samplesPerBeat);
+  if (show === "right" || show === "both") {
+    const rightLeftPoints = generateMandalaPath(
+      beats,
+      "right",
+      tipLeft,
+      gridRadius,
+      samplesPerBeat
+    );
+    const rightRightPoints = generateMandalaPath(
+      beats,
+      "right",
+      tipRight,
+      gridRadius,
+      samplesPerBeat
+    );
     const rightLeftD = pointsToSVGPath(rightLeftPoints);
     const rightRightD = pointsToSVGPath(rightRightPoints);
-    if (rightLeftD) paths.push(`<path d="${rightLeftD}" fill="none" stroke="${rightColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
-    if (rightRightD) paths.push(`<path d="${rightRightD}" fill="none" stroke="${rightColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+    if (rightLeftD)
+      paths.push(
+        `<path d="${rightLeftD}" fill="none" stroke="${rightColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`
+      );
+    if (rightRightD)
+      paths.push(
+        `<path d="${rightRightD}" fill="none" stroke="${rightColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`
+      );
   }
 
   // Grid dots
-  const gridDots = showGridDots ? Object.entries(LOCATION_ANGLES).map(([loc, angle]) => {
-    if (loc === "center") return { x: 0, y: 0 };
-    return { x: Math.cos(angle) * gridRadius, y: Math.sin(angle) * gridRadius };
-  }) : [];
+  const gridDots = showGridDots
+    ? Object.entries(LOCATION_ANGLES).map(([loc, angle]) => {
+        if (loc === "center") return { x: 0, y: 0 };
+        return {
+          x: Math.cos(angle) * gridRadius,
+          y: Math.sin(angle) * gridRadius,
+        };
+      })
+    : [];
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
   <rect width="${size}" height="${size}" fill="#0d0d1a" rx="12"/>
   <g transform="translate(${center}, ${center})">
-    ${gridDots.map(d => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="3.5" fill="rgba(255,255,255,0.25)"/>`).join("\n    ")}
+    ${gridDots.map((d) => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="3.5" fill="rgba(255,255,255,0.25)"/>`).join("\n    ")}
     ${paths.join("\n    ")}
   </g>
 </svg>`;
@@ -430,7 +549,7 @@ function generateDecomposedSVG(sequence, options = {}) {
 
 // ─── Diagnostic: per-beat path with junction analysis ──────────────────────
 
-function generateBeatByBeatSVG(sequence, color, options = {}) {
+function generateBeatByBeatSVG(sequence, hand, options = {}) {
   const {
     size = 500,
     gridRadius = 80,
@@ -445,7 +564,14 @@ function generateBeatByBeatSVG(sequence, color, options = {}) {
   const center = size / 2;
 
   // Beat colors for visual distinction
-  const beatColors = ["#4488ff", "#22cc88", "#ff8844", "#cc44ff", "#ffcc22", "#44cccc"];
+  const beatColors = [
+    "#4488ff",
+    "#22cc88",
+    "#ff8844",
+    "#cc44ff",
+    "#ffcc22",
+    "#44cccc",
+  ];
 
   const paths = [];
   const junctionPoints = [];
@@ -454,25 +580,26 @@ function generateBeatByBeatSVG(sequence, color, options = {}) {
 
   for (let b = 0; b < beats.length; b++) {
     const beat = beats[b];
-    const motion = color === "blue"
-      ? {
-          motionType: beat.leftMotionType,
-          rotDir: beat.leftRotDir,
-          startLoc: beat.leftStartLoc,
-          endLoc: beat.leftEndLoc,
-          startOrientation: beat.leftStartOri || "out",
-          endOrientation: beat.leftEndOri || "out",
-          turns: beat.leftTurns ?? 0,
-        }
-      : {
-          motionType: beat.rightMotionType,
-          rotDir: beat.rightRotDir,
-          startLoc: beat.rightStartLoc,
-          endLoc: beat.rightEndLoc,
-          startOrientation: beat.rightStartOri || "out",
-          endOrientation: beat.rightEndOri || "out",
-          turns: beat.rightTurns ?? 0,
-        };
+    const motion =
+      hand === "left"
+        ? {
+            motionType: beat.leftMotionType,
+            rotDir: beat.leftRotDir,
+            startLoc: beat.leftStartLoc,
+            endLoc: beat.leftEndLoc,
+            startOrientation: beat.leftStartOri || "out",
+            endOrientation: beat.leftEndOri || "out",
+            turns: beat.leftTurns ?? 0,
+          }
+        : {
+            motionType: beat.rightMotionType,
+            rotDir: beat.rightRotDir,
+            startLoc: beat.rightStartLoc,
+            endLoc: beat.rightEndLoc,
+            startOrientation: beat.rightStartOri || "out",
+            endOrientation: beat.rightEndOri || "out",
+            turns: beat.rightTurns ?? 0,
+          };
 
     if (motion.motionType === "float") continue;
 
@@ -488,10 +615,14 @@ function generateBeatByBeatSVG(sequence, color, options = {}) {
         const dir = motion.rotDir === "ccw" ? -1 : 1;
         const turnsRotation = dir * (motion.turns ?? 0) * PI;
         if (motion.motionType === "pro") {
-          const centerMovement = normalizeAngleSigned(endpoints.targetCenterAngle - endpoints.startCenterAngle);
+          const centerMovement = normalizeAngleSigned(
+            endpoints.targetCenterAngle - endpoints.startCenterAngle
+          );
           endpoints.staffRotationDelta = centerMovement + turnsRotation;
         } else if (motion.motionType === "anti") {
-          const centerMovement = normalizeAngleSigned(endpoints.targetCenterAngle - endpoints.startCenterAngle);
+          const centerMovement = normalizeAngleSigned(
+            endpoints.targetCenterAngle - endpoints.startCenterAngle
+          );
           endpoints.staffRotationDelta = -centerMovement + turnsRotation;
         } else {
           endpoints.staffRotationDelta = turnsRotation;
@@ -506,14 +637,22 @@ function generateBeatByBeatSVG(sequence, color, options = {}) {
       endpoints.startStaffAngle + endpoints.staffRotationDelta
     );
 
-    const samples = Math.max(samplesPerBeat, samplesPerBeat * Math.ceil(Math.max(1, motion.turns ?? 0)));
+    const samples = Math.max(
+      samplesPerBeat,
+      samplesPerBeat * Math.ceil(Math.max(1, motion.turns ?? 0))
+    );
 
     const beatPoints = [];
     for (let i = 0; i <= samples; i++) {
       const t = i / samples;
       const handPos = interpolate(endpoints, t);
       // Right tip only for clarity
-      const tip = computeTipPosition(handPos, handPos.staffAngle, tipRight, gridRadius);
+      const tip = computeTipPosition(
+        handPos,
+        handPos.staffAngle,
+        tipRight,
+        gridRadius
+      );
       beatPoints.push(tip);
     }
 
@@ -528,8 +667,11 @@ function generateBeatByBeatSVG(sequence, color, options = {}) {
       endLoc: motion.endLoc,
       startTip: { x: startPt.x.toFixed(2), y: startPt.y.toFixed(2) },
       endTip: { x: endPt.x.toFixed(2), y: endPt.y.toFixed(2) },
-      startStaffAngle: (endpoints.startStaffAngle * 180 / PI).toFixed(1),
-      endStaffAngle: ((endpoints.startStaffAngle + endpoints.staffRotationDelta) * 180 / PI).toFixed(1),
+      startStaffAngle: ((endpoints.startStaffAngle * 180) / PI).toFixed(1),
+      endStaffAngle: (
+        ((endpoints.startStaffAngle + endpoints.staffRotationDelta) * 180) /
+        PI
+      ).toFixed(1),
     });
 
     // Junction: mark start point of each beat
@@ -537,24 +679,33 @@ function generateBeatByBeatSVG(sequence, color, options = {}) {
 
     const d = pointsToSVGPath(beatPoints);
     const col = beatColors[b % beatColors.length];
-    if (d) paths.push(`<path d="${d}" fill="none" stroke="${col}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+    if (d)
+      paths.push(
+        `<path d="${d}" fill="none" stroke="${col}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`
+      );
   }
 
   // Grid dots
-  const gridDots = showGridDots ? Object.entries(LOCATION_ANGLES).map(([loc, angle]) => {
-    if (loc === "center") return { x: 0, y: 0 };
-    return { x: Math.cos(angle) * gridRadius, y: Math.sin(angle) * gridRadius };
-  }) : [];
+  const gridDots = showGridDots
+    ? Object.entries(LOCATION_ANGLES).map(([loc, angle]) => {
+        if (loc === "center") return { x: 0, y: 0 };
+        return {
+          x: Math.cos(angle) * gridRadius,
+          y: Math.sin(angle) * gridRadius,
+        };
+      })
+    : [];
 
   // Junction markers (red circles)
-  const junctionMarkers = junctionPoints.map(p =>
-    `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="#ff3333" stroke="white" stroke-width="1"/>`
+  const junctionMarkers = junctionPoints.map(
+    (p) =>
+      `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="#ff3333" stroke="white" stroke-width="1"/>`
   );
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
   <rect width="${size}" height="${size}" fill="#0d0d1a" rx="12"/>
   <g transform="translate(${center}, ${center})">
-    ${gridDots.map(d => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="3.5" fill="rgba(255,255,255,0.25)"/>`).join("\n    ")}
+    ${gridDots.map((d) => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="3.5" fill="rgba(255,255,255,0.25)"/>`).join("\n    ")}
     ${paths.join("\n    ")}
     ${junctionMarkers.join("\n    ")}
   </g>
@@ -567,8 +718,8 @@ function generateBeatByBeatSVG(sequence, color, options = {}) {
 
 function firestoreStepsToBeats(steps) {
   return steps
-    .filter(s => s.motions) // skip start position
-    .map(s => {
+    .filter((s) => s.motions) // skip start position
+    .map((s) => {
       const b = s.motions.left || {};
       const r = s.motions.right || {};
       // Map rotationDirection strings
@@ -600,12 +751,19 @@ function firestoreStepsToBeats(steps) {
 // ─── Main ──────────────────────────────────────────────────────────────────
 
 // Load from Firestore export
-const firestoreSeq = JSON.parse(fs.readFileSync("scripts/test-sequence.json", "utf-8"));
+const firestoreSeq = JSON.parse(
+  fs.readFileSync("scripts/test-sequence.json", "utf-8")
+);
 const fullBeats = firestoreStepsToBeats(firestoreSeq.steps);
 const seq = { beats: fullBeats, seedWord: firestoreSeq.word };
-const rawSeq = { beats: fullBeats, handPathFamily: firestoreSeq.loopType + " LOOP" };
+const rawSeq = {
+  beats: fullBeats,
+  handPathFamily: firestoreSeq.loopType + " LOOP",
+};
 
-console.log(`Generating mandala for: ${firestoreSeq.word} (${firestoreSeq.loopType})`);
+console.log(
+  `Generating mandala for: ${firestoreSeq.word} (${firestoreSeq.loopType})`
+);
 console.log(`Beats: ${fullBeats.length}`);
 
 // ─── Tip inset comparison ──────────────────────────────────────────────────
@@ -621,7 +779,7 @@ function generateWithTipInset(sequence, insetAmount, options = {}) {
 
   // Staff tip at 150, inset moves it toward center
   const tipLeft = { dx: -(150 - insetAmount), dy: 0 };
-  const tipRight = { dx: (150 - insetAmount), dy: 0 };
+  const tipRight = { dx: 150 - insetAmount, dy: 0 };
   const beats = sequence.beats;
   const center = size / 2;
 
@@ -629,77 +787,146 @@ function generateWithTipInset(sequence, insetAmount, options = {}) {
   const rightColor = "#ed1c24";
   const paths = [];
 
-  // Blue paths
-  const leftLeftPoints = generateMandalaPath(beats, "blue", tipLeft, gridRadius, samplesPerBeat);
-  const leftRightPoints = generateMandalaPath(beats, "blue", tipRight, gridRadius, samplesPerBeat);
+  // Left-hand paths
+  const leftLeftPoints = generateMandalaPath(
+    beats,
+    "left",
+    tipLeft,
+    gridRadius,
+    samplesPerBeat
+  );
+  const leftRightPoints = generateMandalaPath(
+    beats,
+    "left",
+    tipRight,
+    gridRadius,
+    samplesPerBeat
+  );
   const leftLeftD = pointsToSVGPath(leftLeftPoints);
   const leftRightD = pointsToSVGPath(leftRightPoints);
-  if (leftLeftD) paths.push(`<path d="${leftLeftD}" fill="none" stroke="${leftColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
-  if (leftRightD) paths.push(`<path d="${leftRightD}" fill="none" stroke="${leftColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+  if (leftLeftD)
+    paths.push(
+      `<path d="${leftLeftD}" fill="none" stroke="${leftColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`
+    );
+  if (leftRightD)
+    paths.push(
+      `<path d="${leftRightD}" fill="none" stroke="${leftColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`
+    );
 
-  // Red paths
-  const rightLeftPoints = generateMandalaPath(beats, "red", tipLeft, gridRadius, samplesPerBeat);
-  const rightRightPoints = generateMandalaPath(beats, "red", tipRight, gridRadius, samplesPerBeat);
+  // Right-hand paths
+  const rightLeftPoints = generateMandalaPath(
+    beats,
+    "right",
+    tipLeft,
+    gridRadius,
+    samplesPerBeat
+  );
+  const rightRightPoints = generateMandalaPath(
+    beats,
+    "right",
+    tipRight,
+    gridRadius,
+    samplesPerBeat
+  );
   const rightLeftD = pointsToSVGPath(rightLeftPoints);
   const rightRightD = pointsToSVGPath(rightRightPoints);
-  if (rightLeftD) paths.push(`<path d="${rightLeftD}" fill="none" stroke="${rightColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
-  if (rightRightD) paths.push(`<path d="${rightRightD}" fill="none" stroke="${rightColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+  if (rightLeftD)
+    paths.push(
+      `<path d="${rightLeftD}" fill="none" stroke="${rightColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`
+    );
+  if (rightRightD)
+    paths.push(
+      `<path d="${rightRightD}" fill="none" stroke="${rightColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`
+    );
 
-  const gridDots = showGridDots ? Object.entries(LOCATION_ANGLES).map(([loc, angle]) => {
-    if (loc === "center") return { x: 0, y: 0 };
-    return { x: Math.cos(angle) * gridRadius, y: Math.sin(angle) * gridRadius };
-  }) : [];
+  const gridDots = showGridDots
+    ? Object.entries(LOCATION_ANGLES).map(([loc, angle]) => {
+        if (loc === "center") return { x: 0, y: 0 };
+        return {
+          x: Math.cos(angle) * gridRadius,
+          y: Math.sin(angle) * gridRadius,
+        };
+      })
+    : [];
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
   <rect width="${size}" height="${size}" fill="#0d0d1a" rx="12"/>
   <g transform="translate(${center}, ${center})">
-    ${gridDots.map(d => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="3.5" fill="rgba(255,255,255,0.25)"/>`).join("\n    ")}
+    ${gridDots.map((d) => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="3.5" fill="rgba(255,255,255,0.25)"/>`).join("\n    ")}
     ${paths.join("\n    ")}
   </g>
 </svg>`;
 }
 
-const svgOpts = { size: 500, gridRadius: 80, strokeWidth: 2, samplesPerBeat: 64, showGridDots: true };
+const svgOpts = {
+  size: 500,
+  gridRadius: 80,
+  strokeWidth: 2,
+  samplesPerBeat: 64,
+  showGridDots: true,
+};
 
 // Generate diagnostic beat-by-beat view
-const blueDiag = generateBeatByBeatSVG(seq, "blue", svgOpts);
+const leftDiag = generateBeatByBeatSVG(seq, "left", svgOpts);
 
-console.log("\n=== BLUE HAND BEAT JUNCTIONS ===");
-for (const d of blueDiag.diagnostics) {
-  console.log(`Beat ${d.beat} (${d.letter}, ${d.motionType}): ${d.startLoc} → ${d.endLoc}`);
+console.log("\n=== LEFT HAND BEAT JUNCTIONS ===");
+for (const d of leftDiag.diagnostics) {
+  console.log(
+    `Beat ${d.beat} (${d.letter}, ${d.motionType}): ${d.startLoc} → ${d.endLoc}`
+  );
   console.log(`  Staff angle: ${d.startStaffAngle}° → ${d.endStaffAngle}°`);
-  console.log(`  Tip start: (${d.startTip.x}, ${d.startTip.y})  Tip end: (${d.endTip.x}, ${d.endTip.y})`);
+  console.log(
+    `  Tip start: (${d.startTip.x}, ${d.startTip.y})  Tip end: (${d.endTip.x}, ${d.endTip.y})`
+  );
 }
 
 // Check gaps between beats
 console.log("\n=== JUNCTION GAPS ===");
-for (let i = 0; i < blueDiag.diagnostics.length - 1; i++) {
-  const end = blueDiag.diagnostics[i];
-  const start = blueDiag.diagnostics[i + 1];
+for (let i = 0; i < leftDiag.diagnostics.length - 1; i++) {
+  const end = leftDiag.diagnostics[i];
+  const start = leftDiag.diagnostics[i + 1];
   const dx = parseFloat(start.startTip.x) - parseFloat(end.endTip.x);
   const dy = parseFloat(start.startTip.y) - parseFloat(end.endTip.y);
   const gap = Math.sqrt(dx * dx + dy * dy).toFixed(2);
-  console.log(`Beat ${end.beat} end → Beat ${start.beat} start: gap = ${gap}px (dx=${dx.toFixed(2)}, dy=${dy.toFixed(2)})`);
+  console.log(
+    `Beat ${end.beat} end → Beat ${start.beat} start: gap = ${gap}px (dx=${dx.toFixed(2)}, dy=${dy.toFixed(2)})`
+  );
 }
 
 // Generate tip inset comparison
 const insets = [0, 5, 10, 15, 20, 30];
-const insetSvgs = insets.map(inset => ({
+const insetSvgs = insets.map((inset) => ({
   inset,
   svg: generateWithTipInset(seq, inset, svgOpts),
 }));
 
 // Also generate the decomposed view alongside (using 10px inset as default)
 const bestInsetOpts = { ...svgOpts };
-const leftSvg = generateDecomposedSVG(seq, { ...bestInsetOpts, show: "blue" });
-const rightSvg = generateDecomposedSVG(seq, { ...bestInsetOpts, show: "red" });
-const combinedSvg = generateDecomposedSVG(seq, { ...bestInsetOpts, show: "both" });
+const leftSvg = generateDecomposedSVG(seq, { ...bestInsetOpts, show: "left" });
+const rightSvg = generateDecomposedSVG(seq, {
+  ...bestInsetOpts,
+  show: "right",
+});
+const combinedSvg = generateDecomposedSVG(seq, {
+  ...bestInsetOpts,
+  show: "both",
+});
 
 // Beat color legend
-const beatColors = ["#4488ff", "#22cc88", "#ff8844", "#cc44ff", "#ffcc22", "#44cccc"];
-const legend = seq.beats.map((b, i) =>
-  `<span style="color:${beatColors[i % beatColors.length]}; margin-right: 16px;">Beat ${i+1}: ${b.letter} (${b.leftMotionType})</span>`
-).join("");
+const beatColors = [
+  "#4488ff",
+  "#22cc88",
+  "#ff8844",
+  "#cc44ff",
+  "#ffcc22",
+  "#44cccc",
+];
+const legend = seq.beats
+  .map(
+    (b, i) =>
+      `<span style="color:${beatColors[i % beatColors.length]}; margin-right: 16px;">Beat ${i + 1}: ${b.letter} (${b.leftMotionType})</span>`
+  )
+  .join("");
 
 const html = `<!DOCTYPE html>
 <html>
@@ -727,22 +954,26 @@ const html = `<!DOCTYPE html>
 <h2 class="section-title">Tip Inset Comparison</h2>
 <p style="text-align:center;color:#888;font-size:14px;margin-bottom:24px;">Tracking point moved inward from the exact staff tip. 0 = exact tip (dx=150), 10 = 10px inward (dx=140), etc.</p>
 <div class="row" style="gap: 16px;">
-${insetSvgs.map(({ inset, svg }) => `
+${insetSvgs
+  .map(
+    ({ inset, svg }) => `
   <div class="panel">
     ${svg}
-    <h3 style="color:#ccc;">${inset === 0 ? 'Exact tip (0px)' : inset + 'px inset'}</h3>
+    <h3 style="color:#ccc;">${inset === 0 ? "Exact tip (0px)" : inset + "px inset"}</h3>
     <p>dx = ${150 - inset}</p>
   </div>
-`).join("")}
+`
+  )
+  .join("")}
 </div>
 
-<h2 class="section-title">Blue Hand: Beat-by-Beat Diagnostic</h2>
+<h2 class="section-title">Left Hand: Beat-by-Beat Diagnostic</h2>
 <div class="legend">${legend}</div>
 <p style="text-align:center;color:#ff3333;font-size:13px;">Red dots = beat junction points (where discontinuities occur)</p>
 <div class="row">
   <div class="panel">
-    ${blueDiag.svg}
-    <h3 class="blue-label">Blue Right Tip — Color per Beat</h3>
+    ${leftDiag.svg}
+    <h3 class="blue-label">Left Hand, Right Tip — Color per Beat</h3>
   </div>
 </div>
 
@@ -750,12 +981,12 @@ ${insetSvgs.map(({ inset, svg }) => `
 <div class="row">
   <div class="panel">
     ${leftSvg}
-    <h3 class="blue-label">Blue Hand</h3>
+    <h3 class="blue-label">Left Hand</h3>
   </div>
   <div class="operator">+</div>
   <div class="panel">
     ${rightSvg}
-    <h3 class="red-label">Red Hand</h3>
+    <h3 class="red-label">Right Hand</h3>
   </div>
   <div class="operator">=</div>
   <div class="panel">

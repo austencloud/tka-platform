@@ -598,11 +598,11 @@
           <span>Loading pictographs</span>
         {:else if selectedPictograph}
           <span>
-            Blue {selectedPictograph.motions.left?.motionType},
+            Left {selectedPictograph.motions.left?.motionType},
             {formatDirection(
               selectedPictograph.motions.left
                 ?.rotationDirection as RotationDirection
-            )}. Red {selectedPictograph.motions.right?.motionType},
+            )}. Right {selectedPictograph.motions.right?.motionType},
             {formatDirection(
               selectedPictograph.motions.right
                 ?.rotationDirection as RotationDirection

@@ -87,7 +87,7 @@ describe("rotation override effective state", () => {
 
   it("inherits Θ- (s, 3, 3) from layer2 and lets the toggle turn it off and on", async () => {
     const pictograph = createThetaDashPictograph();
-    const blueMotion = pictograph.motions.left!;
+    const leftMotion = pictograph.motions.left!;
     const tupleGenerator = new TurnsTupleGenerator();
     const specialPlacement = new SpecialPlacer(
       new SpecialPlacementDataProvider(new ThetaDashPlacementCache()),
@@ -106,24 +106,24 @@ describe("rotation override effective state", () => {
 
     expect(tupleGenerator.generateTurnsTuple(pictograph)).toBe("(s, 3, 3)");
     await expect(
-      manager.hasRotationOverride(blueMotion, pictograph)
+      manager.hasRotationOverride(leftMotion, pictograph)
     ).resolves.toBe(true);
     await expect(
-      calculator.calculateRotation(blueMotion, GridLocation.EAST, pictograph)
+      calculator.calculateRotation(leftMotion, GridLocation.EAST, pictograph)
     ).resolves.toBe(0);
 
     await expect(
-      manager.toggleRotationOverride(blueMotion, pictograph)
+      manager.toggleRotationOverride(leftMotion, pictograph)
     ).resolves.toBe(false);
     await expect(
-      calculator.calculateRotation(blueMotion, GridLocation.EAST, pictograph)
+      calculator.calculateRotation(leftMotion, GridLocation.EAST, pictograph)
     ).resolves.toBe(90);
 
     await expect(
-      manager.toggleRotationOverride(blueMotion, pictograph)
+      manager.toggleRotationOverride(leftMotion, pictograph)
     ).resolves.toBe(true);
     await expect(
-      calculator.calculateRotation(blueMotion, GridLocation.EAST, pictograph)
+      calculator.calculateRotation(leftMotion, GridLocation.EAST, pictograph)
     ).resolves.toBe(0);
   });
 

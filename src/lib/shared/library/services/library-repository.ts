@@ -382,7 +382,6 @@ export class LibraryRepository {
     } as LibrarySequence;
   }
 
-
   async saveSequence(
     sequence: SequenceData,
     overrides?: { visibility?: SequenceVisibility; notes?: string }
@@ -560,7 +559,7 @@ export class LibraryRepository {
       }
     }
 
-    // Recompute compositional fields (blueSoloProp, redSoloProp, stepPairings,
+    // Recompute compositional fields (leftSoloProp, rightSoloProp, stepPairings,
     // content hashes) from the current steps so Firestore always has fresh
     // compositional data - even if the sequence was modified via the old
     // steps-based mutation API.

@@ -28,15 +28,12 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 
-const { SequenceBuilder } = await import(
-  "../packages/sequence-engine/dist/generation/index.js"
-);
-const { LOOPType, Period } = await import(
-  "../packages/sequence-engine/dist/loop/loop-types.js"
-);
-const { isSequenceCircular } = await import(
-  "../packages/sequence-engine/dist/loop/detection/LOOPDetector.js"
-);
+const { SequenceBuilder } =
+  await import("../packages/sequence-engine/dist/generation/index.js");
+const { LOOPType, Period } =
+  await import("../packages/sequence-engine/dist/loop/loop-types.js");
+const { isSequenceCircular } =
+  await import("../packages/sequence-engine/dist/loop/detection/LOOPDetector.js");
 
 // Real dataset provider (DiamondPictographDataframe.csv — canonical source)
 
@@ -53,7 +50,7 @@ function loadVariations(csvPath) {
       timing: c[3],
       direction: c[4],
       leftMotion: {
-        color: "blue",
+        hand: "left",
         motionType: c[5],
         rotationDirection: c[6],
         startLocation: c[7],
@@ -62,7 +59,7 @@ function loadVariations(csvPath) {
         endOrientation: "in",
       },
       rightMotion: {
-        color: "red",
+        hand: "right",
         motionType: c[9],
         rotationDirection: c[10],
         startLocation: c[11],
@@ -128,8 +125,10 @@ function hasOppositeTypedStep(steps) {
   return steps.some(
     (s) =>
       (s.stepNumber ?? 0) > 0 &&
-      ((s.motions.left.motionType === "pro" && s.motions.right.motionType === "anti") ||
-        (s.motions.left.motionType === "anti" && s.motions.right.motionType === "pro")),
+      ((s.motions.left.motionType === "pro" &&
+        s.motions.right.motionType === "anti") ||
+        (s.motions.left.motionType === "anti" &&
+          s.motions.right.motionType === "pro"))
   );
 }
 
@@ -184,7 +183,7 @@ const csvPath = path.join(
   "static",
   "data",
   "pictographs",
-  "DiamondPictographDataframe.csv",
+  "DiamondPictographDataframe.csv"
 );
 const variations = loadVariations(csvPath);
 console.log(`Loaded ${variations.length} variations from Diamond CSV`);
@@ -197,7 +196,9 @@ for (const type of GENERATABLE_TYPES) {
   fixtures[type] = samples;
   console.log(
     `${type.padEnd(38)} ${samples.length}/${SAMPLES_PER_TYPE} samples (${attempts} attempts)` +
-      (samples[0] ? `  e.g. ${samples[0].seedWord}+${samples[0].derivedWord}` : ""),
+      (samples[0]
+        ? `  e.g. ${samples[0].seedWord}+${samples[0].derivedWord}`
+        : "")
   );
 }
 

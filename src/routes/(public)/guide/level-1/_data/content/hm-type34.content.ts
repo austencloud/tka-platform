@@ -1,7 +1,13 @@
 import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionType, HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  MotionType,
+  HandSide,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  GridMode,
+  GridLocation,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -15,14 +21,31 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
  * dragging, pt geometry).
  */
 
-const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W, SOUTHEAST: SE, CENTER: C } = GridLocation;
-const OPP: Partial<Record<GridLocation, GridLocation>> = { [N]: SO_, [SO_]: N, [E]: W, [W]: E };
+const {
+  NORTH: N,
+  EAST: E,
+  SOUTH: SO_,
+  WEST: W,
+  SOUTHEAST: SE,
+  CENTER: C,
+} = GridLocation;
+const OPP: Partial<Record<GridLocation, GridLocation>> = {
+  [N]: SO_,
+  [SO_]: N,
+  [E]: W,
+  [W]: E,
+};
 
 // Motion type from the location pair: same → STATIC, opposite cardinals →
 // DASH, otherwise (adjacent) → PRO shift (hand-path mode floats it).
 const motion = (color: HandSide, from: GridLocation, to: GridLocation) =>
   createMotionData({
-    motionType: from === to ? MotionType.STATIC : OPP[from] === to ? MotionType.DASH : MotionType.PRO,
+    motionType:
+      from === to
+        ? MotionType.STATIC
+        : OPP[from] === to
+          ? MotionType.DASH
+          : MotionType.PRO,
     startLocation: from,
     endLocation: to,
     hand: color,
@@ -40,7 +63,7 @@ const gp = (a: GridLocation, b: GridLocation) => {
   }
 };
 
-// [blueFrom, blueTo, redFrom, redTo]
+// [leftFrom, leftTo, rightFrom, rightTo]
 type Move = [GridLocation, GridLocation, GridLocation, GridLocation];
 const box = (m: Move, step: number | null, id: string): StepData =>
   ({
@@ -73,7 +96,9 @@ const BREAKDOWN: BD[] = [
   { key: "combined", m: [SO_, N, SO_, E] },
 ];
 const breakdownSteps = (): PictographData[] =>
-  BREAKDOWN.map((b) => box(b.m, null, `t3-${b.key}`)) as unknown as PictographData[];
+  BREAKDOWN.map((b) =>
+    box(b.m, null, `t3-${b.key}`)
+  ) as unknown as PictographData[];
 
 // The DISPLAY breakdown shows 4 poses (start/half/end/combined) - only "start"
 // and "combined" are a real playable pair (half/end are static poses with no
@@ -140,7 +165,9 @@ const stripSteps = (strip: Strip): PictographData[] =>
   strip.rows
     .flat()
     .filter((cell): cell is { m: Move; step: number } => cell !== null)
-    .map((cell) => box(cell.m, cell.step, `seq-${cell.step}`)) as unknown as PictographData[];
+    .map((cell) =>
+      box(cell.m, cell.step, `seq-${cell.step}`)
+    ) as unknown as PictographData[];
 
 /** HAND props - matching Type3CrossShiftsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.HAND } as const;
@@ -150,9 +177,9 @@ export const hmType34Content: GuideBlock[] = [
   {
     kind: "prose",
     html:
-      "A <span class=\"cross\">Cross</span><span class=\"shift\">-Shift</span> combines a shift and a dash.<br>" +
+      'A <span class="cross">Cross</span><span class="shift">-Shift</span> combines a shift and a dash.<br>' +
       "Since a dash has further to travel, it moves slightly faster.<br>" +
-      "To understand <span class=\"cross\">Cross</span><span class=\"shift\">-Shifts</span>, let’s break one down into parts:",
+      'To understand <span class="cross">Cross</span><span class="shift">-Shifts</span>, let’s break one down into parts:',
   },
   {
     kind: "pictographGroup",
@@ -172,12 +199,25 @@ export const hmType34Content: GuideBlock[] = [
       "The following sequences demonstrate their capabilities.<br>" +
       "This one explores alpha → gamma:",
   },
-  { kind: "pictographGroup", items: stripSteps(SEQ1), flowCols: 5, card: true, render: RENDER, caption: "α → γ" },
+  {
+    kind: "pictographGroup",
+    items: stripSteps(SEQ1),
+    flowCols: 5,
+    card: true,
+    render: RENDER,
+    caption: "α → γ",
+  },
   { kind: "prose", html: "And this one shows beta → gamma:" },
-  { kind: "pictographGroup", items: stripSteps(SEQ2), flowCols: 5, card: true, render: RENDER, caption: "β → γ" },
+  {
+    kind: "pictographGroup",
+    items: stripSteps(SEQ2),
+    flowCols: 5,
+    card: true,
+    render: RENDER,
+    caption: "β → γ",
+  },
   {
     kind: "prose",
-    html:
-      "Tech nerds will notice these <span class=\"cross\">Cross</span><span class=\"shift\">-Shifts</span> create <em>Zan’s Diamond</em> variations. Neat!",
+    html: 'Tech nerds will notice these <span class="cross">Cross</span><span class="shift">-Shifts</span> create <em>Zan’s Diamond</em> variations. Neat!',
   },
 ];

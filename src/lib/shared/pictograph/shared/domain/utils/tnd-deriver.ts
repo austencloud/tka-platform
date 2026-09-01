@@ -45,7 +45,10 @@ const ANG: Readonly<Record<string, number>> = {
 
 const SOUTH = 180;
 
-const NULL_RESULT: TnDCalculationResult = { tndMode: null, elementalType: null };
+const NULL_RESULT: TnDCalculationResult = {
+  tndMode: null,
+  elementalType: null,
+};
 
 /**
  * Degrees of travel from `loc` to south along orbital direction `dir`.
@@ -72,10 +75,10 @@ const MODE_BY_TIMING_DIR: Readonly<Record<string, TnDMode>> = {
 /**
  * Derive TnD mode + elemental type from the two hands' arc geometry.
  *
- * @param blueStart blue hand's start grid location
- * @param blueEnd   blue hand's end grid location
- * @param redStart  red hand's start grid location
- * @param redEnd    red hand's end grid location
+ * @param leftStart left hand's start grid location
+ * @param leftEnd   left hand's end grid location
+ * @param rightStart right hand's start grid location
+ * @param rightEnd  right hand's end grid location
  * @returns the classified TnD result, or nulls when either hand is not a rotating
  *   shift (its arc has no orbital sense — static or dash geometry)
  */
@@ -102,7 +105,7 @@ export function deriveTnD(
 }
 
 /**
- * Derive TnD from a pictograph by reading its blue/red motion arcs.
+ * Derive TnD from a pictograph by reading its left/right motion arcs.
  * Each hand's arc is the motion's start → end location. Classification is purely
  * geometric: only shift arcs (pro/anti/float — adjacent points) carry an orbital
  * sense, so static start positions and dash/hash legs naturally yield nulls.

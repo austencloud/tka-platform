@@ -13,15 +13,15 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
  * Describes orientation alignment status for exact position matches.
  */
 export interface OrientationAlignment {
-  /** Whether both blue and red orientations match the start position */
+  /** Whether both left and right orientations match the start position */
   matches: boolean;
-  /** End orientation of blue prop after adding bridge letter */
+  /** End orientation of the left prop after adding bridge letter */
   leftEndOri: string;
-  /** End orientation of red prop after adding bridge letter */
+  /** End orientation of the right prop after adding bridge letter */
   rightEndOri: string;
-  /** Start orientation of blue prop (from sequence start position) */
+  /** Start orientation of the left prop (from sequence start position) */
   leftStartOri: string;
-  /** Start orientation of red prop (from sequence start position) */
+  /** Start orientation of the right prop (from sequence start position) */
   rightStartOri: string;
   /**
    * How many times the sequence needs to repeat to return to original orientations.
@@ -38,8 +38,7 @@ export interface OrientationAlignment {
 export function getStartOrientations(
   sequence: SequenceData
 ): { leftOri: string; rightOri: string } | null {
-  const startPosData =
-    sequence.startPosition || sequence.startingPosition;
+  const startPosData = sequence.startPosition || sequence.startingPosition;
   if (!startPosData) return null;
 
   // Extract orientations from motion data
@@ -47,7 +46,7 @@ export function getStartOrientations(
     .motions as Record<string, unknown> | undefined;
 
   if (!motions) {
-    // Try legacy format with direct blue/red properties
+    // Try the legacy format with direct hand properties.
     const leftData = (startPosData as unknown as Record<string, unknown>)
       .left as Record<string, unknown> | undefined;
     const rightData = (startPosData as unknown as Record<string, unknown>)

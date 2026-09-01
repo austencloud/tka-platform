@@ -109,7 +109,7 @@ export class OffscreenExportRenderer {
     // export drives every frame through renderFrame() → renderSync(). If the loop
     // runs, it repaints from the engine's OWN internal state — which never
     // receives per-frame prop positions (those arrive only as renderFrame args) —
-    // so its bluePropState/redPropState stay at the boot default. During the
+    // so its leftPropState/rightPropState stay at the boot default. During the
     // orchestrator's `await waitForAnimationFrame()` between renderFrame() and the
     // canvas capture, an rAF render fires and (a) overwrites the frame with a
     // propless one AND (b) drives the prop fade managers with a wall clock +
@@ -150,11 +150,11 @@ export class OffscreenExportRenderer {
 
     // Thread the resolved prop types into the offscreen engine's STATE before the
     // frame loop. The renderer skips drawing a prop whose image is null
-    // (canvas-2d-animation-renderer getBluePropImage), so the prop image must be
+    // (canvas-2d-animation-renderer getLeftPropImage), so the prop image must be
     // loaded — but loading the image alone is not enough: frame-parameter-builder
-    // reads the prop TYPE from state.currentBluePropType/RedPropType
+    // reads the prop TYPE from state.currentLeftPropType/currentRightPropType
     // (frame-parameter-builder.ts:227-228,244-245) and the prop DIMENSIONS from
-    // state.bluePropDimensions/redPropDimensions (frame-parameter-builder.ts:209-210).
+    // state.leftPropDimensions/rightPropDimensions (frame-parameter-builder.ts:209-210).
     // The offscreen engine is driven only through renderFrame(), which bypasses
     // PlaybackSync — so those state fields are never synced and stay at the boot
     // default ("staff", staff dimensions). A bare renderer.loadPerColorPropTextures()

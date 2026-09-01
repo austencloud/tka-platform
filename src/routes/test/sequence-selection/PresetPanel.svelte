@@ -6,8 +6,14 @@
     setSequenceSelection,
   } from "$lib/shared/selection/sequence-selection.svelte";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-  import { MotionType, HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    MotionType,
+    HandSide,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import {
+    GridMode,
+    GridLocation,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -45,7 +51,7 @@
           motionType: MotionType.STATIC,
           startLocation: b,
           endLocation: b,
-          color: HandSide.LEFT,
+          hand: HandSide.LEFT,
           propType: PropType.HAND,
           gridMode: GridMode.DIAMOND,
         }),
@@ -53,7 +59,7 @@
           motionType: MotionType.STATIC,
           startLocation: r,
           endLocation: r,
-          color: HandSide.RIGHT,
+          hand: HandSide.RIGHT,
           propType: PropType.HAND,
           gridMode: GridMode.DIAMOND,
         }),

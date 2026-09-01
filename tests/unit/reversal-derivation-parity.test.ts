@@ -30,6 +30,7 @@ import { fileURLToPath } from "node:url";
 import { deriveSteps } from "../../src/lib/shared/foundation/services/step-deriver";
 import { processReversals } from "../../src/lib/shared/create/services/reversal-detector";
 import type { SequenceData } from "../../src/lib/shared/foundation/domain/models/sequence-data";
+import { normalizeLegacySequence } from "@tka/tka-types";
 
 const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -58,12 +59,14 @@ function loadCorpus(): RawDoc[] {
   const parsed = JSON.parse(readFileSync(file, "utf8")) as {
     documents: RawDoc[];
   };
-  return parsed.documents.filter(
-    (d) =>
-      d.leftSoloProp?.steps?.length &&
-      d.rightSoloProp?.steps?.length &&
-      d.stepPairings?.length
-  );
+  return parsed.documents
+    .map(normalizeLegacySequence)
+    .filter(
+      (d) =>
+        d.leftSoloProp?.steps?.length &&
+        d.rightSoloProp?.steps?.length &&
+        d.stepPairings?.length
+    );
 }
 
 describe("reversal-derivation parity (diagnostic over the public corpus)", () => {
@@ -123,7 +126,10 @@ describe("reversal-derivation parity (diagnostic over the public corpus)", () =>
       for (let i = 0; i < pairings.length; i++) {
         const storedB = !!pairings[i].leftReversal;
         const storedR = !!pairings[i].rightReversal;
-        const step = processed.steps[i] as { leftReversal?: boolean; rightReversal?: boolean };
+        const step = processed.steps[i] as {
+          leftReversal?: boolean;
+          rightReversal?: boolean;
+        };
         const derB = !!step?.leftReversal;
         const derR = !!step?.rightReversal;
         stepTotal++;

@@ -11,11 +11,16 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/mot
 import type { PropGeometryKey } from "./prop-geometry-adjustment";
 import { createCanonicalPlacementContext } from "../../calculation/services/canonical-placement-frame";
 import { placementFrameForGridMode } from "../../placement/domain/placement-frame";
+import {
+  HandSide,
+  normalizeLegacyHandSide,
+  type HandSide as HandSideValue,
+} from "@tka/tka-types";
 
 export function derivePropGeometryKey(
   pictographData: PictographData,
   motionData: MotionData,
-  arrowColor?: string
+  arrowHand?: HandSideValue | "blue" | "red"
 ): PropGeometryKey | null {
   const canonicalContext = createCanonicalPlacementContext(
     pictographData,
@@ -35,10 +40,11 @@ export function derivePropGeometryKey(
   if (!endPosition) return null;
   const positionType = endPosition.replace(/\d+$/, "");
 
-  const color = arrowColor || motionData.hand || "blue";
-  const isBlue = color === "blue";
-  const thisMotion = isBlue ? leftMotion : rightMotion;
-  const otherMotion = isBlue ? rightMotion : leftMotion;
+  const hand =
+    normalizeLegacyHandSide(arrowHand ?? motionData.hand) ?? HandSide.LEFT;
+  const isLeft = hand === HandSide.LEFT;
+  const thisMotion = isLeft ? leftMotion : rightMotion;
+  const otherMotion = isLeft ? rightMotion : leftMotion;
 
   return {
     placementFrame,
@@ -49,6 +55,6 @@ export function derivePropGeometryKey(
     otherEndOrientation: otherMotion.endOrientation?.toLowerCase() || "in",
     motionType: motionData.motionType?.toLowerCase() || "static",
     turns: String(motionData.turns ?? 0),
-    arrowColor: color,
+    arrowColor: hand,
   };
 }

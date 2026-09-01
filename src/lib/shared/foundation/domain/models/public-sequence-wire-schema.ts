@@ -36,7 +36,7 @@
  * Firebase and Svelte runtime dependencies while giving every ingress path the
  * same blue/red-to-left/right compatibility behavior. The existing
  * `SoloPropDataSchema`
- * (`./solo-prop-schemas.ts`) is NOT reused for `blueSoloProp`/`redSoloProp`
+ * (`./solo-prop-schemas.ts`) is NOT reused for `leftSoloProp`/`rightSoloProp`
  * because it imports the `$lib/shared/firestore` barrel, which pulls
  * `firestore-crud` → the Firebase client SDK → `authState` → `$app/navigation`.
  * That barrel is unavailable under `tsx` and is the exact import-cycle hazard
@@ -483,9 +483,13 @@ export function toPublicSequenceProjection(
     }),
     ...(wire.encoderHash !== undefined && { encoderHash: wire.encoderHash }),
     ...(wire.leftPathHash !== undefined && { leftPathHash: wire.leftPathHash }),
-    ...(wire.rightPathHash !== undefined && { rightPathHash: wire.rightPathHash }),
+    ...(wire.rightPathHash !== undefined && {
+      rightPathHash: wire.rightPathHash,
+    }),
     ...(wire.leftSoloHash !== undefined && { leftSoloHash: wire.leftSoloHash }),
-    ...(wire.rightSoloHash !== undefined && { rightSoloHash: wire.rightSoloHash }),
+    ...(wire.rightSoloHash !== undefined && {
+      rightSoloHash: wire.rightSoloHash,
+    }),
 
     ...(wire.leftSoloProp !== undefined && {
       leftSoloProp: wire.leftSoloProp as unknown as SoloPropData,

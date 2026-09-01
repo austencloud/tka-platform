@@ -48,7 +48,7 @@ function propPointAt(turns: number, progress: number): Point {
   });
 
   const result = interpolatePropAngles(step, progress);
-  const angles = result.blueAngles as { x?: number; y?: number };
+  const angles = result.leftAngles as { x?: number; y?: number };
   return {
     x: angles.x ?? Number.NaN,
     y: angles.y ?? Number.NaN,

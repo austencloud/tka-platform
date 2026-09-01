@@ -167,9 +167,9 @@ export function locationName(location: GridLocation): string {
   return LOCATION_NAMES[location] ?? String(location);
 }
 
-/** "Blue" / "Red" — the label that always travels WITH the color, never instead of it. */
+/** Performer-relative label for the hand whose canonical trace color is shown. */
 export function handName(hand: TraceHand): string {
-  return hand === HandSide.LEFT ? "Blue" : "Red";
+  return hand === HandSide.LEFT ? "Left" : "Right";
 }
 
 /** Where a segment begins on the stage, whether it moves or holds. */

@@ -16,7 +16,10 @@
  * transform is deliberately ephemeral (a "browse variations" scratch state,
  * not a saved preference) and resets on reload.
  */
-import { HandSide, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  HandSide,
+  RotationDirection,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -24,9 +27,14 @@ import { applyPendingTurnsToOption } from "$lib/shared/create/services/apply-tur
 import {
   rotateAllPictographs,
   mirrorAllPictographs,
-  colorSwapAllPictographs,
+  handSwapAllPictographs,
 } from "$lib/features/learn/codex/services/codex-pictograph-updater";
-import { codexData, SHEET1, SHEET2, type CodexSheetDef } from "../../codex/_data/codex-groups";
+import {
+  codexData,
+  SHEET1,
+  SHEET2,
+  type CodexSheetDef,
+} from "../../codex/_data/codex-groups";
 import {
   GUIDE_CODEX_STORAGE_KEY,
   defaultGuideCodexPrefs,
@@ -61,7 +69,7 @@ function baselineMap(): Map<string, PictographData> {
   return m;
 }
 
-/** Re-skin a pictograph's blue/red motions with a different prop family. */
+/** Re-skin a pictograph's left/right motions with a different prop family. */
 function withPropType(p: PictographData, type: PropType): PictographData {
   const left = p.motions?.[HandSide.LEFT];
   const right = p.motions?.[HandSide.RIGHT];
@@ -77,7 +85,11 @@ function withPropType(p: PictographData, type: PropType): PictographData {
 /** Set each hand's turn count (SETTING, not adding - the canonical option-picker
  *  path recomputes rotation + end orientation). Spin direction only matters for
  *  dash/static hands carrying turns; CW matches the option picker's default. */
-function withTurns(p: PictographData, leftTurns: GuideCodexTurns, rightTurns: GuideCodexTurns): PictographData {
+function withTurns(
+  p: PictographData,
+  leftTurns: GuideCodexTurns,
+  rightTurns: GuideCodexTurns
+): PictographData {
   return applyPendingTurnsToOption(
     p,
     leftTurns,
@@ -87,10 +99,11 @@ function withTurns(p: PictographData, leftTurns: GuideCodexTurns, rightTurns: Gu
   );
 }
 
-
 class GuideCodexState {
   propType = $state<PropType>(defaultGuideCodexPrefs().propType);
-  visibility = $state<GuideCodexVisibility>(defaultGuideCodexPrefs().visibility);
+  visibility = $state<GuideCodexVisibility>(
+    defaultGuideCodexPrefs().visibility
+  );
   leftTurns = $state<GuideCodexTurns>(defaultGuideCodexPrefs().leftTurns);
   rightTurns = $state<GuideCodexTurns>(defaultGuideCodexPrefs().rightTurns);
   #transformed = $state<Map<string, PictographData> | null>(null);
@@ -109,7 +122,9 @@ class GuideCodexState {
   #restore(): void {
     if (typeof localStorage === "undefined") return;
     try {
-      const prefs = restoreGuideCodexPrefs(localStorage.getItem(GUIDE_CODEX_STORAGE_KEY));
+      const prefs = restoreGuideCodexPrefs(
+        localStorage.getItem(GUIDE_CODEX_STORAGE_KEY)
+      );
       this.propType = prefs.propType;
       this.visibility = prefs.visibility;
       this.leftTurns = prefs.leftTurns;
@@ -169,7 +184,7 @@ class GuideCodexState {
         ? rotateAllPictographs(arr)
         : op === "mirror"
           ? mirrorAllPictographs(arr)
-          : colorSwapAllPictographs(arr);
+          : handSwapAllPictographs(arr);
     const next = new Map<string, PictographData>();
     ids.forEach((id, i) => next.set(id, out[i]!));
     this.#transformed = next;
@@ -191,7 +206,10 @@ class GuideCodexState {
     if (!base) return null;
     // Turns first (recomputes rotation/orientation off the canonical motion),
     // then re-skin with the selected prop family.
-    return withPropType(withTurns(base, this.leftTurns, this.rightTurns), this.propType);
+    return withPropType(
+      withTurns(base, this.leftTurns, this.rightTurns),
+      this.propType
+    );
   }
 }
 

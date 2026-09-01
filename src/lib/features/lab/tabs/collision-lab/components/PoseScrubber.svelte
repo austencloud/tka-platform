@@ -49,53 +49,57 @@
 <div class="scrubber">
   <div class="filters">
     <div class="filter-group">
-      <span class="group-label">Blue plane</span>
+      <span class="group-label">Left plane</span>
       <div class="chips">
         {#each planeOptions as opt}
           <button
             class="chip"
             class:active={state.leftPlaneFilter === opt.value}
             onclick={() => state.setLeftPlaneFilter(opt.value)}
-          >{opt.label}</button>
+            >{opt.label}</button
+          >
         {/each}
       </div>
     </div>
 
     <div class="filter-group">
-      <span class="group-label">Red plane</span>
+      <span class="group-label">Right plane</span>
       <div class="chips">
         {#each planeOptions as opt}
           <button
             class="chip"
             class:active={state.rightPlaneFilter === opt.value}
             onclick={() => state.setRightPlaneFilter(opt.value)}
-          >{opt.label}</button>
+            >{opt.label}</button
+          >
         {/each}
       </div>
     </div>
 
     <div class="filter-group">
-      <span class="group-label">Blue ori</span>
+      <span class="group-label">Left ori</span>
       <div class="chips">
         {#each oriOptions as opt}
           <button
             class="chip"
             class:active={state.leftOrientationFilter === opt.value}
             onclick={() => state.setLeftOrientationFilter(opt.value)}
-          >{opt.label}</button>
+            >{opt.label}</button
+          >
         {/each}
       </div>
     </div>
 
     <div class="filter-group">
-      <span class="group-label">Red ori</span>
+      <span class="group-label">Right ori</span>
       <div class="chips">
         {#each oriOptions as opt}
           <button
             class="chip"
             class:active={state.rightOrientationFilter === opt.value}
             onclick={() => state.setRightOrientationFilter(opt.value)}
-          >{opt.label}</button>
+            >{opt.label}</button
+          >
         {/each}
       </div>
     </div>
@@ -107,12 +111,17 @@
         class:active={state.crossPlaneOnly}
         onclick={() => state.setCrossPlaneOnly(!state.crossPlaneOnly)}
         title="Show only poses where the two hands are on different planes"
-      >Cross-plane only</button>
+        >Cross-plane only</button
+      >
     </div>
   </div>
 
   <div class="stepper">
-    <button class="nav" onclick={() => state.stepBackward()} aria-label="Previous pose">◄</button>
+    <button
+      class="nav"
+      onclick={() => state.stepBackward()}
+      aria-label="Previous pose">◄</button
+    >
     <span class="cursor">
       Pose
       <input
@@ -124,15 +133,24 @@
       />
       / {state.filteredPoses.length}
     </span>
-    <button class="nav" onclick={() => state.stepForward()} aria-label="Next pose">►</button>
-    <button class="export" onclick={() => state.exportLabels()}>Export JSON</button>
+    <button
+      class="nav"
+      onclick={() => state.stepForward()}
+      aria-label="Next pose">►</button
+    >
+    <button class="export" onclick={() => state.exportLabels()}
+      >Export JSON</button
+    >
   </div>
 
   <div class="progress">
     <div class="bar">
       <div class="seg clear" style="width: {progressPct.clear}%"></div>
       <div class="seg needs" style="width: {progressPct.needs}%"></div>
-      <div class="seg unreachable" style="width: {progressPct.unreachable}%"></div>
+      <div
+        class="seg unreachable"
+        style="width: {progressPct.unreachable}%"
+      ></div>
       <div class="seg skipped" style="width: {progressPct.skipped}%"></div>
     </div>
     <div class="counts">
@@ -140,7 +158,9 @@
       <span>Needs: {state.progress.needsAdjustment}</span>
       <span>Unreachable: {state.progress.unreachable}</span>
       <span>Skip: {state.progress.skipped}</span>
-      <span>Total labeled: {state.progress.labeled} / {state.progress.total}</span>
+      <span
+        >Total labeled: {state.progress.labeled} / {state.progress.total}</span
+      >
     </div>
   </div>
 </div>
@@ -240,10 +260,18 @@
     border-radius: 4px;
     overflow: hidden;
   }
-  .seg.clear { background: #22c55e; }
-  .seg.needs { background: #eab308; }
-  .seg.unreachable { background: #6b7280; }
-  .seg.skipped { background: #64748b; }
+  .seg.clear {
+    background: #22c55e;
+  }
+  .seg.needs {
+    background: #eab308;
+  }
+  .seg.unreachable {
+    background: #6b7280;
+  }
+  .seg.skipped {
+    background: #64748b;
+  }
   .counts {
     display: flex;
     gap: 16px;

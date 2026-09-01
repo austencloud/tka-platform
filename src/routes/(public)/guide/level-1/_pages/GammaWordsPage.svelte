@@ -4,14 +4,14 @@
    * proof p26 / "1.1 - Gamma Words - MP, NQ, OR, STUV" artboard.
    *
    * The simplest 4-letter γ→γ words, all real staff pictographs sharing one
-   * Start box per block (start = blue S / red E, thumbs in - the γ the previous
+   * Start box per block (start = left S / right E, thumbs in - the γ the previous
    * page ends on):
-   *   γ→γ (Opp)  - MPMP / NQNQ / OROR: blue rides the CW loop s→w→n→e→s while
-   *   red rides the CCW loop e→n→w→s→e (letters alternate M,P,M,P - MCP: M/P
-   *   dual-pro, N/Q dual-anti, O/R hybrid blue-anti + red-pro).
+   *   γ→γ (Opp)  - MPMP / NQNQ / OROR: left rides the CW loop s→w→n→e→s while
+   *   right rides the CCW loop e→n→w→s→e (letters alternate M,P,M,P - MCP: M/P
+   *   dual-pro, N/Q dual-anti, O/R hybrid left-anti + right-pro).
    *   γ→γ (Same) - SSSS / TTTT / UUUU / VVVV: both hands ride the CCW loop,
-   *   red positionally leading (blue s→e→n→w→s one step behind red's
-   *   e→n→w→s→e). U = leader pro (red pro / blue anti); V = leader anti.
+   *   right positionally leading (left s→e→n→w→s one step behind right's
+   *   e→n→w→s→e). U = leader pro (right pro / left anti); V = leader anti.
    * Anti hands flip the thumb every letter (in→out→in→out); pro hands stay in.
    *
    * Reader: each word row is one clickable strip → Start + 4 letters with

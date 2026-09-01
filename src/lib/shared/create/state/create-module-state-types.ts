@@ -28,12 +28,15 @@ export interface SequenceStateMinimal {
   clearSequenceCompletely(): Promise<void>;
   hasSequence(): boolean;
   getSelectedStepIndex(): number | null;
-  removeStepAndSubsequentWithAnimation(stepIndex: number, onComplete?: () => void): void;
+  removeStepAndSubsequentWithAnimation(
+    stepIndex: number,
+    onComplete?: () => void
+  ): void;
   selectStep(stepIndex: number): void;
   selectStartPositionForEditing(): void;
   mirrorSequence(targetHand?: TargetHand): Promise<void>;
   flipSequence(targetHand?: TargetHand): Promise<void>;
-  swapColors(): Promise<void>;
+  swapHands(): Promise<void>;
   invertSequence(): Promise<void>;
   rewindSequence(targetHand?: TargetHand): Promise<void>;
   rotateSequence(
@@ -50,7 +53,10 @@ export interface SequenceStateMinimal {
 export interface CreateModuleState {
   readonly sequenceState: SequenceStateMinimal;
   getActiveTabSequenceState(): SequenceStateMinimal;
-  pushUndoSnapshot(type: UndoOperationType, metadata?: { description?: string }): void;
+  pushUndoSnapshot(
+    type: UndoOperationType,
+    metadata?: { description?: string }
+  ): void;
   undo(): boolean;
   redo(): boolean;
   readonly canUndo: boolean;

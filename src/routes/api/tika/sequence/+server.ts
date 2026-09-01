@@ -92,14 +92,14 @@ function loadDataframe(): PictographData[] {
         timing: row["timing"] ?? "",
         direction: row["direction"] ?? "",
         leftMotion: {
-          color: "blue",
+          hand: "left",
           startLocation: row["blueStartLocation"] ?? "",
           endLocation: row["blueEndLocation"] ?? "",
           motionType: row["blueMotionType"] ?? "",
           rotationDirection: row["blueRotationDirection"] ?? "",
         },
         rightMotion: {
-          color: "red",
+          hand: "right",
           startLocation: row["redStartLocation"] ?? "",
           endLocation: row["redEndLocation"] ?? "",
           motionType: row["redMotionType"] ?? "",
@@ -393,10 +393,13 @@ export const POST: RequestHandler = async (event) => {
     }
 
     if (letters.length === 0) {
-      return new Response(JSON.stringify({ error: "No valid letters provided" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "No valid letters provided" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Build the sequence (clamp to prevent unbounded CPU work)

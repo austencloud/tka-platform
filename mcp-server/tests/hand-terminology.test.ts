@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerEducationalTools } from "../src/tools/educational-tools.js";
 
@@ -41,5 +43,28 @@ describe("canonical hand terminology", () => {
     expect(text).toContain("performer's right hand");
     expect(text.toLowerCase()).not.toContain("follow hand");
     expect(text.toLowerCase()).not.toContain("following hand");
+  });
+
+  it("ships the same definitions and aliases in the standalone MCP package", () => {
+    const glossary = JSON.parse(
+      readFileSync(resolve("../mcp-server-pkg/data/tka-glossary.json"), "utf8")
+    ) as Record<string, { definition?: string }>;
+    const aliases = JSON.parse(
+      readFileSync(
+        resolve("../mcp-server-pkg/data/tka-term-aliases.json"),
+        "utf8"
+      )
+    ) as Record<string, string>;
+
+    expect(glossary.blue?.definition).toContain("performer's left hand");
+    expect(glossary.red?.definition).toContain("performer's right hand");
+    expect(JSON.stringify({ glossary, aliases }).toLowerCase()).not.toContain(
+      "lead hand"
+    );
+    expect(JSON.stringify({ glossary, aliases }).toLowerCase()).not.toContain(
+      "follow hand"
+    );
+    expect(aliases["left hand"]).toBe("left-hand");
+    expect(aliases["right hand"]).toBe("right-hand");
   });
 });

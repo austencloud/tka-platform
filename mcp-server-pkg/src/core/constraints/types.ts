@@ -6,9 +6,8 @@
 
 import type { ConstraintType, ConstraintMode } from "./constraint-types.js";
 
-
 export interface MotionData {
-  color: string;
+  hand: "left" | "right";
   startLocation: string;
   endLocation: string;
   motionType: string;
@@ -23,10 +22,9 @@ export interface PictographData {
   endPosition: string;
   timing: string;
   direction: string;
-  blueMotion: MotionData;
-  redMotion: MotionData;
+  leftMotion: MotionData;
+  rightMotion: MotionData;
 }
-
 
 /**
  * Context passed to constraints for evaluation.
@@ -107,7 +105,6 @@ export interface ISequenceConstraint extends IConstraint {
   evaluateSequence(steps: PictographData[]): ConstraintScore;
 }
 
-
 /**
  * A set of constraints to apply during generation.
  */
@@ -121,7 +118,6 @@ export interface ConstraintSet {
   /** Weights for soft constraints (default 1.0) */
   weights?: Map<ConstraintType, number>;
 }
-
 
 /**
  * Detailed scoring result for a candidate variation.
@@ -143,7 +139,6 @@ export interface VariationScore {
   constraintScores: Map<ConstraintType, ConstraintScore>;
 }
 
-
 /**
  * State of a partial sequence during beam search.
  */
@@ -163,7 +158,6 @@ export interface SearchState {
   /** Indices of steps that are bridge letters (not user-requested letters) */
   bridgeStepIndices?: Set<number>;
 }
-
 
 /**
  * Report on how well a generated sequence satisfies constraints.

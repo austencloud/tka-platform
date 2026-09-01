@@ -18,7 +18,10 @@ import {
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  GridMode,
+  GridLocation,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -33,8 +36,14 @@ const CCW = RotationDirection.COUNTER_CLOCKWISE;
 // ── Motion authoring - copied from GammaLettersPage.svelte (same helpers as
 // CompoundLettersPage). ─────────────────────────────────────────────────────
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
-const hpDir = (from: GridLocation, to: GridLocation) => (HP_CW.has(`${from}-${to}`) ? CW : CCW);
-type HandSpec = { from: GridLocation; to: GridLocation; anti: boolean; so?: Orientation };
+const hpDir = (from: GridLocation, to: GridLocation) =>
+  HP_CW.has(`${from}-${to}`) ? CW : CCW;
+type HandSpec = {
+  from: GridLocation;
+  to: GridLocation;
+  anti: boolean;
+  so?: Orientation;
+};
 const hand = (color: HandSide, h: HandSpec) => {
   const dir = hpDir(h.from, h.to);
   const so = h.so ?? IN;
@@ -63,9 +72,24 @@ const staticHand = (color: HandSide, loc: GridLocation) =>
     gridMode: GridMode.DIAMOND,
   });
 
-type CellDef = { letter: Letter; name: string; left: HandSpec; right: HandSpec };
-const cell = (letter: Letter, name: string, left: HandSpec, right: HandSpec): CellDef => ({ letter, name, left, right });
-const mv = (from: GridLocation, to: GridLocation, anti = false, so?: Orientation): HandSpec => ({
+type CellDef = {
+  letter: Letter;
+  name: string;
+  left: HandSpec;
+  right: HandSpec;
+};
+const cell = (
+  letter: Letter,
+  name: string,
+  left: HandSpec,
+  right: HandSpec
+): CellDef => ({ letter, name, left, right });
+const mv = (
+  from: GridLocation,
+  to: GridLocation,
+  anti = false,
+  so?: Orientation
+): HandSpec => ({
   from,
   to,
   anti,
@@ -86,8 +110,8 @@ const QO_ROWS: CellDef[][] = [
   ],
 ];
 
-// ── Quarter-Same row (S T U V; red positionally leads) ──────────────────────
-// U = leader pro (red pro / blue anti); V = leader anti (red anti / blue pro).
+// ── Quarter-Same row (S T U V; right positionally leads) ────────────────────
+// U = leader pro (right pro / left anti); V = leader anti (right anti / left pro).
 const QS_ROW: CellDef[] = [
   cell(Letter.S, "S", mv(W, SO_), mv(SO_, E)),
   cell(Letter.T, "T", mv(W, SO_, true), mv(SO_, E, true)),
@@ -101,7 +125,10 @@ const WORDS: WordDef[] = [
   {
     word: "MP",
     phrase: "Magic Potion",
-    steps: [cell(Letter.M, "M", mv(W, N), mv(SO_, E)), cell(Letter.P, "P", mv(N, E), mv(E, N))],
+    steps: [
+      cell(Letter.M, "M", mv(W, N), mv(SO_, E)),
+      cell(Letter.P, "P", mv(N, E), mv(E, N)),
+    ],
   },
   {
     word: "NQ",
@@ -121,7 +148,11 @@ const WORDS: WordDef[] = [
   },
 ];
 
-const cellStep = (c: CellDef, key: string, stepNumber: number | null = null): StepData =>
+const cellStep = (
+  c: CellDef,
+  key: string,
+  stepNumber: number | null = null
+): StepData =>
   ({
     id: `${key}${stepNumber === null ? "" : `-${stepNumber}`}`,
     letter: c.letter,

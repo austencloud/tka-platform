@@ -44,8 +44,8 @@ function hasClosedOrientations(steps: GeneratedStep[]): boolean {
   );
 }
 
-function motionForApp(motion: Record<string, unknown>, color: string) {
-  return { ...motion, color, propType: "staff", isVisible: true };
+function motionForApp(motion: Record<string, unknown>, hand: "left" | "right") {
+  return { ...motion, hand, propType: "staff", isVisible: true };
 }
 
 function buildRecord(
@@ -71,8 +71,8 @@ function buildRecord(
     startPosition: step.startPosition,
     endPosition: step.endPosition,
     motions: {
-      left: motionForApp(step.leftMotion, "blue"),
-      right: motionForApp(step.rightMotion, "red"),
+      left: motionForApp(step.leftMotion, "left"),
+      right: motionForApp(step.rightMotion, "right"),
     },
   }));
   const endPosition = sequenceSteps.at(-1)?.endPosition;
@@ -110,8 +110,8 @@ function buildRecord(
       endPosition: start.startPosition,
       letter: start.letter,
       motions: {
-        left: motionForApp(start.leftMotion, "blue"),
-        right: motionForApp(start.rightMotion, "red"),
+        left: motionForApp(start.leftMotion, "left"),
+        right: motionForApp(start.rightMotion, "right"),
       },
     },
     steps: sequenceSteps,

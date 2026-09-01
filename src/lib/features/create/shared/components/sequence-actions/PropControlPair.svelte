@@ -1,7 +1,7 @@
 <!--
   PropControlPair.svelte
 
-  Unified layout component for Blue + Red prop controls.
+  Unified layout component for Left + Right prop controls.
   Provides consistent glass-morphism card styling for both props.
   Handles stacked (mobile) vs side-by-side (desktop) layout.
   Focused mode overlays both mounted cards and exposes one through a hand picker.
@@ -10,8 +10,8 @@
 
   Usage:
     <PropControlPair stacked={isMobile} compact={isMobile}>
-      {#snippet blueContent()} ... blue controls ... {/snippet}
-      {#snippet redContent()} ... red controls ... {/snippet}
+      {#snippet leftContent()} ... left controls ... {/snippet}
+      {#snippet rightContent()} ... right controls ... {/snippet}
     </PropControlPair>
 -->
 <script lang="ts">
@@ -27,9 +27,9 @@
     prominentLabels?: boolean;
     /** Show one mounted card at a time in narrow layouts */
     visibleHand?: TargetHand;
-    /** Content for the blue prop card */
+    /** Content for the left prop card */
     leftContent?: Snippet;
-    /** Content for the red prop card */
+    /** Content for the right prop card */
     rightContent?: Snippet;
   }
 
@@ -55,7 +55,7 @@
     class:inactive={visibleHand === "right"}
     inert={visibleHand === "right"}
   >
-    <span class="prop-label">Blue</span>
+    <span class="prop-label">Left</span>
     <div class="card-content">
       {@render leftContent?.()}
     </div>
@@ -65,7 +65,7 @@
     class:inactive={visibleHand === "left"}
     inert={visibleHand === "left"}
   >
-    <span class="prop-label">Red</span>
+    <span class="prop-label">Right</span>
     <div class="card-content">
       {@render rightContent?.()}
     </div>
@@ -106,7 +106,6 @@
   .prop-pair.compact {
     gap: 6px;
   }
-
 
   .prop-card {
     flex: 1;
@@ -167,7 +166,6 @@
     box-shadow: 0 4px 16px rgba(239, 68, 68, 0.2);
   }
 
-
   .prop-label {
     font-size: 0.75rem;
     font-weight: 700;
@@ -177,7 +175,7 @@
   }
 
   /* Start-position cards have named fields beneath this heading. Giving the
-     prop name the stronger tier keeps Blue/Red above Location/Orientation in
+     prop name the stronger tier keeps Left/Right above Location/Orientation in
      the reading order without changing the compact controls used elsewhere. */
   .prop-pair.prominent-labels .prop-label {
     color: var(--theme-text, #fff);
@@ -223,7 +221,6 @@
     min-height: auto;
   }
 
-
   .prop-card.blue {
     --prop-color: var(--semantic-info);
     --prop-color-rgb: 59, 130, 246;
@@ -233,7 +230,6 @@
     --prop-color: var(--semantic-error);
     --prop-color-rgb: 239, 68, 68;
   }
-
 
   @media (prefers-reduced-motion: reduce) {
     .prop-card {

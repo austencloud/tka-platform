@@ -67,18 +67,28 @@
     label: string;
   }
 
-  const leftTipCount = $derived(getTipPoints(allProps.leftPropType).points.length);
-  const rightTipCount = $derived(getTipPoints(allProps.rightPropType).points.length);
+  const leftTipCount = $derived(
+    getTipPoints(allProps.leftPropType).points.length
+  );
+  const rightTipCount = $derived(
+    getTipPoints(allProps.rightPropType).points.length
+  );
 
   const channels: ChannelRow[] = $derived.by(() => {
     if (scope === "cell") {
-      return [{ key: "*", color: "linear-gradient(135deg, #3b82f6, #ef4444)", label: "Both" }];
+      return [
+        {
+          key: "*",
+          color: "linear-gradient(135deg, #3b82f6, #ef4444)",
+          label: "Both",
+        },
+      ];
     }
 
     if (scope === "hand") {
       return [
-        { key: "0", color: "#3b82f6", label: "Blue" },
-        { key: "1", color: "#ef4444", label: "Red" },
+        { key: "0", color: "#3b82f6", label: "Left" },
+        { key: "1", color: "#ef4444", label: "Right" },
       ];
     }
 
@@ -88,14 +98,14 @@
       rows.push({
         key: `0-${t}`,
         color: "#3b82f6",
-        label: `Blue ${getTipLabel(allProps.leftPropType, t, leftTipCount)}`,
+        label: `Left ${getTipLabel(allProps.leftPropType, t, leftTipCount)}`,
       });
     }
     for (let t = 0; t < rightTipCount; t++) {
       rows.push({
         key: `1-${t}`,
         color: "#ef4444",
-        label: `Red ${getTipLabel(allProps.rightPropType, t, rightTipCount)}`,
+        label: `Right ${getTipLabel(allProps.rightPropType, t, rightTipCount)}`,
       });
     }
     return rows;
@@ -142,8 +152,12 @@
     } else if (newScope === "hand") {
       if (oldScope === "tip") {
         // Collapse per-tip to per-hand: most common per prop
-        const leftKeys = Object.keys(localMap).filter((k) => k.startsWith("0-"));
-        const rightKeys = Object.keys(localMap).filter((k) => k.startsWith("1-"));
+        const leftKeys = Object.keys(localMap).filter((k) =>
+          k.startsWith("0-")
+        );
+        const rightKeys = Object.keys(localMap).filter((k) =>
+          k.startsWith("1-")
+        );
         newMap["0"] = { effect: mostCommonEffect(leftKeys) };
         newMap["1"] = { effect: mostCommonEffect(rightKeys) };
       } else {
@@ -221,7 +235,11 @@
     <!-- Scope selector -->
     <div class="scope-section">
       <span class="scope-label" id="effect-scope-label">SCOPE</span>
-      <div class="scope-strip" role="radiogroup" aria-labelledby="effect-scope-label">
+      <div
+        class="scope-strip"
+        role="radiogroup"
+        aria-labelledby="effect-scope-label"
+      >
         {#each scopes as s}
           <button
             class="scope-seg"
@@ -242,10 +260,7 @@
       {#each channels as ch (ch.key)}
         <div class="channel">
           <div class="channel-id">
-            <span
-              class="channel-dot"
-              style:background={ch.color}
-            ></span>
+            <span class="channel-dot" style:background={ch.color}></span>
             <span class="channel-label">{ch.label}</span>
           </div>
           <div class="channel-effects">
@@ -269,10 +284,7 @@
         <span class="quick-apply-label">Apply to all:</span>
         <div class="quick-apply-btns">
           {#each effectDefs as eff}
-            <button
-              class="quick-btn"
-              onclick={() => applyToAll(eff.value)}
-            >
+            <button class="quick-btn" onclick={() => applyToAll(eff.value)}>
               <i class="fas {eff.icon}" aria-hidden="true"></i>
               {eff.label}
             </button>
@@ -416,7 +428,11 @@
   }
 
   .scope-seg.active {
-    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 15%,
+      transparent
+    );
     color: var(--theme-accent-light, #c084fc);
     box-shadow: inset 0 -2px 0 var(--theme-accent-strong, #a855f7);
   }

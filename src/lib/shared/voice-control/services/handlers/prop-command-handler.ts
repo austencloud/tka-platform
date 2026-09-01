@@ -49,14 +49,15 @@ export class PropCommandHandler implements IVoiceCommandHandler {
       }
     }
 
-    if (hand === "blue") {
+    // Color-keyed values are accepted only for older AI-planned commands.
+    if (hand === "left" || hand === "blue") {
       await settingsService.updateSetting("leftPropType", propType);
-      return { success: true, message: `Blue prop: ${propType}` };
+      return { success: true, message: `Left prop: ${propType}` };
     }
 
-    if (hand === "red") {
+    if (hand === "right" || hand === "red") {
       await settingsService.updateSetting("rightPropType", propType);
-      return { success: true, message: `Red prop: ${propType}` };
+      return { success: true, message: `Right prop: ${propType}` };
     }
 
     // Both hands

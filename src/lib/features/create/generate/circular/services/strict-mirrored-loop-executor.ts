@@ -74,7 +74,7 @@ export class StrictMirroredLOOPExecutor {
       partialLength,
       requestedPeriod,
       (s, p, n) => this._createMirroredEntry(s, p, n),
-      (s, p, n) => this._createCopiedEntry(s, p, n),
+      (s, p, n) => this._createCopiedEntry(s, p, n)
     );
 
     sequence.unshift(startPosition);
@@ -142,10 +142,7 @@ export class StrictMirroredLOOPExecutor {
       },
     };
 
-    const stepWithStartOri = updateStartOrientations(
-      newStep,
-      previousStep
-    );
+    const stepWithStartOri = updateStartOrientations(newStep, previousStep);
     return updateEndOrientations(stepWithStartOri);
   }
 
@@ -162,7 +159,9 @@ export class StrictMirroredLOOPExecutor {
     const sourceLeft = sourceStep.motions[HandSide.LEFT];
     const sourceRight = sourceStep.motions[HandSide.RIGHT];
     if (!sourceLeft || !sourceRight) {
-      throw new Error(`Source step ${sourceStep.stepNumber} is missing motion data`);
+      throw new Error(
+        `Source step ${sourceStep.stepNumber} is missing motion data`
+      );
     }
 
     const newStep: StepData = {
@@ -174,19 +173,20 @@ export class StrictMirroredLOOPExecutor {
       motions: {
         [HandSide.LEFT]: {
           ...sourceLeft,
-          startLocation: previousStep.motions[HandSide.LEFT]?.endLocation ?? sourceLeft.startLocation,
+          startLocation:
+            previousStep.motions[HandSide.LEFT]?.endLocation ??
+            sourceLeft.startLocation,
         },
         [HandSide.RIGHT]: {
           ...sourceRight,
-          startLocation: previousStep.motions[HandSide.RIGHT]?.endLocation ?? sourceRight.startLocation,
+          startLocation:
+            previousStep.motions[HandSide.RIGHT]?.endLocation ??
+            sourceRight.startLocation,
         },
       },
     };
 
-    const stepWithStartOri = updateStartOrientations(
-      newStep,
-      previousStep
-    );
+    const stepWithStartOri = updateStartOrientations(newStep, previousStep);
     return updateEndOrientations(stepWithStartOri);
   }
 
@@ -199,15 +199,15 @@ export class StrictMirroredLOOPExecutor {
   }
 
   private _createMirroredMotion(
-    color: HandSide,
+    hand: HandSide,
     previousStep: StepData,
     sourceStep: StepData
   ): MotionData {
-    const previousMotion = previousStep.motions[color];
-    const sourceMotion = sourceStep.motions[color];
+    const previousMotion = previousStep.motions[hand];
+    const sourceMotion = sourceStep.motions[hand];
 
     if (!previousMotion || !sourceMotion) {
-      throw new Error(`Missing motion data for ${color}`);
+      throw new Error(`Missing motion data for ${hand}`);
     }
 
     const mirroredEndLocation = this._getMirroredLocation(

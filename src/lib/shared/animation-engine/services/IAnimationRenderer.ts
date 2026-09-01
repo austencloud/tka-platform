@@ -77,7 +77,7 @@ export interface IAnimationRenderer {
   loadPropTextures(propType: string): Promise<void>;
 
   /**
-   * Capture the blue prop's last painted transform before a hot-swap changes
+   * Capture the left prop's last painted transform before a hot-swap changes
    * the sequence state. The later crossfade uses this as its visual origin.
    */
   prepareLeftPropCrossfade(): void;

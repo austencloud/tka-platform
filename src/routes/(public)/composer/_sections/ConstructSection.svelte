@@ -15,11 +15,11 @@
   for the visit. Reduced motion: no act, no ghost, plain interactive.
 
   Prop policy: this surface pins its own prop via the canonical-five PropPicker
-  (staff default) and passes bluePropTypeOverride/redPropTypeOverride down the
+  (staff default) and passes leftPropTypeOverride/rightPropTypeOverride down the
   whole chain — the user's global prop setting (which may be poi) never reaches
   this demo. Poi is deliberately impossible here. Turns policy is the same
-  move: the demo pins its available turn values via per-hand pickers (blue/red) and
-  passes blueTurnsOverride/redTurnsOverride, so the user's sticky Create-tab
+  move: the demo pins its available turn values via per-hand pickers (left/right) and
+  passes leftTurnsOverride/rightTurnsOverride, so the user's sticky Create-tab
   turns (localStorage) never leak in. Every visible demo value stays at or
   below 1.5 turns, so the public examples do not imply a higher ceiling.
 
@@ -741,7 +741,7 @@
           >
             <div class="tool-group turns-group blue">
               <span class="tool-label"
-                ><span class="hand-dot blue" aria-hidden="true"></span>Blue
+                ><span class="hand-dot blue" aria-hidden="true"></span>Left
                 turns</span
               >
               <SegmentedControl
@@ -753,7 +753,8 @@
             </div>
             <div class="tool-group turns-group red">
               <span class="tool-label"
-                ><span class="hand-dot red" aria-hidden="true"></span>Red turns</span
+                ><span class="hand-dot red" aria-hidden="true"></span>Right
+                turns</span
               >
               <SegmentedControl
                 options={TURN_OPTIONS}

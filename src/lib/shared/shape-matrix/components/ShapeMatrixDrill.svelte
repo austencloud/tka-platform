@@ -204,7 +204,7 @@
     pair ? `${propType}|${flowerKey(pair.left)}|${flowerKey(pair.right)}` : null
   );
 
-  // The cell's mandala: blue hand's flower merged with red hand's flower — the
+  // The cell's mandala: left hand's flower merged with right hand's flower — the
   // exact merge renderCell uses for the grid tiles, so the hero IS the cell.
   const heroPaths = $derived.by<MandalaPaths | null>(() => {
     if (!pair) return null;

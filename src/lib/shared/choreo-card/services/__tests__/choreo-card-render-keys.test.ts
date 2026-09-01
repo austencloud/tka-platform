@@ -128,7 +128,7 @@ describe("buildChoreoCardRenderKeys — overlay vs structural routing", () => {
           ...step,
           motions: {
             ...step.motions,
-            blue: {
+            left: {
               motionType: "pro",
               rotationDirection: "cw",
               startLocation: index === 0 ? "n" : "e",

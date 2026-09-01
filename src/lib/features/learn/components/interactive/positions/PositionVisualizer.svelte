@@ -48,8 +48,14 @@ Uses PictographContainer (the actual pictograph renderer) instead of custom SVG.
 
   // Position type detection
   const OPPOSITE_PAIRS: Record<string, string> = {
-    N: "S", S: "N", E: "W", W: "E",
-    NE: "SW", SW: "NE", NW: "SE", SE: "NW",
+    N: "S",
+    S: "N",
+    E: "W",
+    W: "E",
+    NE: "SW",
+    SW: "NE",
+    NW: "SE",
+    SE: "NW",
   };
 
   const positionType: PositionType = $derived.by(() => {
@@ -84,7 +90,7 @@ Uses PictographContainer (the actual pictograph renderer) instead of custom SVG.
         isVisible: true,
         propType: PropType.HAND,
         arrowLocation: HAND_TO_LOCATION[leftHand],
-        color: HandSide.LEFT,
+        hand: HandSide.LEFT,
         gridMode,
       }),
       right: createMotionData({
@@ -98,7 +104,7 @@ Uses PictographContainer (the actual pictograph renderer) instead of custom SVG.
         isVisible: true,
         propType: PropType.HAND,
         arrowLocation: HAND_TO_LOCATION[rightHand],
-        color: HandSide.RIGHT,
+        hand: HandSide.RIGHT,
         gridMode,
       }),
     },
@@ -108,7 +114,7 @@ Uses PictographContainer (the actual pictograph renderer) instead of custom SVG.
 <div class="position-visualizer">
   <PictographContainer
     {pictographData}
-    gridMode={gridMode}
+    {gridMode}
     showTKA={showLetter}
     showReversals={false}
     showTnD={false}

@@ -14,7 +14,10 @@
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-  import type { CardOrientations, OrientationOption } from "../domain/level5-lab-types";
+  import type {
+    CardOrientations,
+    OrientationOption,
+  } from "../domain/level5-lab-types";
   import {
     POSITION_LOCATIONS,
     RADIAL_ORIENTATIONS,
@@ -34,7 +37,11 @@
   } = $props<{
     position: GridPosition;
     orientations: CardOrientations;
-    onOrientationChange: (position: GridPosition, hand: "left" | "right", value: Orientation) => void;
+    onOrientationChange: (
+      position: GridPosition,
+      hand: "left" | "right",
+      value: Orientation
+    ) => void;
     leftPropType: PropType;
     rightPropType: PropType;
   }>();
@@ -78,7 +85,7 @@
       endOrientation: effectiveLeftOri,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: HandSide.LEFT,
+      hand: HandSide.LEFT,
       isVisible: true,
       propType: leftPropType,
       arrowLocation: leftLoc,
@@ -93,7 +100,7 @@
       endOrientation: effectiveRightOri,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: HandSide.RIGHT,
+      hand: HandSide.RIGHT,
       isVisible: true,
       propType: rightPropType,
       arrowLocation: rightLoc,
@@ -138,7 +145,9 @@
             <i
               class="fas {ori.icon}"
               aria-hidden="true"
-              style={ori.rotation ? `transform: rotate(${ori.rotation}deg)` : ""}
+              style={ori.rotation
+                ? `transform: rotate(${ori.rotation}deg)`
+                : ""}
             ></i>
           </button>
         {/each}
@@ -159,7 +168,9 @@
             <i
               class="fas {ori.icon}"
               aria-hidden="true"
-              style={ori.rotation ? `transform: rotate(${ori.rotation}deg)` : ""}
+              style={ori.rotation
+                ? `transform: rotate(${ori.rotation}deg)`
+                : ""}
             ></i>
           </button>
         {/each}
@@ -196,7 +207,6 @@
     padding: 1rem;
     aspect-ratio: 1;
   }
-
 
   .orientation-row {
     display: flex;
@@ -279,7 +289,6 @@
   .ori-chip i {
     font-size: 0.625rem;
   }
-
 
   .card-footer {
     display: flex;

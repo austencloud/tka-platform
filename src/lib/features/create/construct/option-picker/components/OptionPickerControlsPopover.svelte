@@ -65,8 +65,8 @@
     if (showFilter) details.push(`Showing ${modeLabel.toLowerCase()}`);
     if (showTurnControls) {
       details.push(`Level ${level}`);
-      details.push(`Blue turns ${leftTurnLabel}`);
-      details.push(`Red turns ${rightTurnLabel}`);
+      details.push(`Left turns ${leftTurnLabel}`);
+      details.push(`Right turns ${rightTurnLabel}`);
     }
     return details.join(". ");
   });

@@ -2,7 +2,7 @@
   /**
    * Motion Column
    *
-   * Displays motion data for a single color (blue or red).
+   * Displays motion data for one performer-relative hand.
    * Reusable component for the pictograph inspector modal.
    */
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
@@ -49,9 +49,7 @@
   const label = $derived(
     hand === HandSide.LEFT ? "Left Motion" : "Right Motion"
   );
-  const isSelected = $derived(
-    selectedArrowState.selectedArrow?.color === hand
-  );
+  const isSelected = $derived(selectedArrowState.selectedArrow?.hand === hand);
 </script>
 
 <CollapsibleSection
@@ -72,7 +70,7 @@
       title="Copy {label}"
     >
       <i class="fas fa-copy" aria-hidden="true"></i>
-      {#if copiedSection === color}<span class="copied-label">Copied</span>{/if}
+      {#if copiedSection === hand}<span class="copied-label">Copied</span>{/if}
     </button>
   {/snippet}
 
@@ -119,7 +117,7 @@
 
       <PipelineTraceSection {diagnostics} {hand} />
     {:else}
-      <div class="empty-state">No {color} motion</div>
+      <div class="empty-state">No {hand} motion</div>
     {/if}
   </section>
 </CollapsibleSection>

@@ -31,16 +31,21 @@ const DECK_ID = "l2-halved-rotated-4beat-t1";
 // CSV Loading
 
 const CSV_PATH = path.join(
-  __dirname, "..", "static", "data", "pictographs", "DiamondPictographDataframe.csv"
+  __dirname,
+  "..",
+  "static",
+  "data",
+  "pictographs",
+  "DiamondPictographDataframe.csv"
 );
 
 const csvContent = fs.readFileSync(CSV_PATH, "utf-8");
 const csvLines = csvContent.split("\n");
-const headers = csvLines[0].split(",").map(h => h.trim());
+const headers = csvLines[0].split(",").map((h) => h.trim());
 
 const edges = [];
 for (let i = 1; i < csvLines.length; i++) {
-  const cols = csvLines[i].split(",").map(c => c.trim());
+  const cols = csvLines[i].split(",").map((c) => c.trim());
   if (cols.length < 13 || !cols[0]) continue;
   edges.push({
     letter: cols[0],
@@ -72,20 +77,62 @@ console.log(`Loaded ${edges.length} edges from CSV`);
 // ============================================================================
 
 const TYPES = {
-  'A': 1, 'B': 1, 'C': 1, 'D': 1, 'E': 1, 'F': 1,
-  'G': 1, 'H': 1, 'I': 1, 'J': 1, 'K': 1, 'L': 1,
-  'M': 1, 'N': 1, 'O': 1, 'P': 1, 'Q': 1, 'R': 1,
-  'S': 1, 'T': 1, 'U': 1, 'V': 1,
-  'W': 2, 'X': 2, 'Y': 2, 'Z': 2, 'Σ': 2, 'Δ': 2, 'Θ': 2, 'Ω': 2,
-  'W-': 3, 'X-': 3, 'Y-': 3, 'Z-': 3, 'Σ-': 3, 'Δ-': 3, 'Θ-': 3, 'Ω-': 3,
-  'Φ': 4, 'Ψ': 4, 'Λ': 4,
-  'Φ-': 5, 'Ψ-': 5, 'Λ-': 5,
-  'α': 6, 'β': 6, 'γ': 6,
+  A: 1,
+  B: 1,
+  C: 1,
+  D: 1,
+  E: 1,
+  F: 1,
+  G: 1,
+  H: 1,
+  I: 1,
+  J: 1,
+  K: 1,
+  L: 1,
+  M: 1,
+  N: 1,
+  O: 1,
+  P: 1,
+  Q: 1,
+  R: 1,
+  S: 1,
+  T: 1,
+  U: 1,
+  V: 1,
+  W: 2,
+  X: 2,
+  Y: 2,
+  Z: 2,
+  Σ: 2,
+  Δ: 2,
+  Θ: 2,
+  Ω: 2,
+  "W-": 3,
+  "X-": 3,
+  "Y-": 3,
+  "Z-": 3,
+  "Σ-": 3,
+  "Δ-": 3,
+  "Θ-": 3,
+  "Ω-": 3,
+  Φ: 4,
+  Ψ: 4,
+  Λ: 4,
+  "Φ-": 5,
+  "Ψ-": 5,
+  "Λ-": 5,
+  α: 6,
+  β: 6,
+  γ: 6,
 };
 
 const TYPE_NAMES = {
-  1: 'Dual-Shift', 2: 'Shift', 3: 'Cross-Shift',
-  4: 'Dash', 5: 'Dual-Dash', 6: 'Static',
+  1: "Dual-Shift",
+  2: "Shift",
+  3: "Cross-Shift",
+  4: "Dash",
+  5: "Dual-Dash",
+  6: "Static",
 };
 
 // ============================================================================
@@ -93,28 +140,29 @@ const TYPE_NAMES = {
 // ============================================================================
 
 function hasReversals(beatSteps) {
-  function getRotDir(step, color) {
-    const m = step.motions[color];
+  function getRotDir(step, hand) {
+    const m = step.motions[hand];
     if (!m) return null;
-    if (m.rotationDirection && m.rotationDirection !== 'noRotation') return m.rotationDirection;
-    if (m.motionType === 'static' || m.motionType === 'dash') return null;
+    if (m.rotationDirection && m.rotationDirection !== "noRotation")
+      return m.rotationDirection;
+    if (m.motionType === "static" || m.motionType === "dash") return null;
     return m.rotationDirection || null;
   }
 
-  function getLastValidDir(steps, endIdx, color) {
+  function getLastValidDir(steps, endIdx, hand) {
     for (let offset = 1; offset <= steps.length; offset++) {
       const idx = (endIdx - offset + steps.length) % steps.length;
-      const dir = getRotDir(steps[idx], color);
+      const dir = getRotDir(steps[idx], hand);
       if (dir) return dir;
     }
     return null;
   }
 
   for (let i = 0; i < beatSteps.length; i++) {
-    for (const color of ['blue', 'red']) {
-      const current = getRotDir(beatSteps[i], color);
+    for (const hand of ["left", "right"]) {
+      const current = getRotDir(beatSteps[i], hand);
       if (!current) continue;
-      const prev = getLastValidDir(beatSteps, i, color);
+      const prev = getLastValidDir(beatSteps, i, hand);
       if (prev && prev !== current) return true;
     }
   }
@@ -126,17 +174,28 @@ function hasReversals(beatSteps) {
 // ============================================================================
 
 function rotationCompatible(prevEdge, nextEdge) {
-  if (prevEdge.leftRotDir === "noRotation" || nextEdge.leftRotDir === "noRotation") {
-    if (prevEdge.rightRotDir !== "noRotation" && nextEdge.rightRotDir !== "noRotation") {
+  if (
+    prevEdge.leftRotDir === "noRotation" ||
+    nextEdge.leftRotDir === "noRotation"
+  ) {
+    if (
+      prevEdge.rightRotDir !== "noRotation" &&
+      nextEdge.rightRotDir !== "noRotation"
+    ) {
       return prevEdge.rightRotDir === nextEdge.rightRotDir;
     }
     return true;
   }
-  if (prevEdge.rightRotDir === "noRotation" || nextEdge.rightRotDir === "noRotation") {
+  if (
+    prevEdge.rightRotDir === "noRotation" ||
+    nextEdge.rightRotDir === "noRotation"
+  ) {
     return prevEdge.leftRotDir === nextEdge.leftRotDir;
   }
-  return prevEdge.leftRotDir === nextEdge.leftRotDir &&
-         prevEdge.rightRotDir === nextEdge.rightRotDir;
+  return (
+    prevEdge.leftRotDir === nextEdge.leftRotDir &&
+    prevEdge.rightRotDir === nextEdge.rightRotDir
+  );
 }
 
 function enumerateSeeds(startPos, requiredEnds) {
@@ -148,7 +207,11 @@ function enumerateSeeds(startPos, requiredEnds) {
     }
     const neighbors = adjacency[currentPos] || [];
     for (const edge of neighbors) {
-      if (pathSoFar.length > 0 && !rotationCompatible(pathSoFar[pathSoFar.length - 1], edge)) continue;
+      if (
+        pathSoFar.length > 0 &&
+        !rotationCompatible(pathSoFar[pathSoFar.length - 1], edge)
+      )
+        continue;
       pathSoFar.push(edge);
       dfs(edge.endPos, pathSoFar);
       pathSoFar.pop();
@@ -190,15 +253,28 @@ function canonicalFingerprint(letterArray) {
 // ============================================================================
 
 const VTG_WORDS = [
-  ["A","A","A","A"], ["B","B","B","B"], ["C","C","C","C"],
-  ["G","G","G","G"], ["H","H","H","H"], ["I","I","I","I"],
-  ["S","S","S","S"], ["T","T","T","T"], ["U","U","U","U"], ["V","V","V","V"],
-  ["J","D","J","D"], ["K","E","K","E"], ["L","F","L","F"],
-  ["D","J","D","J"], ["E","K","E","K"], ["F","L","F","L"],
-  ["M","P","M","P"], ["N","Q","N","Q"], ["O","R","O","R"],
+  ["A", "A", "A", "A"],
+  ["B", "B", "B", "B"],
+  ["C", "C", "C", "C"],
+  ["G", "G", "G", "G"],
+  ["H", "H", "H", "H"],
+  ["I", "I", "I", "I"],
+  ["S", "S", "S", "S"],
+  ["T", "T", "T", "T"],
+  ["U", "U", "U", "U"],
+  ["V", "V", "V", "V"],
+  ["J", "D", "J", "D"],
+  ["K", "E", "K", "E"],
+  ["L", "F", "L", "F"],
+  ["D", "J", "D", "J"],
+  ["E", "K", "E", "K"],
+  ["F", "L", "F", "L"],
+  ["M", "P", "M", "P"],
+  ["N", "Q", "N", "Q"],
+  ["O", "R", "O", "R"],
 ];
 
-const VTG_CANONICAL = new Set(VTG_WORDS.map(w => canonicalFingerprint(w)));
+const VTG_CANONICAL = new Set(VTG_WORDS.map((w) => canonicalFingerprint(w)));
 
 console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
 
@@ -208,11 +284,14 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
 
 (async function main() {
   // Import position maps + LOOP executor
-  const circularMaps = await import("../packages/sequence-engine/dist/loop/position-maps/circular-position-maps.js");
+  const circularMaps =
+    await import("../packages/sequence-engine/dist/loop/position-maps/circular-position-maps.js");
   const { HALVED_LOOPS } = circularMaps;
 
-  const { loopExecutorSelector } = await import("../packages/sequence-engine/dist/loop/execution/LOOPExecutorSelector.js");
-  const { calculateEndOrientation } = await import("../packages/sequence-engine/dist/core/orientation/OrientationCalculator.js");
+  const { loopExecutorSelector } =
+    await import("../packages/sequence-engine/dist/loop/execution/LOOPExecutorSelector.js");
+  const { calculateEndOrientation } =
+    await import("../packages/sequence-engine/dist/core/orientation/OrientationCalculator.js");
   const executor = loopExecutorSelector.getExecutor("rotated");
 
   // Build start→end map
@@ -241,13 +320,15 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
   for (const startPos of validStarts) {
     const seeds = enumerateSeeds(startPos, startEndMap[startPos]);
     for (const edgeList of seeds) {
-      const seedWord = edgeList.map(e => e.letter).join("");
+      const seedWord = edgeList.map((e) => e.letter).join("");
       const key = `${startPos}|${seedWord}`;
       if (seedSeen.has(key)) continue;
       seedSeen.add(key);
       allSeeds.push({ startPos, edges: edgeList, seedWord });
     }
-    console.log(`  ${startPos}: ${seeds.length} raw → ${allSeeds.filter(s => s.startPos === startPos).length} deduped`);
+    console.log(
+      `  ${startPos}: ${seeds.length} raw → ${allSeeds.filter((s) => s.startPos === startPos).length} deduped`
+    );
   }
 
   console.log(`\nTotal deduped seeds: ${allSeeds.length}`);
@@ -274,7 +355,7 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
           startOrientation: "in",
           endOrientation: "in",
           turns: 0,
-          color: "blue",
+          hand: "left",
         },
         right: {
           motionType: edge.rightMotionType,
@@ -284,7 +365,7 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
           startOrientation: "in",
           endOrientation: "in",
           turns: 0,
-          color: "red",
+          hand: "right",
         },
       },
     };
@@ -323,7 +404,11 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
     const firstEdge = seed.edges[0];
     const startStep = {
       id: `start`,
-      letter: seed.startPos.startsWith("alpha") ? "α" : seed.startPos.startsWith("beta") ? "β" : "γ",
+      letter: seed.startPos.startsWith("alpha")
+        ? "α"
+        : seed.startPos.startsWith("beta")
+          ? "β"
+          : "γ",
       startPosition: seed.startPos,
       endPosition: seed.startPos,
       beatIndex: 0,
@@ -331,19 +416,32 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
       duration: 1,
       motions: {
         left: {
-          motionType: "static", rotationDirection: "noRotation",
-          startLocation: firstEdge.leftStartLoc, endLocation: firstEdge.leftStartLoc,
-          startOrientation: "in", endOrientation: "in", turns: 0, color: "blue",
+          motionType: "static",
+          rotationDirection: "noRotation",
+          startLocation: firstEdge.leftStartLoc,
+          endLocation: firstEdge.leftStartLoc,
+          startOrientation: "in",
+          endOrientation: "in",
+          turns: 0,
+          hand: "left",
         },
         right: {
-          motionType: "static", rotationDirection: "noRotation",
-          startLocation: firstEdge.rightStartLoc, endLocation: firstEdge.rightStartLoc,
-          startOrientation: "in", endOrientation: "in", turns: 0, color: "red",
+          motionType: "static",
+          rotationDirection: "noRotation",
+          startLocation: firstEdge.rightStartLoc,
+          endLocation: firstEdge.rightStartLoc,
+          startOrientation: "in",
+          endOrientation: "in",
+          turns: 0,
+          hand: "right",
         },
       },
     };
 
-    const seedSteps = [startStep, ...seed.edges.map((e, i) => edgeToEngineStep(e, i + 1))];
+    const seedSteps = [
+      startStep,
+      ...seed.edges.map((e, i) => edgeToEngineStep(e, i + 1)),
+    ];
     propagateOrientations(seedSteps);
 
     let fullSteps;
@@ -351,14 +449,17 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
       fullSteps = executor.executeLOOP([...seedSteps], "halved");
     } catch (err) {
       loopErrors++;
-      if (loopErrors <= 3) console.warn(`  LOOP error for ${seed.startPos}/${seed.seedWord}: ${err.message}`);
+      if (loopErrors <= 3)
+        console.warn(
+          `  LOOP error for ${seed.startPos}/${seed.seedWord}: ${err.message}`
+        );
       continue;
     }
 
     const beatSteps = fullSteps.slice(1);
     if (hasReversals(beatSteps)) continue;
 
-    const letterArray = beatSteps.map(s => s.letter);
+    const letterArray = beatSteps.map((s) => s.letter);
     const fullWord = letterArray.join("");
 
     fullSequences.push({
@@ -367,12 +468,16 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
       beatSteps,
       fullWord,
       letterArray,
-      handPathFamily: seed.edges.map(e => TYPE_NAMES[TYPES[e.letter] || 0] || "?").join("+"),
+      handPathFamily: seed.edges
+        .map((e) => TYPE_NAMES[TYPES[e.letter] || 0] || "?")
+        .join("+"),
     });
   }
 
   if (loopErrors) console.log(`  ${loopErrors} LOOP execution errors`);
-  console.log(`After LOOP execution + reversal filter: ${fullSequences.length} valid sequences`);
+  console.log(
+    `After LOOP execution + reversal filter: ${fullSequences.length} valid sequences`
+  );
 
   // ========================================================================
   // Phase 3: Canonical Fingerprinting + Dedup
@@ -390,7 +495,11 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
   const canonicals = [];
 
   for (const [fp, members] of canonicalGroups) {
-    members.sort((a, b) => (START_PRIORITY[a.seed.startPos] ?? 99) - (START_PRIORITY[b.seed.startPos] ?? 99));
+    members.sort(
+      (a, b) =>
+        (START_PRIORITY[a.seed.startPos] ?? 99) -
+        (START_PRIORITY[b.seed.startPos] ?? 99)
+    );
     const rep = members[0];
     const isVTG = VTG_CANONICAL.has(fp);
     canonicals.push({
@@ -407,7 +516,7 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
     return a.fingerprint.localeCompare(b.fingerprint);
   });
 
-  const vtgCount = canonicals.filter(c => c.isVTG).length;
+  const vtgCount = canonicals.filter((c) => c.isVTG).length;
   const newCount = canonicals.length - vtgCount;
 
   console.log(`\n${"═".repeat(60)}`);
@@ -439,10 +548,7 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
       ];
 
       // Mirror seed turns to second half (halved LOOP)
-      const allTurns = [
-        seedTurns[0], seedTurns[1],
-        seedTurns[0], seedTurns[1],
-      ];
+      const allTurns = [seedTurns[0], seedTurns[1], seedTurns[0], seedTurns[1]];
 
       const totalTurns = allTurns.reduce((s, t) => s + t.left + t.right, 0);
       if (totalTurns <= bestTotalTurns) continue; // skip if not better
@@ -489,27 +595,40 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
       }
     }
 
-    return bestAssignment || [
-      { left: 0, right: 0 }, { left: 0, right: 0 },
-      { left: 0, right: 0 }, { left: 0, right: 0 },
-    ];
+    return (
+      bestAssignment || [
+        { left: 0, right: 0 },
+        { left: 0, right: 0 },
+        { left: 0, right: 0 },
+        { left: 0, right: 0 },
+      ]
+    );
   }
 
   // Compute turn assignments for all canonicals
   for (const canon of canonicals) {
     canon.turnAssignment = findBestTurnAssignment(canon);
-    canon.totalTurns = canon.turnAssignment.reduce((s, t) => s + t.left + t.right, 0);
+    canon.totalTurns = canon.turnAssignment.reduce(
+      (s, t) => s + t.left + t.right,
+      0
+    );
   }
 
   // ========================================================================
   // Phase 5: Console Output
   // ========================================================================
 
-  console.log("\n╔═══════════════════════════════════════════════════════════════╗");
+  console.log(
+    "\n╔═══════════════════════════════════════════════════════════════╗"
+  );
   console.log(`║   L${LEVEL} HALVED ROTATED LOOP DECK (max T${MAX_TURNS})`);
-  console.log(`║   ${GRID_MODE} grid · 4 beats · ${canonicals.length} canonical hand paths`);
+  console.log(
+    `║   ${GRID_MODE} grid · 4 beats · ${canonicals.length} canonical hand paths`
+  );
   console.log(`║   VTG overlaps: ${vtgCount} · New: ${newCount}`);
-  console.log("╚═══════════════════════════════════════════════════════════════╝");
+  console.log(
+    "╚═══════════════════════════════════════════════════════════════╝"
+  );
 
   // Group by hand-path family
   const familyGroups = {};
@@ -521,17 +640,21 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
 
   let num = 1;
   for (const [family, members] of Object.entries(familyGroups).sort()) {
-    const vtgInFamily = members.filter(m => m.isVTG).length;
+    const vtgInFamily = members.filter((m) => m.isVTG).length;
     const newInFamily = members.length - vtgInFamily;
-    console.log(`\n  ═══ ${family} ═══ ${members.length} canonical (${vtgInFamily} VTG, ${newInFamily} new) ═══`);
+    console.log(
+      `\n  ═══ ${family} ═══ ${members.length} canonical (${vtgInFamily} VTG, ${newInFamily} new) ═══`
+    );
     for (const canon of members) {
       const rep = canon.representative;
       const tag = canon.isVTG ? " [VTG]" : " [NEW]";
-      const turnStr = canon.turnAssignment.map(t => `${t.left}${t.right}`).join(" ");
+      const turnStr = canon.turnAssignment
+        .map((t) => `${t.left}${t.right}`)
+        .join(" ");
       console.log(
         `  #${String(num).padStart(3)} ${rep.fullWord.padEnd(12)} from ${rep.seed.startPos.padEnd(8)}` +
-        ` turns=[${turnStr}] total=${canon.totalTurns}${tag}` +
-        ` (${canon.memberCount} variant${canon.memberCount > 1 ? 's' : ''})`
+          ` turns=[${turnStr}] total=${canon.totalTurns}${tag}` +
+          ` (${canon.memberCount} variant${canon.memberCount > 1 ? "s" : ""})`
       );
       num++;
     }
@@ -543,12 +666,16 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
   console.log(`  Total canonical hand paths: ${canonicals.length}`);
   console.log(`  VTG overlaps: ${vtgCount}`);
   console.log(`  New (non-VTG): ${newCount}`);
-  console.log(`  Turn stats: min=${Math.min(...canonicals.map(c => c.totalTurns))} max=${Math.max(...canonicals.map(c => c.totalTurns))} avg=${(canonicals.reduce((s, c) => s + c.totalTurns, 0) / canonicals.length).toFixed(1)}`);
+  console.log(
+    `  Turn stats: min=${Math.min(...canonicals.map((c) => c.totalTurns))} max=${Math.max(...canonicals.map((c) => c.totalTurns))} avg=${(canonicals.reduce((s, c) => s + c.totalTurns, 0) / canonicals.length).toFixed(1)}`
+  );
 
   // Family breakdown
   console.log(`\n  By family:`);
   for (const [family, members] of Object.entries(familyGroups).sort()) {
-    console.log(`    ${family}: ${members.length} (${members.filter(m => m.isVTG).length} VTG)`);
+    console.log(
+      `    ${family}: ${members.length} (${members.filter((m) => m.isVTG).length} VTG)`
+    );
   }
   console.log(`${"═".repeat(60)}`);
 
@@ -571,7 +698,7 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
         newHandPaths: newCount,
         generatedAt: new Date().toISOString(),
       },
-      canonicalHandPaths: canonicals.map(c => ({
+      canonicalHandPaths: canonicals.map((c) => ({
         fingerprint: c.fingerprint,
         fullWord: c.representative.fullWord,
         startPosition: c.representative.seed.startPos,
@@ -580,7 +707,7 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
         turnAssignment: c.turnAssignment,
         totalTurns: c.totalTurns,
         variantCount: c.memberCount,
-        variants: c.allMembers.map(m => ({
+        variants: c.allMembers.map((m) => ({
           startPos: m.seed.startPos,
           seedWord: m.seed.seedWord,
           fullWord: m.fullWord,
@@ -597,7 +724,10 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
 
   if (seedFirestore) {
     const admin = require("firebase-admin");
-    const serviceAccountPath = path.resolve(__dirname, "../serviceAccountKey.json");
+    const serviceAccountPath = path.resolve(
+      __dirname,
+      "../serviceAccountKey.json"
+    );
     let serviceAccount;
     try {
       serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
@@ -607,7 +737,9 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
     }
 
     if (!admin.apps.length) {
-      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
     }
     const db = admin.firestore();
 
@@ -688,7 +820,10 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
             turns: step.motions.left.turns,
             startOrientation: step.motions.left.startOrientation,
             endOrientation: step.motions.left.endOrientation,
-            isVisible: true, propType: "staff", color: "blue", gridMode: GRID_MODE,
+            isVisible: true,
+            propType: "staff",
+            hand: "left",
+            gridMode: GRID_MODE,
           },
           right: {
             motionType: step.motions.right.motionType,
@@ -698,7 +833,10 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
             turns: step.motions.right.turns,
             startOrientation: step.motions.right.startOrientation,
             endOrientation: step.motions.right.endOrientation,
-            isVisible: true, propType: "staff", color: "red", gridMode: GRID_MODE,
+            isVisible: true,
+            propType: "staff",
+            hand: "right",
+            gridMode: GRID_MODE,
           },
         },
       }));
@@ -715,8 +853,12 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
             startLocation: sp.motions.left.startLocation,
             endLocation: sp.motions.left.endLocation,
             turns: 0,
-            startOrientation: "in", endOrientation: "in",
-            isVisible: true, propType: "staff", color: "blue", gridMode: GRID_MODE,
+            startOrientation: "in",
+            endOrientation: "in",
+            isVisible: true,
+            propType: "staff",
+            hand: "left",
+            gridMode: GRID_MODE,
           },
           right: {
             motionType: sp.motions.right.motionType,
@@ -724,8 +866,12 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
             startLocation: sp.motions.right.startLocation,
             endLocation: sp.motions.right.endLocation,
             turns: 0,
-            startOrientation: "in", endOrientation: "in",
-            isVisible: true, propType: "staff", color: "red", gridMode: GRID_MODE,
+            startOrientation: "in",
+            endOrientation: "in",
+            isVisible: true,
+            propType: "staff",
+            hand: "right",
+            gridMode: GRID_MODE,
           },
         },
       };
@@ -775,11 +921,16 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
     if (batchCount > 0) await batch.commit();
 
     // Build family metadata
-    const familyMeta = Object.entries(familyGroups).map(([family, members]) => ({
-      id: family.toLowerCase().replace(/[+\s]/g, "-"),
-      label: family,
-      sequenceIds: members.map(m => `${m.representative.seed.startPos}_${m.representative.fullWord}`),
-    }));
+    const familyMeta = Object.entries(familyGroups).map(
+      ([family, members]) => ({
+        id: family.toLowerCase().replace(/[+\s]/g, "-"),
+        label: family,
+        sequenceIds: members.map(
+          (m) =>
+            `${m.representative.seed.startPos}_${m.representative.fullWord}`
+        ),
+      })
+    );
 
     const deckData = {
       id: DECK_ID,
@@ -801,10 +952,14 @@ console.log(`VTG canonical fingerprints: ${VTG_CANONICAL.size}`);
     };
 
     await db.doc(`catalogs/${DECK_ID}`).set(deckData);
-    console.log(`  Deck doc written. ${totalWritten} sequences in decks/${DECK_ID}/`);
+    console.log(
+      `  Deck doc written. ${totalWritten} sequences in decks/${DECK_ID}/`
+    );
   }
 
   if (!outPath && !seedFirestore) {
-    console.log("\nUse --out <path> for JSON or --seed-firestore to write to Firestore.");
+    console.log(
+      "\nUse --out <path> for JSON or --seed-firestore to write to Firestore."
+    );
   }
 })();

@@ -72,7 +72,7 @@ describe("prop placement state", () => {
 
     expect(harness.state.leftLocation).toBe(GridLocation.NORTH);
     expect(harness.state.rightLocation).toBe(GridLocation.SOUTH);
-    expect(harness.state.activeColor).toBeNull();
+    expect(harness.state.activeHand).toBeNull();
     expect(harness.state.isComplete).toBe(true);
     expect(harness.state.historyLength).toBe(2);
     expect(harness.onPlacementComplete).toHaveBeenCalledWith(
@@ -93,7 +93,7 @@ describe("prop placement state", () => {
 
     expect(harness.state.leftLocation).toBe(GridLocation.NORTH);
     expect(harness.state.rightLocation).toBeNull();
-    expect(harness.state.activeColor).toBe(HandSide.RIGHT);
+    expect(harness.state.activeHand).toBe(HandSide.RIGHT);
     expect(harness.state.historyLength).toBe(1);
     expect(harness.state.liveAnnouncement).toContain("right prop");
   });
@@ -109,7 +109,7 @@ describe("prop placement state", () => {
 
     expect(harness.state.leftLocation).toBe(GridLocation.WEST);
     expect(harness.state.rightLocation).toBe(GridLocation.EAST);
-    expect(harness.state.activeColor).toBeNull();
+    expect(harness.state.activeHand).toBeNull();
     expect(harness.state.historyLength).toBe(0);
   });
 
@@ -119,7 +119,7 @@ describe("prop placement state", () => {
 
     harness.state.edit(HandSide.RIGHT);
 
-    expect(harness.state.activeColor).toBe(HandSide.LEFT);
+    expect(harness.state.activeHand).toBe(HandSide.LEFT);
     expect(harness.onChange).not.toHaveBeenCalled();
   });
 });

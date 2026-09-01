@@ -11,7 +11,10 @@ import type { StepPairRelationship, LetterRelationshipInfo } from "./types";
 /**
  * Analyze the relationship between two steps.
  */
-export function analyzeBeatPair(step1: StepData, step2: StepData): StepPairRelationship {
+export function analyzeBeatPair(
+  step1: StepData,
+  step2: StepData
+): StepPairRelationship {
   const transformations: string[] = [];
 
   // Check IDENTICAL first (no transformation)
@@ -217,10 +220,10 @@ function isMirrored(step1: Step, step2: Step): boolean {
   }
 
   return (
-    mirrorVertical(left1.startLocation) ===
-      left2.startLocation.toLowerCase() &&
+    mirrorVertical(left1.startLocation) === left2.startLocation.toLowerCase() &&
     mirrorVertical(left1.endLocation) === left2.endLocation.toLowerCase() &&
-    mirrorVertical(right1.startLocation) === right2.startLocation.toLowerCase() &&
+    mirrorVertical(right1.startLocation) ===
+      right2.startLocation.toLowerCase() &&
     mirrorVertical(right1.endLocation) === right2.endLocation.toLowerCase()
   );
 }
@@ -251,10 +254,10 @@ function isFlipped(step1: Step, step2: Step): boolean {
   }
 
   return (
-    flipHorizontal(left1.startLocation) ===
-      left2.startLocation.toLowerCase() &&
+    flipHorizontal(left1.startLocation) === left2.startLocation.toLowerCase() &&
     flipHorizontal(left1.endLocation) === left2.endLocation.toLowerCase() &&
-    flipHorizontal(right1.startLocation) === right2.startLocation.toLowerCase() &&
+    flipHorizontal(right1.startLocation) ===
+      right2.startLocation.toLowerCase() &&
     flipHorizontal(right1.endLocation) === right2.endLocation.toLowerCase()
   );
 }
@@ -291,7 +294,7 @@ function isInverted(step1: StepData, step2: StepData): boolean {
 // Combined transformation checks - apply transformations in sequence
 
 function isRotatedThenSwapped(step1: Step, step2: Step): boolean {
-  // Apply rotation to step1, then swap colors, check if matches step2
+  // Apply rotation to step1, then swap hands, check if matches step2
   const rotate180 = (loc: string) => {
     const map: Record<string, string> = {
       n: "s",
@@ -408,16 +411,16 @@ function isMirroredThenFlipped(step1: Step, step2: Step): boolean {
   }
 
   return (
-    mirrorThenFlip(left1.startLocation) ===
-      left2.startLocation.toLowerCase() &&
+    mirrorThenFlip(left1.startLocation) === left2.startLocation.toLowerCase() &&
     mirrorThenFlip(left1.endLocation) === left2.endLocation.toLowerCase() &&
-    mirrorThenFlip(right1.startLocation) === right2.startLocation.toLowerCase() &&
+    mirrorThenFlip(right1.startLocation) ===
+      right2.startLocation.toLowerCase() &&
     mirrorThenFlip(right1.endLocation) === right2.endLocation.toLowerCase()
   );
 }
 
 function isMirroredThenSwapped(step1: Step, step2: Step): boolean {
-  // Apply mirror (e↔w) to step1, then swap colors, check if matches step2
+  // Apply mirror (e↔w) to step1, then swap hands, check if matches step2
   const mirrorVertical = (loc: string) => {
     const map: Record<string, string> = {
       n: "n",
@@ -457,7 +460,7 @@ function isMirroredThenSwapped(step1: Step, step2: Step): boolean {
 }
 
 function isFlippedThenSwapped(step1: Step, step2: Step): boolean {
-  // Apply flip (n↔s) to step1, then swap colors, check if matches step2
+  // Apply flip (n↔s) to step1, then swap hands, check if matches step2
   const flipHorizontal = (loc: string) => {
     const map: Record<string, string> = {
       n: "s",

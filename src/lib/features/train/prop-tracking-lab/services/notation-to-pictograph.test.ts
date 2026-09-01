@@ -1,15 +1,22 @@
-import { describe, it, expect } from 'vitest';
-import { notationToPictographData } from './notation-to-pictograph';
-import { MotionType, RotationDirection, Orientation } from '$lib/shared/pictograph/shared/domain/enums/pictograph-enums';
-import { GridLocation, GridMode } from '$lib/shared/pictograph/grid/domain/enums/grid-enums';
-import type { StaffMotionNotation } from '../domain/notation-3d';
+import { describe, it, expect } from "vitest";
+import { notationToPictographData } from "./notation-to-pictograph";
+import {
+  MotionType,
+  RotationDirection,
+  Orientation,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  GridLocation,
+  GridMode,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { StaffMotionNotation } from "../domain/notation-3d";
 
 function note(over: Partial<StaffMotionNotation>): StaffMotionNotation {
   return {
-    staff: 'blue',
-    startLocation: 'n',
-    endLocation: 'e',
-    handMotion: 'shift',
+    hand: "left",
+    startLocation: "n",
+    endLocation: "e",
+    handMotion: "shift",
     motionType: MotionType.PRO,
     rotationDirection: RotationDirection.NO_ROTATION,
     turns: 0,
@@ -20,13 +27,18 @@ function note(over: Partial<StaffMotionNotation>): StaffMotionNotation {
   };
 }
 
-describe('notationToPictographData', () => {
-  it('builds blue+red motions with mapped enums and locations', () => {
-    const left = note({ staff: 'blue', startLocation: 'n', endLocation: 'e' });
-    const right = note({ staff: 'red', startLocation: 's', endLocation: 'w', motionType: MotionType.ANTI });
-    const pd = notationToPictographData(left, right, 'beat-1');
+describe("notationToPictographData", () => {
+  it("builds left+right motions with mapped enums and locations", () => {
+    const left = note({ hand: "left", startLocation: "n", endLocation: "e" });
+    const right = note({
+      hand: "right",
+      startLocation: "s",
+      endLocation: "w",
+      motionType: MotionType.ANTI,
+    });
+    const pd = notationToPictographData(left, right, "beat-1");
 
-    expect(pd.id).toBe('beat-1');
+    expect(pd.id).toBe("beat-1");
     expect(pd.motions.left!.motionType).toBe(MotionType.PRO);
     expect(pd.motions.left!.startLocation).toBe(GridLocation.NORTH);
     expect(pd.motions.left!.endLocation).toBe(GridLocation.EAST);
@@ -34,20 +46,20 @@ describe('notationToPictographData', () => {
     expect(pd.motions.right!.startLocation).toBe(GridLocation.SOUTH);
   });
 
-  it('derives diamond grid mode for cardinal locations', () => {
+  it("derives diamond grid mode for cardinal locations", () => {
     const pd = notationToPictographData(
-      note({ startLocation: 'n', endLocation: 'e' }),
-      note({ staff: 'red', startLocation: 's', endLocation: 'w' }),
-      'b',
+      note({ startLocation: "n", endLocation: "e" }),
+      note({ hand: "right", startLocation: "s", endLocation: "w" }),
+      "b"
     );
     expect(pd.gridMode).toBe(GridMode.DIAMOND);
   });
 
-  it('derives box grid mode for intercardinal locations', () => {
+  it("derives box grid mode for intercardinal locations", () => {
     const pd = notationToPictographData(
-      note({ startLocation: 'ne', endLocation: 'se' }),
-      note({ staff: 'red', startLocation: 'sw', endLocation: 'nw' }),
-      'b',
+      note({ startLocation: "ne", endLocation: "se" }),
+      note({ hand: "right", startLocation: "sw", endLocation: "nw" }),
+      "b"
     );
     expect(pd.gridMode).toBe(GridMode.BOX);
   });
@@ -55,9 +67,9 @@ describe('notationToPictographData', () => {
   it('float maps to turns "fl"', () => {
     const pd = notationToPictographData(
       note({ motionType: MotionType.FLOAT, turns: 0 }),
-      note({ staff: 'red' }),
-      'b',
+      note({ hand: "right" }),
+      "b"
     );
-    expect(pd.motions.left!.turns).toBe('fl');
+    expect(pd.motions.left!.turns).toBe("fl");
   });
 });

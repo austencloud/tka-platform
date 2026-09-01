@@ -29,8 +29,16 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
-  const { NORTH, EAST, SOUTH, WEST, NORTHEAST, SOUTHEAST, SOUTHWEST, NORTHWEST } =
-    GridLocation;
+  const {
+    NORTH,
+    EAST,
+    SOUTH,
+    WEST,
+    NORTHEAST,
+    SOUTHEAST,
+    SOUTHWEST,
+    NORTHWEST,
+  } = GridLocation;
 
   // Screen-space unit coords per location (y down, like the rendered grid).
   const COORD: Record<string, [number, number]> = {
@@ -62,21 +70,38 @@
     const dy = Math.sign(by - ay);
     const key = `${dx},${dy}`;
     const ARROWS: Record<string, string> = {
-      "0,-1": "↑", "1,-1": "↗", "1,0": "→", "1,1": "↘",
-      "0,1": "↓", "-1,1": "↙", "-1,0": "←", "-1,-1": "↖",
+      "0,-1": "↑",
+      "1,-1": "↗",
+      "1,0": "→",
+      "1,1": "↘",
+      "0,1": "↓",
+      "-1,1": "↙",
+      "-1,0": "←",
+      "-1,-1": "↖",
     };
     return ARROWS[key] ?? "?";
   };
 
   const OPPOSITE: Record<string, GridLocation> = {
-    [NORTH]: SOUTH, [SOUTH]: NORTH, [EAST]: WEST, [WEST]: EAST,
-    [NORTHEAST]: SOUTHWEST, [SOUTHWEST]: NORTHEAST,
-    [NORTHWEST]: SOUTHEAST, [SOUTHEAST]: NORTHWEST,
+    [NORTH]: SOUTH,
+    [SOUTH]: NORTH,
+    [EAST]: WEST,
+    [WEST]: EAST,
+    [NORTHEAST]: SOUTHWEST,
+    [SOUTHWEST]: NORTHEAST,
+    [NORTHWEST]: SOUTHEAST,
+    [SOUTHEAST]: NORTHWEST,
   };
 
   const SHORT: Record<string, string> = {
-    [NORTH]: "N", [EAST]: "E", [SOUTH]: "S", [WEST]: "W",
-    [NORTHEAST]: "NE", [SOUTHEAST]: "SE", [SOUTHWEST]: "SW", [NORTHWEST]: "NW",
+    [NORTH]: "N",
+    [EAST]: "E",
+    [SOUTH]: "S",
+    [WEST]: "W",
+    [NORTHEAST]: "NE",
+    [SOUTHEAST]: "SE",
+    [SOUTHWEST]: "SW",
+    [NORTHWEST]: "NW",
   };
 
   // Authored exactly like GammaPage: PRO shift, HAND prop; the preparer's
@@ -170,7 +195,7 @@
   const cellEls: Record<string, HTMLElement> = {};
 
   const nudge = (id: string, step: number) => {
-    const next = (((offsets[id] ?? 0) + step) % 360 + 360) % 360;
+    const next = ((((offsets[id] ?? 0) + step) % 360) + 360) % 360;
     if (next === 0) delete offsets[id];
     else offsets[id] = next;
     localStorage.setItem(STORE_KEY, JSON.stringify(offsets));
@@ -209,7 +234,8 @@
   };
 
   const resetAll = () => {
-    for (const id of Object.keys(offsets)) applyOffset(id, cellEls[id] ?? null, 0);
+    for (const id of Object.keys(offsets))
+      applyOffset(id, cellEls[id] ?? null, 0);
     offsets = {};
     localStorage.removeItem(STORE_KEY);
   };
@@ -222,7 +248,7 @@
       }
     }
     return {
-      title: `${color === HandSide.LEFT ? "Blue" : "Red"} hand — ${cw ? "clockwise" : "counter-clockwise"} handpath`,
+      title: `${color === HandSide.LEFT ? "Left" : "Right"} hand — ${cw ? "clockwise" : "counter-clockwise"} handpath`,
       cases,
     };
   };
@@ -247,12 +273,14 @@
       The big arrow under each cell is the expected chord direction, computed
       from pure geometry — the rendered chevron must point the same way. Any
       disagreement is a pipeline bug. Use −45 / +45 on a wrong cell until its
-      chevron reads right, then Copy corrections and hand the output to an
-      agent — offsets persist across reloads.
+      chevron reads right, then Copy corrections and hand the output to an agent
+      — offsets persist across reloads.
     </p>
     <div class="toolbar">
       <button class="tool" onclick={copyCorrections}>
-        {copied ? "Copied ✓" : `Copy corrections (${Object.keys(offsets).length})`}
+        {copied
+          ? "Copied ✓"
+          : `Copy corrections (${Object.keys(offsets).length})`}
       </button>
       <button class="tool" onclick={resetAll}>Reset all</button>
     </div>
@@ -288,14 +316,24 @@
             </div>
             <figcaption>
               <span class="label">{c.label}</span>
-              <span class="expected" aria-label="expected direction">{c.expected}</span>
+              <span class="expected" aria-label="expected direction"
+                >{c.expected}</span
+              >
             </figcaption>
             <div class="nudges">
-              <button class="tool sm" onclick={() => nudge(c.data.id, -45)} aria-label="rotate {c.label} minus 45">−45</button>
+              <button
+                class="tool sm"
+                onclick={() => nudge(c.data.id, -45)}
+                aria-label="rotate {c.label} minus 45">−45</button
+              >
               <span class="offset" class:hot={(offsets[c.data.id] ?? 0) !== 0}>
                 {offsets[c.data.id] ?? 0}°
               </span>
-              <button class="tool sm" onclick={() => nudge(c.data.id, 45)} aria-label="rotate {c.label} plus 45">+45</button>
+              <button
+                class="tool sm"
+                onclick={() => nudge(c.data.id, 45)}
+                aria-label="rotate {c.label} plus 45">+45</button
+              >
             </div>
           </figure>
         {/each}

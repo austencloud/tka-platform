@@ -320,7 +320,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     applyBlockedPositions(blocked);
   }
 
-  // Start orientation per prop. Feeds the engine's blue/redStartOrientation
+  // Start orientation per prop. Feeds the engine's left/rightStartOrientation
   // override so the generated sequence begins from the chosen orientation.
   function handleLeftOriChange(ori: string) {
     if (!startEndOptions || !onStartEndChange) return;
@@ -505,7 +505,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     color: rgba(255, 255, 255, 0.55);
   }
 
-
   /* `spread` distributes a short form down the pane instead of leaving it
      stacked at the top with 700px of nothing under it. `grid-fill` lets a
      pictograph grid grow into the height it has. Both are the sibling
@@ -625,7 +624,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   .ori-red {
     color: color-mix(in srgb, var(--prop-red, #ef4444) 75%, white);
   }
-
 
   @media (prefers-reduced-motion: reduce) {
     .reset-button {

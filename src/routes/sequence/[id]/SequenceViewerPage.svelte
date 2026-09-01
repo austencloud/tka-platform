@@ -141,12 +141,12 @@
   const urlHandPathMode = $derived(decodedBrowseViewMode?.subject === "hands");
   const urlInitialLeftVisible = $derived(
     decodedBrowseViewMode?.granularity === "solo"
-      ? decodedBrowseViewMode.color === "blue"
+      ? decodedBrowseViewMode.hand === "left"
       : true
   );
   const urlInitialRightVisible = $derived(
     decodedBrowseViewMode?.granularity === "solo"
-      ? decodedBrowseViewMode.color === "red"
+      ? decodedBrowseViewMode.hand === "right"
       : true
   );
 

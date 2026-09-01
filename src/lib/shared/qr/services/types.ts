@@ -228,13 +228,13 @@ export interface ImportResolution {
  * Options for short code URL generation
  */
 export interface ShortCodeURLOptions {
-  /** Blue prop type to append to URL (encoded as single char) */
+  /** Left-hand prop type to append to URL (encoded as single char) */
   leftPropType?: string;
-  /** Red prop type to append to URL (encoded as single char) */
+  /** Right-hand prop type to append to URL (encoded as single char) */
   rightPropType?: string;
-  /** Whether blue/red prop overrides are intentionally different. */
+  /** Whether left/right prop overrides are intentionally different. */
   catDogMode?: boolean;
-  /** View mode to encode in URL (e.g., "hsb" = hands-solo-blue) */
+  /** View mode to encode in URL (e.g., "hsb" = legacy wire code for left-hand solo) */
   viewMode?: string;
   /** Force-embed the full sequenceData in the shortcode record even when
    *  ownerId is set. Use this for URL-sync flows where the sequence may

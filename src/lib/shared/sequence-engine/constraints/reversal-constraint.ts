@@ -49,7 +49,8 @@ export class ReversalConstraint implements IVariationConstraint {
       };
     }
 
-    const previousStep = context.previousSteps[context.previousSteps.length - 1];
+    const previousStep =
+      context.previousSteps[context.previousSteps.length - 1];
     if (!previousStep) {
       return {
         score: 0.5,
@@ -91,7 +92,7 @@ export class ReversalConstraint implements IVariationConstraint {
           reason = "Both hands reversed";
         } else if (hasReversal) {
           score = 0.75;
-          reason = leftReversal ? "Blue hand reversed" : "Red hand reversed";
+          reason = leftReversal ? "Left hand reversed" : "Right hand reversed";
         } else {
           score = 0;
           reason = "No reversal (want reversal every beat)";

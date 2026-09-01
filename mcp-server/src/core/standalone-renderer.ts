@@ -244,7 +244,6 @@ const VTG_TO_ELEMENTAL: Record<VTGMode, ElementalType> = {
   QO: "moon", // Quarter Opp
 };
 
-
 export interface MotionInput {
   motionType: string;
   rotationDirection: string;
@@ -289,7 +288,6 @@ export interface RenderVisibilityOptions {
   /** When true, omit XML declaration for inline HTML embedding */
   inline?: boolean;
 }
-
 
 export class StandaloneRenderer {
   private projectRoot: string;
@@ -667,7 +665,8 @@ ${svgParts.join("\n")}
     };
 
     // Target motion gets its own propType for offset direction calculation
-    const targetPropType = motion.hand === "left" ? leftPropType : rightPropType;
+    const targetPropType =
+      motion.hand === "left" ? leftPropType : rightPropType;
     const targetMotion: BetaMotionInput = {
       startLocation: motion.startLocation,
       endLocation: motion.endLocation,
@@ -1072,7 +1071,7 @@ ${svgParts.join("\n")}
     const topY = -PADDING_Y;
     const bottomY = letterHeight - NUMBER_HEIGHT + PADDING_Y;
 
-    // Render top turn number (blue motion)
+    // Render the top turn number for the left-hand motion.
     if (leftTurns !== undefined && leftTurns !== 0) {
       const topTurnSvg = this.renderSingleTurnNumber(
         leftTurns,
@@ -1085,7 +1084,7 @@ ${svgParts.join("\n")}
       if (topTurnSvg) parts.push(topTurnSvg);
     }
 
-    // Render bottom turn number (red motion)
+    // Render the bottom turn number for the right-hand motion.
     if (rightTurns !== undefined && rightTurns !== 0) {
       const bottomTurnSvg = this.renderSingleTurnNumber(
         rightTurns,

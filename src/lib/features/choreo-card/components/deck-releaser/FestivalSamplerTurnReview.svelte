@@ -436,7 +436,7 @@
               <span class="section-kicker">Cyclic editor</span>
               <h2 id="pattern-editor-title">Set the turns</h2>
               <p>
-                Edit the printed blue and red assignment. The effective line
+                Edit the printed left and right assignment. The effective line
                 follows those values through the LOOP.
               </p>
             </div>
@@ -468,14 +468,14 @@
             <div class="balance-pair">
               <div
                 class="balance"
-                aria-label={"Assigned blue total " +
+                aria-label={"Assigned left total " +
                   assignedLeftTotal +
-                  "; assigned red total " +
+                  "; assigned right total " +
                   assignedRightTotal}
               >
                 <span class="balance-label">Assigned</span>
                 <span class="blue-balance"
-                  ><i aria-hidden="true"></i>B {turnValue(
+                  ><i aria-hidden="true"></i>L {turnValue(
                     assignedLeftTotal
                   )}</span
                 >
@@ -487,14 +487,14 @@
               </div>
               <div
                 class="balance effective"
-                aria-label={"Effective blue-track total " +
+                aria-label={"Effective left-track total " +
                   effectiveLeftTotal +
-                  "; effective red-track total " +
+                  "; effective right-track total " +
                   effectiveRightTotal}
               >
                 <span class="balance-label">Effective</span>
                 <span class="blue-balance"
-                  ><i aria-hidden="true"></i>B {turnValue(
+                  ><i aria-hidden="true"></i>L {turnValue(
                     effectiveLeftTotal
                   )}</span
                 >
@@ -527,9 +527,9 @@
                     review.selectedExample.turnIntensity}
                   onclick={() => void review.toggleTurn(index, "left")}
                 >
-                  <span>B</span><strong>{turnValue(entry.left)}</strong>
+                  <span>L</span><strong>{turnValue(entry.left)}</strong>
                   <span class="sr-only"
-                    >. Step {index + 1}, blue hand, {turnValue(entry.left)} turns.</span
+                    >. Step {index + 1}, left hand, {turnValue(entry.left)} turns.</span
                   >
                 </button>
                 <button
@@ -543,7 +543,7 @@
                 >
                   <span>R</span><strong>{turnValue(entry.right)}</strong>
                   <span class="sr-only"
-                    >. Step {index + 1}, red hand, {turnValue(entry.right)} turns.</span
+                    >. Step {index + 1}, right hand, {turnValue(entry.right)} turns.</span
                   >
                 </button>
               </div>

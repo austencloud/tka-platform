@@ -158,14 +158,16 @@ export async function warmSequenceCells(
   opts: WarmOptions = {}
 ): Promise<WarmSequenceCellsResult> {
   throwIfAborted(opts.signal);
-  const blueProp = opts.leftPropType;
+  const leftProp = opts.leftPropType;
   const motionVisibility = getSequenceMotionVisibility(sequence);
   const renderOptions: PreviewCellRenderOptions = {
     ...CANONICAL_CARD_VISIBILITY,
     size: CANONICAL_CELL_SIZE,
     showStepNumbers: false,
-    leftPropType: blueProp,
-    rightPropType: opts.catDogMode ? (opts.rightPropType ?? blueProp) : blueProp,
+    leftPropType: leftProp,
+    rightPropType: opts.catDogMode
+      ? (opts.rightPropType ?? leftProp)
+      : leftProp,
     catDogModeEnabled: opts.catDogMode ?? false,
     showLeftMotion: opts.showLeftMotion ?? motionVisibility.showLeftMotion,
     showRightMotion: opts.showRightMotion ?? motionVisibility.showRightMotion,

@@ -6,7 +6,10 @@
  */
 
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
-import type { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type {
+  GridMode,
+  GridPosition,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -22,8 +25,15 @@ import type { ReversalDetector } from "$lib/shared/create/services/reversal-dete
 import type { LOOPEndPositionResolver } from "./loop-end-position-resolver";
 import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import type { ConstraintSet, ConstraintStep, ConstraintPictographData } from "$lib/shared/sequence-engine/constraints/types";
-import { MotionType, HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type {
+  ConstraintSet,
+  ConstraintStep,
+  ConstraintPictographData,
+} from "$lib/shared/sequence-engine/constraints/types";
+import {
+  MotionType,
+  HandSide,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
 
@@ -55,7 +65,15 @@ export class RandomSequenceGenerator {
     letters: Letter[],
     options: RandomSequenceGenerationOptions
   ): Promise<SequenceData | null> {
-    const { gridMode, constraints, constraintSet, signal, maxAttempts = 100, level, turnIntensity } = options;
+    const {
+      gridMode,
+      constraints,
+      constraintSet,
+      signal,
+      maxAttempts = 100,
+      level,
+      turnIntensity,
+    } = options;
 
     if (letters.length === 0) {
       return null;
@@ -84,7 +102,10 @@ export class RandomSequenceGenerator {
         }
       } catch (error) {
         // If there are no valid start positions, retrying won't help
-        if (error instanceof Error && error.message.includes("No valid start positions")) {
+        if (
+          error instanceof Error &&
+          error.message.includes("No valid start positions")
+        ) {
           console.error(
             `[RandomSequenceGenerator] Cannot generate sequence: ${error.message}`
           );
@@ -111,14 +132,17 @@ export class RandomSequenceGenerator {
     constraints?: VariationConstraints,
     constraintSet?: ConstraintSet,
     signal?: AbortSignal,
-    letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>,
+    letterSources?: Array<{
+      letter: Letter;
+      isOriginal: boolean;
+      stepIndex: number;
+    }>,
     level?: DifficultyLevel,
     turnIntensity?: number
   ): Promise<SequenceData | null> {
     // Get ALL pictograph variations for this grid mode (cached by letterQueryHandler)
-    const allPictographs = await this.letterQueryHandler.getAllPictographVariations(
-      gridMode
-    );
+    const allPictographs =
+      await this.letterQueryHandler.getAllPictographVariations(gridMode);
 
     // Get the first letter of the word
     const firstLetter = letters[0];
@@ -145,9 +169,10 @@ export class RandomSequenceGenerator {
     }
 
     // Apply turn intensity biasing to first letter selection
-    const firstLetterVariation = turnIntensity != null
-      ? this.selectWithTurnBias(firstLetterVariations, turnIntensity)
-      : this.pickRandom(firstLetterVariations);
+    const firstLetterVariation =
+      turnIntensity != null
+        ? this.selectWithTurnBias(firstLetterVariations, turnIntensity)
+        : this.pickRandom(firstLetterVariations);
     if (!firstLetterVariation) return null;
 
     // Step 2: Get where that variation starts (e.g., "alpha3")
@@ -182,7 +207,8 @@ export class RandomSequenceGenerator {
     );
 
     // Convert first letter variation to ConstraintStep for soft constraint scoring
-    const firstConstraintStep = this.pictographToConstraintStep(firstLetterVariation);
+    const firstConstraintStep =
+      this.pictographToConstraintStep(firstLetterVariation);
 
     // Compute valid LOOP end positions if a non-REWOUND LOOP type is selected
     let validEndPositions: GridPosition[] = [];
@@ -278,7 +304,11 @@ export class RandomSequenceGenerator {
 
     // Apply LOOP extension if circular is required
     if (constraints?.requiresCircular && !sequence.isCircular) {
-      const extended = await this.applyCircularExtension(sequence, constraints, letterSources);
+      const extended = await this.applyCircularExtension(
+        sequence,
+        constraints,
+        letterSources
+      );
       return extended || sequence;
     }
 
@@ -434,12 +464,20 @@ export class RandomSequenceGenerator {
 
       // Get alternatives at the backtrack point
       const backtrackCandidateIndex = state.candidatesPerStep.length - depth;
-      const candidatesAtBacktrack = state.candidatesPerStep[backtrackCandidateIndex];
-      const previouslyChosen = state.chosenIndicesPerStep[backtrackCandidateIndex];
+      const candidatesAtBacktrack =
+        state.candidatesPerStep[backtrackCandidateIndex];
+      const previouslyChosen =
+        state.chosenIndicesPerStep[backtrackCandidateIndex];
 
       // Trim candidates/chosen tracking to the backtrack point
-      state.candidatesPerStep = state.candidatesPerStep.slice(0, backtrackCandidateIndex);
-      state.chosenIndicesPerStep = state.chosenIndicesPerStep.slice(0, backtrackCandidateIndex);
+      state.candidatesPerStep = state.candidatesPerStep.slice(
+        0,
+        backtrackCandidateIndex
+      );
+      state.chosenIndicesPerStep = state.chosenIndicesPerStep.slice(
+        0,
+        backtrackCandidateIndex
+      );
 
       if (!candidatesAtBacktrack || candidatesAtBacktrack.length <= 1) {
         // No alternatives at this depth
@@ -635,8 +673,10 @@ export class RandomSequenceGenerator {
     const leftMotion = pictograph.motions[HandSide.LEFT];
     const rightMotion = pictograph.motions[HandSide.RIGHT];
 
-    const leftTurns = leftMotion?.turns === "fl" ? 0.25 : (leftMotion?.turns ?? 0);
-    const rightTurns = rightMotion?.turns === "fl" ? 0.25 : (rightMotion?.turns ?? 0);
+    const leftTurns =
+      leftMotion?.turns === "fl" ? 0.25 : (leftMotion?.turns ?? 0);
+    const rightTurns =
+      rightMotion?.turns === "fl" ? 0.25 : (rightMotion?.turns ?? 0);
 
     return Math.max(leftTurns, rightTurns);
   }
@@ -654,7 +694,9 @@ export class RandomSequenceGenerator {
   /**
    * Convert a pictograph to the ConstraintStep format used for scoring.
    */
-  private pictographToConstraintStep(pictograph: PictographData): ConstraintStep {
+  private pictographToConstraintStep(
+    pictograph: PictographData
+  ): ConstraintStep {
     const leftMotion = pictograph.motions[HandSide.LEFT];
     const rightMotion = pictograph.motions[HandSide.RIGHT];
 
@@ -677,7 +719,9 @@ export class RandomSequenceGenerator {
   /**
    * Convert a pictograph to the ConstraintPictographData format for constraint evaluation.
    */
-  private pictographToConstraintPictograph(pictograph: PictographData): ConstraintPictographData {
+  private pictographToConstraintPictograph(
+    pictograph: PictographData
+  ): ConstraintPictographData {
     const leftMotion = pictograph.motions[HandSide.LEFT];
     const rightMotion = pictograph.motions[HandSide.RIGHT];
 
@@ -688,7 +732,7 @@ export class RandomSequenceGenerator {
       timing: "", // PictographData doesn't have timing - only available on compound letters
       direction: "", // PictographData doesn't have direction - only available on compound letters
       leftMotion: {
-        color: "blue",
+        hand: "left",
         startLocation: leftMotion?.startLocation ?? "",
         endLocation: leftMotion?.endLocation ?? "",
         motionType: leftMotion?.motionType ?? "static",
@@ -697,7 +741,7 @@ export class RandomSequenceGenerator {
         endOrientation: leftMotion?.endOrientation ?? "",
       },
       rightMotion: {
-        color: "red",
+        hand: "right",
         startLocation: rightMotion?.startLocation ?? "",
         endLocation: rightMotion?.endLocation ?? "",
         motionType: rightMotion?.motionType ?? "static",
@@ -711,7 +755,9 @@ export class RandomSequenceGenerator {
   /**
    * Convert a ConstraintStep to ConstraintPictographData for constraint evaluation.
    */
-  private constraintStepToConstraintPictograph(step: ConstraintStep): ConstraintPictographData {
+  private constraintStepToConstraintPictograph(
+    step: ConstraintStep
+  ): ConstraintPictographData {
     return {
       letter: step.letter,
       startPosition: step.startPosition,
@@ -719,7 +765,7 @@ export class RandomSequenceGenerator {
       timing: "",
       direction: "",
       leftMotion: {
-        color: "blue",
+        hand: "left",
         startLocation: step.leftStartLocation ?? "",
         endLocation: step.leftEndLocation ?? "",
         motionType: step.leftMotionType,
@@ -728,7 +774,7 @@ export class RandomSequenceGenerator {
         endOrientation: "",
       },
       rightMotion: {
-        color: "red",
+        hand: "right",
         startLocation: step.rightStartLocation ?? "",
         endLocation: step.rightEndLocation ?? "",
         motionType: step.rightMotionType,
@@ -766,8 +812,10 @@ export class RandomSequenceGenerator {
     }
 
     // Check if we need to apply any scoring
-    const hasSoftConstraints = constraintSet?.soft && constraintSet.soft.length > 0;
-    const hasTurnBias = turnIntensity != null && Math.abs(turnIntensity - 1.0) >= 0.01;
+    const hasSoftConstraints =
+      constraintSet?.soft && constraintSet.soft.length > 0;
+    const hasTurnBias =
+      turnIntensity != null && Math.abs(turnIntensity - 1.0) >= 0.01;
 
     // No soft constraints and no turn bias - use pure random selection
     if (!hasSoftConstraints && !hasTurnBias) {
@@ -781,7 +829,8 @@ export class RandomSequenceGenerator {
 
     // Score each candidate based on soft constraints
     const scored = candidates.map((candidate, _index) => {
-      const candidatePictograph = this.pictographToConstraintPictograph(candidate);
+      const candidatePictograph =
+        this.pictographToConstraintPictograph(candidate);
       const previousPictographs = previousSteps.map((step) =>
         this.constraintStepToConstraintPictograph(step)
       );
@@ -839,7 +888,11 @@ export class RandomSequenceGenerator {
     steps: StepData[],
     gridMode: GridMode,
     startPositionPictograph: PictographData,
-    letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>
+    letterSources?: Array<{
+      letter: Letter;
+      isOriginal: boolean;
+      stepIndex: number;
+    }>
   ): SequenceData {
     // Extract word from step letters
     const word = steps
@@ -887,7 +940,11 @@ export class RandomSequenceGenerator {
   private async applyCircularExtension(
     sequence: SequenceData,
     constraints?: VariationConstraints,
-    letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>
+    letterSources?: Array<{
+      letter: Letter;
+      isOriginal: boolean;
+      stepIndex: number;
+    }>
   ): Promise<SequenceData | null> {
     if (!constraints?.requiresCircular) return sequence;
 
@@ -897,40 +954,50 @@ export class RandomSequenceGenerator {
       const originalStepCount = sequence.steps?.length ?? 0;
 
       // Get existing letterSources - prefer passed-in sources, fall back to metadata
-      const existingSpellData = sequence.metadata?.spellData as {
-        letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>;
-      } | undefined;
-      const existingLetterSources = letterSources ?? existingSpellData?.letterSources ?? [];
+      const existingSpellData = sequence.metadata?.spellData as
+        | {
+            letterSources?: Array<{
+              letter: Letter;
+              isOriginal: boolean;
+              stepIndex: number;
+            }>;
+          }
+        | undefined;
+      const existingLetterSources =
+        letterSources ?? existingSpellData?.letterSources ?? [];
 
-      const extended = await this.sequenceExtender.extendSequence(
-        sequence,
-        { loopType }
-      );
+      const extended = await this.sequenceExtender.extendSequence(sequence, {
+        loopType,
+      });
 
       if (!extended) return sequence;
 
       // Build updated word and letterSources from the extended sequence
       // The extender has already derived correct letters for each step
-      const extendedWord = extended.word || extended.steps?.map(s => s.letter || "").join("") || "";
+      const extendedWord =
+        extended.word ||
+        extended.steps?.map((s) => s.letter || "").join("") ||
+        "";
 
       // Build letterSources: preserve isOriginal from existing sources for first half,
       // mark LOOP-generated steps (second half) as not original
-      const extendedLetterSources = extended.steps?.map((step, index) => {
-        // For original steps, preserve the existing isOriginal flag (handles bridge letters)
-        if (index < originalStepCount && existingLetterSources[index]) {
+      const extendedLetterSources =
+        extended.steps?.map((step, index) => {
+          // For original steps, preserve the existing isOriginal flag (handles bridge letters)
+          if (index < originalStepCount && existingLetterSources[index]) {
+            return {
+              letter: (step.letter || "") as Letter,
+              isOriginal: existingLetterSources[index].isOriginal,
+              stepIndex: index + 1,
+            };
+          }
+          // For LOOP-extended steps, they are never "original"
           return {
             letter: (step.letter || "") as Letter,
-            isOriginal: existingLetterSources[index].isOriginal,
+            isOriginal: false,
             stepIndex: index + 1,
           };
-        }
-        // For LOOP-extended steps, they are never "original"
-        return {
-          letter: (step.letter || "") as Letter,
-          isOriginal: false,
-          stepIndex: index + 1,
-        };
-      }) || [];
+        }) || [];
 
       // Update metadata with spellData
       return {

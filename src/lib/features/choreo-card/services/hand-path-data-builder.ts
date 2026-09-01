@@ -9,7 +9,7 @@
  * no orientation. Just spatial movement.
  *
  * The builder produces the absolute minimum data needed:
- *   - color (blue/red)
+ *   - performer hand (left/right)
  *   - start and end location
  *   - handPath direction (CW, CCW, DASH, or STATIC - derived from locations)
  *
@@ -33,7 +33,6 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { HandPathTrace, HandSkew } from "./types";
 
-
 // The 8 compass points in clockwise order. Any step from point[i] to point[i+1]
 // (mod 8) is clockwise. The reverse is counter-clockwise.
 const CLOCKWISE_ORDER: GridLocation[] = [
@@ -52,9 +51,8 @@ const LOCATION_BY_VALUE: Record<string, GridLocation> = Object.fromEntries(
   Object.values(GridLocation).map((v) => [v, v as GridLocation])
 ) as Record<string, GridLocation>;
 
-
 /**
- * Parses a hand-path ID into blue and red GridLocation arrays.
+ * Parses a hand-path ID into left and right GridLocation arrays.
  *
  * Format: "n→e→e→s→s→w→w→n→n|s→w→w→n→n→e→e→s→s"
  * The "→" separator is a Unicode right arrow (U+2192), not "->".
@@ -64,13 +62,13 @@ export function parseHandPathId(handPathId: string): HandPathTrace {
 
   if (!leftPart || !rightPart) {
     throw new Error(
-      `Invalid hand path ID - expected "blue|red" format: "${handPathId}"`
+      `Invalid hand path ID - expected "left|right" format: "${handPathId}"`
     );
   }
 
   return {
-    left: parseLocationSequence(leftPart, "blue"),
-    right: parseLocationSequence(rightPart, "red"),
+    left: parseLocationSequence(leftPart, "left"),
+    right: parseLocationSequence(rightPart, "right"),
   };
 }
 
@@ -91,7 +89,7 @@ export function buildFromTrace(trace: HandPathTrace): PictographData[] {
 
   if (leftLen < 2 || rightLen < 2) {
     throw new Error(
-      `Hand path trace must have at least 2 locations per hand (blue: ${leftLen}, red: ${rightLen})`
+      `Hand path trace must have at least 2 locations per hand (left: ${leftLen}, right: ${rightLen})`
     );
   }
 
@@ -115,10 +113,18 @@ export function buildFromTrace(trace: HandPathTrace): PictographData[] {
       gridMode: GridMode.DIAMOND,
       motions: {
         [HandSide.LEFT]: createHandMotion(
-          HandSide.LEFT, leftStart, leftEnd, leftHandPath, beatSkews?.left
+          HandSide.LEFT,
+          leftStart,
+          leftEnd,
+          leftHandPath,
+          beatSkews?.left
         ),
         [HandSide.RIGHT]: createHandMotion(
-          HandSide.RIGHT, rightStart, rightEnd, rightHandPath, beatSkews?.right
+          HandSide.RIGHT,
+          rightStart,
+          rightEnd,
+          rightHandPath,
+          beatSkews?.right
         ),
       },
     });
@@ -129,14 +135,17 @@ export function buildFromTrace(trace: HandPathTrace): PictographData[] {
 
 /**
  * Parse the ID then build beats. When a representative sequence is provided,
- * its first beat is used to correct color assignment (the ID is sorted
- * alphabetically for dedup, which may swap blue/red).
+ * its first beat is used to correct hand assignment (the ID is sorted
+ * alphabetically for dedup, which may swap left/right).
  */
-export function buildFromHandPathId(handPathId: string, representative?: SequenceData): PictographData[] {
+export function buildFromHandPathId(
+  handPathId: string,
+  representative?: SequenceData
+): PictographData[] {
   const trace = parseHandPathId(handPathId);
 
   if (representative?.steps?.length) {
-    correctColorAssignment(trace, representative);
+    correctHandAssignment(trace, representative);
   }
 
   return buildFromTrace(trace);
@@ -161,23 +170,29 @@ export function buildFromHandPathId(handPathId: string, representative?: Sequenc
  *   STATIC          | STATIC            | STATIC       | 0
  */
 function createHandMotion(
-  color: HandSide,
+  hand: HandSide,
   start: GridLocation,
   end: GridLocation,
   handPath: HandPath,
-  skew?: HandSkew,
+  skew?: HandSkew
 ) {
-  const isShift = handPath === HandPath.CLOCKWISE || handPath === HandPath.COUNTER_CLOCKWISE;
-  const isDash = handPath === HandPath.DASH
-    || handPath === HandPath.HASH_IN
-    || handPath === HandPath.HASH_OUT;
+  const isShift =
+    handPath === HandPath.CLOCKWISE || handPath === HandPath.COUNTER_CLOCKWISE;
+  const isDash =
+    handPath === HandPath.DASH ||
+    handPath === HandPath.HASH_IN ||
+    handPath === HandPath.HASH_OUT;
 
   return createMotionData({
-    hand: color,
+    hand,
     propType: PropType.HAND,
     startLocation: start,
     endLocation: end,
-    motionType: isShift ? MotionType.FLOAT : isDash ? MotionType.DASH : MotionType.STATIC,
+    motionType: isShift
+      ? MotionType.FLOAT
+      : isDash
+        ? MotionType.DASH
+        : MotionType.STATIC,
     turns: isShift ? "fl" : 0,
     handPath,
     // Skew: how far the shift deviates from the normal arc
@@ -188,13 +203,13 @@ function createHandMotion(
 }
 
 /**
- * The hand path ID is sorted alphabetically for dedup (so blue↔red swaps
+ * The hand path ID is sorted alphabetically for dedup (so left↔right swaps
  * produce the same key). This means parseHandPathId may assign the traces
- * to the wrong colors. We fix that here by comparing the first trace
- * location against the representative sequence's actual blue start location.
+ * to the wrong hands. We fix that here by comparing the first trace
+ * location against the representative sequence's actual left start location.
  * If they don't match, swap the traces.
  */
-function correctColorAssignment(
+function correctHandAssignment(
   trace: HandPathTrace,
   representative: SequenceData
 ): void {
@@ -203,24 +218,21 @@ function correctColorAssignment(
   );
   if (!firstStep) return;
 
-  const blueMotion = firstStep.motions?.[HandSide.LEFT];
+  const leftMotion = firstStep.motions?.[HandSide.LEFT];
   // Invisible placeholder = hand not really there (both-required Step shape).
-  if (!isVisibleMotion(blueMotion) || !blueMotion.startLocation) return;
+  if (!isVisibleMotion(leftMotion) || !leftMotion.startLocation) return;
 
-  const actualBlueStart = blueMotion.startLocation.toLowerCase();
-  const traceBlueStart = trace.left[0];
+  const actualLeftStart = leftMotion.startLocation.toLowerCase();
+  const traceLeftStart = trace.left[0];
 
-  if (traceBlueStart && traceBlueStart !== actualBlueStart) {
+  if (traceLeftStart && traceLeftStart !== actualLeftStart) {
     const temp = trace.left;
     trace.left = trace.right;
     trace.right = temp;
   }
 }
 
-function parseLocationSequence(
-  part: string,
-  label: string
-): GridLocation[] {
+function parseLocationSequence(part: string, label: string): GridLocation[] {
   return part.split("→").map((raw, idx) => {
     const trimmed = raw.trim().toLowerCase();
     const loc = LOCATION_BY_VALUE[trimmed];
@@ -245,10 +257,7 @@ function parseLocationSequence(
  *   - Opposite on ring (4 steps) → DASH (straight across)
  *   - Other ring movement → CW or CCW (shorter arc wins)
  */
-function deriveHandPath(
-  start: GridLocation,
-  end: GridLocation
-): HandPath {
+function deriveHandPath(start: GridLocation, end: GridLocation): HandPath {
   if (start === end) return HandPath.STATIC;
 
   // Center involvement = hash movement
@@ -262,7 +271,7 @@ function deriveHandPath(
   if (startIdx === -1 || endIdx === -1) return HandPath.CLOCKWISE;
 
   const len = CLOCKWISE_ORDER.length; // 8
-  const cwSteps = ((endIdx - startIdx) + len) % len;
+  const cwSteps = (endIdx - startIdx + len) % len;
 
   // Exactly opposite (4 steps in either direction) = straight across = DASH
   if (cwSteps === 4) return HandPath.DASH;
@@ -279,8 +288,7 @@ function deriveHandPath(
  * Algorithm: djb2 variant over the joined location strings.
  */
 function hashTrace(trace: HandPathTrace): string {
-  const combined =
-    trace.left.join(",") + "|" + trace.right.join(",");
+  const combined = trace.left.join(",") + "|" + trace.right.join(",");
 
   let hash = 5381;
   for (let i = 0; i < combined.length; i++) {

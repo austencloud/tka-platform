@@ -11,10 +11,11 @@
 
 import { PRECISE_QUARTER_SAME_EXPLANATION } from "./rotation-invariant.js";
 
-export const DOMAIN_TOPICS: Record<string, { title: string; content: string }> = {
-  "static-props": {
-    title: "TKA and Props: Built for Double Staves",
-    content: `## TKA and Props: Built for Double Staves
+export const DOMAIN_TOPICS: Record<string, { title: string; content: string }> =
+  {
+    "static-props": {
+      title: "TKA and Props: Built for Double Staves",
+      content: `## TKA and Props: Built for Double Staves
 
 TKA was built for **double staves**. That's the canonical prop, and understanding why matters.
 
@@ -44,11 +45,11 @@ TKA is a **radial system** -- all orientations are measured from the prop to the
 The TKA parameter space is precise and finite: 9 grid locations (8 perimeter + center), 8 center-relative orientations (4 radial/nonradial + 4 interradial at L4+), and rotation increments down to 45 degrees (quarter turns at L4). What TKA does NOT enumerate: grip changes, body movement, behind-the-back passes, contact rolling, tosses, or 3D planes below Level 8.
 
 TKA is for **dual-wielded** props. Contact staff (balancing/rolling on body) is NOT part of TKA.`,
-  },
+    },
 
-  "base-rotation": {
-    title: "The Base Rotation Principle",
-    content: `## The Base Rotation Principle
+    "base-rotation": {
+      title: "The Base Rotation Principle",
+      content: `## The Base Rotation Principle
 
 **Turn counts in TKA measure ADDITIONAL rotation on top of an inherent base rotation.** This is the most commonly misunderstood concept.
 
@@ -81,11 +82,11 @@ TKA defines 1 turn as 180 degrees of additional prop rotation beyond base behavi
 - At 180 degrees, the math stays clean at every level: whole turns 0-3 are small integers, half turns (90 degrees) produce cardinal orientation shifts, and quarter turns (45 degrees) produce interradial orientations
 
 This also makes the orientation parity rules intuitive: each additional turn (180 degrees) flips orientation once, so even turns preserve and odd turns reverse.`,
-  },
+    },
 
-  "layers": {
-    title: "Layers and the Layer Signature",
-    content: `## Layers and the Layer Signature
+    layers: {
+      title: "Layers and the Layer Signature",
+      content: `## Layers and the Layer Signature
 
 At any moment each prop is either **radial** (in or out, along the line from the
 performer's center) or **nonradial** (clock or counter, across that line). Take
@@ -156,11 +157,11 @@ reachable from any starting layer, and at Level 3 every signature is reachable o
 any word. Below Level 3 exactly one is reachable: \`111...1\`.
 
 See also: **orientation-algebra** for the per-prop rules this is built on, and
-**loops** for what closure means to a repeating sequence.`
-  },
-  "orientation-algebra": {
-    title: "Orientation Algebra",
-    content: `## Orientation Algebra
+**loops** for what closure means to a repeating sequence.`,
+    },
+    "orientation-algebra": {
+      title: "Orientation Algebra",
+      content: `## Orientation Algebra
 
 ### Whole-Turn Parity Rules
 
@@ -188,11 +189,11 @@ Float holds absolute spatial angle. As the hand arcs, the center-relative orient
 ### Orientation and LOOP Closure
 
 These parity rules set a LOOP's **orientation period** (see LOOP System → Type vs Length). Over one position period, sum each hand's reversals: anti/dash/hash bases + odd whole turns each flip orientation (in↔out / clock↔counter); half-turns step 90°, quarters 45°. If the net per-hand delta is the identity, the LOOP closes at its position period. Otherwise it repeats until the orientation wheel returns home, multiplying length by that orientation period. Position-moving LOOPs (rotated/mirrored/flipped/swapped) usually close orientation trivially; the multiplier appears when the motion/turn content drifts. Inverted LOOPs (and the narrow case of a Swapped LOOP whose entire seed stays in beta) are the pure form — positions pinned, so the orientation cycle IS the LOOP.`,
-  },
+    },
 
-  "combinatorial-space": {
-    title: "Combinatorial Motion Space",
-    content: `## Combinatorial Motion Space
+    "combinatorial-space": {
+      title: "Combinatorial Motion Space",
+      content: `## Combinatorial Motion Space
 
 The complete enumeration of single-hand motions from any grid point, stratified by level.
 
@@ -245,11 +246,11 @@ The original estimate of 214 possibilities was based on incorrect assumptions (0
 **L6 from center (225):** Hash (to 8 perimeter): 8 x 25 = 200. Static: 25.
 
 Shift destinations exclude the origin itself and its opposite point (the dash destination): 2 on a 4-point grid, 6 on an 8-point grid.`,
-  },
+    },
 
-  "hand-path-modifiers": {
-    title: "Hand Path Modifier System (+/-)",
-    content: `## Hand Path Modifier System (+/-)
+    "hand-path-modifiers": {
+      title: "Hand Path Modifier System (+/-)",
+      content: `## Hand Path Modifier System (+/-)
 
 A hand path describes the trajectory of the hand from one grid point to another. The geometric shape (curved vs straight) determines available rotation types.
 
@@ -311,11 +312,11 @@ When the 8-point grid is available, shifts can traverse arcs longer or shorter t
 Skews support all three shift motion types (pro, anti, float). Theoretically unbounded in arc length.
 
 **CHU:** A skew++ (double-extended arc) with float has been identified as a distinct phenomenon. TKA does NOT give it a separate motion type -- it is expressible as an extended-arc float shift within the existing framework.`,
-  },
+    },
 
-  "level-system": {
-    title: "Level System",
-    content: `## Level System
+    "level-system": {
+      title: "Level System",
+      content: `## Level System
 
 ### Locked-In Order (revised Aug 2026)
 
@@ -362,11 +363,11 @@ Levels 4 and 6 traded places with the February 2026 order, which ran centric at 
 - All single-grid 2D knowledge (orientations, skews, and the center point) carries forward into conjoined and then into 3D
 
 **Symmetry:** L4 completes orientation freedom, L6 completes the single grid, L7 completes spatial expansion in 2D. L9 completes 3D the same way -- precision pass after dimensional expansion (atomics at L8).`,
-  },
+    },
 
-  "skewed-letters": {
-    title: "Letter Types on the 8-Point Grid (L5 Skewed)",
-    content: `## Letter Types on the 8-Point Grid (L5 Skewed)
+    "skewed-letters": {
+      title: "Letter Types on the 8-Point Grid (L5 Skewed)",
+      content: `## Letter Types on the 8-Point Grid (L5 Skewed)
 
 > **Audit note (Feb 2026):** This section was drafted during a long exploratory conversation. Core conclusions validated by Austen, but details/framing may contain errors.
 
@@ -428,11 +429,11 @@ Phi- and Psi- extend the same way. Lambda- cannot be skewed.
 | Transition structure | Zeta↔Eta via opposite-direction shift (like Alpha↔Beta) | Same shift geometry, different position family |
 
 Note: Type 1 letter assignment for zeta/eta transitions is intentionally omitted from this summary. Determining whether a given skewed transition uses an A-L letter, an M-V letter, or a new letter entirely is a distinct question from defining what A-L and M-V mean on the 4-point diamond grid. Refer to the Skewed pictograph dataframe or Austen directly for the ground truth on skewed letter assignment.`,
-  },
+    },
 
-  "position-symmetry": {
-    title: "Position Symmetry and Gamma Skewing",
-    content: `## Position Symmetry (Critical for Letter Assignment)
+    "position-symmetry": {
+      title: "Position Symmetry and Gamma Skewing",
+      content: `## Position Symmetry (Critical for Letter Assignment)
 
 Whether a position is **symmetric** or **asymmetric** determines which letters apply to it.
 
@@ -455,11 +456,11 @@ Whether a position is **symmetric** or **asymmetric** determines which letters a
 ### Gamma Cannot Be Skewed
 
 On the 8-point grid, skewed positions require one hand on a cardinal point and one on an intercardinal point. The possible angular separations are always odd multiples of 45 degrees: either 45 degrees (Eta) or 135 degrees (Zeta). You **cannot** get 90 degrees with one hand on each grid. Gamma (90 degrees) only occurs when both hands are on the **same** grid (both cardinal or both intercardinal).`,
-  },
+    },
 
-  "loops": {
-    title: "LOOP System and Compositional Theory",
-    content: `## LOOP System
+    loops: {
+      title: "LOOP System and Compositional Theory",
+      content: `## LOOP System
 
 A **LOOP** is a sequence that returns to its starting position (circular) and follows a structured transformation pattern between its halves/quarters. The LOOP type is determined by step data (positions, motion types, hand identity), not by the word or letters.
 
@@ -572,11 +573,11 @@ A fixed-point requirement applies only to a narrower construction: an already-cl
 3. **Order and construction matter.** Direct, simultaneous, sequential, and literal wrapped-block constructions are not interchangeable.
 4. **Inverted is position-free.** It adds no positional seam constraint.
 5. **Flat detection loses information.** The same net geometry can have different construction histories, and one sequence may satisfy several flat component descriptions. Store the reflection axis in the LOOPSpec instead of relabeling diagonal reflection as a rotated legacy mirror.`,
-  },
+    },
 
-  "caps-vs-loops": {
-    title: "LOOP Transformation Algebra and CAPs vs LOOPs",
-    content: `## LOOP Transformation Algebra
+    "caps-vs-loops": {
+      title: "LOOP Transformation Algebra and CAPs vs LOOPs",
+      content: `## LOOP Transformation Algebra
 
 LOOPs use composable transformations that operate on TKA words:
 
@@ -609,11 +610,12 @@ The LOOP transformations have no CAP equivalent. Charlie Cushing's 8-Step CAP is
 **Charlie's full system is not well enough understood** to make detailed comparative claims. His 10-part video series needs transcription before assuming limitations.
 
 **The per-hand model is not "early learning" or "backwards"** -- it's a different cognitive preference. The Assembler tab bridges for people who think per-hand.`,
-  },
+    },
 
-  "caps-origins": {
-    title: "CAPs — Origins, the Trochoid Framework, and the Home of Poi Deliberations (2007-2009)",
-    content: `## CAPs: Origins and the Trochoid Framework
+    "caps-origins": {
+      title:
+        "CAPs — Origins, the Trochoid Framework, and the Home of Poi Deliberations (2007-2009)",
+      content: `## CAPs: Origins and the Trochoid Framework
 
 Primary source: "What are CAP's?" — Home of Poi forums, topic 891193, read in full 2026-07-19. Images archived in the tka-platform repo (docs/research/caps-archive/). As of 2026-07-19 the thread has NO Internet Archive snapshot (HoP's bot protection has kept crawlers out) — this entry and the repo archive may be the only structured preservation of it.
 
@@ -668,11 +670,11 @@ The term later narrowed in community usage to the **C-CAP** (extension + antispi
 - Basic Poi Dancing Tutorial: C-CAPs — DrexFactor, 2012
 - Learning CAPs (Capped Antispin Patterns) — PlayPoi/Nick Woolsey, 2016 (Wayback: 2026-01)
 - Tutorial: Double Staff 8-Step CAP Recipe — DrexFactor, 2016 ("The idea comes to us from Charlie's 9-square theory")`,
-  },
+    },
 
-  "vtg-deep": {
-    title: "VTG (Vulcan Tech Gospel) Deep Dive",
-    content: `## VTG (Vulcan Tech Gospel) Deep Dive
+    "vtg-deep": {
+      title: "VTG (Vulcan Tech Gospel) Deep Dive",
+      content: `## VTG (Vulcan Tech Gospel) Deep Dive
 
 VTG is an older, widely-adopted notation framework created by Noel Yee and spinners at the Vulcan Lofts in Oakland, CA.
 
@@ -737,11 +739,11 @@ VTG starts with tog-same (G, H, I) because it feels grounded for beginners. TKA 
 ### Per-Hand vs Per-Step Learning
 
 VTG's per-hand decomposition (define left, then right, then combine) and TKA's per-step unit (one letter = both hands) are different cognitive preferences. **Neither is "early" or "late," "beginner" or "advanced."** The Assembler tab bridges for per-hand thinkers.`,
-  },
+    },
 
-  "compound-letters": {
-    title: "Compound Letters",
-    content: `## Compound Letters
+    "compound-letters": {
+      title: "Compound Letters",
+      content: `## Compound Letters
 
 Compound letters are pairs that complete each other to create circular (LOOP) motion. In continuous spinning, you perform compound units, not individual letters.
 
@@ -775,11 +777,11 @@ Compound letters are pairs that complete each other to create circular (LOOP) mo
 - In continuous motion, you're always doing the compound
 - **Split/tog timing is vantage-relative.** The same loop reads as split-opp or tog-opp depending on where you start it: split-opp from the alpha-phase start, tog-opp from the beta-phase start. DJ/EK/FL are not intrinsically "split" — that label is just the canonical alpha1 vantage.
 - The "beta to alpha" descriptions above are the canonical alpha1 reading. The same loop started elsewhere is the same compound, only described from a different vantage.`,
-  },
+    },
 
-  "center-relative-orientation": {
-    title: "Center-Relative Orientation System",
-    content: `## Center-Relative Orientation
+    "center-relative-orientation": {
+      title: "Center-Relative Orientation System",
+      content: `## Center-Relative Orientation
 
 **All orientations in TKA are measured from the prop to the performer's center point.** This is not arbitrary -- it makes the entire orientation algebra work.
 
@@ -816,11 +818,11 @@ When a hand traces a curved arc, the angle from prop to center changes continuou
 **TERMINOLOGY NOTE:** Do not confuse these coordinate systems:
 - **Cardinal / Intercardinal** = grid point LOCATIONS (N/E/S/W vs NE/SE/SW/NW)
 - **Radial / Nonradial / Interradial** = prop ORIENTATIONS relative to center`,
-  },
+    },
 
-  "elemental-model": {
-    title: "The 6-Element Model",
-    content: `## The 6-Element Model
+    "elemental-model": {
+      title: "The 6-Element Model",
+      content: `## The 6-Element Model
 
 The Elemental Model maps VTG's timing/direction categories to classical elements, giving each category an intuitive name and visual quality. The original four elements were popularized by Leonardo Icaza (@poidanceflow, Vancouver BC) and taught in video form by Ronan McLoughlin. Austen Cloud expanded the framework with two additional elements (Sun and Moon) to cover the gamma/"quarter time" patterns that VTG never formally classified.
 
@@ -874,11 +876,11 @@ Three stable elements. Three that permute with grid rotation. The same-direction
 - **Leonardo Icaza** (@poidanceflow): Popularized the 4-element mapping of VTG categories. Coined "body tracer" and defined horizontal stacking for poi. Teaching primarily via Instagram and in-person workshops. Based in Vancouver, BC. Featured in "The Art of Flow" (2012 documentary).
 - **Ronan McLoughlin**: Created "The 4 Elements of Timing and Direction" YouTube video that teaches the framework systematically.
 - **Austen Cloud**: Added Sun and Moon to cover gamma patterns, identified the grid-mode dependency rule.`,
-  },
+    },
 
-  "motion-types-complete": {
-    title: "Motion Types (Complete Reference)",
-    content: `## Motion Types (Complete Reference)
+    "motion-types-complete": {
+      title: "Motion Types (Complete Reference)",
+      content: `## Motion Types (Complete Reference)
 
 ### Shift Motion Types (curved arc required)
 
@@ -916,16 +918,16 @@ Shifts can traverse arcs longer or shorter than standard:
 Skews support all three shift motion types (pro, anti, float). Theoretically unbounded in arc length.
 
 **CHU:** A skew++ (double-extended arc) with float has been identified as a distinct phenomenon. TKA does NOT give it a separate motion type -- it is expressible as an extended-arc float shift within the existing framework. The decision not to add a 6th motion type was deliberate: CHU is a specific combination of existing parameters, not a fundamentally new behavior.`,
-  },
+    },
 
-  "stuv-anomaly": {
-    title: "The STUV Anomaly: Why Quarter-Same Has 4 Letters",
-    content: PRECISE_QUARTER_SAME_EXPLANATION,
-  },
+    "stuv-anomaly": {
+      title: "The STUV Anomaly: Why Quarter-Same Has 4 Letters",
+      content: PRECISE_QUARTER_SAME_EXPLANATION,
+    },
 
-  "l1-quartered-loop-deck": {
-    title: "The Level 1 Quartered Rotated LOOP Deck: Why 64",
-    content: `## The Level 1 Quartered Rotated LOOP Deck: Why 64
+    "l1-quartered-loop-deck": {
+      title: "The Level 1 Quartered Rotated LOOP Deck: Why 64",
+      content: `## The Level 1 Quartered Rotated LOOP Deck: Why 64
 
 ### The Result
 
@@ -1007,11 +1009,11 @@ These 192 sequences (64 × 3 starting positions) form the complete **Level 1 Qua
 - Has 4-fold rotational symmetry
 - Loops back to its starting position
 - Is fully determined by a 2-step seed`,
-  },
+    },
 
-  "symmetry-invariance": {
-    title: "The Symmetry Invariance Principle",
-    content: `## The Symmetry Invariance Principle
+    "symmetry-invariance": {
+      title: "The Symmetry Invariance Principle",
+      content: `## The Symmetry Invariance Principle
 
 ### The Design Rule
 
@@ -1042,11 +1044,11 @@ The symmetry principle means:
 - Color assignment (which hand is red vs blue) is arbitrary for most letters
 - The total letter count is minimized -- without this principle, there would be redundant letters for every spatial rotation
 - The exceptions (STUV) are well-defined and mathematically motivated`,
-  },
+    },
 
-  "glyph-anatomy": {
-    title: "Glyph Anatomy: PADS, Slots, Dots, and Turn Notation",
-    content: `## Glyph Anatomy: PADS, Slots, Dots, and Turn Notation
+    "glyph-anatomy": {
+      title: "Glyph Anatomy: PADS, Slots, Dots, and Turn Notation",
+      content: `## Glyph Anatomy: PADS, Slots, Dots, and Turn Notation
 
 A **glyph** is a letter combined with other characters — numbers, dots, or modifiers — that together describe a single pictograph's motion parameters. The Level 2 Guide formalizes the glyph's anatomy and the rules for assembling it. This topic covers how each element works and how the TKA software represents them.
 
@@ -1111,7 +1113,7 @@ All four are distinct pictographs. **No rotation, reflection, or mirror** can tr
 
 When only one hand rotates (e.g., Λ(0,1) with a 1-turn static and base dash), only that rotating hand gets an op/cl flag: \`Λ(0,1,op)\`. The non-rotating hand has no trajectory to extrapolate.
 
-In the codebase, opening/closing is **computed at placement-key-generation time**, not stored. The rule is encoded in hard-coded lookup tables keyed by \`\${endLocation}|\${otherHandEndLocation}|\${rotationDirection}\` in \`src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/PropRotationStateTracker.ts\` (see \`blueRotationMap\`, \`redRotationMap\`, \`dashRotationMap\`, \`staticRotationMap\` around lines 110-375). The \`TurnsTupleGenerator\` calls into this tracker for Lambda, Λ-, and γ generation (lines ~307-630).
+In the codebase, opening/closing is **computed at placement-key-generation time**, not stored. The rule is encoded in hard-coded lookup tables keyed by \`\${endLocation}|\${otherHandEndLocation}|\${rotationDirection}\` in \`src/lib/shared/pictograph/arrow/positioning/placement/services/prop-rotation-state-tracker.ts\` (see \`leftRotationMap\`, \`rightRotationMap\`, \`dashRotationMap\`, and \`staticRotationMap\`). The turn-tuple generator calls into this tracker for Lambda, Λ-, and γ generation.
 
 ### Turn Notation: Written Forms
 
@@ -1159,8 +1161,8 @@ The Level 2 Guide notes: *"TKA software now handles the placement of these numbe
 
 - Austen Cloud, *The Kinetic Alphabet*, Level 2 Guide (Glyphs / PADS section)
 - ADR 003: Level-1-Base Float Classification (\`docs/adr/003-level-1-base-float-classification.md\`)`,
-  },
-};
+    },
+  };
 
 /** Get list of all available topic keys with their titles. */
 export function listDomainTopics(): Array<{ key: string; title: string }> {

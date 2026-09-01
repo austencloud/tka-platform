@@ -4,16 +4,16 @@
    * Letters"), faithful to proof p25 / "1.1 - Gamma Letters" artboard.
    *
    * The γ→γ letters, all real staff pictographs:
-   *   Quarter-Opp grid - M N O (blue w→n, red s→e) over P Q R (blue n→e,
-   *   red e→n) in Iso/Anti/Hybrid columns; MCP-confirmed M/P dual-pro,
-   *   N/Q dual-anti, O/R hybrid blue-anti + red-pro.
-   *   MP / NQ / OR word strips - M chains into P exactly (end blue N red E =
+   *   Quarter-Opp grid - M N O (left w→n, right s→e) over P Q R (left n→e,
+   *   right e→n) in Iso/Anti/Hybrid columns; MCP-confirmed M/P dual-pro,
+   *   N/Q dual-anti, O/R hybrid left-anti + right-pro.
+   *   MP / NQ / OR word strips - M chains into P exactly (end left N right E =
    *   P's start) with the proof's phrases (Magic Potion / Never Quit / Open
    *   Road).
-   *   Quarter-Same row - S T U V (both hands w→s / s→e, red positionally
+   *   Quarter-Same row - S T U V (both hands w→s / s→e, right positionally
    *   LEADING per the proof's "the right is leading"): S dual-pro, T
-   *   dual-anti, U = leader pro (red pro, blue anti), V = leader anti (red
-   *   anti, blue pro) - the leader/follower rule (U leads with an isolation,
+   *   dual-anti, U = leader pro (right pro, left anti), V = leader anti (right
+   *   anti, left pro) - the leader/follower rule (U leads with an isolation,
    *   V with an antispin).
    * Facelift: lowercase γ (the proof's Γ is stale per the tracker convention);
    * follower thumb orientations follow the algebra (anti flips in→out) even
@@ -38,12 +38,22 @@
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    GridLocation,
+    GridPosition,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import {
+    pt,
+    ptDrag,
+    editText,
+    guideEdit,
+    registerEditSource,
+  } from "../_data/guide-edit.svelte";
   import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
@@ -62,8 +72,14 @@
 
   // ── Motion authoring (same helpers as the Compound Letters page) ───────────
   const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
-  const hpDir = (from: GridLocation, to: GridLocation) => (HP_CW.has(`${from}-${to}`) ? CW : CCW);
-  type HandSpec = { from: GridLocation; to: GridLocation; anti: boolean; so?: Orientation };
+  const hpDir = (from: GridLocation, to: GridLocation) =>
+    HP_CW.has(`${from}-${to}`) ? CW : CCW;
+  type HandSpec = {
+    from: GridLocation;
+    to: GridLocation;
+    anti: boolean;
+    so?: Orientation;
+  };
   const hand = (color: HandSide, h: HandSpec) => {
     const dir = hpDir(h.from, h.to);
     const so = h.so ?? IN;
@@ -92,9 +108,24 @@
       gridMode: GridMode.DIAMOND,
     });
 
-  type CellDef = { letter: Letter; name: string; left: HandSpec; right: HandSpec };
-  const cell = (letter: Letter, name: string, left, right): CellDef => ({ letter, name, left, right });
-  const mv = (from: GridLocation, to: GridLocation, anti = false, so?: Orientation): HandSpec => ({ from, to, anti, ...(so ? { so } : {}) });
+  type CellDef = {
+    letter: Letter;
+    name: string;
+    left: HandSpec;
+    right: HandSpec;
+  };
+  const cell = (letter: Letter, name: string, left, right): CellDef => ({
+    letter,
+    name,
+    left,
+    right,
+  });
+  const mv = (
+    from: GridLocation,
+    to: GridLocation,
+    anti = false,
+    so?: Orientation
+  ): HandSpec => ({ from, to, anti, ...(so ? { so } : {}) });
 
   // ── Quarter-Opp grid (M N O / P Q R) ────────────────────────────────────────
   const QO_ROWS: CellDef[][] = [
@@ -110,8 +141,8 @@
     ],
   ];
 
-  // ── Quarter-Same row (S T U V; red positionally leads) ──────────────────────
-  // U = leader pro (red pro / blue anti); V = leader anti (red anti / blue pro).
+  // ── Quarter-Same row (S T U V; right positionally leads) ────────────────────
+  // U = leader pro (right pro / left anti); V = leader anti (right anti / left pro).
   const QS_ROW: CellDef[] = [
     cell(Letter.S, "S", mv(W, SO_), mv(SO_, E)),
     cell(Letter.T, "T", mv(W, SO_, true), mv(SO_, E, true)),
@@ -126,7 +157,10 @@
       word: "MP",
       phrase: "Magic Potion",
       x: 23.3,
-      steps: [cell(Letter.M, "M", mv(W, N), mv(SO_, E)), cell(Letter.P, "P", mv(N, E), mv(E, N))],
+      steps: [
+        cell(Letter.M, "M", mv(W, N), mv(SO_, E)),
+        cell(Letter.P, "P", mv(N, E), mv(E, N)),
+      ],
     },
     {
       word: "NQ",
@@ -148,7 +182,11 @@
     },
   ];
 
-  const cellStep = (c: CellDef, key: string, stepNumber: number | null): StepData =>
+  const cellStep = (
+    c: CellDef,
+    key: string,
+    stepNumber: number | null
+  ): StepData =>
     ({
       id: `${key}${stepNumber === null ? "" : `-${stepNumber}`}`,
       letter: c.letter,
@@ -176,7 +214,10 @@
       },
     }) as unknown as StepData;
 
-  const cellSteps = (c: CellDef, key: string): StepData[] => [startFor(c), cellStep(c, `${key}-s`, 1)];
+  const cellSteps = (c: CellDef, key: string): StepData[] => [
+    startFor(c),
+    cellStep(c, `${key}-s`, 1),
+  ];
   const wordKey = (w: WordDef) => `gl-word-${w.word}`;
   const wordSteps = (w: WordDef): StepData[] => [
     startFor(w.steps[0]!),
@@ -197,7 +238,12 @@
     return [start!, ...bakeReversals(steps)];
   };
   const CELL_RESOLVED: Record<string, StepData[]> = $derived(
-    Object.fromEntries(ALL_CELLS.map((c) => [`gl-${c.name}`, resolvedCellSteps(c, `gl-${c.name}`)]))
+    Object.fromEntries(
+      ALL_CELLS.map((c) => [
+        `gl-${c.name}`,
+        resolvedCellSteps(c, `gl-${c.name}`),
+      ])
+    )
   );
 
   const resolvedWordSteps = (w: WordDef): StepData[] => {
@@ -230,7 +276,14 @@
   ];
 
   // ── Text at proof coords (Γ→γ per the facelift convention) ─────────────────
-  type Para = { x: number; y: number; fs: number; lh: number; bold?: boolean; html: string };
+  type Para = {
+    x: number;
+    y: number;
+    fs: number;
+    lh: number;
+    bold?: boolean;
+    html: string;
+  };
   let PARAS: Para[] = $state([
     {
       // Proof y 49.7 collides with the Tangerine title's descenders - nudged.
@@ -278,7 +331,9 @@
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
     registerEditSource("Gamma Letters (lt1-mp-nq-or-stuv)", () =>
-      PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n")
+      PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join(
+        "\n"
+      )
     )
   );
 
@@ -300,7 +355,11 @@
 <div class="gamma-letters">
   <!-- Iso/Anti/Hybrid column labels over the Quarter-Opp grid. -->
   {#each SUB_CENTERS as cx, i (cx)}
-    <span class="sub" style="left:{(cx - 30) * S}px; top:{SUB_Y * S}px; width:{60 * S}px; font-size:{13 * S}px">{SUBS[i]}</span>
+    <span
+      class="sub"
+      style="left:{(cx - 30) * S}px; top:{SUB_Y * S}px; width:{60 *
+        S}px; font-size:{13 * S}px">{SUBS[i]}</span
+    >
   {/each}
 
   <!-- Quarter-Opp grid (each cell clickable). -->
@@ -312,7 +371,8 @@
         class:is-hovered={selection?.isHovered(key)}
         class:is-selected={selection?.isSelected(key)}
         class:guide-step-active={activeStep?.key === key}
-        style="left:{(QO.x + ci * CELL) * S}px; top:{QO.rows[ri]! * S}px; width:{CELL * S}px; height:{CELL * S}px"
+        style="left:{(QO.x + ci * CELL) * S}px; top:{QO.rows[ri]! *
+          S}px; width:{CELL * S}px; height:{CELL * S}px"
       >
         <PictographContainer
           pictographData={CELL_RESOLVED[key]![1]}
@@ -326,7 +386,13 @@
           groupId={key}
           isGroupStart
           label={`Animate letter ${c.name}`}
-          onselect={() => emitSequence?.({ strip: CELL_RESOLVED[key]!, word: `Letter ${c.name}`, key, propType: "staff" })}
+          onselect={() =>
+            emitSequence?.({
+              strip: CELL_RESOLVED[key]!,
+              word: `Letter ${c.name}`,
+              key,
+              propType: "staff",
+            })}
         />
       </div>
     {/each}
@@ -334,7 +400,11 @@
 
   <!-- MP / NQ / OR word strips with divider bars. -->
   {#each WORD_DIVIDERS as dx (dx)}
-    <div class="vdivider" style="left:{dx * S}px; top:{(WORD_Y + 4) * S}px; height:{(CELL - 8) * S}px"></div>
+    <div
+      class="vdivider"
+      style="left:{dx * S}px; top:{(WORD_Y + 4) * S}px; height:{(CELL - 8) *
+        S}px"
+    ></div>
   {/each}
   {#each WORDS as w (w.word)}
     {@const key = wordKey(w)}
@@ -342,13 +412,17 @@
       class="strip-wrap tka-seq-cell"
       class:is-hovered={selection?.isHovered(key)}
       class:is-selected={selection?.isSelected(key)}
-      style="left:{w.x * S}px; top:{WORD_Y * S}px; width:{CELL * 2 * S}px; height:{CELL * S}px"
+      style="left:{w.x * S}px; top:{WORD_Y * S}px; width:{CELL *
+        2 *
+        S}px; height:{CELL * S}px"
     >
       {#each WORD_RESOLVED[key]!.slice(1) as sd, i (i)}
         <div
           class="mini cell"
-          class:guide-step-active={activeStep?.key === key && activeStep.ringStep === i + 1}
-          style="left:{i * CELL * S}px; top:0; width:{CELL * S}px; height:{CELL * S}px"
+          class:guide-step-active={activeStep?.key === key &&
+            activeStep.ringStep === i + 1}
+          style="left:{i * CELL * S}px; top:0; width:{CELL *
+            S}px; height:{CELL * S}px"
         >
           <PictographContainer
             pictographData={sd}
@@ -364,16 +438,30 @@
         groupId={key}
         isGroupStart
         label={`Animate the word ${w.word}`}
-        onselect={() => emitSequence?.({ strip: WORD_RESOLVED[key]!, word: w.word, key, propType: "staff" })}
+        onselect={() =>
+          emitSequence?.({
+            strip: WORD_RESOLVED[key]!,
+            word: w.word,
+            key,
+            propType: "staff",
+          })}
       />
     </div>
-    <p class="caption" style="left:{w.x * S}px; top:{462.5 * S}px; width:{CELL * 2 * S}px; font-size:{16 * S}px">
+    <p
+      class="caption"
+      style="left:{w.x * S}px; top:{462.5 * S}px; width:{CELL *
+        2 *
+        S}px; font-size:{16 * S}px"
+    >
       <span class="tka-font">{w.word}</span> - <em>{w.phrase}</em>
     </p>
   {/each}
 
   <!-- Heavy rule before the Quarter-Same group. -->
-  <div class="rule" style="left:{20 * S}px; top:{HEAVY_RULE * S}px; width:{572 * S}px"></div>
+  <div
+    class="rule"
+    style="left:{20 * S}px; top:{HEAVY_RULE * S}px; width:{572 * S}px"
+  ></div>
 
   <!-- Quarter-Same row (S T U V). -->
   {#each QS_ROW as c, ci (ci)}
@@ -383,7 +471,8 @@
       class:is-hovered={selection?.isHovered(key)}
       class:is-selected={selection?.isSelected(key)}
       class:guide-step-active={activeStep?.key === key}
-      style="left:{(QS.x + ci * CELL) * S}px; top:{QS.y * S}px; width:{CELL * S}px; height:{CELL * S}px"
+      style="left:{(QS.x + ci * CELL) * S}px; top:{QS.y * S}px; width:{CELL *
+        S}px; height:{CELL * S}px"
     >
       <PictographContainer
         pictographData={CELL_RESOLVED[key]![1]}
@@ -397,19 +486,41 @@
         groupId={key}
         isGroupStart
         label={`Animate letter ${c.name}`}
-        onselect={() => emitSequence?.({ strip: CELL_RESOLVED[key]!, word: `Letter ${c.name}`, key, propType: "staff" })}
+        onselect={() =>
+          emitSequence?.({
+            strip: CELL_RESOLVED[key]!,
+            word: `Letter ${c.name}`,
+            key,
+            propType: "staff",
+          })}
       />
     </div>
   {/each}
 
   <!-- Margin labels: γ→γ PositionGlyph over the italic qualifier. -->
   {#each MARGINS as m, i (i)}
-    <span class="margin glyph" style="left:{(m.cx - 40) * S}px; top:{m.glyphY * S}px; width:{80 * S}px">
-      <svg class="pos-glyph" viewBox="360 50 230 75" role="img" aria-label={m.t} style="height:{16 * S}px">
-        <PositionGlyph startPosition={GridPosition.GAMMA1} endPosition={GridPosition.GAMMA1} />
+    <span
+      class="margin glyph"
+      style="left:{(m.cx - 40) * S}px; top:{m.glyphY * S}px; width:{80 * S}px"
+    >
+      <svg
+        class="pos-glyph"
+        viewBox="360 50 230 75"
+        role="img"
+        aria-label={m.t}
+        style="height:{16 * S}px"
+      >
+        <PositionGlyph
+          startPosition={GridPosition.GAMMA1}
+          endPosition={GridPosition.GAMMA1}
+        />
       </svg>
     </span>
-    <span class="margin i" style="left:{(m.cx - 40) * S}px; top:{m.modeY * S}px; width:{80 * S}px; font-size:{14 * S}px">{m.mode}</span>
+    <span
+      class="margin i"
+      style="left:{(m.cx - 40) * S}px; top:{m.modeY * S}px; width:{80 *
+        S}px; font-size:{14 * S}px">{m.mode}</span
+    >
   {/each}
 
   <!-- Centred paragraphs (proof coords). -->
@@ -421,7 +532,12 @@
       class:selected={guideEdit.selectedId === `gl-para-${i}`}
       style="top:{p.y * S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px"
       use:ptDrag={pt(`gl-para-${i}`, "para", p)}
-      use:editText={{ id: `gl-para-${i}`, label: "para", get: () => p.html, set: (h) => (p.html = h) }}
+      use:editText={{
+        id: `gl-para-${i}`,
+        label: "para",
+        get: () => p.html,
+        set: (h) => (p.html = h),
+      }}
     >
       {@html p.html}
     </p>

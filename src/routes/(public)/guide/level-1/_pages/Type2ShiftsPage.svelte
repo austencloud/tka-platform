@@ -43,12 +43,21 @@
     MotionType,
     HandSide,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    GridLocation,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { describePictograph } from "$lib/shared/pictograph/shared/domain/utils/pictograph-description";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
+  import {
+    guideEdit,
+    ptDrag,
+    pt,
+    editText,
+    registerEditSource,
+  } from "../_data/guide-edit.svelte";
   import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
@@ -74,7 +83,7 @@
       gridMode: GridMode.DIAMOND,
     });
 
-  // [blueFrom, blueTo, redFrom, redTo]; Start boxes hold (from === to on both).
+  // [leftFrom, leftTo, rightFrom, rightTo]; Start boxes hold (from === to on both).
   type Move = [GridLocation, GridLocation, GridLocation, GridLocation];
   const box = (m: Move, step: number): StepData =>
     ({
@@ -170,7 +179,7 @@
       lh: 19.2,
       html:
         "To move between γ and α/β, you can shift one hand and keep the other hand static.<br>" +
-        "This combination is called a <strong class=\"pu\">Shift</strong> (with a capital “S”). Here’s a simple example:",
+        'This combination is called a <strong class="pu">Shift</strong> (with a capital “S”). Here’s a simple example:',
     },
     {
       // One block (proof split it into two runs, but it reads as one thought)
@@ -198,7 +207,7 @@
       fs: 15,
       lh: 18,
       html:
-        "<span class=\"pu\">Shifts</span> seems mundane here, but they’re very useful " +
+        '<span class="pu">Shifts</span> seems mundane here, but they’re very useful ' +
         "later for constructing dynamic sequences.",
     },
   ]);
@@ -206,7 +215,11 @@
   // Reader companion handoff: present ONLY inside GuideReader (null on /print,
   // /book), so the printable pages stay pristine and gain no click affordance.
   const emitSequence = getGuideSequenceClick();
-  const SEQ_WORDS = ["Single Shift", "Same-Direction Shifts", "Opposite Shifts"];
+  const SEQ_WORDS = [
+    "Single Shift",
+    "Same-Direction Shifts",
+    "Opposite Shifts",
+  ];
   const stripSteps = (strip: Strip): StepData[] =>
     strip.rows
       .flat()
@@ -242,7 +255,9 @@
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
     registerEditSource("Type 2 (p6)", () =>
-      PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n")
+      PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join(
+        "\n"
+      )
     )
   );
 </script>
@@ -255,7 +270,9 @@
       class="strip-wrap tka-seq-cell"
       class:is-hovered={selection?.isHovered(`t2-${si}`)}
       class:is-selected={selection?.isSelected(`t2-${si}`)}
-      style="left:{strip.x * S}px; top:{strip.y * S}px; width:{BOX * 5 * S}px; height:{strip.rows.length * BOX * S}px"
+      style="left:{strip.x * S}px; top:{strip.y * S}px; width:{BOX *
+        5 *
+        S}px; height:{strip.rows.length * BOX * S}px"
     >
       {#each strip.rows as row, ri (ri)}
         {#each row as cell, ci (ci)}
@@ -263,9 +280,11 @@
             {@const cellStep = RESOLVED[si]![ri]![ci]!}
             <div
               class="pbox"
-              class:guide-step-active={activeStep?.key === `t2-${si}` && activeStep.ringStep === cellStep.stepNumber}
+              class:guide-step-active={activeStep?.key === `t2-${si}` &&
+                activeStep.ringStep === cellStep.stepNumber}
               title={describePictograph(cellStep)}
-              style="left:{ci * BOX * S}px; top:{ri * BOX * S}px; width:{BOX * S}px; height:{BOX * S}px"
+              style="left:{ci * BOX * S}px; top:{ri * BOX * S}px; width:{BOX *
+                S}px; height:{BOX * S}px"
             >
               <PictographContainer
                 pictographData={cellStep}
@@ -293,7 +312,14 @@
         groupId={`t2-${si}`}
         isGroupStart
         label={`Animate the ${SEQ_WORDS[si]} sequence`}
-        onselect={() => emitSequence?.({ strip: RESOLVED[si]!.flat().filter((sd): sd is StepData => sd !== null), word: SEQ_WORDS[si], key: `t2-${si}` })}
+        onselect={() =>
+          emitSequence?.({
+            strip: RESOLVED[si]!.flat().filter(
+              (sd): sd is StepData => sd !== null
+            ),
+            word: SEQ_WORDS[si],
+            key: `t2-${si}`,
+          })}
       />
     </div>
   {/each}
@@ -304,10 +330,15 @@
       class="para"
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `type2-para-${i}`}
-      style="transform: translateX({p.x * S}px); top:{p.y * S}px; font-size:{p.fs *
-        S}px; line-height:{p.lh * S}px"
+      style="transform: translateX({p.x * S}px); top:{p.y *
+        S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px"
       use:ptDrag={pt(`type2-para-${i}`, "paragraph", p)}
-      use:editText={{ id: `type2-para-${i}`, label: "paragraph", get: () => p.html, set: (h) => (p.html = h) }}
+      use:editText={{
+        id: `type2-para-${i}`,
+        label: "paragraph",
+        get: () => p.html,
+        set: (h) => (p.html = h),
+      }}
     >
       {@html p.html}
     </p>

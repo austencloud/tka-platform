@@ -5,8 +5,8 @@
  * Similar to beat transforms but without beat-specific fields.
  *
  * Supports targetHand parameter to transform only specific hand(s):
- * - "blue": Only transform blue motion
- * - "red": Only transform red motion
+ * - "left": Only transform left motion
+ * - "right": Only transform right motion
  * - "both": Transform both motions (default, original behavior)
  */
 
@@ -27,9 +27,12 @@ import {
   mirrorMotion,
   flipMotion,
   rotateMotion,
-  swapMotionColor,
+  reassignMotionHand,
 } from "$lib/shared/create/services/motion-transforms";
-import { invertMotionType, reverseRotationDirection } from "$lib/shared/create/services/rotation-helpers";
+import {
+  invertMotionType,
+  reverseRotationDirection,
+} from "$lib/shared/create/services/rotation-helpers";
 import type { TargetHand } from "$lib/shared/create/state/panel-coordination-state.svelte";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
 
@@ -95,7 +98,10 @@ export function mirrorStartPosition(
       ? VERTICAL_MIRROR_POSITION_MAP[startPos.gridPosition]
       : null;
   } else {
-    const tempStartPos = createStartPositionData({ ...startPos, motions: mirroredMotions });
+    const tempStartPos = createStartPositionData({
+      ...startPos,
+      motions: mirroredMotions,
+    });
     newGridPosition = deriveGridPositionFromMotions(tempStartPos);
   }
 
@@ -139,7 +145,10 @@ export function flipStartPosition(
       ? HORIZONTAL_MIRROR_POSITION_MAP[startPos.gridPosition]
       : null;
   } else {
-    const tempStartPos = createStartPositionData({ ...startPos, motions: flippedMotions });
+    const tempStartPos = createStartPositionData({
+      ...startPos,
+      motions: flippedMotions,
+    });
     newGridPosition = deriveGridPositionFromMotions(tempStartPos);
   }
 
@@ -209,25 +218,25 @@ export function rotateStartPosition(
 }
 
 /**
- * Swap colors in a start position (blue ↔ red).
+ * Swap hand roles in a start position (left ↔ right).
  */
-export function colorSwapStartPosition(
+export function handSwapStartPosition(
   startPos: StartPositionData
 ): StartPositionData {
   const origLeft = startPos.motions[HandSide.LEFT];
   const origRight = startPos.motions[HandSide.RIGHT];
   const swappedMotions = {
     [HandSide.LEFT]: origRight
-      ? swapMotionColor(origRight, HandSide.LEFT)
+      ? reassignMotionHand(origRight, HandSide.LEFT)
       : undefined,
     [HandSide.RIGHT]: origLeft
-      ? swapMotionColor(origLeft, HandSide.RIGHT)
+      ? reassignMotionHand(origLeft, HandSide.RIGHT)
       : undefined,
   };
 
   const newGridPosition = startPos.gridPosition
-      ? SWAPPED_POSITION_MAP[startPos.gridPosition]
-      : null;
+    ? SWAPPED_POSITION_MAP[startPos.gridPosition]
+    : null;
 
   return createStartPositionData({
     ...startPos,
@@ -273,7 +282,9 @@ export function invertStartPosition(
     const invertedRightMotion = createMotionData({
       ...rightMotion,
       motionType: invertMotionType(rightMotion.motionType),
-      rotationDirection: reverseRotationDirection(rightMotion.rotationDirection),
+      rotationDirection: reverseRotationDirection(
+        rightMotion.rotationDirection
+      ),
     });
     const newEndOrientation = calculateEndOrientation(
       invertedRightMotion,

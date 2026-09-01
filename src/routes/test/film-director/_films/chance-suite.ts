@@ -79,11 +79,14 @@ export const chanceSuiteFilm: FilmDirectorInput = {
       id: "distinct-everything",
       title: "Distinct everything",
       intent:
-        "Five performers where the distinct draws guarantee no repeats: five different props exactly saturate the pool, and effects, efforts, and blue planes each differ across the cast.",
+        "Five performers where the distinct draws guarantee no repeats: five different props exactly saturate the pool, and effects, efforts, and left planes each differ across the cast.",
       durationSeconds: 10,
       transition: { kind: "environment-dissolve", durationSeconds: 0.9 },
       location: {
-        environmentId: { pick: "any", from: ["cosmic", "celestial", "rainbow"] },
+        environmentId: {
+          pick: "any",
+          from: ["cosmic", "celestial", "rainbow"],
+        },
         showStage: true,
       },
       performance: {

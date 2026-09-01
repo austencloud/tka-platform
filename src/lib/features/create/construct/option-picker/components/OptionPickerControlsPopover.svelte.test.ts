@@ -91,7 +91,7 @@ describe("OptionPickerControlsPopover", () => {
     expect(handlers.onLevelChange).toHaveBeenCalledWith(3);
 
     await page
-      .getByRole("group", { name: "Blue turns" })
+      .getByRole("group", { name: "Left turns" })
       .getByRole("button", { name: "2" })
       .click();
     expect(handlers.onLeftChange).toHaveBeenCalledWith(2);
@@ -138,11 +138,11 @@ describe("OptionPickerControlsPopover", () => {
 
       const expectedTurnButtons = level === 2 ? 4 : 8;
       const leftTurnButtons = page
-        .getByRole("group", { name: "Blue turns" })
+        .getByRole("group", { name: "Left turns" })
         .element()
         .querySelectorAll(".turn-seg button");
       const rightTurnButtons = page
-        .getByRole("group", { name: "Red turns" })
+        .getByRole("group", { name: "Right turns" })
         .element()
         .querySelectorAll(".turn-seg button");
       expect(leftTurnButtons).toHaveLength(expectedTurnButtons);

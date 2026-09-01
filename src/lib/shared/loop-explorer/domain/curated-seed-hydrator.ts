@@ -42,6 +42,10 @@ export interface CuratedStepWire {
   readonly stepNumber: number;
   readonly leftMotion: CuratedMotionWire;
   readonly rightMotion: CuratedMotionWire;
+  /** @deprecated Legacy checked-in and exported seed vocabulary. */
+  readonly blueMotion?: CuratedMotionWire;
+  /** @deprecated Legacy checked-in and exported seed vocabulary. */
+  readonly redMotion?: CuratedMotionWire;
 }
 
 export interface CuratedSequenceWire {
@@ -50,10 +54,7 @@ export interface CuratedSequenceWire {
   readonly steps: readonly CuratedStepWire[];
 }
 
-function hydrateMotion(
-  wire: CuratedMotionWire,
-  color: HandSide
-): MotionData {
+function hydrateMotion(wire: CuratedMotionWire, color: HandSide): MotionData {
   const startLocation = mapLocation(wire.startLocation);
 
   return createMotionData({
@@ -82,6 +83,22 @@ function hydrateMotion(
     arrowLocation: startLocation,
     gridMode: GridMode.DIAMOND,
   });
+}
+
+function motionWireFor(
+  step: CuratedStepWire,
+  hand: HandSide
+): CuratedMotionWire {
+  const wire =
+    hand === HandSide.LEFT
+      ? (step.leftMotion ?? step.blueMotion)
+      : (step.rightMotion ?? step.redMotion);
+  if (!wire) {
+    throw new Error(
+      `seed step ${step.stepNumber} is missing its ${hand} motion`
+    );
+  }
+  return wire;
 }
 
 /**
@@ -117,8 +134,14 @@ export function hydrateCuratedSequence(
       stepNumber: step.stepNumber,
       duration: 1,
       motions: {
-        [HandSide.LEFT]: hydrateMotion(step.leftMotion, HandSide.LEFT),
-        [HandSide.RIGHT]: hydrateMotion(step.rightMotion, HandSide.RIGHT),
+        [HandSide.LEFT]: hydrateMotion(
+          motionWireFor(step, HandSide.LEFT),
+          HandSide.LEFT
+        ),
+        [HandSide.RIGHT]: hydrateMotion(
+          motionWireFor(step, HandSide.RIGHT),
+          HandSide.RIGHT
+        ),
       },
     });
   });

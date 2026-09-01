@@ -82,7 +82,7 @@
     if (!selectedArrow) return "staff";
     const settings = getSettings();
     const settingsPropType =
-      selectedArrow.color === HandSide.LEFT
+      selectedArrow.hand === HandSide.LEFT
         ? settings.leftPropType
         : settings.rightPropType;
     return (
@@ -93,13 +93,13 @@
   const otherPropType = $derived.by(() => {
     if (!selectedArrow) return "staff";
     const settings = getSettings();
-    const otherColor =
-      selectedArrow.color === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
+    const otherHand =
+      selectedArrow.hand === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
     const settingsPropType =
-      otherColor === HandSide.LEFT
+      otherHand === HandSide.LEFT
         ? settings.leftPropType
         : settings.rightPropType;
-    const otherMotion = selectedArrow.pictographData?.motions?.[otherColor];
+    const otherMotion = selectedArrow.pictographData?.motions?.[otherHand];
     return (
       (settingsPropType ?? otherMotion?.propType)?.toLowerCase() || "staff"
     );
@@ -229,7 +229,7 @@
 
       hapticService?.trigger("selection");
       logger.log(
-        `Rotation override ${isActive ? "applied" : "removed"} for ${selectedArrow.color} ${selectedArrow.motionData.motionType}`
+        `Rotation override ${isActive ? "applied" : "removed"} for ${selectedArrow.hand} ${selectedArrow.motionData.motionType}`
       );
     } catch (err) {
       logger.error("Failed to toggle rotation override:", err);
@@ -412,13 +412,13 @@
 </script>
 
 <div class="arrow-adjustment" data-edit-history-shortcut-scope>
-  <!-- Arrow color indicator -->
+  <!-- Arrow hand indicator; its tint still follows the canonical palette. -->
   <span
     class="arrow-badge"
-    class:blue={selectedArrow?.color === HandSide.LEFT}
-    class:red={selectedArrow?.color === HandSide.RIGHT}
+    class:blue={selectedArrow?.hand === HandSide.LEFT}
+    class:red={selectedArrow?.hand === HandSide.RIGHT}
   >
-    {selectedArrow?.color?.toUpperCase()}
+    {selectedArrow?.hand?.toUpperCase()}
   </span>
 
   <!-- Current adjustment values -->

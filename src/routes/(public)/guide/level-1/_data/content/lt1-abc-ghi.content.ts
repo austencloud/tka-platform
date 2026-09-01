@@ -81,7 +81,7 @@ const CW_LOOP: Leg[] = [
   [N, E],
   [E, SO_],
 ];
-// The α block's red hand runs the same loop two legs ahead (n→e→s→w→n).
+// The α block's right hand runs the same loop two legs ahead (n→e→s→w→n).
 const CW_LOOP_RED: Leg[] = [
   [N, E],
   [E, SO_],

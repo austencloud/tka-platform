@@ -72,13 +72,13 @@ export function rotateMotion(
   });
 }
 
-export function swapMotionColor(
+export function reassignMotionHand(
   motion: MotionData,
-  targetColor: HandSide
+  targetHand: HandSide
 ): MotionData {
   return createMotionData({
     ...motion,
-    hand: targetColor,
+    hand: targetHand,
   });
 }
 

@@ -65,7 +65,7 @@ export interface TrailsIntent {
   leftColor: string;
   /** Hex string. Ignored when `rainbow` is true. */
   rightColor: string;
-  /** Hue-cycling mode. Overrides blueColor/redColor. */
+  /** Hue-cycling mode. Overrides the left/right channel colors. */
   rainbow: boolean;
 }
 

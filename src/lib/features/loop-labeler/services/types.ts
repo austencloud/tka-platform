@@ -5,7 +5,6 @@
 import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { TransformationIntervals } from "../domain/models/label-models";
 
-
 export interface AxisAlternatingResult {
   isAxisAlternating: boolean;
   transformationFamily: string[];
@@ -54,7 +53,6 @@ export interface ModularAnalysisResult {
   description: string;
 }
 
-
 export interface HandPathCycle {
   /** Which hand this cycle describes */
   hand: "left" | "right";
@@ -101,10 +99,10 @@ export interface LayeredPathResult {
   /** Whether a layered path pattern was detected */
   isLayeredPath: boolean;
 
-  /** Blue hand's detected cycle */
+  /** Left hand's detected cycle */
   leftCycle: HandPathCycle | null;
 
-  /** Red hand's detected cycle */
+  /** Right hand's detected cycle */
   rightCycle: HandPathCycle | null;
 
   /** Rhythm type classification */
@@ -122,7 +120,6 @@ export interface LayeredPathResult {
   /** Overall confidence score (0-1) */
   confidence: number;
 }
-
 
 export interface RawStepData {
   beat?: number;
@@ -165,7 +162,6 @@ export interface SequenceEntry {
   };
 }
 
-
 export type ComponentId =
   | "rotated"
   | "swapped"
@@ -186,7 +182,6 @@ export interface SectionDesignation {
   loopType: string | null;
   period?: Period | null; // Only relevant when "rotated" component is selected
 }
-
 
 export interface LetterRelationshipInfo {
   letter1: string;
@@ -212,7 +207,6 @@ export interface StepPairRelationship {
   letterRelationship?: LetterRelationshipInfo;
 }
 
-
 export type FilterMode = "all" | "needsVerification" | "verified";
 export interface SequenceStats {
   total: number;
@@ -220,14 +214,12 @@ export interface SequenceStats {
   verified: number;
 }
 
-
 export interface LOOPDesignationInput {
   components: ComponentId[];
   loopType: string | null;
   period?: Period | null;
   transformationIntervals?: TransformationIntervals;
 }
-
 
 export interface LabeledSequence {
   word: string;
@@ -241,7 +233,6 @@ export interface LabeledSequence {
   labeledAt: string;
   notes: string;
 }
-
 
 export interface FormattedTransformations {
   primary: string[];

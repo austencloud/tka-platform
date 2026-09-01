@@ -34,7 +34,7 @@ gotpointercapture / lostpointercapture, which bubble — so the "capture held"
 column is the browser's answer, not our guess about it.
 
 Hand assignment shown here is read from the panel the pointer landed on (the
-stage labels each grid "Blue trace surface" / "Red trace surface"). That is the
+stage labels each grid "Left trace surface" / "Right trace surface"). That is the
 same place-based source the stage itself uses. It is never inferred from pointer
 order and never from isPrimary.
 
@@ -108,11 +108,11 @@ diagnostic here and are not persisted or transmitted, same as in the game.
   const fixtureInstruction = $derived.by(() => {
     switch (fixture) {
       case "one-hand":
-        return "Start on the solid blue marker. Follow the rail into the dashed target.";
+        return "Start on the solid left-hand marker. Follow the rail into the dashed target.";
       case "two-hand":
         return "Place one finger on each solid marker, then trace both rails together.";
       case "hold":
-        return "Keep red anchored while blue follows its route.";
+        return "Keep the right hand anchored while the left follows its route.";
       case "contended":
         return "Both hands share one route. The spacing check should reject this pattern.";
     }
@@ -135,10 +135,7 @@ diagnostic here and are not persisted or transmitted, same as in the game.
     switch (id) {
       case "one-hand":
         trace.loadRound(
-          handPathToTraceRound(
-            createHandPath([N, E, S, W, N]),
-            HandSide.LEFT
-          )
+          handPathToTraceRound(createHandPath([N, E, S, W, N]), HandSide.LEFT)
         );
         return;
       case "two-hand":
@@ -150,7 +147,7 @@ diagnostic here and are not persisted or transmitted, same as in the game.
         );
         return;
       case "hold":
-        // Blue oscillates north/east; red anchors west, a point blue never
+        // Left oscillates north/east; right anchors west, a point left never
         // visits, so the two corridors never contend.
         trace.loadRound(
           pairHandPathsToTraceRound(

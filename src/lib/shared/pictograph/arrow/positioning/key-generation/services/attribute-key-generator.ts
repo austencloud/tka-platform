@@ -6,6 +6,7 @@
 
 import type { ArrowPlacementData } from "../../placement/domain/arrow-placement-data";
 import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
+import { HandSide, normalizeLegacyHandSide } from "@tka/tka-types";
 
 function hasHybridMotions(pictographData: PictographData): boolean {
   try {
@@ -38,7 +39,22 @@ function startsFromMixedOrientation(pictographData: PictographData): boolean {
 }
 
 function isNonHybridLetter(letter: string): boolean {
-  const nonHybridLetters = ["A","B","D","E","G","H","J","K","M","N","P","Q","S","T"];
+  const nonHybridLetters = [
+    "A",
+    "B",
+    "D",
+    "E",
+    "G",
+    "H",
+    "J",
+    "K",
+    "M",
+    "N",
+    "P",
+    "Q",
+    "S",
+    "T",
+  ];
   return nonHybridLetters.includes(letter);
 }
 
@@ -86,14 +102,16 @@ export function generateAttributeKey(
 export function getKeyFromArrow(
   _arrowData: ArrowPlacementData,
   pictographData: PictographData,
-  color: string
+  handValue: string
 ): string {
   try {
-    const motionData = pictographData.motions[color as keyof typeof pictographData.motions];
+    const hand = normalizeLegacyHandSide(handValue) ?? HandSide.LEFT;
+    const legacyColor = hand === HandSide.LEFT ? "blue" : "red";
+    const motionData = pictographData.motions[hand];
 
     if (!motionData) {
-      console.debug(`No motion data for ${color}, using color as key`);
-      return color;
+      console.debug(`No motion data for ${hand}, using legacy color key`);
+      return legacyColor;
     }
 
     const motionType = motionData.motionType || "";
@@ -105,9 +123,20 @@ export function getKeyFromArrow(
     const mixed = startsFromMixedOrientation(pictographData);
     const standard = !mixed;
 
-    return generateAttributeKey(motionType, letter, startOrientation, color, leadState, hybrid, mixed, standard);
+    return generateAttributeKey(
+      motionType,
+      letter,
+      startOrientation,
+      legacyColor,
+      leadState,
+      hybrid,
+      mixed,
+      standard
+    );
   } catch (error) {
-    console.error(`Error generating attribute key for ${color}:`, error);
-    return color;
+    const legacyColor =
+      normalizeLegacyHandSide(handValue) === HandSide.RIGHT ? "red" : "blue";
+    console.error(`Error generating attribute key for ${handValue}:`, error);
+    return legacyColor;
   }
 }

@@ -190,9 +190,7 @@ Usage:
     /** Stable editor identity for prop and arrow position caching. */
     transitionKey?: string | null;
     /** Per-hand live positions for an in-place pictograph motion. */
-    propPositionOverrides?: Partial<
-      Record<HandSideValue, PropPosition>
-    > | null;
+    propPositionOverrides?: Partial<Record<HandSideValue, PropPosition>> | null;
     /** Opacity applied to the complete arrow layer. */
     arrowOpacity?: number;
     /** Duration multiplier for the step (1 = default one beat, shown when != 1) */
@@ -233,7 +231,10 @@ Usage:
         return GridMode.DIAMOND;
       }
       try {
-        return deriveGridMode(pictograph.motions.left, pictograph.motions.right);
+        return deriveGridMode(
+          pictograph.motions.left,
+          pictograph.motions.right
+        );
       } catch {
         return GridMode.DIAMOND;
       }
@@ -256,22 +257,24 @@ Usage:
   // Motions to render (filtered by visibleHand only; visibility controls opacity, not presence)
   const motions = $derived.by(() => {
     if (!pictograph.motions) return [];
-    return [HandSide.LEFT, HandSide.RIGHT]
-      .map((hand) => [hand, pictograph.motions[hand]] as const)
-      // invisible placeholder = hand not really there (both-required Step shape)
-      .filter(
-        (entry): entry is readonly [HandSideValue, MotionData] =>
+    return (
+      [HandSide.LEFT, HandSide.RIGHT]
+        .map((hand) => [hand, pictograph.motions[hand]] as const)
+        // invisible placeholder = hand not really there (both-required Step shape)
+        .filter((entry): entry is readonly [HandSideValue, MotionData] =>
           isVisibleMotion(entry[1])
-      )
-      .filter(([hand]) => visibleHand === null || hand === visibleHand)
-      .map(([hand, data]) => ({
-        hand,
-        data,
-        opacity:
-          (hand === HandSide.LEFT ? leftMotionVisible : rightMotionVisible)
+        )
+        .filter(([hand]) => visibleHand === null || hand === visibleHand)
+        .map(([hand, data]) => ({
+          hand,
+          data,
+          opacity: (
+            hand === HandSide.LEFT ? leftMotionVisible : rightMotionVisible
+          )
             ? 1
             : DIMMED_OPACITY,
-      }));
+        }))
+    );
   });
 
   // Arrow tip z-promotion: detect when behind-arrow's tip is buried under front-arrow's shaft
@@ -289,19 +292,20 @@ Usage:
     const rightPos = arrowPositions[HandSide.RIGHT];
 
     // Both arrows need split data and positions
-    if (!leftAssets?.tipBBox || !leftPos || !rightAssets || !rightPos) return false;
+    if (!leftAssets?.tipBBox || !leftPos || !rightAssets || !rightPos)
+      return false;
 
-    // Transform blue tip bbox to pictograph space
+    // Transform left tip bbox to pictograph space
     // (simplified: offset by arrow position, ignore rotation for AABB approximation)
-    const blueTip = {
+    const leftTip = {
       x: leftPos.x + leftAssets.tipBBox.x - (leftAssets.center?.x ?? 0),
       y: leftPos.y + leftAssets.tipBBox.y - (leftAssets.center?.y ?? 0),
       width: leftAssets.tipBBox.width,
       height: leftAssets.tipBBox.height,
     };
 
-    // Red arrow overall bbox in pictograph space
-    const redBox = {
+    // Right arrow overall bbox in pictograph space
+    const rightBox = {
       x: rightPos.x - (rightAssets.center?.x ?? 0),
       y: rightPos.y - (rightAssets.center?.y ?? 0),
       width: rightAssets.viewBox.width,
@@ -310,10 +314,10 @@ Usage:
 
     // AABB intersection test
     return (
-      blueTip.x < redBox.x + redBox.width &&
-      blueTip.x + blueTip.width > redBox.x &&
-      blueTip.y < redBox.y + redBox.height &&
-      blueTip.y + blueTip.height > redBox.y
+      leftTip.x < rightBox.x + rightBox.width &&
+      leftTip.x + leftTip.width > rightBox.x &&
+      leftTip.y < rightBox.y + rightBox.height &&
+      leftTip.y + leftTip.height > rightBox.y
     );
   });
 

@@ -172,12 +172,8 @@ export class StrictRotatedLOOPExecutor {
     };
 
     // Update orientations
-    const stepWithStartOri = updateStartOrientations(
-      newStep,
-      previousStep
-    );
-    const finalStep =
-      updateEndOrientations(stepWithStartOri);
+    const stepWithStartOri = updateStartOrientations(newStep, previousStep);
+    const finalStep = updateEndOrientations(stepWithStartOri);
 
     return finalStep;
   }
@@ -213,10 +209,7 @@ export class StrictRotatedLOOPExecutor {
   /**
    * Generate index mapping for retrieving corresponding steps
    */
-  private _getIndexMap(
-    period: Period,
-    length: number
-  ): Record<number, number> {
+  private _getIndexMap(period: Period, length: number): Record<number, number> {
     // Handle edge cases for very short sequences
     if (length < 4 && period === Period.QUARTERED) {
       const map: Record<number, number> = {};
@@ -265,7 +258,7 @@ export class StrictRotatedLOOPExecutor {
 
     if (!leftMotion || !rightMotion) {
       throw new Error(
-        "Previous matching step must have both blue and red motions"
+        "Previous matching step must have both left and right motions"
       );
     }
 
@@ -284,13 +277,13 @@ export class StrictRotatedLOOPExecutor {
     const rightLocationMap = getLocationMapForHandRotation(rightHandRotDir);
 
     // Calculate new end locations
-    const previousLeftEndLoc =
-      previousStep.motions[HandSide.LEFT]!.endLocation;
+    const previousLeftEndLoc = previousStep.motions[HandSide.LEFT]!.endLocation;
     const previousRightEndLoc =
       previousStep.motions[HandSide.RIGHT]!.endLocation;
 
     const newLeftEndLoc = leftLocationMap[previousLeftEndLoc as GridLocation];
-    const newRightEndLoc = rightLocationMap[previousRightEndLoc as GridLocation];
+    const newRightEndLoc =
+      rightLocationMap[previousRightEndLoc as GridLocation];
 
     // Derive GridPosition from (blue, red) location tuple using GridPositionDeriver
     const newPosition = getGridPositionFromLocations(

@@ -21,7 +21,7 @@ import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/mo
 import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/create-pictograph-data";
 
 // Position to hand location mapping
-// Format: [blueLocation (left hand), redLocation (right hand)]
+// Format: [leftLocation, rightLocation]
 const POSITION_LOCATIONS: Record<GridPosition, [GridLocation, GridLocation]> = {
   // Alpha positions - hands in opposite/inverted directions (180° apart)
   [GridPosition.ALPHA1]: [GridLocation.SOUTH, GridLocation.NORTH],
@@ -178,7 +178,9 @@ export function createStartPositionVariations(
   return positions.map((pos) => {
     const locations = POSITION_LOCATIONS[pos.position];
     if (!locations) {
-      throw new Error(`No location mapping found for position: ${pos.position}`);
+      throw new Error(
+        `No location mapping found for position: ${pos.position}`
+      );
     }
     const [leftLocation, rightLocation] = locations;
 

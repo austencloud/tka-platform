@@ -2,7 +2,7 @@
   MotionVisibilityButtons.svelte
 
   2026 Bento Box Design - Motion visibility toggles
-  Blue and Red motion visibility toggle buttons.
+  Left and right motion visibility toggle buttons.
 -->
 <script lang="ts">
   let {
@@ -18,14 +18,14 @@
   } = $props();
 </script>
 
-<!-- Blue Motion Visibility Button -->
+<!-- Left motion visibility button -->
 <button
   class="vis-btn blue-vis-btn"
   class:active={leftMotionVisible}
   onclick={onToggleLeft}
   type="button"
-  title={leftMotionVisible ? "Hide blue motion" : "Show blue motion"}
-  aria-label={leftMotionVisible ? "Hide blue motion" : "Show blue motion"}
+  title={leftMotionVisible ? "Hide left motion" : "Show left motion"}
+  aria-label={leftMotionVisible ? "Hide left motion" : "Show left motion"}
 >
   <i
     class="fas {leftMotionVisible ? 'fa-eye' : 'fa-eye-slash'}"
@@ -33,14 +33,14 @@
   ></i>
 </button>
 
-<!-- Red Motion Visibility Button -->
+<!-- Right motion visibility button -->
 <button
   class="vis-btn red-vis-btn"
   class:active={rightMotionVisible}
   onclick={onToggleRight}
   type="button"
-  title={rightMotionVisible ? "Hide red motion" : "Show red motion"}
-  aria-label={rightMotionVisible ? "Hide red motion" : "Show red motion"}
+  title={rightMotionVisible ? "Hide right motion" : "Show right motion"}
+  aria-label={rightMotionVisible ? "Hide right motion" : "Show right motion"}
 >
   <i
     class="fas {rightMotionVisible ? 'fa-eye' : 'fa-eye-slash'}"
@@ -150,7 +150,6 @@
         inset 0 1px 0 var(--theme-card-hover-bg);
     }
   }
-
 
   @media (prefers-reduced-motion: reduce) {
     .vis-btn {

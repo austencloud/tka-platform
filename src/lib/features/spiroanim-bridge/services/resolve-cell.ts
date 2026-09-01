@@ -6,7 +6,7 @@
  * TKA's own pictograph dataframes, so the resolver recovers each step by
  * looking up `(letter, startPosition, endPosition)` there and then hands the
  * result to the canonical owners: `applyPendingTurnsToOption` for turns,
- * `propagateOrientationsForColor` for the orientation chain, and
+ * `propagateOrientationsForHand` for the orientation chain, and
  * `hydrateSequence` for letters, positions, word, LOOP, placement and grid
  * mode. Nothing the hydrator owns is derived here.
  *
@@ -50,7 +50,7 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import { applyPendingTurnsToOption } from "$lib/shared/create/services/apply-turns-to-motion";
-import { propagateOrientationsForColor } from "$lib/shared/create/services/orientation-propagation";
+import { propagateOrientationsForHand } from "$lib/shared/create/services/orientation-propagation";
 import { convertToStep } from "$lib/features/create/generate/shared/services/step-converter";
 import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -109,7 +109,11 @@ async function getRowIndex(): Promise<Map<string, IndexedRow[]>> {
       const variations =
         await letterQueryHandler.getAllPictographVariations(gridMode);
       for (const pictograph of variations) {
-        if (!pictograph.letter || !pictograph.startPosition || !pictograph.endPosition)
+        if (
+          !pictograph.letter ||
+          !pictograph.startPosition ||
+          !pictograph.endPosition
+        )
           continue;
         const key = rowKey(
           String(pictograph.letter),
@@ -126,12 +130,16 @@ async function getRowIndex(): Promise<Map<string, IndexedRow[]>> {
   return rowIndexPromise;
 }
 
-function rowKey(letter: string, startPosition: string, endPosition: string): string {
+function rowKey(
+  letter: string,
+  startPosition: string,
+  endPosition: string
+): string {
   return `${letter}|${startPosition}|${endPosition}`;
 }
 
-function rotationOf(row: IndexedRow, color: HandSide): RotationDirection | null {
-  return row.pictograph.motions?.[color]?.rotationDirection ?? null;
+function rotationOf(row: IndexedRow, hand: HandSide): RotationDirection | null {
+  return row.pictograph.motions?.[hand]?.rotationDirection ?? null;
 }
 
 /**
@@ -160,7 +168,8 @@ function chooseRows(
     const matching = bucket.filter(
       (row) =>
         rotationOf(row, HandSide.LEFT) === leftDirection &&
-        (rightDirection === null || rotationOf(row, HandSide.RIGHT) === rightDirection)
+        (rightDirection === null ||
+          rotationOf(row, HandSide.RIGHT) === rightDirection)
     );
     // One match is the shipped case for all 8,640 steps of the corpus. The
     // fallback keeps a future cell resolvable rather than throwing; it is
@@ -190,12 +199,12 @@ function buildSteps(entry: TranscriptionEntry, rows: IndexedRow[]): StepData[] {
     return { ...convertToStep(withTurns, i + 1, row.gridMode), letter: null };
   });
 
-  const withBlue = propagateOrientationsForColor(
+  const withLeft = propagateOrientationsForHand(
     steps,
     HandSide.LEFT,
     Orientation.IN
   );
-  return propagateOrientationsForColor(withBlue, HandSide.RIGHT, Orientation.IN);
+  return propagateOrientationsForHand(withLeft, HandSide.RIGHT, Orientation.IN);
 }
 
 function matchesKey(
@@ -224,7 +233,8 @@ function matchesKey(
  */
 function isCanonicalReading(entry: TranscriptionEntry): boolean {
   if (entry.quarters !== undefined && entry.quarters !== 1) return false;
-  if (entry.reversePlane !== undefined && entry.reversePlane !== false) return false;
+  if (entry.reversePlane !== undefined && entry.reversePlane !== false)
+    return false;
   return true;
 }
 
@@ -243,7 +253,10 @@ function withRequestedOrientation(
   if (clockwiseSteps === 0) return entry;
   const rotated: TranscriptionStep[] = [];
   for (const step of entry.steps) {
-    const startPosition = rotatePositionName(step.startPosition, clockwiseSteps);
+    const startPosition = rotatePositionName(
+      step.startPosition,
+      clockwiseSteps
+    );
     const endPosition = rotatePositionName(step.endPosition, clockwiseSteps);
     if (!startPosition || !endPosition) return null;
     rotated.push({ ...step, startPosition, endPosition });
@@ -268,7 +281,8 @@ export async function resolveCell(
   if (!parsed) return null;
 
   const entry = transcription.find(
-    (candidate) => isCanonicalReading(candidate) && matchesKey(candidate, parsed)
+    (candidate) =>
+      isCanonicalReading(candidate) && matchesKey(candidate, parsed)
   );
   if (!entry) return null;
 

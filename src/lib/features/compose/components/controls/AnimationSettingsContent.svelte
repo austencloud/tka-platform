@@ -79,8 +79,8 @@
         showRight={rightMotionVisible}
         {onToggleLeft}
         {onToggleRight}
-        leftLabel="Blue"
-        rightLabel="Red"
+        leftLabel="Left"
+        rightLabel="Right"
         layout="column"
         showVisibilityIcons
       />
@@ -156,5 +156,4 @@
     letter-spacing: 0.5px;
     margin: 0;
   }
-
 </style>

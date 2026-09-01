@@ -138,7 +138,7 @@
       Every sample is rendered through the real <code
         >applyMotionColorToSvg</code
       >
-      pipeline (selective mode = {String(selective)}). Blue / Red show the
+      pipeline (selective mode = {String(selective)}). Left / Right show the
       recolored region; preserved fills stay put.
     </p>
     <button onclick={() => (darkBg = !darkBg)}>
@@ -173,11 +173,11 @@
             </figure>
             <figure>
               <div class="stage">{@html r.left}</div>
-              <figcaption>blue prop</figcaption>
+              <figcaption>left prop</figcaption>
             </figure>
             <figure>
               <div class="stage">{@html r.right}</div>
-              <figcaption>red prop</figcaption>
+              <figcaption>right prop</figcaption>
             </figure>
             <figure>
               <div class="stage tile-cell">
@@ -218,13 +218,13 @@
               <div class="stage">
                 {@html r.left}
               </div>
-              <figcaption>blue prop</figcaption>
+              <figcaption>left prop</figcaption>
             </figure>
             <figure>
               <div class="stage">
                 {@html r.right}
               </div>
-              <figcaption>red prop</figcaption>
+              <figcaption>right prop</figcaption>
             </figure>
           </div>
         {:else if failed[v.id]}

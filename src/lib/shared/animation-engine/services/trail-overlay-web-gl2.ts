@@ -73,10 +73,10 @@ const TRAIL_ENDPOINT_DIMENSIONS = { width: 252.8, height: 77.8 };
 // cannot expire a trail faster than the GPU actually faded it.
 const MAX_RETIREMENT_DECAY_STEP_MS = 100;
 
-type TrailColor = "blue" | "red";
+type TrailHand = "left" | "right";
 
 interface TrailAccumulatorIdentity {
-  color: TrailColor;
+  hand: TrailHand;
   /** Multiplier contributed by tunnel spotlighting, independent of the
    *  color's visibility envelope. */
   visibilityScale: number;
@@ -162,8 +162,8 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   private lastHasRight = true;
 
   // Track previous per-color prop-swap suppression (see
-  // bluePropSwapSuppressed on TrailOverlayRenderParams). This is separate from
-  // lastHasBlue/Red because the prop stays visible throughout a crossfade, so
+  // leftPropSwapSuppressed on TrailOverlayRenderParams). This is separate from
+  // lastHasLeft/Right because the prop stays visible throughout a crossfade, so
   // this cannot reuse that transition detection. The suppression-lift reset
   // below must NOT touch the accumulator (no epoch bump), letting the pre-swap trail
   // keep decaying on screen instead of being wiped.
@@ -336,10 +336,10 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     const rightPropSwapStarted =
       rightPropSwapSuppressed && !this.lastRightPropSwapSuppressed;
     if (leftPropSwapStarted) {
-      this.retireColorAccumulators("blue", trailSettings.fadeDurationMs);
+      this.retireHandAccumulators("left", trailSettings.fadeDurationMs);
     }
     if (rightPropSwapStarted) {
-      this.retireColorAccumulators("red", trailSettings.fadeDurationMs);
+      this.retireHandAccumulators("right", trailSettings.fadeDurationMs);
     }
 
     if (
@@ -382,7 +382,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
         this.layerTails[i]!.leftRight = createTailState(leadingEdge);
       }
       if (this.leftEnvelopeWasZero) {
-        this.forgetColorAccumulators("blue");
+        this.forgetHandAccumulators("left");
         this.leftTipEpoch++;
         this.leftEnvelopeWasZero = false;
       }
@@ -399,7 +399,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
         this.layerTails[i]!.rightRight = createTailState(leadingEdge);
       }
       if (this.rightEnvelopeWasZero) {
-        this.forgetColorAccumulators("red");
+        this.forgetHandAccumulators("right");
         this.rightTipEpoch++;
         this.rightEnvelopeWasZero = false;
       }
@@ -507,10 +507,11 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       (rightRightTrails ? 8 : 0);
     if (this.prevTipTrailMask !== null && tipMask !== this.prevTipTrailMask) {
       const leftBitsChanged = (tipMask & 0x3) !== (this.prevTipTrailMask & 0x3);
-      const rightBitsChanged = (tipMask & 0xc) !== (this.prevTipTrailMask & 0xc);
+      const rightBitsChanged =
+        (tipMask & 0xc) !== (this.prevTipTrailMask & 0xc);
       if (leftBitsChanged) {
         if (!leftPropSwapSuppressed) {
-          this.retireColorAccumulators("blue", trailSettings.fadeDurationMs);
+          this.retireHandAccumulators("left", trailSettings.fadeDurationMs);
         }
         this.leftLeftRing = [];
         this.leftRightRing = [];
@@ -519,7 +520,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       }
       if (rightBitsChanged) {
         if (!rightPropSwapSuppressed) {
-          this.retireColorAccumulators("red", trailSettings.fadeDurationMs);
+          this.retireHandAccumulators("right", trailSettings.fadeDurationMs);
         }
         this.rightLeftRing = [];
         this.rightRightRing = [];
@@ -538,9 +539,9 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     // tracks the prop through the fade-out instead of freezing in place.
     const leftCaptureLive = hasLeft || leftAlpha > 0;
     const rightCaptureLive = hasRight || rightAlpha > 0;
-    // bluePropSwapSuppressed/redPropSwapSuppressed: skip the capture (freeze the
+    // leftPropSwapSuppressed/rightPropSwapSuppressed: skip the capture (freeze the
     // tip in place) while that color's prop-type swap is in flight. See the
-    // TrailOverlayRenderParams doc. blueLeftMoved/rightMoved staying false
+    // TrailOverlayRenderParams doc. leftLeftMoved/rightMoved staying false
     // feeds the normal "prop is stationary" path into advanceTail below, so
     // the tail recedes/shrinks toward the frozen point exactly like a real
     // stationary prop, instead of jumping to the new (mismatched) geometry.
@@ -572,7 +573,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     }
 
     // Capture overlaid tunnel-layer tips into per-layer rings (same color/tip
-    // gating as the base pair). Each layer's blue prop feeds a blue tip, red
+    // gating as the base pair). Each layer's left prop feeds a left tip, right
     // prop a red tip — so every kaleidoscope copy trails in its own color.
     const additionalLayers = params.additionalLayers;
     const dtMsCapture = Math.max(0, params.deltaTime * 1000);
@@ -738,7 +739,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       ring: TrailPoint[],
       rgb: [number, number, number],
       tail: TailState,
-      color: TrailColor,
+      hand: TrailHand,
       colorAlpha: number,
       visibilityScale: number
     ) => {
@@ -748,7 +749,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       if (path.length < 2) return;
       submittedAccumulatorIds.add(tipId);
       this.retiredAccumulators.delete(tipId);
-      this.activeAccumulators.set(tipId, { color, visibilityScale });
+      this.activeAccumulators.set(tipId, { hand, visibilityScale });
       tips.push({
         tipId,
         path,
@@ -770,40 +771,40 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     const baseF = spotlightFactor(selected, 0);
     if (!leftPropSwapSuppressed) {
       pushTip(
-        `blue-left${leftSuffix}`,
+        `left-left${leftSuffix}`,
         this.leftLeftRing,
         [bR, bG, bB],
         this.leftLeftTail,
-        "blue",
+        "left",
         leftAlpha,
         baseF
       );
       pushTip(
-        `blue-right${leftSuffix}`,
+        `left-right${leftSuffix}`,
         this.leftRightRing,
         [bR, bG, bB],
         this.leftRightTail,
-        "blue",
+        "left",
         leftAlpha,
         baseF
       );
     }
     if (!rightPropSwapSuppressed) {
       pushTip(
-        `red-left${rightSuffix}`,
+        `right-left${rightSuffix}`,
         this.rightLeftRing,
         [rR, rG, rB],
         this.rightLeftTail,
-        "red",
+        "right",
         rightAlpha,
         baseF
       );
       pushTip(
-        `red-right${rightSuffix}`,
+        `right-right${rightSuffix}`,
         this.rightRightRing,
         [rR, rG, rB],
         this.rightRightTail,
-        "red",
+        "right",
         rightAlpha,
         baseF
       );
@@ -835,40 +836,40 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
         spotlightFactor(selected, i + 1);
       if (!leftPropSwapSuppressed) {
         pushTip(
-          `L${i}-blue-left${leftSuffix}`,
+          `L${i}-left-left${leftSuffix}`,
           rings.leftLeft,
           leftLayerRgb,
           tails.leftLeft,
-          "blue",
+          "left",
           leftAlpha,
           f
         );
         pushTip(
-          `L${i}-blue-right${leftSuffix}`,
+          `L${i}-left-right${leftSuffix}`,
           rings.leftRight,
           leftLayerRgb,
           tails.leftRight,
-          "blue",
+          "left",
           leftAlpha,
           f
         );
       }
       if (!rightPropSwapSuppressed) {
         pushTip(
-          `L${i}-red-left${rightSuffix}`,
+          `L${i}-right-left${rightSuffix}`,
           rings.rightLeft,
           rightLayerRgb,
           tails.rightLeft,
-          "red",
+          "right",
           rightAlpha,
           f
         );
         pushTip(
-          `L${i}-red-right${rightSuffix}`,
+          `L${i}-right-right${rightSuffix}`,
           rings.rightRight,
           rightLayerRgb,
           tails.rightRight,
-          "red",
+          "right",
           rightAlpha,
           f
         );
@@ -898,13 +899,13 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
         continue;
       }
       const retiredAlpha =
-        (retired.color === "blue" ? leftAlpha : rightAlpha) *
+        (retired.hand === "left" ? leftAlpha : rightAlpha) *
         retired.visibilityScale;
       tips.push({
         tipId,
         path: [],
         color:
-          retired.color === "blue" ? [bR, bG, bB, alpha] : [rR, rG, rB, alpha],
+          retired.hand === "left" ? [bR, bG, bB, alpha] : [rR, rG, rB, alpha],
         thickness: thicknessNdc,
         taperTailRatio: MIN_TAIL_WIDTH_RATIO,
         glow: 0,
@@ -1000,20 +1001,20 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   // Internal
   // -------------------------------------------------------------------
 
-  /** Move every FBO currently fed by one prop color into a decay-only
+  /** Move every FBO currently fed by one hand into a decay-only
    *  generation, then advance the live tip-id epoch for the replacement. */
-  private retireColorAccumulators(
-    color: TrailColor,
+  private retireHandAccumulators(
+    hand: TrailHand,
     fadeDurationMs: number
   ): void {
     const remainingMs = Math.max(16.67, fadeDurationMs);
     for (const [tipId, identity] of this.activeAccumulators) {
-      if (identity.color !== color) continue;
+      if (identity.hand !== hand) continue;
       this.retiredAccumulators.set(tipId, { ...identity, remainingMs });
       this.activeAccumulators.delete(tipId);
     }
 
-    if (color === "blue") {
+    if (hand === "left") {
       this.leftTipEpoch++;
     } else {
       this.rightTipEpoch++;
@@ -1022,12 +1023,12 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
 
   /** Forget orphaned identities after a completed visibility fade. Their FBOs
    *  remain unreachable and are reclaimed by the backend's idle-tip sweep. */
-  private forgetColorAccumulators(color: TrailColor): void {
+  private forgetHandAccumulators(hand: TrailHand): void {
     for (const [tipId, identity] of this.activeAccumulators) {
-      if (identity.color === color) this.activeAccumulators.delete(tipId);
+      if (identity.hand === hand) this.activeAccumulators.delete(tipId);
     }
     for (const [tipId, identity] of this.retiredAccumulators) {
-      if (identity.color === color) this.retiredAccumulators.delete(tipId);
+      if (identity.hand === hand) this.retiredAccumulators.delete(tipId);
     }
   }
 
@@ -1069,7 +1070,8 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     trailConfig: TrailPointConfig
   ): { leftMoved: boolean; rightMoved: boolean } {
     const leftRing = propIndex === 0 ? this.leftLeftRing : this.rightLeftRing;
-    const rightRing = propIndex === 0 ? this.leftRightRing : this.rightRightRing;
+    const rightRing =
+      propIndex === 0 ? this.leftRightRing : this.rightRightRing;
     return this.capturePropTipsInto(
       prop,
       canvasSize,

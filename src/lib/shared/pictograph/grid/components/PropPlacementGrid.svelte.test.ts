@@ -122,7 +122,7 @@ describe("PropPlacementGrid", () => {
     expect(onChange).toHaveBeenLastCalledWith({
       leftLocation: GridLocation.EAST,
       rightLocation: null,
-      activeColor: "red",
+      activeHand: "red",
       complete: false,
       canUndo: true,
     });
@@ -155,7 +155,7 @@ describe("PropPlacementGrid", () => {
     expect(onChange).toHaveBeenLastCalledWith({
       leftLocation: GridLocation.EAST,
       rightLocation: GridLocation.NORTH,
-      activeColor: null,
+      activeHand: null,
       complete: true,
       canUndo: true,
     });
@@ -164,7 +164,7 @@ describe("PropPlacementGrid", () => {
     expect(onChange).toHaveBeenLastCalledWith({
       leftLocation: GridLocation.EAST,
       rightLocation: GridLocation.WEST,
-      activeColor: "red",
+      activeHand: "red",
       complete: true,
       // The undo just consumed the only entry in the history.
       canUndo: false,
@@ -312,7 +312,7 @@ describe("PropPlacementGrid", () => {
     expect(onChange).toHaveBeenLastCalledWith({
       leftLocation: GridLocation.NORTHEAST,
       rightLocation: null,
-      activeColor: "red",
+      activeHand: "red",
       complete: false,
       canUndo: true,
     });

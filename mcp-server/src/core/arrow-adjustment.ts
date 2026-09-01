@@ -30,7 +30,6 @@ const PROJECT_ROOT = inDist
   ? join(__dirname, "../../../..")
   : join(__dirname, "../../..");
 
-
 export interface MotionAdjustmentInput {
   letter: string;
   motionType: string;
@@ -57,7 +56,6 @@ type PlacementData = Record<
   Record<TurnsTupleKey, Record<AdjustmentKey, [number, number]>>
 >;
 
-
 /**
  * Calculate orientation key based on motion end orientations.
  * - from_layer1: both motions have radial orientation (IN/OUT)
@@ -65,7 +63,10 @@ type PlacementData = Record<
  * - from_layer3_blue1_red2: blue radial, red non-radial
  * - from_layer3_blue2_red1: blue non-radial, red radial
  */
-export function calculateOriKey(leftEndOri: string, rightEndOri: string): string {
+export function calculateOriKey(
+  leftEndOri: string,
+  rightEndOri: string
+): string {
   const leftLayer = ["in", "out"].includes(leftEndOri.toLowerCase()) ? 1 : 2;
   const rightLayer = ["in", "out"].includes(rightEndOri.toLowerCase()) ? 1 : 2;
 
@@ -75,7 +76,6 @@ export function calculateOriKey(leftEndOri: string, rightEndOri: string): string
   if (leftLayer === 2 && rightLayer === 1) return "from_layer3_blue2_red1";
   return "from_layer1";
 }
-
 
 /**
  * Load special placement data for a letter.
@@ -113,7 +113,7 @@ function loadSpecialPlacement(
 }
 
 /**
- * Format turns tuple key: "(blueTurns, redTurns)"
+ * Format turns tuple key: "(leftTurns, rightTurns)"
  */
 function formatTurnsTuple(
   leftTurns?: number | "fl",

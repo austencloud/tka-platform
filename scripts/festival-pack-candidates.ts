@@ -96,16 +96,16 @@ function tndFamily(id: string): TndFamily {
 }
 
 /**
- * Catalog steps use the app shape (motions.blue/red, no start-position step).
- * The renderer wants MCP shape (blueMotion/redMotion, steps[0] = start pose).
+ * Catalog steps use the app shape (motions.left/right, no start-position step).
+ * The renderer wants MCP shape (leftMotion/rightMotion, steps[0] = start pose).
  */
 function toMcpSteps(entry: TndEntry) {
   const first = entry.steps[0];
   if (!first) throw new Error(`TnD catalog entry ${entry.id} has no steps`);
   const startPos = first.startPosition;
-  const hold = (m: TndMotion, color: string) => ({
+  const hold = (m: TndMotion, hand: "left" | "right") => ({
     ...m,
-    color,
+    hand,
     endLocation: m.startLocation,
     motionType: "static",
     rotationDirection: "noRotation",
@@ -118,8 +118,8 @@ function toMcpSteps(entry: TndEntry) {
     stepNumber: 0,
     startPosition: startPos,
     endPosition: startPos,
-    leftMotion: hold(first.motions.left, "blue"),
-    rightMotion: hold(first.motions.right, "red"),
+    leftMotion: hold(first.motions.left, "left"),
+    rightMotion: hold(first.motions.right, "right"),
   };
   const rest = entry.steps.map((s, i) => ({
     letter: s.letter ?? "",
@@ -127,8 +127,8 @@ function toMcpSteps(entry: TndEntry) {
     stepNumber: i + 1,
     startPosition: s.startPosition,
     endPosition: s.endPosition,
-    leftMotion: { ...s.motions.left, color: "blue" },
-    rightMotion: { ...s.motions.right, color: "red" },
+    leftMotion: { ...s.motions.left, hand: "left" },
+    rightMotion: { ...s.motions.right, hand: "right" },
   }));
   return [startStep, ...rest];
 }

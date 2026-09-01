@@ -19,9 +19,9 @@ export interface CustomizeStartEndLocalState {
  * Why this exists: the overlay edits start positions, end position, and both
  * start orientations independently, but the engine's setOptions() does a full
  * REPLACE (not a merge). The overlay used to spread its frozen open-time
- * snapshot per handler (`{ ...startEndOptions, blueStartOrientation }`), so
+ * snapshot per handler (`{ ...startEndOptions, leftStartOrientation }`), so
  * each single-field change reset every field the user wasn't currently
- * touching back to its open-time value — change red and blue silently reverted,
+ * touching back to its open-time value — change right and left silently reverted,
  * change a position and the orientations reverted, etc. The overlay's own
  * display read separate local mirrors that did NOT revert, so the overlay
  * showed the picked value while the card summary and the generated sequence

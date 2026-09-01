@@ -19,15 +19,15 @@
     stacked?: boolean;
     compact?: boolean;
     focused?: boolean;
-    activeMoveColor?: HandSide | null;
+    activeMoveHand?: HandSide | null;
     repositionDisabled?: boolean;
     isRepositioning?: boolean;
-    onOrientationChange: (color: HandSide, orientation: string) => void;
+    onOrientationChange: (hand: HandSide, orientation: string) => void;
     onLocationRotate: (
-      color: HandSide,
+      hand: HandSide,
       direction: "clockwise" | "counterclockwise"
     ) => void;
-    onMoveProp: (color: HandSide) => void;
+    onMoveProp: (hand: HandSide) => void;
   }
 
   let {
@@ -35,7 +35,7 @@
     stacked = false,
     compact = false,
     focused = false,
-    activeMoveColor = null,
+    activeMoveHand = null,
     repositionDisabled = false,
     isRepositioning = false,
     onOrientationChange,
@@ -48,7 +48,9 @@
   const leftLocation = $derived(
     leftMotion?.startLocation ?? GridLocation.CENTER
   );
-  const rightLocation = $derived(rightMotion?.startLocation ?? GridLocation.CENTER);
+  const rightLocation = $derived(
+    rightMotion?.startLocation ?? GridLocation.CENTER
+  );
   const leftOrientation = $derived(leftMotion?.startOrientation ?? "in");
   const rightOrientation = $derived(rightMotion?.startOrientation ?? "in");
   let visibleHand = $state<TargetHand>("left");
@@ -76,7 +78,7 @@
 </script>
 
 {#snippet propControls(
-  color: HandSide,
+  hand: HandSide,
   location: GridLocation,
   orientation: string
 )}
@@ -84,25 +86,25 @@
     <div class="control-field">
       <span class="field-label">Location</span>
       <PropLocationControl
-        hand={color === HandSide.LEFT ? "left" : "right"}
+        hand={hand === HandSide.LEFT ? "left" : "right"}
         {location}
-        active={activeMoveColor === color}
+        active={activeMoveHand === hand}
         disabled={repositionDisabled || isRepositioning}
         {compact}
-        onRotate={(direction) => onLocationRotate(color, direction)}
-        onChoose={() => onMoveProp(color)}
+        onRotate={(direction) => onLocationRotate(hand, direction)}
+        onChoose={() => onMoveProp(hand)}
       />
     </div>
 
     <div class="control-field">
       <span class="field-label">Orientation</span>
       <PropOrientationControl
-        hand={color === HandSide.LEFT ? "left" : "right"}
+        hand={hand === HandSide.LEFT ? "left" : "right"}
         {orientation}
         {compact}
         disabled={isRepositioning}
         onOrientationChange={(nextOrientation) =>
-          onOrientationChange(color, nextOrientation)}
+          onOrientationChange(hand, nextOrientation)}
         ghostKind="step-edit"
       />
     </div>

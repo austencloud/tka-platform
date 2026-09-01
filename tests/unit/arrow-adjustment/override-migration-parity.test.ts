@@ -1,8 +1,8 @@
 /**
  * Override-migration parity gate — enumerator portion.
  *
- * Proves enumerateVariationArrows() yields one (PictographData, arrowColor)
- * pair per present motion, across diamond + box, carrying the right color.
+ * Proves enumerateVariationArrows() yields one (PictographData, arrowHand)
+ * pair per present motion, across diamond + box, carrying the right hand.
  */
 
 import { describe, expect, it, vi, beforeEach } from "vitest";
@@ -61,15 +61,15 @@ describe("enumerateVariationArrows", () => {
     expect(result).toHaveLength(3);
   });
 
-  it("carries the correct arrowColor per motion", async () => {
+  it("carries the correct arrowHand per motion", async () => {
     const result = await enumerateVariationArrows();
 
     const pEntries = result.filter((e) => e.pictographData.letter === "P");
-    expect(pEntries.map((e) => e.arrowColor).sort()).toEqual(["blue", "red"]);
+    expect(pEntries.map((e) => e.arrowHand).sort()).toEqual(["left", "right"]);
 
     const iEntries = result.filter((e) => e.pictographData.letter === "I");
     expect(iEntries).toHaveLength(1);
-    expect(iEntries[0].arrowColor).toBe("blue");
+    expect(iEntries[0].arrowHand).toBe("left");
   });
 
   it("includes the known letter P", async () => {
@@ -115,7 +115,7 @@ async function loadEngine(): Promise<
     doc: vi.fn(),
   }));
 
-  // 3 fixture variation-arrows: A blue, B red, C blue.
+  // 3 fixture variation-arrows: A left, B right, C left.
   vi.doMock(
     "$lib/features/admin/override-migration/services/variation-enumerator",
     () => ({
@@ -123,23 +123,23 @@ async function loadEngine(): Promise<
         {
           pictographData: {
             letter: "A",
-            motions: { left: { propType: "staff", color: "blue" } },
+            motions: { left: { propType: "staff", hand: "left" } },
           },
-          arrowColor: "blue",
+          arrowHand: "left",
         },
         {
           pictographData: {
             letter: "B",
-            motions: { right: { propType: "staff", color: "red" } },
+            motions: { right: { propType: "staff", hand: "right" } },
           },
-          arrowColor: "red",
+          arrowHand: "right",
         },
         {
           pictographData: {
             letter: "C",
-            motions: { left: { propType: "staff", color: "blue" } },
+            motions: { left: { propType: "staff", hand: "left" } },
           },
-          arrowColor: "blue",
+          arrowHand: "left",
         },
       ]),
     })
