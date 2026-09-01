@@ -300,7 +300,7 @@ describe("landing shared-element contract", () => {
       'import { FALLBACK_DEMO } from "$lib/shared/landing/data/per-visit-demo"'
     );
     expect(composer).toContain(
-      "let sequence = $state<SequenceData>(FALLBACK_DEMO)"
+      "let carriedSequence = $state<SequenceData>(FALLBACK_DEMO)"
     );
     expect(composer).toContain(
       'loader={() => import("./_sections/ConstructSection.svelte")}'
