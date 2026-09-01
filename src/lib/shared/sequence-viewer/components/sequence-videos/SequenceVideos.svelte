@@ -13,7 +13,6 @@
   See docs/superpowers/specs/2026-08-16-sequence-videos-consolidation-design.md
 -->
 <script lang="ts">
-  import { fade } from "svelte/transition";
   import { getSequenceVideosStore } from "$lib/shared/video-collaboration/state/sequence-videos-store.svelte";
   import {
     getCreatorDisplayName,
@@ -294,7 +293,6 @@
       : videos.length > 0
         ? "ready"
         : "empty"}
-  in:fade={{ duration: 200 }}
   oncontextmenu={handleVideoContextMenu}
 >
   {#if view === "upload"}

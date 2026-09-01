@@ -727,12 +727,36 @@
               />
             </div>
           {/if}
+
+          {#snippet performanceWorkspace()}
+            <div
+              class="performance-gallery-layer"
+              data-active={layout.showVideoGallery}
+              data-persistent-performance-gallery
+            >
+              <SequenceVideos
+                {sequence}
+                active={layout.showVideoGallery}
+                isOwned={ctx.isOwned || ctx.isOwnedLibraryRecord}
+                isLoggedIn={ctx.isLoggedIn}
+                bpm={ctx.bpmLocal}
+                canUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED}
+                uploadRequested={layout.isVideoUploadActive}
+                onSaveFirst={interactions.handleVideoUploadSaveFirst}
+                onSaveToLibrary={interactions.handleSave}
+                onUploadOpenChange={interactions.handleVideoWorkOpenChange}
+              />
+            </div>
+          {/snippet}
+
           <ViewerWorkspacePanels
             direction={layout.effectiveMobile ? "vertical" : "horizontal"}
             inspectorActive={layout.isWorkspaceInspectorActive}
             inspectorCollapsed={layout.exportSidebarCollapsed &&
               !layout.isImageExportActive}
             inspectorProfile={layout.inspectorProfile}
+            takeover={performanceWorkspace}
+            takeoverActive={layout.showVideoGallery}
           >
             {#snippet stage()}
               <div class="viewer-stage-container">
@@ -744,17 +768,7 @@
                     onSharePost={() => share.sharePost()}
                   />
                 {:else}
-                  <!-- The Animator and Performances share one stage allocation.
-                       Keeping both layers alive lets the gallery inherit the
-                       exact pixels released by the inspector instead of
-                       appearing after a full workspace replacement. -->
-                  <div
-                    class="stage-content-layer viewer-motion-stage-layer"
-                    data-active={!layout.showVideoGallery}
-                    inert={layout.showVideoGallery || undefined}
-                    aria-hidden={layout.showVideoGallery}
-                    data-persistent-viewer-stage
-                  >
+                  <div class="viewer-motion-stage-content">
                     <ViewerSplitPane
                       sequence={ctx.effectiveSequence}
                       {tunnelComposition}
@@ -877,26 +891,6 @@
                       practiceCellSize={ctx.practiceViewPrefs.cellSize}
                       practiceCanvasFraction={0.5}
                       practiceMirrorEnabled={ctx.mirrorEnabled}
-                    />
-                  </div>
-                  <div
-                    class="stage-content-layer performance-gallery-layer"
-                    data-active={layout.showVideoGallery}
-                    inert={!layout.showVideoGallery || undefined}
-                    aria-hidden={!layout.showVideoGallery}
-                    data-persistent-performance-gallery
-                  >
-                    <SequenceVideos
-                      {sequence}
-                      active={layout.showVideoGallery}
-                      isOwned={ctx.isOwned || ctx.isOwnedLibraryRecord}
-                      isLoggedIn={ctx.isLoggedIn}
-                      bpm={ctx.bpmLocal}
-                      canUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED}
-                      uploadRequested={layout.isVideoUploadActive}
-                      onSaveFirst={interactions.handleVideoUploadSaveFirst}
-                      onSaveToLibrary={interactions.handleSave}
-                      onUploadOpenChange={interactions.handleVideoWorkOpenChange}
                     />
                   </div>
                 {/if}
@@ -1381,32 +1375,14 @@
     isolation: isolate;
   }
 
-  .stage-content-layer {
-    position: absolute;
-    inset: 0;
+  .viewer-motion-stage-content,
+  .performance-gallery-layer {
     display: flex;
+    width: 100%;
+    height: 100%;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition:
-      opacity var(--transition-emphasis),
-      visibility 0s linear var(--duration-emphasis);
-  }
-
-  .stage-content-layer[data-active="true"] {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    transition:
-      opacity var(--transition-emphasis),
-      visibility 0s linear 0s;
-  }
-
-  .performance-gallery-layer {
-    z-index: 1;
   }
 
   /* The settings column never grew with the viewport, so on a big screen its
@@ -1547,10 +1523,6 @@
   }
 
   :global(:root[data-motion-preference="reduce"]) .inspector-content-layer {
-    transition-duration: 0ms, 0s;
-  }
-
-  :global(:root[data-motion-preference="reduce"]) .stage-content-layer {
     transition-duration: 0ms, 0s;
   }
 

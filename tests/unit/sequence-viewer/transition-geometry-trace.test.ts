@@ -92,6 +92,7 @@ function sample(
     stageLayerActive: true,
     performanceLayerActive: false,
     performanceGalleryReady: true,
+    performanceLayoutColumns: 2,
     stageLayerWidth: 900,
     performanceLayerWidth: 900,
   };
@@ -161,6 +162,7 @@ describe("Sequence Viewer geometry trace", () => {
     expect(summary.performanceGalleryIdentityChanges).toBe(0);
     expect(summary.performanceBlankFrames).toBe(0);
     expect(summary.performanceDoubleOpaqueFrames).toBe(0);
+    expect(summary.performanceLayoutChanges).toBe(0);
     expect(summary.performanceCrossfadeFrames).toBe(2);
     expect(summary.performanceUnreadyFrames).toBe(0);
     expect(summary.performanceOpacityComplementDriftMaximum).toBe(0);
@@ -174,6 +176,33 @@ describe("Sequence Viewer geometry trace", () => {
     ]);
     expect(summary.performanceStageExit?.backtrack).toBe(0);
     expect(summary.performanceStageEntry?.overshoot).toBe(0);
+  });
+
+  it("reports a gallery breakpoint swap while the gallery is visible", () => {
+    const stacked = {
+      ...sample(0, 900, 1),
+      phase: "stage-to-performances" as const,
+      selectedMode: "videos" as const,
+      stageLayerOpacity: 0.6,
+      performanceLayerOpacity: 0.4,
+      performanceLayoutColumns: 1,
+    };
+    const columns = {
+      ...stacked,
+      time: 16,
+      stageLayerOpacity: 0.4,
+      performanceLayerOpacity: 0.6,
+      performanceLayoutColumns: 2,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "performances-2d",
+      duration: 16,
+      samples: [stacked, columns],
+      modeCommits: [],
+    });
+
+    expect(summary.performanceLayoutChanges).toBe(1);
   });
 
   it("accepts one continuous Card and viewer-stage exchange with a stable inspector", () => {

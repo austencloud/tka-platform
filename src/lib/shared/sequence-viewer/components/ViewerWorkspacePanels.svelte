@@ -3,6 +3,8 @@
   import PanelGroup, {
     type PanelDefinition,
   } from "$lib/shared/panels/PanelGroup.svelte";
+  import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import {
     VIEWER_INSPECTOR_HANDLE_SIZE,
     VIEWER_STAGE_MIN_WIDTH,
@@ -17,6 +19,8 @@
     inspectorProfile: ViewerInspectorProfile;
     stage: Snippet;
     inspector: Snippet;
+    takeover?: Snippet;
+    takeoverActive?: boolean;
   }
 
   let {
@@ -26,6 +30,8 @@
     inspectorProfile,
     stage,
     inspector,
+    takeover,
+    takeoverActive = false,
   }: Props = $props();
 
   // With one panel the axis is visually irrelevant, so retain the last axis
@@ -68,10 +74,7 @@
         defaultSize: 1,
         minSize: inspectorConstraints.minWidth,
         maxSize: inspectorConstraints.maxWidth,
-        fixedSize:
-          !inspectorActive || inspectorCollapsed
-            ? "0px"
-            : undefined,
+        fixedSize: !inspectorActive || inspectorCollapsed ? "0px" : undefined,
         preferredSize:
           inspectorActive && !inspectorCollapsed
             ? "var(--active-inspector-width)"
@@ -93,8 +96,46 @@
   });
 </script>
 
-<PanelGroup
-  direction={workspaceDirection}
-  {panels}
-  gap={inspectorResizable ? VIEWER_INSPECTOR_HANDLE_SIZE : 0}
-/>
+{#snippet panelWorkspace()}
+  <div
+    class="panel-workspace-source viewer-motion-stage-layer"
+    data-active={!takeoverActive}
+    data-persistent-viewer-stage
+  >
+    <PanelGroup
+      direction={workspaceDirection}
+      {panels}
+      gap={inspectorResizable ? VIEWER_INSPECTOR_HANDLE_SIZE : 0}
+    />
+  </div>
+{/snippet}
+
+{#if takeover}
+  <div class="panel-workspace-transition-stage">
+    <DualSourceCrossfade
+      active={takeoverActive ? "second" : "first"}
+      first={panelWorkspace}
+      second={takeover}
+      duration={DURATION.emphasis}
+      profile="soft-dissolve"
+    />
+  </div>
+{:else}
+  {@render panelWorkspace()}
+{/if}
+
+<style>
+  /* A full-workspace takeover must not inherit the stage track while that track
+     is changing size. Both live sources resolve against this fixed allocation,
+     then the canonical crossfade owns the only visible handoff between them. */
+  .panel-workspace-transition-stage,
+  .panel-workspace-source {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+</style>
