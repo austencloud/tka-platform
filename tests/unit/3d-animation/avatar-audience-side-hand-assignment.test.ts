@@ -17,21 +17,21 @@ const avatarRuntime = readFileSync(
   "utf8"
 );
 
-describe("viewer-facing character hand assignment", () => {
+describe("performer-relative character hand assignment", () => {
   it.each([
     ["source", avatarSource],
     ["runtime", avatarRuntime],
   ])(
-    "keeps each prop on its audience-side arm in the %s build",
+    "keeps blue on anatomical left and red on anatomical right in the %s build",
     (_label, component) => {
       expect(component).toMatch(
-        /setPropsAndBlend\(\s*redVisible \? redWorldProp : null,\s*blueVisible \? blueWorldProp : null/
+        /setPropsAndBlend\(\s*blueVisible \? blueWorldProp : null,\s*redVisible \? redWorldProp : null/
       );
       expect(component).toMatch(
-        /applyContactLock\(\s*"right",\s*bluePropAnchorRef,\s*bluePropCorrectionRef/
+        /applyContactLock\(\s*"left",\s*bluePropAnchorRef,\s*bluePropCorrectionRef/
       );
       expect(component).toMatch(
-        /applyContactLock\(\s*"left",\s*redPropAnchorRef,\s*redPropCorrectionRef/
+        /applyContactLock\(\s*"right",\s*redPropAnchorRef,\s*redPropCorrectionRef/
       );
     }
   );
@@ -40,13 +40,13 @@ describe("viewer-facing character hand assignment", () => {
     ["source", avatarSource],
     ["runtime", avatarRuntime],
   ])(
-    "keeps finger poses attached to the reassigned arms in the %s build",
+    "keeps finger poses attached to the canonical arms in the %s build",
     (_label, component) => {
       expect(component).toContain(
-        "const leftGrip = redPropState ? GripType.SQUARE : GripType.IDLE"
+        "const leftGrip = bluePropState ? GripType.SQUARE : GripType.IDLE"
       );
       expect(component).toContain(
-        "const rightGrip = bluePropState ? GripType.SQUARE : GripType.IDLE"
+        "const rightGrip = redPropState ? GripType.SQUARE : GripType.IDLE"
       );
     }
   );
