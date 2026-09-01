@@ -322,8 +322,8 @@ export function createViewerShellInteractionState(
     dependencies.captureScanSettingChanged({
       group: "props",
       setting: "prop_type",
-      previous_value: `blue:${previousLeft ?? "none"}|red:${previousRight ?? "none"}`,
-      value: `blue:${left ?? "none"}|red:${right ?? "none"}`,
+      previous_value: `left:${previousLeft ?? "none"}|right:${previousRight ?? "none"}`,
+      value: `left:${left ?? "none"}|right:${right ?? "none"}`,
       previous_left_prop: previousLeft,
       previous_right_prop: previousRight,
       left_prop: left,

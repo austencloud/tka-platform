@@ -6,6 +6,7 @@ import { Plane } from "@austencloud/scene-3d";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { MotionConfig3D } from "../domain/models/motion-data-3d";
 import type { GridMode } from "@austencloud/scene-3d";
+import { normalizeLegacySequence } from "@tka/tka-types";
 
 export interface CharacterProportions {
   height: number;
@@ -89,6 +90,17 @@ export function loadScene3DState(): Partial<Scene3DPersistedState> {
     }
     if (state.activeTab === "blue") state.activeTab = "left";
     if (state.activeTab === "red") state.activeTab = "right";
+    state.showLeft ??= state.showBlue;
+    state.showRight ??= state.showRed;
+    state.leftConfig ??= state.blueConfig;
+    state.rightConfig ??= state.redConfig;
+    delete state.showBlue;
+    delete state.showRed;
+    delete state.blueConfig;
+    delete state.redConfig;
+    if (state.loadedSequence) {
+      state.loadedSequence = normalizeLegacySequence(state.loadedSequence);
+    }
 
     // Migration: Clear legacy camera positions (pre-meter scale).
     if (state.cameraPosition) {

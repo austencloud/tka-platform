@@ -25,6 +25,7 @@ vi.mock("$lib/shared/auth/firebase", () => ({
 }));
 
 import {
+  loadPropPreferences,
   savePropPreferences,
   removePropPreference,
   setFavoriteProp,
@@ -37,6 +38,27 @@ describe("PropPreferencePersister", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(updateDoc).mockResolvedValue(undefined);
+  });
+
+  it("restores a literal blue/red CatDog favorite", async () => {
+    vi.mocked(getDoc).mockResolvedValue({
+      exists: () => true,
+      data: () => ({
+        propsISpinWith: [PropType.POI, PropType.FAN],
+        favoriteProp: null,
+        favoriteCatdog: {
+          bluePropType: PropType.POI,
+          redPropType: PropType.FAN,
+        },
+      }),
+    } as never);
+
+    await expect(loadPropPreferences("legacy-user")).resolves.toMatchObject({
+      favoriteCatdog: {
+        leftPropType: PropType.POI,
+        rightPropType: PropType.FAN,
+      },
+    });
   });
 
   describe("validate (via save)", () => {
