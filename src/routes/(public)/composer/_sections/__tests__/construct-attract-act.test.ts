@@ -220,6 +220,8 @@ describe("Construct animation rendering", () => {
     expect(constructSource).toContain("place-items: center");
     expect(constructSource).toContain("@container (min-width: 1100px)");
     expect(constructSource).toContain("inline-size: 21rem");
+    expect(constructSource).toContain("align-items: stretch;");
+    expect(constructSource).not.toContain("align-items: start;");
   });
 
   it("pins the shared vivid trail preset and assigns trails to the prop tips", () => {
