@@ -17,6 +17,9 @@ const shell = read(
 const workspacePanels = read(
   "src/lib/shared/sequence-viewer/components/ViewerWorkspacePanels.svelte"
 );
+const shellLayoutState = read(
+  "src/lib/shared/sequence-viewer/state/viewer-shell-layout-state.svelte.ts"
+);
 const panelGroup = read("src/lib/shared/panels/PanelGroup.svelte");
 const viewerModeDissolve = read(
   "src/lib/shared/transitions/viewer-mode-dissolve.ts"
@@ -117,6 +120,8 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(shell).toContain("data-effects-inspector");
     expect(shell).toContain("> :global(.export-panel.sidebar)");
     expect(geometryTrace).toContain("Card → Effects seam");
+    expect(geometryTrace).toContain("2D return allocation");
+    expect(shellLayoutState).not.toContain("splitModePromotionTimer");
   });
 
   it("reviews the real production shell through production mode buttons", () => {
