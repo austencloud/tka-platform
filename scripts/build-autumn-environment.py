@@ -950,7 +950,10 @@ def create_terrain_apron():
         nxt = (ring_index + 1) * perimeter
         for i in range(perimeter):
             j = (i + 1) % perimeter
-            faces.append((base + i, base + j, nxt + j, nxt + i))
+            # The perimeter walks counter-clockwise. Stitch inner-to-outer in
+            # the same orientation so the apron faces upward after the
+            # optimized asset makes the shared ground material front-sided.
+            faces.append((base + i, nxt + i, nxt + j, base + j))
 
     mesh = bpy.data.meshes.new("Autumn Terrain Apron Mesh")
     mesh.from_pydata(vertices, [], faces)
