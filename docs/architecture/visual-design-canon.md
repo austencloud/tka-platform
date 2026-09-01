@@ -369,9 +369,15 @@ Primary repository sources:
 - `.claude/rules/no-checkboxes.md`
 - `.claude/rules/sequence-viewer-shell.md`
 
-## 15. Front-Door Restyle Boundary
+## 15. Create Front Door
 
-This document does not restyle the Create front door. That screen currently
-violates the edge-strip rule and needs a separate composition pass. Its next
-design should be judged against this canon only after Austen reviews and
-approves the direction.
+The Create front door is the canonical onboarding composition for parallel
+creation methods. One authored content band places the question directly above
+the choices so their relationship remains explicit. Each method is a complete
+button whose icon, whole-surface tint, and full perimeter border carry its tab
+color. The surfaces stay matte and theme-aware, without blur or decorative edge
+strips.
+
+Height-constrained landscape screens keep the same hierarchy and compact the
+vertical rhythm instead. The question remains above the method list at every
+viewport.
