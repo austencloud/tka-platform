@@ -42,7 +42,22 @@ describe("BentoPropGrid style chooser", () => {
     expect(overlayBounds.height).toBe(window.innerHeight);
     expect(getComputedStyle(overlay.element()).pointerEvents).toBe("auto");
 
-    await page.getByRole("button", { name: "Select Torch prop type" }).click();
+    const torchOption = page.getByRole("button", {
+      name: "Select Torch prop type",
+    });
+    const torchBounds = torchOption.element().getBoundingClientRect();
+    const hitTarget = document.elementFromPoint(
+      torchBounds.left + torchBounds.width / 2,
+      torchBounds.top + torchBounds.height / 2
+    );
+    const positioner = torchOption
+      .element()
+      .closest<HTMLElement>("[data-bits-floating-content-wrapper]");
+    expect(getComputedStyle(positioner!).zIndex).toBe("300");
+    expect(getComputedStyle(overlay.element()).zIndex).toBe("299");
+    expect(torchOption.element().contains(hitTarget)).toBe(true);
+
+    await torchOption.click();
 
     expect(onSelect).toHaveBeenCalledTimes(1);
     expect(onSelect).toHaveBeenCalledWith(PropType.TORCH);
