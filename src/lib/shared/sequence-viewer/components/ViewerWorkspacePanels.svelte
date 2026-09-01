@@ -39,18 +39,30 @@
       },
     ];
 
-    if (inspectorActive) {
+    if (direction === "horizontal") {
       definitions.push({
+        // Keep the fixed-width inspector track mounted at zero between desktop
+        // visits. A conditional second panel starts its intro one lifecycle
+        // boundary after the Card begins collapsing, which makes one mode
+        // change read as two swipes. The persistent track lets both allocations
+        // change in the same PanelGroup layout frame.
         id: "export-inspector",
         content: inspector,
         defaultSize: 1,
-        fixedSize: inspectorCollapsed
-          ? "0px"
-          : direction === "horizontal"
-            ? "var(--export-sidebar-width)"
-            : undefined,
-        preferredSize:
-          !inspectorCollapsed && direction === "vertical" ? "auto" : undefined,
+        fixedSize:
+          !inspectorActive || inspectorCollapsed
+            ? "0px"
+            : "var(--export-sidebar-width)",
+      });
+    } else if (inspectorActive) {
+      // A stacked dock discovers its intrinsic open height from its contents.
+      // Keep the canonical flexPresence mount here: CSS cannot interpolate a
+      // persistent track from 0px to `auto` without a measured endpoint.
+      definitions.push({
+        id: "export-inspector-stacked",
+        content: inspector,
+        defaultSize: 1,
+        preferredSize: inspectorCollapsed ? undefined : "auto",
       });
     }
 
