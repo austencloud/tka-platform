@@ -138,7 +138,10 @@ shared debug Chrome, GPU P95 measured 7.36 ms at 1920x1080 and 8.10 ms at
 authoritative saturation signal; screenshot capture stalls were excluded from
 these figures. A 960x412 production pass measured 4.04 ms GPU P95. The missing
 pond-normal fetch was removed entirely and replaced with two deterministic,
-seamless physical ripple normals generated in memory.
+seamless physical ripple normals generated in memory. Their synchronous ready
+event is deferred until the parent boot reset completes; the final production
+reload reached 100% environment progress and `READY` inside the ordinary
+15-second gate without a forced-ready warning.
 
 ## Acceptance
 

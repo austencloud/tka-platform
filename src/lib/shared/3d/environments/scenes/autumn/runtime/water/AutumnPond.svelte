@@ -37,7 +37,10 @@
     prefersReducedMotion,
     resolveMotionScale,
   } from "../../../../primitives/motion-preference";
-  import type { AutumnBootStatus } from "../autumn-boot-state";
+  import {
+    scheduleAutumnBootStatus,
+    type AutumnBootStatus,
+  } from "../autumn-boot-state";
   import {
     createAutumnPondNormalMap,
     createAutumnPondSurfaceMaterial,
@@ -93,6 +96,7 @@
 
   $effect(() => {
     void retryRequest;
+    let cancelled = false;
     reportStatus("pending");
 
     const geometry = new ShapeGeometry(
@@ -118,9 +122,13 @@
       bodyNormal = normal0;
       coatNormal = normal1;
     });
-    reportStatus("ready");
+    // The parent resets its boot ledger in its own initial effect. Deferring
+    // this synchronous texture result until the current effect flush ends
+    // prevents that reset from erasing the pond's ready event.
+    scheduleAutumnBootStatus(reportStatus, "ready", () => cancelled);
 
     return () => {
+      cancelled = true;
       geometry.dispose();
       material.dispose();
       normal0.dispose();
