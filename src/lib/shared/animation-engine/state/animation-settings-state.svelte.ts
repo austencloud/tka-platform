@@ -23,6 +23,7 @@ import {
   DEFAULT_TRAIL_SETTINGS as MODULE_DEFAULT_TRAIL_SETTINGS,
   TAIL_LENGTH_MIN,
   TAIL_LENGTH_MAX,
+  normalizeLegacyTrailSettings,
 } from "../domain/types/trail-types";
 import { PLAYBACK_MAX_BPM } from "../domain/constants/timing";
 
@@ -56,7 +57,6 @@ export interface AnimationSettings {
   trail: TrailSettings;
 }
 
-
 import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
 import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -73,7 +73,7 @@ export const DEFAULT_TRAIL_SETTINGS: TrailSettings = {
   ...MODULE_DEFAULT_TRAIL_SETTINGS,
 };
 
-export const ANIMATION_SETTINGS_VERSION = 2;
+export const ANIMATION_SETTINGS_VERSION = 3;
 
 export const DEFAULT_ANIMATION_SETTINGS: AnimationSettings = {
   version: ANIMATION_SETTINGS_VERSION,
@@ -81,7 +81,6 @@ export const DEFAULT_ANIMATION_SETTINGS: AnimationSettings = {
   shouldLoop: true,
   trail: { ...DEFAULT_TRAIL_SETTINGS },
 };
-
 
 import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
 
@@ -109,16 +108,17 @@ function readStoredSettingsVersion(): number {
 
 export function migrateAnimationSettings(
   settings: AnimationSettings,
-  storedVersion: number,
+  storedVersion: number
 ): AnimationSettings {
+  const normalizedTrail = normalizeLegacyTrailSettings(settings.trail);
   // Older installs inherited Thumb End from the old factory default. Promote
   // that value once so a staff opens with both trails, then preserve every
   // tracking choice the user makes after this migration.
   const trail =
     storedVersion < BOTH_ENDS_DEFAULT_VERSION &&
-    settings.trail.trackingMode === TrackingMode.RIGHT_END
-      ? { ...settings.trail, trackingMode: TrackingMode.BOTH_ENDS }
-      : settings.trail;
+    normalizedTrail.trackingMode === TrackingMode.RIGHT_END
+      ? { ...normalizedTrail, trackingMode: TrackingMode.BOTH_ENDS }
+      : normalizedTrail;
 
   return {
     ...settings,
@@ -134,7 +134,7 @@ export function migrateAnimationSettings(
 function loadSettings(): AnimationSettings {
   const settings = migrateAnimationSettings(
     settingsPersistence.load(),
-    readStoredSettingsVersion(),
+    readStoredSettingsVersion()
   );
 
   // Keep the shared presentation consistent across legacy animation surfaces.
@@ -159,7 +159,6 @@ function loadSettings(): AnimationSettings {
 
   return settings;
 }
-
 
 export type AnimationSettingsState = {
   // Read-only access
@@ -194,14 +193,14 @@ export type AnimationSettingsState = {
  * Create the shared animation settings state.
  * This is a singleton - call once at app init and share via context.
  */
-export function createAnimationSettingsState(
-  options?: { ephemeral?: boolean },
-): AnimationSettingsState {
+export function createAnimationSettingsState(options?: {
+  ephemeral?: boolean;
+}): AnimationSettingsState {
   const ephemeral = options?.ephemeral ?? false;
   let settings = $state<AnimationSettings>(
     ephemeral
       ? { ...DEFAULT_ANIMATION_SETTINGS, trail: { ...DEFAULT_TRAIL_SETTINGS } }
-      : loadSettings(),
+      : loadSettings()
   );
   let propType = $state("staff");
 
@@ -248,7 +247,10 @@ export function createAnimationSettingsState(
 
     // Playback setters
     setBpm: (bpm: number) => {
-      settings = { ...settings, bpm: Math.max(30, Math.min(PLAYBACK_MAX_BPM, bpm)) };
+      settings = {
+        ...settings,
+        bpm: Math.max(30, Math.min(PLAYBACK_MAX_BPM, bpm)),
+      };
     },
 
     setShouldLoop: (loop: boolean) => {
@@ -292,7 +294,7 @@ export function createAnimationSettingsState(
 
     setTailLength: (points: number) => {
       const clamped = Math.round(
-        Math.max(TAIL_LENGTH_MIN, Math.min(TAIL_LENGTH_MAX, points)),
+        Math.max(TAIL_LENGTH_MIN, Math.min(TAIL_LENGTH_MAX, points))
       );
       settings = {
         ...settings,
@@ -346,7 +348,6 @@ export function createAnimationSettingsState(
 const hmrSettingsData = import.meta.hot?.data as
   | { animationSettings?: AnimationSettingsState }
   | undefined;
-
 
 /**
  * Global animation settings state instance.

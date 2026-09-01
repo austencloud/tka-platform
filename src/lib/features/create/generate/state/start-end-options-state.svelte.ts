@@ -29,6 +29,7 @@ import {
   getBlockedPositionsForPreset,
   StartPositionPreset,
 } from "../shared/domain/start-position-presets";
+import { normalizePersistedStartEndOptions } from "../domain/generator-persistence-normalizer";
 
 // ===== Session-local Persistence (localStorage) =====
 const SESSION_STORAGE_KEY = "tka-start-end-session-options";
@@ -51,6 +52,10 @@ interface SerializedSessionOptions {
   mustNotContainLetters: string[];
   leftStartOrientation?: string;
   rightStartOrientation?: string;
+  /** @deprecated Read only; replaced by physical hand identity. */
+  blueStartOrientation?: string;
+  /** @deprecated Read only; replaced by physical hand identity. */
+  redStartOrientation?: string;
   timestamp: number;
 }
 
@@ -88,7 +93,9 @@ function loadSessionOptions(): Partial<StartEndOptions> | null {
       return null;
     }
 
-    const data = JSON.parse(stored) as SerializedSessionOptions;
+    const data = normalizePersistedStartEndOptions(
+      JSON.parse(stored) as SerializedSessionOptions
+    );
 
     return {
       startPosition: data.startPositionLetter
@@ -133,7 +140,6 @@ const DEFAULT_OPTIONS: StartEndOptions = {
   leftStartOrientation: Orientation.IN,
   rightStartOrientation: Orientation.IN,
 };
-
 
 /**
  * Creates reactive state for start/end position options

@@ -69,6 +69,7 @@ import {
   resolveInitialDefaultProp,
   resolvePlainOpenPerformerSettings,
 } from "../domain/plain-open-policy";
+import { normalizeLegacyPerformerSnapshot } from "./legacy-viewer-3d-snapshots";
 
 // Popover Stack
 
@@ -289,7 +290,9 @@ function loadPersistedPerformers(): StoredPerformerSnapshot[] | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return null;
-    return parsed as StoredPerformerSnapshot[];
+    return parsed.map(
+      normalizeLegacyPerformerSnapshot
+    ) as StoredPerformerSnapshot[];
   } catch {
     return null;
   }
@@ -304,7 +307,11 @@ function persistPerformers(snapshots: StoredPerformerSnapshot[]): void {
   }
 }
 
-function loadPersistedActiveFormation(): FormationPreset | "manual" | "custom" | null {
+function loadPersistedActiveFormation():
+  | FormationPreset
+  | "manual"
+  | "custom"
+  | null {
   if (typeof localStorage === "undefined") return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY_ACTIVE_FORMATION);
@@ -314,7 +321,9 @@ function loadPersistedActiveFormation(): FormationPreset | "manual" | "custom" |
   }
 }
 
-function persistActiveFormation(value: FormationPreset | "manual" | "custom"): void {
+function persistActiveFormation(
+  value: FormationPreset | "manual" | "custom"
+): void {
   if (typeof localStorage === "undefined") return;
   try {
     localStorage.setItem(STORAGE_KEY_ACTIVE_FORMATION, value);

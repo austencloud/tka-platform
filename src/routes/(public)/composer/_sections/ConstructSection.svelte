@@ -577,24 +577,27 @@
             class="demo-status word-label-area"
             aria-live={tookOver ? "polite" : "off"}
           >
-            {#if rawWord}
-              <WordLabel
-                word={rawWord}
-                activeStepNumber={phase === "play" && playingStepNumber
-                  ? playingStepNumber
-                  : null}
-              />
-            {:else}
-              <p class="hint">
-                {#if phase === "pick-start" && act && !tookOver}
-                  Watch it build. Tap anything to take over.
-                {:else if phase === "pick-start"}
-                  Pick a starting position to begin.
-                {:else}
-                  Tap a pictograph to add it.
-                {/if}
-              </p>
-            {/if}
+            <span class="region-label">Your sequence</span>
+            <div class="status-content">
+              {#if rawWord}
+                <WordLabel
+                  word={rawWord}
+                  activeStepNumber={phase === "play" && playingStepNumber
+                    ? playingStepNumber
+                    : null}
+                />
+              {:else}
+                <p class="hint">
+                  {#if phase === "pick-start" && act && !tookOver}
+                    Watch it build. Tap anything to take over.
+                  {:else if phase === "pick-start"}
+                    Pick a starting position to begin.
+                  {:else}
+                    Tap a pictograph to add it.
+                  {/if}
+                </p>
+              {/if}
+            </div>
           </header>
 
           <div class="ws-frame" bind:clientWidth={wsW} bind:clientHeight={wsH}>
@@ -775,6 +778,9 @@
             class="guided-build-status"
             aria-live={tookOver ? "polite" : "off"}
           >
+            <span class="region-label">
+              {phase === "play" ? "Playback" : "Next move"}
+            </span>
             <strong>
               {phase === "pick-start"
                 ? "Choose where the props begin"
@@ -876,23 +882,17 @@
     color: var(--theme-text, #fff);
   }
 
-  /* The toy box: one framed panel holds the whole demo, so toolbar, workspace
-     and picker read as a single self-contained unit instead of controls
-     floating in the section void. */
-  /* Sizes here are rem so browser zoom and user font preferences carry through
-     the whole demo. Viewport width changes its composition, not its root size. */
+  /* One presentation stage holds the real Composer surfaces. Internal regions
+     separate through hierarchy and spacing instead of each becoming another
+     bordered card. */
   .demo-shell {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    /* Contained toy, not a full-bleed slab: on ultrawide viewports the panel
-       caps out and centers, so the controls never drift apart into voids.
-       4K-native cap per the shell standard (min(1720px, 92vw)) — 1360 left
-       the toy inset from its own heading at 2560 CSS. */
     width: 100%;
     max-width: var(--shell-w, min(1720px, 92vw));
     margin-inline: auto;
-    padding: clamp(1rem, 2.2cqw, 1.75rem);
+    padding: clamp(1rem, 1.8cqw, 1.5rem);
     border-radius: 1.5rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: color-mix(
@@ -901,6 +901,13 @@
       transparent
     );
     box-sizing: border-box;
+  }
+
+  /* The public page already owns the composition band. Applying its shell cap
+     again here created a second inset at laptop widths, so the two examples
+     missed each other's edge even though they belong to the same story. */
+  .guided-build .demo-shell {
+    max-width: none;
   }
 
   /* ===== Column stacks =====
@@ -1053,8 +1060,9 @@
   .guided-build-status {
     min-height: 2.75rem;
     display: flex;
-    align-items: center;
-    padding-inline: 0.25rem;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
     font-size: clamp(1rem, 0.96rem + 0.14vw, 1.15rem);
   }
 
@@ -1062,6 +1070,15 @@
     color: var(--theme-text, #fff);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .region-label {
+    flex: 0 0 auto;
+    min-width: 6rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.56));
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 600;
   }
 
   .hand-dot {
@@ -1167,11 +1184,21 @@
   @container (min-width: 1100px) {
     .demo-columns {
       display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-      gap: 0 clamp(1.5rem, 3cqw, 3rem);
+      grid-template-columns: minmax(0, 1.4fr) minmax(22rem, 0.86fr);
+      gap: 0;
       align-items: stretch;
       min-height: calc(clamp(18.75rem, 38vh, 33.75rem) + 6.75rem);
     }
+
+    .sequence-column {
+      padding-right: clamp(1.5rem, 2.6cqw, 2.75rem);
+    }
+
+    .build-column {
+      padding-left: clamp(1.5rem, 2.6cqw, 2.75rem);
+      border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    }
+
     .workspace {
       flex: 1;
     }
@@ -1187,15 +1214,12 @@
     }
   }
 
-  /* Both halves are framed sub-panels — defined edges instead of controls
-     floating in the shell. Symmetric margins INSIDE a visible frame read as a
-     stage; the same pixels outside one read as accidental void. */
   .workspace,
   .picker-pane {
-    border-radius: 1.125rem;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    background: rgba(255, 255, 255, 0.025);
-    padding: 0.75rem 1rem 0.875rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
     box-sizing: border-box;
   }
 
@@ -1212,9 +1236,22 @@
   .demo-status {
     min-height: 3.25rem;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
     --text-color: var(--theme-text, #fff);
+  }
+
+  .status-content {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  .status-content :global(.word-label-container) {
+    justify-content: flex-end;
   }
 
   .hint {
@@ -1232,6 +1269,8 @@
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
 
     /* Clear, play, and history share the global touch-target floor. The rem
        side lets browser zoom enlarge the controls with their labels. */
@@ -1385,14 +1424,9 @@
     }
   }
 
-  /* Each column is its own height now rather than one stretching to match the
-     other, and whichever is shorter centers against its neighbour. Which one
-     that is changes with the phase — the workspace is taller while picking,
-     the player taller during play — so balanced space reads as breathing room
-     either way, where top-aligning banked it all under one column. */
   @container (min-width: 1100px) {
     .demo-columns {
-      align-items: center;
+      align-items: start;
     }
   }
 

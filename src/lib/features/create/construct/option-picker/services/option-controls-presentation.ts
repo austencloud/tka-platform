@@ -1,12 +1,8 @@
-export type OptionControlsPresentation =
-  | "hidden"
-  | "wide-inline"
-  | "compact-inline"
-  | "disclosed";
+export type OptionControlsPresentation = "hidden" | "inline" | "disclosed";
 
 interface OptionControlsPresentationInput {
   hasControls: boolean;
-  wideInlineEligible: boolean;
+  fullInlineEligible: boolean;
   containerHeight: number;
   canShowTurnRows: boolean;
 }
@@ -30,14 +26,14 @@ export function minimumInlineControlsHeight(canShowTurnRows: boolean): number {
 
 export function selectOptionControlsPresentation({
   hasControls,
-  wideInlineEligible,
+  fullInlineEligible,
   containerHeight,
   canShowTurnRows,
 }: OptionControlsPresentationInput): OptionControlsPresentation {
   if (!hasControls) return "hidden";
-  if (wideInlineEligible) return "wide-inline";
+  if (fullInlineEligible) return "inline";
 
   return containerHeight >= minimumInlineControlsHeight(canShowTurnRows)
-    ? "compact-inline"
+    ? "inline"
     : "disclosed";
 }

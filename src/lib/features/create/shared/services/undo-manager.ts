@@ -10,6 +10,7 @@
 import { browser } from "$app/environment";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ActiveCreateModule } from "$lib/shared/foundation/ui/ui-types";
+import { normalizeLegacySequence } from "@tka/tka-types";
 
 /**
  * Types of undoable operations in the Create module
@@ -99,6 +100,29 @@ const UNDO_HISTORY_STORAGE_KEY = "tka_build_undo_history";
  * LocalStorage key for persisting redo history
  */
 const REDO_HISTORY_STORAGE_KEY = "tka_build_redo_history";
+
+export function normalizeUndoHistoryEntries(
+  value: unknown
+): UndoHistoryEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((entry) => ({
+    ...entry,
+    beforeState: {
+      ...entry.beforeState,
+      sequence: entry.beforeState?.sequence
+        ? normalizeLegacySequence(entry.beforeState.sequence)
+        : null,
+    },
+    ...(entry.afterState && {
+      afterState: {
+        ...entry.afterState,
+        sequence: entry.afterState.sequence
+          ? normalizeLegacySequence(entry.afterState.sequence)
+          : null,
+      },
+    }),
+  })) as UndoHistoryEntry[];
+}
 
 /**
  * Human-readable descriptions for operation types
@@ -481,12 +505,12 @@ export class UndoManager {
     try {
       const undoData = localStorage.getItem(UNDO_HISTORY_STORAGE_KEY);
       if (undoData) {
-        this._undoHistory = JSON.parse(undoData);
+        this._undoHistory = normalizeUndoHistoryEntries(JSON.parse(undoData));
       }
 
       const redoData = localStorage.getItem(REDO_HISTORY_STORAGE_KEY);
       if (redoData) {
-        this._redoHistory = JSON.parse(redoData);
+        this._redoHistory = normalizeUndoHistoryEntries(JSON.parse(redoData));
       }
 
       // Notify subscribers after loading

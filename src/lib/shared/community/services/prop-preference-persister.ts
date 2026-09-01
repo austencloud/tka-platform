@@ -2,6 +2,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { PropPreferences, CatdogCombo } from "./types";
+import { normalizeLegacyPropConfig } from "@tka/tka-types";
 
 const DEFAULT_PREFS: PropPreferences = {
   propsISpinWith: [],
@@ -42,7 +43,9 @@ export async function loadPropPreferences(
   return {
     propsISpinWith: (data.propsISpinWith as PropType[]) ?? [],
     favoriteProp: (data.favoriteProp as PropType) ?? null,
-    favoriteCatdog: (data.favoriteCatdog as CatdogCombo) ?? null,
+    favoriteCatdog: data.favoriteCatdog
+      ? (normalizeLegacyPropConfig(data.favoriteCatdog) as CatdogCombo)
+      : null,
   };
 }
 

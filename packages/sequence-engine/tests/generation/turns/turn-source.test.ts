@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { allocationSource, patternSource } from "./TurnSource.js";
+import {
+  allocationSource,
+  patternSource,
+} from "../../../src/generation/turns/TurnSource.js";
 
 describe("TurnSource", () => {
   it("reports no turn past the end of a random allocation", () => {
@@ -23,5 +26,16 @@ describe("TurnSource", () => {
   it("treats an empty lane as no turn rather than dividing by zero", () => {
     const source = patternSource({ left: [], right: [] });
     expect(source.at(0, "left")).toBeUndefined();
+  });
+
+  it("reads the literal blue/red turn lanes saved before hand identity migrated", () => {
+    const source = patternSource({
+      blue: [1, 0],
+      red: [0.5],
+    } as never);
+
+    expect(source.at(0, "left")).toBe(1);
+    expect(source.at(1, "left")).toBe(0);
+    expect(source.at(7, "right")).toBe(0.5);
   });
 });

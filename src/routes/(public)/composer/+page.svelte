@@ -647,11 +647,6 @@
   .generator-surface {
     container-type: inline-size;
     min-width: 0;
-    padding: clamp(1rem, 2.5vw, 2.1rem);
-    border: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
-    border-radius: clamp(1.1rem, 2vw, 1.8rem);
-    background: var(--theme-panel-bg, oklch(0.13 0.025 270 / 0.92));
-    box-shadow: 0 2rem 5rem oklch(0.04 0.03 270 / 0.35);
   }
 
   /* The two demos are separated by a gap, not by a tracked-out uppercase rule

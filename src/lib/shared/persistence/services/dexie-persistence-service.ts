@@ -11,6 +11,7 @@ import { db } from "../database/tka-database";
 import { UserWorkType } from "../domain/enums/user-work-type";
 import type { UserProject } from "../domain/models/user-project";
 import type { UserWorkData } from "../domain/models/user-work-data";
+import { normalizeLegacyStep } from "@tka/tka-types";
 
 export async function initialize(): Promise<void> {
   try {
@@ -439,7 +440,9 @@ export async function loadCurrentSequenceState(mode?: string): Promise<{
       currentSequence: parsed.currentSequence
         ? createSequenceData(parsed.currentSequence)
         : null,
-      selectedStartPosition: parsed.selectedStartPosition,
+      selectedStartPosition: parsed.selectedStartPosition
+        ? normalizeLegacyStep(parsed.selectedStartPosition)
+        : null,
       hasStartPosition: parsed.hasStartPosition,
       activeBuildSection: parsed.activeBuildSection ?? targetMode,
     };
