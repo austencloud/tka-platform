@@ -81,6 +81,18 @@ retained revision, content-hash claim, and parity stamps in one guarded
 transaction. Use `--owner <uid>` only when the sequence belongs to someone
 other than the default library owner.
 
+When a sequence was initially imported into the default library as a temporary
+owner, transfer it after the recipient creates their account with:
+
+```powershell
+pnpm sequence:transfer -- <sequenceId> <uid|username|displayName>
+```
+
+This preserves the sequence id and public URL while moving the owner record,
+public attribution, content-hash claim, shortcodes, and exact profile counters
+in one guarded transaction. Add `--dry-run` to preview the resolved account and
+counter changes without writing.
+
 ### 6. Report result
 
 On success, report:
