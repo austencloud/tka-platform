@@ -123,6 +123,7 @@
       stageTunnelSnapshotForViewer(snapshot);
       persistViewerMode("tunnel");
       openSequenceOverlay(lead.source.sequence, {
+        analyticsSource: "create_workspace",
         returnLabel: "Back to Tunnel Creator",
         initialViewerMode: "tunnel",
         initialViewMode: "animation",

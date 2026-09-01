@@ -16,6 +16,7 @@ import {
   removeCurrentUrlParams,
   writeUrl,
 } from "$lib/shared/navigation/services/url-state";
+import type { SequenceViewerSource } from "$lib/shared/sequence-viewer/analytics/viewer-events";
 
 let _isOpen = $state(false);
 let _sequence = $state<SequenceData | null>(null);
@@ -36,11 +37,13 @@ let _playOnOpen = $state(false);
 let _shareOnOpen = $state(false);
 let _openedFromUrl = $state(false);
 let _activeShortCode = $state<string | null>(null);
+let _analyticsSource = $state<SequenceViewerSource>("external_link");
 let _openToken = $state(0);
 
 export function openSequenceOverlay(
   sequence: SequenceData,
-  options?: {
+  options: {
+    analyticsSource: SequenceViewerSource;
     returnLabel?: string;
     initialBpm?: number;
     initialPlaybackMode?: PlaybackMode;
@@ -62,35 +65,36 @@ export function openSequenceOverlay(
   }
 ): void {
   _sequence = sequence;
-  _variations = options?.variations ?? [sequence];
+  _variations = options.variations ?? [sequence];
   _variationIndex = _variations.findIndex((v) => v.id === sequence.id);
   if (_variationIndex < 0) _variationIndex = 0;
-  _returnLabel = options?.returnLabel || "Back";
-  _initialBpm = options?.initialBpm || 60;
-  _initialPlaybackMode = options?.initialPlaybackMode ?? "continuous";
-  _initialStep = options?.initialStep || 0;
-  _initialViewMode = options?.initialViewMode;
-  _initialViewerMode = options?.initialViewerMode;
-  _tunnelComposition = options?.tunnelComposition ?? null;
-  _tunnelSaveTarget = options?.tunnelSaveTarget ?? null;
-  _onTunnelSaved = options?.onTunnelSaved ?? null;
-  _dismissPath = options?.dismissPath || null;
-  _handPathMode = options?.handPathMode ?? false;
-  _playOnOpen = options?.playOnOpen ?? false;
-  _shareOnOpen = options?.shareOnOpen ?? false;
-  _openedFromUrl = options?.fromUrl ?? false;
-  _activeShortCode = options?.shortCode ?? null;
+  _returnLabel = options.returnLabel || "Back";
+  _initialBpm = options.initialBpm || 60;
+  _initialPlaybackMode = options.initialPlaybackMode ?? "continuous";
+  _initialStep = options.initialStep || 0;
+  _initialViewMode = options.initialViewMode;
+  _initialViewerMode = options.initialViewerMode;
+  _tunnelComposition = options.tunnelComposition ?? null;
+  _tunnelSaveTarget = options.tunnelSaveTarget ?? null;
+  _onTunnelSaved = options.onTunnelSaved ?? null;
+  _dismissPath = options.dismissPath || null;
+  _handPathMode = options.handPathMode ?? false;
+  _playOnOpen = options.playOnOpen ?? false;
+  _shareOnOpen = options.shareOnOpen ?? false;
+  _openedFromUrl = options.fromUrl ?? false;
+  _activeShortCode = options.shortCode ?? null;
+  _analyticsSource = options.analyticsSource;
   _isOpen = true;
   const token = ++_openToken;
 
-  if (!options?.skipHistoryPush) {
+  if (!options.skipHistoryPush) {
     writeUrl("", {
       mode: "push",
       state: { sequenceOverlay: true },
     });
   }
 
-  if (!options?.fromUrl && typeof window !== "undefined") {
+  if (!options.fromUrl && typeof window !== "undefined") {
     const url = new URL(window.location.href);
     if (url.searchParams.has("v")) {
       removeCurrentUrlParams(["v"], {
@@ -98,7 +102,7 @@ export function openSequenceOverlay(
       });
     }
     void mintAndSyncShortCode(sequence, token);
-  } else if (options?.shortCode) {
+  } else if (options.shortCode) {
     _activeShortCode = options.shortCode;
   }
 }
@@ -195,6 +199,7 @@ export function closeSequenceOverlay(): void {
   _shareOnOpen = false;
   _openedFromUrl = false;
   _activeShortCode = null;
+  _analyticsSource = "external_link";
 }
 
 export function switchVariation(index: number): void {
@@ -267,6 +272,9 @@ export function getSequenceOverlayState() {
     },
     get activeShortCode() {
       return _activeShortCode;
+    },
+    get analyticsSource() {
+      return _analyticsSource;
     },
     /** Changes for every open, including replacing an already-open sequence. */
     get sessionKey() {

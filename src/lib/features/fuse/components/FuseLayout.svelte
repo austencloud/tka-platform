@@ -500,6 +500,7 @@
 
     try {
       openSequenceViewer(sequence, {
+        source: "fuse",
         returnPath: "/app/create",
         returnLabel: "Fuse",
         initialBpm: fuseState.bpm,

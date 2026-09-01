@@ -219,6 +219,7 @@
 
       inboxState.close();
       openSequenceViewer(sequence, {
+        source: "inbox_notification",
         returnPath: window.location.pathname,
         returnLabel: "Notifications",
       });
@@ -286,7 +287,11 @@
         // the catch-all route and leaves the previous module running.
         if (n["fromUserId"]) {
           inboxState.close();
-          await openCreatorProfile(n["fromUserId"]);
+          await openCreatorProfile(
+            n["fromUserId"],
+            undefined,
+            "inbox_notification"
+          );
         }
         break;
 
@@ -303,7 +308,11 @@
         // state, module state, URL, and browser history move together.
         inboxState.close();
         if (authState.effectiveUserId) {
-          await openCreatorProfile(authState.effectiveUserId);
+          await openCreatorProfile(
+            authState.effectiveUserId,
+            undefined,
+            "inbox_notification"
+          );
         }
         break;
 

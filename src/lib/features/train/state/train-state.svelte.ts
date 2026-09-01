@@ -43,6 +43,7 @@ import {
   VisualizationMode,
   DetectionMethod,
 } from "../domain/enums/train-enums";
+import { trackTrainSessionStarted } from "../analytics/train-events";
 
 export interface TrainStateConfig {
   defaultBpm: number;
@@ -183,6 +184,12 @@ export function createTrainState(config: Partial<TrainStateConfig> = {}) {
     totalMisses = 0;
     maxCombo = 0;
     countdownValue = null;
+    trackTrainSessionStarted({
+      sequenceId: sequence?.id,
+      bpm,
+      detectionMethod,
+      totalSteps,
+    });
   }
 
   function advanceBeat() {

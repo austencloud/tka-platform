@@ -153,6 +153,7 @@
         <SequenceViewerShell
           {ctx}
           sequence={data.sequence}
+          analyticsSource="spiroanim"
           {isMobile}
           onClose={handleClose}
           navigation={{ label: "Back to TKA" }}

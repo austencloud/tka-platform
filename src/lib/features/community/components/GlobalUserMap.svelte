@@ -259,7 +259,7 @@
   }
 
   function handleViewProfile(userId: string) {
-    void openCreatorProfile(userId);
+    void openCreatorProfile(userId, undefined, "community_map");
   }
 
   function closePopup() {

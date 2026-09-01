@@ -110,6 +110,7 @@
     variations?: SequenceData[]
   ): void {
     openSequenceViewer(sequence, {
+      source: "deck_release",
       returnPath: "/choreo_card/releaser",
       returnLabel: "Deck Releaser",
       variations,

@@ -176,14 +176,14 @@
 
     try {
       if (userProfile.isFollowing) {
-        await unfollowUser(currentUserId, userId);
+        await unfollowUser(currentUserId, userId, "creator_profile");
         userProfile = {
           ...userProfile,
           isFollowing: false,
           followerCount: Math.max(0, userProfile.followerCount - 1),
         };
       } else {
-        await followUser(currentUserId, userId);
+        await followUser(currentUserId, userId, "creator_profile");
         userProfile = {
           ...userProfile,
           isFollowing: true,
@@ -202,6 +202,7 @@
   function handleSequenceClick(sequence: LibrarySequence) {
     hapticService?.trigger("selection");
     openSequenceViewer(sequence, {
+      source: "creator_profile",
       returnPath: `/creators/${encodeURIComponent(userId)}`,
       returnLabel: userProfile?.displayName ?? "Creator",
     });
@@ -244,7 +245,11 @@
 
   function handleUserCardClick(user: UserProfile) {
     hapticService?.trigger("selection");
-    void openCreatorProfile(user.id, user.displayName);
+    void openCreatorProfile(
+      user.id,
+      user.displayName,
+      "creator_connection"
+    );
   }
 </script>
 

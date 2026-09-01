@@ -16,6 +16,10 @@ Supports two navigation modes:
   } from "../domain/types";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { getConceptExperience } from "../domain/concept-experience-registry";
+  import {
+    trackLessonCompleted,
+    trackLessonStarted,
+  } from "../services/learn-events";
 
   let { concept, onClose } = $props<{
     concept: LearnConcept;
@@ -69,6 +73,7 @@ Supports two navigation modes:
 
   // Start the concept when detail view opens
   onMount(() => {
+    trackLessonStarted(concept.id, progress.status);
     if (progress.status === "available") {
       conceptProgressService.startConcept(concept.id);
     }
@@ -101,6 +106,7 @@ Supports two navigation modes:
     // Mark the concept as completed when the experience is finished
     // This explicitly completes rather than just recording one practice attempt
     conceptProgressService.completeConcept(concept.id);
+    trackLessonCompleted(concept.id);
     // After completing, go back to concept list
     handleClose();
   }

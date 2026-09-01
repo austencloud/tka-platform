@@ -301,6 +301,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
   function handleSequenceAction(action: string, sequence: SequenceData) {
     if (action === "view-detail") {
       openSequenceViewer(sequence, {
+        source: "browse_collection",
         returnPath: "/browse",
         returnLabel: collection?.name ?? "Collection",
       });
@@ -736,12 +737,14 @@ becomes private while open, we bail back to the list instead of showing a ghost.
             if (following) {
               void followedCollectionsState.unfollow(
                 foreignOwnerId,
-                collectionId
+                collectionId,
+                "community_collection"
               );
             } else {
               void followedCollectionsState.follow(
                 foreignOwnerId,
-                collectionId
+                collectionId,
+                "community_collection"
               );
             }
           }}

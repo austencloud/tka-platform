@@ -392,7 +392,11 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
 
   function viewHistoryEntry(entry: { sequenceData: unknown }) {
     const seq = JSON.parse(JSON.stringify(entry.sequenceData)) as SequenceData;
-    openSequenceViewer(seq, { returnPath: "/effects-lab", returnLabel: "Effects Lab" });
+    openSequenceViewer(seq, {
+      source: "effects_lab",
+      returnPath: "/effects-lab",
+      returnLabel: "Effects Lab",
+    });
   }
 
   function handleKeydown(e: KeyboardEvent) {

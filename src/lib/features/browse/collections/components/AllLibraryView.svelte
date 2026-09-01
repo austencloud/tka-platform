@@ -180,6 +180,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
 
   function openViewer(sequence: SequenceData, variations?: SequenceData[]) {
     openSequenceViewer(sequence, {
+      source: "browse_library",
       returnPath: "/browse/library",
       returnLabel: "Library",
       scrollY: browseScrollState.lastScrollY,
