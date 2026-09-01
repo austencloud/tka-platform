@@ -16,6 +16,10 @@ export function createShapeMatrixAnimationState() {
   const scope = createAnimationScope({ persistence: "ephemeral" });
   scope.settings.setBpm(60);
   scope.visibility.setBpm(60);
+  scope.visibility.setPathPolicy({
+    pathShape: "arc",
+    motionAwarePaths: false,
+  });
   scope.effects.replace({
     ...scope.effects.config,
     trails: {
@@ -69,6 +73,11 @@ export function createShapeMatrixAnimationState() {
     disassembled = next;
   }
 
+  function showRelationships(): void {
+    if (activeSection === null) return;
+    closeRequest += 1;
+  }
+
   return {
     scope,
     get playing() {
@@ -95,6 +104,7 @@ export function createShapeMatrixAnimationState() {
     setPlaybackMode,
     setActiveSection,
     requestDisassembled,
+    showRelationships,
   };
 }
 

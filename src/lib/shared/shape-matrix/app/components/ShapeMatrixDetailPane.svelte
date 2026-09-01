@@ -5,6 +5,7 @@
   import { setAnimationScopeContext } from "$lib/shared/animation-engine/state/animation-scope-context";
   import { setAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
 
   const state = getShapeMatrixAppContext();
@@ -14,11 +15,62 @@
   setAnimationScopeContext(animationState.scope);
   setAnimationVisibilityContext(animationState.scope.visibility);
   setEffectsConfigContext(animationState.scope.effects);
+
+  const controlLabels = {
+    grid: "Grid",
+    layers: "Layers",
+    effects: "Effects",
+    props: "Props",
+    effort: "Effort",
+    playback: "Playback",
+    display: "Display",
+    motion: "Motion",
+    export: "Export",
+  } as const;
+  const activeControlLabel = $derived(
+    animationState.activeSection
+      ? controlLabels[animationState.activeSection]
+      : null
+  );
+
+  $effect(() => {
+    if (state.propPickerOpen) {
+      animationState.setActiveSection("props");
+    } else if (animationState.activeSection === "props") {
+      animationState.setActiveSection(null);
+    }
+  });
 </script>
 
-<aside class="detail-pane" aria-label="Shape detail">
+<aside
+  class="detail-pane"
+  aria-label="Shape animation and element relationships"
+>
   <header class="pane-heading">
-    <span class="eyebrow">Shape detail</span>
+    <div
+      class="relationship-entry"
+      class:current={animationState.activeSection === null}
+    >
+      <PanelButton
+        ariaLabel="Show element relationships"
+        ariaExpanded={animationState.activeSection === null}
+        onclick={animationState.showRelationships}
+      >
+        <i
+          class={animationState.activeSection === null
+            ? "fas fa-shapes"
+            : "fas fa-arrow-left"}
+          aria-hidden="true"
+        ></i>
+        <span>Element relationships</span>
+      </PanelButton>
+    </div>
+    {#if activeControlLabel}
+      <span class="active-workspace" aria-live="polite">
+        <i class="fas fa-sliders" aria-hidden="true"></i>
+        {activeControlLabel}
+      </span>
+    {/if}
   </header>
 
   <div class="drill-stage">
@@ -32,6 +84,7 @@
         onpropmodechange={state.setPropMode}
         propType={state.propType}
         onproptypechange={(propType) => void state.setPropType(propType)}
+        onopenproppicker={state.openPropPicker}
       />
     {:else}
       <p class="status">Building the matrix…</p>
@@ -54,6 +107,7 @@
   .pane-heading {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 0.65rem;
     min-height: 3.5rem;
     padding: 0.35rem 0.75rem;
@@ -61,13 +115,46 @@
     container: shape-matrix-detail-heading / inline-size;
   }
 
-  .eyebrow {
-    flex: 0 0 auto;
+  .relationship-entry {
+    min-width: 0;
+  }
+
+  .relationship-entry :global(.panel-btn) {
+    min-height: var(--min-touch-target, 44px);
+    justify-content: flex-start;
+    padding: 0.45rem 0.7rem;
+    white-space: nowrap;
+  }
+
+  .relationship-entry.current :global(.panel-btn) {
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #f4b54c) 52%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f4b54c) 14%,
+      var(--theme-card-bg, transparent)
+    );
     color: var(--theme-accent, #f4b54c);
+  }
+
+  .active-workspace {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
     font-size: var(--font-size-min, 0.875rem);
     font-weight: 650;
-    letter-spacing: 0.015em;
+    text-overflow: ellipsis;
+    overflow: hidden;
     white-space: nowrap;
+  }
+
+  .active-workspace i {
+    color: var(--theme-accent, #f4b54c);
   }
 
   .drill-stage {

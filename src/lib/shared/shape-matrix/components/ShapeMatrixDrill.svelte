@@ -34,12 +34,11 @@
   never remounted before its replacement is moving.
 
   The drill owns its own empty state now (pair is nullable): chips disabled,
-  "Pick a cell" hint in the hero, caption line reserved but empty — the panel
-  structure is constant from load, so first selection causes no layout shift.
+  "Pick a cell" hint in the hero. The relationship workspace above the stage
+  owns the hands-to-props explanation, so the animation area does not repeat it.
 -->
 <script lang="ts">
   import { onDestroy, untrack } from "svelte";
-  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import MandalaHeroLayer from "./MandalaHeroLayer.svelte";
@@ -49,11 +48,7 @@
     buildModeRealizationCandidates,
     type ModeRealization,
   } from "../services/build-mode-realizations";
-  import {
-    flowerKey,
-    flowerLabel,
-    type Flower,
-  } from "../domain/flower-signature";
+  import { flowerKey, type Flower } from "../domain/flower-signature";
   import type { ShapeMatrixData } from "../services/shape-matrix-flowers";
   import {
     MODE_ORDER,
@@ -90,6 +85,7 @@
     onpropmodechange?: (mode: VtgMode | null) => void;
     propType?: PropType;
     onproptypechange?: (propType: PropType) => void;
+    onopenproppicker?: () => void;
   }
   let {
     pair,
@@ -102,6 +98,7 @@
     onpropmodechange,
     propType = PropType.STAFF,
     onproptypechange,
+    onopenproppicker,
   }: Props = $props();
 
   const animationState = getShapeMatrixAnimationContext();
@@ -142,13 +139,11 @@
     return foldTrailIntentIntoSettings(SHAPE_MATRIX_TRAIL_PRESET, intent);
   });
 
-  const animationActions = $derived<ControlDockAction[]>([
-    {
-      icon: animationState.playing ? "fa-pause" : "fa-play",
-      label: animationState.playing ? "Pause" : "Play",
-      onClick: animationState.togglePlaying,
-    },
-  ]);
+  const playbackAction = $derived<ControlDockAction>({
+    icon: animationState.playing ? "fa-pause" : "fa-play",
+    label: animationState.playing ? "Pause" : "Play",
+    onClick: animationState.togglePlaying,
+  });
 
   // Sticky across pair changes by design (spec: "Selection persistence").
   // Realizations are immutable payloads replaced as a unit. Raw state keeps
@@ -480,13 +475,6 @@
       !activeReal
   );
   const captionRealization = $derived(visibleRealization ?? activeReal);
-  const captionKey = $derived.by(() => {
-    const visibleLayer = visibleSource ? getLayer(visibleSource) : null;
-    if (visibleLayer) return visibleLayer.key;
-    if (activeReal && pairKey) return realizationKey(activeReal, pairKey);
-    if (buildError || modeMissing) return "error";
-    return pair ? "pending" : "empty";
-  });
   const visibleStep = $derived(
     visibleSource === "first"
       ? firstStep
@@ -898,10 +886,6 @@
     transitionRecorder.destroy();
   });
 
-  function elementName(raw: string): string {
-    return raw.charAt(0).toUpperCase() + raw.slice(1);
-  }
-
   function entryStepFor(realization: ModeRealization, key: string): number {
     const outgoingLayer = visibleSource ? getLayer(visibleSource) : null;
     return resolveRealizationEntryStep({
@@ -1162,76 +1146,6 @@
     {/if}
   </div>
 
-  <!-- The reserved box never changes size. Only the relationship inside it
-       dissolves after the new realization has taken ownership of the stage. -->
-  <div class="caption-stage">
-    <Crossfade key={captionKey} fill duration={DURATION.fast}>
-      <p
-        class="caption"
-        style={captionRealization
-          ? `--el: ${captionRealization.element.accentColor}`
-          : undefined}
-      >
-        {#if buildError || modeMissing}
-          <span class="cap-err"
-            >Could not build this realization. Reload and try again.</span
-          >
-        {:else if captionRealization}
-          <span class="relationship-badge hand-relationship">
-            <span class="relationship-label">Hands</span>
-            <img src={captionRealization.element.iconPath} alt="" />
-            <span class="badge-copy">
-              <strong>{elementName(captionRealization.element.element)}</strong>
-              <small>{captionRealization.element.name}</small>
-            </span>
-          </span>
-          <i class="fas fa-arrow-right derivation-arrow" aria-hidden="true"></i>
-          <span class="sr-only">produces</span>
-          <span class="relationship-badge prop-relationship">
-            <span class="relationship-label">Props</span>
-            {#if captionRealization.propRelationship.kind === "full"}
-              <img
-                src={captionRealization.propRelationship.element.iconPath}
-                alt=""
-              />
-              <span class="badge-copy">
-                <strong
-                  >{elementName(
-                    captionRealization.propRelationship.element.element
-                  )}</strong
-                >
-                <small>{captionRealization.propRelationship.element.name}</small
-                >
-              </span>
-            {:else if captionRealization.propRelationship.kind === "direction-only"}
-              <span class="relationship-dot" aria-hidden="true"></span>
-              <span class="badge-copy">
-                <strong
-                  >{captionRealization.propRelationship.direction === "same"
-                    ? "Same"
-                    : "Opposite"}</strong
-                >
-                <small>Direction only · different rates</small>
-              </span>
-            {:else}
-              <span class="relationship-dot float-dot" aria-hidden="true"
-              ></span>
-              <span class="badge-copy">
-                <strong>Float</strong>
-                <small>No prop rotation</small>
-              </span>
-            {/if}
-          </span>
-        {:else if pair}
-          <span>
-            Blue <span class="cap-blue">{flowerLabel(pair.left)}</span> over red
-            <span class="cap-red">{flowerLabel(pair.right)}</span>
-          </span>
-        {/if}
-      </p>
-    </Crossfade>
-  </div>
-
   <div class="animation-controls">
     <AnimationPanel
       isExporting={false}
@@ -1245,8 +1159,10 @@
       showEffectsPlayback={false}
       selectedPropType={propType}
       onPropChange={onproptypechange}
+      onPropPickerRequest={onopenproppicker}
       sequence={captionRealization?.seq ?? null}
-      secondaryActions={animationActions}
+      dockTrailingAction={playbackAction}
+      showPathShape={false}
       showMotionVisibility={true}
       onActiveSectionChange={animationState.setActiveSection}
       closeRequest={animationState.closeRequest}
@@ -1275,11 +1191,10 @@
   .drill {
     height: 100%;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
     grid-template-areas:
       "modes"
       "media"
-      "caption"
       "controls"
       "action";
     min-height: 0;
@@ -1481,95 +1396,10 @@
     color: var(--theme-text-dim, oklch(0.68 0.02 270));
   }
 
-  .caption-stage {
-    grid-area: caption;
-    height: 3rem;
-    min-width: 0;
-  }
   .animation-controls {
     grid-area: controls;
     min-width: 0;
     min-height: 0;
-  }
-  .caption {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: center;
-    gap: 0.45rem;
-    font-size: clamp(var(--font-size-min, 0.875rem), 0.82rem + 0.1vw, 0.98rem);
-    line-height: 1.5;
-    text-align: center;
-    color: var(--theme-text, oklch(0.85 0.02 270));
-  }
-  .relationship-badge {
-    display: grid;
-    grid-template-columns: auto auto minmax(0, auto);
-    align-items: center;
-    gap: 0.45rem;
-    min-width: 0;
-    min-height: 3rem;
-    justify-content: center;
-    padding: 0.35rem 0.6rem;
-    border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
-    border-radius: 12px;
-    background: color-mix(in srgb, currentColor 8%, transparent);
-  }
-  .relationship-badge img {
-    width: 1.65rem;
-    height: 1.65rem;
-    object-fit: contain;
-  }
-  .badge-copy {
-    display: grid;
-    line-height: 1.05;
-    text-align: left;
-  }
-  .badge-copy small {
-    color: var(--theme-text-dim, oklch(0.68 0.015 270));
-    font-size: var(--font-size-compact, 0.75rem);
-    white-space: nowrap;
-  }
-  .relationship-label {
-    color: var(--theme-text-dim, oklch(0.62 0.015 270));
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 750;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .hand-relationship strong {
-    color: var(--hand-el, var(--theme-text, oklch(0.85 0.02 270)));
-  }
-  .hand-relationship {
-    color: var(--hand-el, var(--theme-text, oklch(0.85 0.02 270)));
-  }
-  .prop-relationship strong {
-    color: var(--prop-el, var(--theme-text, oklch(0.85 0.02 270)));
-  }
-  .prop-relationship {
-    color: var(--prop-el, var(--theme-text, oklch(0.85 0.02 270)));
-  }
-  .relationship-dot {
-    width: 1rem;
-    height: 1rem;
-    flex: 0 0 auto;
-    border-radius: 999px;
-    background: var(--prop-el, var(--theme-accent, #f4b54c));
-    box-shadow: 0 0 10px
-      color-mix(
-        in srgb,
-        var(--prop-el, var(--theme-accent, #f4b54c)) 45%,
-        transparent
-      );
-  }
-  .float-dot {
-    background: var(--theme-text-dim, #b7c0cc);
-  }
-  .derivation-arrow {
-    color: var(--theme-accent, oklch(0.64 0.03 80));
-    font-size: 0.75rem;
   }
   .select-action {
     grid-area: action;
@@ -1582,47 +1412,15 @@
   .select-action :global(.panel-btn) {
     width: 100%;
   }
-  .cap-err {
-    color: var(--semantic-error, #fb8a8a);
-    font-size: var(--font-size-min, 0.875rem);
-  }
-  .cap-blue {
-    color: var(--prop-blue, oklch(0.68 0.14 255));
-  }
-  .cap-red {
-    color: var(--prop-red, oklch(0.68 0.16 25));
-  }
-
-  @container shape-matrix-drill (max-width: 30rem) {
-    .badge-copy small {
-      display: none;
-    }
-
-    .caption {
-      gap: 0.3rem;
-    }
-
-    .relationship-badge {
-      gap: 0.3rem;
-      padding-inline: 0.35rem;
-    }
-
-    .relationship-badge img {
-      width: 1.35rem;
-      height: 1.35rem;
-    }
-  }
-
   /* Phone-height realizations keep the live animation legible. The dedicated
      rail returns as soon as the host has enough width to show it without
      reducing the hero to a thumbnail. */
   @container shape-matrix-drill (max-width: 25rem) {
     .drill {
-      grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
       grid-template-areas:
         "modes"
         "media"
-        "caption"
         "controls"
         "action";
     }
@@ -1654,10 +1452,6 @@
     }
 
     .strip-zone {
-      display: none;
-    }
-
-    .caption-stage {
       display: none;
     }
 

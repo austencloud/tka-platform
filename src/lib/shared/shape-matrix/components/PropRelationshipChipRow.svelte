@@ -71,6 +71,13 @@
     };
   }
 
+  const selectedHand = $derived.by(() => {
+    if (!selectedMode) return null;
+    return (
+      realizations.find((realization) => realization.mode === selectedMode)
+        ?.element ?? null
+    );
+  });
   const choices = $derived.by<PropResultDescription[]>(() => {
     if (!selectedMode) return [];
     return realizations
@@ -93,62 +100,92 @@
   );
 </script>
 
+<!-- One shared bridge replaces the former prop-result row and stage footer. -->
 <div
-  class="prop-result"
+  class="relationship-bridge"
   role="group"
-  aria-label="Prop timing and direction result"
+  aria-label="Selected hand relationship and resulting prop relationship"
 >
-  <span class="result-label">Prop result</span>
-  <div class="result-stage">
+  <div
+    class="bridge-side hand-side"
+    style:--bridge-accent={selectedHand?.accentColor}
+  >
+    <span class="bridge-role">Hands</span>
+    {#if selectedHand}
+      <img src={selectedHand.iconPath} alt="" />
+      <span class="bridge-copy">
+        <strong>{elementName(selectedHand.element)}</strong>
+        <small>{selectedHand.name}</small>
+      </span>
+    {:else}
+      <span class="bridge-dot" aria-hidden="true"></span>
+      <span class="bridge-copy">
+        <strong>Pick a cell</strong>
+        <small>Hand relationship</small>
+      </span>
+    {/if}
+  </div>
+
+  <i class="fas fa-arrow-right bridge-arrow" aria-hidden="true"></i>
+  <span class="sr-only">produces</span>
+
+  <div class="prop-stage">
     <Crossfade key={resultKey} fill duration={DURATION.fast}>
       {#if disabled}
-        <div class="passive-result pending-result">
-          <span class="result-dot" aria-hidden="true"></span>
-          <span>Pick a cell</span>
+        <div class="bridge-side prop-side pending-result">
+          <span class="bridge-role">Props</span>
+          <span class="bridge-dot" aria-hidden="true"></span>
+          <span class="bridge-copy">
+            <strong>Result</strong>
+            <small>Pick a cell</small>
+          </span>
         </div>
       {:else if choices.length > 1}
-        <div class="result-choices" aria-label="Exact prop phase choices">
-          {#each choices as choice (choice.key)}
-            {#if choice.mode}
-              <RelationshipChoiceChip
-                accent={choice.color}
-                icon={choice.icon}
-                code={choice.detail}
-                compactCode={choice.mode}
-                label={choice.label}
-                active={selectedChoice?.key === choice.key}
-                disabled={building}
-                ariaLabel={`${choice.detail} ${choice.label}`}
-                onpick={() => ontarget(choice.mode!)}
-              />
-            {/if}
-          {/each}
+        <div class="branching-result">
+          <span class="branch-label">Props · choose phase</span>
+          <div class="result-choices" aria-label="Exact prop phase choices">
+            {#each choices as choice (choice.key)}
+              {#if choice.mode}
+                <RelationshipChoiceChip
+                  accent={choice.color}
+                  icon={choice.icon}
+                  code={choice.detail}
+                  compactCode={choice.mode}
+                  label={choice.label}
+                  active={selectedChoice?.key === choice.key}
+                  disabled={building}
+                  ariaLabel={`Props: ${choice.detail} ${choice.label}`}
+                  onpick={() => ontarget(choice.mode!)}
+                />
+              {/if}
+            {/each}
+          </div>
         </div>
       {:else if selectedChoice}
         <output
-          class="passive-result"
-          style="--result-accent: {selectedChoice.color}"
+          class="bridge-side prop-side"
+          style="--bridge-accent: {selectedChoice.color}"
           aria-label={`Props: ${selectedChoice.detail} ${selectedChoice.label}`}
         >
+          <span class="bridge-role">Props</span>
           {#if selectedChoice.icon}
             <img src={selectedChoice.icon} alt="" />
           {:else}
-            <span class="result-dot" aria-hidden="true"></span>
+            <span class="bridge-dot" aria-hidden="true"></span>
           {/if}
-          <span class="passive-copy">
-            <strong>{selectedChoice.detail}</strong>
-            <small>{selectedChoice.label}</small>
+          <span class="bridge-copy">
+            <strong>{selectedChoice.label}</strong>
+            <small>{selectedChoice.detail}</small>
           </span>
-          <span class="derived-label">Derived</span>
         </output>
       {:else}
-        <div class="passive-result pending-result" aria-live="polite">
-          <span class="result-dot" aria-hidden="true"></span>
-          <span
-            >{building
-              ? "Finding exact prop result…"
-              : "No exact prop result"}</span
-          >
+        <div class="bridge-side prop-side pending-result" aria-live="polite">
+          <span class="bridge-role">Props</span>
+          <span class="bridge-dot" aria-hidden="true"></span>
+          <span class="bridge-copy">
+            <strong>{building ? "Finding result…" : "Unavailable"}</strong>
+            <small>Exact relationship</small>
+          </span>
         </div>
       {/if}
     </Crossfade>
@@ -156,26 +193,112 @@
 </div>
 
 <style>
-  .prop-result {
+  .relationship-bridge {
     display: grid;
-    grid-template-columns: 5.4rem minmax(0, 1fr);
-    align-items: center;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: stretch;
     gap: 0.55rem;
     min-width: 0;
   }
 
-  .result-label {
+  .bridge-side {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.55rem;
+    width: 100%;
+    min-width: 0;
+    min-height: 3.5rem;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--bridge-accent, var(--theme-text)) 36%,
+        transparent
+      );
+    border-radius: 12px;
+    background: color-mix(
+      in srgb,
+      var(--bridge-accent, var(--theme-text)) 8%,
+      transparent
+    );
+    color: var(--theme-text, #fff);
+  }
+
+  .bridge-side img {
+    width: 1.55rem;
+    height: 1.55rem;
+    flex: 0 0 auto;
+    object-fit: contain;
+  }
+
+  .bridge-role,
+  .branch-label {
     color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
-    font-size: var(--font-size-min, 0.875rem);
-    font-weight: 700;
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 750;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
     white-space: nowrap;
   }
 
-  .result-stage {
-    position: relative;
-    width: min(100%, 24rem);
+  .bridge-copy {
+    display: grid;
     min-width: 0;
-    min-height: 3.25rem;
+    line-height: 1.08;
+    text-align: left;
+  }
+
+  .bridge-copy strong,
+  .bridge-copy small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .bridge-copy strong {
+    color: color-mix(
+      in srgb,
+      var(--bridge-accent, var(--theme-text)) 80%,
+      white
+    );
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .bridge-copy small {
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
+    font-size: var(--font-size-compact, 0.75rem);
+  }
+
+  .bridge-dot {
+    width: 0.8rem;
+    height: 0.8rem;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: var(--bridge-accent, var(--theme-text-dim, #999));
+  }
+
+  .bridge-arrow {
+    align-self: center;
+    color: var(--theme-accent, #f4b54c);
+    font-size: 0.85rem;
+  }
+
+  .prop-stage {
+    position: relative;
+    min-width: 0;
+    min-height: 3.5rem;
+  }
+
+  .branching-result {
+    display: grid;
+    gap: 0.25rem;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .branch-label {
+    text-align: center;
   }
 
   .result-choices {
@@ -186,103 +309,80 @@
   }
 
   .result-choices :global(.relationship-choice) {
-    min-height: 3.25rem;
+    min-height: 3.5rem;
     padding-block: 0.3rem;
   }
 
-  .passive-result {
-    display: flex;
-    width: min(100%, 15rem);
-    min-height: 3.25rem;
-    align-items: center;
-    gap: 0.55rem;
-    padding: 0.35rem 0.65rem;
-    border: 1px solid
-      color-mix(
-        in srgb,
-        var(--result-accent, var(--theme-text)) 32%,
-        transparent
-      );
-    border-radius: 10px;
-    background: color-mix(
-      in srgb,
-      var(--result-accent, var(--theme-text)) 7%,
-      transparent
-    );
-    color: var(--theme-text, #fff);
-  }
-
-  .passive-result img {
-    width: 1.45rem;
-    height: 1.45rem;
-    flex: 0 0 auto;
-    object-fit: contain;
-  }
-
-  .passive-copy {
-    display: grid;
-    min-width: 0;
-  }
-
-  .passive-copy strong,
-  .passive-copy small {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .passive-copy strong {
-    color: color-mix(in srgb, var(--result-accent) 80%, white);
-    font-size: var(--font-size-min, 0.875rem);
-  }
-
-  .passive-copy small,
-  .derived-label {
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
-    font-size: var(--font-size-compact, 0.75rem);
-  }
-
-  .derived-label {
-    margin-left: auto;
-  }
-
-  .result-dot {
-    width: 0.7rem;
-    height: 0.7rem;
-    flex: 0 0 auto;
-    border-radius: 999px;
-    background: var(--result-accent, var(--theme-text-dim, #999));
-  }
-
   .pending-result {
-    --result-accent: var(--theme-text-dim, #999);
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
-    font-size: var(--font-size-min, 0.875rem);
+    --bridge-accent: var(--theme-text-dim, #999);
   }
 
   @container shape-matrix-drill (max-width: 30rem) {
-    .prop-result {
-      grid-template-columns: 1fr;
+    .relationship-bridge {
+      grid-template-columns: minmax(0, 0.92fr) auto minmax(0, 1.08fr);
       gap: 0.3rem;
     }
 
-    .result-stage,
-    .passive-result {
-      width: 100%;
-      max-width: none;
+    .bridge-side {
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.35rem;
+      padding-inline: 0.45rem;
+    }
+
+    .bridge-role {
+      grid-column: 1 / -1;
+      line-height: 1;
+    }
+
+    .bridge-copy small {
+      display: none;
+    }
+
+    .result-choices {
+      gap: 0.3rem;
+    }
+
+    .result-choices :global(.relationship-choice) {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      padding-inline: 0.25rem;
     }
   }
 
   @container shape-matrix-drill (min-width: 42rem) and (max-height: 24rem) {
-    .prop-result {
-      grid-template-columns: 1fr;
-      gap: 0.3rem;
+    .bridge-side {
+      min-height: 3.1rem;
+      gap: 0.35rem;
+      padding-inline: 0.45rem;
+      padding-block: 0.25rem;
     }
 
-    .result-stage,
-    .passive-result {
-      width: 100%;
-      max-width: none;
+    .prop-stage,
+    .result-choices :global(.relationship-choice) {
+      min-height: 3.1rem;
+    }
+
+    .bridge-copy small,
+    .branch-label {
+      display: none;
+    }
+
+    .bridge-role {
+      font-size: 0;
+    }
+
+    .hand-side .bridge-role::after,
+    .prop-side .bridge-role::after {
+      font-size: var(--font-size-compact, 0.75rem);
+    }
+
+    .hand-side .bridge-role::after {
+      content: "H";
+    }
+
+    .prop-side .bridge-role::after {
+      content: "P";
     }
   }
 </style>
