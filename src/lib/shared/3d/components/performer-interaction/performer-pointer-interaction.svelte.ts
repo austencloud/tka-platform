@@ -8,6 +8,7 @@ export const TOUCH_MOVE_TOLERANCE_PX = 5;
 export const MIN_TOUCH_TARGET_PX = 44;
 export const PERFORMER_CLEARANCE_METRES = 0.5;
 const GRAZING_RAY_EPSILON = 0.001;
+const TOUCH_FALLBACK_PICK_HEIGHT_METRES = 1;
 const EIGHT_DIRECTION_STEP_RADIANS = Math.PI / 4;
 const POSITION_EPSILON = 1e-10;
 
@@ -63,14 +64,14 @@ export function resolveTouchIntent(input: {
   return "tap";
 }
 
-export function intersectGroundPlane(
+export function intersectHorizontalPlane(
   origin: { x: number; y: number; z: number },
   direction: { x: number; y: number; z: number },
-  groundY: number,
+  planeY: number,
   grabOffset: StagePosition
 ): StagePosition | null {
   if (Math.abs(direction.y) < GRAZING_RAY_EPSILON) return null;
-  const distance = (groundY - origin.y) / direction.y;
+  const distance = (planeY - origin.y) / direction.y;
   if (distance < 0) return null;
   return {
     x: origin.x + direction.x * distance + grabOffset.x,
@@ -216,7 +217,13 @@ interface PressedPointer {
   start: Point2;
   startedAt: number;
   startPosition: StagePosition;
+  dragPlaneY: number;
   grabOffset: StagePosition;
+}
+
+interface PerformerHit {
+  performerIndex: number;
+  dragPlaneY: number;
 }
 
 export function createPerformerPointerInteraction(options: InteractionOptions) {
@@ -265,7 +272,7 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
     options.viewer.performerManager.performers.forEach((performer, index) => {
       const projected = new Vector3(
         performer.position.x,
-        options.groundY() + 1,
+        options.groundY() + TOUCH_FALLBACK_PICK_HEIGHT_METRES,
         performer.position.z
       ).project(camera);
       const x = rect.left + ((projected.x + 1) * rect.width) / 2;
@@ -283,21 +290,31 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
     return nearest?.index ?? null;
   }
 
-  function hitTest(event: PointerEvent): number | null {
+  function hitTest(event: PointerEvent): PerformerHit | null {
     if (!setRayFromEvent(event)) return null;
     const hit = raycaster.intersectObjects([...pickTargets], false)[0];
-    return (
-      performerIndexFromObject(hit?.object ?? null) ??
-      screenSpaceTouchFallback(event)
-    );
+    const performerIndex = performerIndexFromObject(hit?.object ?? null);
+    // A ground-height ray makes a torso grab outrun the pointer under a
+    // perspective camera. Keeping the drag plane at the picked height keeps
+    // the exact place the user grabbed attached to the cursor.
+    if (hit && performerIndex !== null)
+      return { performerIndex, dragPlaneY: hit.point.y };
+
+    const touchIndex = screenSpaceTouchFallback(event);
+    return touchIndex === null
+      ? null
+      : {
+          performerIndex: touchIndex,
+          dragPlaneY: options.groundY() + TOUCH_FALLBACK_PICK_HEIGHT_METRES,
+        };
   }
 
-  function groundTarget(): StagePosition | null {
+  function dragTarget(): StagePosition | null {
     if (!pressed) return null;
-    return intersectGroundPlane(
+    return intersectHorizontalPlane(
       raycaster.ray.origin,
       raycaster.ray.direction,
-      options.groundY(),
+      pressed.dragPlaneY,
       pressed.grabOffset
     );
   }
@@ -357,18 +374,24 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
       return;
     }
     if (options.viewer.isCameraDragging) return;
-    const performerIndex = hitTest(event);
-    if (performerIndex === null) {
+    const hit = hitTest(event);
+    if (hit === null) {
       emptyPress = {
         pointerId: event.pointerId,
         start: { x: event.clientX, y: event.clientY },
       };
       return;
     }
+    const { performerIndex } = hit;
     const performer =
       options.viewer.performerManager.performers[performerIndex];
     if (!performer) return;
-    const hit = groundTargetFromEvent(event);
+    const dragPoint = intersectHorizontalPlane(
+      raycaster.ray.origin,
+      raycaster.ray.direction,
+      hit.dragPlaneY,
+      { x: 0, z: 0 }
+    );
     pressed = {
       pointerId: event.pointerId,
       pointerType: event.pointerType,
@@ -376,8 +399,12 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
       start: { x: event.clientX, y: event.clientY },
       startedAt: performance.now(),
       startPosition: { ...performer.position },
-      grabOffset: hit
-        ? { x: performer.position.x - hit.x, z: performer.position.z - hit.z }
+      dragPlaneY: hit.dragPlaneY,
+      grabOffset: dragPoint
+        ? {
+            x: performer.position.x - dragPoint.x,
+            z: performer.position.z - dragPoint.z,
+          }
         : { x: 0, z: 0 },
     };
     options.canvas.setPointerCapture(event.pointerId);
@@ -401,16 +428,6 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
         }
       }, TOUCH_HOLD_MS);
     }
-  }
-
-  function groundTargetFromEvent(event: PointerEvent): StagePosition | null {
-    if (!setRayFromEvent(event)) return null;
-    return intersectGroundPlane(
-      raycaster.ray.origin,
-      raycaster.ray.direction,
-      options.groundY(),
-      { x: 0, z: 0 }
-    );
   }
 
   function onPointerMove(event: PointerEvent): void {
@@ -442,7 +459,7 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
       }
       if (draggingIndex !== null) {
         event.preventDefault();
-        const target = groundTarget();
+        const target = dragTarget();
         if (target && pressed)
           options.viewer.performerManager.handleDrag(
             draggingIndex,
@@ -457,7 +474,7 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
       return;
     }
     if (options.viewer.isCameraDragging || activePointers.size > 0) return;
-    const next = hitTest(event);
+    const next = hitTest(event)?.performerIndex ?? null;
     if (next !== hoveredIndex) {
       hoveredIndex = next;
       options.canvas.style.cursor = next === null ? "" : "grab";
