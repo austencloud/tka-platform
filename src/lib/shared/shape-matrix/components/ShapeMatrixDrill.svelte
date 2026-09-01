@@ -1019,6 +1019,7 @@
             resumeWhenPlaybackAllowed: true,
             initialStep: layer.initialStep,
             propElementalType: propElementalTypeOf(layer.realization),
+            glyphFrame: "stage",
             onReady: playerCallbacks[source].onReady,
             onCanvasInitialized: playerCallbacks[source].onCanvasInitialized,
             onStepChange: playerCallbacks[source].onStepChange,
@@ -1076,7 +1077,7 @@
 
   <div class="media-stage">
     <div class="hero-stage">
-      <div class="hero-square">
+      <div class="hero-frame">
         {#if pair && heroPaths}
           <!-- The still mandala is a cold-load floor only. Once the canonical
                animation canvas has painted, its own trail is the sole path
@@ -1164,9 +1165,9 @@
           >
         {:else if captionRealization}
           <span class="relationship-badge hand-relationship">
+            <span class="relationship-label">Hands</span>
             <img src={captionRealization.element.iconPath} alt="" />
             <span class="badge-copy">
-              <span class="relationship-label">Hands</span>
               <strong>{elementName(captionRealization.element.element)}</strong>
               <small>{captionRealization.element.name}</small>
             </span>
@@ -1174,13 +1175,13 @@
           <i class="fas fa-arrow-right derivation-arrow" aria-hidden="true"></i>
           <span class="sr-only">produces</span>
           <span class="relationship-badge prop-relationship">
+            <span class="relationship-label">Props</span>
             {#if captionRealization.propRelationship.kind === "full"}
               <img
                 src={captionRealization.propRelationship.element.iconPath}
                 alt=""
               />
               <span class="badge-copy">
-                <span class="relationship-label">Props</span>
                 <strong
                   >{elementName(
                     captionRealization.propRelationship.element.element
@@ -1192,7 +1193,6 @@
             {:else if captionRealization.propRelationship.kind === "direction-only"}
               <span class="relationship-dot" aria-hidden="true"></span>
               <span class="badge-copy">
-                <span class="relationship-label">Props</span>
                 <strong
                   >{captionRealization.propRelationship.direction === "same"
                     ? "Same"
@@ -1204,7 +1204,6 @@
               <span class="relationship-dot float-dot" aria-hidden="true"
               ></span>
               <span class="badge-copy">
-                <span class="relationship-label">Props</span>
                 <strong>Float</strong>
                 <small>No prop rotation</small>
               </span>
@@ -1327,12 +1326,15 @@
     text-align: center;
   }
 
-  /* The cold-load floor and live player fill the same square, so their
-     coordinate frames coincide during the readiness handoff. */
-  .hero-square {
+  /* The stage frame owns all available geometry. MandalaHeroLayer and the
+     animation renderer independently keep their motion planes square while
+     the word and four corner annotations can use the rectangular edges. */
+  .hero-frame {
     position: relative;
-    aspect-ratio: 1 / 1;
-    height: min(100cqh, 100cqw, 72rem);
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
   }
 
   .player-layer {
@@ -1460,7 +1462,8 @@
     color: var(--theme-text, oklch(0.85 0.02 270));
   }
   .relationship-badge {
-    display: inline-flex;
+    display: grid;
+    grid-template-columns: auto auto minmax(0, auto);
     align-items: center;
     gap: 0.45rem;
     min-width: 0;
@@ -1489,8 +1492,9 @@
   .relationship-label {
     color: var(--theme-text-dim, oklch(0.62 0.015 270));
     font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 600;
-    letter-spacing: 0.015em;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
   .hand-relationship strong {
     color: var(--hand-el, var(--theme-text, oklch(0.85 0.02 270)));
