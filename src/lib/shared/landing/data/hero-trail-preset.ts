@@ -14,10 +14,10 @@
  *
  * - fadeDurationMs 2500 → 3200: the trail hangs around longer, so a visitor
  *   who glances mid-loop still catches the shape.
- * - glowBlur 3 → 9: a much brighter halo — needed to read at hero scale,
+ * - glowBlur 2.5 → 8: a brighter halo — enough to read at hero scale,
  *   where the in-app default reads as barely-there.
  * - tailLength 20 → 36: more of the mandala arc stays visible at once.
- * - lineWidth 5 → 6: a touch thicker so the line holds up against the glow.
+ * - lineWidth 4 → 5: one step above the app default so it holds at hero scale.
  * - minOpacity 0.25 → 0.35: the tail's fading tip stays legible longer.
  *
  * These are a starting point, not final. Acceptance is "clearly visible
@@ -51,8 +51,8 @@ export const HERO_TRAIL_PRESET: TrailSettings = {
   mode: TrailMode.FADE,
   effect: TrailEffect.GLOW,
   fadeDurationMs: 3200,
-  glowBlur: 9,
+  glowBlur: 8,
   tailLength: 36,
-  lineWidth: 6,
+  lineWidth: DEFAULT_TRAIL_SETTINGS.lineWidth + 1,
   minOpacity: 0.35,
 };

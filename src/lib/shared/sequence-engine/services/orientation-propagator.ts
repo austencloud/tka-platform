@@ -32,9 +32,9 @@ export function calculateEndOrientation(
   });
 }
 
-export function propagateForColor(
+export function propagateForHand(
   steps: SequenceStep[],
-  color: "blue" | "red",
+  hand: "left" | "right",
   initialOrientation: Orientation
 ): SequenceStep[] {
   const updatedSteps = [...steps];
@@ -44,7 +44,7 @@ export function propagateForColor(
     const step = updatedSteps[i];
     if (!step) continue;
 
-    const motion = color === "blue" ? step.blueMotion : step.redMotion;
+    const motion = hand === "left" ? step.leftMotion : step.rightMotion;
     if (!motion) continue;
 
     const newEndOrientation = calculateEndOrientation(
@@ -64,8 +64,8 @@ export function propagateForColor(
 
     updatedSteps[i] = {
       ...step,
-      blueMotion: color === "blue" ? updatedMotion : step.blueMotion,
-      redMotion: color === "red" ? updatedMotion : step.redMotion,
+      leftMotion: hand === "left" ? updatedMotion : step.leftMotion,
+      rightMotion: hand === "right" ? updatedMotion : step.rightMotion,
     };
 
     previousEndOrientation = newEndOrientation;
@@ -86,11 +86,11 @@ export function recalculateAll(result: SequenceResult): SequenceResult {
 
   let updatedSteps = [...result.steps];
 
-  const blueStartOrientation = (startPosition.blueMotion.endOrientation || "in") as Orientation;
-  updatedSteps = propagateForColor(updatedSteps, "blue", blueStartOrientation);
+  const leftStartOrientation = (startPosition.leftMotion.endOrientation || "in") as Orientation;
+  updatedSteps = propagateForHand(updatedSteps, "left", leftStartOrientation);
 
-  const redStartOrientation = (startPosition.redMotion.endOrientation || "in") as Orientation;
-  updatedSteps = propagateForColor(updatedSteps, "red", redStartOrientation);
+  const rightStartOrientation = (startPosition.rightMotion.endOrientation || "in") as Orientation;
+  updatedSteps = propagateForHand(updatedSteps, "right", rightStartOrientation);
 
   return {
     ...result,

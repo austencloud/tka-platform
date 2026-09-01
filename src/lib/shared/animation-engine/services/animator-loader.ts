@@ -10,10 +10,10 @@ import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/pl
 import {
   generateGridSvg,
   generatePropSvg,
-  generateBluePropSvg,
-  generateRedPropSvg,
-  generateBlueStaffSvg,
-  generateRedStaffSvg,
+  generateLeftPropSvg,
+  generateRightPropSvg,
+  generateLeftStaffSvg,
+  generateRightStaffSvg,
 } from "$lib/shared/animation-engine/services/svg-generator";
 import type { ISVGGenerator } from "$lib/shared/animation-engine/services/ISVGGenerator";
 import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/get-sequence-animation-orchestrator";
@@ -30,10 +30,10 @@ export function loadAnimatorServices(): AnimatorServiceLoadResult {
     const svgGeneratorAdapter: ISVGGenerator = {
       generateGridSvg,
       generatePropSvg,
-      generateBluePropSvg,
-      generateRedPropSvg,
-      generateBlueStaffSvg,
-      generateRedStaffSvg,
+      generateLeftPropSvg,
+      generateRightPropSvg,
+      generateLeftStaffSvg,
+      generateRightStaffSvg,
     };
     const services: AnimatorServices = {
       svgGenerator: svgGeneratorAdapter,

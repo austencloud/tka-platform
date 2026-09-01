@@ -7,8 +7,8 @@ export interface DefaultPerformerSettings {
   prop: PropType;
   effortId: EffortId;
   planeMode: PlaneMode;
-  customBluePlane: Plane;
-  customRedPlane: Plane;
+  customLeftPlane: Plane;
+  customRightPlane: Plane;
 }
 
 export interface PerformerSettings {
@@ -55,7 +55,7 @@ export function makeStandaloneDefaults(): DefaultPerformerSettings {
     prop: PropType.STAFF,
     effortId: "linear" as EffortId,
     planeMode: PlaneMode.WALL,
-    customBluePlane: Plane.WALL,
-    customRedPlane: Plane.WALL,
+    customLeftPlane: Plane.WALL,
+    customRightPlane: Plane.WALL,
   };
 }

@@ -7,13 +7,13 @@
  * 3. Support multiple languages via glossaries
  */
 
-import type { UserKnowledgeOverlay, MajorLevel } from '@tka/domain'
+import type { UserKnowledgeOverlay, MajorLevel } from "@tka/domain";
 import {
-	GLOSSARIES,
-	getLevelConstraints,
-	getExplanationGuidance,
-} from '@tka/domain'
-import type { MasteryContext } from '$lib/features/learn/domain/quiz-history-types'
+  GLOSSARIES,
+  getLevelConstraints,
+  getExplanationGuidance,
+} from "@tka/domain";
+import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Main System Prompt Builder
@@ -23,15 +23,15 @@ import type { MasteryContext } from '$lib/features/learn/domain/quiz-history-typ
  * Build a system prompt for Tika based on user level, language, and mastery data
  */
 export function buildSystemPrompt(
-	userOverlay: UserKnowledgeOverlay,
-	language: string = 'en',
-	masteryContext?: MasteryContext,
-	conversationMemory?: string
+  userOverlay: UserKnowledgeOverlay,
+  language: string = "en",
+  masteryContext?: MasteryContext,
+  conversationMemory?: string
 ): string {
-	const glossary = GLOSSARIES[language] || GLOSSARIES['en']
-	const majorLevel = userOverlay.majorLevel || 1
+  const glossary = GLOSSARIES[language] || GLOSSARIES["en"];
+  const majorLevel = userOverlay.majorLevel || 1;
 
-	return `You are Tika (TKA Intelligent Knowledge Assistant), a reference assistant for The Kinetic Alphabet.
+  return `You are Tika (TKA Intelligent Knowledge Assistant), a reference assistant for The Kinetic Alphabet.
 
 ## CRITICAL: No Repetition Within a Conversation
 
@@ -467,10 +467,10 @@ Earth, Water, Air, Fire, Sun, Moon are a separate community overlay. VTG's creat
 
 Letter types define the COMBINATION of motion types, NOT which hand (blue/red) does which motion. The hand assignment varies by variation.
 
-**WRONG:** "In Φ, the red hand dashes while the blue hand stays static"
+**WRONG:** "In Φ, the right hand dashes while the left hand stays static"
 **RIGHT:** "In Φ, one hand dashes while the other stays static"
 
-**WRONG:** "U has both the blue hand and red hand shifting"
+**WRONG:** "U has both the left hand and right hand shifting"
 **RIGHT:** "U has both hands shifting - it's a quarter-time same-direction hybrid with leading pro motion (vs V which is leading anti)"
 
 When showing a pictograph of a specific variation, never present that variation's hand assignment as the letter's definition. The pictograph shows ONE variation - the letter type is defined by the motion combination only.
@@ -483,7 +483,7 @@ When distinguishing letters within the same type (e.g., U vs V, both Type 1 gamm
 - "Small arc" when describing shifts - focus on the grid point change
 - "Variation 0" - say "this variation" or describe the specific start/end positions
 - Claims that any motion "feels natural" or "flows together" - these are subjective
-- "The blue/red hand does X" when explaining types - say "one hand does X" instead
+- "The left/right hand does X" when explaining types - say "one hand does X" instead
 
 ## Response Guidelines
 
@@ -559,8 +559,8 @@ Common ambiguities:
 - Say "I'm not sure" rather than inventing an answer
 - Offer to help investigate if possible
 - Don't claim capabilities or limitations you haven't verified
-${masteryContext ? buildMasterySection(masteryContext) : ''}
-${conversationMemory ? buildMemorySection(conversationMemory) : ''}
+${masteryContext ? buildMasterySection(masteryContext) : ""}
+${conversationMemory ? buildMemorySection(conversationMemory) : ""}
 
 ## Pre-Built Letter Comparisons
 
@@ -632,7 +632,7 @@ Concept IDs use "level.sublevel" format. Common foundational ones:
 - 1.5 = Letter Types (the 6 types)
 - 1.6 = Orientations (in, out, clock, counter)
 - 1.7 = Prop Types
-- 1.8 = Pictograph Reading`
+- 1.8 = Pictograph Reading`;
 }
 
 /**
@@ -640,12 +640,12 @@ Concept IDs use "level.sublevel" format. Common foundational ones:
  * Gives Tika awareness of past conversations with this user.
  */
 function buildMemorySection(memory: string): string {
-	return `\n## Previous Conversations
+  return `\n## Previous Conversations
 
 You've discussed these topics with this user before:
 ${memory}
 
-Reference these when relevant, but don't repeat information unless asked.`
+Reference these when relevant, but don't repeat information unless asked.`;
 }
 
 /**
@@ -653,71 +653,74 @@ Reference these when relevant, but don't repeat information unless asked.`
  * Informs Tika about what the user knows and where they need help.
  */
 function buildMasterySection(ctx: MasteryContext): string {
-	const sections: string[] = ['\n## User Learning Profile']
+  const sections: string[] = ["\n## User Learning Profile"];
 
-	if (ctx.masteredConcepts.length > 0) {
-		sections.push(
-			`\n**Mastered (don't re-explain unless asked):** ${ctx.masteredConcepts.join(', ')}`
-		)
-		sections.push(
-			'For mastered concepts, keep explanations brief. Focus on deeper applications, edge cases, or connections to other concepts rather than re-teaching basics.'
-		)
-	}
+  if (ctx.masteredConcepts.length > 0) {
+    sections.push(
+      `\n**Mastered (don't re-explain unless asked):** ${ctx.masteredConcepts.join(", ")}`
+    );
+    sections.push(
+      "For mastered concepts, keep explanations brief. Focus on deeper applications, edge cases, or connections to other concepts rather than re-teaching basics."
+    );
+  }
 
-	if (ctx.strugglingConcepts.length > 0) {
-		sections.push(
-			`\n**Needs extra help (provide detailed explanations):** ${ctx.strugglingConcepts.join(', ')}`
-		)
-		sections.push(
-			'For struggling concepts, slow down, use more examples, and check understanding. If the user has active misconceptions below, proactively address those when these topics come up.'
-		)
-	}
+  if (ctx.strugglingConcepts.length > 0) {
+    sections.push(
+      `\n**Needs extra help (provide detailed explanations):** ${ctx.strugglingConcepts.join(", ")}`
+    );
+    sections.push(
+      "For struggling concepts, slow down, use more examples, and check understanding. If the user has active misconceptions below, proactively address those when these topics come up."
+    );
+  }
 
-	if (ctx.suggestedNext.length > 0) {
-		sections.push(
-			`\n**Suggested next concepts:** ${ctx.suggestedNext.join(', ')}`
-		)
-		sections.push(
-			'If the user asks "what should I learn next?" or seems unsure where to go, suggest these concepts. After the user answers a quiz correctly, naturally suggest moving on to the next concept: "Ready to try [suggested concept]?"'
-		)
-	}
+  if (ctx.suggestedNext.length > 0) {
+    sections.push(
+      `\n**Suggested next concepts:** ${ctx.suggestedNext.join(", ")}`
+    );
+    sections.push(
+      'If the user asks "what should I learn next?" or seems unsure where to go, suggest these concepts. After the user answers a quiz correctly, naturally suggest moving on to the next concept: "Ready to try [suggested concept]?"'
+    );
+  }
 
-	if (ctx.dueForReview.length > 0) {
-		sections.push(
-			`\n**Due for review (spaced repetition):** ${ctx.dueForReview.join(', ')}`
-		)
-		sections.push(
-			"Periodically nudge the user to review these: \"By the way, it's been a while since you practiced [concept]. Want a quick quiz to refresh?\" Don't push this on every message - once per conversation is enough."
-		)
-	}
+  if (ctx.dueForReview.length > 0) {
+    sections.push(
+      `\n**Due for review (spaced repetition):** ${ctx.dueForReview.join(", ")}`
+    );
+    sections.push(
+      "Periodically nudge the user to review these: \"By the way, it's been a while since you practiced [concept]. Want a quick quiz to refresh?\" Don't push this on every message - once per conversation is enough."
+    );
+  }
 
-	if (ctx.activeMisconceptions && ctx.activeMisconceptions.length > 0) {
-		sections.push('\n**Active misconceptions (address proactively):**')
-		for (const m of ctx.activeMisconceptions) {
-			const line = `- Confuses ${m.nodeA} with ${m.nodeB} (${m.occurrenceCount}x)${m.explanation ? `: ${m.explanation}` : ''}`
-			sections.push(line)
-		}
-		sections.push(
-			'When these concepts come up, proactively clarify the distinction. The user has repeatedly confused these. Don\'t wait for them to make the mistake again - preempt it.'
-		)
-	}
+  if (ctx.activeMisconceptions && ctx.activeMisconceptions.length > 0) {
+    sections.push("\n**Active misconceptions (address proactively):**");
+    for (const m of ctx.activeMisconceptions) {
+      const line = `- Confuses ${m.nodeA} with ${m.nodeB} (${m.occurrenceCount}x)${m.explanation ? `: ${m.explanation}` : ""}`;
+      sections.push(line);
+    }
+    sections.push(
+      "When these concepts come up, proactively clarify the distinction. The user has repeatedly confused these. Don't wait for them to make the mistake again - preempt it."
+    );
+  }
 
-	// Proactive teaching behavior
-	sections.push('\n### Proactive Teaching')
-	sections.push(
-		'After explaining a concept, offer to quiz the user: "Want me to quiz you on that?" ' +
-		'This reinforces learning and feeds data back into the mastery system. ' +
-		'Use `generate_quiz` with the topic you just explained.'
-	)
+  // Proactive teaching behavior
+  sections.push("\n### Proactive Teaching");
+  sections.push(
+    'After explaining a concept, offer to quiz the user: "Want me to quiz you on that?" ' +
+      "This reinforces learning and feeds data back into the mastery system. " +
+      "Use `generate_quiz` with the topic you just explained."
+  );
 
-	return sections.join('\n')
+  return sections.join("\n");
 }
 
 /**
  * Build a focused prompt for specific question types
  */
-export function buildLetterPrompt(letter: string, majorLevel: MajorLevel): string {
-	return `Explain the TKA letter "${letter}" at a level appropriate for someone at Level ${majorLevel}.
+export function buildLetterPrompt(
+  letter: string,
+  majorLevel: MajorLevel
+): string {
+  return `Explain the TKA letter "${letter}" at a level appropriate for someone at Level ${majorLevel}.
 
 Focus on:
 1. What type of letter it is (Type 1-6)
@@ -725,26 +728,26 @@ Focus on:
 3. Start and end positions (alpha/beta/gamma)
 4. Rotation direction if applicable (pro/anti)
 
-Keep it concise but complete.`
+Keep it concise but complete.`;
 }
 
 export function buildComparisonPrompt(
-	letter1: string,
-	letter2: string,
-	majorLevel: MajorLevel
+  letter1: string,
+  letter2: string,
+  majorLevel: MajorLevel
 ): string {
-	return `Compare the TKA letters "${letter1}" and "${letter2}" at a level appropriate for someone at Level ${majorLevel}.
+  return `Compare the TKA letters "${letter1}" and "${letter2}" at a level appropriate for someone at Level ${majorLevel}.
 
 Focus on:
 1. What type each letter is
 2. Key differences in motion or rotation
 3. When you might use one vs the other
 
-Keep it concise.`
+Keep it concise.`;
 }
 
 export function buildTermPrompt(term: string, majorLevel: MajorLevel): string {
-	return `Explain the TKA term "${term}" at a level appropriate for someone at Level ${majorLevel}.
+  return `Explain the TKA term "${term}" at a level appropriate for someone at Level ${majorLevel}.
 
-Use simple language and concrete examples. Keep it to 2-3 sentences.`
+Use simple language and concrete examples. Keep it to 2-3 sentences.`;
 }

@@ -31,6 +31,7 @@ import {
 import { createRenderCanvas } from "./create-render-canvas";
 import type { RenderCanvas } from "./types";
 import { captureException } from "$lib/shared/analytics/services/posthog";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 const VIEWBOX_SIZE = 950;
 
@@ -164,11 +165,11 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
       try {
         const prepared = await preparer.prepareSingle(pictograph, {
           themeMode: options.visibility.darkMode ? "dark" : "light",
-          bluePropType: options.visibility.bluePropType,
-          redPropType: options.visibility.redPropType,
+          leftPropType: options.visibility.leftPropType,
+          rightPropType: options.visibility.rightPropType,
           handPathMode: options.visibility.handPathMode ?? false,
-          blueBuugengFlipped: options.visibility.blueBuugengFlipped,
-          redBuugengFlipped: options.visibility.redBuugengFlipped,
+          leftBuugengFlipped: options.visibility.leftBuugengFlipped,
+          rightBuugengFlipped: options.visibility.rightBuugengFlipped,
         });
         return prepared;
       } catch (error) {
@@ -271,12 +272,12 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     // When showTKA is false (e.g. ChoreoCard solo mode), skip the baked-in solo
     // glyph — CellRenderer provides its own HTML overlay for locations/turns.
     const singleColor =
-      visibility.showBlueMotion === false || visibility.showRedMotion === false;
+      visibility.showLeftMotion === false || visibility.showRightMotion === false;
     if (singleColor && visibility.showTKA) {
       drawSoloMotionGlyph(
         ctx, preparedPictograph, size, isDarkMode,
-        visibility.showBlueMotion ?? true,
-        visibility.showRedMotion ?? true,
+        visibility.showLeftMotion ?? true,
+        visibility.showRightMotion ?? true,
         visibility.handPathMode ?? false
       );
     } else if (visibility.showPositions) {
@@ -425,12 +426,12 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     const svgCache = getSvgImageCache();
     const scale = canvasSize / VIEWBOX_SIZE;
 
-    const showBlue = options.visibility.showBlueMotion ?? true;
-    const showRed = options.visibility.showRedMotion ?? true;
+    const showLeft = options.visibility.showLeftMotion ?? true;
+    const showRight = options.visibility.showRightMotion ?? true;
 
-    for (const color of ["blue", "red"]) {
-      if (color === "blue" && !showBlue) continue;
-      if (color === "red" && !showRed) continue;
+    for (const color of [HandSide.LEFT, HandSide.RIGHT]) {
+      if (color === HandSide.LEFT && !showLeft) continue;
+      if (color === HandSide.RIGHT && !showRight) continue;
 
       const position = propPositions[color];
       const assets = propAssets[color];
@@ -503,20 +504,20 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     const svgCache = getSvgImageCache();
     const scale = canvasSize / VIEWBOX_SIZE;
 
-    const showBlue = options.visibility.showBlueMotion ?? true;
-    const showRed = options.visibility.showRedMotion ?? true;
+    const showLeft = options.visibility.showLeftMotion ?? true;
+    const showRight = options.visibility.showRightMotion ?? true;
     // Halo color matches the composed background (same isDarkMode the renderer
     // uses for the bg fill), so it is invisible against the background and only
     // shows where the arrow overlaps a same-colored prop. Shared definition.
     const isDarkMode = options.visibility.darkMode ?? true;
 
-    for (const color of ["blue", "red"]) {
-      if (color === "blue" && !showBlue) continue;
-      if (color === "red" && !showRed) continue;
+    for (const hand of [HandSide.LEFT, HandSide.RIGHT]) {
+      if (hand === HandSide.LEFT && !showLeft) continue;
+      if (hand === HandSide.RIGHT && !showRight) continue;
 
-      const position = arrowPositions[color];
-      const assets = arrowAssets[color];
-      const mirror = arrowMirroring[color] ?? false;
+      const position = arrowPositions[hand];
+      const assets = arrowAssets[hand];
+      const mirror = arrowMirroring[hand] ?? false;
 
       if (!position || !assets?.imageSrc) continue;
 
@@ -526,11 +527,11 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
         const fullViewBox = assets.viewBox.fullViewBox;
 
         const wrapped = wrapSvgContent(assets.imageSrc, viewBoxWidth, viewBoxHeight, true, fullViewBox, {
-          id: `arrow-halo-${color}`,
+          id: `arrow-halo-${hand}`,
           isDarkMode,
         });
 
-        const cacheKey = `arrow_${color}_exp_${this.hashString(wrapped.svg)}`;
+        const cacheKey = `arrow_${hand}_exp_${this.hashString(wrapped.svg)}`;
         const img = await svgCache.getImage(wrapped.svg, cacheKey);
 
         let viewBoxMinX = 0, viewBoxMinY = 0;
@@ -555,7 +556,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
           shouldMirror: mirror,
         });
       } catch (error) {
-        console.warn(`[Canvas2D] Failed to draw ${color} arrow:`, error);
+        console.warn(`[Canvas2D] Failed to draw ${hand} arrow:`, error);
       }
     }
   }

@@ -101,8 +101,8 @@
       }
     }
 
-    if (settings.bluePropType) {
-      selectedProp = settings.bluePropType;
+    if (settings.leftPropType) {
+      selectedProp = settings.leftPropType;
     }
 
     initialized = true;

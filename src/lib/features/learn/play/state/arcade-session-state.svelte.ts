@@ -19,6 +19,11 @@ import type {
 import { roundIsCorrect } from "../domain/arcade-types";
 import { computeGrade, scoreAnswer } from "../domain/scoring";
 import { computeStars } from "../domain/progression";
+import {
+  trackQuizAnswer,
+  trackQuizCompleted,
+  trackQuizStarted,
+} from "../../services/learn-events";
 
 export type ArcadePhase =
   | { name: "hub" }
@@ -115,6 +120,12 @@ export function createArcadeSession() {
     timeRemaining = 0;
     startedAt = Date.now();
     phase = { name: "playing", game, challenge };
+    trackQuizStarted({
+      quizId: game.id,
+      challengeNumber: challenge.challengeNumber,
+      mode: challenge.mode.kind,
+      quizType: game.quizType ? String(game.quizType) : undefined,
+    });
     if (challenge.mode.kind === "countdown") {
       startClock(challenge.mode.seconds);
     }
@@ -186,6 +197,13 @@ export function createArcadeSession() {
     }
     score += points;
     questionIndex += 1;
+    trackQuizAnswer({
+      quizId: game.id,
+      challengeNumber: challenge.challengeNumber,
+      questionNumber: questionIndex,
+      correct: isCorrect,
+      roundKind: event.kind,
+    });
 
     const mode = challenge.mode;
     if (
@@ -240,6 +258,15 @@ export function createArcadeSession() {
     };
 
     phase = { name: "results", game, challenge, result };
+    trackQuizCompleted({
+      quizId: game.id,
+      challengeNumber: challenge.challengeNumber,
+      score,
+      correctCount,
+      totalCount,
+      accuracyPercentage,
+      durationSeconds,
+    });
   }
 
   function quitToHub() {

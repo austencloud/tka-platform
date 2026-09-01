@@ -75,18 +75,18 @@ const BLUE_COLOR = "#3575E2";
 const RED_COLOR = "#ED1C24";
 
 export interface WorkerPropImages {
-  blue: ImageBitmap;
-  red: ImageBitmap;
+  left: ImageBitmap;
+  right: ImageBitmap;
 }
 
 export interface WorkerEffectRenderer {
   renderFrame(
     ctx: OffscreenCanvasRenderingContext2D,
     canvasSize: number,
-    blue: FramePropState | null,
-    red: FramePropState | null,
-    blueViewBox: { width: number; height: number },
-    redViewBox: { width: number; height: number },
+    left: FramePropState | null,
+    right: FramePropState | null,
+    leftViewBox: { width: number; height: number },
+    rightViewBox: { width: number; height: number },
     frameIndex: number,
     dt: number,
     stepIndex: number,
@@ -159,26 +159,26 @@ function buildWorkerPropSprite(
 }
 
 interface FourTipPositions {
-  bluePosA: Vec2 | null;
-  bluePosB: Vec2 | null;
-  redPosA: Vec2 | null;
-  redPosB: Vec2 | null;
+  leftPosA: Vec2 | null;
+  leftPosB: Vec2 | null;
+  rightPosA: Vec2 | null;
+  rightPosB: Vec2 | null;
 }
 
 function computeFourTips(
   canvasSize: number,
-  blue: FramePropState | null,
-  red: FramePropState | null,
-  blueVB: { width: number; height: number },
-  redVB: { width: number; height: number }
+  left: FramePropState | null,
+  right: FramePropState | null,
+  leftVB: { width: number; height: number },
+  rightVB: { width: number; height: number }
 ): FourTipPositions {
-  const b = computeTips(canvasSize, blue, blueVB);
-  const r = computeTips(canvasSize, red, redVB);
+  const b = computeTips(canvasSize, left, leftVB);
+  const r = computeTips(canvasSize, right, rightVB);
   return {
-    bluePosA: b?.a ?? null,
-    bluePosB: b?.b ?? null,
-    redPosA: r?.a ?? null,
-    redPosB: r?.b ?? null,
+    leftPosA: b?.a ?? null,
+    leftPosB: b?.b ?? null,
+    rightPosA: r?.a ?? null,
+    rightPosB: r?.b ?? null,
   };
 }
 
@@ -189,33 +189,33 @@ function computeFourTips(
  */
 function fourTipsToEmitters(four: FourTipPositions): EmitterTip[] {
   const out: EmitterTip[] = [];
-  if (four.bluePosA)
+  if (four.leftPosA)
     out.push({
-      ...four.bluePosA,
+      ...four.leftPosA,
       propIndex: 0,
       tipIndex: 0,
       end: "A",
       color: BLUE_COLOR,
     });
-  if (four.bluePosB)
+  if (four.leftPosB)
     out.push({
-      ...four.bluePosB,
+      ...four.leftPosB,
       propIndex: 0,
       tipIndex: 1,
       end: "B",
       color: BLUE_COLOR,
     });
-  if (four.redPosA)
+  if (four.rightPosA)
     out.push({
-      ...four.redPosA,
+      ...four.rightPosA,
       propIndex: 1,
       tipIndex: 0,
       end: "A",
       color: RED_COLOR,
     });
-  if (four.redPosB)
+  if (four.rightPosB)
     out.push({
-      ...four.redPosB,
+      ...four.rightPosB,
       propIndex: 1,
       tipIndex: 1,
       end: "B",
@@ -227,52 +227,52 @@ function fourTipsToEmitters(four: FourTipPositions): EmitterTip[] {
 
 function createTrailsRenderer(): WorkerEffectRenderer {
   const renderer = new Canvas2DTrailRenderer();
-  const bluePoints: TrailPoint[] = [];
-  const redPoints: TrailPoint[] = [];
+  const leftPoints: TrailPoint[] = [];
+  const rightPoints: TrailPoint[] = [];
   const settings: TrailSettings = {
     ...DEFAULT_TRAIL_SETTINGS,
     mode: TrailMode.FADE,
     effect: TrailEffect.GLOW,
-    blueColor: BLUE_COLOR,
-    redColor: RED_COLOR,
+    leftColor: BLUE_COLOR,
+    rightColor: RED_COLOR,
   };
 
   return {
-    renderFrame(ctx, canvasSize, blue, red, blueVB, redVB, frameIndex, dt) {
+    renderFrame(ctx, canvasSize, left, right, leftVB, rightVB, frameIndex, dt) {
       const timestamp = frameIndex * dt * 1000;
-      const tips = computeFourTips(canvasSize, blue, red, blueVB, redVB);
+      const tips = computeFourTips(canvasSize, left, right, leftVB, rightVB);
 
-      if (tips.bluePosA) {
-        bluePoints.push({
-          x: tips.bluePosA.x,
-          y: tips.bluePosA.y,
+      if (tips.leftPosA) {
+        leftPoints.push({
+          x: tips.leftPosA.x,
+          y: tips.leftPosA.y,
           timestamp,
           propIndex: 0,
           tipIndex: 0,
         });
       }
-      if (tips.bluePosB) {
-        bluePoints.push({
-          x: tips.bluePosB.x,
-          y: tips.bluePosB.y,
+      if (tips.leftPosB) {
+        leftPoints.push({
+          x: tips.leftPosB.x,
+          y: tips.leftPosB.y,
           timestamp,
           propIndex: 0,
           tipIndex: 1,
         });
       }
-      if (tips.redPosA) {
-        redPoints.push({
-          x: tips.redPosA.x,
-          y: tips.redPosA.y,
+      if (tips.rightPosA) {
+        rightPoints.push({
+          x: tips.rightPosA.x,
+          y: tips.rightPosA.y,
           timestamp,
           propIndex: 1,
           tipIndex: 0,
         });
       }
-      if (tips.redPosB) {
-        redPoints.push({
-          x: tips.redPosB.x,
-          y: tips.redPosB.y,
+      if (tips.rightPosB) {
+        rightPoints.push({
+          x: tips.rightPosB.x,
+          y: tips.rightPosB.y,
           timestamp,
           propIndex: 1,
           tipIndex: 1,
@@ -280,25 +280,25 @@ function createTrailsRenderer(): WorkerEffectRenderer {
       }
 
       const maxPoints = settings.maxPoints;
-      if (bluePoints.length > maxPoints)
-        bluePoints.splice(0, bluePoints.length - maxPoints);
-      if (redPoints.length > maxPoints)
-        redPoints.splice(0, redPoints.length - maxPoints);
+      if (leftPoints.length > maxPoints)
+        leftPoints.splice(0, leftPoints.length - maxPoints);
+      if (rightPoints.length > maxPoints)
+        rightPoints.splice(0, rightPoints.length - maxPoints);
 
       renderer.renderTrails(
         ctx as unknown as CanvasRenderingContext2D,
-        bluePoints,
-        redPoints,
+        leftPoints,
+        rightPoints,
         settings,
         timestamp,
-        !!blue,
-        !!red,
+        !!left,
+        !!right,
         canvasSize
       );
     },
     dispose() {
-      bluePoints.length = 0;
-      redPoints.length = 0;
+      leftPoints.length = 0;
+      rightPoints.length = 0;
     },
   };
 }
@@ -356,9 +356,9 @@ function createQuadTipEffect(
   const { r, p } = renderers[effectType]();
 
   return {
-    renderFrame(ctx, cs, blue, red, blueVB, redVB, _fi, dt) {
+    renderFrame(ctx, cs, left, right, leftVB, rightVB, _fi, dt) {
       const tips: EmitterTip[] = fourTipsToEmitters(
-        computeFourTips(cs, blue, red, blueVB, redVB)
+        computeFourTips(cs, left, right, leftVB, rightVB)
       );
 
       switch (effectType) {
@@ -467,10 +467,10 @@ function createBloomRenderer(canvasSize: number): WorkerEffectRenderer {
   const scale = computeEffectScale(canvasSize, canvasSize);
 
   return {
-    renderFrame(ctx, cs, blue, red, blueVB, redVB) {
+    renderFrame(ctx, cs, left, right, leftVB, rightVB) {
       const tips: BloomTipInput[] = [];
-      const bt = computeTips(cs, blue, blueVB);
-      const rt = computeTips(cs, red, redVB);
+      const bt = computeTips(cs, left, leftVB);
+      const rt = computeTips(cs, right, rightVB);
 
       if (bt) {
         tips.push({
@@ -533,10 +533,10 @@ function createGhostRenderer(canvasSize: number): WorkerEffectRenderer {
     renderFrame(
       ctx,
       cs,
-      blue,
-      red,
-      blueVB,
-      redVB,
+      left,
+      right,
+      leftVB,
+      rightVB,
       frameIndex,
       dt,
       stepIndex,
@@ -584,18 +584,18 @@ function createPulseRenderer(canvasSize: number): WorkerEffectRenderer {
     renderFrame(
       ctx,
       cs,
-      blue,
-      red,
-      blueVB,
-      redVB,
+      left,
+      right,
+      leftVB,
+      rightVB,
       frameIndex,
       dt,
       stepIndex,
       isStartPosition
     ) {
       const tips: PulseTipInput[] = [];
-      const bt = computeTips(cs, blue, blueVB);
-      const rt = computeTips(cs, red, redVB);
+      const bt = computeTips(cs, left, leftVB);
+      const rt = computeTips(cs, right, rightVB);
 
       if (bt) {
         tips.push({
@@ -669,10 +669,10 @@ function createFireRenderer(canvasSize: number): WorkerEffectRenderer | null {
     renderFrame(
       ctx,
       cs,
-      blue,
-      red,
-      blueVB,
-      redVB,
+      left,
+      right,
+      leftVB,
+      rightVB,
       frameIndex,
       dt,
       _stepIndex,
@@ -719,8 +719,8 @@ function createFireRenderer(canvasSize: number): WorkerEffectRenderer | null {
         };
       };
 
-      const bt = computeTips(cs, blue, blueVB);
-      const rt = computeTips(cs, red, redVB);
+      const bt = computeTips(cs, left, leftVB);
+      const rt = computeTips(cs, right, rightVB);
       if (bt) {
         tips.push(buildTip(bt.a, 0, 0));
         tips.push(buildTip(bt.b, 0, 1));
@@ -737,8 +737,8 @@ function createFireRenderer(canvasSize: number): WorkerEffectRenderer | null {
         canvasHeight: cs,
         darkMode: true,
         propSprites: [
-          buildWorkerPropSprite(cs, blue, propImages?.blue, blueVB),
-          buildWorkerPropSprite(cs, red, propImages?.red, redVB),
+          buildWorkerPropSprite(cs, left, propImages?.left, leftVB),
+          buildWorkerPropSprite(cs, right, propImages?.right, rightVB),
         ].filter((sprite): sprite is RenderedPropSprite => sprite !== null),
       };
 
@@ -757,9 +757,9 @@ function createSmokeRenderer(canvasSize: number): WorkerEffectRenderer | null {
   const webglCanvas = renderer.getCanvas() as unknown as OffscreenCanvas;
   const params = resolveSmoke2D(DEFAULT_EFFECTS_CONFIG.smoke);
   return {
-    renderFrame(ctx, cs, blue, red, blueVB, redVB, _frameIndex, dt) {
+    renderFrame(ctx, cs, left, right, leftVB, rightVB, _frameIndex, dt) {
       const tips = fourTipsToEmitters(
-        computeFourTips(cs, blue, red, blueVB, redVB)
+        computeFourTips(cs, left, right, leftVB, rightVB)
       );
       renderer.renderFrame(params, tips, dt);
       ctx.drawImage(webglCanvas, 0, 0);
@@ -778,7 +778,7 @@ function createLedRenderer(canvasSize: number): WorkerEffectRenderer | null {
   const webglCanvas = (renderer as any).canvas as OffscreenCanvas;
 
   return {
-    renderFrame(ctx, cs, blue, red, blueVB, redVB, frameIndex, dt) {
+    renderFrame(ctx, cs, left, right, leftVB, rightVB, frameIndex, dt) {
       const leds: LedSample[] = [];
       const currentTime = frameIndex * dt * 1000;
 
@@ -800,18 +800,18 @@ function createLedRenderer(canvasSize: number): WorkerEffectRenderer | null {
         ...color,
       });
 
-      const blueRGB = { r: 0.21, g: 0.46, b: 0.89 };
-      const redRGB = { r: 0.96, g: 0.27, b: 0.21 };
+      const leftRGB = { r: 0.21, g: 0.46, b: 0.89 };
+      const rightRGB = { r: 0.96, g: 0.27, b: 0.21 };
 
-      const bt = computeTips(cs, blue, blueVB);
-      const rt = computeTips(cs, red, redVB);
+      const bt = computeTips(cs, left, leftVB);
+      const rt = computeTips(cs, right, rightVB);
       if (bt) {
-        leds.push(buildLed(bt.a, 0, 0, blueRGB));
-        leds.push(buildLed(bt.b, 0, 1, blueRGB));
+        leds.push(buildLed(bt.a, 0, 0, leftRGB));
+        leds.push(buildLed(bt.b, 0, 1, leftRGB));
       }
       if (rt) {
-        leds.push(buildLed(rt.a, 1, 0, redRGB));
-        leds.push(buildLed(rt.b, 1, 1, redRGB));
+        leds.push(buildLed(rt.a, 1, 0, rightRGB));
+        leds.push(buildLed(rt.b, 1, 1, rightRGB));
       }
 
       const input: LedFrameInput = {
@@ -841,7 +841,7 @@ function createCharcoalRenderer(
   const prevTips = new Map<string, PrevTipState>();
 
   return {
-    renderFrame(ctx, cs, blue, red, blueVB, redVB, frameIndex, dt) {
+    renderFrame(ctx, cs, left, right, leftVB, rightVB, frameIndex, dt) {
       const tips: PropTipData[] = [];
       const currentTime = frameIndex * dt * 1000;
 
@@ -882,8 +882,8 @@ function createCharcoalRenderer(
         };
       };
 
-      const bt = computeTips(cs, blue, blueVB);
-      const rt = computeTips(cs, red, redVB);
+      const bt = computeTips(cs, left, leftVB);
+      const rt = computeTips(cs, right, rightVB);
       if (bt) {
         tips.push(buildTip(bt.a, 0, 0));
         tips.push(buildTip(bt.b, 0, 1));

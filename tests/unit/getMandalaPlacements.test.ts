@@ -11,8 +11,8 @@ function args(overrides: Partial<GetMandalaPlacementsArgs> = {}): GetMandalaPlac
 		rows: 4,
 		includeStartPosition: true,
 		showQRCode: true,
-		blueVisible: true,
-		redVisible: true,
+		leftVisible: true,
+		rightVisible: true,
 		mandalaEnabled: true,
 		startPositionLayout: "column",
 		...overrides,
@@ -32,7 +32,7 @@ describe("getMandalaPlacements — toggle/off cases", () => {
 	});
 
 	it("returns empty when both hands hidden", () => {
-		const res = getMandalaPlacements(args({ blueVisible: false, redVisible: false }));
+		const res = getMandalaPlacements(args({ leftVisible: false, rightVisible: false }));
 		expect(res.placements).toEqual([]);
 	});
 
@@ -66,8 +66,8 @@ describe("getMandalaPlacements — 4-count", () => {
 			args({ stepCount: 4, cols: 4, rows: 2, startPositionLayout: "row" }),
 		);
 		expect(res.placements).toEqual([
-			{ row: 1, col: 2, variant: "blue" },
-			{ row: 1, col: 3, variant: "red" },
+			{ row: 1, col: 2, variant: "left" },
+			{ row: 1, col: 3, variant: "right" },
 		]);
 		expect(res.layoutOverride).toBeNull();
 	});
@@ -101,26 +101,26 @@ describe("getMandalaPlacements — col-0 empties (both hands visible)", () => {
 	it("2 empties → blue on top, red on bottom", () => {
 		const res = getMandalaPlacements(args({ stepCount: 8, cols: 3, rows: 4 }));
 		expect(res.placements).toEqual([
-			{ row: 2, col: 1, variant: "blue" },
-			{ row: 3, col: 1, variant: "red" },
+			{ row: 2, col: 1, variant: "left" },
+			{ row: 3, col: 1, variant: "right" },
 		]);
 	});
 
 	it("3 empties → sandwich", () => {
 		const res = getMandalaPlacements(args({ stepCount: 10, cols: 3, rows: 5 }));
 		expect(res.placements).toEqual([
-			{ row: 2, col: 1, variant: "blue" },
+			{ row: 2, col: 1, variant: "left" },
 			{ row: 3, col: 1, variant: "full" },
-			{ row: 4, col: 1, variant: "red" },
+			{ row: 4, col: 1, variant: "right" },
 		]);
 	});
 
 	it("4+ empties → still fills first 3 slots (blue, full, red)", () => {
 		const res = getMandalaPlacements(args({ stepCount: 20, cols: 6, rows: 6 }));
 		expect(res.placements).toEqual([
-			{ row: 2, col: 1, variant: "blue" },
+			{ row: 2, col: 1, variant: "left" },
 			{ row: 3, col: 1, variant: "full" },
-			{ row: 4, col: 1, variant: "red" },
+			{ row: 4, col: 1, variant: "right" },
 		]);
 	});
 
@@ -129,9 +129,9 @@ describe("getMandalaPlacements — col-0 empties (both hands visible)", () => {
 			args({ stepCount: 22, cols: 5, rows: 6, showQRCode: false }),
 		);
 		expect(res.placements).toEqual([
-			{ row: 2, col: 1, variant: "blue" },
+			{ row: 2, col: 1, variant: "left" },
 			{ row: 3, col: 1, variant: "full" },
-			{ row: 4, col: 1, variant: "red" },
+			{ row: 4, col: 1, variant: "right" },
 		]);
 	});
 });
@@ -139,17 +139,17 @@ describe("getMandalaPlacements — col-0 empties (both hands visible)", () => {
 describe("getMandalaPlacements — single-hand visibility", () => {
 	it("2 empties + red hidden → only blue slot, centered", () => {
 		const res = getMandalaPlacements(
-			args({ stepCount: 8, cols: 3, rows: 4, redVisible: false }),
+			args({ stepCount: 8, cols: 3, rows: 4, rightVisible: false }),
 		);
 		// 2 empties (rows 2,3), 1 variant → startRow = 2+floor((2-1)/2) = 2.
-		expect(res.placements).toEqual([{ row: 2, col: 1, variant: "blue" }]);
+		expect(res.placements).toEqual([{ row: 2, col: 1, variant: "left" }]);
 	});
 
 	it("3 empties + blue hidden → only red slot, anchored to top", () => {
 		const res = getMandalaPlacements(
-			args({ stepCount: 10, cols: 3, rows: 5, blueVisible: false }),
+			args({ stepCount: 10, cols: 3, rows: 5, leftVisible: false }),
 		);
-		expect(res.placements).toEqual([{ row: 2, col: 1, variant: "red" }]);
+		expect(res.placements).toEqual([{ row: 2, col: 1, variant: "right" }]);
 	});
 });
 
@@ -159,9 +159,9 @@ describe("getMandalaPlacements — QR off joins bottom cell to empty span", () =
 			args({ stepCount: 8, cols: 3, rows: 4, showQRCode: false }),
 		);
 		expect(res.placements).toEqual([
-			{ row: 2, col: 1, variant: "blue" },
+			{ row: 2, col: 1, variant: "left" },
 			{ row: 3, col: 1, variant: "full" },
-			{ row: 4, col: 1, variant: "red" },
+			{ row: 4, col: 1, variant: "right" },
 		]);
 	});
 });

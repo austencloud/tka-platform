@@ -4,11 +4,11 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-typ
 
 export interface ChoreoCardRenderKeyInputs {
   sequence: SequenceData | null | undefined;
-  bluePropType: PropType | undefined;
-  redPropType: PropType | undefined;
+  leftPropType: PropType | undefined;
+  rightPropType: PropType | undefined;
   catDogModeEnabled: boolean;
-  blueBuugengFlipped: boolean;
-  redBuugengFlipped: boolean;
+  leftBuugengFlipped: boolean;
+  rightBuugengFlipped: boolean;
   showStepNumbers: boolean;
   showNonRadial: boolean;
   handPointVis: "all" | "active" | "none";
@@ -18,8 +18,8 @@ export interface ChoreoCardRenderKeyInputs {
   showElemental: boolean;
   showPositions: boolean;
   showGrid: boolean;
-  showBlueMotion: boolean;
-  showRedMotion: boolean;
+  showLeftMotion: boolean;
+  showRightMotion: boolean;
   includeStartPosition: boolean;
   startPositionLayout: "row" | "column";
   effectiveColumns: number;
@@ -76,9 +76,9 @@ export function buildChoreoCardRenderKeys(
   // Chirality mirrors the prop and can collapse the beta separation offset, so
   // it changes prop GEOMETRY — it belongs in the structural key, not the
   // overlay-only bucket.
-  const ch = `${i.blueBuugengFlipped ? "1" : "0"}${i.redBuugengFlipped ? "1" : "0"}`;
+  const ch = `${i.leftBuugengFlipped ? "1" : "0"}${i.rightBuugengFlipped ? "1" : "0"}`;
   const gv = `${i.showTnD ? "1" : "0"}${i.showElemental ? "1" : "0"}${i.showPositions ? "1" : "0"}${i.showGrid ? "1" : "0"}`;
-  const imageKey = `${i.sequence?.id ?? ""}-${sequenceContentKey}-${stepCount}-${i.bluePropType}-${i.redPropType}-${i.catDogModeEnabled}-${i.showStepNumbers}-${i.showNonRadial}-${i.handPointVis}-${i.showTKA}-${i.showReversals}-${durationKey}-mv:${i.showBlueMotion ? "1" : "0"}${i.showRedMotion ? "1" : "0"}-ch:${ch}-gv:${gv}`;
+  const imageKey = `${i.sequence?.id ?? ""}-${sequenceContentKey}-${stepCount}-${i.leftPropType}-${i.rightPropType}-${i.catDogModeEnabled}-${i.showStepNumbers}-${i.showNonRadial}-${i.handPointVis}-${i.showTKA}-${i.showReversals}-${durationKey}-mv:${i.showLeftMotion ? "1" : "0"}${i.showRightMotion ? "1" : "0"}-ch:${ch}-gv:${gv}`;
   // startPositionLayout (row vs column) changes where the start cell sits and
   // therefore where every step cell AND the QR cell land. It's in the CONTENT
   // (layout) key but NOT imageKey/gridStableKey/structuralKey: a pure row↔column
@@ -92,7 +92,7 @@ export function buildChoreoCardRenderKeys(
   // Geometry-only subset (see interface docs). Deliberately excludes every
   // overlay-visibility flag so a non-radial / glyph / grid / points toggle
   // leaves it unchanged → crossfade, not swap.
-  const structuralKey = `${i.sequence?.id ?? ""}-${sequenceContentKey}-${stepCount}-${i.bluePropType}-${i.redPropType}-${i.catDogModeEnabled}-${durationKey}-mv:${i.showBlueMotion ? "1" : "0"}${i.showRedMotion ? "1" : "0"}-ch:${ch}`;
+  const structuralKey = `${i.sequence?.id ?? ""}-${sequenceContentKey}-${stepCount}-${i.leftPropType}-${i.rightPropType}-${i.catDogModeEnabled}-${durationKey}-mv:${i.showLeftMotion ? "1" : "0"}${i.showRightMotion ? "1" : "0"}-ch:${ch}`;
   const renderKey = `${contentKey}-${i.darkMode}`;
 
   return { imageKey, contentKey, gridStableKey, structuralKey, renderKey };

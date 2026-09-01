@@ -21,8 +21,8 @@ export interface ExportFrameContext {
    * props missing from the export (fire/tips still track positions, so fire shows
    * but the staves don't). Live path feeds these from propRendering.
    */
-  bluePropType: string | null;
-  redPropType: string | null;
+  leftPropType: string | null;
+  rightPropType: string | null;
   /** Dark-mode override for prop rendering, matching the export's theme. */
   previewDarkMode: boolean | null;
 }
@@ -40,8 +40,8 @@ export function assembleExportEngineProps(
   const sequenceData = panelState.sequenceData;
   const gridMode = sequenceData?.gridMode ?? GridMode.DIAMOND;
   return {
-    blueProp: panelState.bluePropState,
-    redProp: panelState.redPropState,
+    leftProp: panelState.leftPropState,
+    rightProp: panelState.rightPropState,
     gridVisible: true,
     gridMode,
     backgroundAlpha: frame.backgroundAlpha,
@@ -52,8 +52,8 @@ export function assembleExportEngineProps(
     virtualTime: frame.virtualTime,
     showNonRadialPoints: frame.showNonRadialPoints,
     externalTrailSettings: frame.trailSettings,
-    bluePropType: frame.bluePropType,
-    redPropType: frame.redPropType,
+    leftPropType: frame.leftPropType,
+    rightPropType: frame.rightPropType,
     previewDarkMode: frame.previewDarkMode,
   };
 }

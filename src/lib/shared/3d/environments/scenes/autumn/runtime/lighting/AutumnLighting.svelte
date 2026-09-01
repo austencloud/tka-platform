@@ -18,7 +18,8 @@
    *   4. Ambient    — a restrained lift so bark and floor survive tone mapping.
    *   5. Pond point — local violet bounce for the recessed pond and wet stones.
    *
-   * Purely declarative — no useTask, no $state, no $effect.
+   * The key stays live because production performers and props are animated
+   * shadow casters. Only retained, inactive worlds stop participating.
    */
 
   import { T } from "@threlte/core";
@@ -28,9 +29,14 @@
   interface Props {
     quality: AutumnQualityConfig;
     groundY?: number;
+    active?: boolean;
   }
 
-  let { quality, groundY = 0 }: Props = $props();
+  let {
+    quality,
+    groundY = 0,
+    active = true,
+  }: Props = $props();
 
   // The light is placed along the moon's direction, far enough out that its
   // orthographic shadow frustum comfortably clears the canopy.
@@ -42,17 +48,18 @@
 </script>
 
 <!-- Moon key: cool, from the moon's own direction, and the scene's only shadow
-     caster. The camera spans ±20 rather than the clearing alone: hero trees
-     stand 13-20m out and throw shadows ~1.7x their height, so a clearing-tight
-     box clipped them mid-shadow and left a visible straight edge across the
-     ground. Texel density is bought back with a 2048 map on the high tier. -->
+     caster. The camera spans ±20 because the deliberately small prop-caster
+     set reaches from the pond shore to the owl perch; a clearing-tight box
+     clipped those local contacts at its edges. Texel density is bought back
+     with a 2048 map on the high tier. -->
 <T.DirectionalLight
   color="#b9c6f2"
   intensity={2.05}
   position.x={moonKey[0]}
   position.y={moonKey[1] + groundY}
   position.z={moonKey[2]}
-  castShadow={quality.shadows}
+  visible={active}
+  castShadow={quality.shadows && active}
   shadow.mapSize.width={quality.shadowMapSize}
   shadow.mapSize.height={quality.shadowMapSize}
   shadow.camera.near={1}
@@ -61,10 +68,10 @@
   shadow.camera.right={20}
   shadow.camera.top={20}
   shadow.camera.bottom={-20}
-  shadow.bias={-0.0007}
-  shadow.normalBias={0.04}
-  shadow.radius={3}
-  shadow.intensity={0.58}
+  shadow.bias={-0.00035}
+  shadow.normalBias={0.055}
+  shadow.radius={5}
+  shadow.intensity={0.38}
 />
 
 <!-- Warm ember light from the opposite horizon: the last of the sunset behind
@@ -72,6 +79,7 @@
      the moon key leaves dark, but it casts nothing so there is exactly one
      shadow direction to read. -->
 <T.DirectionalLight
+  visible={active}
   color="#ff8748"
   intensity={1.05}
   position.x={14}
@@ -85,8 +93,9 @@
      for light scattered back off the clearing floor. It is what turns a hard
      shadow into a shaded area. -->
 <T.DirectionalLight
+  visible={active}
   color="#6f6396"
-  intensity={0.5}
+  intensity={0.62}
   position.x={-8}
   position.y={5}
   position.z={26}
@@ -94,17 +103,23 @@
 
 <!-- Dusk hemisphere ambient keeps bark, distant silhouettes, and understory
      readable on ordinary displays. -->
-<T.HemisphereLight color="#8a6ba0" groundColor="#462e28" intensity={0.92} />
+<T.HemisphereLight
+  visible={active}
+  color="#8a6ba0"
+  groundColor="#462e28"
+  intensity={0.92}
+/>
 
 <!-- A restrained ambient lift preserves scanned bark and floor detail after
      tone mapping without flattening the moon/ember split. -->
-<T.AmbientLight color="#c2a2c0" intensity={0.46} />
+<T.AmbientLight visible={active} color="#c2a2c0" intensity={0.46} />
 
 <!-- A local violet reflection source gives the recessed pond and its wet
      stones a readable cool edge without raising the whole forest floor. -->
 <!-- Dropped from 2.2: at that strength it lit the pond's stone bank at a
      grazing angle and produced a hot pale rim around the water. -->
 <T.PointLight
+  visible={active}
   color="#8170c5"
   intensity={0.45}
   distance={16}
@@ -118,6 +133,7 @@
      human-scale pool inside the vast forest without flattening the surrounding
      moonlit trunks. -->
 <T.PointLight
+  visible={active}
   color="#ffad67"
   intensity={1.15}
   distance={14}

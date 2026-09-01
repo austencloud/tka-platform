@@ -11,14 +11,15 @@ const CONTEXT = {
   durationSeconds: 8,
   aspectRatio: 16 / 9,
   groundOffset: 0,
+  sceneId: "test-scene",
   performers: [
     {
-      id: "performer-1", name: "P1", avatarId: "y-bot" as never,
+      id: "performer-1", name: "P1", characterId: "y-bot" as never,
       prop: "staff" as never, effect: "none" as never, effort: "linear" as never,
       position: { x: -1, z: 0 }, facingAngle: 0, blocking: [], beatOffset: 0, staffLengthCm: null,
     },
     {
-      id: "performer-2", name: "P2", avatarId: "x-bot" as never,
+      id: "performer-2", name: "P2", characterId: "x-bot" as never,
       prop: "staff" as never, effect: "none" as never, effort: "linear" as never,
       position: { x: 1, z: 0 }, facingAngle: 0, blocking: [], beatOffset: 0, staffLengthCm: null,
     },

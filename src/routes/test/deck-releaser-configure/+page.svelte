@@ -25,8 +25,8 @@
 
   const deckState = createDeckReleaserState({
     storage: null,
-    getBluePropType: () => null,
-    getRedPropType: () => null,
+    getLeftPropType: () => null,
+    getRightPropType: () => null,
     mintSeed: () => "configure-preview",
     nextReferenceNumber: () => 1,
   });

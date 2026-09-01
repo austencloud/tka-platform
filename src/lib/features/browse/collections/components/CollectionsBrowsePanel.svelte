@@ -94,7 +94,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
   function handleViewProfile(creatorId: string) {
     hapticService?.trigger("selection");
     // Open the creator's profile without making Collections own profile state.
-    void openCreatorProfile(creatorId);
+    void openCreatorProfile(creatorId, undefined, "browse_collections");
   }
 
   function handleSequenceClick(sequenceId: string) {

@@ -1,21 +1,28 @@
 import { describe, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";
-import { isAbsolute, join, resolve } from "node:path";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
 import {
   buildWindowsCommandLine,
   choosePushedCommit,
-  createArchiveExtractionPlan,
   createNativeBuildEnv,
+  createSnapshotCheckoutPlan,
   inspectNativeReleaseSurface,
   inspectZipFilenameFlags,
   parseAdbDevices,
   parseJavaMajor,
   parsePushUpdates,
   readJavaProperty,
-  selectSnapshotArchive,
-  selectSnapshotExtractor,
   selectAndroidDevice,
+  selectAndroidSdkRoot,
 } from "../../../scripts/lib/native-push-deploy-core.mjs";
 
 describe("native release surface verification", () => {
@@ -133,72 +140,112 @@ describe("native APK filename verification", () => {
 });
 
 describe("native snapshot extraction", () => {
-  it("uses ZIP snapshots on Windows so bsdtar preserves Unicode names", () => {
-    expect(selectSnapshotArchive("win32")).toEqual({
-      filename: "source.zip",
-      format: "zip",
-    });
-  });
-
-  it("keeps tar snapshots on non-Windows hosts", () => {
-    expect(selectSnapshotArchive("linux")).toEqual({
-      filename: "source.tar",
-      format: "tar",
-    });
-  });
-
-  it("pins Windows extraction to the ZIP-capable system tar", () => {
-    expect(selectSnapshotExtractor("win32", "C:\\Windows")).toBe(
-      "C:\\Windows\\System32\\tar.exe"
-    );
-  });
-
-  it("does not depend on PATH when Windows system location is unavailable", () => {
-    expect(() => selectSnapshotExtractor("win32", "")).toThrow(
-      "SystemRoot is required"
-    );
-  });
-
-  it("uses tar from PATH on non-Windows hosts", () => {
-    expect(selectSnapshotExtractor("linux", "")).toBe("tar");
-  });
-
-  it("passes Windows ZIP paths relative to the build directory", () => {
+  it("uses a private Git index and an absolute checkout prefix", () => {
     const buildRoot = resolve("test-results", "native-push");
-    const plan = createArchiveExtractionPlan(
+    const snapshotRoot = join(buildRoot, "source");
+    const indexPath = join(buildRoot, "source.index");
+    const commit = "a".repeat(40);
+    const plan = createSnapshotCheckoutPlan(
       buildRoot,
-      join(buildRoot, "source.zip"),
-      join(buildRoot, "source")
+      snapshotRoot,
+      indexPath,
+      commit
     );
 
     expect(plan).toEqual({
-      cwd: buildRoot,
-      args: ["-xf", "source.zip", "-C", "source"],
+      indexPath,
+      readTreeArgs: ["read-tree", "--no-sparse-checkout", commit],
+      checkoutArgs: [
+        "checkout-index",
+        "--all",
+        "--ignore-skip-worktree-bits",
+        `--prefix=${snapshotRoot.replaceAll("\\", "/")}/`,
+      ],
     });
-    expect(plan.args.every((token) => !isAbsolute(token))).toBe(true);
   });
 
-  it("passes non-Windows tar paths relative to the build directory", () => {
-    const buildRoot = resolve("test-results", "native-push");
-    const plan = createArchiveExtractionPlan(
-      buildRoot,
-      join(buildRoot, "source.tar"),
-      join(buildRoot, "source")
-    );
+  it("materializes Unicode filenames through Git on the host platform", () => {
+    const root = mkdtempSync(join(tmpdir(), "tka-native-snapshot-"));
+    const repoRoot = join(root, "repo");
+    const buildRoot = join(root, "build");
+    const snapshotRoot = join(buildRoot, "source");
+    const indexPath = join(buildRoot, "source.index");
+    const unicodePath = join("assets", "Δ", "Σ.json");
+    const contents = '{"symbol":"Σ"}\n';
+    const git = (args: string[], env = process.env) => {
+      const result = spawnSync("git", args, {
+        cwd: repoRoot,
+        encoding: "utf8",
+        env,
+      });
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      return result.stdout.trim();
+    };
 
-    expect(plan.args).toEqual(["-xf", "source.tar", "-C", "source"]);
+    try {
+      mkdirSync(join(repoRoot, "assets", "Δ"), { recursive: true });
+      mkdirSync(snapshotRoot, { recursive: true });
+      writeFileSync(join(repoRoot, unicodePath), contents);
+      git(["init", "--quiet"]);
+      git(["config", "core.autocrlf", "false"]);
+      git(["add", unicodePath]);
+      git([
+        "-c",
+        "user.name=TKA Test",
+        "-c",
+        "user.email=test@tkaflowarts.com",
+        "commit",
+        "--quiet",
+        "-m",
+        "fixture",
+      ]);
+
+      const commit = git(["rev-parse", "HEAD"]);
+      const plan = createSnapshotCheckoutPlan(
+        buildRoot,
+        snapshotRoot,
+        indexPath,
+        commit
+      );
+      const checkoutEnv = {
+        ...process.env,
+        GIT_INDEX_FILE: plan.indexPath,
+      };
+      git(plan.readTreeArgs, checkoutEnv);
+      git(plan.checkoutArgs, checkoutEnv);
+
+      expect(readFileSync(join(snapshotRoot, unicodePath), "utf8")).toBe(
+        contents
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
-  it("rejects extraction targets outside the build directory", () => {
+  it("rejects checkout targets outside the build directory", () => {
     const buildRoot = resolve("test-results", "native-push");
 
     expect(() =>
-      createArchiveExtractionPlan(
+      createSnapshotCheckoutPlan(
         buildRoot,
-        join(buildRoot, "source.tar"),
-        resolve(buildRoot, "..", "outside")
+        resolve(buildRoot, "..", "outside"),
+        join(buildRoot, "source.index"),
+        "a".repeat(40)
       )
     ).toThrow("must stay inside");
+  });
+
+  it("rejects unresolved commit names", () => {
+    const buildRoot = resolve("test-results", "native-push");
+
+    expect(() =>
+      createSnapshotCheckoutPlan(
+        buildRoot,
+        join(buildRoot, "source"),
+        join(buildRoot, "source.index"),
+        "HEAD"
+      )
+    ).toThrow("resolved Git object ID");
   });
 });
 
@@ -285,6 +332,36 @@ describe("Android SDK property parsing", () => {
         "sdk.dir"
       )
     ).toBe("C:\\Users\\Austen\\AppData\\Local\\Android\\Sdk");
+  });
+
+  it("falls back to the standard user SDK when a worktree has no local.properties", () => {
+    const localAppData = resolve("test-results", "local-app-data");
+    const expected = join(localAppData, "Android", "Sdk");
+
+    expect(
+      selectAndroidSdkRoot(
+        {
+          androidHome: resolve("test-results", "missing-sdk"),
+          localAppData,
+        },
+        (candidate) => candidate === expected
+      )
+    ).toBe(expected);
+  });
+
+  it("prefers a valid explicit SDK over local and default candidates", () => {
+    const explicit = resolve("test-results", "explicit-sdk");
+
+    expect(
+      selectAndroidSdkRoot(
+        {
+          androidHome: explicit,
+          localProperties: `sdk.dir=${resolve("test-results", "property-sdk")}`,
+          localAppData: resolve("test-results", "local-app-data"),
+        },
+        (candidate) => candidate === explicit
+      )
+    ).toBe(explicit);
   });
 });
 

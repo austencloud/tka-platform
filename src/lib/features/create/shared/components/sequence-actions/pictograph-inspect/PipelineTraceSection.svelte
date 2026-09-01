@@ -11,19 +11,20 @@
     PipelineTier,
   } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/pipeline-diagnostics";
   import { livePipelineEdit } from "./live-pipeline-edit.svelte";
+  import type { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   interface Props {
     diagnostics: PipelineDiagnostics | null;
-    color: "blue" | "red";
+    hand: HandSide;
   }
 
-  let { diagnostics, color }: Props = $props();
+  let { diagnostics, hand }: Props = $props();
 
   // The in-flight edit for THIS motion's color, or null. Lets every tier row show
   // the value being dragged live (before Save) — a plain reactive read off the
   // shared editor signal, no async pipeline rerun.
   const liveEdit = $derived(
-    livePipelineEdit.current?.color === color ? livePipelineEdit.current : null
+    livePipelineEdit.current?.hand === hand ? livePipelineEdit.current : null
   );
 
   function tierLabel(tier: PipelineTier): string {

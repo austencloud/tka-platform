@@ -21,7 +21,7 @@ even when Svelte recreates the component instance.
   import { onDestroy } from "svelte";
   import {
     Orientation,
-    MotionColor,
+    HandSide,
     RotationDirection,
   } from "../../shared/domain/enums/pictograph-enums";
   import { PropType } from "../domain/enums/prop-type";
@@ -206,7 +206,7 @@ even when Svelte recreates the component instance.
     if (directPositioning) return target;
     const cacheIdentity = transitionKey ?? cellIndex;
     if (cacheIdentity === null) return target;
-    return positionCache.get(`${cacheIdentity}-${motionData.color}`) ?? target;
+    return positionCache.get(`${cacheIdentity}-${motionData.hand}`) ?? target;
   }
 
   const firstFrame = initialPosition();
@@ -241,10 +241,10 @@ even when Svelte recreates the component instance.
     // Determine the actual prop type being rendered.
     // Settings prop type takes precedence — it's what the user chose to display.
     const settingsPropType =
-      motionData.color === MotionColor.BLUE
-        ? settings.bluePropType
-        : motionData.color === MotionColor.RED
-          ? settings.redPropType
+      motionData.hand === HandSide.LEFT
+        ? settings.leftPropType
+        : motionData.hand === HandSide.RIGHT
+          ? settings.rightPropType
           : undefined;
     const actualPropType: PropType | string | undefined =
       settingsPropType ?? motionData.propType;
@@ -252,10 +252,10 @@ even when Svelte recreates the component instance.
     // Red hand is always mirrored (left/right hands are anatomically mirrored).
     // Also check the prepared motion's own prop type: a per-pictograph override
     // (export, guide pages) forces HAND onto the motion via the preparer, but the
-    // user's global settings.redPropType would otherwise mask it through
+    // user's global settings.rightPropType would otherwise mask it through
     // `actualPropType` and leave the red hand looking like an un-mirrored left hand.
     if (
-      motionData.color === MotionColor.RED &&
+      motionData.hand === HandSide.RIGHT &&
       (actualPropType === PropType.HAND ||
         motionData.propType === PropType.HAND)
     ) {
@@ -264,10 +264,10 @@ even when Svelte recreates the component instance.
 
     // Check buugeng flip preference based on hand color
     if (BUUGENG_FAMILY.has(actualPropType as PropType)) {
-      if (motionData.color === MotionColor.BLUE) {
-        return settings.blueBuugengFlipped ?? false;
-      } else if (motionData.color === MotionColor.RED) {
-        return settings.redBuugengFlipped ?? false;
+      if (motionData.hand === HandSide.LEFT) {
+        return settings.leftBuugengFlipped ?? false;
+      } else if (motionData.hand === HandSide.RIGHT) {
+        return settings.rightBuugengFlipped ?? false;
       }
     }
 
@@ -299,7 +299,7 @@ even when Svelte recreates the component instance.
       displayedY = targetY;
       const cacheIdentity = transitionKey ?? cellIndex;
       if (cacheIdentity !== null) {
-        const key = `${cacheIdentity}-${motionData.color}`;
+        const key = `${cacheIdentity}-${motionData.hand}`;
         positionCache.set(key, { x: targetX, y: targetY });
       }
       return;
@@ -315,7 +315,7 @@ even when Svelte recreates the component instance.
     }
 
     // Build cache key from cell index and motion color
-    const key = `${cacheIdentity}-${motionData.color}`;
+    const key = `${cacheIdentity}-${motionData.hand}`;
     const cached = positionCache.get(key);
 
     if (cached && (cached.x !== targetX || cached.y !== targetY)) {
@@ -545,7 +545,7 @@ even when Svelte recreates the component instance.
   {#if isClickable && onPropClick}
     <!-- Interactive prop - clickable button -->
     <g
-      class="prop-svg {motionData.color}-prop-svg clickable"
+      class="prop-svg {motionData.hand}-prop-svg clickable"
       class:selected={isSelected}
       class:no-transition={isTransforming || directPositioning}
       class:prop-fading={propFading}
@@ -579,7 +579,7 @@ even when Svelte recreates the component instance.
   {:else}
     <!-- Non-interactive prop - display only -->
     <g
-      class="prop-svg {motionData.color}-prop-svg"
+      class="prop-svg {motionData.hand}-prop-svg"
       class:selected={isSelected}
       class:no-transition={isTransforming || directPositioning}
       class:prop-fading={propFading}

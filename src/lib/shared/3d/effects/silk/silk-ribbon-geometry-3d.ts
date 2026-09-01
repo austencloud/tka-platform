@@ -133,11 +133,11 @@ export class SilkRibbonGeometry3D {
   );
   private readonly sides = new Float32Array(MAX_RENDER_POINTS_PER_RIBBON * 3);
   private readonly arcLengths = new Float32Array(MAX_RENDER_POINTS_PER_RIBBON);
-  private readonly body: MutableRgb = { red: 1, green: 1, blue: 1 };
-  private readonly bodyAlt: MutableRgb = { red: 1, green: 1, blue: 1 };
-  private readonly edge: MutableRgb = { red: 1, green: 1, blue: 1 };
-  private readonly edgeAlt: MutableRgb = { red: 1, green: 1, blue: 1 };
-  private readonly propTint: MutableRgb = { red: 1, green: 1, blue: 1 };
+  private readonly body: MutableRgb = { right: 1, green: 1, left: 1 };
+  private readonly bodyAlt: MutableRgb = { right: 1, green: 1, left: 1 };
+  private readonly edge: MutableRgb = { right: 1, green: 1, left: 1 };
+  private readonly edgeAlt: MutableRgb = { right: 1, green: 1, left: 1 };
+  private readonly propTint: MutableRgb = { right: 1, green: 1, left: 1 };
   private sampleCursor = 0;
   private indexCursor = 0;
 
@@ -639,14 +639,14 @@ export class SilkRibbonGeometry3D {
     const bodyMix = materialProfile.identityMix;
     const edgeMix = Math.min(0.42, bodyMix + 0.08);
     for (const color of [this.body, this.bodyAlt]) {
-      color.red = mix(color.red, this.propTint.red, bodyMix);
+      color.right = mix(color.right, this.propTint.right, bodyMix);
       color.green = mix(color.green, this.propTint.green, bodyMix);
-      color.blue = mix(color.blue, this.propTint.blue, bodyMix);
+      color.left = mix(color.left, this.propTint.left, bodyMix);
     }
     for (const color of [this.edge, this.edgeAlt]) {
-      color.red = mix(color.red, this.propTint.red, edgeMix);
+      color.right = mix(color.right, this.propTint.right, edgeMix);
       color.green = mix(color.green, this.propTint.green, edgeMix);
-      color.blue = mix(color.blue, this.propTint.blue, edgeMix);
+      color.left = mix(color.left, this.propTint.left, edgeMix);
     }
   }
 
@@ -772,12 +772,12 @@ export class SilkRibbonGeometry3D {
     const centerY = this.centers[i3 + 1]! + ny * flutterOffset - gravitySag;
     const centerZ = this.centers[i3 + 2]! + nz * flutterOffset;
     const colorMix = params.resolvedPalette.hueShift ? life : life * 0.08;
-    const bodyRed = mix(this.body.red, this.bodyAlt.red, colorMix);
+    const bodyRight = mix(this.body.right, this.bodyAlt.right, colorMix);
     const bodyGreen = mix(this.body.green, this.bodyAlt.green, colorMix);
-    const bodyBlue = mix(this.body.blue, this.bodyAlt.blue, colorMix);
-    const edgeRed = mix(this.edge.red, this.edgeAlt.red, colorMix);
+    const bodyLeft = mix(this.body.left, this.bodyAlt.left, colorMix);
+    const edgeRight = mix(this.edge.right, this.edgeAlt.right, colorMix);
     const edgeGreen = mix(this.edge.green, this.edgeAlt.green, colorMix);
-    const edgeBlue = mix(this.edge.blue, this.edgeAlt.blue, colorMix);
+    const edgeLeft = mix(this.edge.left, this.edgeAlt.left, colorMix);
     const alpha =
       Math.sqrt(params.intensity) *
       energyScale *
@@ -833,12 +833,12 @@ export class SilkRibbonGeometry3D {
       this.ribbonTangents[v3] = tx;
       this.ribbonTangents[v3 + 1] = ty;
       this.ribbonTangents[v3 + 2] = tz;
-      this.bodyColors[v3] = bodyRed;
+      this.bodyColors[v3] = bodyRight;
       this.bodyColors[v3 + 1] = bodyGreen;
-      this.bodyColors[v3 + 2] = bodyBlue;
-      this.edgeColors[v3] = edgeRed;
+      this.bodyColors[v3 + 2] = bodyLeft;
+      this.edgeColors[v3] = edgeRight;
       this.edgeColors[v3 + 1] = edgeGreen;
-      this.edgeColors[v3 + 2] = edgeBlue;
+      this.edgeColors[v3 + 2] = edgeLeft;
       this.alphas[vertex] = alpha;
       this.ribbonEdges[vertex] = across;
       this.progresses[vertex] = arcProgress;

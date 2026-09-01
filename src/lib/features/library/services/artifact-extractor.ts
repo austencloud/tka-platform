@@ -7,7 +7,7 @@
  * sequence itself is already safe.
  *
  * Each sequence contributes up to 4 artifacts:
- * - Blue hand path (the spatial trajectory of the blue performer's hand)
+ * - Left hand path (the spatial trajectory of the performer's left hand)
  * - Red hand path (same for red)
  * - Blue solo prop (hand path + orientation data for blue)
  * - Red solo prop (same for red)
@@ -25,10 +25,10 @@ export class ArtifactExtractor {
   ) {}
 
   async extract(sequence: SequenceData, userId: string): Promise<void> {
-    const { blueSoloProp, redSoloProp } = sequence;
+    const { leftSoloProp, rightSoloProp } = sequence;
 
     // If the sequence hasn't been decomposed into solo props yet, there's nothing to extract
-    if (!blueSoloProp || !redSoloProp) {
+    if (!leftSoloProp || !rightSoloProp) {
       return;
     }
 
@@ -41,19 +41,19 @@ export class ArtifactExtractor {
     // Save all 4 artifacts in parallel. allSettled so one failure doesn't block the rest.
     const results = await Promise.allSettled([
       this.handPathRepository.save(
-        { ...blueSoloProp.handPath, ownerId: userId },
+        { ...leftSoloProp.handPath, ownerId: userId },
         provenance
       ),
       this.handPathRepository.save(
-        { ...redSoloProp.handPath, ownerId: userId },
+        { ...rightSoloProp.handPath, ownerId: userId },
         provenance
       ),
       this.soloPropRepository.save(
-        { ...blueSoloProp, ownerId: userId },
+        { ...leftSoloProp, ownerId: userId },
         provenance
       ),
       this.soloPropRepository.save(
-        { ...redSoloProp, ownerId: userId },
+        { ...rightSoloProp, ownerId: userId },
         provenance
       ),
     ]);
@@ -61,7 +61,10 @@ export class ArtifactExtractor {
     // Log any individual failures without throwing - the sequence is already saved
     for (const result of results) {
       if (result.status === "rejected") {
-        console.warn("[ArtifactExtractor] Artifact save failed:", result.reason);
+        console.warn(
+          "[ArtifactExtractor] Artifact save failed:",
+          result.reason
+        );
       }
     }
   }

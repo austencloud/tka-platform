@@ -1,9 +1,9 @@
 /**
  * Task 3 of docs/superpowers/plans/2026-08-24-film-director-plane-axes.md:
  * "wire resolved planes into the viewer." Task 2 (already landed) taught
- * `resolveFilmDirectorSpec` to resolve bluePlane/redPlane/stepPlanes per
+ * `resolveFilmDirectorSpec` to resolve leftPlane/rightPlane/stepPlanes per
  * performer and scene.visiblePlanes per scene. This file proves the adapter
- * actually carries those resolved values onto the viewer/avatar-instance
+ * actually carries those resolved values onto the viewer/character-instance
  * layer:
  *
  *  (a) `buildDirectorViewerSeed` puts the resolved planes on the seed.
@@ -32,9 +32,9 @@ const demoSequence = demoSequenceJson as unknown as SequenceData;
 // capability probe sees "not supported" rather than throwing. Same pattern
 // as tests/unit/3d-viewer/viewer3d-integration.test.ts.
 beforeAll(() => {
-  const originalCreateElement = document.createElement as unknown as (
-    tag: string
-  ) => unknown;
+  const originalCreateElement = document.createElement.bind(
+    document
+  ) as unknown as (tag: string) => unknown;
   (
     document as unknown as { createElement: (tag: string) => unknown }
   ).createElement = (tag: string) => {
@@ -47,7 +47,10 @@ beforeAll(() => {
   __resetWebGL2CapabilityForTests();
 });
 
-function film(scene: Record<string, unknown>, extras: Record<string, unknown> = {}) {
+function film(
+  scene: Record<string, unknown>,
+  extras: Record<string, unknown> = {}
+) {
   return {
     version: 2,
     id: "viewer-adapter-film",
@@ -58,15 +61,15 @@ function film(scene: Record<string, unknown>, extras: Record<string, unknown> = 
 }
 
 describe("buildDirectorViewerSeed carries resolved planes", () => {
-  it("seeds each performer's customBluePlane/customRedPlane from the resolved bluePlane/redPlane", () => {
+  it("seeds each performer's customBluePlane/customRedPlane from the resolved leftPlane/rightPlane", () => {
     const spec = resolveFilmDirectorSpec(
       film({
         performance: {
           cast: {
             count: 2,
             performers: [
-              { id: "performer-1", bluePlane: "wheel", redPlane: "floor" },
-              { id: "performer-2", bluePlane: "right-shield" },
+              { id: "performer-1", leftPlane: "wheel", rightPlane: "floor" },
+              { id: "performer-2", leftPlane: "right-shield" },
             ],
           },
         },
@@ -78,12 +81,12 @@ describe("buildDirectorViewerSeed carries resolved planes", () => {
     expect(seed.performers).toHaveLength(2);
     scene.performance.performers.forEach((performer, index) => {
       const seededPerformer = seed.performers![index]!;
-      expect(seededPerformer.customBluePlane).toBe(performer.bluePlane);
-      expect(seededPerformer.customRedPlane).toBe(performer.redPlane);
+      expect(seededPerformer.customLeftPlane).toBe(performer.leftPlane);
+      expect(seededPerformer.customRightPlane).toBe(performer.rightPlane);
     });
-    expect(seed.performers![0]!.customBluePlane).toBe(Plane.WHEEL);
-    expect(seed.performers![0]!.customRedPlane).toBe(Plane.FLOOR);
-    expect(seed.performers![1]!.customBluePlane).toBe(Plane.RIGHT_SHIELD);
+    expect(seed.performers![0]!.customLeftPlane).toBe(Plane.WHEEL);
+    expect(seed.performers![0]!.customRightPlane).toBe(Plane.FLOOR);
+    expect(seed.performers![1]!.customLeftPlane).toBe(Plane.RIGHT_SHIELD);
   });
 
   it("seeds visiblePlanes from the resolved scene.visiblePlanes", () => {
@@ -109,7 +112,7 @@ describe("buildDirectorViewerSeed carries resolved planes", () => {
   });
 });
 
-describe("applyDirectorSceneToViewer wires planes onto real avatar instances", () => {
+describe("applyDirectorSceneToViewer wires planes onto real character instances", () => {
   it("sets hand planes and step overrides on scene A, then on scene B (reused instance) clears A's stale step overrides and applies B's own hand planes", () => {
     const { state, dispose } = createViewer3DStateForTest({});
     try {
@@ -126,11 +129,11 @@ describe("applyDirectorSceneToViewer wires planes onto real avatar instances", (
               performers: [
                 {
                   id: "performer-1",
-                  bluePlane: "wheel",
-                  redPlane: "floor",
+                  leftPlane: "wheel",
+                  rightPlane: "floor",
                   stepPlanes: [
-                    { step: 1, hand: "blue", plane: "floor" },
-                    { step: 3, hand: "red", plane: "wheel" },
+                    { step: 1, hand: "left", plane: "floor" },
+                    { step: 3, hand: "right", plane: "wheel" },
                   ],
                 },
               ],
@@ -143,25 +146,25 @@ describe("applyDirectorSceneToViewer wires planes onto real avatar instances", (
 
       const performer = state.performerManager.performers[0]!;
       // Reused-instance identity across the whole test: scene A and scene B
-      // both target this exact AvatarInstanceState.
+      // both target this exact CharacterInstanceState.
       expect(state.performerManager.performers).toHaveLength(1);
 
-      expect(performer.customBluePlane).toBe(Plane.WHEEL);
-      expect(performer.customRedPlane).toBe(Plane.FLOOR);
+      expect(performer.customLeftPlane).toBe(Plane.WHEEL);
+      expect(performer.customRightPlane).toBe(Plane.FLOOR);
       // Un-overridden hands report the performer's effective whole-sequence
       // plane (wheel/floor here), not a hardcoded WALL.
       expect(performer.getStepPlanes(1)).toEqual({
-        blue: Plane.FLOOR,
-        red: Plane.FLOOR,
+        left: Plane.FLOOR,
+        right: Plane.FLOOR,
       });
       expect(performer.getStepPlanes(3)).toEqual({
-        blue: Plane.WHEEL,
-        red: Plane.WHEEL,
+        left: Plane.WHEEL,
+        right: Plane.WHEEL,
       });
       // A step nobody touched reports the whole-sequence hand planes.
       expect(performer.getStepPlanes(0)).toEqual({
-        blue: Plane.WHEEL,
-        red: Plane.FLOOR,
+        left: Plane.WHEEL,
+        right: Plane.FLOOR,
       });
 
       const sceneB = resolveFilmDirectorSpec(
@@ -172,8 +175,8 @@ describe("applyDirectorSceneToViewer wires planes onto real avatar instances", (
               performers: [
                 {
                   id: "performer-1",
-                  bluePlane: "right-shield",
-                  redPlane: "wall",
+                  leftPlane: "right-shield",
+                  rightPlane: "wall",
                 },
               ],
             },
@@ -188,19 +191,19 @@ describe("applyDirectorSceneToViewer wires planes onto real avatar instances", (
       expect(state.performerManager.performers).toHaveLength(1);
       expect(state.performerManager.performers[0]).toBe(performer);
 
-      expect(performer.customBluePlane).toBe(Plane.RIGHT_SHIELD);
-      expect(performer.customRedPlane).toBe(Plane.WALL);
+      expect(performer.customLeftPlane).toBe(Plane.RIGHT_SHIELD);
+      expect(performer.customRightPlane).toBe(Plane.WALL);
 
       // Proves (b): scene A's per-step overrides do not survive into scene B,
       // which declares no stepPlanes of its own. Every step reports scene B's
       // whole-sequence hand planes.
       expect(performer.getStepPlanes(1)).toEqual({
-        blue: Plane.RIGHT_SHIELD,
-        red: Plane.WALL,
+        left: Plane.RIGHT_SHIELD,
+        right: Plane.WALL,
       });
       expect(performer.getStepPlanes(3)).toEqual({
-        blue: Plane.RIGHT_SHIELD,
-        red: Plane.WALL,
+        left: Plane.RIGHT_SHIELD,
+        right: Plane.WALL,
       });
     } finally {
       dispose();
@@ -223,8 +226,8 @@ describe("applyDirectorSceneToViewer wires planes onto real avatar instances", (
                 { id: "performer-1" },
                 {
                   id: "performer-2",
-                  bluePlane: "floor",
-                  stepPlanes: [{ step: 2, hand: "blue", plane: "floor" }],
+                  leftPlane: "floor",
+                  stepPlanes: [{ step: 2, hand: "left", plane: "floor" }],
                 },
               ],
             },
@@ -241,10 +244,10 @@ describe("applyDirectorSceneToViewer wires planes onto real avatar instances", (
       expect(state.performerManager.performers).toHaveLength(2);
       const secondPerformer = state.performerManager.performers[1]!;
       expect(secondPerformer.hasSequence).toBe(true);
-      expect(secondPerformer.customBluePlane).toBe(Plane.FLOOR);
+      expect(secondPerformer.customLeftPlane).toBe(Plane.FLOOR);
       expect(secondPerformer.getStepPlanes(2)).toEqual({
-        blue: Plane.FLOOR,
-        red: Plane.WALL,
+        left: Plane.FLOOR,
+        right: Plane.WALL,
       });
     } finally {
       dispose();

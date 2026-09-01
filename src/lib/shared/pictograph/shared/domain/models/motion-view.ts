@@ -21,7 +21,10 @@ import type { Motion } from "@tka/tka-types";
 import type { ArrowPlacementData } from "../../../arrow/positioning/placement/domain/arrow-placement-data";
 import type { PropPlacementData } from "../../../prop/domain/models/prop-placement-data";
 import type { PropType } from "../../../prop/domain/enums/prop-type";
-import type { GridLocation, GridMode } from "../../../grid/domain/enums/grid-enums";
+import type {
+  GridLocation,
+  GridMode,
+} from "../../../grid/domain/enums/grid-enums";
 import type { HandPath, SkewDirection } from "../enums/pictograph-enums";
 
 export interface MotionView {
@@ -87,7 +90,7 @@ export interface MotionView {
  * The 2026-04-20 blocker ("app enums are nominal TS enums, tka-types uses
  * const-as-union") no longer holds: every enum the lean `Motion` touches
  * (MotionType, GridLocation, GridMode, RotationDirection, Orientation,
- * MotionColor, Plane) has since been converted to const-as-union on the app
+ * HandSide and Plane have since been converted to const-as-union on the app
  * side, so the types are structurally identical across the package boundary.
  * Verified empirically 2026-07-01: `const m: Motion = motionData` and
  * `const mv: MotionWithView = motionData` both compile with zero errors

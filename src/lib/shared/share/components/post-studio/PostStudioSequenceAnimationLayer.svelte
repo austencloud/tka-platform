@@ -16,14 +16,14 @@
     sequence,
     sequencePosition,
     playing,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
   }: {
     sequence: SequenceData;
     sequencePosition: number;
     playing: boolean;
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
   } = $props();
 
   const stateManager = new AnimationStateManager();
@@ -37,8 +37,8 @@
   // readiness marker; keeping the exact reference lets both Create and the
   // Sequence Viewer drive the same animation layer.
   let initializedSequence = $state.raw<SequenceData | null>(null);
-  let blueProp = $state<PropState | null>(null);
-  let redProp = $state<PropState | null>(null);
+  let leftProp = $state<PropState | null>(null);
+  let rightProp = $state<PropState | null>(null);
 
   const beatNumber = $derived(
     clampDisplayedBeatNumber(
@@ -73,15 +73,15 @@
     const position = sequencePosition;
     if (initializedSequence !== sequence) return;
     orchestrator.calculateState(position);
-    blueProp = stateManager.getBluePropState();
-    redProp = stateManager.getRedPropState();
+    leftProp = stateManager.getLeftPropState();
+    rightProp = stateManager.getRightPropState();
   });
 </script>
 
 <div class="animation-layer">
   <AnimatorCanvas
-    {blueProp}
-    {redProp}
+    {leftProp}
+    {rightProp}
     gridVisible
     gridMode={sequence.gridMode ?? null}
     letter={stepData?.letter ?? null}
@@ -89,8 +89,8 @@
     sequenceData={sequence}
     currentStep={sequencePosition}
     isPlaying={playing}
-    {bluePropType}
-    {redPropType}
+    {leftPropType}
+    {rightPropType}
     word={null}
     previewDarkMode
     hideProgressBar

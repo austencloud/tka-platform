@@ -16,6 +16,84 @@
  * the tip trackers: base blue=0, red=1; layer li blue=2+2*li, red=3+2*li.
  */
 
+import {
+  DEFAULT_VIEWER_CUSTOM_COLORS,
+  normalizeViewerHexColor,
+  type ViewerCustomColorPair,
+} from "../domain/viewer-custom-colors";
+import { normalizeLegacyHandPair } from "@tka/tka-types";
+
+export type TunnelPropColorMode = "hands" | "spectrum" | "custom";
+
+export type TunnelPropColorPair = ViewerCustomColorPair;
+
+export interface TunnelPropColorState {
+  mode: TunnelPropColorMode;
+  custom: TunnelPropColorPair;
+}
+
+/** Stable seed for Custom mode. It deliberately uses the dark-stage hand
+ * colors because Tunnel playback is authored on the dark canvas. */
+export const DEFAULT_TUNNEL_CUSTOM_PROP_COLORS: TunnelPropColorPair = {
+  ...DEFAULT_VIEWER_CUSTOM_COLORS,
+};
+
+export const DEFAULT_TUNNEL_PROP_COLOR_STATE: TunnelPropColorState = {
+  mode: "spectrum",
+  custom: { ...DEFAULT_TUNNEL_CUSTOM_PROP_COLORS },
+};
+
+export function normalizeTunnelHexColor(
+  value: unknown,
+  fallback: string
+): string {
+  return normalizeViewerHexColor(value, fallback);
+}
+
+/** Parse current color state and the version-2 `spectrum` boolean at one
+ * boundary. Callers always receive a complete, normalized state. */
+export function resolveTunnelPropColorState(
+  value: unknown,
+  legacySpectrum?: unknown
+): TunnelPropColorState {
+  const candidate =
+    value && typeof value === "object"
+      ? (value as {
+          mode?: unknown;
+          custom?: { left?: unknown; right?: unknown } | null;
+        })
+      : null;
+  const custom = normalizeLegacyHandPair(candidate?.custom);
+  const mode: TunnelPropColorMode =
+    candidate?.mode === "hands" ||
+    candidate?.mode === "spectrum" ||
+    candidate?.mode === "custom"
+      ? candidate.mode
+      : legacySpectrum === false
+        ? "hands"
+        : "spectrum";
+  return {
+    mode,
+    custom: {
+      left: normalizeTunnelHexColor(
+        custom?.left,
+        DEFAULT_TUNNEL_CUSTOM_PROP_COLORS.left
+      ),
+      right: normalizeTunnelHexColor(
+        custom?.right,
+        DEFAULT_TUNNEL_CUSTOM_PROP_COLORS.right
+      ),
+    },
+  };
+}
+
+/** Exact pair sent to the engine only while Custom mode is active. */
+export function activeTunnelPropColorPair(
+  state: TunnelPropColorState
+): TunnelPropColorPair | null {
+  return state.mode === "custom" ? { ...state.custom } : null;
+}
+
 // Hue arcs in degrees. t=0 sits at the family anchor, t=1 at its far color.
 const BLUE_ANCHOR_HUE = 250; // blue-violet
 const BLUE_FAR_HUE = 110; // green  (250 → 200 cyan → 110 green)
@@ -32,6 +110,25 @@ export interface TunnelColor {
   rgb01: { r: number; g: number; b: number };
   /** Components in 0..255. */
   rgb255: { r: number; g: number; b: number };
+}
+
+export function tunnelColorFromHex(hex: string): TunnelColor {
+  const normalized = normalizeTunnelHexColor(hex, "#ffffff");
+  const packed = Number.parseInt(normalized.slice(1), 16);
+  const rgb255 = {
+    r: (packed >> 16) & 255,
+    g: (packed >> 8) & 255,
+    b: packed & 255,
+  };
+  return {
+    hex: normalized,
+    rgb255,
+    rgb01: {
+      r: rgb255.r / 255,
+      g: rgb255.g / 255,
+      b: rgb255.b / 255,
+    },
+  };
 }
 
 function lerp(a: number, b: number, t: number): number {
@@ -69,7 +166,7 @@ function toHex2(n: number): string {
 /**
  * Color for one prop in the tunnel stack.
  *
- * @param propIndex  base blue=0, red=1; layer blue=2+2*li, red=3+2*li.
+ * @param propIndex base left=0, right=1; layer left=2+2*li, right=3+2*li.
  * @param layerCount number of overlaid layers (`additionalLayers.length`); the
  *                   family spans `layerCount + 1` props (base + layers), so the
  *                   fan stretches to fill exactly the active stack.
@@ -78,12 +175,12 @@ export function tunnelPropColor(
   propIndex: number,
   layerCount: number
 ): TunnelColor {
-  const isBlue = propIndex % 2 === 0;
+  const isLeft = propIndex % 2 === 0;
   const familyIndex = Math.floor(propIndex / 2); // 0 = base
   const familyCount = Math.max(1, layerCount + 1);
   const t = familyCount <= 1 ? 0 : Math.min(1, familyIndex / (familyCount - 1));
 
-  const hue = isBlue
+  const hue = isLeft
     ? lerp(BLUE_ANCHOR_HUE, BLUE_FAR_HUE, t)
     : lerp(RED_ANCHOR_HUE, RED_FAR_HUE, t);
 
@@ -104,7 +201,10 @@ export function tunnelPropColor(
 export const SPOTLIGHT_DIM = 0.12;
 
 export type TunnelLayerSelection =
-  number | readonly number[] | null | undefined;
+  | number
+  | readonly number[]
+  | null
+  | undefined;
 
 /**
  * Brightness multiplier for a prop family under the spotlight. `selectedArm` is

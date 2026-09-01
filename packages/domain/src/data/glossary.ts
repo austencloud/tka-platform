@@ -350,7 +350,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
       "A per-hand designation used by Lambda (Λ), Lambda-Dash (Λ-), and gamma (γ). Opening means the rotating hand's trajectory would continue through a pro shift toward an alpha position. Each hand can be opening or closing independently.",
     examples: [
       "Λ(0,1,op): Lambda with 1-turn static hand whose trajectory would resolve to alpha",
-      "Λ-(1,1,op,cl): Lambda-Dash with blue hand opening (toward alpha), red hand closing (toward beta)",
+      "Λ-(1,1,op,cl): Lambda-Dash with the left hand opening (toward alpha), right hand closing (toward beta)",
       "γ(op,op): gamma with both hands rotating such that both trajectories resolve to alpha",
     ],
     relatedTerms: ["closing", "glyph", "alpha", "rotational-relationship"],
@@ -362,7 +362,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     examples: [
       "Λ(0,1,cl): Lambda with 1-turn static hand whose trajectory would resolve to beta",
       "Λ-(1,1,cl,cl): Lambda-Dash with both hands closing (both trajectories resolve to beta)",
-      "γ(cl,op): gamma with blue closing (toward beta), red opening (toward alpha)",
+      "γ(cl,op): gamma with the left hand closing (toward beta), right hand opening (toward alpha)",
     ],
     relatedTerms: ["opening", "glyph", "beta", "rotational-relationship"],
     category: "notation",
@@ -448,13 +448,20 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
 
   chirality: {
     definition:
-      "Which of two mirror-image forms an asymmetric prop takes. A chiral prop is not superimposable on its own mirror image, so the shape has a handedness that rotation cannot change: orientation turns the prop, chirality decides which of the two shapes is being turned. Chirality is set per hand, so the blue prop and the red prop can differ. In TKA it applies to the buugeng family, where the pair's relative chirality is what matters: two props of the same chirality stay visibly apart at a shared hand point, while two of opposite chirality nest into a single combined shape and take no separation offset. Neither form is the canonical one, so TKA names them A and B rather than treating one as a mirrored version of the other.",
+      "Which of two mirror-image forms an asymmetric prop takes. A chiral prop is not superimposable on its own mirror image, so the shape has a handedness that rotation cannot change: orientation turns the prop, chirality decides which of the two shapes is being turned. Chirality is set per hand, so the left and right props can differ. In TKA it applies to the buugeng family, where the pair's relative chirality is what matters: two props of the same chirality stay visibly apart at a shared hand point, while two of opposite chirality nest into a single combined shape and take no separation offset. Neither form is the canonical one, so TKA names them A and B rather than treating one as a mirrored version of the other.",
     examples: [
-      "Blue A beside red B is the pairing that nests at a beta position",
-      "Blue A beside red A stays separated, the same as any other matched pair",
+      "Left A beside right B is the pairing that nests at a beta position",
+      "Left A beside right A stays separated, the same as any other matched pair",
       "Flipping one hand's chirality changes the shape drawn, not its rotation angle",
     ],
-    relatedTerms: ["buugeng", "trigeng", "prop", "orientation", "beta", "bilateral"],
+    relatedTerms: [
+      "buugeng",
+      "trigeng",
+      "prop",
+      "orientation",
+      "beta",
+      "bilateral",
+    ],
     category: "general",
   },
 
@@ -465,7 +472,13 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
       "A buugeng pictograph tracks orientation and chirality separately",
       "Trigeng is the three-armed member of the same family",
     ],
-    relatedTerms: ["chirality", "trigeng", "prop", "bilateral", "staff-reference"],
+    relatedTerms: [
+      "chirality",
+      "trigeng",
+      "prop",
+      "bilateral",
+      "staff-reference",
+    ],
     category: "general",
   },
   trigeng: {
@@ -732,7 +745,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   step: {
     definition:
-      "The fundamental unit of a sequence: one step = one letter = one pictograph. A sequence of N letters has N steps of motion plus a start position (step 0). Each step shows what both hands and props do during that moment, regardless of its duration.",
+      "A pictograph in the context of a sequence. A sequence of N letters has N steps of motion plus a start position (step 0). Each step shows what both hands and props do, while its duration is measured separately in musical beats.",
     examples: [
       "A 4-letter word is 4 steps long",
       "Step 0 is the start position (no motion yet)",
@@ -740,6 +753,16 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     ],
     relatedTerms: ["letter", "pictograph", "sequence"],
     category: "general",
+  },
+  beat: {
+    definition:
+      "A unit of musical timing. A beat can be subdivided, and a sequence step may last for one or more beats. Beat does not mean pictograph or step.",
+    examples: [
+      "A half beat is a subdivision of one beat",
+      "A held step can last for two beats",
+    ],
+    relatedTerms: ["step", "sequence", "timing"],
+    category: "notation",
   },
   "type-1": {
     definition:
@@ -868,7 +891,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   pictograph: {
     definition:
-      "A visual representation of one step of motion in TKA. Shows two props, arrows indicating motion, and optional glyphs for letter name, timing, positions, and reversals.",
+      "A visual TKA diagram showing two props, arrows indicating motion, and optional glyphs for letter name, timing, positions, and reversals. A pictograph can stand alone; when it is placed in a sequence, it functions as a step.",
     examples: [
       "Each letter has multiple pictograph variations",
       "Pictographs can be sequenced into choreo cards",
@@ -1139,9 +1162,9 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   swapped: {
     definition:
-      "A LOOP transformation where the blue and red hands swap roles. What the blue hand did, the red hand now does (and vice versa). Changes body motion significantly.",
+      "A LOOP transformation where the left and right hands swap roles. What the left hand did, the right hand now does (and vice versa). Changes body motion significantly.",
     examples: [
-      "Blue was at N doing pro, now red is at N doing pro",
+      "The left hand was at N doing pro; now the right hand is at N doing pro",
       "Body has to reorganize to execute the swapped version",
     ],
     relatedTerms: ["loop", "mirrored", "inverted"],
@@ -1250,24 +1273,44 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     relatedTerms: ["sequence", "pictograph", "word"],
     category: "notation",
   },
+  "left-hand": {
+    definition:
+      "The performer's physical left hand. It is the canonical left motion channel in TKA data and uses blue in the default notation palette.",
+    examples: [
+      "The left hand starts at N and shifts to E",
+      "Changing the left-hand color changes its prop, arrow, and mandala path together",
+    ],
+    relatedTerms: ["right-hand", "blue", "motion-type", "pictograph"],
+    category: "general",
+  },
+  "right-hand": {
+    definition:
+      "The performer's physical right hand. It is the canonical right motion channel in TKA data and uses red in the default notation palette.",
+    examples: [
+      "The right hand starts at S and shifts to W",
+      "Changing the right-hand color changes its prop, arrow, and mandala path together",
+    ],
+    relatedTerms: ["left-hand", "red", "motion-type", "pictograph"],
+    category: "general",
+  },
   blue: {
     definition:
-      "The color assigned to one of the two hands/props in TKA notation. Blue is conventionally the left hand or lead hand. In pictographs, the blue prop and arrow are rendered in blue. The choice of blue vs red is a notational convention, not a physical requirement.",
+      "The canonical display color for the performer's left hand and prop in TKA notation. The underlying motion identity is left; pictographs traditionally render its prop and arrow in blue.",
     examples: [
-      "Blue hand starts at N, shifts to E",
-      "Blue prop shown in blue on the pictograph",
+      "The left hand starts at N and shifts to E",
+      "The left prop and arrow use canonical blue in the default palette",
     ],
-    relatedTerms: ["red", "prop", "pictograph"],
+    relatedTerms: ["red", "left-hand", "prop", "pictograph"],
     category: "general",
   },
   red: {
     definition:
-      "The color assigned to the other hand/prop in TKA notation. Red is conventionally the right hand or follow hand. In pictographs, the red prop and arrow are rendered in red.",
+      "The canonical display color for the performer's right hand and prop in TKA notation. The underlying motion identity is right; pictographs traditionally render its prop and arrow in red.",
     examples: [
-      "Red hand starts at S, shifts to W",
-      "Red prop shown in red on the pictograph",
+      "The right hand starts at S and shifts to W",
+      "The right prop and arrow use canonical red in the default palette",
     ],
-    relatedTerms: ["blue", "prop", "pictograph"],
+    relatedTerms: ["blue", "right-hand", "prop", "pictograph"],
     category: "general",
   },
   constraint: {
@@ -1276,7 +1319,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     examples: [
       "constraintPreset: 'smooth' minimizes reversals",
       "constraintPreset: 'isolation' forces all pro motions",
-      "Natural language: 'maximize flow with blue clockwise'",
+      "Natural language: 'maximize flow with the left hand clockwise'",
     ],
     relatedTerms: ["sequence", "word", "pro", "anti", "reversal"],
     category: "sequence",
@@ -1327,7 +1370,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     definition:
       "A Level 7 concept where two grids share a junction point, expanding the spatial canvas and bridging to 3D. Each grid shows one hand's motion. The junction point creates new position combinations that can't exist on a single grid, including patterns with two center points. Uses existing terminology (alpha, beta, gamma, etc.) to express new spatial relationships across the paired grids. Placed after the centric grid (L6) so the single grid is complete — every orientation (L4), every perimeter pairing (L5), and the center point itself (L6) — before expanding beyond one grid. The junction consumes the center point directly.",
     examples: [
-      "Two grids sharing a north/south junction, blue hand on grid A, red hand on grid B",
+      "Two grids sharing a north/south junction, left hand on grid A, right hand on grid B",
       "Layouts: left-right, top-bottom, diagonal arrangements",
       "Patterns where hands are spatially further apart than a single grid allows",
     ],

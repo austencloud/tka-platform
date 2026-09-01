@@ -6,9 +6,9 @@
  * FOV. Works for wall, wheel, and floor planes.
  *
  * Unlike the shots.ts helpers in camera-choreography (which take full
- * AvatarInstanceState objects), this accepts plain {x, z} positions so
+ * CharacterInstanceState objects), this accepts plain {x, z} positions so
  * it can be used anywhere — quiz stages, previews, thumbnails — without
- * depending on the full avatar system.
+ * depending on the full character system.
  */
 
 import { userProportionsState } from "@austencloud/scene-3d";

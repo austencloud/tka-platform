@@ -4,14 +4,21 @@
   Generic vertical icon-bar tablist. The pill id type `T` is a free string
   union supplied by the consumer (AnimationPanel passes PillId; the Art panel
   passes its own tunnel/mandala id unions), so this rail is reusable beyond the
-  Download-Animation panel. Each pill renders its FontAwesome `icon`, or — when
-  no icon is given — an accent dot (used by Effort).
+  Download-Animation panel. Each pill renders live prop artwork, a FontAwesome
+  `icon`, or an accent dot (used by Effort).
 -->
 <script lang="ts" generics="T extends string">
+  import RailPropGlyph from "$lib/shared/components/RailPropGlyph.svelte";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+
   interface RailPill {
     id: T;
     /** FontAwesome class, e.g. "fa-wand-magic-sparkles". Omit for an accent dot. */
     icon?: string;
+    /** The current prop itself is more informative than a generic Props glyph. */
+    propType?: PropType;
+    fanAppearance?: FanAppearance;
     label: string;
     /** Optional one-line summary surfaced in the button title tooltip. */
     summary?: string;
@@ -104,15 +111,26 @@
       onclick={() => onSelect(pill.id)}
       onkeydown={handleKeydown}
     >
-      {#if pill.icon}
-        <i class="fas {pill.icon}" aria-hidden="true"></i>
-      {:else}
-        <span
-          class="effort-dot"
-          style:background={pill.accentColor ?? "#94a3b8"}
-        ></span>
-      {/if}
-      <span class="rail-label">{pill.label}</span>
+      <span class="rail-glyph">
+        {#if pill.propType}
+          <RailPropGlyph
+            propType={pill.propType}
+            fanAppearance={pill.fanAppearance}
+            size={26}
+          />
+        {:else if pill.icon}
+          <i class="fas {pill.icon}" aria-hidden="true"></i>
+        {:else}
+          <span
+            class="effort-dot"
+            style:background={pill.accentColor ?? "#94a3b8"}
+          ></span>
+        {/if}
+      </span>
+      <span class="rail-copy">
+        <span class="rail-label">{pill.label}</span>
+        {#if pill.summary}<span class="rail-summary">{pill.summary}</span>{/if}
+      </span>
     </button>
   {/each}
 </div>
@@ -140,7 +158,11 @@
     align-items: center;
     justify-content: center;
     font-size: 22px;
-    color: rgba(255, 255, 255, 0.62);
+    color: color-mix(
+      in srgb,
+      var(--pill-accent, var(--theme-text-dim, rgba(255, 255, 255, 0.62))) 42%,
+      var(--theme-text-dim, rgba(255, 255, 255, 0.62))
+    );
     background: rgba(20, 22, 32, 0.78);
     backdrop-filter: blur(20px) saturate(140%);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -153,7 +175,11 @@
   .rail-btn:hover:not([aria-selected="true"]) {
     transform: scale(1.08);
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.22));
-    color: rgba(255, 255, 255, 0.85);
+    color: color-mix(
+      in srgb,
+      var(--pill-accent, var(--theme-text, rgba(255, 255, 255, 0.85))) 68%,
+      var(--theme-text, rgba(255, 255, 255, 0.85))
+    );
   }
 
   .rail-btn:focus-visible {
@@ -183,14 +209,36 @@
     border-radius: 50%;
   }
 
-  .rail-label {
+  .rail-glyph {
+    display: grid;
+    width: 26px;
+    height: 26px;
+    flex: 0 0 auto;
+    place-items: center;
+  }
+
+  .rail-copy {
     display: none;
     min-width: 0;
+  }
+
+  .rail-label,
+  .rail-summary {
+    display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .rail-label {
     font-size: var(--font-size-compact, 12px);
     font-weight: 650;
+  }
+
+  .rail-summary {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
   }
 
   /* The wide effects sidebar has room to name its sections. Keeping the
@@ -210,18 +258,15 @@
       font-size: 18px;
     }
 
-    .rail-btn i,
-    .effort-dot {
+    .rail-glyph {
       flex: 0 0 auto;
     }
 
-    .rail-btn i {
-      width: 20px;
-      text-align: center;
-    }
-
-    .rail-label {
-      display: block;
+    .rail-copy {
+      display: grid;
+      min-width: 0;
+      gap: 1px;
+      text-align: left;
     }
   }
 

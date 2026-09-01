@@ -2,32 +2,103 @@ name: Desktop Build
 on:
   workflow_dispatch:
   push:
-    tags: ['v*']
+    tags: ["v*"]
 
 permissions:
   contents: write
 
 jobs:
+  release-preflight:
+    name: Validate desktop release signing
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Validate signing secrets for tagged releases
+        if: github.ref_type == 'tag'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          missing=()
+          [[ -n "$TAURI_SIGNING_PRIVATE_KEY" ]] || missing+=(TAURI_SIGNING_PRIVATE_KEY)
+          [[ -n "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" ]] || missing+=(TAURI_SIGNING_PRIVATE_KEY_PASSWORD)
+          if (( ${#missing[@]} )); then
+            printf '::error::Missing required desktop release secret(s): %s\n' "${missing[*]}"
+            exit 1
+          fi
+
+      - name: Confirm unsigned smoke-build mode
+        if: github.ref_type != 'tag'
+        run: echo "Branch dispatch uses unsigned packages and does not create a GitHub release."
+
+  prepare-sequence-bundle:
+    name: Export and verify offline sequence data
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Create Firebase credential file
+        env:
+          SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+        run: |
+          credential_path="$RUNNER_TEMP/firebase-service-account.json"
+          printf '%s' "$SERVICE_ACCOUNT_KEY" > "$credential_path"
+          printf 'GOOGLE_APPLICATION_CREDENTIALS=%s\n' "$credential_path" >> "$GITHUB_ENV"
+
+      - name: Export desktop sequence bundle
+        run: pnpm export:deck-bundle
+
+      - name: Verify desktop sequence bundle
+        run: pnpm verify:desktop-sequence-bundle
+
+      - name: Remove Firebase credential file
+        if: always()
+        run: rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
+
+      - name: Upload desktop sequence bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-sequence-bundle
+          path: data/sequences/
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 9
+
   build:
+    needs: [release-preflight, prepare-sequence-bundle]
     strategy:
       fail-fast: false
       matrix:
         include:
           - platform: windows-latest
-            args: ''
+            args: ""
           - platform: macos-latest
-            args: '--target aarch64-apple-darwin'
+            args: "--target aarch64-apple-darwin"
           - platform: macos-latest
-            args: '--target x86_64-apple-darwin'
+            args: "--target x86_64-apple-darwin"
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: pnpm/action-setup@v4
         with:
           version: 10.28.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: pnpm
@@ -36,20 +107,37 @@ jobs:
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
+
+      - name: Download desktop sequence bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: desktop-sequence-bundle
+          path: data/sequences
+
+      - name: Verify downloaded desktop sequence bundle
+        run: pnpm verify:desktop-sequence-bundle
 
       - name: Create .env from example
         run: cp .env.example .env
 
-      - uses: tauri-apps/tauri-action@v0
+      - name: Build unsigned desktop packages
+        if: github.ref_type != 'tag'
+        uses: tauri-apps/tauri-action@v0
+        with:
+          args: ${{ matrix.args }} --config src-tauri/tauri.ci.conf.json
+
+      - name: Build and publish signed desktop release
+        if: github.ref_type == 'tag'
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'Flow Arts Composer ${{ github.ref_name }}'
-          releaseBody: 'Desktop release — see web changelog for details.'
+          releaseName: "Flow Arts Composer ${{ github.ref_name }}"
+          releaseBody: "Desktop release — see web changelog for details."
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

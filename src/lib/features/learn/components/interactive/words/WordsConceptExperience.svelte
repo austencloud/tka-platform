@@ -398,8 +398,8 @@
                     {sequence}
                     selected={sequence.id === selectedSequence.id}
                     onPrimaryAction={chooseSequence}
-                    bluePropType={PropType.STAFF}
-                    redPropType={PropType.STAFF}
+                    leftPropType={PropType.STAFF}
+                    rightPropType={PropType.STAFF}
                     eager
                     allowQR={false}
                   />

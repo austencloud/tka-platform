@@ -156,6 +156,16 @@ describe("scene asset manifest", () => {
     expect(urls).toContain("/models/ocean/ocean-environment.glb");
   });
 
+  it("warms every Autumn texture needed at reveal", () => {
+    expect(sceneAssetUrls(BackgroundType.AUTUMN)).toEqual([
+      "/models/autumn/autumn-environment.glb",
+      "/textures/autumn-floor/ground-detail-modulation.ktx2",
+      "/textures/water/Water_1_M_Normal.jpg",
+      "/textures/water/Water_2_M_Normal.jpg",
+      "/textures/autumn/moon-512.png",
+    ]);
+  });
+
   it("keeps the flora scene off the dev-only comparison build", () => {
     const urls = sceneAssetUrls(BackgroundType.OCEAN);
     expect(urls.some((url) => url.includes(OCEAN_FLORA_FILES.composed))).toBe(

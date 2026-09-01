@@ -1,11 +1,23 @@
 <!-- Tunnel settings route each substantial rail section to its presentation owner. -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import { fly } from "svelte/transition";
   import IconRailNav from "$lib/shared/animation-panel/pill-nav/IconRailNav.svelte";
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
   import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
   import { createGlobalChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import FanAppearancePicker from "$lib/shared/pictograph/prop/components/FanAppearancePicker.svelte";
+  import {
+    isFanPropType,
+    type FanAppearance,
+  } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+  import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { getAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
+  import { computePlaybackSummary } from "$lib/shared/animation-panel/pill-nav/pill-summaries";
+  import { RAIL_CATEGORY_ACCENTS } from "$lib/shared/animation-panel/pill-nav/rail-category-accents";
   import ControlDock, {
     type ControlDockAction,
     type ControlDockTab,
@@ -47,8 +59,10 @@
     onBpmChange: (bpm: number) => void;
     onPlaybackModeChange: (mode: PlaybackMode) => void;
     onPlaybackToggle: () => void;
-    bluePropType: string | null;
+    leftPropType: string | null;
     onPropChange?: (propType: PropType) => void;
+    fanAppearance?: FanAppearance;
+    onFanAppearanceChange?: (appearance: FanAppearance) => void;
     propChirality?: PropChiralitySeam;
     animationSettingsState?: AnimationSettingsState;
     onArtSettingChange?: ArtSettingChangeHandler;
@@ -71,8 +85,10 @@
     onBpmChange,
     onPlaybackModeChange,
     onPlaybackToggle,
-    bluePropType,
+    leftPropType,
     onPropChange,
+    fanAppearance,
+    onFanAppearanceChange,
     propChirality = createGlobalChiralitySeam(),
     animationSettingsState = animationSettings,
     onArtSettingChange,
@@ -97,25 +113,86 @@
     );
   }
 
-  const tunnelRail = $derived<
-    { id: TunnelRailId; icon?: string; label: string; accentColor?: string }[]
-  >([
-    { id: "tunnel", icon: "fa-shapes", label: "Formation" },
-    ...(onPropChange
-      ? [{ id: "props" as const, icon: "fa-paintbrush", label: "Props" }]
-      : []),
-    { id: "speed", icon: "fa-gauge-high", label: "Speed" },
-    { id: "effects", icon: "fa-wand-magic-sparkles", label: "Effects" },
-    // Effort uses an accent dot (no icon), matching the Download panel's Effort pill.
-    { id: "effort", label: "Effort", accentColor: "#94a3b8" },
-    { id: "playback", icon: "fa-play", label: "Playback" },
-  ]);
-
   // The active prop for the Props grid's highlight. Tunnel uses a single prop for
   // both hands (like the 2D Download panel), so blue is the source of truth.
   const selectedPropType = $derived<PropType>(
-    (bluePropType as PropType | null) ?? PropType.STAFF
+    (leftPropType as PropType | null) ?? PropType.STAFF
   );
+  const visibility =
+    getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
+  let visibilityVersion = $state(0);
+  function onVisibilityChanged(): void {
+    visibilityVersion++;
+  }
+  visibility.registerObserver(onVisibilityChanged);
+  onDestroy(() => visibility.unregisterObserver(onVisibilityChanged));
+
+  const activeEffort = $derived.by(() => {
+    void visibilityVersion;
+    const id = visibility.getEffortPreset();
+    return EFFORTS.find((effort) => effort.id === id) ?? EFFORTS[0]!;
+  });
+  const formationSummary = $derived(
+    `${controller.presetRecipe?.name ?? "Custom"} · ${controller.performerCount} ${controller.performerCount === 1 ? "instance" : "instances"}`
+  );
+  const tunnelRail = $derived<
+    {
+      id: TunnelRailId;
+      icon?: string;
+      propType?: PropType;
+      fanAppearance?: FanAppearance;
+      label: string;
+      summary?: string;
+      accentColor?: string;
+    }[]
+  >([
+    {
+      id: "tunnel",
+      icon: "fa-shapes",
+      label: "Formation",
+      summary: formationSummary,
+      accentColor: RAIL_CATEGORY_ACCENTS.formation,
+    },
+    ...(onPropChange
+      ? [
+          {
+            id: "props" as const,
+            propType: selectedPropType,
+            fanAppearance,
+            label: "Props",
+            summary: getPropTypeDisplayInfo(selectedPropType).label,
+            accentColor: RAIL_CATEGORY_ACCENTS.props,
+          },
+        ]
+      : []),
+    {
+      id: "speed",
+      icon: "fa-gauge-high",
+      label: "Copy Speed",
+      summary: controller.hasSpeedOverrides ? "Mixed rates" : "Uniform",
+      accentColor: RAIL_CATEGORY_ACCENTS.speed,
+    },
+    {
+      id: "effects",
+      icon: "fa-wand-magic-sparkles",
+      label: "Effects",
+      summary: "Colors & effects",
+      accentColor: RAIL_CATEGORY_ACCENTS.effects,
+    },
+    {
+      id: "effort",
+      label: "Effort",
+      summary: activeEffort.label,
+      accentColor: activeEffort.color,
+    },
+    {
+      id: "playback",
+      icon: "fa-route",
+      label: "Playback",
+      summary: computePlaybackSummary(bpm, playbackMode),
+      accentColor: RAIL_CATEGORY_ACCENTS.playback,
+    },
+  ]);
   // Active section lives on the controller so it persists with the rest of the
   // tunnel view state (load/save in TunnelViewController).
   const tunnelSection = $derived<TunnelRailId>(controller.section);
@@ -161,6 +238,8 @@
       id: p.id,
       label: p.label,
       icon: p.icon,
+      propType: p.propType,
+      fanAppearance: p.fanAppearance,
       accentColor: p.accentColor,
     }))
   );
@@ -202,6 +281,15 @@
           flat={dense}
           chirality={propChirality}
         />
+        {#if fanAppearance && onFanAppearanceChange && isFanPropType(selectedPropType)}
+          <div class="fan-appearance-section">
+            <FanAppearancePicker
+              value={fanAppearance}
+              onchange={onFanAppearanceChange}
+              compact={dense}
+            />
+          </div>
+        {/if}
       {/if}
     </div>
   {:else if id === "speed"}
@@ -380,6 +468,11 @@
     gap: 16px;
     padding: 8px 16px 20px;
   }
+
+  .fan-appearance-section {
+    padding-top: 14px;
+    border-top: 1px solid var(--theme-stroke);
+  }
   .section-hint {
     font-size: var(--font-size-compact, 12px);
     color: rgba(255, 255, 255, 0.6);
@@ -395,5 +488,9 @@
   .dock-dense .section-pad {
     gap: 8px;
     padding: 2px 2px 6px;
+  }
+
+  .dock-dense .fan-appearance-section {
+    padding-top: 10px;
   }
 </style>

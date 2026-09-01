@@ -97,13 +97,13 @@ export function computePropRotation(
 
 export function computeBetaOffset(
   location: GridLocation,
-  color: "blue" | "red",
+  hand: "left" | "right",
   mode: TriGridMode,
 ): Point {
   const locationAngle = getLocationAngle(location, mode);
 
-  // Blue offsets +90° (clockwise perpendicular), red offsets -90° (counter-clockwise)
-  const perpendicularAngle = color === "blue"
+  // Left offsets +90°; right offsets -90°.
+  const perpendicularAngle = hand === "left"
     ? locationAngle + 90
     : locationAngle - 90;
 

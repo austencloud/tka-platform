@@ -189,8 +189,8 @@ export function startGalleryWarm(
           // tiers and only renders+uploads a full miss.
           const input = buildGalleryRenderInput({
             sequence: combo.sequence,
-            bluePropType: combo.prop,
-            redPropType: combo.prop,
+            leftPropType: combo.prop,
+            rightPropType: combo.prop,
             catDogModeEnabled: false,
             lightMode: combo.mode === "light",
             variant: "gallery",

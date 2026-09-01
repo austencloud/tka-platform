@@ -12,8 +12,8 @@ import type { Section, SectionGroup } from "../domain/types";
 // Note: Animate is now a Play button in the button panel with inline animator
 // Note: Record removed (not implemented yet, users will use native camera apps)
 
-// Default tab for new users visiting /create without a specific tab.
-// "construct" is the default because it's the most complete/polished experience.
+// Valid backing tab while the generic /create front door is visible. Direct
+// mode routes still select their requested tab explicitly.
 export const DEFAULT_CREATE_TAB = "construct";
 
 export const CREATE_TABS: Section[] = [
@@ -23,7 +23,7 @@ export const CREATE_TABS: Section[] = [
     descKey: "tab_desc_create_assemble",
     label: "Assemble",
     icon: '<i class="fas fa-puzzle-piece" aria-hidden="true"></i>',
-    description: "Click grid points to build sequences visually",
+    description: "Build a sequence by choosing grid points directly.",
     color: "#06b6d4",
     gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
     metadata: { isCreationMethod: true },
@@ -34,7 +34,8 @@ export const CREATE_TABS: Section[] = [
     descKey: "tab_desc_create_construct",
     label: "Construct",
     icon: '<i class="fas fa-hammer" aria-hidden="true"></i>',
-    description: "Create sequences step by step (all options)",
+    description:
+      "Build a sequence one pictograph at a time, with every option available.",
     color: "#3b82f6",
     gradient: "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)",
     metadata: { isCreationMethod: true },
@@ -45,7 +46,7 @@ export const CREATE_TABS: Section[] = [
     descKey: "tab_desc_create_generate",
     label: "Generate",
     icon: '<i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>',
-    description: "Auto-create sequences",
+    description: "Set a few rules and let the app create a sequence for you.",
     color: "#f59e0b",
     gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #f97316 100%)",
     metadata: { isCreationMethod: true },
@@ -56,7 +57,7 @@ export const CREATE_TABS: Section[] = [
     descKey: "tab_desc_create_fuse",
     label: "Fuse",
     icon: '<i class="fas fa-fire" aria-hidden="true"></i>',
-    description: "Combine two sequences into one",
+    description: "Choose two sequences and combine them into one.",
     color: "#f97316",
     gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)",
     metadata: { isCreationMethod: true },
@@ -67,7 +68,7 @@ export const CREATE_TABS: Section[] = [
     descKey: "tab_desc_create_tunnel",
     label: "Tunnel",
     icon: '<i class="fas fa-people-arrows-left-right" aria-hidden="true"></i>',
-    description: "Compose complete sequences into a multi-performer tunnel",
+    description: "Arrange complete sequences for multiple performers.",
     color: "#a78bfa",
     gradient: "linear-gradient(135deg, #67e8f9 0%, #a78bfa 100%)",
     metadata: { isCreationMethod: true },
@@ -579,12 +580,14 @@ export const ARENA_TABS: Section[] = [
 ];
 
 // Choreo Card tabs configuration
+export const CHOREO_CARD_SCAN_ATLAS_TAB_ID = "scan-atlas";
+
 export const CHOREO_CARD_TABS: Section[] = [
   {
-    id: "scan-activity",
+    id: CHOREO_CARD_SCAN_ATLAS_TAB_ID,
     labelKey: "tab_choreo_card_scan_activity",
     descKey: "tab_desc_choreo_card_scan_activity",
-    label: "Scan Activity",
+    label: "Scan Atlas",
     icon: '<i class="fas fa-satellite-dish" aria-hidden="true"></i>',
     description: "Live feed of Choreo Card scans worldwide",
     color: "#10b981",

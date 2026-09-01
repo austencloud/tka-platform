@@ -9,7 +9,7 @@ import { applyColorToSvg } from "$lib/shared/pictograph/arrow/rendering/services
 import { parseArrowSvg } from "$lib/shared/pictograph/arrow/rendering/services/arrow-svg-parser";
 import { createArrowPlacementData } from "$lib/shared/pictograph/arrow/positioning/placement/domain/create-arrow-placement-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -141,7 +141,7 @@ describe("full quarter-turn arrow asset resolution", () => {
       resolve("static/images/arrows/pro/from_radial/pro_0.25.svg"),
       "utf8"
     );
-    const colored = applyColorToSvg(source, MotionColor.RED, "dark");
+    const colored = applyColorToSvg(source, HandSide.RIGHT, "dark");
 
     expect(colored).not.toContain("stroke:#2e3192");
     expect(colored).toMatch(/stroke:#[0-9a-f]{6}/i);

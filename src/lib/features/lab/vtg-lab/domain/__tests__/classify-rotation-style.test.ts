@@ -4,9 +4,9 @@ import { classifyRotationStyle } from "$lib/shared/shape-matrix/domain/rotation-
 // Minimal sequence shape: steps with blue/red motions carrying a motionType.
 function seq(pairs: Array<[string, string]>): any {
   return {
-    steps: pairs.map(([blue, red]) => ({
+    steps: pairs.map(([left, right]) => ({
       isBlank: false,
-      motions: { blue: { motionType: blue }, red: { motionType: red } },
+      motions: { left: { motionType: left }, right: { motionType: right } },
     })),
   };
 }
@@ -34,8 +34,8 @@ describe("classifyRotationStyle", () => {
         {
           isBlank: false,
           motions: {
-            blue: { motionType: "float", prefloatMotionType: "anti" },
-            red: { motionType: "anti" },
+            left: { motionType: "float", prefloatMotionType: "anti" },
+            right: { motionType: "anti" },
           },
         },
       ],

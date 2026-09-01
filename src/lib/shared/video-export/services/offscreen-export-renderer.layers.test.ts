@@ -9,14 +9,20 @@ vi.mock("$lib/shared/animation-engine/services/render-context-factory", () => ({
   RenderContextFactory: class {},
 }));
 vi.mock("./export-engine-props", () => ({
-  assembleExportEngineProps: () => ({ blueProp: null, redProp: null }),
+  assembleExportEngineProps: () => ({ leftProp: null, rightProp: null }),
 }));
-vi.mock("$lib/shared/animation-engine/state/animation-settings-state.svelte", () => ({
-  animationSettings: { trail: {} },
-}));
-vi.mock("$lib/shared/animation-engine/state/animation-visibility-state.svelte", () => ({
-  getAnimationVisibilityManager: () => ({}),
-}));
+vi.mock(
+  "$lib/shared/animation-engine/state/animation-settings-state.svelte",
+  () => ({
+    animationSettings: { trail: {} },
+  })
+);
+vi.mock(
+  "$lib/shared/animation-engine/state/animation-visibility-state.svelte",
+  () => ({
+    getAnimationVisibilityManager: () => ({}),
+  })
+);
 
 import { OffscreenExportRenderer } from "./offscreen-export-renderer";
 
@@ -24,14 +30,14 @@ describe("OffscreenExportRenderer layer provider", () => {
   it("invokes the layer provider with the rendered beat", () => {
     // The renderer requires an initialized engine; we assert the provider-call
     // contract via a partial instance whose handle is stubbed.
-    const provider = vi.fn(() => [{ blueProp: null, redProp: null }]);
+    const provider = vi.fn(() => [{ leftProp: null, rightProp: null }]);
     const r = Object.create(OffscreenExportRenderer.prototype) as any;
     r.handle = {
       context: { trailCapturer: { captureFrame: () => {} } },
       engine: { renderFrame: () => {} },
     };
     r.playback = {
-      computePropStatesForStep: () => ({ blue: null, red: null }),
+      computePropStatesForStep: () => ({ left: null, right: null }),
       isSeamlesslyLoopable: false,
     };
     r.panelState = {};
@@ -49,5 +55,42 @@ describe("OffscreenExportRenderer layer provider", () => {
     } catch {
       expect(OffscreenExportRenderer.prototype.renderFrame.length).toBe(3);
     }
+  });
+
+  it("forwards exact Tunnel colors into every offscreen frame", () => {
+    const renderFrame = vi.fn();
+    const r = Object.create(OffscreenExportRenderer.prototype) as any;
+    r.handle = {
+      context: { trailCapturer: { captureFrame: () => {} } },
+      engine: { renderFrame },
+    };
+    r.playback = {
+      computePropStatesForStep: () => ({ left: null, right: null }),
+      isSeamlesslyLoopable: false,
+    };
+    r.panelState = {};
+    r.init = {
+      tunnelSpectrum: false,
+      tunnelPropColors: { left: "#123456", right: "#abcdef" },
+      showNonRadialPoints: true,
+      previewDarkMode: true,
+      leftPropType: "staff",
+      rightPropType: "staff",
+    };
+    r.internalClockMs = 0;
+    r.accumulatorMs = 0;
+    r.prevBeatPos = null;
+    r.prevTargetMs = 0;
+
+    r.renderFrame(1, 0);
+
+    expect(renderFrame).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tunnelSpectrum: false,
+        tunnelPropColors: { left: "#123456", right: "#abcdef" },
+      }),
+      expect.any(Number),
+      expect.any(Number)
+    );
   });
 });

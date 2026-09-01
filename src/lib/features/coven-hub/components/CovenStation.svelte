@@ -8,7 +8,7 @@
    * sequence on all three primary planes simultaneously.
    *
    * Center: 6 PerformerRigs (3 planes × original/mirror) - props visible,
-   * no avatar, grid visible. Perimeter: 6 acolytes - avatar visible, no
+   * no character, grid visible. Perimeter: 6 acolytes - character visible, no
    * props, no grid. Each acolyte's IK targets track the actual center prop
    * positions every frame, creating a dynamic "telekinetic control" effect
    * where arms subtly shift as the floating staffs move through the sequence.
@@ -26,9 +26,9 @@
   import { PlaneMode } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
-    createAvatarInstanceState,
+    createCharacterInstanceState,
     makeStandaloneDeps,
-  } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  } from "$lib/shared/3d/state/character-instance-state.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { buildTipEffectMap } from "$lib/features/coven-hub/domain/coven-effect-map";
@@ -58,7 +58,7 @@
      * Render the centre staffs. Turning this off leaves the effect trace alone
      * in space — still driven by the real prop motion, with nothing visible
      * making it. That is the "elemental motif" configuration: the modality
-     * draws itself. Avatars are already off on the centre rigs.
+     * draws itself. Characters are already off on the centre rigs.
      */
     showProps?: boolean;
     /**
@@ -85,7 +85,7 @@
   const platformColor = new Color(0x2a1f18);
   const platformRingColor = new Color(0x4a3828);
 
-  // Avatar3D in "stage mode" positions feet at groundY (≈ -1.4m below rig origin).
+  // Character3D in "stage mode" positions feet at groundY (≈ -1.4m below rig origin).
   // In the museum the floor is at y=0, so we offset by -groundY + PLATFORM_HEIGHT.
   // Both center rigs AND acolyte rigs use this so grids/props align with shoulder height.
   const presentationFloorOffset =
@@ -114,17 +114,17 @@
   // mirror has red going N and blue going where red was.
   interface CenterConfig {
     plane: Plane;
-    blue: Plane;
-    red: Plane;
+    left: Plane;
+    right: Plane;
     mirror: boolean;
   }
   const CENTER_PLANES: CenterConfig[] = [
-    { plane: Plane.WALL, blue: Plane.WALL, red: Plane.WALL, mirror: false },
-    { plane: Plane.WALL, blue: Plane.WALL, red: Plane.WALL, mirror: true },
-    { plane: Plane.WHEEL, blue: Plane.WHEEL, red: Plane.WHEEL, mirror: false },
-    { plane: Plane.WHEEL, blue: Plane.WHEEL, red: Plane.WHEEL, mirror: true },
-    { plane: Plane.FLOOR, blue: Plane.FLOOR, red: Plane.FLOOR, mirror: false },
-    { plane: Plane.FLOOR, blue: Plane.FLOOR, red: Plane.FLOOR, mirror: true },
+    { plane: Plane.WALL, left: Plane.WALL, right: Plane.WALL, mirror: false },
+    { plane: Plane.WALL, left: Plane.WALL, right: Plane.WALL, mirror: true },
+    { plane: Plane.WHEEL, left: Plane.WHEEL, right: Plane.WHEEL, mirror: false },
+    { plane: Plane.WHEEL, left: Plane.WHEEL, right: Plane.WHEEL, mirror: true },
+    { plane: Plane.FLOOR, left: Plane.FLOOR, right: Plane.FLOOR, mirror: false },
+    { plane: Plane.FLOOR, left: Plane.FLOOR, right: Plane.FLOOR, mirror: true },
   ];
 
   // Shared identity quaternion for prop state overrides
@@ -139,18 +139,18 @@
     props.tipEffectMap ?? buildTipEffectMap(props.effectId ?? null)
   );
 
-  type AvatarInstance = ReturnType<typeof createAvatarInstanceState>;
+  type CharacterInstance = ReturnType<typeof createCharacterInstanceState>;
 
-  // Create avatar instances: 6 for center planes + 6 for acolytes
-  let centerInstances = $state<AvatarInstance[]>([]);
-  let acolyteInstances = $state<AvatarInstance[]>([]);
-  // True when avatar-instance construction threw — the scene falls back to a
+  // Create character instances: 6 for center planes + 6 for acolytes
+  let centerInstances = $state<CharacterInstance[]>([]);
+  let acolyteInstances = $state<CharacterInstance[]>([]);
+  // True when character-instance construction threw — the scene falls back to a
   // visible marker (below) instead of rendering nothing, and we surface a toast.
   let initFailed = $state(false);
 
   try {
     centerInstances = CENTER_PLANES.map((cfg, i) =>
-      createAvatarInstanceState(
+      createCharacterInstanceState(
         {
           id: `formation-${stationId}-center-${cfg.plane}-${cfg.mirror ? "mirror" : "orig"}`,
           positionX: 0,
@@ -163,7 +163,7 @@
     acolyteInstances =
       presentation === "ritual"
         ? ACOLYTE_POSITIONS.map((_, i) =>
-            createAvatarInstanceState(
+            createCharacterInstanceState(
               {
                 id: `formation-${stationId}-acolyte-${i}`,
                 positionX: 0,
@@ -206,8 +206,8 @@
         if (planeCfg.plane === Plane.WALL) {
           instance.setPlaneMode(PlaneMode.WALL);
         } else {
-          instance.setHandPlane("blue", planeCfg.blue);
-          instance.setHandPlane("red", planeCfg.red);
+          instance.setHandPlane("left", planeCfg.left);
+          instance.setHandPlane("right", planeCfg.right);
         }
         if (autoPlay && stationPlaying) instance.play();
       }
@@ -216,7 +216,7 @@
 
   // A frozen station remains mounted as a static exhibit, but its playback
   // clocks must stop. Museum rooms can contain many stations, and one RAF loop
-  // per hidden avatar otherwise keeps recomputing prop textures indefinitely.
+  // per hidden character otherwise keeps recomputing prop textures indefinitely.
   $effect(() => {
     const shouldPlay = autoPlay && stationPlaying;
     untrack(() => {
@@ -244,20 +244,20 @@
   // We invert this chain to find the override that makes acolyte arms point at center props.
   const acolytePropOverrides = $derived.by(() => {
     const wallInstance = centerInstances[0];
-    const wallBlue = wallInstance?.bluePropState;
-    const wallRed = wallInstance?.redPropState;
+    const wallLeft = wallInstance?.leftPropState;
+    const wallRight = wallInstance?.rightPropState;
 
-    if (!wallBlue || !wallRed) {
+    if (!wallLeft || !wallRight) {
       // No sequence playing yet - arms reach forward at rest
       return ACOLYTE_POSITIONS.map(() => ({
-        blue: {
+        left: {
           centerPathAngle: 0,
           staffRotationAngle: 0,
           plane: Plane.WALL,
           worldPosition: new Vector3(0.15, -0.1, 0.5),
           worldRotation: IDENTITY_QUAT,
         } as PropState3D,
-        red: {
+        right: {
           centerPathAngle: 0,
           staffRotationAngle: 0,
           plane: Plane.WALL,
@@ -270,48 +270,48 @@
     // Center prop positions in formation space.
     // Center rig is at origin with facingAngle=0, WALL mode gridOffset=0.3.
     // So prop formation-space position = (prop.worldPos.x, prop.worldPos.y, 0.3 + prop.worldPos.z)
-    const blueFormX = wallBlue.worldPosition.x;
-    const blueFormZ = GRID_OFFSET + wallBlue.worldPosition.z;
-    const redFormX = wallRed.worldPosition.x;
-    const redFormZ = GRID_OFFSET + wallRed.worldPosition.z;
+    const leftFormX = wallLeft.worldPosition.x;
+    const leftFormZ = GRID_OFFSET + wallLeft.worldPosition.z;
+    const rightFormX = wallRight.worldPosition.x;
+    const rightFormZ = GRID_OFFSET + wallRight.worldPosition.z;
 
     return ACOLYTE_POSITIONS.map((acolyte) => {
       const cosF = Math.cos(acolyte.facing);
       const sinF = Math.sin(acolyte.facing);
 
       // Target vector: center prop relative to acolyte rig origin (formation space)
-      const blueTx = blueFormX - acolyte.x;
-      const blueTz = blueFormZ - acolyte.z;
-      const redTx = redFormX - acolyte.x;
-      const redTz = redFormZ - acolyte.z;
+      const leftTx = leftFormX - acolyte.x;
+      const leftTz = leftFormZ - acolyte.z;
+      const rightTx = rightFormX - acolyte.x;
+      const rightTz = rightFormZ - acolyte.z;
 
       // Inverse rotation by facingAngle to get rig-local coordinates,
       // then subtract hand anchor offset (0, 0, GRID_OFFSET)
-      const blueLocalX = cosF * blueTx - sinF * blueTz;
-      const blueLocalZ = sinF * blueTx + cosF * blueTz - GRID_OFFSET;
-      const redLocalX = cosF * redTx - sinF * redTz;
-      const redLocalZ = sinF * redTx + cosF * redTz - GRID_OFFSET;
+      const leftLocalX = cosF * leftTx - sinF * leftTz;
+      const leftLocalZ = sinF * leftTx + cosF * leftTz - GRID_OFFSET;
+      const rightLocalX = cosF * rightTx - sinF * rightTz;
+      const rightLocalZ = sinF * rightTx + cosF * rightTz - GRID_OFFSET;
 
       return {
-        blue: {
+        left: {
           centerPathAngle: 0,
           staffRotationAngle: 0,
           plane: Plane.WALL,
           worldPosition: new Vector3(
-            blueLocalX,
-            wallBlue.worldPosition.y,
-            blueLocalZ
+            leftLocalX,
+            wallLeft.worldPosition.y,
+            leftLocalZ
           ),
           worldRotation: IDENTITY_QUAT,
         } as PropState3D,
-        red: {
+        right: {
           centerPathAngle: 0,
           staffRotationAngle: 0,
           plane: Plane.WALL,
           worldPosition: new Vector3(
-            redLocalX,
-            wallRed.worldPosition.y,
-            redLocalZ
+            rightLocalX,
+            wallRight.worldPosition.y,
+            rightLocalZ
           ),
           worldRotation: IDENTITY_QUAT,
         } as PropState3D,
@@ -320,16 +320,16 @@
   });
 
   // Prop type from sequence or global settings
-  const bluePropType = $derived.by((): PropType => {
+  const leftPropType = $derived.by((): PropType => {
     try {
-      return settingsService.settings.bluePropType ?? PropType.STAFF;
+      return settingsService.settings.leftPropType ?? PropType.STAFF;
     } catch {
       return PropType.STAFF;
     }
   });
-  const redPropType = $derived.by((): PropType => {
+  const rightPropType = $derived.by((): PropType => {
     try {
-      return settingsService.settings.redPropType ?? PropType.STAFF;
+      return settingsService.settings.rightPropType ?? PropType.STAFF;
     } catch {
       return PropType.STAFF;
     }
@@ -375,7 +375,7 @@
   {/if}
 
   {#if initFailed}
-    <!-- Degraded fallback: avatar instances failed to construct, so the rigs
+    <!-- Degraded fallback: character instances failed to construct, so the rigs
          below render nothing. Show a clearly-broken marker pillar at center so
          the empty station is observable rather than silently blank. -->
     <T.Mesh position.y={presentationFloorOffset + 0.75}>
@@ -411,7 +411,7 @@
     castShadow={false}
   />
 
-  <!-- CENTER RIGS: 6 total (3 planes × original + mirror), props + grid visible, no avatar -->
+  <!-- CENTER RIGS: 6 total (3 planes × original + mirror), props + grid visible, no character -->
   <!-- Mirrored rigs swap blue/red prop states for a symmetric pattern on each plane.
        Only the original (non-mirror) rigs show the grid to avoid visual clutter. -->
   {#each visibleCenter as instance, i (instance.id)}
@@ -432,29 +432,29 @@
         {tipEffectMap}
         visiblePlanes={new Set([planeCfg.plane])}
         gridMode={"diamond"}
-        bluePropType={toScenePropType(bluePropType)}
-        redPropType={toScenePropType(redPropType)}
+        leftPropType={toScenePropType(leftPropType)}
+        rightPropType={toScenePropType(rightPropType)}
         groundOffset={museumGroundOffset}
       >
         {#snippet effectsSlot({
-          bluePropState,
-          redPropState,
-          blueHandPos,
-          redHandPos,
+          leftPropState,
+          rightPropState,
+          leftHandPos,
+          rightHandPos,
           isPlaying: rigPlaying,
           staffHalfLength,
           effectsParentRef,
         })}
           <EffectOrchestrator3D
-            {bluePropState}
-            {redPropState}
-            bluePropType={toScenePropType(bluePropType)}
-            redPropType={toScenePropType(redPropType)}
+            {leftPropState}
+            {rightPropState}
+            leftPropType={toScenePropType(leftPropType)}
+            rightPropType={toScenePropType(rightPropType)}
             isPlaying={rigPlaying}
             {staffHalfLength}
             {tipEffectMap}
-            {blueHandPos}
-            {redHandPos}
+            {leftHandPos}
+            {rightHandPos}
             {effectsParentRef}
             currentStep={instance.currentStepIndex + instance.progress}
             totalSteps={instance.totalSteps}
@@ -465,7 +465,7 @@
     {/if}
   {/each}
 
-  <!-- ACOLYTE RIGS: 6 avatars with arms dynamically tracking center props -->
+  <!-- ACOLYTE RIGS: 6 characters with arms dynamically tracking center props -->
   {#if showAcolytes}
     {#each acolyteInstances as instance, i (instance.id)}
       {@const acolytePos = ACOLYTE_POSITIONS[i]}
@@ -480,10 +480,10 @@
           showGrid={false}
           showProps={false}
           showEffects={false}
-          bluePropState={propOverride.blue}
-          redPropState={propOverride.red}
-          bluePropType={toScenePropType(bluePropType)}
-          redPropType={toScenePropType(redPropType)}
+          leftPropState={propOverride.left}
+          rightPropState={propOverride.right}
+          leftPropType={toScenePropType(leftPropType)}
+          rightPropType={toScenePropType(rightPropType)}
           groundOffset={museumGroundOffset}
         />
       {/if}

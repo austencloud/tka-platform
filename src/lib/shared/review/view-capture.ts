@@ -14,6 +14,8 @@
  * clipboard. What the pose means is the calling scene's business.
  */
 
+import { refreshInteractiveCanvasFrame } from "$lib/shared/3d/rendering/interactive-canvas-frame";
+
 /** A first-person camera pose. Angles in radians, position in world metres. */
 export interface ViewPose {
   x: number;
@@ -178,7 +180,7 @@ export interface CaptureViewOptions {
   /** Scene id. Names the capture folder and appears in the payload. */
   sceneId: string;
   pose: ViewPose;
-  /** The live WebGL canvas. Requires `preserveDrawingBuffer` on the renderer. */
+  /** The live WebGL canvas. Its registered final-frame owner renders on demand. */
   canvas: HTMLCanvasElement | null | undefined;
   /** Surface under the centre reticle at capture time. */
   target?: ViewTarget3D;
@@ -192,8 +194,7 @@ async function writeFrame(
 ): Promise<{ frame?: string; frameUrl?: string; frameError?: string }> {
   let base64: string;
   try {
-    // Blank output here means the renderer lacks preserveDrawingBuffer: the
-    // context is free to discard the drawing buffer once it has composited.
+    refreshInteractiveCanvasFrame(canvas);
     base64 = canvas.toDataURL("image/png").split(",")[1] ?? "";
   } catch (error) {
     return {

@@ -61,14 +61,14 @@
   });
 
   // Get user's prop types from reactive settings (responds to Alt+number, P key)
-  const bluePropType = $derived.by(() => {
+  const leftPropType = $derived.by(() => {
     const settings = getSettings();
-    return (settings.bluePropType ?? settings.propType ?? PropType.STAFF) as PropType;
+    return (settings.leftPropType ?? settings.propType ?? PropType.STAFF) as PropType;
   });
 
-  const redPropType = $derived.by(() => {
+  const rightPropType = $derived.by(() => {
     const settings = getSettings();
-    return (settings.redPropType ?? settings.propType ?? PropType.STAFF) as PropType;
+    return (settings.rightPropType ?? settings.propType ?? PropType.STAFF) as PropType;
   });
 
   // Filtered and paginated data
@@ -285,8 +285,8 @@
             <PictographContainer
               pictographData={pictograph}
               gridMode={GridMode.SKEWED}
-              bluePropTypeOverride={bluePropType}
-              redPropTypeOverride={redPropType}
+              leftPropTypeOverride={leftPropType}
+              rightPropTypeOverride={rightPropType}
             />
           </div>
           <!-- Minimal info bar -->

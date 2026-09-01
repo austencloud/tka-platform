@@ -56,8 +56,8 @@ describe("Fuse built path", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.sequence.steps).toHaveLength(4);
-    expect(result.sequence.redSoloProp).toBeDefined();
-    expect(result.sequence.blueSoloProp).toBeUndefined();
+    expect(result.sequence.rightSoloProp).toBeDefined();
+    expect(result.sequence.leftSoloProp).toBeUndefined();
     expect(isSeamlesslyLoopable(result.sequence)).toBe(true);
   });
 

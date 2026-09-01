@@ -21,7 +21,7 @@ import {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export class SequenceFeatureExtractor {
@@ -154,36 +154,36 @@ export class SequenceFeatureExtractor {
   analyzeReversals(sequence: SequenceData): ReversalAnalysis {
     const validSteps = this.getValidBeats(sequence);
 
-    const blueReversalSteps: number[] = [];
-    const redReversalSteps: number[] = [];
+    const leftReversalSteps: number[] = [];
+    const rightReversalSteps: number[] = [];
 
     for (const step of validSteps) {
-      if (step.blueReversal) {
-        blueReversalSteps.push(step.stepNumber);
+      if (step.leftReversal) {
+        leftReversalSteps.push(step.stepNumber);
       }
-      if (step.redReversal) {
-        redReversalSteps.push(step.stepNumber);
+      if (step.rightReversal) {
+        rightReversalSteps.push(step.stepNumber);
       }
     }
 
-    const blueReversalCount = blueReversalSteps.length;
-    const redReversalCount = redReversalSteps.length;
-    const totalReversals = blueReversalCount + redReversalCount;
+    const leftReversalCount = leftReversalSteps.length;
+    const rightReversalCount = rightReversalSteps.length;
+    const totalReversals = leftReversalCount + rightReversalCount;
 
     // Check if reversals are synchronized (occur at same steps)
     const synchronizedReversals =
-      blueReversalCount > 0 &&
-      blueReversalCount === redReversalCount &&
-      blueReversalSteps.every((step) => redReversalSteps.includes(step));
+      leftReversalCount > 0 &&
+      leftReversalCount === rightReversalCount &&
+      leftReversalSteps.every((step) => rightReversalSteps.includes(step));
 
     return {
-      blueReversalCount,
-      redReversalCount,
+      leftReversalCount,
+      rightReversalCount,
       totalReversals,
       hasReversals: totalReversals > 0,
       synchronizedReversals,
-      blueReversalSteps,
-      redReversalSteps,
+      leftReversalSteps,
+      rightReversalSteps,
     };
   }
 
@@ -335,18 +335,18 @@ export class SequenceFeatureExtractor {
 
     for (const step of steps) {
       if (step.motions) {
-        const blueMotion = step.motions[MotionColor.BLUE];
-        const redMotion = step.motions[MotionColor.RED];
+        const leftMotion = step.motions[HandSide.LEFT];
+        const rightMotion = step.motions[HandSide.RIGHT];
 
         // Check if either hand has a turn (pro or anti)
-        const blueHasTurn =
-          blueMotion?.motionType === MotionType.PRO ||
-          blueMotion?.motionType === MotionType.ANTI;
-        const redHasTurn =
-          redMotion?.motionType === MotionType.PRO ||
-          redMotion?.motionType === MotionType.ANTI;
+        const leftHasTurn =
+          leftMotion?.motionType === MotionType.PRO ||
+          leftMotion?.motionType === MotionType.ANTI;
+        const rightHasTurn =
+          rightMotion?.motionType === MotionType.PRO ||
+          rightMotion?.motionType === MotionType.ANTI;
 
-        if (blueHasTurn || redHasTurn) {
+        if (leftHasTurn || rightHasTurn) {
           turnStepCount++;
         }
       }
@@ -406,14 +406,14 @@ export class SequenceFeatureExtractor {
 
     for (const step of steps) {
       if (step.motions) {
-        const blueMotion = step.motions[MotionColor.BLUE];
-        const redMotion = step.motions[MotionColor.RED];
+        const leftMotion = step.motions[HandSide.LEFT];
+        const rightMotion = step.motions[HandSide.RIGHT];
 
-        if (blueMotion?.motionType) {
-          types.add(blueMotion.motionType);
+        if (leftMotion?.motionType) {
+          types.add(leftMotion.motionType);
         }
-        if (redMotion?.motionType) {
-          types.add(redMotion.motionType);
+        if (rightMotion?.motionType) {
+          types.add(rightMotion.motionType);
         }
       }
     }

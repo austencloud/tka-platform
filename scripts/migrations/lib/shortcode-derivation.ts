@@ -17,7 +17,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { decodeSequenceFromQR } from "../../../src/lib/shared/navigation/services/sequence-encoder";
 import { deriveWordStatusFromSteps } from "../../../src/lib/shared/foundation/services/word-deriver";
-import type { Step } from "@tka/tka-types";
+import { normalizeLegacyStep, type Step } from "@tka/tka-types";
 import {
   parseCsvEdges,
   type CsvEdge,
@@ -26,7 +26,7 @@ import type { SequenceData } from "../../../src/lib/shared/foundation/domain/mod
 
 export type AnyRec = Record<string, unknown>;
 
-const REPO_ROOT = "E:/tka-platform";
+const REPO_ROOT = process.cwd();
 
 // All three dataframes, parsed once. deriveGridMode is browser-coupled, so
 // match diamond first, then box, then skewed — a beat only lives in one, and
@@ -60,7 +60,10 @@ interface Motion {
  *  a float resolves through its prefloat type, or to a shift when it travels. */
 function searchType(m: Motion): string {
   if (m.prefloatMotionType) return lc(m.prefloatMotionType);
-  if (lc(m.motionType) === "float" && lc(m.startLocation) !== lc(m.endLocation)) {
+  if (
+    lc(m.motionType) === "float" &&
+    lc(m.startLocation) !== lc(m.endLocation)
+  ) {
     return "pro";
   }
   return lc(m.motionType);
@@ -102,34 +105,39 @@ function effectiveRotation(m: Motion): string {
  *    underivable and quarantine. */
 function matchIn(
   edges: CsvEdge[],
-  blue: Motion,
-  red: Motion,
+  left: Motion,
+  right: Motion,
   floatAlternatives: boolean
 ): string | null {
-  const blueFloat = lc(blue.motionType) === "float" && !blue.prefloatMotionType;
-  const redFloat = lc(red.motionType) === "float" && !red.prefloatMotionType;
-  if ((blueFloat || redFloat) && !floatAlternatives) return null;
-  const blueTypes =
-    blueFloat && searchType(blue) === "pro" ? ["pro", "anti"] : [searchType(blue)];
-  const redTypes =
-    redFloat && searchType(red) === "pro" ? ["pro", "anti"] : [searchType(red)];
-  const blueRot = effectiveRotation(blue);
-  const redRot = effectiveRotation(red);
+  const leftFloat = lc(left.motionType) === "float" && !left.prefloatMotionType;
+  const rightFloat =
+    lc(right.motionType) === "float" && !right.prefloatMotionType;
+  if ((leftFloat || rightFloat) && !floatAlternatives) return null;
+  const leftTypes =
+    leftFloat && searchType(left) === "pro"
+      ? ["pro", "anti"]
+      : [searchType(left)];
+  const rightTypes =
+    rightFloat && searchType(right) === "pro"
+      ? ["pro", "anti"]
+      : [searchType(right)];
+  const leftRot = effectiveRotation(left);
+  const rightRot = effectiveRotation(right);
 
-  for (const bt of blueTypes) {
-    for (const rt of redTypes) {
-      const bIgnore = bt === "static" || bt === "dash" || blueFloat;
-      const rIgnore = rt === "static" || rt === "dash" || redFloat;
+  for (const bt of leftTypes) {
+    for (const rt of rightTypes) {
+      const bIgnore = bt === "static" || bt === "dash" || leftFloat;
+      const rIgnore = rt === "static" || rt === "dash" || rightFloat;
       for (const e of edges) {
         if (
-          lc(e.blueMotionType) === bt &&
-          lc(e.blueStartLocation) === lc(blue.startLocation) &&
-          lc(e.blueEndLocation) === lc(blue.endLocation) &&
-          (bIgnore || lc(e.blueRotationDirection) === blueRot) &&
-          lc(e.redMotionType) === rt &&
-          lc(e.redStartLocation) === lc(red.startLocation) &&
-          lc(e.redEndLocation) === lc(red.endLocation) &&
-          (rIgnore || lc(e.redRotationDirection) === redRot)
+          lc(e.leftMotionType) === bt &&
+          lc(e.leftStartLocation) === lc(left.startLocation) &&
+          lc(e.leftEndLocation) === lc(left.endLocation) &&
+          (bIgnore || lc(e.leftRotationDirection) === leftRot) &&
+          lc(e.rightMotionType) === rt &&
+          lc(e.rightStartLocation) === lc(right.startLocation) &&
+          lc(e.rightEndLocation) === lc(right.endLocation) &&
+          (rIgnore || lc(e.rightRotationDirection) === rightRot)
         ) {
           return e.letter || null;
         }
@@ -143,16 +151,21 @@ export function letterForBeat(
   step: AnyRec,
   options?: { floatAlternatives?: boolean }
 ): string | null {
-  if (typeof step.letter === "string" && step.letter) return step.letter;
-  const motions = step.motions as { blue?: Motion; red?: Motion } | undefined;
-  const blue = motions?.blue;
-  const red = motions?.red;
-  if (!blue || !red) return null;
+  const normalized = normalizeLegacyStep(step);
+  if (typeof normalized.letter === "string" && normalized.letter) {
+    return normalized.letter;
+  }
+  const motions = normalized.motions as
+    | { left?: Motion; right?: Motion }
+    | undefined;
+  const left = motions?.left;
+  const right = motions?.right;
+  if (!left || !right) return null;
   const floatAlternatives = options?.floatAlternatives ?? false;
   return (
-    matchIn(DIAMOND_EDGES, blue, red, floatAlternatives) ??
-    matchIn(BOX_EDGES, blue, red, floatAlternatives) ??
-    matchIn(SKEWED_EDGES, blue, red, floatAlternatives)
+    matchIn(DIAMOND_EDGES, left, right, floatAlternatives) ??
+    matchIn(BOX_EDGES, left, right, floatAlternatives) ??
+    matchIn(SKEWED_EDGES, left, right, floatAlternatives)
   );
 }
 
@@ -243,7 +256,9 @@ export function deriveFromSteps(
  *     must agree, otherwise the record is quarantined as a source conflict
  *   - both partial → report the one with fewer missing beats
  */
-export async function derivePayloadWord(data: AnyRec): Promise<
+export async function derivePayloadWord(
+  data: AnyRec
+): Promise<
   | PayloadDerivation
   | { conflict: { encoded: PayloadDerivation; embedded: PayloadDerivation } }
   | null
@@ -251,7 +266,9 @@ export async function derivePayloadWord(data: AnyRec): Promise<
   let fromEncoded: PayloadDerivation | null = null;
   if (typeof data.encoded === "string" && data.encoded) {
     try {
-      const decoded = (await decodeSequenceFromQR(data.encoded)) as SequenceData;
+      const decoded = (await decodeSequenceFromQR(
+        data.encoded
+      )) as SequenceData;
       const decodedSteps = (decoded.steps ?? []) as unknown as AnyRec[];
       if (decodedSteps.length > 0) {
         fromEncoded = deriveFromSteps(decodedSteps, "encoded");

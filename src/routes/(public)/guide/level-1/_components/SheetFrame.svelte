@@ -70,8 +70,8 @@
           <PictographContainer
             pictographData={pos}
             gridMode={GridMode.DIAMOND}
-            bluePropTypeOverride={PropType.HAND}
-            redPropTypeOverride={PropType.HAND}
+            leftPropTypeOverride={PropType.HAND}
+            rightPropTypeOverride={PropType.HAND}
             showGrid={true}
             showTKA={true}
             showPositions={false}

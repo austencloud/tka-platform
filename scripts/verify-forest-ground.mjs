@@ -50,11 +50,11 @@ const { data: atlasSample, info } = await sharp(atlasPath)
 const luminance = [];
 const chroma = [];
 for (let index = 0; index < atlasSample.length; index += info.channels) {
-  const red = atlasSample[index];
+  const right = atlasSample[index];
   const green = atlasSample[index + 1];
-  const blue = atlasSample[index + 2];
-  luminance.push(red * 0.2126 + green * 0.7152 + blue * 0.0722);
-  chroma.push(Math.max(red, green, blue) - Math.min(red, green, blue));
+  const left = atlasSample[index + 2];
+  luminance.push(right * 0.2126 + green * 0.7152 + left * 0.0722);
+  chroma.push(Math.max(right, green, left) - Math.min(right, green, left));
 }
 const minimumLuminance = Math.min(...luminance);
 const maximumLuminance = Math.max(...luminance);

@@ -1,6 +1,6 @@
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
@@ -26,7 +26,7 @@ export interface AssemblePathController {
   moveSelectedStep(direction: -1 | 1): void;
   beginReplaceSelectedStep(): void;
   cancelStepEdit(): void;
-  switchToHand(hand: MotionColor): void;
+  switchToHand(hand: HandSide): void;
   setAnimationCallback(
     callback: (step: BuilderStep, durationMs?: number) => Promise<void>
   ): () => void;
@@ -79,10 +79,10 @@ export function createAssemblePathController(
       ? onAnimationRequest(step)
       : Promise.resolve();
 
-    if (hand === MotionColor.BLUE) {
-      document.blueSteps = [...document.blueSteps, step];
+    if (hand === HandSide.LEFT) {
+      document.leftSteps = [...document.leftSteps, step];
     } else {
-      document.redSteps = [...document.redSteps, step];
+      document.rightSteps = [...document.rightSteps, step];
     }
 
     document.currentPosition = endLocation;
@@ -96,7 +96,7 @@ export function createAssemblePathController(
     } finally {
       document.phase = "building";
       const handSteps =
-        hand === MotionColor.BLUE ? document.blueSteps : document.redSteps;
+        hand === HandSide.LEFT ? document.leftSteps : document.rightSteps;
       history.recordSnapshot(
         `Add ${handLabel(hand)} step ${handSteps.length}`,
         before
@@ -121,16 +121,16 @@ export function createAssemblePathController(
     if (!pose) return;
 
     const before = history.takeSnapshot();
-    if (document.activeHand === MotionColor.BLUE) {
-      document.blueSteps = replaceBuilderStepDestination(
-        document.blueSteps,
+    if (document.activeHand === HandSide.LEFT) {
+      document.leftSteps = replaceBuilderStepDestination(
+        document.leftSteps,
         document.selectedStepIndex,
         location,
         pose
       );
     } else {
-      document.redSteps = replaceBuilderStepDestination(
-        document.redSteps,
+      document.rightSteps = replaceBuilderStepDestination(
+        document.rightSteps,
         document.selectedStepIndex,
         location,
         pose
@@ -176,7 +176,7 @@ export function createAssemblePathController(
 
   function selectStep(index: number | null): void {
     if (document.phase === "animating") return;
-    const total = Math.max(document.blueSteps.length, document.redSteps.length);
+    const total = Math.max(document.leftSteps.length, document.rightSteps.length);
     if (index === null || index < 0 || index >= total) {
       document.selectedStepIndex = null;
       document.stepEditMode = null;
@@ -193,20 +193,20 @@ export function createAssemblePathController(
 
   function deleteStepAt(index: number): void {
     if (document.phase === "animating") return;
-    const total = Math.max(document.blueSteps.length, document.redSteps.length);
+    const total = Math.max(document.leftSteps.length, document.rightSteps.length);
     if (index < 0 || index >= total) return;
     const before = history.takeSnapshot();
-    const bluePose = document.poseForHand(MotionColor.BLUE);
-    const redPose = document.poseForHand(MotionColor.RED);
-    if (bluePose) {
-      document.blueSteps = removeBuilderStep(
-        document.blueSteps,
+    const leftPose = document.poseForHand(HandSide.LEFT);
+    const rightPose = document.poseForHand(HandSide.RIGHT);
+    if (leftPose) {
+      document.leftSteps = removeBuilderStep(
+        document.leftSteps,
         index,
-        bluePose
+        leftPose
       );
     }
-    if (redPose) {
-      document.redSteps = removeBuilderStep(document.redSteps, index, redPose);
+    if (rightPose) {
+      document.rightSteps = removeBuilderStep(document.rightSteps, index, rightPose);
     }
     document.selectedStepIndex = null;
     document.stepEditMode = null;
@@ -222,7 +222,7 @@ export function createAssemblePathController(
 
   function moveStep(fromIndex: number, toIndex: number): void {
     if (!document.canReorderSteps || document.phase === "animating") return;
-    const total = document.blueSteps.length;
+    const total = document.leftSteps.length;
     if (
       fromIndex < 0 ||
       fromIndex >= total ||
@@ -232,22 +232,22 @@ export function createAssemblePathController(
     ) {
       return;
     }
-    const bluePose = document.poseForHand(MotionColor.BLUE);
-    const redPose = document.poseForHand(MotionColor.RED);
-    if (!bluePose || !redPose) return;
+    const leftPose = document.poseForHand(HandSide.LEFT);
+    const rightPose = document.poseForHand(HandSide.RIGHT);
+    if (!leftPose || !rightPose) return;
 
     const before = history.takeSnapshot();
-    document.blueSteps = moveBuilderStep(
-      document.blueSteps,
+    document.leftSteps = moveBuilderStep(
+      document.leftSteps,
       fromIndex,
       toIndex,
-      bluePose
+      leftPose
     );
-    document.redSteps = moveBuilderStep(
-      document.redSteps,
+    document.rightSteps = moveBuilderStep(
+      document.rightSteps,
       fromIndex,
       toIndex,
-      redPose
+      rightPose
     );
     document.selectedStepIndex = toIndex;
     document.stepEditMode = null;
@@ -276,7 +276,7 @@ export function createAssemblePathController(
     document.stepEditMode = null;
   }
 
-  function switchToHand(hand: MotionColor): void {
+  function switchToHand(hand: HandSide): void {
     if (
       hand === document.activeHand ||
       document.phase === "animating" ||

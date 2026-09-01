@@ -242,8 +242,8 @@ export interface RenderState {
   prevStepIndex: number;
   prevIsStart: boolean;
   crossfadeProgress: number;
-  blueTrailHistory: Point2D[];
-  redTrailHistory: Point2D[];
+  leftTrailHistory: Point2D[];
+  rightTrailHistory: Point2D[];
 }
 
 export function createRenderState(): RenderState {
@@ -251,8 +251,8 @@ export function createRenderState(): RenderState {
     prevStepIndex: -999,
     prevIsStart: true,
     crossfadeProgress: 1,
-    blueTrailHistory: [],
-    redTrailHistory: [],
+    leftTrailHistory: [],
+    rightTrailHistory: [],
   };
 }
 
@@ -260,12 +260,12 @@ export function renderScene(
   ctx: OffscreenCanvasRenderingContext2D,
   canvasSize: number,
   gridImage: ImageBitmap,
-  bluePropImage: ImageBitmap,
-  redPropImage: ImageBitmap,
-  blueProp: FramePropState | null,
-  redProp: FramePropState | null,
-  bluePropViewBox: { width: number; height: number },
-  redPropViewBox: { width: number; height: number },
+  leftPropImage: ImageBitmap,
+  rightPropImage: ImageBitmap,
+  leftProp: FramePropState | null,
+  rightProp: FramePropState | null,
+  leftPropViewBox: { width: number; height: number },
+  rightPropViewBox: { width: number; height: number },
   overlay?: SceneOverlay,
   renderState?: RenderState
 ): void {
@@ -278,30 +278,30 @@ export function renderScene(
   ctx.drawImage(gridImage, 0, 0, canvasSize, canvasSize);
 
   if (renderState) {
-    if (blueProp) {
-      const pos = getPropCenter(canvasSize, blueProp);
-      renderState.blueTrailHistory.push(pos);
-      if (renderState.blueTrailHistory.length > TRAIL_MAX_POINTS) {
-        renderState.blueTrailHistory.shift();
+    if (leftProp) {
+      const pos = getPropCenter(canvasSize, leftProp);
+      renderState.leftTrailHistory.push(pos);
+      if (renderState.leftTrailHistory.length > TRAIL_MAX_POINTS) {
+        renderState.leftTrailHistory.shift();
       }
     }
-    if (redProp) {
-      const pos = getPropCenter(canvasSize, redProp);
-      renderState.redTrailHistory.push(pos);
-      if (renderState.redTrailHistory.length > TRAIL_MAX_POINTS) {
-        renderState.redTrailHistory.shift();
+    if (rightProp) {
+      const pos = getPropCenter(canvasSize, rightProp);
+      renderState.rightTrailHistory.push(pos);
+      if (renderState.rightTrailHistory.length > TRAIL_MAX_POINTS) {
+        renderState.rightTrailHistory.shift();
       }
     }
 
-    drawTrail(ctx, renderState.blueTrailHistory, TRAIL_COLOR_BLUE, scale);
-    drawTrail(ctx, renderState.redTrailHistory, TRAIL_COLOR_RED, scale);
+    drawTrail(ctx, renderState.leftTrailHistory, TRAIL_COLOR_BLUE, scale);
+    drawTrail(ctx, renderState.rightTrailHistory, TRAIL_COLOR_RED, scale);
   }
 
-  if (blueProp) {
-    drawProp(ctx, canvasSize, blueProp, bluePropImage, bluePropViewBox);
+  if (leftProp) {
+    drawProp(ctx, canvasSize, leftProp, leftPropImage, leftPropViewBox);
   }
-  if (redProp) {
-    drawProp(ctx, canvasSize, redProp, redPropImage, redPropViewBox);
+  if (rightProp) {
+    drawProp(ctx, canvasSize, rightProp, rightPropImage, rightPropViewBox);
   }
 
   if (!overlay) return;

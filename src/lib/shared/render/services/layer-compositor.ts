@@ -150,8 +150,8 @@ export class LayerCompositor {
     cacheStats.gridPointsFromCache = gridPointsResult?.fromCache ?? false;
 
     const motionVisibility = {
-      showBlueMotion: options.showBlueMotion,
-      showRedMotion: options.showRedMotion,
+      showLeftMotion: options.showLeftMotion,
+      showRightMotion: options.showRightMotion,
     };
 
     let tkaResult: LayerRenderResult | null = null;
@@ -292,7 +292,7 @@ export class LayerCompositor {
   async renderTKAOverlay(
     pictograph: PreparedPictographData,
     options: Pick<LayerRenderOptions, "size" | "darkMode">,
-    motionVisibility?: { showBlueMotion?: boolean; showRedMotion?: boolean }
+    motionVisibility?: { showLeftMotion?: boolean; showRightMotion?: boolean }
   ): Promise<LayerRenderResult | null> {
     if (!pictograph.letter) return null;
 
@@ -300,7 +300,7 @@ export class LayerCompositor {
 
     const turnsTuple = this.getTurnsTuple(pictograph);
     const visKeySuffix = motionVisibility
-      ? `:b${motionVisibility.showBlueMotion ?? true}:r${motionVisibility.showRedMotion ?? true}`
+      ? `:b${motionVisibility.showLeftMotion ?? true}:r${motionVisibility.showRightMotion ?? true}`
       : "";
     const cacheKey = deriveTKALayerKey(pictograph, turnsTuple, options) + visKeySuffix;
 
@@ -339,13 +339,13 @@ export class LayerCompositor {
     stepData: StepData,
     size: number,
     darkMode: boolean = false,
-    motionVisibility?: { showBlueMotion?: boolean; showRedMotion?: boolean }
+    motionVisibility?: { showLeftMotion?: boolean; showRightMotion?: boolean }
   ): Promise<LayerRenderResult | null> {
-    if (!stepData.blueReversal && !stepData.redReversal) return null;
+    if (!stepData.leftReversal && !stepData.rightReversal) return null;
 
     const startTime = performance.now();
     const visKey = motionVisibility
-      ? `:b${motionVisibility.showBlueMotion ?? true}:r${motionVisibility.showRedMotion ?? true}`
+      ? `:b${motionVisibility.showLeftMotion ?? true}:r${motionVisibility.showRightMotion ?? true}`
       : "";
     const cacheKey = `${deriveReversalLayerKey(stepData, size)}:${darkMode ? "dark" : "light"}${visKey}`;
 
@@ -459,12 +459,12 @@ export class LayerCompositor {
         showReversals: false,
         baseGridOnly: true,
         showGrid: options.showGrid,
-        bluePropType: options.bluePropType,
-        redPropType: options.redPropType,
-        blueBuugengFlipped: options.blueBuugengFlipped,
-        redBuugengFlipped: options.redBuugengFlipped,
-        showBlueMotion: options.showBlueMotion,
-        showRedMotion: options.showRedMotion,
+        leftPropType: options.leftPropType,
+        rightPropType: options.rightPropType,
+        leftBuugengFlipped: options.leftBuugengFlipped,
+        rightBuugengFlipped: options.rightBuugengFlipped,
+        showLeftMotion: options.showLeftMotion,
+        showRightMotion: options.showRightMotion,
         showTnD: options.showTnD,
         showElemental: options.showElemental,
         showPositions: options.showPositions,
@@ -478,7 +478,7 @@ export class LayerCompositor {
   private async renderTKAOverlayInternal(
     pictograph: PreparedPictographData,
     options: Pick<LayerRenderOptions, "size" | "darkMode">,
-    motionVisibility?: { showBlueMotion?: boolean; showRedMotion?: boolean }
+    motionVisibility?: { showLeftMotion?: boolean; showRightMotion?: boolean }
   ): Promise<RenderCanvas> {
     const canvas = createCanvas(options.size, options.size);
     const ctx = canvas.getContext("2d")! as RenderContext2D;
@@ -567,16 +567,16 @@ export class LayerCompositor {
 
     const activeLocations = new Set<string>();
 
-    const blueMotion = pictograph.motions?.blue;
-    if (isVisibleMotion(blueMotion)) {
-      if (blueMotion.startLocation) activeLocations.add(blueMotion.startLocation.toLowerCase());
-      if (blueMotion.endLocation) activeLocations.add(blueMotion.endLocation.toLowerCase());
+    const leftMotion = pictograph.motions?.left;
+    if (isVisibleMotion(leftMotion)) {
+      if (leftMotion.startLocation) activeLocations.add(leftMotion.startLocation.toLowerCase());
+      if (leftMotion.endLocation) activeLocations.add(leftMotion.endLocation.toLowerCase());
     }
 
-    const redMotion = pictograph.motions?.red;
-    if (isVisibleMotion(redMotion)) {
-      if (redMotion.startLocation) activeLocations.add(redMotion.startLocation.toLowerCase());
-      if (redMotion.endLocation) activeLocations.add(redMotion.endLocation.toLowerCase());
+    const rightMotion = pictograph.motions?.right;
+    if (isVisibleMotion(rightMotion)) {
+      if (rightMotion.startLocation) activeLocations.add(rightMotion.startLocation.toLowerCase());
+      if (rightMotion.endLocation) activeLocations.add(rightMotion.endLocation.toLowerCase());
     }
 
     return activeLocations;
@@ -586,19 +586,19 @@ export class LayerCompositor {
     stepData: StepData,
     size: number,
     darkMode: boolean,
-    motionVisibility?: { showBlueMotion?: boolean; showRedMotion?: boolean }
+    motionVisibility?: { showLeftMotion?: boolean; showRightMotion?: boolean }
   ): RenderCanvas {
     const canvas = createCanvas(size, size);
     const ctx = canvas.getContext("2d")! as RenderContext2D;
 
     ctx.clearRect(0, 0, size, size);
 
-    const blueReversal = (stepData.blueReversal ?? false) && (motionVisibility?.showBlueMotion ?? true);
-    const redReversal = (stepData.redReversal ?? false) && (motionVisibility?.showRedMotion ?? true);
+    const leftReversal = (stepData.leftReversal ?? false) && (motionVisibility?.showLeftMotion ?? true);
+    const rightReversal = (stepData.rightReversal ?? false) && (motionVisibility?.showRightMotion ?? true);
 
     const { dots } = calculateReversalPositions(
-      blueReversal,
-      redReversal,
+      leftReversal,
+      rightReversal,
       darkMode
     );
 
@@ -719,7 +719,7 @@ export class LayerCompositor {
     letterDimensions: { width: number; height: number },
     scale: number,
     _darkMode: boolean,
-    motionVisibility?: { showBlueMotion?: boolean; showRedMotion?: boolean }
+    motionVisibility?: { showLeftMotion?: boolean; showRightMotion?: boolean }
   ): Promise<void> {
     const turnsTuple = this.getTurnsTuple(pictograph);
 
@@ -735,8 +735,8 @@ export class LayerCompositor {
     );
 
     const isColorHidden = (color: string) => {
-      if (color === BLUE_HEX && motionVisibility?.showBlueMotion === false) return true;
-      if (color === RED_HEX && motionVisibility?.showRedMotion === false) return true;
+      if (color === BLUE_HEX && motionVisibility?.showLeftMotion === false) return true;
+      if (color === RED_HEX && motionVisibility?.showRightMotion === false) return true;
       return false;
     };
 
@@ -843,7 +843,7 @@ export class LayerCompositor {
   }
 
   private isStepData(pictograph: PreparedPictographData): pictograph is StepData & PreparedPictographData {
-    return "blueReversal" in pictograph || "redReversal" in pictograph;
+    return "leftReversal" in pictograph || "rightReversal" in pictograph;
   }
 }
 

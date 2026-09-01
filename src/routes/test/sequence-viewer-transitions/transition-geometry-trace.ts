@@ -7,7 +7,14 @@ export type TransitionTraceCommand =
   | "3d-interrupt"
   | "tunnel-first"
   | "tunnel-3d"
-  | "tunnel-interrupt";
+  | "tunnel-interrupt"
+  | "card-2d"
+  | "card-3d"
+  | "card-tunnel"
+  | "card-stage-interrupt"
+  | "performances-2d"
+  | "performances-3d"
+  | "performances-interrupt";
 
 export type TransitionTracePhase =
   | "focus-2d"
@@ -29,7 +36,14 @@ export type TransitionTracePhase =
   | "prepare-tunnel-from-3d"
   | "return-3d"
   | "interrupt-tunnel"
-  | "interrupt-stage";
+  | "interrupt-stage"
+  | "card-to-stage"
+  | "stage-to-card"
+  | "card-stage-interrupt"
+  | "stage-to-performances"
+  | "performances-to-stage"
+  | "interrupt-performances"
+  | "interrupt-performance-stage";
 
 export interface TransitionGeometrySample {
   time: number;
@@ -37,7 +51,13 @@ export interface TransitionGeometrySample {
   direction: "horizontal" | "vertical";
   focusedPane: string | null;
   selectedMode:
-    "split" | "animation" | "animation-3d" | "card" | "tunnel" | null;
+    | "split"
+    | "animation"
+    | "animation-3d"
+    | "card"
+    | "tunnel"
+    | "videos"
+    | null;
   outerDirection: "horizontal" | "vertical";
   stageSize: number;
   stageFlexGrow: number;
@@ -48,6 +68,9 @@ export interface TransitionGeometrySample {
   mandalaBackingSize: number;
   mandalaDisplaySize: number;
   mandalaRasterScale: number;
+  mandalaDisplayWidth: number;
+  mandalaDisplayHeight: number;
+  mandalaMaximumRasterScale: number;
   cardSize: number;
   cardFlexGrow: number;
   cardHidden: boolean;
@@ -72,11 +95,14 @@ export interface TransitionGeometrySample {
   inspectorSize: number;
   inspectorFlexGrow: number;
   inspectorIdentity: number;
+  effectsInspectorOpacity: number;
+  cardEffectsSeamGap: number;
   desktopInspectorExpected: boolean;
   cardSettingsWidth: number;
   cardSettingsHeight: number;
   cardSettingsCenterY: number;
   cardSettingsOpacity: number;
+  cardIdentity: number;
   dissolveActive: boolean;
   animationOpacity: number;
   cardOpacity: number;
@@ -86,17 +112,32 @@ export interface TransitionGeometrySample {
   motion3DPresented: boolean;
   motion3DReady: boolean;
   motion3DPreparing: boolean;
+  motion2DPreparationHeld: boolean;
   sceneCurtainVisible: boolean;
+  scenePreparationProgress: number | null;
+  scenePreparationLabel: string | null;
   tunnelOpacity: number;
   tunnelPresented: boolean;
   tunnelCanvasReady: boolean;
   animatorIdentity: number;
   animatorCanvasCount: number;
   activeArtSettingsCount: number;
+  artSettingsOpacity: number;
   tunnelBackingWidth: number;
   tunnelBackingHeight: number;
   tunnelDisplayWidth: number;
   tunnelDisplayHeight: number;
+  stageLayerOpacity: number;
+  performanceLayerOpacity: number;
+  stageLayerIdentity: number;
+  performanceLayerIdentity: number;
+  stageLayerActive: boolean;
+  performanceLayerActive: boolean;
+  performanceGalleryReady: boolean;
+  performanceLayoutColumns: number;
+  performancePlayerCount: number;
+  stageLayerWidth: number;
+  performanceLayerWidth: number;
 }
 
 export interface TransitionGeometryTrace {
@@ -104,7 +145,7 @@ export interface TransitionGeometryTrace {
   duration: number;
   samples: TransitionGeometrySample[];
   modeCommits: Array<{
-    mode: "split" | "animation" | "animation-3d" | "card" | "tunnel";
+    mode: "split" | "animation" | "animation-3d" | "card" | "tunnel" | "videos";
     latency: number;
   }>;
 }
@@ -138,17 +179,29 @@ export interface TransitionGeometrySummary {
   cardReturnVisualWidth: TransitionEndpointUndershoot | null;
   cardReturnVisualHeight: TransitionEndpointUndershoot | null;
   cardReturnTravel: TransitionTravelSummary | null;
+  animationReturnSizeTravel: TransitionTravelSummary | null;
   cardSettingsFocusWidth: TransitionValueRange | null;
   cardSettingsFocusHeight: TransitionValueRange | null;
   cardSettingsFocusCenterY: TransitionValueRange | null;
   cardSettingsReturnWidth: TransitionValueRange | null;
   cardSettingsReturnHeight: TransitionValueRange | null;
   cardSettingsReturnCenterY: TransitionValueRange | null;
+  cardEffectsSeamGapMaximum: number;
+  cardEffectsOpacityOnsetSkew: number | null;
+  cardEffectsCrossfadeFrames: number;
+  cardEffectsBlankFrames: number;
   motionBlankFrames: number;
   motionUnready3DFrames: number;
   motionCurtainFrames: number;
+  motionMisidentified3DFrames: number;
+  motionPreparationProgressRegressions: number;
+  motionPreparationLabels: string[];
   motionCrossfadeFrames: number;
   motionPreparationFrames: number;
+  motionPreparationGeometryHeldFrames: number;
+  motionPreparationRasterScaleMaximum: number | null;
+  motionPreparationRasterGrowthMaximum: number | null;
+  motionMagnifiedPreparationFrames: number;
   motionLate2DBackingChanges: number;
   motionSurfacePath: string[];
   motionHandoffLatency: number | null;
@@ -167,6 +220,36 @@ export interface TransitionGeometrySummary {
   tunnelHandoffLatency: number | null;
   tunnelStageSize: TransitionValueRange | null;
   tunnelDisplaySize: TransitionValueRange | null;
+  cardStageCardIdentityChanges: number;
+  cardStageAnimatorIdentityChanges: number;
+  cardStageInspectorIdentityChanges: number;
+  cardStageBlankFrames: number;
+  cardStageSplitFrames: number;
+  cardStageSettingsBlankFrames: number;
+  cardStageSettingsCrossfadeFrames: number;
+  cardStageExitTravel: TransitionTravelSummary | null;
+  cardStageEntryTravel: TransitionTravelSummary | null;
+  cardStageExitAllocation: TransitionTravelSummary | null;
+  cardStageEntryAllocation: TransitionTravelSummary | null;
+  cardStageInspectorSize: TransitionValueRange | null;
+  cardStageInspectorExit: TransitionTravelSummary | null;
+  cardStageInspectorEntry: TransitionTravelSummary | null;
+  performanceStageIdentityChanges: number;
+  performanceGalleryIdentityChanges: number;
+  performanceInspectorIdentityChanges: number;
+  performanceBlankFrames: number;
+  performanceDoubleOpaqueFrames: number;
+  performanceCrossfadeFrames: number;
+  performanceUnreadyFrames: number;
+  performanceLayoutChanges: number;
+  performancePlayerCountMaximum: number;
+  performanceOpacityComplementDriftMaximum: number;
+  performanceLayerWidthMismatchMaximum: number;
+  performanceSurfacePath: string[];
+  performanceStageExit: TransitionTravelSummary | null;
+  performanceStageEntry: TransitionTravelSummary | null;
+  performanceInspectorExit: TransitionTravelSummary | null;
+  performanceInspectorEntry: TransitionTravelSummary | null;
 }
 
 export interface TransitionEndpointUndershoot {
@@ -353,6 +436,35 @@ function travelSummary(
   };
 }
 
+function phaseTravelSummary(
+  samples: TransitionGeometrySample[],
+  phase: TransitionTracePhase,
+  value: (sample: TransitionGeometrySample) => number
+): TransitionTravelSummary | null {
+  const values = samples
+    .filter((sample) => sample.phase === phase && value(sample) > 0)
+    .map(value);
+  if (values.length < 2) return null;
+
+  const start = values[0];
+  const end = values.at(-1)!;
+  const minimum = Math.min(...values);
+  const maximum = Math.max(...values);
+  const increasing = end >= start;
+  return {
+    start,
+    end,
+    minimum,
+    maximum,
+    backtrack: increasing
+      ? Math.max(0, start - minimum)
+      : Math.max(0, maximum - start),
+    overshoot: increasing
+      ? Math.max(0, maximum - end)
+      : Math.max(0, end - minimum),
+  };
+}
+
 function visiblePhaseRange(
   samples: TransitionGeometrySample[],
   phase: TransitionTracePhase,
@@ -377,6 +489,26 @@ function visiblePhaseRange(
     maximum,
     variation: maximum - minimum,
   };
+}
+
+function cardEffectsOpacityOnsetSkew(
+  samples: TransitionGeometrySample[]
+): number | null {
+  const handoff = samples.filter(
+    (sample) => sample.phase === "focus-2d" && sample.desktopInspectorExpected
+  );
+  const first = handoff[0];
+  if (!first || handoff.some((sample) => sample.dissolveActive)) return null;
+
+  const cardOnset = handoff.find(
+    (sample) => sample.cardOpacity < first.cardOpacity - 0.02
+  );
+  const effectsOnset = handoff.find(
+    (sample) =>
+      sample.effectsInspectorOpacity > first.effectsInspectorOpacity + 0.02
+  );
+  if (!cardOnset || !effectsOnset) return null;
+  return Math.abs(cardOnset.time - effectsOnset.time);
 }
 
 function valueRange(
@@ -447,6 +579,25 @@ function late2DBackingChanges(samples: TransitionGeometrySample[]): number {
   return changes;
 }
 
+function preparationProgressRegressions(
+  samples: TransitionGeometrySample[]
+): number {
+  let previous: number | null = null;
+  let regressions = 0;
+  for (const sample of samples) {
+    if (!sample.sceneCurtainVisible || sample.scenePreparationProgress === null)
+      continue;
+    if (
+      previous !== null &&
+      sample.scenePreparationProgress < previous - 0.001
+    ) {
+      regressions += 1;
+    }
+    previous = sample.scenePreparationProgress;
+  }
+  return regressions;
+}
+
 function uniqueTunnelSurfacePath(
   samples: TransitionGeometrySample[]
 ): string[] {
@@ -509,11 +660,31 @@ function lateTunnelBackingChanges(samples: TransitionGeometrySample[]): number {
   return changes;
 }
 
+function uniquePerformanceSurfacePath(
+  samples: TransitionGeometrySample[]
+): string[] {
+  return uniqueValuePath(
+    samples.map((sample) => {
+      if (
+        sample.stageLayerOpacity >= 0.05 &&
+        sample.performanceLayerOpacity >= 0.05
+      ) {
+        return "Motion stage + Performance stage";
+      }
+      if (sample.performanceLayerOpacity >= 0.05) return "Performance stage";
+      if (sample.stageLayerOpacity >= 0.05) return "Motion stage";
+      return "Blank";
+    })
+  );
+}
+
 export function summarizeTransitionGeometry(
   trace: TransitionGeometryTrace
 ): TransitionGeometrySummary {
   const isMotionTrace = trace.command.startsWith("3d");
   const isTunnelTrace = trace.command.startsWith("tunnel");
+  const isCardStageTrace = trace.command.startsWith("card-");
+  const isPerformanceTrace = trace.command.startsWith("performances-");
   const tinyCardFrames = trace.samples.filter(
     (sample) =>
       !sample.dissolveActive &&
@@ -558,6 +729,32 @@ export function summarizeTransitionGeometry(
   ).length;
   const transformedCardCellSamples = expectedCardSamples.filter(
     (sample) => sample.cardTransformedCellCount > 0
+  );
+  const motionPreparationSamples = isMotionTrace
+    ? trace.samples.filter(
+        (sample) =>
+          sample.phase === "prepare-3d" &&
+          sample.motion3DPreparing &&
+          sample.motion2DOpacity >= VISIBLE_PANE_OPACITY &&
+          sample.mandalaMaximumRasterScale > 0
+      )
+    : [];
+  const motionPreparationRasterBaseline = isMotionTrace
+    ? (trace.samples.find(
+        (sample) =>
+          !sample.motion3DPreparing &&
+          sample.motion2DPresented &&
+          sample.motion2DOpacity >= VISIBLE_PANE_OPACITY &&
+          sample.mandalaMaximumRasterScale > 0
+      )?.mandalaMaximumRasterScale ??
+      motionPreparationSamples[0]?.mandalaMaximumRasterScale ??
+      null)
+    : null;
+  const magnifiedMotionPreparationSamples = motionPreparationSamples.filter(
+    (sample) =>
+      motionPreparationRasterBaseline !== null &&
+      sample.mandalaMaximumRasterScale / motionPreparationRasterBaseline >
+        MAX_MANDALA_RASTER_SCALE
   );
 
   return {
@@ -659,6 +856,10 @@ export function summarizeTransitionGeometry(
       trace.samples,
       (sample) => sample.cardContentCenterX
     ),
+    animationReturnSizeTravel: travelSummary(
+      trace.samples,
+      (sample) => sample.animationSize
+    ),
     cardSettingsFocusWidth: visiblePhaseRange(
       trace.samples,
       "focus-card",
@@ -689,6 +890,35 @@ export function summarizeTransitionGeometry(
       "return-split",
       (sample) => sample.cardSettingsCenterY
     ),
+    cardEffectsSeamGapMaximum: Math.max(
+      0,
+      ...trace.samples
+        .filter(
+          (sample) =>
+            sample.phase === "focus-2d" &&
+            sample.desktopInspectorExpected &&
+            sample.cardPanelWidth > 0 &&
+            sample.inspectorSize > 0
+        )
+        .map((sample) => sample.cardEffectsSeamGap)
+    ),
+    cardEffectsOpacityOnsetSkew: cardEffectsOpacityOnsetSkew(trace.samples),
+    cardEffectsCrossfadeFrames: trace.samples.filter(
+      (sample) =>
+        sample.phase === "focus-2d" &&
+        sample.desktopInspectorExpected &&
+        !sample.dissolveActive &&
+        sample.cardOpacity >= 0.05 &&
+        sample.effectsInspectorOpacity >= 0.05
+    ).length,
+    cardEffectsBlankFrames: trace.samples.filter(
+      (sample) =>
+        sample.phase === "focus-2d" &&
+        sample.desktopInspectorExpected &&
+        !sample.dissolveActive &&
+        sample.cardOpacity < 0.05 &&
+        sample.effectsInspectorOpacity < 0.05
+    ).length,
     motionBlankFrames: isMotionTrace
       ? trace.samples.filter(
           (sample) =>
@@ -699,7 +929,10 @@ export function summarizeTransitionGeometry(
       : 0,
     motionUnready3DFrames: isMotionTrace
       ? trace.samples.filter(
-          (sample) => sample.motion3DPresented && !sample.motion3DReady
+          (sample) =>
+            sample.motion3DPresented &&
+            !sample.motion3DReady &&
+            !sample.sceneCurtainVisible
         ).length
       : 0,
     motionCurtainFrames: isMotionTrace
@@ -707,6 +940,24 @@ export function summarizeTransitionGeometry(
           (sample) => sample.motion3DPresented && sample.sceneCurtainVisible
         ).length
       : 0,
+    motionMisidentified3DFrames: isMotionTrace
+      ? trace.samples.filter(
+          (sample) =>
+            !sample.dissolveActive &&
+            sample.selectedMode === "animation-3d" &&
+            sample.motion2DPresented
+        ).length
+      : 0,
+    motionPreparationProgressRegressions: isMotionTrace
+      ? preparationProgressRegressions(trace.samples)
+      : 0,
+    motionPreparationLabels: isMotionTrace
+      ? uniqueValuePath(
+          trace.samples
+            .map((sample) => sample.scenePreparationLabel)
+            .filter((label): label is string => Boolean(label))
+        )
+      : [],
     motionCrossfadeFrames: isMotionTrace
       ? trace.samples.filter(
           (sample) =>
@@ -716,6 +967,31 @@ export function summarizeTransitionGeometry(
     motionPreparationFrames: isMotionTrace
       ? trace.samples.filter((sample) => sample.motion3DPreparing).length
       : 0,
+    motionPreparationGeometryHeldFrames: isMotionTrace
+      ? trace.samples.filter(
+          (sample) => sample.motion3DPreparing && sample.motion2DPreparationHeld
+        ).length
+      : 0,
+    motionPreparationRasterScaleMaximum:
+      motionPreparationSamples.length === 0
+        ? null
+        : Math.max(
+            ...motionPreparationSamples.map(
+              (sample) => sample.mandalaMaximumRasterScale
+            )
+          ),
+    motionPreparationRasterGrowthMaximum:
+      motionPreparationSamples.length === 0 ||
+      motionPreparationRasterBaseline === null
+        ? null
+        : Math.max(
+            ...motionPreparationSamples.map(
+              (sample) =>
+                sample.mandalaMaximumRasterScale /
+                motionPreparationRasterBaseline
+            )
+          ),
+    motionMagnifiedPreparationFrames: magnifiedMotionPreparationSamples.length,
     motionLate2DBackingChanges: isMotionTrace
       ? late2DBackingChanges(trace.samples)
       : 0,
@@ -789,6 +1065,206 @@ export function summarizeTransitionGeometry(
     tunnelDisplaySize: isTunnelTrace
       ? visibleTunnelRange(trace.samples, (sample) =>
           Math.min(sample.tunnelDisplayWidth, sample.tunnelDisplayHeight)
+        )
+      : null,
+    cardStageCardIdentityChanges: isCardStageTrace
+      ? identityChanges(trace.samples, (sample) => sample.cardIdentity)
+      : 0,
+    cardStageAnimatorIdentityChanges: isCardStageTrace
+      ? identityChanges(trace.samples, (sample) => sample.animatorIdentity)
+      : 0,
+    cardStageInspectorIdentityChanges: isCardStageTrace
+      ? identityChanges(
+          trace.samples.filter((sample) => sample.desktopInspectorExpected),
+          (sample) => sample.inspectorIdentity
+        )
+      : 0,
+    cardStageBlankFrames: isCardStageTrace
+      ? trace.samples.filter(
+          (sample) =>
+            !sample.dissolveActive &&
+            sample.cardOpacity < 0.05 &&
+            sample.animationOpacity < 0.05
+        ).length
+      : 0,
+    cardStageSplitFrames: isCardStageTrace
+      ? trace.samples.filter((sample) => sample.selectedMode === "split").length
+      : 0,
+    cardStageSettingsBlankFrames: isCardStageTrace
+      ? trace.samples.filter(
+          (sample) =>
+            sample.desktopInspectorExpected &&
+            !sample.dissolveActive &&
+            sample.cardSettingsOpacity < 0.05 &&
+            sample.effectsInspectorOpacity < 0.05 &&
+            sample.artSettingsOpacity < 0.05
+        ).length
+      : 0,
+    cardStageSettingsCrossfadeFrames: isCardStageTrace
+      ? trace.samples.filter(
+          (sample) =>
+            sample.desktopInspectorExpected &&
+            sample.cardSettingsOpacity >= 0.05 &&
+            Math.max(
+              sample.effectsInspectorOpacity,
+              sample.artSettingsOpacity
+            ) >= 0.05
+        ).length
+      : 0,
+    cardStageExitTravel: isCardStageTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "card-to-stage",
+          (sample) => sample.cardContentCenterX
+        )
+      : null,
+    cardStageEntryTravel: isCardStageTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "stage-to-card",
+          (sample) => sample.cardContentCenterX
+        )
+      : null,
+    cardStageExitAllocation: isCardStageTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "card-to-stage",
+          (sample) => sample.animationSize
+        )
+      : null,
+    cardStageEntryAllocation: isCardStageTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "stage-to-card",
+          (sample) => sample.animationSize
+        )
+      : null,
+    cardStageInspectorSize: isCardStageTrace
+      ? valueRange(trace.samples, (sample) => sample.inspectorSize)
+      : null,
+    cardStageInspectorExit: isCardStageTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "card-to-stage",
+          (sample) => sample.inspectorSize
+        )
+      : null,
+    cardStageInspectorEntry: isCardStageTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "stage-to-card",
+          (sample) => sample.inspectorSize
+        )
+      : null,
+    performanceStageIdentityChanges: isPerformanceTrace
+      ? identityChanges(trace.samples, (sample) => sample.stageLayerIdentity)
+      : 0,
+    performanceGalleryIdentityChanges: isPerformanceTrace
+      ? identityChanges(
+          trace.samples,
+          (sample) => sample.performanceLayerIdentity
+        )
+      : 0,
+    performanceInspectorIdentityChanges: isPerformanceTrace
+      ? identityChanges(
+          trace.samples.filter((sample) => sample.desktopInspectorExpected),
+          (sample) => sample.inspectorIdentity
+        )
+      : 0,
+    performanceBlankFrames: isPerformanceTrace
+      ? trace.samples.filter(
+          (sample) =>
+            !sample.dissolveActive &&
+            sample.stageLayerOpacity < 0.05 &&
+            sample.performanceLayerOpacity < 0.05
+        ).length
+      : 0,
+    performanceDoubleOpaqueFrames: isPerformanceTrace
+      ? trace.samples.filter(
+          (sample) =>
+            sample.stageLayerOpacity > 0.95 &&
+            sample.performanceLayerOpacity > 0.95
+        ).length
+      : 0,
+    performanceCrossfadeFrames: isPerformanceTrace
+      ? trace.samples.filter(
+          (sample) =>
+            sample.stageLayerOpacity >= 0.05 &&
+            sample.performanceLayerOpacity >= 0.05
+        ).length
+      : 0,
+    performanceUnreadyFrames: isPerformanceTrace
+      ? trace.samples.filter(
+          (sample) =>
+            sample.performanceLayerActive &&
+            sample.performanceLayerOpacity >= 0.05 &&
+            !sample.performanceGalleryReady
+        ).length
+      : 0,
+    performanceLayoutChanges: isPerformanceTrace
+      ? Math.max(
+          0,
+          uniqueValuePath(
+            trace.samples
+              .filter((sample) => sample.performanceLayerOpacity >= 0.05)
+              .map((sample) => sample.performanceLayoutColumns)
+              .filter((columns) => columns > 0)
+          ).length - 1
+        )
+      : 0,
+    performancePlayerCountMaximum: isPerformanceTrace
+      ? Math.max(
+          0,
+          ...trace.samples.map((sample) => sample.performancePlayerCount)
+        )
+      : 0,
+    performanceOpacityComplementDriftMaximum: isPerformanceTrace
+      ? Math.max(
+          0,
+          ...trace.samples.map((sample) =>
+            Math.abs(
+              sample.stageLayerOpacity + sample.performanceLayerOpacity - 1
+            )
+          )
+        )
+      : 0,
+    performanceLayerWidthMismatchMaximum: isPerformanceTrace
+      ? Math.max(
+          0,
+          ...trace.samples.map((sample) =>
+            Math.abs(sample.stageLayerWidth - sample.performanceLayerWidth)
+          )
+        )
+      : 0,
+    performanceSurfacePath: isPerformanceTrace
+      ? uniquePerformanceSurfacePath(trace.samples)
+      : [],
+    performanceStageExit: isPerformanceTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "stage-to-performances",
+          (sample) => sample.stageSize
+        )
+      : null,
+    performanceStageEntry: isPerformanceTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "performances-to-stage",
+          (sample) => sample.stageSize
+        )
+      : null,
+    performanceInspectorExit: isPerformanceTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "stage-to-performances",
+          (sample) => sample.inspectorSize
+        )
+      : null,
+    performanceInspectorEntry: isPerformanceTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "performances-to-stage",
+          (sample) => sample.inspectorSize
         )
       : null,
   };

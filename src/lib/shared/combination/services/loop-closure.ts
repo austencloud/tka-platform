@@ -147,7 +147,7 @@ const LOOP_TYPE_FACTS: readonly LOOPTypeFacts[] = ALL_LOOP_TYPES.map(
     return {
       loopType,
       periodSensitive:
-        halved.blue?.components.has(LOOPComponent.ROTATED) ?? false,
+        halved.left?.components.has(LOOPComponent.ROTATED) ?? false,
       halvedMultiplier,
       quarteredMultiplier: getLOOPSpecExpansionMultiplier(quartered),
       compound: halvedMultiplier > SINGLE_TRANSFORM_MULTIPLIER_CEILING,

@@ -39,13 +39,19 @@
  */
 
 import { Vector3 } from "three";
-import type { RestPoseGeometry, SimPropTarget, SimResult, SimCollision } from "./types";
+import type {
+  RestPoseGeometry,
+  SimPropTarget,
+  SimResult,
+  SimCollision,
+} from "./types";
 import type { StancePose } from "../domain/types";
 
 // --- Collision radii - mirror the live CollisionDetector exactly so the
 // simulator and the live readout agree on whether a stance is clear.
 const PROP_BODY_THRESHOLD = 0.02;
 const ARM_ARM_THRESHOLD = 0.06;
+const NECK_RADIUS = 0.07;
 
 // --- Joint comfort ranges (radians). Beyond these, we flag the pose as
 // "uncomfortable" - not physically impossible but visibly strained.
@@ -56,8 +62,8 @@ const SHOULDER_ABDUCTION_LIMIT = (170 * Math.PI) / 180;
 // --- Balance check - we treat each foot as a 15 × 30 cm rectangle centered
 // on the hips' XZ projection (shifted by footHalfWidth). The base of support
 // is the convex hull of both rectangles, which is itself a larger rectangle.
-const FOOT_LENGTH_FORWARD = 0.30; // toes forward of ankle
-const FOOT_LENGTH_BACKWARD = 0.10; // heel behind ankle
+const FOOT_LENGTH_FORWARD = 0.3; // toes forward of ankle
+const FOOT_LENGTH_BACKWARD = 0.1; // heel behind ankle
 
 // --- Forearm wrist exclusion - when checking the forearm against a prop,
 // we ignore the final WRIST_EXCLUSION_FRACTION of the segment (the wrist end)
@@ -130,6 +136,8 @@ export class StanceSimulator {
   private readonly _torsoForward = new Vector3();
   private readonly _segClosest = new Vector3();
   private readonly _sep = new Vector3();
+  private readonly _leftUpperBodyStart = new Vector3();
+  private readonly _rightUpperBodyStart = new Vector3();
 
   constructor(restPose: RestPoseGeometry) {
     this.restPose = restPose;
@@ -137,8 +145,8 @@ export class StanceSimulator {
 
   evaluate(
     stance: StancePose,
-    blueTarget: SimPropTarget,
-    redTarget: SimPropTarget
+    leftTarget: SimPropTarget,
+    rightTarget: SimPropTarget
   ): SimResult {
     // 1. Place joints from the rest pose, then apply stance transforms.
     this.applyStance(stance);
@@ -146,14 +154,14 @@ export class StanceSimulator {
     // 2. Solve IK for each arm and record reach outcomes.
     const leftReach = this.solveArmIK(
       this.skeleton.leftShoulder,
-      blueTarget.gripWorld,
+      leftTarget.gripWorld,
       this.skeleton.leftElbow,
       this.skeleton.leftHand,
       /* isLeft */ true
     );
     const rightReach = this.solveArmIK(
       this.skeleton.rightShoulder,
-      redTarget.gripWorld,
+      rightTarget.gripWorld,
       this.skeleton.rightElbow,
       this.skeleton.rightHand,
       /* isLeft */ false
@@ -165,7 +173,7 @@ export class StanceSimulator {
     this.computeFaceCenter();
 
     // 4. Collision checks.
-    const collisions = this.detectCollisions(blueTarget, redTarget);
+    const collisions = this.detectCollisions(leftTarget, rightTarget);
 
     // 5. Balance check.
     const balanceMargin = this.computeBalanceMargin(stance);
@@ -187,7 +195,9 @@ export class StanceSimulator {
       if (
         c.zone === "prop-through-head" ||
         c.zone === "prop-through-torso" ||
-        c.zone === "arm-through-face"
+        c.zone === "arm-through-face" ||
+        c.zone === "arm-through-neck" ||
+        c.zone === "arm-through-torso"
       ) {
         if (c.depth > hardFaceOrBodyDepth) hardFaceOrBodyDepth = c.depth;
       }
@@ -201,12 +211,12 @@ export class StanceSimulator {
 
     return {
       reachShortfall: {
-        blue: leftReach.shortfall,
-        red: rightReach.shortfall,
+        left: leftReach.shortfall,
+        right: rightReach.shortfall,
       },
       reachStretch: {
-        blue: leftReach.stretch,
-        red: rightReach.stretch,
+        left: leftReach.stretch,
+        right: rightReach.stretch,
       },
       collisions,
       balanceMargin,
@@ -225,17 +235,17 @@ export class StanceSimulator {
    */
   evaluateSweep(
     stance: StancePose,
-    blueSweep: SimPropTarget[],
-    redSweep: SimPropTarget[]
+    leftSweep: SimPropTarget[],
+    rightSweep: SimPropTarget[]
   ): SimResult {
-    const n = Math.min(blueSweep.length, redSweep.length);
+    const n = Math.min(leftSweep.length, rightSweep.length);
     if (n === 0) {
       // Degenerate: nothing to hit. Evaluate at the stance with whatever single
       // target exists so balance/joints are still reported.
       return this.evaluate(
         stance,
-        blueSweep[0] ?? redSweep[0]!,
-        redSweep[0] ?? blueSweep[0]!
+        leftSweep[0] ?? rightSweep[0]!,
+        rightSweep[0] ?? leftSweep[0]!
       );
     }
 
@@ -243,7 +253,7 @@ export class StanceSimulator {
     const worstByZone = new Map<SimCollision["zone"], SimCollision>();
 
     for (let i = 0; i < n; i++) {
-      const r = this.evaluate(stance, blueSweep[i]!, redSweep[i]!);
+      const r = this.evaluate(stance, leftSweep[i]!, rightSweep[i]!);
       if (!merged) {
         merged = {
           reachShortfall: { ...r.reachShortfall },
@@ -255,11 +265,26 @@ export class StanceSimulator {
           totalCollisionDepth: 0,
         };
       } else {
-        merged.reachShortfall.blue = Math.max(merged.reachShortfall.blue, r.reachShortfall.blue);
-        merged.reachShortfall.red = Math.max(merged.reachShortfall.red, r.reachShortfall.red);
-        merged.reachStretch.blue = Math.max(merged.reachStretch.blue, r.reachStretch.blue);
-        merged.reachStretch.red = Math.max(merged.reachStretch.red, r.reachStretch.red);
-        merged.jointViolationRad = Math.max(merged.jointViolationRad, r.jointViolationRad);
+        merged.reachShortfall.left = Math.max(
+          merged.reachShortfall.left,
+          r.reachShortfall.left
+        );
+        merged.reachShortfall.right = Math.max(
+          merged.reachShortfall.right,
+          r.reachShortfall.right
+        );
+        merged.reachStretch.left = Math.max(
+          merged.reachStretch.left,
+          r.reachStretch.left
+        );
+        merged.reachStretch.right = Math.max(
+          merged.reachStretch.right,
+          r.reachStretch.right
+        );
+        merged.jointViolationRad = Math.max(
+          merged.jointViolationRad,
+          r.jointViolationRad
+        );
       }
       for (const c of r.collisions) {
         const prev = worstByZone.get(c.zone);
@@ -276,15 +301,17 @@ export class StanceSimulator {
       if (
         c.zone === "prop-through-head" ||
         c.zone === "prop-through-torso" ||
-        c.zone === "arm-through-face"
+        c.zone === "arm-through-face" ||
+        c.zone === "arm-through-neck" ||
+        c.zone === "arm-through-torso"
       ) {
         if (c.depth > hardBodyDepth) hardBodyDepth = c.depth;
       }
     }
     result.totalCollisionDepth = total;
     result.feasible =
-      result.reachShortfall.blue <= REACH_FEASIBILITY_TOLERANCE &&
-      result.reachShortfall.red <= REACH_FEASIBILITY_TOLERANCE &&
+      result.reachShortfall.left <= REACH_FEASIBILITY_TOLERANCE &&
+      result.reachShortfall.right <= REACH_FEASIBILITY_TOLERANCE &&
       result.balanceMargin > -0.005 &&
       hardBodyDepth <= 0.01;
     return result;
@@ -322,18 +349,68 @@ export class StanceSimulator {
     this.placeLocalJoint(sk.hips, 0, rest.hipsY, 0, cy, sy, stance);
 
     // Lower spine: pitch + plain yaw (no twist - the twist pivots above here).
-    this.transformAndPlace(sk.spine1, rest.spine1, pivotY, cp, sp, cy, sy, stance);
+    this.transformAndPlace(
+      sk.spine1,
+      rest.spine1,
+      pivotY,
+      cp,
+      sp,
+      cy,
+      sy,
+      stance
+    );
 
     // Upper body (mid-torso up): pitch + twisted yaw, so the shoulder line and
     // everything attached to it turns by rootYaw + torsoTwist.
-    this.transformAndPlace(sk.spine2, rest.spine2, pivotY, cp, sp, cyt, syt, stance);
-    this.transformAndPlace(sk.neck, rest.neck, pivotY, cp, sp, cyt, syt, stance);
-    this.transformAndPlace(sk.head, rest.head, pivotY, cp, sp, cyt, syt, stance);
     this.transformAndPlace(
-      sk.leftShoulder, rest.leftShoulder, pivotY, cp, sp, cyt, syt, stance
+      sk.spine2,
+      rest.spine2,
+      pivotY,
+      cp,
+      sp,
+      cyt,
+      syt,
+      stance
     );
     this.transformAndPlace(
-      sk.rightShoulder, rest.rightShoulder, pivotY, cp, sp, cyt, syt, stance
+      sk.neck,
+      rest.neck,
+      pivotY,
+      cp,
+      sp,
+      cyt,
+      syt,
+      stance
+    );
+    this.transformAndPlace(
+      sk.head,
+      rest.head,
+      pivotY,
+      cp,
+      sp,
+      cyt,
+      syt,
+      stance
+    );
+    this.transformAndPlace(
+      sk.leftShoulder,
+      rest.leftShoulder,
+      pivotY,
+      cp,
+      sp,
+      cyt,
+      syt,
+      stance
+    );
+    this.transformAndPlace(
+      sk.rightShoulder,
+      rest.rightShoulder,
+      pivotY,
+      cp,
+      sp,
+      cyt,
+      syt,
+      stance
     );
   }
 
@@ -504,8 +581,7 @@ export class StanceSimulator {
   private computeFaceCenter(): void {
     const sk = this.skeleton;
     // right = rightShoulder − leftShoulder
-    this._tmp1
-      .subVectors(sk.rightShoulder, sk.leftShoulder);
+    this._tmp1.subVectors(sk.rightShoulder, sk.leftShoulder);
     if (this._tmp1.lengthSq() > 1e-6) {
       this._tmp1.normalize();
       // forward = cross(right, up)
@@ -522,21 +598,25 @@ export class StanceSimulator {
   // optimizer only keeps the best result so there's no hot-path array churn.
 
   private detectCollisions(
-    blueTarget: SimPropTarget,
-    redTarget: SimPropTarget
+    leftTarget: SimPropTarget,
+    rightTarget: SimPropTarget
   ): SimCollision[] {
     const collisions: SimCollision[] = [];
     const sk = this.skeleton;
     const rp = this.restPose;
 
-    const propPairs: Array<{ label: "Blue" | "Red"; prop: SimPropTarget }> = [
-      { label: "Blue", prop: blueTarget },
-      { label: "Red", prop: redTarget },
+    const propPairs: Array<{ label: "Left" | "Right"; prop: SimPropTarget }> = [
+      { label: "Left", prop: leftTarget },
+      { label: "Right", prop: rightTarget },
     ];
 
     // 1. Prop shaft through face.
     for (const { label, prop } of propPairs) {
-      const d = this.pointToSegmentDistance(sk.face, prop.tipAWorld, prop.tipBWorld);
+      const d = this.pointToSegmentDistance(
+        sk.face,
+        prop.tipAWorld,
+        prop.tipBWorld
+      );
       const threshold = rp.headRadius + prop.radius;
       if (d < threshold) {
         collisions.push({
@@ -560,7 +640,9 @@ export class StanceSimulator {
     this._torsoRight.subVectors(sk.rightShoulder, sk.leftShoulder);
     if (this._torsoRight.lengthSq() > 1e-6) {
       this._torsoRight.normalize();
-      this._torsoForward.crossVectors(this._torsoRight, this._worldUp).normalize();
+      this._torsoForward
+        .crossVectors(this._torsoRight, this._worldUp)
+        .normalize();
     } else {
       this._torsoRight.set(1, 0, 0);
       this._torsoForward.set(0, 0, 1);
@@ -570,7 +652,9 @@ export class StanceSimulator {
       let worstDepth = 0;
       for (const p of spinePoints) {
         const depth = this.ellipsoidSegmentDepth(
-          p, prop.tipAWorld, prop.tipBWorld,
+          p,
+          prop.tipAWorld,
+          prop.tipBWorld,
           torsoHalfWidth + prop.radius,
           torsoHalfHeight + prop.radius,
           torsoHalfDepth + prop.radius
@@ -589,12 +673,12 @@ export class StanceSimulator {
     // 3. Prop shaft through arm segments. Forearms are truncated at the
     //    wrist so a legitimate grip (hand on staff) doesn't register as
     //    a forearm-through-staff collision.
-    const leftForearmWrist = this._tmp1.lerpVectors(
-      sk.leftElbow, sk.leftHand, 1 - WRIST_EXCLUSION_FRACTION
-    ).clone();
-    const rightForearmWrist = this._tmp2.lerpVectors(
-      sk.rightElbow, sk.rightHand, 1 - WRIST_EXCLUSION_FRACTION
-    ).clone();
+    const leftForearmWrist = this._tmp1
+      .lerpVectors(sk.leftElbow, sk.leftHand, 1 - WRIST_EXCLUSION_FRACTION)
+      .clone();
+    const rightForearmWrist = this._tmp2
+      .lerpVectors(sk.rightElbow, sk.rightHand, 1 - WRIST_EXCLUSION_FRACTION)
+      .clone();
     const armSegs: Array<{ a: Vector3; b: Vector3; name: string }> = [
       { name: "L upper arm", a: sk.leftShoulder, b: sk.leftElbow },
       { name: "L forearm", a: sk.leftElbow, b: leftForearmWrist },
@@ -603,7 +687,12 @@ export class StanceSimulator {
     ];
     for (const { label, prop } of propPairs) {
       for (const arm of armSegs) {
-        const d = this.segmentToSegmentDistance(prop.tipAWorld, prop.tipBWorld, arm.a, arm.b);
+        const d = this.segmentToSegmentDistance(
+          prop.tipAWorld,
+          prop.tipBWorld,
+          arm.a,
+          arm.b
+        );
         const threshold = rp.armRadius + prop.radius;
         if (d < threshold) {
           collisions.push({
@@ -618,20 +707,27 @@ export class StanceSimulator {
 
     // 4. Prop through prop.
     const pp = this.segmentToSegmentDistance(
-      blueTarget.tipAWorld, blueTarget.tipBWorld,
-      redTarget.tipAWorld, redTarget.tipBWorld
+      leftTarget.tipAWorld,
+      leftTarget.tipBWorld,
+      rightTarget.tipAWorld,
+      rightTarget.tipBWorld
     );
-    const ppThresh = blueTarget.radius + redTarget.radius + PROP_BODY_THRESHOLD;
+    const ppThresh =
+      leftTarget.radius + rightTarget.radius + PROP_BODY_THRESHOLD;
     if (pp < ppThresh) {
       collisions.push({
         zone: "prop-through-prop",
         depth: ppThresh - pp,
-        description: "Blue/Red staffs cross",
+        description: "Left/right staffs cross",
       });
     }
 
     // 5. Arms through face.
-    const leftArmD = this.pointToSegmentDistance(sk.face, sk.leftElbow, sk.leftHand);
+    const leftArmD = this.pointToSegmentDistance(
+      sk.face,
+      sk.leftElbow,
+      sk.leftHand
+    );
     const leftArmThresh = rp.headRadius + rp.armRadius + PROP_BODY_THRESHOLD;
     if (leftArmD < leftArmThresh) {
       collisions.push({
@@ -640,7 +736,11 @@ export class StanceSimulator {
         description: "L forearm → face",
       });
     }
-    const rightArmD = this.pointToSegmentDistance(sk.face, sk.rightElbow, sk.rightHand);
+    const rightArmD = this.pointToSegmentDistance(
+      sk.face,
+      sk.rightElbow,
+      sk.rightHand
+    );
     if (rightArmD < leftArmThresh) {
       collisions.push({
         zone: "arm-through-face",
@@ -649,10 +749,53 @@ export class StanceSimulator {
       });
     }
 
+    // 5b. Arms through neck/torso. Match the live detector's padded sphere
+    // chain and ignore the shoulder-adjacent 35% of each upper arm.
+    this._leftUpperBodyStart.lerpVectors(sk.leftShoulder, sk.leftElbow, 0.35);
+    this._rightUpperBodyStart.lerpVectors(
+      sk.rightShoulder,
+      sk.rightElbow,
+      0.35
+    );
+    const bodyArmSegs: Array<{ name: string; a: Vector3; b: Vector3 }> = [
+      { name: "L upper arm", a: this._leftUpperBodyStart, b: sk.leftElbow },
+      { name: "L forearm", a: sk.leftElbow, b: sk.leftHand },
+      { name: "R upper arm", a: this._rightUpperBodyStart, b: sk.rightElbow },
+      { name: "R forearm", a: sk.rightElbow, b: sk.rightHand },
+    ];
+    const neckThreshold = NECK_RADIUS + rp.armRadius + PROP_BODY_THRESHOLD;
+    const torsoThreshold = rp.torsoRadius + rp.armRadius;
+    const torsoCenters = [sk.spine1, sk.spine2];
+    for (const arm of bodyArmSegs) {
+      const neckDistance = this.pointToSegmentDistance(sk.neck, arm.a, arm.b);
+      if (neckDistance < neckThreshold) {
+        collisions.push({
+          zone: "arm-through-neck",
+          depth: neckThreshold - neckDistance,
+          description: `${arm.name} → neck`,
+        });
+      }
+
+      let worstTorsoDepth = 0;
+      for (const center of torsoCenters) {
+        const distance = this.pointToSegmentDistance(center, arm.a, arm.b);
+        worstTorsoDepth = Math.max(worstTorsoDepth, torsoThreshold - distance);
+      }
+      if (worstTorsoDepth > 0) {
+        collisions.push({
+          zone: "arm-through-torso",
+          depth: worstTorsoDepth,
+          description: `${arm.name} → torso`,
+        });
+      }
+    }
+
     // 6. Arms through each other (forearms).
     const foreD = this.segmentToSegmentDistance(
-      sk.leftElbow, sk.leftHand,
-      sk.rightElbow, sk.rightHand
+      sk.leftElbow,
+      sk.leftHand,
+      sk.rightElbow,
+      sk.rightHand
     );
     if (foreD < ARM_ARM_THRESHOLD) {
       collisions.push({
@@ -663,8 +806,10 @@ export class StanceSimulator {
     }
     // Upper arms.
     const upperD = this.segmentToSegmentDistance(
-      sk.leftShoulder, sk.leftElbow,
-      sk.rightShoulder, sk.rightElbow
+      sk.leftShoulder,
+      sk.leftElbow,
+      sk.rightShoulder,
+      sk.rightElbow
     );
     if (upperD < ARM_ARM_THRESHOLD) {
       collisions.push({
@@ -694,7 +839,7 @@ export class StanceSimulator {
     const sk = this.skeleton;
     const wHead = 0.081;
     const wTrunk = 0.497;
-    const wArms = 0.10;
+    const wArms = 0.1;
     const wLegs = 0.322; // remainder - centered on hips since we don't model legs
 
     const headPos = sk.head;
@@ -763,10 +908,24 @@ export class StanceSimulator {
     // = angle > π + limit (which can't happen in our IK because the
     // triangle inequality prevents it), so in practice we check full
     // extension as a comfort penalty: arm too straight = strained.
-    const leftElbow = this.elbowAngle(sk.leftShoulder, sk.leftElbow, sk.leftHand);
-    const rightElbow = this.elbowAngle(sk.rightShoulder, sk.rightElbow, sk.rightHand);
-    const leftStrain = Math.max(0, leftElbow - (Math.PI - ELBOW_HYPEREXTENSION_LIMIT));
-    const rightStrain = Math.max(0, rightElbow - (Math.PI - ELBOW_HYPEREXTENSION_LIMIT));
+    const leftElbow = this.elbowAngle(
+      sk.leftShoulder,
+      sk.leftElbow,
+      sk.leftHand
+    );
+    const rightElbow = this.elbowAngle(
+      sk.rightShoulder,
+      sk.rightElbow,
+      sk.rightHand
+    );
+    const leftStrain = Math.max(
+      0,
+      leftElbow - (Math.PI - ELBOW_HYPEREXTENSION_LIMIT)
+    );
+    const rightStrain = Math.max(
+      0,
+      rightElbow - (Math.PI - ELBOW_HYPEREXTENSION_LIMIT)
+    );
     violation += leftStrain + rightStrain;
 
     // Shoulder flexion (arm raised forward from side) - angle between
@@ -774,10 +933,16 @@ export class StanceSimulator {
     // passive limit. We model it as the angle from "down at side" to the
     // current upper-arm direction.
     const leftShoulderAngle = this.shoulderFlexion(
-      sk.leftShoulder, sk.leftElbow, sk.hips, sk.spine2
+      sk.leftShoulder,
+      sk.leftElbow,
+      sk.hips,
+      sk.spine2
     );
     const rightShoulderAngle = this.shoulderFlexion(
-      sk.rightShoulder, sk.rightElbow, sk.hips, sk.spine2
+      sk.rightShoulder,
+      sk.rightElbow,
+      sk.hips,
+      sk.spine2
     );
     if (leftShoulderAngle > SHOULDER_FLEXION_LIMIT) {
       violation += leftShoulderAngle - SHOULDER_FLEXION_LIMIT;
@@ -954,8 +1119,8 @@ export function restPoseFromHeight(heightMeters: number): RestPoseGeometry {
   const h = heightMeters;
   // Shoulder line at Y=0. Measurements below/above as % of body height.
   const hipsY = -0.28 * h;
-  const spine1Y = -0.20 * h;
-  const spine2Y = -0.10 * h;
+  const spine1Y = -0.2 * h;
+  const spine2Y = -0.1 * h;
   const neckY = 0;
   const headBoneY = 0.04 * h; // base of skull, slightly above shoulder line
   const shoulderHalfWidth = 0.129 * h;
@@ -971,7 +1136,7 @@ export function restPoseFromHeight(heightMeters: number): RestPoseGeometry {
     rightShoulder: new Vector3(shoulderHalfWidth, 0, 0),
     upperArmLength: 0.186 * h,
     forearmLength: 0.146 * h,
-    footHalfWidth: 0.10,
+    footHalfWidth: 0.1,
     headRadius: 0.09,
     torsoRadius: 0.12,
     // Oriented slab: wide across the shoulders, thin front-to-back. Scaled off

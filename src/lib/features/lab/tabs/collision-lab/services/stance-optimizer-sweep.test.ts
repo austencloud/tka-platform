@@ -36,14 +36,14 @@ describe("StanceOptimizer.optimizeSweep", () => {
   it("finds a stance that clears the whole sweep where neutral does not", () => {
     const sim = new StanceSimulator(restPoseFromHeight(1.8));
     const opt = new StanceOptimizer(sim);
-    const blue = wheelSpinSweep();
-    const red = blue.map(() => handToPropTarget(Plane.WALL, "N", "in")); // RH wall, out of the way
+    const left = wheelSpinSweep();
+    const right = left.map(() => handToPropTarget(Plane.WALL, "N", "in")); // RH wall, out of the way
 
-    const neutral = sim.evaluateSweep(NEUTRAL, blue, red);
+    const neutral = sim.evaluateSweep(NEUTRAL, left, right);
     const neutralTorso = neutral.collisions.find((c) => c.zone === "prop-through-torso");
     expect(neutralTorso && neutralTorso.depth > 0.01).toBe(true); // impaled at neutral
 
-    const result = opt.optimizeSweep({ blue, red }, NEUTRAL, OPTIMIZER_BOUNDS);
+    const result = opt.optimizeSweep({ left, right }, NEUTRAL, OPTIMIZER_BOUNDS);
     const solvedTorso = result.simResult.collisions.find((c) => c.zone === "prop-through-torso");
     const solvedDepth = solvedTorso ? solvedTorso.depth : 0;
     expect(solvedDepth).toBeLessThan(0.01); // cleared after solve
@@ -53,9 +53,9 @@ describe("StanceOptimizer.optimizeSweep", () => {
   it("existing instantaneous optimize() still works (no regression)", () => {
     const sim = new StanceSimulator(restPoseFromHeight(1.8));
     const opt = new StanceOptimizer(sim);
-    const blue = handToPropTarget(Plane.WALL, "N", "in");
-    const red = handToPropTarget(Plane.WALL, "S", "in");
-    const r = opt.optimize({ blue, red }, NEUTRAL, OPTIMIZER_BOUNDS);
+    const left = handToPropTarget(Plane.WALL, "N", "in");
+    const right = handToPropTarget(Plane.WALL, "S", "in");
+    const r = opt.optimize({ left, right }, NEUTRAL, OPTIMIZER_BOUNDS);
     expect(r.stance).toBeDefined();
     expect(Number.isFinite(r.loss)).toBe(true);
   });

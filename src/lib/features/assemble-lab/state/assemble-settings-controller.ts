@@ -4,7 +4,7 @@ import {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { normalizeOrientationForLocation } from "$lib/shared/pictograph/grid/domain/orientation-from-drag";
 import {
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -18,7 +18,7 @@ import type { BuilderStartPose } from "./assemble-state-types";
 
 export interface AssembleSettingsController {
   reset(): void;
-  setStartPoses(poses: Record<MotionColor, BuilderStartPose>): void;
+  setStartPoses(poses: Record<HandSide, BuilderStartPose>): void;
   setRotationDirection(direction: RotationDirection): void;
   setTurnCount(turns: number): void;
   setOrientation(orientation: Orientation): void;
@@ -36,16 +36,16 @@ export function createAssembleSettingsController(
 
   function reset(): void {
     const hasContent =
-      document.blueSteps.length > 0 ||
-      document.redSteps.length > 0 ||
+      document.leftSteps.length > 0 ||
+      document.rightSteps.length > 0 ||
       Object.keys(document.startPoses).length > 0;
     if (!hasContent) return;
     const before = history.takeSnapshot();
     cancelPendingAction();
     document.phase = "idle";
-    document.activeHand = MotionColor.BLUE;
-    document.blueSteps = [];
-    document.redSteps = [];
+    document.activeHand = HandSide.LEFT;
+    document.leftSteps = [];
+    document.rightSteps = [];
     document.startPoses = {};
     document.currentPosition = null;
     document.currentOrientation = Orientation.IN;
@@ -59,28 +59,28 @@ export function createAssembleSettingsController(
     history.recordSnapshot("Clear sequence", before);
   }
 
-  function setStartPoses(poses: Record<MotionColor, BuilderStartPose>): void {
+  function setStartPoses(poses: Record<HandSide, BuilderStartPose>): void {
     if (
       document.phase === "animating" ||
       document.phase === "complete" ||
-      document.blueSteps.length > 0 ||
-      document.redSteps.length > 0
+      document.leftSteps.length > 0 ||
+      document.rightSteps.length > 0
     ) {
       return;
     }
 
-    const blue = poses[MotionColor.BLUE];
-    const red = poses[MotionColor.RED];
+    const left = poses[HandSide.LEFT];
+    const right = poses[HandSide.RIGHT];
     if (
-      !blue ||
-      !red ||
+      !left ||
+      !right ||
       !isLocationValidForMode(
-        blue.location,
+        left.location,
         document.gridMode,
         document.showCenter
       ) ||
       !isLocationValidForMode(
-        red.location,
+        right.location,
         document.gridMode,
         document.showCenter
       )
@@ -88,19 +88,19 @@ export function createAssembleSettingsController(
       return;
     }
 
-    const nextPoses: Record<MotionColor, BuilderStartPose> = {
-      [MotionColor.BLUE]: {
-        location: blue.location,
+    const nextPoses: Record<HandSide, BuilderStartPose> = {
+      [HandSide.LEFT]: {
+        location: left.location,
         orientation: normalizeOrientationForLocation(
-          blue.orientation,
-          blue.location
+          left.orientation,
+          left.location
         ),
       },
-      [MotionColor.RED]: {
-        location: red.location,
+      [HandSide.RIGHT]: {
+        location: right.location,
         orientation: normalizeOrientationForLocation(
-          red.orientation,
-          red.location
+          right.orientation,
+          right.location
         ),
       },
     };
@@ -110,9 +110,9 @@ export function createAssembleSettingsController(
 
     const before = history.takeSnapshot();
     document.startPoses = nextPoses;
-    document.activeHand = MotionColor.BLUE;
-    document.currentPosition = nextPoses[MotionColor.BLUE].location;
-    document.currentOrientation = nextPoses[MotionColor.BLUE].orientation;
+    document.activeHand = HandSide.LEFT;
+    document.currentPosition = nextPoses[HandSide.LEFT].location;
+    document.currentOrientation = nextPoses[HandSide.LEFT].orientation;
     document.phase = "placing";
     document.selectedStepIndex = null;
     document.stepEditMode = null;
@@ -180,7 +180,7 @@ export function createAssembleSettingsController(
         ? history.takeSnapshot()
         : null;
     const nextPoses = cloneStartPoses(document.startPoses);
-    for (const hand of [MotionColor.BLUE, MotionColor.RED]) {
+    for (const hand of [HandSide.LEFT, HandSide.RIGHT]) {
       const pose = nextPoses[hand];
       if (
         pose &&
@@ -204,7 +204,7 @@ export function createAssembleSettingsController(
         : null;
     if (!show) {
       const nextPoses = cloneStartPoses(document.startPoses);
-      for (const hand of [MotionColor.BLUE, MotionColor.RED]) {
+      for (const hand of [HandSide.LEFT, HandSide.RIGHT]) {
         if (nextPoses[hand]?.location === GridLocation.CENTER) {
           delete nextPoses[hand];
         }

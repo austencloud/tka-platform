@@ -28,7 +28,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -59,7 +59,7 @@
   type HandStep = { anti?: boolean; still?: boolean; from: GridLocation; to: GridLocation; so: Orientation };
   const h = (anti: boolean, from: GridLocation, to: GridLocation, so: Orientation = IN): HandStep => ({ anti, from, to, so });
   const sh = (loc: GridLocation, so: Orientation = IN): HandStep => ({ still: true, from: loc, to: loc, so });
-  const handMotion = (color: MotionColor, x: HandStep) => {
+  const handMotion = (color: HandSide, x: HandStep) => {
     if (x.still) {
       return createMotionData({
         motionType: MotionType.STATIC,
@@ -87,8 +87,8 @@
     });
   };
 
-  type Step = { letter: Letter; blue: HandStep; red: HandStep };
-  const st = (letter: Letter, blue: HandStep, red: HandStep): Step => ({ letter, blue, red });
+  type Step = { letter: Letter; left: HandStep; right: HandStep };
+  const st = (letter: Letter, left, right): Step => ({ letter, left, right });
   const { A, C, D, F, I, K, L } = Letter;
   const EL = Letter.E;
 
@@ -96,8 +96,8 @@
     key: string;
     word: string;
     startLetter: Letter;
-    startBlue: GridLocation;
-    startRed: GridLocation;
+    startLeft: GridLocation;
+    startRight: GridLocation;
     startX: number;
     rowX: number;
     cell: number;
@@ -111,8 +111,8 @@
       key: "frl-ccke",
       word: "CCKE",
       startLetter: Letter.ALPHA,
-      startBlue: SO_,
-      startRed: N,
+      startLeft: SO_,
+      startRight: N,
       startX: 100.8,
       rowX: 194.7,
       cell: 93.9,
@@ -134,8 +134,8 @@
       key: "frl-flii",
       word: "FLII",
       startLetter: Letter.BETA,
-      startBlue: SO_,
-      startRed: SO_,
+      startLeft: SO_,
+      startRight: SO_,
       startX: 100.8,
       rowX: 194.7,
       cell: 93.9,
@@ -158,8 +158,8 @@
       key: "frl-dak",
       word: "DAK",
       startLetter: Letter.BETA,
-      startBlue: SO_,
-      startRed: SO_,
+      startLeft: SO_,
+      startRight: SO_,
       startX: 5.6,
       rowX: 93,
       cell: 87.4,
@@ -188,12 +188,12 @@
       id: `${q.key}-${i + 1}`,
       letter: s.letter,
       gridMode: GridMode.DIAMOND,
-      startPosition: getGridPositionFromLocations(s.blue.from, s.red.from),
-      endPosition: getGridPositionFromLocations(s.blue.to, s.red.to),
+      startPosition: getGridPositionFromLocations(s.left.from, s.right.from),
+      endPosition: getGridPositionFromLocations(s.left.to, s.right.to),
       stepNumber: i + 1,
       motions: {
-        blue: handMotion(MotionColor.BLUE, s.blue),
-        red: handMotion(MotionColor.RED, s.red),
+        left: handMotion(HandSide.LEFT, s.left),
+        right: handMotion(HandSide.RIGHT, s.right),
       },
     } as unknown as StepData;
   };
@@ -203,11 +203,11 @@
       letter: q.startLetter,
       gridMode: GridMode.DIAMOND,
       stepNumber: 0,
-      startPosition: getGridPositionFromLocations(q.startBlue, q.startRed),
-      endPosition: getGridPositionFromLocations(q.startBlue, q.startRed),
+      startPosition: getGridPositionFromLocations(q.startLeft, q.startRight),
+      endPosition: getGridPositionFromLocations(q.startLeft, q.startRight),
       motions: {
-        blue: handMotion(MotionColor.BLUE, sh(q.startBlue)),
-        red: handMotion(MotionColor.RED, sh(q.startRed)),
+        left: handMotion(HandSide.LEFT, sh(q.startLeft)),
+        right: handMotion(HandSide.RIGHT, sh(q.startRight)),
       },
     }) as unknown as StepData;
 
@@ -294,8 +294,8 @@
         <PictographContainer
           pictographData={RESOLVED[q.key]![0]}
           gridMode={GridMode.DIAMOND}
-          bluePropTypeOverride={PropType.STAFF}
-          redPropTypeOverride={PropType.STAFF}
+          leftPropTypeOverride={PropType.STAFF}
+          rightPropTypeOverride={PropType.STAFF}
           stepNumberOverride={true}
           {...PICTO_FLAGS}
         />
@@ -309,8 +309,8 @@
           <PictographContainer
             pictographData={sd}
             gridMode={GridMode.DIAMOND}
-            bluePropTypeOverride={PropType.STAFF}
-            redPropTypeOverride={PropType.STAFF}
+            leftPropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
             stepNumberOverride={true}
             {...PICTO_FLAGS}
           />

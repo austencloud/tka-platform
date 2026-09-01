@@ -29,10 +29,10 @@
 
   const draftRuleLabel = $derived(fuseRuleLabel(draftRule));
   const draftDriverLabel = $derived(
-    draftDriver === "blue" ? "Blue path" : "Red path"
+    draftDriver === "left" ? "Left path" : "Right path"
   );
   const draftFollowerLabel = $derived(
-    draftDriver === "blue" ? "Red path" : "Blue path"
+    draftDriver === "left" ? "Right path" : "Left path"
   );
   const draftGlyph = $derived(fuseRuleGlyph(draftRule));
   const draftRuleTint = $derived(fuseRuleTint(draftRule));
@@ -138,7 +138,7 @@
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
         <span
           class="path-node"
-          data-side={draftDriver === "blue" ? "red" : "blue"}
+          data-side={draftDriver === "left" ? "right" : "left"}
         >
           <span class="node-dot" aria-hidden="true"></span>
           <span class="node-copy">
@@ -308,11 +308,11 @@
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--node-color) 22%, transparent);
   }
 
-  .path-node[data-side="blue"] {
+  .path-node[data-side="left"] {
     --node-color: var(--prop-blue, #2196f3);
   }
 
-  .path-node[data-side="red"] {
+  .path-node[data-side="right"] {
     --node-color: var(--prop-red, #f44336);
   }
 

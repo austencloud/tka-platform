@@ -13,18 +13,18 @@ export function applyReversalToMotion(motionType: string, isReversed: boolean): 
 }
 
 export interface ReversalFlags {
-  blueReversal: boolean;
-  redReversal: boolean;
+  leftReversal: boolean;
+  rightReversal: boolean;
 }
 
 /** Read pattern[beat % length] → which hands reverse. Symbols: P/R/B/-. */
 export function getReversalFlagsForBeat(patternSequence: string, beatIndex: number): ReversalFlags {
   const symbol = patternSequence[beatIndex % patternSequence.length];
   switch (symbol) {
-    case "P": return { blueReversal: true, redReversal: true };
-    case "R": return { blueReversal: false, redReversal: true };
-    case "B": return { blueReversal: true, redReversal: false };
-    case "-": return { blueReversal: false, redReversal: false };
+    case "P": return { leftReversal: true, rightReversal: true };
+    case "R": return { leftReversal: false, rightReversal: true };
+    case "B": return { leftReversal: true, rightReversal: false };
+    case "-": return { leftReversal: false, rightReversal: false };
     default:
       throw new Error(`Unknown reversal symbol "${symbol}" in "${patternSequence}". Valid: P R B -.`);
   }
@@ -45,19 +45,19 @@ export function getReversalFlagsForBeat(patternSequence: string, beatIndex: numb
 export function cumulativeParities(
   patternSequence: string,
   beatCount: number,
-): { blue: boolean[]; red: boolean[] } {
-  const blue: boolean[] = [];
-  const red: boolean[] = [];
-  let blueParity = false;
-  let redParity = false;
+): { left: boolean[]; right: boolean[] } {
+  const left: boolean[] = [];
+  const right: boolean[] = [];
+  let leftParity = false;
+  let rightParity = false;
   for (let i = 0; i < beatCount; i++) {
-    const { blueReversal, redReversal } = getReversalFlagsForBeat(patternSequence, i);
-    if (blueReversal) blueParity = !blueParity;
-    if (redReversal) redParity = !redParity;
-    blue.push(blueParity);
-    red.push(redParity);
+    const { leftReversal, rightReversal } = getReversalFlagsForBeat(patternSequence, i);
+    if (leftReversal) leftParity = !leftParity;
+    if (rightReversal) rightParity = !rightParity;
+    left.push(leftParity);
+    right.push(rightParity);
   }
-  return { blue, red };
+  return { left, right };
 }
 
 export interface ResolvedReversalPattern {
@@ -68,11 +68,11 @@ export interface ResolvedReversalPattern {
   isCleanLoop: boolean;
 }
 
-function toSequenceString(blue: boolean[], red: boolean[]): string {
+function toSequenceString(left: boolean[], right: boolean[]): string {
   let out = "";
-  for (let i = 0; i < blue.length; i++) {
-    const b = blue[i];
-    const r = red[i];
+  for (let i = 0; i < left.length; i++) {
+    const b = left[i];
+    const r = right[i];
     if (b && r) out += "P";
     else if (r) out += "R";
     else if (b) out += "B";
@@ -102,11 +102,11 @@ function tilesTo(patternSequence: string, candidate: string): boolean {
  * isCleanLoop is true when both hands reverse an even number of times — meaning
  * the prop returns to its starting rotation direction at the loop boundary.
  */
-export function resolvePattern(blue: boolean[], red: boolean[]): ResolvedReversalPattern {
-  const sequence = toSequenceString(blue, red);
-  const blueCount = blue.filter(Boolean).length;
-  const redCount = red.filter(Boolean).length;
-  const isCleanLoop = blueCount % 2 === 0 && redCount % 2 === 0;
+export function resolvePattern(left: boolean[], right: boolean[]): ResolvedReversalPattern {
+  const sequence = toSequenceString(left, right);
+  const leftCount = left.filter(Boolean).length;
+  const rightCount = right.filter(Boolean).length;
+  const isCleanLoop = leftCount % 2 === 0 && rightCount % 2 === 0;
 
   const named = SIMPLE_PATTERNS.find((p) => tilesTo(p.sequence, sequence));
   if (named) {

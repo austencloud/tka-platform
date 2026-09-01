@@ -14,6 +14,7 @@ import {
   selectContactProofSequence,
 } from "$lib/features/contact-lab/domain/contact-proof-sequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { selectStaticSequence } from "$lib/shared/foundation/services/static-sequence-catalog";
 
 const catalogPayload: unknown = JSON.parse(
   readFileSync(
@@ -23,17 +24,9 @@ const catalogPayload: unknown = JSON.parse(
 );
 
 function getCatalogSequence(id: string): SequenceData {
-  if (!Array.isArray(catalogPayload))
-    throw new Error("TnD catalog is not an array");
-  const sequence = catalogPayload.find(
-    (entry) =>
-      typeof entry === "object" &&
-      entry !== null &&
-      "id" in entry &&
-      entry.id === id
-  );
+  const sequence = selectStaticSequence(catalogPayload, id);
   if (!sequence) throw new Error(`Missing catalog sequence ${id}`);
-  return sequence as SequenceData;
+  return sequence;
 }
 
 function getResolvedProfile(sequence: SequenceData): ContactPalmspinProfile {
@@ -72,8 +65,8 @@ describe("TKA-driven two-ball palmspin", () => {
       expect(inspectContactFrame(frame)).toEqual([]);
       expect(frame.balls).toHaveLength(4);
 
-      for (const color of ["blue", "red"] as const) {
-        const [a, b] = frame.balls.filter((ball) => ball.color === color);
+      for (const hand of ["left", "right"] as const) {
+        const [a, b] = frame.balls.filter((ball) => ball.hand === hand);
         expect(a).toBeDefined();
         expect(b).toBeDefined();
         const distance = Math.hypot(
@@ -83,9 +76,7 @@ describe("TKA-driven two-ball palmspin", () => {
         );
         expect(distance).toBeCloseTo(CONTACT_BALL_RADIUS * 2, 6);
         expect(a!.supportMode).toBe("rolling");
-        expect(a!.contact.hand).toBe(
-          color === "blue" ? "blue-left" : "red-right"
-        );
+        expect(a!.contact.hand).toBe(hand);
       }
     }
   });
@@ -120,18 +111,18 @@ describe("TKA-driven two-ball palmspin", () => {
   it("rejects center-point and disconnected paths instead of inventing contact motion", () => {
     const centerPoint = structuredClone(mpmp);
     const centerMotion = centerPoint as unknown as {
-      steps: Array<{ motions: { blue: { endLocation: string } } }>;
+      steps: Array<{ motions: { left: { endLocation: string } } }>;
     };
-    centerMotion.steps[0]!.motions.blue.endLocation = "c";
+    centerMotion.steps[0]!.motions.left.endLocation = "c";
 
     const disconnected = structuredClone(mpmp);
     const disconnectedMotion = disconnected as unknown as {
       steps: Array<{
-        motions: { blue: { startLocation: string; endLocation: string } };
+        motions: { left: { startLocation: string; endLocation: string } };
       }>;
     };
-    disconnectedMotion.steps[1]!.motions.blue.startLocation = "s";
-    disconnectedMotion.steps[1]!.motions.blue.endLocation = "w";
+    disconnectedMotion.steps[1]!.motions.left.startLocation = "s";
+    disconnectedMotion.steps[1]!.motions.left.endLocation = "w";
 
     const centerResult = buildContactPalmspinProfile(centerPoint);
     const disconnectedResult = buildContactPalmspinProfile(disconnected);

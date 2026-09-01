@@ -32,7 +32,10 @@ const BY_LABEL: Record<string, string[]> = {
     "Can I watch both at once?",
     "I want to see them next to each other.",
   ],
-  "2d animation": ["Just the clean version, no depth.", "Back to the flat one."],
+  "2d animation": [
+    "Just the clean version, no depth.",
+    "Back to the flat one.",
+  ],
   "3d animation": [
     "What does this look like in three dimensions?",
     "Let's see it in 3D.",
@@ -54,7 +57,10 @@ const BY_LABEL: Record<string, string[]> = {
   ],
   playback: ["Let me get at the playback controls.", "How do I drive this?"],
   props: ["What else could I be spinning?", "Let's change what's in my hands."],
-  display: ["What can I turn on and off here?", "Let me see the display options."],
+  display: [
+    "What can I turn on and off here?",
+    "Let me see the display options.",
+  ],
 
   // Props
   staff: ["Staves are what this was built for.", "Back to staves."],
@@ -81,7 +87,7 @@ const BY_LABEL: Record<string, string[]> = {
   // Sparks BURST from the tips on direction changes and fall under gravity,
   // hot→cool ramp (charcoal-renderer-3d). Not embers smouldering — struck sparks.
   coal: ["Let's make it throw sparks.", "Sparks off the ends, then."],
-  // A bolt arcs BETWEEN the blue prop's end and the red prop's matching end.
+  // A bolt arcs BETWEEN the left prop's end and the right prop's matching end.
   // The interesting part is that it connects the two hands, which "let's make it
   // electric" completely misses.
   zap: ["Let's make it arc between the two.", "Lightning between the hands?"],
@@ -106,7 +112,10 @@ const BY_LABEL: Record<string, string[]> = {
   // tongue, dragon crest and horns. The best-kept secret in the panel.
   // Default creature is SNAKE (defaults.ts), with dragon and caterpillar as
   // presets — so "the dragon one" would have been a lie most of the time.
-  animal: ["Let's turn it into a creature.", "The snake one. Let's do that again."],
+  animal: [
+    "Let's turn it into a creature.",
+    "The snake one. Let's do that again.",
+  ],
   // Expanding shockwave rings from the tip along its travel axis.
   pulse: ["Let's make it send out rings.", "Pulse — shockwaves off the ends."],
 
@@ -141,7 +150,11 @@ const BY_KIND: Partial<Record<GhostKind, string[]>> = {
     "{label} is a good place to begin.",
     "I'll open with {label}.",
   ],
-  effect: ["What does {label} do to it?", "Let's try {label}.", "{label}, then."],
+  effect: [
+    "What does {label} do to it?",
+    "Let's try {label}.",
+    "{label}, then.",
+  ],
   "effect-param": ["A little more of that.", "What if I nudge this?"],
   prop: ["What if these were {label}?", "Let's put {label} in its hands."],
   tempo: ["What about {label}?", "Let's try it {label}."],
@@ -158,7 +171,10 @@ const BY_KIND: Partial<Record<GhostKind, string[]>> = {
   ],
   viewer: ["Let's see this properly.", "I want a better look at it."],
   play: ["Let's see it move.", "Now watch."],
-  clear: ["Let's try something completely different.", "Scrap it and start over."],
+  clear: [
+    "Let's try something completely different.",
+    "Scrap it and start over.",
+  ],
   confirm: ["Yes, get rid of it.", "Go on then."],
   dismiss: ["Not right now, thanks.", "I'd rather just look around."],
   "close-overlay": ["Right — what else was there?", "Enough of that."],
@@ -220,7 +236,7 @@ const REACTIONS: Record<string, string[]> = {
  */
 export function reactionFor(
   target: HTMLElement | null,
-  ctx: GhostContext,
+  ctx: GhostContext
 ): string | null {
   const label = tidy(readLabel(target)).toLowerCase();
   const pool = REACTIONS[label];
@@ -242,7 +258,10 @@ export function encounterKey(target: HTMLElement | null): string {
 }
 
 /** Mark a control as met, so next time it gets its real motive. */
-export function noteEncounter(ctx: GhostContext, target: HTMLElement | null): void {
+export function noteEncounter(
+  ctx: GhostContext,
+  target: HTMLElement | null
+): void {
   const key = encounterKey(target);
   if (key) ctx.askedAbout.add(key);
 }
@@ -274,7 +293,7 @@ export function monologueFor(
   kind: GhostKind,
   target: HTMLElement | null,
   ctx: GhostContext,
-  fallback: string,
+  fallback: string
 ): string {
   const label = tidy(readLabel(target));
 

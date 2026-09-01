@@ -227,7 +227,7 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
     let rotationInterval: number | undefined;
     let inversionInterval: number | undefined;
 
-    for (const prop of [input.loopSpec.blue, input.loopSpec.red]) {
+    for (const prop of [input.loopSpec.left, input.loopSpec.right]) {
       if (!prop) continue;
       for (const [compKey, cSpec] of Object.entries(prop)) {
         const comp = compKey as LOOPComponent;

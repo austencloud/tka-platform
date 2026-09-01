@@ -20,7 +20,7 @@ import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -40,7 +40,7 @@ const NOROT = RotationDirection.NO_ROTATION;
 // ── Motion authoring - copied from Type3CrossShiftLettersPage.svelte ───────
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
 const hpDir = (from: GridLocation, to: GridLocation) => (HP_CW.has(`${from}-${to}`) ? CW : CCW);
-const shift = (color: MotionColor, from: GridLocation, to: GridLocation, anti: boolean, so: Orientation = IN) => {
+const shift = (color: HandSide, from: GridLocation, to: GridLocation, anti: boolean, so: Orientation = IN) => {
   const dir = hpDir(from, to);
   return createMotionData({
     motionType: anti ? MotionType.ANTI : MotionType.PRO,
@@ -50,12 +50,12 @@ const shift = (color: MotionColor, from: GridLocation, to: GridLocation, anti: b
     startOrientation: so,
     endOrientation: anti ? (so === IN ? OUT : IN) : so,
     turns: 0,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
 };
-const dash = (color: MotionColor, from: GridLocation, to: GridLocation) =>
+const dash = (color: HandSide, from: GridLocation, to: GridLocation) =>
   createMotionData({
     motionType: MotionType.DASH,
     rotationDirection: NOROT,
@@ -64,18 +64,18 @@ const dash = (color: MotionColor, from: GridLocation, to: GridLocation) =>
     startOrientation: IN,
     endOrientation: OUT,
     turns: 0,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
-const stat = (color: MotionColor, loc: GridLocation, ori: Orientation = IN) =>
+const stat = (color: HandSide, loc: GridLocation, ori: Orientation = IN) =>
   createMotionData({
     motionType: MotionType.STATIC,
     startLocation: loc,
     endLocation: loc,
     startOrientation: ori,
     endOrientation: ori,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
@@ -131,8 +131,8 @@ const cellStep = (c: CellDef, id: string, stepNumber: number | null): StepData =
     endPosition: getGridPositionFromLocations(c.bTo, c.rTo),
     stepNumber,
     motions: {
-      blue: dash(MotionColor.BLUE, c.bFrom, c.bTo),
-      red: shift(MotionColor.RED, c.rFrom, c.rTo, c.anti),
+      left: dash(HandSide.LEFT, c.bFrom, c.bTo),
+      right: shift(HandSide.RIGHT, c.rFrom, c.rTo, c.anti),
     },
   }) as unknown as StepData;
 
@@ -166,8 +166,8 @@ const bdStart = (b: Breakdown): StepData =>
     gridMode: GridMode.DIAMOND,
     stepNumber: null,
     motions: {
-      blue: stat(MotionColor.BLUE, b.cell.bFrom, b.startOris[0]),
-      red: stat(MotionColor.RED, b.cell.rFrom, b.startOris[1]),
+      left: stat(HandSide.LEFT, b.cell.bFrom, b.startOris[0]),
+      right: stat(HandSide.RIGHT, b.cell.rFrom, b.startOris[1]),
     },
   }) as unknown as StepData;
 

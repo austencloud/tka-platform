@@ -62,9 +62,9 @@ export interface PrecomputedPropPath {
  */
 export interface AnimationPathCacheData {
   /** Pre-computed path for blue prop */
-  bluePropPath: PrecomputedPropPath;
+  leftPropPath: PrecomputedPropPath;
   /** Pre-computed path for red prop */
-  redPropPath: PrecomputedPropPath;
+  rightPropPath: PrecomputedPropPath;
   /** Total duration in milliseconds */
   totalDurationMs: number;
   /** Total number of steps in sequence */
@@ -133,8 +133,8 @@ export class AnimationPathCache {
    */
   async precomputePaths(
     calculateStateFunc: (beat: number) => {
-      blueProp: PropState;
-      redProp: PropState;
+      leftProp: PropState;
+      rightProp: PropState;
     },
     totalSteps: number,
     stepDurationMs: number,
@@ -149,8 +149,8 @@ export class AnimationPathCache {
     const totalFrames = Math.ceil(cacheDurationMs / frameTimeMs);
 
     // Pre-allocate arrays at known size to avoid push overhead
-    const bluePositions = new Array<PrecomputedPropPosition>(totalFrames + 1);
-    const redPositions = new Array<PrecomputedPropPosition>(totalFrames + 1);
+    const leftPositions = new Array<PrecomputedPropPosition>(totalFrames + 1);
+    const rightPositions = new Array<PrecomputedPropPosition>(totalFrames + 1);
 
     // Reusable endpoint config (avoid per-frame allocation)
     const endpointConfig: PropEndpointConfig = {
@@ -174,23 +174,23 @@ export class AnimationPathCache {
         const timestamp = frame * frameTimeMs;
         const playbackPosition = timestamp / stepDurationMs;
 
-        const { blueProp, redProp } = calculateStateFunc(playbackPosition);
+        const { leftProp, rightProp } = calculateStateFunc(playbackPosition);
 
-        const blueEndpoints = calculatePropEndpoints(blueProp, endpointConfig);
-        const redEndpoints = calculatePropEndpoints(redProp, endpointConfig);
+        const leftEndpoints = calculatePropEndpoints(leftProp, endpointConfig);
+        const rightEndpoints = calculatePropEndpoints(rightProp, endpointConfig);
 
-        bluePositions[frame] = {
+        leftPositions[frame] = {
           beat: playbackPosition,
           timestamp,
-          propState: { ...blueProp },
-          endpoints: blueEndpoints,
+          propState: { ...leftProp },
+          endpoints: leftEndpoints,
         };
 
-        redPositions[frame] = {
+        rightPositions[frame] = {
           beat: playbackPosition,
           timestamp,
-          propState: { ...redProp },
-          endpoints: redEndpoints,
+          propState: { ...rightProp },
+          endpoints: rightEndpoints,
         };
       }
 
@@ -204,17 +204,17 @@ export class AnimationPathCache {
     options?.onProgress?.(100);
 
     // Build beat lookup tables
-    const blueBeatLookup = this.buildBeatLookup(bluePositions);
-    const redBeatLookup = this.buildBeatLookup(redPositions);
+    const leftBeatLookup = this.buildBeatLookup(leftPositions);
+    const rightBeatLookup = this.buildBeatLookup(rightPositions);
 
     this.cacheData = {
-      bluePropPath: {
-        positions: bluePositions,
-        stepLookup: blueBeatLookup,
+      leftPropPath: {
+        positions: leftPositions,
+        stepLookup: leftBeatLookup,
       },
-      redPropPath: {
-        positions: redPositions,
-        stepLookup: redBeatLookup,
+      rightPropPath: {
+        positions: rightPositions,
+        stepLookup: rightBeatLookup,
       },
       totalDurationMs,
       totalSteps,
@@ -246,8 +246,8 @@ export class AnimationPathCache {
 
     const propPath =
       propIndex === 0
-        ? this.cacheData.bluePropPath
-        : this.cacheData.redPropPath;
+        ? this.cacheData.leftPropPath
+        : this.cacheData.rightPropPath;
 
     // Convert beat range to frame indices
     const stepDurationMs =
@@ -322,8 +322,8 @@ export class AnimationPathCache {
 
     const propPath =
       propIndex === 0
-        ? this.cacheData.bluePropPath
-        : this.cacheData.redPropPath;
+        ? this.cacheData.leftPropPath
+        : this.cacheData.rightPropPath;
 
     const stepDurationMs =
       this.cacheData.totalDurationMs / this.cacheData.totalSteps;
@@ -439,8 +439,8 @@ export class AnimationPathCache {
 
     const propPath =
       propIndex === 0
-        ? this.cacheData.bluePropPath
-        : this.cacheData.redPropPath;
+        ? this.cacheData.leftPropPath
+        : this.cacheData.rightPropPath;
 
     const roundedBeat =
       Math.round(beat * this.config.cacheFps) / this.config.cacheFps;
@@ -470,8 +470,8 @@ export class AnimationPathCache {
 
     const propPath =
       propIndex === 0
-        ? this.cacheData.bluePropPath
-        : this.cacheData.redPropPath;
+        ? this.cacheData.leftPropPath
+        : this.cacheData.rightPropPath;
 
     return propPath.positions;
   }
@@ -499,8 +499,8 @@ export class AnimationPathCache {
       totalSteps: this.cacheData.totalSteps,
       totalDurationMs: this.cacheData.totalDurationMs,
       cacheFps: this.cacheData.cacheFps,
-      bluePointCount: this.cacheData.bluePropPath.positions.length,
-      redPointCount: this.cacheData.redPropPath.positions.length,
+      leftPointCount: this.cacheData.leftPropPath.positions.length,
+      rightPointCount: this.cacheData.rightPropPath.positions.length,
     };
   }
 

@@ -75,13 +75,13 @@ describe("Create workspace mandala viewer contract", () => {
       '{ value: "animated", label: "Animated" }'
     );
     expect(mandalaControls).toContain(
-      '{ value: "blue", label: "Blue", tone: "blue" }'
+      '{ value: "left", label: "Left", tone: "blue" }'
     );
     expect(mandalaControls).toContain(
       '{ value: "both", label: "Both", tone: "accent" }'
     );
     expect(mandalaControls).toContain(
-      '{ value: "red", label: "Red", tone: "red" }'
+      '{ value: "right", label: "Right", tone: "red" }'
     );
     expect(mandalaControls).not.toContain('label: "Purple"');
     expect(mandalaPanel).toContain("ctrl.show = variant");
@@ -98,10 +98,11 @@ describe("Create workspace mandala viewer contract", () => {
     expect(mandalaDock).toContain("trailingAction={dockAction}");
   });
 
-  it("opens with canonical blue and red instead of saved custom colors", () => {
-    expect(mandalaPanel).toContain("customBlue: BLUE_STROKE");
-    expect(mandalaPanel).toContain("customRed: RED_STROKE");
+  it("edits the shared custom pair without replacing the full Mandala look", () => {
+    expect(mandalaPanel).not.toContain("customBlue:");
+    expect(mandalaPanel).not.toContain("customRed:");
     expect(mandalaPanel).toContain('colorMode: "solid"');
     expect(mandalaPanel).toContain("persistViewState: false");
+    expect(mandalaPanel).toContain("persistCustomColors: true");
   });
 });

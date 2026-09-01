@@ -11,13 +11,13 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-typ
  * Check if user is in cat-dog mode (different props for each hand)
  */
 export function isCatDogMode(
-  bluePropType: PropType | undefined,
-  redPropType: PropType | undefined,
+  leftPropType: PropType | undefined,
+  rightPropType: PropType | undefined,
   catDogModeEnabled: boolean | undefined
 ): boolean {
   if (!catDogModeEnabled) return false;
-  if (!bluePropType || !redPropType) return false;
-  return bluePropType !== redPropType;
+  if (!leftPropType || !rightPropType) return false;
+  return leftPropType !== rightPropType;
 }
 
 /**
@@ -26,18 +26,18 @@ export function isCatDogMode(
  */
 export function getThumbnailPathForPropConfig(
   sequenceName: string,
-  bluePropType: PropType | undefined,
-  redPropType: PropType | undefined,
+  leftPropType: PropType | undefined,
+  rightPropType: PropType | undefined,
   catDogModeEnabled: boolean | undefined,
   lightMode: boolean = false
 ): string | null {
   // Cat-dog mode requires dynamic rendering
-  if (isCatDogMode(bluePropType, redPropType, catDogModeEnabled)) {
+  if (isCatDogMode(leftPropType, rightPropType, catDogModeEnabled)) {
     return null;
   }
 
   // Single-prop mode: use pre-rendered static image
-  const propType = bluePropType ?? redPropType ?? "staff";
+  const propType = leftPropType ?? rightPropType ?? "staff";
   const modeSuffix = lightMode ? "_light" : "_dark";
   return `/gallery/${propType}/${sequenceName}${modeSuffix}.webp`;
 }

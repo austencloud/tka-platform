@@ -177,8 +177,8 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
   {:else}
     <div class="animation-wrapper">
       <AnimatorCanvas
-        blueProp={animState.bluePropState}
-        redProp={animState.redPropState}
+        leftProp={animState.leftPropState}
+        rightProp={animState.rightPropState}
         gridVisible={true}
         gridMode={generatedSequence?.gridMode}
         {letter}

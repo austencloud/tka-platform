@@ -15,11 +15,17 @@
   a tray Snippet that renders the active tab's body, and the trailing action.
 -->
 <script lang="ts" module>
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+
   export interface ControlDockTab {
     id: string;
     label: string;
     /** FontAwesome class, e.g. "fa-wand-magic-sparkles". Omit to use a color dot. */
     icon?: string;
+    /** Live prop artwork for the Props destination. Takes precedence over icon. */
+    propType?: PropType;
+    fanAppearance?: FanAppearance;
     /** Tints the active state (and the solo dot when there's no icon). */
     accentColor?: string;
     /** Two-color dot pair instead of an icon (mandala "Colors" tab). */
@@ -61,6 +67,7 @@
   import { cubicOut } from "svelte/easing";
   import type { Snippet } from "svelte";
   import { SwipeToDismiss } from "$lib/shared/foundation/ui/drawer/swipe-to-dismiss";
+  import RailPropGlyph from "$lib/shared/components/RailPropGlyph.svelte";
 
   interface Props {
     tabs: ControlDockTab[];
@@ -350,6 +357,12 @@
                  collapse chevron, and re-tapping it closes the tray (restoring
                  the ducked nav). -->
             <i class="fas fa-chevron-down" aria-hidden="true"></i>
+          {:else if t.propType}
+            <RailPropGlyph
+              propType={t.propType}
+              fanAppearance={t.fanAppearance}
+              size={20}
+            />
           {:else if t.dots}
             <span class="cat-dots">
               <span class="dot" style:background={t.dots[0]}></span>
@@ -661,6 +674,11 @@
     flex: 1 1 0;
     min-width: 0;
     padding: 6px 2px;
+    color: color-mix(
+      in srgb,
+      var(--cat-accent, var(--theme-text-dim, rgba(255, 255, 255, 0.6))) 42%,
+      var(--theme-text-dim, rgba(255, 255, 255, 0.6))
+    );
   }
   .dock-btn.cat.active i {
     transform: translateY(-1px) scale(1.08);

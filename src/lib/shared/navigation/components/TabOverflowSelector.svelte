@@ -1,7 +1,10 @@
 <!-- TabOverflowSelector - 2026-ready tab overflow handler using Popover API -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { Section } from "$lib/shared/navigation/domain/types";
+  import type {
+    Section,
+    SectionHomeDestination,
+  } from "$lib/shared/navigation/domain/types";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount } from "svelte";
 
@@ -9,37 +12,54 @@
     sections = [],
     currentSection = "",
     onSectionChange = () => {},
+    sectionHome = null,
+    onSectionHomeSelect = () => {},
+    selectorLabel = "Select tab",
   } = $props<{
     sections: Section[];
     currentSection: string;
     onSectionChange?: (sectionId: string) => void;
+    sectionHome?: SectionHomeDestination | null;
+    onSectionHomeSelect?: () => void;
+    selectorLabel?: string;
   }>();
 
   let popoverElement: HTMLElement | null = null;
   let isOpen = $state(false);
   let hapticService: HapticFeedback | null = null;
 
-  // Find current section
-  let currentSectionData = $derived(
-    sections.find((s: Section) => s.id === currentSection) || sections[0]
+  const currentDestination = $derived(
+    sectionHome?.active
+      ? sectionHome
+      : sections.find((section: Section) => section.id === currentSection) ||
+          sections[0],
   );
 
   function handleTriggerClick() {
     hapticService?.trigger("selection");
   }
 
+  function closePopover() {
+    if (popoverElement && typeof popoverElement.hidePopover === "function") {
+      try {
+        popoverElement.hidePopover();
+      } catch {
+        // The browser may have already closed it after the selection.
+      }
+    }
+  }
+
+  function handleHomeClick() {
+    hapticService?.trigger("selection");
+    onSectionHomeSelect();
+    closePopover();
+  }
+
   function handleSectionClick(section: Section) {
     if (!section.disabled) {
       hapticService?.trigger("selection");
       onSectionChange(section.id);
-      // Popover auto-closes via popovertarget, but close manually for fallback
-      if (popoverElement && typeof popoverElement.hidePopover === "function") {
-        try {
-          popoverElement.hidePopover();
-        } catch {
-          // Ignore errors - popover might already be closing
-        }
-      }
+      closePopover();
     }
   }
 
@@ -67,13 +87,17 @@
 <button
   class="tab-picker-trigger"
   popovertarget="tab-overflow-popover"
-  aria-label="Select tab"
+  aria-label={selectorLabel}
   aria-expanded={isOpen}
   aria-controls="tab-overflow-popover"
   onclick={handleTriggerClick}
+  style="--current-section-color: {currentDestination?.color ||
+    'var(--theme-accent)'}; --current-section-gradient: {currentDestination?.gradient ||
+    currentDestination?.color ||
+    'var(--theme-accent)'}"
 >
-  <span class="current-tab-icon">{@html currentSectionData?.icon || ""}</span>
-  <span class="current-tab-label">{currentSectionData?.label || "Select"}</span>
+  <span class="current-tab-icon">{@html currentDestination?.icon || ""}</span>
+  <span class="current-tab-label">{currentDestination?.label || "Select"}</span>
   <i
     class="fas fa-chevron-down chevron"
     class:rotated={isOpen}
@@ -89,12 +113,41 @@
   class="tab-overflow-popover"
 >
   <div class="tab-grid">
+    {#if sectionHome}
+      <button
+        class="tab-option home-option"
+        class:active={sectionHome.active}
+        aria-current={sectionHome.active ? "page" : undefined}
+        aria-label={sectionHome.ariaLabel ??
+          sectionHome.optionLabel ??
+          sectionHome.label}
+        onclick={handleHomeClick}
+        style="--section-color: {sectionHome.color ||
+          'var(--theme-accent)'}; --section-gradient: {sectionHome.gradient ||
+          sectionHome.color ||
+          'var(--theme-accent)'}"
+      >
+        <span class="tab-icon">{@html sectionHome.icon}</span>
+        <span class="tab-label"
+          >{sectionHome.optionLabel ?? sectionHome.label}</span
+        >
+        {#if sectionHome.active}
+          <i class="fas fa-check check-mark" aria-hidden="true"></i>
+        {/if}
+      </button>
+    {/if}
+
     {#each sections as section}
       <button
         class="tab-option"
-        class:active={currentSection === section.id}
+        class:active={sectionHome?.active !== true &&
+          currentSection === section.id}
         class:disabled={section.disabled}
         disabled={section.disabled}
+        aria-current={sectionHome?.active !== true &&
+        currentSection === section.id
+          ? "page"
+          : undefined}
         onclick={() => handleSectionClick(section)}
         style="--section-color: {section.color ||
           'var(--theme-accent)'}; --section-gradient: {section.gradient ||
@@ -103,7 +156,7 @@
       >
         <span class="tab-icon">{@html section.icon}</span>
         <span class="tab-label">{section.label}</span>
-        {#if currentSection === section.id}
+        {#if sectionHome?.active !== true && currentSection === section.id}
           <i class="fas fa-check check-mark" aria-hidden="true"></i>
         {/if}
       </button>
@@ -126,12 +179,17 @@
     max-width: 240px;
 
     /* Use global theme system */
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
+    background: color-mix(
+      in srgb,
+      var(--current-section-color) 12%,
+      var(--theme-card-bg)
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--current-section-color) 38%, var(--theme-stroke));
     border-radius: 12px;
 
     color: var(--theme-text);
-    font-size: var(--font-size-compact);
+    font-size: var(--font-size-min, 14px);
     font-weight: 500;
     letter-spacing: 0.01em;
 
@@ -140,18 +198,22 @@
     -webkit-tap-highlight-color: transparent;
 
     transition:
-      background 0.2s ease,
-      border-color 0.2s ease,
-      transform 0.15s ease;
+      background var(--transition-normal),
+      border-color var(--transition-normal),
+      transform var(--transition-fast);
   }
 
   .tab-picker-trigger:hover {
     background: color-mix(
       in srgb,
-      var(--theme-card-bg) 100%,
-      var(--theme-accent, var(--theme-accent)) 10%
+      var(--current-section-color) 18%,
+      var(--theme-card-bg)
     );
-    border-color: var(--theme-accent, var(--theme-accent));
+    border-color: color-mix(
+      in srgb,
+      var(--current-section-color) 58%,
+      var(--theme-stroke)
+    );
   }
 
   .tab-picker-trigger:active {
@@ -166,7 +228,7 @@
   }
 
   .current-tab-icon :global(i) {
-    background: var(--theme-accent);
+    background: var(--current-section-gradient);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -181,9 +243,9 @@
   }
 
   .chevron {
-    font-size: var(--font-size-compact);
+    font-size: var(--font-size-compact, 12px);
     opacity: 0.6;
-    transition: transform var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--transition-normal);
   }
 
   .chevron.rotated {
@@ -231,10 +293,10 @@
     opacity: 1;
     scale: 1;
     transition:
-      opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-      scale 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
-      overlay 0.25s cubic-bezier(0.4, 0, 0.2, 1) allow-discrete,
-      display 0.25s cubic-bezier(0.4, 0, 0.2, 1) allow-discrete;
+      opacity var(--transition-emphasis),
+      scale var(--transition-spring),
+      overlay var(--transition-emphasis) allow-discrete,
+      display var(--transition-emphasis) allow-discrete;
   }
 
   /* Starting style for smooth open animation - @starting-style is valid CSS */
@@ -274,12 +336,17 @@
     padding: 16px 12px;
     min-height: 80px;
 
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
+    background: color-mix(
+      in srgb,
+      var(--section-color) 8%,
+      var(--theme-card-bg)
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--section-color) 24%, var(--theme-stroke));
     border-radius: 12px;
 
     color: var(--theme-text);
-    font-size: var(--font-size-compact);
+    font-size: var(--font-size-min, 14px);
     font-weight: 500;
 
     cursor: pointer;
@@ -287,18 +354,22 @@
     -webkit-tap-highlight-color: transparent;
 
     transition:
-      background 0.2s ease,
-      border-color 0.2s ease,
-      transform 0.15s ease;
+      background var(--transition-normal),
+      border-color var(--transition-normal),
+      transform var(--transition-fast);
   }
 
   .tab-option:hover:not(:disabled) {
     background: color-mix(
       in srgb,
-      var(--theme-card-bg) 100%,
-      var(--theme-accent, var(--theme-accent)) 10%
+      var(--section-color) 14%,
+      var(--theme-card-bg)
     );
-    border-color: var(--theme-accent, var(--theme-accent));
+    border-color: color-mix(
+      in srgb,
+      var(--section-color) 48%,
+      var(--theme-stroke)
+    );
   }
 
   .tab-option:active:not(:disabled) {
@@ -308,17 +379,17 @@
   .tab-option.active {
     background: color-mix(
       in srgb,
-      var(--theme-card-bg) 100%,
-      var(--theme-accent, var(--theme-accent)) 20%
+      var(--section-color) 20%,
+      var(--theme-card-bg)
     );
-    border-color: var(--theme-accent, var(--theme-accent));
+    border-color: color-mix(
+      in srgb,
+      var(--section-color) 62%,
+      var(--theme-stroke)
+    );
     box-shadow:
       0 0 0 2px
-        color-mix(
-          in srgb,
-          var(--theme-accent, var(--theme-accent)) 25%,
-          transparent
-        ),
+        color-mix(in srgb, var(--section-color) 25%, transparent),
       inset 0 1px 0 0 hsl(0 0% 100% / 0.1);
   }
 
@@ -351,9 +422,8 @@
     top: 8px;
     right: 8px;
     font-size: var(--font-size-compact);
-    color: var(--theme-accent, var(--theme-accent));
+    color: var(--section-color);
   }
-
 
   /* High contrast mode */
   @media (prefers-contrast: high) {

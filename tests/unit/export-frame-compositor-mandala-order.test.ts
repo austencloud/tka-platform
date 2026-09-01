@@ -27,8 +27,8 @@ function config(): FrameCompositorConfig {
     rotationPeriod: undefined,
     inversionPeriod: undefined,
     overlayComponents: null,
-    showBluePathLines: false,
-    showRedPathLines: false,
+    showLeftPathLines: false,
+    showRightPathLines: false,
     sequenceSteps: [],
   };
 }

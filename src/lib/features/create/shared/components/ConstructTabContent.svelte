@@ -19,6 +19,9 @@
   import ConstructTutorialGuide from "../../construct/tutorial/components/ConstructTutorialGuide.svelte";
   import ConstructGuideEntry from "../../construct/tutorial/components/ConstructGuideEntry.svelte";
   import type { StartPositionPath } from "../../construct/services/construct-analytics";
+  import { getCreateModuleContext } from "../context/create-module-context";
+
+  const { constructTutorialState } = getCreateModuleContext();
   // Props
   let {
     shouldShowStartPositionPicker,
@@ -101,6 +104,7 @@
               {isSideBySideLayout}
               onPositionSubmitted={onStartPositionSubmitted}
               heading={startPositionHeading}
+              suppressHeading={constructTutorialState.isActive}
             />
           {:else}
             <OptionPicker

@@ -16,7 +16,10 @@
  * transform is deliberately ephemeral (a "browse variations" scratch state,
  * not a saved preference) and resets on reload.
  */
-import { MotionColor, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  HandSide,
+  RotationDirection,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -24,9 +27,14 @@ import { applyPendingTurnsToOption } from "$lib/shared/create/services/apply-tur
 import {
   rotateAllPictographs,
   mirrorAllPictographs,
-  colorSwapAllPictographs,
+  handSwapAllPictographs,
 } from "$lib/features/learn/codex/services/codex-pictograph-updater";
-import { codexData, SHEET1, SHEET2, type CodexSheetDef } from "../../codex/_data/codex-groups";
+import {
+  codexData,
+  SHEET1,
+  SHEET2,
+  type CodexSheetDef,
+} from "../../codex/_data/codex-groups";
 import {
   GUIDE_CODEX_STORAGE_KEY,
   defaultGuideCodexPrefs,
@@ -61,15 +69,15 @@ function baselineMap(): Map<string, PictographData> {
   return m;
 }
 
-/** Re-skin a pictograph's blue/red motions with a different prop family. */
+/** Re-skin a pictograph's left/right motions with a different prop family. */
 function withPropType(p: PictographData, type: PropType): PictographData {
-  const blue = p.motions?.[MotionColor.BLUE];
-  const red = p.motions?.[MotionColor.RED];
+  const left = p.motions?.[HandSide.LEFT];
+  const right = p.motions?.[HandSide.RIGHT];
   return {
     ...p,
     motions: {
-      blue: blue ? createMotionData({ ...blue, propType: type }) : blue,
-      red: red ? createMotionData({ ...red, propType: type }) : red,
+      left: left ? createMotionData({ ...left, propType: type }) : left,
+      right: right ? createMotionData({ ...right, propType: type }) : right,
     },
   };
 }
@@ -77,22 +85,27 @@ function withPropType(p: PictographData, type: PropType): PictographData {
 /** Set each hand's turn count (SETTING, not adding - the canonical option-picker
  *  path recomputes rotation + end orientation). Spin direction only matters for
  *  dash/static hands carrying turns; CW matches the option picker's default. */
-function withTurns(p: PictographData, blueTurns: GuideCodexTurns, redTurns: GuideCodexTurns): PictographData {
+function withTurns(
+  p: PictographData,
+  leftTurns: GuideCodexTurns,
+  rightTurns: GuideCodexTurns
+): PictographData {
   return applyPendingTurnsToOption(
     p,
-    blueTurns,
-    redTurns,
+    leftTurns,
+    rightTurns,
     RotationDirection.CLOCKWISE,
     RotationDirection.CLOCKWISE
   );
 }
 
-
 class GuideCodexState {
   propType = $state<PropType>(defaultGuideCodexPrefs().propType);
-  visibility = $state<GuideCodexVisibility>(defaultGuideCodexPrefs().visibility);
-  blueTurns = $state<GuideCodexTurns>(defaultGuideCodexPrefs().blueTurns);
-  redTurns = $state<GuideCodexTurns>(defaultGuideCodexPrefs().redTurns);
+  visibility = $state<GuideCodexVisibility>(
+    defaultGuideCodexPrefs().visibility
+  );
+  leftTurns = $state<GuideCodexTurns>(defaultGuideCodexPrefs().leftTurns);
+  rightTurns = $state<GuideCodexTurns>(defaultGuideCodexPrefs().rightTurns);
   #transformed = $state<Map<string, PictographData> | null>(null);
   /** The cell the companion is currently animating (ephemeral, like the
    *  transform). Shared here because the codex spans two reader pages: the
@@ -109,11 +122,13 @@ class GuideCodexState {
   #restore(): void {
     if (typeof localStorage === "undefined") return;
     try {
-      const prefs = restoreGuideCodexPrefs(localStorage.getItem(GUIDE_CODEX_STORAGE_KEY));
+      const prefs = restoreGuideCodexPrefs(
+        localStorage.getItem(GUIDE_CODEX_STORAGE_KEY)
+      );
       this.propType = prefs.propType;
       this.visibility = prefs.visibility;
-      this.blueTurns = prefs.blueTurns;
-      this.redTurns = prefs.redTurns;
+      this.leftTurns = prefs.leftTurns;
+      this.rightTurns = prefs.rightTurns;
     } catch {
       // private mode / quota - fall back to defaults, not worth surfacing
     }
@@ -125,11 +140,11 @@ class GuideCodexState {
       localStorage.setItem(
         GUIDE_CODEX_STORAGE_KEY,
         serializeGuideCodexPrefs({
-          version: 3,
+          version: 4,
           propType: this.propType,
           visibility: $state.snapshot(this.visibility),
-          blueTurns: this.blueTurns,
-          redTurns: this.redTurns,
+          leftTurns: this.leftTurns,
+          rightTurns: this.rightTurns,
         })
       );
     } catch {
@@ -150,12 +165,12 @@ class GuideCodexState {
 
   /** Bump a hand's turns by a signed delta (the stepper's unit), clamped 0..3.
    *  A "fl" (float) current value is treated as 0 for stepping. */
-  adjustTurns(color: MotionColor, delta: number): void {
-    const cur = color === MotionColor.BLUE ? this.blueTurns : this.redTurns;
+  adjustTurns(color: HandSide, delta: number): void {
+    const cur = color === HandSide.LEFT ? this.leftTurns : this.rightTurns;
     const base = cur === "fl" ? 0 : cur;
     const next = normalizeGuideCodexTurns(base + delta);
-    if (color === MotionColor.BLUE) this.blueTurns = next;
-    else this.redTurns = next;
+    if (color === HandSide.LEFT) this.leftTurns = next;
+    else this.rightTurns = next;
     this.#persist();
   }
 
@@ -169,7 +184,7 @@ class GuideCodexState {
         ? rotateAllPictographs(arr)
         : op === "mirror"
           ? mirrorAllPictographs(arr)
-          : colorSwapAllPictographs(arr);
+          : handSwapAllPictographs(arr);
     const next = new Map<string, PictographData>();
     ids.forEach((id, i) => next.set(id, out[i]!));
     this.#transformed = next;
@@ -191,7 +206,10 @@ class GuideCodexState {
     if (!base) return null;
     // Turns first (recomputes rotation/orientation off the canonical motion),
     // then re-skin with the selected prop family.
-    return withPropType(withTurns(base, this.blueTurns, this.redTurns), this.propType);
+    return withPropType(
+      withTurns(base, this.leftTurns, this.rightTurns),
+      this.propType
+    );
   }
 }
 

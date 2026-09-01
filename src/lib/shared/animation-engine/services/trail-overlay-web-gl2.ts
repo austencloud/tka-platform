@@ -73,10 +73,10 @@ const TRAIL_ENDPOINT_DIMENSIONS = { width: 252.8, height: 77.8 };
 // cannot expire a trail faster than the GPU actually faded it.
 const MAX_RETIREMENT_DECAY_STEP_MS = 100;
 
-type TrailColor = "blue" | "red";
+type TrailHand = "left" | "right";
 
 interface TrailAccumulatorIdentity {
-  color: TrailColor;
+  hand: TrailHand;
   /** Multiplier contributed by tunnel spotlighting, independent of the
    *  color's visibility envelope. */
   visibilityScale: number;
@@ -115,10 +115,10 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   private width = 0;
   private height = 0;
 
-  private blueLeftRing: TrailPoint[] = [];
-  private blueRightRing: TrailPoint[] = [];
-  private redLeftRing: TrailPoint[] = [];
-  private redRightRing: TrailPoint[] = [];
+  private leftLeftRing: TrailPoint[] = [];
+  private leftRightRing: TrailPoint[] = [];
+  private rightLeftRing: TrailPoint[] = [];
+  private rightRightRing: TrailPoint[] = [];
 
   // Overlaid tunnel-layer rings + tail states (one full set per layer per
   // color end). Each layer's blue end emits a blue-colored tip and red end a
@@ -126,16 +126,16 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   // prop color. Pools are grown/shrunk to the active layer count each frame
   // (ensureLayerState), so memory is bounded by fold count — not unbounded.
   private layerRings: Array<{
-    blueLeft: TrailPoint[];
-    blueRight: TrailPoint[];
-    redLeft: TrailPoint[];
-    redRight: TrailPoint[];
+    leftLeft: TrailPoint[];
+    leftRight: TrailPoint[];
+    rightLeft: TrailPoint[];
+    rightRight: TrailPoint[];
   }> = [];
   private layerTails: Array<{
-    blueLeft: TailState;
-    blueRight: TailState;
-    redLeft: TailState;
-    redRight: TailState;
+    leftLeft: TailState;
+    leftRight: TailState;
+    rightLeft: TailState;
+    rightRight: TailState;
   }> = [];
 
   // Per-ring tail recession state. `visibleCount` shrinks from the current
@@ -143,10 +143,10 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   // window actually closes from the tail end instead of staying pinned at
   // "last N ring entries." `prog` interpolates the first visible point
   // between adjacent ring entries so recession is continuous, not step-wise.
-  private blueLeftTail: TailState = createTailState(DEFAULT_LEADING_EDGE);
-  private blueRightTail: TailState = createTailState(DEFAULT_LEADING_EDGE);
-  private redLeftTail: TailState = createTailState(DEFAULT_LEADING_EDGE);
-  private redRightTail: TailState = createTailState(DEFAULT_LEADING_EDGE);
+  private leftLeftTail: TailState = createTailState(DEFAULT_LEADING_EDGE);
+  private leftRightTail: TailState = createTailState(DEFAULT_LEADING_EDGE);
+  private rightLeftTail: TailState = createTailState(DEFAULT_LEADING_EDGE);
+  private rightRightTail: TailState = createTailState(DEFAULT_LEADING_EDGE);
 
   /** Current ring capacity - derived from `trailSettings.tailLength`. */
   private ringCapacity = RING_BUFFER_MIN;
@@ -158,25 +158,25 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   // hidden back to visible, its ring buffers still contain stale points
   // from before it was hidden, and the next capture would draw a straight
   // line between the stale tail and the fresh tip. Clear on false→true.
-  private lastHasBlue = true;
-  private lastHasRed = true;
+  private lastHasLeft = true;
+  private lastHasRight = true;
 
   // Track previous per-color prop-swap suppression (see
-  // bluePropSwapSuppressed on TrailOverlayRenderParams). This is separate from
-  // lastHasBlue/Red because the prop stays visible throughout a crossfade, so
+  // leftPropSwapSuppressed on TrailOverlayRenderParams). This is separate from
+  // lastHasLeft/Right because the prop stays visible throughout a crossfade, so
   // this cannot reuse that transition detection. The suppression-lift reset
   // below must NOT touch the accumulator (no epoch bump), letting the pre-swap trail
   // keep decaying on screen instead of being wiped.
-  private lastBluePropSwapSuppressed = false;
-  private lastRedPropSwapSuppressed = false;
+  private lastLeftPropSwapSuppressed = false;
+  private lastRightPropSwapSuppressed = false;
 
   // Per-color tipId epoch. Bumped once the fade-out envelope reaches
   // zero, so the next fade-in allocates a fresh accumulator FBO rather
   // than inheriting the previous cycle's residual pixels. The idle FBO
   // is reclaimed by the backend's per-tip GC after MAX_UNUSED_FRAMES_
   // BEFORE_GC idle frames.
-  private blueTipEpoch = 0;
-  private redTipEpoch = 0;
+  private leftTipEpoch = 0;
+  private rightTipEpoch = 0;
 
   // Accumulator identities that have actually received a drawable path. A
   // prop swap moves the current color's identities into `retiredAccumulators`
@@ -189,13 +189,13 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   // Per-color alpha envelope. Matches prop fade timing (300 ms in /
   // 200 ms out with cubic ease-out) so the trail appears and disappears
   // alongside the prop instead of snapping in/out.
-  private blueEnvelope = new Canvas2DVisibilityFadeManager(300, 200);
-  private redEnvelope = new Canvas2DVisibilityFadeManager(300, 200);
+  private leftEnvelope = new Canvas2DVisibilityFadeManager(300, 200);
+  private rightEnvelope = new Canvas2DVisibilityFadeManager(300, 200);
   // Remembers whether the envelope was fully faded out on the previous
   // frame, so we know to bump the epoch (for a clean accumulator FBO)
   // before the next fade-in begins.
-  private blueEnvelopeWasZero = false;
-  private redEnvelopeWasZero = false;
+  private leftEnvelopeWasZero = false;
+  private rightEnvelopeWasZero = false;
 
   private warmupFramesRemaining = 0;
   private static readonly WARMUP_FRAMES = 3;
@@ -265,10 +265,10 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     this.height = height;
 
     if (sizeChanged) {
-      this.blueLeftRing = [];
-      this.blueRightRing = [];
-      this.redLeftRing = [];
-      this.redRightRing = [];
+      this.leftLeftRing = [];
+      this.leftRightRing = [];
+      this.rightLeftRing = [];
+      this.rightRightRing = [];
       this.resetLayerState();
       this.warmupFramesRemaining = TrailOverlayWebGL2.WARMUP_FRAMES;
     }
@@ -296,14 +296,14 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     const {
       trailSettings,
       canvasSize,
-      hasBlue,
-      hasRed,
-      blueProp,
-      redProp,
-      bluePropType,
-      redPropType,
-      bluePropSwapSuppressed = false,
-      redPropSwapSuppressed = false,
+      hasLeft,
+      hasRight,
+      leftProp,
+      rightProp,
+      leftPropType,
+      rightPropType,
+      leftPropSwapSuppressed = false,
+      rightPropSwapSuppressed = false,
     } = params;
 
     // Non-seamless loop wrap: the props teleport from the end position back to
@@ -331,88 +331,88 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     // epoch and keep submitting the old identities as decay-only passes for
     // one full trail lifetime. This also prevents either side of the swap from
     // sharing an accumulator with mismatched endpoint geometry.
-    const bluePropSwapStarted =
-      bluePropSwapSuppressed && !this.lastBluePropSwapSuppressed;
-    const redPropSwapStarted =
-      redPropSwapSuppressed && !this.lastRedPropSwapSuppressed;
-    if (bluePropSwapStarted) {
-      this.retireColorAccumulators("blue", trailSettings.fadeDurationMs);
+    const leftPropSwapStarted =
+      leftPropSwapSuppressed && !this.lastLeftPropSwapSuppressed;
+    const rightPropSwapStarted =
+      rightPropSwapSuppressed && !this.lastRightPropSwapSuppressed;
+    if (leftPropSwapStarted) {
+      this.retireHandAccumulators("left", trailSettings.fadeDurationMs);
     }
-    if (redPropSwapStarted) {
-      this.retireColorAccumulators("red", trailSettings.fadeDurationMs);
+    if (rightPropSwapStarted) {
+      this.retireHandAccumulators("right", trailSettings.fadeDurationMs);
     }
 
     if (
       this.lastTrackingMode !== null &&
       this.lastTrackingMode !== trailSettings.trackingMode
     ) {
-      this.blueLeftRing = [];
-      this.blueRightRing = [];
-      this.redLeftRing = [];
-      this.redRightRing = [];
-      this.blueLeftTail = createTailState(leadingEdge);
-      this.blueRightTail = createTailState(leadingEdge);
-      this.redLeftTail = createTailState(leadingEdge);
-      this.redRightTail = createTailState(leadingEdge);
+      this.leftLeftRing = [];
+      this.leftRightRing = [];
+      this.rightLeftRing = [];
+      this.rightRightRing = [];
+      this.leftLeftTail = createTailState(leadingEdge);
+      this.leftRightTail = createTailState(leadingEdge);
+      this.rightLeftTail = createTailState(leadingEdge);
+      this.rightRightTail = createTailState(leadingEdge);
       this.resetLayerState();
     }
     this.lastTrackingMode = trailSettings.trackingMode;
 
     // Advance per-color envelopes toward the current target visibility.
-    this.blueEnvelope.setVisible(hasBlue);
-    this.redEnvelope.setVisible(hasRed);
+    this.leftEnvelope.setVisible(hasLeft);
+    this.rightEnvelope.setVisible(hasRight);
     const nowMs = this.backendClockMs;
-    const blueAlpha = this.blueEnvelope.updateProgress(nowMs).alpha;
-    const redAlpha = this.redEnvelope.updateProgress(nowMs).alpha;
+    const leftAlpha = this.leftEnvelope.updateProgress(nowMs).alpha;
+    const rightAlpha = this.rightEnvelope.updateProgress(nowMs).alpha;
 
     // On hidden→visible transitions: reset the ring so the fresh trail
     // starts from the current prop position (not a straight line from
     // the stale tail to the new tip). If the envelope had already fully
     // faded out before the re-enable, bump the tipId epoch so the
     // backend hands us a pristine accumulator FBO for the fade-in.
-    if (hasBlue && !this.lastHasBlue) {
-      this.blueLeftRing = [];
-      this.blueRightRing = [];
-      this.blueLeftTail = createTailState(leadingEdge);
-      this.blueRightTail = createTailState(leadingEdge);
+    if (hasLeft && !this.lastHasLeft) {
+      this.leftLeftRing = [];
+      this.leftRightRing = [];
+      this.leftLeftTail = createTailState(leadingEdge);
+      this.leftRightTail = createTailState(leadingEdge);
       for (let i = 0; i < this.layerRings.length; i++) {
-        this.layerRings[i]!.blueLeft = [];
-        this.layerRings[i]!.blueRight = [];
-        this.layerTails[i]!.blueLeft = createTailState(leadingEdge);
-        this.layerTails[i]!.blueRight = createTailState(leadingEdge);
+        this.layerRings[i]!.leftLeft = [];
+        this.layerRings[i]!.leftRight = [];
+        this.layerTails[i]!.leftLeft = createTailState(leadingEdge);
+        this.layerTails[i]!.leftRight = createTailState(leadingEdge);
       }
-      if (this.blueEnvelopeWasZero) {
-        this.forgetColorAccumulators("blue");
-        this.blueTipEpoch++;
-        this.blueEnvelopeWasZero = false;
+      if (this.leftEnvelopeWasZero) {
+        this.forgetHandAccumulators("left");
+        this.leftTipEpoch++;
+        this.leftEnvelopeWasZero = false;
       }
     }
-    if (hasRed && !this.lastHasRed) {
-      this.redLeftRing = [];
-      this.redRightRing = [];
-      this.redLeftTail = createTailState(leadingEdge);
-      this.redRightTail = createTailState(leadingEdge);
+    if (hasRight && !this.lastHasRight) {
+      this.rightLeftRing = [];
+      this.rightRightRing = [];
+      this.rightLeftTail = createTailState(leadingEdge);
+      this.rightRightTail = createTailState(leadingEdge);
       for (let i = 0; i < this.layerRings.length; i++) {
-        this.layerRings[i]!.redLeft = [];
-        this.layerRings[i]!.redRight = [];
-        this.layerTails[i]!.redLeft = createTailState(leadingEdge);
-        this.layerTails[i]!.redRight = createTailState(leadingEdge);
+        this.layerRings[i]!.rightLeft = [];
+        this.layerRings[i]!.rightRight = [];
+        this.layerTails[i]!.rightLeft = createTailState(leadingEdge);
+        this.layerTails[i]!.rightRight = createTailState(leadingEdge);
       }
-      if (this.redEnvelopeWasZero) {
-        this.forgetColorAccumulators("red");
-        this.redTipEpoch++;
-        this.redEnvelopeWasZero = false;
+      if (this.rightEnvelopeWasZero) {
+        this.forgetHandAccumulators("right");
+        this.rightTipEpoch++;
+        this.rightEnvelopeWasZero = false;
       }
     }
 
     // Latch "fully faded out" the first time the envelope reaches 0
     // while the color is hidden. The next hidden→visible transition
     // consults this flag to decide whether to bump the epoch.
-    if (!hasBlue && blueAlpha === 0) this.blueEnvelopeWasZero = true;
-    if (!hasRed && redAlpha === 0) this.redEnvelopeWasZero = true;
+    if (!hasLeft && leftAlpha === 0) this.leftEnvelopeWasZero = true;
+    if (!hasRight && rightAlpha === 0) this.rightEnvelopeWasZero = true;
 
-    this.lastHasBlue = hasBlue;
-    this.lastHasRed = hasRed;
+    this.lastHasLeft = hasLeft;
+    this.lastHasRight = hasRight;
 
     // Prop-swap suppression lift: reset that color's
     // ring/tail so the next capture starts a fresh, disconnected segment at
@@ -420,23 +420,23 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     // pre-suppression point. Deliberately does NOT touch blueTipEpoch/
     // redTipEpoch or the backend. The accumulator keeps whatever it already
     // has and decays normally instead of being wiped on re-entry.
-    if (!bluePropSwapSuppressed && this.lastBluePropSwapSuppressed) {
-      this.blueLeftRing = [];
-      this.blueRightRing = [];
-      this.blueLeftTail = createTailState(leadingEdge);
-      this.blueRightTail = createTailState(leadingEdge);
+    if (!leftPropSwapSuppressed && this.lastLeftPropSwapSuppressed) {
+      this.leftLeftRing = [];
+      this.leftRightRing = [];
+      this.leftLeftTail = createTailState(leadingEdge);
+      this.leftRightTail = createTailState(leadingEdge);
     }
-    if (!redPropSwapSuppressed && this.lastRedPropSwapSuppressed) {
-      this.redLeftRing = [];
-      this.redRightRing = [];
-      this.redLeftTail = createTailState(leadingEdge);
-      this.redRightTail = createTailState(leadingEdge);
+    if (!rightPropSwapSuppressed && this.lastRightPropSwapSuppressed) {
+      this.rightLeftRing = [];
+      this.rightRightRing = [];
+      this.rightLeftTail = createTailState(leadingEdge);
+      this.rightRightTail = createTailState(leadingEdge);
     }
-    this.lastBluePropSwapSuppressed = bluePropSwapSuppressed;
-    this.lastRedPropSwapSuppressed = redPropSwapSuppressed;
+    this.lastLeftPropSwapSuppressed = leftPropSwapSuppressed;
+    this.lastRightPropSwapSuppressed = rightPropSwapSuppressed;
 
-    const blueHasTwoEnds = propTipEnds(bluePropType ?? undefined) === 2;
-    const redHasTwoEnds = propTipEnds(redPropType ?? undefined) === 2;
+    const leftHasTwoEnds = propTipEnds(leftPropType ?? undefined) === 2;
+    const rightHasTwoEnds = propTipEnds(rightPropType ?? undefined) === 2;
     const modeTracksLeft =
       trailSettings.trackingMode === TrackingMode.LEFT_END ||
       trailSettings.trackingMode === TrackingMode.BOTH_ENDS;
@@ -447,132 +447,133 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       trailSettings.trackingMode === TrackingMode.RIGHT_END ||
       trailSettings.trackingMode === TrackingMode.BOTH_ENDS ||
       trailSettings.trackingMode === TrackingMode.HAND;
-    const blueTrackLeft = blueHasTwoEnds && modeTracksLeft;
-    const blueTrackRight = !blueHasTwoEnds || modeTracksRight;
-    const redTrackLeft = redHasTwoEnds && modeTracksLeft;
-    const redTrackRight = !redHasTwoEnds || modeTracksRight;
+    const leftTrackLeft = leftHasTwoEnds && modeTracksLeft;
+    const leftTrackRight = !leftHasTwoEnds || modeTracksRight;
+    const rightTrackLeft = rightHasTwoEnds && modeTracksLeft;
+    const rightTrackRight = !rightHasTwoEnds || modeTracksRight;
 
     // Per-tip effect gating
     const tipMap = params.tipEffectMap;
     const hasMap = tipMap && Object.keys(tipMap).length > 0;
-    const blueTrailConfig = resolveTrailPointConfig(
-      bluePropType,
+    const leftTrailConfig = resolveTrailPointConfig(
+      leftPropType,
       trailSettings.trackingMode
     );
-    const redTrailConfig = resolveTrailPointConfig(
-      redPropType,
+    const rightTrailConfig = resolveTrailPointConfig(
+      rightPropType,
       trailSettings.trackingMode
     );
-    const blueLeftTrails =
-      blueTrailConfig.left.type !== "none" &&
+    const leftLeftTrails =
+      leftTrailConfig.left.type !== "none" &&
       (!hasMap ||
         resolveEffect(
           0,
-          effectTipIndex(blueTrailConfig.left, 0),
+          effectTipIndex(leftTrailConfig.left, 0),
           tipMap!,
           {}
         ) === "trails");
-    const blueRightTrails =
-      blueTrailConfig.right.type !== "none" &&
+    const leftRightTrails =
+      leftTrailConfig.right.type !== "none" &&
       (!hasMap ||
         resolveEffect(
           0,
-          effectTipIndex(blueTrailConfig.right, 1),
+          effectTipIndex(leftTrailConfig.right, 1),
           tipMap!,
           {}
         ) === "trails");
-    const redLeftTrails =
-      redTrailConfig.left.type !== "none" &&
+    const rightLeftTrails =
+      rightTrailConfig.left.type !== "none" &&
       (!hasMap ||
         resolveEffect(
           1,
-          effectTipIndex(redTrailConfig.left, 0),
+          effectTipIndex(rightTrailConfig.left, 0),
           tipMap!,
           {}
         ) === "trails");
-    const redRightTrails =
-      redTrailConfig.right.type !== "none" &&
+    const rightRightTrails =
+      rightTrailConfig.right.type !== "none" &&
       (!hasMap ||
         resolveEffect(
           1,
-          effectTipIndex(redTrailConfig.right, 1),
+          effectTipIndex(rightTrailConfig.right, 1),
           tipMap!,
           {}
         ) === "trails");
 
     const tipMask =
-      (blueLeftTrails ? 1 : 0) |
-      (blueRightTrails ? 2 : 0) |
-      (redLeftTrails ? 4 : 0) |
-      (redRightTrails ? 8 : 0);
+      (leftLeftTrails ? 1 : 0) |
+      (leftRightTrails ? 2 : 0) |
+      (rightLeftTrails ? 4 : 0) |
+      (rightRightTrails ? 8 : 0);
     if (this.prevTipTrailMask !== null && tipMask !== this.prevTipTrailMask) {
-      const blueBitsChanged = (tipMask & 0x3) !== (this.prevTipTrailMask & 0x3);
-      const redBitsChanged = (tipMask & 0xc) !== (this.prevTipTrailMask & 0xc);
-      if (blueBitsChanged) {
-        if (!bluePropSwapSuppressed) {
-          this.retireColorAccumulators("blue", trailSettings.fadeDurationMs);
+      const leftBitsChanged = (tipMask & 0x3) !== (this.prevTipTrailMask & 0x3);
+      const rightBitsChanged =
+        (tipMask & 0xc) !== (this.prevTipTrailMask & 0xc);
+      if (leftBitsChanged) {
+        if (!leftPropSwapSuppressed) {
+          this.retireHandAccumulators("left", trailSettings.fadeDurationMs);
         }
-        this.blueLeftRing = [];
-        this.blueRightRing = [];
-        this.blueLeftTail = createTailState(leadingEdge);
-        this.blueRightTail = createTailState(leadingEdge);
+        this.leftLeftRing = [];
+        this.leftRightRing = [];
+        this.leftLeftTail = createTailState(leadingEdge);
+        this.leftRightTail = createTailState(leadingEdge);
       }
-      if (redBitsChanged) {
-        if (!redPropSwapSuppressed) {
-          this.retireColorAccumulators("red", trailSettings.fadeDurationMs);
+      if (rightBitsChanged) {
+        if (!rightPropSwapSuppressed) {
+          this.retireHandAccumulators("right", trailSettings.fadeDurationMs);
         }
-        this.redLeftRing = [];
-        this.redRightRing = [];
-        this.redLeftTail = createTailState(leadingEdge);
-        this.redRightTail = createTailState(leadingEdge);
+        this.rightLeftRing = [];
+        this.rightRightRing = [];
+        this.rightLeftTail = createTailState(leadingEdge);
+        this.rightRightTail = createTailState(leadingEdge);
       }
-      if (blueBitsChanged || redBitsChanged) this.resetLayerState();
+      if (leftBitsChanged || rightBitsChanged) this.resetLayerState();
     }
     this.prevTipTrailMask = tipMask;
 
-    let blueLeftMoved = false;
-    let blueRightMoved = false;
-    let redLeftMoved = false;
-    let redRightMoved = false;
+    let leftLeftMoved = false;
+    let leftRightMoved = false;
+    let rightLeftMoved = false;
+    let rightRightMoved = false;
     // Keep capturing while the envelope is still fading so the trail
     // tracks the prop through the fade-out instead of freezing in place.
-    const blueCaptureLive = hasBlue || blueAlpha > 0;
-    const redCaptureLive = hasRed || redAlpha > 0;
-    // bluePropSwapSuppressed/redPropSwapSuppressed: skip the capture (freeze the
+    const leftCaptureLive = hasLeft || leftAlpha > 0;
+    const rightCaptureLive = hasRight || rightAlpha > 0;
+    // leftPropSwapSuppressed/rightPropSwapSuppressed: skip the capture (freeze the
     // tip in place) while that color's prop-type swap is in flight. See the
-    // TrailOverlayRenderParams doc. blueLeftMoved/rightMoved staying false
+    // TrailOverlayRenderParams doc. leftLeftMoved/rightMoved staying false
     // feeds the normal "prop is stationary" path into advanceTail below, so
     // the tail recedes/shrinks toward the frozen point exactly like a real
     // stationary prop, instead of jumping to the new (mismatched) geometry.
-    if (blueProp && blueCaptureLive && !bluePropSwapSuppressed) {
+    if (leftProp && leftCaptureLive && !leftPropSwapSuppressed) {
       const r = this.capturePropTips(
-        blueProp,
+        leftProp,
         canvasSize,
-        bluePropType,
+        leftPropType,
         0,
-        blueTrackLeft && blueLeftTrails,
-        blueTrackRight && blueRightTrails,
-        blueTrailConfig
+        leftTrackLeft && leftLeftTrails,
+        leftTrackRight && leftRightTrails,
+        leftTrailConfig
       );
-      blueLeftMoved = r.leftMoved;
-      blueRightMoved = r.rightMoved;
+      leftLeftMoved = r.leftMoved;
+      leftRightMoved = r.rightMoved;
     }
-    if (redProp && redCaptureLive && !redPropSwapSuppressed) {
+    if (rightProp && rightCaptureLive && !rightPropSwapSuppressed) {
       const r = this.capturePropTips(
-        redProp,
+        rightProp,
         canvasSize,
-        redPropType,
+        rightPropType,
         1,
-        redTrackLeft && redLeftTrails,
-        redTrackRight && redRightTrails,
-        redTrailConfig
+        rightTrackLeft && rightLeftTrails,
+        rightTrackRight && rightRightTrails,
+        rightTrailConfig
       );
-      redLeftMoved = r.leftMoved;
-      redRightMoved = r.rightMoved;
+      rightLeftMoved = r.leftMoved;
+      rightRightMoved = r.rightMoved;
     }
 
     // Capture overlaid tunnel-layer tips into per-layer rings (same color/tip
-    // gating as the base pair). Each layer's blue prop feeds a blue tip, red
+    // gating as the base pair). Each layer's left prop feeds a left tip, right
     // prop a red tip — so every kaleidoscope copy trails in its own color.
     const additionalLayers = params.additionalLayers;
     const dtMsCapture = Math.max(0, params.deltaTime * 1000);
@@ -587,41 +588,41 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
           rL = false,
           rR = false;
         if (
-          layer.blueProp &&
-          layer.hasBlue &&
-          blueCaptureLive &&
-          !bluePropSwapSuppressed
+          layer.leftProp &&
+          layer.hasLeft &&
+          leftCaptureLive &&
+          !leftPropSwapSuppressed
         ) {
           const m = this.capturePropTipsInto(
-            layer.blueProp,
+            layer.leftProp,
             canvasSize,
-            bluePropType,
+            leftPropType,
             0,
-            rings.blueLeft,
-            rings.blueRight,
-            blueTrackLeft && blueLeftTrails,
-            blueTrackRight && blueRightTrails,
-            blueTrailConfig
+            rings.leftLeft,
+            rings.leftRight,
+            leftTrackLeft && leftLeftTrails,
+            leftTrackRight && leftRightTrails,
+            leftTrailConfig
           );
           bL = m.leftMoved;
           bR = m.rightMoved;
         }
         if (
-          layer.redProp &&
-          layer.hasRed &&
-          redCaptureLive &&
-          !redPropSwapSuppressed
+          layer.rightProp &&
+          layer.hasRight &&
+          rightCaptureLive &&
+          !rightPropSwapSuppressed
         ) {
           const m = this.capturePropTipsInto(
-            layer.redProp,
+            layer.rightProp,
             canvasSize,
-            redPropType,
+            rightPropType,
             1,
-            rings.redLeft,
-            rings.redRight,
-            redTrackLeft && redLeftTrails,
-            redTrackRight && redRightTrails,
-            redTrailConfig
+            rings.rightLeft,
+            rings.rightRight,
+            rightTrackLeft && rightLeftTrails,
+            rightTrackRight && rightRightTrails,
+            rightTrailConfig
           );
           rL = m.leftMoved;
           rR = m.rightMoved;
@@ -629,30 +630,30 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
         // Advance every tail each frame (moved=false freezes recession during a
         // fade-out the same way the base pair does), so layer trails recede
         // identically whether the prop is moving, stationary, or fading out.
-        tails.blueLeft = advanceTail(
-          tails.blueLeft,
-          rings.blueLeft,
+        tails.leftLeft = advanceTail(
+          tails.leftLeft,
+          rings.leftLeft,
           bL,
           dtMsCapture,
           leadingEdge
         );
-        tails.blueRight = advanceTail(
-          tails.blueRight,
-          rings.blueRight,
+        tails.leftRight = advanceTail(
+          tails.leftRight,
+          rings.leftRight,
           bR,
           dtMsCapture,
           leadingEdge
         );
-        tails.redLeft = advanceTail(
-          tails.redLeft,
-          rings.redLeft,
+        tails.rightLeft = advanceTail(
+          tails.rightLeft,
+          rings.rightLeft,
           rL,
           dtMsCapture,
           leadingEdge
         );
-        tails.redRight = advanceTail(
-          tails.redRight,
-          rings.redRight,
+        tails.rightRight = advanceTail(
+          tails.rightRight,
+          rings.rightRight,
           rR,
           dtMsCapture,
           leadingEdge
@@ -669,31 +670,31 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     // finishes the motion" instead of freezing at constant length.
     const dtMs = Math.max(0, params.deltaTime * 1000);
 
-    this.blueLeftTail = advanceTail(
-      this.blueLeftTail,
-      this.blueLeftRing,
-      blueLeftMoved,
+    this.leftLeftTail = advanceTail(
+      this.leftLeftTail,
+      this.leftLeftRing,
+      leftLeftMoved,
       dtMs,
       leadingEdge
     );
-    this.blueRightTail = advanceTail(
-      this.blueRightTail,
-      this.blueRightRing,
-      blueRightMoved,
+    this.leftRightTail = advanceTail(
+      this.leftRightTail,
+      this.leftRightRing,
+      leftRightMoved,
       dtMs,
       leadingEdge
     );
-    this.redLeftTail = advanceTail(
-      this.redLeftTail,
-      this.redLeftRing,
-      redLeftMoved,
+    this.rightLeftTail = advanceTail(
+      this.rightLeftTail,
+      this.rightLeftRing,
+      rightLeftMoved,
       dtMs,
       leadingEdge
     );
-    this.redRightTail = advanceTail(
-      this.redRightTail,
-      this.redRightRing,
-      redRightMoved,
+    this.rightRightTail = advanceTail(
+      this.rightRightTail,
+      this.rightRightRing,
+      rightRightMoved,
       dtMs,
       leadingEdge
     );
@@ -710,8 +711,12 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     const thicknessNdc = (lineWidth * 2) / Math.max(1, this.width);
     const decayPerSecond = decayRateFor(trailSettings.fadeDurationMs);
     const glowNdc = thicknessNdc * GLOW_RATIO;
-    const [bR, bG, bB] = hexToRgb(trailSettings.blueColor);
-    const [rR, rG, rB] = hexToRgb(trailSettings.redColor);
+    const [bR, bG, bB] = hexToRgb(
+      params.tunnelPropColors?.left ?? trailSettings.leftColor
+    );
+    const [rR, rG, rB] = hexToRgb(
+      params.tunnelPropColors?.right ?? trailSettings.rightColor
+    );
     const alpha = Math.max(0, Math.min(1, trailSettings.maxOpacity));
 
     const tips: TrailTipState[] = [];
@@ -719,8 +724,8 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
 
     // Epoch-scoped tipIds let the backend spin up a fresh accumulator FBO
     // after a full fade-out without wiping the whole backend.
-    const blueSuffix = this.blueTipEpoch > 0 ? `-e${this.blueTipEpoch}` : "";
-    const redSuffix = this.redTipEpoch > 0 ? `-e${this.redTipEpoch}` : "";
+    const leftSuffix = this.leftTipEpoch > 0 ? `-e${this.leftTipEpoch}` : "";
+    const rightSuffix = this.rightTipEpoch > 0 ? `-e${this.rightTipEpoch}` : "";
 
     // Emit tips whenever the envelope has any visibility. Stamps go into
     // the accumulator at full alpha so the trail's shape stays consistent
@@ -734,7 +739,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       ring: TrailPoint[],
       rgb: [number, number, number],
       tail: TailState,
-      color: TrailColor,
+      hand: TrailHand,
       colorAlpha: number,
       visibilityScale: number
     ) => {
@@ -744,7 +749,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       if (path.length < 2) return;
       submittedAccumulatorIds.add(tipId);
       this.retiredAccumulators.delete(tipId);
-      this.activeAccumulators.set(tipId, { color, visibilityScale });
+      this.activeAccumulators.set(tipId, { hand, visibilityScale });
       tips.push({
         tipId,
         path,
@@ -764,43 +769,43 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     // envelope fades its whole trail toward the black stage.
     const selected = params.tunnelSelectedLayer ?? null;
     const baseF = spotlightFactor(selected, 0);
-    if (!bluePropSwapSuppressed) {
+    if (!leftPropSwapSuppressed) {
       pushTip(
-        `blue-left${blueSuffix}`,
-        this.blueLeftRing,
+        `left-left${leftSuffix}`,
+        this.leftLeftRing,
         [bR, bG, bB],
-        this.blueLeftTail,
-        "blue",
-        blueAlpha,
+        this.leftLeftTail,
+        "left",
+        leftAlpha,
         baseF
       );
       pushTip(
-        `blue-right${blueSuffix}`,
-        this.blueRightRing,
+        `left-right${leftSuffix}`,
+        this.leftRightRing,
         [bR, bG, bB],
-        this.blueRightTail,
-        "blue",
-        blueAlpha,
+        this.leftRightTail,
+        "left",
+        leftAlpha,
         baseF
       );
     }
-    if (!redPropSwapSuppressed) {
+    if (!rightPropSwapSuppressed) {
       pushTip(
-        `red-left${redSuffix}`,
-        this.redLeftRing,
+        `right-left${rightSuffix}`,
+        this.rightLeftRing,
         [rR, rG, rB],
-        this.redLeftTail,
-        "red",
-        redAlpha,
+        this.rightLeftTail,
+        "right",
+        rightAlpha,
         baseF
       );
       pushTip(
-        `red-right${redSuffix}`,
-        this.redRightRing,
+        `right-right${rightSuffix}`,
+        this.rightRightRing,
         [rR, rG, rB],
-        this.redRightTail,
-        "red",
-        redAlpha,
+        this.rightRightTail,
+        "right",
+        rightAlpha,
         baseF
       );
     }
@@ -813,58 +818,59 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     // Spectrum off: layers inherit the base blue/red trail color ([bR..]/[rR..],
     // which already carry the user's Choose-a-Look / custom colors) so the whole
     // kaleidoscope trails in one chosen pair instead of a rainbow.
-    const spectrum = params.tunnelSpectrum ?? true;
+    const spectrum =
+      (params.tunnelSpectrum ?? true) && !params.tunnelPropColors;
     const layerCount = this.layerRings.length;
     for (let i = 0; i < layerCount; i++) {
       const rings = this.layerRings[i]!;
       const tails = this.layerTails[i]!;
-      const blueLayerRgb = spectrum
+      const leftLayerRgb = spectrum
         ? hexToRgb(tunnelPropColor(2 + i * 2, layerCount).hex)
         : ([bR, bG, bB] as [number, number, number]);
-      const redLayerRgb = spectrum
+      const rightLayerRgb = spectrum
         ? hexToRgb(tunnelPropColor(3 + i * 2, layerCount).hex)
         : ([rR, rG, rB] as [number, number, number]);
       // Layer i is copy arm i+1 — dim it when another performer is spotlit.
       const f =
         (params.additionalLayers?.[i]?.opacity ?? 1) *
         spotlightFactor(selected, i + 1);
-      if (!bluePropSwapSuppressed) {
+      if (!leftPropSwapSuppressed) {
         pushTip(
-          `L${i}-blue-left${blueSuffix}`,
-          rings.blueLeft,
-          blueLayerRgb,
-          tails.blueLeft,
-          "blue",
-          blueAlpha,
+          `L${i}-left-left${leftSuffix}`,
+          rings.leftLeft,
+          leftLayerRgb,
+          tails.leftLeft,
+          "left",
+          leftAlpha,
           f
         );
         pushTip(
-          `L${i}-blue-right${blueSuffix}`,
-          rings.blueRight,
-          blueLayerRgb,
-          tails.blueRight,
-          "blue",
-          blueAlpha,
+          `L${i}-left-right${leftSuffix}`,
+          rings.leftRight,
+          leftLayerRgb,
+          tails.leftRight,
+          "left",
+          leftAlpha,
           f
         );
       }
-      if (!redPropSwapSuppressed) {
+      if (!rightPropSwapSuppressed) {
         pushTip(
-          `L${i}-red-left${redSuffix}`,
-          rings.redLeft,
-          redLayerRgb,
-          tails.redLeft,
-          "red",
-          redAlpha,
+          `L${i}-right-left${rightSuffix}`,
+          rings.rightLeft,
+          rightLayerRgb,
+          tails.rightLeft,
+          "right",
+          rightAlpha,
           f
         );
         pushTip(
-          `L${i}-red-right${redSuffix}`,
-          rings.redRight,
-          redLayerRgb,
-          tails.redRight,
-          "red",
-          redAlpha,
+          `L${i}-right-right${rightSuffix}`,
+          rings.rightRight,
+          rightLayerRgb,
+          tails.rightRight,
+          "right",
+          rightAlpha,
           f
         );
       }
@@ -893,13 +899,13 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
         continue;
       }
       const retiredAlpha =
-        (retired.color === "blue" ? blueAlpha : redAlpha) *
+        (retired.hand === "left" ? leftAlpha : rightAlpha) *
         retired.visibilityScale;
       tips.push({
         tipId,
         path: [],
         color:
-          retired.color === "blue" ? [bR, bG, bB, alpha] : [rR, rG, rB, alpha],
+          retired.hand === "left" ? [bR, bG, bB, alpha] : [rR, rG, rB, alpha],
         thickness: thicknessNdc,
         taperTailRatio: MIN_TAIL_WIDTH_RATIO,
         glow: 0,
@@ -934,10 +940,10 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
 
   clear(): void {
     this.resetRingsAndTails();
-    this.blueEnvelope.reset();
-    this.redEnvelope.reset();
-    this.blueEnvelopeWasZero = false;
-    this.redEnvelopeWasZero = false;
+    this.leftEnvelope.reset();
+    this.rightEnvelope.reset();
+    this.leftEnvelopeWasZero = false;
+    this.rightEnvelopeWasZero = false;
     this.warmupFramesRemaining = TrailOverlayWebGL2.WARMUP_FRAMES;
     this.prevTipTrailMask = null;
     this.freshAccumulators();
@@ -951,16 +957,16 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   }
 
   private resetRingsAndTails(): void {
-    this.blueLeftRing = [];
-    this.blueRightRing = [];
-    this.redLeftRing = [];
-    this.redRightRing = [];
+    this.leftLeftRing = [];
+    this.leftRightRing = [];
+    this.rightLeftRing = [];
+    this.rightRightRing = [];
     // Reset to DEFAULT_LEADING_EDGE - the next renderFrame will re-seed with
     // the current tailLength setting before the first advance call.
-    this.blueLeftTail = createTailState(DEFAULT_LEADING_EDGE);
-    this.blueRightTail = createTailState(DEFAULT_LEADING_EDGE);
-    this.redLeftTail = createTailState(DEFAULT_LEADING_EDGE);
-    this.redRightTail = createTailState(DEFAULT_LEADING_EDGE);
+    this.leftLeftTail = createTailState(DEFAULT_LEADING_EDGE);
+    this.leftRightTail = createTailState(DEFAULT_LEADING_EDGE);
+    this.rightLeftTail = createTailState(DEFAULT_LEADING_EDGE);
+    this.rightRightTail = createTailState(DEFAULT_LEADING_EDGE);
     this.resetLayerState();
   }
 
@@ -982,10 +988,10 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     this.canvas = null;
     this.width = 0;
     this.height = 0;
-    this.blueLeftRing = [];
-    this.blueRightRing = [];
-    this.redLeftRing = [];
-    this.redRightRing = [];
+    this.leftLeftRing = [];
+    this.leftRightRing = [];
+    this.rightLeftRing = [];
+    this.rightRightRing = [];
     this.resetLayerState();
     this.activeAccumulators.clear();
     this.retiredAccumulators.clear();
@@ -995,34 +1001,34 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   // Internal
   // -------------------------------------------------------------------
 
-  /** Move every FBO currently fed by one prop color into a decay-only
+  /** Move every FBO currently fed by one hand into a decay-only
    *  generation, then advance the live tip-id epoch for the replacement. */
-  private retireColorAccumulators(
-    color: TrailColor,
+  private retireHandAccumulators(
+    hand: TrailHand,
     fadeDurationMs: number
   ): void {
     const remainingMs = Math.max(16.67, fadeDurationMs);
     for (const [tipId, identity] of this.activeAccumulators) {
-      if (identity.color !== color) continue;
+      if (identity.hand !== hand) continue;
       this.retiredAccumulators.set(tipId, { ...identity, remainingMs });
       this.activeAccumulators.delete(tipId);
     }
 
-    if (color === "blue") {
-      this.blueTipEpoch++;
+    if (hand === "left") {
+      this.leftTipEpoch++;
     } else {
-      this.redTipEpoch++;
+      this.rightTipEpoch++;
     }
   }
 
   /** Forget orphaned identities after a completed visibility fade. Their FBOs
    *  remain unreachable and are reclaimed by the backend's idle-tip sweep. */
-  private forgetColorAccumulators(color: TrailColor): void {
+  private forgetHandAccumulators(hand: TrailHand): void {
     for (const [tipId, identity] of this.activeAccumulators) {
-      if (identity.color === color) this.activeAccumulators.delete(tipId);
+      if (identity.hand === hand) this.activeAccumulators.delete(tipId);
     }
     for (const [tipId, identity] of this.retiredAccumulators) {
-      if (identity.color === color) this.retiredAccumulators.delete(tipId);
+      if (identity.hand === hand) this.retiredAccumulators.delete(tipId);
     }
   }
 
@@ -1042,8 +1048,8 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     this.activeAccumulators.clear();
     this.retiredAccumulators.clear();
     if (!this.backend) return;
-    this.blueTipEpoch++;
-    this.redTipEpoch++;
+    this.leftTipEpoch++;
+    this.rightTipEpoch++;
     // Blank the visible canvas too. The epoch bump gives fresh accumulator FBOs,
     // but the default framebuffer still holds the last composited trail; with the
     // canvas hidden then re-shown (effect toggled off→on) that stale frame flashes
@@ -1063,8 +1069,9 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     trackRight: boolean,
     trailConfig: TrailPointConfig
   ): { leftMoved: boolean; rightMoved: boolean } {
-    const leftRing = propIndex === 0 ? this.blueLeftRing : this.redLeftRing;
-    const rightRing = propIndex === 0 ? this.blueRightRing : this.redRightRing;
+    const leftRing = propIndex === 0 ? this.leftLeftRing : this.rightLeftRing;
+    const rightRing =
+      propIndex === 0 ? this.leftRightRing : this.rightRightRing;
     return this.capturePropTipsInto(
       prop,
       canvasSize,
@@ -1146,16 +1153,16 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   private ensureLayerState(count: number, leadingEdge: number): void {
     while (this.layerRings.length < count) {
       this.layerRings.push({
-        blueLeft: [],
-        blueRight: [],
-        redLeft: [],
-        redRight: [],
+        leftLeft: [],
+        leftRight: [],
+        rightLeft: [],
+        rightRight: [],
       });
       this.layerTails.push({
-        blueLeft: createTailState(leadingEdge),
-        blueRight: createTailState(leadingEdge),
-        redLeft: createTailState(leadingEdge),
-        redRight: createTailState(leadingEdge),
+        leftLeft: createTailState(leadingEdge),
+        leftRight: createTailState(leadingEdge),
+        rightLeft: createTailState(leadingEdge),
+        rightRight: createTailState(leadingEdge),
       });
     }
     if (this.layerRings.length > count) {

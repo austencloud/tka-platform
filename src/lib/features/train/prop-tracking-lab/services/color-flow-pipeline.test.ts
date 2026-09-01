@@ -63,10 +63,10 @@ describe('trackStaffPoses', () => {
 
 describe('notateColorFlow', () => {
   it('classifies a blue shift N->E with red static at South from synthetic LED frames', () => {
-    const frame = (bluePts: [PixelPoint, PixelPoint], redPts: [PixelPoint, PixelPoint]) => {
+    const frame = (leftPts: [PixelPoint, PixelPoint], rightPts: [PixelPoint, PixelPoint]) => {
       const img = new ImageData(200, 200);
-      paintLine(img, bluePts[0], bluePts[1], [0, 0, 255]);
-      paintLine(img, redPts[0], redPts[1], [255, 0, 0]);
+      paintLine(img, leftPts[0], leftPts[1], [0, 0, 255]);
+      paintLine(img, rightPts[0], rightPts[1], [255, 0, 0]);
       return img;
     };
     // Blue grip: held North (~100,50) x3, move, held East (~150,100) x4.
@@ -82,9 +82,9 @@ describe('notateColorFlow', () => {
     ];
     const beats = notateColorFlow(frames, BLUE, RED, cal);
     expect(beats.length).toBeGreaterThanOrEqual(1);
-    expect(beats[0]!.blue.startLocation).toBe('n');
-    expect(beats[0]!.blue.endLocation).toBe('e');
-    expect(beats[0]!.blue.handMotion).toBe('shift');
-    expect(beats[0]!.red.handMotion).toBe('static');
+    expect(beats[0]!.left.startLocation).toBe('n');
+    expect(beats[0]!.left.endLocation).toBe('e');
+    expect(beats[0]!.left.handMotion).toBe('shift');
+    expect(beats[0]!.right.handMotion).toBe('static');
   });
 });

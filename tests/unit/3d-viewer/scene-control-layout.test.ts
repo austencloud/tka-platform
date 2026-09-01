@@ -5,11 +5,26 @@ import {
 } from "$lib/shared/3d/domain/scene-control-layout";
 
 describe("scene control workspace layout", () => {
-  it("uses compact controls when either dimension cannot carry a side panel", () => {
+  it("uses compact controls on phones and genuinely narrow landscapes", () => {
     expect(resolveSceneControlLayout(375, 667, false).presentation).toBe(
       "compact"
     );
     expect(resolveSceneControlLayout(960, 412, true).presentation).toBe(
+      "compact"
+    );
+  });
+
+  it("does not change a wide desktop into mobile controls when its timeline grows", () => {
+    expect(resolveSceneControlLayout(1440, 509, true).presentation).toBe(
+      "overlay"
+    );
+  });
+
+  it("uses the compact editor when a wide workspace is too shallow to expose a touch target", () => {
+    expect(resolveSceneControlLayout(1280, 400, true).presentation).toBe(
+      "compact"
+    );
+    expect(resolveSceneControlLayout(2560, 500, true).presentation).toBe(
       "compact"
     );
   });

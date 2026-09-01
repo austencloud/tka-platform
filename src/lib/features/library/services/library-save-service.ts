@@ -320,8 +320,8 @@ export class LibrarySaveService {
       const ip = sequenceToSave.intendedProp;
       void warmSequenceCells(sequenceToSave, {
         isDark: true,
-        bluePropType: ip?.bluePropType,
-        redPropType: ip?.redPropType,
+        leftPropType: ip?.leftPropType,
+        rightPropType: ip?.rightPropType,
         catDogMode: ip?.catDogMode ?? false,
       }).catch(() => {});
     }
@@ -332,8 +332,8 @@ export class LibrarySaveService {
     if (
       this.artifactExtractor &&
       currentUserId &&
-      sequenceToSave.blueSoloProp &&
-      sequenceToSave.redSoloProp
+      sequenceToSave.leftSoloProp &&
+      sequenceToSave.rightSoloProp
     ) {
       this.artifactExtractor
         .extract(sequenceToSave, currentUserId)

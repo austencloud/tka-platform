@@ -40,13 +40,13 @@
     /** Index of the currently highlighted grid (for visual feedback) */
     highlightedGridIndex?: number;
     /** Blue prop placement */
-    blueRef?: PointRef | null;
+    leftRef?: PointRef | null;
     /** Red prop placement */
-    redRef?: PointRef | null;
+    rightRef?: PointRef | null;
     /** Blue prop render data (loaded externally) */
-    bluePropData?: TopologyPropRenderData | null;
+    leftPropData?: TopologyPropRenderData | null;
     /** Red prop render data (loaded externally) */
-    redPropData?: TopologyPropRenderData | null;
+    rightPropData?: TopologyPropRenderData | null;
     /** Beta separation offsets (computed externally) */
     betaOffset?: BetaOffset | null;
     /** Callback when a hand point is clicked */
@@ -63,10 +63,10 @@
     showJunctions = true,
     showProps = true,
     highlightedGridIndex = -1,
-    blueRef = null,
-    redRef = null,
-    bluePropData = null,
-    redPropData = null,
+    leftRef = null,
+    rightRef = null,
+    leftPropData = null,
+    rightPropData = null,
     betaOffset = null,
     onPointClick,
     clickTargetsEnabled = false,
@@ -193,18 +193,18 @@
     <!-- 5. Props -->
     {#if showProps}
       <!-- Blue prop -->
-      {#if bluePropData && blueRef}
-        {@const gridIndex = topology.grids.findIndex((g) => g.id === blueRef.gridId)}
+      {#if leftPropData && leftRef}
+        {@const gridIndex = topology.grids.findIndex((g) => g.id === leftRef.gridId)}
         {@const translation = gridTranslations[gridIndex]}
         {#if translation}
           <g transform="translate({translation.x}, {translation.y})">
-            <g transform={propTransform(bluePropData, betaOffset?.blue)}>
+            <g transform={propTransform(leftPropData, betaOffset?.left)}>
               <svg
-                width={bluePropData.viewBox.width}
-                height={bluePropData.viewBox.height}
-                viewBox="0 0 {bluePropData.viewBox.width} {bluePropData.viewBox.height}"
+                width={leftPropData.viewBox.width}
+                height={leftPropData.viewBox.height}
+                viewBox="0 0 {leftPropData.viewBox.width} {leftPropData.viewBox.height}"
               >
-                {@html bluePropData.svgContent}
+                {@html leftPropData.svgContent}
               </svg>
             </g>
           </g>
@@ -212,18 +212,18 @@
       {/if}
 
       <!-- Red prop -->
-      {#if redPropData && redRef}
-        {@const gridIndex = topology.grids.findIndex((g) => g.id === redRef.gridId)}
+      {#if rightPropData && rightRef}
+        {@const gridIndex = topology.grids.findIndex((g) => g.id === rightRef.gridId)}
         {@const translation = gridTranslations[gridIndex]}
         {#if translation}
           <g transform="translate({translation.x}, {translation.y})">
-            <g transform={propTransform(redPropData, betaOffset?.red)}>
+            <g transform={propTransform(rightPropData, betaOffset?.right)}>
               <svg
-                width={redPropData.viewBox.width}
-                height={redPropData.viewBox.height}
-                viewBox="0 0 {redPropData.viewBox.width} {redPropData.viewBox.height}"
+                width={rightPropData.viewBox.width}
+                height={rightPropData.viewBox.height}
+                viewBox="0 0 {rightPropData.viewBox.width} {rightPropData.viewBox.height}"
               >
-                {@html redPropData.svgContent}
+                {@html rightPropData.svgContent}
               </svg>
             </g>
           </g>

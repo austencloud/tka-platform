@@ -419,15 +419,15 @@ export class WebGPUOverlayEffectsExecutor {
 
       if (drawStaff) {
         this.drawLineSegment(
-          this.meshPipeline, presentView, phantom.bluePos, phantom.redPos,
+          this.meshPipeline, presentView, phantom.leftPos, phantom.rightPos,
           payload.thickness, payload.color, payload.color[3] * ageFade,
         );
       }
 
       if (drawTips) {
         const dotW = payload.thickness * (drawStaff ? 2 : 1);
-        this.drawDot(this.meshPipeline, presentView, phantom.bluePos, dotW, payload.color, payload.color[3] * ageFade);
-        this.drawDot(this.meshPipeline, presentView, phantom.redPos, dotW, payload.color, payload.color[3] * ageFade);
+        this.drawDot(this.meshPipeline, presentView, phantom.leftPos, dotW, payload.color, payload.color[3] * ageFade);
+        this.drawDot(this.meshPipeline, presentView, phantom.rightPos, dotW, payload.color, payload.color[3] * ageFade);
       }
     }
   }

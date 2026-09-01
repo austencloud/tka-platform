@@ -13,16 +13,16 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
  * Describes orientation alignment status for exact position matches.
  */
 export interface OrientationAlignment {
-  /** Whether both blue and red orientations match the start position */
+  /** Whether both left and right orientations match the start position */
   matches: boolean;
-  /** End orientation of blue prop after adding bridge letter */
-  blueEndOri: string;
-  /** End orientation of red prop after adding bridge letter */
-  redEndOri: string;
-  /** Start orientation of blue prop (from sequence start position) */
-  blueStartOri: string;
-  /** Start orientation of red prop (from sequence start position) */
-  redStartOri: string;
+  /** End orientation of the left prop after adding bridge letter */
+  leftEndOri: string;
+  /** End orientation of the right prop after adding bridge letter */
+  rightEndOri: string;
+  /** Start orientation of the left prop (from sequence start position) */
+  leftStartOri: string;
+  /** Start orientation of the right prop (from sequence start position) */
+  rightStartOri: string;
   /**
    * How many times the sequence needs to repeat to return to original orientations.
    * 1 = orientations already match (true loop)
@@ -37,9 +37,8 @@ export interface OrientationAlignment {
  */
 export function getStartOrientations(
   sequence: SequenceData
-): { blueOri: string; redOri: string } | null {
-  const startPosData =
-    sequence.startPosition || sequence.startingPosition;
+): { leftOri: string; rightOri: string } | null {
+  const startPosData = sequence.startPosition || sequence.startingPosition;
   if (!startPosData) return null;
 
   // Extract orientations from motion data
@@ -47,31 +46,31 @@ export function getStartOrientations(
     .motions as Record<string, unknown> | undefined;
 
   if (!motions) {
-    // Try legacy format with direct blue/red properties
-    const blueData = (startPosData as unknown as Record<string, unknown>)
-      .blue as Record<string, unknown> | undefined;
-    const redData = (startPosData as unknown as Record<string, unknown>)
-      .red as Record<string, unknown> | undefined;
+    // Try the legacy format with direct hand properties.
+    const leftData = (startPosData as unknown as Record<string, unknown>)
+      .left as Record<string, unknown> | undefined;
+    const rightData = (startPosData as unknown as Record<string, unknown>)
+      .right as Record<string, unknown> | undefined;
 
-    if (blueData?.endOri && redData?.endOri) {
+    if (leftData?.endOri && rightData?.endOri) {
       return {
-        blueOri: blueData.endOri as string,
-        redOri: redData.endOri as string,
+        leftOri: leftData.endOri as string,
+        rightOri: rightData.endOri as string,
       };
     }
     return null;
   }
 
-  const blueMotion = motions.blue as Record<string, unknown> | undefined;
-  const redMotion = motions.red as Record<string, unknown> | undefined;
+  const leftMotion = motions.left as Record<string, unknown> | undefined;
+  const rightMotion = motions.right as Record<string, unknown> | undefined;
 
-  if (!blueMotion?.endOri || !redMotion?.endOri) {
+  if (!leftMotion?.endOri || !rightMotion?.endOri) {
     return null;
   }
 
   return {
-    blueOri: blueMotion.endOri as string,
-    redOri: redMotion.endOri as string,
+    leftOri: leftMotion.endOri as string,
+    rightOri: rightMotion.endOri as string,
   };
 }
 
@@ -115,28 +114,28 @@ export function calculateOrientationAlignment(
   if (!startOris) return null;
 
   // Get end orientations from bridge pictograph
-  const blueMotion = bridgePictograph.motions?.blue;
-  const redMotion = bridgePictograph.motions?.red;
+  const leftMotion = bridgePictograph.motions?.left;
+  const rightMotion = bridgePictograph.motions?.right;
 
-  if (!blueMotion?.endOrientation || !redMotion?.endOrientation) return null;
+  if (!leftMotion?.endOrientation || !rightMotion?.endOrientation) return null;
 
-  const blueEndOri = blueMotion.endOrientation;
-  const redEndOri = redMotion.endOrientation;
+  const leftEndOri = leftMotion.endOrientation;
+  const rightEndOri = rightMotion.endOrientation;
 
   // Calculate steps needed for each prop
-  const blueSteps = calculateOrientationSteps(startOris.blueOri, blueEndOri);
-  const redSteps = calculateOrientationSteps(startOris.redOri, redEndOri);
+  const leftSteps = calculateOrientationSteps(startOris.leftOri, leftEndOri);
+  const rightSteps = calculateOrientationSteps(startOris.rightOri, rightEndOri);
 
   // Need LCM of both steps (if blue needs 2 and red needs 4, we need 4 total)
-  const repetitionsNeeded = Math.max(blueSteps, redSteps) as 1 | 2 | 4;
+  const repetitionsNeeded = Math.max(leftSteps, rightSteps) as 1 | 2 | 4;
 
   return {
     matches:
-      blueEndOri === startOris.blueOri && redEndOri === startOris.redOri,
-    blueEndOri,
-    redEndOri,
-    blueStartOri: startOris.blueOri,
-    redStartOri: startOris.redOri,
+      leftEndOri === startOris.leftOri && rightEndOri === startOris.rightOri,
+    leftEndOri,
+    rightEndOri,
+    leftStartOri: startOris.leftOri,
+    rightStartOri: startOris.rightOri,
     repetitionsNeeded,
   };
 }

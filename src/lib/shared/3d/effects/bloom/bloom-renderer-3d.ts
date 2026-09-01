@@ -30,9 +30,9 @@ const LIVE_RENDER_ORDER = 119;
 
 interface BloomSourceState {
   path: BoundedSourcePath3D;
-  red: Float32Array;
+  right: Float32Array;
   green: Float32Array;
-  blue: Float32Array;
+  left: Float32Array;
   velocityX: Float32Array;
   velocityY: Float32Array;
   velocityZ: Float32Array;
@@ -56,9 +56,9 @@ interface BloomInstanceWrite {
   velocityX: number;
   velocityY: number;
   velocityZ: number;
-  red: number;
+  right: number;
   green: number;
-  blue: number;
+  left: number;
   energy: number;
   radius: number;
   stretch: number;
@@ -94,6 +94,7 @@ export class BloomRenderer3D {
   private parent: Object3D | null = null;
   private lightManager: DynamicLightManager | null = null;
   private lightTier: QualityTier | null = null;
+  private ownsLightManager = false;
   private clock = 0;
   private epoch = 0;
   private visibleCount = 0;
@@ -132,11 +133,23 @@ export class BloomRenderer3D {
     this.object3D.renderOrder = LIVE_RENDER_ORDER;
   }
 
-  initialize(parent: Object3D): void {
-    if (this.parent === parent) return;
+  initialize(
+    parent: Object3D,
+    sharedLightManager?: DynamicLightManager | null
+  ): void {
+    if (
+      this.parent === parent &&
+      (!sharedLightManager || this.lightManager === sharedLightManager)
+    )
+      return;
     this.parent?.remove(this.object3D);
     this.disposeLights();
     this.parent = parent;
+    if (sharedLightManager) {
+      this.lightManager = sharedLightManager;
+      this.lightTier = QualityTier.HIGH;
+      this.ownsLightManager = false;
+    }
     parent.add(this.object3D);
   }
 
@@ -175,9 +188,9 @@ export class BloomRenderer3D {
         velocityX: opticalAxis.x,
         velocityY: opticalAxis.y,
         velocityZ: opticalAxis.z,
-        red: this.color.r,
+        right: this.color.r,
         green: this.color.g,
-        blue: this.color.b,
+        left: this.color.b,
         energy: frame.energy,
         radius: frame.radiusWorld,
         stretch: frame.stretch,
@@ -221,9 +234,9 @@ export class BloomRenderer3D {
     if (!state) {
       state = {
         path: new BoundedSourcePath3D(PATH_CAPACITY),
-        red: new Float32Array(PATH_CAPACITY),
+        right: new Float32Array(PATH_CAPACITY),
         green: new Float32Array(PATH_CAPACITY),
-        blue: new Float32Array(PATH_CAPACITY),
+        left: new Float32Array(PATH_CAPACITY),
         velocityX: new Float32Array(PATH_CAPACITY),
         velocityY: new Float32Array(PATH_CAPACITY),
         velocityZ: new Float32Array(PATH_CAPACITY),
@@ -282,9 +295,9 @@ export class BloomRenderer3D {
     );
     if (retained) {
       const index = state.path.indexFromNewest(0);
-      state.red[index] = this.color.r;
+      state.right[index] = this.color.r;
       state.green[index] = this.color.g;
-      state.blue[index] = this.color.b;
+      state.left[index] = this.color.b;
       state.velocityX[index] = source.velocity.x;
       state.velocityY[index] = source.velocity.y;
       state.velocityZ[index] = source.velocity.z;
@@ -317,9 +330,9 @@ export class BloomRenderer3D {
         velocityX: state.velocityX[index]!,
         velocityY: state.velocityY[index]!,
         velocityZ: state.velocityZ[index]!,
-        red: state.red[index]!,
+        right: state.right[index]!,
         green: state.green[index]!,
-        blue: state.blue[index]!,
+        left: state.left[index]!,
         energy: state.energy[index]! * fade,
         radius: state.params.haloRadiusWorld * (0.58 - progress * 0.3),
         stretch: 1 + state.params.streak * motion * 4.2,
@@ -400,16 +413,24 @@ export class BloomRenderer3D {
     }
     const tier = sources[0]!.qualityTier;
     if (tier === QualityTier.LOW) {
-      this.disposeLights();
+      this.releaseLights();
       return;
     }
     if (!this.lightManager || this.lightTier !== tier) {
-      this.disposeLights();
-      this.lightManager = new DynamicLightManager(
-        this.parent,
-        TIER_CONFIGS[tier]
-      );
-      this.lightTier = tier;
+      if (this.ownsLightManager) this.disposeLights();
+      if (this.lightManager) {
+        // A scene-shared pool is deliberately sized once at startup. Runtime
+        // quality changes reduce usage without changing the scene's light
+        // count and forcing a new shader program.
+        this.lightTier = tier;
+      } else {
+        this.lightManager = new DynamicLightManager(
+          this.parent,
+          TIER_CONFIGS[tier]
+        );
+        this.lightTier = tier;
+        this.ownsLightManager = true;
+      }
     }
 
     const lightSources = this.selectLightSources(
@@ -516,9 +537,10 @@ export class BloomRenderer3D {
 
   private disposeLights(): void {
     this.releaseLights();
-    this.lightManager?.dispose();
+    if (this.ownsLightManager) this.lightManager?.dispose();
     this.lightManager = null;
     this.lightTier = null;
+    this.ownsLightManager = false;
     this.lightHandles.length = 0;
   }
 
@@ -534,9 +556,9 @@ export class BloomRenderer3D {
     this.velocitySeeds[i4 + 1] = instance.velocityY;
     this.velocitySeeds[i4 + 2] = instance.velocityZ;
     this.velocitySeeds[i4 + 3] = instance.seed;
-    this.colors[i3] = instance.red;
+    this.colors[i3] = instance.right;
     this.colors[i3 + 1] = instance.green;
-    this.colors[i3 + 2] = instance.blue;
+    this.colors[i3 + 2] = instance.left;
     this.optics[i4] = instance.energy;
     this.optics[i4 + 1] = instance.radius;
     this.optics[i4 + 2] = instance.stretch;

@@ -33,10 +33,12 @@
   }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
-  const avatarState = $derived(
+  const characterState = $derived(
     viewer3DState.performerManager.performers[0] ?? null
   );
-  const isDualWheel = $derived(avatarState?.planeMode === PlaneMode.DUAL_WHEEL);
+  const isDualWheel = $derived(
+    characterState?.planeMode === PlaneMode.DUAL_WHEEL
+  );
 
   const gridCenter = $derived({
     x: 0,
@@ -138,9 +140,28 @@
       presetId
     );
   }
+
+  function handleFrameCast() {
+    viewer3DState.frameAllPerformers();
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_camera",
+      "frame_cast",
+      null,
+      "requested"
+    );
+  }
 </script>
 
 {#if flat}
+  <button
+    class="preset-button frame-cast"
+    onclick={handleFrameCast}
+    aria-label="Frame the complete cast"
+  >
+    <i class="fas fa-expand" aria-hidden="true"></i>
+    Frame cast
+  </button>
   {#each activePresets as preset}
     <button
       class="preset-button"
@@ -154,6 +175,14 @@
   {/each}
 {:else}
   <div class="presets-bar" class:compact class:grid>
+    <button
+      class="preset-button frame-cast"
+      onclick={handleFrameCast}
+      aria-label="Frame the complete cast"
+    >
+      <i class="fas fa-expand" aria-hidden="true"></i>
+      <span class="preset-label">Frame cast</span>
+    </button>
     {#each activePresets as preset}
       <button
         class="preset-button"
@@ -190,7 +219,12 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
+    transition:
+      color var(--transition-fast),
+      background-color var(--transition-fast),
+      border-color var(--transition-fast),
+      box-shadow var(--transition-fast),
+      transform var(--transition-fast);
     white-space: nowrap;
     display: flex;
     align-items: center;
@@ -200,7 +234,7 @@
   .preset-button i {
     font-size: 11px;
     opacity: 0.5;
-    transition: opacity 180ms;
+    transition: opacity var(--transition-fast);
   }
 
   .compact .preset-button {
@@ -239,6 +273,15 @@
     color: color-mix(in srgb, var(--theme-accent, #4a9eff) 60%, #ffffff);
   }
 
+  .frame-cast {
+    color: color-mix(in srgb, var(--theme-accent, #4a9eff) 45%, #ffffff);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 28%,
+      transparent
+    );
+  }
+
   .presets-bar.grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -260,6 +303,12 @@
     flex-direction: column;
     gap: 5px;
     justify-content: center;
+  }
+
+  .grid .frame-cast {
+    grid-column: 1 / -1;
+    min-height: var(--min-touch-target, 44px);
+    flex-direction: row;
   }
 
   .grid .preset-button i {

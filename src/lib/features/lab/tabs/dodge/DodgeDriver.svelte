@@ -47,16 +47,16 @@
   let {
     controller,
     rig,
-    blueConfig,
-    redConfig,
+    leftConfig,
+    rightConfig,
     dodgeOn,
     knob,
     onClearance,
   }: {
     controller: MmLocomotionController | null;
     rig: RigBinding | null;
-    blueConfig: MotionConfig3D;
-    redConfig: MotionConfig3D;
+    leftConfig: MotionConfig3D;
+    rightConfig: MotionConfig3D;
     dodgeOn: boolean;
     knob: DodgeKnob;
     onClearance: (clearanceM: number, plan: DodgePlan | null) => void;
@@ -66,11 +66,11 @@
   const STAFF_HORIZONTAL_QUAT = new Quaternion().setFromEuler(new Euler(0, 0, Math.PI / 2));
 
   // Imperative meshes — mutated each frame, NEVER bound to reactive $state.
-  const blueStaff = new Mesh(
+  const leftStaff = new Mesh(
     new CylinderGeometry(0.02, 0.02, 0.86, 12),
     new MeshStandardMaterial({ color: "#3b82f6" })
   );
-  const redStaff = new Mesh(
+  const rightStaff = new Mesh(
     new CylinderGeometry(0.02, 0.02, 0.86, 12),
     new MeshStandardMaterial({ color: "#ef4444" })
   );
@@ -84,8 +84,8 @@
   // Plain (non-reactive) state. None of this triggers Svelte reactivity.
   let shoulderY = 0;
   let restFacing = 0;
-  let blueSweep: SimPropTarget[] = [];
-  let redSweep: SimPropTarget[] = [];
+  let leftSweep: SimPropTarget[] = [];
+  let rightSweep: SimPropTarget[] = [];
   let sim: StanceSimulator | null = null;
   let spineBone: Bone | null = null;
   let measuredBody: RestPoseGeometry | null = null;
@@ -152,13 +152,13 @@
     _shL.z += bz - root.z;
     _shR.x += bx - root.x;
     _shR.z += bz - root.z;
-    const dL = _shL.distanceTo(blueStaff.position);
-    const dR = _shR.distanceTo(redStaff.position);
+    const dL = _shL.distanceTo(leftStaff.position);
+    const dR = _shR.distanceTo(rightStaff.position);
     const deficit = Math.max(dL, dR) - reach;
     if (deficit <= 0.001) return none;
     // Step toward the harder-to-reach prop (in XZ), from that shoulder.
     const worstSh = dL >= dR ? _shL : _shR;
-    const worstGrip = dL >= dR ? blueStaff.position : redStaff.position;
+    const worstGrip = dL >= dR ? leftStaff.position : rightStaff.position;
     let dx = worstGrip.x - worstSh.x;
     let dz = worstGrip.z - worstSh.z;
     const len = Math.hypot(dx, dz) || 1;
@@ -315,8 +315,8 @@
     rightArm = buildArmChain("Right", rig);
     leftElbowHinge = leftArm ? computeKneeHingeAxis(leftArm.rootRestDir, leftArm.middleRestDir) : null;
     rightElbowHinge = rightArm ? computeKneeHingeAxis(rightArm.rootRestDir, rightArm.middleRestDir) : null;
-    blueSweep = buildSweptVolume(blueConfig, 24).samples;
-    redSweep = buildSweptVolume(redConfig, 24).samples;
+    leftSweep = buildSweptVolume(leftConfig, 24).samples;
+    rightSweep = buildSweptVolume(rightConfig, 24).samples;
     // Body model measured from the REAL rig (real handedness + reach), shared by
     // the plan and the live clearance readout so both match the actual avatar.
     measuredBody = measureRigBody(rig) ?? restPoseFromHeight(1.8);
@@ -328,8 +328,8 @@
       (window as unknown as { __dodgeClearance?: () => number }).__dodgeClearance = liveClearance;
       (window as unknown as { __dodgeHandGap?: () => { left: number; right: number } }).__dodgeHandGap =
         () => ({
-          left: leftArm ? leftArm.effector.getWorldPosition(new Vector3()).distanceTo(blueStaff.position) : -1,
-          right: rightArm ? rightArm.effector.getWorldPosition(new Vector3()).distanceTo(redStaff.position) : -1,
+          left: leftArm ? leftArm.effector.getWorldPosition(new Vector3()).distanceTo(leftStaff.position) : -1,
+          right: rightArm ? rightArm.effector.getWorldPosition(new Vector3()).distanceTo(rightStaff.position) : -1,
         });
       (window as unknown as { __dodgeLive?: () => unknown }).__dodgeLive = () => {
         if (!rig || !leftArm || !rightArm) return null;
@@ -344,20 +344,20 @@
           placement: plan ? plan.placement(progress) : null,
           extL: +(shL.distanceTo(haL) / lenL).toFixed(3),
           extR: +(shR.distanceTo(haR) / lenR).toFixed(3),
-          handToStaffL: +haL.distanceTo(blueStaff.position).toFixed(3),
-          handToStaffR: +haR.distanceTo(redStaff.position).toFixed(3),
+          handToStaffL: +haL.distanceTo(leftStaff.position).toFixed(3),
+          handToStaffR: +haR.distanceTo(rightStaff.position).toFixed(3),
         };
       };
       (window as unknown as { __dodgeEval?: (x: number, z: number, yawDeg: number, pitchRad?: number, twistDeg?: number) => unknown }).__dodgeEval =
         (x: number, z: number, yawDeg: number, pitchRad = 0, twistDeg = 0) => {
           if (!sim) return null;
           const s: StancePose = { footOffsetX: x, footOffsetZ: z, rootYawRad: (yawDeg * Math.PI) / 180, spinePitchRad: pitchRad, torsoTwistRad: (twistDeg * Math.PI) / 180 };
-          const r = sim.evaluateSweep(s, blueSweep, redSweep);
+          const r = sim.evaluateSweep(s, leftSweep, rightSweep);
           let body = 0;
           for (const c of r.collisions) {
             if (c.zone === "prop-through-torso" || c.zone === "prop-through-head") body = Math.max(body, c.depth);
           }
-          return { feasible: r.feasible, reachBlue: r.reachShortfall.blue, reachRed: r.reachShortfall.red, body, bal: r.balanceMargin };
+          return { feasible: r.feasible, reachLeft: r.reachShortfall.left, reachRight: r.reachShortfall.right, body, bal: r.balanceMargin };
         };
     }
   }
@@ -367,7 +367,7 @@
     if (!measuredBody) return;
     const key = `${knob.side}:${knob.aggression}`;
     if (plan && key === planKey) return;
-    plan = planDodge(blueConfig, redConfig, 1.8, 24, measuredBody, knob);
+    plan = planDodge(leftConfig, rightConfig, 1.8, 24, measuredBody, knob);
     planKey = key;
     const p = plan.placement(0.5);
     footSphere.position.set(p.footOffsetX, 0.02, p.footOffsetZ);
@@ -408,8 +408,8 @@
   /** Worst body penetration at the live stance, as a signed clearance (m).
    *  Negative = the prop intrudes into torso/head; >= 0 = cleared. */
   function liveClearance(): number {
-    if (!sim || blueSweep.length === 0) return 0;
-    const r: SimResult = sim.evaluateSweep(liveStance(), blueSweep, redSweep);
+    if (!sim || leftSweep.length === 0) return 0;
+    const r: SimResult = sim.evaluateSweep(liveStance(), leftSweep, rightSweep);
     const torso = r.collisions.find((c) => c.zone === "prop-through-torso");
     const head = r.collisions.find((c) => c.zone === "prop-through-head");
     const depth = Math.max(torso?.depth ?? 0, head?.depth ?? 0);
@@ -425,8 +425,8 @@
     // Place the staves first (fixed world choreography; they do NOT follow the
     // body), so the reach computation sees this frame's grips.
     progress = (progress + dt / LOOP_SEC) % 1;
-    placeStaff(blueStaff, blueConfig, progress);
-    placeStaff(redStaff, redConfig, progress);
+    placeStaff(leftStaff, leftConfig, progress);
+    placeStaff(rightStaff, rightConfig, progress);
 
     // Base stance from the analytic plan (deterministic, held — no jitter).
     // Neutral when the dodge is off.
@@ -476,8 +476,8 @@
       }
       spineBone.updateMatrixWorld(true);
     }
-    if (leftArm && leftElbowHinge) solveArm(leftArm, leftElbowHinge, blueStaff, true);
-    if (rightArm && rightElbowHinge) solveArm(rightArm, rightElbowHinge, redStaff, false);
+    if (leftArm && leftElbowHinge) solveArm(leftArm, leftElbowHinge, leftStaff, true);
+    if (rightArm && rightElbowHinge) solveArm(rightArm, rightElbowHinge, rightStaff, false);
 
     // Report clearance to the page at ~6/sec, not every frame.
     if (++clearanceFrames >= 10) {
@@ -487,6 +487,6 @@
   });
 </script>
 
-<T is={blueStaff} />
-<T is={redStaff} />
+<T is={leftStaff} />
+<T is={rightStaff} />
 <T is={footSphere} />

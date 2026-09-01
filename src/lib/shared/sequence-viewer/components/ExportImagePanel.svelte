@@ -40,6 +40,12 @@
     type ResolvedAutoLayout,
   } from "$lib/shared/render/services/container-aware-layout";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import CardFooterEditor from "$lib/shared/share/components/CardFooterEditor.svelte";
+  import {
+    cardPresentationFromFooterSettings,
+    resolveCardFooter,
+    type CardPresentation,
+  } from "$lib/shared/share/domain/models/card-presentation";
 
   type PanelLayout = "sidebar" | "bottom" | "inline";
 
@@ -57,6 +63,12 @@
       value: string | number | boolean | null,
       coalesce?: boolean
     ) => void;
+    /** Current sequence/session footer. Omitted means account defaults. */
+    cardPresentation?: CardPresentation;
+    onCardPresentationChange?: (value: CardPresentation) => void;
+    onSaveCardPresentation?: () => void | Promise<void>;
+    cardPresentationDirty?: boolean;
+    cardPresentationSaving?: boolean;
   }
 
   let {
@@ -66,6 +78,11 @@
     resolvedAutoLayout = null,
     onClose,
     onSettingChange,
+    cardPresentation,
+    onCardPresentationChange,
+    onSaveCardPresentation,
+    cardPresentationDirty = false,
+    cardPresentationSaving = false,
   }: Props = $props();
 
   type AnalyticsValue = string | number | boolean | null;
@@ -116,10 +133,33 @@
     void compositionVersion;
     return imageComposition.addDifficultyLevel;
   });
-  const showNotes = $derived.by(() => {
+  const effectiveCardPresentation = $derived.by(() => {
     void compositionVersion;
-    return imageComposition.showNotes;
+    return (
+      cardPresentation ??
+      cardPresentationFromFooterSettings(
+        imageComposition.showNotes,
+        imageComposition.customNotesText
+      )
+    );
   });
+
+  function changeCardPresentation(next: CardPresentation): void {
+    if (onCardPresentationChange) {
+      onCardPresentationChange(next);
+      return;
+    }
+
+    const previous = effectiveCardPresentation;
+    const footer = resolveCardFooter(next);
+    imageComposition.setShowNotes(footer.show);
+    if (footer.show) imageComposition.setCustomNotesText(footer.text);
+    reportSetting(
+      "card_footer",
+      JSON.stringify(previous),
+      JSON.stringify(next)
+    );
+  }
   const showQRCode = $derived.by(() => {
     void compositionVersion;
     return imageComposition.showQRCode;
@@ -416,21 +456,16 @@
                 >
               </div>
             </div>
-            <div class="field">
-              <span class="field-label">Footer</span>
-              <div class="rt-chip-row">
-                <button
-                  type="button"
-                  class="rt-chip"
-                  aria-pressed={showNotes}
-                  onclick={() =>
-                    toggleCompositionSetting(
-                      "notes",
-                      showNotes,
-                      imageComposition.setShowNotes.bind(imageComposition)
-                    )}>Notes</button
-                >
-              </div>
+            <div class="footer-editor-field">
+              <CardFooterEditor
+                value={effectiveCardPresentation}
+                onchange={changeCardPresentation}
+                description="Appears inside the card image."
+                onSave={onSaveCardPresentation}
+                dirty={cardPresentationDirty}
+                saving={cardPresentationSaving}
+                idBase="inline-card-footer"
+              />
             </div>
           {:else if activeTab === "pictograph"}
             <div class="field">
@@ -705,23 +740,16 @@
           </div>
         </div>
 
-        <!-- Footer section -->
-        <div class="setting-row">
-          <span class="setting-label">Footer</span>
-          <div class="chip-group">
-            <button
-              type="button"
-              class="chip"
-              class:active={showNotes}
-              onclick={() =>
-                toggleCompositionSetting(
-                  "notes",
-                  showNotes,
-                  imageComposition.setShowNotes.bind(imageComposition)
-                )}
-              aria-pressed={showNotes}>Notes</button
-            >
-          </div>
+        <div class="footer-editor-field">
+          <CardFooterEditor
+            value={effectiveCardPresentation}
+            onchange={changeCardPresentation}
+            description="Appears inside the card image."
+            onSave={onSaveCardPresentation}
+            dirty={cardPresentationDirty}
+            saving={cardPresentationSaving}
+            idBase="card-footer"
+          />
         </div>
 
         <!-- Pictograph section -->
@@ -1188,6 +1216,15 @@
     display: flex;
     align-items: center;
     gap: 12px;
+  }
+
+  .footer-editor-field {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 10px;
+    background: var(--theme-card-bg);
   }
 
   .setting-label {

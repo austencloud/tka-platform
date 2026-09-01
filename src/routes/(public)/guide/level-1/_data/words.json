@@ -7,12 +7,12 @@
       "endPosition": "alpha5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -21,12 +21,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -44,12 +44,12 @@
       "endPosition": "alpha7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -58,12 +58,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -81,12 +81,12 @@
       "endPosition": "alpha1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -95,12 +95,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -118,12 +118,12 @@
       "endPosition": "alpha3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -132,12 +132,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -155,12 +155,12 @@
       "endPosition": "alpha5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -169,12 +169,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -192,12 +192,12 @@
       "endPosition": "alpha7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -206,12 +206,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -229,12 +229,12 @@
       "endPosition": "alpha1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -243,12 +243,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -266,12 +266,12 @@
       "endPosition": "alpha3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -280,12 +280,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -303,12 +303,12 @@
       "endPosition": "alpha5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -317,12 +317,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -340,12 +340,12 @@
       "endPosition": "alpha7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -354,12 +354,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -377,12 +377,12 @@
       "endPosition": "alpha1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -391,12 +391,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -414,12 +414,12 @@
       "endPosition": "alpha3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -428,12 +428,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -451,12 +451,12 @@
       "endPosition": "alpha5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -465,12 +465,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -488,12 +488,12 @@
       "endPosition": "alpha7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -502,12 +502,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -525,12 +525,12 @@
       "endPosition": "alpha1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -539,12 +539,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -562,12 +562,12 @@
       "endPosition": "alpha3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -576,12 +576,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -599,12 +599,12 @@
       "endPosition": "alpha5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -613,12 +613,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -636,12 +636,12 @@
       "endPosition": "alpha7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -650,12 +650,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -673,12 +673,12 @@
       "endPosition": "alpha1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -687,12 +687,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -710,12 +710,12 @@
       "endPosition": "alpha3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -724,12 +724,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -747,12 +747,12 @@
       "endPosition": "alpha5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -761,12 +761,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -784,12 +784,12 @@
       "endPosition": "alpha7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -798,12 +798,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -821,12 +821,12 @@
       "endPosition": "alpha1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -835,12 +835,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -858,12 +858,12 @@
       "endPosition": "alpha3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -872,12 +872,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -895,12 +895,12 @@
       "endPosition": "beta5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -909,12 +909,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -932,12 +932,12 @@
       "endPosition": "beta7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -946,12 +946,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -969,12 +969,12 @@
       "endPosition": "beta1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -983,12 +983,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1006,12 +1006,12 @@
       "endPosition": "beta3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1020,12 +1020,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1043,12 +1043,12 @@
       "endPosition": "beta5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1057,12 +1057,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1080,12 +1080,12 @@
       "endPosition": "beta7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1094,12 +1094,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1117,12 +1117,12 @@
       "endPosition": "beta1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1131,12 +1131,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1154,12 +1154,12 @@
       "endPosition": "beta3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1168,12 +1168,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1191,12 +1191,12 @@
       "endPosition": "beta5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1205,12 +1205,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1228,12 +1228,12 @@
       "endPosition": "beta7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1242,12 +1242,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1265,12 +1265,12 @@
       "endPosition": "beta1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1279,12 +1279,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1302,12 +1302,12 @@
       "endPosition": "beta3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1316,12 +1316,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1339,12 +1339,12 @@
       "endPosition": "beta5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1353,12 +1353,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1376,12 +1376,12 @@
       "endPosition": "beta7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1390,12 +1390,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1413,12 +1413,12 @@
       "endPosition": "beta1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1427,12 +1427,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1450,12 +1450,12 @@
       "endPosition": "beta3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1464,12 +1464,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1487,12 +1487,12 @@
       "endPosition": "beta5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1501,12 +1501,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1524,12 +1524,12 @@
       "endPosition": "beta7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1538,12 +1538,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1561,12 +1561,12 @@
       "endPosition": "beta1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1575,12 +1575,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1598,12 +1598,12 @@
       "endPosition": "beta3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1612,12 +1612,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1635,12 +1635,12 @@
       "endPosition": "beta5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1649,12 +1649,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1672,12 +1672,12 @@
       "endPosition": "beta7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1686,12 +1686,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1709,12 +1709,12 @@
       "endPosition": "beta1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1723,12 +1723,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1746,12 +1746,12 @@
       "endPosition": "beta3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1760,12 +1760,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1783,12 +1783,12 @@
       "endPosition": "gamma13",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1797,12 +1797,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1820,12 +1820,12 @@
       "endPosition": "gamma15",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1834,12 +1834,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1857,12 +1857,12 @@
       "endPosition": "gamma9",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1871,12 +1871,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1894,12 +1894,12 @@
       "endPosition": "gamma11",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1908,12 +1908,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1931,12 +1931,12 @@
       "endPosition": "gamma13",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1945,12 +1945,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1968,12 +1968,12 @@
       "endPosition": "gamma15",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -1982,12 +1982,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2005,12 +2005,12 @@
       "endPosition": "gamma9",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2019,12 +2019,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2042,12 +2042,12 @@
       "endPosition": "gamma11",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2056,12 +2056,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2079,12 +2079,12 @@
       "endPosition": "gamma13",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2093,12 +2093,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2116,12 +2116,12 @@
       "endPosition": "gamma15",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2130,12 +2130,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2153,12 +2153,12 @@
       "endPosition": "gamma9",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2167,12 +2167,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2190,12 +2190,12 @@
       "endPosition": "gamma11",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2204,12 +2204,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2227,12 +2227,12 @@
       "endPosition": "gamma5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2241,12 +2241,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2264,12 +2264,12 @@
       "endPosition": "gamma7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2278,12 +2278,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2301,12 +2301,12 @@
       "endPosition": "gamma1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2315,12 +2315,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2338,12 +2338,12 @@
       "endPosition": "gamma3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2352,12 +2352,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2375,12 +2375,12 @@
       "endPosition": "gamma5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2389,12 +2389,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2412,12 +2412,12 @@
       "endPosition": "gamma7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2426,12 +2426,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2449,12 +2449,12 @@
       "endPosition": "gamma1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2463,12 +2463,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2486,12 +2486,12 @@
       "endPosition": "gamma3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2500,12 +2500,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2523,12 +2523,12 @@
       "endPosition": "gamma5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2537,12 +2537,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2560,12 +2560,12 @@
       "endPosition": "gamma7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2574,12 +2574,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2597,12 +2597,12 @@
       "endPosition": "gamma1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2611,12 +2611,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2634,12 +2634,12 @@
       "endPosition": "gamma3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2648,12 +2648,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2671,12 +2671,12 @@
       "endPosition": "gamma5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2685,12 +2685,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2708,12 +2708,12 @@
       "endPosition": "gamma7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2722,12 +2722,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2745,12 +2745,12 @@
       "endPosition": "gamma1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2759,12 +2759,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2782,12 +2782,12 @@
       "endPosition": "gamma3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2796,12 +2796,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2819,12 +2819,12 @@
       "endPosition": "gamma5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2833,12 +2833,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2856,12 +2856,12 @@
       "endPosition": "gamma7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2870,12 +2870,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2893,12 +2893,12 @@
       "endPosition": "gamma1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2907,12 +2907,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2930,12 +2930,12 @@
       "endPosition": "gamma3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2944,12 +2944,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2967,12 +2967,12 @@
       "endPosition": "gamma13",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -2981,12 +2981,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3004,12 +3004,12 @@
       "endPosition": "gamma15",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3018,12 +3018,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3041,12 +3041,12 @@
       "endPosition": "gamma9",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3055,12 +3055,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3078,12 +3078,12 @@
       "endPosition": "gamma11",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3092,12 +3092,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3115,12 +3115,12 @@
       "endPosition": "gamma13",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3129,12 +3129,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3152,12 +3152,12 @@
       "endPosition": "gamma15",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3166,12 +3166,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3189,12 +3189,12 @@
       "endPosition": "gamma9",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3203,12 +3203,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3226,12 +3226,12 @@
       "endPosition": "gamma11",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3240,12 +3240,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3263,12 +3263,12 @@
       "endPosition": "alpha5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3277,12 +3277,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3300,12 +3300,12 @@
       "endPosition": "alpha7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3314,12 +3314,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3337,12 +3337,12 @@
       "endPosition": "alpha1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3351,12 +3351,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3374,12 +3374,12 @@
       "endPosition": "alpha3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3388,12 +3388,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3411,12 +3411,12 @@
       "endPosition": "alpha5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3425,12 +3425,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3448,12 +3448,12 @@
       "endPosition": "alpha7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3462,12 +3462,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3485,12 +3485,12 @@
       "endPosition": "alpha1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3499,12 +3499,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3522,12 +3522,12 @@
       "endPosition": "alpha3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3536,12 +3536,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3559,12 +3559,12 @@
       "endPosition": "beta5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3573,12 +3573,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3596,12 +3596,12 @@
       "endPosition": "beta7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3610,12 +3610,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3633,12 +3633,12 @@
       "endPosition": "beta1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3647,12 +3647,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3670,12 +3670,12 @@
       "endPosition": "beta3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3684,12 +3684,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3707,12 +3707,12 @@
       "endPosition": "beta5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3721,12 +3721,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3744,12 +3744,12 @@
       "endPosition": "beta7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3758,12 +3758,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3781,12 +3781,12 @@
       "endPosition": "beta1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3795,12 +3795,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3818,12 +3818,12 @@
       "endPosition": "beta3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3832,12 +3832,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3855,12 +3855,12 @@
       "endPosition": "gamma13",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3869,12 +3869,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3892,12 +3892,12 @@
       "endPosition": "gamma15",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3906,12 +3906,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3929,12 +3929,12 @@
       "endPosition": "gamma9",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3943,12 +3943,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3966,12 +3966,12 @@
       "endPosition": "gamma11",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -3980,12 +3980,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4003,12 +4003,12 @@
       "endPosition": "gamma13",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4017,12 +4017,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4040,12 +4040,12 @@
       "endPosition": "gamma15",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4054,12 +4054,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4077,12 +4077,12 @@
       "endPosition": "gamma9",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4091,12 +4091,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4114,12 +4114,12 @@
       "endPosition": "gamma11",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4128,12 +4128,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4151,12 +4151,12 @@
       "endPosition": "gamma5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4165,12 +4165,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4188,12 +4188,12 @@
       "endPosition": "gamma7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4202,12 +4202,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4225,12 +4225,12 @@
       "endPosition": "gamma1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4239,12 +4239,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4262,12 +4262,12 @@
       "endPosition": "gamma3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4276,12 +4276,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4299,12 +4299,12 @@
       "endPosition": "gamma5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4313,12 +4313,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4336,12 +4336,12 @@
       "endPosition": "gamma7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4350,12 +4350,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4373,12 +4373,12 @@
       "endPosition": "gamma1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4387,12 +4387,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4410,12 +4410,12 @@
       "endPosition": "gamma3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4424,12 +4424,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4447,12 +4447,12 @@
       "endPosition": "alpha5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4461,12 +4461,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4484,12 +4484,12 @@
       "endPosition": "alpha7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4498,12 +4498,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4521,12 +4521,12 @@
       "endPosition": "alpha1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4535,12 +4535,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4558,12 +4558,12 @@
       "endPosition": "alpha3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4572,12 +4572,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4595,12 +4595,12 @@
       "endPosition": "alpha5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4609,12 +4609,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4632,12 +4632,12 @@
       "endPosition": "alpha7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4646,12 +4646,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4669,12 +4669,12 @@
       "endPosition": "alpha1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4683,12 +4683,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4706,12 +4706,12 @@
       "endPosition": "alpha3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4720,12 +4720,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4743,12 +4743,12 @@
       "endPosition": "beta5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4757,12 +4757,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4780,12 +4780,12 @@
       "endPosition": "beta7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4794,12 +4794,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4817,12 +4817,12 @@
       "endPosition": "beta1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4831,12 +4831,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4854,12 +4854,12 @@
       "endPosition": "beta3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4868,12 +4868,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4891,12 +4891,12 @@
       "endPosition": "beta5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4905,12 +4905,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4928,12 +4928,12 @@
       "endPosition": "beta7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4942,12 +4942,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4965,12 +4965,12 @@
       "endPosition": "beta1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -4979,12 +4979,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5002,12 +5002,12 @@
       "endPosition": "beta3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5016,12 +5016,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5039,12 +5039,12 @@
       "endPosition": "gamma13",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5053,12 +5053,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5076,12 +5076,12 @@
       "endPosition": "gamma15",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5090,12 +5090,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5113,12 +5113,12 @@
       "endPosition": "gamma9",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5127,12 +5127,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5150,12 +5150,12 @@
       "endPosition": "gamma11",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5164,12 +5164,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5187,12 +5187,12 @@
       "endPosition": "gamma13",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5201,12 +5201,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5224,12 +5224,12 @@
       "endPosition": "gamma15",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5238,12 +5238,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5261,12 +5261,12 @@
       "endPosition": "gamma9",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5275,12 +5275,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5298,12 +5298,12 @@
       "endPosition": "gamma11",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5312,12 +5312,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5335,12 +5335,12 @@
       "endPosition": "gamma5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5349,12 +5349,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5372,12 +5372,12 @@
       "endPosition": "gamma7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5386,12 +5386,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5409,12 +5409,12 @@
       "endPosition": "gamma1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5423,12 +5423,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5446,12 +5446,12 @@
       "endPosition": "gamma3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5460,12 +5460,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5483,12 +5483,12 @@
       "endPosition": "gamma5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5497,12 +5497,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "e",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5520,12 +5520,12 @@
       "endPosition": "gamma7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5534,12 +5534,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "s",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5557,12 +5557,12 @@
       "endPosition": "gamma1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5571,12 +5571,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "w",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5594,12 +5594,12 @@
       "endPosition": "gamma3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5608,12 +5608,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "anti",
           "rotationDirection": "ccw",
           "startLocation": "n",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5631,12 +5631,12 @@
       "endPosition": "alpha7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5645,12 +5645,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5668,12 +5668,12 @@
       "endPosition": "alpha5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5682,12 +5682,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5705,12 +5705,12 @@
       "endPosition": "alpha3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5719,12 +5719,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5742,12 +5742,12 @@
       "endPosition": "alpha1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5756,12 +5756,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5779,12 +5779,12 @@
       "endPosition": "beta7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5793,12 +5793,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5816,12 +5816,12 @@
       "endPosition": "beta5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5830,12 +5830,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5853,12 +5853,12 @@
       "endPosition": "beta3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5867,12 +5867,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5890,12 +5890,12 @@
       "endPosition": "beta1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5904,12 +5904,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5927,12 +5927,12 @@
       "endPosition": "gamma15",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5941,12 +5941,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5964,12 +5964,12 @@
       "endPosition": "gamma1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -5978,12 +5978,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6001,12 +6001,12 @@
       "endPosition": "gamma7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6015,12 +6015,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6038,12 +6038,12 @@
       "endPosition": "gamma13",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6052,12 +6052,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6075,12 +6075,12 @@
       "endPosition": "alpha7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6089,12 +6089,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6112,12 +6112,12 @@
       "endPosition": "alpha5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6126,12 +6126,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6149,12 +6149,12 @@
       "endPosition": "alpha3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6163,12 +6163,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6186,12 +6186,12 @@
       "endPosition": "alpha1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6200,12 +6200,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6223,12 +6223,12 @@
       "endPosition": "beta7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6237,12 +6237,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6260,12 +6260,12 @@
       "endPosition": "beta5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6274,12 +6274,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6297,12 +6297,12 @@
       "endPosition": "beta3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6311,12 +6311,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6334,12 +6334,12 @@
       "endPosition": "beta1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6348,12 +6348,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6371,12 +6371,12 @@
       "endPosition": "gamma7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6385,12 +6385,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6408,12 +6408,12 @@
       "endPosition": "gamma15",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6422,12 +6422,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6445,12 +6445,12 @@
       "endPosition": "gamma13",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6459,12 +6459,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6482,12 +6482,12 @@
       "endPosition": "gamma5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6496,12 +6496,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "dash",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 1,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6519,12 +6519,12 @@
       "endPosition": "alpha3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6533,12 +6533,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6556,12 +6556,12 @@
       "endPosition": "alpha5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6570,12 +6570,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6593,12 +6593,12 @@
       "endPosition": "alpha1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6607,12 +6607,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6630,12 +6630,12 @@
       "endPosition": "alpha7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6644,12 +6644,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6667,12 +6667,12 @@
       "endPosition": "beta3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6681,12 +6681,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6704,12 +6704,12 @@
       "endPosition": "beta5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6718,12 +6718,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6741,12 +6741,12 @@
       "endPosition": "beta1",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6755,12 +6755,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "red",
+          "hand": "right",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6778,12 +6778,12 @@
       "endPosition": "beta7",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6792,12 +6792,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "w",
-          "color": "red",
+          "hand": "right",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6815,12 +6815,12 @@
       "endPosition": "gamma11",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6829,12 +6829,12 @@
           "arrowLocation": "s",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6852,12 +6852,12 @@
       "endPosition": "gamma3",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "n",
           "endLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6866,12 +6866,12 @@
           "arrowLocation": "n",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "red",
+          "hand": "right",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6889,12 +6889,12 @@
       "endPosition": "gamma13",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "w",
           "endLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6903,12 +6903,12 @@
           "arrowLocation": "w",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6926,12 +6926,12 @@
       "endPosition": "gamma5",
       "gridMode": "diamond",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "e",
           "endLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",
@@ -6940,12 +6940,12 @@
           "arrowLocation": "e",
           "gridMode": "diamond"
         },
-        "red": {
+        "right": {
           "motionType": "static",
           "rotationDirection": "noRotation",
           "startLocation": "s",
           "endLocation": "s",
-          "color": "red",
+          "hand": "right",
           "turns": 0,
           "startOrientation": "in",
           "endOrientation": "in",

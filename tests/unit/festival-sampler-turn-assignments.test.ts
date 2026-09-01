@@ -17,7 +17,7 @@ describe("festival sampler frozen turn assignments", () => {
     ) as FestivalSamplerCardManifest;
     const sequence = await resolveFestivalSamplerCardSequence(card);
     const applied = sequence.steps.map(
-      (step) => `${step.motions?.blue?.turns}|${step.motions?.red?.turns}`
+      (step) => `${step.motions?.left?.turns}|${step.motions?.right?.turns}`
     );
 
     expect(card.turnPatternId).toBe("alternating-hands");
@@ -37,8 +37,8 @@ describe("festival sampler frozen turn assignments", () => {
     for (const card of uniqueCards.values()) {
       const sequence = await resolveFestivalSamplerCardSequence(card);
       const turns = sequence.steps.flatMap((step) => [
-        step.motions?.blue?.turns,
-        step.motions?.red?.turns,
+        step.motions?.left?.turns,
+        step.motions?.right?.turns,
       ]);
       const cap = card.turnIntensity ?? 0;
 

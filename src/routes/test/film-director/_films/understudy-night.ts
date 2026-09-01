@@ -9,7 +9,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * odd-one-out cast where one performer is excluded from the group's pool.
  */
 export const understudyNightFilm: FilmDirectorInput = {
-  version: 3,
+  version: 5,
   id: "understudy-night-r1",
   title: "Understudy Night",
   brief:
@@ -33,7 +33,7 @@ export const understudyNightFilm: FilmDirectorInput = {
           // Cast override ids follow the resolver's performer-N naming;
           // performer-1 is the lead the sameAs default points at.
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: { sameAs: "performer-1" },
             effect: { not: "fire" },
             effort: { pick: "distinct" },
@@ -42,7 +42,7 @@ export const understudyNightFilm: FilmDirectorInput = {
             {
               id: "performer-1",
               name: "Lead",
-              avatarId: "y-bot",
+              characterId: "y-bot",
               prop: PropType.SWORD,
               effect: "fire",
               effort: "punch",
@@ -81,7 +81,7 @@ export const understudyNightFilm: FilmDirectorInput = {
         cast: {
           count: 8,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: PropType.STAFF,
             effect: "led",
             effort: { pick: "distinct" },
@@ -123,23 +123,23 @@ export const understudyNightFilm: FilmDirectorInput = {
             {
               id: "performer-1",
               name: "Original",
-              avatarId: "x-bot",
+              characterId: "x-bot",
               prop: PropType.STAFF,
               effect: "petals",
               effort: "glide",
-              bluePlane: "wheel",
-              redPlane: "floor",
+              leftPlane: "wheel",
+              rightPlane: "floor",
               staffLengthCm: { pick: "distinct", from: [110, 150] },
             },
             {
               id: "performer-2",
               name: "Mirror",
-              avatarId: "ch01",
+              characterId: "ch01",
               prop: { sameAs: "performer-1" },
               effect: { sameAs: "performer-1" },
               effort: { sameAs: "performer-1" },
-              bluePlane: { sameAs: "performer-1" },
-              redPlane: { sameAs: "performer-1" },
+              leftPlane: { sameAs: "performer-1" },
+              rightPlane: { sameAs: "performer-1" },
               staffLengthCm: { pick: "distinct", from: [110, 150] },
             },
           ],
@@ -172,7 +172,7 @@ export const understudyNightFilm: FilmDirectorInput = {
         cast: {
           count: 6,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: PropType.TRIAD,
             effect: "silk",
             effort: "elastic",

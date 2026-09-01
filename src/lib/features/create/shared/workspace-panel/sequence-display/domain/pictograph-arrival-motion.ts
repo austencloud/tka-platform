@@ -18,7 +18,7 @@ export const PICTOGRAPH_ARRIVAL_PROP_DEGREES_PER_SECOND = 360;
 export function getPictographArrivalPropMotionDurationMs(
   step: StepData
 ): number {
-  const effectiveDegrees = ([step.motions?.blue, step.motions?.red] as const)
+  const effectiveDegrees = ([step.motions?.left, step.motions?.right] as const)
     .filter(isVisibleMotion)
     .map(
       (motion) =>

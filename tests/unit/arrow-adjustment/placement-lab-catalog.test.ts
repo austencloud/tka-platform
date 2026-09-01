@@ -4,7 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -73,14 +73,14 @@ describe("arrow placement lab catalog", () => {
     expect(oneTurn.boxMotion.endOrientation).toBe(Orientation.OUT);
 
     for (const fixture of [zeroTurn, oneTurn]) {
-      const diamondRed = fixture.diamond.motions.red!;
-      const boxRed = fixture.box.motions.red!;
+      const diamondRed = fixture.diamond.motions.right!;
+      const boxRed = fixture.box.motions.right!;
 
       expect(fixture.diamondMotion.endOrientation).toBe(
-        calculateEndOrientation(fixture.diamondMotion, MotionColor.BLUE)
+        calculateEndOrientation(fixture.diamondMotion, HandSide.LEFT)
       );
       expect(diamondRed.endOrientation).toBe(
-        calculateEndOrientation(diamondRed, MotionColor.RED)
+        calculateEndOrientation(diamondRed, HandSide.RIGHT)
       );
       expect(fixture.boxMotion.endOrientation).toBe(
         fixture.diamondMotion.endOrientation
@@ -100,37 +100,37 @@ describe("arrow placement lab catalog", () => {
       ...sourceFixture.diamond,
       letter: "H" as never,
       startPosition: getGridPositionFromLocations(
-        sourceFixture.diamond.motions.blue!.startLocation,
-        sourceFixture.diamond.motions.red!.startLocation
+        sourceFixture.diamond.motions.left!.startLocation,
+        sourceFixture.diamond.motions.right!.startLocation
       ),
       endPosition: getGridPositionFromLocations(
-        sourceFixture.diamond.motions.blue!.endLocation,
-        sourceFixture.diamond.motions.red!.endLocation
+        sourceFixture.diamond.motions.left!.endLocation,
+        sourceFixture.diamond.motions.right!.endLocation
       ),
     };
     const sourceSnapshot = structuredClone(source);
 
     const fixture = buildPictographPlacementFixture(source, 0.5);
-    const diamondRed = fixture.diamond.motions.red!;
-    const boxRed = fixture.box.motions.red!;
+    const diamondRed = fixture.diamond.motions.right!;
+    const boxRed = fixture.box.motions.right!;
 
     expect(fixture.diamond.letter).toBe("H");
     expect(fixture.box.letter).toBe("H");
     expect(fixture.diamondMotion.turns).toBe(0.5);
     expect(diamondRed.turns).toBe(0.5);
-    expect(source.motions.blue?.turns).toBe(0);
-    expect(source.motions.red?.turns).toBe(0);
+    expect(source.motions.left?.turns).toBe(0);
+    expect(source.motions.right?.turns).toBe(0);
     expect(source).toEqual(sourceSnapshot);
     expect(fixture.box.startPosition).toBe(
       getGridPositionFromLocations(
-        fixture.box.motions.blue!.startLocation,
-        fixture.box.motions.red!.startLocation
+        fixture.box.motions.left!.startLocation,
+        fixture.box.motions.right!.startLocation
       )
     );
     expect(fixture.box.endPosition).toBe(
       getGridPositionFromLocations(
-        fixture.box.motions.blue!.endLocation,
-        fixture.box.motions.red!.endLocation
+        fixture.box.motions.left!.endLocation,
+        fixture.box.motions.right!.endLocation
       )
     );
     expect([
@@ -138,10 +138,10 @@ describe("arrow placement lab catalog", () => {
       fixture.box.endPosition !== source.endPosition,
     ]).toContain(true);
     expect(fixture.diamondMotion.endOrientation).toBe(
-      calculateEndOrientation(fixture.diamondMotion, MotionColor.BLUE)
+      calculateEndOrientation(fixture.diamondMotion, HandSide.LEFT)
     );
     expect(diamondRed.endOrientation).toBe(
-      calculateEndOrientation(diamondRed, MotionColor.RED)
+      calculateEndOrientation(diamondRed, HandSide.RIGHT)
     );
     expect(fixture.boxMotion.endOrientation).toBe(
       fixture.diamondMotion.endOrientation
@@ -178,11 +178,11 @@ describe("arrow placement lab catalog", () => {
             if (resolvedKey !== key.placementKey) reroutedContextCount++;
 
             expect(fixture.diamondMotion.endOrientation).toBe(
-              calculateEndOrientation(fixture.diamondMotion, MotionColor.BLUE)
+              calculateEndOrientation(fixture.diamondMotion, HandSide.LEFT)
             );
-            const diamondRed = fixture.diamond.motions.red!;
+            const diamondRed = fixture.diamond.motions.right!;
             expect(diamondRed.endOrientation).toBe(
-              calculateEndOrientation(diamondRed, MotionColor.RED)
+              calculateEndOrientation(diamondRed, HandSide.RIGHT)
             );
 
             const canonical = createCanonicalPlacementContext(

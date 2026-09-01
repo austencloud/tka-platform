@@ -6,7 +6,6 @@
   import { slide } from "svelte/transition";
   import ShareSheetFrame from "./ShareSheetFrame.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
-  import ExportImagePanel from "$lib/shared/sequence-viewer/components/ExportImagePanel.svelte";
   import ExportPopover from "$lib/shared/sequence-viewer/components/ExportPopover.svelte";
   import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
@@ -26,6 +25,13 @@
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { getCaptionPresetManager } from "$lib/shared/share/state/caption-presets.svelte";
   import { createCardPreviewState } from "$lib/shared/share/state/card-preview-state.svelte";
+  import { createPostShareDraftState } from "$lib/shared/share/state/post-share-draft-state.svelte";
+  import CardFooterEditor from "$lib/shared/share/components/CardFooterEditor.svelte";
+  import {
+    cardPresentationFromFooterSettings,
+    type CardPresentation,
+  } from "$lib/shared/share/domain/models/card-presentation";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import {
     buildArtifactFilename,
     buildPostLink,
@@ -66,7 +72,7 @@
     isRecordingScene?: boolean;
     exportProgress: number | null;
     /** `false` means no render started, so the sheet must stop waiting. */
-    onRequestVideo: () => void | Promise<boolean>;
+    onRequestVideo?: () => void | boolean | Promise<boolean>;
     onClose: () => void;
     /** Visual-test seam for connection states normally supplied by Firestore. */
     metaStatusOverride?: MetaPublishStatus;
@@ -75,10 +81,20 @@
     /** Labels view-specific renders such as Mandala or Tunnel. */
     videoLabel?: string;
     initialArtifact?: ShareArtifact;
+    /** The host advertises only artifacts it can actually produce. */
+    availableArtifacts?: readonly ShareArtifact[];
+    /** Current Card-tab presentation; the sheet clones it into one share draft. */
+    initialCardPresentation?: CardPresentation;
+    /** Omitted when the sequence is not an owned saved Library record. */
+    onSaveCardPresentation?: (
+      value: CardPresentation
+    ) => boolean | Promise<boolean>;
     /** Reuses the live card's resolved auto-layout so the exported image matches. */
     resolvedCardAutoLayout?: ResolvedAutoLayout | null;
     /** Omitted when the host cannot switch its viewer body to Post Studio. */
     onOpenPostStudio?: () => void;
+    /** False for local-only guest flows that cannot mint an account-owned link. */
+    canCreateLink?: boolean;
   }
 
   let {
@@ -89,14 +105,18 @@
     isExportingVideo,
     isRecordingScene = false,
     exportProgress,
-    onRequestVideo,
+    onRequestVideo = () => false,
     onClose,
     metaStatusOverride,
     onSendInTka,
     videoLabel = "Video",
     initialArtifact = "card",
+    availableArtifacts = ["card", "video"],
+    initialCardPresentation,
+    onSaveCardPresentation,
     resolvedCardAutoLayout = null,
     onOpenPostStudio,
+    canCreateLink = true,
   }: Props = $props();
 
   const postDeliveryState = createPostDeliveryState({
@@ -146,7 +166,17 @@
 
   let glyphHeight = $state(0);
 
-  let artifact = $state<ShareArtifact>("card");
+  const shareDraft = createPostShareDraftState();
+  const artifact = $derived(shareDraft.artifact);
+  const caption = $derived(shareDraft.caption);
+  const captionTouched = $derived(shareDraft.captionTouched);
+  const imageComposition = getImageCompositionManager();
+  const artifactOptions = $derived(
+    shareDraft.availableArtifacts.map((value) => ({
+      value,
+      label: value === "card" ? "Card" : videoLabel,
+    }))
+  );
   /** Sharing starts actionable; customization unfolds only on request. */
   let customizeOpen = $state(false);
 
@@ -162,11 +192,14 @@
     });
   }
 
-  let caption = $state("");
-  let captionTouched = $state(false);
   let statusMessage = $state("");
   let busyDestination = $state<HandoffDestinationId | null>(null);
   let videoRefused = $state(false);
+  let savingCardPresentation = $state(false);
+
+  function changeShareCardPresentation(value: CardPresentation): void {
+    shareDraft.cardPresentation = value;
+  }
 
   let videoBlob = $state<Blob | null>(null);
   let instagramReviewOpen = $state(false);
@@ -179,6 +212,7 @@
     getEnabled: () => isOpen,
     getDarkMode: () => exportOptions.imageDarkMode,
     getResolvedAutoLayout: () => resolvedCardAutoLayout,
+    getCardPresentation: () => shareDraft.cardPresentation,
     onError: () => {
       statusMessage = "Couldn't render the card";
     },
@@ -355,7 +389,7 @@
         brand: "facebook",
         name: "Facebook",
         label: "Open Facebook",
-        hint: "Copies the image to paste in",
+        hint: "Paste the image, then use Copy caption",
         kind: "handoff",
         destination: "copy-image-facebook",
       });
@@ -447,17 +481,33 @@
     return `Rendering ${videoLabel.toLowerCase()}…`;
   });
 
-  // Reset on the open edge only, preserving choices during an active session.
+  // A closed sheet owns nothing. Every open starts a clean public-content draft.
   let wasOpen = false;
   $effect(() => {
     if (isOpen === wasOpen) return;
     wasOpen = isOpen;
     if (!isOpen) return;
-    artifact = initialArtifact;
-    // Reuse current settings until the user asks to customize.
+    shareDraft.start({
+      availableArtifacts,
+      initialArtifact,
+      cardPresentation:
+        initialCardPresentation ??
+        cardPresentationFromFooterSettings(
+          imageComposition.showNotes,
+          imageComposition.customNotesText
+        ),
+    });
     customizeOpen = false;
+    statusMessage = "";
+    busyDestination = null;
+    videoRefused = false;
+    qrDataUrl = null;
+    qrError = "";
+    pageMenuOpen = false;
+    postedPermalinks = {};
+    shortUrl = seededShortUrl || null;
     if (
-      initialArtifact === "video" &&
+      shareDraft.artifact === "video" &&
       !hasVideo &&
       !isExportingVideo &&
       !isRecordingScene
@@ -496,7 +546,7 @@
 
   // Mint asynchronously on open; captions never expose the long viewer URL.
   $effect(() => {
-    if (!isOpen || !sequence || seededShortUrl) return;
+    if (!isOpen || !sequence || seededShortUrl || !canCreateLink) return;
 
     const target = sequence;
     let stale = false;
@@ -523,7 +573,7 @@
   $effect(() => {
     if (!isOpen || captionTouched) return;
     const first = presets[0];
-    if (first) caption = first.text;
+    if (first) shareDraft.caption = first.text;
   });
 
   // Hold the connection listener only while the sheet is open.
@@ -541,7 +591,7 @@
   });
 
   function handleArtifactChange(next: ShareArtifact): void {
-    artifact = next;
+    if (!shareDraft.selectArtifact(next)) return;
     statusMessage = "";
     qrDataUrl = null;
     // Posted links belong to the selected artifact.
@@ -622,8 +672,8 @@
   }
 
   function syncInstagramReviewCaption(): void {
-    caption = postDeliveryState.draft.caption;
-    captionTouched = true;
+    shareDraft.caption = postDeliveryState.draft.caption;
+    shareDraft.captionTouched = true;
   }
 
   function closeInstagramReview(): void {
@@ -665,19 +715,42 @@
    * "Rendering video…" forever with no error and no way back.
    */
   function requestVideo(): void {
+    if (!shareDraft.availableArtifacts.includes("video")) return;
     videoRefused = false;
     requestedVideoKey = untrack(() => videoSettingsKey);
     const started = onRequestVideo();
+    if (started === false) {
+      videoRefused = true;
+      return;
+    }
     if (!(started instanceof Promise)) return;
-    void started.then((ok) => {
-      videoRefused = ok === false;
-    });
+    void started
+      .then((ok) => {
+        videoRefused = ok === false;
+      })
+      .catch(() => {
+        videoRefused = true;
+      });
   }
 
   function applyPreset(text: string): void {
-    caption = text;
-    captionTouched = true;
+    shareDraft.caption = text;
+    shareDraft.captionTouched = true;
     postedPermalinks = {};
+  }
+
+  async function saveCardPresentation(): Promise<void> {
+    if (!onSaveCardPresentation || savingCardPresentation) return;
+    savingCardPresentation = true;
+    try {
+      const saved = await onSaveCardPresentation(shareDraft.cardPresentation);
+      if (saved) {
+        shareDraft.markCardPresentationSaved();
+        statusMessage = "Card footer saved";
+      }
+    } finally {
+      savingCardPresentation = false;
+    }
   }
 
   function saveCurrentAsPreset(): void {
@@ -1113,31 +1186,35 @@
         </header>
 
         {#if !qrDataUrl}
-          <div class="artifact-picker">
-            <SegmentedControl
-              options={[
-                { value: "card", label: "Card" },
-                { value: "video", label: videoLabel },
-              ]}
-              value={artifact}
-              onchange={handleArtifactChange}
-              ariaLabel="What to share"
-              semantics="radiogroup"
-              size="sm"
-              color="accent"
-            />
-            {#if onOpenPostStudio}
-              <button
-                type="button"
-                class="studio-launch"
-                onclick={openPostStudio}
-              >
-                <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"
-                ></i>
-                Post Studio
-              </button>
-            {/if}
-          </div>
+          {#if artifactOptions.length > 1 || onOpenPostStudio}
+            <div
+              class="artifact-picker"
+              class:single-artifact={artifactOptions.length === 1}
+            >
+              {#if artifactOptions.length > 1}
+                <SegmentedControl
+                  options={artifactOptions}
+                  value={artifact}
+                  onchange={handleArtifactChange}
+                  ariaLabel="What to share"
+                  semantics="radiogroup"
+                  size="sm"
+                  color="accent"
+                />
+              {/if}
+              {#if onOpenPostStudio}
+                <button
+                  type="button"
+                  class="studio-launch"
+                  onclick={openPostStudio}
+                >
+                  <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"
+                  ></i>
+                  Post Studio
+                </button>
+              {/if}
+            </div>
+          {/if}
         {/if}
 
         <div class="stage" class:showing-media={!!previewReady}>
@@ -1182,44 +1259,47 @@
           {/if}
         </div>
 
-        <!-- Customization sits next to the preview it changes. -->
+        <!-- Final content confirmation sits next to the preview it changes. -->
         {#if !qrDataUrl && sequence}
-          <div class="customize">
-            <button
-              type="button"
-              class="customize-toggle"
-              aria-expanded={customizeOpen}
-              aria-controls="post-share-customize"
-              onclick={() => (customizeOpen = !customizeOpen)}
-            >
-              <i class="fa-solid fa-sliders" aria-hidden="true"></i>
-              <span class="customize-label">
-                {artifact === "card"
-                  ? "Card settings"
-                  : `${videoLabel} settings`}
-              </span>
-              <i
-                class="fa-solid fa-chevron-down chevron"
-                class:open={customizeOpen}
-                aria-hidden="true"
-              ></i>
-            </button>
-
-            {#if customizeOpen}
-              <div
-                class="customize-body"
-                id="post-share-customize"
-                transition:slide={{ duration: 200 }}
-                onintroend={revealCustomize}
+          {#if artifact === "card"}
+            <div class="card-footer-confirmation">
+              <CardFooterEditor
+                value={shareDraft.cardPresentation}
+                onchange={changeShareCardPresentation}
+                onSave={onSaveCardPresentation
+                  ? saveCardPresentation
+                  : undefined}
+                dirty={shareDraft.cardPresentationDirty}
+                saving={savingCardPresentation}
+                description="Appears inside this shared card image."
+                idBase="share-card-footer"
+              />
+            </div>
+          {:else}
+            <div class="customize">
+              <button
+                type="button"
+                class="customize-toggle"
+                aria-expanded={customizeOpen}
+                aria-controls="post-share-customize"
+                onclick={() => (customizeOpen = !customizeOpen)}
               >
-                {#if artifact === "card"}
-                  <ExportImagePanel
-                    {exportOptions}
-                    layout="inline"
-                    stepCount={sequence.steps?.length ?? 0}
-                    resolvedAutoLayout={resolvedCardAutoLayout}
-                  />
-                {:else}
+                <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+                <span class="customize-label">{videoLabel} settings</span>
+                <i
+                  class="fa-solid fa-chevron-down chevron"
+                  class:open={customizeOpen}
+                  aria-hidden="true"
+                ></i>
+              </button>
+
+              {#if customizeOpen}
+                <div
+                  class="customize-body"
+                  id="post-share-customize"
+                  transition:slide={{ duration: 200 }}
+                  onintroend={revealCustomize}
+                >
                   <ExportPopover />
                   {#if videoSettingsStale}
                     <button
@@ -1232,17 +1312,18 @@
                       Re-render with these settings
                     </button>
                   {/if}
-                {/if}
-              </div>
-            {/if}
-          </div>
+                </div>
+              {/if}
+            </div>
+          {/if}
         {/if}
 
         {#if !qrDataUrl}
           <div class="caption-block">
-            <label class="visually-hidden" for="post-share-caption"
-              >Caption</label
-            >
+            <div class="content-heading">
+              <label for="post-share-caption">Post caption</label>
+              <p>Travels with the post, not inside the card image.</p>
+            </div>
 
             <div class="presets">
               {#each presets as preset (preset.id)}
@@ -1271,8 +1352,13 @@
 
             <textarea
               id="post-share-caption"
-              bind:value={caption}
-              oninput={() => (captionTouched = true)}
+              value={caption}
+              oninput={(event) => {
+                shareDraft.caption = (
+                  event.currentTarget as HTMLTextAreaElement
+                ).value;
+                shareDraft.captionTouched = true;
+              }}
               rows="3"
               placeholder="Write a caption…"
             ></textarea>
@@ -1601,6 +1687,10 @@
     width: auto;
   }
 
+  .artifact-picker.single-artifact {
+    justify-content: flex-end;
+  }
+
   .studio-launch {
     display: inline-flex;
     align-items: center;
@@ -1725,6 +1815,13 @@
     background: var(--theme-surface-2, rgba(255, 255, 255, 0.04));
   }
 
+  .card-footer-confirmation {
+    padding: 0.875rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 0.875rem;
+    background: var(--theme-surface-2, rgba(255, 255, 255, 0.04));
+  }
+
   /* Keep the panel's short segmented control from stretching like a progress bar. */
   .customize-body :global(.seg-fill) {
     max-width: 24rem;
@@ -1770,6 +1867,20 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .content-heading label {
+    display: block;
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+  }
+
+  .content-heading p {
+    margin: 0.1875rem 0 0;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.35;
   }
 
   .visually-hidden {
@@ -2254,6 +2365,7 @@
       grid-template-areas:
         "stage header"
         "stage picker"
+        "stage footer"
         "stage caption"
         "stage cta"
         "stage tiles"
@@ -2261,7 +2373,10 @@
         "stage status"
         "stage customize";
       /* Let the useful caption field absorb the card column's extra height. */
-      grid-template-rows: auto auto minmax(5rem, 1fr) auto auto auto auto auto;
+      grid-template-rows: auto auto auto minmax(
+          5rem,
+          1fr
+        ) auto auto auto auto auto;
       align-content: start;
       column-gap: 1.5rem;
       row-gap: 0.625rem;
@@ -2303,6 +2418,9 @@
     }
 
     /* Explicit placement prevents later spacer rows from capturing customization. */
+    .card-footer-confirmation {
+      grid-area: footer;
+    }
     .customize {
       grid-area: customize;
     }
@@ -2345,12 +2463,16 @@
       grid-template-areas:
         "stage header"
         "stage picker"
+        "stage footer"
         "stage caption"
         "stage cta"
         "stage tiles"
         "connections status"
         "customize customize";
-      grid-template-rows: auto auto minmax(3.25rem, 1fr) auto auto auto auto;
+      grid-template-rows: auto auto auto minmax(
+          3.25rem,
+          1fr
+        ) auto auto auto auto;
       row-gap: 0.25rem;
       padding: 0.25rem 1rem 0.375rem;
     }
@@ -2477,6 +2599,7 @@
         "stage ."
         "stage header"
         "stage picker"
+        "stage footer"
         "stage caption"
         "stage cta"
         "stage tiles"
@@ -2484,7 +2607,7 @@
         "stage status"
         "stage customize"
         "stage .";
-      grid-template-rows: 1fr auto auto auto auto auto auto auto auto 1fr;
+      grid-template-rows: 1fr auto auto auto auto auto auto auto auto auto 1fr;
     }
 
     textarea {

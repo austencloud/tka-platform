@@ -13,7 +13,7 @@ import {
 	GridMode,
 	MotionType,
 	Orientation,
-	MotionColor,
+	HandSide,
 	RotationDirection,
 } from "$lib/features/retro/shared/domain/pictograph-types";
 import type {
@@ -42,34 +42,34 @@ export type ViewMode = "raw" | "crt";
 interface PictographEntry {
 	letter: string;
 	gridMode: GridMode;
-	blueStartLocation: GridLocation;
-	blueEndLocation: GridLocation;
-	blueMotionType: MotionType;
-	redStartLocation: GridLocation;
-	redEndLocation: GridLocation;
-	redMotionType: MotionType;
+	leftStartLocation: GridLocation;
+	leftEndLocation: GridLocation;
+	leftMotionType: MotionType;
+	rightStartLocation: GridLocation;
+	rightEndLocation: GridLocation;
+	rightMotionType: MotionType;
 }
 
 function entryToPictograph(entry: PictographEntry): RetroPictographData {
-	const blueHand: RetroHandData = {
-		color: MotionColor.BLUE,
-		location: entry.blueStartLocation,
-		endLocation: entry.blueEndLocation,
-		motionType: entry.blueMotionType,
+	const leftHand: RetroHandData = {
+		color: HandSide.LEFT,
+		location: entry.leftStartLocation,
+		endLocation: entry.leftEndLocation,
+		motionType: entry.leftMotionType,
 		orientation: Orientation.IN,
 		turns: 0,
 		rotationDirection: RotationDirection.NO_ROTATION,
 	};
-	const redHand: RetroHandData = {
-		color: MotionColor.RED,
-		location: entry.redStartLocation,
-		endLocation: entry.redEndLocation,
-		motionType: entry.redMotionType,
+	const rightHand: RetroHandData = {
+		color: HandSide.RIGHT,
+		location: entry.rightStartLocation,
+		endLocation: entry.rightEndLocation,
+		motionType: entry.rightMotionType,
 		orientation: Orientation.IN,
 		turns: 0,
 		rotationDirection: RotationDirection.NO_ROTATION,
 	};
-	return { letter: entry.letter, blueHand, redHand, gridMode: entry.gridMode };
+	return { letter: entry.letter, leftHand, rightHand, gridMode: entry.gridMode };
 }
 
 function parseCsv(text: string, gridMode: GridMode): PictographEntry[] {
@@ -85,12 +85,12 @@ function parseCsv(text: string, gridMode: GridMode): PictographEntry[] {
 		entries.push({
 			letter: v[col("letter")] ?? "",
 			gridMode,
-			blueStartLocation: (v[col("blueStartLocation")] as GridLocation) || GridLocation.NORTH,
-			blueEndLocation: (v[col("blueEndLocation")] as GridLocation) || GridLocation.NORTH,
-			blueMotionType: (v[col("blueMotionType")] as MotionType) || MotionType.STATIC,
-			redStartLocation: (v[col("redStartLocation")] as GridLocation) || GridLocation.SOUTH,
-			redEndLocation: (v[col("redEndLocation")] as GridLocation) || GridLocation.SOUTH,
-			redMotionType: (v[col("redMotionType")] as MotionType) || MotionType.STATIC,
+			leftStartLocation: (v[col("blueStartLocation")] as GridLocation) || GridLocation.NORTH,
+			leftEndLocation: (v[col("blueEndLocation")] as GridLocation) || GridLocation.NORTH,
+			leftMotionType: (v[col("blueMotionType")] as MotionType) || MotionType.STATIC,
+			rightStartLocation: (v[col("redStartLocation")] as GridLocation) || GridLocation.SOUTH,
+			rightEndLocation: (v[col("redEndLocation")] as GridLocation) || GridLocation.SOUTH,
+			rightMotionType: (v[col("redMotionType")] as MotionType) || MotionType.STATIC,
 		});
 	}
 	return entries;
@@ -99,32 +99,32 @@ function parseCsv(text: string, gridMode: GridMode): PictographEntry[] {
 // STEP CONVERSION (Sequence mode)
 
 function stepToRetro(step: StepData, isBridge = false): RetroPictographData {
-	const blue = step.motions[MotionColor.BLUE];
-	const red = step.motions[MotionColor.RED];
+	const left = step.motions[HandSide.LEFT];
+	const right = step.motions[HandSide.RIGHT];
 
-	const blueHand: RetroHandData = {
-		color: MotionColor.BLUE,
-		location: blue?.startLocation ?? GridLocation.NORTH,
-		endLocation: blue?.endLocation ?? GridLocation.NORTH,
-		motionType: blue?.motionType ?? MotionType.STATIC,
-		orientation: blue?.endOrientation ?? Orientation.IN,
-		turns: typeof blue?.turns === "number" ? blue.turns : 0,
-		rotationDirection: blue?.rotationDirection ?? RotationDirection.NO_ROTATION,
+	const leftHand: RetroHandData = {
+		color: HandSide.LEFT,
+		location: left?.startLocation ?? GridLocation.NORTH,
+		endLocation: left?.endLocation ?? GridLocation.NORTH,
+		motionType: left?.motionType ?? MotionType.STATIC,
+		orientation: left?.endOrientation ?? Orientation.IN,
+		turns: typeof left?.turns === "number" ? left.turns : 0,
+		rotationDirection: left?.rotationDirection ?? RotationDirection.NO_ROTATION,
 	};
-	const redHand: RetroHandData = {
-		color: MotionColor.RED,
-		location: red?.startLocation ?? GridLocation.SOUTH,
-		endLocation: red?.endLocation ?? GridLocation.SOUTH,
-		motionType: red?.motionType ?? MotionType.STATIC,
-		orientation: red?.endOrientation ?? Orientation.IN,
-		turns: typeof red?.turns === "number" ? red.turns : 0,
-		rotationDirection: red?.rotationDirection ?? RotationDirection.NO_ROTATION,
+	const rightHand: RetroHandData = {
+		color: HandSide.RIGHT,
+		location: right?.startLocation ?? GridLocation.SOUTH,
+		endLocation: right?.endLocation ?? GridLocation.SOUTH,
+		motionType: right?.motionType ?? MotionType.STATIC,
+		orientation: right?.endOrientation ?? Orientation.IN,
+		turns: typeof right?.turns === "number" ? right.turns : 0,
+		rotationDirection: right?.rotationDirection ?? RotationDirection.NO_ROTATION,
 	};
 
 	return {
 		letter: step.letter ?? "",
-		blueHand,
-		redHand,
+		leftHand,
+		rightHand,
 		gridMode: step.gridMode ?? GridMode.DIAMOND,
 		isBridge,
 	};
@@ -191,13 +191,13 @@ const ARROW_TEST_CASES: RetroPictographData[] = [
 	{
 		letter: "PRO CW",
 		gridMode: GridMode.DIAMOND,
-		blueHand: {
-			color: MotionColor.BLUE, location: GridLocation.WEST, endLocation: GridLocation.NORTH,
+		leftHand: {
+			color: HandSide.LEFT, location: GridLocation.WEST, endLocation: GridLocation.NORTH,
 			motionType: MotionType.PRO, orientation: Orientation.IN, turns: 1,
 			rotationDirection: RotationDirection.CLOCKWISE,
 		},
-		redHand: {
-			color: MotionColor.RED, location: GridLocation.EAST, endLocation: GridLocation.SOUTH,
+		rightHand: {
+			color: HandSide.RIGHT, location: GridLocation.EAST, endLocation: GridLocation.SOUTH,
 			motionType: MotionType.PRO, orientation: Orientation.IN, turns: 1,
 			rotationDirection: RotationDirection.CLOCKWISE,
 		},
@@ -205,13 +205,13 @@ const ARROW_TEST_CASES: RetroPictographData[] = [
 	{
 		letter: "ANTI CCW",
 		gridMode: GridMode.DIAMOND,
-		blueHand: {
-			color: MotionColor.BLUE, location: GridLocation.WEST, endLocation: GridLocation.NORTH,
+		leftHand: {
+			color: HandSide.LEFT, location: GridLocation.WEST, endLocation: GridLocation.NORTH,
 			motionType: MotionType.ANTI, orientation: Orientation.IN, turns: 1,
 			rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
 		},
-		redHand: {
-			color: MotionColor.RED, location: GridLocation.EAST, endLocation: GridLocation.SOUTH,
+		rightHand: {
+			color: HandSide.RIGHT, location: GridLocation.EAST, endLocation: GridLocation.SOUTH,
 			motionType: MotionType.ANTI, orientation: Orientation.IN, turns: 1,
 			rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
 		},
@@ -219,13 +219,13 @@ const ARROW_TEST_CASES: RetroPictographData[] = [
 	{
 		letter: "DASH",
 		gridMode: GridMode.DIAMOND,
-		blueHand: {
-			color: MotionColor.BLUE, location: GridLocation.WEST, endLocation: GridLocation.NORTH,
+		leftHand: {
+			color: HandSide.LEFT, location: GridLocation.WEST, endLocation: GridLocation.NORTH,
 			motionType: MotionType.DASH, orientation: Orientation.IN, turns: 0,
 			rotationDirection: RotationDirection.NO_ROTATION,
 		},
-		redHand: {
-			color: MotionColor.RED, location: GridLocation.EAST, endLocation: GridLocation.SOUTH,
+		rightHand: {
+			color: HandSide.RIGHT, location: GridLocation.EAST, endLocation: GridLocation.SOUTH,
 			motionType: MotionType.DASH, orientation: Orientation.IN, turns: 0,
 			rotationDirection: RotationDirection.NO_ROTATION,
 		},
@@ -233,13 +233,13 @@ const ARROW_TEST_CASES: RetroPictographData[] = [
 	{
 		letter: "PRO CCW",
 		gridMode: GridMode.DIAMOND,
-		blueHand: {
-			color: MotionColor.BLUE, location: GridLocation.NORTH, endLocation: GridLocation.EAST,
+		leftHand: {
+			color: HandSide.LEFT, location: GridLocation.NORTH, endLocation: GridLocation.EAST,
 			motionType: MotionType.PRO, orientation: Orientation.IN, turns: 1,
 			rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
 		},
-		redHand: {
-			color: MotionColor.RED, location: GridLocation.SOUTH, endLocation: GridLocation.WEST,
+		rightHand: {
+			color: HandSide.RIGHT, location: GridLocation.SOUTH, endLocation: GridLocation.WEST,
 			motionType: MotionType.PRO, orientation: Orientation.IN, turns: 1,
 			rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
 		},

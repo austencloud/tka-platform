@@ -6,15 +6,30 @@
  */
 
 import type { ISubInterpreter } from "../ISubInterpreter";
-import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../domain/voice-command-types";
+import type {
+  VoiceCommand,
+  VoiceCommandCategory,
+  CommandContext,
+} from "../../domain/voice-command-types";
 
 const UNDO_PHRASES = new Set(["undo", "go back one", "undo that"]);
 const REDO_PHRASES = new Set(["redo", "redo that"]);
-const CLEAR_PHRASES = new Set(["clear", "reset", "start over", "clear sequence"]);
+const CLEAR_PHRASES = new Set([
+  "clear",
+  "reset",
+  "start over",
+  "clear sequence",
+]);
 const SAVE_PHRASES = new Set(["save", "save sequence", "save to library"]);
 const MIRROR_PHRASES = new Set(["mirror", "mirror sequence"]);
 const FLIP_PHRASES = new Set(["flip", "flip sequence"]);
-const SWAP_PHRASES = new Set(["swap hands", "switch hands", "swap colors", "swap"]);
+// "swap colors" remains a spoken legacy alias; the operation swaps hand roles.
+const SWAP_PHRASES = new Set([
+  "swap hands",
+  "switch hands",
+  "swap colors",
+  "swap",
+]);
 const REVERSE_PHRASES = new Set(["reverse", "reverse sequence", "rewind"]);
 const ROTATE_PHRASES = new Set(["rotate", "rotate sequence"]);
 

@@ -22,7 +22,7 @@
    * those via the transform chain - so the props always sit on the visible
    * grid regardless of where the avatar is standing or which way it faces.
    *
-   * Scene3D also gets `avatarPositions=[footOffset]` so its internal Grid3D
+   * Scene3D also gets `characterPositions=[footOffset]` so its internal Grid3D
    * visual is rendered at the same rig-root offset we use for props.
    */
 
@@ -108,23 +108,23 @@
     };
   }
 
-  const bluePropState = $derived.by<PropState3D | null>(() => {
+  const leftPropState = $derived.by<PropState3D | null>(() => {
     const pose = labCtx.state.currentPose;
     if (!pose) return null;
     return buildPropState(
-      pose.blueHand.plane,
-      pose.blueHand.position,
-      pose.blueHand.orientation
+      pose.leftHand.plane,
+      pose.leftHand.position,
+      pose.leftHand.orientation
     );
   });
 
-  const redPropState = $derived.by<PropState3D | null>(() => {
+  const rightPropState = $derived.by<PropState3D | null>(() => {
     const pose = labCtx.state.currentPose;
     if (!pose) return null;
     return buildPropState(
-      pose.redHand.plane,
-      pose.redHand.position,
-      pose.redHand.orientation
+      pose.rightHand.plane,
+      pose.rightHand.position,
+      pose.rightHand.orientation
     );
   });
 
@@ -136,7 +136,7 @@
   const visiblePlanes = $derived.by<Set<Plane>>(() => {
     const pose = labCtx.state.currentPose;
     if (!pose) return new Set();
-    return new Set([pose.blueHand.plane, pose.redHand.plane]);
+    return new Set([pose.leftHand.plane, pose.rightHand.plane]);
   });
 
   // The reviewer drives these live via sliders in StanceControls. Because
@@ -154,7 +154,7 @@
   const facingAngle = $derived(labCtx.state.rootYawRad);
   const spinePitchOffset = $derived(labCtx.state.spinePitchRad);
 
-  // Scene3D's avatarPositions drives where its Grid3D visual is rendered.
+  // Scene3D's characterPositions drives where its Grid3D visual is rendered.
   // We want the grid to stay in world XZ (performer walks around it)
   // but to be lifted onto the stage deck alongside the performer,
   // otherwise the avatar's hands reach for prop targets floating below
@@ -164,8 +164,8 @@
   ];
 
   // PropAnchor refs - Avatar3D reads world positions from these for IK.
-  let bluePropAnchorRef = $state<Group | undefined>(undefined);
-  let redPropAnchorRef = $state<Group | undefined>(undefined);
+  let leftPropAnchorRef = $state<Group | undefined>(undefined);
+  let rightPropAnchorRef = $state<Group | undefined>(undefined);
 
   const SEVERITY_RANK: Record<"graze" | "clip" | "penetrate", number> = {
     graze: 1,
@@ -211,7 +211,7 @@
     showGrid={true}
     showLabels={false}
     {visiblePlanes}
-    avatarPositions={gridAnchorPositions}
+    characterPositions={gridAnchorPositions}
     backgroundType={BackgroundType.FOREST}
   >
     {#snippet children()}
@@ -220,18 +220,18 @@
         position={[footOffset.x, footOffset.y, footOffset.z]}
         rotation.y={facingAngle}
       >
-        {#if bluePropState && redPropState}
+        {#if leftPropState && rightPropState}
           <Avatar3D
-            {bluePropState}
-            {redPropState}
+            {leftPropState}
+            {rightPropState}
             position={{ x: 0, y: 0, z: 0 }}
             facingAngle={0}
             {spinePitchOffset}
             visible={true}
             isActive={false}
             enableLocomotion={false}
-            {bluePropAnchorRef}
-            {redPropAnchorRef}
+            {leftPropAnchorRef}
+            {rightPropAnchorRef}
             onCollisionEvents={handleCollisionEvents}
           />
         {/if}
@@ -258,24 +258,24 @@
         keep the target rings sitting on the raised deck.
       -->
       <T.Group position={[0, STAGE.STAGE_DECK_HEIGHT, GRID_FORWARD_OFFSET]}>
-        {#if bluePropState}
+        {#if leftPropState}
           <T.Group
-            bind:ref={bluePropAnchorRef}
-            position.x={bluePropState.worldPosition.x}
-            position.y={bluePropState.worldPosition.y}
-            position.z={bluePropState.worldPosition.z}
+            bind:ref={leftPropAnchorRef}
+            position.x={leftPropState.worldPosition.x}
+            position.y={leftPropState.worldPosition.y}
+            position.z={leftPropState.worldPosition.z}
           >
-            <Prop3D propType={toScenePropType(PropType.STAFF)} propState={bluePropState} color="blue" />
+            <Prop3D propType={toScenePropType(PropType.STAFF)} propState={leftPropState} color="blue" />
           </T.Group>
         {/if}
-        {#if redPropState}
+        {#if rightPropState}
           <T.Group
-            bind:ref={redPropAnchorRef}
-            position.x={redPropState.worldPosition.x}
-            position.y={redPropState.worldPosition.y}
-            position.z={redPropState.worldPosition.z}
+            bind:ref={rightPropAnchorRef}
+            position.x={rightPropState.worldPosition.x}
+            position.y={rightPropState.worldPosition.y}
+            position.z={rightPropState.worldPosition.z}
           >
-            <Prop3D propType={toScenePropType(PropType.STAFF)} propState={redPropState} color="red" />
+            <Prop3D propType={toScenePropType(PropType.STAFF)} propState={rightPropState} color="red" />
           </T.Group>
         {/if}
       </T.Group>

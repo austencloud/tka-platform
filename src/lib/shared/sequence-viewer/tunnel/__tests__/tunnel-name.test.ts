@@ -6,7 +6,7 @@ import type { TunnelSnapshot } from "../tunnel-snapshot";
 
 function performer(
   word: string,
-  overrides: Partial<TunnelPerformer> = {},
+  overrides: Partial<TunnelPerformer> = {}
 ): TunnelPerformer {
   return {
     id: `performer-${word}`,
@@ -26,7 +26,10 @@ function snapshot(overrides: Partial<TunnelSnapshot> = {}): TunnelSnapshot {
     tunnel: {
       config: { ...DEFAULT_CONFIG },
       gridVisible: false,
-      spectrum: false,
+      colors: {
+        mode: "hands",
+        custom: { left: "#2e8bf0", right: "#ed1c24" },
+      },
       section: "tunnel",
     },
     effects: { tipEffectMap: {} },
@@ -34,11 +37,11 @@ function snapshot(overrides: Partial<TunnelSnapshot> = {}): TunnelSnapshot {
     paths: {
       pathShape: "arc",
       motionAwarePaths: false,
-      bluePathLines: false,
-      redPathLines: false,
+      leftPathLines: false,
+      rightPathLines: false,
     },
     playback: { bpm: 120, playbackMode: "continuous" },
-    props: { bluePropType: "staff", redPropType: "staff" },
+    props: { leftPropType: "staff", rightPropType: "staff" },
     trailRender: {},
     ...overrides,
   } as TunnelSnapshot;
@@ -51,13 +54,13 @@ function configWith(overrides: Partial<TunnelConfig>): TunnelConfig {
 describe("deriveTunnelName", () => {
   it("names a plain tunnel by its word and formation", () => {
     expect(deriveTunnelName({ baseWord: "BBBA", snapshot: snapshot() })).toBe(
-      "BBBA Duo",
+      "BBBA Duo"
     );
   });
 
   it("collapses a repeated word to its seed", () => {
     expect(
-      deriveTunnelName({ baseWord: "FΨFΨFΨFΨ", snapshot: snapshot() }),
+      deriveTunnelName({ baseWord: "FΨFΨFΨFΨ", snapshot: snapshot() })
     ).toBe("FΨ Duo");
   });
 
@@ -92,7 +95,10 @@ describe("deriveTunnelName", () => {
         tunnel: {
           config: configWith({ fold: 8, staggerSteps: 2 }),
           gridVisible: false,
-          spectrum: false,
+          colors: {
+            mode: "hands",
+            custom: { left: "#2e8bf0", right: "#ed1c24" },
+          },
           section: "tunnel",
         },
       }),
@@ -104,19 +110,21 @@ describe("deriveTunnelName", () => {
     const withFans = deriveTunnelName({
       baseWord: "BBBA",
       snapshot: snapshot({
-        props: { bluePropType: "fan", redPropType: "fan" },
+        props: { leftPropType: "fan", rightPropType: "fan" },
       }),
     });
     expect(withFans).toBe("BBBA Duo on fans");
     expect(deriveTunnelName({ baseWord: "BBBA", snapshot: snapshot() })).toBe(
-      "BBBA Duo",
+      "BBBA Duo"
     );
   });
 
   it("distinguishes one shared effect from several", () => {
     const one = deriveTunnelName({
       baseWord: "BBBA",
-      snapshot: snapshot({ effects: { tipEffectMap: { "*": { effect: "fire" } } } } as never),
+      snapshot: snapshot({
+        effects: { tipEffectMap: { "*": { effect: "fire" } } },
+      } as never),
     });
     expect(one).toBe("BBBA Duo in fire");
 
@@ -138,7 +146,10 @@ describe("deriveTunnelName", () => {
         tunnel: {
           config: configWith({ speedOverrides: { 1: 2 } }),
           gridVisible: false,
-          spectrum: false,
+          colors: {
+            mode: "hands",
+            custom: { left: "#2e8bf0", right: "#ed1c24" },
+          },
           section: "tunnel",
         },
       }),
@@ -153,10 +164,13 @@ describe("deriveTunnelName", () => {
         tunnel: {
           config: configWith({ speedOverrides: { 1: 2 } }),
           gridVisible: false,
-          spectrum: false,
+          colors: {
+            mode: "hands",
+            custom: { left: "#2e8bf0", right: "#ed1c24" },
+          },
           section: "tunnel",
         },
-        props: { bluePropType: "fan", redPropType: "fan" },
+        props: { leftPropType: "fan", rightPropType: "fan" },
         effects: { tipEffectMap: { "*": { effect: "fire" } } },
       } as never),
     });
@@ -197,7 +211,7 @@ describe("describeTunnel", () => {
     const description = describeTunnel({
       composition: { performers: [performer("BBBA"), performer("ΩORZ")] },
       snapshot: snapshot({
-        props: { bluePropType: "fan", redPropType: "club" },
+        props: { leftPropType: "fan", rightPropType: "club" },
       }),
     });
     expect(description.words).toEqual(["BBBA", "ΩORZ"]);

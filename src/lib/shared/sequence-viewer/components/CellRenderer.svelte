@@ -33,7 +33,7 @@
     transitionMode: "crossfade" | "swap";
     isBrowseSoloMode: boolean;
     isMotionSoloMode: boolean;
-    soloColor: "blue" | "red" | undefined;
+    soloHand: "left" | "right" | undefined;
     stepNumFontSize: number;
     hasMixedDurations: boolean;
     formatDuration: (d: number) => string;
@@ -51,7 +51,7 @@
     transitionMode,
     isBrowseSoloMode,
     isMotionSoloMode,
-    soloColor,
+    soloHand,
     stepNumFontSize,
     hasMixedDurations,
     formatDuration,
@@ -131,7 +131,7 @@
         <span
           class="solo-turn-number"
           class:dark-mode={activeDarkMode}
-          style="color: {soloColor === 'blue'
+          style="color: {soloHand === 'left'
             ? 'var(--prop-blue, #2196f3)'
             : 'var(--prop-red, #f44336)'};"
           transition:fade|local={{ duration: 150 }}>{turnsLabel}</span

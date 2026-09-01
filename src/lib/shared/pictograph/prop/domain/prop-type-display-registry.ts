@@ -112,7 +112,7 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     },
 
     [PropType.HAND]: {
-      label: "Hand",
+      label: "Bare hands",
       image: "/images/props/buttons/hand.svg",
       category: "singles",
     },

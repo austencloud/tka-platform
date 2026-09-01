@@ -1,21 +1,21 @@
 export interface ScanPropProperties {
-  blue_prop: string | null;
-  red_prop: string | null;
+  left_prop: string | null;
+  right_prop: string | null;
   mixed_props: boolean | null;
 }
 
 /** Canonical compact prop identity used by scan, export, and super properties. */
 export function scanPropProperties(
-  blueProp: unknown,
-  redProp: unknown
+  leftProp: unknown,
+  rightProp: unknown
 ): ScanPropProperties {
-  const blue =
-    blueProp === null || blueProp === undefined ? null : String(blueProp);
-  const red =
-    redProp === null || redProp === undefined ? null : String(redProp);
+  const left =
+    leftProp === null || leftProp === undefined ? null : String(leftProp);
+  const right =
+    rightProp === null || rightProp === undefined ? null : String(rightProp);
   return {
-    blue_prop: blue,
-    red_prop: red,
-    mixed_props: blue !== null && red !== null ? blue !== red : null,
+    left_prop: left,
+    right_prop: right,
+    mixed_props: left !== null && right !== null ? left !== right : null,
   };
 }

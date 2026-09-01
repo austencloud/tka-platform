@@ -5,7 +5,7 @@ import type { PictographData, MotionData } from "../../../src/generation/constra
 
 function makeMotion(overrides: Partial<MotionData> = {}): MotionData {
   return {
-    color: "blue",
+    hand: "left",
     startLocation: "n",
     endLocation: "s",
     motionType: "pro",
@@ -23,8 +23,8 @@ function variation(start: string, end: string): PictographData {
     endPosition: end,
     timing: "together",
     direction: "together",
-    blueMotion: makeMotion({ color: "blue" }),
-    redMotion: makeMotion({ color: "red" }),
+    leftMotion: makeMotion({ hand: "left" }),
+    rightMotion: makeMotion({ hand: "right" }),
   };
 }
 

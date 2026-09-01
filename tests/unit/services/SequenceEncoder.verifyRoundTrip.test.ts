@@ -6,7 +6,7 @@ import {
   MotionType,
   RotationDirection,
   Orientation,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -22,15 +22,15 @@ describe("SequenceEncoder.verifyRoundTrip", () => {
           id: "step-1",
           stepNumber: 1,
           duration: 1,
-          blueReversal: false,
-          redReversal: false,
+          leftReversal: false,
+          rightReversal: false,
           isBlank: false,
           letter: null,
           startPosition: null,
           endPosition: null,
           motions: {
-            blue: createMotionData({
-              color: MotionColor.BLUE,
+            left: createMotionData({
+              hand: HandSide.LEFT,
               motionType: MotionType.ANTI,
               rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
               startLocation: GridLocation.SOUTH,
@@ -40,8 +40,8 @@ describe("SequenceEncoder.verifyRoundTrip", () => {
               turns: 0.5,
               propType: PropType.STAFF,
             }),
-            red: createMotionData({
-              color: MotionColor.RED,
+            right: createMotionData({
+              hand: HandSide.RIGHT,
               motionType: MotionType.STATIC,
               rotationDirection: RotationDirection.NO_ROTATION,
               startLocation: GridLocation.NORTH,

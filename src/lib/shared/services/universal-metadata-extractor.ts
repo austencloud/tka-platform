@@ -32,8 +32,8 @@ interface StepData {
   end_pos?: string;
   timing?: string;
   direction?: string;
-  blue_attributes?: Record<string, unknown>;
-  red_attributes?: Record<string, unknown>;
+  left_attributes?: Record<string, unknown>;
+  right_attributes?: Record<string, unknown>;
 }
 
 function buildSidecarPath(sequenceName: string): string {

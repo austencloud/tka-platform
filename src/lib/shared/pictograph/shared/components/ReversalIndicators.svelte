@@ -1,23 +1,22 @@
 <script lang="ts">
   import { getVisibilityStateManager } from "../state/visibility-state.svelte";
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
-  import { MotionColor } from "../domain/enums/pictograph-enums";
   import { onMount } from "svelte";
 
   let {
-    blueReversal = false,
-    redReversal = false,
+    leftReversal = false,
+    rightReversal = false,
     hasValidData = true,
     visible = true,
     previewMode = false,
     onToggle = undefined,
-    blueMotionVisible = true,
-    redMotionVisible = true,
+    leftMotionVisible = true,
+    rightMotionVisible = true,
   } = $props<{
     /** Whether to show blue reversal indicator */
-    blueReversal?: boolean;
+    leftReversal?: boolean;
     /** Whether to show red reversal indicator */
-    redReversal?: boolean;
+    rightReversal?: boolean;
     /** Whether the pictograph has valid data */
     hasValidData?: boolean;
     /** Visibility control for fade effect */
@@ -27,9 +26,9 @@
     /** Callback when glyph is clicked to toggle visibility */
     onToggle?: () => void;
     /** Blue motion visibility (dims dot when false) */
-    blueMotionVisible?: boolean;
+    leftMotionVisible?: boolean;
     /** Red motion visibility (dims dot when false) */
-    redMotionVisible?: boolean;
+    rightMotionVisible?: boolean;
   }>();
 
   // Get global visibility manager to respect motion visibility settings
@@ -64,20 +63,20 @@
   });
 
   // Show reversal dots based on data (visibility controls opacity, not presence)
-  const effectiveBlueReversal = $derived.by(() => {
+  const effectiveLeftReversal = $derived.by(() => {
     visibilityUpdateCount; // Force reactivity
-    return blueReversal;
+    return leftReversal;
   });
 
-  const effectiveRedReversal = $derived.by(() => {
+  const effectiveRightReversal = $derived.by(() => {
     visibilityUpdateCount; // Force reactivity
-    return redReversal;
+    return rightReversal;
   });
 
   // Per-dot opacity: dimmed when the corresponding motion is hidden
   const DIMMED_DOT_OPACITY = 0.2;
-  const blueDotOpacity = $derived(blueMotionVisible ? 1 : DIMMED_DOT_OPACITY);
-  const redDotOpacity = $derived(redMotionVisible ? 1 : DIMMED_DOT_OPACITY);
+  const leftDotOpacity = $derived(leftMotionVisible ? 1 : DIMMED_DOT_OPACITY);
+  const rightDotOpacity = $derived(rightMotionVisible ? 1 : DIMMED_DOT_OPACITY);
 
   // Only render if we have valid data, at least one reversal, AND when visible
   // NOTE: We check visibility here (not just CSS) because when exporting to SVG/image,
@@ -89,13 +88,13 @@
       return false;
     }
     const render =
-      hasValidData && (effectiveBlueReversal || effectiveRedReversal);
+      hasValidData && (effectiveLeftReversal || effectiveRightReversal);
     return render;
   });
 
   // Get motion colors from centralized cache
-  const BLUE_COLOR = $derived(cachedColors.blue);
-  const RED_COLOR = $derived(cachedColors.red);
+  const BLUE_COLOR = $derived(cachedColors.left);
+  const RED_COLOR = $derived(cachedColors.right);
 
   // Relative positioning - scales with pictograph size
   // Using percentages of the standard 1000px pictograph dimensions
@@ -112,22 +111,22 @@
   const DOT_SPACING = DOT_SPACING_PERCENT * 13; // Convert to 950px scale
 
   // Calculate vertical positions when both dots are present (after visibility filtering)
-  const redDotY = $derived.by(() => {
-    if (effectiveBlueReversal && effectiveRedReversal) {
+  const rightDotY = $derived.by(() => {
+    if (effectiveLeftReversal && effectiveRightReversal) {
       // Both present: stack vertically with fixed spacing around center
       return CENTER_Y - DOT_SPACING / 2;
-    } else if (effectiveRedReversal) {
+    } else if (effectiveRightReversal) {
       // Only red: center it
       return CENTER_Y;
     }
     return CENTER_Y;
   });
 
-  const blueDotY = $derived.by(() => {
-    if (effectiveBlueReversal && effectiveRedReversal) {
+  const leftDotY = $derived.by(() => {
+    if (effectiveLeftReversal && effectiveRightReversal) {
       // Both present: blue below red with fixed spacing
       return CENTER_Y + DOT_SPACING / 2;
-    } else if (effectiveBlueReversal) {
+    } else if (effectiveLeftReversal) {
       // Only blue: center it
       return CENTER_Y;
     }
@@ -137,27 +136,27 @@
   // Track reversal state changes to trigger CSS animations.
   // Use untracked previous values to avoid reactivity loops.
 
-  let prevBlue: boolean | null = null;
-  let prevRed: boolean | null = null;
-  let isBlueExiting = $state(false);
-  let isRedExiting = $state(false);
+  let prevLeft: boolean | null = null;
+  let prevRight: boolean | null = null;
+  let isLeftExiting = $state(false);
+  let isRightExiting = $state(false);
 
   // Blue dot state change detection
   $effect(() => {
-    const current = effectiveBlueReversal;
+    const current = effectiveLeftReversal;
     let timeout: ReturnType<typeof setTimeout> | undefined;
 
     // Skip initial mount
-    if (prevBlue === null) {
-      prevBlue = current;
-    } else if (prevBlue !== current) {
+    if (prevLeft === null) {
+      prevLeft = current;
+    } else if (prevLeft !== current) {
       // Only react to actual changes
-      if (prevBlue && !current) {
+      if (prevLeft && !current) {
         // Was visible, now hidden - trigger exit animation
-        isBlueExiting = true;
-        timeout = setTimeout(() => { isBlueExiting = false; }, 200);
+        isLeftExiting = true;
+        timeout = setTimeout(() => { isLeftExiting = false; }, 200);
       }
-      prevBlue = current;
+      prevLeft = current;
     }
 
     return () => { if (timeout) clearTimeout(timeout); };
@@ -165,20 +164,20 @@
 
   // Red dot state change detection
   $effect(() => {
-    const current = effectiveRedReversal;
+    const current = effectiveRightReversal;
     let timeout: ReturnType<typeof setTimeout> | undefined;
 
     // Skip initial mount
-    if (prevRed === null) {
-      prevRed = current;
-    } else if (prevRed !== current) {
+    if (prevRight === null) {
+      prevRight = current;
+    } else if (prevRight !== current) {
       // Only react to actual changes
-      if (prevRed && !current) {
+      if (prevRight && !current) {
         // Was visible, now hidden - trigger exit animation
-        isRedExiting = true;
-        timeout = setTimeout(() => { isRedExiting = false; }, 200);
+        isRightExiting = true;
+        timeout = setTimeout(() => { isRightExiting = false; }, 200);
       }
-      prevRed = current;
+      prevRight = current;
     }
 
     return () => { if (timeout) clearTimeout(timeout); };
@@ -186,7 +185,7 @@
 
   // For smooth exit animations, we need to keep dots in DOM but hide them with CSS
   // We use a delayed unmount pattern - keep component mounted briefly after reversals disappear
-  const hasAnyReversal = $derived(blueReversal || redReversal);
+  const hasAnyReversal = $derived(leftReversal || rightReversal);
 
   // Track if we should keep the component mounted for exit animation
   let keepMountedForExit = $state(false);
@@ -249,23 +248,23 @@
     <!-- Always render both dots, use CSS classes to animate in/out smoothly -->
     <circle
       class="reversal-dot red-dot"
-      class:dot-visible={effectiveRedReversal}
-      class:dot-exiting={isRedExiting}
+      class:dot-visible={effectiveRightReversal}
+      class:dot-exiting={isRightExiting}
       cx={X_POSITION}
-      cy={redDotY}
+      cy={rightDotY}
       r={DOT_RADIUS}
       fill={RED_COLOR}
-      style="transform-origin: {X_POSITION}px {redDotY}px; opacity: {effectiveRedReversal ? redDotOpacity : 0};"
+      style="transform-origin: {X_POSITION}px {rightDotY}px; opacity: {effectiveRightReversal ? rightDotOpacity : 0};"
     />
     <circle
       class="reversal-dot blue-dot"
-      class:dot-visible={effectiveBlueReversal}
-      class:dot-exiting={isBlueExiting}
+      class:dot-visible={effectiveLeftReversal}
+      class:dot-exiting={isLeftExiting}
       cx={X_POSITION}
-      cy={blueDotY}
+      cy={leftDotY}
       r={DOT_RADIUS}
       fill={BLUE_COLOR}
-      style="transform-origin: {X_POSITION}px {blueDotY}px; opacity: {effectiveBlueReversal ? blueDotOpacity : 0};"
+      style="transform-origin: {X_POSITION}px {leftDotY}px; opacity: {effectiveLeftReversal ? leftDotOpacity : 0};"
     />
   </g>
 {/if}

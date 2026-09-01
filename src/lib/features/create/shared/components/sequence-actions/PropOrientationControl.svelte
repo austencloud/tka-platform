@@ -11,7 +11,7 @@
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
   interface Props {
-    color: "blue" | "red";
+    hand: "left" | "right";
     orientation: string;
     onOrientationChange: (orientation: string) => void;
     /** Enable interradial orientations (Level 4). */
@@ -29,7 +29,7 @@
   }
 
   let {
-    color,
+    hand,
     orientation,
     onOrientationChange,
     showInterradial = false,
@@ -38,6 +38,9 @@
     disabled = false,
     ghostKind,
   }: Props = $props();
+
+  const tone = $derived(hand === "left" ? "blue" : "red");
+  const handLabel = $derived(hand === "left" ? "Left" : "Right");
 
   interface OrientationOption {
     value: string;
@@ -75,8 +78,8 @@
         label: option.label,
         // The label is short and ambiguous on its own — CW could be a rotation
         // direction anywhere. The full name is what a screen reader announces.
-        ariaLabel: `Set ${color} orientation to ${option.label}`,
-        tone: color,
+        ariaLabel: `Set ${hand} orientation to ${option.label}`,
+        tone,
         disabled,
       }))
   );
@@ -87,11 +90,11 @@
     {options}
     value={orientation}
     onchange={onOrientationChange}
-    {color}
+    color={tone}
     size="sm"
     density={compact ? "compact" : "standard"}
     semantics="radiogroup"
-    ariaLabel="{color === 'blue' ? 'Blue' : 'Red'} start orientation"
+    ariaLabel="{handLabel} start orientation"
     {ghostKind}
   />
 </div>

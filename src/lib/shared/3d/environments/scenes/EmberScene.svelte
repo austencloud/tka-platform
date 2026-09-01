@@ -22,6 +22,7 @@
   import VolcanicHaze from "./ember/VolcanicHaze.svelte";
   import HeatDistortion from "./ember/HeatDistortion.svelte";
   import EmberGroundDetail from "./ember/EmberGroundDetail.svelte";
+  import EmberPlumes from "./ember/EmberPlumes.svelte";
   import EmberSurfaceEcology from "./ember/EmberSurfaceEcology.svelte";
   import {
     type EmberSceneConfig,
@@ -216,11 +217,67 @@
   // only along the contour where the two graze, which renders as the thin
   // kinked bright slivers near the stage rather than as fissures. Re-cutting
   // them belongs to the asset; until then they contribute only the artifact.
+  // Measured against the slice: these are the only zero-thickness meshes it
+  // ships (h = 0.00 over footprints of 0.9m to 12.6m). Every other flat-looking
+  // form is real geology — the shelf surface is 0.10m over 17.1m, the strata
+  // 0.17-0.19m, the caldera banks 0.46-0.52m — and those descend monotonically
+  // outward, so none of them is a decal to hide.
   const BURIED_FISSURE_DECAL_ROLES = new Set(["cooled-fissure", "live-fissure"]);
+
+  // Highest priority first. A material shared by several roles takes the
+  // treatment of the strongest claim on it rather than the last one the
+  // traversal happened to reach.
+  const TREATMENT_PRECEDENCE = [
+    "playableSurface",
+    "mineral",
+    "meshyGeology",
+    "world",
+  ] as const;
+  type EmberTreatmentKey = (typeof TREATMENT_PRECEDENCE)[number];
+
+  function resolveTreatmentKey(
+    role: string | undefined,
+    materialName: string
+  ): EmberTreatmentKey {
+    if (
+      role === "playable-surface" ||
+      role === "playable-shelf" ||
+      role === "shelf-stratum" ||
+      role === "stage-crust-transition"
+    )
+      return "playableSurface";
+    if (role?.startsWith("meshy-")) return "meshyGeology";
+    if (
+      materialName.includes("iron-contact") ||
+      materialName.includes("windborne-ash") ||
+      materialName.includes("Mineral") ||
+      materialName.includes("Ash_Deposit")
+    )
+      return "mineral";
+    return "world";
+  }
+
+  // n successive lerps toward the same target land at this blend.
+  function compoundedBlend(blend: number, applications: number): number {
+    return 1 - Math.pow(1 - blend, applications);
+  }
 
   function handleProductionSliceReady(asset: Object3D): void {
     productionSliceAsset = asset;
     const treatments = activeConfig.atmosphere.materials;
+
+    // GLTFLoader hands out one material instance per glTF material index, so a
+    // per-mesh treatment loop lerps the same instance once per mesh that
+    // references it: roped-pahoehoe 20 times, iron-contact-crust 52. Colour and
+    // emissive keep that compounded strength — the blend below is the closed
+    // form of those repeats — but roughness, metalness and
+    // emissiveIntensity were compounding or last-write-wins across an arbitrary
+    // traversal order, which is not a look, it is a mesh count.
+    const routed = new Map<
+      MeshStandardMaterial,
+      Map<EmberTreatmentKey, number>
+    >();
+
     asset.traverse((child) => {
       const mesh = child as {
         isMesh?: boolean;
@@ -250,38 +307,42 @@
         : [mesh.material];
       for (const material of materials) {
         if (!material.isMeshStandardMaterial) continue;
-        const name = material.name;
-        const treatment =
-          role === "playable-surface" ||
-          role === "playable-shelf" ||
-          role === "shelf-stratum" ||
-          role === "stage-crust-transition"
-            ? treatments.playableSurface
-            : role?.startsWith("meshy-")
-              ? treatments.meshyGeology
-              : name.includes("iron-contact") ||
-                  name.includes("windborne-ash") ||
-                  name.includes("Mineral") ||
-                  name.includes("Ash_Deposit")
-                ? treatments.mineral
-                : treatments.world;
-        material.color.lerp(new Color(treatment.tint), treatment.tintBlend);
-        material.emissive.lerp(
-          new Color(treatment.emissive),
-          treatment.emissiveBlend
-        );
-        material.emissiveIntensity = treatment.emissiveIntensity;
-        material.roughness = Math.min(
-          1,
-          material.roughness * treatment.roughnessScale
-        );
-        material.metalness = Math.max(
-          0,
-          Math.min(1, material.metalness + treatment.metalnessAdd)
-        );
-        material.needsUpdate = true;
+        const key = resolveTreatmentKey(role, material.name);
+        const counts = routed.get(material) ?? new Map<EmberTreatmentKey, number>();
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+        routed.set(material, counts);
       }
     });
+
+    for (const [material, counts] of routed) {
+      for (const key of TREATMENT_PRECEDENCE) {
+        const applications = counts.get(key);
+        if (!applications) continue;
+        const treatment = treatments[key];
+        material.color.lerp(
+          new Color(treatment.tint),
+          compoundedBlend(treatment.tintBlend, applications)
+        );
+        material.emissive.lerp(
+          new Color(treatment.emissive),
+          compoundedBlend(treatment.emissiveBlend, applications)
+        );
+      }
+      const dominant = TREATMENT_PRECEDENCE.find((key) => counts.has(key));
+      if (!dominant) continue;
+      const treatment = treatments[dominant];
+      material.emissiveIntensity = treatment.emissiveIntensity;
+      material.roughness = Math.min(
+        1,
+        material.roughness * treatment.roughnessScale
+      );
+      material.metalness = Math.max(
+        0,
+        Math.min(1, material.metalness + treatment.metalnessAdd)
+      );
+      material.needsUpdate = true;
+    }
+
     asset.userData.emberAtmosphereLook = activeConfig.atmosphere.id;
     productionSliceProgress = 1;
   }
@@ -353,6 +414,7 @@
   <LavaRivers
     config={activeConfig.lavaRivers}
     poolPosition={activeConfig.lavaPool.position}
+    terrain={productionSliceAsset}
   />
 {/if}
 
@@ -467,6 +529,8 @@
     colors={activeConfig.embers.colors}
     sizeRange={activeConfig.embers.sizeRange}
     spin={activeConfig.embers.spin ?? false}
+    buoyant={activeConfig.embers.buoyant ?? false}
+    rangeFalloff={activeConfig.embers.rangeFalloff}
   />
 {/key}
 
@@ -481,6 +545,8 @@
       colors={activeConfig.ash.colors}
       sizeRange={activeConfig.ash.sizeRange}
       spin={activeConfig.ash.spin ?? false}
+      buoyant={activeConfig.ash.buoyant ?? false}
+      rangeFalloff={activeConfig.ash.rangeFalloff}
     />
   {/key}
 {/if}
@@ -496,6 +562,8 @@
       colors={activeConfig.smoke.colors}
       sizeRange={activeConfig.smoke.sizeRange}
       spin={activeConfig.smoke.spin ?? false}
+      buoyant={activeConfig.smoke.buoyant ?? false}
+      rangeFalloff={activeConfig.smoke.rangeFalloff}
     />
   {/key}
 {/if}
@@ -521,26 +589,14 @@
 {/if}
 
 <!-- Layered fumaroles stitch the playable shelf into the distant active caldera. -->
-{#each activeConfig.atmosphere.plumes as plume}
-  <T.Group
-    position.x={plume.position[0]}
-    position.y={groundY + plume.position[1]}
-    position.z={plume.position[2]}
-  >
-    <FallingParticles
-      type="smoke"
-      count={plume.count}
-      area={plume.area}
-      speed={plume.speed}
-      colors={plume.colors}
-      sizeRange={plume.sizeRange}
-      spin={false}
-      opacity={plume.opacity}
-      emissionShape="ellipse"
-      motionScale={plume.motionScale}
-    />
-  </T.Group>
-{/each}
+{#key activeConfig.atmosphere.id}
+  <EmberPlumes
+    plumes={activeConfig.atmosphere.plumes}
+    {groundY}
+    fogColor={activeConfig.fog.color}
+    fogDensity={activeConfig.fog.density}
+  />
+{/key}
 
 <T.PointLight
   position={[

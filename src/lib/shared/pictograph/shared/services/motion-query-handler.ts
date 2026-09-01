@@ -1,4 +1,4 @@
-import { MotionColor } from "../domain/enums/pictograph-enums";
+import { HandSide } from "../domain/enums/pictograph-enums";
 import { GridMode } from "../../grid/domain/enums/grid-enums";
 import type { MotionData } from "../domain/models/motion-data";
 import { createMotionData } from "../domain/models/motion-data";
@@ -135,10 +135,10 @@ export class MotionQueryHandler implements IMotionQueryHandler {
         const data = row;
         if (
           data.letter.toLowerCase().includes(lowerPattern) ||
-          data.blueMotionType.toLowerCase().includes(lowerPattern) ||
-          data.redMotionType.toLowerCase().includes(lowerPattern) ||
-          data.blueStartLocation.toLowerCase().includes(lowerPattern) ||
-          data.redStartLocation.toLowerCase().includes(lowerPattern)
+          data.leftMotionType.toLowerCase().includes(lowerPattern) ||
+          data.rightMotionType.toLowerCase().includes(lowerPattern) ||
+          data.leftStartLocation.toLowerCase().includes(lowerPattern) ||
+          data.rightStartLocation.toLowerCase().includes(lowerPattern)
         ) {
           const pictograph = this.csvPictographParser.parseCSVRowToPictograph(
             row as CSVRow,
@@ -178,7 +178,7 @@ export class MotionQueryHandler implements IMotionQueryHandler {
         try {
           const pictograph = this.csvPictographParser.parseCSVRowToPictograph(
             row as unknown as CSVRow,
-            effectiveMode 
+            effectiveMode
           );
           if (pictograph) {
             allPictographs.push(pictograph);
@@ -189,7 +189,6 @@ export class MotionQueryHandler implements IMotionQueryHandler {
             parseError
           );
         }
-
       }
 
       if (!sequence || sequence.length === 0) {
@@ -197,44 +196,43 @@ export class MotionQueryHandler implements IMotionQueryHandler {
       }
 
       const lastStep = sequence[sequence.length - 1] as PictographData;
-      if (!lastStep.motions.blue || !lastStep.motions.red) {
+      if (!lastStep.motions.left || !lastStep.motions.right) {
         console.warn(
           "⚠️ MotionQueryHandler: Last beat has no motion data, returning all options"
         );
         return allPictographs;
       }
 
-      const endBlueOrientation = lastStep.motions.blue.endOrientation;
-      const endRedOrientation = lastStep.motions.red.endOrientation;
-      const endBlueLocation = lastStep.motions.blue.endLocation;
-      const endRedLocation = lastStep.motions.red.endLocation;
+      const endLeftOrientation = lastStep.motions.left.endOrientation;
+      const endRightOrientation = lastStep.motions.right.endOrientation;
+      const endLeftLocation = lastStep.motions.left.endLocation;
+      const endRightLocation = lastStep.motions.right.endLocation;
 
       const transformedPictographs: PictographData[] = [];
 
       for (let i = 0; i < allPictographs.length; i++) {
         const pictograph = allPictographs[i];
-        if (!pictograph?.motions.blue || !pictograph.motions.red) {
+        if (!pictograph?.motions.left || !pictograph.motions.right) {
           continue;
         }
 
-        const startBlueLocation = pictograph.motions.blue.startLocation;
-        const startRedLocation = pictograph.motions.red.startLocation;
+        const startLeftLocation = pictograph.motions.left.startLocation;
+        const startRightLocation = pictograph.motions.right.startLocation;
 
         const canConnect =
-          startBlueLocation === endBlueLocation &&
-          startRedLocation === endRedLocation;
+          startLeftLocation === endLeftLocation &&
+          startRightLocation === endRightLocation;
 
         if (canConnect) {
           const transformedPictograph =
             this.transformPictographStartOrientation(
               pictograph,
-              endBlueOrientation,
-              endRedOrientation
+              endLeftOrientation,
+              endRightOrientation
             );
 
           transformedPictographs.push(transformedPictograph);
         }
-
       }
 
       if (transformedPictographs.length === 0) {
@@ -250,47 +248,47 @@ export class MotionQueryHandler implements IMotionQueryHandler {
         "❌ MotionQueryHandler: Error in getNextOptionsForSequence:",
         error
       );
-      throw error; 
+      throw error;
     }
   }
 
   private transformPictographStartOrientation(
     pictograph: PictographData,
-    targetBlueStartOrientation: Orientation,
-    targetRedStartOrientation: Orientation
+    targetLeftStartOrientation: Orientation,
+    targetRightStartOrientation: Orientation
   ): PictographData {
-    if (!pictograph.motions.blue || !pictograph.motions.red) {
+    if (!pictograph.motions.left || !pictograph.motions.right) {
       return pictograph;
     }
 
     const transformedPictograph: PictographData = {
       ...pictograph,
       motions: {
-        blue: { ...pictograph.motions.blue },
-        red: { ...pictograph.motions.red },
+        left: { ...pictograph.motions.left },
+        right: { ...pictograph.motions.right },
       },
     };
 
-    if (transformedPictograph.motions.blue) {
-      transformedPictograph.motions.blue = {
-        ...transformedPictograph.motions.blue,
-        startOrientation: targetBlueStartOrientation,
+    if (transformedPictograph.motions.left) {
+      transformedPictograph.motions.left = {
+        ...transformedPictograph.motions.left,
+        startOrientation: targetLeftStartOrientation,
         endOrientation: this.calculateTransformedEndOrientation(
-          transformedPictograph.motions.blue,
-          targetBlueStartOrientation,
-          MotionColor.BLUE
+          transformedPictograph.motions.left,
+          targetLeftStartOrientation,
+          HandSide.LEFT
         ),
       };
     }
 
-    if (transformedPictograph.motions.red) {
-      transformedPictograph.motions.red = {
-        ...transformedPictograph.motions.red,
-        startOrientation: targetRedStartOrientation,
+    if (transformedPictograph.motions.right) {
+      transformedPictograph.motions.right = {
+        ...transformedPictograph.motions.right,
+        startOrientation: targetRightStartOrientation,
         endOrientation: this.calculateTransformedEndOrientation(
-          transformedPictograph.motions.red,
-          targetRedStartOrientation,
-          MotionColor.RED
+          transformedPictograph.motions.right,
+          targetRightStartOrientation,
+          HandSide.RIGHT
         ),
       };
     }
@@ -301,7 +299,7 @@ export class MotionQueryHandler implements IMotionQueryHandler {
   private calculateTransformedEndOrientation(
     originalMotion: MotionData,
     newStartOrientation: Orientation,
-    color: MotionColor
+    color: HandSide
   ): Orientation {
     const transformedMotionData: MotionData = createMotionData({
       motionType: originalMotion.motionType,
@@ -309,23 +307,20 @@ export class MotionQueryHandler implements IMotionQueryHandler {
       startLocation: originalMotion.startLocation,
       endLocation: originalMotion.endLocation,
       turns: originalMotion.turns,
-      startOrientation: newStartOrientation, 
-      endOrientation: originalMotion.endOrientation, 
+      startOrientation: newStartOrientation,
+      endOrientation: originalMotion.endOrientation,
       isVisible: originalMotion.isVisible,
-      color: color,
+      hand: color,
       propType: originalMotion.propType,
       arrowLocation: originalMotion.arrowLocation,
     });
 
-    return calculateEndOrientation(
-      transformedMotionData,
-      color
-    );
+    return calculateEndOrientation(transformedMotionData, color);
   }
 
   async findLetterByMotionConfiguration(
-    blueMotion: MotionData,
-    redMotion: MotionData,
+    leftMotion: MotionData,
+    rightMotion: MotionData,
     gridMode: GridMode
   ): Promise<string | null> {
     await this.ensureInitialized();
@@ -366,83 +361,84 @@ export class MotionQueryHandler implements IMotionQueryHandler {
       return motion.motionType;
     };
 
-    const blueSearchMotion = {
-      ...blueMotion,
-      motionType: getSearchMotionType(blueMotion),
-      rotationDirection: isFabricatedPrefloat(blueMotion)
-        ? blueMotion.rotationDirection
-        : blueMotion.prefloatRotationDirection || blueMotion.rotationDirection,
+    const leftSearchMotion = {
+      ...leftMotion,
+      motionType: getSearchMotionType(leftMotion),
+      rotationDirection: isFabricatedPrefloat(leftMotion)
+        ? leftMotion.rotationDirection
+        : leftMotion.prefloatRotationDirection || leftMotion.rotationDirection,
     };
-    const redSearchMotion = {
-      ...redMotion,
-      motionType: getSearchMotionType(redMotion),
-      rotationDirection: isFabricatedPrefloat(redMotion)
-        ? redMotion.rotationDirection
-        : redMotion.prefloatRotationDirection || redMotion.rotationDirection,
+    const rightSearchMotion = {
+      ...rightMotion,
+      motionType: getSearchMotionType(rightMotion),
+      rotationDirection: isFabricatedPrefloat(rightMotion)
+        ? rightMotion.rotationDirection
+        : rightMotion.prefloatRotationDirection ||
+          rightMotion.rotationDirection,
     };
 
-    const blueIsFloatWithoutPrefloat =
-      blueMotion.motionType.toLowerCase() === "float" &&
-      (!blueMotion.prefloatMotionType || isFabricatedPrefloat(blueMotion));
-    const redIsFloatWithoutPrefloat =
-      redMotion.motionType.toLowerCase() === "float" &&
-      (!redMotion.prefloatMotionType || isFabricatedPrefloat(redMotion));
-    const blueAlternativeTypes =
-      blueIsFloatWithoutPrefloat && blueSearchMotion.motionType === "pro"
+    const leftIsFloatWithoutPrefloat =
+      leftMotion.motionType.toLowerCase() === "float" &&
+      (!leftMotion.prefloatMotionType || isFabricatedPrefloat(leftMotion));
+    const rightIsFloatWithoutPrefloat =
+      rightMotion.motionType.toLowerCase() === "float" &&
+      (!rightMotion.prefloatMotionType || isFabricatedPrefloat(rightMotion));
+    const leftAlternativeTypes =
+      leftIsFloatWithoutPrefloat && leftSearchMotion.motionType === "pro"
         ? ["pro", "anti"]
-        : [blueSearchMotion.motionType];
-    const redAlternativeTypes =
-      redIsFloatWithoutPrefloat && redSearchMotion.motionType === "pro"
+        : [leftSearchMotion.motionType];
+    const rightAlternativeTypes =
+      rightIsFloatWithoutPrefloat && rightSearchMotion.motionType === "pro"
         ? ["pro", "anti"]
-        : [redSearchMotion.motionType];
+        : [rightSearchMotion.motionType];
 
-    for (const blueType of blueAlternativeTypes) {
-      for (const redType of redAlternativeTypes) {
+    for (const leftType of leftAlternativeTypes) {
+      for (const rightType of rightAlternativeTypes) {
         for (const row of csvRows) {
-          const blueIgnoreRotation =
-            blueType.toLowerCase() === "static" ||
-            blueType.toLowerCase() === "dash" ||
-            blueIsFloatWithoutPrefloat;
-          const redIgnoreRotation =
-            redType.toLowerCase() === "static" ||
-            redType.toLowerCase() === "dash" ||
-            redIsFloatWithoutPrefloat;
+          const leftIgnoreRotation =
+            leftType.toLowerCase() === "static" ||
+            leftType.toLowerCase() === "dash" ||
+            leftIsFloatWithoutPrefloat;
+          const rightIgnoreRotation =
+            rightType.toLowerCase() === "static" ||
+            rightType.toLowerCase() === "dash" ||
+            rightIsFloatWithoutPrefloat;
 
-          const matchesBlueMotion =
-            row.blueMotionType.toLowerCase() === blueType.toLowerCase() &&
-            row.blueStartLocation.toLowerCase() ===
-              blueMotion.startLocation.toLowerCase() &&
-            row.blueEndLocation.toLowerCase() ===
-              blueMotion.endLocation.toLowerCase() &&
-            (blueIgnoreRotation ||
-              row.blueRotationDirection.toLowerCase() ===
-                blueSearchMotion.rotationDirection.toLowerCase());
+          const matchesLeftMotion =
+            row.leftMotionType.toLowerCase() === leftType.toLowerCase() &&
+            row.leftStartLocation.toLowerCase() ===
+              leftMotion.startLocation.toLowerCase() &&
+            row.leftEndLocation.toLowerCase() ===
+              leftMotion.endLocation.toLowerCase() &&
+            (leftIgnoreRotation ||
+              row.leftRotationDirection.toLowerCase() ===
+                leftSearchMotion.rotationDirection.toLowerCase());
 
-          const matchesRedMotion =
-            row.redMotionType.toLowerCase() === redType.toLowerCase() &&
-            row.redStartLocation.toLowerCase() ===
-              redMotion.startLocation.toLowerCase() &&
-            row.redEndLocation.toLowerCase() ===
-              redMotion.endLocation.toLowerCase() &&
-            (redIgnoreRotation ||
-              row.redRotationDirection.toLowerCase() ===
-                redSearchMotion.rotationDirection.toLowerCase());
+          const matchesRightMotion =
+            row.rightMotionType.toLowerCase() === rightType.toLowerCase() &&
+            row.rightStartLocation.toLowerCase() ===
+              rightMotion.startLocation.toLowerCase() &&
+            row.rightEndLocation.toLowerCase() ===
+              rightMotion.endLocation.toLowerCase() &&
+            (rightIgnoreRotation ||
+              row.rightRotationDirection.toLowerCase() ===
+                rightSearchMotion.rotationDirection.toLowerCase());
 
-          if (matchesBlueMotion && matchesRedMotion) {
+          if (matchesLeftMotion && matchesRightMotion) {
             return row.letter || null;
           }
         }
       }
     }
 
-    const blueDesc = blueMotion.prefloatMotionType
-      ? `${blueMotion.motionType}(was ${blueMotion.prefloatMotionType}) ${blueMotion.startLocation}->${blueMotion.endLocation} ${blueSearchMotion.rotationDirection}`
-      : `${blueMotion.motionType} ${blueMotion.startLocation}->${blueMotion.endLocation} ${blueSearchMotion.rotationDirection}`;
-    const redDesc = redMotion.prefloatMotionType
-      ? `${redMotion.motionType}(was ${redMotion.prefloatMotionType}) ${redMotion.startLocation}->${redMotion.endLocation} ${redSearchMotion.rotationDirection}`
-      : `${redMotion.motionType} ${redMotion.startLocation}->${redMotion.endLocation} ${redSearchMotion.rotationDirection}`;
+    const leftDesc = leftMotion.prefloatMotionType
+      ? `${leftMotion.motionType}(was ${leftMotion.prefloatMotionType}) ${leftMotion.startLocation}->${leftMotion.endLocation} ${leftSearchMotion.rotationDirection}`
+      : `${leftMotion.motionType} ${leftMotion.startLocation}->${leftMotion.endLocation} ${leftSearchMotion.rotationDirection}`;
+    const rightDesc = rightMotion.prefloatMotionType
+      ? `${rightMotion.motionType}(was ${rightMotion.prefloatMotionType}) ${rightMotion.startLocation}->${rightMotion.endLocation} ${rightSearchMotion.rotationDirection}`
+      : `${rightMotion.motionType} ${rightMotion.startLocation}->${rightMotion.endLocation} ${rightSearchMotion.rotationDirection}`;
     console.warn(
-      `⚠️ No letter found for motion configuration: Blue(${blueDesc}), Red(${redDesc})`
+      `⚠️ No letter found for motion configuration: Left(${leftDesc}), Right(${rightDesc})`
     );
     return null;
   }

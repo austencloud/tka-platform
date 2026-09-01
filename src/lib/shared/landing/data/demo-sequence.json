@@ -9,7 +9,7 @@
       "startPosition": "beta5",
       "endPosition": "beta7",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
@@ -20,7 +20,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "gridMode": "diamond",
           "arrowPlacementData": {
             "positionX": 0,
@@ -43,7 +43,7 @@
           "skewSteps": null,
           "skewDir": null
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
@@ -54,7 +54,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "color": "red",
+          "hand": "right",
           "gridMode": "diamond",
           "arrowPlacementData": {
             "positionX": 0,
@@ -80,8 +80,8 @@
       },
       "stepNumber": 1,
       "duration": 1,
-      "blueReversal": false,
-      "redReversal": false,
+      "leftReversal": false,
+      "rightReversal": false,
       "isBlank": false
     },
     {
@@ -90,7 +90,7 @@
       "startPosition": "beta7",
       "endPosition": "beta1",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
@@ -101,7 +101,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "gridMode": "diamond",
           "arrowPlacementData": {
             "positionX": 0,
@@ -124,7 +124,7 @@
           "skewSteps": null,
           "skewDir": null
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
@@ -135,7 +135,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "color": "red",
+          "hand": "right",
           "gridMode": "diamond",
           "arrowPlacementData": {
             "positionX": 0,
@@ -161,8 +161,8 @@
       },
       "stepNumber": 2,
       "duration": 1,
-      "blueReversal": false,
-      "redReversal": false,
+      "leftReversal": false,
+      "rightReversal": false,
       "isBlank": false
     },
     {
@@ -171,7 +171,7 @@
       "startPosition": "beta1",
       "endPosition": "beta3",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
@@ -182,7 +182,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "gridMode": "diamond",
           "arrowPlacementData": {
             "positionX": 0,
@@ -205,7 +205,7 @@
           "skewSteps": null,
           "skewDir": null
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
@@ -216,7 +216,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "color": "red",
+          "hand": "right",
           "gridMode": "diamond",
           "arrowPlacementData": {
             "positionX": 0,
@@ -242,8 +242,8 @@
       },
       "stepNumber": 3,
       "duration": 1,
-      "blueReversal": false,
-      "redReversal": false,
+      "leftReversal": false,
+      "rightReversal": false,
       "isBlank": false
     },
     {
@@ -252,7 +252,7 @@
       "startPosition": "beta3",
       "endPosition": "beta5",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
@@ -263,7 +263,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "gridMode": "diamond",
           "arrowPlacementData": {
             "positionX": 0,
@@ -286,7 +286,7 @@
           "skewSteps": null,
           "skewDir": null
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
@@ -297,7 +297,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "color": "red",
+          "hand": "right",
           "gridMode": "diamond",
           "arrowPlacementData": {
             "positionX": 0,
@@ -323,8 +323,8 @@
       },
       "stepNumber": 4,
       "duration": 1,
-      "blueReversal": false,
-      "redReversal": false,
+      "leftReversal": false,
+      "rightReversal": false,
       "isBlank": false
     },
     {
@@ -333,7 +333,7 @@
       "startPosition": "beta5",
       "endPosition": "beta7",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
@@ -344,7 +344,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "color": "blue",
+          "hand": "left",
           "gridMode": "diamond",
           "arrowPlacementData": {
             "positionX": 0,
@@ -367,7 +367,7 @@
           "skewSteps": null,
           "skewDir": null
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "s",
@@ -378,7 +378,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "w",
-          "color": "red",
+          "hand": "right",
           "gridMode": "diamond",
           "arrowPlacementData": {
             "positionX": 0,
@@ -404,8 +404,8 @@
       },
       "stepNumber": 5,
       "duration": 1,
-      "blueReversal": false,
-      "redReversal": false,
+      "leftReversal": false,
+      "rightReversal": false,
       "isBlank": false
     },
     {
@@ -414,7 +414,7 @@
       "startPosition": "beta7",
       "endPosition": "beta1",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
@@ -425,7 +425,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "color": "blue",
+          "hand": "left",
           "gridMode": "diamond",
           "arrowPlacementData": {
             "positionX": 0,
@@ -448,7 +448,7 @@
           "skewSteps": null,
           "skewDir": null
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "w",
@@ -459,7 +459,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "n",
-          "color": "red",
+          "hand": "right",
           "gridMode": "diamond",
           "arrowPlacementData": {
             "positionX": 0,
@@ -485,8 +485,8 @@
       },
       "stepNumber": 6,
       "duration": 1,
-      "blueReversal": false,
-      "redReversal": false,
+      "leftReversal": false,
+      "rightReversal": false,
       "isBlank": false
     },
     {
@@ -495,7 +495,7 @@
       "startPosition": "beta1",
       "endPosition": "beta3",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
@@ -506,7 +506,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "color": "blue",
+          "hand": "left",
           "gridMode": "diamond",
           "arrowPlacementData": {
             "positionX": 0,
@@ -529,7 +529,7 @@
           "skewSteps": null,
           "skewDir": null
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "n",
@@ -540,7 +540,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "e",
-          "color": "red",
+          "hand": "right",
           "gridMode": "diamond",
           "arrowPlacementData": {
             "positionX": 0,
@@ -566,8 +566,8 @@
       },
       "stepNumber": 7,
       "duration": 1,
-      "blueReversal": false,
-      "redReversal": false,
+      "leftReversal": false,
+      "rightReversal": false,
       "isBlank": false
     },
     {
@@ -576,7 +576,7 @@
       "startPosition": "beta3",
       "endPosition": "beta5",
       "motions": {
-        "blue": {
+        "left": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
@@ -587,7 +587,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "color": "blue",
+          "hand": "left",
           "gridMode": "diamond",
           "arrowPlacementData": {
             "positionX": 0,
@@ -610,7 +610,7 @@
           "skewSteps": null,
           "skewDir": null
         },
-        "red": {
+        "right": {
           "motionType": "pro",
           "rotationDirection": "cw",
           "startLocation": "e",
@@ -621,7 +621,7 @@
           "isVisible": true,
           "propType": "staff",
           "arrowLocation": "s",
-          "color": "red",
+          "hand": "right",
           "gridMode": "diamond",
           "arrowPlacementData": {
             "positionX": 0,
@@ -647,15 +647,15 @@
       },
       "stepNumber": 8,
       "duration": 1,
-      "blueReversal": false,
-      "redReversal": false,
+      "leftReversal": false,
+      "rightReversal": false,
       "isBlank": false
     }
   ],
   "gridMode": "diamond",
   "startPosition": {
     "motions": {
-      "red": {
+      "right": {
         "motionType": "static",
         "rotationDirection": "noRotation",
         "startLocation": "s",
@@ -666,7 +666,7 @@
         "isVisible": true,
         "propType": "staff",
         "arrowLocation": "s",
-        "color": "red",
+        "hand": "right",
         "gridMode": "diamond",
         "arrowPlacementData": {
           "positionX": 0,
@@ -689,7 +689,7 @@
         "skewSteps": null,
         "skewDir": null
       },
-      "blue": {
+      "left": {
         "motionType": "static",
         "rotationDirection": "noRotation",
         "startLocation": "s",
@@ -700,7 +700,7 @@
         "isVisible": true,
         "propType": "staff",
         "arrowLocation": "s",
-        "color": "blue",
+        "hand": "left",
         "gridMode": "diamond",
         "arrowPlacementData": {
           "positionX": 0,

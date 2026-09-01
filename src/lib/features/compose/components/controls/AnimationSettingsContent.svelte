@@ -24,32 +24,32 @@
 
   let {
     bpm = $bindable(60),
-    blueMotionVisible = true,
-    redMotionVisible = true,
+    leftMotionVisible = true,
+    rightMotionVisible = true,
     currentPropType = null,
     playbackMode = "continuous",
     stepPlaybackPauseMs = 300,
     stepPlaybackStepSize = 1,
     isPlaying = false,
     onBpmChange = () => {},
-    onToggleBlue = () => {},
-    onToggleRed = () => {},
+    onToggleLeft = () => {},
+    onToggleRight = () => {},
     onPlaybackModeChange = () => {},
     onStepPlaybackPauseMsChange = () => {},
     onStepPlaybackStepSizeChange = () => {},
     onPlaybackToggle = () => {},
   }: {
     bpm: number;
-    blueMotionVisible?: boolean;
-    redMotionVisible?: boolean;
+    leftMotionVisible?: boolean;
+    rightMotionVisible?: boolean;
     currentPropType?: PropType | string | null;
     playbackMode?: PlaybackMode;
     stepPlaybackPauseMs?: number;
     stepPlaybackStepSize?: StepPlaybackStepSize;
     isPlaying?: boolean;
     onBpmChange?: (bpm: number) => void;
-    onToggleBlue?: () => void;
-    onToggleRed?: () => void;
+    onToggleLeft?: () => void;
+    onToggleRight?: () => void;
     onPlaybackModeChange?: (mode: PlaybackMode) => void;
     onStepPlaybackPauseMsChange?: (pauseMs: number) => void;
     onStepPlaybackStepSizeChange?: (stepSize: StepPlaybackStepSize) => void;
@@ -75,12 +75,12 @@
     <section class="settings-section compact">
       <h4 class="settings-section-title">Motion Visibility</h4>
       <MotionColorChips
-        showBlue={blueMotionVisible}
-        showRed={redMotionVisible}
-        {onToggleBlue}
-        {onToggleRed}
-        blueLabel="Blue"
-        redLabel="Red"
+        showLeft={leftMotionVisible}
+        showRight={rightMotionVisible}
+        {onToggleLeft}
+        {onToggleRight}
+        leftLabel="Left"
+        rightLabel="Right"
         layout="column"
         showVisibilityIcons
       />
@@ -156,5 +156,4 @@
     letter-spacing: 0.5px;
     margin: 0;
   }
-
 </style>

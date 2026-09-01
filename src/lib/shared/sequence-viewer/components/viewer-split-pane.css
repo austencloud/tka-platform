@@ -196,31 +196,17 @@
   transition: opacity var(--transition-normal);
 }
 
-.split-view .viewer-3d-handoff-anchor {
-  position: absolute;
-  top: max(16px, 3cqh);
-  right: 0;
-  left: 0;
-  z-index: 6;
-  display: flex;
-  justify-content: center;
-  pointer-events: none;
-}
-
-.split-view .viewer-3d-handoff-status {
-  display: flex;
-  min-height: 36px;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
-  border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-  border-radius: 999px;
-  background: var(--theme-panel-bg, rgba(18, 18, 28, 0.96));
-  color: var(--theme-text, #f7f8fb);
-  box-shadow: var(--shadow-sm, 0 6px 18px rgba(0, 0, 0, 0.24));
-  font-size: var(--font-size-min, 14px);
-  font-weight: 600;
-  letter-spacing: 0.01em;
+/* While the first 3D scene boots, the live 2D stage is a continuity frame,
+   not a responsive destination. Keep it at the sharp width it already owned
+   and let the expanding workspace carry that frame to center. `max-width`
+   must be cleared because the generic media-pane child constraint would
+   otherwise squeeze it through PanelGroup's narrow departure frames. */
+.split-view .canvas-2d-layer.canvas-2d-preparation-held {
+  right: auto;
+  left: 50%;
+  width: var(--preparation-canvas-width);
+  max-width: none;
+  transform: translateX(-50%);
 }
 
 .split-view .practice-mirror-layer {

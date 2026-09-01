@@ -12,8 +12,8 @@ function snapshot(overrides: Partial<AssembleSnapshot> = {}): AssembleSnapshot {
     gridMode: "diamond",
     showCenter: false,
     startPoses: {},
-    blueSteps: [],
-    redSteps: [],
+    leftSteps: [],
+    rightSteps: [],
     currentPosition: null,
     currentOrientation: "in",
     rotationDirection: "noRotation",
@@ -34,7 +34,7 @@ describe("createAssembleHistoryTransition", () => {
       gridMode: "box",
       showCenter: true,
       startPoses: { blue: { location: "n", orientation: "in" } },
-      blueSteps: [
+      leftSteps: [
         {
           startPosition: "n",
           endPosition: "e",

@@ -45,59 +45,59 @@ export function resolveSessionHand(hand: QftSessionHand): QftTrajectory {
 }
 
 export interface ActiveQftHands {
-  blue: QftTrajectory;
-  red?: QftTrajectory;
+  left: QftTrajectory;
+  right?: QftTrajectory;
 }
 
 export function buildActiveHands(
   handCount: QftHandCount,
-  blueSelection: QftSessionHand,
-  redSelection: QftSessionHand,
+  leftSelection: QftSessionHand,
+  rightSelection: QftSessionHand,
   vtgMode: VtgMode,
   originPhase: number
 ): ActiveQftHands {
-  const blue = resolveSessionHand(blueSelection);
+  const left = resolveSessionHand(leftSelection);
 
   if (handCount === "one") {
-    return { blue: withTrajectoryPhase(blue, originPhase) };
+    return { left: withTrajectoryPhase(left, originPhase) };
   }
 
   const related = relateTrajectories(
-    blue,
-    resolveSessionHand(redSelection),
+    left,
+    resolveSessionHand(rightSelection),
     vtgMode
   );
   return {
-    blue: withTrajectoryPhase(related.blue, originPhase),
-    red: withTrajectoryPhase(related.red, originPhase),
+    left: withTrajectoryPhase(related.left, originPhase),
+    right: withTrajectoryPhase(related.right, originPhase),
   };
 }
 
 export function activeHandsAreValid(hands: ActiveQftHands): boolean {
   return (
-    hasValidReversalPositions(hands.blue) &&
-    (!hands.red || hasValidReversalPositions(hands.red))
+    hasValidReversalPositions(hands.left) &&
+    (!hands.right || hasValidReversalPositions(hands.right))
   );
 }
 
 export function validOriginPhases(
   handCount: QftHandCount,
-  blue: QftSessionHand,
-  red: QftSessionHand,
+  left: QftSessionHand,
+  right: QftSessionHand,
   vtgMode: VtgMode
 ): number[] {
   return Array.from({ length: 8 }, (_, phase) => phase).filter((phase) =>
-    activeHandsAreValid(buildActiveHands(handCount, blue, red, vtgMode, phase))
+    activeHandsAreValid(buildActiveHands(handCount, left, right, vtgMode, phase))
   );
 }
 
 export function validVtgModes(
-  blue: QftSessionHand,
-  red: QftSessionHand,
+  left: QftSessionHand,
+  right: QftSessionHand,
   originPhase: number
 ): VtgMode[] {
   return MODE_ORDER.filter((mode) =>
-    activeHandsAreValid(buildActiveHands("two", blue, red, mode, originPhase))
+    activeHandsAreValid(buildActiveHands("two", left, right, mode, originPhase))
   );
 }
 

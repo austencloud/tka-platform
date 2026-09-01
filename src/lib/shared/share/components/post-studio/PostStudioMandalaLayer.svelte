@@ -5,11 +5,11 @@
 
   interface Props {
     sequence: SequenceData;
-    bluePropType?: string;
-    redPropType?: string;
+    leftPropType?: string;
+    rightPropType?: string;
   }
 
-  let { sequence, bluePropType, redPropType }: Props = $props();
+  let { sequence, leftPropType, rightPropType }: Props = $props();
 
   // The viewer's own mandala pane, on the studio's shared controller — so shape,
   // spin, speed, colors, weight and depth in the inspector move this bloom.
@@ -28,8 +28,8 @@
     controlsPlacement="external"
     showDownload={false}
     {sequence}
-    {bluePropType}
-    {redPropType}
+    {leftPropType}
+    {rightPropType}
   />
 </div>
 

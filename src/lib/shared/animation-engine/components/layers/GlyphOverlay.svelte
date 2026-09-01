@@ -27,6 +27,11 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   import { deriveTnDFromPictograph } from "$lib/shared/pictograph/shared/domain/utils/tnd-deriver";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { motionDuration } from "$lib/shared/transitions/motion";
+  import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import {
+    calculateGlyphOverlayFrame,
+    type GlyphOverlayFrameMode,
+  } from "$lib/shared/animation-engine/domain/glyph-overlay-frame";
 
   let {
     // Current glyph state
@@ -40,6 +45,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     // Visibility
     tkaGlyphVisible = true,
     elementalGlyphVisible = false,
+    propElementalType = null,
     stepNumbersVisible = true,
     // Start→end position indicator (α/β/γ) centered at the top. Educational
     // overlay for the guide's hand-path exploration; off elsewhere.
@@ -50,6 +56,9 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     isAtStartPosition = false,
     // End position indicator - shows "End" in top-left when at end position (freeform sequences only)
     isAtEndPosition = false,
+    // Pictographs keep their canonical square. Stage embeds may let the four
+    // annotations use a rectangular frame while the motion plane stays square.
+    glyphFrame = "pictograph",
   }: {
     letter?: Letter | null;
     displayedLetter?: Letter | null;
@@ -59,12 +68,20 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     stepData?: PictographData | null;
     tkaGlyphVisible?: boolean;
     elementalGlyphVisible?: boolean;
+    propElementalType?: ElementalType | null;
     stepNumbersVisible?: boolean;
     positionGlyphVisible?: boolean;
     darkMode?: boolean;
     isAtStartPosition?: boolean;
     isAtEndPosition?: boolean;
+    glyphFrame?: GlyphOverlayFrameMode;
   } = $props();
+
+  let overlayWidth = $state(0);
+  let overlayHeight = $state(0);
+  const frame = $derived(
+    calculateGlyphOverlayFrame(glyphFrame, overlayWidth, overlayHeight)
+  );
 
   // Cross-fade duration in ms
   const FADE_DURATION = DURATION.normal;
@@ -126,6 +143,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   // The artwork itself is keyed by element. Consecutive steps that share the
   // same symbol stay visually steady; an actual symbol change crossfades once.
   const elementalKey = $derived(elementalInfo.elementalType);
+  const propElementalKey = $derived(propElementalType);
 
   // Current step's start/end grid positions (α/β/γ) for the PositionGlyph.
   // StepData carries both; StartPositionData/PictographData without them just
@@ -145,10 +163,17 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   );
 </script>
 
-<div class="glyph-overlay" class:dark-mode={darkMode} data-controlled="true">
+<div
+  class="glyph-overlay"
+  class:dark-mode={darkMode}
+  data-controlled="true"
+  data-glyph-frame={glyphFrame}
+  bind:clientWidth={overlayWidth}
+  bind:clientHeight={overlayHeight}
+>
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 950 950"
+    viewBox={`0 0 ${frame.width} ${frame.height}`}
     class="glyph-svg"
   >
     <!-- TKA Glyph with cross-fade using {#key} block -->
@@ -157,6 +182,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
       {#key glyphKey}
         <g
           class="glyph-group"
+          transform={`translate(0 ${frame.bottomOffset})`}
           in:fade={{
             duration: motionDuration(FADE_DURATION),
             easing: cubicOut,
@@ -198,6 +224,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
       {#key elementalKey}
         <g
           class="elemental-glyph-transition"
+          transform={`translate(${frame.rightOffset} ${frame.bottomOffset})`}
           in:fade|global={{
             duration: motionDuration(FADE_DURATION),
             easing: cubicOut,
@@ -216,6 +243,33 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
       {/key}
     {/if}
 
+    <!-- The hand relationship owns the bottom-right corner. Hosts with a fully
+         derived prop relationship can place its sister in the opposite corner
+         without adding another label to every pictograph. -->
+    {#if elementalGlyphVisible && propElementalType}
+      {#key propElementalKey}
+        <g
+          class="prop-elemental-glyph-transition"
+          transform={`translate(${frame.rightOffset} 0)`}
+          in:fade|global={{
+            duration: motionDuration(FADE_DURATION),
+            easing: cubicOut,
+          }}
+          out:fade|global={{
+            duration: motionDuration(FADE_DURATION),
+            easing: cubicOut,
+          }}
+        >
+          <ElementalGlyph
+            elementalType={propElementalType}
+            visible={true}
+            corner="top-right"
+            ariaLabel={`Prop timing and direction element: ${propElementalType}`}
+          />
+        </g>
+      {/key}
+    {/if}
+
     <!-- Start→end position (α/β/γ) centered at top. Stays put between steps;
          PositionGlyph's own pulse reacts only when the positions actually change. -->
     {#if positionGlyphVisible && positionKey && !isAtStartPosition}
@@ -224,7 +278,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
         endPosition={stepEndPosition as GridPosition}
         {letter}
         visible={true}
-        centerX={475}
+        centerX={frame.centerX}
       />
     {/if}
 
@@ -324,6 +378,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   @media (prefers-reduced-motion: reduce) {
     .glyph-group,
     .elemental-glyph-transition,
+    .prop-elemental-glyph-transition,
     .beat-number-group {
       transition: none !important;
       animation: none !important;

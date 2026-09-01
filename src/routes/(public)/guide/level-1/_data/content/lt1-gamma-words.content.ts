@@ -11,11 +11,14 @@ import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  GridMode,
+  GridLocation,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -28,8 +31,15 @@ const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
-const hpDir = (from: GridLocation, to: GridLocation) => (HP_CW.has(`${from}-${to}`) ? CW : CCW);
-const hand = (color: MotionColor, from: GridLocation, to: GridLocation, anti: boolean, so: Orientation) => {
+const hpDir = (from: GridLocation, to: GridLocation) =>
+  HP_CW.has(`${from}-${to}`) ? CW : CCW;
+const hand = (
+  color: HandSide,
+  from: GridLocation,
+  to: GridLocation,
+  anti: boolean,
+  so: Orientation
+) => {
   const dir = hpDir(from, to);
   return createMotionData({
     motionType: anti ? MotionType.ANTI : MotionType.PRO,
@@ -39,19 +49,19 @@ const hand = (color: MotionColor, from: GridLocation, to: GridLocation, anti: bo
     startOrientation: so,
     endOrientation: anti ? (so === IN ? OUT : IN) : so,
     turns: 0,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
 };
-const staticHand = (color: MotionColor, loc: GridLocation) =>
+const staticHand = (color: HandSide, loc: GridLocation) =>
   createMotionData({
     motionType: MotionType.STATIC,
     startLocation: loc,
     endLocation: loc,
     startOrientation: IN,
     endOrientation: IN,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
@@ -59,19 +69,19 @@ const staticHand = (color: MotionColor, loc: GridLocation) =>
 // ── The two loops: blue rides CW (Opp block) or CCW (Same block); red always
 // rides the CCW loop one step ahead - copied from GammaWordsPage.svelte. ───
 type Leg = [GridLocation, GridLocation];
-const BLUE_CW: Leg[] = [
+const LEFT_CW: Leg[] = [
   [SO_, W],
   [W, N],
   [N, E],
   [E, SO_],
 ];
-const RED_CCW: Leg[] = [
+const RIGHT_CCW: Leg[] = [
   [E, N],
   [N, W],
   [W, SO_],
   [SO_, E],
 ];
-const BLUE_CCW: Leg[] = [
+const LEFT_CCW: Leg[] = [
   [SO_, E],
   [E, N],
   [N, W],
@@ -83,37 +93,90 @@ type RowDef = {
   word: string;
   letters: Letter[];
   block: 0 | 1;
-  blueAnti: boolean;
-  redAnti: boolean;
+  leftAnti: boolean;
+  rightAnti: boolean;
 };
 const ROWS: RowDef[] = [
-  { key: "gw-mpmp", word: "MPMP", letters: [Letter.M, Letter.P, Letter.M, Letter.P], block: 0, blueAnti: false, redAnti: false },
-  { key: "gw-nqnq", word: "NQNQ", letters: [Letter.N, Letter.Q, Letter.N, Letter.Q], block: 0, blueAnti: true, redAnti: true },
-  { key: "gw-oror", word: "OROR", letters: [Letter.O, Letter.R, Letter.O, Letter.R], block: 0, blueAnti: true, redAnti: false },
-  { key: "gw-ssss", word: "SSSS", letters: [Letter.S, Letter.S, Letter.S, Letter.S], block: 1, blueAnti: false, redAnti: false },
-  { key: "gw-tttt", word: "TTTT", letters: [Letter.T, Letter.T, Letter.T, Letter.T], block: 1, blueAnti: true, redAnti: true },
-  { key: "gw-uuuu", word: "UUUU", letters: [Letter.U, Letter.U, Letter.U, Letter.U], block: 1, blueAnti: true, redAnti: false },
-  { key: "gw-vvvv", word: "VVVV", letters: [Letter.V, Letter.V, Letter.V, Letter.V], block: 1, blueAnti: false, redAnti: true },
+  {
+    key: "gw-mpmp",
+    word: "MPMP",
+    letters: [Letter.M, Letter.P, Letter.M, Letter.P],
+    block: 0,
+    leftAnti: false,
+    rightAnti: false,
+  },
+  {
+    key: "gw-nqnq",
+    word: "NQNQ",
+    letters: [Letter.N, Letter.Q, Letter.N, Letter.Q],
+    block: 0,
+    leftAnti: true,
+    rightAnti: true,
+  },
+  {
+    key: "gw-oror",
+    word: "OROR",
+    letters: [Letter.O, Letter.R, Letter.O, Letter.R],
+    block: 0,
+    leftAnti: true,
+    rightAnti: false,
+  },
+  {
+    key: "gw-ssss",
+    word: "SSSS",
+    letters: [Letter.S, Letter.S, Letter.S, Letter.S],
+    block: 1,
+    leftAnti: false,
+    rightAnti: false,
+  },
+  {
+    key: "gw-tttt",
+    word: "TTTT",
+    letters: [Letter.T, Letter.T, Letter.T, Letter.T],
+    block: 1,
+    leftAnti: true,
+    rightAnti: true,
+  },
+  {
+    key: "gw-uuuu",
+    word: "UUUU",
+    letters: [Letter.U, Letter.U, Letter.U, Letter.U],
+    block: 1,
+    leftAnti: true,
+    rightAnti: false,
+  },
+  {
+    key: "gw-vvvv",
+    word: "VVVV",
+    letters: [Letter.V, Letter.V, Letter.V, Letter.V],
+    block: 1,
+    leftAnti: false,
+    rightAnti: true,
+  },
 ];
 
-const legs = (r: RowDef, color: "blue" | "red", i: number): Leg =>
-  color === "red" ? RED_CCW[i]! : r.block === 0 ? BLUE_CW[i]! : BLUE_CCW[i]!;
+const legs = (r: RowDef, handSide: "left" | "right", i: number): Leg =>
+  handSide === "right"
+    ? RIGHT_CCW[i]!
+    : r.block === 0
+      ? LEFT_CW[i]!
+      : LEFT_CCW[i]!;
 
 const rowStep = (r: RowDef, i: number): StepData => {
-  const bl = legs(r, "blue", i);
-  const rl = legs(r, "red", i);
-  const bso = r.blueAnti ? (i % 2 === 0 ? IN : OUT) : IN;
-  const rso = r.redAnti ? (i % 2 === 0 ? IN : OUT) : IN;
+  const leftLeg = legs(r, "left", i);
+  const rightLeg = legs(r, "right", i);
+  const bso = r.leftAnti ? (i % 2 === 0 ? IN : OUT) : IN;
+  const rso = r.rightAnti ? (i % 2 === 0 ? IN : OUT) : IN;
   return {
     id: `${r.key}-s-${i + 1}`,
     letter: r.letters[i]!,
     gridMode: GridMode.DIAMOND,
-    startPosition: getGridPositionFromLocations(bl[0], rl[0]),
-    endPosition: getGridPositionFromLocations(bl[1], rl[1]),
+    startPosition: getGridPositionFromLocations(leftLeg[0], rightLeg[0]),
+    endPosition: getGridPositionFromLocations(leftLeg[1], rightLeg[1]),
     stepNumber: i + 1,
     motions: {
-      blue: hand(MotionColor.BLUE, bl[0], bl[1], r.blueAnti, bso),
-      red: hand(MotionColor.RED, rl[0], rl[1], r.redAnti, rso),
+      left: hand(HandSide.LEFT, leftLeg[0], leftLeg[1], r.leftAnti, bso),
+      right: hand(HandSide.RIGHT, rightLeg[0], rightLeg[1], r.rightAnti, rso),
     },
   } as unknown as StepData;
 };
@@ -127,8 +190,8 @@ const startBox = (block: 0 | 1): StepData =>
     startPosition: getGridPositionFromLocations(SO_, E),
     endPosition: getGridPositionFromLocations(SO_, E),
     motions: {
-      blue: staticHand(MotionColor.BLUE, SO_),
-      red: staticHand(MotionColor.RED, E),
+      left: staticHand(HandSide.LEFT, SO_),
+      right: staticHand(HandSide.RIGHT, E),
     },
   }) as unknown as StepData;
 
@@ -136,7 +199,10 @@ const startBox = (block: 0 | 1): StepData =>
 // showReversals off, so the strip is used directly - no bakeReversals needed
 // for the display.)
 const rowStrip = (r: RowDef): PictographData[] =>
-  [startBox(r.block), ...[0, 1, 2, 3].map((i) => rowStep(r, i))] as unknown as PictographData[];
+  [
+    startBox(r.block),
+    ...[0, 1, 2, 3].map((i) => rowStep(r, i)),
+  ] as unknown as PictographData[];
 
 /** STAFF props, TKA letter glyph on - matching GammaWordsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF } as const;

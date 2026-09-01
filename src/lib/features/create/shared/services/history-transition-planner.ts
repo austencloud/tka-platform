@@ -2,6 +2,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { UndoOperationType } from "./undo-manager";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export type HistoryDirection = "undo" | "redo" | "jump";
 
@@ -243,7 +244,7 @@ function sameValue(left: unknown, right: unknown): boolean {
 function motionPropVisual(motion: MotionData): unknown {
   return {
     isVisible: motion.isVisible,
-    color: motion.color,
+    color: motion.hand,
     propType: motion.propType,
     startLocation: motion.startLocation,
     endLocation: motion.endLocation,
@@ -260,7 +261,7 @@ function motionPropVisual(motion: MotionData): unknown {
 function motionArrowVisual(motion: MotionData): unknown {
   return {
     isVisible: motion.isVisible,
-    color: motion.color,
+    color: motion.hand,
     motionType: motion.motionType,
     prefloatMotionType: motion.prefloatMotionType,
     prefloatRotationDirection: motion.prefloatRotationDirection,
@@ -299,15 +300,15 @@ function getStepVisualChanges(
   if (from.isBlank !== to.isBlank) changes.add("visibility");
   if (
     from.letter !== to.letter ||
-    from.blueReversal !== to.blueReversal ||
-    from.redReversal !== to.redReversal ||
+    from.leftReversal !== to.leftReversal ||
+    from.rightReversal !== to.rightReversal ||
     from.category !== to.category ||
     from.betaSwapped !== to.betaSwapped
   ) {
     changes.add("notation");
   }
 
-  for (const color of ["blue", "red"] as const) {
+    for (const color of [HandSide.LEFT, HandSide.RIGHT] as const) {
     const fromMotion = from.motions?.[color];
     const toMotion = to.motions?.[color];
     if (!fromMotion || !toMotion) {

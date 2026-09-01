@@ -39,9 +39,9 @@
       : (renderer as unknown)
   ) as WebGLRenderer;
   const texturePaths: Record<keyof MaskedGroundDetailMaps, string> = {
-    red: "/textures/forest-floor/forest-ground-detail-neutral.jpg",
+    right: "/textures/forest-floor/forest-ground-detail-neutral.jpg",
     green: "/textures/forest-floor/forest-ground-detail-meadow.jpg",
-    blue: "/textures/forest-floor/forest-ground-detail-litter.jpg",
+    left: "/textures/forest-floor/forest-ground-detail-litter.jpg",
     fourth: "/textures/forest-floor/forest-ground-detail-damp.jpg",
   };
   let detailMaps = $state<Partial<MaskedGroundDetailMaps>>({});

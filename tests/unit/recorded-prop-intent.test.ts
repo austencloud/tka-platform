@@ -12,21 +12,21 @@ describe("recorded prop intent resolution", () => {
     const sequence = {
       creatorIntent: {
         propConfig: {
-          bluePropType: PropType.BUUGENG,
-          redPropType: PropType.BUUGENG,
+          leftPropType: PropType.BUUGENG,
+          rightPropType: PropType.BUUGENG,
           catDogMode: false,
         },
       },
       intendedProp: {
-        bluePropType: PropType.STAFF,
-        redPropType: PropType.STAFF,
+        leftPropType: PropType.STAFF,
+        rightPropType: PropType.STAFF,
         catDogMode: false,
       },
     } as SequenceData;
 
     expect(resolveRecordedPropConfig(sequence)).toEqual({
-      bluePropType: PropType.BUUGENG,
-      redPropType: PropType.BUUGENG,
+      leftPropType: PropType.BUUGENG,
+      rightPropType: PropType.BUUGENG,
       catDogMode: false,
     });
   });
@@ -35,15 +35,15 @@ describe("recorded prop intent resolution", () => {
     const sequence = {
       creatorIntent: { effortTimeline: null },
       intendedProp: {
-        bluePropType: PropType.CLUB,
-        redPropType: PropType.CLUB,
+        leftPropType: PropType.CLUB,
+        rightPropType: PropType.CLUB,
         catDogMode: false,
       },
     } as SequenceData;
 
     expect(resolveRecordedPropConfig(sequence)).toEqual({
-      bluePropType: PropType.CLUB,
-      redPropType: PropType.CLUB,
+      leftPropType: PropType.CLUB,
+      rightPropType: PropType.CLUB,
       catDogMode: false,
     });
   });
@@ -57,8 +57,8 @@ describe("recorded prop intent resolution", () => {
     const sequence = {
       creatorIntent: {
         propConfig: {
-          bluePropType: PropType.FAN,
-          redPropType: "not-a-prop",
+          leftPropType: PropType.FAN,
+          rightPropType: "not-a-prop",
           catDogMode: false,
         },
       },
@@ -71,16 +71,16 @@ describe("recorded prop intent resolution", () => {
     const sequence = {
       creatorIntent: {
         propConfig: {
-          bluePropType: PropType.BUUGENG,
-          redPropType: PropType.CLUB,
+          leftPropType: PropType.BUUGENG,
+          rightPropType: PropType.CLUB,
           catDogMode: false,
         },
       },
     } as SequenceData;
 
     expect(resolveRecordedPropConfig(sequence)).toEqual({
-      bluePropType: PropType.BUUGENG,
-      redPropType: PropType.CLUB,
+      leftPropType: PropType.BUUGENG,
+      rightPropType: PropType.CLUB,
       catDogMode: true,
     });
   });
@@ -90,8 +90,8 @@ describe("recorded prop intent resolution", () => {
       steps: [
         {
           motions: {
-            blue: { propType: PropType.TRIAD },
-            red: { propType: PropType.BUUGENG },
+            left: { propType: PropType.TRIAD },
+            right: { propType: PropType.BUUGENG },
           },
         },
       ],
@@ -105,26 +105,26 @@ describe("publication-moment capture from active settings", () => {
   it("captures the per-color pair and infers cat-dog for a mixed pair", () => {
     expect(
       captureActivePropConfig({
-        bluePropType: PropType.BUUGENG,
-        redPropType: PropType.CLUB,
+        leftPropType: PropType.BUUGENG,
+        rightPropType: PropType.CLUB,
         catDogMode: false,
       })
     ).toEqual({
-      bluePropType: PropType.BUUGENG,
-      redPropType: PropType.CLUB,
+      leftPropType: PropType.BUUGENG,
+      rightPropType: PropType.CLUB,
       catDogMode: true,
     });
   });
 
   it("falls back to the legacy single propType field, then staff", () => {
     expect(captureActivePropConfig({ propType: PropType.FAN })).toEqual({
-      bluePropType: PropType.FAN,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.FAN,
+      rightPropType: PropType.FAN,
       catDogMode: false,
     });
     expect(captureActivePropConfig({})).toEqual({
-      bluePropType: PropType.STAFF,
-      redPropType: PropType.STAFF,
+      leftPropType: PropType.STAFF,
+      rightPropType: PropType.STAFF,
       catDogMode: false,
     });
   });

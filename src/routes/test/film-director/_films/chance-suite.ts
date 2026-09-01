@@ -33,7 +33,7 @@ const ROLLABLE_EFFECTS = [
 ];
 
 export const chanceSuiteFilm: FilmDirectorInput = {
-  version: 3,
+  version: 5,
   id: "chance-suite-r1",
   title: "Chance Suite",
   brief:
@@ -55,12 +55,12 @@ export const chanceSuiteFilm: FilmDirectorInput = {
         cast: {
           count: 4,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: { pick: "any", from: ROLLABLE_PROPS },
             effect: { pick: "any", from: ROLLABLE_EFFECTS },
             effort: { pick: "any" },
-            bluePlane: { pick: "any" },
-            redPlane: { pick: "any" },
+            leftPlane: { pick: "any" },
+            rightPlane: { pick: "any" },
           },
         },
       },
@@ -79,11 +79,14 @@ export const chanceSuiteFilm: FilmDirectorInput = {
       id: "distinct-everything",
       title: "Distinct everything",
       intent:
-        "Five performers where the distinct draws guarantee no repeats: five different props exactly saturate the pool, and effects, efforts, and blue planes each differ across the cast.",
+        "Five performers where the distinct draws guarantee no repeats: five different props exactly saturate the pool, and effects, efforts, and left planes each differ across the cast.",
       durationSeconds: 10,
       transition: { kind: "environment-dissolve", durationSeconds: 0.9 },
       location: {
-        environmentId: { pick: "any", from: ["cosmic", "celestial", "rainbow"] },
+        environmentId: {
+          pick: "any",
+          from: ["cosmic", "celestial", "rainbow"],
+        },
         showStage: true,
       },
       performance: {
@@ -92,12 +95,12 @@ export const chanceSuiteFilm: FilmDirectorInput = {
         cast: {
           count: 5,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: { pick: "distinct", from: ROLLABLE_PROPS },
             effect: { pick: "distinct", from: ROLLABLE_EFFECTS },
             effort: { pick: "distinct" },
-            bluePlane: { pick: "distinct" },
-            redPlane: "wall",
+            leftPlane: { pick: "distinct" },
+            rightPlane: "wall",
           },
         },
       },
@@ -133,13 +136,13 @@ export const chanceSuiteFilm: FilmDirectorInput = {
         cast: {
           count: 6,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: PropType.CLUB,
             effect: { oneOf: ["fire", "led", "trails"] },
             effort: { pick: "any", from: ["glide", "press", "elastic"] },
             stepPlanes: [
-              { step: 4, hand: "blue", plane: { oneOf: ["wheel", "floor"] } },
-              { step: 4, hand: "red", plane: { not: "wall" } },
+              { step: 4, hand: "left", plane: { oneOf: ["wheel", "floor"] } },
+              { step: 4, hand: "right", plane: { not: "wall" } },
             ],
           },
           // Id-less overrides fill cast slots in order: a one-count canon
@@ -183,12 +186,12 @@ export const chanceSuiteFilm: FilmDirectorInput = {
         cast: {
           count: 8,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: { pick: "any", from: ROLLABLE_PROPS },
             effect: { pick: "any", from: ROLLABLE_EFFECTS },
             effort: { pick: "any" },
-            bluePlane: { pick: "any" },
-            redPlane: { pick: "any" },
+            leftPlane: { pick: "any" },
+            rightPlane: { pick: "any" },
           },
         },
       },

@@ -33,6 +33,12 @@
 
   let geometry = $state<SphereGeometry | undefined>(undefined);
 
+  // The dome is depth-tested, so its radius is a hard boundary: terrain nearer
+  // than the radius hides it, terrain further away is painted over additively.
+  // At 260 that boundary fell inside the world and cut a visible shell across
+  // the ridgelines — near hills went to fog, the ones just past the shell went
+  // to sky. The radius has to clear the furthest terrain from any camera so the
+  // dome is only ever sky and scene fog owns every metre of distance.
   $effect(() => {
     const nextGeometry = new SphereGeometry(config.radius, 32, 24);
     geometry = nextGeometry;
@@ -61,6 +67,8 @@
     uniform vec3 uUnderglowColor;
     uniform vec2 uUnderglowBearing;
     uniform float uUnderglowStrength;
+    uniform float uUnderglowFocus;
+    uniform float uUnderglowWrap;
     varying vec3 vHazeDirection;
 
     // 3D Simplex noise implementation
@@ -132,6 +140,14 @@
       float combined = n1 * 0.5 + n2 * 0.35 + n3 * 0.15;
       combined = pow(combined, 1.25);
 
+      // One eye-level profile shared by the wash, the cloud dissolve and the
+      // underglow. Two lobes: a broad one that fills the low sky and a tighter
+      // one that keeps the horizon itself the brightest part of the band. A
+      // single lobe either smears the glow up the dome or draws a hard line
+      // across it.
+      float band = exp(-pow(abs(dir.y) * 3.1, 1.5)) * 0.62
+        + exp(-pow(abs(dir.y) * 9.0, 1.6)) * 0.38;
+
       float lowAtmosphere = smoothstep(0.34, -0.32, dir.y);
       vec3 color = mix(uColor2, uColor1, lowAtmosphere * (0.5 + n2 * 0.32));
 
@@ -144,17 +160,20 @@
       // Cut visible cloud bodies out of the noise instead of tinting the whole
       // dome evenly. Three averaged noise layers land near 0.42 with a spread
       // of roughly 0.1, so the band has to sit across that distribution or the
-      // dome resolves to nothing at all.
-      float cloudBody = smoothstep(0.30, 0.58, combined);
-      float strata = 0.78 + snoise(
+      // dome resolves to nothing at all. Across the horizon band the cut
+      // dissolves back into the field: a hard-edged blob sitting on a ridgeline
+      // is what made the glow read as pooled paint rather than lit air.
+      float cloudBody = smoothstep(0.24, 0.64, combined);
+      cloudBody = mix(cloudBody, 0.28 + combined * 0.36, band);
+      float strata = 0.84 + snoise(
         vec3(dir.x * 7.0, dir.y * 1.4, dir.z * 7.0)
           + vec3(uTime * 0.018)
-      ) * 0.22;
+      ) * 0.16;
       float alpha = cloudBody * strata * uOpacity * topFade;
 
       // Horizon boost — volcanic glow at eye level
-      float horizonBoost = exp(-pow(abs(dir.y) * 3.6, 1.4)) * 0.42;
-      alpha += horizonBoost * uOpacity * (0.72 + combined * 0.28);
+      float horizonBoost = band * 0.44;
+      alpha += horizonBoost * uOpacity * (0.84 + combined * 0.16);
 
       // Warm underglow
       color = mix(color, vec3(0.46, 0.11, 0.015), bottomGlow * 0.42);
@@ -170,12 +189,16 @@
           : 0.5;
         // pow() is undefined for a negative base; rounding can push the dot
         // product a hair past -1.
-        float lateral = pow(clamp(bearing, 0.0, 1.0), 3.4);
-        float vertical = exp(-pow(max(dir.y, 0.0) * 3.2, 1.3));
-        // Modulated by the same cloud field, so the glow reads as light caught
-        // by layered haze rather than a painted gradient.
+        float lobe = pow(clamp(bearing, 0.0, 1.0), uUnderglowFocus);
+        // The caldera lobe rides on a floor that reaches every bearing. With no
+        // floor the half of the sky facing away from the vent received nothing
+        // at all, which is what left the sky above the terminus a void.
+        float lateral = mix(uUnderglowWrap, 1.0, lobe);
+        float vertical = exp(-pow(max(dir.y, 0.0) * 3.2, 1.3)) * (0.62 + band * 0.38);
+        // Light caught in layered haze still varies, but only enough to break
+        // the gradient. Heavier noise here is what pooled the glow into blobs.
         float underglow = lateral * vertical * uUnderglowStrength
-          * (0.55 + combined * 0.85);
+          * (0.82 + combined * 0.36);
         color += uUnderglowColor * underglow;
         alpha = clamp(alpha + underglow * 0.5, 0.0, 1.0);
       }
@@ -219,6 +242,8 @@
         },
         uUnderglowBearing: { value: underglowBearing(config) },
         uUnderglowStrength: { value: config.underglowStrength ?? 0 },
+        uUnderglowFocus: { value: config.underglowFocus ?? 3.4 },
+        uUnderglowWrap: { value: config.underglowWrap ?? 0 },
       },
       vertexShader,
       fragmentShader,
@@ -263,6 +288,8 @@
     );
     material.uniforms.uUnderglowBearing!.value = underglowBearing(config);
     material.uniforms.uUnderglowStrength!.value = config.underglowStrength ?? 0;
+    material.uniforms.uUnderglowFocus!.value = config.underglowFocus ?? 3.4;
+    material.uniforms.uUnderglowWrap!.value = config.underglowWrap ?? 0;
   });
 </script>
 

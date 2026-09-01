@@ -3,12 +3,19 @@ import type { TunnelConfig } from "./tunnel-config";
 import type { TunnelViewState } from "./tunnel-view-state";
 import type { EffectsConfig } from "$lib/shared/effects/domain/effects-config";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
-import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
+import {
+  normalizeLegacyTrailSettings,
+  type TrailSettings,
+} from "$lib/shared/animation-engine/domain/types/trail-types";
 import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { TunnelPresetRecipe } from "./tunnel-preset-recipe";
 import type { TunnelComposition, TunnelSaveTarget } from "./tunnel-composition";
+import {
+  resolveTunnelPropColorState,
+  type TunnelPropColorState,
+} from "./tunnel-prop-colors";
 
-export const SNAPSHOT_VERSION = 2;
+export const SNAPSHOT_VERSION = 3;
 
 type TunnelSection = TunnelViewState["section"];
 type PathShape = "arc" | "linear" | "concave";
@@ -20,7 +27,7 @@ export interface TunnelSnapshot {
   tunnel: {
     config: TunnelConfig;
     gridVisible: boolean;
-    spectrum: boolean;
+    colors: TunnelPropColorState;
     section: TunnelSection;
     /** Preserves which recipe the author started from without treating generated
      * copies as authored choreography. Null is honest for old/custom work. */
@@ -31,16 +38,16 @@ export interface TunnelSnapshot {
   paths: {
     pathShape: PathShape;
     motionAwarePaths: boolean;
-    bluePathLines: boolean;
-    redPathLines: boolean;
+    leftPathLines: boolean;
+    rightPathLines: boolean;
   };
   playback: { bpm: number; playbackMode: PlaybackMode };
   props: {
-    bluePropType: string;
-    redPropType: string;
+    leftPropType: string;
+    rightPropType: string;
     /** Optional only for snapshots saved before creator draft v4. */
-    blueBuugengFlipped?: boolean;
-    redBuugengFlipped?: boolean;
+    leftBuugengFlipped?: boolean;
+    rightBuugengFlipped?: boolean;
   };
   trailRender: TrailSettings;
 }
@@ -56,42 +63,145 @@ export type TunnelSavedCallback = (receipt: TunnelSaveReceipt) => void;
 // TunnelConfig / EffectsConfig / TrailSettings are large, internally-validated
 // shapes; the boundary schema guards the envelope + enums and passes the deep
 // blobs through as `z.any()` (same pattern mandala uses for nested StepData).
-export const TunnelSnapshotSchema = z.object({
-  version: z.number(),
-  tunnel: z.object({
-    config: z.any(),
-    gridVisible: z.boolean(),
-    spectrum: z.boolean(),
-    section: z.enum([
-      "tunnel",
-      "props",
-      "speed",
-      "effects",
-      "effort",
-      "playback",
-    ]),
-    presetRecipe: z.any().optional(),
-  }),
-  effects: z.any(),
-  effort: z.string(),
-  paths: z.object({
-    pathShape: z.enum(["arc", "linear", "concave"]),
-    motionAwarePaths: z.boolean(),
-    bluePathLines: z.boolean(),
-    redPathLines: z.boolean(),
-  }),
-  playback: z.object({
-    bpm: z.number(),
-    playbackMode: z.enum(["continuous", "step"]),
-  }),
-  props: z.object({
-    bluePropType: z.string(),
-    redPropType: z.string(),
-    blueBuugengFlipped: z.boolean().optional(),
-    redBuugengFlipped: z.boolean().optional(),
-  }),
-  trailRender: z.any(),
-});
+function record(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function hasOwn(value: Record<string, unknown> | null, key: string): boolean {
+  return value !== null && Object.prototype.hasOwnProperty.call(value, key);
+}
+
+function normalizeLegacyTunnelHands(value: unknown): unknown {
+  const snapshot = record(value);
+  const tunnel = record(snapshot?.tunnel);
+  const colors = record(tunnel?.colors);
+  const customColors = record(colors?.custom);
+  const paths = record(snapshot?.paths);
+  const props = record(snapshot?.props);
+
+  const hasLegacyFields =
+    hasOwn(customColors, "blue") ||
+    hasOwn(customColors, "red") ||
+    hasOwn(paths, "bluePathLines") ||
+    hasOwn(paths, "redPathLines") ||
+    hasOwn(props, "bluePropType") ||
+    hasOwn(props, "redPropType") ||
+    hasOwn(props, "blueBuugengFlipped") ||
+    hasOwn(props, "redBuugengFlipped");
+
+  if (!snapshot) return value;
+  const trailRender = normalizeLegacyTrailSettings(snapshot.trailRender);
+  if (!hasLegacyFields && trailRender === snapshot.trailRender) return value;
+
+  return {
+    ...snapshot,
+    ...(tunnel
+      ? {
+          tunnel: {
+            ...tunnel,
+            ...(colors
+              ? {
+                  colors: {
+                    ...colors,
+                    ...(customColors
+                      ? {
+                          custom: {
+                            ...customColors,
+                            left: customColors.left ?? customColors.blue,
+                            right: customColors.right ?? customColors.red,
+                          },
+                        }
+                      : {}),
+                  },
+                }
+              : {}),
+          },
+        }
+      : {}),
+    ...(paths
+      ? {
+          paths: {
+            ...paths,
+            leftPathLines: paths.leftPathLines ?? paths.bluePathLines,
+            rightPathLines: paths.rightPathLines ?? paths.redPathLines,
+          },
+        }
+      : {}),
+    ...(props
+      ? {
+          props: {
+            ...props,
+            leftPropType: props.leftPropType ?? props.bluePropType,
+            rightPropType: props.rightPropType ?? props.redPropType,
+            leftBuugengFlipped:
+              props.leftBuugengFlipped ?? props.blueBuugengFlipped,
+            rightBuugengFlipped:
+              props.rightBuugengFlipped ?? props.redBuugengFlipped,
+          },
+        }
+      : {}),
+    trailRender,
+  };
+}
+
+const RawTunnelSnapshotSchema = z.preprocess(
+  normalizeLegacyTunnelHands,
+  z
+    .object({
+      version: z.number(),
+      tunnel: z.object({
+        config: z.any(),
+        gridVisible: z.boolean(),
+        colors: z
+          .object({
+            mode: z.enum(["hands", "spectrum", "custom"]),
+            custom: z.object({ left: z.string(), right: z.string() }),
+          })
+          .optional(),
+        spectrum: z.boolean().optional(),
+        section: z.enum([
+          "tunnel",
+          "props",
+          "speed",
+          "effects",
+          "effort",
+          "playback",
+        ]),
+        presetRecipe: z.any().optional(),
+      }),
+      effects: z.any(),
+      effort: z.string(),
+      paths: z.object({
+        pathShape: z.enum(["arc", "linear", "concave"]),
+        motionAwarePaths: z.boolean(),
+        leftPathLines: z.boolean(),
+        rightPathLines: z.boolean(),
+      }),
+      playback: z.object({
+        bpm: z.number(),
+        playbackMode: z.enum(["continuous", "step"]),
+      }),
+      props: z.object({
+        leftPropType: z.string(),
+        rightPropType: z.string(),
+        leftBuugengFlipped: z.boolean().optional(),
+        rightBuugengFlipped: z.boolean().optional(),
+      }),
+      trailRender: z.any(),
+    })
+    .refine(
+      (snapshot) =>
+        snapshot.tunnel.colors !== undefined ||
+        snapshot.tunnel.spectrum !== undefined,
+      { message: "Tunnel snapshot requires colors or legacy spectrum state" }
+    )
+);
+
+export const TunnelSnapshotSchema = RawTunnelSnapshotSchema.transform(
+  (snapshot) => migrateTunnelSnapshot(snapshot as LegacyTunnelSnapshot)
+);
 
 import type { TunnelViewController } from "./tunnel-view-controller.svelte";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
@@ -105,15 +215,15 @@ export interface SnapshotDeps {
   effects: EffectsConfigState;
   visibility: AnimationVisibilityStateManager;
   settings: {
-    bluePropType: string;
-    redPropType: string;
-    blueBuugengFlipped?: boolean;
-    redBuugengFlipped?: boolean;
+    leftPropType: string;
+    rightPropType: string;
+    leftBuugengFlipped?: boolean;
+    rightBuugengFlipped?: boolean;
     updateSettings: (p: {
-      bluePropType?: string;
-      redPropType?: string;
-      blueBuugengFlipped?: boolean;
-      redBuugengFlipped?: boolean;
+      leftPropType?: string;
+      rightPropType?: string;
+      leftBuugengFlipped?: boolean;
+      rightBuugengFlipped?: boolean;
     }) => unknown;
   };
   animationSettings: AnimationSettingsState;
@@ -148,7 +258,7 @@ export function captureTunnelSnapshot(deps: SnapshotDeps): TunnelSnapshot {
     tunnel: {
       config: clone(controller.config),
       gridVisible: controller.gridVisible,
-      spectrum: controller.spectrum,
+      colors: controller.colors,
       section: controller.section,
       presetRecipe: controller.presetRecipe,
     },
@@ -157,15 +267,15 @@ export function captureTunnelSnapshot(deps: SnapshotDeps): TunnelSnapshot {
     paths: {
       pathShape: visibility.getPathShape(),
       motionAwarePaths: visibility.getMotionAwarePaths(),
-      bluePathLines: visibility.getVisibility("bluePathLines"),
-      redPathLines: visibility.getVisibility("redPathLines"),
+      leftPathLines: visibility.getVisibility("leftPathLines"),
+      rightPathLines: visibility.getVisibility("rightPathLines"),
     },
     playback: { bpm: getBpm(), playbackMode: animationPanel.playbackMode },
     props: {
-      bluePropType: settings.bluePropType,
-      redPropType: settings.redPropType,
-      blueBuugengFlipped: settings.blueBuugengFlipped ?? false,
-      redBuugengFlipped: settings.redBuugengFlipped ?? false,
+      leftPropType: settings.leftPropType,
+      rightPropType: settings.rightPropType,
+      leftBuugengFlipped: settings.leftBuugengFlipped ?? false,
+      rightBuugengFlipped: settings.rightBuugengFlipped ?? false,
     },
     trailRender: clone(animationSettings.trail),
   };
@@ -184,11 +294,11 @@ export function applyTunnelSnapshot(
     playback,
   } = deps;
 
-  // Tunnel topology + chrome (applyConfig clamps to the live budget; grid/spectrum/
-  // section are public $state fields on the controller).
+  // Tunnel topology + chrome (applyConfig clamps to the live budget; grid,
+  // colors, and section are public reactive fields on the controller).
   controller.applyConfig(snap.tunnel.config, snap.tunnel.presetRecipe ?? null);
   controller.gridVisible = snap.tunnel.gridVisible;
-  controller.spectrum = snap.tunnel.spectrum;
+  controller.colors = snap.tunnel.colors;
   controller.section = snap.tunnel.section;
 
   // Effects (its own capture/restore pair).
@@ -198,8 +308,8 @@ export function applyTunnelSnapshot(
   visibility.setEffortPreset(snap.effort);
   visibility.setPathShape(snap.paths.pathShape);
   visibility.setMotionAwarePaths(snap.paths.motionAwarePaths);
-  visibility.setVisibility("bluePathLines", snap.paths.bluePathLines);
-  visibility.setVisibility("redPathLines", snap.paths.redPathLines);
+  visibility.setVisibility("leftPathLines", snap.paths.leftPathLines);
+  visibility.setVisibility("rightPathLines", snap.paths.rightPathLines);
 
   // Trail render params (bulk trail set).
   animationSettings.updateSettings({ trail: snap.trailRender });
@@ -210,34 +320,58 @@ export function applyTunnelSnapshot(
 
   // Prop types.
   settings.updateSettings({
-    bluePropType: snap.props.bluePropType,
-    redPropType: snap.props.redPropType,
-    ...(snap.props.blueBuugengFlipped !== undefined
-      ? { blueBuugengFlipped: snap.props.blueBuugengFlipped }
+    leftPropType: snap.props.leftPropType,
+    rightPropType: snap.props.rightPropType,
+    ...(snap.props.leftBuugengFlipped !== undefined
+      ? { leftBuugengFlipped: snap.props.leftBuugengFlipped }
       : {}),
-    ...(snap.props.redBuugengFlipped !== undefined
-      ? { redBuugengFlipped: snap.props.redBuugengFlipped }
+    ...(snap.props.rightBuugengFlipped !== undefined
+      ? { rightBuugengFlipped: snap.props.rightBuugengFlipped }
       : {}),
   });
 }
 
-/** Converts the one earlier snapshot shape without claiming it had a preset
- * recipe. The performed configuration is copied verbatim. */
+interface LegacyTunnelSnapshot extends Omit<TunnelSnapshot, "tunnel"> {
+  tunnel: Omit<TunnelSnapshot["tunnel"], "colors"> & {
+    colors?: unknown;
+    spectrum?: boolean;
+  };
+}
+
+/** Converts earlier snapshot shapes without changing their performed look.
+ * Version 1 gains honest null recipe provenance; version 2's spectrum boolean
+ * becomes the explicit color mode. Exact values are normalized on every read. */
 export function migrateTunnelSnapshot(
-  snapshot: TunnelSnapshot
+  snapshot: TunnelSnapshot | LegacyTunnelSnapshot
 ): TunnelSnapshot {
+  const legacySpectrum =
+    "spectrum" in snapshot.tunnel ? snapshot.tunnel.spectrum : undefined;
+  const {
+    spectrum: _legacySpectrum,
+    colors,
+    ...tunnel
+  } = snapshot.tunnel as LegacyTunnelSnapshot["tunnel"];
+  const resolvedColors = resolveTunnelPropColorState(colors, legacySpectrum);
   if (
     snapshot.version >= SNAPSHOT_VERSION &&
-    "presetRecipe" in snapshot.tunnel
+    !("spectrum" in snapshot.tunnel) &&
+    "presetRecipe" in snapshot.tunnel &&
+    snapshot.tunnel.colors.mode === resolvedColors.mode &&
+    snapshot.tunnel.colors.custom.left === resolvedColors.custom.left &&
+    snapshot.tunnel.colors.custom.right === resolvedColors.custom.right
   ) {
-    return snapshot;
+    return snapshot as TunnelSnapshot;
   }
   return {
     ...snapshot,
     version: SNAPSHOT_VERSION,
     tunnel: {
-      ...snapshot.tunnel,
-      presetRecipe: null,
+      ...tunnel,
+      colors: resolvedColors,
+      presetRecipe:
+        "presetRecipe" in snapshot.tunnel
+          ? (snapshot.tunnel.presetRecipe ?? null)
+          : null,
     },
   };
 }

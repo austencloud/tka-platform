@@ -14,14 +14,14 @@ export interface ParsedCsvRow {
   endPosition: string;
   timing: string;
   direction: string;
-  blueMotionType: string;
-  blueRotationDirection: string;
-  blueStartLocation: string;
-  blueEndLocation: string;
-  redMotionType: string;
-  redRotationDirection: string;
-  redStartLocation: string;
-  redEndLocation: string;
+  leftMotionType: string;
+  leftRotationDirection: string;
+  leftStartLocation: string;
+  leftEndLocation: string;
+  rightMotionType: string;
+  rightRotationDirection: string;
+  rightStartLocation: string;
+  rightEndLocation: string;
   // Add index signature to make it compatible with Record<string, string>
   [key: string]: string;
 }

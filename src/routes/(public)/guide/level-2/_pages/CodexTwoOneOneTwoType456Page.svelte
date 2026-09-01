@@ -117,8 +117,8 @@
           <PictographContainer
             pictographData={cell.data}
             gridMode={GridMode.DIAMOND}
-            bluePropTypeOverride={PropType.STAFF}
-            redPropTypeOverride={PropType.STAFF}
+            leftPropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
             {...PICTO_FLAGS}
           />
         {/if}

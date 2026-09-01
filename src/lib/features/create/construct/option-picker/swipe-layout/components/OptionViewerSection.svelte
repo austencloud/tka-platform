@@ -307,7 +307,7 @@ Renders a section with:
   function toPictographData(
     pictographWithReversals: PictographWithReversals
   ): PictographData {
-    const { blueReversal, redReversal, ...pictographData } =
+    const { leftReversal, rightReversal, ...pictographData } =
       pictographWithReversals;
     return pictographData as PictographData;
   }
@@ -396,8 +396,8 @@ Renders a section with:
         >
           <OptionPictographCell
             pictographData={pictograph as PreparedPictographData}
-            blueReversal={pictograph.blueReversal || false}
-            redReversal={pictograph.redReversal || false}
+            leftReversal={pictograph.leftReversal || false}
+            rightReversal={pictograph.rightReversal || false}
           />
         </button>
       {/each}
@@ -468,6 +468,7 @@ Renders a section with:
   /* Desktop hover - only on hover-capable devices */
   @media (hover: hover) {
     .pictograph-option:hover {
+      z-index: 1;
       transform: scale(1.05);
       filter: brightness(1.05);
       box-shadow: var(--option-card-shadow-hover);

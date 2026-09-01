@@ -13,10 +13,13 @@ export interface ElementalGlyphBox {
   height: number;
 }
 
+export type ElementalGlyphCorner = "top-right" | "bottom-right";
+
 /** Scale the canonical pictograph slot to any square canvas. */
 export function getElementalGlyphBox(
   canvasSize: number,
-  xOffset = 0
+  xOffset = 0,
+  corner: ElementalGlyphCorner = "bottom-right"
 ): ElementalGlyphBox {
   const scale = canvasSize / ELEMENTAL_GLYPH_VIEWBOX_SIZE;
   return {
@@ -27,10 +30,11 @@ export function getElementalGlyphBox(
         xOffset) *
       scale,
     y:
-      (ELEMENTAL_GLYPH_VIEWBOX_SIZE -
-        ELEMENTAL_GLYPH_LAYOUT.height -
-        ELEMENTAL_GLYPH_LAYOUT.inset) *
-      scale,
+      (corner === "top-right"
+        ? ELEMENTAL_GLYPH_LAYOUT.inset
+        : ELEMENTAL_GLYPH_VIEWBOX_SIZE -
+          ELEMENTAL_GLYPH_LAYOUT.height -
+          ELEMENTAL_GLYPH_LAYOUT.inset) * scale,
     width: ELEMENTAL_GLYPH_LAYOUT.width * scale,
     height: ELEMENTAL_GLYPH_LAYOUT.height * scale,
   };

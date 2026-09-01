@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { countDirectionReversals, getReversalCount } from "./reversal-checker";
+import {
+  countDirectionReversals,
+  filterDirectionContinuousOptions,
+  getReversalCount,
+} from "./reversal-checker";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
@@ -8,21 +12,21 @@ import {
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 function step(
-  blueDir: RotationDirection,
-  redDir = RotationDirection.NO_ROTATION
+  leftDir: RotationDirection,
+  rightDir = RotationDirection.NO_ROTATION
 ): PictographData {
   return {
     letter: "X",
     motions: {
-      blue: createMotionData({
+      left: createMotionData({
         motionType: MotionType.DASH,
-        rotationDirection: blueDir,
-        turns: blueDir === RotationDirection.NO_ROTATION ? 0 : 2,
+        rotationDirection: leftDir,
+        turns: leftDir === RotationDirection.NO_ROTATION ? 0 : 2,
       }),
-      red: createMotionData({
+      right: createMotionData({
         motionType: MotionType.DASH,
-        rotationDirection: redDir,
-        turns: redDir === RotationDirection.NO_ROTATION ? 0 : 2,
+        rotationDirection: rightDir,
+        turns: rightDir === RotationDirection.NO_ROTATION ? 0 : 2,
       }),
     },
   } as unknown as PictographData;
@@ -40,8 +44,8 @@ function floatStep(prefloatDirection: RotationDirection): PictographData {
   return {
     letter: "M",
     motions: {
-      blue: motion,
-      red: createMotionData({
+      left: motion,
+      right: createMotionData({
         motionType: MotionType.STATIC,
         rotationDirection: RotationDirection.NO_ROTATION,
         turns: 0,
@@ -93,5 +97,35 @@ describe("countDirectionReversals", () => {
     expect(
       getReversalCount(floatStep(RotationDirection.COUNTER_CLOCKWISE), [prev])
     ).toBe(1);
+  });
+});
+
+describe("filterDirectionContinuousOptions", () => {
+  it("reports only the options hidden by direction continuity", () => {
+    const previous = step(RotationDirection.CLOCKWISE);
+    const matching = step(RotationDirection.CLOCKWISE);
+    const reversing = step(RotationDirection.COUNTER_CLOCKWISE);
+
+    const result = filterDirectionContinuousOptions(
+      [matching, reversing],
+      [previous]
+    );
+
+    expect(result.options).toEqual([matching]);
+    expect(result.totalCount).toBe(2);
+    expect(result.hiddenCount).toBe(1);
+  });
+
+  it("keeps every option when there is no prior direction context", () => {
+    const options = [
+      step(RotationDirection.CLOCKWISE),
+      step(RotationDirection.COUNTER_CLOCKWISE),
+    ];
+
+    const result = filterDirectionContinuousOptions(options);
+
+    expect(result.options).toEqual(options);
+    expect(result.totalCount).toBe(2);
+    expect(result.hiddenCount).toBe(0);
   });
 });

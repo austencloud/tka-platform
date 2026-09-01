@@ -107,10 +107,10 @@ export class CellPreWarmer {
   }
 
   private buildRenderOptions(): PreviewCellRenderOptions {
-    const bluePropType = settingsService.settings.bluePropType;
-    const redPropType = settingsService.settings.redPropType;
+    const leftPropType = settingsService.settings.leftPropType;
+    const rightPropType = settingsService.settings.rightPropType;
     const catDogMode = settingsService.settings.catDogMode;
-    const catDogModeEnabled = isCatDogMode(bluePropType, redPropType, catDogMode);
+    const catDogModeEnabled = isCatDogMode(leftPropType, rightPropType, catDogMode);
     const vm = getVisibilityStateManager();
 
     // Mirror ChoreoCard's canonical render options EXACTLY — same VM source, same
@@ -120,11 +120,11 @@ export class CellPreWarmer {
     // baked grid:true into the pre-warm key and never hit.)
     return buildCellRenderOptions({
       cellSize: 240,
-      bluePropType,
-      redPropType,
+      leftPropType,
+      rightPropType,
       catDogModeEnabled,
-      blueBuugengFlipped: settingsService.settings.blueBuugengFlipped ?? false,
-      redBuugengFlipped: settingsService.settings.redBuugengFlipped ?? false,
+      leftBuugengFlipped: settingsService.settings.leftBuugengFlipped ?? false,
+      rightBuugengFlipped: settingsService.settings.rightBuugengFlipped ?? false,
       showNonRadial: vm.getNonRadialVisibility(),
       showGrid: vm.getGridVisibility(),
       handPointVis: vm.getHandPointVisibility(),
@@ -136,8 +136,8 @@ export class CellPreWarmer {
       isSoloMode: false,
       handPathMode: false,
       browseViewMode: undefined,
-      showBlueMotion: true,
-      showRedMotion: true,
+      showLeftMotion: true,
+      showRightMotion: true,
     });
   }
 
@@ -241,12 +241,12 @@ export class CellPreWarmer {
 
     const prepared = await pictographPreparer.prepareSingle(task.pictographData, {
       themeMode: task.isDark ? "dark" : "light",
-      bluePropType: options.bluePropType,
-      redPropType: options.catDogModeEnabled
-        ? options.redPropType
-        : options.bluePropType,
-      showBlueMotion: options.showBlueMotion,
-      showRedMotion: options.showRedMotion,
+      leftPropType: options.leftPropType,
+      rightPropType: options.catDogModeEnabled
+        ? options.rightPropType
+        : options.leftPropType,
+      showLeftMotion: options.showLeftMotion,
+      showRightMotion: options.showRightMotion,
     });
 
     if (signal.aborted) return;
@@ -263,12 +263,12 @@ export class CellPreWarmer {
       darkMode: task.isDark,
       showNonRadialPoints: options.showNonRadialPoints ?? true,
       handPointVisibility: options.handPointVisibility ?? "all",
-      bluePropType: options.bluePropType,
-      redPropType: options.catDogModeEnabled
-        ? options.redPropType
-        : options.bluePropType,
-      showBlueMotion: options.showBlueMotion,
-      showRedMotion: options.showRedMotion,
+      leftPropType: options.leftPropType,
+      rightPropType: options.catDogModeEnabled
+        ? options.rightPropType
+        : options.leftPropType,
+      showLeftMotion: options.showLeftMotion,
+      showRightMotion: options.showRightMotion,
       showTnD: options.showTnD,
       showElemental: options.showElemental,
       showPositions: options.showPositions,

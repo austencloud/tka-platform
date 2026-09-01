@@ -1,83 +1,97 @@
-# No Left-Edge Accent Bar — ENFORCED
+# No Decorative Edge Accent Strips - ENFORCED
 
-## The Problem This Solves
+## Terminology
 
-The gallery's filter picker marked its selected category with
-`box-shadow: inset 3px 0 0 var(--theme-accent)` — a colored bar down the left
-edge of the tile. Austen (2026-08-11): *"it's doing this whole highlight the
-left edge of the container pattern which is quintessential AI generated slop.
-I need you to ban that from future styles because that is the most dead
-giveaway this was AI generated and I'm not OK with that."*
+This pattern is commonly called a **left accent border**, **accent rail**,
+**status stripe**, or **callout/inset border**. There is no single inventor or
+standard name. It predates generative UI and still has legitimate historical
+uses in alerts, inset text, navigation, and document callouts.
 
-He is right about the provenance. The left-edge accent bar is the single most
-over-represented "selected/active" treatment in web training data — it shows up
-in every generated dashboard, sidebar, and card list. Shipping it makes a
-surface read as machine output rather than as a designed product, which is the
-exact bar `visual-verification-mandatory.md` closes with: *does it look like a
-product, or like output?*
+That history does not make it appropriate for Flow Arts Composer. The pattern
+has become a default generated-dashboard flourish because one CSS declaration
+creates the appearance of hierarchy without requiring the interface to earn it
+through composition. In this product it reads as machine output.
 
 ## The Rule
 
-**Never indicate selected, active, current, or focused state with a colored bar
-on one edge of a box.** That includes every spelling of it:
+**Never attach a thin decorative color strip to one edge of a UI container.**
 
-- `box-shadow: inset Npx 0 0 <color>` (left bar) and its `inset -Npx 0 0`,
-  `inset 0 Npx 0`, `inset 0 -Npx 0` siblings (right / top / bottom bars)
-- `border-left: 3px solid <accent>` applied on an `.active` / `.selected` /
-  `[aria-current]` / `:checked` variant
-- A `::before`/`::after` pseudo-element absolutely positioned as a thin strip
-  along one edge to signal selection
+The ban applies to cards, tiles, panels, rows, buttons, callouts, menus, list
+items, dialogs, and any other containing surface. It applies to every edge and
+to every claimed purpose, including:
+
+- selection, focus, current location, or active state;
+- category, module, owner, or content identity;
+- status, severity, progress, or priority;
+- visual emphasis or an attempt to make a neutral card feel designed.
+
+The previous exception for an identity color shown on every item is revoked.
+Color may encode identity, but it may not do so as a decorative container-edge
+strip.
+
+## Banned Implementations
+
+The implementation does not change the pattern. All of these are violations:
+
+- `border-left`, `border-right`, `border-top`, or `border-bottom` used as a
+  colored accent on a container;
+- an inset `box-shadow` that draws a narrow colored edge;
+- an absolutely positioned `::before` or `::after` pseudo-element used as a
+  narrow edge strip;
+- a thin colored child element placed flush against an edge;
+- a gradient whose only job is to imitate an accent strip;
+- moving the strip to a different edge, making it thicker, rounding its ends,
+  or applying it to every item in a set.
 
 ## What To Use Instead
 
-Selection is a property of the WHOLE element, so mark the whole element:
+Treat state and identity as properties of the whole object:
 
-1. **Accent edge all the way around** — `border-color: var(--theme-accent)`,
-   optionally plus a full ring: `box-shadow: 0 0 0 1px color-mix(in srgb,
-   var(--theme-accent) 55%, transparent)`.
-2. **A tint of the accent in the background** —
-   `color-mix(in srgb, var(--theme-accent) 22%, var(--theme-card-bg))`.
-3. **A double ring** when the element carries full-bleed art a tint cannot sit
-   on (the gallery's level tiles: `0 0 0 3px <panel-bg>, 0 0 0 6px <accent>`).
-4. **The shared primitive's own selected state** — `SegmentedControl`'s sliding
-   indicator, `FilterChipBase`'s active styling. Reach for these first
-   (`chip-primitives.md`).
+1. Use a full outline or ring around a selected element.
+2. Tint or fill the whole selected surface.
+3. Use the selected treatment owned by `SegmentedControl`, `FilterChipBase`, or
+   the relevant shared primitive.
+4. Put identity color inside the actual icon, glyph, thumbnail, pictograph, or
+   artwork.
+5. Pair semantic color with a clear icon and label for status or severity.
+6. Establish hierarchy with size, spacing, alignment, typography, grouping,
+   and real content.
 
-Whatever you pick, keep a non-color cue too (`aria-current`, `aria-pressed`,
-`aria-selected`): color alone is not an accessible state signal.
+State still needs a non-color cue such as `aria-current`, `aria-pressed`, or
+`aria-selected`.
 
-## The Legitimate Exception: color as DATA
+## Narrow Non-Decorative Cases
 
-A colored edge stripe is fine when it encodes **identity**, not selection — a
-per-category, per-module, per-owner, or per-severity color that is present on
-every item in the list and differs between them. Examples already in the repo:
-`--section-color`, `--module-color`, `--owner-color`, severity stripes on
-feedback dialogs, and the spine on `BookCoverArt`. The test: **does the stripe
-still appear when nothing is selected?** If yes, it is data. If it appears only
-on the active item, it is the banned pattern.
+These are not accent-strip treatments:
 
-## The Self-Check
+- a neutral structural divider or pane boundary using the theme stroke;
+- chart geometry, a progress meter, a ruler, or another actual data graphic;
+- an edge that is literally part of rendered artwork or a physical artifact,
+  rather than chrome attached to its containing UI surface.
 
-Grep your diff before shipping any selected-state styling:
+If a colored edge could be removed without losing data or structure, it is
+decoration and is banned.
 
-```bash
-git diff -U0 | grep -nE "inset [0-9]+px 0 0|border-(left|right|top|bottom): *[0-9]+px solid"
-```
+## Existing Violations
 
-Every hit must either be identity color (per the exception) or be replaced.
+Existing instances are legacy violations, not precedent. Remove one whenever
+its owning surface is deliberately restyled. Do not copy it into new work.
 
-## Known Remaining Instances (not swept 2026-08-11)
+The Create front door is the reference correction: each creation method carries
+its identity through the icon and a restrained whole-surface tint with a full
+perimeter border. It does not attach color to one edge.
 
-Fixed at the time the rule was written: `CategoryTile.svelte` (catalog + rail
-compositions) and `gallery-workspace-styles/01-foundations.css`. A repo-wide
-grep found roughly a dozen more selection-state bars — including
-`ConversationItem.svelte`, `OptionPickerHeader.svelte`,
-`CollectionCardSurface.svelte`, `ShortcutRow.svelte`, and several `test/`
-routes. They were left alone to keep that fix scoped. Convert one whenever you
-are already editing its file; do not open a sweeping refactor for it.
+## Review Check
+
+Before shipping container styling, search the changed CSS for per-edge borders,
+inset shadows, and edge-positioned pseudo-elements. Inspect each hit by meaning,
+not just syntax. Reject any implementation that produces a decorative colored
+edge strip.
 
 ## Related
 
-- `visual-verification-mandatory.md` — "product, or output?"
-- `chip-primitives.md`, `never-hand-roll.md` — the primitives own selection
-- `no-checkboxes.md` — the other banned-by-default web-default pattern
+- `docs/architecture/visual-design-canon.md`
+- `visual-verification-mandatory.md`
+- `chip-primitives.md`
+- `never-hand-roll.md`
+- `no-checkboxes.md`

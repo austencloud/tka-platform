@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CODEX_BOXES,
   CODEX_TYPES,
-} from "../../../src/routes/(public)/glossary/_components/codex-boards/codex-letters";
+} from "../../../src/routes/(public)/atlas/_components/codex-boards/codex-letters";
 import {
   SHEET1,
   SHEET2,

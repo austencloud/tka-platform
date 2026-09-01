@@ -25,11 +25,11 @@ import {
 import type { TurnValue } from "./turn-pattern-data";
 
 export interface LayerPredictionInput {
-  readonly blueStartOrientation: string;
-  readonly redStartOrientation: string;
+  readonly leftStartOrientation: string;
+  readonly rightStartOrientation: string;
   readonly lanes: {
-    readonly blue: readonly TurnValue[];
-    readonly red: readonly TurnValue[];
+    readonly left: readonly TurnValue[];
+    readonly right: readonly TurnValue[];
   };
   /** How many steps to project the period across. */
   readonly length: number;
@@ -48,11 +48,11 @@ function crosses(turn: TurnValue | undefined): boolean {
 }
 
 function flipFor(
-  blue: TurnValue | undefined,
-  red: TurnValue | undefined
+  left: TurnValue | undefined,
+  right: TurnValue | undefined
 ): FlipVector {
-  const b = crosses(blue);
-  const r = crosses(red);
+  const b = crosses(left);
+  const r = crosses(right);
   if (b && r) return "X";
   if (b) return "B";
   if (r) return "R";
@@ -62,10 +62,10 @@ function flipFor(
 export function predictLayerSignature(
   input: LayerPredictionInput
 ): LayerPrediction {
-  const { blue, red } = input.lanes;
-  const start = layerOf(input.blueStartOrientation, input.redStartOrientation);
+  const { left, right } = input.lanes;
+  const start = layerOf(input.leftStartOrientation, input.rightStartOrientation);
 
-  if (!start || blue.length === 0 || red.length === 0 || input.length <= 0) {
+  if (!start || left.length === 0 || right.length === 0 || input.length <= 0) {
     return { signature: "", uncertain: false };
   }
 
@@ -74,8 +74,8 @@ export function predictLayerSignature(
   let uncertain = false;
 
   for (let i = 0; i < input.length; i++) {
-    const b = blue[i % blue.length];
-    const r = red[i % red.length];
+    const b = left[i % left.length];
+    const r = right[i % right.length];
     if (b === "fl" || r === "fl") uncertain = true;
     current = applyFlip(current, flipFor(b, r));
     layers.push(current);

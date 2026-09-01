@@ -1,4 +1,4 @@
-import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { VariationConstraints } from "../domain/models/spell-models";
@@ -13,8 +13,8 @@ import type { SpellPreferences } from "../domain/models/spell-models";
 export interface OrientationContinuityError {
   /** The step index where the error occurs */
   stepIndex: number;
-  /** The color that has the orientation break */
-  color: MotionColor;
+  /** The hand that has the orientation break */
+  hand: HandSide;
   /** Expected start orientation (from previous beat's end) */
   expectedStartOrientation: string;
   /** Actual start orientation in the beat */

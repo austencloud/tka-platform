@@ -60,7 +60,8 @@ export interface ImageExportOptions {
   darkMode: boolean;
 }
 
-interface ExportOptionsState {
+/** The full persisted shape. Also the snapshot/replaceAll payload for view-only link sessions (see `setPersistenceSuspended` below). */
+export interface ExportOptionsState {
   video: VideoExportOptions;
   split: SplitExportOptions;
   image: ImageExportOptions;
@@ -69,7 +70,7 @@ interface ExportOptionsState {
 const STORAGE_KEY = "tka_export_options";
 
 // Default values
-const DEFAULT_VIDEO_OPTIONS: VideoExportOptions = {
+export const DEFAULT_VIDEO_OPTIONS: VideoExportOptions = {
   fps: 60,
   loopCount: 1,
   resolution: 1080,
@@ -79,7 +80,7 @@ const DEFAULT_VIDEO_OPTIONS: VideoExportOptions = {
   quality: "standard",
 };
 
-const DEFAULT_SPLIT_OPTIONS: SplitExportOptions = {
+export const DEFAULT_SPLIT_OPTIONS: SplitExportOptions = {
   fps: 60,
   loopCount: 1,
   resolution: 1080,
@@ -92,7 +93,7 @@ const DEFAULT_SPLIT_OPTIONS: SplitExportOptions = {
   quality: "standard",
 };
 
-const DEFAULT_IMAGE_OPTIONS: ImageExportOptions = {
+export const DEFAULT_IMAGE_OPTIONS: ImageExportOptions = {
   includeStartPosition: true,
   showStepNumbers: true,
   showWord: true,
@@ -243,6 +244,18 @@ export interface ExportOptionsStateManager {
   getImageOptions(): ImageExportOptions;
 
   resetToDefaults(): void;
+
+  // View-only link sessions (viewer URL state). A shared link borrows this
+  // global singleton instead of constructing a parallel instance, because
+  // ~8 files (AnimationSettings.svelte, ExportPopover.svelte, PostStudioPane.svelte,
+  // PostStudio.svelte, PostShareSheet.svelte, export-orchestrator.ts,
+  // export-coordinator.svelte.ts, create-scene-video-export.svelte.ts) call
+  // `getExportOptionsState()` directly with no injection seam. Snapshot ->
+  // suspend -> replaceAll -> (on close) replaceAll(snapshot) -> resume leaves
+  // the recipient's disk untouched.
+  setPersistenceSuspended(suspended: boolean): void;
+  snapshot(): ExportOptionsState;
+  replaceAll(next: ExportOptionsState): void;
 }
 
 /**
@@ -280,9 +293,14 @@ export function createExportOptionsState(): ExportOptionsStateManager {
   let imageShowQRCode = $state(stored.image.showQRCode ?? true);
   let imageDarkMode = $state(stored.image.darkMode);
 
-  // Persist changes on any update
-  function persist() {
-    saveToStorage({
+  // A viewer URL link session suspends disk writes while it borrows this
+  // singleton (see `setPersistenceSuspended`); a recipient's tweaks during
+  // the session stay session-local instead of overwriting their own saved
+  // options.
+  let persistenceSuspended = false;
+
+  function buildSnapshot(): ExportOptionsState {
+    return {
       video: {
         fps: videoFps,
         loopCount: videoLoopCount,
@@ -313,7 +331,13 @@ export function createExportOptionsState(): ExportOptionsStateManager {
         showQRCode: imageShowQRCode,
         darkMode: imageDarkMode,
       },
-    });
+    };
+  }
+
+  // Persist changes on any update
+  function persist() {
+    if (persistenceSuspended) return;
+    saveToStorage(buildSnapshot());
   }
 
   return {
@@ -493,6 +517,41 @@ export function createExportOptionsState(): ExportOptionsStateManager {
       imageShowNotes = DEFAULT_IMAGE_OPTIONS.showNotes;
       imageShowQRCode = DEFAULT_IMAGE_OPTIONS.showQRCode;
       imageDarkMode = DEFAULT_IMAGE_OPTIONS.darkMode;
+      persist();
+    },
+
+    setPersistenceSuspended(suspended: boolean) {
+      persistenceSuspended = suspended;
+    },
+
+    snapshot(): ExportOptionsState {
+      return buildSnapshot();
+    },
+
+    replaceAll(next: ExportOptionsState) {
+      videoFps = next.video.fps;
+      videoLoopCount = next.video.loopCount;
+      videoResolution = next.video.resolution;
+      videoEffectOverrides = next.video.effectOverrides;
+      videoIncludeStartPosition = next.video.includeStartPosition;
+      videoIncludeEndHold = next.video.includeEndHold;
+      videoQuality = next.video.quality;
+      splitFps = next.split.fps;
+      splitLoopCount = next.split.loopCount;
+      splitResolution = next.split.resolution;
+      splitEffectOverrides = next.split.effectOverrides;
+      splitOrientation = next.split.compositeOrientation;
+      splitGridStepSize = next.split.gridStepSize;
+      splitShowStepNumbers = next.split.showStepNumbers;
+      splitIncludeStartPosition = next.split.includeStartPosition;
+      splitIncludeEndHold = next.split.includeEndHold;
+      imageIncludeStartPosition = next.image.includeStartPosition;
+      imageShowStepNumbers = next.image.showStepNumbers;
+      imageShowWord = next.image.showWord;
+      imageShowDifficulty = next.image.showDifficulty;
+      imageShowNotes = next.image.showNotes;
+      imageShowQRCode = next.image.showQRCode;
+      imageDarkMode = next.image.darkMode;
       persist();
     },
   };

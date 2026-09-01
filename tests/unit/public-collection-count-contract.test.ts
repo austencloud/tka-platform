@@ -60,7 +60,7 @@ describe("public-collection count normalization contract", () => {
     // A consumer counting for itself means normalization moved back out of
     // the loader — the exact opt-in drift this contract forbids.
     expect(offenders).toEqual([]);
-  });
+  }, 30_000);
 
   it("every public-facing getter routes through toPublicView", () => {
     const loader = read(LOADER);

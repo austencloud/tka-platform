@@ -1,11 +1,16 @@
 <script lang="ts">
   import { getViewer3DContext } from "../../context/viewer-3d-context";
+  import { flip } from "svelte/animate";
   import { STAGE } from "@austencloud/scene-3d";
   import { getPerformerColor } from "../../constants/performer-colors";
   import {
     reportViewerControlChange,
     type ViewerControlSink,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+  import {
+    flipDuration,
+    growFade,
+  } from "$lib/shared/transitions/motion";
 
   interface Props {
     onSettingChange?: ViewerControlSink;
@@ -104,7 +109,7 @@
         <i class="fas fa-users"></i>
       </button>
 
-      {#each performers as _, i (i)}
+      {#each performers as performer, i (performer.id)}
         {@const color = getPerformerColor(i)}
         <button
           class="spine-chip performer-chip"
@@ -113,6 +118,8 @@
           title="Performer {i + 1}"
           style:--performer-color={color}
           onclick={() => selectPerformer(i)}
+          animate:flip={{ duration: flipDuration() }}
+          transition:growFade={{ axis: "x" }}
         >
           <span class="performer-number">{i + 1}</span>
           <span class="performer-dot"></span>
@@ -156,7 +163,12 @@
     align-items: center;
     justify-content: center;
     position: relative;
-    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
+    transition:
+      background-color var(--transition-fast),
+      border-color var(--transition-fast),
+      box-shadow var(--transition-fast),
+      color var(--transition-fast),
+      transform var(--transition-fast);
     flex-shrink: 0;
   }
 

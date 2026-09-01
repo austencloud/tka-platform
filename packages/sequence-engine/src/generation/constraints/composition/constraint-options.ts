@@ -31,7 +31,7 @@ export interface ConstraintOptions {
   handPathContinuity?: "maximize" | "allow-reversals" | "force-reversals";
 
   /** Soft preference for dash vs shift motions. Default: no preference.
-   *  "maximize" strongly biases the beam toward candidates whose blue or red
+   *  "maximize" strongly biases the beam toward candidates whose left or right
    *  motion is a dash; "minimize" does the opposite. Closure and other hard
    *  constraints can still force non-dash picks on specific steps — this is
    *  a best-effort bias, not a hard minimum. */

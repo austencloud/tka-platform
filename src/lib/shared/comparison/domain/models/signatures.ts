@@ -94,10 +94,10 @@ export interface StepSignature {
   readonly endPositionGroup: GridPositionGroup;
 
   /** Blue hand motion signature */
-  readonly blue: MotionSignature;
+  readonly left: MotionSignature;
 
   /** Red hand motion signature */
-  readonly red: MotionSignature;
+  readonly right: MotionSignature;
 
   /**
    * Angular relationship between hands at start.
@@ -178,8 +178,8 @@ export interface StepComparisonResult {
 
 export interface StepComparisonBreakdown {
   readonly positionGroupMatch: boolean;
-  readonly blueSimilarity: number;
-  readonly redSimilarity: number;
+  readonly leftSimilarity: number;
+  readonly rightSimilarity: number;
   readonly handAngleMatch: boolean;
 }
 

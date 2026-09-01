@@ -4,7 +4,7 @@
  * Draws detection results from Phase 1 (MediaPipe hand tracking) onto
  * a canvas overlay positioned over the source video frame:
  *
- * - Blue/red circles at detected hand positions
+ * - Left/right circles at detected hand positions
  * - Confidence-based color coding (green/amber/red rings)
  * - Grid location labels (N, NE, E, etc.)
  * - Crosshair grid showing the 8 cardinal/intercardinal positions
@@ -45,27 +45,27 @@ export class Phase1OverlayRenderer {
     this.drawGridLabels(ctx, width, height);
 
     if (frame) {
-      if (frame.blue) {
+      if (frame.left) {
         this.drawHandMarker(
           ctx,
           width,
           height,
-          frame.blue.rawPosition,
-          frame.blue.confidence,
-          frame.blue.quadrant,
+          frame.left.rawPosition,
+          frame.left.confidence,
+          frame.left.quadrant,
           "#3b82f6",
           "B"
         );
       }
 
-      if (frame.red) {
+      if (frame.right) {
         this.drawHandMarker(
           ctx,
           width,
           height,
-          frame.red.rawPosition,
-          frame.red.confidence,
-          frame.red.quadrant,
+          frame.right.rawPosition,
+          frame.right.confidence,
+          frame.right.quadrant,
           "#ef4444",
           "R"
         );

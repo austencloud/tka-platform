@@ -5,7 +5,7 @@
 import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import type { ResponsiveSettings } from "../../device/domain/models/device-models";
   import { onMount } from "svelte";
-  import type { Section } from "../domain/types";
+  import type { Section, SectionHomeDestination } from "../domain/types";
   import BottomNavigation from "./layouts/BottomNavigation.svelte";
   import SideNavigation from "./layouts/SideNavigation.svelte";
 
@@ -13,6 +13,8 @@ import type { DeviceDetector } from '$lib/shared/device/services/device-detector
     sections = [],
     currentSection,
     onSectionChange,
+    sectionHome = null,
+    onSectionHomeSelect,
     onModuleSwitcherTap,
     onLayoutChange,
     onHeightChange,
@@ -25,6 +27,8 @@ import type { DeviceDetector } from '$lib/shared/device/services/device-detector
     sections: Section[];
     currentSection: string;
     onSectionChange?: (sectionId: string) => void;
+    sectionHome?: SectionHomeDestination | null;
+    onSectionHomeSelect?: () => void;
     onModuleSwitcherTap?: () => void;
     onLayoutChange?: (isLandscape: boolean) => void;
     onHeightChange?: (height: number) => void;
@@ -82,6 +86,8 @@ import type { DeviceDetector } from '$lib/shared/device/services/device-detector
     {sections}
     {currentSection}
     {onSectionChange}
+    {sectionHome}
+    {onSectionHomeSelect}
     {onModuleSwitcherTap}
     {showModuleSwitcher}
     {isUIVisible}
@@ -91,6 +97,8 @@ import type { DeviceDetector } from '$lib/shared/device/services/device-detector
     {sections}
     {currentSection}
     {onSectionChange}
+    {sectionHome}
+    {onSectionHomeSelect}
     {onModuleSwitcherTap}
     {onHeightChange}
     {showModuleSwitcher}

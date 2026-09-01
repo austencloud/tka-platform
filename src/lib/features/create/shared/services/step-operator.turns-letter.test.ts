@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { StepOperator } from "./step-operator";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -36,20 +36,20 @@ function makeStep(stepNumber: number): StepData {
     id: `step-${stepNumber}`,
     stepNumber,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
-        color: MotionColor.BLUE,
+      [HandSide.LEFT]: createMotionData({
+        hand: HandSide.LEFT,
         motionType: MotionType.PRO,
         rotationDirection: RotationDirection.CLOCKWISE,
         startLocation: GridLocation.NORTH,
         endLocation: GridLocation.EAST,
         turns: 0,
       }),
-      [MotionColor.RED]: createMotionData({
-        color: MotionColor.RED,
+      [HandSide.RIGHT]: createMotionData({
+        hand: HandSide.RIGHT,
         motionType: MotionType.PRO,
         rotationDirection: RotationDirection.CLOCKWISE,
         startLocation: GridLocation.SOUTH,
@@ -96,7 +96,7 @@ describe("StepOperator.updateStepTurns reconciles the letter", () => {
     const op = new StepOperator(handler);
     const state = makeMockState([makeStep(1), makeStep(2)]);
 
-    op.updateStepTurns(2, MotionColor.BLUE, 0.5, state, null);
+    op.updateStepTurns(2, HandSide.LEFT, 0.5, state, null);
 
     // recalculateLetterForBeat runs synchronously up to its first await, so the
     // handler is already invoked; flush a microtask to be safe.

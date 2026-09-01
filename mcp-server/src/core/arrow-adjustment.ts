@@ -17,6 +17,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
 import { GridLocation, GridMode, MotionType, Orientation } from "./enums.js";
+import type { HandSide } from "@tka/tka-types";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -29,22 +30,21 @@ const PROJECT_ROOT = inDist
   ? join(__dirname, "../../../..")
   : join(__dirname, "../../..");
 
-
 export interface MotionAdjustmentInput {
   letter: string;
   motionType: string;
   rotationDirection: string;
   startLocation: string;
   endLocation: string;
-  color: "blue" | "red";
+  hand: HandSide;
   turns?: number | "fl";
   endOrientation?: string;
 }
 
 export interface PictographAdjustmentInput {
   letter: string;
-  blueMotion: MotionAdjustmentInput;
-  redMotion: MotionAdjustmentInput;
+  leftMotion: MotionAdjustmentInput;
+  rightMotion: MotionAdjustmentInput;
   gridMode: GridMode;
   endPosition?: string; // e.g., "alpha5", "beta3", "gamma11"
 }
@@ -56,7 +56,6 @@ type PlacementData = Record<
   Record<TurnsTupleKey, Record<AdjustmentKey, [number, number]>>
 >;
 
-
 /**
  * Calculate orientation key based on motion end orientations.
  * - from_layer1: both motions have radial orientation (IN/OUT)
@@ -64,17 +63,19 @@ type PlacementData = Record<
  * - from_layer3_blue1_red2: blue radial, red non-radial
  * - from_layer3_blue2_red1: blue non-radial, red radial
  */
-export function calculateOriKey(blueEndOri: string, redEndOri: string): string {
-  const blueLayer = ["in", "out"].includes(blueEndOri.toLowerCase()) ? 1 : 2;
-  const redLayer = ["in", "out"].includes(redEndOri.toLowerCase()) ? 1 : 2;
+export function calculateOriKey(
+  leftEndOri: string,
+  rightEndOri: string
+): string {
+  const leftLayer = ["in", "out"].includes(leftEndOri.toLowerCase()) ? 1 : 2;
+  const rightLayer = ["in", "out"].includes(rightEndOri.toLowerCase()) ? 1 : 2;
 
-  if (blueLayer === 1 && redLayer === 1) return "from_layer1";
-  if (blueLayer === 2 && redLayer === 2) return "from_layer2";
-  if (blueLayer === 1 && redLayer === 2) return "from_layer3_blue1_red2";
-  if (blueLayer === 2 && redLayer === 1) return "from_layer3_blue2_red1";
+  if (leftLayer === 1 && rightLayer === 1) return "from_layer1";
+  if (leftLayer === 2 && rightLayer === 2) return "from_layer2";
+  if (leftLayer === 1 && rightLayer === 2) return "from_layer3_blue1_red2";
+  if (leftLayer === 2 && rightLayer === 1) return "from_layer3_blue2_red1";
   return "from_layer1";
 }
-
 
 /**
  * Load special placement data for a letter.
@@ -112,26 +113,26 @@ function loadSpecialPlacement(
 }
 
 /**
- * Format turns tuple key: "(blueTurns, redTurns)"
+ * Format turns tuple key: "(leftTurns, rightTurns)"
  */
 function formatTurnsTuple(
-  blueTurns?: number | "fl",
-  redTurns?: number | "fl"
+  leftTurns?: number | "fl",
+  rightTurns?: number | "fl"
 ): string {
-  const blue = blueTurns === "fl" ? "fl" : (blueTurns ?? 0);
-  const red = redTurns === "fl" ? "fl" : (redTurns ?? 0);
-  return `(${blue}, ${red})`;
+  const left = leftTurns === "fl" ? "fl" : (leftTurns ?? 0);
+  const right = rightTurns === "fl" ? "fl" : (rightTurns ?? 0);
+  return `(${left}, ${right})`;
 }
 
 /**
  * Look up base adjustment from special placement data.
- * Tries color key first, then motion type key.
+ * Tries the historical palette key first, then the motion type key.
  */
 function lookupBaseAdjustment(
   data: PlacementData,
   letter: string,
   turnsTuple: string,
-  color: "blue" | "red",
+  hand: HandSide,
   motionType: string
 ): [number, number] | null {
   const letterData = data[letter];
@@ -140,9 +141,10 @@ function lookupBaseAdjustment(
   const tupleData = letterData[turnsTuple];
   if (!tupleData) return null;
 
-  // Try color key first
-  if (tupleData[color]) {
-    return tupleData[color];
+  // Placement assets retain their historical blue/red keys.
+  const legacyPaletteKey = hand === "left" ? "blue" : "red";
+  if (tupleData[legacyPaletteKey]) {
+    return tupleData[legacyPaletteKey];
   }
 
   // Try motion type key
@@ -642,9 +644,9 @@ export function calculateArrowAdjustment(
   arrowLocation: GridLocation
 ): [number, number] {
   // 1. Try to get special placement override first
-  const blueEndOri = pictograph.blueMotion.endOrientation || "in";
-  const redEndOri = pictograph.redMotion.endOrientation || "in";
-  const oriKey = calculateOriKey(blueEndOri, redEndOri);
+  const leftEndOri = pictograph.leftMotion.endOrientation || "in";
+  const rightEndOri = pictograph.rightMotion.endOrientation || "in";
+  const oriKey = calculateOriKey(leftEndOri, rightEndOri);
 
   const placementData = loadSpecialPlacement(
     pictograph.gridMode,
@@ -658,14 +660,14 @@ export function calculateArrowAdjustment(
 
   if (placementData) {
     const turnsTuple = formatTurnsTuple(
-      pictograph.blueMotion.turns,
-      pictograph.redMotion.turns
+      pictograph.leftMotion.turns,
+      pictograph.rightMotion.turns
     );
     const specialAdjustment = lookupBaseAdjustment(
       placementData,
       pictograph.letter,
       turnsTuple,
-      motion.color,
+      motion.hand,
       motion.motionType
     );
 

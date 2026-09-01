@@ -47,13 +47,14 @@ Controls moved below the grid for better UX
     onNavigateToDefault,
     isSideBySideLayout = () => false,
     embedded = false,
-    bluePropTypeOverride = undefined,
-    redPropTypeOverride = undefined,
+    leftPropTypeOverride = undefined,
+    rightPropTypeOverride = undefined,
     initialStartPosition = null,
     lockedGridMode = undefined,
     validationMessage = null,
     onPositionSubmitted = () => {},
     heading,
+    suppressHeading = false,
   } = $props<{
     startPositionState?: SimplifiedStartPositionState | null;
     onNavigateToAdvanced?: () => void;
@@ -66,8 +67,8 @@ Controls moved below the grid for better UX
     embedded?: boolean;
     /** Explicit prop types for demo/preview rendering (bypasses global
      *  settings) — same convention as StepCell/PictographContainer. */
-    bluePropTypeOverride?: PropType;
-    redPropTypeOverride?: PropType;
+    leftPropTypeOverride?: PropType;
+    rightPropTypeOverride?: PropType;
     initialStartPosition?: PictographData | null;
     lockedGridMode?: GridMode;
     validationMessage?: string | null;
@@ -76,6 +77,9 @@ Controls moved below the grid for better UX
       path: StartPositionPath
     ) => void;
     heading?: Snippet;
+    /** The active Construct guide owns this instruction band. Keep the wrapper
+     *  mounted so its height can collapse on the same clock as the guide. */
+    suppressHeading?: boolean;
   }>();
 
   // Create simplified state - use $derived to handle prop changes
@@ -89,21 +93,21 @@ Controls moved below the grid for better UX
   let buildPathOpened = false;
   let buildPositionSubmitted = false;
 
-  const effectiveBluePropType = $derived(
-    bluePropTypeOverride ??
-      settingsService.settings.bluePropType ??
+  const effectiveLeftPropType = $derived(
+    leftPropTypeOverride ??
+      settingsService.settings.leftPropType ??
       PropType.STAFF
   );
-  const effectiveRedPropType = $derived(
-    redPropTypeOverride ??
-      settingsService.settings.redPropType ??
+  const effectiveRightPropType = $derived(
+    rightPropTypeOverride ??
+      settingsService.settings.rightPropType ??
       PropType.STAFF
   );
-  const initialBlueLocation = $derived(
-    initialStartPosition?.motions.blue?.startLocation ?? null
+  const initialLeftLocation = $derived(
+    initialStartPosition?.motions.left?.startLocation ?? null
   );
-  const initialRedLocation = $derived(
-    initialStartPosition?.motions.red?.startLocation ?? null
+  const initialRightLocation = $derived(
+    initialStartPosition?.motions.right?.startLocation ?? null
   );
 
   // Services
@@ -120,15 +124,15 @@ Controls moved below the grid for better UX
       void pickerState.loadPositions(lockedGridMode);
     }
 
-    const initialBlueOrientation =
-      initialStartPosition?.motions.blue?.startOrientation;
-    const initialRedOrientation =
-      initialStartPosition?.motions.red?.startOrientation;
-    if (initialBlueOrientation) {
-      void pickerState.setBlueOrientation(initialBlueOrientation);
+    const initialLeftOrientation =
+      initialStartPosition?.motions.left?.startOrientation;
+    const initialRightOrientation =
+      initialStartPosition?.motions.right?.startOrientation;
+    if (initialLeftOrientation) {
+      void pickerState.setLeftOrientation(initialLeftOrientation);
     }
-    if (initialRedOrientation) {
-      void pickerState.setRedOrientation(initialRedOrientation);
+    if (initialRightOrientation) {
+      void pickerState.setRightOrientation(initialRightOrientation);
     }
 
     // Always ensure positions are loaded - loadPersistedPreferences may
@@ -161,6 +165,8 @@ Controls moved below the grid for better UX
         pickerPath?: StartPositionPath;
         gridMode?: string;
         orientation?: string; // legacy single orientation
+        leftOrientation?: string;
+        rightOrientation?: string;
         blueOrientation?: string;
         redOrientation?: string;
       };
@@ -184,33 +190,27 @@ Controls moved below the grid for better UX
         Orientation.OUT,
         Orientation.COUNTER,
       ] as string[];
+      const leftOrientation = prefs.leftOrientation ?? prefs.blueOrientation;
+      const rightOrientation = prefs.rightOrientation ?? prefs.redOrientation;
 
-      if (
-        prefs.blueOrientation &&
-        validOrientations.includes(prefs.blueOrientation)
-      ) {
-        void pickerState.setBlueOrientation(
-          prefs.blueOrientation as Orientation
-        );
+      if (leftOrientation && validOrientations.includes(leftOrientation)) {
+        void pickerState.setLeftOrientation(leftOrientation as Orientation);
       } else if (
         prefs.orientation &&
         validOrientations.includes(prefs.orientation)
       ) {
-        // Legacy: single orientation applied to blue
-        void pickerState.setBlueOrientation(prefs.orientation as Orientation);
+        // Legacy: single orientation applied to the left hand
+        void pickerState.setLeftOrientation(prefs.orientation as Orientation);
       }
 
-      if (
-        prefs.redOrientation &&
-        validOrientations.includes(prefs.redOrientation)
-      ) {
-        void pickerState.setRedOrientation(prefs.redOrientation as Orientation);
+      if (rightOrientation && validOrientations.includes(rightOrientation)) {
+        void pickerState.setRightOrientation(rightOrientation as Orientation);
       } else if (
         prefs.orientation &&
         validOrientations.includes(prefs.orientation)
       ) {
-        // Legacy: single orientation applied to red
-        void pickerState.setRedOrientation(prefs.orientation as Orientation);
+        // Legacy: single orientation applied to the right hand
+        void pickerState.setRightOrientation(prefs.orientation as Orientation);
       }
 
       // Restore grid mode preference (Diamond/Box)
@@ -238,8 +238,8 @@ Controls moved below the grid for better UX
         pickerPath,
         gridMode:
           pickerState.currentGridMode === GridMode.DIAMOND ? "DIAMOND" : "BOX",
-        blueOrientation: pickerState.blueOrientation,
-        redOrientation: pickerState.redOrientation,
+        leftOrientation: pickerState.leftOrientation,
+        rightOrientation: pickerState.rightOrientation,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
     } catch (error) {
@@ -326,15 +326,15 @@ Controls moved below the grid for better UX
   }
 
   // Handle per-hand orientation changes from cyclers
-  async function handleBlueOrientationChange(orientation: Orientation) {
+  async function handleLeftOrientationChange(orientation: Orientation) {
     hapticService?.trigger("selection");
-    await pickerState.setBlueOrientation(orientation);
+    await pickerState.setLeftOrientation(orientation);
     persistPreferences();
   }
 
-  async function handleRedOrientationChange(orientation: Orientation) {
+  async function handleRightOrientationChange(orientation: Orientation) {
     hapticService?.trigger("selection");
-    await pickerState.setRedOrientation(orientation);
+    await pickerState.setRightOrientation(orientation);
     persistPreferences();
   }
 </script>
@@ -348,11 +348,13 @@ Controls moved below the grid for better UX
   data-testid="start-position-picker"
 >
   {#if !embedded}
-    <div class="workspace-heading">
-      {#if heading}
-        {@render heading()}
-      {:else}
-        <p class="workspace-hint">Choose your start position</p>
+    <div class="workspace-heading" class:heading-suppressed={suppressHeading}>
+      {#if !suppressHeading}
+        {#if heading}
+          {@render heading()}
+        {:else}
+          <p class="workspace-hint">Choose your start position</p>
+        {/if}
       {/if}
     </div>
   {/if}
@@ -383,14 +385,14 @@ Controls moved below the grid for better UX
         {#if pickerPath === "build"}
           <BuildStartPosition
             gridMode={pickerState.currentGridMode}
-            bluePropType={effectiveBluePropType}
-            redPropType={effectiveRedPropType}
-            blueOrientation={pickerState.blueOrientation}
-            redOrientation={pickerState.redOrientation}
-            {initialBlueLocation}
-            {initialRedLocation}
-            onBlueOrientationChange={handleBlueOrientationChange}
-            onRedOrientationChange={handleRedOrientationChange}
+            leftPropType={effectiveLeftPropType}
+            rightPropType={effectiveRightPropType}
+            leftOrientation={pickerState.leftOrientation}
+            rightOrientation={pickerState.rightOrientation}
+            {initialLeftLocation}
+            {initialRightLocation}
+            onLeftOrientationChange={handleLeftOrientationChange}
+            onRightOrientationChange={handleRightOrientationChange}
             onGridModeChange={lockedGridMode === undefined
               ? handleGridModeChange
               : undefined}
@@ -413,8 +415,8 @@ Controls moved below the grid for better UX
                 pictographDataSet={pickerState.positions}
                 selectedPictograph={pickerState.selectedPosition}
                 onPictographSelect={handlePositionSelect}
-                {bluePropTypeOverride}
-                {redPropTypeOverride}
+                {leftPropTypeOverride}
+                {rightPropTypeOverride}
               />
             </div>
           </div>
@@ -428,14 +430,14 @@ Controls moved below the grid for better UX
     <div class="controls-footer">
       <div class="orientation-controls">
         <OrientationCycler
-          orientation={pickerState.blueOrientation}
-          onOrientationChange={handleBlueOrientationChange}
+          orientation={pickerState.leftOrientation}
+          onOrientationChange={handleLeftOrientationChange}
           color="blue"
         />
 
         <OrientationCycler
-          orientation={pickerState.redOrientation}
-          onOrientationChange={handleRedOrientationChange}
+          orientation={pickerState.rightOrientation}
+          onOrientationChange={handleRightOrientationChange}
           color="red"
         />
       </div>
@@ -502,6 +504,10 @@ Controls moved below the grid for better UX
     padding: clamp(12px, 4vh, 52px)
       calc(1rem + var(--picker-leading-action-offset, 0px)) 0;
     box-sizing: border-box;
+    overflow: hidden;
+    transition:
+      height var(--duration-emphasis) var(--transition-easing, ease),
+      padding var(--duration-emphasis) var(--transition-easing, ease);
   }
 
   .workspace-hint {
@@ -863,6 +869,18 @@ Controls moved below the grid for better UX
     .control-icon {
       width: 16px;
       height: 16px;
+    }
+  }
+
+  .start-pos-picker .workspace-heading.heading-suppressed,
+  .start-pos-picker.build-path .workspace-heading.heading-suppressed {
+    height: 0;
+    padding: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .workspace-heading {
+      transition: none;
     }
   }
 </style>

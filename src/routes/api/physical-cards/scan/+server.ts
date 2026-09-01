@@ -25,6 +25,8 @@ import {
 const SHORTCODE_MASK = [
   "deckId",
   "deckName",
+  "leftPropType",
+  "rightPropType",
   "bluePropType",
   "redPropType",
   "catDogMode",
@@ -275,8 +277,12 @@ export const POST: RequestHandler = async (event) => {
         printPosition: physicalCardDocument
           ? readFirestoreInteger(physicalCardDocument, "printPosition")
           : null,
-        bluePropType: readFirestoreString(shortCodeDocument, "bluePropType"),
-        redPropType: readFirestoreString(shortCodeDocument, "redPropType"),
+        leftPropType:
+          readFirestoreString(shortCodeDocument, "leftPropType") ??
+          readFirestoreString(shortCodeDocument, "bluePropType"),
+        rightPropType:
+          readFirestoreString(shortCodeDocument, "rightPropType") ??
+          readFirestoreString(shortCodeDocument, "redPropType"),
         catDogMode: readFirestoreBoolean(shortCodeDocument, "catDogMode"),
       }),
       scanCounterTransform(

@@ -80,7 +80,7 @@ interface CatalogEntry {
   sequenceLength: number;
   metadata: { handPathId: string; familyLabel: string };
   steps: Array<{
-    motions: { blue: CatalogMotion; red: CatalogMotion };
+    motions: { left: CatalogMotion; right: CatalogMotion };
   }>;
 }
 
@@ -356,7 +356,7 @@ function buildBoard(
         <g>
           <text x="${x}" y="620" fill="${color}" font-size="30" font-weight="700" text-anchor="middle">${performer.label}</text>
           <path d="${path}" fill="none" stroke="${color}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-          ${textLines(x, 785, [`blue ${motion.blue.motionType} ${motion.blue.rotationDirection}`, `red ${motion.red.motionType} ${motion.red.rotationDirection}`, `4-step circular loop`], { size: 14, fill: COLORS.text, anchor: "middle", lineHeight: 20 })}
+          ${textLines(x, 785, [`blue ${motion.left.motionType} ${motion.left.rotationDirection}`, `red ${motion.right.motionType} ${motion.right.rotationDirection}`, `4-step circular loop`], { size: 14, fill: COLORS.text, anchor: "middle", lineHeight: 20 })}
         </g>`;
     })
     .join("");

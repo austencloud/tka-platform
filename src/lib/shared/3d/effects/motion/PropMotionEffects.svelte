@@ -16,8 +16,8 @@
   interface Props {
     /** Current prop position in world space */
     position: Vector3;
-    /** Prop color for matching effects */
-    color: "blue" | "red";
+    /** Performer-relative prop identity. */
+    hand: "left" | "right";
     /** Enable motion blur effect */
     enableBlur?: boolean;
     /** Enable speed lines effect */
@@ -30,7 +30,7 @@
 
   let {
     position,
-    color,
+    hand,
     enableBlur = true,
     enableSpeedLines = true,
     intensity = 0.6,
@@ -38,8 +38,8 @@
   }: Props = $props();
 
   // Color mapping
-  const colorHex = $derived(color === "blue" ? "#3b82f6" : "#ef4444");
-  const colorLight = $derived(color === "blue" ? "#60a5fa" : "#f87171");
+  const colorHex = $derived(hand === "left" ? "#3b82f6" : "#ef4444");
+  const colorLight = $derived(hand === "left" ? "#60a5fa" : "#f87171");
 
   // Track previous position internally - synced with position on mount
   let previousPosition = $state(new Vector3());

@@ -132,7 +132,7 @@
         icon: "fa-wand-magic-sparkles",
         title: "Props & sizes",
         summary:
-          `${settings.bluePropType ?? d.prop} / ${settings.redPropType ?? d.prop}` +
+          `${settings.leftPropType ?? d.prop} / ${settings.rightPropType ?? d.prop}` +
           (overrideCounts.prop > 0
             ? ` · ${overrideCounts.prop} performer override${overrideCounts.prop > 1 ? "s" : ""}`
             : "") +

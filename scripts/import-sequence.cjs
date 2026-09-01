@@ -11,7 +11,7 @@
  * auto-detects LOOP type, generates required metadata, and writes to
  * users/{uid}/sequences/{id}.
  *
- * Compositional fields (blueSoloProp, redSoloProp, stepPairings) are
+ * Compositional fields (leftSoloProp, rightSoloProp, stepPairings) are
  * computed automatically at import time — no manual migration needed.
  */
 
@@ -55,7 +55,9 @@ function parseCliArgs() {
     console.error(
       "Usage: node scripts/import-sequence.cjs <file.json> [--notes 'tagline'] [--circular] [--loop-type mirrored_swapped] [--visibility private|unlisted] [--dry-run]"
     );
-    console.error("       echo '{...}' | node scripts/import-sequence.cjs --stdin");
+    console.error(
+      "       echo '{...}' | node scripts/import-sequence.cjs --stdin"
+    );
     process.exit(1);
   }
 }
@@ -80,8 +82,7 @@ function loadPersistenceNormalizer() {
 }
 
 async function normalizeFirestoreDoc(built) {
-  const { normalizeSequenceForPersistence } =
-    await loadPersistenceNormalizer();
+  const { normalizeSequenceForPersistence } = await loadPersistenceNormalizer();
   const normalized = await normalizeSequenceForPersistence({
     ...built.data,
     id: built.id,
@@ -116,36 +117,36 @@ const COMPONENT_TO_LOOP_TYPE = {
 };
 
 /**
- * Convert a raw step (app format with motions.blue/red) to the
+ * Convert a raw step (current motions.left/right or legacy motions.blue/red) to the
  * SequenceStep format expected by the sequence-engine's LOOP detector.
  */
 function convertToEngineStep(step, index) {
-  const blue = step.motions?.blue || {};
-  const red = step.motions?.red || {};
+  const left = step.motions?.left || step.motions?.blue || {};
+  const right = step.motions?.right || step.motions?.red || {};
   return {
     letter: step.letter,
     startPosition: step.startPosition,
     endPosition: step.endPosition,
-    // The detector's sameLOOPSignal reads `motions.{blue,red}`; the transform
-    // comparators read `blueMotion`/`redMotion`. Emit both.
-    motions: { blue, red },
-    blueMotion: {
-      motionType: blue.motionType,
-      startLocation: blue.startLocation,
-      endLocation: blue.endLocation,
-      rotationDirection: blue.rotationDirection,
-      startOrientation: blue.startOrientation,
-      endOrientation: blue.endOrientation,
-      turns: blue.turns,
+    // The detector reads `motions.{left,right}` while transform comparators use
+    // flat `leftMotion`/`rightMotion`. Emit both current shapes.
+    motions: { left, right },
+    leftMotion: {
+      motionType: left.motionType,
+      startLocation: left.startLocation,
+      endLocation: left.endLocation,
+      rotationDirection: left.rotationDirection,
+      startOrientation: left.startOrientation,
+      endOrientation: left.endOrientation,
+      turns: left.turns,
     },
-    redMotion: {
-      motionType: red.motionType,
-      startLocation: red.startLocation,
-      endLocation: red.endLocation,
-      rotationDirection: red.rotationDirection,
-      startOrientation: red.startOrientation,
-      endOrientation: red.endOrientation,
-      turns: red.turns,
+    rightMotion: {
+      motionType: right.motionType,
+      startLocation: right.startLocation,
+      endLocation: right.endLocation,
+      rotationDirection: right.rotationDirection,
+      startOrientation: right.startOrientation,
+      endOrientation: right.endOrientation,
+      turns: right.turns,
     },
     beatIndex: index,
     stepNumber: index,
@@ -158,24 +159,26 @@ function convertToEngineStep(step, index) {
  */
 function detectLoop(raw) {
   try {
-    const { detectLOOPFromSteps } = require("../packages/sequence-engine/dist/loop/detection/LOOPDetector.js");
+    const {
+      detectLOOPFromSteps,
+    } = require("../packages/sequence-engine/dist/loop/detection/LOOPDetector.js");
 
     const steps = raw.steps || [];
     const startPos = raw.startPosition || raw.startingPosition;
     const startGridPos = startPos?.startPosition || startPos?.gridPosition;
 
     // Build engine-format steps with start position as step 0
-    const startBlue = {
+    const startLeft = {
       motionType: "static",
-      startLocation: startPos?.motions?.blue?.startLocation || "n",
-      endLocation: startPos?.motions?.blue?.endLocation || "n",
+      startLocation: startPos?.motions?.left?.startLocation || "n",
+      endLocation: startPos?.motions?.left?.endLocation || "n",
       rotationDirection: "noRotation",
       turns: 0,
     };
-    const startRed = {
+    const startRight = {
       motionType: "static",
-      startLocation: startPos?.motions?.red?.startLocation || "n",
-      endLocation: startPos?.motions?.red?.endLocation || "n",
+      startLocation: startPos?.motions?.right?.startLocation || "n",
+      endLocation: startPos?.motions?.right?.endLocation || "n",
       rotationDirection: "noRotation",
       turns: 0,
     };
@@ -185,18 +188,18 @@ function detectLoop(raw) {
         letter: startPos?.letter || "β",
         startPosition: startGridPos || "beta1",
         endPosition: startPos?.endPosition || startGridPos || "beta1",
-        motions: { blue: startBlue, red: startRed },
-        blueMotion: {
+        motions: { left: startLeft, right: startRight },
+        leftMotion: {
           motionType: "static",
-          startLocation: startPos?.motions?.blue?.startLocation || "n",
-          endLocation: startPos?.motions?.blue?.endLocation || "n",
+          startLocation: startPos?.motions?.left?.startLocation || "n",
+          endLocation: startPos?.motions?.left?.endLocation || "n",
           rotationDirection: "noRotation",
           turns: 0,
         },
-        redMotion: {
+        rightMotion: {
           motionType: "static",
-          startLocation: startPos?.motions?.red?.startLocation || "n",
-          endLocation: startPos?.motions?.red?.endLocation || "n",
+          startLocation: startPos?.motions?.right?.startLocation || "n",
+          endLocation: startPos?.motions?.right?.endLocation || "n",
           rotationDirection: "noRotation",
           turns: 0,
         },
@@ -211,7 +214,8 @@ function detectLoop(raw) {
     // Map the first detected component to a loopType enum value
     let loopType = null;
     if (result.components && result.components.length > 0) {
-      loopType = COMPONENT_TO_LOOP_TYPE[result.components[0]] || result.components[0];
+      loopType =
+        COMPONENT_TO_LOOP_TYPE[result.components[0]] || result.components[0];
     }
 
     return {
@@ -249,8 +253,8 @@ async function readInput() {
 /**
  * Build a complete startPosition object. Two input shapes are tolerated:
  *
- *   1. Rich object (from the app or a prior export): already has .motions.blue
- *      and .motions.red — we just normalize and pass through.
+ *   1. Rich object (from the app or a prior export): has current
+ *      .motions.left/right or legacy .motions.blue/red. Normalize it here.
  *   2. Bare string or stub (from MCP generate_sequence, which returns
  *      startPosition as a grid-position string like "beta5"): synthesize a
  *      static startPosition object from the first step's start-side motion
@@ -261,8 +265,8 @@ function buildStartPositionObject(startPosInput, steps, sequenceId) {
   if (
     startPosInput &&
     typeof startPosInput === "object" &&
-    startPosInput.motions?.blue &&
-    startPosInput.motions?.red
+    (startPosInput.motions?.left || startPosInput.motions?.blue) &&
+    (startPosInput.motions?.right || startPosInput.motions?.red)
   ) {
     const gridPos =
       startPosInput.gridPosition ||
@@ -276,26 +280,33 @@ function buildStartPositionObject(startPosInput, steps, sequenceId) {
       letter: startPosInput.letter,
       startPosition: startPosInput.startPosition || gridPos,
       endPosition: startPosInput.endPosition || gridPos,
-      motions: startPosInput.motions,
+      motions: {
+        left: startPosInput.motions.left || startPosInput.motions.blue,
+        right: startPosInput.motions.right || startPosInput.motions.red,
+      },
     };
   }
 
   const firstStep = steps?.[0];
-  const blueMotion = firstStep?.motions?.blue;
-  const redMotion = firstStep?.motions?.red;
-  if (!blueMotion || !redMotion) return null;
+  const leftMotion = firstStep?.motions?.left || firstStep?.motions?.blue;
+  const rightMotion = firstStep?.motions?.right || firstStep?.motions?.red;
+  if (!leftMotion || !rightMotion) return null;
 
   const gridPos =
     (typeof startPosInput === "string" ? startPosInput : null) ||
     firstStep.startPosition ||
     null;
 
-  const letter = typeof gridPos === "string"
-    ? gridPos.startsWith("alpha") ? "α"
-    : gridPos.startsWith("beta") ? "β"
-    : gridPos.startsWith("gamma") ? "γ"
-    : null
-    : null;
+  const letter =
+    typeof gridPos === "string"
+      ? gridPos.startsWith("alpha")
+        ? "α"
+        : gridPos.startsWith("beta")
+          ? "β"
+          : gridPos.startsWith("gamma")
+            ? "γ"
+            : null
+      : null;
 
   return {
     isStartPosition: true,
@@ -305,27 +316,27 @@ function buildStartPositionObject(startPosInput, steps, sequenceId) {
     startPosition: gridPos,
     endPosition: gridPos,
     motions: {
-      blue: {
-        color: "blue",
+      left: {
+        hand: "left",
         motionType: "static",
-        startLocation: blueMotion.startLocation,
-        endLocation: blueMotion.startLocation,
-        startOrientation: blueMotion.startOrientation,
-        endOrientation: blueMotion.startOrientation,
+        startLocation: leftMotion.startLocation,
+        endLocation: leftMotion.startLocation,
+        startOrientation: leftMotion.startOrientation,
+        endOrientation: leftMotion.startOrientation,
         rotationDirection: "no_rotation",
         turns: 0,
-        isVisible: blueMotion.isVisible !== false,
+        isVisible: leftMotion.isVisible !== false,
       },
-      red: {
-        color: "red",
+      right: {
+        hand: "right",
         motionType: "static",
-        startLocation: redMotion.startLocation,
-        endLocation: redMotion.startLocation,
-        startOrientation: redMotion.startOrientation,
-        endOrientation: redMotion.startOrientation,
+        startLocation: rightMotion.startLocation,
+        endLocation: rightMotion.startLocation,
+        startOrientation: rightMotion.startOrientation,
+        endOrientation: rightMotion.startOrientation,
         rotationDirection: "no_rotation",
         turns: 0,
-        isVisible: redMotion.isVisible !== false,
+        isVisible: rightMotion.isVisible !== false,
       },
     },
   };
@@ -372,14 +383,14 @@ function buildFirestoreDoc(raw, fieldValue, loopInfo, opts = {}) {
     startPos?.startPosition ||
     startPos?.gridPosition;
   const lastStep = steps[steps.length - 1];
-  const manualCircular = lastStep && startGridPos
-    ? lastStep.endPosition === startGridPos
-    : false;
-  const isCircular = optForceCircular != null
-    ? optForceCircular
-    : loopInfo != null
-      ? loopInfo.isCircular
-      : manualCircular;
+  const manualCircular =
+    lastStep && startGridPos ? lastStep.endPosition === startGridPos : false;
+  const isCircular =
+    optForceCircular != null
+      ? optForceCircular
+      : loopInfo != null
+        ? loopInfo.isCircular
+        : manualCircular;
 
   // Determine starting position group (alpha, beta, gamma)
   let startingPositionGroup = null;
@@ -434,7 +445,7 @@ function buildFirestoreDoc(raw, fieldValue, loopInfo, opts = {}) {
     doc.notes = optNotes;
   }
 
-  // Compute compositional fields (blueSoloProp, redSoloProp, stepPairings)
+  // Compute compositional fields (leftSoloProp, rightSoloProp, stepPairings)
   const compositional = decomposeSequence(doc);
   if (compositional) {
     Object.assign(doc, compositional);
@@ -483,7 +494,9 @@ async function main() {
     const localClock = { serverTimestamp: () => new Date() };
     const built = buildFirestoreDoc(raw, localClock, loopInfo);
     const { id, data } = await normalizeFirestoreDoc(built);
-    console.log(`\n[DRY RUN] Would save as: users/${AUSTEN_UID}/sequences/${id}`);
+    console.log(
+      `\n[DRY RUN] Would save as: users/${AUSTEN_UID}/sequences/${id}`
+    );
     console.log(`Fields: ${Object.keys(data).join(", ")}`);
     console.log(`Visibility: ${data.visibility}`);
     console.log(`isCircular: ${data.isCircular}`);
@@ -500,7 +513,9 @@ async function main() {
     serviceAccount = JSON.parse(readFileSync(serviceAccountPath, "utf8"));
   } catch {
     console.error("Missing serviceAccountKey.json in project root.");
-    console.error("Place your Firebase service account key there to use this script.");
+    console.error(
+      "Place your Firebase service account key there to use this script."
+    );
     process.exit(1);
   }
 

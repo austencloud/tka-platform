@@ -21,7 +21,7 @@
     customChipId: string;
     customDisabled?: boolean;
     /** Trails shows its captured blue/red on the Custom chip. */
-    customColors?: { blue: string; red: string } | null;
+    customColors?: { left: string; right: string } | null;
     accentColor: string;
     effectLabel: string;
     onSelect: (presetId: string) => void;
@@ -81,17 +81,17 @@
   const trailDefaultColors = $derived(
     presetGroup.effectType === "trails"
       ? {
-          blue: DEFAULT_EFFECTS_CONFIG.trails.blueColor,
-          red: DEFAULT_EFFECTS_CONFIG.trails.redColor,
+          left: DEFAULT_EFFECTS_CONFIG.trails.leftColor,
+          right: DEFAULT_EFFECTS_CONFIG.trails.rightColor,
         }
       : null
   );
 </script>
 
-{#snippet dualSwatch(blue: string, red: string)}
+{#snippet dualSwatch(left, right)}
   <span class="swatch dual" aria-hidden="true">
-    <span class="half" style:background={blue}></span>
-    <span class="half" style:background={red}></span>
+    <span class="half" style:background={left}></span>
+    <span class="half" style:background={right}></span>
   </span>
 {/snippet}
 
@@ -114,7 +114,7 @@
     onclick={() => onSelect(defaultChipId)}
   >
     {#if trailDefaultColors}
-      {@render dualSwatch(trailDefaultColors.blue, trailDefaultColors.red)}
+      {@render dualSwatch(trailDefaultColors.left, trailDefaultColors.right)}
     {:else}
       <span class="swatch" style:background={accentColor} aria-hidden="true"
       ></span>
@@ -132,7 +132,7 @@
     onclick={() => onSelect(customChipId)}
   >
     {#if customColors}
-      {@render dualSwatch(customColors.blue, customColors.red)}
+      {@render dualSwatch(customColors.left, customColors.right)}
     {:else}
       <span class="swatch custom" aria-hidden="true"></span>
     {/if}

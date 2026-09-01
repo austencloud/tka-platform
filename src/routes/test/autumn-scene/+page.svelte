@@ -14,6 +14,7 @@
    */
   import { Canvas } from "@threlte/core";
   import { page } from "$app/state";
+  import { onDestroy } from "svelte";
   import { WebGLRenderer } from "three";
   import { BackgroundType } from "@austencloud/backgrounds";
 
@@ -28,8 +29,13 @@
   import { setSceneFeatureContext } from "$lib/shared/3d/scene-features/context/scene-feature-context";
   import { createEnvironmentTransitionVisualState } from "$lib/shared/3d/environments/state/environment-transition-visual-state.svelte";
   import { setEnvironmentTransitionVisualContext } from "$lib/shared/3d/environments/context/environment-transition-visual-context";
-  import HarnessToneMapping from "./HarnessToneMapping.svelte";
+  import ScenePostProcessing from "$lib/shared/3d/effects/post-processing/ScenePostProcessing.svelte";
   import PerfMonitor from "$lib/shared/3d/components/PerfMonitor.svelte";
+  import SceneShaderWarmup from "$lib/shared/3d/components/SceneShaderWarmup.svelte";
+  import InteractiveCanvasFrameBridge from "$lib/shared/3d/components/InteractiveCanvasFrameBridge.svelte";
+  import type { RendererPerformanceSample } from "$lib/shared/3d/components/renderer-performance-window";
+  import { readCameraUrlPose } from "$lib/shared/3d/domain/camera-url-pose";
+  import AutumnProductionHarness from "./AutumnProductionHarness.svelte";
   import { autumnQualityOverride } from "$lib/shared/3d/environments/scenes/autumn/quality/autumn-quality-override.svelte";
   import type { AutumnQualityTier } from "$lib/shared/3d/environments/scenes/autumn/quality/autumn-quality";
   import {
@@ -65,6 +71,16 @@
       target: [0, 2, 0],
       fov: 52,
     },
+    overlook: {
+      position: [-51.21, 43.81, 25.07],
+      target: [1.27, 8.56, -4.99],
+      fov: 48,
+    },
+    reverse: {
+      position: [0, 9, -30],
+      target: [0, 2, 2],
+      fov: 48,
+    },
     depth: {
       position: [0, 9, 29],
       target: [0, 2, -42],
@@ -76,35 +92,48 @@
       fov: 48,
     },
     shack: {
-      position: [-10, 4, -40],
-      target: [-10, 1.5, -56],
-      fov: 50,
+      position: [-8.6, 3.8, -43],
+      target: [-11.05, 1.92, -53.92],
+      fov: 46,
+    },
+    pond: {
+      position: [-4.8, 3.2, 13.5],
+      target: [-10.5, -1.25, 7],
+      fov: 45,
     },
     fungi: {
-      position: [4, 2.1, -7.2],
-      target: [4, 0.08, -12],
+      position: [4, 0.35, -7.8],
+      target: [4, -1.2, -12],
       fov: 46,
     },
     ferns: {
-      position: [-15.6, 1.65, 1.2],
-      target: [-15.6, 0.35, -3.5],
-      fov: 46,
+      position: [-11.8, 0.4, -0.2],
+      target: [-15.6, -1.05, -3.5],
+      fov: 44,
     },
     rootContact: {
-      position: [-3, 2.4, 7.5],
-      target: [-12.8, 0.7, -6.5],
+      position: [-3, 1.2, 7.5],
+      target: [-12.8, -0.9, -6.5],
       fov: 52,
     },
     owlRootContact: {
-      position: [0, 2.4, -2],
-      target: [6.2, 0.7, -18.3],
+      position: [0, 1.2, -2],
+      target: [6.2, -0.9, -18.3],
       fov: 52,
+    },
+    owl: {
+      position: [1.8, 6.2, -10.3],
+      target: [5.7, 5.25, -17.7],
+      fov: 38,
     },
   } as const;
 
   type ViewName = keyof typeof VIEW_PRESETS;
   const requestedView = $derived(page.url.searchParams.get("view"));
   const replayPose = $derived(parseViewParam(page.url.search));
+  const cameraUrlPose = $derived(
+    readCameraUrlPose(page.url.searchParams, VIEW_PRESETS.walk.fov)
+  );
   const view = $derived(
     requestedView && requestedView in VIEW_PRESETS
       ? (requestedView as ViewName)
@@ -115,10 +144,27 @@
   const cameraPreset = $derived(
     replayPose
       ? environmentReviewPresetFromPose(replayPose, VIEW_PRESETS.walk.fov)
-      : VIEW_PRESETS[view]
+      : cameraUrlPose
+        ? {
+            position: [
+              cameraUrlPose.position.x,
+              cameraUrlPose.position.y,
+              cameraUrlPose.position.z,
+            ] as [number, number, number],
+            target: [
+              cameraUrlPose.target.x,
+              cameraUrlPose.target.y,
+              cameraUrlPose.target.z,
+            ] as [number, number, number],
+            fov: cameraUrlPose.fov,
+          }
+        : VIEW_PRESETS[view]
   );
   const cameraKey = $derived(JSON.stringify(cameraPreset));
   const showPerf = $derived(page.url.searchParams.get("perf") === "1");
+  const productionGraph = $derived(
+    page.url.searchParams.get("graph") === "production"
+  );
   const renderDpr = $derived.by(() => {
     const requested = Number(page.url.searchParams.get("dpr") ?? "1");
     return Number.isFinite(requested)
@@ -131,10 +177,27 @@
       ? requested
       : "auto";
   });
-
   let reading = $state<EnvironmentReviewReading | null>(null);
+  let renderSample = $state<RendererPerformanceSample | null>(null);
+  let productionReady = $state(false);
   let captureNote = $state<string | null>(null);
   let captureNoteTimer: ReturnType<typeof setTimeout> | null = null;
+  const reviewReady = $derived(
+    productionGraph
+      ? productionReady
+      : sceneFeatureState.allEnabledReady &&
+          sceneFeatureState.warmupProgress >= 1 &&
+          reading !== null
+  );
+
+  function recordRenderSample(sample: RendererPerformanceSample): void {
+    renderSample = sample;
+    (
+      globalThis as typeof globalThis & {
+        __autumnPerformance?: RendererPerformanceSample;
+      }
+    ).__autumnPerformance = sample;
+  }
 
   const formatPoint = (value: { x: number; y: number; z: number }) =>
     `${value.x.toFixed(2)}, ${value.y.toFixed(2)}, ${value.z.toFixed(2)}`;
@@ -166,88 +229,138 @@
       autumnQualityOverride.tier = "auto";
     };
   });
+
+  onDestroy(() => {
+    if (captureNoteTimer) clearTimeout(captureNoteTimer);
+    delete (
+      globalThis as typeof globalThis & {
+        __autumnPerformance?: RendererPerformanceSample;
+      }
+    ).__autumnPerformance;
+  });
 </script>
 
 <svelte:head>
   <title>Autumn Scene — verification harness</title>
 </svelte:head>
 
-<div class="page">
-  <Canvas
-    dpr={renderDpr}
-    shadows
-    createRenderer={(canvas) =>
-      new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
-  >
-    <!-- Match the real viewer's ScenePostProcessing tone mapping (AgX, 1.0)
-         so colors read the same here as in the sequence viewer. -->
-    <HarnessToneMapping />
-    <PerfMonitor visible={showPerf} active={showPerf} />
-
+<div class="page" data-autumn-ready={reviewReady ? "true" : "false"}>
+  {#if productionGraph}
     {#key cameraKey}
-      <EnvironmentReviewCamera
-        destinationId="autumn-scene-review"
-        preset={cameraPreset}
-        walk={view === "walk" || Boolean(replayPose)}
+      <AutumnProductionHarness
+        onSample={recordRenderSample}
+        onReadyChange={(ready) => (productionReady = ready)}
+        {cameraPreset}
       />
     {/key}
+  {:else}
+    <Canvas
+      dpr={renderDpr}
+      shadows
+      createRenderer={(canvas) =>
+        new WebGLRenderer({ canvas, preserveDrawingBuffer: false })}
+    >
+      <InteractiveCanvasFrameBridge />
+      <SceneShaderWarmup waitForAllFeatures={true} cacheKey="autumn-review" />
+      <ScenePostProcessing
+        backgroundType={BackgroundType.AUTUMN}
+        forceBloom={requestedQuality !== "low"}
+        bloomResolutionScale={requestedQuality === "high" ? 1 : 0.5}
+        bloomLevels={requestedQuality === "high" ? 8 : 5}
+        enableChromaticAberration={false}
+      />
+      <PerfMonitor
+        visible={showPerf}
+        active={showPerf}
+        warmupMs={5_000}
+        onSample={recordRenderSample}
+      />
 
-    <EnvironmentReviewViewSource
-      sceneId="autumn-scene"
-      state={() => ({
-        shot: view,
-        quality: requestedQuality,
-        dpr: renderDpr,
-      })}
-      onReading={(nextReading) => (reading = nextReading)}
-    />
+      {#key cameraKey}
+        <EnvironmentReviewCamera
+          destinationId="autumn-scene-review"
+          preset={cameraPreset}
+          walk={view === "walk" || Boolean(replayPose)}
+        />
+      {/key}
 
-    <!-- Real environment switcher. AUTUMN routes to AutumnScene, which
+      <EnvironmentReviewViewSource
+        sceneId="autumn-scene"
+        state={() => ({
+          shot: view,
+          quality: requestedQuality,
+          dpr: renderDpr,
+        })}
+        onReading={(nextReading) => (reading = nextReading)}
+      />
+
+      <!-- Real environment switcher. AUTUMN routes to AutumnScene, which
          supplies its own sky, ground, fog, trees, leaves and lighting. -->
-    <Environment3D
-      backgroundType={BackgroundType.AUTUMN}
-      performerCount={1}
-      stageWidth={6}
-      stageDepth={6}
-      stageZOffset={0}
-    />
-  </Canvas>
+      <Environment3D
+        backgroundType={BackgroundType.AUTUMN}
+        performerCount={1}
+        stageWidth={6}
+        stageDepth={6}
+        stageZOffset={0}
+      />
+    </Canvas>
 
-  <aside class="view-inspector" aria-label="Autumn review coordinates">
-    <button type="button" onclick={copyCurrentView}>
-      <span>Copy exact view</span>
-      <kbd>P</kbd>
-    </button>
-    {#if reading}
-      <dl>
-        <div>
-          <dt>Camera</dt>
-          <dd>{formatPoint(reading.camera)}</dd>
-        </div>
-        <div class="target-reading">
-          <dt>Centre target</dt>
-          <dd>{targetLabel}</dd>
-        </div>
-        {#if reading.target}
+    <aside class="view-inspector" aria-label="Autumn review coordinates">
+      <button type="button" onclick={copyCurrentView}>
+        <span>Copy exact view</span>
+        <kbd>P</kbd>
+      </button>
+      {#if reading}
+        <dl>
           <div>
-            <dt>Target origin</dt>
-            <dd>{formatPoint(reading.target.origin)}</dd>
+            <dt>Camera</dt>
+            <dd>{formatPoint(reading.camera)}</dd>
           </div>
-          <div>
-            <dt>Surface hit</dt>
-            <dd>{formatPoint(reading.target.point)}</dd>
+          <div class="target-reading">
+            <dt>Centre target</dt>
+            <dd>{targetLabel}</dd>
           </div>
-        {/if}
-      </dl>
-    {:else}
-      <span class="waiting">Reading camera…</span>
-    {/if}
-    {#if captureNote}
-      <span class="capture-note" role="status" aria-live="polite"
-        >{captureNote}</span
+          {#if reading.target}
+            <div>
+              <dt>Target origin</dt>
+              <dd>{formatPoint(reading.target.origin)}</dd>
+            </div>
+            <div>
+              <dt>Surface hit</dt>
+              <dd>{formatPoint(reading.target.point)}</dd>
+            </div>
+          {/if}
+        </dl>
+      {:else}
+        <span class="waiting">Reading camera…</span>
+      {/if}
+      {#if captureNote}
+        <span class="capture-note" role="status" aria-live="polite"
+          >{captureNote}</span
+        >
+      {/if}
+    </aside>
+  {/if}
+
+  {#if showPerf && renderSample}
+    <aside class="perf-readout" aria-label="Autumn renderer performance">
+      <span>{renderSample.fps} FPS</span>
+      <span>P95 {renderSample.frameP95Ms.toFixed(1)}ms</span>
+      <span>P99 {renderSample.frameP99Ms.toFixed(1)}ms</span>
+      <span
+        >GPU95 {renderSample.gpuTimingSupported
+          ? `${renderSample.gpuP95Ms.toFixed(1)}ms`
+          : "n/a"}</span
       >
-    {/if}
-  </aside>
+      <span>{(renderSample.longFrameRate * 100).toFixed(2)}% long</span>
+      <span>{(renderSample.thermalDrift * 100).toFixed(1)}% drift</span>
+      <span>{renderSample.drawCalls} draws</span>
+      <span>{(renderSample.triangles / 1_000_000).toFixed(3)}M tris</span>
+      <span>{renderSample.geometries} geo</span>
+      <span>{renderSample.textures} tex</span>
+      <span>{renderSample.programs} programs</span>
+    </aside>
+  {/if}
 </div>
 
 <style>
@@ -277,6 +390,29 @@
     box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.32);
     color: #fff7ed;
     font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    backdrop-filter: blur(0.7rem);
+  }
+
+  .perf-readout {
+    position: absolute;
+    inset-block-start: clamp(0.75rem, 1.5vw, 1.5rem);
+    inset-inline-end: clamp(0.75rem, 1.5vw, 1.5rem);
+    z-index: 20;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.35rem 0.75rem;
+    max-inline-size: min(32rem, calc(100vw - 1.5rem));
+    padding: 0.55rem 0.7rem;
+    border: 1px solid rgba(255, 210, 153, 0.18);
+    border-radius: 0.7rem;
+    background: rgba(20, 10, 8, 0.78);
+    color: #ffedd5;
+    font:
+      700 0.72rem/1.35 ui-monospace,
+      "SFMono-Regular",
+      Consolas,
+      monospace;
     backdrop-filter: blur(0.7rem);
   }
 
@@ -432,6 +568,11 @@
 
     dl {
       grid-template-columns: 1fr;
+    }
+
+    .perf-readout {
+      justify-content: flex-start;
+      font-size: 0.65rem;
     }
   }
 </style>

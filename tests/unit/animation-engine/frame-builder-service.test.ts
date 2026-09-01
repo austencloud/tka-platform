@@ -30,14 +30,14 @@ describe("FrameBuilder", () => {
 
   it("calculateTurnsTuple delegates to generator when available", () => {
     const generator = { generateTurnsTuple: vi.fn().mockReturnValue("(+, 1, 1)") };
-    const stepData = { motions: { blue: {}, red: {} } } as any;
+    const stepData = { motions: { left: {}, right: {} } } as any;
     const svc = new FrameBuilder();
     expect(svc.calculateTurnsTuple(stepData, generator as any)).toBe("(+, 1, 1)");
   });
 
   it("calculateTurnsTuple returns default when generator returns null", () => {
     const generator = { generateTurnsTuple: vi.fn().mockReturnValue(null) };
-    const stepData = { motions: { blue: {}, red: {} } } as any;
+    const stepData = { motions: { left: {}, right: {} } } as any;
     const svc = new FrameBuilder();
     expect(svc.calculateTurnsTuple(stepData, generator as any)).toBe("(s, 0, 0)");
   });

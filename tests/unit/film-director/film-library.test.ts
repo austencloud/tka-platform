@@ -101,24 +101,26 @@ describe("film library", () => {
     const ninePlanes = FILM_LIBRARY.find((entry) => entry.key === "planes")!;
     const resolved = resolveFilmDirectorSpec(ninePlanes.film);
 
-    const wheelhouse = resolved.scenes.find((scene) => scene.id === "wheelhouse")!;
+    const wheelhouse = resolved.scenes.find(
+      (scene) => scene.id === "wheelhouse"
+    )!;
     expect(wheelhouse.location.visiblePlanes).toEqual(["wheel"]);
     for (const performer of wheelhouse.performance.performers) {
-      expect(performer.bluePlane).toBe("wheel");
-      expect(performer.redPlane).toBe("wheel");
+      expect(performer.leftPlane).toBe("wheel");
+      expect(performer.rightPlane).toBe("wheel");
     }
 
     const noTwoAlike = resolved.scenes.find(
       (scene) => scene.id === "no-two-alike"
     )!;
-    const bluePlanes = noTwoAlike.performance.performers.map(
-      (performer) => performer.bluePlane
+    const leftPlanes = noTwoAlike.performance.performers.map(
+      (performer) => performer.leftPlane
     );
-    expect(new Set(bluePlanes).size).toBe(bluePlanes.length);
-    const redPlanes = noTwoAlike.performance.performers.map(
-      (performer) => performer.redPlane
+    expect(new Set(leftPlanes).size).toBe(leftPlanes.length);
+    const rightPlanes = noTwoAlike.performance.performers.map(
+      (performer) => performer.rightPlane
     );
-    expect(new Set(redPlanes).size).toBe(redPlanes.length);
+    expect(new Set(rightPlanes).size).toBe(rightPlanes.length);
 
     const scramble = resolved.scenes.find(
       (scene) => scene.id === "mid-phrase-scramble"
@@ -182,9 +184,46 @@ describe("film library", () => {
     expect(mirror.prop).toBe(original.prop);
     expect(mirror.effect).toBe(original.effect);
     expect(mirror.effort).toBe(original.effort);
-    expect(mirror.bluePlane).toBe(original.bluePlane);
-    expect(mirror.redPlane).toBe(original.redPlane);
+    expect(mirror.leftPlane).toBe(original.leftPlane);
+    expect(mirror.rightPlane).toBe(original.rightPlane);
     expect(mirror.staffLengthCm).not.toBe(original.staffLengthCm);
+  });
+
+  it("Proving Grounds exercises the gaps it advertises", () => {
+    const proving = FILM_LIBRARY.find((entry) => entry.key === "proving")!;
+    const resolved = resolveFilmDirectorSpec(proving.film);
+
+    const combined = resolved.scenes.find((s) => s.id === "combined-draw")!;
+    const lefts = combined.performance.performers.map((p) => p.leftPlane);
+    const rights = combined.performance.performers.map((p) => p.rightPlane);
+    expect(new Set(lefts).size).toBe(lefts.length);
+    expect(new Set(rights).size).toBe(rights.length);
+    expect(lefts).not.toContain("wall");
+    expect(rights).not.toContain("wall");
+    // Distinctness is only guaranteed PER axis — the pinned seed additionally
+    // produces zero cross-axis repeats, so the frame actually shows six
+    // different planes rather than four unique ones reused across six slots.
+    expect(new Set([...lefts, ...rights]).size).toBe(6);
+
+    const onBeat = resolved.scenes.find((s) => s.id === "on-the-beat")!;
+    expect(onBeat.durationSeconds).toBe(8);
+    const pushStart = onBeat.camera.keyframes.find(
+      (frame) => Math.abs(frame.atSeconds - 0) < 1e-6
+    );
+    const pushArrival = onBeat.camera.keyframes.find(
+      (frame) => Math.abs(frame.atSeconds - 4) < 1e-6
+    );
+    expect(pushStart).toBeDefined();
+    expect(pushArrival).toBeDefined();
+    // A keyframe existing at 4s isn't proof the push actually moved the
+    // camera — compare against the 0s keyframe to prove it did.
+    expect(pushArrival!.position).not.toEqual(pushStart!.position);
+    const walker = onBeat.performance.performers[1]!;
+    const arrival = walker.blocking.find(
+      (frame) => Math.abs(frame.atSeconds - 4) < 1e-6
+    );
+    expect(arrival).toBeDefined();
+    expect(arrival!.position).toEqual({ x: -1.5, z: -1 });
   });
 
   it("Chance Suite's identical directives on different scenes draw from different streams", () => {
@@ -203,7 +242,7 @@ describe("film library", () => {
     for (const performer of loaded.performance.performers) {
       expect(["fire", "led", "trails"]).toContain(performer.effect);
       const redStep = performer.stepPlanes.find(
-        (entry) => entry.hand === "red"
+        (entry) => entry.hand === "right"
       )!;
       expect(redStep.plane).not.toBe("wall");
     }

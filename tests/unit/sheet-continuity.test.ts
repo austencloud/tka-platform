@@ -6,7 +6,7 @@ import {
   normalizeToStart,
   loopStatus,
 } from "$lib/features/write/services/sheet-continuity";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 // Minimal fake: only the fields sheet-continuity reads.
@@ -27,11 +27,11 @@ function seq(
       startPosition: s.start,
       endPosition: s.end,
       motions: {
-        [MotionColor.BLUE]: {
+        [HandSide.LEFT]: {
           startOrientation: s.bStart ?? "in",
           endOrientation: s.bEnd ?? "in",
         },
-        [MotionColor.RED]: {
+        [HandSide.RIGHT]: {
           startOrientation: s.rStart ?? "in",
           endOrientation: s.rEnd ?? "in",
         },
@@ -44,8 +44,8 @@ function seq(
 describe("edge states", () => {
   it("reads start state from step 0 and end state from last step", () => {
     const s = seq([{ start: "alpha1", end: "beta3", bEnd: "out", rEnd: "out" }]);
-    expect(startStateOf(s)).toEqual({ position: "alpha1", blueOri: "in", redOri: "in" });
-    expect(endStateOf(s)).toEqual({ position: "beta3", blueOri: "out", redOri: "out" });
+    expect(startStateOf(s)).toEqual({ position: "alpha1", leftOri: "in", rightOri: "in" });
+    expect(endStateOf(s)).toEqual({ position: "beta3", leftOri: "out", rightOri: "out" });
   });
   it("returns null for an empty sequence", () => {
     expect(startStateOf(seq([]))).toBeNull();
@@ -74,7 +74,7 @@ describe("connects", () => {
 });
 
 describe("normalizeToStart", () => {
-  const target = { position: "beta3", blueOri: "in", redOri: "in" };
+  const target = { position: "beta3", leftOri: "in", rightOri: "in" };
 
   it("returns the sequence unchanged when it already starts at target", () => {
     const s = seq([{ start: "beta3", end: "alpha1" }]);

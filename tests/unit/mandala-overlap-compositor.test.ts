@@ -5,15 +5,15 @@ import { compositeMandalaOverlap } from "$lib/shared/mandala/services/mandala-ov
 describe("mandala overlap compositor", () => {
   it("intersects the hand masks and paints the shared pixels purple", () => {
     const operations: string[] = [];
-    const blueMask = {} as OffscreenCanvas;
-    const redMask = {} as OffscreenCanvas;
+    const leftMask = {} as OffscreenCanvas;
+    const rightMask = {} as OffscreenCanvas;
     const overlapMaskContext = {
       setTransform: () => operations.push("mask:identity"),
       set globalCompositeOperation(value: GlobalCompositeOperation) {
         operations.push(`mask:composite:${value}`);
       },
       drawImage: (source: CanvasImageSource) => {
-        expect(source).toBe(redMask);
+        expect(source).toBe(rightMask);
         operations.push("mask:intersect-red");
       },
       set fillStyle(value: string | CanvasGradient | CanvasPattern) {
@@ -32,7 +32,7 @@ describe("mandala overlap compositor", () => {
         operations.push(`target:alpha:${value}`);
       },
       drawImage: (source: CanvasImageSource) => {
-        expect(source).toBe(blueMask);
+        expect(source).toBe(leftMask);
         operations.push("target:draw-overlap");
       },
       restore: () => operations.push("target:restore"),
@@ -41,8 +41,8 @@ describe("mandala overlap compositor", () => {
     compositeMandalaOverlap({
       targetContext,
       overlapMaskContext,
-      overlapMaskCanvas: blueMask,
-      otherMaskCanvas: redMask,
+      overlapMaskCanvas: leftMask,
+      otherMaskCanvas: rightMask,
       width: 950,
       height: 950,
     });

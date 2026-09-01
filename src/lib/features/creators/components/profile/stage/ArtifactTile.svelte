@@ -56,9 +56,9 @@
     /** Mandala media: everything CollectedMandala carries. */
     mandala?: {
       steps: unknown[];
-      variant: "blue" | "red" | "both";
-      bluePropType?: string;
-      redPropType?: string;
+      variant: "left" | "right" | "both";
+      leftPropType?: string;
+      rightPropType?: string;
       pathShape?: "arc" | "linear" | "concave" | "hybrid";
     } | null;
     lightMode?: boolean;
@@ -145,8 +145,8 @@
   // used to inherit the selected props while the mandala floor defaulted to a
   // saved intent or staff, so clubs could animate over a two-ended staff path.
   const seqPropTypes = $derived({
-    blue: settingsService.settings.bluePropType ?? "staff",
-    red: settingsService.settings.redPropType ?? "staff",
+    left: settingsService.settings.leftPropType ?? "staff",
+    right: settingsService.settings.rightPropType ?? "staff",
   });
 
   /** Outermost tip distance for a prop, in the engine's prop-local units. */
@@ -159,7 +159,7 @@
   // Mixed-prop sequences are rare and the larger reach is the safer read — it
   // never draws an orbit TIGHTER than something the props actually trace.
   const overlayTipDx = $derived(
-    Math.max(tipReach(seqPropTypes.blue), tipReach(seqPropTypes.red))
+    Math.max(tipReach(seqPropTypes.left), tipReach(seqPropTypes.right))
   );
 
   /**
@@ -266,8 +266,8 @@
               pathShape="arc"
               animate={false}
               darkMode={!lightMode}
-              bluePropType={seqPropTypes.blue}
-              redPropType={seqPropTypes.red}
+              leftPropType={seqPropTypes.left}
+              rightPropType={seqPropTypes.right}
               tipDx={overlayTipDx}
               size={320}
             />
@@ -282,8 +282,8 @@
                 active
                 props={{
                   sequence,
-                  bluePropType: seqPropTypes.blue,
-                  redPropType: seqPropTypes.red,
+                  leftPropType: seqPropTypes.left,
+                  rightPropType: seqPropTypes.right,
                   autoPlay: true,
                   showControls: false,
                   chrome: "minimal",
@@ -342,8 +342,8 @@
           sequence={{ steps: mandala.steps }}
           mode="gallery"
           show={mandala.variant}
-          bluePropType={mandala.bluePropType}
-          redPropType={mandala.redPropType}
+          leftPropType={mandala.leftPropType}
+          rightPropType={mandala.rightPropType}
           pathShape={mandala.pathShape ?? "arc"}
           animate={showLive}
           animateRotation={0}

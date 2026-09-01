@@ -24,9 +24,9 @@
   const opts = { tipEnds: 1 as const, pathShape: "arc" as const };
   const tip = { dx: 150, dy: 0 };
   const pathA =
-    calculateMandalaGeometry(seq.steps.slice(0, 2), undefined, undefined, opts, tip).red[0]?.d ?? "";
+    calculateMandalaGeometry(seq.steps.slice(0, 2), undefined, undefined, opts, tip).right[0]?.d ?? "";
   const pathB =
-    calculateMandalaGeometry(seq.steps.slice(2, 4), undefined, undefined, opts, tip).red[0]?.d ?? "";
+    calculateMandalaGeometry(seq.steps.slice(2, 4), undefined, undefined, opts, tip).right[0]?.d ?? "";
 
   const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
 

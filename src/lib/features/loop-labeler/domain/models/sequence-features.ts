@@ -41,10 +41,10 @@ export interface PositionDominance {
  */
 export interface ReversalAnalysis {
   /** Number of blue handpath reversals */
-  readonly blueReversalCount: number;
+  readonly leftReversalCount: number;
 
   /** Number of red handpath reversals */
-  readonly redReversalCount: number;
+  readonly rightReversalCount: number;
 
   /** Total reversal count */
   readonly totalReversals: number;
@@ -56,10 +56,10 @@ export interface ReversalAnalysis {
   readonly synchronizedReversals: boolean;
 
   /** Beat numbers where blue reversals occur */
-  readonly blueReversalSteps: readonly number[];
+  readonly leftReversalSteps: readonly number[];
 
   /** Beat numbers where red reversals occur */
-  readonly redReversalSteps: readonly number[];
+  readonly rightReversalSteps: readonly number[];
 }
 
 /**
@@ -122,13 +122,13 @@ export function createDefaultSequenceFeatures(): SequenceFeatures {
     },
     detectedCapTypes: [],
     reversals: {
-      blueReversalCount: 0,
-      redReversalCount: 0,
+      leftReversalCount: 0,
+      rightReversalCount: 0,
       totalReversals: 0,
       hasReversals: false,
       synchronizedReversals: false,
-      blueReversalSteps: [],
-      redReversalSteps: [],
+      leftReversalSteps: [],
+      rightReversalSteps: [],
     },
     positionDominance: {
       primaryGroup: null,

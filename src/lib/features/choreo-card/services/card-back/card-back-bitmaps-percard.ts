@@ -218,9 +218,9 @@ export async function rasterizeTurnGlyph(
   let x = (boxW - clusterW) / 2;
 
   for (const entry of entries) {
-    drawTurnBar(ctx2d, x, boxH, barW, turnBarHeightCqi(entry.blue, !!entry.blueFloat) * cqi, radius, BLUE_HAND, !!entry.blueFloat);
+    drawTurnBar(ctx2d, x, boxH, barW, turnBarHeightCqi(entry.left, !!entry.leftFloat) * cqi, radius, BLUE_HAND, !!entry.leftFloat);
     x += barW + intraGap;
-    drawTurnBar(ctx2d, x, boxH, barW, turnBarHeightCqi(entry.red, !!entry.redFloat) * cqi, radius, RED_HAND, !!entry.redFloat);
+    drawTurnBar(ctx2d, x, boxH, barW, turnBarHeightCqi(entry.right, !!entry.rightFloat) * cqi, radius, RED_HAND, !!entry.rightFloat);
     x += barW + groupGap;
   }
 
@@ -294,8 +294,8 @@ export async function rasterizeReversalGlyph(
 
   for (const symbol of symbols) {
     const dots = reversalDots(symbol);
-    drawReversalDot(ctx2d, cx, topCy, r, dots.red ? RED_HAND : null, ctx.textMutedColor);
-    drawReversalDot(ctx2d, cx, botCy, r, dots.blue ? BLUE_HAND : null, ctx.textMutedColor);
+    drawReversalDot(ctx2d, cx, topCy, r, dots.right ? RED_HAND : null, ctx.textMutedColor);
+    drawReversalDot(ctx2d, cx, botCy, r, dots.left ? BLUE_HAND : null, ctx.textMutedColor);
     cx += colW + colGap;
   }
 
@@ -303,12 +303,12 @@ export async function rasterizeReversalGlyph(
 }
 
 /** Reversal symbol → which dots are filled (ReversalPatternGlyph.getDots). */
-function reversalDots(symbol: string): { red: boolean; blue: boolean } {
+function reversalDots(symbol: string): { right: boolean; left: boolean } {
   switch (symbol) {
-    case "P": return { red: true, blue: true };
-    case "R": return { red: true, blue: false };
-    case "B": return { red: false, blue: true };
-    default: return { red: false, blue: false };
+    case "P": return { right: true, left: true };
+    case "R": return { right: true, left: false };
+    case "B": return { right: false, left: true };
+    default: return { right: false, left: false };
   }
 }
 
@@ -514,8 +514,8 @@ export async function rasterizeStartPosPictograph(
   pictographData: unknown,
   darkMode: boolean,
   ctx: PerCardRenderCtx = DEFAULT_CTX,
-  bluePropType?: PropType,
-  redPropType?: PropType,
+  leftPropType?: PropType,
+  rightPropType?: PropType,
 ): Promise<ImageBitmap> {
   const box = Math.round(12 * ctx.cqi);
   const borderW = Math.max(1, Math.round(0.3 * ctx.cqi));
@@ -534,8 +534,8 @@ export async function rasterizeStartPosPictograph(
       showNonRadialPoints: false,
       handPointVisibility: "all",
       // Draw the deck's prop, not the renderer's staff default.
-      bluePropType,
-      redPropType,
+      leftPropType,
+      rightPropType,
     },
   });
 

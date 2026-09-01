@@ -1,7 +1,9 @@
+import { ArrowHelper } from "three";
 import { describe, expect, it } from "vitest";
 import {
   getGridMarkerGeometry,
   getGridMaterial,
+  getGridOrientationHelperArgs,
   getGridPlaneGeometry,
   getGridRenderResourceCounts,
   getGridRingGeometry,
@@ -30,5 +32,19 @@ describe("grid render resources", () => {
     const counts = getGridRenderResourceCounts();
     expect(counts.geometries).toBeGreaterThanOrEqual(4);
     expect(counts.materials).toBeGreaterThanOrEqual(2);
+  });
+
+  it("builds every orientation arrow with finite Three.js transforms", () => {
+    const helpers = getGridOrientationHelperArgs(1.2).map(
+      (args) => new ArrowHelper(...args)
+    );
+
+    expect(helpers).toHaveLength(3);
+    for (const helper of helpers) {
+      expect(helper.position.toArray().every(Number.isFinite)).toBe(true);
+      expect(helper.quaternion.toArray().every(Number.isFinite)).toBe(true);
+      expect(helper.line.scale.toArray().every(Number.isFinite)).toBe(true);
+      expect(helper.cone.scale.toArray().every(Number.isFinite)).toBe(true);
+    }
   });
 });

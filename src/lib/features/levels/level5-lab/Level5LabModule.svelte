@@ -37,8 +37,8 @@
       ALL_POSITIONS.map((pos) => [
         pos,
         {
-          blue: isHandAtCenter(pos, "blue") ? Orientation.CENTER_N : Orientation.IN,
-          red: isHandAtCenter(pos, "red") ? Orientation.CENTER_N : Orientation.IN,
+          left: isHandAtCenter(pos, "left") ? Orientation.CENTER_N : Orientation.IN,
+          right: isHandAtCenter(pos, "right") ? Orientation.CENTER_N : Orientation.IN,
         },
       ])
     )
@@ -46,7 +46,7 @@
 
   function handleOrientationChange(
     position: GridPosition,
-    hand: "blue" | "red",
+    hand: "left" | "right",
     value: Orientation
   ): void {
     const current = orientationMap.get(position);
@@ -57,14 +57,14 @@
   }
 
 
-  const bluePropType = $derived.by(() => {
+  const leftPropType = $derived.by(() => {
     const settings = getSettings();
-    return (settings.bluePropType ?? settings.propType ?? PropType.STAFF) as PropType;
+    return (settings.leftPropType ?? settings.propType ?? PropType.STAFF) as PropType;
   });
 
-  const redPropType = $derived.by(() => {
+  const rightPropType = $derived.by(() => {
     const settings = getSettings();
-    return (settings.redPropType ?? settings.propType ?? PropType.STAFF) as PropType;
+    return (settings.rightPropType ?? settings.propType ?? PropType.STAFF) as PropType;
   });
 
   const displaySections = $derived.by((): PositionSection[] => {
@@ -116,8 +116,8 @@
     sections={displaySections}
     {orientationMap}
     onOrientationChange={handleOrientationChange}
-    {bluePropType}
-    {redPropType}
+    {leftPropType}
+    {rightPropType}
   />
 </div>
 

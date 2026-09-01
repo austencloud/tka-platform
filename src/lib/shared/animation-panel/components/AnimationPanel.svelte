@@ -29,14 +29,23 @@
   import { getAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
-  import { EFFECT_LABELS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
+  import {
+    EFFECT_COLORS,
+    EFFECT_LABELS,
+  } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
   import DisplayPanel from "$lib/shared/animation-engine/components/settings-panels/DisplayPanel.svelte";
   import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import FanAppearancePicker from "$lib/shared/pictograph/prop/components/FanAppearancePicker.svelte";
+  import {
+    isFanPropType,
+    type FanAppearance,
+  } from "$lib/shared/pictograph/prop/domain/fan-appearance";
   import type { PropChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
   import IconRailNav from "../pill-nav/IconRailNav.svelte";
+  import { RAIL_CATEGORY_ACCENTS } from "../pill-nav/rail-category-accents";
   import ControlDock, {
     type ControlDockTab,
     type ControlDockAction,
@@ -91,9 +100,14 @@
      *  provides persistent playback controls beside the canvas. */
     showEffectsPlayback?: boolean;
     selectedPropType?: PropType;
+    fanAppearance?: FanAppearance;
+    onFanAppearanceChange?: (appearance: FanAppearance) => void;
     /** The loaded sequence. Only the Display page reads it, so the word, glyph,
      *  and mandala tiles can preview THIS sequence instead of a stand-in. */
-    sequence?: { word?: string | null; steps?: ReadonlyArray<{ letter?: string | null }> | null } | null;
+    sequence?: {
+      word?: string | null;
+      steps?: ReadonlyArray<{ letter?: string | null }> | null;
+    } | null;
     onPropChange?: (propType: PropType) => void;
     /**
      * Buugeng chirality seam forwarded to the props pill's picker. Optional
@@ -136,6 +150,8 @@
     showTempoControls = true,
     showEffectsPlayback = true,
     selectedPropType,
+    fanAppearance,
+    onFanAppearanceChange,
     sequence = null,
     onPropChange,
     propChirality,
@@ -322,11 +338,16 @@
     );
   });
 
-  const effectsSummary = $derived.by(() => {
+  const activeEffectId = $derived.by(() => {
     void vmVersion;
-    const activeEffect = effectsConfigState?.activeEffect ?? "none";
-    return computeEffectsSummary(activeEffect, EFFECT_LABELS);
+    return effectsConfigState?.activeEffect ?? "none";
   });
+  const effectsSummary = $derived(
+    computeEffectsSummary(activeEffectId, EFFECT_LABELS)
+  );
+  const effectsAccent = $derived(
+    EFFECT_COLORS[activeEffectId] ?? RAIL_CATEGORY_ACCENTS.effects
+  );
 
   const effortSummary = $derived(activeEffort.label);
   const effortAccent = $derived(activeEffort.color);
@@ -348,7 +369,7 @@
       props: s.props,
       wordHeader: s.wordHeader,
       mandala: s.mandala,
-      pathLines: s.bluePathLines || s.redPathLines,
+      pathLines: s.leftPathLines || s.rightPathLines,
       grid: vm.isGridVisible(),
     });
   });
@@ -434,9 +455,11 @@
         ...(onPropChange
           ? {
               props: {
-                icon: "fa-paintbrush",
+                propType: selectedPropType,
+                fanAppearance,
                 label: "Props",
                 summary: propsSummary,
+                accentColor: RAIL_CATEGORY_ACCENTS.props,
               },
             }
           : {}),
@@ -444,6 +467,7 @@
           icon: "fa-wand-magic-sparkles",
           label: "Effects",
           summary: effectsSummary,
+          accentColor: effectsAccent,
         },
         effort: {
           label: "Effort",
@@ -451,11 +475,17 @@
           accentColor: effortAccent,
         },
         playback: {
-          icon: "fa-play",
+          icon: "fa-route",
           label: "Playback",
           summary: playbackSummary,
+          accentColor: RAIL_CATEGORY_ACCENTS.playback,
         },
-        display: { icon: "fa-eye", label: "Display", summary: displaySummary },
+        display: {
+          icon: "fa-eye",
+          label: "Display",
+          summary: displaySummary,
+          accentColor: RAIL_CATEGORY_ACCENTS.display,
+        },
         // Effort alone, not effort + playback: the summary contract is ≤24
         // chars (pill-types.ts) and concatenating two live values blew past it
         // and changed width on every BPM tick, which is a shifting rail.
@@ -519,6 +549,8 @@
       id: p.id,
       label: p.label,
       icon: p.icon,
+      propType: p.propType,
+      fanAppearance: p.fanAppearance,
       accentColor: p.accentColor,
     }))
   );
@@ -559,6 +591,15 @@
         variant="inline"
         flat={layout === "bottom"}
       />
+      {#if fanAppearance && onFanAppearanceChange && isFanPropType(selectedPropType)}
+        <div class="fan-appearance-section">
+          <FanAppearancePicker
+            value={fanAppearance}
+            onchange={onFanAppearanceChange}
+            compact={layout === "bottom"}
+          />
+        </div>
+      {/if}
     {/await}
   {:else if resolvedPill === "effects"}
     <EffectsPanel
@@ -1180,6 +1221,17 @@
     min-height: 140px;
   }
 
+  .fan-appearance-section {
+    margin-top: 14px;
+    padding: 14px 16px 18px;
+    border-top: 1px solid var(--theme-stroke);
+  }
+
+  .dock-dense .fan-appearance-section {
+    margin-top: 10px;
+    padding: 10px 12px 12px;
+  }
+
   /* Compact Export body: label-left rows instead of stacked sections. */
   .export-fields .field {
     display: grid;
@@ -1386,7 +1438,6 @@
     gap: 6px;
   }
 
-
   .mobile-export {
     position: relative;
     flex-shrink: 0;
@@ -1401,7 +1452,6 @@
     gap: 8px;
     padding: 10px 16px 12px;
   }
-
 
   .export-panel {
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));

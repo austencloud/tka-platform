@@ -13,7 +13,10 @@
  */
 
 import type { PictographData } from "../types.js";
-import { getHandpathDirection, HandPath } from "../implementations/hand-path-constraint.js";
+import {
+  getHandpathDirection,
+  HandPath,
+} from "../implementations/hand-path-constraint.js";
 
 /**
  * Analysis result for a single letter-to-letter transition.
@@ -57,52 +60,62 @@ export interface WordAnalysis {
   propReversalBlockers: string[];
 }
 
-function hasHandReversal(from: PictographData, to: PictographData): { blue: boolean; red: boolean } {
-  const fromBlueHandPath = getHandpathDirection(
-    from.blueMotion.startLocation,
-    from.blueMotion.endLocation
+function hasHandReversal(
+  from: PictographData,
+  to: PictographData
+): { left: boolean; right: boolean } {
+  const fromLeftHandPath = getHandpathDirection(
+    from.leftMotion.startLocation,
+    from.leftMotion.endLocation
   );
-  const toBlueHandPath = getHandpathDirection(
-    to.blueMotion.startLocation,
-    to.blueMotion.endLocation
+  const toLeftHandPath = getHandpathDirection(
+    to.leftMotion.startLocation,
+    to.leftMotion.endLocation
   );
-  const fromRedHandPath = getHandpathDirection(
-    from.redMotion.startLocation,
-    from.redMotion.endLocation
+  const fromRightHandPath = getHandpathDirection(
+    from.rightMotion.startLocation,
+    from.rightMotion.endLocation
   );
-  const toRedHandPath = getHandpathDirection(
-    to.redMotion.startLocation,
-    to.redMotion.endLocation
+  const toRightHandPath = getHandpathDirection(
+    to.rightMotion.startLocation,
+    to.rightMotion.endLocation
   );
 
   // Only cw ↔ ccw is a reversal (dash/static are neutral)
-  const blueReversal =
-    (fromBlueHandPath === HandPath.CLOCKWISE && toBlueHandPath === HandPath.COUNTER_CLOCKWISE) ||
-    (fromBlueHandPath === HandPath.COUNTER_CLOCKWISE && toBlueHandPath === HandPath.CLOCKWISE);
-  const redReversal =
-    (fromRedHandPath === HandPath.CLOCKWISE && toRedHandPath === HandPath.COUNTER_CLOCKWISE) ||
-    (fromRedHandPath === HandPath.COUNTER_CLOCKWISE && toRedHandPath === HandPath.CLOCKWISE);
+  const leftReversal =
+    (fromLeftHandPath === HandPath.CLOCKWISE &&
+      toLeftHandPath === HandPath.COUNTER_CLOCKWISE) ||
+    (fromLeftHandPath === HandPath.COUNTER_CLOCKWISE &&
+      toLeftHandPath === HandPath.CLOCKWISE);
+  const rightReversal =
+    (fromRightHandPath === HandPath.CLOCKWISE &&
+      toRightHandPath === HandPath.COUNTER_CLOCKWISE) ||
+    (fromRightHandPath === HandPath.COUNTER_CLOCKWISE &&
+      toRightHandPath === HandPath.CLOCKWISE);
 
-  return { blue: blueReversal, red: redReversal };
+  return { left: leftReversal, right: rightReversal };
 }
 
-function hasPropReversal(from: PictographData, to: PictographData): { blue: boolean; red: boolean } {
+function hasPropReversal(
+  from: PictographData,
+  to: PictographData
+): { left: boolean; right: boolean } {
   // Get effective prop rotation (considering motion type)
-  const fromBlueRotation = getEffectivePropRotation(from.blueMotion);
-  const toBlueRotation = getEffectivePropRotation(to.blueMotion);
-  const fromRedRotation = getEffectivePropRotation(from.redMotion);
-  const toRedRotation = getEffectivePropRotation(to.redMotion);
+  const fromLeftRotation = getEffectivePropRotation(from.leftMotion);
+  const toLeftRotation = getEffectivePropRotation(to.leftMotion);
+  const fromRightRotation = getEffectivePropRotation(from.rightMotion);
+  const toRightRotation = getEffectivePropRotation(to.rightMotion);
 
-  const blueReversal =
-    fromBlueRotation !== null &&
-    toBlueRotation !== null &&
-    fromBlueRotation !== toBlueRotation;
-  const redReversal =
-    fromRedRotation !== null &&
-    toRedRotation !== null &&
-    fromRedRotation !== toRedRotation;
+  const leftReversal =
+    fromLeftRotation !== null &&
+    toLeftRotation !== null &&
+    fromLeftRotation !== toLeftRotation;
+  const rightReversal =
+    fromRightRotation !== null &&
+    toRightRotation !== null &&
+    fromRightRotation !== toRightRotation;
 
-  return { blue: blueReversal, red: redReversal };
+  return { left: leftReversal, right: rightReversal };
 }
 
 /**
@@ -122,7 +135,9 @@ function hasPropReversal(from: PictographData, to: PictographData): { blue: bool
  * transparently past everything else. Testing the value also covers float and
  * missing data, which a motion-type list would keep missing one at a time.
  */
-function getEffectivePropRotation(motion: PictographData["blueMotion"]): "cw" | "ccw" | null {
+function getEffectivePropRotation(
+  motion: PictographData["leftMotion"]
+): "cw" | "ccw" | null {
   const dir = motion.rotationDirection;
   return dir === "cw" || dir === "ccw" ? dir : null;
 }
@@ -137,8 +152,12 @@ export function analyzeTransition(
   let noHandReversalCount = 0;
   let noPropReversalCount = 0;
   let bothHandsReverseCount = 0;
-  let noHandReversalExample: { fromVariation: number; toVariation: number } | undefined;
-  let noPropReversalExample: { fromVariation: number; toVariation: number } | undefined;
+  let noHandReversalExample:
+    | { fromVariation: number; toVariation: number }
+    | undefined;
+  let noPropReversalExample:
+    | { fromVariation: number; toVariation: number }
+    | undefined;
 
   for (let fromIdx = 0; fromIdx < fromVariations.length; fromIdx++) {
     const from = fromVariations[fromIdx];
@@ -159,23 +178,29 @@ export function analyzeTransition(
       const propRev = hasPropReversal(from, to);
 
       // No hand reversal?
-      if (!handRev.blue && !handRev.red) {
+      if (!handRev.left && !handRev.right) {
         noHandReversalCount++;
         if (!noHandReversalExample) {
-          noHandReversalExample = { fromVariation: fromIdx, toVariation: toIdx };
+          noHandReversalExample = {
+            fromVariation: fromIdx,
+            toVariation: toIdx,
+          };
         }
       }
 
       // No prop reversal?
-      if (!propRev.blue && !propRev.red) {
+      if (!propRev.left && !propRev.right) {
         noPropReversalCount++;
         if (!noPropReversalExample) {
-          noPropReversalExample = { fromVariation: fromIdx, toVariation: toIdx };
+          noPropReversalExample = {
+            fromVariation: fromIdx,
+            toVariation: toIdx,
+          };
         }
       }
 
       // Both hands reverse?
-      if (handRev.blue && handRev.red) {
+      if (handRev.left && handRev.right) {
         bothHandsReverseCount++;
       }
     }
@@ -212,7 +237,12 @@ export function analyzeWord(
     const fromVariations = getVariationsForLetter(fromLetter);
     const toVariations = getVariationsForLetter(toLetter);
 
-    const analysis = analyzeTransition(fromLetter, toLetter, fromVariations, toVariations);
+    const analysis = analyzeTransition(
+      fromLetter,
+      toLetter,
+      fromVariations,
+      toVariations
+    );
     transitions.push(analysis);
 
     if (!analysis.canAvoidHandReversal) {
@@ -237,8 +267,14 @@ export function analyzeWord(
 /**
  * Generate a human-readable explanation of why a constraint is impossible.
  */
-export function explainImpossibility(analysis: WordAnalysis, constraint: "no-hand-reversals" | "no-prop-reversals"): string {
-  if (constraint === "no-hand-reversals" && !analysis.canAvoidAllHandReversals) {
+export function explainImpossibility(
+  analysis: WordAnalysis,
+  constraint: "no-hand-reversals" | "no-prop-reversals"
+): string {
+  if (
+    constraint === "no-hand-reversals" &&
+    !analysis.canAvoidAllHandReversals
+  ) {
     const blockers = analysis.handReversalBlockers;
     if (blockers.length === 1) {
       return `The word "${analysis.word}" cannot be done without handpath reversals because the transition ${blockers[0]} always requires at least one hand to reverse direction.`;
@@ -246,7 +282,10 @@ export function explainImpossibility(analysis: WordAnalysis, constraint: "no-han
     return `The word "${analysis.word}" cannot be done without handpath reversals. ${blockers.length} transitions always require handpath reversals: ${blockers.join(", ")}.`;
   }
 
-  if (constraint === "no-prop-reversals" && !analysis.canAvoidAllPropReversals) {
+  if (
+    constraint === "no-prop-reversals" &&
+    !analysis.canAvoidAllPropReversals
+  ) {
     const blockers = analysis.propReversalBlockers;
     if (blockers.length === 1) {
       return `The word "${analysis.word}" cannot be done without prop reversals because the transition ${blockers[0]} always requires at least one prop to change spin direction.`;

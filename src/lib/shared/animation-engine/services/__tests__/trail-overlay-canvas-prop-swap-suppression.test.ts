@@ -32,8 +32,8 @@ function baseParams(
   overrides: Partial<TrailOverlayRenderParams>
 ): TrailOverlayRenderParams {
   return {
-    blueTrailPoints: [],
-    redTrailPoints: [],
+    leftTrailPoints: [],
+    rightTrailPoints: [],
     trailSettings: {
       ...DEFAULT_TRAIL_SETTINGS,
       trackingMode: TrackingMode.BOTH_ENDS,
@@ -41,9 +41,9 @@ function baseParams(
     deltaTime: 1 / 60,
     currentTime: 0,
     canvasSize: 500,
-    hasBlue: true,
-    hasRed: false,
-    bluePropType: "staff",
+    hasLeft: true,
+    hasRight: false,
+    leftPropType: "staff",
     ...overrides,
   };
 }
@@ -53,39 +53,39 @@ function ringsOf(overlay: TrailOverlayCanvas): {
   right: Array<{ tipIndex: number }>;
 } {
   const internals = overlay as unknown as {
-    blueLeftRing: Array<{ tipIndex: number }>;
-    blueRightRing: Array<{ tipIndex: number }>;
+    leftLeftRing: Array<{ tipIndex: number }>;
+    leftRightRing: Array<{ tipIndex: number }>;
   };
   return {
-    left: internals.blueLeftRing,
-    right: internals.blueRightRing,
+    left: internals.leftLeftRing,
+    right: internals.leftRightRing,
   };
 }
 
 describe("TrailOverlayCanvas prop-swap suppression", () => {
   it("pauses capture, then starts the replacement prop as a disconnected segment", () => {
     const overlay = makeOverlay();
-    overlay.renderFrame(baseParams({ blueProp: propAt(0), currentTime: 0 }));
+    overlay.renderFrame(baseParams({ leftProp: propAt(0), currentTime: 0 }));
     overlay.renderFrame(
-      baseParams({ blueProp: propAt(0.05), currentTime: 16 })
+      baseParams({ leftProp: propAt(0.05), currentTime: 16 })
     );
     expect(ringsOf(overlay).left).toHaveLength(2);
 
     overlay.renderFrame(
       baseParams({
-        blueProp: propAt(0.2),
+        leftProp: propAt(0.2),
         currentTime: 32,
-        bluePropSwapSuppressed: true,
+        leftPropSwapSuppressed: true,
       })
     );
     expect(ringsOf(overlay).left).toHaveLength(2);
 
     overlay.renderFrame(
       baseParams({
-        blueProp: propAt(0.2),
-        bluePropType: "fan",
+        leftProp: propAt(0.2),
+        leftPropType: "fan",
         currentTime: 48,
-        bluePropSwapSuppressed: false,
+        leftPropSwapSuppressed: false,
       })
     );
 
@@ -99,28 +99,28 @@ describe("TrailOverlayCanvas prop-swap suppression", () => {
     const clearRect = vi.fn();
     const fillRect = vi.fn();
     const internals = overlay as unknown as {
-      blueAccumCtx: OffscreenCanvasRenderingContext2D | null;
+      leftAccumCtx: OffscreenCanvasRenderingContext2D | null;
     };
-    internals.blueAccumCtx = {
+    internals.leftAccumCtx = {
       clearRect,
       fillRect,
       save: () => {},
       restore: () => {},
     } as unknown as OffscreenCanvasRenderingContext2D;
 
-    overlay.renderFrame(baseParams({ blueProp: propAt(0), currentTime: 0 }));
+    overlay.renderFrame(baseParams({ leftProp: propAt(0), currentTime: 0 }));
     overlay.renderFrame(
-      baseParams({ blueProp: propAt(0.05), currentTime: 16 })
+      baseParams({ leftProp: propAt(0.05), currentTime: 16 })
     );
     clearRect.mockClear();
     fillRect.mockClear();
 
     overlay.renderFrame(
       baseParams({
-        blueProp: propAt(0.2),
-        bluePropType: "fan",
+        leftProp: propAt(0.2),
+        leftPropType: "fan",
         currentTime: 32,
-        bluePropSwapSuppressed: true,
+        leftPropSwapSuppressed: true,
       })
     );
 

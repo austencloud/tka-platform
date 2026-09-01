@@ -66,8 +66,8 @@
   const storage = typeof window === "undefined" ? null : window.localStorage;
   const rs = createDeckReleaserState({
     storage,
-    getBluePropType: () => getSettings().bluePropType,
-    getRedPropType: () => getSettings().redPropType,
+    getLeftPropType: () => getSettings().leftPropType,
+    getRightPropType: () => getSettings().rightPropType,
     mintSeed,
     nextReferenceNumber,
   });
@@ -156,11 +156,11 @@
     },
     generateSequence: (options) =>
       generationOrchestrator.generateSequence(options),
-    getStartPositionVariations: (gridMode, blueOrientation, redOrientation) =>
+    getStartPositionVariations: (gridMode, leftOrientation, rightOrientation) =>
       startPositionManager.getAllStartPositionVariations(
         gridMode,
-        blueOrientation,
-        redOrientation
+        leftOrientation,
+        rightOrientation
       ),
     loadArchivedDeck: archive.load,
     getReleasedSequenceIds: () => releaseHistory.releasedSequenceIds,
@@ -580,8 +580,8 @@
         cards={rs.cards}
         sequences={rs.sequences}
         theme={rs.theme}
-        bluePropType={rs.bluePropType}
-        redPropType={rs.redPropType}
+        leftPropType={rs.leftPropType}
+        rightPropType={rs.rightPropType}
         nextDeckNumber={rs.nextDeckNumber}
         refNumber={print.deckRefNumber}
         deckName={rs.name}
@@ -637,8 +637,8 @@
           commitDeckStep("configure", "backward", () => {
             rs.viewingRelease = null;
             rs.themeOverride = null;
-            rs.bluePropOverride = null;
-            rs.redPropOverride = null;
+            rs.leftPropOverride = null;
+            rs.rightPropOverride = null;
             rs.step = "configure";
             rs.persist();
           });

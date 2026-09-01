@@ -41,6 +41,13 @@
       mixed-axis bands, prop selection, hand/prop relationship derivation,
       animation, and pictograph readouts are additions made here.
     </p>
+    <p>
+      <strong>Hands and props.</strong> In the shape detail pane, choose a hand
+      path to see the prop relationship it produces, or choose a prop
+      relationship to find a matching hand path. The paired result stays below
+      the animation. Both controls describe the same shape from a different
+      starting point.
+    </p>
     <div class="source-links">
       <a
         href="http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/"
@@ -80,6 +87,11 @@
   p a {
     color: #f4b54c;
     text-underline-offset: 0.2em;
+  }
+
+  p strong {
+    color: var(--theme-text, #fff);
+    font-weight: 650;
   }
 
   .source-links {

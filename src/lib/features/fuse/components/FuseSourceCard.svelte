@@ -28,6 +28,10 @@
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
   import { resolveFusePictographMotionFrame } from "../services/fuse-pictograph-motion-frame";
   import { createCircularFuseSoloSequence } from "../services/fuse-solo-sequence";
+  import {
+    FUSE_LIVE_GRID_GAP,
+    getFittedFuseCellSize,
+  } from "../services/fuse-workspace-split";
 
   let {
     side,
@@ -68,12 +72,12 @@
 
   const { state: fuseState } = getFuseContext();
   const settings = getSettings();
-  const source = $derived(side === "blue" ? fuseState.blue : fuseState.red);
-  const label = $derived(side === "blue" ? "Blue" : "Red");
+  const source = $derived(side === "left" ? fuseState.left : fuseState.right);
+  const label = $derived(side === "left" ? "Left" : "Right");
   const viewMode = $derived<BrowseViewMode>({
     subject: "props",
     granularity: "solo",
-    color: side,
+    hand: side,
   });
   // The notation stage's live size. ChoreoCard's autoFit reads a landscape
   // stage as "one long row" — 8 tiny cells with dead space above and below.
@@ -107,16 +111,15 @@
     if (!isSymmetryFollower) return source.sequence;
 
     const preview = fuseState.symmetryPreview;
-    const solo = side === "blue" ? preview?.blueSoloProp : preview?.redSoloProp;
+    const solo =
+      side === "left" ? preview?.leftSoloProp : preview?.rightSoloProp;
     if (!solo) return null;
 
     return createCircularFuseSoloSequence(side, solo);
   });
-  const followerTransformLabel = $derived(
-    fuseRuleLabel(fuseState.previewRule)
-  );
+  const followerTransformLabel = $derived(fuseRuleLabel(fuseState.previewRule));
   const driverLabel = $derived(
-    fuseState.previewDriverSide === "blue" ? "Blue" : "Red"
+    fuseState.previewDriverSide === "left" ? "Left" : "Right"
   );
   const followerGlyph = $derived(fuseRuleGlyph(fuseState.previewRule));
   const followerTransformTint = $derived(fuseRuleTint(fuseState.previewRule));
@@ -164,13 +167,16 @@
   const liveGridTotalColumns = $derived(liveGridColumns + (full ? 1 : 0));
   const liveCellSize = $derived(
     Math.max(
-      72,
+      1,
       Math.floor(
-        Math.min(
-          stageW / Math.max(1, liveGridTotalColumns),
-          stageH / Math.max(1, liveGridRows)
+        getFittedFuseCellSize(
+          stageW,
+          stageH,
+          liveGridTotalColumns,
+          liveGridRows,
+          FUSE_LIVE_GRID_GAP
         )
-      ) || 120
+      )
     )
   );
 
@@ -255,7 +261,8 @@
     sequence: SequenceData | null = source.sequence
   ): Promise<void> {
     if (isSavingLoop || !sequence) return;
-    const solo = side === "blue" ? sequence.blueSoloProp : sequence.redSoloProp;
+    const solo =
+      side === "left" ? sequence.leftSoloProp : sequence.rightSoloProp;
     if (!solo) {
       showToast("This path is not ready to save yet", "info");
       return;
@@ -267,7 +274,7 @@
       const result = await getSoloPropSaveOrchestrator().save(solo, {
         name: `${label} ${solo.length}-step LOOP`,
         notes: "Created in Fuse",
-        authoredHand: side === "blue" ? "left" : "right",
+        authoredHand: side,
         ownerId: authState.effectiveUserId ?? undefined,
         ownerDisplayName: authState.user?.displayName ?? undefined,
       });
@@ -408,8 +415,8 @@
           showHandPoints={true}
           visibleHand={side}
           darkMode={true}
-          bluePropTypeOverride={settings.bluePropType}
-          redPropTypeOverride={settings.redPropType}
+          leftPropTypeOverride={settings.leftPropType}
+          rightPropTypeOverride={settings.rightPropType}
           stepNumberOverride={false}
           cellIndex={0}
           transitionKey={`fuse-${side}-compact`}
@@ -428,8 +435,8 @@
           includeStart={full}
           showMandala={full}
           highlightedStepIndex={highlightIndex}
-          bluePropType={settings.bluePropType}
-          redPropType={settings.redPropType}
+          leftPropType={settings.leftPropType}
+          rightPropType={settings.rightPropType}
           onStepClick={firstStepPickerActive
             ? (stepIndex) => void chooseInlineFirstStep(stepIndex)
             : undefined}
@@ -488,7 +495,7 @@
           disabled={sourceControlsDisabled}
           ariaLabel="{label} path options"
           placement="bottom"
-          align={side === "blue" ? "left" : "right"}
+          align={side}
         />
       </div>
     {/if}
@@ -633,8 +640,8 @@
         showNotes={false}
         showLoopGlyph={false}
         darkMode={true}
-        bluePropType={settings.bluePropType}
-        redPropType={settings.redPropType}
+        leftPropType={settings.leftPropType}
+        rightPropType={settings.rightPropType}
         hideSoloHeader={true}
         fitWidth={true}
       />
@@ -665,8 +672,8 @@
     sequence={inspectedSequence}
     presentation="live"
     browseViewMode={viewMode}
-    bluePropType={settings.bluePropType}
-    redPropType={settings.redPropType}
+    leftPropType={settings.leftPropType}
+    rightPropType={settings.rightPropType}
     onClose={() => (inspectedSequence = null)}
   />
 {/if}
@@ -694,13 +701,13 @@
       var(--theme-card-bg, rgba(255, 255, 255, 0.045));
   }
 
-  .blue-source {
-    grid-area: blue;
+  .left-source {
+    grid-area: left;
   }
 
-  .red-source {
+  .right-source {
     --source-color: var(--prop-red, #f44336);
-    grid-area: red;
+    grid-area: right;
   }
 
   .source-card.loading {
@@ -748,7 +755,7 @@
     z-index: 0;
     width: 100%;
     height: 100%;
-    overflow: auto;
+    overflow: hidden;
   }
 
   .compact-live-pictograph {
@@ -1002,8 +1009,8 @@
     );
     color: var(--theme-text, #fff);
     font-weight: 700;
-    box-shadow: 0 0 0 1px
-        color-mix(in srgb, var(--source-color) 45%, transparent),
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--source-color) 45%, transparent),
       0 6px 18px color-mix(in srgb, var(--source-color) 22%, transparent);
   }
 
@@ -1273,7 +1280,7 @@
   /* One-page fit layouts only (mirrors FuseLayout's fr-row conditions).
      min-height: 0 lets the card shrink inside its fr row; anywhere else it
      zeroes the card's minimum contribution and collapses the auto grid rows.
-     The notation stage gives up its tall floor and scrolls internally. */
+     The fitted pictographs shrink with the stage instead of making it scroll. */
   @container fuse (min-width: 600px) and (min-height: 600px) {
     .source-card {
       min-height: 0;

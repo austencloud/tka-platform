@@ -3,7 +3,7 @@
  * Repair Broken Start Positions
  *
  * Finds user-library sequences where `startPosition` EXISTS but is missing
- * `motions.blue` or `motions.red`, and rebuilds the motions block from
+ * canonical `motions.left` or `motions.right`, and rebuilds the motions block from
  * the first step's start-side motion data.
  *
  * This fixes docs produced by an older `import-sequence.cjs` that passed
@@ -53,34 +53,34 @@ function letterFromGrid(gridPos) {
 
 function synthesizeMotionsFromSteps(steps) {
   const firstStep = steps?.[0];
-  const blueMotion = firstStep?.motions?.blue;
-  const redMotion = firstStep?.motions?.red;
-  if (!blueMotion || !redMotion) return null;
+  const leftMotion = firstStep?.motions?.left || firstStep?.motions?.blue;
+  const rightMotion = firstStep?.motions?.right || firstStep?.motions?.red;
+  if (!leftMotion || !rightMotion) return null;
 
   return {
-    blue: {
-      color: "blue",
+    left: {
+      hand: "left",
       motionType: "static",
-      startLocation: blueMotion.startLocation,
-      endLocation: blueMotion.startLocation,
-      startOrientation: blueMotion.startOrientation,
-      endOrientation: blueMotion.startOrientation,
+      startLocation: leftMotion.startLocation,
+      endLocation: leftMotion.startLocation,
+      startOrientation: leftMotion.startOrientation,
+      endOrientation: leftMotion.startOrientation,
       rotationDirection: "noRotation",
       turns: 0,
-      isVisible: blueMotion.isVisible !== false,
-      propType: blueMotion.propType,
+      isVisible: leftMotion.isVisible !== false,
+      propType: leftMotion.propType,
     },
-    red: {
-      color: "red",
+    right: {
+      hand: "right",
       motionType: "static",
-      startLocation: redMotion.startLocation,
-      endLocation: redMotion.startLocation,
-      startOrientation: redMotion.startOrientation,
-      endOrientation: redMotion.startOrientation,
+      startLocation: rightMotion.startLocation,
+      endLocation: rightMotion.startLocation,
+      startOrientation: rightMotion.startOrientation,
+      endOrientation: rightMotion.startOrientation,
       rotationDirection: "noRotation",
       turns: 0,
-      isVisible: redMotion.isVisible !== false,
-      propType: redMotion.propType,
+      isVisible: rightMotion.isVisible !== false,
+      propType: rightMotion.propType,
     },
   };
 }
@@ -97,16 +97,13 @@ function repairStartPosition(data, sequenceId) {
   const derivedGridPos = firstStep?.startPosition || null;
 
   const gridPos =
-    existing.gridPosition ||
-    existing.startPosition ||
-    derivedGridPos ||
-    null;
+    existing.gridPosition || existing.startPosition || derivedGridPos || null;
 
-  const motionsOk =
-    existing.motions?.blue?.startLocation &&
-    existing.motions?.red?.startLocation;
+  const existingLeft = existing.motions?.left || existing.motions?.blue;
+  const existingRight = existing.motions?.right || existing.motions?.red;
+  const motionsOk = existingLeft?.startLocation && existingRight?.startLocation;
   const motions = motionsOk
-    ? existing.motions
+    ? { left: existingLeft, right: existingRight }
     : synthesizeMotionsFromSteps(data.steps || data.beats || []);
 
   if (!gridPos || !motions) return null;
@@ -125,10 +122,10 @@ function repairStartPosition(data, sequenceId) {
 function isBroken(startPosition) {
   if (!startPosition) return false; // backfill-start-position.cjs handles the missing case
   if (typeof startPosition !== "object") return true;
-  const hasBlueMotion = !!startPosition.motions?.blue?.startLocation;
-  const hasRedMotion = !!startPosition.motions?.red?.startLocation;
+  const hasLeftMotion = !!startPosition.motions?.left?.startLocation;
+  const hasRightMotion = !!startPosition.motions?.right?.startLocation;
   const hasGrid = !!(startPosition.gridPosition || startPosition.startPosition);
-  return !(hasBlueMotion && hasRedMotion && hasGrid);
+  return !(hasLeftMotion && hasRightMotion && hasGrid);
 }
 
 async function processDoc(docSnap, stats) {
@@ -151,14 +148,20 @@ async function processDoc(docSnap, stats) {
   const repaired = repairStartPosition(data, docSnap.id);
   if (!repaired) {
     stats.unrepairable++;
-    console.log(`  [unrepairable] ${docSnap.ref.path} — cannot derive gridPosition or motions`);
+    console.log(
+      `  [unrepairable] ${docSnap.ref.path} — cannot derive gridPosition or motions`
+    );
     return;
   }
 
   stats.willRepair++;
-  console.log(`  [${isCommit ? "REPAIR" : "dry-run"}] ${docSnap.ref.path} (word: ${data.word || data.name || "?"})`);
+  console.log(
+    `  [${isCommit ? "REPAIR" : "dry-run"}] ${docSnap.ref.path} (word: ${data.word || data.name || "?"})`
+  );
   console.log(`    old: ${JSON.stringify(data.startPosition).slice(0, 160)}`);
-  console.log(`    new.gridPosition=${repaired.gridPosition} blue=${repaired.motions.blue.startLocation}/${repaired.motions.blue.startOrientation} red=${repaired.motions.red.startLocation}/${repaired.motions.red.startOrientation}`);
+  console.log(
+    `    new.gridPosition=${repaired.gridPosition} blue=${repaired.motions.left.startLocation}/${repaired.motions.left.startOrientation} red=${repaired.motions.right.startLocation}/${repaired.motions.right.startOrientation}`
+  );
 
   if (isCommit) {
     await docSnap.ref.update({ startPosition: repaired });
@@ -167,7 +170,9 @@ async function processDoc(docSnap, stats) {
 }
 
 async function main() {
-  console.log(`Repair Broken Start Positions ${isCommit ? "(COMMIT)" : "(dry-run)"}`);
+  console.log(
+    `Repair Broken Start Positions ${isCommit ? "(COMMIT)" : "(dry-run)"}`
+  );
   const stats = {
     ok: 0,
     willRepair: 0,
@@ -195,7 +200,9 @@ async function main() {
   } else {
     const usersSnapshot = await db.collection("users").get();
     for (const userDoc of usersSnapshot.docs) {
-      const libSnap = await db.collection(`users/${userDoc.id}/sequences`).get();
+      const libSnap = await db
+        .collection(`users/${userDoc.id}/sequences`)
+        .get();
       for (const d of libSnap.docs) await processDoc(d, stats);
     }
   }

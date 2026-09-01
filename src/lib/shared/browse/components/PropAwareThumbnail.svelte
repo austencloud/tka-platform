@@ -47,8 +47,8 @@
 
   interface Props {
     sequence: SequenceData;
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
     catDogModeEnabled?: boolean;
     lightMode?: boolean;
     variant?: ThumbnailVariant;
@@ -68,9 +68,9 @@
     // Render as hand-path visualization (float arrows for shifts, zero-turn dash for dashes)
     handPathMode?: boolean;
     /** Show blue motion (prop + arrow). Default: true */
-    showBlueMotion?: boolean;
+    showLeftMotion?: boolean;
     /** Show red motion (prop + arrow). Default: true */
-    showRedMotion?: boolean;
+    showRightMotion?: boolean;
     // Skip IntersectionObserver and load immediately (use in modals/pickers)
     eager?: boolean;
     /** Allow a QR code to be baked in (signed-in only). Grids/peeks pass false —
@@ -82,8 +82,8 @@
 
   const {
     sequence,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     catDogModeEnabled = false,
     lightMode = false,
     variant = "gallery",
@@ -98,8 +98,8 @@
     showLoopGlyph,
     visibility,
     handPathMode = false,
-    showBlueMotion = true,
-    showRedMotion = true,
+    showLeftMotion = true,
+    showRightMotion = true,
     eager = false,
     allowQR = true,
     cardMode = false,
@@ -172,8 +172,8 @@
   const renderInput = $derived<ThumbnailRenderInput>(
     buildGalleryRenderInput({
       sequence,
-      bluePropType,
-      redPropType,
+      leftPropType,
+      rightPropType,
       catDogModeEnabled,
       lightMode,
       variant,
@@ -188,8 +188,8 @@
       showLoopGlyph,
       visibility,
       handPathMode,
-      showBlueMotion,
-      showRedMotion,
+      showLeftMotion,
+      showRightMotion,
       allowQR,
       cardMode,
       compositionManager,

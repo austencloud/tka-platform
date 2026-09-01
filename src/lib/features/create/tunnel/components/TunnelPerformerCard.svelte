@@ -20,8 +20,8 @@
     selected = false,
     generatedInstanceCount = 0,
     sourcePerformerLabel = null,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     stageColors = [],
     sourceOrigin = null,
     previousCount = 0,
@@ -52,8 +52,8 @@
     selected?: boolean;
     generatedInstanceCount?: number;
     sourcePerformerLabel?: string | null;
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
     stageColors?: Array<{ arm: number; left: string; right: string }>;
     sourceOrigin?: TunnelSourceOrigin | null;
     previousCount?: number;
@@ -314,10 +314,10 @@
         fitAllSteps={true}
         narrowMaxColumns={3}
         preferWidthSizingOnNarrow={true}
-        bluePropTypeOverride={bluePropType}
-        redPropTypeOverride={redPropType}
-        blueColorOverride={primaryStageColors?.left}
-        redColorOverride={primaryStageColors?.right}
+        leftPropTypeOverride={leftPropType}
+        rightPropTypeOverride={rightPropType}
+        leftColorOverride={primaryStageColors?.left}
+        rightColorOverride={primaryStageColors?.right}
         sequenceWord={displayWord}
       />
     </div>

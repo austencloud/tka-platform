@@ -20,7 +20,7 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/mot
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type {
   GridLocation,
@@ -164,13 +164,13 @@ export class MirroredInvertedLOOPExecutor {
       startPosition: previousStep.endPosition ?? null,
       endPosition: mirroredEndPosition, // MIRRORED: Flip position
       motions: {
-        [MotionColor.BLUE]: this._createMirroredInvertedMotion(
-          MotionColor.BLUE,
+        [HandSide.LEFT]: this._createMirroredInvertedMotion(
+          HandSide.LEFT,
           previousStep,
           previousMatchingStep
         ),
-        [MotionColor.RED]: this._createMirroredInvertedMotion(
-          MotionColor.RED,
+        [HandSide.RIGHT]: this._createMirroredInvertedMotion(
+          HandSide.RIGHT,
           previousStep,
           previousMatchingStep
         ),
@@ -255,7 +255,7 @@ export class MirroredInvertedLOOPExecutor {
    * **IMPORTANT**: Rotation direction stays the SAME (two flips cancel out)
    */
   private _createMirroredInvertedMotion(
-    color: MotionColor,
+    color: HandSide,
     previousStep: StepData,
     previousMatchingStep: StepData
   ): MotionData {

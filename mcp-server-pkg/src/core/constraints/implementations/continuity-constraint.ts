@@ -33,8 +33,7 @@ function isReversal(prev: string, current: string): boolean {
 
   // Opposite directions = reversal
   return (
-    (prev === "cw" && current === "ccw") ||
-    (prev === "ccw" && current === "cw")
+    (prev === "cw" && current === "ccw") || (prev === "ccw" && current === "cw")
   );
 }
 
@@ -44,27 +43,27 @@ function isReversal(prev: string, current: string): boolean {
 function calculateContinuityScore(
   prev: PictographData,
   current: PictographData
-): { blueScore: number; redScore: number } {
-  const blueReversal = isReversal(
-    prev.blueMotion.rotationDirection,
-    current.blueMotion.rotationDirection
+): { leftScore: number; rightScore: number } {
+  const leftReversal = isReversal(
+    prev.leftMotion.rotationDirection,
+    current.leftMotion.rotationDirection
   );
-  const redReversal = isReversal(
-    prev.redMotion.rotationDirection,
-    current.redMotion.rotationDirection
+  const rightReversal = isReversal(
+    prev.rightMotion.rotationDirection,
+    current.rightMotion.rotationDirection
   );
 
   // Check for static motions (neutral - not continuous, not reversal)
-  const blueStatic =
-    prev.blueMotion.motionType === "static" ||
-    current.blueMotion.motionType === "static";
-  const redStatic =
-    prev.redMotion.motionType === "static" ||
-    current.redMotion.motionType === "static";
+  const leftStatic =
+    prev.leftMotion.motionType === "static" ||
+    current.leftMotion.motionType === "static";
+  const rightStatic =
+    prev.rightMotion.motionType === "static" ||
+    current.rightMotion.motionType === "static";
 
   return {
-    blueScore: blueStatic ? 0.5 : blueReversal ? 0 : 1,
-    redScore: redStatic ? 0.5 : redReversal ? 0 : 1,
+    leftScore: leftStatic ? 0.5 : leftReversal ? 0 : 1,
+    rightScore: rightStatic ? 0.5 : rightReversal ? 0 : 1,
   };
 }
 
@@ -111,7 +110,8 @@ export class ContinuityConstraint implements IVariationConstraint {
       };
     }
 
-    const previousStep = context.previousSteps[context.previousSteps.length - 1];
+    const previousStep =
+      context.previousSteps[context.previousSteps.length - 1];
     if (!previousStep) {
       return {
         score: 1,
@@ -120,18 +120,18 @@ export class ContinuityConstraint implements IVariationConstraint {
       };
     }
 
-    const { blueScore, redScore } = calculateContinuityScore(
+    const { leftScore, rightScore } = calculateContinuityScore(
       previousStep,
       context.candidate
     );
 
     // Average of both hands
-    const avgScore = (blueScore + redScore) / 2;
+    const avgScore = (leftScore + rightScore) / 2;
 
     // For "enforce" mode, require perfect continuity (both hands score 1)
     const satisfied =
       this.continuityMode !== "enforce" ||
-      (blueScore === 1 && redScore === 1);
+      (leftScore === 1 && rightScore === 1);
 
     // Build reason string
     let reason: string;
@@ -139,10 +139,10 @@ export class ContinuityConstraint implements IVariationConstraint {
       reason = "Continuous (no reversals)";
     } else if (avgScore === 0) {
       reason = "Both hands reversed";
-    } else if (blueScore < 1 && redScore === 1) {
-      reason = "Blue hand reversal";
-    } else if (redScore < 1 && blueScore === 1) {
-      reason = "Red hand reversal";
+    } else if (leftScore < 1 && rightScore === 1) {
+      reason = "Left hand reversal";
+    } else if (rightScore < 1 && leftScore === 1) {
+      reason = "Right hand reversal";
     } else {
       reason = "Partial continuity";
     }

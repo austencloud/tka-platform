@@ -49,17 +49,17 @@ describe("StanceOptimizer easy cases", () => {
 
     // Both hands at natural reach in front of the shoulders — no stance
     // change should be necessary.
-    const blue = makeStaffTarget(
+    const left = makeStaffTarget(
       new Vector3(rest.leftShoulder.x + 0.1, rest.leftShoulder.y, 0.3),
       new Vector3(0, 1, 0)
     );
-    const red = makeStaffTarget(
+    const right = makeStaffTarget(
       new Vector3(rest.rightShoulder.x - 0.1, rest.rightShoulder.y, 0.3),
       new Vector3(0, 1, 0)
     );
 
     const result = optimizer.optimize(
-      { blue, red },
+      { left, right },
       NEUTRAL_STANCE,
       DEFAULT_BOUNDS
     );
@@ -81,17 +81,17 @@ describe("StanceOptimizer shifts the body for offset reach targets", () => {
 
     // Place the blue target 10 cm past max reach on the character's left.
     // The optimizer should shift the feet left to close the gap.
-    const blue = makeStaffTarget(
+    const left = makeStaffTarget(
       new Vector3(rest.leftShoulder.x + maxReach + 0.1, rest.leftShoulder.y, 0),
       new Vector3(0, 1, 0)
     );
-    const red = makeStaffTarget(
+    const right = makeStaffTarget(
       new Vector3(rest.rightShoulder.x - 0.1, rest.rightShoulder.y, 0.2),
       new Vector3(0, 1, 0)
     );
 
     const result = optimizer.optimize(
-      { blue, red },
+      { left, right },
       NEUTRAL_STANCE,
       DEFAULT_BOUNDS
     );
@@ -106,22 +106,22 @@ describe("StanceOptimizer infeasibility", () => {
   it("reports infeasible for a target 5 m away in any direction", () => {
     const optimizer = optimizerForHeight(1.7);
 
-    const blue = makeStaffTarget(
+    const left = makeStaffTarget(
       new Vector3(5, 1.2, 0),
       new Vector3(0, 1, 0)
     );
-    const red = makeStaffTarget(
+    const right = makeStaffTarget(
       new Vector3(-0.2, 1.2, 0.2),
       new Vector3(0, 1, 0)
     );
 
     const result = optimizer.optimize(
-      { blue, red },
+      { left, right },
       NEUTRAL_STANCE,
       DEFAULT_BOUNDS
     );
     expect(result.feasible).toBe(false);
-    expect(result.simResult.reachShortfall.blue).toBeGreaterThan(3);
+    expect(result.simResult.reachShortfall.left).toBeGreaterThan(3);
   });
 });
 
@@ -134,17 +134,17 @@ describe("StanceOptimizer avoids collisions", () => {
     // reach would clip. The optimizer should adjust yaw/pitch to clear.
     const faceZ = 0.1;
     const faceY = rest.head.y + 0.05;
-    const blue = makeStaffTarget(
+    const left = makeStaffTarget(
       new Vector3(0.25, faceY, faceZ),
       new Vector3(0, 1, 0)
     );
-    const red = makeStaffTarget(
+    const right = makeStaffTarget(
       new Vector3(-0.25, faceY, faceZ),
       new Vector3(0, 1, 0)
     );
 
     const result = optimizer.optimize(
-      { blue, red },
+      { left, right },
       NEUTRAL_STANCE,
       DEFAULT_BOUNDS
     );
@@ -166,16 +166,16 @@ describe("StanceOptimizer full-rotation cases", () => {
     // reach of that single point.
     const optimizer = optimizerForHeight(1.7);
     const target = new Vector3(0.55, 0, 0.3);
-    const blue = makeStaffTarget(target, new Vector3(0, 1, 0));
-    const red = makeStaffTarget(target.clone(), new Vector3(0, 1, 0));
+    const left = makeStaffTarget(target, new Vector3(0, 1, 0));
+    const right = makeStaffTarget(target.clone(), new Vector3(0, 1, 0));
     const result = optimizer.optimize(
-      { blue, red },
+      { left, right },
       NEUTRAL_STANCE,
       DEFAULT_BOUNDS
     );
     expect(result.feasible).toBe(true);
-    expect(result.simResult.reachShortfall.blue).toBeLessThan(0.005);
-    expect(result.simResult.reachShortfall.red).toBeLessThan(0.005);
+    expect(result.simResult.reachShortfall.left).toBeLessThan(0.005);
+    expect(result.simResult.reachShortfall.right).toBeLessThan(0.005);
   });
 
   it("finds feasible stance for beta on the far side of the body", () => {
@@ -184,16 +184,16 @@ describe("StanceOptimizer full-rotation cases", () => {
     // around the target and rotating.
     const optimizer = optimizerForHeight(1.7);
     const target = new Vector3(0, 0.3, -0.5);
-    const blue = makeStaffTarget(target, new Vector3(0, 1, 0));
-    const red = makeStaffTarget(target.clone(), new Vector3(0, 1, 0));
+    const left = makeStaffTarget(target, new Vector3(0, 1, 0));
+    const right = makeStaffTarget(target.clone(), new Vector3(0, 1, 0));
     const result = optimizer.optimize(
-      { blue, red },
+      { left, right },
       NEUTRAL_STANCE,
       DEFAULT_BOUNDS
     );
     expect(result.feasible).toBe(true);
-    expect(result.simResult.reachShortfall.blue).toBeLessThan(0.005);
-    expect(result.simResult.reachShortfall.red).toBeLessThan(0.005);
+    expect(result.simResult.reachShortfall.left).toBeLessThan(0.005);
+    expect(result.simResult.reachShortfall.right).toBeLessThan(0.005);
   });
 
   it("finds feasible stance for hard cross-plane pose (blue right, red left)", () => {
@@ -203,22 +203,22 @@ describe("StanceOptimizer full-rotation cases", () => {
     // left prop and the right arm faces the right prop. The resulting
     // stance should be feasible.
     const optimizer = optimizerForHeight(1.7);
-    const blue = makeStaffTarget(
+    const left = makeStaffTarget(
       new Vector3(0.5, 0, 0.3), // character-right side
       new Vector3(0, 1, 0)
     );
-    const red = makeStaffTarget(
+    const right = makeStaffTarget(
       new Vector3(-0.5, 0, 0.3), // character-left side
       new Vector3(0, 1, 0)
     );
     const result = optimizer.optimize(
-      { blue, red },
+      { left, right },
       NEUTRAL_STANCE,
       DEFAULT_BOUNDS
     );
     expect(result.feasible).toBe(true);
-    expect(result.simResult.reachShortfall.blue).toBeLessThan(0.005);
-    expect(result.simResult.reachShortfall.red).toBeLessThan(0.005);
+    expect(result.simResult.reachShortfall.left).toBeLessThan(0.005);
+    expect(result.simResult.reachShortfall.right).toBeLessThan(0.005);
   });
 
   it("uses full eval budget only when needed (easy case exits early)", () => {
@@ -226,16 +226,16 @@ describe("StanceOptimizer full-rotation cases", () => {
     // handful of descent iterations, well under the MAX_TOTAL_EVALS cap.
     const optimizer = optimizerForHeight(1.7);
     const rest = optimizer.simulator.restPose;
-    const blue = makeStaffTarget(
+    const left = makeStaffTarget(
       new Vector3(rest.leftShoulder.x - 0.05, rest.leftShoulder.y, 0.3),
       new Vector3(0, 1, 0)
     );
-    const red = makeStaffTarget(
+    const right = makeStaffTarget(
       new Vector3(rest.rightShoulder.x + 0.05, rest.rightShoulder.y, 0.3),
       new Vector3(0, 1, 0)
     );
     const result = optimizer.optimize(
-      { blue, red },
+      { left, right },
       NEUTRAL_STANCE,
       DEFAULT_BOUNDS
     );

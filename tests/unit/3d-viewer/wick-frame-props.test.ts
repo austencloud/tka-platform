@@ -58,12 +58,16 @@ describe("wick-frame props", () => {
   });
 
   it("puts all four quiad emitters on its canonical arm ends", () => {
-    const anchors = resolvePropTipAnchors3D(PropType.QUIAD, STAFF_HALF_M, BUILD);
+    const anchors = resolvePropTipAnchors3D(
+      PropType.QUIAD,
+      STAFF_HALF_M,
+      BUILD
+    );
     const [anchor] = anchors;
 
     expect(anchors).toHaveLength(4);
     expect(anchor.effectTipIndex).toBe(1);
-    expect(anchor.offset.y).toBeCloseTo(STAFF_LENGTH_M * (104.17 / 252.8), 6);
+    expect(anchor.offset.y).toBeCloseTo(STAFF_LENGTH_M * QUIAD_ARM_LENGTH, 6);
 
     // The 3D reach used to borrow TRIAD_REACH_RATIO, which was only right while
     // the quiad was rendering as a three-armed prop.

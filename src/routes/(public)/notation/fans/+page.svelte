@@ -67,8 +67,8 @@
         <SequenceHeroDemo
           sequence={demoSequence}
           note="the demo sequence, on fans"
-          bluePropType="fan"
-          redPropType="fan"
+          leftPropType="fan"
+          rightPropType="fan"
         />
       </div>
     </div>

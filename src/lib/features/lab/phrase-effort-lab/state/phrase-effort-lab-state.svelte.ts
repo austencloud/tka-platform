@@ -22,8 +22,8 @@ export interface PhraseEffortLabState {
   showPicker: boolean;
   sequence: SequenceData | null;
   readonly steps: readonly StepData[];
-  blueProp: PropState;
-  redProp: PropState;
+  leftProp: PropState;
+  rightProp: PropState;
   currentStep: number;
   currentLetter: Letter | null;
   currentStepData: StepData | null;
@@ -63,8 +63,8 @@ export function createPhraseEffortLabState(): PhraseEffortLabState {
   let showPicker = $state(false);
   let sequence = $state<SequenceData | null>(null);
   let steps = $state<readonly StepData[]>([]);
-  let blueProp = $state<PropState>({ ...DEFAULT_PROP_STATE });
-  let redProp = $state<PropState>({ ...DEFAULT_PROP_STATE });
+  let leftProp = $state<PropState>({ ...DEFAULT_PROP_STATE });
+  let rightProp = $state<PropState>({ ...DEFAULT_PROP_STATE });
   let currentStep = $state(0);
   let currentLetter = $state<Letter | null>(null);
   let currentStepData = $state<StepData | null>(null);
@@ -204,10 +204,10 @@ export function createPhraseEffortLabState(): PhraseEffortLabState {
     get sequence() { return sequence; },
     set sequence(v: SequenceData | null) { sequence = v; },
     get steps() { return steps; },
-    get blueProp() { return blueProp; },
-    set blueProp(v: PropState) { blueProp = v; },
-    get redProp() { return redProp; },
-    set redProp(v: PropState) { redProp = v; },
+    get leftProp() { return leftProp; },
+    set leftProp(v: PropState) { leftProp = v; },
+    get rightProp() { return rightProp; },
+    set rightProp(v: PropState) { rightProp = v; },
     get currentStep() { return currentStep; },
     set currentStep(v: number) { currentStep = v; },
     get currentLetter() { return currentLetter; },

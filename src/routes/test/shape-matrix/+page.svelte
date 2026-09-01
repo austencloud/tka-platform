@@ -9,13 +9,13 @@
 
   let data = $state<ShapeMatrixData | null>(null);
   let err = $state("");
-  let pair = $state<{ blue: Flower; red: Flower } | null>(null);
+  let pair = $state<{ left: Flower; right: Flower } | null>(null);
   let open = $state(false);
 
   let filters = $state<MatrixFilters>(defaultMatrixFilters());
 
-  const rowAxis = $derived(data ? applyFilter(data.axis, filters.blue, filters.collapse) : []);
-  const colAxis = $derived(data ? applyFilter(data.axis, filters.red, filters.collapse) : []);
+  const rowAxis = $derived(data ? applyFilter(data.axis, filters.left, filters.collapse) : []);
+  const colAxis = $derived(data ? applyFilter(data.axis, filters.right, filters.collapse) : []);
   const cellCount = $derived(rowAxis.length * colAxis.length);
 
   onMount(async () => {

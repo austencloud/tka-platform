@@ -22,8 +22,8 @@ describe("EffectOrchestrator3D mounts EffectsLayer", () => {
   it("passes the prop states EffectsLayer needs", () => {
     const tag = source.slice(source.indexOf("<EffectsLayer"));
     for (const prop of [
-      "bluePropState",
-      "redPropState",
+      "leftPropState",
+      "rightPropState",
       "isPlaying",
       "staffLength",
       "currentStep",
@@ -34,14 +34,14 @@ describe("EffectOrchestrator3D mounts EffectsLayer", () => {
 
   it("passes rig-local tip motion instead of letting the layer track prop centers", () => {
     const tag = source.slice(source.indexOf("<EffectsLayer"));
-    expect(tag).toContain("blueTipData");
-    expect(tag).toContain("redTipData");
+    expect(tag).toContain("leftTipData");
+    expect(tag).toContain("rightTipData");
   });
 
   it("passes both hand anchors so Ghost captures the live prop centers", () => {
     const tag = source.slice(source.indexOf("<EffectsLayer"));
-    expect(tag).toContain("blueHandPos");
-    expect(tag).toContain("redHandPos");
+    expect(tag).toContain("leftHandPos");
+    expect(tag).toContain("rightHandPos");
   });
 });
 
@@ -86,10 +86,10 @@ describe("EffectsLayer follows the 3D effect selection, not the 2D one", () => {
 
   it("forwards each hand anchor to its matching Ghost renderer", () => {
     expect(layerSource).toMatch(
-      /propState=\{bluePropState\}[\s\S]*?handAnchor=\{blueHandPos\}/
+      /propState=\{leftPropState\}[\s\S]*?handAnchor=\{leftHandPos\}/
     );
     expect(layerSource).toMatch(
-      /propState=\{redPropState\}[\s\S]*?handAnchor=\{redHandPos\}/
+      /propState=\{rightPropState\}[\s\S]*?handAnchor=\{rightHandPos\}/
     );
   });
 
@@ -106,10 +106,10 @@ describe("EffectsLayer follows the 3D effect selection, not the 2D one", () => {
     // A club has one end. Enumerating [[0,0],[0,1],[1,0],[1,1]] lit effects for
     // ends the prop does not have.
     expect(orchestratorSource).toMatch(
-      /resolvePropTipAnchors3D\(bluePropType,\s*staffHalfLength,\s*\{/
+      /resolvePropTipAnchors3D\(leftPropType,\s*staffHalfLength,\s*propBuild\)/
     );
     expect(orchestratorSource).toMatch(
-      /resolvePropTipAnchors3D\(redPropType,\s*staffHalfLength,\s*\{/
+      /resolvePropTipAnchors3D\(rightPropType,\s*staffHalfLength,\s*propBuild\)/
     );
   });
 });

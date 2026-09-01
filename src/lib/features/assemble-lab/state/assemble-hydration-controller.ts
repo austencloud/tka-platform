@@ -1,5 +1,5 @@
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   cloneBuilderSteps,
   cloneStartPoses,
@@ -24,12 +24,12 @@ export function createAssembleHydrationController(
 ): AssembleHydrationController {
   function applyHydration(snapshot: AssembleStateHydration): void {
     cancelPendingAction();
-    document.blueSteps = cloneBuilderSteps(snapshot.blueSteps);
-    document.redSteps = cloneBuilderSteps(snapshot.redSteps);
+    document.leftSteps = cloneBuilderSteps(snapshot.leftSteps);
+    document.rightSteps = cloneBuilderSteps(snapshot.rightSteps);
     document.startPoses = cloneStartPoses(snapshot.startPoses);
     document.gridMode = snapshot.gridMode;
     document.showCenter =
-      [...document.blueSteps, ...document.redSteps].some(
+      [...document.leftSteps, ...document.rightSteps].some(
         (step) =>
           step.startPosition === GridLocation.CENTER ||
           step.endPosition === GridLocation.CENTER
@@ -38,18 +38,18 @@ export function createAssembleHydrationController(
         (pose) => pose?.location === GridLocation.CENTER
       );
 
-    if (document.blueSteps.length > document.redSteps.length) {
-      document.activeHand = MotionColor.RED;
-    } else if (document.redSteps.length > document.blueSteps.length) {
-      document.activeHand = MotionColor.BLUE;
+    if (document.leftSteps.length > document.rightSteps.length) {
+      document.activeHand = HandSide.RIGHT;
+    } else if (document.rightSteps.length > document.leftSteps.length) {
+      document.activeHand = HandSide.LEFT;
     } else if (
-      document.blueSteps.length === 0 &&
-      document.startPoses[MotionColor.RED] &&
-      !document.startPoses[MotionColor.BLUE]
+      document.leftSteps.length === 0 &&
+      document.startPoses[HandSide.RIGHT] &&
+      !document.startPoses[HandSide.LEFT]
     ) {
-      document.activeHand = MotionColor.RED;
+      document.activeHand = HandSide.RIGHT;
     } else {
-      document.activeHand = MotionColor.BLUE;
+      document.activeHand = HandSide.LEFT;
     }
 
     document.selectedStepIndex = null;
@@ -62,9 +62,9 @@ export function createAssembleHydrationController(
       document.gridMode === snapshot.gridMode &&
       JSON.stringify(document.startPoses) ===
         JSON.stringify(snapshot.startPoses) &&
-      JSON.stringify(document.blueSteps) ===
-        JSON.stringify(snapshot.blueSteps) &&
-      JSON.stringify(document.redSteps) === JSON.stringify(snapshot.redSteps)
+      JSON.stringify(document.leftSteps) ===
+        JSON.stringify(snapshot.leftSteps) &&
+      JSON.stringify(document.rightSteps) === JSON.stringify(snapshot.rightSteps)
     );
   }
 
@@ -80,13 +80,13 @@ export function createAssembleHydrationController(
       applyHydration(snapshot);
       const previousHandHasContent =
         Boolean(document.startPoses[previousHand]) ||
-        (previousHand === MotionColor.BLUE
-          ? document.blueSteps.length > 0
-          : document.redSteps.length > 0);
+        (previousHand === HandSide.LEFT
+          ? document.leftSteps.length > 0
+          : document.rightSteps.length > 0);
       if (previousHandHasContent) document.activeHand = previousHand;
       const total = Math.max(
-        document.blueSteps.length,
-        document.redSteps.length
+        document.leftSteps.length,
+        document.rightSteps.length
       );
       document.selectedStepIndex =
         previousSelection !== null && previousSelection < total

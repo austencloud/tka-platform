@@ -6,13 +6,14 @@
  * The direction of offset depends on:
  * - The location (N/S/E/W vs NE/SE/SW/NW)
  * - The orientation type (radial IN/OUT vs non-radial CLOCK/COUNTER)
- * - The motion color (red vs blue)
+ * - The performer hand
  * - For shift motions, the start->end transition
  *
  * Ported from src/lib/shared/pictograph/prop/domain/direction/DirectionMaps.ts
  */
 
 import { GridLocation, GridMode, Orientation } from "./enums.js";
+import type { HandSide } from "@tka/tka-types";
 
 // Vector directions for offset calculation
 export enum VectorDirection {
@@ -32,13 +33,13 @@ export interface BetaMotionInput {
   endLocation: string;
   endOrientation?: string;
   motionType: string;
-  color: "blue" | "red";
+  hand: HandSide;
   propType?: string;
 }
 
 export interface BetaOffsetInput {
-  blueMotion: BetaMotionInput;
-  redMotion: BetaMotionInput;
+  leftMotion: BetaMotionInput;
+  rightMotion: BetaMotionInput;
   letter: string;
   gridMode: GridMode;
 }
@@ -53,37 +54,37 @@ const HAND_BETA_OFFSET_DISTANCE_DIAMOND = 950 / 45;  // ~21.11px
 const HAND_BETA_OFFSET_DISTANCE_BOX = (950 / 45) / Math.sqrt(2);  // ~14.93px
 
 
-type ColorMap = Record<"blue" | "red", VectorDirection>;
+type HandMap = Record<HandSide, VectorDirection>;
 
 /**
  * Diamond grid (N/S/E/W) - radial orientation (IN/OUT)
  * Props at cardinal locations with radial orientations
  */
-const DIAMOND_RADIAL_MAP: Record<string, ColorMap> = {
-  [GridLocation.NORTH]: { red: VectorDirection.RIGHT, blue: VectorDirection.LEFT },
-  [GridLocation.EAST]: { red: VectorDirection.DOWN, blue: VectorDirection.UP },
-  [GridLocation.SOUTH]: { red: VectorDirection.LEFT, blue: VectorDirection.RIGHT },
-  [GridLocation.WEST]: { red: VectorDirection.UP, blue: VectorDirection.DOWN },
+const DIAMOND_RADIAL_MAP: Record<string, HandMap> = {
+  [GridLocation.NORTH]: { right: VectorDirection.RIGHT, left: VectorDirection.LEFT },
+  [GridLocation.EAST]: { right: VectorDirection.DOWN, left: VectorDirection.UP },
+  [GridLocation.SOUTH]: { right: VectorDirection.LEFT, left: VectorDirection.RIGHT },
+  [GridLocation.WEST]: { right: VectorDirection.UP, left: VectorDirection.DOWN },
 };
 
 /**
  * Diamond grid (N/S/E/W) - non-radial orientation (CLOCK/COUNTER)
  */
-const DIAMOND_NON_RADIAL_MAP: Record<string, ColorMap> = {
-  [GridLocation.NORTH]: { red: VectorDirection.UP, blue: VectorDirection.DOWN },
-  [GridLocation.EAST]: { red: VectorDirection.RIGHT, blue: VectorDirection.LEFT },
-  [GridLocation.SOUTH]: { red: VectorDirection.DOWN, blue: VectorDirection.UP },
-  [GridLocation.WEST]: { red: VectorDirection.LEFT, blue: VectorDirection.RIGHT },
+const DIAMOND_NON_RADIAL_MAP: Record<string, HandMap> = {
+  [GridLocation.NORTH]: { right: VectorDirection.UP, left: VectorDirection.DOWN },
+  [GridLocation.EAST]: { right: VectorDirection.RIGHT, left: VectorDirection.LEFT },
+  [GridLocation.SOUTH]: { right: VectorDirection.DOWN, left: VectorDirection.UP },
+  [GridLocation.WEST]: { right: VectorDirection.LEFT, left: VectorDirection.RIGHT },
 };
 
 /**
  * Box grid (NE/SE/SW/NW) - radial orientation
  */
-const BOX_RADIAL_MAP: Record<string, ColorMap> = {
-  [GridLocation.NORTHEAST]: { red: VectorDirection.DOWNRIGHT, blue: VectorDirection.UPLEFT },
-  [GridLocation.SOUTHEAST]: { red: VectorDirection.UPRIGHT, blue: VectorDirection.DOWNLEFT },
-  [GridLocation.SOUTHWEST]: { red: VectorDirection.DOWNRIGHT, blue: VectorDirection.UPLEFT },
-  [GridLocation.NORTHWEST]: { red: VectorDirection.UPRIGHT, blue: VectorDirection.DOWNLEFT },
+const BOX_RADIAL_MAP: Record<string, HandMap> = {
+  [GridLocation.NORTHEAST]: { right: VectorDirection.DOWNRIGHT, left: VectorDirection.UPLEFT },
+  [GridLocation.SOUTHEAST]: { right: VectorDirection.UPRIGHT, left: VectorDirection.DOWNLEFT },
+  [GridLocation.SOUTHWEST]: { right: VectorDirection.DOWNRIGHT, left: VectorDirection.UPLEFT },
+  [GridLocation.NORTHWEST]: { right: VectorDirection.UPRIGHT, left: VectorDirection.DOWNLEFT },
 };
 
 /**
@@ -91,11 +92,11 @@ const BOX_RADIAL_MAP: Record<string, ColorMap> = {
  */
 // CCW 90° rotation of BOX_RADIAL_MAP — non-radial staff lies perpendicular to
 // the radial axis, so props nest along the radial axis.
-const BOX_NON_RADIAL_MAP: Record<string, ColorMap> = {
-  [GridLocation.NORTHEAST]: { red: VectorDirection.UPRIGHT, blue: VectorDirection.DOWNLEFT },
-  [GridLocation.SOUTHEAST]: { red: VectorDirection.UPLEFT, blue: VectorDirection.DOWNRIGHT },
-  [GridLocation.SOUTHWEST]: { red: VectorDirection.UPRIGHT, blue: VectorDirection.DOWNLEFT },
-  [GridLocation.NORTHWEST]: { red: VectorDirection.UPLEFT, blue: VectorDirection.DOWNRIGHT },
+const BOX_NON_RADIAL_MAP: Record<string, HandMap> = {
+  [GridLocation.NORTHEAST]: { right: VectorDirection.UPRIGHT, left: VectorDirection.DOWNLEFT },
+  [GridLocation.SOUTHEAST]: { right: VectorDirection.UPLEFT, left: VectorDirection.DOWNRIGHT },
+  [GridLocation.SOUTHWEST]: { right: VectorDirection.UPRIGHT, left: VectorDirection.DOWNLEFT },
+  [GridLocation.NORTHWEST]: { right: VectorDirection.UPLEFT, left: VectorDirection.DOWNRIGHT },
 };
 
 /**
@@ -207,8 +208,8 @@ function isRadialOrientation(orientation: string | undefined): boolean {
 /**
  * Check if both orientations are radial
  */
-function areBothRadial(blueOri: string | undefined, redOri: string | undefined): boolean {
-  return isRadialOrientation(blueOri) && isRadialOrientation(redOri);
+function areBothRadial(leftOri: string | undefined, rightOri: string | undefined): boolean {
+  return isRadialOrientation(leftOri) && isRadialOrientation(rightOri);
 }
 
 /**
@@ -271,28 +272,27 @@ export function calculateBetaOffset(
   input: BetaOffsetInput,
   targetMotion: BetaMotionInput
 ): { x: number; y: number } {
-  const { blueMotion, redMotion, letter, gridMode } = input;
+  const { leftMotion, rightMotion, letter, gridMode } = input;
 
   // Check if both props end at the same location (beta position)
-  const blueEndLoc = normalizeLocation(blueMotion.endLocation);
-  const redEndLoc = normalizeLocation(redMotion.endLocation);
+  const leftEndLoc = normalizeLocation(leftMotion.endLocation);
+  const rightEndLoc = normalizeLocation(rightMotion.endLocation);
 
-  if (blueEndLoc !== redEndLoc) {
+  if (leftEndLoc !== rightEndLoc) {
     // Props don't overlap, no offset needed
     return { x: 0, y: 0 };
   }
 
   // SPECIAL CASE: Hand props always use "right hand on right, left hand on left"
   // This matches the behavior in PropPlacer.ts (lines 129-197)
-  const bothAreHands = blueMotion.propType === "hand" && redMotion.propType === "hand";
+  const bothAreHands = leftMotion.propType === "hand" && rightMotion.propType === "hand";
   if (bothAreHands) {
     const distance = gridMode === GridMode.BOX
       ? HAND_BETA_OFFSET_DISTANCE_BOX
       : HAND_BETA_OFFSET_DISTANCE_DIAMOND;
 
-    // Blue hand goes LEFT (negative X), Red hand goes RIGHT (positive X)
-    // This creates the "right hand on right, left hand on left" visual
-    if (targetMotion.color === "blue") {
+    // Keep the anatomical hands separated on their corresponding sides.
+    if (targetMotion.hand === "left") {
       return { x: -distance, y: 0 };
     } else {
       return { x: distance, y: 0 };
@@ -300,11 +300,11 @@ export function calculateBetaOffset(
   }
 
   // Determine if both orientations are radial
-  const isRadial = areBothRadial(blueMotion.endOrientation, redMotion.endOrientation);
+  const isRadial = areBothRadial(leftMotion.endOrientation, rightMotion.endOrientation);
 
   // Get the target motion's end location
   const location = normalizeLocation(targetMotion.endLocation);
-  const color = targetMotion.color;
+  const hand = targetMotion.hand;
 
   // Check for letter-specific handling (Y/Z have special logic)
   if (letter === "Y" || letter === "Z" || letter === "Y-" || letter === "Z-") {
@@ -326,7 +326,7 @@ export function calculateBetaOffset(
   }
 
   // Static or Dash motion - use location-based maps
-  return calculateStaticDashBetaOffset(location, color, isRadial, gridMode);
+  return calculateStaticDashBetaOffset(location, hand, isRadial, gridMode);
 }
 
 /**
@@ -334,7 +334,7 @@ export function calculateBetaOffset(
  */
 function calculateStaticDashBetaOffset(
   location: string,
-  color: "blue" | "red",
+  hand: HandSide,
   isRadial: boolean,
   gridMode: GridMode
 ): { x: number; y: number } {
@@ -342,21 +342,21 @@ function calculateStaticDashBetaOffset(
   const isDiamond = isCardinalLocation(location);
 
   // Select the appropriate direction map
-  let map: Record<string, ColorMap>;
+  let map: Record<string, HandMap>;
   if (isDiamond) {
     map = isRadial ? DIAMOND_RADIAL_MAP : DIAMOND_NON_RADIAL_MAP;
   } else {
     map = isRadial ? BOX_RADIAL_MAP : BOX_NON_RADIAL_MAP;
   }
 
-  // Look up the direction for this location and color
+  // Look up the direction for this location and performer hand.
   const locationMap = map[location];
   if (!locationMap) {
     // Location not found in map, no offset
     return { x: 0, y: 0 };
   }
 
-  const direction = locationMap[color];
+  const direction = locationMap[hand];
   if (!direction) {
     return { x: 0, y: 0 };
   }
@@ -383,13 +383,13 @@ function calculateShiftBetaOffset(
   const startMap = map[startLoc];
   if (!startMap) {
     // Fall back to static/dash calculation
-    return calculateStaticDashBetaOffset(endLoc, motion.color, isRadial, gridMode);
+    return calculateStaticDashBetaOffset(endLoc, motion.hand, isRadial, gridMode);
   }
 
   const direction = startMap[endLoc];
   if (!direction) {
     // Fall back to static/dash calculation
-    return calculateStaticDashBetaOffset(endLoc, motion.color, isRadial, gridMode);
+    return calculateStaticDashBetaOffset(endLoc, motion.hand, isRadial, gridMode);
   }
 
   return directionToOffset(direction, gridMode);
@@ -408,18 +408,18 @@ function calculateYZBetaOffset(
   isRadial: boolean,
   gridMode: GridMode
 ): { x: number; y: number } {
-  const { blueMotion, redMotion } = input;
+  const { leftMotion, rightMotion } = input;
 
   // Identify which motion is shift (PRO/ANTI/FLOAT) vs non-shift (STATIC/DASH)
-  const redIsShift = isShiftMotion(redMotion.motionType);
-  const blueIsShift = isShiftMotion(blueMotion.motionType);
+  const rightIsShift = isShiftMotion(rightMotion.motionType);
+  const leftIsShift = isShiftMotion(leftMotion.motionType);
 
-  const shiftMotion = redIsShift ? redMotion : blueIsShift ? blueMotion : null;
+  const shiftMotion = rightIsShift ? rightMotion : leftIsShift ? leftMotion : null;
 
   if (!shiftMotion) {
     // Neither is a shift motion - fall back to static/dash calculation
     const location = normalizeLocation(targetMotion.endLocation);
-    return calculateStaticDashBetaOffset(location, targetMotion.color, isRadial, gridMode);
+    return calculateStaticDashBetaOffset(location, targetMotion.hand, isRadial, gridMode);
   }
 
   // Calculate direction from the SHIFT motion (not the target motion)
@@ -431,19 +431,19 @@ function calculateYZBetaOffset(
   if (!startMap) {
     // Fall back
     const location = normalizeLocation(targetMotion.endLocation);
-    return calculateStaticDashBetaOffset(location, targetMotion.color, isRadial, gridMode);
+    return calculateStaticDashBetaOffset(location, targetMotion.hand, isRadial, gridMode);
   }
 
   const shiftDirection = startMap[endLoc];
   if (!shiftDirection) {
     // Fall back
     const location = normalizeLocation(targetMotion.endLocation);
-    return calculateStaticDashBetaOffset(location, targetMotion.color, isRadial, gridMode);
+    return calculateStaticDashBetaOffset(location, targetMotion.hand, isRadial, gridMode);
   }
 
   // If target is the shift motion, use the calculated direction
   // If target is the non-shift motion, use the OPPOSITE direction
-  const isTargetShiftMotion = targetMotion.color === shiftMotion.color;
+  const isTargetShiftMotion = targetMotion.hand === shiftMotion.hand;
   const direction = isTargetShiftMotion
     ? shiftDirection
     : getOppositeDirection(shiftDirection);

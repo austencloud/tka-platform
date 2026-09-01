@@ -17,7 +17,7 @@ competing ones.
 -->
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { createHandPath } from "$lib/shared/foundation/services/hand-path-factory";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -144,27 +144,27 @@ competing ones.
     if (handCount < 2) {
       return handPathToTraceRound(
         createHandPath(walk(traceStepCount)),
-        MotionColor.BLUE
+        HandSide.LEFT
       );
     }
 
-    const bluePath = walk(traceStepCount);
+    const leftPath = walk(traceStepCount);
     // "Hold and Move": one hand anchors while the other travels. Red prefers a
     // point blue never occupies so the hands don't contend for the same place —
     // but a walk long enough to visit all four cardinals leaves no such point,
     // and in that case anywhere but blue's start is still a usable anchor.
-    const untouched = CARDINALS.filter((loc) => !bluePath.includes(loc));
+    const untouched = CARDINALS.filter((loc) => !leftPath.includes(loc));
     const anchorOptions =
       untouched.length > 0
         ? untouched
-        : CARDINALS.filter((loc) => loc !== bluePath[0]);
-    const redPath = constraints.requireHold
+        : CARDINALS.filter((loc) => loc !== leftPath[0]);
+    const rightPath = constraints.requireHold
       ? stay(traceStepCount, pick(anchorOptions, GridLocation.SOUTH))
       : walk(traceStepCount);
 
     return pairHandPathsToTraceRound(
-      createHandPath(bluePath),
-      createHandPath(redPath)
+      createHandPath(leftPath),
+      createHandPath(rightPath)
     );
   }
 

@@ -5,8 +5,8 @@
   glossary term/definition pairs, styled like a dictionary entry (headword +
   category tag + gloss), crossfading between entries.
 
-  Data source: the same canonical GLOSSARY the live /glossary route renders
-  (src/routes/(public)/glossary/+page.server.ts imports it from "@tka/domain"
+  Data source: the same canonical GLOSSARY the live /atlas route renders
+  (src/routes/(public)/atlas/+page.server.ts imports it from "@tka/domain"
   too). This is a small curated excerpt of real keys — the definition text is
   read live from GLOSSARY at render time, never retyped, so it can't drift
   into fabricated copy. `category` is the entry's real GlossaryCategory value
@@ -37,7 +37,7 @@
 
 	// Curated excerpt of real GLOSSARY keys: short, self-contained entries that
 	// read cleanly at tile scale. None of these need the display-name overrides
-	// the live /glossary page applies to acronyms (vtg, pads, cw, ...), so a
+	// the live /atlas page applies to acronyms (vtg, pads, cw, ...), so a
 	// plain title-case of the key matches +page.server.ts's displayName()
 	// fallback branch exactly.
 	const KEYS = ["alpha", "beta", "gamma", "letter", "word", "glyph", "bridge", "compound"] as const;

@@ -50,8 +50,8 @@
      *  Embedded contexts like the guide need a fixed prop type per page —
      *  STAFF for letter/word/LOOP pages, HAND for motion pages — independent of
      *  whatever the viewer has selected. */
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
     onSelect?: (sequence: SequenceData) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
@@ -75,8 +75,8 @@
     preRenderedImageUrl: preRenderedImageUrlProp,
     eager = false,
     showMandala = false,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     onSelect,
     onContextMenu,
   }: Props = $props();
@@ -107,8 +107,8 @@
   // Prop family: an explicit override (guide pages pass a fixed STAFF/HAND) wins
   // over the user's global setting.
   const propSettings = $derived({
-    bluePropType: bluePropType ?? settingsService.settings.bluePropType,
-    redPropType: redPropType ?? settingsService.settings.redPropType,
+    leftPropType: leftPropType ?? settingsService.settings.leftPropType,
+    rightPropType: rightPropType ?? settingsService.settings.rightPropType,
     catDogMode: settingsService.settings.catDogMode,
   });
 
@@ -169,8 +169,8 @@
       <PropAwareThumbnail
         bind:this={thumbnailRef}
         {sequence}
-        bluePropType={propSettings.bluePropType}
-        redPropType={propSettings.redPropType}
+        leftPropType={propSettings.leftPropType}
+        rightPropType={propSettings.rightPropType}
         catDogModeEnabled={propSettings.catDogMode}
         lightMode={effectiveLightMode}
         variant="wordcard"
@@ -193,8 +193,8 @@
   bind:this={saveMenuHost}
   {sequence}
   intent={{
-    bluePropType: propSettings.bluePropType,
-    redPropType: propSettings.redPropType,
+    leftPropType: propSettings.leftPropType,
+    rightPropType: propSettings.rightPropType,
     catDogModeEnabled: propSettings.catDogMode,
   }}
 />

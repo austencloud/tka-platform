@@ -13,7 +13,7 @@ import { createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/mo
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   RotationDirection,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -217,8 +217,8 @@ function encodeBeat(
   beat: StepData | StartPositionData,
   floatWireFormat: FloatWireFormat = "token"
 ): string {
-  const motions = beat.motions ?? { blue: undefined, red: undefined };
-  const encodedMotions = `${encodeMotion(motions.blue, floatWireFormat)}:${encodeMotion(motions.red, floatWireFormat)}`;
+  const motions = beat.motions ?? { left: undefined, right: undefined };
+  const encodedMotions = `${encodeMotion(motions.left, floatWireFormat)}:${encodeMotion(motions.right, floatWireFormat)}`;
 
   // Keep the legacy byte representation for ordinary one-beat steps. Custom
   // durations get an explicit third segment so old links and their hashes stay
@@ -257,7 +257,7 @@ function decodeDuration(
 
 function decodeMotion(
   encoded: string,
-  color: "blue" | "red",
+  hand: HandSide,
   chainStartOrientation: Orientation,
   propType: PropType
 ): MotionData | undefined {
@@ -336,7 +336,6 @@ function decodeMotion(
     endLocation as unknown as string
   );
 
-  const motionColor = color === "blue" ? ("blue" as const) : ("red" as const);
   const gridMode = inferGridModeFromMotion(startLocation, endLocation);
 
   return {
@@ -348,7 +347,7 @@ function decodeMotion(
     startOrientation,
     endOrientation,
     handPath,
-    color: motionColor as unknown as MotionColor,
+    hand,
     isVisible: true,
     propType,
     gridMode: gridMode as unknown as GridMode,
@@ -409,12 +408,12 @@ function buildMetadataQuery(metadata?: ShareURLMetadata): string {
   if (metadata.difficulty) params.set("difficulty", metadata.difficulty);
   if (metadata.birthday) params.set("birthday", metadata.birthday);
 
-  if (metadata.bluePropType && metadata.bluePropType !== PropType.STAFF) {
-    const encoded = PROP_TYPE_ENCODE[metadata.bluePropType as PropType];
+  if (metadata.leftPropType && metadata.leftPropType !== PropType.STAFF) {
+    const encoded = PROP_TYPE_ENCODE[metadata.leftPropType as PropType];
     if (encoded) params.set("bp", encoded);
   }
-  if (metadata.redPropType && metadata.redPropType !== PropType.STAFF) {
-    const encoded = PROP_TYPE_ENCODE[metadata.redPropType as PropType];
+  if (metadata.rightPropType && metadata.rightPropType !== PropType.STAFF) {
+    const encoded = PROP_TYPE_ENCODE[metadata.rightPropType as PropType];
     if (encoded) params.set("rp", encoded);
   }
 
@@ -441,7 +440,7 @@ function findMotionMismatch(a: SequenceData, b: SequenceData): string | null {
     "skewDir",
   ];
   for (let i = 0; i < a.steps.length; i++) {
-    for (const color of ["blue", "red"] as const) {
+      for (const color of [HandSide.LEFT, HandSide.RIGHT] as const) {
       const ma = a.steps[i]?.motions?.[color];
       const mb = b.steps[i]?.motions?.[color];
       if (!ma || !mb) return `step ${i + 1} ${color} motion missing`;
@@ -484,22 +483,22 @@ function encodeSequenceWithFloatFormat(
   }
 
   const spMotions = startPositionStep.motions ?? {
-    blue: undefined,
-    red: undefined,
+    left: undefined,
+    right: undefined,
   };
-  const blueSeed =
-    ORIENTATION_ENCODE[spMotions.blue?.startOrientation as Orientation] ?? "i";
-  const redSeed =
-    ORIENTATION_ENCODE[spMotions.red?.startOrientation as Orientation] ?? "i";
-  const bluePropCode =
+  const leftSeed =
+    ORIENTATION_ENCODE[spMotions.left?.startOrientation as Orientation] ?? "i";
+  const rightSeed =
+    ORIENTATION_ENCODE[spMotions.right?.startOrientation as Orientation] ?? "i";
+  const leftPropCode =
     PROP_TYPE_ENCODE[
-      (spMotions.blue?.propType ?? PropType.STAFF) as PropType
+      (spMotions.left?.propType ?? PropType.STAFF) as PropType
     ] ?? PROP_TYPE_ENCODE[PropType.STAFF];
-  const redPropCode =
-    PROP_TYPE_ENCODE[(spMotions.red?.propType ?? PropType.STAFF) as PropType] ??
+  const rightPropCode =
+    PROP_TYPE_ENCODE[(spMotions.right?.propType ?? PropType.STAFF) as PropType] ??
     PROP_TYPE_ENCODE[PropType.STAFF];
 
-  const header = `${blueSeed}${redSeed}${bluePropCode}${redPropCode}`;
+  const header = `${leftSeed}${rightSeed}${leftPropCode}${rightPropCode}`;
   const encodedStartPosition = encodeBeat(startPositionStep, floatWireFormat);
   const encodedSteps = actualSteps.map((step) =>
     encodeBeat(step, floatWireFormat)
@@ -523,13 +522,13 @@ export function decodeSequence(encoded: string): SequenceData {
     throw new Error("Invalid sequence encoding - missing data");
 
   const header = parts[0] ?? "iiSS";
-  let blueOri = (ORIENTATION_DECODE[header[0] ?? "i"] ??
+  let leftOri = (ORIENTATION_DECODE[header[0] ?? "i"] ??
     Orientation.IN) as Orientation;
-  let redOri = (ORIENTATION_DECODE[header[1] ?? "i"] ??
+  let rightOri = (ORIENTATION_DECODE[header[1] ?? "i"] ??
     Orientation.IN) as Orientation;
-  const blueProp = (PROP_TYPE_DECODE[header[2] ?? "S"] ??
+  const leftProp = (PROP_TYPE_DECODE[header[2] ?? "S"] ??
     PropType.STAFF) as PropType;
-  const redProp = (PROP_TYPE_DECODE[header[3] ?? "S"] ??
+  const rightProp = (PROP_TYPE_DECODE[header[3] ?? "S"] ??
     PropType.STAFF) as PropType;
 
   const beatEncodings = parts.slice(1);
@@ -540,38 +539,50 @@ export function decodeSequence(encoded: string): SequenceData {
   // there") synthesizes an invisible static placeholder at the hand's last
   // known location/orientation, keeping the both-required Step shape while
   // the re-encode path (encodeMotion) drops it back to an empty segment.
-  let blueLoc: GridLocation | undefined;
-  let redLoc: GridLocation | undefined;
+  let leftLoc: GridLocation | undefined;
+  let rightLoc: GridLocation | undefined;
   const decodeChained = (enc: string, stepNumber: number): StepData => {
     const segs = enc.split(":");
-    const blue = decodeMotion(segs[0] ?? "", "blue", blueOri, blueProp);
-    const red = decodeMotion(segs[1] ?? "", "red", redOri, redProp);
-    if (blue) {
-      blueOri = blue.endOrientation;
-      blueLoc = blue.endLocation;
+    // Slot order is immutable because these bytes are printed on physical
+    // cards: the legacy blue slot is the left hand, and red is the right hand.
+    const left = decodeMotion(
+      segs[0] ?? "",
+      HandSide.LEFT,
+      leftOri,
+      leftProp
+    );
+    const right = decodeMotion(
+      segs[1] ?? "",
+      HandSide.RIGHT,
+      rightOri,
+      rightProp
+    );
+    if (left) {
+      leftOri = left.endOrientation;
+      leftLoc = left.endLocation;
     }
-    if (red) {
-      redOri = red.endOrientation;
-      redLoc = red.endLocation;
+    if (right) {
+      rightOri = right.endOrientation;
+      rightLoc = right.endLocation;
     }
     return {
       stepNumber,
       duration: decodeDuration(segs[2], stepNumber),
-      blueReversal: false,
-      redReversal: false,
+      leftReversal: false,
+      rightReversal: false,
       isBlank: !(segs[0] ?? "") && !(segs[1] ?? ""),
       motions: {
-        blue:
-          blue ??
-          createPlaceholderMotion(MotionColor.BLUE, {
-            location: blueLoc,
-            orientation: blueOri,
+        left:
+          left ??
+          createPlaceholderMotion(HandSide.LEFT, {
+            location: leftLoc,
+            orientation: leftOri,
           }),
-        red:
-          red ??
-          createPlaceholderMotion(MotionColor.RED, {
-            location: redLoc,
-            orientation: redOri,
+        right:
+          right ??
+          createPlaceholderMotion(HandSide.RIGHT, {
+            location: rightLoc,
+            orientation: rightOri,
           }),
       },
       id: crypto.randomUUID(),
@@ -895,13 +906,13 @@ export function parsePropsFromURL(
 ): URLPropOptions {
   const result: URLPropOptions = {};
 
-  const bluePropType = parsePropTypeFromURLValue(searchParams.get("bp"));
-  if (bluePropType) result.bluePropType = bluePropType;
+  const leftPropType = parsePropTypeFromURLValue(searchParams.get("bp"));
+  if (leftPropType) result.leftPropType = leftPropType;
 
-  const redPropType = parsePropTypeFromURLValue(searchParams.get("rp"));
-  if (redPropType) result.redPropType = redPropType;
-  if (bluePropType && redPropType) {
-    result.catDogMode = bluePropType !== redPropType;
+  const rightPropType = parsePropTypeFromURLValue(searchParams.get("rp"));
+  if (rightPropType) result.rightPropType = rightPropType;
+  if (leftPropType && rightPropType) {
+    result.catDogMode = leftPropType !== rightPropType;
   }
 
   return result;

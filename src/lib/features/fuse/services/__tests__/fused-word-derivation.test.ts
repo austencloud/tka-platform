@@ -91,7 +91,7 @@ const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
 // The exact solo-prop step lists from the production doc that saved as "GI".
-const blueSpecs: StepSpec[] = [
+const leftSpecs: StepSpec[] = [
   [PRO, S, E, CCW],
   [PRO, E, N, CCW],
   [ANTI, N, E, CCW],
@@ -105,7 +105,7 @@ const blueSpecs: StepSpec[] = [
   [PRO, S, E, CCW],
   [ANTI, E, S, CCW],
 ];
-const redSpecs: StepSpec[] = [
+const rightSpecs: StepSpec[] = [
   [ANTI, S, E, CW],
   [ANTI, E, N, CW],
   [ANTI, N, W, CW],
@@ -128,8 +128,8 @@ describe("fused sequence word derivation", () => {
   it("derives a letter for every fused step and a length-consistent word", async () => {
     injectRealCsvData();
     const fused = fuseSequences(
-      makeSoloProp(blueSpecs, S),
-      makeSoloProp(redSpecs, S)
+      makeSoloProp(leftSpecs, S),
+      makeSoloProp(rightSpecs, S)
     );
     expect(fused.steps.length).toBe(12);
 
@@ -148,8 +148,8 @@ describe("fused sequence word derivation", () => {
     injectRealCsvData();
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const fused = fuseSequences(
-      makeSoloProp(blueSpecs, S),
-      makeSoloProp(redSpecs, S)
+      makeSoloProp(leftSpecs, S),
+      makeSoloProp(rightSpecs, S)
     );
     // Sabotage one step so its lookup cannot match any dataframe row.
     const steps = fused.steps.map((s, i) =>
@@ -158,7 +158,7 @@ describe("fused sequence word derivation", () => {
             ...s,
             motions: {
               ...s.motions,
-              blue: { ...s.motions.blue!, startLocation: N, endLocation: S },
+              left: { ...s.motions.left!, startLocation: N, endLocation: S },
             },
           }
         : s

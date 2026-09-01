@@ -15,7 +15,7 @@
 <script lang="ts">
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
-    MotionColor,
+    HandSide,
     Orientation,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
@@ -85,16 +85,16 @@
 
   // SVG element ref for the active prop's animated group
   let activePropGroupRef: SVGGElement | null = $state(null);
-  let ghostBluePropGroupRef: SVGGElement | null = $state(null);
-  let ghostRedPropGroupRef: SVGGElement | null = $state(null);
+  let ghostLeftPropGroupRef = $state<SVGGElement | null>(null);
+  let ghostRightPropGroupRef = $state<SVGGElement | null>(null);
   let interactiveGridRef: HTMLDivElement | null = $state(null);
 
   // Track whether the active prop just appeared (for scale-in animation)
   let justPlaced = $state(false);
 
   // Prop SVG render data (loaded async, keyed on prop type + color)
-  let bluePropData = $state<PropRenderData | null>(null);
-  let redPropData = $state<PropRenderData | null>(null);
+  let leftPropData = $state<PropRenderData | null>(null);
+  let rightPropData = $state<PropRenderData | null>(null);
   let previewLocation = $state<GridLocation | null>(null);
   let startAimPreview = $state<Orientation | null>(null);
 
@@ -148,50 +148,50 @@
   });
 
   // Reactive prop types for rotation checks
-  const currentBluePropType = $derived(
-    getSettings().bluePropType ?? PropType.STAFF
+  const currentLeftPropType = $derived(
+    getSettings().leftPropType ?? PropType.STAFF
   );
-  const currentRedPropType = $derived(
-    getSettings().redPropType ?? PropType.STAFF
+  const currentRightPropType = $derived(
+    getSettings().rightPropType ?? PropType.STAFF
   );
 
   // Load prop SVGs reactively when prop type changes in settings
   $effect(() => {
     const settings = getSettings();
-    const bluePropType = settings.bluePropType ?? PropType.STAFF;
-    const redPropType = settings.redPropType ?? PropType.STAFF;
+    const leftPropType = settings.leftPropType ?? PropType.STAFF;
+    const rightPropType = settings.rightPropType ?? PropType.STAFF;
 
-    // Load blue prop SVG
-    const blueMotion = createMotionData({
-      propType: bluePropType,
-      color: MotionColor.BLUE,
+    // Load left-hand prop SVG
+    const leftMotion = createMotionData({
+      propType: leftPropType,
+      hand: HandSide.LEFT,
     });
     propSvgLoader
       .loadPropSvg(
         { positionX: 0, positionY: 0, rotationAngle: 0 },
-        blueMotion,
+        leftMotion,
         false
       )
       .then((data) => {
-        bluePropData = data;
+        leftPropData = data;
       })
       .catch(() => {
         /* SVG unavailable; fallback circle renders */
       });
 
-    // Load red prop SVG
-    const redMotion = createMotionData({
-      propType: redPropType,
-      color: MotionColor.RED,
+    // Load right-hand prop SVG
+    const rightMotion = createMotionData({
+      propType: rightPropType,
+      hand: HandSide.RIGHT,
     });
     propSvgLoader
       .loadPropSvg(
         { positionX: 0, positionY: 0, rotationAngle: 0 },
-        redMotion,
+        rightMotion,
         false
       )
       .then((data) => {
-        redPropData = data;
+        rightPropData = data;
       })
       .catch(() => {
         /* SVG unavailable; fallback circle renders */
@@ -200,7 +200,7 @@
 
   // Active hand's prop render data
   const activePropData = $derived(
-    builderState.activeHand === MotionColor.BLUE ? bluePropData : redPropData
+    builderState.activeHand === HandSide.LEFT ? leftPropData : rightPropData
   );
 
   // SVG center point for transform offset (falls back to 0,0 while loading)
@@ -214,9 +214,9 @@
     if (builderState.currentPosition === null) return 0;
     const settings = getSettings();
     const activePropType =
-      builderState.activeHand === MotionColor.BLUE
-        ? (settings.bluePropType ?? PropType.STAFF)
-        : (settings.redPropType ?? PropType.STAFF);
+      builderState.activeHand === HandSide.LEFT
+        ? (settings.leftPropType ?? PropType.STAFF)
+        : (settings.rightPropType ?? PropType.STAFF);
     if (activePropType === PropType.HAND) return 0;
     return PropRotAngleManager.calculateRotation(
       builderState.currentPosition,
@@ -301,30 +301,30 @@
         // During red building, animate ghost blue through its corresponding step,
         // or fade it out if blue has no step at this beat
         if (
-          builderState.activeHand === MotionColor.RED &&
-          ghostBluePropGroupRef &&
-          bluePropData?.svgData
+          builderState.activeHand === HandSide.RIGHT &&
+          ghostLeftPropGroupRef &&
+          leftPropData?.svgData
         ) {
-          const blueIndex = builderState.redSteps.length;
-          const blueStep = builderState.blueSteps[blueIndex];
-          if (blueStep) {
+          const leftIndex = builderState.rightSteps.length;
+          const leftStep = builderState.leftSteps[leftIndex];
+          if (leftStep) {
             animations.push(
               ghostAnimator.animate({
-                element: ghostBluePropGroupRef,
-                startPosition: blueStep.startPosition,
-                endPosition: blueStep.endPosition,
-                rotationDirection: blueStep.rotationDirection,
-                turnCount: blueStep.turnCount,
-                startOrientation: blueStep.startOrientation,
+                element: ghostLeftPropGroupRef,
+                startPosition: leftStep.startPosition,
+                endPosition: leftStep.endPosition,
+                rotationDirection: leftStep.rotationDirection,
+                turnCount: leftStep.turnCount,
+                startOrientation: leftStep.startOrientation,
                 durationMs: durationMs ?? ANIMATION_DURATION_MS,
-                propCenter: bluePropData.svgData.center,
+                propCenter: leftPropData.svgData.center,
               })
             );
           } else {
             // Blue has no step here - fade out in sync with the active prop's animation
             animations.push(
               fadeOutElement(
-                ghostBluePropGroupRef,
+                ghostLeftPropGroupRef,
                 durationMs ?? ANIMATION_DURATION_MS
               )
             );
@@ -334,30 +334,30 @@
         // During blue building (after going back), animate ghost red through its corresponding step,
         // or fade it out if red has no step at this beat
         if (
-          builderState.activeHand === MotionColor.BLUE &&
-          ghostRedPropGroupRef &&
-          redPropData?.svgData
+          builderState.activeHand === HandSide.LEFT &&
+          ghostRightPropGroupRef &&
+          rightPropData?.svgData
         ) {
-          const redIndex = builderState.blueSteps.length;
-          const redStep = builderState.redSteps[redIndex];
-          if (redStep) {
+          const rightIndex = builderState.leftSteps.length;
+          const rightStep = builderState.rightSteps[rightIndex];
+          if (rightStep) {
             animations.push(
               ghostAnimator.animate({
-                element: ghostRedPropGroupRef,
-                startPosition: redStep.startPosition,
-                endPosition: redStep.endPosition,
-                rotationDirection: redStep.rotationDirection,
-                turnCount: redStep.turnCount,
-                startOrientation: redStep.startOrientation,
+                element: ghostRightPropGroupRef,
+                startPosition: rightStep.startPosition,
+                endPosition: rightStep.endPosition,
+                rotationDirection: rightStep.rotationDirection,
+                turnCount: rightStep.turnCount,
+                startOrientation: rightStep.startOrientation,
                 durationMs: durationMs ?? ANIMATION_DURATION_MS,
-                propCenter: redPropData.svgData.center,
+                propCenter: rightPropData.svgData.center,
               })
             );
           } else {
             // Red has no step here - fade out in sync with the active prop's animation
             animations.push(
               fadeOutElement(
-                ghostRedPropGroupRef,
+                ghostRightPropGroupRef,
                 durationMs ?? ANIMATION_DURATION_MS
               )
             );
@@ -440,7 +440,7 @@
     defaultLabel: string
   ): string {
     const handLabel =
-      builderState.activeHand === MotionColor.BLUE ? "Left" : "Right";
+      builderState.activeHand === HandSide.LEFT ? "Left" : "Right";
     if (builderState.stepEditMode === "replace") {
       return `Set ${handLabel} step ${
         (builderState.selectedStepIndex ?? 0) + 1
@@ -476,13 +476,13 @@
 
   const comparisonStep = $derived.by(() => {
     const activeSteps =
-      builderState.activeHand === MotionColor.BLUE
-        ? builderState.blueSteps
-        : builderState.redSteps;
+      builderState.activeHand === HandSide.LEFT
+        ? builderState.leftSteps
+        : builderState.rightSteps;
     const inactiveSteps =
-      builderState.activeHand === MotionColor.BLUE
-        ? builderState.redSteps
-        : builderState.blueSteps;
+      builderState.activeHand === HandSide.LEFT
+        ? builderState.rightSteps
+        : builderState.leftSteps;
     const editIndex =
       builderState.stepEditMode === "replace"
         ? builderState.selectedStepIndex
@@ -502,13 +502,11 @@
     });
   });
 
-  const activePhaseColor = $derived<"blue" | "red">(
-    builderState.activeHand === MotionColor.BLUE ? "blue" : "red"
-  );
+  const activePhaseHand = $derived(builderState.activeHand);
   const currentStepNumber = $derived(
-    (builderState.activeHand === MotionColor.BLUE
-      ? builderState.blueSteps.length
-      : builderState.redSteps.length) +
+    (builderState.activeHand === HandSide.LEFT
+      ? builderState.leftSteps.length
+      : builderState.rightSteps.length) +
       (builderState.phase === "complete" ? 0 : 1)
   );
   const targetsDisabled = $derived(
@@ -516,59 +514,59 @@
   );
 
   // Blue's final orientation (for complete-phase rendering)
-  const blueFinalOrientation = $derived.by(() => {
-    const steps = builderState.blueSteps;
+  const leftFinalOrientation = $derived.by(() => {
+    const steps = builderState.leftSteps;
     if (steps.length === 0) return Orientation.IN;
     return steps[steps.length - 1]!.endOrientation;
   });
 
   // Ghost blue: tracks rest position during red building (syncs with red step count).
   // Returns null once red goes past blue's last step - the ghost fades out.
-  const ghostBlueState = $derived.by(() => {
-    if (builderState.activeHand !== MotionColor.RED) return null;
-    if (builderState.blueSteps.length === 0) return null;
+  const ghostLeftState = $derived.by(() => {
+    if (builderState.activeHand !== HandSide.RIGHT) return null;
+    if (builderState.leftSteps.length === 0) return null;
     if (builderState.phase === "complete") return null;
 
-    const redStepsDone = builderState.redSteps.length;
+    const rightStepsDone = builderState.rightSteps.length;
 
     // Red has gone past all blue steps - blue doesn't exist at this beat.
     // Use > not >= so the ghost stays visible when both hands are at the same count.
-    if (redStepsDone > builderState.blueSteps.length) return null;
+    if (rightStepsDone > builderState.leftSteps.length) return null;
 
-    if (redStepsDone === 0) {
+    if (rightStepsDone === 0) {
       return {
-        position: builderState.blueSteps[0]!.startPosition,
-        orientation: builderState.blueSteps[0]!.startOrientation,
+        position: builderState.leftSteps[0]!.startPosition,
+        orientation: builderState.leftSteps[0]!.startOrientation,
       };
     }
     return {
-      position: builderState.blueSteps[redStepsDone - 1]!.endPosition,
-      orientation: builderState.blueSteps[redStepsDone - 1]!.endOrientation,
+      position: builderState.leftSteps[rightStepsDone - 1]!.endPosition,
+      orientation: builderState.leftSteps[rightStepsDone - 1]!.endOrientation,
     };
   });
 
   // Ghost red: tracks rest position during blue building when red has steps ahead.
   // Returns null once blue goes past red's last step - the ghost fades out.
-  const ghostRedState = $derived.by(() => {
-    if (builderState.activeHand !== MotionColor.BLUE) return null;
-    if (builderState.redSteps.length === 0) return null;
+  const ghostRightState = $derived.by(() => {
+    if (builderState.activeHand !== HandSide.LEFT) return null;
+    if (builderState.rightSteps.length === 0) return null;
     if (builderState.phase === "complete") return null;
 
-    const blueStepsDone = builderState.blueSteps.length;
+    const leftStepsDone = builderState.leftSteps.length;
 
     // Blue has gone past all red steps - red doesn't exist at this beat.
     // Use > not >= so the ghost stays visible when both hands are at the same count.
-    if (blueStepsDone > builderState.redSteps.length) return null;
+    if (leftStepsDone > builderState.rightSteps.length) return null;
 
-    if (blueStepsDone === 0) {
+    if (leftStepsDone === 0) {
       return {
-        position: builderState.redSteps[0]!.startPosition,
-        orientation: builderState.redSteps[0]!.startOrientation,
+        position: builderState.rightSteps[0]!.startPosition,
+        orientation: builderState.rightSteps[0]!.startOrientation,
       };
     }
     return {
-      position: builderState.redSteps[blueStepsDone - 1]!.endPosition,
-      orientation: builderState.redSteps[blueStepsDone - 1]!.endOrientation,
+      position: builderState.rightSteps[leftStepsDone - 1]!.endPosition,
+      orientation: builderState.rightSteps[leftStepsDone - 1]!.endOrientation,
     };
   });
 
@@ -580,7 +578,7 @@
 
   // Active hand color for CSS glow
   const activeColor = $derived(
-    builderState.activeHand === MotionColor.BLUE
+    builderState.activeHand === HandSide.LEFT
       ? "var(--prop-blue, #2e8bf0)"
       : "var(--prop-red, #ed1c24)"
   );
@@ -615,8 +613,8 @@
 >
   <div
     class="step-badge"
-    class:blue={builderState.activeHand === MotionColor.BLUE}
-    class:red={builderState.activeHand === MotionColor.RED}
+    class:blue={builderState.activeHand === HandSide.LEFT}
+    class:red={builderState.activeHand === HandSide.RIGHT}
     aria-label="Building step {currentStepNumber}"
   >
     <span>Step</span>
@@ -645,8 +643,8 @@
     {#if comparisonPathD}
       <path
         class="comparison-path motion-preview-path"
-        class:blue-path={builderState.activeHand === MotionColor.RED}
-        class:red-path={builderState.activeHand === MotionColor.BLUE}
+        class:blue-path={builderState.activeHand === HandSide.RIGHT}
+        class:red-path={builderState.activeHand === HandSide.LEFT}
         d={comparisonPathD}
         fill="none"
         stroke-linecap="round"
@@ -658,8 +656,8 @@
     {#if candidatePathD}
       <path
         class="candidate-path motion-preview-path"
-        class:blue-path={builderState.activeHand === MotionColor.BLUE}
-        class:red-path={builderState.activeHand === MotionColor.RED}
+        class:blue-path={builderState.activeHand === HandSide.LEFT}
+        class:red-path={builderState.activeHand === HandSide.RIGHT}
         d={candidatePathD}
         fill="none"
         stroke-linecap="round"
@@ -670,25 +668,25 @@
 
     <!-- Layer 3: Ghost props (the inactive hand animated in sync during building).
          Fades out when the active hand goes past the other hand's last step. -->
-    {#if ghostBlueState && builderState.phase !== "complete"}
-      {@const ghostTarget = findTarget(ghostBlueState.position)}
+    {#if ghostLeftState && builderState.phase !== "complete"}
+      {@const ghostTarget = findTarget(ghostLeftState.position)}
       {#if ghostTarget}
-        {#if bluePropData?.svgData}
+        {#if leftPropData?.svgData}
           <g
-            bind:this={ghostBluePropGroupRef}
+            bind:this={ghostLeftPropGroupRef}
             class="prop-svg-group dimmed-prop"
             style="transform: {propTransform(
               ghostTarget.x,
               ghostTarget.y,
               getRotation(
-                ghostBlueState.position,
-                ghostBlueState.orientation,
-                currentBluePropType
+                ghostLeftState.position,
+                ghostLeftState.orientation,
+                currentLeftPropType
               ),
-              bluePropData.svgData.center
+              leftPropData.svgData.center
             )}"
           >
-            {@html bluePropData.svgData.svgContent}
+            {@html leftPropData.svgData.svgContent}
           </g>
         {:else}
           <circle
@@ -701,25 +699,25 @@
       {/if}
     {/if}
 
-    {#if ghostRedState && builderState.phase !== "complete"}
-      {@const ghostRedTarget = findTarget(ghostRedState.position)}
+    {#if ghostRightState && builderState.phase !== "complete"}
+      {@const ghostRedTarget = findTarget(ghostRightState.position)}
       {#if ghostRedTarget}
-        {#if redPropData?.svgData}
+        {#if rightPropData?.svgData}
           <g
-            bind:this={ghostRedPropGroupRef}
+            bind:this={ghostRightPropGroupRef}
             class="prop-svg-group dimmed-prop"
             style="transform: {propTransform(
               ghostRedTarget.x,
               ghostRedTarget.y,
               getRotation(
-                ghostRedState.position,
-                ghostRedState.orientation,
-                currentRedPropType
+                ghostRightState.position,
+                ghostRightState.orientation,
+                currentRightPropType
               ),
-              redPropData.svgData.center
+              rightPropData.svgData.center
             )}"
           >
-            {@html redPropData.svgData.svgContent}
+            {@html rightPropData.svgData.svgContent}
           </g>
         {:else}
           <circle
@@ -761,8 +759,8 @@
             cy="0"
             r={FALLBACK_RADIUS}
             class="prop-fallback"
-            class:blue-fallback={builderState.activeHand === MotionColor.BLUE}
-            class:red-fallback={builderState.activeHand === MotionColor.RED}
+            class:blue-fallback={builderState.activeHand === HandSide.LEFT}
+            class:red-fallback={builderState.activeHand === HandSide.RIGHT}
             class:scale-in={justPlaced}
           />
         {/if}
@@ -808,63 +806,67 @@
 
     <!-- When complete, show both hands at their final positions -->
     {#if builderState.phase === "complete"}
-      <!-- Blue final -->
-      {@const blueFinalLoc = getFinalPosition(builderState.blueSteps)}
-      {#if blueFinalLoc}
-        {@const blueFinalT = findTarget(blueFinalLoc)}
-        {#if blueFinalT}
-          {#if bluePropData?.svgData}
+      <!-- Left-hand final -->
+      {@const leftFinalLocation = getFinalPosition(builderState.leftSteps)}
+      {#if leftFinalLocation}
+        {@const leftFinalT = findTarget(leftFinalLocation)}
+        {#if leftFinalT}
+          {#if leftPropData?.svgData}
             <g
               class="prop-svg-group"
               style="transform: {propTransform(
-                blueFinalT.x,
-                blueFinalT.y,
+                leftFinalT.x,
+                leftFinalT.y,
                 getRotation(
-                  blueFinalLoc,
-                  blueFinalOrientation,
-                  currentBluePropType
+                  leftFinalLocation,
+                  leftFinalOrientation,
+                  currentLeftPropType
                 ),
-                bluePropData.svgData.center
+                leftPropData.svgData.center
               )}"
             >
-              {@html bluePropData.svgData.svgContent}
+              {@html leftPropData.svgData.svgContent}
             </g>
           {:else}
             <circle
-              cx={blueFinalT.x}
-              cy={blueFinalT.y}
+              cx={leftFinalT.x}
+              cy={leftFinalT.y}
               r={FALLBACK_RADIUS}
               class="prop-fallback blue-fallback"
             />
           {/if}
         {/if}
       {/if}
-      <!-- Red final -->
-      {@const redFinal = getFinalPosition(builderState.redSteps)}
-      {#if redFinal}
-        {@const redFinalT = findTarget(redFinal)}
-        {@const redFinalOri =
-          builderState.redSteps.length > 0
-            ? builderState.redSteps[builderState.redSteps.length - 1]!
+      <!-- Right-hand final -->
+      {@const rightFinalLocation = getFinalPosition(builderState.rightSteps)}
+      {#if rightFinalLocation}
+        {@const rightFinalT = findTarget(rightFinalLocation)}
+        {@const rightFinalOrientation =
+          builderState.rightSteps.length > 0
+            ? builderState.rightSteps[builderState.rightSteps.length - 1]!
                 .endOrientation
             : Orientation.IN}
-        {#if redFinalT}
-          {#if redPropData?.svgData}
+        {#if rightFinalT}
+          {#if rightPropData?.svgData}
             <g
               class="prop-svg-group"
               style="transform: {propTransform(
-                redFinalT.x,
-                redFinalT.y,
-                getRotation(redFinal, redFinalOri, currentRedPropType),
-                redPropData.svgData.center
+                rightFinalT.x,
+                rightFinalT.y,
+                getRotation(
+                  rightFinalLocation,
+                  rightFinalOrientation,
+                  currentRightPropType
+                ),
+                rightPropData.svgData.center
               )}"
             >
-              {@html redPropData.svgData.svgContent}
+              {@html rightPropData.svgData.svgContent}
             </g>
           {:else}
             <circle
-              cx={redFinalT.x}
-              cy={redFinalT.y}
+              cx={rightFinalT.x}
+              cy={rightFinalT.y}
               r={FALLBACK_RADIUS}
               class="prop-fallback red-fallback"
             />
@@ -876,7 +878,7 @@
   <HitTargetOverlay
     gridMode={builderState.gridMode}
     showCenter={builderState.showCenter}
-    {activePhaseColor}
+    {activePhaseHand}
     currentPosition={builderState.currentPosition}
     disabled={targetsDisabled}
     pulseTargets={false}

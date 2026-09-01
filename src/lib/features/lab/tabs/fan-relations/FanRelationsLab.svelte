@@ -9,7 +9,7 @@
   import { normalizeOrientationForLocation } from "$lib/shared/pictograph/grid/domain/orientation-from-drag";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
-    MotionColor,
+    HandSide,
     Orientation,
     type Orientation as OrientationValue,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -80,13 +80,13 @@
   };
 
   let gridMode = $state<GridMode>(GridMode.DIAMOND);
-  let blueLocation = $state<GridLocation>(GridLocation.EAST);
-  let redLocation = $state<GridLocation>(GridLocation.WEST);
-  let initialBlueLocation = $state<GridLocation>(GridLocation.EAST);
-  let initialRedLocation = $state<GridLocation>(GridLocation.WEST);
+  let leftLocation = $state<GridLocation>(GridLocation.EAST);
+  let rightLocation = $state<GridLocation>(GridLocation.WEST);
+  let initialLeftLocation = $state<GridLocation>(GridLocation.EAST);
+  let initialRightLocation = $state<GridLocation>(GridLocation.WEST);
   let placementRevision = $state(0);
-  let blueOrientation = $state<OrientationValue>(Orientation.IN);
-  let redOrientation = $state<OrientationValue>(Orientation.IN);
+  let leftOrientation = $state<OrientationValue>(Orientation.IN);
+  let rightOrientation = $state<OrientationValue>(Orientation.IN);
   let propType = $state<PropType>(PropType.BIGFAN);
   let presentationPlane = $state<Plane>(Plane.WALL);
   let viewpoint = $state(FanViewpoint.AUDIENCE);
@@ -94,25 +94,25 @@
     WorkingFanRelation.UNLABELED
   );
 
-  const blueHeadingDegrees = $derived(
-    getFanHeadingDegrees(blueLocation, blueOrientation, gridMode)
+  const leftHeadingDegrees = $derived(
+    getFanHeadingDegrees(leftLocation, leftOrientation, gridMode)
   );
-  const redHeadingDegrees = $derived(
-    getFanHeadingDegrees(redLocation, redOrientation, gridMode)
+  const rightHeadingDegrees = $derived(
+    getFanHeadingDegrees(rightLocation, rightOrientation, gridMode)
   );
-  const blueWorldHeading = $derived(
+  const leftWorldHeading = $derived(
     describeWorldHeading(
-      getWorldHeadingVector(blueHeadingDegrees, presentationPlane)
+      getWorldHeadingVector(leftHeadingDegrees, presentationPlane)
     )
   );
-  const redWorldHeading = $derived(
+  const rightWorldHeading = $derived(
     describeWorldHeading(
-      getWorldHeadingVector(redHeadingDegrees, presentationPlane)
+      getWorldHeadingVector(rightHeadingDegrees, presentationPlane)
     )
   );
   const headingRelationship = $derived(
     describeHeadingSeparation(
-      getHeadingSeparationDegrees(blueHeadingDegrees, redHeadingDegrees)
+      getHeadingSeparationDegrees(leftHeadingDegrees, rightHeadingDegrees)
     )
   );
   const projection = $derived(
@@ -121,21 +121,21 @@
 
   function resetPlacement(
     nextGridMode: GridMode,
-    nextBlueLocation: GridLocation,
-    nextRedLocation: GridLocation
+    nextLeftLocation,
+    nextRightLocation
   ) {
     gridMode = nextGridMode;
-    blueLocation = nextBlueLocation;
-    redLocation = nextRedLocation;
-    initialBlueLocation = nextBlueLocation;
-    initialRedLocation = nextRedLocation;
-    blueOrientation = normalizeOrientationForLocation(
-      blueOrientation,
-      nextBlueLocation
+    leftLocation = nextLeftLocation;
+    rightLocation = nextRightLocation;
+    initialLeftLocation = nextLeftLocation;
+    initialRightLocation = nextRightLocation;
+    leftOrientation = normalizeOrientationForLocation(
+      leftOrientation,
+      nextLeftLocation
     );
-    redOrientation = normalizeOrientationForLocation(
-      redOrientation,
-      nextRedLocation
+    rightOrientation = normalizeOrientationForLocation(
+      rightOrientation,
+      nextRightLocation
     );
     placementRevision += 1;
   }
@@ -153,40 +153,40 @@
       );
       return;
     }
-    resetPlacement(nextGridMode, blueLocation, redLocation);
+    resetPlacement(nextGridMode, leftLocation, rightLocation);
   }
 
   function handlePlacementChange(change: PropPlacementChange) {
-    if (change.blueLocation) {
-      blueLocation = change.blueLocation;
-      blueOrientation = normalizeOrientationForLocation(
-        blueOrientation,
-        blueLocation
+    if (change.leftLocation) {
+      leftLocation = change.leftLocation;
+      leftOrientation = normalizeOrientationForLocation(
+        leftOrientation,
+        leftLocation
       );
     }
-    if (change.redLocation) {
-      redLocation = change.redLocation;
-      redOrientation = normalizeOrientationForLocation(
-        redOrientation,
-        redLocation
+    if (change.rightLocation) {
+      rightLocation = change.rightLocation;
+      rightOrientation = normalizeOrientationForLocation(
+        rightOrientation,
+        rightLocation
       );
     }
   }
 
   function handleOrientationChange(
-    color: MotionColor,
+    color: HandSide,
     orientation: OrientationValue
   ) {
-    if (color === MotionColor.BLUE) {
-      blueOrientation = orientation;
+    if (color === HandSide.LEFT) {
+      leftOrientation = orientation;
     } else {
-      redOrientation = orientation;
+      rightOrientation = orientation;
     }
   }
 
   function loadWObservation() {
-    blueOrientation = Orientation.CLOCK_OUT;
-    redOrientation = Orientation.COUNTER_OUT;
+    leftOrientation = Orientation.CLOCK_OUT;
+    rightOrientation = Orientation.COUNTER_OUT;
     presentationPlane = Plane.WALL;
     viewpoint = FanViewpoint.AUDIENCE;
     workingRelation = WorkingFanRelation.W;
@@ -198,8 +198,8 @@
   }
 
   function loadCenterObservation() {
-    blueOrientation = Orientation.CENTER_E;
-    redOrientation = Orientation.OUT;
+    leftOrientation = Orientation.CENTER_E;
+    rightOrientation = Orientation.OUT;
     presentationPlane = Plane.WALL;
     viewpoint = FanViewpoint.AUDIENCE;
     workingRelation = WorkingFanRelation.UNLABELED;
@@ -207,8 +207,8 @@
   }
 
   function loadEdgeOnObservation() {
-    blueOrientation = Orientation.COUNTER;
-    redOrientation = Orientation.COUNTER;
+    leftOrientation = Orientation.COUNTER;
+    rightOrientation = Orientation.COUNTER;
     presentationPlane = Plane.FLOOR;
     viewpoint = FanViewpoint.AUDIENCE;
     workingRelation = WorkingFanRelation.I;
@@ -254,16 +254,16 @@
             {#key placementRevision}
               <PropPlacementGrid
                 {gridMode}
-                bluePropType={propType}
-                redPropType={propType}
-                {blueOrientation}
-                {redOrientation}
-                {initialBlueLocation}
-                {initialRedLocation}
+                leftPropType={propType}
+                rightPropType={propType}
+                {leftOrientation}
+                {rightOrientation}
+                {initialLeftLocation}
+                {initialRightLocation}
                 showCenter
                 editAfterCompletion
-                blueNoun="left fan"
-                redNoun="right fan"
+                leftNoun="left fan"
+                rightNoun="right fan"
                 onChange={handlePlacementChange}
                 onOrientationChange={handleOrientationChange}
               />
@@ -305,19 +305,19 @@
                 aria-label="Fan orientations: left is blue, right is red"
               >
                 <OrientationCycler
-                  orientation={blueOrientation}
+                  orientation={leftOrientation}
                   onOrientationChange={(orientation) =>
-                    (blueOrientation = orientation)}
+                    (leftOrientation = orientation)}
                   color="blue"
-                  centered={blueLocation === GridLocation.CENTER}
+                  centered={leftLocation === GridLocation.CENTER}
                   allowInterradial
                 />
                 <OrientationCycler
-                  orientation={redOrientation}
+                  orientation={rightOrientation}
                   onOrientationChange={(orientation) =>
-                    (redOrientation = orientation)}
+                    (rightOrientation = orientation)}
                   color="red"
-                  centered={redLocation === GridLocation.CENTER}
+                  centered={rightLocation === GridLocation.CENTER}
                   allowInterradial
                 />
               </div>
@@ -386,10 +386,10 @@
 
         <div class="scene-frame">
           <FanRelationScene
-            {blueLocation}
-            {redLocation}
-            {blueOrientation}
-            {redOrientation}
+            {leftLocation}
+            {rightLocation}
+            {leftOrientation}
+            {rightOrientation}
             {gridMode}
             {propType}
             {presentationPlane}
@@ -418,15 +418,15 @@
         <dl>
           <div>
             <dt>Location</dt>
-            <dd>{getLocationLabel(blueLocation)}</dd>
+            <dd>{getLocationLabel(leftLocation)}</dd>
           </div>
           <div>
             <dt>Local orientation</dt>
-            <dd>{getOrientationLabel(blueOrientation)}</dd>
+            <dd>{getOrientationLabel(leftOrientation)}</dd>
           </div>
           <div>
             <dt>World heading</dt>
-            <dd>{blueWorldHeading}</dd>
+            <dd>{leftWorldHeading}</dd>
           </div>
         </dl>
       </div>
@@ -441,15 +441,15 @@
         <dl>
           <div>
             <dt>Location</dt>
-            <dd>{getLocationLabel(redLocation)}</dd>
+            <dd>{getLocationLabel(rightLocation)}</dd>
           </div>
           <div>
             <dt>Local orientation</dt>
-            <dd>{getOrientationLabel(redOrientation)}</dd>
+            <dd>{getOrientationLabel(rightOrientation)}</dd>
           </div>
           <div>
             <dt>World heading</dt>
-            <dd>{redWorldHeading}</dd>
+            <dd>{rightWorldHeading}</dd>
           </div>
         </dl>
       </div>

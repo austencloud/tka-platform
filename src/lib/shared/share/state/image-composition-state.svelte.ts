@@ -68,7 +68,7 @@ export interface ImageCompositionSettings {
   addUserInfo: boolean; // True if any footer element is shown
 }
 
-const DEFAULT_SETTINGS: ImageCompositionSettings = {
+export const DEFAULT_IMAGE_COMPOSITION_SETTINGS: ImageCompositionSettings = {
   addWord: true,
   addStepNumbers: true,
   addDifficultyLevel: false,
@@ -117,10 +117,10 @@ function createSettings(
     showBirthday: _legacyBirthday,
     ...supportedSeed
   } = seed ?? {};
-  const showNotes = supportedSeed.showNotes ?? DEFAULT_SETTINGS.showNotes;
+  const showNotes = supportedSeed.showNotes ?? DEFAULT_IMAGE_COMPOSITION_SETTINGS.showNotes;
 
   return {
-    ...DEFAULT_SETTINGS,
+    ...DEFAULT_IMAGE_COMPOSITION_SETTINGS,
     ...supportedSeed,
     showNotes,
     addUserInfo: showNotes,
@@ -150,6 +150,16 @@ class ImageCompositionStateManager {
     settings: AppSettings | null;
     userId: string;
   } | null = null;
+  // View-only link sessions (viewer URL state) borrow this singleton. While
+  // suspended NOTHING here reaches a persistence sink: not the dedicated local
+  // key, not the scoped column key, not account settings.
+  private persistenceSuspended = false;
+  private suspendedSessionState: {
+    changedThisSession: boolean;
+    columnChangedThisSession: boolean;
+    activeColumnPreferenceOwner: string | null;
+  } | null = null;
+  private deferredWhileSuspended: Array<() => void> = [];
 
   constructor() {
     if (browser) {
@@ -167,16 +177,18 @@ class ImageCompositionStateManager {
    * can never mutate account B.
    */
   private adoptRemoteSettingsOnArrival(): void {
-    settingsService.onRemoteSettingsApplied?.((remote, userId) => {
-      const remoteOwner = getColumnCountPreferenceOwner({ uid: userId });
-      if (this.activeColumnPreferenceOwner === null) {
-        this.pendingRemoteSettings = { settings: remote, userId };
-        return;
-      }
-      if (this.activeColumnPreferenceOwner !== remoteOwner) return;
+    settingsService.onRemoteSettingsApplied?.((remote, userId) =>
+      this.runOrDefer(() => {
+        const remoteOwner = getColumnCountPreferenceOwner({ uid: userId });
+        if (this.activeColumnPreferenceOwner === null) {
+          this.pendingRemoteSettings = { settings: remote, userId };
+          return;
+        }
+        if (this.activeColumnPreferenceOwner !== remoteOwner) return;
 
-      this.applyRemoteSettings(remote, remoteOwner);
-    });
+        this.applyRemoteSettings(remote, remoteOwner);
+      })
+    );
   }
 
   /**
@@ -185,51 +197,66 @@ class ImageCompositionStateManager {
    * associated with a guest or a specific account.
    */
   private observeAuthIdentity(): void {
-    getAuthSync().onAuthStateChanged((user) => {
-      const owner = getColumnCountPreferenceOwner(user);
-      const previousOwner = this.activeColumnPreferenceOwner;
-      const identityChanged = owner !== this.activeColumnPreferenceOwner;
-      const carryLiveGuestChoiceIntoAnonymousIdentity =
-        identityChanged &&
-        previousOwner === "guest" &&
-        user?.isAnonymous === true &&
-        this.columnChangedThisSession;
+    getAuthSync().onAuthStateChanged((user) =>
+      this.runOrDefer(() => {
+        const owner = getColumnCountPreferenceOwner(user);
+        const previousOwner = this.activeColumnPreferenceOwner;
+        const identityChanged = owner !== this.activeColumnPreferenceOwner;
+        const carryLiveGuestChoiceIntoAnonymousIdentity =
+          identityChanged &&
+          previousOwner === "guest" &&
+          user?.isAnonymous === true &&
+          this.columnChangedThisSession;
 
-      this.activeColumnPreferenceOwner = owner;
-      if (carryLiveGuestChoiceIntoAnonymousIdentity) {
-        this.settings.columnCountPreferenceVersion =
-          COLUMN_COUNT_PREFERENCE_VERSION;
-        this.settings.columnCountPreferenceOwner = owner;
-        this.writeScopedColumnPreference(owner);
-        this.writeLocalCopy();
+        this.activeColumnPreferenceOwner = owner;
+        if (carryLiveGuestChoiceIntoAnonymousIdentity) {
+          this.settings.columnCountPreferenceVersion =
+            COLUMN_COUNT_PREFERENCE_VERSION;
+          this.settings.columnCountPreferenceOwner = owner;
+          this.writeScopedColumnPreference(owner);
+          this.writeLocalCopy();
+          this.pendingRemoteSettings = null;
+          this.pushAccountSettings();
+          this.notifyObservers();
+          return;
+        }
+
+        if (identityChanged) {
+          this.changedThisSession = false;
+          this.columnChangedThisSession = false;
+        }
+
+        const pending = this.pendingRemoteSettings;
         this.pendingRemoteSettings = null;
-        void settingsService.updateSetting(
-          "imageExport",
-          createSettings(this.settings)
-        );
-        this.notifyObservers();
-        return;
-      }
+        if (
+          pending &&
+          getColumnCountPreferenceOwner({ uid: pending.userId }) === owner
+        ) {
+          this.applyRemoteSettings(pending.settings, owner);
+          return;
+        }
 
-      if (identityChanged) {
-        this.changedThisSession = false;
-        this.columnChangedThisSession = false;
-      }
+        const localPreference =
+          this.readScopedColumnPreference(owner) ??
+          this.initialColumnPreference;
+        this.applyColumnPreference(localPreference, owner);
+      })
+    );
+  }
 
-      const pending = this.pendingRemoteSettings;
-      this.pendingRemoteSettings = null;
-      if (
-        pending &&
-        getColumnCountPreferenceOwner({ uid: pending.userId }) === owner
-      ) {
-        this.applyRemoteSettings(pending.settings, owner);
-        return;
-      }
-
-      const localPreference =
-        this.readScopedColumnPreference(owner) ?? this.initialColumnPreference;
-      this.applyColumnPreference(localPreference, owner);
-    });
+  /**
+   * Identity work that must not run against a borrowed state. A remote
+   * snapshot or an auth transition arriving mid-session would otherwise
+   * overwrite the link's card settings AND re-derive column provenance from
+   * them; the queued action runs after the snapshot is restored, so it sees
+   * the visitor's own state exactly as it would have without the link.
+   */
+  private runOrDefer(action: () => void): void {
+    if (this.persistenceSuspended) {
+      this.deferredWhileSuspended.push(action);
+      return;
+    }
+    action();
   }
 
   private applyRemoteSettings(remote: AppSettings | null, owner: string): void {
@@ -254,10 +281,7 @@ class ImageCompositionStateManager {
         (this.columnChangedThisSession && !remoteHasCurrentColumns) ||
         (!this.columnChangedThisSession && sanitized.changed)
       ) {
-        void settingsService.updateSetting(
-          "imageExport",
-          createSettings(this.settings)
-        );
+        this.pushAccountSettings();
       }
       return;
     }
@@ -275,10 +299,7 @@ class ImageCompositionStateManager {
     if (sanitized.changed) {
       // This is a migration write, not a user edit. It turns every legacy or
       // cross-account numeric value into explicit Auto at the cloud boundary.
-      void settingsService.updateSetting(
-        "imageExport",
-        createSettings(this.settings)
-      );
+      this.pushAccountSettings();
     }
   }
 
@@ -334,6 +355,7 @@ class ImageCompositionStateManager {
   }
 
   private writeScopedColumnPreference(owner: string): void {
+    if (this.persistenceSuspended) return;
     try {
       localStorage.setItem(
         this.scopedColumnPreferenceKey(owner),
@@ -404,7 +426,7 @@ class ImageCompositionStateManager {
 
     // Fix truncated default that was persisted due to previous save bug
     if (this.settings.customNotesText === "Created using TKA Scrib") {
-      this.settings.customNotesText = DEFAULT_SETTINGS.customNotesText;
+      this.settings.customNotesText = DEFAULT_IMAGE_COMPOSITION_SETTINGS.customNotesText;
       migrated = true;
     }
 
@@ -491,11 +513,26 @@ class ImageCompositionStateManager {
   }
 
   private writeLocalCopy(): void {
+    if (this.persistenceSuspended) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.settings));
     } catch {
       console.warn("Failed to save image composition settings to localStorage");
     }
+  }
+
+  /**
+   * The one account-settings sink. Every cloud write goes through here so a
+   * borrowed session has a single place to gate — a link writing the sender's
+   * card settings into the recipient's ACCOUNT is worse than a local leak.
+   * A deep plain copy avoids leaking $state proxies or shared override maps.
+   */
+  private pushAccountSettings(): void {
+    if (this.persistenceSuspended) return;
+    void settingsService.updateSetting(
+      "imageExport",
+      createSettings(this.settings)
+    );
   }
 
   /**
@@ -505,6 +542,10 @@ class ImageCompositionStateManager {
    */
   private saveToStorage(): void {
     if (!browser) return;
+    // A borrowed session: the in-memory edit stands for this view, but no sink
+    // is touched and no session-identity bookkeeping is recorded, so the
+    // restored snapshot looks untouched to the account-sync arbitration.
+    if (this.persistenceSuspended) return;
 
     this.changedThisSession = true;
     const owner = this.activeColumnPreferenceOwner;
@@ -526,11 +567,7 @@ class ImageCompositionStateManager {
       return;
     }
 
-    // A deep plain copy avoids leaking $state proxies or shared override maps.
-    void settingsService.updateSetting(
-      "imageExport",
-      createSettings(this.settings)
-    );
+    this.pushAccountSettings();
   }
 
   private notifyObservers(): void {
@@ -610,13 +647,62 @@ class ImageCompositionStateManager {
     return String(stepCount) in this.settings.startPositionLayoutOverrides;
   }
 
-  // Get all settings (for passing to share service)
+  // Get all settings (for passing to share service). Also the snapshot half of
+  // the view-only memento below — it is already a deep plain copy.
   getSettings(): ImageCompositionSettings {
     return {
       ...createSettings(this.settings),
       // Include computed addUserInfo for backwards compatibility
       addUserInfo: this.settings.showNotes,
     };
+  }
+
+  /**
+   * View-only link sessions (viewer URL state). ~10 files reach this singleton
+   * through `getImageCompositionManager()` with no injection seam, so a shared
+   * link BORROWS the real instance instead of constructing a view-only copy:
+   * `getSettings()` -> suspend -> `replaceAll(seed)` -> (on close)
+   * `replaceAll(snapshot)` -> resume. While suspended, every sink is closed —
+   * the dedicated local key, the scoped column key, and account settings — and
+   * the session-identity bookkeeping (`changedThisSession`,
+   * `columnChangedThisSession`, `activeColumnPreferenceOwner`) is frozen and
+   * restored, so a recipient's tweaks during the session can never later
+   * outrank their own account snapshot. Remote/auth callbacks that land
+   * mid-session are queued by `runOrDefer` and run against the restored state.
+   */
+  setPersistenceSuspended(suspended: boolean): void {
+    if (suspended === this.persistenceSuspended) return;
+
+    if (suspended) {
+      this.suspendedSessionState = {
+        changedThisSession: this.changedThisSession,
+        columnChangedThisSession: this.columnChangedThisSession,
+        activeColumnPreferenceOwner: this.activeColumnPreferenceOwner,
+      };
+      this.persistenceSuspended = true;
+      return;
+    }
+
+    this.persistenceSuspended = false;
+    const frozen = this.suspendedSessionState;
+    this.suspendedSessionState = null;
+    if (frozen) {
+      this.changedThisSession = frozen.changedThisSession;
+      this.columnChangedThisSession = frozen.columnChangedThisSession;
+      this.activeColumnPreferenceOwner = frozen.activeColumnPreferenceOwner;
+    }
+    // Drain AFTER the identity baseline is back, so deferred work sees the
+    // visitor's own state rather than the link's.
+    const deferred = this.deferredWhileSuspended;
+    this.deferredWhileSuspended = [];
+    for (const action of deferred) action();
+  }
+
+  /** Memento pair to `getSettings()`. Applies a full settings object at once. */
+  replaceAll(next: ImageCompositionSettings): void {
+    this.settings = createSettings(next);
+    this.saveToStorage();
+    this.notifyObservers();
   }
 
   // Setters

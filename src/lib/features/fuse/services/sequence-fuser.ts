@@ -7,7 +7,7 @@ import { MotionType, RotationDirection, Orientation } from "$lib/shared/pictogra
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { FuseOptions } from "./types";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -67,7 +67,7 @@ function tile<T>(items: readonly T[], targetLength: number): T[] {
 
 function buildMotionFromSoloPropStep(
 	step: SoloPropStepData,
-	color: MotionColor,
+	color: HandSide,
 	gridMode: GridMode
 ): ReturnType<typeof createMotionData> {
 	return createMotionData({
@@ -78,21 +78,21 @@ function buildMotionFromSoloPropStep(
 		turns: step.turns,
 		startOrientation: step.startOrientation,
 		endOrientation: step.endOrientation,
-		color,
+		hand: color,
 		gridMode,
 		isVisible: true,
 	});
 }
 
 function resolveFusedGridMode(
-	blueGridMode: GridMode,
-	redGridMode: GridMode
+	leftGridMode: GridMode,
+	rightGridMode: GridMode
 ): GridMode {
 	const mixesDiamondAndBox =
-		(blueGridMode === GridMode.DIAMOND && redGridMode === GridMode.BOX) ||
-		(blueGridMode === GridMode.BOX && redGridMode === GridMode.DIAMOND);
+		(leftGridMode === GridMode.DIAMOND && rightGridMode === GridMode.BOX) ||
+		(leftGridMode === GridMode.BOX && rightGridMode === GridMode.DIAMOND);
 
-	return mixesDiamondAndBox ? GridMode.SKEWED : blueGridMode;
+	return mixesDiamondAndBox ? GridMode.SKEWED : leftGridMode;
 }
 
 /**
@@ -138,47 +138,47 @@ function buildSoloPropFromHandPath(
 }
 
 export function fuseSequences(
-	blue: HandPathData | SoloPropData,
-	red: HandPathData | SoloPropData,
+	left: HandPathData | SoloPropData,
+	right: HandPathData | SoloPropData,
 	options?: FuseOptions
 ): SequenceData {
 	const maxSteps = options?.maxSteps ?? DEFAULT_MAX_STEPS;
 	const alignmentOffset = options?.alignmentOffset ?? 0;
 
-	const blueHandPath = extractHandPath(blue);
-	const redHandPath = extractHandPath(red);
+	const leftHandPath = extractHandPath(left);
+	const rightHandPath = extractHandPath(right);
 
 	// Derive step count from locations (N+1 locations = N steps), not from
 	// the `length` property which may be stale or incorrect in existing data.
-	const blueLength = blueHandPath.locations.length - 1;
-	const redLength = redHandPath.locations.length - 1;
+	const leftLength = leftHandPath.locations.length - 1;
+	const rightLength = rightHandPath.locations.length - 1;
 
 	// Compute target length: LCM of both, truncated if it exceeds maxSteps
-	const naturalLength = lcm(blueLength, redLength);
+	const naturalLength = lcm(leftLength, rightLength);
 	const targetLength = naturalLength > maxSteps
-		? Math.min(blueLength, redLength)
+		? Math.min(leftLength, rightLength)
 		: naturalLength;
 
 	// Tile hand path locations to fill the target length.
 	// Each location pair (i, i+1) defines one step's start and end.
-	const blueLocations = tile(blueHandPath.locations, targetLength + 1);
-	const redLocations = tile(
-		redHandPath.locations,
+	const leftLocations = tile(leftHandPath.locations, targetLength + 1);
+	const rightLocations = tile(
+		rightHandPath.locations,
 		targetLength + 1 + alignmentOffset
 	).slice(alignmentOffset);
 
 	// Build solo prop steps by tiling the source steps if available,
 	// otherwise synthesize minimal steps from hand path locations.
-	const blueSoloSteps = extractSoloPropSteps(blue);
-	const redSoloSteps = extractSoloPropSteps(red);
+	const leftSoloSteps = extractSoloPropSteps(left);
+	const rightSoloSteps = extractSoloPropSteps(right);
 
-	const tiledBlueSteps = blueSoloSteps
-		? tile(blueSoloSteps, targetLength)
-		: buildMinimalSteps(blueLocations, targetLength);
+	const tiledLeftSteps = leftSoloSteps
+		? tile(leftSoloSteps, targetLength)
+		: buildMinimalSteps(leftLocations, targetLength);
 
-	const tiledRedSteps = redSoloSteps
-		? tile(redSoloSteps, targetLength)
-		: buildMinimalSteps(redLocations, targetLength);
+	const tiledRightSteps = rightSoloSteps
+		? tile(rightSoloSteps, targetLength)
+		: buildMinimalSteps(rightLocations, targetLength);
 
 	// Build per-step step pairings. Without full motion analysis we mark
 	// letter and positions as null/false - downstream hydration fills them.
@@ -186,8 +186,8 @@ export function fuseSequences(
 	for (let i = 0; i < targetLength; i++) {
 		stepPairings.push({
 			letter: null,
-			blueReversal: false,
-			redReversal: false,
+			leftReversal: false,
+			rightReversal: false,
 			startPosition: null,
 			endPosition: null,
 		});
@@ -195,51 +195,51 @@ export function fuseSequences(
 
 	// Build SoloPropData wrappers. For inputs that were already SoloPropData,
 	// preserve the metadata and override just the steps and length.
-	const blueSoloProp: SoloPropData = isHandPathData(blue)
-		? buildSoloPropFromHandPath(blueHandPath, tiledBlueSteps, targetLength)
+	const leftSoloProp: SoloPropData = isHandPathData(left)
+		? buildSoloPropFromHandPath(leftHandPath, tiledLeftSteps, targetLength)
 		: {
-			...blue,
-			steps: tiledBlueSteps,
+			...left,
+			steps: tiledLeftSteps,
 			length: targetLength,
-			handPath: blueHandPath,
+			handPath: leftHandPath,
 		};
 
-	const redSoloProp: SoloPropData = isHandPathData(red)
-		? buildSoloPropFromHandPath(redHandPath, tiledRedSteps, targetLength)
+	const rightSoloProp: SoloPropData = isHandPathData(right)
+		? buildSoloPropFromHandPath(rightHandPath, tiledRightSteps, targetLength)
 		: {
-			...red,
-			steps: tiledRedSteps,
+			...right,
+			steps: tiledRightSteps,
 			length: targetLength,
-			handPath: redHandPath,
+			handPath: rightHandPath,
 		};
 
 	// A 45-degree adjustment can place one source on Box while its partner stays
 	// on Diamond. Preserve each motion's native frame and describe the combined
 	// sequence as skewed when those frames differ.
-	const blueGridMode =
-		blueSoloProp.impliedGridMode ?? redSoloProp.impliedGridMode ?? GridMode.DIAMOND;
-	const redGridMode =
-		redSoloProp.impliedGridMode ?? blueSoloProp.impliedGridMode ?? GridMode.DIAMOND;
-	const gridMode = resolveFusedGridMode(blueGridMode, redGridMode);
+	const leftGridMode =
+		leftSoloProp.impliedGridMode ?? rightSoloProp.impliedGridMode ?? GridMode.DIAMOND;
+	const rightGridMode =
+		rightSoloProp.impliedGridMode ?? leftSoloProp.impliedGridMode ?? GridMode.DIAMOND;
+	const gridMode = resolveFusedGridMode(leftGridMode, rightGridMode);
 
 	// Build proper steps with motion data so ensureMotionData short-circuits
 	const steps: StepData[] = [];
 	for (let i = 0; i < targetLength; i++) {
-		const blueStep = tiledBlueSteps[i]!;
-		const redStep = tiledRedSteps[i]!;
+		const leftStep = tiledLeftSteps[i]!;
+		const rightStep = tiledRightSteps[i]!;
 		steps.push({
 			id: crypto.randomUUID(),
 			stepNumber: i + 1,
-			duration: blueStep.duration ?? 1,
-			blueReversal: stepPairings[i]!.blueReversal,
-			redReversal: stepPairings[i]!.redReversal,
+			duration: leftStep.duration ?? 1,
+			leftReversal: stepPairings[i]!.leftReversal,
+			rightReversal: stepPairings[i]!.rightReversal,
 			isBlank: false,
 			letter: stepPairings[i]!.letter ?? null,
 			startPosition: null,
 			endPosition: null,
 			motions: {
-				blue: buildMotionFromSoloPropStep(blueStep, MotionColor.BLUE, blueGridMode),
-				red: buildMotionFromSoloPropStep(redStep, MotionColor.RED, redGridMode),
+				left: buildMotionFromSoloPropStep(leftStep, HandSide.LEFT, leftGridMode),
+				right: buildMotionFromSoloPropStep(rightStep, HandSide.RIGHT, rightGridMode),
 			},
 		});
 	}
@@ -248,8 +248,8 @@ export function fuseSequences(
 	// data carries no `name` in practice, so the old `"blue + red"` label leaked
 	// into saved docs — fall back to an honest human label instead.
 	const placeholderName =
-		blueHandPath.name && redHandPath.name
-			? `${blueHandPath.name} + ${redHandPath.name}`
+		leftHandPath.name && rightHandPath.name
+			? `${leftHandPath.name} + ${rightHandPath.name}`
 			: "Fused sequence";
 
 	const sequence = createSequenceData({
@@ -257,15 +257,15 @@ export function fuseSequences(
 		displayName: placeholderName,
 		word: "__fused__",
 		steps,
-		blueSoloProp,
-		redSoloProp,
+		leftSoloProp,
+		rightSoloProp,
 		stepPairings,
 		sequenceLength: targetLength,
 		isCircular: false,
 		isFavorite: false,
 		tags: [],
 		gridMode,
-		metadata: { fusedFrom: [blueHandPath.id, redHandPath.id] },
+		metadata: { fusedFrom: [leftHandPath.id, rightHandPath.id] },
 	});
 
 	// Fuse normally receives two already-verified one-hand LOOPs, but this service
@@ -280,8 +280,8 @@ export function fuseSequences(
 	const synchronizedPairings = withReversals.stepPairings?.map(
 		(pairing, index) => ({
 			...pairing,
-			blueReversal: withReversals.steps[index]?.blueReversal ?? false,
-			redReversal: withReversals.steps[index]?.redReversal ?? false,
+			leftReversal: withReversals.steps[index]?.leftReversal ?? false,
+			rightReversal: withReversals.steps[index]?.rightReversal ?? false,
 		})
 	);
 

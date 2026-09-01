@@ -55,8 +55,8 @@ export function applyOverlayInversion(
     return {
       ...s,
       motions: {
-        blue: invertMotion(s.motions.blue),
-        red: invertMotion(s.motions.red),
+        left: invertMotion(s.motions.left),
+        right: invertMotion(s.motions.right),
       },
     };
   });

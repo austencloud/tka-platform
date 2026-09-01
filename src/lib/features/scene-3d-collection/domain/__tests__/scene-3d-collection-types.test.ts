@@ -11,9 +11,18 @@ import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifi
 const snapshot: Scene3DSnapshot = {
   version: 1,
   scene: { backgroundType: "forest", oceanVariant: "abyss" },
-  camera: { position: { x: 0, y: 1, z: 5 }, target: { x: 0, y: 0, z: 0 } } as never,
+  camera: {
+    position: { x: 0, y: 1, z: 5 },
+    target: { x: 0, y: 0, z: 0 },
+  } as never,
   performers: [
-    { position: { x: 0, z: 0 }, facingAngle: 0, customBluePlane: "wall", customRedPlane: "wall", name: null },
+    {
+      position: { x: 0, z: 0 },
+      facingAngle: 0,
+      customLeftPlane: "wall",
+      customRightPlane: "wall",
+      name: null,
+    },
   ],
   selectedPerformerIndex: null,
   activeFormation: "manual",
@@ -22,8 +31,8 @@ const snapshot: Scene3DSnapshot = {
     prop: "staff",
     effortId: "linear",
     planeMode: "wall",
-    customBluePlane: "wall",
-    customRedPlane: "wall",
+    customLeftPlane: "wall",
+    customRightPlane: "wall",
   },
   visiblePlanes: ["wall"],
   showGridLabels: false,
@@ -33,12 +42,48 @@ const snapshot: Scene3DSnapshot = {
   stageGroundOffset: 0,
   effectToggles: { fire: false, trails: true },
   sceneFeatures: { stage: true, campfire: false },
-  props: { bluePropType: "staff", redPropType: "staff" },
+  props: { leftPropType: "staff", rightPropType: "staff" },
 };
 
 describe("Scene3DSnapshotSchema", () => {
   it("accepts a well-formed snapshot", () => {
     expect(Scene3DSnapshotSchema.safeParse(snapshot).success).toBe(true);
+  });
+
+  it("restores literal blue/red fields from a saved pre-migration scene", () => {
+    const legacy = {
+      ...snapshot,
+      performers: [
+        {
+          position: { x: 0, z: 0 },
+          facingAngle: 0,
+          customBluePlane: "wheel",
+          customRedPlane: "wall",
+        },
+      ],
+      defaultSettings: {
+        ...snapshot.defaultSettings,
+        customLeftPlane: undefined,
+        customRightPlane: undefined,
+        customBluePlane: "wheel",
+        customRedPlane: "wall",
+      },
+      props: { bluePropType: "poi", redPropType: "fan" },
+    };
+
+    const result = Scene3DSnapshotSchema.parse(legacy);
+    expect(result.performers[0]).toMatchObject({
+      customLeftPlane: "wheel",
+      customRightPlane: "wall",
+    });
+    expect(result.defaultSettings).toMatchObject({
+      customLeftPlane: "wheel",
+      customRightPlane: "wall",
+    });
+    expect(result.props).toEqual({
+      leftPropType: "poi",
+      rightPropType: "fan",
+    });
   });
 
   it("rejects a bad nav mode", () => {
@@ -79,7 +124,12 @@ describe("Scene3DSnapshotSchema", () => {
       performers: [
         {
           ...snapshot.performers[0]!,
-          settings: { prop: "fan", effortId: null, effect: "trails", staffLengthCm: 95 },
+          settings: {
+            prop: "fan",
+            effortId: null,
+            effect: "trails",
+            staffLengthCm: 95,
+          },
         },
       ],
     };
@@ -121,7 +171,9 @@ describe("Collected3DSceneSchema", () => {
       snapshot,
     };
     expect(Collected3DSceneSchema.safeParse(entry).success).toBe(true);
-    expect(Collected3DSceneSchema.safeParse({ ...entry, steps: [] }).success).toBe(true);
+    expect(
+      Collected3DSceneSchema.safeParse({ ...entry, steps: [] }).success
+    ).toBe(true);
   });
 
   it("rejects an entry with no id", () => {
@@ -132,7 +184,13 @@ describe("Collected3DSceneSchema", () => {
   // Unit 3 (lineage stamp): old entries lack sourceWord/sourceSequenceId
   // entirely — the schema must still accept them.
   it("accepts an entry with no lineage stamp (old entries)", () => {
-    const entry = { id: "abc", name: "Forest stage", poster: "x", createdAt: 1, snapshot };
+    const entry = {
+      id: "abc",
+      name: "Forest stage",
+      poster: "x",
+      createdAt: 1,
+      snapshot,
+    };
     expect(Collected3DSceneSchema.safeParse(entry).success).toBe(true);
   });
 

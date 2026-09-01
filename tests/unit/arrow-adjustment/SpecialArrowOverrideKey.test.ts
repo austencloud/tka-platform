@@ -28,15 +28,15 @@ describe("generateSpecialOverrideKey — per-arrow discriminator", () => {
   };
 
   it("produces DIFFERENT keys for the two arrows of a same-motion-type letter", () => {
-    const blueKey = generateSpecialOverrideKey({
+    const leftKey = generateSpecialOverrideKey({
       ...shared,
       attributeKey: "blue",
     });
-    const redKey = generateSpecialOverrideKey({
+    const rightKey = generateSpecialOverrideKey({
       ...shared,
       attributeKey: "red",
     });
-    expect(blueKey).not.toBe(redKey);
+    expect(leftKey).not.toBe(rightKey);
   });
 
   it("round-trips through parseSpecialOverrideKey including attributeKey", () => {

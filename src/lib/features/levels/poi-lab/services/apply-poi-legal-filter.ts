@@ -23,14 +23,14 @@ export function applyPoiLegalComposerFilter(
   previous: PictographData | null,
   /** Explicit per-hand prop types (demo/preview surfaces that pin their own
    *  prop, e.g. the composer construct demo). Falls back to user settings. */
-  propTypes?: { bluePropType?: PropType; redPropType?: PropType }
+  propTypes?: { leftPropType?: PropType; rightPropType?: PropType }
 ): PictographData[] {
   if (!isPoiComposerFilterEnabled()) {
     return [...options];
   }
   const settings = getSettings();
   return getPoiOptionFilterDecorator().filterPoiLegalOptions(options, previous, {
-    bluePropType: propTypes?.bluePropType ?? settings.bluePropType,
-    redPropType: propTypes?.redPropType ?? settings.redPropType,
+    leftPropType: propTypes?.leftPropType ?? settings.leftPropType,
+    rightPropType: propTypes?.rightPropType ?? settings.rightPropType,
   });
 }

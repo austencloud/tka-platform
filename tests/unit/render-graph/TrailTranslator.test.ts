@@ -7,8 +7,8 @@ const baseIntent: TrailsIntent = {
   trackingMode: "both_ends",
   thickness: 1,
   brightness: 1,
-  blueColor: "#0000ff",
-  redColor: "#ff0000",
+  leftColor: "#0000ff",
+  rightColor: "#ff0000",
   rainbow: false,
 };
 

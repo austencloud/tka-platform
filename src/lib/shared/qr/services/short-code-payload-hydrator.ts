@@ -11,12 +11,12 @@ import {
   type SequenceData,
 } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
-  colorForAuthoredHand,
+  motionHandForAuthoredHand,
   getSequenceMotionProfile,
 } from "$lib/shared/foundation/services/sequence-motion-profile";
 import {
-  extractBlueSoloProp,
-  extractRedSoloProp,
+  extractLeftSoloProp,
+  extractRightSoloProp,
 } from "$lib/shared/foundation/services/sequence-decomposer";
 import { soloPropToSequence } from "$lib/shared/foundation/services/solo-prop-sequence-adapter";
 import { hashSoloProp } from "$lib/shared/foundation/services/content-hasher";
@@ -129,19 +129,19 @@ export async function verifyEncodedSoloPayload(
 ): Promise<SequenceData | null> {
   const decoded = await decodeSequenceFromQR(encoded);
   const profile = getSequenceMotionProfile(decoded);
-  const expectedColor = colorForAuthoredHand(authoredHand);
+  const expectedHand = motionHandForAuthoredHand(authoredHand);
   if (
     profile.kind !== "solo" ||
-    profile.color !== expectedColor ||
+    profile.hand !== expectedHand ||
     decoded.steps.length !== expectedStepCount
   ) {
     return null;
   }
 
   const extracted =
-    expectedColor === "blue"
-      ? extractBlueSoloProp(decoded)
-      : extractRedSoloProp(decoded);
+    expectedHand === "left"
+      ? extractLeftSoloProp(decoded)
+      : extractRightSoloProp(decoded);
   if (extracted.contentHash !== expectedContentHash) return null;
 
   const normalized = soloPropToSequence(

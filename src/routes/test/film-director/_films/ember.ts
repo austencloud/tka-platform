@@ -26,7 +26,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * explicitly: the ignition is the film's turn, not a side effect.
  */
 export const emberFilm: FilmDirectorInput = {
-  version: 3,
+  version: 5,
   id: "ember-r1",
   title: "Ember",
   brief:
@@ -48,7 +48,7 @@ export const emberFilm: FilmDirectorInput = {
           {
             id: "master",
             name: "Master",
-            avatarId: "ch10",
+            characterId: "ch10",
             prop: PropType.STAFF,
             staffLengthCm: 150,
             effect: "charcoal",
@@ -109,13 +109,13 @@ export const emberFilm: FilmDirectorInput = {
           {
             id: "master",
             name: "Master",
-            avatarId: "ch10",
+            characterId: "ch10",
             prop: PropType.STAFF,
             staffLengthCm: 150,
             effect: "charcoal",
             effort: "glide",
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
             sequence: {
               word: "EMBER",
               startPosition: "beta3",
@@ -129,13 +129,13 @@ export const emberFilm: FilmDirectorInput = {
           {
             id: "apprentice",
             name: "Apprentice",
-            avatarId: "ch34",
+            characterId: "ch34",
             prop: PropType.STAFF,
             staffLengthCm: 120,
             effect: "none",
             effort: "anticipation",
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
             // The same word stripped of everything hard: level 1, no turns.
             // A dancer marks a phrase by doing it small; a spinner marks it
             // by doing it flat. One beat behind, because she is reading him.
@@ -205,13 +205,13 @@ export const emberFilm: FilmDirectorInput = {
           {
             id: "apprentice",
             name: "Apprentice",
-            avatarId: "ch34",
+            characterId: "ch34",
             prop: PropType.STAFF,
             staffLengthCm: 120,
             effect: "sparkles",
             effort: "press",
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
             // Halfway up the ladder: whole turns only, alternating with
             // rests. Ten steps, so the per-step overrides below sit at
             // indices 4–7 of 0–9.
@@ -226,13 +226,13 @@ export const emberFilm: FilmDirectorInput = {
             // hands commit through 5–7, and steps 8–9 fall back to the wall
             // she was taught on. First flight, then the landing.
             stepPlanes: [
-              { step: 4, hand: "blue", plane: "wheel" },
-              { step: 5, hand: "blue", plane: "wheel" },
-              { step: 5, hand: "red", plane: "wheel" },
-              { step: 6, hand: "blue", plane: "wheel" },
-              { step: 6, hand: "red", plane: "wheel" },
-              { step: 7, hand: "blue", plane: "wheel" },
-              { step: 7, hand: "red", plane: "wheel" },
+              { step: 4, hand: "left", plane: "wheel" },
+              { step: 5, hand: "left", plane: "wheel" },
+              { step: 5, hand: "right", plane: "wheel" },
+              { step: 6, hand: "left", plane: "wheel" },
+              { step: 6, hand: "right", plane: "wheel" },
+              { step: 7, hand: "left", plane: "wheel" },
+              { step: 7, hand: "right", plane: "wheel" },
             ],
             position: { x: 0, z: 0.4 },
             facingDegrees: 180,
@@ -240,13 +240,13 @@ export const emberFilm: FilmDirectorInput = {
           {
             id: "master",
             name: "Master",
-            avatarId: "ch10",
+            characterId: "ch10",
             prop: PropType.STAFF,
             staffLengthCm: 150,
             effect: "charcoal",
             effort: "glide",
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
             // The echo reverses for good here: the master carries the
             // marked phrase now, a beat behind her.
             sequence: {
@@ -318,7 +318,7 @@ export const emberFilm: FilmDirectorInput = {
           {
             id: "apprentice",
             name: "Apprentice",
-            avatarId: "ch34",
+            characterId: "ch34",
             // Cast explicitly, not left to the fire auto-equip: the film's
             // whole turn is this prop change.
             prop: PropType.FIRE_DOUBLE_STAFF,
@@ -340,7 +340,7 @@ export const emberFilm: FilmDirectorInput = {
           {
             id: "master",
             name: "Master",
-            avatarId: "ch10",
+            characterId: "ch10",
             prop: PropType.STAFF,
             staffLengthCm: 150,
             effect: "smoke",

@@ -16,15 +16,15 @@ function motionProps(
   sequence: SequenceData | null | undefined
 ): ScanPropCandidate {
   if (!sequence) return {};
-  let bluePropType: unknown;
-  let redPropType: unknown;
+  let leftPropType: unknown;
+  let rightPropType: unknown;
   const pictographs = [sequence.startPosition, ...(sequence.steps ?? [])];
   for (const pictograph of pictographs) {
-    bluePropType ??= pictograph?.motions?.blue?.propType;
-    redPropType ??= pictograph?.motions?.red?.propType;
-    if (bluePropType && redPropType) break;
+    leftPropType ??= pictograph?.motions?.left?.propType;
+    rightPropType ??= pictograph?.motions?.right?.propType;
+    if (leftPropType && rightPropType) break;
   }
-  return { bluePropType, redPropType };
+  return { leftPropType, rightPropType };
 }
 
 /**
@@ -41,21 +41,21 @@ export function resolveScanPropConfig(
     motionProps(sequence),
   ];
   const candidates = [...scanCandidates, ...sequenceCandidates];
-  const bluePropType =
-    propFromCandidates("bluePropType", candidates) ?? PropType.STAFF;
-  const redPropType =
-    propFromCandidates("redPropType", candidates) ?? PropType.STAFF;
+  const leftPropType =
+    propFromCandidates("leftPropType", candidates) ?? PropType.STAFF;
+  const rightPropType =
+    propFromCandidates("rightPropType", candidates) ?? PropType.STAFF;
   const scanCatDogMode = catDogFromCandidates(scanCandidates);
   const sequenceCatDogMode = catDogFromCandidates(sequenceCandidates);
 
   return {
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     // A printed per-hand override is stronger evidence than an older
     // sequence-level false flag. Without this inference, mixed-prop QR URLs
     // resolved both values correctly and then rendered the red hand as blue.
     catDogMode:
       scanCatDogMode ??
-      (bluePropType !== redPropType ? true : (sequenceCatDogMode ?? false)),
+      (leftPropType !== rightPropType ? true : (sequenceCatDogMode ?? false)),
   };
 }

@@ -79,8 +79,8 @@ Computes reversal indicators for options based on current sequence.
         <OptionCard
           pictograph={option as PreparedPictographData}
           size={cardSize}
-          blueReversal={option.blueReversal || false}
-          redReversal={option.redReversal || false}
+          leftReversal={option.leftReversal || false}
+          rightReversal={option.rightReversal || false}
           isContinuation={continuationIndex === index}
           onSelect={(p) => {
             onSlotClicked?.(typeSectionTitle, index);

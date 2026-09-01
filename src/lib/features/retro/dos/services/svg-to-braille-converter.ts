@@ -209,8 +209,8 @@ export class SvgToBrailleConverter {
 				const sx1 = Math.min(Math.floor((px + 1) * scaleX), sourceW);
 				const sy1 = Math.min(Math.floor((py + 1) * scaleY), sourceH);
 
-				let blueVotes = 0;
-				let redVotes = 0;
+				let leftVotes = 0;
+				let rightVotes = 0;
 				let structVotes = 0;
 
 				// Sample every source pixel in the region
@@ -223,13 +223,13 @@ export class SvgToBrailleConverter {
 						const a = data[idx + 3]!;
 
 						const classification = classifyPixel(r, g, b, a);
-						if (classification === COLOR_BLUE) blueVotes++;
-						else if (classification === COLOR_RED) redVotes++;
+						if (classification === COLOR_BLUE) leftVotes++;
+						else if (classification === COLOR_RED) rightVotes++;
 						else if (classification === COLOR_STRUCTURAL) structVotes++;
 					}
 				}
 
-				const totalLit = blueVotes + redVotes + structVotes;
+				const totalLit = leftVotes + rightVotes + structVotes;
 				const totalPixels = (sx1 - sx0) * (sy1 - sy0);
 
 				// A braille pixel is "on" only if enough of the source region
@@ -238,9 +238,9 @@ export class SvgToBrailleConverter {
 				// separation at convergence points like the center.
 				if (totalLit < totalPixels * 0.15) {
 					result[py * PX_WIDTH + px] = 0;
-				} else if (blueVotes >= redVotes && blueVotes >= structVotes) {
+				} else if (leftVotes >= rightVotes && leftVotes >= structVotes) {
 					result[py * PX_WIDTH + px] = COLOR_BLUE;
-				} else if (redVotes >= blueVotes && redVotes >= structVotes) {
+				} else if (rightVotes >= leftVotes && rightVotes >= structVotes) {
 					result[py * PX_WIDTH + px] = COLOR_RED;
 				} else {
 					result[py * PX_WIDTH + px] = COLOR_STRUCTURAL;
@@ -265,8 +265,8 @@ export class SvgToBrailleConverter {
 
 			for (let charCol = 0; charCol < CHAR_WIDTH; charCol++) {
 				let code = 0;
-				let blueCount = 0;
-				let redCount = 0;
+				let leftCount = 0;
+				let rightCount = 0;
 				let structCount = 0;
 
 				// Read the 2×4 pixel block for this character cell
@@ -278,8 +278,8 @@ export class SvgToBrailleConverter {
 
 						if (colorId > 0) {
 							code |= PIXEL_MAP[dy]![dx]!;
-							if (colorId === COLOR_BLUE) blueCount++;
-							else if (colorId === COLOR_RED) redCount++;
+							if (colorId === COLOR_BLUE) leftCount++;
+							else if (colorId === COLOR_RED) rightCount++;
 							else structCount++;
 						}
 					}
@@ -294,9 +294,9 @@ export class SvgToBrailleConverter {
 				} else {
 					char = String.fromCharCode(BRAILLE_OFFSET + code);
 					// Dominant color wins for this cell
-					if (blueCount >= redCount && blueCount >= structCount) {
+					if (leftCount >= rightCount && leftCount >= structCount) {
 						cellColor = CSS_BLUE;
-					} else if (redCount >= blueCount && redCount >= structCount) {
+					} else if (rightCount >= leftCount && rightCount >= structCount) {
 						cellColor = CSS_RED;
 					} else {
 						cellColor = CSS_WHITE;

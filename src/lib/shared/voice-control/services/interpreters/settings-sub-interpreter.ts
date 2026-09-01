@@ -41,8 +41,11 @@ const SETTING_ALIASES: Record<string, string> = {
   "led effect": "effect:led",
   charcoal: "effect:charcoal",
   "charcoal effect": "effect:charcoal",
-  "blue motion": "blueMotion",
-  "red motion": "redMotion",
+  "left motion": "leftMotion",
+  "right motion": "rightMotion",
+  // Spoken color aliases remain accepted for people using the canonical palette.
+  "blue motion": "leftMotion",
+  "red motion": "rightMotion",
 
   // App settings
   "musician mode": "musicianMode",

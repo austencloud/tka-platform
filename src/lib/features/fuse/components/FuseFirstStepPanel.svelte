@@ -21,14 +21,14 @@
   const { state: fuseState } = getFuseContext();
   const settings = getSettings();
   const source = $derived(
-    side === "blue" ? fuseState.blue : side === "red" ? fuseState.red : null
+    side === "left" ? fuseState.left : side === "right" ? fuseState.right : null
   );
   const sequence = $derived(source?.sequence ?? null);
-  const label = $derived(side === "red" ? "Red" : "Blue");
+  const label = $derived(side === "right" ? "Right" : "Left");
   const browseViewMode = $derived<BrowseViewMode>({
     subject: "props",
     granularity: "solo",
-    color: side ?? "blue",
+    hand: side ?? "left",
   });
   let isMobile = $state(responsiveLayoutManager.isMobilePortrait());
 
@@ -79,8 +79,8 @@
             showNotes={false}
             showLoopGlyph={false}
             darkMode={true}
-            bluePropType={settings.bluePropType}
-            redPropType={settings.redPropType}
+            leftPropType={settings.leftPropType}
+            rightPropType={settings.rightPropType}
             hideSoloHeader={true}
             fitWidth={true}
             onStepClick={(stepIndex) => void chooseFirstStep(stepIndex)}

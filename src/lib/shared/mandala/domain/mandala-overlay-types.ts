@@ -1,4 +1,5 @@
 import type { PreparedMandalaPaths } from "../services/types";
+import type { MandalaHandVisibility } from "./mandala-types";
 
 export interface MandalaOverlayConfig {
 	enabled: boolean;
@@ -12,7 +13,7 @@ export interface MandalaOverlayConfig {
 	/** Line thickness in canvas pixels (default: 2.5) */
 	strokeWidth: number;
 	/** Which hands to draw */
-	show: "blue" | "red" | "both";
+	show: MandalaHandVisibility;
 	/** Global opacity of the overlay (0-1, default: 0.9) */
 	opacity: number;
 	/** Hide prop rendering for pure mandala view */

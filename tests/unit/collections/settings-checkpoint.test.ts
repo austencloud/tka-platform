@@ -7,11 +7,16 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 // truthy with `data` undefined — an unrelated pre-existing gap in that HMR
 // guard, not something this suite is testing. Stub it out so the checkpoint
 // tests exercise the real settingsState write without tripping over it.
-vi.mock("$lib/shared/settings/utils/background-theme-calculator", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("$lib/shared/settings/utils/background-theme-calculator")>();
-  return { ...actual, applyThemeForBackground: () => {} };
-});
+vi.mock(
+  "$lib/shared/settings/utils/background-theme-calculator",
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import("$lib/shared/settings/utils/background-theme-calculator")
+      >();
+    return { ...actual, applyThemeForBackground: () => {} };
+  }
+);
 
 import {
   captureSettingsCheckpoint,
@@ -64,8 +69,12 @@ describe("settings checkpoint capture/revert symmetry", () => {
     const label = revertSettingsCheckpoint();
 
     expect(label).toBe("Test Tunnel");
-    expect(localStorage.getItem(TUNNEL_VIEW_STATE_KEY)).toBe("pristine-tunnel-state");
-    expect(localStorage.getItem(EFFECTS_CONFIG_STORAGE_KEY)).toBe("pristine-effects");
+    expect(localStorage.getItem(TUNNEL_VIEW_STATE_KEY)).toBe(
+      "pristine-tunnel-state"
+    );
+    expect(localStorage.getItem(EFFECTS_CONFIG_STORAGE_KEY)).toBe(
+      "pristine-effects"
+    );
     expect(localStorage.getItem(VIEWER_MODE_KEY)).toBe("split");
     expect(localStorage.getItem("tka-viewer3d-renderMode")).toBe("2d");
     // Neither key existed at capture time, so revert removes them rather
@@ -105,14 +114,18 @@ describe("settings checkpoint capture/revert symmetry", () => {
     vm.setEffortPreset("linear");
     vm.setPathShape("arc");
     vm.setMotionAwarePaths(false);
-    vm.setVisibility("bluePathLines", false);
-    vm.setVisibility("redPathLines", true);
+    vm.setVisibility("leftPathLines", false);
+    vm.setVisibility("rightPathLines", true);
     animationSettings.updateSettings({
-      trail: { ...animationSettings.trail, mode: TrailMode.PERSISTENT, lineWidth: 7 },
+      trail: {
+        ...animationSettings.trail,
+        mode: TrailMode.PERSISTENT,
+        lineWidth: 7,
+      },
     });
     void settingsService.updateSettings({
-      bluePropType: PropType.STAFF,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.STAFF,
+      rightPropType: PropType.FAN,
       backgroundType: BackgroundType.COSMIC,
     });
 
@@ -123,14 +136,14 @@ describe("settings checkpoint capture/revert symmetry", () => {
     vm.setEffortPreset("bounce");
     vm.setPathShape("concave");
     vm.setMotionAwarePaths(true);
-    vm.setVisibility("bluePathLines", true);
-    vm.setVisibility("redPathLines", false);
+    vm.setVisibility("leftPathLines", true);
+    vm.setVisibility("rightPathLines", false);
     animationSettings.updateSettings({
       trail: { ...animationSettings.trail, mode: TrailMode.FADE, lineWidth: 2 },
     });
     void settingsService.updateSettings({
-      bluePropType: PropType.CLUB,
-      redPropType: PropType.CLUB,
+      leftPropType: PropType.CLUB,
+      rightPropType: PropType.CLUB,
       backgroundType: BackgroundType.OCEAN,
     });
 
@@ -140,12 +153,55 @@ describe("settings checkpoint capture/revert symmetry", () => {
     expect(vm.getEffortPreset()).toBe("linear");
     expect(vm.getPathShape()).toBe("arc");
     expect(vm.getMotionAwarePaths()).toBe(false);
-    expect(vm.getVisibility("bluePathLines")).toBe(false);
-    expect(vm.getVisibility("redPathLines")).toBe(true);
+    expect(vm.getVisibility("leftPathLines")).toBe(false);
+    expect(vm.getVisibility("rightPathLines")).toBe(true);
     expect(animationSettings.trail.mode).toBe(TrailMode.PERSISTENT);
     expect(animationSettings.trail.lineWidth).toBe(7);
-    expect(settingsService.settings.bluePropType).toBe(PropType.STAFF);
-    expect(settingsService.settings.redPropType).toBe(PropType.FAN);
+    expect(settingsService.settings.leftPropType).toBe(PropType.STAFF);
+    expect(settingsService.settings.rightPropType).toBe(PropType.FAN);
     expect(settingsService.settings.backgroundType).toBe(BackgroundType.COSMIC);
+  });
+
+  it("restores a literal blue/red semantic checkpoint", () => {
+    const vm = getAnimationVisibilityManager();
+    localStorage.setItem(
+      "tka_settings_checkpoint",
+      JSON.stringify({
+        label: "Legacy",
+        capturedAt: 1,
+        semantic: {
+          effortPreset: "linear",
+          pathShape: "arc",
+          motionAwarePaths: false,
+          bluePathLines: false,
+          redPathLines: true,
+          trail: {
+            ...animationSettings.trail,
+            leftColor: undefined,
+            rightColor: undefined,
+            blueColor: "#112233",
+            redColor: "#445566",
+          },
+          bluePropType: PropType.POI,
+          redPropType: PropType.FAN,
+          backgroundType: BackgroundType.COSMIC,
+        },
+        raw: {
+          tunnelViewState: null,
+          effectsConfig: null,
+          viewerMode: null,
+          sceneFeatures: null,
+          viewer3d: {},
+        },
+      })
+    );
+
+    expect(revertSettingsCheckpoint()).toBe("Legacy");
+    expect(vm.getVisibility("leftPathLines")).toBe(false);
+    expect(vm.getVisibility("rightPathLines")).toBe(true);
+    expect(animationSettings.trail.leftColor).toBe("#112233");
+    expect(animationSettings.trail.rightColor).toBe("#445566");
+    expect(settingsService.settings.leftPropType).toBe(PropType.POI);
+    expect(settingsService.settings.rightPropType).toBe(PropType.FAN);
   });
 });

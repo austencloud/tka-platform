@@ -90,15 +90,15 @@ describe("the equivalence relation", () => {
     const rotateRed = (unit: CandidateUnit, eighths: number): StepData[] | null => {
       const rotated: StepData[] = [];
       for (const step of unit.steps) {
-        const red = step.motions.red;
+        const right = step.motions.right;
         const probe = createStepData({
           ...step,
           motions: {
-            blue: step.motions.blue,
-            red: {
-              ...red,
-              startLocation: rotate(red.startLocation, eighths),
-              endLocation: rotate(red.endLocation, eighths),
+            left: step.motions.left,
+            right: {
+              ...right,
+              startLocation: rotate(right.startLocation, eighths),
+              endLocation: rotate(right.endLocation, eighths),
             },
           },
         });

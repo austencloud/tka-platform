@@ -3,7 +3,7 @@
  *
  * Interprets compose's TimelineState for multi-performer 3D rendering.
  * Maps timeline concepts to Stage concepts:
- *   - Performer tracks → Avatar assignments
+ *   - Performer tracks → Character assignments
  *   - Clips on performer tracks → Sequence playback
  *   - Formation track clips → Formation cue triggers
  *   - Camera track clips → Camera keyframe choreography
@@ -19,7 +19,7 @@
  * const timelineState = getTimelineState();
  * const adapter = createStageSceneAdapter(timelineState);
  *
- * // In $effect: drive avatar animations from timeline
+ * // In $effect: drive character animations from timeline
  * $effect(() => {
  *   const clips = adapter.getAllActivePerformerClips();
  *   for (const [index, clipInfo] of clips) {

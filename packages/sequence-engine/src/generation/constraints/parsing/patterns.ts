@@ -189,9 +189,9 @@ const minimizeDashesPattern: ConstraintPattern = {
 
 /**
  * Examples:
- * - "blue hand lots of dashes" / "left hand maximize dashes"
- * - "red hand minimize dashes" / "right hand few dashes"
- * - "blue hand should dash, red hand should shift"
+ * - "left hand lots of dashes" / "left hand maximize dashes"
+ * - "right hand minimize dashes" / "right hand few dashes"
+ * - "left hand should dash, right hand should shift"
  */
 
 function detectPerHandDash(text: string): { hand: PerHandTarget; mode: "maximize" | "minimize" } | null {
@@ -199,10 +199,10 @@ function detectPerHandDash(text: string): { hand: PerHandTarget; mode: "maximize
 
   // Detect which hand
   let hand: PerHandTarget | null = null;
-  if (containsConcept(text, "blue") && !containsConcept(text, "red")) {
-    hand = "blue";
-  } else if (containsConcept(text, "red") && !containsConcept(text, "blue")) {
-    hand = "red";
+  if (containsConcept(text, "left") && !containsConcept(text, "right")) {
+    hand = "left";
+  } else if (containsConcept(text, "right") && !containsConcept(text, "left")) {
+    hand = "right";
   }
 
   if (!hand) {
@@ -255,8 +255,8 @@ const perHandDashMaximizePattern: ConstraintPattern = {
   },
   build(text: string): IConstraint {
     const result = detectPerHandDash(text);
-    // Default to blue if detection fails (shouldn't happen since matches passed)
-    return new PerHandDashConstraint(result?.hand ?? "blue", "maximize");
+    // Default to left if detection fails (shouldn't happen since matches passed)
+    return new PerHandDashConstraint(result?.hand ?? "left", "maximize");
   },
 };
 
@@ -270,7 +270,7 @@ const perHandDashMinimizePattern: ConstraintPattern = {
   },
   build(text: string): IConstraint {
     const result = detectPerHandDash(text);
-    return new PerHandDashConstraint(result?.hand ?? "red", "minimize");
+    return new PerHandDashConstraint(result?.hand ?? "right", "minimize");
   },
 };
 
@@ -498,11 +498,11 @@ const noReversalsPattern: ConstraintPattern = {
 
 
 function detectHand(text: string): HandTarget {
-  if (containsConcept(text, "blue") && !containsConcept(text, "red")) {
-    return "blue";
+  if (containsConcept(text, "left") && !containsConcept(text, "right")) {
+    return "left";
   }
-  if (containsConcept(text, "red") && !containsConcept(text, "blue")) {
-    return "red";
+  if (containsConcept(text, "right") && !containsConcept(text, "left")) {
+    return "right";
   }
   return "both";
 }
@@ -531,7 +531,7 @@ export const CONSTRAINT_PATTERNS: ConstraintPattern[] = [
   noReversalsPattern,
 
   // Per-hand dash preferences (HIGHEST PRIORITY for dash patterns)
-  // These handle "blue hand lots of dashes, red hand few dashes"
+  // These handle "left hand lots of dashes, right hand few dashes"
   perHandDashMaximizePattern,
   perHandDashMinimizePattern,
 
