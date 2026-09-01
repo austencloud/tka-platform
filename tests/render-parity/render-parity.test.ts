@@ -102,7 +102,7 @@ describe.runIf(MODE === "self")(
       for (const seq of selfSubset()) {
         const h = hydrate(seq) as SequenceData;
         for (const s of h.steps ?? []) {
-          if (s.blueReversal || s.redReversal) reversalSteps++;
+          if (s.leftReversal || s.rightReversal) reversalSteps++;
         }
       }
       expect(reversalSteps).toBeGreaterThan(0);
@@ -180,8 +180,8 @@ describe.runIf(MODE === "self")(
         mutateStep: (step) =>
           ({
             ...step,
-            blueReversal: !step.blueReversal,
-            redReversal: !step.redReversal,
+            leftReversal: !step.leftReversal,
+            rightReversal: !step.rightReversal,
           }) as StepData,
       });
       const diffs = countHashDiffs(baselineHashes, await hashAll(mutated));

@@ -63,35 +63,35 @@ function enrichWithTurns(
 ): PictographData {
   if (!turnSource) return variation;
 
-  const blueTurns = turnSource.at(stepIndex, "blue");
-  const redTurns = turnSource.at(stepIndex, "red");
+  const leftTurns = turnSource.at(stepIndex, "left");
+  const rightTurns = turnSource.at(stepIndex, "right");
 
-  const enrichedBlue = enrichMotionDirection(
-    variation.blueMotion,
-    blueTurns,
+  const enrichedLeft = enrichMotionDirection(
+    variation.leftMotion,
+    leftTurns,
     previousSteps,
-    "blue",
+    "left",
     propContinuity
   );
-  const enrichedRed = enrichMotionDirection(
-    variation.redMotion,
-    redTurns,
+  const enrichedRight = enrichMotionDirection(
+    variation.rightMotion,
+    rightTurns,
     previousSteps,
-    "red",
+    "right",
     propContinuity
   );
 
   if (
-    enrichedBlue === variation.blueMotion &&
-    enrichedRed === variation.redMotion
+    enrichedLeft === variation.leftMotion &&
+    enrichedRight === variation.rightMotion
   ) {
     return variation; // No changes needed
   }
 
   return {
     ...variation,
-    blueMotion: enrichedBlue,
-    redMotion: enrichedRed,
+    leftMotion: enrichedLeft,
+    rightMotion: enrichedRight,
   };
 }
 
@@ -101,12 +101,12 @@ function enrichWithTurns(
  * in SequenceBuilder.postProcess).
  */
 function enrichMotionDirection(
-  motion: PictographData["blueMotion"],
+  motion: PictographData["leftMotion"],
   turns: number | "fl" | undefined,
   previousSteps: PictographData[],
-  color: "blue" | "red",
+  hand: "left" | "right",
   propContinuity: PropContinuityMode | undefined
-): PictographData["blueMotion"] {
+): PictographData["leftMotion"] {
   const hasTurns = turns !== undefined && turns !== 0 && turns !== "fl";
   // Runtime JSON may emit either "noRotation" (canonical) or legacy "no_rot".
   // Treat motion.rotationDirection as its wire string for the absence check.
@@ -122,9 +122,9 @@ function enrichMotionDirection(
   let prevDir: string | null = null;
   for (let i = previousSteps.length - 1; i >= 0; i--) {
     const m =
-      color === "blue"
-        ? previousSteps[i]!.blueMotion
-        : previousSteps[i]!.redMotion;
+      hand === "left"
+        ? previousSteps[i]!.leftMotion
+        : previousSteps[i]!.rightMotion;
     const d = m.rotationDirection as string | undefined;
     if (d && d !== "noRotation" && d !== "no_rot") {
       prevDir = d;
@@ -245,14 +245,14 @@ export class BeamSearch {
    * the end of a fixed allocation — which reads as no turns, because nothing
    * asked that step to turn.
    */
-  private turnsAt(stepIndex: number): { blue: number; red: number } {
+  private turnsAt(stepIndex: number): { left: number; right: number } {
     const asCount = (t: number | "fl" | undefined): number => {
       if (t === "fl") return 1;
       return t ?? 0;
     };
     return {
-      blue: asCount(this.activeTurnSource?.at(stepIndex, "blue")),
-      red: asCount(this.activeTurnSource?.at(stepIndex, "red")),
+      left: asCount(this.activeTurnSource?.at(stepIndex, "left")),
+      right: asCount(this.activeTurnSource?.at(stepIndex, "right")),
     };
   }
 
@@ -987,20 +987,20 @@ export class BeamSearch {
           endPosition: position,
           timing: "together",
           direction: "same",
-          blueMotion: {
-            ...firstVariation.blueMotion,
-            endLocation: firstVariation.blueMotion.startLocation,
+          leftMotion: {
+            ...firstVariation.leftMotion,
+            endLocation: firstVariation.leftMotion.startLocation,
             motionType: "static",
             rotationDirection: "noRotation",
-            endOrientation: firstVariation.blueMotion.startOrientation,
+            endOrientation: firstVariation.leftMotion.startOrientation,
             turns: 0,
           },
-          redMotion: {
-            ...firstVariation.redMotion,
-            endLocation: firstVariation.redMotion.startLocation,
+          rightMotion: {
+            ...firstVariation.rightMotion,
+            endLocation: firstVariation.rightMotion.startLocation,
             motionType: "static",
             rotationDirection: "noRotation",
-            endOrientation: firstVariation.redMotion.startOrientation,
+            endOrientation: firstVariation.rightMotion.startOrientation,
             turns: 0,
           },
         },
@@ -1036,9 +1036,9 @@ export class BeamSearch {
     const startPosition = steps[0];
     if (!startPosition) return steps;
 
-    let blueOrientation = (startPosition.blueMotion.endOrientation ||
+    let leftOrientation = (startPosition.leftMotion.endOrientation ||
       "in") as Orientation;
-    let redOrientation = (startPosition.redMotion.endOrientation ||
+    let rightOrientation = (startPosition.rightMotion.endOrientation ||
       "in") as Orientation;
 
     result.push(startPosition);
@@ -1047,40 +1047,40 @@ export class BeamSearch {
       const step = steps[i];
       if (!step) continue;
 
-      const blueEndOrientation = calculateEndOrientation({
-        motionType: step.blueMotion.motionType,
+      const leftEndOrientation = calculateEndOrientation({
+        motionType: step.leftMotion.motionType,
         turns: 0,
-        rotationDirection: step.blueMotion.rotationDirection || "cw",
-        startLocation: step.blueMotion.startLocation,
-        endLocation: step.blueMotion.endLocation,
-        startOrientation: blueOrientation,
+        rotationDirection: step.leftMotion.rotationDirection || "cw",
+        startLocation: step.leftMotion.startLocation,
+        endLocation: step.leftMotion.endLocation,
+        startOrientation: leftOrientation,
       });
 
-      const redEndOrientation = calculateEndOrientation({
-        motionType: step.redMotion.motionType,
+      const rightEndOrientation = calculateEndOrientation({
+        motionType: step.rightMotion.motionType,
         turns: 0,
-        rotationDirection: step.redMotion.rotationDirection || "cw",
-        startLocation: step.redMotion.startLocation,
-        endLocation: step.redMotion.endLocation,
-        startOrientation: redOrientation,
+        rotationDirection: step.rightMotion.rotationDirection || "cw",
+        startLocation: step.rightMotion.startLocation,
+        endLocation: step.rightMotion.endLocation,
+        startOrientation: rightOrientation,
       });
 
       result.push({
         ...step,
-        blueMotion: {
-          ...step.blueMotion,
-          startOrientation: blueOrientation,
-          endOrientation: blueEndOrientation,
+        leftMotion: {
+          ...step.leftMotion,
+          startOrientation: leftOrientation,
+          endOrientation: leftEndOrientation,
         },
-        redMotion: {
-          ...step.redMotion,
-          startOrientation: redOrientation,
-          endOrientation: redEndOrientation,
+        rightMotion: {
+          ...step.rightMotion,
+          startOrientation: rightOrientation,
+          endOrientation: rightEndOrientation,
         },
       });
 
-      blueOrientation = blueEndOrientation;
-      redOrientation = redEndOrientation;
+      leftOrientation = leftEndOrientation;
+      rightOrientation = rightEndOrientation;
     }
 
     return result;

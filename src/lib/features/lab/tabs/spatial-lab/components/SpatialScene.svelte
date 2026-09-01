@@ -17,8 +17,8 @@
 
   let { state: labState }: Props = $props();
   let rafId: number;
-  let bluePropAnchorRef = $state<Group | undefined>(undefined);
-  let redPropAnchorRef = $state<Group | undefined>(undefined);
+  let leftPropAnchorRef = $state<Group | undefined>(undefined);
+  let rightPropAnchorRef = $state<Group | undefined>(undefined);
 
   const backgroundType = $derived(
     settingsService.settings.backgroundType ?? BackgroundType.COSMIC,
@@ -30,9 +30,9 @@
     if (labState.mode === "sequence") return;
     const lcName = meshName.toLowerCase();
     if (lcName.includes("blue") || lcName.includes("staff_blue") || lcName.includes("prop_blue")) {
-      labState.draggingSide = "blue";
+      labState.draggingSide = "left";
     } else if (lcName.includes("red") || lcName.includes("staff_red") || lcName.includes("prop_red")) {
-      labState.draggingSide = "red";
+      labState.draggingSide = "right";
     }
   }
 
@@ -80,16 +80,16 @@
         <!-- Blue HandAnchor + PropAnchor -->
         <T.Group position.z={gridOffset}>
           <T.Group
-            bind:ref={bluePropAnchorRef}
+            bind:ref={leftPropAnchorRef}
             position={[
-              labState.bluePropState.worldPosition.x,
-              labState.bluePropState.worldPosition.y,
-              labState.bluePropState.worldPosition.z,
+              labState.leftPropState.worldPosition.x,
+              labState.leftPropState.worldPosition.y,
+              labState.leftPropState.worldPosition.z,
             ]}
           >
             <Prop3D
               propType={toScenePropType(PropType.STAFF)}
-              propState={labState.bluePropState}
+              propState={labState.leftPropState}
               color="blue"
             />
           </T.Group>
@@ -97,25 +97,25 @@
         <!-- Red HandAnchor + PropAnchor -->
         <T.Group position.z={gridOffset}>
           <T.Group
-            bind:ref={redPropAnchorRef}
+            bind:ref={rightPropAnchorRef}
             position={[
-              labState.redPropState.worldPosition.x,
-              labState.redPropState.worldPosition.y,
-              labState.redPropState.worldPosition.z,
+              labState.rightPropState.worldPosition.x,
+              labState.rightPropState.worldPosition.y,
+              labState.rightPropState.worldPosition.z,
             ]}
           >
             <Prop3D
               propType={toScenePropType(PropType.STAFF)}
-              propState={labState.redPropState}
+              propState={labState.rightPropState}
               color="red"
             />
           </T.Group>
         </T.Group>
         <Avatar3D
-          bluePropState={labState.bluePropState}
-          redPropState={labState.redPropState}
-          {bluePropAnchorRef}
-          {redPropAnchorRef}
+          leftPropState={labState.leftPropState}
+          rightPropState={labState.rightPropState}
+          {leftPropAnchorRef}
+          {rightPropAnchorRef}
           position={{ x: 0, y: 0, z: 0 }}
           facingAngle={labState.facingAngle}
         />

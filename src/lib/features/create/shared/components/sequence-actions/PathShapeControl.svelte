@@ -5,21 +5,21 @@
   When no override is set, all buttons are deselected and a hint shows the global setting.
 -->
 <script lang="ts">
-  import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PathShapeValue } from "../../services/step-operations/path-shape-handler";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   interface Props {
-    bluePathShape: PathShapeValue | undefined;
-    redPathShape: PathShapeValue | undefined;
+    leftPathShape: PathShapeValue | undefined;
+    rightPathShape: PathShapeValue | undefined;
     compact?: boolean;
-    onPathShapeChange: (color: MotionColor, shape: PathShapeValue) => void;
-    onPathShapeClear: (color: MotionColor) => void;
+    onPathShapeChange: (color: HandSide, shape: PathShapeValue) => void;
+    onPathShapeClear: (color: HandSide) => void;
   }
 
   let {
-    bluePathShape,
-    redPathShape,
+    leftPathShape,
+    rightPathShape,
     compact = false,
     onPathShapeChange,
     onPathShapeClear,
@@ -38,7 +38,7 @@
 <div class="path-shape-control" class:compact>
   <span class="section-label">Path Shape</span>
 
-  {#each [{ label: "BLUE", color: "blue" as MotionColor, current: bluePathShape, cssClass: "blue" }, { label: "RED", color: "red" as MotionColor, current: redPathShape, cssClass: "red" }] as hand}
+  {#each [{ label: "LEFT", hand: "left" as HandSide, current: leftPathShape, cssClass: "blue" }, { label: "RIGHT", hand: "right" as HandSide, current: rightPathShape, cssClass: "red" }] as hand}
     <div class="hand-row">
       <span class="hand-label {hand.cssClass}">{hand.label}</span>
       <div class="shape-buttons">
@@ -51,7 +51,7 @@
             class:red-active={hand.current === shape && hand.cssClass === "red"}
             aria-pressed={hand.current === shape}
             aria-label="{hand.label} path shape: {shape}"
-            onclick={() => onPathShapeChange(hand.color, shape)}
+            onclick={() => onPathShapeChange(hand.hand, shape)}
           >
             {shape.charAt(0).toUpperCase() + shape.slice(1)}
           </button>
@@ -60,7 +60,7 @@
           class="shape-btn reset"
           disabled={hand.current === undefined}
           aria-label="Reset {hand.label} path shape to global"
-          onclick={() => onPathShapeClear(hand.color)}
+          onclick={() => onPathShapeClear(hand.hand)}
         >
           <i class="fas fa-rotate-left" aria-hidden="true"></i>
         </button>

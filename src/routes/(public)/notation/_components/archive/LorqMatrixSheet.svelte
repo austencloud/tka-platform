@@ -50,24 +50,24 @@
 	// own sub-work names.
 	const rowAxis = $derived<Flower[]>(
 		data
-			? applyFilter(data.axis, matrixFiltersForSize("large").blue, false)
+			? applyFilter(data.axis, matrixFiltersForSize("large").left, false)
 			: []
 	);
 	const colAxis = $derived<Flower[]>(
-		data ? applyFilter(data.axis, matrixFiltersForSize("large").red, false) : []
+		data ? applyFilter(data.axis, matrixFiltersForSize("large").right, false) : []
 	);
 
 	// Cells paint once into data URLs and are cached; CSS scales them to the
 	// plate, so resizing never repaints.
 	const CELL_PX = 72;
 	const cache = new Map<string, string>();
-	function cellSrc(blue: Flower, red: Flower): string {
-		const key = `${flowerKey(blue)}__${flowerKey(red)}`;
+	function cellSrc(left, right): string {
+		const key = `${flowerKey(left)}__${flowerKey(right)}`;
 		let url = cache.get(key);
 		if (!url) {
 			url = renderCell(
-				data!.blue.get(flowerKey(blue))!,
-				data!.red.get(flowerKey(red))!,
+				data!.left.get(flowerKey(left))!,
+				data!.right.get(flowerKey(right))!,
 				CELL_PX,
 				data!.clubTipDx
 			);
@@ -88,14 +88,14 @@
 	>
 		{#if data && rowAxis.length && colAxis.length}
 			<div class="matrix" style={`--cols: ${colAxis.length}`}>
-				{#each rowAxis as blue (flowerKey(blue))}
-					{#each colAxis as red (flowerKey(red))}
+				{#each rowAxis as left (flowerKey(left))}
+					{#each colAxis as right (flowerKey(right))}
 						<img
 							class="cell"
-							src={cellSrc(blue, red)}
+							src={cellSrc(left, right)}
 							alt=""
 							decoding="async"
-							title={`${flowerLabel(blue)} × ${flowerLabel(red)}`}
+							title={`${flowerLabel(left)} × ${flowerLabel(right)}`}
 						/>
 					{/each}
 				{/each}

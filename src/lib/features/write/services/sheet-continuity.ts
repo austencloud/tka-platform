@@ -9,7 +9,7 @@
  */
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { isVisibleMotion, type MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { shiftStartPosition } from "$lib/shared/create/services/sequence-transformer";
 
@@ -31,8 +31,8 @@ export interface EdgeState {
   // Opaque comparison keys — the exact domain types don't matter to this module,
   // only that a row's end tuple equals the next row's start tuple.
   position: StepData["startPosition"];
-  blueOri: string | undefined;
-  redOri: string | undefined;
+  leftOri: string | undefined;
+  rightOri: string | undefined;
 }
 
 /** The state a sequence begins in (step 0's start position + start orientations). */
@@ -41,8 +41,8 @@ export function startStateOf(seq: SequenceData): EdgeState | null {
   if (!first) return null;
   return {
     position: first.startPosition,
-    blueOri: oriOf(first.motions?.[MotionColor.BLUE], "start"),
-    redOri: oriOf(first.motions?.[MotionColor.RED], "start"),
+    leftOri: oriOf(first.motions?.[HandSide.LEFT], "start"),
+    rightOri: oriOf(first.motions?.[HandSide.RIGHT], "start"),
   };
 }
 
@@ -52,13 +52,13 @@ export function endStateOf(seq: SequenceData): EdgeState | null {
   if (!last) return null;
   return {
     position: last.endPosition,
-    blueOri: oriOf(last.motions?.[MotionColor.BLUE], "end"),
-    redOri: oriOf(last.motions?.[MotionColor.RED], "end"),
+    leftOri: oriOf(last.motions?.[HandSide.LEFT], "end"),
+    rightOri: oriOf(last.motions?.[HandSide.RIGHT], "end"),
   };
 }
 
 export function statesMatch(a: EdgeState, b: EdgeState): boolean {
-  return a.position === b.position && a.blueOri === b.blueOri && a.redOri === b.redOri;
+  return a.position === b.position && a.leftOri === b.leftOri && a.rightOri === b.rightOri;
 }
 
 /** Does row `prev` flow straight into row `next` — same position and orientations? */

@@ -5,7 +5,7 @@ import { Point } from "fabric";
 import type { PageServerLoad } from "./$types";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -168,7 +168,7 @@ async function replayLegacyOutlier(
     canonicalPictograph: fixture.box,
     legacyPictograph: withManualAdjustment(
       fixture.box,
-      MotionColor.BLUE,
+      HandSide.LEFT,
       correction
     ),
   };
@@ -190,7 +190,7 @@ async function readPlacementMap(
 
 function withManualAdjustment(
   pictograph: PictographData,
-  color: MotionColor,
+  color: HandSide,
   adjustment: { x: number; y: number }
 ): PictographData {
   const motion = pictograph.motions[color];

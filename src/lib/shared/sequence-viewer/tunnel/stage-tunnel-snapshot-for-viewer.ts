@@ -58,17 +58,17 @@ export function stageTunnelSnapshotForViewer(
     pathShape: snapshot.paths.pathShape,
     motionAwarePaths: snapshot.paths.motionAwarePaths,
   });
-  visibility.setVisibility("bluePathLines", snapshot.paths.bluePathLines);
-  visibility.setVisibility("redPathLines", snapshot.paths.redPathLines);
+  visibility.setVisibility("leftPathLines", snapshot.paths.leftPathLines);
+  visibility.setVisibility("rightPathLines", snapshot.paths.rightPathLines);
   animationSettings.updateSettings({ trail: snapshot.trailRender });
   void settings.updateSettings({
-    bluePropType: snapshot.props.bluePropType as PropType,
-    redPropType: snapshot.props.redPropType as PropType,
-    ...(snapshot.props.blueBuugengFlipped !== undefined
-      ? { blueBuugengFlipped: snapshot.props.blueBuugengFlipped }
+    leftPropType: snapshot.props.leftPropType as PropType,
+    rightPropType: snapshot.props.rightPropType as PropType,
+    ...(snapshot.props.leftBuugengFlipped !== undefined
+      ? { leftBuugengFlipped: snapshot.props.leftBuugengFlipped }
       : {}),
-    ...(snapshot.props.redBuugengFlipped !== undefined
-      ? { redBuugengFlipped: snapshot.props.redBuugengFlipped }
+    ...(snapshot.props.rightBuugengFlipped !== undefined
+      ? { rightBuugengFlipped: snapshot.props.rightBuugengFlipped }
       : {}),
   });
 

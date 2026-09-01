@@ -72,7 +72,6 @@ export interface MandalaViewerSelection {
   pathShape: MandalaPathShape;
 }
 
-
 const sequenceActionsPanelPersistence = createPersistenceHelper({
   key: "tka_sequence_actions_panel_open",
   defaultValue: false,
@@ -135,16 +134,16 @@ export interface StartEndOptions {
   mustContainLetters: Letter[];
   mustNotContainLetters: Letter[];
   /**
-   * Starting orientation for the blue prop. Defaults to IN ("in/in").
-   * Feeds the engine's blueStartOrientation override (seeds beat 0 +
+   * Starting orientation for the left prop. Defaults to IN ("in/in").
+   * Feeds the engine's leftStartOrientation override (seeds beat 0 +
    * propagates forward). Undefined = engine default (IN).
    */
-  blueStartOrientation?: Orientation;
+  leftStartOrientation?: Orientation;
   /**
-   * Starting orientation for the red prop. Defaults to IN ("in/in").
-   * Feeds the engine's redStartOrientation override.
+   * Starting orientation for the right prop. Defaults to IN ("in/in").
+   * Feeds the engine's rightStartOrientation override.
    */
-  redStartOrientation?: Orientation;
+  rightStartOrientation?: Orientation;
 }
 
 /** @deprecated Use StartEndOptions instead */
@@ -176,7 +175,7 @@ export interface CustomizeOverlayProps {
     motionTypeFilter: "no-dash" | "prefer-dash" | null;
   };
   /** Absent means the generator rolls its own turns under the intensity ceiling. */
-  turnPattern: { blue: (number | "fl")[]; red: (number | "fl")[] } | null;
+  turnPattern: { left: (number | "fl")[]; right: (number | "fl")[] } | null;
   /** The ceiling from the bento's Turn Intensity card, which caps the strip's values. */
   turnIntensity: number;
   sequenceLength: number;
@@ -187,7 +186,7 @@ export interface CustomizeOverlayProps {
   onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
   onStartEndChange: ((options: StartEndOptions) => void) | null;
   onTurnPatternChange: (
-    lanes: { blue: (number | "fl")[]; red: (number | "fl")[] } | null
+    lanes: { left: (number | "fl")[]; right: (number | "fl")[] } | null
   ) => void;
   /** "Reset all" — every persisted generation setting back to first-run. */
   onResetAll: (() => void) | null;

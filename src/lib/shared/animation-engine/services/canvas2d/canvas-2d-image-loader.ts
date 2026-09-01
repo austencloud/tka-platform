@@ -1,6 +1,6 @@
 import {
-  generateBluePropSvg,
-  generateRedPropSvg,
+  generateLeftPropSvg,
+  generateRightPropSvg,
   generatePropSvg,
   generateGridSvg,
 } from "$lib/shared/animation-engine/services/svg-generator";
@@ -53,8 +53,8 @@ export interface PropSpriteSnapshot {
 
 export class Canvas2DImageLoader {
   // Image cache
-  private bluePropImage: HTMLImageElement | null = null;
-  private redPropImage: HTMLImageElement | null = null;
+  private leftPropImage: HTMLImageElement | null = null;
+  private rightPropImage: HTMLImageElement | null = null;
   private gridImage: HTMLImageElement | null = null;
   private glyphImage: HTMLImageElement | null = null;
   private previousGlyphImage: HTMLImageElement | null = null;
@@ -63,13 +63,13 @@ export class Canvas2DImageLoader {
   // from snapping into the incoming prop's bounds before its opacity reaches 0.
   // Stashing a snapshot does not itself start a fade: PropTypeManager decides
   // whether a load represents a genuine hot-swap.
-  private previousBlueProp: PropSpriteSnapshot | null = null;
-  private previousRedProp: PropSpriteSnapshot | null = null;
+  private previousLeftProp: PropSpriteSnapshot | null = null;
+  private previousRightProp: PropSpriteSnapshot | null = null;
 
   // Additional tunnel layer prop images (lazily populated)
   private additionalLayerImages: Array<{
-    blue: HTMLImageElement | null;
-    red: HTMLImageElement | null;
+    left: HTMLImageElement | null;
+    right: HTMLImageElement | null;
   }> = [];
 
   // Per-layer intrinsic prop dimensions (from each layer's SVG viewBox). A
@@ -77,66 +77,66 @@ export class Canvas2DImageLoader {
   // OWN dimensions, not the base pair's, or the sprite stretches. Index-aligned
   // with additionalLayerImages.
   private additionalLayerDimensions: Array<{
-    blue: { width: number; height: number };
-    red: { width: number; height: number };
+    left: { width: number; height: number };
+    right: { width: number; height: number };
   }> = [];
 
   // Track prop dimensions (from SVG viewBox)
-  private bluePropDimensions: { width: number; height: number } = {
+  private leftPropDimensions: { width: number; height: number } = {
     width: 0,
     height: 0,
   };
-  private redPropDimensions: { width: number; height: number } = {
+  private rightPropDimensions: { width: number; height: number } = {
     width: 0,
     height: 0,
   };
-  private bluePropType: string | null = null;
-  private redPropType: string | null = null;
+  private leftPropType: string | null = null;
+  private rightPropType: string | null = null;
 
   async loadPropImages(propType: string): Promise<{
-    blue: HTMLImageElement;
-    red: HTMLImageElement;
+    left: HTMLImageElement;
+    right: HTMLImageElement;
   }> {
     try {
       // Generate blue and red prop SVGs
-      const [bluePropData, redPropData] = await Promise.all([
-        generateBluePropSvg(propType),
-        generateRedPropSvg(propType),
+      const [leftPropData, rightPropData] = await Promise.all([
+        generateLeftPropSvg(propType),
+        generateRightPropSvg(propType),
       ]);
 
       // Create new images BEFORE releasing old ones
-      const [newBlueImage, newRedImage] = await Promise.all([
+      const [newLeftImage, newRightImage] = await Promise.all([
         this.createPropImageFromSVG(
-          bluePropData.svg,
-          bluePropData.width,
-          bluePropData.height
+          leftPropData.svg,
+          leftPropData.width,
+          leftPropData.height
         ),
         this.createPropImageFromSVG(
-          redPropData.svg,
-          redPropData.width,
-          redPropData.height
+          rightPropData.svg,
+          rightPropData.width,
+          rightPropData.height
         ),
       ]);
 
       // Store dimensions
-      this.bluePropDimensions = {
-        width: bluePropData.width,
-        height: bluePropData.height,
+      this.leftPropDimensions = {
+        width: leftPropData.width,
+        height: leftPropData.height,
       };
-      this.redPropDimensions = {
-        width: redPropData.width,
-        height: redPropData.height,
+      this.rightPropDimensions = {
+        width: rightPropData.width,
+        height: rightPropData.height,
       };
-      this.bluePropType = propType;
-      this.redPropType = propType;
+      this.leftPropType = propType;
+      this.rightPropType = propType;
 
       // Swap references (old images will be garbage collected)
-      this.bluePropImage = newBlueImage;
-      this.redPropImage = newRedImage;
+      this.leftPropImage = newLeftImage;
+      this.rightPropImage = newRightImage;
 
       return {
-        blue: this.bluePropImage,
-        red: this.redPropImage,
+        left: this.leftPropImage,
+        right: this.rightPropImage,
       };
     } catch (error) {
       console.error("[Canvas2DImageLoader] Failed to load prop images:", error);
@@ -145,87 +145,87 @@ export class Canvas2DImageLoader {
   }
 
   async loadPerColorPropImages(
-    bluePropType: string,
-    redPropType: string,
+    leftPropType: string,
+    rightPropType: string,
     darkMode?: boolean,
     colors?: TunnelPropColorPair | null
   ): Promise<{
-    blue: HTMLImageElement;
-    red: HTMLImageElement;
+    left: HTMLImageElement;
+    right: HTMLImageElement;
   }> {
     try {
       // Generate blue and red prop SVGs with different types
       // Pass darkMode to use local preview state instead of global
-      const [bluePropData, redPropData] = await Promise.all([
+      const [leftPropData, rightPropData] = await Promise.all([
         colors
           ? generatePropSvg(
-              bluePropType,
-              colors.blue,
+              leftPropType,
+              colors.left,
               darkMode === undefined ? undefined : darkMode ? "dark" : "light"
             )
-          : generateBluePropSvg(bluePropType, darkMode),
+          : generateLeftPropSvg(leftPropType, darkMode),
         colors
           ? generatePropSvg(
-              redPropType,
-              colors.red,
+              rightPropType,
+              colors.right,
               darkMode === undefined ? undefined : darkMode ? "dark" : "light"
             )
-          : generateRedPropSvg(redPropType, darkMode),
+          : generateRightPropSvg(rightPropType, darkMode),
       ]);
 
       // Create new images
-      const [newBlueImage, newRedImage] = await Promise.all([
+      const [newLeftImage, newRightImage] = await Promise.all([
         this.createPropImageFromSVG(
-          bluePropData.svg,
-          bluePropData.width,
-          bluePropData.height
+          leftPropData.svg,
+          leftPropData.width,
+          leftPropData.height
         ),
         this.createPropImageFromSVG(
-          redPropData.svg,
-          redPropData.width,
-          redPropData.height
+          rightPropData.svg,
+          rightPropData.width,
+          rightPropData.height
         ),
       ]);
 
       // Capture the outgoing sprites before replacing any of their geometry.
       // The renderer draws these snapshots at their own intrinsic bounds while
       // the incoming sprites draw at the new bounds below.
-      this.previousBlueProp =
-        this.bluePropImage && this.bluePropType
+      this.previousLeftProp =
+        this.leftPropImage && this.leftPropType
           ? {
-              image: this.bluePropImage,
-              dimensions: { ...this.bluePropDimensions },
-              propType: this.bluePropType,
+              image: this.leftPropImage,
+              dimensions: { ...this.leftPropDimensions },
+              propType: this.leftPropType,
             }
           : null;
-      this.previousRedProp =
-        this.redPropImage && this.redPropType
+      this.previousRightProp =
+        this.rightPropImage && this.rightPropType
           ? {
-              image: this.redPropImage,
-              dimensions: { ...this.redPropDimensions },
-              propType: this.redPropType,
+              image: this.rightPropImage,
+              dimensions: { ...this.rightPropDimensions },
+              propType: this.rightPropType,
             }
           : null;
 
       // Store incoming geometry and type.
-      this.bluePropDimensions = {
-        width: bluePropData.width,
-        height: bluePropData.height,
+      this.leftPropDimensions = {
+        width: leftPropData.width,
+        height: leftPropData.height,
       };
-      this.redPropDimensions = {
-        width: redPropData.width,
-        height: redPropData.height,
+      this.rightPropDimensions = {
+        width: rightPropData.width,
+        height: rightPropData.height,
       };
-      this.bluePropType = bluePropType;
-      this.redPropType = redPropType;
+      this.leftPropType = leftPropType;
+      this.rightPropType = rightPropType;
 
       // Swap references
-      this.bluePropImage = newBlueImage;
-      this.redPropImage = newRedImage;
+      this.leftPropImage = newLeftImage;
+      this.rightPropImage = newRightImage;
 
       return {
-        blue: this.bluePropImage,
-        red: this.redPropImage,
+        left: this.leftPropImage,
+        right: this.rightPropImage,
       };
     } catch (error) {
       console.error(
@@ -238,58 +238,58 @@ export class Canvas2DImageLoader {
 
   async loadAdditionalLayerPropImages(
     layerIndex: number,
-    bluePropType: string,
-    redPropType: string,
-    blueColor: string,
-    redColor: string
+    leftPropType: string,
+    rightPropType: string,
+    leftColor: string,
+    rightColor: string
   ): Promise<{
-    blue: HTMLImageElement;
-    red: HTMLImageElement;
+    left: HTMLImageElement;
+    right: HTMLImageElement;
   }> {
     try {
       // Generate per-hand prop SVGs with custom colors for this layer. Blue and
       // red can be different prop types (each performer's per-hand prop).
-      const [bluePropData, redPropData] = await Promise.all([
-        generatePropSvg(bluePropType, blueColor),
-        generatePropSvg(redPropType, redColor),
+      const [leftPropData, rightPropData] = await Promise.all([
+        generatePropSvg(leftPropType, leftColor),
+        generatePropSvg(rightPropType, rightColor),
       ]);
 
       // Create new images
-      const [newBlueImage, newRedImage] = await Promise.all([
+      const [newLeftImage, newRightImage] = await Promise.all([
         this.createPropImageFromSVG(
-          bluePropData.svg,
-          bluePropData.width,
-          bluePropData.height
+          leftPropData.svg,
+          leftPropData.width,
+          leftPropData.height
         ),
         this.createPropImageFromSVG(
-          redPropData.svg,
-          redPropData.width,
-          redPropData.height
+          rightPropData.svg,
+          rightPropData.width,
+          rightPropData.height
         ),
       ]);
 
       // Ensure arrays are large enough (images + dimensions stay index-aligned)
       while (this.additionalLayerImages.length <= layerIndex) {
-        this.additionalLayerImages.push({ blue: null, red: null });
+        this.additionalLayerImages.push({ left: null, right: null });
       }
       while (this.additionalLayerDimensions.length <= layerIndex) {
         this.additionalLayerDimensions.push({
-          blue: { width: 0, height: 0 },
-          red: { width: 0, height: 0 },
+          left: { width: 0, height: 0 },
+          right: { width: 0, height: 0 },
         });
       }
 
       // Swap references
       this.additionalLayerImages[layerIndex] = {
-        blue: newBlueImage,
-        red: newRedImage,
+        left: newLeftImage,
+        right: newRightImage,
       };
       this.additionalLayerDimensions[layerIndex] = {
-        blue: { width: bluePropData.width, height: bluePropData.height },
-        red: { width: redPropData.width, height: redPropData.height },
+        left: { width: leftPropData.width, height: leftPropData.height },
+        right: { width: rightPropData.width, height: rightPropData.height },
       };
 
-      return { blue: newBlueImage, red: newRedImage };
+      return { left: newLeftImage, right: newRightImage };
     } catch (error) {
       console.error(
         `[Canvas2DImageLoader] Failed to load additional layer ${layerIndex} prop images:`,
@@ -459,45 +459,45 @@ export class Canvas2DImageLoader {
   }
 
   // Getters
-  getBluePropImage(): HTMLImageElement | null {
-    return this.bluePropImage;
+  getLeftPropImage(): HTMLImageElement | null {
+    return this.leftPropImage;
   }
 
-  getRedPropImage(): HTMLImageElement | null {
-    return this.redPropImage;
+  getRightPropImage(): HTMLImageElement | null {
+    return this.rightPropImage;
   }
 
-  getBluePropType(): string | null {
-    return this.bluePropType;
+  getLeftPropType(): string | null {
+    return this.leftPropType;
   }
 
-  getRedPropType(): string | null {
-    return this.redPropType;
+  getRightPropType(): string | null {
+    return this.rightPropType;
   }
 
-  getPreviousBlueProp(): PropSpriteSnapshot | null {
-    return this.previousBlueProp;
+  getPreviousLeftProp(): PropSpriteSnapshot | null {
+    return this.previousLeftProp;
   }
 
-  getPreviousRedProp(): PropSpriteSnapshot | null {
-    return this.previousRedProp;
+  getPreviousRightProp(): PropSpriteSnapshot | null {
+    return this.previousRightProp;
   }
 
   getAdditionalLayerImages(layerIndex: number): {
-    blue: HTMLImageElement | null;
-    red: HTMLImageElement | null;
+    left: HTMLImageElement | null;
+    right: HTMLImageElement | null;
   } {
     if (layerIndex < this.additionalLayerImages.length) {
       return this.additionalLayerImages[layerIndex]!;
     }
-    return { blue: null, red: null };
+    return { left: null, right: null };
   }
 
   /** Intrinsic per-hand dimensions of an additional layer's props, or null when
    *  that layer hasn't loaded yet (caller falls back to the base dimensions). */
   getAdditionalLayerDimensions(layerIndex: number): {
-    blue: { width: number; height: number };
-    red: { width: number; height: number };
+    left: { width: number; height: number };
+    right: { width: number; height: number };
   } | null {
     return this.additionalLayerDimensions[layerIndex] ?? null;
   }
@@ -514,34 +514,34 @@ export class Canvas2DImageLoader {
     return this.previousGlyphImage;
   }
 
-  getBluePropDimensions(): { width: number; height: number } {
-    return this.bluePropDimensions;
+  getLeftPropDimensions(): { width: number; height: number } {
+    return this.leftPropDimensions;
   }
 
-  getRedPropDimensions(): { width: number; height: number } {
-    return this.redPropDimensions;
+  getRightPropDimensions(): { width: number; height: number } {
+    return this.rightPropDimensions;
   }
 
   clearPreviousGlyphImage(): void {
     this.previousGlyphImage = null;
   }
 
-  clearPreviousBlueProp(): void {
-    this.previousBlueProp = null;
+  clearPreviousLeftProp(): void {
+    this.previousLeftProp = null;
   }
 
-  clearPreviousRedProp(): void {
-    this.previousRedProp = null;
+  clearPreviousRightProp(): void {
+    this.previousRightProp = null;
   }
 
   destroy(): void {
     // Clear all image references (allows garbage collection)
-    this.bluePropImage = null;
-    this.redPropImage = null;
-    this.previousBlueProp = null;
-    this.previousRedProp = null;
-    this.bluePropType = null;
-    this.redPropType = null;
+    this.leftPropImage = null;
+    this.rightPropImage = null;
+    this.previousLeftProp = null;
+    this.previousRightProp = null;
+    this.leftPropType = null;
+    this.rightPropType = null;
     this.additionalLayerImages.length = 0;
     this.additionalLayerDimensions.length = 0;
     this.gridImage = null;

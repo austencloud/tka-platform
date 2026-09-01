@@ -9,7 +9,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * odd-one-out cast where one performer is excluded from the group's pool.
  */
 export const understudyNightFilm: FilmDirectorInput = {
-  version: 4,
+  version: 5,
   id: "understudy-night-r1",
   title: "Understudy Night",
   brief:
@@ -127,8 +127,8 @@ export const understudyNightFilm: FilmDirectorInput = {
               prop: PropType.STAFF,
               effect: "petals",
               effort: "glide",
-              bluePlane: "wheel",
-              redPlane: "floor",
+              leftPlane: "wheel",
+              rightPlane: "floor",
               staffLengthCm: { pick: "distinct", from: [110, 150] },
             },
             {
@@ -138,8 +138,8 @@ export const understudyNightFilm: FilmDirectorInput = {
               prop: { sameAs: "performer-1" },
               effect: { sameAs: "performer-1" },
               effort: { sameAs: "performer-1" },
-              bluePlane: { sameAs: "performer-1" },
-              redPlane: { sameAs: "performer-1" },
+              leftPlane: { sameAs: "performer-1" },
+              rightPlane: { sameAs: "performer-1" },
               staffLengthCm: { pick: "distinct", from: [110, 150] },
             },
           ],

@@ -11,7 +11,7 @@
 import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 
 import type { RetroPictographData } from "../../shared/domain/pictograph-types";
@@ -35,18 +35,18 @@ export interface RetroCard {
  */
 function convertStepsToRetro(steps: readonly StepData[]): RetroPictographData[] {
   return steps.map((step) => {
-    const blueMotion = step.motions[MotionColor.BLUE];
-    const redMotion = step.motions[MotionColor.RED];
+    const leftMotion = step.motions[HandSide.LEFT];
+    const rightMotion = step.motions[HandSide.RIGHT];
 
     return {
       letter: step.letter ?? "?",
       gridMode: step.gridMode ?? GridMode.DIAMOND,
-      blueHand: blueMotion
-        ? motionToRetroHand(blueMotion)
-        : fallbackHand(MotionColor.BLUE),
-      redHand: redMotion
-        ? motionToRetroHand(redMotion)
-        : fallbackHand(MotionColor.RED),
+      leftHand: leftMotion
+        ? motionToRetroHand(leftMotion)
+        : fallbackHand(HandSide.LEFT),
+      rightHand: rightMotion
+        ? motionToRetroHand(rightMotion)
+        : fallbackHand(HandSide.RIGHT),
     };
   });
 }

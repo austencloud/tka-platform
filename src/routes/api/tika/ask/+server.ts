@@ -317,15 +317,15 @@ function createTikaTools(userId: string, completedConcepts: string[], masteryCtx
     show_motion_examples: tool({
       description:
         'MANDATORY for motion type questions ("What is shift?", "Tell me about dash", "Show me static motion"). Returns visual pictograph examples. NEVER explain motion types in text alone - always show examples.',
-      inputSchema: jsonSchema<{ motionType: string; hand?: "blue" | "red" | "both" }>({
+      inputSchema: jsonSchema<{ motionType: string; hand?: "left" | "right" | "both" | "blue" | "red" }>({
         type: "object",
         properties: {
           motionType: { type: "string", description: "Motion type (shift, dash, static)" },
           hand: {
             type: "string",
-            enum: ["blue", "red", "both"],
+            enum: ["left", "right", "both", "blue", "red"],
             default: "both",
-            description: "Which hand to filter by",
+            description: "Performer hand. Prefer left/right; blue/red are legacy aliases.",
           },
         },
         required: ["motionType"],

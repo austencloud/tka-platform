@@ -35,16 +35,16 @@ export interface TunnelSnapshot {
   paths: {
     pathShape: PathShape;
     motionAwarePaths: boolean;
-    bluePathLines: boolean;
-    redPathLines: boolean;
+    leftPathLines: boolean;
+    rightPathLines: boolean;
   };
   playback: { bpm: number; playbackMode: PlaybackMode };
   props: {
-    bluePropType: string;
-    redPropType: string;
+    leftPropType: string;
+    rightPropType: string;
     /** Optional only for snapshots saved before creator draft v4. */
-    blueBuugengFlipped?: boolean;
-    redBuugengFlipped?: boolean;
+    leftBuugengFlipped?: boolean;
+    rightBuugengFlipped?: boolean;
   };
   trailRender: TrailSettings;
 }
@@ -69,7 +69,7 @@ const RawTunnelSnapshotSchema = z
       colors: z
         .object({
           mode: z.enum(["hands", "spectrum", "custom"]),
-          custom: z.object({ blue: z.string(), red: z.string() }),
+          custom: z.object({ left: z.string(), right: z.string() }),
         })
         .optional(),
       spectrum: z.boolean().optional(),
@@ -88,18 +88,18 @@ const RawTunnelSnapshotSchema = z
     paths: z.object({
       pathShape: z.enum(["arc", "linear", "concave"]),
       motionAwarePaths: z.boolean(),
-      bluePathLines: z.boolean(),
-      redPathLines: z.boolean(),
+      leftPathLines: z.boolean(),
+      rightPathLines: z.boolean(),
     }),
     playback: z.object({
       bpm: z.number(),
       playbackMode: z.enum(["continuous", "step"]),
     }),
     props: z.object({
-      bluePropType: z.string(),
-      redPropType: z.string(),
-      blueBuugengFlipped: z.boolean().optional(),
-      redBuugengFlipped: z.boolean().optional(),
+      leftPropType: z.string(),
+      rightPropType: z.string(),
+      leftBuugengFlipped: z.boolean().optional(),
+      rightBuugengFlipped: z.boolean().optional(),
     }),
     trailRender: z.any(),
   })
@@ -126,15 +126,15 @@ export interface SnapshotDeps {
   effects: EffectsConfigState;
   visibility: AnimationVisibilityStateManager;
   settings: {
-    bluePropType: string;
-    redPropType: string;
-    blueBuugengFlipped?: boolean;
-    redBuugengFlipped?: boolean;
+    leftPropType: string;
+    rightPropType: string;
+    leftBuugengFlipped?: boolean;
+    rightBuugengFlipped?: boolean;
     updateSettings: (p: {
-      bluePropType?: string;
-      redPropType?: string;
-      blueBuugengFlipped?: boolean;
-      redBuugengFlipped?: boolean;
+      leftPropType?: string;
+      rightPropType?: string;
+      leftBuugengFlipped?: boolean;
+      rightBuugengFlipped?: boolean;
     }) => unknown;
   };
   animationSettings: AnimationSettingsState;
@@ -178,15 +178,15 @@ export function captureTunnelSnapshot(deps: SnapshotDeps): TunnelSnapshot {
     paths: {
       pathShape: visibility.getPathShape(),
       motionAwarePaths: visibility.getMotionAwarePaths(),
-      bluePathLines: visibility.getVisibility("bluePathLines"),
-      redPathLines: visibility.getVisibility("redPathLines"),
+      leftPathLines: visibility.getVisibility("leftPathLines"),
+      rightPathLines: visibility.getVisibility("rightPathLines"),
     },
     playback: { bpm: getBpm(), playbackMode: animationPanel.playbackMode },
     props: {
-      bluePropType: settings.bluePropType,
-      redPropType: settings.redPropType,
-      blueBuugengFlipped: settings.blueBuugengFlipped ?? false,
-      redBuugengFlipped: settings.redBuugengFlipped ?? false,
+      leftPropType: settings.leftPropType,
+      rightPropType: settings.rightPropType,
+      leftBuugengFlipped: settings.leftBuugengFlipped ?? false,
+      rightBuugengFlipped: settings.rightBuugengFlipped ?? false,
     },
     trailRender: clone(animationSettings.trail),
   };
@@ -219,8 +219,8 @@ export function applyTunnelSnapshot(
   visibility.setEffortPreset(snap.effort);
   visibility.setPathShape(snap.paths.pathShape);
   visibility.setMotionAwarePaths(snap.paths.motionAwarePaths);
-  visibility.setVisibility("bluePathLines", snap.paths.bluePathLines);
-  visibility.setVisibility("redPathLines", snap.paths.redPathLines);
+  visibility.setVisibility("leftPathLines", snap.paths.leftPathLines);
+  visibility.setVisibility("rightPathLines", snap.paths.rightPathLines);
 
   // Trail render params (bulk trail set).
   animationSettings.updateSettings({ trail: snap.trailRender });
@@ -231,13 +231,13 @@ export function applyTunnelSnapshot(
 
   // Prop types.
   settings.updateSettings({
-    bluePropType: snap.props.bluePropType,
-    redPropType: snap.props.redPropType,
-    ...(snap.props.blueBuugengFlipped !== undefined
-      ? { blueBuugengFlipped: snap.props.blueBuugengFlipped }
+    leftPropType: snap.props.leftPropType,
+    rightPropType: snap.props.rightPropType,
+    ...(snap.props.leftBuugengFlipped !== undefined
+      ? { leftBuugengFlipped: snap.props.leftBuugengFlipped }
       : {}),
-    ...(snap.props.redBuugengFlipped !== undefined
-      ? { redBuugengFlipped: snap.props.redBuugengFlipped }
+    ...(snap.props.rightBuugengFlipped !== undefined
+      ? { rightBuugengFlipped: snap.props.rightBuugengFlipped }
       : {}),
   });
 }
@@ -268,8 +268,8 @@ export function migrateTunnelSnapshot(
     !("spectrum" in snapshot.tunnel) &&
     "presetRecipe" in snapshot.tunnel &&
     snapshot.tunnel.colors.mode === resolvedColors.mode &&
-    snapshot.tunnel.colors.custom.blue === resolvedColors.custom.blue &&
-    snapshot.tunnel.colors.custom.red === resolvedColors.custom.red
+    snapshot.tunnel.colors.custom.left === resolvedColors.custom.left &&
+    snapshot.tunnel.colors.custom.right === resolvedColors.custom.right
   ) {
     return snapshot as TunnelSnapshot;
   }

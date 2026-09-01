@@ -12,7 +12,10 @@
   import CellResizeHandles from "./CellResizeHandles.svelte";
   import CellContextMenuHost from "./cell-editor/context-menu/CellContextMenuHost.svelte";
   import type { CellContextMenuCallbacks } from "./cell-editor/context-menu/cell-context-menu-builder";
-  import { arrangeGridState, type GridCell } from "../../state/arrange-grid-state.svelte";
+  import {
+    arrangeGridState,
+    type GridCell,
+  } from "../../state/arrange-grid-state.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 
   interface GridBoundsInfo {
@@ -48,7 +51,13 @@
     /** Pre-computed grid bounds from state */
     stateGridBounds: GridBoundsInfo;
     onSelectCell: (cellId: string) => void;
-    onSetCellSpan: (cellId: string, colSpan: number, rowSpan: number, newCol?: number, newRow?: number) => void;
+    onSetCellSpan: (
+      cellId: string,
+      colSpan: number,
+      rowSpan: number,
+      newCol?: number,
+      newRow?: number
+    ) => void;
   } = $props();
 
   // Grid gap must match the CSS `gap` value on `.grid-content`
@@ -60,7 +69,15 @@
   const LONG_PRESS_MOVE_TOLERANCE = 10;
 
   // Resize direction type
-  type ResizeDirection = "left" | "right" | "top" | "bottom" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  type ResizeDirection =
+    | "left"
+    | "right"
+    | "top"
+    | "bottom"
+    | "top-left"
+    | "top-right"
+    | "bottom-left"
+    | "bottom-right";
 
   // Drag-to-move state
   let dragState = $state<{
@@ -119,7 +136,9 @@
   let containerHeight = $state(0);
 
   // Get visible cells for rendering (within current grid dimensions)
-  const visibleCells = $derived(cells.filter((c) => c.row < gridRows && c.col < gridCols));
+  const visibleCells = $derived(
+    cells.filter((c) => c.row < gridRows && c.col < gridCols)
+  );
 
   // Grid bounds: always match current dimensions
   const gridBounds = $derived(stateGridBounds);
@@ -142,7 +161,9 @@
     const maxCellFromHeight = availableHeight / rows;
 
     // Use the smaller dimension to keep cells square
-    const naturalSize = Math.floor(Math.min(maxCellFromWidth, maxCellFromHeight));
+    const naturalSize = Math.floor(
+      Math.min(maxCellFromWidth, maxCellFromHeight)
+    );
 
     // Hard limits: min 80px (spanning cells provide adequate visual size), max 400px
     // 400px prevents single/small grids (1x1, 2x2) from producing enormous cells
@@ -168,7 +189,6 @@
   function getCellAt(row: number, col: number): GridCell | undefined {
     return visibleCells.find((c) => c.row === row && c.col === col);
   }
-
 
   // Resize handlers
   function handleResizeStart(
@@ -225,10 +245,17 @@
       const colChange = state.originalCol - newCol;
       targetCol = newCol;
       targetColSpan = Math.max(1, state.originalColSpan + colChange);
-    } else if (dir === "right" || dir === "top-right" || dir === "bottom-right") {
+    } else if (
+      dir === "right" ||
+      dir === "top-right" ||
+      dir === "bottom-right"
+    ) {
       // Dragging right edge: positive delta = expand right
       const colDelta = Math.round(deltaX / unitSize);
-      targetColSpan = Math.max(1, Math.min(gridCols - state.originalCol, state.originalColSpan + colDelta));
+      targetColSpan = Math.max(
+        1,
+        Math.min(gridCols - state.originalCol, state.originalColSpan + colDelta)
+      );
     }
 
     // Handle vertical resizing
@@ -239,10 +266,17 @@
       const rowChange = state.originalRow - newRow;
       targetRow = newRow;
       targetRowSpan = Math.max(1, state.originalRowSpan + rowChange);
-    } else if (dir === "bottom" || dir === "bottom-left" || dir === "bottom-right") {
+    } else if (
+      dir === "bottom" ||
+      dir === "bottom-left" ||
+      dir === "bottom-right"
+    ) {
       // Dragging bottom edge: positive delta = expand down
       const rowDelta = Math.round(deltaY / unitSize);
-      targetRowSpan = Math.max(1, Math.min(gridRows - state.originalRow, state.originalRowSpan + rowDelta));
+      targetRowSpan = Math.max(
+        1,
+        Math.min(gridRows - state.originalRow, state.originalRowSpan + rowDelta)
+      );
     }
 
     // Ensure we don't exceed grid bounds
@@ -256,13 +290,29 @@
     // Always valid - we'll absorb any cells that get in the way
     const isValid = true;
 
-    resizeState = { ...state, targetCol, targetRow, targetColSpan, targetRowSpan, isValid };
+    resizeState = {
+      ...state,
+      targetCol,
+      targetRow,
+      targetColSpan,
+      targetRowSpan,
+      isValid,
+    };
   }
 
   function handleResizeEnd() {
     if (resizeState && resizeState.isValid) {
-      const { cellId, targetCol, targetRow, targetColSpan, targetRowSpan, originalCol, originalRow, originalColSpan, originalRowSpan } =
-        resizeState;
+      const {
+        cellId,
+        targetCol,
+        targetRow,
+        targetColSpan,
+        targetRowSpan,
+        originalCol,
+        originalRow,
+        originalColSpan,
+        originalRowSpan,
+      } = resizeState;
       // Only update if something actually changed
       if (
         targetCol !== originalCol ||
@@ -270,7 +320,13 @@
         targetColSpan !== originalColSpan ||
         targetRowSpan !== originalRowSpan
       ) {
-        onSetCellSpan(cellId, targetColSpan, targetRowSpan, targetCol, targetRow);
+        onSetCellSpan(
+          cellId,
+          targetColSpan,
+          targetRowSpan,
+          targetCol,
+          targetRow
+        );
       }
     }
 
@@ -318,7 +374,11 @@
 
       // Capture the pointer during pointerdown so the browser doesn't steal it
       // for scroll/zoom gestures. Released if user scrolls before long press fires.
-      try { element.setPointerCapture(e.pointerId); } catch { /* noop */ }
+      try {
+        element.setPointerCapture(e.pointerId);
+      } catch {
+        /* noop */
+      }
 
       // Activate via long press (like rearranging apps on a home screen)
       longPressTimer = setTimeout(() => {
@@ -347,7 +407,11 @@
         if (distance > LONG_PRESS_MOVE_TOLERANCE) {
           cancelLongPress();
           pressingCellId = null;
-          try { state.element.releasePointerCapture(state.pointerId); } catch { /* noop */ }
+          try {
+            state.element.releasePointerCapture(state.pointerId);
+          } catch {
+            /* noop */
+          }
           dragState = null;
           cleanupDragListeners();
           return;
@@ -372,8 +436,14 @@
     const rowOffset = Math.round(deltaY / unitSize);
 
     // Apply offset and clamp so the entire span fits within the grid
-    const targetCol = Math.max(0, Math.min(gridCols - state.colSpan, state.originCol + colOffset));
-    const targetRow = Math.max(0, Math.min(gridRows - state.rowSpan, state.originRow + rowOffset));
+    const targetCol = Math.max(
+      0,
+      Math.min(gridCols - state.colSpan, state.originCol + colOffset)
+    );
+    const targetRow = Math.max(
+      0,
+      Math.min(gridRows - state.rowSpan, state.originRow + rowOffset)
+    );
 
     dragState = { ...dragState!, targetCol, targetRow };
   }
@@ -385,17 +455,32 @@
 
     // Release pointer capture if we captured it during touch drag
     if (state) {
-      try { state.element.releasePointerCapture(state.pointerId); } catch { /* noop */ }
+      try {
+        state.element.releasePointerCapture(state.pointerId);
+      } catch {
+        /* noop */
+      }
     }
 
     if (state?.activated) {
       // Suppress the upcoming click event
       suppressClick = true;
-      requestAnimationFrame(() => { suppressClick = false; });
+      requestAnimationFrame(() => {
+        suppressClick = false;
+      });
 
       // Apply move if target differs from origin
-      if (state.targetCol !== state.originCol || state.targetRow !== state.originRow) {
-        onSetCellSpan(state.cellId, state.colSpan, state.rowSpan, state.targetCol, state.targetRow);
+      if (
+        state.targetCol !== state.originCol ||
+        state.targetRow !== state.originRow
+      ) {
+        onSetCellSpan(
+          state.cellId,
+          state.colSpan,
+          state.rowSpan,
+          state.targetCol,
+          state.targetRow
+        );
       }
     }
 
@@ -454,7 +539,9 @@
   const showDragGhost = $derived.by(() => {
     const state = dragState;
     if (!state?.activated) return false;
-    return state.targetCol !== state.originCol || state.targetRow !== state.originRow;
+    return (
+      state.targetCol !== state.originCol || state.targetRow !== state.originRow
+    );
   });
 
   const dragGhostStyle = $derived.by(() => {
@@ -516,9 +603,12 @@
       },
       onSetSpeed: (speed) => arrangeGridState.setCellSpeed(cell.id, speed),
       onSetEffect: (effect) => arrangeGridState.setCellEffect(cell.id, effect),
-      onSetTrailMode: (mode) => arrangeGridState.setCellTrailMode(cell.id, mode),
-      onSetBlueVisible: (visible) => arrangeGridState.setCellMotionVisibility(cell.id, "blue", visible),
-      onSetRedVisible: (visible) => arrangeGridState.setCellMotionVisibility(cell.id, "red", visible),
+      onSetTrailMode: (mode) =>
+        arrangeGridState.setCellTrailMode(cell.id, mode),
+      onSetLeftVisible: (visible) =>
+        arrangeGridState.setCellMotionVisibility(cell.id, "left", visible),
+      onSetRightVisible: (visible) =>
+        arrangeGridState.setCellMotionVisibility(cell.id, "right", visible),
       onSetEffort: (effort) => arrangeGridState.setCellEffort(cell.id, effort),
       onCopyCell: () => arrangeGridState.copyCellLayers(cell.id),
       onClearCell: () => arrangeGridState.clearCell(cell.id),
@@ -580,86 +670,89 @@
   style:--grid-gap="{GRID_GAP}px"
 >
   <div class="grid-content">
-      {#each { length: gridBounds.rows } as _, rowOffset}
-        {#each { length: gridBounds.cols } as _, colOffset}
-          {@const row = gridBounds.minRow + rowOffset}
-          {@const col = gridBounds.minCol + colOffset}
-          {@const posKey = `${row}-${col}`}
-          {@const cell = getCellAt(row, col)}
-          {@const isOccupied = occupiedPositions.has(posKey)}
+    {#each { length: gridBounds.rows } as _, rowOffset}
+      {#each { length: gridBounds.cols } as _, colOffset}
+        {@const row = gridBounds.minRow + rowOffset}
+        {@const col = gridBounds.minCol + colOffset}
+        {@const posKey = `${row}-${col}`}
+        {@const cell = getCellAt(row, col)}
+        {@const isOccupied = occupiedPositions.has(posKey)}
 
-          {#if isOccupied}
-            <!-- Skip - this position is covered by a spanning cell -->
-          {:else if cell}
-            <div
-              class="cell-wrapper"
-              class:is-pressing={pressingCellId === cell.id}
-              class:is-resizing={resizeState?.cellId === cell.id}
-              class:is-dragging={dragState?.activated && dragState?.cellId === cell.id}
-              style:grid-column="span {cell.colSpan}"
-              style:grid-row="span {cell.rowSpan}"
-              style:--col-span={cell.colSpan}
-              style:--row-span={cell.rowSpan}
-              role="group"
-              aria-label="Cell {arrangeGridState.getCellDisplayIndex(cell.id)}"
-              onpointerdown={(e) => {
-                handleDragStart(cell.id, e);
-                startContextMenuLongPress(cell, e);
-              }}
-              onpointermove={() => cancelContextMenuLongPress()}
-              onpointerup={() => cancelContextMenuLongPress()}
-              onpointercancel={() => cancelContextMenuLongPress()}
-              oncontextmenu={(e) => handleCellContextMenu(cell, e)}
-            >
-              <!-- Key by cell ID only. CellCanvas effects handle reinit when layer data changes.
+        {#if isOccupied}
+          <!-- Skip - this position is covered by a spanning cell -->
+        {:else if cell}
+          <div
+            class="cell-wrapper"
+            class:is-pressing={pressingCellId === cell.id}
+            class:is-resizing={resizeState?.cellId === cell.id}
+            class:is-dragging={dragState?.activated &&
+              dragState?.cellId === cell.id}
+            style:grid-column="span {cell.colSpan}"
+            style:grid-row="span {cell.rowSpan}"
+            style:--col-span={cell.colSpan}
+            style:--row-span={cell.rowSpan}
+            role="group"
+            aria-label="Cell {arrangeGridState.getCellDisplayIndex(cell.id)}"
+            onpointerdown={(e) => {
+              handleDragStart(cell.id, e);
+              startContextMenuLongPress(cell, e);
+            }}
+            onpointermove={() => cancelContextMenuLongPress()}
+            onpointerup={() => cancelContextMenuLongPress()}
+            onpointercancel={() => cancelContextMenuLongPress()}
+            oncontextmenu={(e) => handleCellContextMenu(cell, e)}
+          >
+            <!-- Key by cell ID only. CellCanvas effects handle reinit when layer data changes.
                    Including sequence properties in the key causes unnecessary destruction/recreation. -->
-              {#key cell.id}
-                <CellCanvas
-                  {cell}
-                  cellIndex={arrangeGridState.getCellDisplayIndex(cell.id)}
-                  {currentStep}
-                  {isPlaying}
-                  {skipStartPosition}
-                  isSelected={selectedCellId === cell.id}
-                  isDragging={suppressClick}
-                  onSelect={() => onSelectCell(cell.id)}
-                />
-              {/key}
-
-              <CellResizeHandles
-                cellId={cell.id}
-                canResizeLeft={cell.colSpan > 1 || cell.col > 0}
-                canResizeRight={cell.colSpan > 1 || cell.col + cell.colSpan < gridCols}
-                canResizeTop={cell.rowSpan > 1 || cell.row > 0}
-                canResizeBottom={cell.rowSpan > 1 || cell.row + cell.rowSpan < gridRows}
-                onResizeStart={handleResizeStart}
+            {#key cell.id}
+              <CellCanvas
+                {cell}
+                cellIndex={arrangeGridState.getCellDisplayIndex(cell.id)}
+                {currentStep}
+                {isPlaying}
+                {skipStartPosition}
+                isSelected={selectedCellId === cell.id}
+                isDragging={suppressClick}
+                onSelect={() => onSelectCell(cell.id)}
               />
-            </div>
-          {:else}
-            <div class="cell-placeholder" class:drop-target={isDragActive}></div>
-          {/if}
-        {/each}
+            {/key}
+
+            <CellResizeHandles
+              cellId={cell.id}
+              canResizeLeft={cell.colSpan > 1 || cell.col > 0}
+              canResizeRight={cell.colSpan > 1 ||
+                cell.col + cell.colSpan < gridCols}
+              canResizeTop={cell.rowSpan > 1 || cell.row > 0}
+              canResizeBottom={cell.rowSpan > 1 ||
+                cell.row + cell.rowSpan < gridRows}
+              onResizeStart={handleResizeStart}
+            />
+          </div>
+        {:else}
+          <div class="cell-placeholder" class:drop-target={isDragActive}></div>
+        {/if}
       {/each}
+    {/each}
 
-      <!-- Ghost preview during resize (absolute positioned to avoid layout shifts) -->
-      {#if showGhost && resizeState}
-        <div
-          class="resize-ghost"
-          class:invalid={!resizeState.isValid}
-          style={ghostStyle}
-        ></div>
-      {/if}
+    <!-- Ghost preview during resize (absolute positioned to avoid layout shifts) -->
+    {#if showGhost && resizeState}
+      <div
+        class="resize-ghost"
+        class:invalid={!resizeState.isValid}
+        style={ghostStyle}
+      ></div>
+    {/if}
 
-      <!-- Origin placeholder: dashed outline where the cell came from -->
-      {#if showOriginPlaceholder}
-        <div class="origin-placeholder" style={originPlaceholderStyle}></div>
-      {/if}
+    <!-- Origin placeholder: dashed outline where the cell came from -->
+    {#if showOriginPlaceholder}
+      <div class="origin-placeholder" style={originPlaceholderStyle}></div>
+    {/if}
 
-      <!-- Ghost preview during drag-to-move (with smooth position transitions) -->
-      {#if showDragGhost}
-        <div class="drag-ghost" style={dragGhostStyle}></div>
-      {/if}
-    </div>
+    <!-- Ghost preview during drag-to-move (with smooth position transitions) -->
+    {#if showDragGhost}
+      <div class="drag-ghost" style={dragGhostStyle}></div>
+    {/if}
+  </div>
 </div>
 
 <!-- Context menu portal (renders to document.body via ContextMenu internals) -->
@@ -694,8 +787,14 @@
     cursor: grab;
     touch-action: none; /* Prevent browser gesture interception during drag */
     /* Width/height calculated from span and cell size */
-    width: calc(var(--col-span, 1) * var(--cell-size, 200px) + (var(--col-span, 1) - 1) * var(--grid-gap, 16px));
-    height: calc(var(--row-span, 1) * var(--cell-size, 200px) + (var(--row-span, 1) - 1) * var(--grid-gap, 16px));
+    width: calc(
+      var(--col-span, 1) * var(--cell-size, 200px) + (var(--col-span, 1) - 1) *
+        var(--grid-gap, 16px)
+    );
+    height: calc(
+      var(--row-span, 1) * var(--cell-size, 200px) + (var(--row-span, 1) - 1) *
+        var(--grid-gap, 16px)
+    );
   }
 
   .cell-wrapper.is-resizing {
@@ -720,9 +819,15 @@
   }
 
   @keyframes drag-lift {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.08); }
-    100% { transform: scale(1.05); }
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.08);
+    }
+    100% {
+      transform: scale(1.05);
+    }
   }
 
   /* Long press progress: glowing ring builds up over 500ms to signal "keep holding" */
@@ -732,13 +837,22 @@
 
   @keyframes long-press-glow {
     0% {
-      box-shadow: 0 0 0 0 color-mix(in srgb, var(--theme-accent, #8b5cf6) 0%, transparent);
+      box-shadow: 0 0 0 0
+        color-mix(in srgb, var(--theme-accent, #8b5cf6) 0%, transparent);
     }
     40% {
-      box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent), 0 0 8px color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
+      box-shadow:
+        0 0 0 2px
+          color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent),
+        0 0 8px
+          color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
     }
     100% {
-      box-shadow: 0 0 0 4px color-mix(in srgb, var(--theme-accent, #8b5cf6) 70%, transparent), 0 0 20px color-mix(in srgb, var(--theme-accent, #8b5cf6) 35%, transparent);
+      box-shadow:
+        0 0 0 4px
+          color-mix(in srgb, var(--theme-accent, #8b5cf6) 70%, transparent),
+        0 0 20px
+          color-mix(in srgb, var(--theme-accent, #8b5cf6) 35%, transparent);
     }
   }
 
@@ -783,21 +897,31 @@
     border-radius: var(--border-radius-md, 8px);
     pointer-events: none;
     z-index: 15;
-    transition: left 0.12s ease-out, top 0.12s ease-out;
+    transition:
+      left 0.12s ease-out,
+      top 0.12s ease-out;
   }
 
   /* Drop zone highlighting: subtle glow on valid positions while dragging */
   .cell-placeholder.drop-target {
-    border: 2px dashed color-mix(in srgb, var(--theme-accent, #8b5cf6) 25%, transparent);
+    border: 2px dashed
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 25%, transparent);
     border-radius: var(--border-radius-md, 8px);
-    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 6%, transparent);
-    transition: background 0.2s ease, border-color 0.2s ease;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 6%,
+      transparent
+    );
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .cell-wrapper.is-pressing {
       animation: none;
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
+      box-shadow: 0 0 0 3px
+        color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
     }
 
     .cell-wrapper.is-dragging {

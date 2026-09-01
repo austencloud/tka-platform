@@ -31,7 +31,7 @@ function hasMotionData(sequence: SequenceData): boolean {
   return (
     Array.isArray(sequence.steps) &&
     sequence.steps.length > 0 &&
-    sequence.steps.some((step) => step?.motions?.blue && step?.motions?.red)
+    sequence.steps.some((step) => step?.motions?.left && step?.motions?.right)
   );
 }
 

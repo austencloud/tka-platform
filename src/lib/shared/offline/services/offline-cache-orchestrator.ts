@@ -260,8 +260,8 @@ export class OfflineCacheOrchestrator {
       // warmed cloud URL the one the gallery will later fetch.
       const renderOrchestrator = getThumbnailRenderOrchestrator();
       const lightMode = !getAnimationVisibilityManager().isDarkMode();
-      const bluePropType = settingsService.settings.bluePropType;
-      const redPropType = settingsService.settings.redPropType;
+      const leftPropType = settingsService.settings.leftPropType;
+      const rightPropType = settingsService.settings.rightPropType;
       const catDogModeEnabled = settingsService.settings.catDogMode ?? false;
 
       const concurrency = fullSpeed ? 10 : this.getConcurrency();
@@ -294,8 +294,8 @@ export class OfflineCacheOrchestrator {
               const input: ThumbnailRenderInput = {
                 sequenceName: sequence.word || sequence.name || "",
                 sequenceId: sequence.id,
-                bluePropType,
-                redPropType,
+                leftPropType,
+                rightPropType,
                 catDogModeEnabled,
                 lightMode,
                 variant: "gallery",

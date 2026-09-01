@@ -16,7 +16,7 @@
  *           StepData→Step migration endangers most.
  *        2. `buildPictograph` dropped `blueReversal`/`redReversal`, so
  *           reversal dots never rendered (canvas-2d-glyph-renderer keys off
- *           `pictograph.blueReversal`) — the D1/D4 corruption channel was
+ *           `pictograph.leftReversal`) — the D1/D4 corruption channel was
  *           invisible.
  *   v2 (this module): preparer wired (arrows + props render), reversal flags
  *      + betaSwapped/category carried onto the pictograph. Baselines captured
@@ -57,11 +57,11 @@ export function buildParityPictograph(
   const m = step.motions;
   const motions = m
     ? {
-        blue: m.blue
-          ? { ...m.blue, propType: m.blue.propType || propType }
+        left: m.left
+          ? { ...m.left, propType: m.left.propType || propType }
           : undefined,
-        red: m.red
-          ? { ...m.red, propType: m.red.propType || propType }
+        right: m.right
+          ? { ...m.right, propType: m.right.propType || propType }
           : undefined,
       }
     : {};
@@ -73,8 +73,8 @@ export function buildParityPictograph(
     gridMode: seq.gridMode || GridMode.DIAMOND,
     motions,
     // Step-level render extras — v1 dropped these (blind spots #2).
-    blueReversal: step.blueReversal ?? false,
-    redReversal: step.redReversal ?? false,
+    leftReversal: step.leftReversal ?? false,
+    rightReversal: step.rightReversal ?? false,
     betaSwapped: step.betaSwapped,
     category: step.category,
   } as PictographData;
@@ -152,8 +152,8 @@ export async function renderStepSet(
           showReversals: true,
           showNonRadialPoints: false,
           darkMode: true,
-          bluePropType: PropType.STAFF,
-          redPropType: PropType.STAFF,
+          leftPropType: PropType.STAFF,
+          rightPropType: PropType.STAFF,
         },
       });
       out.push({

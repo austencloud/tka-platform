@@ -13,7 +13,7 @@ import {
 import type { MotionConfig3D } from "../domain/models/motion-data-3d";
 import { Plane } from "@austencloud/scene-3d";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
   Orientation,
@@ -23,8 +23,8 @@ import type { PlaneModeConfig } from "@austencloud/scene-3d";
 
 export interface StepMotionConfigs {
   stepNumber: number;
-  blue: MotionConfig3D | null;
-  red: MotionConfig3D | null;
+  left: MotionConfig3D | null;
+  right: MotionConfig3D | null;
 }
 
 export function motionDataToConfig3D(
@@ -53,31 +53,33 @@ export function stepDataToConfigs(
   plane: Plane = Plane.WALL,
   modeConfig?: PlaneModeConfig,
 ): StepMotionConfigs {
-  const blueMotion = step.motions?.[MotionColor.BLUE];
-  const redMotion = step.motions?.[MotionColor.RED];
+  const leftMotion = step.motions?.[HandSide.LEFT];
+  const rightMotion = step.motions?.[HandSide.RIGHT];
 
   const stepNumber =
     "isStartPosition" in step && step.isStartPosition
       ? 0
       : (step as StepData).stepNumber ?? 0;
 
-  const bluePlane = modeConfig?.bluePlane ?? plane;
-  const redPlane = modeConfig?.redPlane ?? plane;
+  // @austencloud/scene-3d still exposes its legacy color-named boundary.
+  // Normalize immediately into performer-relative locals.
+  const leftPlane = modeConfig?.bluePlane ?? plane;
+  const rightPlane = modeConfig?.redPlane ?? plane;
   const rotPlane = modeConfig?.rotationPlane;
 
   return {
     stepNumber,
-    blue: isVisibleMotion(blueMotion)
+    left: isVisibleMotion(leftMotion)
       ? {
-          ...motionDataToConfig3D(blueMotion, bluePlane),
-          ...(modeConfig ? { plane: bluePlane } : {}),
+          ...motionDataToConfig3D(leftMotion, leftPlane),
+          ...(modeConfig ? { plane: leftPlane } : {}),
           rotationPlane: rotPlane,
         }
       : null,
-    red: isVisibleMotion(redMotion)
+    right: isVisibleMotion(rightMotion)
       ? {
-          ...motionDataToConfig3D(redMotion, redPlane),
-          ...(modeConfig ? { plane: redPlane } : {}),
+          ...motionDataToConfig3D(rightMotion, rightPlane),
+          ...(modeConfig ? { plane: rightPlane } : {}),
           rotationPlane: rotPlane,
         }
       : null,
@@ -90,36 +92,36 @@ function deriveStartConfigFromStep(
   plane: Plane,
   modeConfig?: PlaneModeConfig,
 ): StepMotionConfigs {
-  const blueMotion = step.motions?.[MotionColor.BLUE];
-  const redMotion = step.motions?.[MotionColor.RED];
+  const leftMotion = step.motions?.[HandSide.LEFT];
+  const rightMotion = step.motions?.[HandSide.RIGHT];
 
-  const bluePlane = modeConfig?.bluePlane ?? plane;
-  const redPlane = modeConfig?.redPlane ?? plane;
+  const leftPlane = modeConfig?.bluePlane ?? plane;
+  const rightPlane = modeConfig?.redPlane ?? plane;
 
   return {
     stepNumber: 0,
-    blue: isVisibleMotion(blueMotion)
+    left: isVisibleMotion(leftMotion)
       ? {
-          plane: bluePlane,
-          startLocation: blueMotion.startLocation,
-          endLocation: blueMotion.startLocation,
+          plane: leftPlane,
+          startLocation: leftMotion.startLocation,
+          endLocation: leftMotion.startLocation,
           motionType: MotionType.STATIC,
           rotationDirection: RotationDirection.NO_ROTATION,
           turns: 0,
-          startOrientation: blueMotion.startOrientation,
-          endOrientation: blueMotion.startOrientation,
+          startOrientation: leftMotion.startOrientation,
+          endOrientation: leftMotion.startOrientation,
         }
       : null,
-    red: isVisibleMotion(redMotion)
+    right: isVisibleMotion(rightMotion)
       ? {
-          plane: redPlane,
-          startLocation: redMotion.startLocation,
-          endLocation: redMotion.startLocation,
+          plane: rightPlane,
+          startLocation: rightMotion.startLocation,
+          endLocation: rightMotion.startLocation,
           motionType: MotionType.STATIC,
           rotationDirection: RotationDirection.NO_ROTATION,
           turns: 0,
-          startOrientation: redMotion.startOrientation,
-          endOrientation: redMotion.startOrientation,
+          startOrientation: rightMotion.startOrientation,
+          endOrientation: rightMotion.startOrientation,
         }
       : null,
   };

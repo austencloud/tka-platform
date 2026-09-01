@@ -19,7 +19,7 @@ export interface WallFeasibilityMetadata {
   /** Keyed by step index, then hand. Only present for "withCheat". */
   wallPlaneOverrides?: Record<
     number,
-    { blue?: WallPlaneStepOverride; red?: WallPlaneStepOverride }
+    { left?: WallPlaneStepOverride; right?: WallPlaneStepOverride }
   >;
   /** Scanner version for invalidation when thresholds/model change. */
   scanVersion: number;

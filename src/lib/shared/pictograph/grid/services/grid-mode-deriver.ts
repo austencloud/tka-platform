@@ -53,27 +53,27 @@ export function isSkewed(motion: MotionData): boolean {
  * Determine grid mode from motion start/end locations.
  * CORRECTED: Cardinal locations = Diamond mode.
  */
-export function deriveGridMode(blueMotion: MotionData, redMotion: MotionData): GridMode {
-  const blueIsDiamond = usesDiamondLocations(blueMotion);
-  const redIsDiamond = usesDiamondLocations(redMotion);
+export function deriveGridMode(leftMotion: MotionData, rightMotion: MotionData): GridMode {
+  const leftIsDiamond = usesDiamondLocations(leftMotion);
+  const rightIsDiamond = usesDiamondLocations(rightMotion);
 
-  const blueIsBox = usesBoxLocations(blueMotion);
-  const redIsBox = usesBoxLocations(redMotion);
+  const leftIsBox = usesBoxLocations(leftMotion);
+  const rightIsBox = usesBoxLocations(rightMotion);
 
-  const blueIsSkewed = isSkewed(blueMotion);
-  const redIsSkewed = isSkewed(redMotion);
+  const leftIsSkewed = isSkewed(leftMotion);
+  const rightIsSkewed = isSkewed(rightMotion);
 
-  if (blueIsSkewed || redIsSkewed) {
+  if (leftIsSkewed || rightIsSkewed) {
     return GridMode.SKEWED;
   }
 
-  if ((blueIsDiamond && redIsBox) || (blueIsBox && redIsDiamond)) {
+  if ((leftIsDiamond && rightIsBox) || (leftIsBox && rightIsDiamond)) {
     return GridMode.SKEWED;
   }
 
-  if (blueIsDiamond && redIsDiamond) {
+  if (leftIsDiamond && rightIsDiamond) {
     return GridMode.DIAMOND;
-  } else if (blueIsBox && redIsBox) {
+  } else if (leftIsBox && rightIsBox) {
     return GridMode.BOX;
   } else {
     console.warn(
@@ -83,8 +83,8 @@ export function deriveGridMode(blueMotion: MotionData, redMotion: MotionData): G
   }
 }
 
-export function computeGridData(blueMotion: MotionData, redMotion: MotionData): GridData {
-  const gridMode = deriveGridMode(blueMotion, redMotion);
+export function computeGridData(leftMotion: MotionData, rightMotion: MotionData): GridData {
+  const gridMode = deriveGridMode(leftMotion, rightMotion);
   const gridData: GridData = { gridMode } as GridData;
   return gridData;
 }

@@ -1,4 +1,4 @@
-export type MandalaVariant = "blue" | "red" | "full";
+export type MandalaVariant = "left" | "right" | "full";
 
 export interface MandalaPlacement {
 	row: number;
@@ -20,8 +20,8 @@ export interface GetMandalaPlacementsArgs {
 	rows: number;
 	includeStartPosition: boolean;
 	showQRCode: boolean;
-	blueVisible: boolean;
-	redVisible: boolean;
+	leftVisible: boolean;
+	rightVisible: boolean;
 	mandalaEnabled: boolean;
 	/** Where the info cells live. "column" → mandalas stack vertically in col 1.
 	 *  "row" → mandalas lay out horizontally across the top row. */
@@ -42,15 +42,15 @@ export function getMandalaPlacements(args: GetMandalaPlacementsArgs): GetMandala
 		rows,
 		includeStartPosition,
 		showQRCode,
-		blueVisible,
-		redVisible,
+		leftVisible,
+		rightVisible,
 		mandalaEnabled,
 		startPositionLayout = "row",
 	} = args;
 
 	if (!mandalaEnabled) return EMPTY;
 	if (!includeStartPosition) return EMPTY;
-	if (!blueVisible && !redVisible) return EMPTY;
+	if (!leftVisible && !rightVisible) return EMPTY;
 	if (stepCount < 4) return EMPTY;
 
 	if (startPositionLayout === "row") {
@@ -61,8 +61,8 @@ export function getMandalaPlacements(args: GetMandalaPlacementsArgs): GetMandala
 		const emptyCount = rightCol - leftCol + 1;
 		if (emptyCount < 1) return EMPTY;
 
-		// Anchored: blue → leftmost slot, red → rightmost slot. Never migrate when one is toggled off.
-		return { placements: buildRowPlacements(emptyCount, leftCol, rightCol, blueVisible, redVisible), layoutOverride: null };
+		// Anchored: left → leftmost slot, right → rightmost slot. Never migrate when one is toggled off.
+		return { placements: buildRowPlacements(emptyCount, leftCol, rightCol, leftVisible, rightVisible), layoutOverride: null };
 	}
 
 	// Column layout: col 1 runs start (row 1) → empties → QR (row `rows`).
@@ -74,52 +74,52 @@ export function getMandalaPlacements(args: GetMandalaPlacementsArgs): GetMandala
 
 	void cols;
 
-	// Anchored: blue → topmost slot, red → bottommost slot. Never migrate when one is toggled off.
-	return { placements: buildColumnPlacements(emptyCount, topRow, bottomRow, blueVisible, redVisible), layoutOverride: null };
+	// Anchored: left → topmost slot, right → bottommost slot. Never migrate when one is toggled off.
+	return { placements: buildColumnPlacements(emptyCount, topRow, bottomRow, leftVisible, rightVisible), layoutOverride: null };
 }
 
 function buildRowPlacements(
 	emptyCount: number,
 	leftCol: number,
 	rightCol: number,
-	blueVisible: boolean,
-	redVisible: boolean,
+	leftVisible: boolean,
+	rightVisible: boolean,
 ): MandalaPlacement[] {
-	if (blueVisible && redVisible) {
+	if (leftVisible && rightVisible) {
 		if (emptyCount === 1) return [{ row: 1, col: leftCol, variant: "full" }];
 		if (emptyCount === 2) return [
-			{ row: 1, col: leftCol, variant: "blue" },
-			{ row: 1, col: rightCol, variant: "red" },
+			{ row: 1, col: leftCol, variant: "left" },
+			{ row: 1, col: rightCol, variant: "right" },
 		];
 		return [
-			{ row: 1, col: leftCol, variant: "blue" },
+			{ row: 1, col: leftCol, variant: "left" },
 			{ row: 1, col: leftCol + 1, variant: "full" },
-			{ row: 1, col: leftCol + 2, variant: "red" },
+			{ row: 1, col: leftCol + 2, variant: "right" },
 		];
 	}
-	if (blueVisible) return [{ row: 1, col: leftCol, variant: "blue" }];
-	return [{ row: 1, col: leftCol, variant: "red" }];
+	if (leftVisible) return [{ row: 1, col: leftCol, variant: "left" }];
+	return [{ row: 1, col: leftCol, variant: "right" }];
 }
 
 function buildColumnPlacements(
 	emptyCount: number,
 	topRow: number,
 	bottomRow: number,
-	blueVisible: boolean,
-	redVisible: boolean,
+	leftVisible: boolean,
+	rightVisible: boolean,
 ): MandalaPlacement[] {
-	if (blueVisible && redVisible) {
+	if (leftVisible && rightVisible) {
 		if (emptyCount === 1) return [{ row: topRow, col: 1, variant: "full" }];
 		if (emptyCount === 2) return [
-			{ row: topRow, col: 1, variant: "blue" },
-			{ row: bottomRow, col: 1, variant: "red" },
+			{ row: topRow, col: 1, variant: "left" },
+			{ row: bottomRow, col: 1, variant: "right" },
 		];
 		return [
-			{ row: topRow, col: 1, variant: "blue" },
+			{ row: topRow, col: 1, variant: "left" },
 			{ row: topRow + 1, col: 1, variant: "full" },
-			{ row: topRow + 2, col: 1, variant: "red" },
+			{ row: topRow + 2, col: 1, variant: "right" },
 		];
 	}
-	if (blueVisible) return [{ row: topRow, col: 1, variant: "blue" }];
-	return [{ row: topRow, col: 1, variant: "red" }];
+	if (leftVisible) return [{ row: topRow, col: 1, variant: "left" }];
+	return [{ row: topRow, col: 1, variant: "right" }];
 }

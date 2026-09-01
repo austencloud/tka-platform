@@ -3,7 +3,7 @@
  *
  * Handles sequence-level transformations:
  * - Mirror sequence
- * - Swap colors
+ * - Swap hands
  * - Rotate sequence
  * - Duplicate sequence
  * - Set start position
@@ -111,11 +111,17 @@ export function createSequenceTransformOperations(
           // Use requestAnimationFrame to ensure animation has started before deriving letters
           requestAnimationFrame(async () => {
             try {
-              const withLetters = await SequenceTransformer.deriveSequenceLetters(transformedSequence);
+              const withLetters =
+                await SequenceTransformer.deriveSequenceLetters(
+                  transformedSequence
+                );
               coreState.setCurrentSequence(withLetters);
               await onSave?.();
             } catch (letterError) {
-              console.warn("Failed to derive letters after mirror:", letterError);
+              console.warn(
+                "Failed to derive letters after mirror:",
+                letterError
+              );
               // Still save the transformed sequence even if letter derivation fails
               await onSave?.();
             }
@@ -130,11 +136,11 @@ export function createSequenceTransformOperations(
       }
     },
 
-    async swapColors() {
+    async swapHands() {
       if (!coreState.currentSequence || !SequenceTransformer) return;
 
       try {
-        const updatedSequence = SequenceTransformer.swapColors(
+        const updatedSequence = SequenceTransformer.swapHands(
           coreState.currentSequence
         );
         coreState.setCurrentSequence(updatedSequence);
@@ -149,7 +155,7 @@ export function createSequenceTransformOperations(
         // Persist the transformed sequence
         await onSave?.();
       } catch (error) {
-        handleError("Failed to swap colors", error);
+        handleError("Failed to swap hands", error);
       }
     },
 
@@ -189,11 +195,17 @@ export function createSequenceTransformOperations(
           await new Promise<void>((resolve) => {
             requestAnimationFrame(async () => {
               try {
-                const withLetters = await SequenceTransformer.deriveSequenceLetters(transformedSequence);
+                const withLetters =
+                  await SequenceTransformer.deriveSequenceLetters(
+                    transformedSequence
+                  );
                 coreState.setCurrentSequence(withLetters);
                 await onSave?.();
               } catch (letterError) {
-                console.warn("Failed to derive letters after rotate:", letterError);
+                console.warn(
+                  "Failed to derive letters after rotate:",
+                  letterError
+                );
                 await onSave?.();
               } finally {
                 resolve();
@@ -245,11 +257,17 @@ export function createSequenceTransformOperations(
         if (targetHand !== "both") {
           requestAnimationFrame(async () => {
             try {
-              const withLetters = await SequenceTransformer.deriveSequenceLetters(transformedSequence);
+              const withLetters =
+                await SequenceTransformer.deriveSequenceLetters(
+                  transformedSequence
+                );
               coreState.setCurrentSequence(withLetters);
               await onSave?.();
             } catch (letterError) {
-              console.warn("Failed to derive letters after rewind:", letterError);
+              console.warn(
+                "Failed to derive letters after rewind:",
+                letterError
+              );
               await onSave?.();
             }
           });
@@ -306,7 +324,10 @@ export function createSequenceTransformOperations(
         if (targetHand !== "both") {
           requestAnimationFrame(async () => {
             try {
-              const withLetters = await SequenceTransformer.deriveSequenceLetters(transformedSequence);
+              const withLetters =
+                await SequenceTransformer.deriveSequenceLetters(
+                  transformedSequence
+                );
               coreState.setCurrentSequence(withLetters);
               await onSave?.();
             } catch (letterError) {
@@ -344,11 +365,17 @@ export function createSequenceTransformOperations(
         if (targetHand !== "both") {
           requestAnimationFrame(async () => {
             try {
-              const withLetters = await SequenceTransformer.deriveSequenceLetters(transformedSequence);
+              const withLetters =
+                await SequenceTransformer.deriveSequenceLetters(
+                  transformedSequence
+                );
               coreState.setCurrentSequence(withLetters);
               await onSave?.();
             } catch (letterError) {
-              console.warn("Failed to derive letters after invert:", letterError);
+              console.warn(
+                "Failed to derive letters after invert:",
+                letterError
+              );
               await onSave?.();
             }
           });

@@ -7,7 +7,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import {
-    MotionColor,
+    HandSide,
     MotionType,
     type RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -32,10 +32,10 @@
     variations,
     selectedIndex,
     draft,
-    blueTurns,
-    redTurns,
-    blueRotation,
-    redRotation,
+    leftTurns,
+    rightTurns,
+    leftRotation,
+    rightRotation,
     edited,
     isLoading,
     loadError,
@@ -57,10 +57,10 @@
     variations: PictographData[];
     selectedIndex: number;
     draft: PictographData | null;
-    blueTurns: TurnValue;
-    redTurns: TurnValue;
-    blueRotation: RotationDirection;
-    redRotation: RotationDirection;
+    leftTurns: TurnValue;
+    rightTurns: TurnValue;
+    leftRotation: RotationDirection;
+    rightRotation: RotationDirection;
     edited: boolean;
     isLoading: boolean;
     loadError: boolean;
@@ -70,9 +70,9 @@
     composerHref: string | null;
     onGridChange: (gridMode: GridModeValue) => void;
     onVariationChange: (index: number) => void;
-    onTurnsChange: (color: MotionColor, delta: number) => void;
+    onTurnsChange: (color: HandSide, delta: number) => void;
     onRotationChange: (
-      color: MotionColor,
+      color: HandSide,
       direction: RotationDirection
     ) => void;
     onReset: () => void;
@@ -81,19 +81,19 @@
     onCopyLink: () => void;
   } = $props();
 
-  const blueMotion = $derived(draft?.motions?.blue);
-  const redMotion = $derived(draft?.motions?.red);
-  const blueCanChooseRotation = $derived(
-    blueTurns !== "fl" &&
-      blueTurns > 0 &&
-      (blueMotion?.motionType === MotionType.DASH ||
-        blueMotion?.motionType === MotionType.STATIC)
+  const leftMotion = $derived(draft?.motions?.left);
+  const rightMotion = $derived(draft?.motions?.right);
+  const leftCanChooseRotation = $derived(
+    leftTurns !== "fl" &&
+      leftTurns > 0 &&
+      (leftMotion?.motionType === MotionType.DASH ||
+        leftMotion?.motionType === MotionType.STATIC)
   );
-  const redCanChooseRotation = $derived(
-    redTurns !== "fl" &&
-      redTurns > 0 &&
-      (redMotion?.motionType === MotionType.DASH ||
-        redMotion?.motionType === MotionType.STATIC)
+  const rightCanChooseRotation = $derived(
+    rightTurns !== "fl" &&
+      rightTurns > 0 &&
+      (rightMotion?.motionType === MotionType.DASH ||
+        rightMotion?.motionType === MotionType.STATIC)
   );
   const gridLabel = $derived(
     gridMode === GridMode.BOX ? "Box grid" : "Diamond grid"
@@ -158,33 +158,33 @@
 
         {#if draft}
           <PropControlPair compact>
-            {#snippet blueContent()}
+            {#snippet leftContent()}
               <div class="prop-editor">
                 <PropTurnsControl
                   color="blue"
-                  turns={blueTurns}
-                  rotationDirection={blueRotation}
-                  showRotation={blueCanChooseRotation}
+                  turns={leftTurns}
+                  rotationDirection={leftRotation}
+                  showRotation={leftCanChooseRotation}
                   compact
                   onTurnsChange={(delta) =>
-                    onTurnsChange(MotionColor.BLUE, delta)}
+                    onTurnsChange(HandSide.LEFT, delta)}
                   onRotationChange={(direction) =>
-                    onRotationChange(MotionColor.BLUE, direction)}
+                    onRotationChange(HandSide.LEFT, direction)}
                 />
               </div>
             {/snippet}
-            {#snippet redContent()}
+            {#snippet rightContent()}
               <div class="prop-editor">
                 <PropTurnsControl
                   color="red"
-                  turns={redTurns}
-                  rotationDirection={redRotation}
-                  showRotation={redCanChooseRotation}
+                  turns={rightTurns}
+                  rotationDirection={rightRotation}
+                  showRotation={rightCanChooseRotation}
                   compact
                   onTurnsChange={(delta) =>
-                    onTurnsChange(MotionColor.RED, delta)}
+                    onTurnsChange(HandSide.RIGHT, delta)}
                   onRotationChange={(direction) =>
-                    onRotationChange(MotionColor.RED, direction)}
+                    onRotationChange(HandSide.RIGHT, direction)}
                 />
               </div>
             {/snippet}

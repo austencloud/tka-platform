@@ -17,16 +17,16 @@
   let {
     isOpen = $bindable(false),
     bpm = $bindable(60),
-    blueMotionVisible = true,
-    redMotionVisible = true,
+    leftMotionVisible = true,
+    rightMotionVisible = true,
     currentPropType = null,
     playbackMode = "continuous",
     stepPlaybackPauseMs = 300,
     stepPlaybackStepSize = 1,
     isPlaying = false,
     onBpmChange = () => {},
-    onToggleBlue = () => {},
-    onToggleRed = () => {},
+    onToggleLeft = () => {},
+    onToggleRight = () => {},
     onPlaybackModeChange = () => {},
     onStepPlaybackPauseMsChange = () => {},
     onStepPlaybackStepSizeChange = () => {},
@@ -34,16 +34,16 @@
   }: {
     isOpen: boolean;
     bpm: number;
-    blueMotionVisible?: boolean;
-    redMotionVisible?: boolean;
+    leftMotionVisible?: boolean;
+    rightMotionVisible?: boolean;
     currentPropType?: PropType | string | null;
     playbackMode?: PlaybackMode;
     stepPlaybackPauseMs?: number;
     stepPlaybackStepSize?: StepPlaybackStepSize;
     isPlaying?: boolean;
     onBpmChange?: (bpm: number) => void;
-    onToggleBlue?: () => void;
-    onToggleRed?: () => void;
+    onToggleLeft?: () => void;
+    onToggleRight?: () => void;
     onPlaybackModeChange?: (mode: PlaybackMode) => void;
     onStepPlaybackPauseMsChange?: (pauseMs: number) => void;
     onStepPlaybackStepSizeChange?: (stepSize: StepPlaybackStepSize) => void;
@@ -65,16 +65,16 @@
     <!-- No header - swipe handle or tap backdrop to close -->
     <AnimationSettingsContent
       bind:bpm
-      {blueMotionVisible}
-      {redMotionVisible}
+      {leftMotionVisible}
+      {rightMotionVisible}
       {currentPropType}
       {playbackMode}
       {stepPlaybackPauseMs}
       {stepPlaybackStepSize}
       {isPlaying}
       {onBpmChange}
-      {onToggleBlue}
-      {onToggleRed}
+      {onToggleLeft}
+      {onToggleRight}
       {onPlaybackModeChange}
       {onStepPlaybackPauseMsChange}
       {onStepPlaybackStepSizeChange}

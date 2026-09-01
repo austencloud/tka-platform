@@ -17,17 +17,17 @@ import type { SequenceTransformer } from "$lib/features/create/shared/services/s
 import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import type {
-  EndState, PositionGroup, SpinnerStats } from "$lib/shared/landing/domain/types";
+  EndState,
+  PositionGroup,
+  SpinnerStats,
+} from "$lib/shared/landing/domain/types";
 import {
   GridMode,
   GridPosition,
   GridLocation,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type {
-  Orientation} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import {
-  MotionColor,
-} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   GenerationMode,
   DifficultyLevel,
@@ -35,8 +35,7 @@ import {
 } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
-import {
-} from "$lib/shared/create/services/sequence-transforms";
+import {} from "$lib/shared/create/services/sequence-transforms";
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
 // Cardinal locations (for DIAMOND grid) and intercardinal (for BOX grid)
 const CARDINAL_LOCATIONS: ReadonlySet<GridLocation> = new Set<GridLocation>([
@@ -46,43 +45,57 @@ const CARDINAL_LOCATIONS: ReadonlySet<GridLocation> = new Set<GridLocation>([
   GridLocation.WEST,
 ]);
 
-const INTERCARDINAL_LOCATIONS: ReadonlySet<GridLocation> = new Set<GridLocation>([
-  GridLocation.NORTHEAST,
-  GridLocation.SOUTHEAST,
-  GridLocation.SOUTHWEST,
-  GridLocation.NORTHWEST,
-]);
+const INTERCARDINAL_LOCATIONS: ReadonlySet<GridLocation> =
+  new Set<GridLocation>([
+    GridLocation.NORTHEAST,
+    GridLocation.SOUTHEAST,
+    GridLocation.SOUTHWEST,
+    GridLocation.NORTHWEST,
+  ]);
 
 /**
  * Validate motion data for consistency and flag any issues.
  * Returns an array of warning messages.
  */
-function validateMotionData(
-  sequence: SequenceData,
-  label: string
-): string[] {
+function validateMotionData(sequence: SequenceData, label: string): string[] {
   const warnings: string[] = [];
   const seqGridMode = sequence.gridMode ?? GridMode.DIAMOND;
 
   // Check start position
   if (sequence.startPosition?.motions) {
-    const blue = sequence.startPosition.motions[MotionColor.BLUE];
-    const red = sequence.startPosition.motions[MotionColor.RED];
+    const left = sequence.startPosition.motions[HandSide.LEFT];
+    const right = sequence.startPosition.motions[HandSide.RIGHT];
 
-    if (blue) {
-      if (blue.gridMode !== seqGridMode) {
-        warnings.push(`StartPos blue motion gridMode (${blue.gridMode}) != sequence (${seqGridMode})`);
+    if (left) {
+      if (left.gridMode !== seqGridMode) {
+        warnings.push(
+          `StartPos blue motion gridMode (${left.gridMode}) != sequence (${seqGridMode})`
+        );
       }
-      if (seqGridMode === GridMode.DIAMOND && blue.endLocation && INTERCARDINAL_LOCATIONS.has(blue.endLocation)) {
-        warnings.push(`StartPos blue has intercardinal location ${blue.endLocation} in DIAMOND mode`);
+      if (
+        seqGridMode === GridMode.DIAMOND &&
+        left.endLocation &&
+        INTERCARDINAL_LOCATIONS.has(left.endLocation)
+      ) {
+        warnings.push(
+          `StartPos blue has intercardinal location ${left.endLocation} in DIAMOND mode`
+        );
       }
-      if (seqGridMode === GridMode.BOX && blue.endLocation && CARDINAL_LOCATIONS.has(blue.endLocation)) {
-        warnings.push(`StartPos blue has cardinal location ${blue.endLocation} in BOX mode`);
+      if (
+        seqGridMode === GridMode.BOX &&
+        left.endLocation &&
+        CARDINAL_LOCATIONS.has(left.endLocation)
+      ) {
+        warnings.push(
+          `StartPos blue has cardinal location ${left.endLocation} in BOX mode`
+        );
       }
     }
-    if (red) {
-      if (red.gridMode !== seqGridMode) {
-        warnings.push(`StartPos red motion gridMode (${red.gridMode}) != sequence (${seqGridMode})`);
+    if (right) {
+      if (right.gridMode !== seqGridMode) {
+        warnings.push(
+          `StartPos red motion gridMode (${right.gridMode}) != sequence (${seqGridMode})`
+        );
       }
     }
   }
@@ -90,23 +103,27 @@ function validateMotionData(
   // Check each beat
   sequence.steps?.forEach((step, idx) => {
     const stepNum = idx + 1;
-    const blue = step.motions?.[MotionColor.BLUE];
-    const red = step.motions?.[MotionColor.RED];
+    const left = step.motions?.[HandSide.LEFT];
+    const right = step.motions?.[HandSide.RIGHT];
 
-    if (blue) {
-      if (blue.gridMode !== seqGridMode) {
-        warnings.push(`Beat ${stepNum} blue gridMode (${blue.gridMode}) != sequence (${seqGridMode})`);
+    if (left) {
+      if (left.gridMode !== seqGridMode) {
+        warnings.push(
+          `Beat ${stepNum} blue gridMode (${left.gridMode}) != sequence (${seqGridMode})`
+        );
       }
-      if (!blue.endOrientation) {
+      if (!left.endOrientation) {
         warnings.push(`Beat ${stepNum} blue missing endOrientation`);
       }
-      if (!blue.endLocation) {
+      if (!left.endLocation) {
         warnings.push(`Beat ${stepNum} blue missing endLocation`);
       }
     }
-    if (red) {
-      if (red.gridMode !== seqGridMode) {
-        warnings.push(`Beat ${stepNum} red gridMode (${red.gridMode}) != sequence (${seqGridMode})`);
+    if (right) {
+      if (right.gridMode !== seqGridMode) {
+        warnings.push(
+          `Beat ${stepNum} red gridMode (${right.gridMode}) != sequence (${seqGridMode})`
+        );
       }
     }
   });
@@ -149,16 +166,18 @@ interface RotatableMatch {
  */
 function createStartStateKey(
   position: GridPosition | string | null,
-  blueOrientation: Orientation | null,
-  redOrientation: Orientation | null
+  leftOrientation: Orientation | null,
+  rightOrientation: Orientation | null
 ): string {
-  return `${position ?? "null"}_${blueOrientation ?? "null"}_${redOrientation ?? "null"}`;
+  return `${position ?? "null"}_${leftOrientation ?? "null"}_${rightOrientation ?? "null"}`;
 }
 
 /**
  * Extract position group from a grid position string.
  */
-function getPositionGroup(position: GridPosition | string | null): PositionGroup | null {
+function getPositionGroup(
+  position: GridPosition | string | null
+): PositionGroup | null {
   if (!position) return null;
   const posStr = position.toString().toLowerCase();
   if (posStr.startsWith("alpha")) return "alpha";
@@ -171,7 +190,9 @@ function getPositionGroup(position: GridPosition | string | null): PositionGroup
  * Extract the position number from a GridPosition.
  * e.g., ALPHA3 → 3, GAMMA11 → 11
  */
-function getPositionNumber(position: GridPosition | string | null): number | null {
+function getPositionNumber(
+  position: GridPosition | string | null
+): number | null {
   if (!position) return null;
   const match = position.toString().match(/\d+$/);
   return match ? parseInt(match[0], 10) : null;
@@ -209,8 +230,8 @@ function calculateRotationSteps(
   }
 
   // Normalize positions to 0-7 range for the cycle
-  const normalizedFrom = ((fromNum - 1) % cycleLength);
-  const normalizedTo = ((toNum - 1) % cycleLength);
+  const normalizedFrom = (fromNum - 1) % cycleLength;
+  const normalizedTo = (toNum - 1) % cycleLength;
 
   // Calculate the difference
   let diff = normalizedTo - normalizedFrom;
@@ -225,20 +246,53 @@ function calculateRotationSteps(
 /**
  * Get a random position from a position group for bridge generation.
  */
-function getRandomPositionInGroup(group: PositionGroup, gridMode: GridMode): GridPosition {
+function getRandomPositionInGroup(
+  group: PositionGroup,
+  gridMode: GridMode
+): GridPosition {
   const positions: Record<PositionGroup, GridPosition[]> = {
     alpha:
       gridMode === GridMode.DIAMOND
-        ? [GridPosition.ALPHA1, GridPosition.ALPHA3, GridPosition.ALPHA5, GridPosition.ALPHA7]
-        : [GridPosition.ALPHA2, GridPosition.ALPHA4, GridPosition.ALPHA6, GridPosition.ALPHA8],
+        ? [
+            GridPosition.ALPHA1,
+            GridPosition.ALPHA3,
+            GridPosition.ALPHA5,
+            GridPosition.ALPHA7,
+          ]
+        : [
+            GridPosition.ALPHA2,
+            GridPosition.ALPHA4,
+            GridPosition.ALPHA6,
+            GridPosition.ALPHA8,
+          ],
     beta:
       gridMode === GridMode.DIAMOND
-        ? [GridPosition.BETA1, GridPosition.BETA3, GridPosition.BETA5, GridPosition.BETA7]
-        : [GridPosition.BETA2, GridPosition.BETA4, GridPosition.BETA6, GridPosition.BETA8],
+        ? [
+            GridPosition.BETA1,
+            GridPosition.BETA3,
+            GridPosition.BETA5,
+            GridPosition.BETA7,
+          ]
+        : [
+            GridPosition.BETA2,
+            GridPosition.BETA4,
+            GridPosition.BETA6,
+            GridPosition.BETA8,
+          ],
     gamma:
       gridMode === GridMode.DIAMOND
-        ? [GridPosition.GAMMA1, GridPosition.GAMMA5, GridPosition.GAMMA9, GridPosition.GAMMA13]
-        : [GridPosition.GAMMA3, GridPosition.GAMMA7, GridPosition.GAMMA11, GridPosition.GAMMA15],
+        ? [
+            GridPosition.GAMMA1,
+            GridPosition.GAMMA5,
+            GridPosition.GAMMA9,
+            GridPosition.GAMMA13,
+          ]
+        : [
+            GridPosition.GAMMA3,
+            GridPosition.GAMMA7,
+            GridPosition.GAMMA11,
+            GridPosition.GAMMA15,
+          ],
   };
 
   const options = positions[group];
@@ -268,7 +322,9 @@ function _getNextPositionGroup(current: PositionGroup | null): PositionGroup {
  * GAMMA1-8 are "low" cycle, GAMMA9-16 are "high" cycle.
  * Returns null for non-gamma positions.
  */
-function getGammaCycle(position: GridPosition | string | null): "low" | "high" | null {
+function getGammaCycle(
+  position: GridPosition | string | null
+): "low" | "high" | null {
   if (!position) return null;
   const group = getPositionGroup(position);
   if (group !== "gamma") return null;
@@ -316,10 +372,14 @@ export class EndlessSpinnerOrchestrator {
       const allSequences = await this.browseLoader.loadSequenceMetadata();
 
       // Filter for circular sequences only (LOOPs loop seamlessly)
-      this.circularSequences = allSequences.filter((seq) => seq.isCircular === true);
+      this.circularSequences = allSequences.filter(
+        (seq) => seq.isCircular === true
+      );
 
       if (this.circularSequences.length === 0) {
-        console.warn("[EndlessSpinner] No circular sequences found, using all sequences");
+        console.warn(
+          "[EndlessSpinner] No circular sequences found, using all sequences"
+        );
         this.circularSequences = allSequences;
       }
 
@@ -345,19 +405,22 @@ export class EndlessSpinnerOrchestrator {
 
     for (const sequence of this.circularSequences) {
       // Load full sequence data to get the steps
-      const fullSequence = await this.browseLoader.loadFullSequenceData(sequence.word);
+      const fullSequence = await this.browseLoader.loadFullSequenceData(
+        sequence.word
+      );
       if (!fullSequence?.steps || fullSequence.steps.length === 0) continue;
 
       // Get or derive start position
-      const startPos = this.startPositionDeriver.getOrDeriveStartPosition(fullSequence);
+      const startPos =
+        this.startPositionDeriver.getOrDeriveStartPosition(fullSequence);
       if (!startPos) continue;
 
       // Extract start state
       const position = startPos.gridPosition ?? startPos.startPosition ?? null;
-      const blueOri = startPos.motions?.blue?.startOrientation ?? null;
-      const redOri = startPos.motions?.red?.startOrientation ?? null;
+      const leftOri = startPos.motions?.left?.startOrientation ?? null;
+      const rightOri = startPos.motions?.right?.startOrientation ?? null;
 
-      const key = createStartStateKey(position, blueOri, redOri);
+      const key = createStartStateKey(position, leftOri, rightOri);
 
       // Add to index
       if (!this.sequenceIndex.has(key)) {
@@ -382,7 +445,10 @@ export class EndlessSpinnerOrchestrator {
     // Strategy 2: Fallback to old approach - find sequence starting in same position group
     const targetGroup = getPositionGroup(endState.position);
     if (targetGroup) {
-      const transformedSequence = await this.findAndTransformSequence(endState, targetGroup);
+      const transformedSequence = await this.findAndTransformSequence(
+        endState,
+        targetGroup
+      );
       if (transformedSequence) {
         this.stats.rotatedMatches++;
         return this.recordAndReturn(transformedSequence);
@@ -403,20 +469,20 @@ export class EndlessSpinnerOrchestrator {
    * Derive the grid position from a beat's end state using motion end locations.
    */
   private deriveBeatEndPosition(beat: StepData): GridPosition | null {
-    const blueMotion = beat.motions?.[MotionColor.BLUE];
-    const redMotion = beat.motions?.[MotionColor.RED];
+    const leftMotion = beat.motions?.[HandSide.LEFT];
+    const rightMotion = beat.motions?.[HandSide.RIGHT];
 
     // Invisible placeholder = hand not really there (both-required Step shape).
     if (
-      isVisibleMotion(blueMotion) &&
-      isVisibleMotion(redMotion) &&
-      blueMotion.endLocation &&
-      redMotion.endLocation
+      isVisibleMotion(leftMotion) &&
+      isVisibleMotion(rightMotion) &&
+      leftMotion.endLocation &&
+      rightMotion.endLocation
     ) {
       try {
         return getGridPositionFromLocations(
-          blueMotion.endLocation,
-          redMotion.endLocation
+          leftMotion.endLocation,
+          rightMotion.endLocation
         );
       } catch {
         return null;
@@ -429,14 +495,18 @@ export class EndlessSpinnerOrchestrator {
    * Enhanced algorithm: Find ANY circular sequence that passes through the target position group
    * at any beat, then apply transforms to make it match exactly.
    */
-  private async findAndTransformAnySequence(endState: EndState): Promise<SequenceData | null> {
+  private async findAndTransformAnySequence(
+    endState: EndState
+  ): Promise<SequenceData | null> {
     const targetGroup = getPositionGroup(endState.position);
     if (!targetGroup) return null;
 
     const targetGammaCycle = getGammaCycle(endState.position);
 
     // Shuffle sequences for variety
-    const shuffled = [...this.circularSequences].sort(() => Math.random() - 0.5);
+    const shuffled = [...this.circularSequences].sort(
+      () => Math.random() - 0.5
+    );
 
     // Limit attempts for performance (scanning all steps is O(n*m))
     const maxSequenceAttempts = Math.min(20, shuffled.length);
@@ -446,16 +516,25 @@ export class EndlessSpinnerOrchestrator {
       if (!candidate) continue;
 
       // Prefer unused sequences
-      if (this.usedSequenceIds.has(candidate.id) && seqIdx < maxSequenceAttempts - 5) {
+      if (
+        this.usedSequenceIds.has(candidate.id) &&
+        seqIdx < maxSequenceAttempts - 5
+      ) {
         continue;
       }
 
       // Load full sequence data
-      const fullSequence = await this.browseLoader.loadFullSequenceData(candidate.word);
+      const fullSequence = await this.browseLoader.loadFullSequenceData(
+        candidate.word
+      );
       if (!fullSequence?.steps?.length || !fullSequence.isCircular) continue;
 
       // Scan each beat for a position match
-      for (let stepIndex = 0; stepIndex < fullSequence.steps.length; stepIndex++) {
+      for (
+        let stepIndex = 0;
+        stepIndex < fullSequence.steps.length;
+        stepIndex++
+      ) {
         const beat = fullSequence.steps[stepIndex];
         if (!beat) continue;
 
@@ -506,10 +585,16 @@ export class EndlessSpinnerOrchestrator {
       // (stepIndex is 0-based, shiftStartPosition expects 1-based beat number)
       // The next beat (stepIndex + 2) becomes the new beat 1
       const targetStepNumber = stepIndex + 2;
-      const rotated = this.sequenceTransformer.shiftStartPosition(sequence, targetStepNumber);
+      const rotated = this.sequenceTransformer.shiftStartPosition(
+        sequence,
+        targetStepNumber
+      );
 
       // Step 2: Position rotation - match exact variant
-      const rotationSteps = calculateRotationSteps(stepEndPosition, targetEndState.position);
+      const rotationSteps = calculateRotationSteps(
+        stepEndPosition,
+        targetEndState.position
+      );
       let positionMatched = rotated;
 
       if (rotationSteps !== null && rotationSteps !== 0) {
@@ -526,41 +611,46 @@ export class EndlessSpinnerOrchestrator {
 
       if (
         startPos &&
-        targetEndState.blueOrientation &&
-        targetEndState.redOrientation
+        targetEndState.leftOrientation &&
+        targetEndState.rightOrientation
       ) {
         // Check if orientations already match
-        const currentBlueOri = startPos.motions?.[MotionColor.BLUE]?.startOrientation;
-        const currentRedOri = startPos.motions?.[MotionColor.RED]?.startOrientation;
+        const currentLeftOri =
+          startPos.motions?.[HandSide.LEFT]?.startOrientation;
+        const currentRightOri =
+          startPos.motions?.[HandSide.RIGHT]?.startOrientation;
 
         if (
-          currentBlueOri !== targetEndState.blueOrientation ||
-          currentRedOri !== targetEndState.redOrientation
+          currentLeftOri !== targetEndState.leftOrientation ||
+          currentRightOri !== targetEndState.rightOrientation
         ) {
           // Modify start position to have target orientations
-          const startBlueMotion = startPos.motions?.[MotionColor.BLUE];
-          const startRedMotion = startPos.motions?.[MotionColor.RED];
+          const startLeftMotion = startPos.motions?.[HandSide.LEFT];
+          const startRightMotion = startPos.motions?.[HandSide.RIGHT];
           const adjustedStartPos: StartPositionData = {
             ...startPos,
             motions: {
-              [MotionColor.BLUE]: startBlueMotion
+              [HandSide.LEFT]: startLeftMotion
                 ? {
-                    ...startBlueMotion,
-                    startOrientation: targetEndState.blueOrientation,
-                    endOrientation: targetEndState.blueOrientation,
+                    ...startLeftMotion,
+                    startOrientation: targetEndState.leftOrientation,
+                    endOrientation: targetEndState.leftOrientation,
                   }
                 : undefined,
-              [MotionColor.RED]: startRedMotion
+              [HandSide.RIGHT]: startRightMotion
                 ? {
-                    ...startRedMotion,
-                    startOrientation: targetEndState.redOrientation,
-                    endOrientation: targetEndState.redOrientation,
+                    ...startRightMotion,
+                    startOrientation: targetEndState.rightOrientation,
+                    endOrientation: targetEndState.rightOrientation,
                   }
                 : undefined,
             },
           };
 
-          finalSequence = { ...positionMatched, startPosition: adjustedStartPos };
+          finalSequence = {
+            ...positionMatched,
+            startPosition: adjustedStartPos,
+          };
         }
       }
 
@@ -571,11 +661,18 @@ export class EndlessSpinnerOrchestrator {
       // Step 5: Determine the sequence's grid mode from actual motion locations.
       // We derive from the first step's motions rather than trusting sequence.gridMode,
       // which may be stale (e.g. "box" stored in Firestore for a diamond sequence).
-      const sequenceGridMode = this.deriveSequenceGridMode(orientationCorrected);
-      const gridCorrected = this.forceGridMode(orientationCorrected, sequenceGridMode);
+      const sequenceGridMode =
+        this.deriveSequenceGridMode(orientationCorrected);
+      const gridCorrected = this.forceGridMode(
+        orientationCorrected,
+        sequenceGridMode
+      );
 
       // Step 6: Update start position letter to match new position
-      const result = this.updateStartPositionLetter(gridCorrected, targetEndState.position);
+      const result = this.updateStartPositionLetter(
+        gridCorrected,
+        targetEndState.position
+      );
 
       // Step 7: Validate the final result (logs warnings if issues found)
       validateMotionData(result, `After transform "${sequence.word}"`);
@@ -589,7 +686,7 @@ export class EndlessSpinnerOrchestrator {
 
   /**
    * Derive the grid mode from the sequence's actual motion locations.
-   * Examines the first available step's blue and red motions to determine
+   * Examines the first available step's left and right motions to determine
    * whether cardinal (diamond) or intercardinal (box) locations are used.
    * Falls back to GridMode.DIAMOND when motion data is absent.
    *
@@ -598,40 +695,38 @@ export class EndlessSpinnerOrchestrator {
    */
   private deriveSequenceGridMode(sequence: SequenceData): GridMode {
     // Try start position first, then first step
-    const candidates = [
-      sequence.startPosition,
-      ...(sequence.steps ?? []),
-    ];
+    const candidates = [sequence.startPosition, ...(sequence.steps ?? [])];
 
     for (const candidate of candidates) {
       if (!candidate) continue;
-      const blue = candidate.motions?.[MotionColor.BLUE];
-      const red = candidate.motions?.[MotionColor.RED];
-      if (!isVisibleMotion(blue) || !isVisibleMotion(red)) continue;
+      const left = candidate.motions?.[HandSide.LEFT];
+      const right = candidate.motions?.[HandSide.RIGHT];
+      if (!isVisibleMotion(left) || !isVisibleMotion(right)) continue;
 
       // Both motions need start+end locations for reliable detection
       if (
-        !blue.startLocation ||
-        !blue.endLocation ||
-        !red.startLocation ||
-        !red.endLocation
-      ) continue;
+        !left.startLocation ||
+        !left.endLocation ||
+        !right.startLocation ||
+        !right.endLocation
+      )
+        continue;
 
-      const blueIsDiamond =
-        CARDINAL_LOCATIONS.has(blue.startLocation) &&
-        CARDINAL_LOCATIONS.has(blue.endLocation);
-      const redIsDiamond =
-        CARDINAL_LOCATIONS.has(red.startLocation) &&
-        CARDINAL_LOCATIONS.has(red.endLocation);
-      const blueIsBox =
-        INTERCARDINAL_LOCATIONS.has(blue.startLocation) &&
-        INTERCARDINAL_LOCATIONS.has(blue.endLocation);
-      const redIsBox =
-        INTERCARDINAL_LOCATIONS.has(red.startLocation) &&
-        INTERCARDINAL_LOCATIONS.has(red.endLocation);
+      const leftIsDiamond =
+        CARDINAL_LOCATIONS.has(left.startLocation) &&
+        CARDINAL_LOCATIONS.has(left.endLocation);
+      const rightIsDiamond =
+        CARDINAL_LOCATIONS.has(right.startLocation) &&
+        CARDINAL_LOCATIONS.has(right.endLocation);
+      const leftIsBox =
+        INTERCARDINAL_LOCATIONS.has(left.startLocation) &&
+        INTERCARDINAL_LOCATIONS.has(left.endLocation);
+      const rightIsBox =
+        INTERCARDINAL_LOCATIONS.has(right.startLocation) &&
+        INTERCARDINAL_LOCATIONS.has(right.endLocation);
 
-      if (blueIsDiamond && redIsDiamond) return GridMode.DIAMOND;
-      if (blueIsBox && redIsBox) return GridMode.BOX;
+      if (leftIsDiamond && rightIsDiamond) return GridMode.DIAMOND;
+      if (leftIsBox && rightIsBox) return GridMode.BOX;
       // Mixed/skewed - use DIAMOND as safe default
       return GridMode.DIAMOND;
     }
@@ -647,7 +742,10 @@ export class EndlessSpinnerOrchestrator {
    * IMPORTANT: We must update gridMode on motions too, not just steps/sequence.
    * The PropRotAngleManager uses motion gridMode for angle calculations.
    */
-  private forceGridMode(sequence: SequenceData, gridMode: GridMode): SequenceData {
+  private forceGridMode(
+    sequence: SequenceData,
+    gridMode: GridMode
+  ): SequenceData {
     // Update grid mode on the sequence itself
     const updatedSequence = {
       ...sequence,
@@ -657,14 +755,14 @@ export class EndlessSpinnerOrchestrator {
     // Update grid mode on all steps AND their motions
     if (updatedSequence.steps?.length) {
       updatedSequence.steps = updatedSequence.steps.map((step) => {
-        const blueMotion = step.motions?.[MotionColor.BLUE];
-        const redMotion = step.motions?.[MotionColor.RED];
+        const leftMotion = step.motions?.[HandSide.LEFT];
+        const rightMotion = step.motions?.[HandSide.RIGHT];
         return {
           ...step,
           gridMode,
           motions: {
-            blue: { ...blueMotion, gridMode },
-            red: { ...redMotion, gridMode },
+            left: { ...leftMotion, gridMode },
+            right: { ...rightMotion, gridMode },
           },
         };
       });
@@ -673,18 +771,16 @@ export class EndlessSpinnerOrchestrator {
     // Update grid mode on start position and its motions if present
     if (updatedSequence.startPosition) {
       const sp = updatedSequence.startPosition;
-      const blueMotion = sp.motions?.[MotionColor.BLUE];
-      const redMotion = sp.motions?.[MotionColor.RED];
+      const leftMotion = sp.motions?.[HandSide.LEFT];
+      const rightMotion = sp.motions?.[HandSide.RIGHT];
       updatedSequence.startPosition = {
         ...sp,
         gridMode,
         motions: {
           ...sp.motions,
-          [MotionColor.BLUE]: blueMotion
-            ? { ...blueMotion, gridMode }
-            : undefined,
-          [MotionColor.RED]: redMotion
-            ? { ...redMotion, gridMode }
+          [HandSide.LEFT]: leftMotion ? { ...leftMotion, gridMode } : undefined,
+          [HandSide.RIGHT]: rightMotion
+            ? { ...rightMotion, gridMode }
             : undefined,
         },
       };
@@ -754,11 +850,14 @@ export class EndlessSpinnerOrchestrator {
       }
 
       // Load full sequence data
-      const fullSequence = await this.browseLoader.loadFullSequenceData(candidate.word);
+      const fullSequence = await this.browseLoader.loadFullSequenceData(
+        candidate.word
+      );
       if (!fullSequence?.steps?.length) continue;
 
       // Get the sequence's start position
-      const startPos = this.startPositionDeriver.getOrDeriveStartPosition(fullSequence);
+      const startPos =
+        this.startPositionDeriver.getOrDeriveStartPosition(fullSequence);
       if (!startPos) continue;
 
       // Prefer the canonical start-position field, with the inherited
@@ -774,7 +873,10 @@ export class EndlessSpinnerOrchestrator {
       if (sequenceGroup !== targetGroup) continue;
 
       // Calculate rotation needed to transform this sequence's start to our target
-      const rotationSteps = calculateRotationSteps(sequenceStartPosition, endState.position);
+      const rotationSteps = calculateRotationSteps(
+        sequenceStartPosition,
+        endState.position
+      );
 
       if (rotationSteps === null) {
         // Can't rotate (different gamma cycle or other issue), skip
@@ -814,7 +916,8 @@ export class EndlessSpinnerOrchestrator {
       (seq) => !this.usedSequenceIds.has(seq.id)
     );
 
-    const candidates = unusedSequences.length > 0 ? unusedSequences : this.circularSequences;
+    const candidates =
+      unusedSequences.length > 0 ? unusedSequences : this.circularSequences;
     const randomSeq = pickRandom(candidates);
 
     if (!randomSeq) return null;
@@ -826,18 +929,22 @@ export class EndlessSpinnerOrchestrator {
   /**
    * Find a sequence that directly starts at the given end state.
    */
-  private async findDirectMatch(endState: EndState): Promise<SequenceData | null> {
+  private async findDirectMatch(
+    endState: EndState
+  ): Promise<SequenceData | null> {
     const key = createStartStateKey(
       endState.position,
-      endState.blueOrientation,
-      endState.redOrientation
+      endState.leftOrientation,
+      endState.rightOrientation
     );
 
     const matches = this.sequenceIndex.get(key);
     if (!matches || matches.length === 0) return null;
 
     // Prefer sequences we haven't used yet
-    const unusedMatches = matches.filter((seq) => !this.usedSequenceIds.has(seq.id));
+    const unusedMatches = matches.filter(
+      (seq) => !this.usedSequenceIds.has(seq.id)
+    );
     if (unusedMatches.length > 0) {
       return pickRandom(unusedMatches);
     }
@@ -850,12 +957,16 @@ export class EndlessSpinnerOrchestrator {
    * Find a circular sequence that passes through the target end state.
    * Returns the sequence and which beat number to rotate to.
    */
-  private async findRotatableMatch(endState: EndState): Promise<RotatableMatch | null> {
+  private async findRotatableMatch(
+    endState: EndState
+  ): Promise<RotatableMatch | null> {
     const matches: RotatableMatch[] = [];
 
     for (const sequence of this.circularSequences) {
       // Load full sequence data
-      const fullSequence = await this.browseLoader.loadFullSequenceData(sequence.word);
+      const fullSequence = await this.browseLoader.loadFullSequenceData(
+        sequence.word
+      );
       if (!fullSequence?.steps || !fullSequence.isCircular) continue;
 
       // Check each beat's end state
@@ -865,13 +976,13 @@ export class EndlessSpinnerOrchestrator {
 
         // Check if this beat's END state matches our target
         const beatEndPos = beat.endPosition;
-        const blueEndOri = beat.motions?.blue?.endOrientation ?? null;
-        const redEndOri = beat.motions?.red?.endOrientation ?? null;
+        const leftEndOri = beat.motions?.left?.endOrientation ?? null;
+        const rightEndOri = beat.motions?.right?.endOrientation ?? null;
 
         if (
           beatEndPos === endState.position &&
-          blueEndOri === endState.blueOrientation &&
-          redEndOri === endState.redOrientation
+          leftEndOri === endState.leftOrientation &&
+          rightEndOri === endState.rightOrientation
         ) {
           // Beat i+1 should become the new beat 1 (rotating past this beat)
           matches.push({
@@ -906,10 +1017,14 @@ export class EndlessSpinnerOrchestrator {
       const gridMode = sampleSequence?.gridMode ?? GridMode.DIAMOND;
 
       // Create start position data from end state
-      const startPositionData = this.createStartPositionFromEndState(fromEndState);
+      const startPositionData =
+        this.createStartPositionFromEndState(fromEndState);
 
       // Get a random target position in the target group
-      const targetPosition = getRandomPositionInGroup(toPositionGroup, gridMode);
+      const targetPosition = getRandomPositionInGroup(
+        toPositionGroup,
+        gridMode
+      );
 
       // Generate a short freeform sequence from current state to target
       const bridge = await this.generationOrchestrator.generateSequence({
@@ -947,11 +1062,11 @@ export class EndlessSpinnerOrchestrator {
       id: `spinner-start-${Date.now()}`,
       startPosition: endState.position,
       motions: {
-        blue: endState.blueOrientation
-          ? { startOrientation: endState.blueOrientation }
+        left: endState.leftOrientation
+          ? { startOrientation: endState.leftOrientation }
           : undefined,
-        red: endState.redOrientation
-          ? { startOrientation: endState.redOrientation }
+        right: endState.rightOrientation
+          ? { startOrientation: endState.rightOrientation }
           : undefined,
       },
     };

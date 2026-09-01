@@ -42,12 +42,12 @@
     isPlaying: boolean;
     bpm?: number;
     onBpmChange?: (bpm: number) => void;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     /** Current blue prop state for 2D mode positioning */
-    bluePropState?: PropState | null;
+    leftPropState?: PropState | null;
     /** Current red prop state for 2D mode positioning */
-    redPropState?: PropState | null;
+    rightPropState?: PropState | null;
     /** Grid mode for 2D mode rendering */
     gridMode?: string | null;
     hideOverlays?: boolean;
@@ -63,10 +63,10 @@
     isPlaying,
     bpm = 60,
     onBpmChange = () => {},
-    bluePropType = null,
-    redPropType = null,
-    bluePropState = null,
-    redPropState = null,
+    leftPropType = null,
+    rightPropType = null,
+    leftPropState = null,
+    rightPropState = null,
     gridMode = null,
     hideOverlays = false,
     fullScreen = false,
@@ -123,10 +123,10 @@
         {#if is2D}
           <Viewer2DCamera />
           <Viewer2DScene
-            {bluePropState}
-            {redPropState}
-            {bluePropType}
-            {redPropType}
+            {leftPropState}
+            {rightPropState}
+            {leftPropType}
+            {rightPropType}
             {gridMode}
             {currentStep}
           />

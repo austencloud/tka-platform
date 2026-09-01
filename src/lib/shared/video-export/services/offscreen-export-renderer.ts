@@ -50,8 +50,8 @@ export interface OffscreenExportInit {
   /** When true, run synchronous warmup renders so the fluid sim (fire/charcoal) converges. */
   needsFluidWarmup: boolean;
   /** Resolved prop types (e.g. "staff"). Thread into frame ctx + trail capture config. */
-  bluePropType: string | null;
-  redPropType: string | null;
+  leftPropType: string | null;
+  rightPropType: string | null;
   /** Dark-mode override for prop colors + grid tint. null → engine boot value. */
   previewDarkMode: boolean | null;
   /** Whether to draw non-radial grid points (matches the live grid). */
@@ -109,7 +109,7 @@ export class OffscreenExportRenderer {
     // export drives every frame through renderFrame() → renderSync(). If the loop
     // runs, it repaints from the engine's OWN internal state — which never
     // receives per-frame prop positions (those arrive only as renderFrame args) —
-    // so its bluePropState/redPropState stay at the boot default. During the
+    // so its leftPropState/rightPropState stay at the boot default. During the
     // orchestrator's `await waitForAnimationFrame()` between renderFrame() and the
     // canvas capture, an rAF render fires and (a) overwrites the frame with a
     // propless one AND (b) drives the prop fade managers with a wall clock +
@@ -130,8 +130,8 @@ export class OffscreenExportRenderer {
     // feeds the canvas2D fallback path consistently.)
     this.handle.context.trailCapturer.updateConfig({
       canvasSize: init.outputCanvasSize,
-      bluePropType: init.bluePropType,
-      redPropType: init.redPropType,
+      leftPropType: init.leftPropType,
+      rightPropType: init.rightPropType,
       trailSettings: animationSettings.trail,
       isSeamlesslyLoopable: this.playback.isSeamlesslyLoopable,
     });
@@ -150,11 +150,11 @@ export class OffscreenExportRenderer {
 
     // Thread the resolved prop types into the offscreen engine's STATE before the
     // frame loop. The renderer skips drawing a prop whose image is null
-    // (canvas-2d-animation-renderer getBluePropImage), so the prop image must be
+    // (canvas-2d-animation-renderer getLeftPropImage), so the prop image must be
     // loaded — but loading the image alone is not enough: frame-parameter-builder
-    // reads the prop TYPE from state.currentBluePropType/RedPropType
+    // reads the prop TYPE from state.currentLeftPropType/currentRightPropType
     // (frame-parameter-builder.ts:227-228,244-245) and the prop DIMENSIONS from
-    // state.bluePropDimensions/redPropDimensions (frame-parameter-builder.ts:209-210).
+    // state.leftPropDimensions/rightPropDimensions (frame-parameter-builder.ts:209-210).
     // The offscreen engine is driven only through renderFrame(), which bypasses
     // PlaybackSync — so those state fields are never synced and stay at the boot
     // default ("staff", staff dimensions). A bare renderer.loadPerColorPropTextures()
@@ -163,11 +163,11 @@ export class OffscreenExportRenderer {
     // override path (sets state types + loads textures + syncs dimensions to state).
     // "staff" is the floor so a missing type still draws.
     const darkMode = init.previewDarkMode ?? vm.isDarkMode();
-    const blue = init.bluePropType ?? "staff";
-    const red = init.redPropType ?? "staff";
+    const left = init.leftPropType ?? "staff";
+    const right = init.rightPropType ?? "staff";
     await this.handle.engine.prepareExportPropTypes(
-      blue,
-      red,
+      left,
+      right,
       darkMode,
       init.tunnelPropColors ?? null
     );
@@ -314,16 +314,16 @@ export class OffscreenExportRenderer {
       backgroundAlpha: 1,
       showNonRadialPoints: this.init.showNonRadialPoints,
       trailSettings: animationSettings.trail,
-      bluePropType: this.init.bluePropType,
-      redPropType: this.init.redPropType,
+      leftPropType: this.init.leftPropType,
+      rightPropType: this.init.rightPropType,
       previewDarkMode: this.init.previewDarkMode,
     };
     const props = assembleExportEngineProps(this.panelState, frameCtx);
     // Drive the offscreen frame off the sampled states + this beat (the shared
     // panelState is frozen at the export's start pose, so these overrides — not
     // panelState's stale values — are what render/capture).
-    props.blueProp = sampled.blue;
-    props.redProp = sampled.red;
+    props.leftProp = sampled.left;
+    props.rightProp = sampled.right;
     props.currentStep = beat;
 
     if (layerProvider) props.additionalLayers = layerProvider(beat);
@@ -336,7 +336,7 @@ export class OffscreenExportRenderer {
     // Feed the capturer at the same cadence the WebGL2 overlay captures its own
     // ring, so the canvas2D fallback path (if ever active) stays consistent.
     handle.context.trailCapturer.captureFrame(
-      { blueProp: props.blueProp, redProp: props.redProp },
+      { leftProp: props.leftProp, rightProp: props.rightProp },
       Math.floor(beat),
       clockMs
     );

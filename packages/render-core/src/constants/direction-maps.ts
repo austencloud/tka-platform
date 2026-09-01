@@ -6,58 +6,58 @@
  * The direction of offset depends on:
  * - The location (N/S/E/W vs NE/SE/SW/NW)
  * - The orientation type (radial IN/OUT vs non-radial CLOCK/COUNTER)
- * - The motion color (red vs blue)
+ * - The performer-relative hand (right vs left)
  * - For shift motions, the start->end transition
  */
 
 import type { GridLocation, VectorDirection } from "../types.js";
 
-type ColorMap = Record<"blue" | "red", VectorDirection>;
+type HandMap = Record<"left" | "right", VectorDirection>;
 
 
 /**
  * Diamond grid (N/S/E/W) - radial orientation (IN/OUT)
  */
-export const DIAMOND_RADIAL_MAP: Record<GridLocation, ColorMap> = {
-  n: { red: "right", blue: "left" },
-  e: { red: "down", blue: "up" },
-  s: { red: "left", blue: "right" },
-  w: { red: "up", blue: "down" },
-  ne: { red: "right", blue: "left" },
-  se: { red: "right", blue: "left" },
-  sw: { red: "right", blue: "left" },
-  nw: { red: "right", blue: "left" },
-  c: { red: "right", blue: "left" },
+export const DIAMOND_RADIAL_MAP: Record<GridLocation, HandMap> = {
+  n: { right: "right", left: "left" },
+  e: { right: "down", left: "up" },
+  s: { right: "left", left: "right" },
+  w: { right: "up", left: "down" },
+  ne: { right: "right", left: "left" },
+  se: { right: "right", left: "left" },
+  sw: { right: "right", left: "left" },
+  nw: { right: "right", left: "left" },
+  c: { right: "right", left: "left" },
 };
 
 /**
  * Diamond grid (N/S/E/W) - non-radial orientation (CLOCK/COUNTER)
  */
-export const DIAMOND_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
-  n: { red: "up", blue: "down" },
-  e: { red: "right", blue: "left" },
-  s: { red: "down", blue: "up" },
-  w: { red: "left", blue: "right" },
-  ne: { red: "up", blue: "down" },
-  se: { red: "up", blue: "down" },
-  sw: { red: "up", blue: "down" },
-  nw: { red: "up", blue: "down" },
-  c: { red: "up", blue: "down" },
+export const DIAMOND_NON_RADIAL_MAP: Record<GridLocation, HandMap> = {
+  n: { right: "up", left: "down" },
+  e: { right: "right", left: "left" },
+  s: { right: "down", left: "up" },
+  w: { right: "left", left: "right" },
+  ne: { right: "up", left: "down" },
+  se: { right: "up", left: "down" },
+  sw: { right: "up", left: "down" },
+  nw: { right: "up", left: "down" },
+  c: { right: "up", left: "down" },
 };
 
 /**
  * Box grid (NE/SE/SW/NW) - radial orientation
  */
-export const BOX_RADIAL_MAP: Record<GridLocation, ColorMap> = {
-  ne: { red: "downright", blue: "upleft" },
-  se: { red: "upright", blue: "downleft" },
-  sw: { red: "downright", blue: "upleft" },
-  nw: { red: "upright", blue: "downleft" },
-  n: { red: "downright", blue: "upleft" },
-  e: { red: "downright", blue: "upleft" },
-  s: { red: "downright", blue: "upleft" },
-  w: { red: "downright", blue: "upleft" },
-  c: { red: "right", blue: "left" },
+export const BOX_RADIAL_MAP: Record<GridLocation, HandMap> = {
+  ne: { right: "downright", left: "upleft" },
+  se: { right: "upright", left: "downleft" },
+  sw: { right: "downright", left: "upleft" },
+  nw: { right: "upright", left: "downleft" },
+  n: { right: "downright", left: "upleft" },
+  e: { right: "downright", left: "upleft" },
+  s: { right: "downright", left: "upleft" },
+  w: { right: "downright", left: "upleft" },
+  c: { right: "right", left: "left" },
 };
 
 /**
@@ -65,16 +65,16 @@ export const BOX_RADIAL_MAP: Record<GridLocation, ColorMap> = {
  * Also used for interradial orientations (clockIn/clockOut/counterIn/counterOut)
  * as a close approximation — both are perpendicular-ish to the radial axis.
  */
-export const BOX_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
-  ne: { red: "upright", blue: "downleft" },
-  se: { red: "upleft", blue: "downright" },
-  sw: { red: "upright", blue: "downleft" },
-  nw: { red: "upleft", blue: "downright" },
-  n: { red: "upright", blue: "downleft" },
-  e: { red: "upright", blue: "downleft" },
-  s: { red: "upright", blue: "downleft" },
-  w: { red: "upright", blue: "downleft" },
-  c: { red: "up", blue: "down" },
+export const BOX_NON_RADIAL_MAP: Record<GridLocation, HandMap> = {
+  ne: { right: "upright", left: "downleft" },
+  se: { right: "upleft", left: "downright" },
+  sw: { right: "upright", left: "downleft" },
+  nw: { right: "upleft", left: "downright" },
+  n: { right: "upright", left: "downleft" },
+  e: { right: "upright", left: "downleft" },
+  s: { right: "upright", left: "downleft" },
+  w: { right: "upright", left: "downleft" },
+  c: { right: "up", left: "down" },
 };
 
 
@@ -119,28 +119,28 @@ export const SHIFT_NON_RADIAL_MAP: Record<GridLocation, Partial<Record<GridLocat
  * different from generic shift maps.
  * Ported from app's DirectionMaps.ts LETTER_I_RADIAL_MAP / LETTER_I_NON_RADIAL_MAP.
  */
-export const LETTER_I_RADIAL_MAP: Record<GridLocation, ColorMap> = {
-  n: { red: "right", blue: "left" },
-  e: { red: "down", blue: "up" },
-  s: { red: "left", blue: "right" },
-  w: { red: "down", blue: "up" },
-  ne: { red: "downright", blue: "upleft" },
-  se: { red: "upright", blue: "downleft" },
-  sw: { red: "downright", blue: "upleft" },
-  nw: { red: "upright", blue: "downleft" },
-  c: { red: "up", blue: "down" },
+export const LETTER_I_RADIAL_MAP: Record<GridLocation, HandMap> = {
+  n: { right: "right", left: "left" },
+  e: { right: "down", left: "up" },
+  s: { right: "left", left: "right" },
+  w: { right: "down", left: "up" },
+  ne: { right: "downright", left: "upleft" },
+  se: { right: "upright", left: "downleft" },
+  sw: { right: "downright", left: "upleft" },
+  nw: { right: "upright", left: "downleft" },
+  c: { right: "up", left: "down" },
 };
 
-export const LETTER_I_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
-  n: { red: "up", blue: "down" },
-  e: { red: "right", blue: "left" },
-  s: { red: "down", blue: "up" },
-  w: { red: "right", blue: "left" },
-  ne: { red: "upright", blue: "downleft" },
-  se: { red: "downright", blue: "upleft" },
-  sw: { red: "upright", blue: "downleft" },
-  nw: { red: "downright", blue: "upleft" },
-  c: { red: "up", blue: "down" },
+export const LETTER_I_NON_RADIAL_MAP: Record<GridLocation, HandMap> = {
+  n: { right: "up", left: "down" },
+  e: { right: "right", left: "left" },
+  s: { right: "down", left: "up" },
+  w: { right: "right", left: "left" },
+  ne: { right: "upright", left: "downleft" },
+  se: { right: "downright", left: "upleft" },
+  sw: { right: "upright", left: "downleft" },
+  nw: { right: "downright", left: "upleft" },
+  c: { right: "up", left: "down" },
 };
 
 

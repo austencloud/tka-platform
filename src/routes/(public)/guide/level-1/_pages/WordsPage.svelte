@@ -22,7 +22,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -72,7 +72,7 @@
   // pro (steps 1-2) preserves, anti (step 3) flips into step 4, which flips back.
   const oriAt = (o0: Orientation, i: number): Orientation => (i === 3 ? flip(o0) : o0);
 
-  const hand = (color: MotionColor, leg: Leg, so: Orientation) => {
+  const hand = (color: HandSide, leg: Leg, so: Orientation) => {
     const dir = hpDir(leg.from, leg.to);
     return createMotionData({
       motionType: leg.anti ? MotionType.ANTI : MotionType.PRO,
@@ -87,7 +87,7 @@
       gridMode: GridMode.DIAMOND,
     });
   };
-  const stat = (color: MotionColor, loc: GridLocation, ori: Orientation) =>
+  const stat = (color: HandSide, loc: GridLocation, ori: Orientation) =>
     createMotionData({
       motionType: MotionType.STATIC,
       startLocation: loc,
@@ -99,11 +99,11 @@
       gridMode: GridMode.DIAMOND,
     });
 
-  type RowDef = { key: string; y: number; blueOri: Orientation; redOri: Orientation; label: string };
+  type RowDef = { key: string; y: number; leftOri: Orientation; rightOri: Orientation; label: string };
   const ROWS: RowDef[] = [
-    { key: "w-aabb-ii", y: 228.0, blueOri: IN, redOri: IN, label: "in | in" },
-    { key: "w-aabb-oo", y: 327.9, blueOri: OUT, redOri: OUT, label: "out | out" },
-    { key: "w-aabb-io", y: 427.9, blueOri: IN, redOri: OUT, label: "in | out" },
+    { key: "w-aabb-ii", y: 228.0, leftOri: IN, rightOri: IN, label: "in | in" },
+    { key: "w-aabb-oo", y: 327.9, leftOri: OUT, rightOri: OUT, label: "out | out" },
+    { key: "w-aabb-io", y: 427.9, leftOri: IN, rightOri: OUT, label: "in | out" },
   ];
 
   const rowStep = (r: RowDef, i: number): StepData =>
@@ -115,8 +115,8 @@
       endPosition: getGridPositionFromLocations(BLUE_LEGS[i]!.to, RED_LEGS[i]!.to),
       stepNumber: i + 1,
       motions: {
-        blue: hand(MotionColor.BLUE, BLUE_LEGS[i]!, oriAt(r.blueOri, i)),
-        red: hand(MotionColor.RED, RED_LEGS[i]!, oriAt(r.redOri, i)),
+        left: hand(HandSide.LEFT, BLUE_LEGS[i]!, oriAt(r.leftOri, i)),
+        right: hand(HandSide.RIGHT, RED_LEGS[i]!, oriAt(r.rightOri, i)),
       },
     }) as unknown as StepData;
 
@@ -129,8 +129,8 @@
       startPosition: getGridPositionFromLocations(SO_, N),
       endPosition: getGridPositionFromLocations(SO_, N),
       motions: {
-        blue: stat(MotionColor.BLUE, SO_, r.blueOri),
-        red: stat(MotionColor.RED, N, r.redOri),
+        left: stat(HandSide.LEFT, SO_, r.leftOri),
+        right: stat(HandSide.RIGHT, N, r.rightOri),
       },
     }) as unknown as StepData;
 
@@ -272,8 +272,8 @@
           <PictographContainer
             pictographData={RESOLVED[r.key]![i + 1]}
             gridMode={GridMode.DIAMOND}
-            bluePropTypeOverride={PropType.STAFF}
-            redPropTypeOverride={PropType.STAFF}
+            leftPropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
             stepNumberOverride={true}
             {...PICTO_FLAGS}
           />

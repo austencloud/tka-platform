@@ -40,9 +40,9 @@
     };
   const AXIS_OPTIONS = [
     {
-      value: "blue" as const,
-      label: "Blue rows",
-      shortLabel: "Blue",
+      value: "left" as const,
+      label: "Left-hand rows",
+      shortLabel: "Left",
       tone: "blue" as const,
     },
     {
@@ -52,9 +52,9 @@
       tone: "both" as const,
     },
     {
-      value: "red" as const,
-      label: "Red columns",
-      shortLabel: "Red",
+      value: "right" as const,
+      label: "Right-hand columns",
+      shortLabel: "Right",
       tone: "red" as const,
     },
   ];
@@ -66,7 +66,8 @@
     appState.labelMode === "ratios" ? "VTG ratio" : "TKA turn"
   );
   const turnOptions = $derived([
-    ...(appState.activeAxis === "both" && appState.blueTurn !== appState.redTurn
+    ...(appState.activeAxis === "both" &&
+    appState.leftTurn !== appState.rightTurn
       ? [
           {
             value: "mixed",
@@ -96,12 +97,17 @@
         value: key,
         label: turnLabel,
         shortLabel: visible,
-        tone: appState.activeAxis,
+        tone:
+          appState.activeAxis === "left"
+            ? "blue"
+            : appState.activeAxis === "right"
+              ? "red"
+              : "both",
       };
     }),
   ]);
   const selectedTurnKey = $derived(
-    appState.activeAxis === "both" && appState.blueTurn !== appState.redTurn
+    appState.activeAxis === "both" && appState.leftTurn !== appState.rightTurn
       ? "mixed"
       : turnValueToKey(appState.activeTurn)
   );

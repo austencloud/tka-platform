@@ -10,7 +10,7 @@ function periods(
 ): Map<string, number> {
   const spec = loopSpecFromLegacyRhythm(loopType, rotationPeriod);
   return new Map(
-    [...(spec.blue?.components ?? [])].map(([component, componentSpec]) => [
+    [...(spec.left?.components ?? [])].map(([component, componentSpec]) => [
       component,
       componentSpec.period,
     ])

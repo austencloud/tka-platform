@@ -16,10 +16,10 @@ import {
 } from "$lib/shared/mandala/domain/mandala-constants";
 
 const DARK_PALETTE: MandalaPalette = {
-  blueStroke: DARK_MOTION_BLUE_STROKE,
-  blueFill: DARK_MOTION_BLUE_FILL,
-  redStroke: DARK_MOTION_RED_STROKE,
-  redFill: DARK_MOTION_RED_FILL,
+  leftStroke: DARK_MOTION_BLUE_STROKE,
+  leftFill: DARK_MOTION_BLUE_FILL,
+  rightStroke: DARK_MOTION_RED_STROKE,
+  rightFill: DARK_MOTION_RED_FILL,
   purpleStroke: DARK_MOTION_PURPLE_STROKE,
   purpleFill: DARK_MOTION_PURPLE_FILL,
 };
@@ -37,7 +37,7 @@ function pathOptionsFor(shape: MandalaPathShape): MandalaPathOptions {
  */
 export function buildMandalaOverlayDraw(
   sequence: SequenceData,
-  opts: { show: "blue" | "red"; pathShape: MandalaPathShape; opacity?: number; scale?: number },
+  opts: { show: "left" | "right"; pathShape: MandalaPathShape; opacity?: number; scale?: number },
 ): (ctx: CanvasRenderingContext2D, sizePx: number) => void {
   const { show, pathShape, opacity = 0.55, scale = 1 } = opts;
   const clubTipDx = getTipPoints("club").points[0]?.dx ?? 130;

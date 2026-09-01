@@ -1841,8 +1841,8 @@
 >
   <Avatar3D
     id="museum-player"
-    bluePropState={null}
-    redPropState={null}
+    leftPropState={null}
+    rightPropState={null}
     position={{
       x: playerPosition.x,
       y: playerPosition.y - 0.85 + 0.001,

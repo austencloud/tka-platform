@@ -11,7 +11,7 @@ const state = vi.hoisted(() => ({
 vi.mock("./context/deck-releaser-context", () => ({
   getDeckReleaserContext: () => ({
     state: {
-      get bluePropType() {
+      get leftPropType() {
         return state.selectedPropType;
       },
       get selectedPropType() {

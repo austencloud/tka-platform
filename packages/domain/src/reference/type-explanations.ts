@@ -6,8 +6,8 @@ export interface TypeDefinition {
   name: string;
   description: string;
   motionPattern: {
-    blue: string;
-    red: string;
+    left: string;
+    right: string;
   };
   letterCount: number;
   letters: string;
@@ -29,7 +29,7 @@ export const TYPE_DEFINITIONS: Record<number, TypeDefinition> = {
     type: 1,
     name: "Dual-Shift",
     description: "Both hands shift (move to adjacent grid points).",
-    motionPattern: { blue: "shift", red: "shift" },
+    motionPattern: { left: "shift", right: "shift" },
     letterCount: 22,
     letters: "A through V",
     keyFact: "The largest type. Both hands shift - this is what defines it, not just that both move.",
@@ -52,7 +52,7 @@ export const TYPE_DEFINITIONS: Record<number, TypeDefinition> = {
     type: 2,
     name: "Shift",
     description: "One hand shifts while the other remains static.",
-    motionPattern: { blue: "static OR shift", red: "shift OR static" },
+    motionPattern: { left: "static OR shift", right: "shift OR static" },
     letterCount: 8,
     letters: "W, X, Y, Z, Σ, Δ, Θ, Ω",
     keyFact: "4 Latin letters (W, X, Y, Z) and 4 Greek letters (Σ, Δ, Θ, Ω) - an even split.",
@@ -61,7 +61,7 @@ export const TYPE_DEFINITIONS: Record<number, TypeDefinition> = {
     type: 3,
     name: "Cross-Shift",
     description: "One hand shifts while the other dashes. Both hands move, but with different motion types.",
-    motionPattern: { blue: "shift OR dash", red: "dash OR shift" },
+    motionPattern: { left: "shift OR dash", right: "dash OR shift" },
     letterCount: 8,
     letters: "W-, X-, Y-, Z-, Σ-, Δ-, Θ-, Ω-",
     keyFact: "Named with '-' suffix (e.g., 'Sigma dash' = Σ-). Both hands move, but one shifts and one dashes.",
@@ -70,7 +70,7 @@ export const TYPE_DEFINITIONS: Record<number, TypeDefinition> = {
     type: 4,
     name: "Dash",
     description: "One hand dashes while the other remains static.",
-    motionPattern: { blue: "static OR dash", red: "dash OR static" },
+    motionPattern: { left: "static OR dash", right: "dash OR static" },
     letterCount: 3,
     letters: "Φ, Ψ, Λ",
     registeredExtensions: "τ- (Tau-Dash, Level 6; no dataframe variations yet)",
@@ -80,7 +80,7 @@ export const TYPE_DEFINITIONS: Record<number, TypeDefinition> = {
     type: 5,
     name: "Dual-Dash",
     description: "Both hands dash (move to opposite grid points).",
-    motionPattern: { blue: "dash", red: "dash" },
+    motionPattern: { left: "dash", right: "dash" },
     letterCount: 3,
     letters: "Φ-, Ψ-, Λ-",
     keyFact: "Both hands move to opposite points. Named with '-' suffix like Type 3.",
@@ -89,7 +89,7 @@ export const TYPE_DEFINITIONS: Record<number, TypeDefinition> = {
     type: 6,
     name: "Static",
     description: "Both hands remain stationary. Only prop rotation changes.",
-    motionPattern: { blue: "static", red: "static" },
+    motionPattern: { left: "static", right: "static" },
     letterCount: 3,
     letters: "α, β, γ",
     keyFact: "No hand movement at all - only the props rotate. Uses lowercase Greek letters.",
@@ -123,13 +123,13 @@ export function getTypeComparison(type1: number, type2: number): string {
   const t2 = TYPE_DEFINITIONS[type2];
   if (!t1 || !t2) return `Invalid type number. Types range from 1-6.`;
   const [first, second] = type1 < type2 ? [t1, t2] : [t2, t1];
-  return `## Type ${first.type} (${first.name}) vs Type ${second.type} (${second.name})\n\n**Type ${first.type} - ${first.name}:**\n- ${first.description}\n- Blue hand: ${first.motionPattern.blue}\n- Red hand: ${first.motionPattern.red}\n- ${first.letterCount} Level 1/dataframe letters: ${first.letters}${first.registeredExtensions ? `\n- Registered extensions: ${first.registeredExtensions}` : ""}\n\n**Type ${second.type} - ${second.name}:**\n- ${second.description}\n- Blue hand: ${second.motionPattern.blue}\n- Red hand: ${second.motionPattern.red}\n- ${second.letterCount} Level 1/dataframe letters: ${second.letters}${second.registeredExtensions ? `\n- Registered extensions: ${second.registeredExtensions}` : ""}\n\n**Key difference:** ${getKeyDifference(first.type, second.type)}`;
+  return `## Type ${first.type} (${first.name}) vs Type ${second.type} (${second.name})\n\n**Type ${first.type} - ${first.name}:**\n- ${first.description}\n- Left hand: ${first.motionPattern.left}\n- Right hand: ${first.motionPattern.right}\n- ${first.letterCount} Level 1/dataframe letters: ${first.letters}${first.registeredExtensions ? `\n- Registered extensions: ${first.registeredExtensions}` : ""}\n\n**Type ${second.type} - ${second.name}:**\n- ${second.description}\n- Left hand: ${second.motionPattern.left}\n- Right hand: ${second.motionPattern.right}\n- ${second.letterCount} Level 1/dataframe letters: ${second.letters}${second.registeredExtensions ? `\n- Registered extensions: ${second.registeredExtensions}` : ""}\n\n**Key difference:** ${getKeyDifference(first.type, second.type)}`;
 }
 
 export function getTypeExplanation(type: number): string {
   const t = TYPE_DEFINITIONS[type];
   if (!t) return `Invalid type number ${type}. Types range from 1-6.`;
-  let explanation = `## Type ${t.type}: ${t.name}\n\n**Definition:** ${t.description}\n\n**Motion pattern:** ${t.motionPattern.blue === t.motionPattern.red ? `Both hands ${t.motionPattern.blue}` : `Blue: ${t.motionPattern.blue}, Red: ${t.motionPattern.red}`}\n\n**Level 1/dataframe letters (${t.letterCount}):** ${t.letters}${t.registeredExtensions ? `\n\n**Registered extensions:** ${t.registeredExtensions}` : ""}\n\n**Key fact:** ${t.keyFact}`;
+  let explanation = `## Type ${t.type}: ${t.name}\n\n**Definition:** ${t.description}\n\n**Motion pattern:** ${t.motionPattern.left === t.motionPattern.right ? `Both hands ${t.motionPattern.left}` : `Left: ${t.motionPattern.left}, Right: ${t.motionPattern.right}`}\n\n**Level 1/dataframe letters (${t.letterCount}):** ${t.letters}${t.registeredExtensions ? `\n\n**Registered extensions:** ${t.registeredExtensions}` : ""}\n\n**Key fact:** ${t.keyFact}`;
   if (t.rotationPattern) {
     explanation += `\n\n**Organization:** ${t.rotationPattern.description}\n`;
     for (const group of t.rotationPattern.groups) {

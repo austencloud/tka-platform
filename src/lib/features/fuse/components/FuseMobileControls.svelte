@@ -21,15 +21,15 @@
       fuseState.pendingSide !== null ||
       fuseState.isFusing
   );
-  const blueDisabled = $derived(
+  const leftDisabled = $derived(
     sourceControlsDisabled ||
-      !fuseState.blue.sequence ||
-      (fuseState.mode === "symmetry" && fuseState.driverSide !== "blue")
+      !fuseState.left.sequence ||
+      (fuseState.mode === "symmetry" && fuseState.driverSide !== "left")
   );
-  const redDisabled = $derived(
+  const rightDisabled = $derived(
     sourceControlsDisabled ||
-      !fuseState.red.sequence ||
-      (fuseState.mode === "symmetry" && fuseState.driverSide !== "red")
+      !fuseState.right.sequence ||
+      (fuseState.mode === "symmetry" && fuseState.driverSide !== "right")
   );
 </script>
 
@@ -44,17 +44,17 @@
       <PanelButton
         variant="secondary"
         fullWidth={true}
-        disabled={blueDisabled}
-        ariaLabel="Generate another Blue LOOP"
-        onclick={() => void fuseState.shuffle("blue")}
+        disabled={leftDisabled}
+        ariaLabel="Generate another left-hand LOOP"
+        onclick={() => void fuseState.shuffle("left")}
       >
         <i
-          class="fas {fuseState.pendingSide === 'blue'
+          class="fas {fuseState.pendingSide === 'left'
             ? 'fa-spinner fa-spin'
             : 'fa-wand-magic-sparkles'}"
           aria-hidden="true"
         ></i>
-        <span class="shuffle-verb">New</span> Blue
+        <span class="shuffle-verb">New</span> Left
       </PanelButton>
     </div>
 
@@ -75,17 +75,17 @@
       <PanelButton
         variant="secondary"
         fullWidth={true}
-        disabled={redDisabled}
-        ariaLabel="Generate another Red LOOP"
-        onclick={() => void fuseState.shuffle("red")}
+        disabled={rightDisabled}
+        ariaLabel="Generate another right-hand LOOP"
+        onclick={() => void fuseState.shuffle("right")}
       >
         <i
-          class="fas {fuseState.pendingSide === 'red'
+          class="fas {fuseState.pendingSide === 'right'
             ? 'fa-spinner fa-spin'
             : 'fa-wand-magic-sparkles'}"
           aria-hidden="true"
         ></i>
-        <span class="shuffle-verb">New</span> Red
+        <span class="shuffle-verb">New</span> Right
       </PanelButton>
     </div>
   </div>

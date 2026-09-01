@@ -10,8 +10,8 @@ export interface ScanActivityEventRecord {
   lng: number | null;
   deviceId: string | null;
   userId: string | null;
-  bluePropType: PropType | null;
-  redPropType: PropType | null;
+  leftPropType: PropType | null;
+  rightPropType: PropType | null;
   catDogMode: boolean | null;
 }
 

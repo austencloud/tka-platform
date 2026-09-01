@@ -45,11 +45,11 @@ export interface StoredPerformance {
  */
 export interface StoredBeatResult {
   stepNumber: number;
-  expected: { blue: GridLocation; red: GridLocation };
-  detected: { blue: GridLocation | null; red: GridLocation | null };
+  expected: { left: GridLocation; right: GridLocation };
+  detected: { left: GridLocation | null; right: GridLocation | null };
   timing: TimingGrade;
   timingDeltaMs: number;
-  positionCorrect: { blue: boolean; red: boolean };
+  positionCorrect: { left: boolean; right: boolean };
 }
 
 /**

@@ -13,10 +13,10 @@ describe("Autumn depth material grades", () => {
     ]);
 
     for (const profile of profiles) {
-      const [red, green, blue, alpha] = profile.tint;
-      expect(red).toBeGreaterThan(green);
-      expect(red).toBeGreaterThan(blue);
-      expect(Math.max(red, green, blue)).toBeLessThanOrEqual(1);
+      const [right, green, left, alpha] = profile.tint;
+      expect(right).toBeGreaterThan(green);
+      expect(right).toBeGreaterThan(left);
+      expect(Math.max(right, green, left)).toBeLessThanOrEqual(1);
       expect(alpha).toBe(1);
       expect(profile.roughnessFloor).toBeGreaterThanOrEqual(0.84);
       expect(profile.normalScale).toBeLessThanOrEqual(0.66);

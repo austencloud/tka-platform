@@ -16,6 +16,7 @@ import {
 import {
   MODULE_DEFINITIONS,
   normalizeModuleId,
+  normalizeSectionId,
 } from "../config/module-definitions";
 
 import {
@@ -121,7 +122,13 @@ export function createNavigationState() {
       const raw = localStorage.getItem(MODULE_LAST_TABS_KEY);
       if (!raw) return null;
       const map: Record<string, string> = JSON.parse(raw);
-      return map[moduleId] || null;
+      const savedTab = map[moduleId] || null;
+      const normalizedTab = normalizeSectionId(moduleId, savedTab);
+      if (normalizedTab && normalizedTab !== savedTab) {
+        map[moduleId] = normalizedTab;
+        localStorage.setItem(MODULE_LAST_TABS_KEY, JSON.stringify(map));
+      }
+      return normalizedTab ?? null;
     } catch {
       return null;
     }
@@ -194,6 +201,9 @@ export function createNavigationState() {
           searchParams.get("section")?.toLowerCase();
 
         const normalizedModule = normalizeModuleId(rawUrlModule);
+        if (normalizedModule) {
+          urlTab = normalizeSectionId(normalizedModule, urlTab);
+        }
 
         // Moderation folded into Admin as a tab (2026-06-30): a bare /moderation
         // deep link normalizes to the Admin module — open its Moderation tab.
@@ -301,13 +311,16 @@ export function createNavigationState() {
       const moduleDefinition = MODULE_DEFINITIONS.find(
         (m) => m.id === moduleId
       );
+      const normalizedTargetTab = normalizeSectionId(moduleId, targetTab);
       let nextTab = "";
       if (moduleDefinition && moduleDefinition.sections.length > 0) {
         if (
-          targetTab &&
-          moduleDefinition.sections.some((tab) => tab.id === targetTab)
+          normalizedTargetTab &&
+          moduleDefinition.sections.some(
+            (tab) => tab.id === normalizedTargetTab
+          )
         ) {
-          nextTab = targetTab;
+          nextTab = normalizedTargetTab;
         } else {
           const savedTab = loadModuleTab(moduleId);
           if (
@@ -361,6 +374,9 @@ export function createNavigationState() {
   }
 
   function setActiveTab(tabId: string) {
+    const normalizedTabId = normalizeSectionId(currentModule, tabId);
+    if (!normalizedTabId) return;
+
     const debug =
       typeof window !== "undefined" &&
       (window as unknown as Record<string, unknown>).__DEBUG_NAV__;
@@ -369,12 +385,13 @@ export function createNavigationState() {
       (m) => m.id === currentModule
     );
     const tabExists = moduleDefinition?.sections.some(
-      (tab) => tab.id === tabId
+      (tab) => tab.id === normalizedTabId
     );
 
     if (debug) {
       console.log("[NavState] setActiveTab called:", {
         tabId,
+        normalizedTabId,
         currentModule,
         moduleFound: !!moduleDefinition,
         tabExists,
@@ -389,14 +406,14 @@ export function createNavigationState() {
 
     const previousTab = activeTab;
 
-    activeTab = tabId;
+    activeTab = normalizedTabId;
 
-    if (previousTab === tabId) {
+    if (previousTab === normalizedTabId) {
       return;
     }
 
     try {
-      const moduleWithTab = `${currentModule}:${tabId}`;
+      const moduleWithTab = `${currentModule}:${normalizedTabId}`;
       const previousModuleWithTab = `${currentModule}:${previousTab}`;
       void logModuleView(moduleWithTab, previousModuleWithTab);
     } catch {
@@ -406,7 +423,10 @@ export function createNavigationState() {
     try {
       import("../../presence/get-presence-tracker")
         .then(({ getPresenceTracker }) => {
-          void getPresenceTracker().updateLocation(currentModule, tabId);
+          void getPresenceTracker().updateLocation(
+            currentModule,
+            normalizedTabId
+          );
         })
         .catch(() => {
           /* presence is non-critical */
@@ -416,19 +436,19 @@ export function createNavigationState() {
     }
 
     if (typeof localStorage !== "undefined") {
-      localStorage.setItem(ACTIVE_TAB_KEY, tabId);
-      saveModuleTab(currentModule, tabId);
+      localStorage.setItem(ACTIVE_TAB_KEY, normalizedTabId);
+      saveModuleTab(currentModule, normalizedTabId);
     }
 
     const module = getCurrentModule();
     if (module === "create") {
-      setCreateMode(tabId);
+      setCreateMode(normalizedTabId);
     } else if (module === "learn") {
-      setLearnMode(tabId);
+      setLearnMode(normalizedTabId);
     }
 
     if (import.meta.env.DEV && hasMimeErrorOccurred()) {
-      void verifyTabSwitch(tabId, 200);
+      void verifyTabSwitch(normalizedTabId, 200);
     }
   }
 

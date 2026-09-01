@@ -93,8 +93,8 @@ export interface GenerationOptions {
    * Absent ⇒ the engine keeps the randomly-selected start variation's orientation
    * (default "in"). Threaded straight through to the engine's BuildOptions.
    */
-  blueStartOrientation?: string;
-  redStartOrientation?: string;
+  leftStartOrientation?: string;
+  rightStartOrientation?: string;
 }
 
 export interface LetterDerivationResult {
@@ -187,8 +187,8 @@ export enum GenerationMode {
  * Used during continuous prop generation to determine rotation behavior
  */
 export interface RotationDirections {
-  blueRotationDirection: string;
-  redRotationDirection: string;
+  leftRotationDirection: string;
+  rightRotationDirection: string;
 }
 
 // Re-exporting TurnAllocation for backwards compatibility

@@ -68,12 +68,12 @@
 
   const { state: fuseState } = getFuseContext();
   const settings = getSettings();
-  const source = $derived(side === "blue" ? fuseState.blue : fuseState.red);
-  const label = $derived(side === "blue" ? "Blue" : "Red");
+  const source = $derived(side === "left" ? fuseState.left : fuseState.right);
+  const label = $derived(side === "left" ? "Left" : "Right");
   const viewMode = $derived<BrowseViewMode>({
     subject: "props",
     granularity: "solo",
-    color: side,
+    hand: side,
   });
   // The notation stage's live size. ChoreoCard's autoFit reads a landscape
   // stage as "one long row" — 8 tiny cells with dead space above and below.
@@ -107,7 +107,7 @@
     if (!isSymmetryFollower) return source.sequence;
 
     const preview = fuseState.symmetryPreview;
-    const solo = side === "blue" ? preview?.blueSoloProp : preview?.redSoloProp;
+    const solo = side === "left" ? preview?.leftSoloProp : preview?.rightSoloProp;
     if (!solo) return null;
 
     return createCircularFuseSoloSequence(side, solo);
@@ -116,7 +116,7 @@
     fuseRuleLabel(fuseState.previewRule)
   );
   const driverLabel = $derived(
-    fuseState.previewDriverSide === "blue" ? "Blue" : "Red"
+    fuseState.previewDriverSide === "left" ? "Left" : "Right"
   );
   const followerGlyph = $derived(fuseRuleGlyph(fuseState.previewRule));
   const followerTransformTint = $derived(fuseRuleTint(fuseState.previewRule));
@@ -255,7 +255,7 @@
     sequence: SequenceData | null = source.sequence
   ): Promise<void> {
     if (isSavingLoop || !sequence) return;
-    const solo = side === "blue" ? sequence.blueSoloProp : sequence.redSoloProp;
+    const solo = side === "left" ? sequence.leftSoloProp : sequence.rightSoloProp;
     if (!solo) {
       showToast("This path is not ready to save yet", "info");
       return;
@@ -267,7 +267,7 @@
       const result = await getSoloPropSaveOrchestrator().save(solo, {
         name: `${label} ${solo.length}-step LOOP`,
         notes: "Created in Fuse",
-        authoredHand: side === "blue" ? "left" : "right",
+        authoredHand: side,
         ownerId: authState.effectiveUserId ?? undefined,
         ownerDisplayName: authState.user?.displayName ?? undefined,
       });
@@ -408,8 +408,8 @@
           showHandPoints={true}
           visibleHand={side}
           darkMode={true}
-          bluePropTypeOverride={settings.bluePropType}
-          redPropTypeOverride={settings.redPropType}
+          leftPropTypeOverride={settings.leftPropType}
+          rightPropTypeOverride={settings.rightPropType}
           stepNumberOverride={false}
           cellIndex={0}
           transitionKey={`fuse-${side}-compact`}
@@ -428,8 +428,8 @@
           includeStart={full}
           showMandala={full}
           highlightedStepIndex={highlightIndex}
-          bluePropType={settings.bluePropType}
-          redPropType={settings.redPropType}
+          leftPropType={settings.leftPropType}
+          rightPropType={settings.rightPropType}
           onStepClick={firstStepPickerActive
             ? (stepIndex) => void chooseInlineFirstStep(stepIndex)
             : undefined}
@@ -488,7 +488,7 @@
           disabled={sourceControlsDisabled}
           ariaLabel="{label} path options"
           placement="bottom"
-          align={side === "blue" ? "left" : "right"}
+          align={side}
         />
       </div>
     {/if}
@@ -633,8 +633,8 @@
         showNotes={false}
         showLoopGlyph={false}
         darkMode={true}
-        bluePropType={settings.bluePropType}
-        redPropType={settings.redPropType}
+        leftPropType={settings.leftPropType}
+        rightPropType={settings.rightPropType}
         hideSoloHeader={true}
         fitWidth={true}
       />
@@ -665,8 +665,8 @@
     sequence={inspectedSequence}
     presentation="live"
     browseViewMode={viewMode}
-    bluePropType={settings.bluePropType}
-    redPropType={settings.redPropType}
+    leftPropType={settings.leftPropType}
+    rightPropType={settings.rightPropType}
     onClose={() => (inspectedSequence = null)}
   />
 {/if}
@@ -694,13 +694,13 @@
       var(--theme-card-bg, rgba(255, 255, 255, 0.045));
   }
 
-  .blue-source {
-    grid-area: blue;
+  .left-source {
+    grid-area: left;
   }
 
-  .red-source {
+  .right-source {
     --source-color: var(--prop-red, #f44336);
-    grid-area: red;
+    grid-area: right;
   }
 
   .source-card.loading {

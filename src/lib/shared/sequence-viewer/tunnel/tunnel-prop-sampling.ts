@@ -3,10 +3,13 @@ import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";
 import { stepToIndexProgress } from "./tunnel-fold-math";
 
-const DEFAULT_PROP_STATE: PropState = { centerPathAngle: 0, staffRotationAngle: 0 };
+const DEFAULT_PROP_STATE: PropState = {
+  centerPathAngle: 0,
+  staffRotationAngle: 0,
+};
 
 /**
- * Sample one sequence's blue+red prop states at the shared tunnel playhead.
+ * Sample one sequence's left+right prop states at the shared tunnel playhead.
  * `currentStep` is 1-indexed fractional (the start position is < 1). `ease`
  * optionally reshapes the within-step progress — the live controller passes the
  * global Effort easing so every kaleidoscope copy honors the sidebar's Effort
@@ -25,12 +28,15 @@ export function sampleTunnelProps(
   currentStep: number,
   ease?: (progress: number) => number,
   offset = 0,
-  speed = 1,
-): { blue: PropState; red: PropState } {
+  speed = 1
+): { left: PropState; right: PropState } {
   const steps = seq.steps ?? [];
   const length = steps.length;
   if (length === 0) {
-    return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE } };
+    return {
+      left: { ...DEFAULT_PROP_STATE },
+      right: { ...DEFAULT_PROP_STATE },
+    };
   }
   let effStep = currentStep;
   if (speed !== 1 || offset !== 0) {
@@ -48,11 +54,19 @@ export function sampleTunnelProps(
   }
   const { idx, progress } = stepToIndexProgress(effStep, length);
   const step = steps[idx];
-  if (!step) return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE } };
+  if (!step)
+    return {
+      left: { ...DEFAULT_PROP_STATE },
+      right: { ...DEFAULT_PROP_STATE },
+    };
   const eased = ease ? ease(progress) : progress;
   const r = interpolatePropAngles(step, eased);
   return {
-    blue: r.isValid ? (r.blueAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
-    red: r.isValid ? (r.redAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
+    left: r.isValid
+      ? (r.leftAngles ?? { ...DEFAULT_PROP_STATE })
+      : { ...DEFAULT_PROP_STATE },
+    right: r.isValid
+      ? (r.rightAngles ?? { ...DEFAULT_PROP_STATE })
+      : { ...DEFAULT_PROP_STATE },
   };
 }

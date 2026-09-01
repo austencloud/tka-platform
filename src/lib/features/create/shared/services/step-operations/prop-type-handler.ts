@@ -8,7 +8,7 @@ import { createStartPositionData } from "$lib/shared/create/factories/create-sta
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { ICreateModuleState } from "../../types/create-module-types";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {
   getStepDataFromState,
@@ -34,7 +34,7 @@ export function updateStepPropType(
   }
 
   const currentMotion: MotionData | undefined =
-    stepData.motions[color as MotionColor];
+    stepData.motions[color as HandSide];
   if (!currentMotion) {
     logger.warn(`No motion data for ${color}`);
     return;
@@ -83,7 +83,7 @@ export function bulkUpdatePropType(
   // Update start position
   const startPosition = createModuleState.sequenceState.selectedStartPosition;
   if (startPosition?.motions) {
-    const currentMotion = startPosition.motions[color as MotionColor];
+    const currentMotion = startPosition.motions[color as HandSide];
     if (currentMotion) {
       const updatedMotion = {
         ...currentMotion,
@@ -107,7 +107,7 @@ export function bulkUpdatePropType(
     const updatedSteps = sequence.steps.map((beat: StepData) => {
       if (!beat.motions) return beat;
 
-      const currentMotion = beat.motions[color as MotionColor];
+      const currentMotion = beat.motions[color as HandSide];
       if (!currentMotion) return beat;
 
       const updatedMotion = {

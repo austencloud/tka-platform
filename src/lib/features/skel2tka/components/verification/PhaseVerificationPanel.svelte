@@ -28,17 +28,17 @@
   let corrections = $state<UserCorrection[]>([]);
 
   // Track corrected positions for the current beat
-  let correctedBlue = $state<GridLocation | null>(null);
-  let correctedRed = $state<GridLocation | null>(null);
+  let correctedLeft = $state<GridLocation | null>(null);
+  let correctedRight = $state<GridLocation | null>(null);
 
   const currentStep = $derived(beats[correctingBeatIndex] ?? null);
 
-  const detectedBlue = $derived<GridLocation | null>(
-    currentStep?.positions.find((p) => p.hand === "blue")?.location ?? null
+  const detectedLeft = $derived<GridLocation | null>(
+    currentStep?.positions.find((p) => p.hand === "left")?.location ?? null
   );
 
-  const detectedRed = $derived<GridLocation | null>(
-    currentStep?.positions.find((p) => p.hand === "red")?.location ?? null
+  const detectedRight = $derived<GridLocation | null>(
+    currentStep?.positions.find((p) => p.hand === "right")?.location ?? null
   );
 
   function handleAccept() {
@@ -53,31 +53,31 @@
     mode = "correcting";
     correctingBeatIndex = stepNumber;
     // Initialize with detected values
-    correctedBlue = detectedBlue;
-    correctedRed = detectedRed;
+    correctedLeft = detectedLeft;
+    correctedRight = detectedRight;
   }
 
   function saveCorrection() {
     if (!currentStep) return;
 
     // Only add corrections where the value actually changed
-    if (correctedBlue && correctedBlue !== detectedBlue) {
+    if (correctedLeft && correctedLeft !== detectedLeft) {
       corrections.push({
         stepNumber: correctingBeatIndex,
         field: "hand_position",
-        hand: "blue",
-        detectedValue: detectedBlue ?? "none",
-        correctedValue: correctedBlue,
+        hand: "left",
+        detectedValue: detectedLeft ?? "none",
+        correctedValue: correctedLeft,
       });
     }
 
-    if (correctedRed && correctedRed !== detectedRed) {
+    if (correctedRight && correctedRight !== detectedRight) {
       corrections.push({
         stepNumber: correctingBeatIndex,
         field: "hand_position",
-        hand: "red",
-        detectedValue: detectedRed ?? "none",
-        correctedValue: correctedRed,
+        hand: "right",
+        detectedValue: detectedRight ?? "none",
+        correctedValue: correctedRight,
       });
     }
 
@@ -145,24 +145,24 @@
         <div class="picker-group">
           <span class="picker-label" style="color: var(--semantic-info);">{t('skel2tka_blue_hand')}</span>
           <span class="detected-value">
-            {t('skel2tka_detected_value', { value: detectedBlue?.toUpperCase() ?? t('skel2tka_none') })}
+            {t('skel2tka_detected_value', { value: detectedLeft?.toUpperCase() ?? t('skel2tka_none') })}
           </span>
           <GridPositionPicker
-            selected={correctedBlue}
-            hand="blue"
-            onSelect={(loc) => (correctedBlue = loc)}
+            selected={correctedLeft}
+            hand="left"
+            onSelect={(loc) => (correctedLeft = loc)}
           />
         </div>
 
         <div class="picker-group">
           <span class="picker-label" style="color: var(--semantic-error);">{t('skel2tka_red_hand')}</span>
           <span class="detected-value">
-            {t('skel2tka_detected_value', { value: detectedRed?.toUpperCase() ?? t('skel2tka_none') })}
+            {t('skel2tka_detected_value', { value: detectedRight?.toUpperCase() ?? t('skel2tka_none') })}
           </span>
           <GridPositionPicker
-            selected={correctedRed}
-            hand="red"
-            onSelect={(loc) => (correctedRed = loc)}
+            selected={correctedRight}
+            hand="right"
+            onSelect={(loc) => (correctedRight = loc)}
           />
         </div>
       </div>

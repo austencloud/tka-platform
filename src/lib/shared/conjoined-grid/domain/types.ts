@@ -18,15 +18,15 @@ export type ConjoinedGridMode = "browse" | "explore";
  */
 export interface JunctionOverlap {
   readonly junction: Junction;
-  readonly blueRef: PointRef;
-  readonly redRef: PointRef;
+  readonly leftRef: PointRef;
+  readonly rightRef: PointRef;
   readonly distance: number;
 }
 
 /** Current placement of the blue and red props on the topology */
 export interface PropPlacement {
-  readonly blue: PointRef;
-  readonly red: PointRef;
+  readonly left: PointRef;
+  readonly right: PointRef;
 }
 
 // LEGACY CONSTANTS (migrated from conjoined-lab, needed for rendering)

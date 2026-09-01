@@ -65,7 +65,7 @@ describe("AnimationPlaybackController ownership (HMR remount clobber)", () => {
       initializeWithDomainData: vi.fn(() => true),
       getMetadata: vi.fn(() => ({ totalSteps: 4, word: "TEST", author: "x" })),
       getTotalDurationWithStartPosition: vi.fn(() => 4),
-      getCurrentPropStates: vi.fn(() => ({ blue: {}, red: {} })),
+      getCurrentPropStates: vi.fn(() => ({ left: {}, right: {} })),
       getActiveVisibilityManager: vi.fn(() => ({ setSpeed: vi.fn() })),
     } as unknown as SequenceAnimationOrchestrator;
   }

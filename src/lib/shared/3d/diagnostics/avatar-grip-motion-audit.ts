@@ -58,18 +58,18 @@ export interface AvatarGripMotionSample {
   speeds: GripMotionSpeeds;
   separations: GripMotionSeparations;
   propOverlapDepth: number;
-  authoredBlueGrip: Vec3 | null;
-  authoredRedGrip: Vec3 | null;
+  authoredLeftGrip: Vec3 | null;
+  authoredRightGrip: Vec3 | null;
   leftTarget: Vec3 | null;
   rightTarget: Vec3 | null;
   leftWrist: Vec3 | null;
   rightWrist: Vec3 | null;
   leftPalm: Vec3 | null;
   rightPalm: Vec3 | null;
-  renderedBlueGrip: Vec3 | null;
-  renderedRedGrip: Vec3 | null;
-  blueCorrectionLocal: Vec3 | null;
-  redCorrectionLocal: Vec3 | null;
+  renderedLeftGrip: Vec3 | null;
+  renderedRightGrip: Vec3 | null;
+  leftCorrectionLocal: Vec3 | null;
+  rightCorrectionLocal: Vec3 | null;
 }
 
 interface SpeedSummary {
@@ -264,27 +264,27 @@ export class AvatarGripMotionAudit {
         renderedGrips: null,
       },
       propOverlapDepth: overlapDepth(events),
-      authoredBlueGrip: copyPoint(diagnostics.authoredBlueGrip),
-      authoredRedGrip: copyPoint(diagnostics.authoredRedGrip),
+      authoredLeftGrip: copyPoint(diagnostics.authoredBlueGrip),
+      authoredRightGrip: copyPoint(diagnostics.authoredRedGrip),
       leftTarget: copyPoint(diagnostics.leftTarget),
       rightTarget: copyPoint(diagnostics.rightTarget),
       leftWrist: copyPoint(diagnostics.leftWrist),
       rightWrist: copyPoint(diagnostics.rightWrist),
       leftPalm: copyPoint(diagnostics.leftPalm),
       rightPalm: copyPoint(diagnostics.rightPalm),
-      renderedBlueGrip: copyPoint(diagnostics.renderedBlueGrip),
-      renderedRedGrip: copyPoint(diagnostics.renderedRedGrip),
-      blueCorrectionLocal: copyPoint(diagnostics.blueCorrectionLocal),
-      redCorrectionLocal: copyPoint(diagnostics.redCorrectionLocal),
+      renderedLeftGrip: copyPoint(diagnostics.renderedBlueGrip),
+      renderedRightGrip: copyPoint(diagnostics.renderedRedGrip),
+      leftCorrectionLocal: copyPoint(diagnostics.blueCorrectionLocal),
+      rightCorrectionLocal: copyPoint(diagnostics.redCorrectionLocal),
     };
 
     if (previous && validInterval) {
       sample.speeds = {
         authored: pairSpeed(
-          sample.authoredBlueGrip,
-          previous.authoredBlueGrip,
-          sample.authoredRedGrip,
-          previous.authoredRedGrip,
+          sample.authoredLeftGrip,
+          previous.authoredLeftGrip,
+          sample.authoredRightGrip,
+          previous.authoredRightGrip,
           deltaSeconds
         ),
         target: pairSpeed(
@@ -309,17 +309,17 @@ export class AvatarGripMotionAudit {
           deltaSeconds
         ),
         renderedGrip: pairSpeed(
-          sample.renderedBlueGrip,
-          previous.renderedBlueGrip,
-          sample.renderedRedGrip,
-          previous.renderedRedGrip,
+          sample.renderedLeftGrip,
+          previous.renderedLeftGrip,
+          sample.renderedRightGrip,
+          previous.renderedRightGrip,
           deltaSeconds
         ),
         correction: pairSpeed(
-          sample.blueCorrectionLocal,
-          previous.blueCorrectionLocal,
-          sample.redCorrectionLocal,
-          previous.redCorrectionLocal,
+          sample.leftCorrectionLocal,
+          previous.leftCorrectionLocal,
+          sample.rightCorrectionLocal,
+          previous.rightCorrectionLocal,
           deltaSeconds
         ),
       };
@@ -337,11 +337,17 @@ export class AvatarGripMotionAudit {
     if (sample.settled) sample.source = classifySource(sample.speeds);
 
     sample.separations = {
-      authoredGrips: distance(sample.authoredBlueGrip, sample.authoredRedGrip),
+      authoredGrips: distance(
+        sample.authoredLeftGrip,
+        sample.authoredRightGrip
+      ),
       targets: distance(sample.leftTarget, sample.rightTarget),
       wrists: distance(sample.leftWrist, sample.rightWrist),
       palms: distance(sample.leftPalm, sample.rightPalm),
-      renderedGrips: distance(sample.renderedBlueGrip, sample.renderedRedGrip),
+      renderedGrips: distance(
+        sample.renderedLeftGrip,
+        sample.renderedRightGrip
+      ),
     };
 
     trace.nextFrame += 1;
@@ -454,8 +460,8 @@ export class AvatarGripMotionAudit {
         (maximum, sample) =>
           Math.max(
             maximum,
-            pointMagnitude(sample.blueCorrectionLocal),
-            pointMagnitude(sample.redCorrectionLocal)
+            pointMagnitude(sample.leftCorrectionLocal),
+            pointMagnitude(sample.rightCorrectionLocal)
           ),
         0
       ),

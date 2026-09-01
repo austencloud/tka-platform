@@ -8,8 +8,8 @@
   let {
     propType,
     selected = false,
-    selectedBlue = false,
-    selectedRed = false,
+    selectedLeft = false,
+    selectedRight = false,
     color = "blue",
     badge,
     actionLabel,
@@ -18,8 +18,8 @@
   } = $props<{
     propType: PropType;
     selected?: boolean;
-    selectedBlue?: boolean;
-    selectedRed?: boolean;
+    selectedLeft?: boolean;
+    selectedRight?: boolean;
     color?: "blue" | "red" | (string & {});
     badge?: number;
     actionLabel?: string;
@@ -36,8 +36,8 @@
 <PropSelectionButton
   label={displayInfo.label}
   {selected}
-  {selectedBlue}
-  {selectedRed}
+  {selectedLeft}
+  {selectedRight}
   {color}
   {badge}
   actionLabel={resolvedActionLabel}

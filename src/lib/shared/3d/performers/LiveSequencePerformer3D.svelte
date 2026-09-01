@@ -92,8 +92,8 @@
   avatarId={props.characterId}
   showGrid={false}
   visiblePlanes={new Set([Plane.WALL])}
-  bluePropType={toScenePropType(props.propType)}
-  redPropType={toScenePropType(props.propType)}
+  leftPropType={toScenePropType(props.propType)}
+  rightPropType={toScenePropType(props.propType)}
   groundOffset={rigGroundOffset}
   enableLocomotion={true}
   enableFootPlanting={true}
@@ -108,24 +108,24 @@
   }}
 >
   {#snippet effectsSlot({
-    bluePropState,
-    redPropState,
-    blueHandPos,
-    redHandPos,
+    leftPropState,
+    rightPropState,
+    leftHandPos,
+    rightHandPos,
     isPlaying,
     staffHalfLength,
     effectsParentRef,
   })}
     <EffectOrchestrator3D
-      {bluePropState}
-      {redPropState}
-      bluePropType={toScenePropType(props.propType)}
-      redPropType={toScenePropType(props.propType)}
+      {leftPropState}
+      {rightPropState}
+      leftPropType={toScenePropType(props.propType)}
+      rightPropType={toScenePropType(props.propType)}
       {isPlaying}
       {staffHalfLength}
       {tipEffectMap}
-      {blueHandPos}
-      {redHandPos}
+      {leftHandPos}
+      {rightHandPos}
       {effectsParentRef}
       currentStep={performerState.currentStepIndex + performerState.progress}
       totalSteps={performerState.totalSteps}

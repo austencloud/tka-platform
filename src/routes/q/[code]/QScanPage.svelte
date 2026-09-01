@@ -68,14 +68,14 @@
         thumbnailUrl: string | null;
         deckId: string | null;
         deckName: string | null;
-        bluePropType: string | null;
-        redPropType: string | null;
+        leftPropType: string | null;
+        rightPropType: string | null;
       };
       record: ShortCodeData | null;
       preparedSequence: SequenceData | null;
       preparedPropConfig: {
-        bluePropType: import("$lib/shared/pictograph/prop/domain/enums/prop-type").PropType;
-        redPropType: import("$lib/shared/pictograph/prop/domain/enums/prop-type").PropType;
+        leftPropType: import("$lib/shared/pictograph/prop/domain/enums/prop-type").PropType;
+        rightPropType: import("$lib/shared/pictograph/prop/domain/enums/prop-type").PropType;
         catDogMode: boolean;
       } | null;
     };
@@ -151,8 +151,8 @@
         sequenceWord: data.meta.word,
         deckId: data.meta.deckId,
         deckName: data.meta.deckName,
-        blueProp: data.meta.bluePropType,
-        redProp: data.meta.redPropType,
+        leftProp: data.meta.leftPropType,
+        rightProp: data.meta.rightPropType,
         isAuthenticated: () => authState.isAuthenticated,
       });
       void initializeAuthListener();
@@ -201,8 +201,8 @@
         sequenceWord: word || null,
         deckId: record?.deckId ?? data.meta.deckId,
         deckName: record?.deckName ?? data.meta.deckName,
-        blueProp: String(propConfig.bluePropType),
-        redProp: String(propConfig.redPropType),
+        leftProp: String(propConfig.leftPropType),
+        rightProp: String(propConfig.rightPropType),
       });
 
       const scanPrintId = page.url.searchParams.get("pid") || null;
@@ -216,8 +216,8 @@
           country: data.geo.country,
           city: data.geo.city,
           ...scanPropProperties(
-            propConfig.bluePropType,
-            propConfig.redPropType
+            propConfig.leftPropType,
+            propConfig.rightPropType
           ),
         });
 

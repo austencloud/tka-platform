@@ -33,8 +33,8 @@ export interface SequenceExportOptions {
 
   propTypeOverride?: PropType;
 
-  bluePropTypeOverride?: PropType;
-  redPropTypeOverride?: PropType;
+  leftPropTypeOverride?: PropType;
+  rightPropTypeOverride?: PropType;
 
   /**
    * When set, the composition worker wraps the rendered content in the MPC card
@@ -56,8 +56,8 @@ export interface SequenceExportOptions {
   stepSize: number;
   margin: number;
 
-  redVisible: boolean;
-  blueVisible: boolean;
+  rightVisible: boolean;
+  leftVisible: boolean;
 
   visibilityOverrides?: {
     showTKA?: boolean;
@@ -75,14 +75,14 @@ export interface SequenceExportOptions {
     showGrid?: boolean;
     /** Hand point visibility: "all" | "active" | "none" */
     handPointVisibility?: "all" | "active" | "none";
-    /** Blue prop type override (for cache key consistency) */
-    bluePropType?: PropType;
-    /** Red prop type override (for cache key consistency) */
-    redPropType?: PropType;
+    /** Left-hand prop type override (for cache key consistency) */
+    leftPropType?: PropType;
+    /** Right-hand prop type override (for cache key consistency) */
+    rightPropType?: PropType;
     /** Buugeng chirality (buugeng-family props only). Omitted = unflipped,
      *  which is the canonical look for locked deck/print cards. */
-    blueBuugengFlipped?: boolean;
-    redBuugengFlipped?: boolean;
+    leftBuugengFlipped?: boolean;
+    rightBuugengFlipped?: boolean;
     /** Render QR code in empty cell (if available) */
     showQRCode?: boolean;
     /** Render as hand path visualization (HAND props, float arrows, no TKA) */
@@ -147,8 +147,8 @@ export interface SequenceExportOptions {
 
 export interface StepRenderOptions {
   addStepNumbers: boolean;
-  redVisible: boolean;
-  blueVisible: boolean;
+  rightVisible: boolean;
+  leftVisible: boolean;
   combinedGrids: boolean;
   stepScale: number;
 }

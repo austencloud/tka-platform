@@ -12,7 +12,7 @@ import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/mo
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -20,26 +20,26 @@ import {
  * Helper: create a minimal PictographData with specified motions.
  */
 function makePictograph(
-  blue?: { start: GridLocation; end: GridLocation; motionType?: MotionType },
-  red?: { start: GridLocation; end: GridLocation; motionType?: MotionType }
+  left?: { start: GridLocation; end: GridLocation; motionType?: MotionType },
+  right?: { start: GridLocation; end: GridLocation; motionType?: MotionType }
 ): PictographData {
   const motions: PictographData["motions"] = {};
 
-  if (blue) {
-    motions.blue = createMotionData({
-      startLocation: blue.start,
-      endLocation: blue.end,
-      motionType: blue.motionType ?? MotionType.PRO,
-      color: MotionColor.BLUE,
+  if (left) {
+    motions.left = createMotionData({
+      startLocation: left.start,
+      endLocation: left.end,
+      motionType: left.motionType ?? MotionType.PRO,
+      hand: HandSide.LEFT,
     });
   }
 
-  if (red) {
-    motions.red = createMotionData({
-      startLocation: red.start,
-      endLocation: red.end,
-      motionType: red.motionType ?? MotionType.PRO,
-      color: MotionColor.RED,
+  if (right) {
+    motions.right = createMotionData({
+      startLocation: right.start,
+      endLocation: right.end,
+      motionType: right.motionType ?? MotionType.PRO,
+      hand: HandSide.RIGHT,
     });
   }
 

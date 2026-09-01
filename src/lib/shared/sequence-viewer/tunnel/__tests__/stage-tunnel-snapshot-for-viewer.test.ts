@@ -14,7 +14,7 @@ const snapshot = {
     gridVisible: true,
     colors: {
       mode: "custom",
-      custom: { blue: "#123456", red: "#abcdef" },
+      custom: { left: "#123456", right: "#abcdef" },
     },
     section: "props",
     presetRecipe: null,
@@ -24,15 +24,15 @@ const snapshot = {
   paths: {
     pathShape: "concave",
     motionAwarePaths: true,
-    bluePathLines: true,
-    redPathLines: false,
+    leftPathLines: true,
+    rightPathLines: false,
   },
   playback: { bpm: 128, playbackMode: "step" },
   props: {
-    bluePropType: "buugeng",
-    redPropType: "buugeng",
-    blueBuugengFlipped: true,
-    redBuugengFlipped: false,
+    leftPropType: "buugeng",
+    rightPropType: "buugeng",
+    leftBuugengFlipped: true,
+    rightBuugengFlipped: false,
   },
   trailRender: { mode: "trail", marker: "exact" },
 } as unknown as TunnelSnapshot;
@@ -64,12 +64,12 @@ describe("stageTunnelSnapshotForViewer", () => {
     });
     expect(dependencies.visibility.setVisibility).toHaveBeenNthCalledWith(
       1,
-      "bluePathLines",
+      "leftPathLines",
       true
     );
     expect(dependencies.visibility.setVisibility).toHaveBeenNthCalledWith(
       2,
-      "redPathLines",
+      "rightPathLines",
       false
     );
     expect(dependencies.animationSettings.updateSettings).toHaveBeenCalledWith({

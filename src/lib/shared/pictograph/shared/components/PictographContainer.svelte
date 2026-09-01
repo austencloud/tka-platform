@@ -44,6 +44,7 @@ with pre-prepared data for better performance.
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
   import PictographRenderer from "./PictographRenderer.svelte";
   import { globalAdjustmentVersion } from "../../arrow/positioning/global/state/global-adjustment-version.svelte";
+  import type { HandSide } from "../domain/enums/pictograph-enums";
 
   // Props - accepts either StepData (with beat context) or PictographData
   let {
@@ -58,8 +59,8 @@ with pre-prepared data for better performance.
     showTKA = undefined,
     showReversals = undefined,
     showNonRadialPoints = undefined,
-    showBlueMotion = undefined,
-    showRedMotion = undefined,
+    showLeftMotion = undefined,
+    showRightMotion = undefined,
     showHandPoints = undefined,
     // Extended glyph visibility overrides
     showTnD = undefined,
@@ -98,10 +99,10 @@ with pre-prepared data for better performance.
     transparentBackground = false,
     // Explicit prop types for export/thumbnail rendering
     // When provided, passed to PictographPreparer for consistency during async operations
-    bluePropTypeOverride = undefined,
-    redPropTypeOverride = undefined,
-    blueColorOverride = undefined,
-    redColorOverride = undefined,
+    leftPropTypeOverride = undefined,
+    rightPropTypeOverride = undefined,
+    leftColorOverride = undefined,
+    rightColorOverride = undefined,
     // Width multiplier for expanded timeline cells (1 = normal square, >1 = wider)
     widthMultiplier = 1,
     // Cell index for position caching (enables smooth transitions on regeneration)
@@ -136,20 +137,20 @@ with pre-prepared data for better performance.
     showTKA?: boolean;
     showReversals?: boolean;
     showNonRadialPoints?: boolean;
-    showBlueMotion?: boolean;
-    showRedMotion?: boolean;
+    showLeftMotion?: boolean;
+    showRightMotion?: boolean;
     showHandPoints?: boolean;
     showTnD?: boolean;
     showElemental?: boolean;
     showPositions?: boolean;
     previewMode?: boolean;
-    visibleHand?: "blue" | "red" | null;
+    visibleHand?: HandSide | null;
     arrowsClickable?: boolean;
     /** Renderable option: hide arrows entirely (props + grid still render). Default true. */
     showArrow?: boolean;
     propsClickable?: boolean;
-    selectedPropHand?: "blue" | "red" | null;
-    onPropClick?: (hand: "blue" | "red") => void;
+    selectedPropHand?: HandSide | null;
+    onPropClick?: (hand: HandSide) => void;
     onToggleTKA?: () => void;
     onToggleTnD?: () => void;
     onToggleElemental?: () => void;
@@ -164,14 +165,14 @@ with pre-prepared data for better performance.
     printMode?: boolean;
     /** Skip the background fill so the glyph floats on the host surface. */
     transparentBackground?: boolean;
-    /** Explicit prop type for blue hand. Export/thumbnail rendering provides this for consistency. */
-    bluePropTypeOverride?: PropType;
-    /** Explicit prop type for red hand. Export/thumbnail rendering provides this for consistency. */
-    redPropTypeOverride?: PropType;
-    /** Display-only color for the blue-hand prop and arrow. */
-    blueColorOverride?: string;
-    /** Display-only color for the red-hand prop and arrow. */
-    redColorOverride?: string;
+    /** Explicit prop type for the left hand. Export/thumbnail rendering provides this for consistency. */
+    leftPropTypeOverride?: PropType;
+    /** Explicit prop type for the right hand. Export/thumbnail rendering provides this for consistency. */
+    rightPropTypeOverride?: PropType;
+    /** Display-only color for the left-hand prop and arrow. */
+    leftColorOverride?: string;
+    /** Display-only color for the right-hand prop and arrow. */
+    rightColorOverride?: string;
     /** Width multiplier for expanded timeline cells (1 = normal square, >1 = wider viewBox) */
     widthMultiplier?: number;
     /** Cell index for position caching (enables smooth transitions on regeneration) */
@@ -199,8 +200,8 @@ with pre-prepared data for better performance.
   const stepData = $derived(
     pictographData && "stepNumber" in pictographData ? pictographData : null
   );
-  const blueReversal = $derived(stepData?.blueReversal ?? false);
-  const redReversal = $derived(stepData?.redReversal ?? false);
+  const leftReversal = $derived(stepData?.leftReversal ?? false);
+  const rightReversal = $derived(stepData?.rightReversal ?? false);
   const stepNumber = $derived(stepData?.stepNumber ?? null);
   const duration = $derived(stepData?.duration ?? 1);
   const isStartPosition = $derived(stepNumber === 0);
@@ -282,20 +283,20 @@ with pre-prepared data for better performance.
   const liveAnimateVisibility = $derived(darkMode === undefined && !printMode);
 
   // Effective visibility values - use prop overrides if set, otherwise true (motion always visible)
-  const effectiveBlueMotion = $derived(
-    showBlueMotion !== undefined ? showBlueMotion : true
+  const effectiveLeftMotion = $derived(
+    showLeftMotion !== undefined ? showLeftMotion : true
   );
-  const effectiveRedMotion = $derived(
-    showRedMotion !== undefined ? showRedMotion : true
+  const effectiveRightMotion = $derived(
+    showRightMotion !== undefined ? showRightMotion : true
   );
   // A one-hand presentation must be prepared as one hand, not prepared as a
   // pair and filtered only at the final SVG layer. Relationship geometry such
   // as beta offsets and arrow keys depends on this semantic visibility.
-  const preparationShowBlueMotion = $derived(
-    effectiveBlueMotion && visibleHand !== "red"
+  const preparationShowLeftMotion = $derived(
+    effectiveLeftMotion && visibleHand !== "right"
   );
-  const preparationShowRedMotion = $derived(
-    effectiveRedMotion && visibleHand !== "blue"
+  const preparationShowRightMotion = $derived(
+    effectiveRightMotion && visibleHand !== "left"
   );
   const effectiveShowGrid = $derived(
     showGrid !== undefined ? showGrid : syncedVisibility.showGrid
@@ -353,14 +354,14 @@ with pre-prepared data for better performance.
     if (!pictographData) return [];
     const locations: GridLocation[] = [];
 
-    const blueMotion = pictographData.motions?.blue;
-    const redMotion = pictographData.motions?.red;
+    const leftMotion = pictographData.motions?.left;
+    const rightMotion = pictographData.motions?.right;
 
-    if (isVisibleMotion(blueMotion) && blueMotion.endLocation) {
-      locations.push(blueMotion.endLocation as GridLocation);
+    if (isVisibleMotion(leftMotion) && leftMotion.endLocation) {
+      locations.push(leftMotion.endLocation as GridLocation);
     }
-    if (isVisibleMotion(redMotion) && redMotion.endLocation) {
-      locations.push(redMotion.endLocation as GridLocation);
+    if (isVisibleMotion(rightMotion) && rightMotion.endLocation) {
+      locations.push(rightMotion.endLocation as GridLocation);
     }
 
     return locations;
@@ -397,11 +398,11 @@ with pre-prepared data for better performance.
   // Resolve prop types: use explicit overrides if provided, otherwise fall back to global settings.
   // These are used both in the cache key and when preparing, so the start position
   // (which has no overrides) correctly picks up the user's selected prop type.
-  const effectiveBluePropType = $derived(
-    bluePropTypeOverride ?? getSettings().bluePropType
+  const effectiveLeftPropType = $derived(
+    leftPropTypeOverride ?? getSettings().leftPropType
   );
-  const effectiveRedPropType = $derived(
-    redPropTypeOverride ?? getSettings().redPropType
+  const effectiveRightPropType = $derived(
+    rightPropTypeOverride ?? getSettings().rightPropType
   );
 
   // Create a stable key for data preparation dependencies
@@ -413,67 +414,67 @@ with pre-prepared data for better performance.
 
     // Extract motion fingerprints for change detection
     // These are the properties that transforms modify
-    const blueMotion = pictographData.motions?.blue;
-    const redMotion = pictographData.motions?.red;
+    const leftMotion = pictographData.motions?.left;
+    const rightMotion = pictographData.motions?.right;
 
-    const blueFingerprint = blueMotion
+    const leftFingerprint = leftMotion
       ? {
-          startLoc: blueMotion.startLocation,
-          endLoc: blueMotion.endLocation,
-          startPos: blueMotion.startPosition,
-          endPos: blueMotion.endPosition,
-          motionType: blueMotion.motionType,
-          rotation: blueMotion.rotationDirection,
+          startLoc: leftMotion.startLocation,
+          endLoc: leftMotion.endLocation,
+          startPos: leftMotion.startPosition,
+          endPos: leftMotion.endPosition,
+          motionType: leftMotion.motionType,
+          rotation: leftMotion.rotationDirection,
           // Include orientations so prop rotation updates when orientation changes propagate
-          startOrientation: blueMotion.startOrientation,
-          endOrientation: blueMotion.endOrientation,
+          startOrientation: leftMotion.startOrientation,
+          endOrientation: leftMotion.endOrientation,
           // Include manual adjustments so arrow moves when adjusted
-          manualAdjustX: blueMotion.arrowPlacementData?.manualAdjustmentX ?? 0,
-          manualAdjustY: blueMotion.arrowPlacementData?.manualAdjustmentY ?? 0,
-          isVisible: blueMotion.isVisible !== false,
+          manualAdjustX: leftMotion.arrowPlacementData?.manualAdjustmentX ?? 0,
+          manualAdjustY: leftMotion.arrowPlacementData?.manualAdjustmentY ?? 0,
+          isVisible: leftMotion.isVisible !== false,
         }
       : null;
 
-    const redFingerprint = redMotion
+    const rightFingerprint = rightMotion
       ? {
-          startLoc: redMotion.startLocation,
-          endLoc: redMotion.endLocation,
-          startPos: redMotion.startPosition,
-          endPos: redMotion.endPosition,
-          motionType: redMotion.motionType,
-          rotation: redMotion.rotationDirection,
+          startLoc: rightMotion.startLocation,
+          endLoc: rightMotion.endLocation,
+          startPos: rightMotion.startPosition,
+          endPos: rightMotion.endPosition,
+          motionType: rightMotion.motionType,
+          rotation: rightMotion.rotationDirection,
           // Include orientations so prop rotation updates when orientation changes propagate
-          startOrientation: redMotion.startOrientation,
-          endOrientation: redMotion.endOrientation,
+          startOrientation: rightMotion.startOrientation,
+          endOrientation: rightMotion.endOrientation,
           // Include manual adjustments so arrow moves when adjusted
-          manualAdjustX: redMotion.arrowPlacementData?.manualAdjustmentX ?? 0,
-          manualAdjustY: redMotion.arrowPlacementData?.manualAdjustmentY ?? 0,
-          isVisible: redMotion.isVisible !== false,
+          manualAdjustX: rightMotion.arrowPlacementData?.manualAdjustmentX ?? 0,
+          manualAdjustY: rightMotion.arrowPlacementData?.manualAdjustmentY ?? 0,
+          isVisible: rightMotion.isVisible !== false,
         }
       : null;
 
     return JSON.stringify({
       id: pictographData.id,
       letter: pictographData.letter,
-      bluePropType: effectiveBluePropType,
-      redPropType: effectiveRedPropType,
+      leftPropType: effectiveLeftPropType,
+      rightPropType: effectiveRightPropType,
       // Buugeng chirality feeds the beta offset (opposite chirality nests, so
       // no separation), so a flip has to re-prepare.
-      blueBuugengFlipped: settings.blueBuugengFlipped ?? false,
-      redBuugengFlipped: settings.redBuugengFlipped ?? false,
+      leftBuugengFlipped: settings.leftBuugengFlipped ?? false,
+      rightBuugengFlipped: settings.rightBuugengFlipped ?? false,
       darkMode: effectiveDarkMode, // Include effective dark mode for color-correct preparation
-      blueMotion: blueFingerprint,
-      redMotion: redFingerprint,
-      preparationShowBlueMotion,
-      preparationShowRedMotion,
+      leftMotion: leftFingerprint,
+      rightMotion: rightFingerprint,
+      preparationShowLeftMotion,
+      preparationShowRightMotion,
       motionStartData: motionStartData
         ? {
             id: motionStartData.id,
             letter: motionStartData.letter,
             gridMode: motionStartData.gridMode,
             betaSwapped: motionStartData.betaSwapped,
-            blueMotion: motionStartData.motions?.blue,
-            redMotion: motionStartData.motions?.red,
+            leftMotion: motionStartData.motions?.left,
+            rightMotion: motionStartData.motions?.right,
           }
         : null,
       // Include global adjustment version so ALL pictographs re-prepare when adjustments are saved
@@ -517,12 +518,12 @@ with pre-prepared data for better performance.
         const currentDarkMode = effectiveDarkMode;
         const prepareOptions = {
           themeMode: currentDarkMode ? ("dark" as const) : ("light" as const),
-          bluePropType: effectiveBluePropType,
-          redPropType: effectiveRedPropType,
-          blueBuugengFlipped: getSettings().blueBuugengFlipped ?? false,
-          redBuugengFlipped: getSettings().redBuugengFlipped ?? false,
-          showBlueMotion: preparationShowBlueMotion,
-          showRedMotion: preparationShowRedMotion,
+          leftPropType: effectiveLeftPropType,
+          rightPropType: effectiveRightPropType,
+          leftBuugengFlipped: getSettings().leftBuugengFlipped ?? false,
+          rightBuugengFlipped: getSettings().rightBuugengFlipped ?? false,
+          showLeftMotion: preparationShowLeftMotion,
+          showRightMotion: preparationShowRightMotion,
         };
         const [result, startResult] = await Promise.all([
           pictographPreparer.prepareSingle(
@@ -580,8 +581,8 @@ with pre-prepared data for better performance.
       progress: motionProgress,
       gridMode:
         overrideGridMode ?? preparedData._prepared.gridMode ?? GridMode.DIAMOND,
-      bluePropType: effectiveBluePropType,
-      redPropType: effectiveRedPropType,
+      leftPropType: effectiveLeftPropType,
+      rightPropType: effectiveRightPropType,
       startPositions: preparedStartData?._prepared?.propPositions ?? {},
       endPositions: preparedData._prepared.propPositions,
     });
@@ -648,10 +649,10 @@ with pre-prepared data for better performance.
     {#if disableTransitions}
       <PictographRenderer
         pictograph={preparedData}
-        {blueReversal}
-        {redReversal}
-        blueMotionVisible={effectiveBlueMotion}
-        redMotionVisible={effectiveRedMotion}
+        {leftReversal}
+        {rightReversal}
+        leftMotionVisible={effectiveLeftMotion}
+        rightMotionVisible={effectiveRightMotion}
         showGrid={effectiveShowGrid}
         showTKA={effectiveShowTKA}
         showReversals={effectiveShowReversals}
@@ -673,8 +674,8 @@ with pre-prepared data for better performance.
         {propRenderContext}
         {printMode}
         {transparentBackground}
-        {blueColorOverride}
-        {redColorOverride}
+        {leftColorOverride}
+        {rightColorOverride}
         {onToggleTKA}
         {onToggleTnD}
         {onToggleElemental}
@@ -698,8 +699,8 @@ with pre-prepared data for better performance.
         >
           <PictographRenderer
             pictograph={preparedData}
-            {blueReversal}
-            {redReversal}
+            {leftReversal}
+            {rightReversal}
             showGrid={effectiveShowGrid}
             showTKA={effectiveShowTKA}
             showReversals={effectiveShowReversals}
@@ -721,8 +722,8 @@ with pre-prepared data for better performance.
             {propRenderContext}
             {printMode}
             {transparentBackground}
-            {blueColorOverride}
-            {redColorOverride}
+            {leftColorOverride}
+            {rightColorOverride}
             {onToggleTKA}
             {onToggleTnD}
             {onToggleElemental}

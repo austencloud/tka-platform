@@ -32,7 +32,7 @@
     {
       value: "shuffle",
       label: "Separate",
-      ariaLabel: "Separate paths: edit Blue and Red independently",
+      ariaLabel: "Separate paths: edit Left and Right independently",
     },
     {
       value: "symmetry",

@@ -22,14 +22,14 @@ import type { StancePose } from "../domain/types";
  * hands must land, not which enum values represent them.
  */
 export interface OptimizerInput {
-  blue: SimPropTarget;
-  red: SimPropTarget;
+  left: SimPropTarget;
+  right: SimPropTarget;
 }
 
 /** Sweep variant of OptimizerInput: each hand is a sequence of staff instants. */
 export interface OptimizerSweepInput {
-  blue: SimPropTarget[];
-  red: SimPropTarget[];
+  left: SimPropTarget[];
+  right: SimPropTarget[];
 }
 
 /** Hard bounds on each stance parameter. */
@@ -181,11 +181,11 @@ export interface SimResult {
    *  cannot reach the prop, zero = exactly on target, negative = target
    *  is inside the arm's reach envelope (always 0 in practice because
    *  the hand will just be placed at the target). */
-  reachShortfall: { blue: number; red: number };
+  reachShortfall: { left: number; right: number };
   /** Distance the shoulder travels from its rest position just to reach
    *  the target. High values mean the arm is maxed out and the pose is
    *  uncomfortable even if reachable. */
-  reachStretch: { blue: number; red: number };
+  reachStretch: { left: number; right: number };
   /** All detected self-collisions under this stance. */
   collisions: SimCollision[];
   /** Distance from the center-of-mass projection to the edge of the

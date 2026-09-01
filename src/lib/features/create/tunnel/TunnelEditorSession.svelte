@@ -99,12 +99,12 @@
     effects,
     visibility,
     animationSettings: localAnimationSettings,
-    initialBluePropType: settingsService.settings.bluePropType ?? "staff",
-    initialRedPropType: settingsService.settings.redPropType ?? "staff",
-    initialBlueBuugengFlipped:
-      settingsService.settings.blueBuugengFlipped ?? false,
-    initialRedBuugengFlipped:
-      settingsService.settings.redBuugengFlipped ?? false,
+    initialLeftPropType: settingsService.settings.leftPropType ?? "staff",
+    initialRightPropType: settingsService.settings.rightPropType ?? "staff",
+    initialLeftBuugengFlipped:
+      settingsService.settings.leftBuugengFlipped ?? false,
+    initialRightBuugengFlipped:
+      settingsService.settings.rightBuugengFlipped ?? false,
   });
 
   const creator = createTunnelCreatorState({

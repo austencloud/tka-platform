@@ -4,16 +4,16 @@ import { scanPropProperties } from "$lib/shared/analytics/scan-prop-attribution"
 describe("scan prop attribution", () => {
   it("keeps mixed left and right props explicit", () => {
     expect(scanPropProperties("fan", "hoop")).toEqual({
-      blue_prop: "fan",
-      red_prop: "hoop",
+      left_prop: "fan",
+      right_prop: "hoop",
       mixed_props: true,
     });
   });
 
   it("marks a matched pair without collapsing it to one field", () => {
     expect(scanPropProperties("staff", "staff")).toEqual({
-      blue_prop: "staff",
-      red_prop: "staff",
+      left_prop: "staff",
+      right_prop: "staff",
       mixed_props: false,
     });
   });

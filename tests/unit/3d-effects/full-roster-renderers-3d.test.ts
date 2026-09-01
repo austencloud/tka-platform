@@ -324,7 +324,7 @@ describe("native 3D full-roster renderers", () => {
     let previousTail: [number, number, number] | null = null;
     let maxTailMovement = 0;
     for (let stepIndex = 0; stepIndex <= 2; stepIndex++) {
-      const config = steps[stepIndex]!.blue!;
+      const config = steps[stepIndex]!.left!;
       for (let frame = 0; frame <= 60; frame++) {
         const progress = frame / 60;
         const propState = calculatePropState(config, progress);

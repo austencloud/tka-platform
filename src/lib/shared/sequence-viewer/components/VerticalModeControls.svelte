@@ -59,8 +59,8 @@
 		/>
 		<SettingsTogglePanel
 			propType={null}
-			bluePropType={null}
-			redPropType={null}
+			leftPropType={null}
+			rightPropType={null}
 			{bpm}
 			{playbackMode}
 			stepPlaybackStepSize={stepSize}

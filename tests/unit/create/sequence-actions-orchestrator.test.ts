@@ -32,7 +32,7 @@ function createHarness(
     mirrorSequence: vi.fn(async () => {
       events.push("mirror");
     }),
-    swapColors: vi.fn(async () => {
+    swapHands: vi.fn(async () => {
       events.push("swap");
     }),
     rewindSequence: vi.fn(async () => {

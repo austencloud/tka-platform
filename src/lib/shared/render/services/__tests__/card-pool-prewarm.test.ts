@@ -6,8 +6,8 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 const seq = (id: string) => ({ id, word: id, steps: [] }) as unknown as SequenceData;
 const base = {
   sequences: [seq("a"), seq("b")],
-  bluePropType: PropType.STAFF,
-  redPropType: PropType.STAFF,
+  leftPropType: PropType.STAFF,
+  rightPropType: PropType.STAFF,
   theme: "cosmic",
 };
 
@@ -26,7 +26,7 @@ describe("computeBundleSignature", () => {
 
   it("changes when prop types change", () => {
     const s1 = computeBundleSignature(base);
-    const s2 = computeBundleSignature({ ...base, redPropType: PropType.FAN });
+    const s2 = computeBundleSignature({ ...base, rightPropType: PropType.FAN });
     expect(s1).not.toBe(s2);
   });
 });

@@ -28,7 +28,7 @@
   import { onMount } from "svelte";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import {
     createMotionData,
@@ -73,7 +73,7 @@
     )
   );
 
-  function staticFrom(m: MotionData | undefined, color: MotionColor) {
+  function staticFrom(m: MotionData | undefined, color: HandSide) {
     if (!m) return undefined;
     return createMotionData({
       motionType: MotionType.STATIC,
@@ -122,8 +122,8 @@
   function emitStrip(id: string, data: PictographData) {
     if (!emitSequence || !state) return;
     const cellDef = CELLS_BY_ID.get(id);
-    const blue = data.motions?.[MotionColor.BLUE];
-    const red = data.motions?.[MotionColor.RED];
+    const left = data.motions?.[HandSide.LEFT];
+    const right = data.motions?.[HandSide.RIGHT];
     const key = `codex-${id}`;
     const start: StepData = {
       id: `${key}-start`,
@@ -133,8 +133,8 @@
       startPosition: data.startPosition,
       endPosition: data.startPosition,
       motions: {
-        blue: staticFrom(blue, MotionColor.BLUE),
-        red: staticFrom(red, MotionColor.RED),
+        left: staticFrom(left, HandSide.LEFT),
+        right: staticFrom(right, HandSide.RIGHT),
       },
     } as unknown as StepData;
     const step: StepData = {
@@ -142,8 +142,8 @@
       id: `${key}-1`,
       stepNumber: 1,
       duration: 1,
-      blueReversal: false,
-      redReversal: false,
+      leftReversal: false,
+      rightReversal: false,
       isBlank: false,
     } as unknown as StepData;
     const strip = [start, ...bakeReversals([step])];

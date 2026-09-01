@@ -19,18 +19,18 @@
     colAxis: Flower[];
     /** Upper bound on a cell's edge; the actual size shrinks to fit the viewport. */
     maxCellPx?: number;
-    onselect: (pair: { blue: Flower; red: Flower }) => void;
+    onselect: (pair: { left: Flower; right: Flower }) => void;
     /** Optional externally-owned selection for restored/shared app state. */
-    selectedPair?: { blue: Flower; red: Flower } | null;
+    selectedPair?: { left: Flower; right: Flower } | null;
     /** Alternative cell/header painter (e.g. the poi trail painter). Defaults to the club-style painter. */
     painter?: {
       cell: typeof renderCell;
       header: typeof renderHeader;
     };
     /** Per-cell verdict tint (poi-legality curation). Null/undefined = no tint. */
-    overlayFor?: (blue: Flower, red: Flower) => CellVerdict | null | undefined;
+    overlayFor?: (left, right) => CellVerdict | null | undefined;
     /** Cells to de-emphasize (e.g. already-judged cells in a curation focus view). */
-    dimFor?: (blue: Flower, red: Flower) => boolean;
+    dimFor?: (left, right) => boolean;
   }
   let {
     data,
@@ -67,12 +67,12 @@
   const VECTOR_VIEWBOX_PX = 128;
 
   const headerCache = new Map<string, string>();
-  function headerSrc(f: Flower, hand: "blue" | "red"): string {
+  function headerSrc(f: Flower, hand: "left" | "right"): string {
     const k = `${data.propType}__${hand}__${flowerKey(f)}`;
     let url = headerCache.get(k);
     if (!url) {
       url = paintHeader(
-        (hand === "blue" ? data.blue : data.red).get(flowerKey(f))!,
+        (hand === "left" ? data.left : data.right).get(flowerKey(f))!,
         hand,
         VECTOR_VIEWBOX_PX,
         data.clubTipDx
@@ -88,8 +88,8 @@
     let url = cellCache.get(k);
     if (!url) {
       url = paintCell(
-        data.blue.get(flowerKey(b))!,
-        data.red.get(flowerKey(r))!,
+        data.left.get(flowerKey(b))!,
+        data.right.get(flowerKey(r))!,
         VECTOR_VIEWBOX_PX,
         data.clubTipDx
       );
@@ -119,7 +119,7 @@
     selectedPair === undefined
       ? sel
       : selectedPair
-        ? `${flowerKey(selectedPair.blue)}__${flowerKey(selectedPair.red)}`
+        ? `${flowerKey(selectedPair.left)}__${flowerKey(selectedPair.right)}`
         : null
   );
 </script>
@@ -135,14 +135,14 @@
   {:else}
     <table
       class="matrix"
-      aria-label="Shape matrix: blue flower rows by red flower columns; activate a cell for its TKA realizations"
+      aria-label="Shape matrix: left-hand flower rows by right-hand flower columns; activate a cell for its TKA realizations"
     >
       <thead>
         <tr>
-          <th class="corner" scope="col" aria-label="blue rows by red columns"
+          <th class="corner" scope="col" aria-label="left rows by right columns"
           ></th>
           {#each colAxis as rf, colIndex (colIndex)}
-            {@const source = headerSrc(rf, "red")}
+            {@const source = headerSrc(rf, "right")}
             <th class="colhead" scope="col" title={flowerLabel(rf)}>
               <Crossfade
                 key={source}
@@ -150,7 +150,7 @@
                 duration={DURATION.emphasis}
                 delay={STAGGER.micro}
               >
-                <img src={source} alt={`red ${flowerLabel(rf)}`} />
+                <img src={source} alt={`right ${flowerLabel(rf)}`} />
               </Crossfade>
             </th>
           {/each}
@@ -158,7 +158,7 @@
       </thead>
       <tbody>
         {#each rowAxis as bf, rowIndex (rowIndex)}
-          {@const rowSource = headerSrc(bf, "blue")}
+          {@const rowSource = headerSrc(bf, "left")}
           <tr>
             <th class="rowhead" scope="row" title={flowerLabel(bf)}>
               <Crossfade
@@ -167,7 +167,7 @@
                 duration={DURATION.emphasis}
                 delay={STAGGER.micro}
               >
-                <img src={rowSource} alt={`blue ${flowerLabel(bf)}`} />
+                <img src={rowSource} alt={`left ${flowerLabel(bf)}`} />
               </Crossfade>
             </th>
             {#each colAxis as rf, colIndex (colIndex)}
@@ -184,11 +184,11 @@
                   class:v-unsure={verdict === "unsure"}
                   class:dim={dimFor?.(bf, rf) ?? false}
                   use:watch={slotKey}
-                  aria-label={`blue ${flowerLabel(bf)} over red ${flowerLabel(rf)}`}
+                  aria-label={`left ${flowerLabel(bf)} over right ${flowerLabel(rf)}`}
                   aria-pressed={selectedKey === key}
                   onclick={() => {
                     sel = key;
-                    onselect({ blue: bf, red: rf });
+                    onselect({ left: bf, right: rf });
                   }}
                 >
                   {#if observed.has(slotKey)}
@@ -240,7 +240,7 @@
 
   /* The table needs this cell to align its sticky row and column headers. It is
      visually neutral because the colored flower headers already identify both
-     axes; another blue/red legend reads like a selectable matrix result. */
+     axes; another left/right legend reads like a selectable matrix result. */
   .corner {
     position: sticky;
     top: 0;

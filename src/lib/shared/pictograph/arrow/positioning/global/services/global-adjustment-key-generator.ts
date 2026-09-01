@@ -81,10 +81,10 @@ export class GlobalAdjustmentKeyGenerator {
    * Get grid mode from pictograph data
    */
   private getGridMode(pictographData: PictographData): string {
-    if (pictographData.motions.blue && pictographData.motions.red) {
+    if (pictographData.motions.left && pictographData.motions.right) {
       return _deriveGridMode(
-        pictographData.motions.blue,
-        pictographData.motions.red
+        pictographData.motions.left,
+        pictographData.motions.right
       );
     }
     return GridMode.DIAMOND;

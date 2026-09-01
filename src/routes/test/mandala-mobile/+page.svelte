@@ -28,20 +28,20 @@
   const collectionSequences = $derived(
     mandalaCollectionState.collection.map((m) => ({
       id: m.id, word: m.name, steps: m.steps,
-      bluePropType: m.bluePropType, redPropType: m.redPropType,
+      leftPropType: m.leftPropType, rightPropType: m.rightPropType,
     })),
   );
 
   const sequences = $derived(dataSource === "collection" ? collectionSequences : catalogSequences);
   const currentSeq = $derived(sequences[currentIndex] ?? null);
-  const blueProp = $derived(currentSeq?.bluePropType ?? "staff");
-  const redProp = $derived(currentSeq?.redPropType ?? "staff");
+  const leftProp = $derived(currentSeq?.leftPropType ?? "staff");
+  const rightProp = $derived(currentSeq?.rightPropType ?? "staff");
 
   // ── Shared controller (same logic the real MandalaPane uses) ──────
   const ctrl = new MandalaViewerController({
     getSequence: () => currentSeq as SequenceData,
-    getBluePropType: () => blueProp,
-    getRedPropType: () => redProp,
+    getLeftPropType: () => leftProp,
+    getRightPropType: () => rightProp,
     pathPolicy: getAnimationVisibilityManager(),
   });
 
@@ -208,8 +208,8 @@
               animateRotation={ctrl.rotation}
               pathShape={ctrl.pathShape}
               size={stageSize}
-              bluePropType={blueProp}
-              redPropType={redProp}
+              leftPropType={leftProp}
+              rightPropType={rightProp}
               mode="card-back"
               style="stroke"
               show="both"
@@ -233,7 +233,7 @@
         onSelectSplit={() => { viewerMode = "split"; }}
       />
 
-      <MandalaExportTakeover {ctrl} sequence={currentSeq} bluePropType={blueProp} redPropType={redProp} size={takeoverSize} />
+      <MandalaExportTakeover {ctrl} sequence={currentSeq} leftPropType={leftProp} rightPropType={rightProp} size={takeoverSize} />
     </div>
   </div>
 </div>

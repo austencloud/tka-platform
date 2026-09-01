@@ -8,6 +8,7 @@
 	import { cubicInOut } from "svelte/easing";
 	import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 	import type {
+		MandalaHandVisibility,
 		MandalaMode,
 		MandalaRenderOptions,
 		MandalaPaths,
@@ -93,12 +94,12 @@
 		sequence: any;
 		mode?: MandalaMode;
 		style?: "stroke" | "filled";
-		show?: "blue" | "red" | "both";
+		show?: MandalaHandVisibility;
 		size?: number;
 		currentStep?: number;
 		darkMode?: boolean;
-		bluePropType?: string;
-		redPropType?: string;
+		leftPropType?: string;
+		rightPropType?: string;
 		/** Animate the mandala by oscillating tip point distance */
 		animate?: boolean;
 		/** Min dx for animation oscillation (default 80) */
@@ -123,13 +124,13 @@
 		strokeWidth?: number;
 		/** Per-path gradient colors for gradient color mode */
 		gradient?: {
-			blue: [string, string];
-			red: [string, string];
+			left: [string, string];
+			right: [string, string];
 			purple: [string, string];
 		};
 		/**
 		 * Prop ends traced: 2 = staff (both tips), 1 = club (one tip). Optional —
-		 * when omitted, derived from bluePropType/redPropType via pairTipEnds. Set
+		 * when omitted, derived from leftPropType/rightPropType via pairTipEnds. Set
 		 * explicitly only to force a count regardless of prop (labs/explorers).
 		 */
 		tipEnds?: 1 | 2;
@@ -143,8 +144,8 @@
 		size = MANDALA_DEFAULT_SIZE,
 		currentStep,
 		darkMode,
-		bluePropType,
-		redPropType,
+		leftPropType,
+		rightPropType,
 		animate = false,
 		animateMin = 0,
 		animateMax = 250,
@@ -165,17 +166,17 @@
 	// prop (club/fan/triad) traces ONE staff end, a two-ended prop (staff/buugeng)
 	// traces both. This is what makes a club sequence's mandala drop the inner
 	// (pinky) locus instead of always drawing the double-staff figure.
-	const effectiveTipEnds = $derived(tipEnds ?? pairTipEnds(bluePropType, redPropType));
+	const effectiveTipEnds = $derived(tipEnds ?? pairTipEnds(leftPropType, rightPropType));
 	const tipOverrides = $derived.by(() => {
-		if (!bluePropType && !redPropType) return undefined;
+		if (!leftPropType && !rightPropType) return undefined;
 		return {
-			blue: resolveMandalaTipOffsets(
-				bluePropType,
+			left: resolveMandalaTipOffsets(
+				leftPropType,
 				TrackingMode.BOTH_ENDS,
 				"baseline"
 			),
-			red: resolveMandalaTipOffsets(
-				redPropType,
+			right: resolveMandalaTipOffsets(
+				rightPropType,
 				TrackingMode.BOTH_ENDS,
 				"baseline"
 			),
@@ -183,19 +184,19 @@
 	});
 
 	const DARK_MOTION_PALETTE: MandalaPalette = {
-		blueStroke: DARK_MOTION_BLUE_STROKE,
-		blueFill: DARK_MOTION_BLUE_FILL,
-		redStroke: DARK_MOTION_RED_STROKE,
-		redFill: DARK_MOTION_RED_FILL,
+		leftStroke: DARK_MOTION_BLUE_STROKE,
+		leftFill: DARK_MOTION_BLUE_FILL,
+		rightStroke: DARK_MOTION_RED_STROKE,
+		rightFill: DARK_MOTION_RED_FILL,
 		purpleStroke: DARK_MOTION_PURPLE_STROKE,
 		purpleFill: DARK_MOTION_PURPLE_FILL,
 	};
 
 	const LIGHT_MOTION_PALETTE: MandalaPalette = {
-		blueStroke: LIGHT_MOTION_BLUE_STROKE,
-		blueFill: LIGHT_MOTION_BLUE_FILL,
-		redStroke: LIGHT_MOTION_RED_STROKE,
-		redFill: LIGHT_MOTION_RED_FILL,
+		leftStroke: LIGHT_MOTION_BLUE_STROKE,
+		leftFill: LIGHT_MOTION_BLUE_FILL,
+		rightStroke: LIGHT_MOTION_RED_STROKE,
+		rightFill: LIGHT_MOTION_RED_FILL,
 		purpleStroke: LIGHT_MOTION_PURPLE_STROKE,
 		purpleFill: LIGHT_MOTION_PURPLE_FILL,
 	};
@@ -352,11 +353,11 @@
 		// spins, because animatedDx never reaches the geometry calculator.
 		const scale = effectiveDx / MANDALA_STANDARD_TIP_DX;
 		return {
-			blue: baseline.blue.map(({ dx, dy }) => ({
+			left: baseline.left.map(({ dx, dy }) => ({
 				dx: dx * scale,
 				dy: dy * scale,
 			})),
-			red: baseline.red.map(({ dx, dy }) => ({
+			right: baseline.right.map(({ dx, dy }) => ({
 				dx: dx * scale,
 				dy: dy * scale,
 			})),
@@ -372,15 +373,15 @@
 		if (morph) {
 			return calculateMandalaMorphed(
 				sequence.steps,
-				bluePropType,
-				redPropType,
+				leftPropType,
+				rightPropType,
 				getMandalaPathOptions(morph.from, effectiveTipEnds),
 				pathOptions,
 				morph.t,
 				overrides
 			);
 		}
-		return calculateMandalaGeometry(sequence.steps, bluePropType, redPropType, pathOptions, overrides);
+		return calculateMandalaGeometry(sequence.steps, leftPropType, rightPropType, pathOptions, overrides);
 	});
 
 	// The workspace changes a whole sequence at once. Holding the currently

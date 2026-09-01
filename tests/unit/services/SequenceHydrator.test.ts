@@ -23,7 +23,7 @@ import {
   MotionType,
   RotationDirection,
   Orientation,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -44,22 +44,22 @@ function injectRealCsvData() {
 
 function makeStep(
   stepNumber: number,
-  blue: Partial<Parameters<typeof createMotionData>[0]>,
-  red: Partial<Parameters<typeof createMotionData>[0]>
+  left: Partial<Parameters<typeof createMotionData>[0]>,
+  right: Partial<Parameters<typeof createMotionData>[0]>
 ): StepData {
   return {
     id: `step-${stepNumber}`,
     stepNumber,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     letter: null,
     startPosition: null,
     endPosition: null,
     motions: {
-      blue: createMotionData({ ...blue, color: MotionColor.BLUE }),
-      red: createMotionData({ ...red, color: MotionColor.RED }),
+      left: createMotionData({ ...left, hand: HandSide.LEFT }),
+      right: createMotionData({ ...right, hand: HandSide.RIGHT }),
     },
   };
 }
@@ -196,31 +196,31 @@ describe("hydrateSequence — encode/decode round-trip", () => {
     const decoded = decodeSequenceWithCompression(encoded);
 
     expect(decoded.startPosition).toBeTruthy();
-    expect(isVisibleMotion(decoded.startPosition?.motions.blue)).toBe(false);
-    expect(isVisibleMotion(decoded.startPosition?.motions.red)).toBe(false);
+    expect(isVisibleMotion(decoded.startPosition?.motions.left)).toBe(false);
+    expect(isVisibleMotion(decoded.startPosition?.motions.right)).toBe(false);
 
     const hydrated = await hydrateSequence(decoded, { loopDetector });
     const firstStep = hydrated.steps[0]!;
     const start = hydrated.startPosition!;
 
-    expect(isVisibleMotion(start.motions.blue)).toBe(true);
-    expect(isVisibleMotion(start.motions.red)).toBe(true);
-    expect(start.motions.blue?.motionType).toBe(MotionType.STATIC);
-    expect(start.motions.red?.motionType).toBe(MotionType.STATIC);
-    expect(start.motions.blue?.startLocation).toBe(
-      firstStep.motions.blue.startLocation
+    expect(isVisibleMotion(start.motions.left)).toBe(true);
+    expect(isVisibleMotion(start.motions.right)).toBe(true);
+    expect(start.motions.left?.motionType).toBe(MotionType.STATIC);
+    expect(start.motions.right?.motionType).toBe(MotionType.STATIC);
+    expect(start.motions.left?.startLocation).toBe(
+      firstStep.motions.left.startLocation
     );
-    expect(start.motions.red?.startLocation).toBe(
-      firstStep.motions.red.startLocation
+    expect(start.motions.right?.startLocation).toBe(
+      firstStep.motions.right.startLocation
     );
-    expect(start.motions.blue?.startOrientation).toBe(
-      firstStep.motions.blue.startOrientation
+    expect(start.motions.left?.startOrientation).toBe(
+      firstStep.motions.left.startOrientation
     );
-    expect(start.motions.red?.startOrientation).toBe(
-      firstStep.motions.red.startOrientation
+    expect(start.motions.right?.startOrientation).toBe(
+      firstStep.motions.right.startOrientation
     );
-    expect(start.motions.blue?.propPlacementData).toBeTruthy();
-    expect(start.motions.red?.propPlacementData).toBeTruthy();
+    expect(start.motions.left?.propPlacementData).toBeTruthy();
+    expect(start.motions.right?.propPlacementData).toBeTruthy();
     expect(hydrated.startingPosition).toEqual(start);
   });
 
@@ -259,7 +259,7 @@ describe("hydrateSequence — encode/decode round-trip", () => {
       steps: [soloStep],
       startPosition: createStartPositionData({
         motions: {
-          blue: createMotionData({
+          left: createMotionData({
             motionType: MotionType.STATIC,
             rotationDirection: RotationDirection.NO_ROTATION,
             startLocation: GridLocation.NORTHEAST,
@@ -267,11 +267,11 @@ describe("hydrateSequence — encode/decode round-trip", () => {
             startOrientation: Orientation.IN,
             endOrientation: Orientation.IN,
             turns: 0,
-            color: MotionColor.BLUE,
+            hand: HandSide.LEFT,
             propType: PropType.STAFF,
             isVisible: true,
           }),
-          red: createMotionData({
+          right: createMotionData({
             motionType: MotionType.STATIC,
             rotationDirection: RotationDirection.NO_ROTATION,
             startLocation: GridLocation.NORTH,
@@ -279,7 +279,7 @@ describe("hydrateSequence — encode/decode round-trip", () => {
             startOrientation: Orientation.IN,
             endOrientation: Orientation.IN,
             turns: 0,
-            color: MotionColor.RED,
+            hand: HandSide.RIGHT,
             propType: PropType.STAFF,
             isVisible: false,
           }),
@@ -293,9 +293,9 @@ describe("hydrateSequence — encode/decode round-trip", () => {
     expect(hydrated.steps[0]?.letter).toBeNull();
     expect(hydrated.name).toBe("Shared Sequence");
     expect(hydrated.displayName).toBe("Shared Sequence");
-    expect(isVisibleMotion(hydrated.steps[0]?.motions.red)).toBe(false);
-    expect(isVisibleMotion(hydrated.startPosition?.motions.blue)).toBe(true);
-    expect(isVisibleMotion(hydrated.startPosition?.motions.red)).toBe(false);
+    expect(isVisibleMotion(hydrated.steps[0]?.motions.right)).toBe(false);
+    expect(isVisibleMotion(hydrated.startPosition?.motions.left)).toBe(true);
+    expect(isVisibleMotion(hydrated.startPosition?.motions.right)).toBe(false);
   });
 
   it("preserves fractional turns (0.5) through encode → decode", () => {
@@ -332,7 +332,7 @@ describe("hydrateSequence — encode/decode round-trip", () => {
     const { encoded } = encodeSequenceWithCompression(original);
     const decoded = decodeSequenceWithCompression(encoded);
 
-    expect(decoded.steps[0]?.motions.blue.turns).toBe(0.5);
-    expect(decoded.steps[0]?.motions.red.turns).toBe(0);
+    expect(decoded.steps[0]?.motions.left.turns).toBe(0.5);
+    expect(decoded.steps[0]?.motions.right.turns).toBe(0);
   });
 });

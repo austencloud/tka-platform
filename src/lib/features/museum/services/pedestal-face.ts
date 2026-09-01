@@ -34,7 +34,7 @@ export interface PedestalFaceOptions {
   propType: string;
   /**
    * Wing tint. The figure is drawn in one colour per wing rather than in the
-   * app's blue/red prop identity — a pedestal is architecture, not a pictograph,
+   * app's left/right prop identity — a pedestal is architecture, not a pictograph,
    * and two prop colours on a stone face reads as decoration.
    */
   tint: string;
@@ -80,10 +80,10 @@ export interface PedestalFace {
  */
 function monochromePalette(tint: string): MandalaPalette {
   return {
-    blueStroke: tint,
-    blueFill: tint,
-    redStroke: tint,
-    redFill: tint,
+    leftStroke: tint,
+    leftFill: tint,
+    rightStroke: tint,
+    rightFill: tint,
     purpleStroke: tint,
     purpleFill: tint,
   };
@@ -92,8 +92,8 @@ function monochromePalette(tint: string): MandalaPalette {
 /** Both ends of one bilateral prop, drawn as one figure. */
 function mergePaths(a: MandalaPaths, b: MandalaPaths): MandalaPaths {
   return {
-    blue: [...a.blue, ...b.blue],
-    red: [...a.red, ...b.red],
+    left: [...a.left, ...b.left],
+    right: [...a.right, ...b.right],
     purple: [...a.purple, ...b.purple],
   };
 }
@@ -180,7 +180,7 @@ export function buildPedestalFace(options: PedestalFaceOptions): PedestalFace {
     size
   );
 
-  const empty = paths.blue.length === 0 && paths.red.length === 0;
+  const empty = paths.left.length === 0 && paths.right.length === 0;
 
   return { svg, traceCount, empty };
 }

@@ -6,7 +6,7 @@ import type { StepLike, MotionLike } from "$lib/shared/mandala/services/types";
 
 // Two minimal hand-authored 2-beat sequences with blue+red motions. Locations
 // use the lowercase strings the calculator resolves ("n","e","s","w").
-function step(blue: Partial<MotionLike>, red: Partial<MotionLike>): StepLike {
+function step(left: Partial<MotionLike>, right: Partial<MotionLike>): StepLike {
   const base: MotionLike = {
     motionType: "pro",
     rotationDirection: "cw",
@@ -16,7 +16,7 @@ function step(blue: Partial<MotionLike>, red: Partial<MotionLike>): StepLike {
     endOrientation: "out",
     turns: 0,
   };
-  return { motions: { blue: { ...base, ...blue }, red: { ...base, ...red } } };
+  return { motions: { left: { ...base, ...left }, right: { ...base, ...right } } };
 }
 
 const seqA: StepLike[] = [

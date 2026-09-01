@@ -15,7 +15,7 @@ import {
 function input(overrides: Partial<DashLocationInput>): DashLocationInput {
   return {
     letter: "A",
-    motionColor: "red",
+    motionHand: "right",
     motionStartLocation: "n",
     motionEndLocation: "s",
     motionTurns: 0,
@@ -88,8 +88,8 @@ describe("calculateDashLocation — Phi-dash / Psi-dash special map", () => {
       motionTurns: 0 as const,
       otherMotionTurns: 0 as const,
     };
-    expect(calculateDashLocation(input({ ...base, motionColor: "red" }))).toBe("e");
-    expect(calculateDashLocation(input({ ...base, motionColor: "blue" }))).toBe("w");
+    expect(calculateDashLocation(input({ ...base, motionHand: "right" }))).toBe("e");
+    expect(calculateDashLocation(input({ ...base, motionHand: "left" }))).toBe("w");
   });
 
   it("does the same for a psi-dash", () => {
@@ -100,8 +100,8 @@ describe("calculateDashLocation — Phi-dash / Psi-dash special map", () => {
       motionTurns: 0 as const,
       otherMotionTurns: 0 as const,
     };
-    expect(calculateDashLocation(input({ ...base, motionColor: "red" }))).toBe("n");
-    expect(calculateDashLocation(input({ ...base, motionColor: "blue" }))).toBe("s");
+    expect(calculateDashLocation(input({ ...base, motionHand: "right" }))).toBe("n");
+    expect(calculateDashLocation(input({ ...base, motionHand: "left" }))).toBe("s");
   });
 });
 

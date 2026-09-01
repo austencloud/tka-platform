@@ -13,7 +13,6 @@ import type {
   Orientation as _Orientation,
   RotationDirection as _RotationDirection,
   VectorDirection as _VectorDirection,
-  PropColor as _PropColor,
   Coordinates as _Coordinates,
 } from "@tka/render-core";
 
@@ -24,7 +23,6 @@ export type MotionType = _MotionType;
 export type Orientation = _Orientation;
 export type RotationDirection = _RotationDirection;
 export type VectorDirection = _VectorDirection;
-export type PropColor = _PropColor;
 export type Coordinates = _Coordinates;
 
 // Re-export runtime values from the canonical package

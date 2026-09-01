@@ -15,11 +15,11 @@
   for the visit. Reduced motion: no act, no ghost, plain interactive.
 
   Prop policy: this surface pins its own prop via the canonical-five PropPicker
-  (staff default) and passes bluePropTypeOverride/redPropTypeOverride down the
+  (staff default) and passes leftPropTypeOverride/rightPropTypeOverride down the
   whole chain — the user's global prop setting (which may be poi) never reaches
   this demo. Poi is deliberately impossible here. Turns policy is the same
-  move: the demo pins its available turn values via per-hand pickers (blue/red) and
-  passes blueTurnsOverride/redTurnsOverride, so the user's sticky Create-tab
+  move: the demo pins its available turn values via per-hand pickers (left/right) and
+  passes leftTurnsOverride/rightTurnsOverride, so the user's sticky Create-tab
   turns (localStorage) never leak in. Every visible demo value stays at or
   below 1.5 turns, so the public examples do not imply a higher ceiling.
 
@@ -114,10 +114,10 @@
   // The demo's pinned turns — one picker PER HAND (blue/red), overriding the
   // picker's sticky localStorage turns (same leak-proofing as the prop
   // override).
-  let blueTurnsValue = $state<string>("0");
-  let redTurnsValue = $state<string>("0");
-  const blueTurns = $derived(Number(blueTurnsValue));
-  const redTurns = $derived(Number(redTurnsValue));
+  let leftTurnsValue = $state<string>("0");
+  let rightTurnsValue = $state<string>("0");
+  const leftTurns = $derived(Number(leftTurnsValue));
+  const rightTurns = $derived(Number(rightTurnsValue));
 
   // The player's playback-toggle fn (via onTogglePlaybackRef). The attract act
   // calls it to demonstrate tap-to-pause/tap-to-play on the canvas — the real
@@ -615,8 +615,8 @@
                   activeMode="construct"
                   manualColumnCount={STEP_COLUMNS}
                   arrivalSequence={composedSequence}
-                  bluePropTypeOverride={demoProp}
-                  redPropTypeOverride={demoProp}
+                  leftPropTypeOverride={demoProp}
+                  rightPropTypeOverride={demoProp}
                   sequenceWord={rawWord}
                 />
               {:else}
@@ -637,8 +637,8 @@
                     : undefined}
                   getStepKey={(beat, index) => beat.id ?? `demo-key-${index}`}
                   getDurationDisplay={(stepIndex) => String(stepIndex + 1)}
-                  bluePropTypeOverride={demoProp}
-                  redPropTypeOverride={demoProp}
+                  leftPropTypeOverride={demoProp}
+                  rightPropTypeOverride={demoProp}
                   sequenceWord={rawWord}
                 />
               {/if}
@@ -741,24 +741,25 @@
           >
             <div class="tool-group turns-group blue">
               <span class="tool-label"
-                ><span class="hand-dot blue" aria-hidden="true"></span>Blue
+                ><span class="hand-dot blue" aria-hidden="true"></span>Left
                 turns</span
               >
               <SegmentedControl
                 options={TURN_OPTIONS}
-                value={blueTurnsValue}
-                onchange={(v) => (blueTurnsValue = v)}
+                value={leftTurnsValue}
+                onchange={(v) => (leftTurnsValue = v)}
                 color="blue"
               />
             </div>
             <div class="tool-group turns-group red">
               <span class="tool-label"
-                ><span class="hand-dot red" aria-hidden="true"></span>Red turns</span
+                ><span class="hand-dot red" aria-hidden="true"></span>Right
+                turns</span
               >
               <SegmentedControl
                 options={TURN_OPTIONS}
-                value={redTurnsValue}
-                onchange={(v) => (redTurnsValue = v)}
+                value={rightTurnsValue}
+                onchange={(v) => (rightTurnsValue = v)}
                 color="red"
               />
             </div>
@@ -790,8 +791,8 @@
               <mod.default
                 {startPositionState}
                 embedded
-                bluePropTypeOverride={demoProp}
-                redPropTypeOverride={demoProp}
+                leftPropTypeOverride={demoProp}
+                rightPropTypeOverride={demoProp}
               />
             {/await}
           {:else if phase === "add-step"}
@@ -805,10 +806,10 @@
                 currentGridMode={gridMode}
                 onOptionSelected={handleOptionSelected}
                 hideFilters={isGuidedBuild}
-                bluePropTypeOverride={demoProp}
-                redPropTypeOverride={demoProp}
-                blueTurnsOverride={blueTurns}
-                redTurnsOverride={redTurns}
+                leftPropTypeOverride={demoProp}
+                rightPropTypeOverride={demoProp}
+                leftTurnsOverride={leftTurns}
+                rightTurnsOverride={rightTurns}
               />
             {/await}
           {:else if playSequence}
@@ -828,8 +829,8 @@
                     progressLine
                     progressLineSeekable
                     hoverHint="badge"
-                    bluePropType={demoProp}
-                    redPropType={demoProp}
+                    leftPropType={demoProp}
+                    rightPropType={demoProp}
                     trailSettingsOverride={HERO_TRAIL_PRESET}
                     tipEffectMap={HERO_TIP_EFFECT_MAP}
                     onStepChange={handlePlayerStepChange}

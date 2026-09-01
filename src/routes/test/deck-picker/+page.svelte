@@ -28,8 +28,8 @@
       extract: (e) => {
         const coord = parseTurnPattern(e.catalog.turnPattern);
         if (!coord) return e.catalog.turnPattern || 'none';
-        if (coord.blue === coord.red) return `${coord.blue}T`;
-        return `${coord.blue}|${coord.red}`;
+        if (coord.left === coord.right) return `${coord.left}T`;
+        return `${coord.left}|${coord.right}`;
       },
     },
     reversalPattern: {

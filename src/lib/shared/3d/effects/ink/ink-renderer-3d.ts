@@ -65,14 +65,14 @@ export class InkRenderer3D {
   private readonly age = new Float32Array(DROPLET_CAPACITY);
   private readonly lifetime = new Float32Array(DROPLET_CAPACITY);
   private readonly size = new Float32Array(DROPLET_CAPACITY);
-  private readonly red = new Float32Array(DROPLET_CAPACITY);
+  private readonly right = new Float32Array(DROPLET_CAPACITY);
   private readonly green = new Float32Array(DROPLET_CAPACITY);
-  private readonly blue = new Float32Array(DROPLET_CAPACITY);
+  private readonly left = new Float32Array(DROPLET_CAPACITY);
   private readonly emissive = new Uint8Array(DROPLET_CAPACITY);
   private readonly direction = new Vector3();
   private readonly orientation = new Quaternion();
-  private readonly pigment: MutableRgb = { red: 1, green: 1, blue: 1 };
-  private readonly edge: MutableRgb = { red: 1, green: 1, blue: 1 };
+  private readonly pigment: MutableRgb = { right: 1, green: 1, left: 1 };
+  private readonly edge: MutableRgb = { right: 1, green: 1, left: 1 };
   private readonly writeState: ParticleInstanceWrite = {
     x: 0,
     y: 0,
@@ -80,9 +80,9 @@ export class InkRenderer3D {
     scaleX: 1,
     scaleY: 1,
     scaleZ: 1,
-    red: 1,
+    right: 1,
     green: 1,
-    blue: 1,
+    left: 1,
     alpha: 1,
   };
   private clock = 0;
@@ -244,9 +244,9 @@ export class InkRenderer3D {
     write.quaternionY = this.orientation.y;
     write.quaternionZ = this.orientation.z;
     write.quaternionW = this.orientation.w;
-    write.red = color.red;
+    write.right = color.right;
     write.green = color.green;
-    write.blue = color.blue;
+    write.left = color.left;
     write.alpha = alpha;
     pool.write(write);
   }
@@ -286,9 +286,9 @@ export class InkRenderer3D {
         (0.8 + Math.random() * 2.6) *
         (0.5 + params.intensity * 0.5);
       setRgbFromHex(this.pigment, params.resolvedPalette.splatterTint);
-      this.red[slot] = this.pigment.red;
+      this.right[slot] = this.pigment.right;
       this.green[slot] = this.pigment.green;
-      this.blue[slot] = this.pigment.blue;
+      this.left[slot] = this.pigment.left;
       this.emissive[slot] = params.emissiveMaterial ? 1 : 0;
       state.dropletAccumulator -= 1;
     }
@@ -320,9 +320,9 @@ export class InkRenderer3D {
       write.quaternionY = 0;
       write.quaternionZ = 0;
       write.quaternionW = 1;
-      write.red = this.red[index]!;
+      write.right = this.right[index]!;
       write.green = this.green[index]!;
-      write.blue = this.blue[index]!;
+      write.left = this.left[index]!;
       write.alpha = Math.pow(1 - life, 1.4) * 0.9;
       (this.emissive[index] === 1
         ? this.dropletEmissive

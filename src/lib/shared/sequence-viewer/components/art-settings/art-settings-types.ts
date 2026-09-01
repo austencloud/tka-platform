@@ -57,8 +57,8 @@ export interface ArtSettingsPanelProps {
   onPlaybackModeChange?: (mode: PlaybackMode) => void;
   onStepSizeChange?: (size: StepPlaybackStepSize) => void;
   onPlaybackToggle?: () => void;
-  bluePropType?: string | null;
-  redPropType?: string | null;
+  leftPropType?: string | null;
+  rightPropType?: string | null;
   onPropChange?: (propType: PropType) => void;
   fanAppearance?: FanAppearance;
   onFanAppearanceChange?: (appearance: FanAppearance) => void;

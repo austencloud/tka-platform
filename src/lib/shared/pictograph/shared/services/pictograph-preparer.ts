@@ -14,6 +14,7 @@ import type { PropAssets } from "../../prop/domain/models/prop-assets";
 import { GridMode } from "../../grid/domain/enums/grid-enums";
 import { PropType } from "../../prop/domain/enums/prop-type";
 import {
+  HandSide,
   MotionType,
   HandPath,
   RotationDirection,
@@ -26,18 +27,18 @@ import { getPictographGeometryRevision } from "$lib/shared/render/services/picto
 // All render-path callers (ImageComposer, CompositionDispatcher) already pass
 // prop types through options, so this default is only hit in edge cases.
 const DEFAULT_PROP_SETTINGS = {
-  bluePropType: PropType.STAFF,
-  redPropType: PropType.STAFF,
+  leftPropType: PropType.STAFF,
+  rightPropType: PropType.STAFF,
 };
 
-/** One warning per session per colour — a propless grid would otherwise emit
+/** One warning per session per hand — a propless grid would otherwise emit
  *  hundreds of identical lines and bury the signal it exists to give. */
 let warnedMissingPropPlacement = false;
-function warnMissingPropPlacement(color: string): void {
+function warnMissingPropPlacement(hand: HandSide): void {
   if (warnedMissingPropPlacement) return;
   warnedMissingPropPlacement = true;
   console.warn(
-    `[PictographPreparer] Motion "${color}" has no propPlacementData — rendering ` +
+    `[PictographPreparer] Motion "${hand}" has no propPlacementData — rendering ` +
       `this cell without props. The data reached the renderer un-backfilled: run ` +
       `its read path through ensureStepPlacement() ` +
       `(pictograph/shared/services/motion-placement.ts). Further occurrences ` +
@@ -129,10 +130,13 @@ export class PictographPreparer {
   ): boolean {
     const motions = pictograph.motions;
     if (!motions) return false;
-    for (const [color, motion] of Object.entries(motions)) {
+    for (const [color, motion] of Object.entries(motions) as [
+      HandSide,
+      MotionData,
+    ][]) {
       if (!isVisibleMotion(motion)) continue;
-      if (color === "blue" && options?.showBlueMotion === false) continue;
-      if (color === "red" && options?.showRedMotion === false) continue;
+      if (color === HandSide.LEFT && options?.showLeftMotion === false) continue;
+      if (color === HandSide.RIGHT && options?.showRightMotion === false) continue;
       if (!motion.propPlacementData) continue;
       if (!prepared.propAssets[color]) return true;
     }
@@ -146,16 +150,16 @@ export class PictographPreparer {
     const gridMode = this.deriveGridMode(pictograph);
 
     const settings = {
-      bluePropType: options?.bluePropType ?? DEFAULT_PROP_SETTINGS.bluePropType,
-      redPropType: options?.redPropType ?? DEFAULT_PROP_SETTINGS.redPropType,
+      leftPropType: options?.leftPropType ?? DEFAULT_PROP_SETTINGS.leftPropType,
+      rightPropType: options?.rightPropType ?? DEFAULT_PROP_SETTINGS.rightPropType,
     };
 
-    const effectiveBlueProp = settings.bluePropType;
-    const effectiveRedProp = settings.redPropType;
+    const effectiveLeftProp = settings.leftPropType;
+    const effectiveRightProp = settings.rightPropType;
     const useHandPath =
       options?.handPathMode ||
-      (effectiveBlueProp === PropType.HAND &&
-        effectiveRedProp === PropType.HAND);
+      (effectiveLeftProp === PropType.HAND &&
+        effectiveRightProp === PropType.HAND);
 
     const effectivePictograph = useHandPath
       ? this.transformForHandPath(pictograph)
@@ -172,9 +176,9 @@ export class PictographPreparer {
       ) as PictographData["motions"],
     };
 
-    const showBlue = isVisibleMotion(pictographWithPropOverrides.motions.blue);
-    const showRed = isVisibleMotion(pictographWithPropOverrides.motions.red);
-    const soloMode = showBlue !== showRed;
+    const showLeft = isVisibleMotion(pictographWithPropOverrides.motions.left);
+    const showRight = isVisibleMotion(pictographWithPropOverrides.motions.right);
+    const soloMode = showLeft !== showRight;
 
     const arrowResult = await this.arrowManager.coordinateArrowLifecycle(
       pictographWithPropOverrides,
@@ -199,54 +203,54 @@ export class PictographPreparer {
     pictograph: PictographData,
     options?: PrepareOptions
   ): string {
-    const blue = pictograph.motions?.blue;
-    const red = pictograph.motions?.red;
+    const left = pictograph.motions?.left;
+    const right = pictograph.motions?.right;
 
-    const effectiveBlue =
-      options?.bluePropType ?? DEFAULT_PROP_SETTINGS.bluePropType;
-    const effectiveRed =
-      options?.redPropType ?? DEFAULT_PROP_SETTINGS.redPropType;
+    const effectiveLeft =
+      options?.leftPropType ?? DEFAULT_PROP_SETTINGS.leftPropType;
+    const effectiveRight =
+      options?.rightPropType ?? DEFAULT_PROP_SETTINGS.rightPropType;
 
     const parts = [
       pictograph.letter ?? "none",
-      blue?.motionType ?? "none",
-      blue?.startLocation ?? "",
-      blue?.endLocation ?? "",
-      blue?.rotationDirection ?? "",
-      blue?.turns ?? 0,
-      blue?.startOrientation ?? "",
-      blue?.endOrientation ?? "",
-      effectiveBlue ?? "",
-      blue?.arrowPlacementData?.manualAdjustmentX ?? 0,
-      blue?.arrowPlacementData?.manualAdjustmentY ?? 0,
-      red?.motionType ?? "none",
-      red?.startLocation ?? "",
-      red?.endLocation ?? "",
-      red?.rotationDirection ?? "",
-      red?.turns ?? 0,
-      red?.startOrientation ?? "",
-      red?.endOrientation ?? "",
-      effectiveRed ?? "",
-      red?.arrowPlacementData?.manualAdjustmentX ?? 0,
-      red?.arrowPlacementData?.manualAdjustmentY ?? 0,
+      left?.motionType ?? "none",
+      left?.startLocation ?? "",
+      left?.endLocation ?? "",
+      left?.rotationDirection ?? "",
+      left?.turns ?? 0,
+      left?.startOrientation ?? "",
+      left?.endOrientation ?? "",
+      effectiveLeft ?? "",
+      left?.arrowPlacementData?.manualAdjustmentX ?? 0,
+      left?.arrowPlacementData?.manualAdjustmentY ?? 0,
+      right?.motionType ?? "none",
+      right?.startLocation ?? "",
+      right?.endLocation ?? "",
+      right?.rotationDirection ?? "",
+      right?.turns ?? 0,
+      right?.startOrientation ?? "",
+      right?.endOrientation ?? "",
+      effectiveRight ?? "",
+      right?.arrowPlacementData?.manualAdjustmentX ?? 0,
+      right?.arrowPlacementData?.manualAdjustmentY ?? 0,
       options?.themeMode ?? "dark",
       (options?.useGridVersion ?? false) ? "grid" : "thumbnail",
       options?.handPathMode ||
-      (effectiveBlue === PropType.HAND && effectiveRed === PropType.HAND)
+      (effectiveLeft === PropType.HAND && effectiveRight === PropType.HAND)
         ? "hp"
         : "",
-      options?.showBlueMotion === false ? "hideBlue" : "",
-      options?.showRedMotion === false ? "hideRed" : "",
+      options?.showLeftMotion === false ? "hideBlue" : "",
+      options?.showRightMotion === false ? "hideRed" : "",
       // Chirality changes the beta offset, so a flip must not reuse the
       // unflipped entry.
-      options?.blueBuugengFlipped ? "bFlip" : "",
-      options?.redBuugengFlipped ? "rFlip" : "",
+      options?.leftBuugengFlipped ? "bFlip" : "",
+      options?.rightBuugengFlipped ? "rFlip" : "",
       pictograph.betaSwapped ? "bs" : "",
       getPictographGeometryRevision(pictograph) ?? "",
       // Visibility is render-relevant: an invisible placeholder hand must not
       // share a cache entry with a visible static twin.
-      blue?.isVisible === false ? "bInvis" : "",
-      red?.isVisible === false ? "rInvis" : "",
+      left?.isVisible === false ? "bInvis" : "",
+      right?.isVisible === false ? "rInvis" : "",
     ];
 
     return parts.join("|");
@@ -262,13 +266,13 @@ export class PictographPreparer {
     }
 
     if (
-      !isVisibleMotion(pictograph.motions?.blue) ||
-      !isVisibleMotion(pictograph.motions?.red)
+      !isVisibleMotion(pictograph.motions?.left) ||
+      !isVisibleMotion(pictograph.motions?.right)
     ) {
       return GridMode.DIAMOND;
     }
     try {
-      return _deriveGridMode(pictograph.motions.blue, pictograph.motions.red);
+      return _deriveGridMode(pictograph.motions.left, pictograph.motions.right);
     } catch {
       return GridMode.DIAMOND;
     }
@@ -278,35 +282,35 @@ export class PictographPreparer {
     pictograph: PictographData,
     options?: PrepareOptions
   ): Promise<{
-    propPositions: Record<string, PropPosition>;
-    propAssets: Record<string, PropAssets>;
+    propPositions: Partial<Record<HandSide, PropPosition>>;
+    propAssets: Partial<Record<HandSide, PropAssets>>;
   }> {
     if (!pictograph.motions) {
       return { propPositions: {}, propAssets: {} };
     }
 
-    const positions: Record<string, PropPosition> = {};
-    const assets: Record<string, PropAssets> = {};
+    const positions: Partial<Record<HandSide, PropPosition>> = {};
+    const assets: Partial<Record<HandSide, PropAssets>> = {};
     const settings = {
-      bluePropType: options?.bluePropType ?? DEFAULT_PROP_SETTINGS.bluePropType,
-      redPropType: options?.redPropType ?? DEFAULT_PROP_SETTINGS.redPropType,
+      leftPropType: options?.leftPropType ?? DEFAULT_PROP_SETTINGS.leftPropType,
+      rightPropType: options?.rightPropType ?? DEFAULT_PROP_SETTINGS.rightPropType,
       // Chirality decides whether the beta offset fires at all: two
       // opposite-chirality buugeng nest into an infinity symbol and must share
       // the hand point. Omitting these here made the beta calc read both props
       // as unflipped, so the nesting gate never fired in the app.
-      blueBuugengFlipped: options?.blueBuugengFlipped ?? false,
-      redBuugengFlipped: options?.redBuugengFlipped ?? false,
+      leftBuugengFlipped: options?.leftBuugengFlipped ?? false,
+      rightBuugengFlipped: options?.rightBuugengFlipped ?? false,
     };
 
     const motions = this.getMotionsWithOverrides(pictograph, settings, options);
 
     const visibility = {
-      showBlue: options?.showBlueMotion,
-      showRed: options?.showRedMotion,
+      showLeft: options?.showLeftMotion,
+      showRight: options?.showRightMotion,
     };
 
     await Promise.all(
-      motions.map(async ([color, motion]) => {
+      motions.map(async ([hand, motion]) => {
         try {
           if (!motion.propPlacementData) {
             // Bailing here renders the cell as grid + label with no prop in it,
@@ -317,7 +321,7 @@ export class PictographPreparer {
             // stored data is lean and its READ PATH is what needs fixing, not
             // this guard. Warn once per session so a broken path is loud
             // without spamming a grid of hundreds of cells.
-            warnMissingPropPlacement(color);
+            warnMissingPropPlacement(hand);
             return;
           }
 
@@ -338,20 +342,20 @@ export class PictographPreparer {
 
           if (!renderData.svgData) return;
 
-          assets[color] = {
+          assets[hand] = {
             imageSrc: renderData.svgData.svgContent,
             viewBox: `${renderData.svgData.viewBox.width} ${renderData.svgData.viewBox.height}`,
             center: renderData.svgData.center,
             propType: motion.propType,
           };
 
-          positions[color] = {
+          positions[hand] = {
             x: placementData.positionX,
             y: placementData.positionY,
             rotation: placementData.rotationAngle,
           };
         } catch (error) {
-          console.warn(`Failed to calculate ${color} prop:`, error);
+          console.warn(`Failed to calculate ${hand} prop:`, error);
         }
       })
     );
@@ -361,41 +365,46 @@ export class PictographPreparer {
 
   private getMotionsWithOverrides(
     pictograph: PictographData,
-    settings: { bluePropType?: unknown; redPropType?: unknown },
+    settings: { leftPropType?: unknown; rightPropType?: unknown },
     options?: PrepareOptions
-  ): [string, MotionData][] {
+  ): [HandSide, MotionData][] {
     return (
-      Object.entries(pictograph.motions || {})
+      Object.entries(pictograph.motions || {}) as [HandSide, MotionData][]
+    )
         // invisible placeholder = hand not really there (both-required Step shape)
-        .filter((entry): entry is [string, MotionData] => {
-          const [color, motion] = entry;
+        .filter((entry): entry is [HandSide, MotionData] => {
+          const [hand, motion] = entry;
           if (!isVisibleMotion(motion)) return false;
-          if (color === "blue" && options?.showBlueMotion === false)
+          if (hand === HandSide.LEFT && options?.showLeftMotion === false)
             return false;
-          if (color === "red" && options?.showRedMotion === false) return false;
+          if (hand === HandSide.RIGHT && options?.showRightMotion === false)
+            return false;
           return true;
         })
-        .map(([color, motion]) => {
+        .map(([hand, motion]) => {
           const explicitPropType =
-            color === "blue" ? options?.bluePropType : options?.redPropType;
+            hand === HandSide.LEFT
+              ? options?.leftPropType
+              : options?.rightPropType;
           if (explicitPropType !== undefined) {
-            return [color, { ...motion, propType: explicitPropType }] as [
-              string,
+            return [hand, { ...motion, propType: explicitPropType }] as [
+              HandSide,
               MotionData,
             ];
           }
 
           const settingsPropType =
-            color === "blue" ? settings.bluePropType : settings.redPropType;
+            hand === HandSide.LEFT
+              ? settings.leftPropType
+              : settings.rightPropType;
           if (settingsPropType) {
-            return [color, { ...motion, propType: settingsPropType }] as [
-              string,
+            return [hand, { ...motion, propType: settingsPropType }] as [
+              HandSide,
               MotionData,
             ];
           }
-          return [color, motion] as [string, MotionData];
-        })
-    );
+          return [hand, motion] as [HandSide, MotionData];
+        });
   }
 
   private transformForHandPath(pictograph: PictographData): PictographData {
@@ -467,8 +476,8 @@ export class PictographPreparer {
     return {
       ...pictograph,
       motions: {
-        blue: motions.blue ? transform(motions.blue) : undefined,
-        red: motions.red ? transform(motions.red) : undefined,
+        left: motions.left ? transform(motions.left) : undefined,
+        right: motions.right ? transform(motions.right) : undefined,
       } as PictographData["motions"],
     };
   }

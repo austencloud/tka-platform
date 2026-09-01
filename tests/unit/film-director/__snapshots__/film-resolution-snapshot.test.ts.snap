@@ -2,7 +2,7 @@
 
 exports[`film resolution snapshots > "Break the Star" (break) resolves to its frozen spec 1`] = `
 "{
-  "version": 4,
+  "version": 5,
   "id": "break-the-star-r1",
   "title": "Break the Star",
   "brief": "Five performers hold a star facing the audience, then break it: the fans slide out sideways, the back pair walks forward, the tip backs up, and all five land on one line.",
@@ -111,8 +111,8 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -174,8 +174,8 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -237,8 +237,8 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -300,8 +300,8 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -363,8 +363,8 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -555,7 +555,7 @@ exports[`film resolution snapshots > "Break the Star" (break) resolves to its fr
 
 exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its frozen spec 1`] = `
 "{
-  "version": 4,
+  "version": 5,
   "id": "chance-suite-r1",
   "title": "Chance Suite",
   "brief": "A film the seed writes: environment, formation, prop, effect, effort, and both hand planes are all drawn from pools. Rerolling means bumping one integer in the seed block, and the opening and closing scenes share directives but land on different rolls.",
@@ -639,8 +639,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wheel",
-            "redPlane": "wheel",
+            "leftPlane": "wheel",
+            "rightPlane": "wheel",
             "stepPlanes": []
           },
           {
@@ -682,8 +682,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "left-wing",
-            "redPlane": "left-wing",
+            "leftPlane": "left-wing",
+            "rightPlane": "left-wing",
             "stepPlanes": []
           },
           {
@@ -725,8 +725,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "right-shield",
-            "redPlane": "backward-ramp",
+            "leftPlane": "right-shield",
+            "rightPlane": "backward-ramp",
             "stepPlanes": []
           },
           {
@@ -768,8 +768,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "floor",
-            "redPlane": "right-wing",
+            "leftPlane": "floor",
+            "rightPlane": "right-wing",
             "stepPlanes": []
           }
         ],
@@ -884,7 +884,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
     {
       "id": "distinct-everything",
       "title": "Distinct everything",
-      "intent": "Five performers where the distinct draws guarantee no repeats: five different props exactly saturate the pool, and effects, efforts, and blue planes each differ across the cast.",
+      "intent": "Five performers where the distinct draws guarantee no repeats: five different props exactly saturate the pool, and effects, efforts, and left planes each differ across the cast.",
       "startSeconds": 9,
       "durationSeconds": 10,
       "transition": {
@@ -951,8 +951,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "floor",
-            "redPlane": "wall",
+            "leftPlane": "floor",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -994,8 +994,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "right-shield",
-            "redPlane": "wall",
+            "leftPlane": "right-shield",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -1037,8 +1037,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "right-wing",
-            "redPlane": "wall",
+            "leftPlane": "right-wing",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -1080,8 +1080,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "left-wing",
-            "redPlane": "wall",
+            "leftPlane": "left-wing",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -1123,8 +1123,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "forward-ramp",
-            "redPlane": "wall",
+            "leftPlane": "forward-ramp",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -1350,17 +1350,17 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": [
               {
                 "step": 4,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "wheel"
               },
               {
                 "step": 4,
-                "hand": "red",
+                "hand": "right",
                 "plane": "backward-ramp"
               }
             ]
@@ -1404,17 +1404,17 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": -1,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": [
               {
                 "step": 4,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "wheel"
               },
               {
                 "step": 4,
-                "hand": "red",
+                "hand": "right",
                 "plane": "right-shield"
               }
             ]
@@ -1458,17 +1458,17 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": -2,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": [
               {
                 "step": 4,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "floor"
               },
               {
                 "step": 4,
-                "hand": "red",
+                "hand": "right",
                 "plane": "left-wing"
               }
             ]
@@ -1512,17 +1512,17 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": -3,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": [
               {
                 "step": 4,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "floor"
               },
               {
                 "step": 4,
-                "hand": "red",
+                "hand": "right",
                 "plane": "right-wing"
               }
             ]
@@ -1566,17 +1566,17 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": -4,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": [
               {
                 "step": 4,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "floor"
               },
               {
                 "step": 4,
-                "hand": "red",
+                "hand": "right",
                 "plane": "forward-ramp"
               }
             ]
@@ -1620,17 +1620,17 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": -5,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": [
               {
                 "step": 4,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "floor"
               },
               {
                 "step": 4,
-                "hand": "red",
+                "hand": "right",
                 "plane": "right-shield"
               }
             ]
@@ -1902,8 +1902,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "left-shield",
-            "redPlane": "left-wing",
+            "leftPlane": "left-shield",
+            "rightPlane": "left-wing",
             "stepPlanes": []
           },
           {
@@ -1945,8 +1945,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "backward-ramp",
-            "redPlane": "right-wing",
+            "leftPlane": "backward-ramp",
+            "rightPlane": "right-wing",
             "stepPlanes": []
           },
           {
@@ -1988,8 +1988,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "left-wing",
-            "redPlane": "wall",
+            "leftPlane": "left-wing",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -2031,8 +2031,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "forward-ramp",
-            "redPlane": "wheel",
+            "leftPlane": "forward-ramp",
+            "rightPlane": "wheel",
             "stepPlanes": []
           },
           {
@@ -2074,8 +2074,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "floor",
+            "leftPlane": "wall",
+            "rightPlane": "floor",
             "stepPlanes": []
           },
           {
@@ -2117,8 +2117,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "right-shield",
-            "redPlane": "right-shield",
+            "leftPlane": "right-shield",
+            "rightPlane": "right-shield",
             "stepPlanes": []
           },
           {
@@ -2160,8 +2160,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "right-wing",
-            "redPlane": "left-shield",
+            "leftPlane": "right-wing",
+            "rightPlane": "left-shield",
             "stepPlanes": []
           },
           {
@@ -2203,8 +2203,8 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wheel",
-            "redPlane": "backward-ramp",
+            "leftPlane": "wheel",
+            "rightPlane": "backward-ramp",
             "stepPlanes": []
           }
         ],
@@ -2499,7 +2499,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
 
 exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec 1`] = `
 "{
-  "version": 4,
+  "version": 5,
   "id": "ember-r1",
   "title": "Ember",
   "brief": "A master and an apprentice, and one ten-step figure passed between them: full at level 3 with a turn figure of [1, fl, 0, half], shadowed flat a beat behind, taken alone at level 2, then performed on fire by the student while the teacher marks it in smoke. Every axis is pinned — no directive randomness anywhere.",
@@ -2592,8 +2592,8 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             ],
             "beatOffset": 0,
             "staffLengthCm": 150,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -2800,8 +2800,8 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             ],
             "beatOffset": 0,
             "staffLengthCm": 150,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -2877,8 +2877,8 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             ],
             "beatOffset": -1,
             "staffLengthCm": 120,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -3076,42 +3076,42 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             ],
             "beatOffset": 0,
             "staffLengthCm": 120,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": [
               {
                 "step": 4,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "wheel"
               },
               {
                 "step": 5,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "wheel"
               },
               {
                 "step": 5,
-                "hand": "red",
+                "hand": "right",
                 "plane": "wheel"
               },
               {
                 "step": 6,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "wheel"
               },
               {
                 "step": 6,
-                "hand": "red",
+                "hand": "right",
                 "plane": "wheel"
               },
               {
                 "step": 7,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "wheel"
               },
               {
                 "step": 7,
-                "hand": "red",
+                "hand": "right",
                 "plane": "wheel"
               }
             ]
@@ -3189,8 +3189,8 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             ],
             "beatOffset": -1,
             "staffLengthCm": 150,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -3403,8 +3403,8 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             ],
             "beatOffset": 0,
             "staffLengthCm": 120,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -3450,8 +3450,8 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
             ],
             "beatOffset": -1,
             "staffLengthCm": 150,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -3581,7 +3581,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
 
 exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen spec 1`] = `
 "{
-  "version": 4,
+  "version": 5,
   "id": "figures-r1",
   "title": "Figures",
   "brief": "Five scenes on what a group writes on the floor: a solo before a seated house, a silhouette that splits in two, two rings turning opposite ways, four performers weaving a figure eight, and a cast that walks into formation on one instruction.",
@@ -3690,8 +3690,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -3881,8 +3881,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -3924,8 +3924,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -3962,8 +3962,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
           "decay": 7,
           "interval": 0.72,
           "intensity": 0.6,
-          "blueColor": "#9fd8ff",
-          "redColor": "#ffb3c7"
+          "leftColor": "#9fd8ff",
+          "rightColor": "#ffb3c7"
         }
       },
       "camera": {
@@ -4247,8 +4247,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -4382,8 +4382,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": -4,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -4517,8 +4517,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": -8,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -4652,8 +4652,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -4787,8 +4787,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": -4,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -4922,8 +4922,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": -8,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -5549,8 +5549,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": 0,
             "staffLengthCm": 140,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -5713,8 +5713,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": -1,
             "staffLengthCm": 140,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -5876,8 +5876,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": -2,
             "staffLengthCm": 140,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -6039,8 +6039,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": -3,
             "staffLengthCm": 140,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -6460,8 +6460,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -6515,8 +6515,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -6570,8 +6570,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -6625,8 +6625,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -6680,8 +6680,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -6735,8 +6735,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -6790,8 +6790,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -6845,8 +6845,8 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -7081,7 +7081,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
 
 exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its frozen spec 1`] = `
 "{
-  "version": 4,
+  "version": 5,
   "id": "nine-planes-r1",
   "title": "Nine Planes",
   "brief": "Four scenes that put the plane grammar on camera: a whole-cast wheel circle, a distinct-plane draw where no two performers match, a mid-phrase scramble driven by per-step overrides, and a split shield wall with its grids dictated visible.",
@@ -7167,8 +7167,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wheel",
-            "redPlane": "wheel",
+            "leftPlane": "wheel",
+            "rightPlane": "wheel",
             "stepPlanes": []
           },
           {
@@ -7210,8 +7210,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wheel",
-            "redPlane": "wheel",
+            "leftPlane": "wheel",
+            "rightPlane": "wheel",
             "stepPlanes": []
           },
           {
@@ -7253,8 +7253,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wheel",
-            "redPlane": "wheel",
+            "leftPlane": "wheel",
+            "rightPlane": "wheel",
             "stepPlanes": []
           },
           {
@@ -7296,8 +7296,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wheel",
-            "redPlane": "wheel",
+            "leftPlane": "wheel",
+            "rightPlane": "wheel",
             "stepPlanes": []
           },
           {
@@ -7339,8 +7339,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wheel",
-            "redPlane": "wheel",
+            "leftPlane": "wheel",
+            "rightPlane": "wheel",
             "stepPlanes": []
           },
           {
@@ -7382,8 +7382,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wheel",
-            "redPlane": "wheel",
+            "leftPlane": "wheel",
+            "rightPlane": "wheel",
             "stepPlanes": []
           },
           {
@@ -7425,8 +7425,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wheel",
-            "redPlane": "wheel",
+            "leftPlane": "wheel",
+            "rightPlane": "wheel",
             "stepPlanes": []
           },
           {
@@ -7468,8 +7468,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wheel",
-            "redPlane": "wheel",
+            "leftPlane": "wheel",
+            "rightPlane": "wheel",
             "stepPlanes": []
           }
         ],
@@ -7666,7 +7666,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
     {
       "id": "no-two-alike",
       "title": "No two alike",
-      "intent": "A line of eight where every performer's blue hand draws a different plane from the nine-plane catalog, and every red hand draws its own as well.",
+      "intent": "A line of eight where every performer's left hand draws a different plane from the nine-plane catalog, and every right hand draws its own as well.",
       "startSeconds": 9,
       "durationSeconds": 9,
       "transition": {
@@ -7733,8 +7733,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "left-wing",
-            "redPlane": "left-wing",
+            "leftPlane": "left-wing",
+            "rightPlane": "left-wing",
             "stepPlanes": []
           },
           {
@@ -7776,8 +7776,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "backward-ramp",
-            "redPlane": "wall",
+            "leftPlane": "backward-ramp",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -7819,8 +7819,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "forward-ramp",
-            "redPlane": "forward-ramp",
+            "leftPlane": "forward-ramp",
+            "rightPlane": "forward-ramp",
             "stepPlanes": []
           },
           {
@@ -7862,8 +7862,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "right-wing",
-            "redPlane": "right-wing",
+            "leftPlane": "right-wing",
+            "rightPlane": "right-wing",
             "stepPlanes": []
           },
           {
@@ -7905,8 +7905,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "left-shield",
-            "redPlane": "right-shield",
+            "leftPlane": "left-shield",
+            "rightPlane": "right-shield",
             "stepPlanes": []
           },
           {
@@ -7948,8 +7948,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "left-shield",
+            "leftPlane": "wall",
+            "rightPlane": "left-shield",
             "stepPlanes": []
           },
           {
@@ -7991,8 +7991,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wheel",
-            "redPlane": "floor",
+            "leftPlane": "wheel",
+            "rightPlane": "floor",
             "stepPlanes": []
           },
           {
@@ -8034,8 +8034,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "floor",
-            "redPlane": "backward-ramp",
+            "leftPlane": "floor",
+            "rightPlane": "backward-ramp",
             "stepPlanes": []
           }
         ],
@@ -8267,27 +8267,27 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": [
               {
                 "step": 2,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "left-shield"
               },
               {
                 "step": 3,
-                "hand": "red",
+                "hand": "right",
                 "plane": "wall"
               },
               {
                 "step": 5,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "left-wing"
               },
               {
                 "step": 6,
-                "hand": "red",
+                "hand": "right",
                 "plane": "floor"
               }
             ]
@@ -8331,27 +8331,27 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": [
               {
                 "step": 2,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "left-shield"
               },
               {
                 "step": 3,
-                "hand": "red",
+                "hand": "right",
                 "plane": "right-shield"
               },
               {
                 "step": 5,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "right-wing"
               },
               {
                 "step": 6,
-                "hand": "red",
+                "hand": "right",
                 "plane": "left-shield"
               }
             ]
@@ -8395,27 +8395,27 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": [
               {
                 "step": 2,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "left-wing"
               },
               {
                 "step": 3,
-                "hand": "red",
+                "hand": "right",
                 "plane": "left-wing"
               },
               {
                 "step": 5,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "backward-ramp"
               },
               {
                 "step": 6,
-                "hand": "red",
+                "hand": "right",
                 "plane": "right-shield"
               }
             ]
@@ -8459,27 +8459,27 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": [
               {
                 "step": 2,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "right-wing"
               },
               {
                 "step": 3,
-                "hand": "red",
+                "hand": "right",
                 "plane": "right-wing"
               },
               {
                 "step": 5,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "right-shield"
               },
               {
                 "step": 6,
-                "hand": "red",
+                "hand": "right",
                 "plane": "left-shield"
               }
             ]
@@ -8523,27 +8523,27 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": [
               {
                 "step": 2,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "wheel"
               },
               {
                 "step": 3,
-                "hand": "red",
+                "hand": "right",
                 "plane": "wall"
               },
               {
                 "step": 5,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "left-wing"
               },
               {
                 "step": 6,
-                "hand": "red",
+                "hand": "right",
                 "plane": "wheel"
               }
             ]
@@ -8587,27 +8587,27 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": [
               {
                 "step": 2,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "backward-ramp"
               },
               {
                 "step": 3,
-                "hand": "red",
+                "hand": "right",
                 "plane": "right-wing"
               },
               {
                 "step": 5,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "wall"
               },
               {
                 "step": 6,
-                "hand": "red",
+                "hand": "right",
                 "plane": "left-shield"
               }
             ]
@@ -8651,27 +8651,27 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": [
               {
                 "step": 2,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "floor"
               },
               {
                 "step": 3,
-                "hand": "red",
+                "hand": "right",
                 "plane": "backward-ramp"
               },
               {
                 "step": 5,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "left-wing"
               },
               {
                 "step": 6,
-                "hand": "red",
+                "hand": "right",
                 "plane": "left-shield"
               }
             ]
@@ -8715,27 +8715,27 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": [
               {
                 "step": 2,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "right-shield"
               },
               {
                 "step": 3,
-                "hand": "red",
+                "hand": "right",
                 "plane": "left-wing"
               },
               {
                 "step": 5,
-                "hand": "blue",
+                "hand": "left",
                 "plane": "right-wing"
               },
               {
                 "step": 6,
-                "hand": "red",
+                "hand": "right",
                 "plane": "backward-ramp"
               }
             ]
@@ -8956,8 +8956,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "left-shield",
-            "redPlane": "left-shield",
+            "leftPlane": "left-shield",
+            "rightPlane": "left-shield",
             "stepPlanes": []
           },
           {
@@ -8999,8 +8999,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "left-shield",
-            "redPlane": "left-shield",
+            "leftPlane": "left-shield",
+            "rightPlane": "left-shield",
             "stepPlanes": []
           },
           {
@@ -9042,8 +9042,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "left-shield",
-            "redPlane": "left-shield",
+            "leftPlane": "left-shield",
+            "rightPlane": "left-shield",
             "stepPlanes": []
           },
           {
@@ -9085,8 +9085,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "left-shield",
-            "redPlane": "left-shield",
+            "leftPlane": "left-shield",
+            "rightPlane": "left-shield",
             "stepPlanes": []
           },
           {
@@ -9128,8 +9128,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "right-shield",
-            "redPlane": "right-shield",
+            "leftPlane": "right-shield",
+            "rightPlane": "right-shield",
             "stepPlanes": []
           },
           {
@@ -9171,8 +9171,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "right-shield",
-            "redPlane": "right-shield",
+            "leftPlane": "right-shield",
+            "rightPlane": "right-shield",
             "stepPlanes": []
           },
           {
@@ -9214,8 +9214,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "right-shield",
-            "redPlane": "right-shield",
+            "leftPlane": "right-shield",
+            "rightPlane": "right-shield",
             "stepPlanes": []
           },
           {
@@ -9257,8 +9257,8 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "right-shield",
-            "redPlane": "right-shield",
+            "leftPlane": "right-shield",
+            "rightPlane": "right-shield",
             "stepPlanes": []
           }
         ],
@@ -9427,10 +9427,10 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
 
 exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its frozen spec 1`] = `
 "{
-  "version": 4,
+  "version": 5,
   "id": "proving-grounds-r1",
   "title": "Proving Grounds",
-  "brief": "One scene per closed gap. Three performers draw distinct blue and red planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing.",
+  "brief": "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing.",
   "format": {
     "width": 1920,
     "height": 1080,
@@ -9444,7 +9444,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
     {
       "id": "combined-draw",
       "title": "Combined Draw",
-      "intent": "Gap 9: three performers draw DISTINCT blue planes and DISTINCT red planes, and none of the six is ever the wall plane.",
+      "intent": "Gap 9: three performers draw DISTINCT left planes and DISTINCT right planes, and none of the six is ever the wall plane.",
       "startSeconds": 0,
       "durationSeconds": 12,
       "transition": {
@@ -9520,8 +9520,8 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wheel",
-            "redPlane": "right-wing",
+            "leftPlane": "wheel",
+            "rightPlane": "right-wing",
             "stepPlanes": []
           },
           {
@@ -9563,8 +9563,8 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "floor",
-            "redPlane": "left-wing",
+            "leftPlane": "floor",
+            "rightPlane": "left-wing",
             "stepPlanes": []
           },
           {
@@ -9606,8 +9606,8 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "backward-ramp",
-            "redPlane": "right-shield",
+            "leftPlane": "backward-ramp",
+            "rightPlane": "right-shield",
             "stepPlanes": []
           }
         ],
@@ -9761,8 +9761,8 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -9814,8 +9814,8 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -9914,7 +9914,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
 
 exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its frozen spec 1`] = `
 "{
-  "version": 4,
+  "version": 5,
   "id": "sky-is-the-limit-r1",
   "title": "Sky Is the Limit",
   "brief": "A first directed proof that changes cast, formation, prop, effect, effort, environment, timing, and camera without inheriting the viewer settings of whoever opens it.",
@@ -9998,8 +9998,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -10041,8 +10041,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -10084,8 +10084,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -10127,8 +10127,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -10170,8 +10170,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -10213,8 +10213,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -10256,8 +10256,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -10299,8 +10299,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -10617,8 +10617,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -10660,8 +10660,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -10703,8 +10703,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -10866,8 +10866,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -10909,8 +10909,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -10952,8 +10952,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -10995,8 +10995,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -11164,8 +11164,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -11207,8 +11207,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": -1,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -11250,8 +11250,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": -2,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -11293,8 +11293,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": -3,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -11336,8 +11336,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": -4,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -11379,8 +11379,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": -5,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -11422,8 +11422,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": -6,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -11465,8 +11465,8 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
             ],
             "beatOffset": -7,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -11635,7 +11635,7 @@ exports[`film resolution snapshots > "Sky Is the Limit" (sky) resolves to its fr
 
 exports[`film resolution snapshots > "Star of Five" (star) resolves to its frozen spec 1`] = `
 "{
-  "version": 4,
+  "version": 5,
   "id": "star-of-five-r1",
   "title": "Star of Five",
   "brief": "Five performers hold a star facing the audience under the clouds. The camera opens tight on the baton at the tip and pulls back until the whole star is in frame.",
@@ -11719,8 +11719,8 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -11762,8 +11762,8 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -11805,8 +11805,8 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -11848,8 +11848,8 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -11891,8 +11891,8 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -12043,7 +12043,7 @@ exports[`film resolution snapshots > "Star of Five" (star) resolves to its froze
 
 exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to its frozen spec 1`] = `
 "{
-  "version": 4,
+  "version": 5,
   "id": "understudy-night-r1",
   "title": "Understudy Night",
   "brief": "A pinned lead and four understudies who copy the lead's prop but are forbidden the lead's effect, a cast that draws all eight efforts at once, a sameAs mirror pair, and a closing circle with one deliberate outlier.",
@@ -12127,8 +12127,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -12170,8 +12170,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -12213,8 +12213,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -12256,8 +12256,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -12299,8 +12299,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -12528,8 +12528,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -12571,8 +12571,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -12614,8 +12614,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -12657,8 +12657,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -12700,8 +12700,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -12743,8 +12743,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -12786,8 +12786,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -12829,8 +12829,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],
@@ -13078,8 +13078,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": 110,
-            "bluePlane": "wheel",
-            "redPlane": "floor",
+            "leftPlane": "wheel",
+            "rightPlane": "floor",
             "stepPlanes": []
           },
           {
@@ -13121,8 +13121,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": 150,
-            "bluePlane": "wheel",
-            "redPlane": "floor",
+            "leftPlane": "wheel",
+            "rightPlane": "floor",
             "stepPlanes": []
           }
         ],
@@ -13266,8 +13266,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -13309,8 +13309,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -13352,8 +13352,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -13395,8 +13395,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -13438,8 +13438,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           },
           {
@@ -13481,8 +13481,8 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
             ],
             "beatOffset": 0,
             "staffLengthCm": null,
-            "bluePlane": "wall",
-            "redPlane": "wall",
+            "leftPlane": "wall",
+            "rightPlane": "wall",
             "stepPlanes": []
           }
         ],

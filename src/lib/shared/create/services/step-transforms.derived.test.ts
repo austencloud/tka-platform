@@ -3,7 +3,7 @@ import { rotateBeat } from "./step-transforms";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -23,15 +23,15 @@ describe("single-hand rotateBeat reconciles positions", () => {
     const s = createStepData({
       stepNumber: 1,
       motions: {
-        [MotionColor.BLUE]: createMotionData({
-          color: MotionColor.BLUE,
+        [HandSide.LEFT]: createMotionData({
+          hand: HandSide.LEFT,
           motionType: MotionType.PRO,
           rotationDirection: RotationDirection.CLOCKWISE,
           startLocation: GridLocation.NORTH,
           endLocation: GridLocation.EAST,
         }),
-        [MotionColor.RED]: createMotionData({
-          color: MotionColor.RED,
+        [HandSide.RIGHT]: createMotionData({
+          hand: HandSide.RIGHT,
           motionType: MotionType.PRO,
           rotationDirection: RotationDirection.CLOCKWISE,
           startLocation: GridLocation.SOUTH,
@@ -40,16 +40,16 @@ describe("single-hand rotateBeat reconciles positions", () => {
       },
     });
 
-    // Rotate ONLY blue by 1 step (45° CW) — positions must reflect the new pair.
-    const out = await rotateBeat(s, 1, GridMode.DIAMOND, queryStub, "blue");
+    // Rotate ONLY the left hand by 1 step (45° CW) — positions must reflect the new pair.
+    const out = await rotateBeat(s, 1, GridMode.DIAMOND, queryStub, "left");
 
-    const blue = out.motions[MotionColor.BLUE]!;
-    const red = out.motions[MotionColor.RED]!;
+    const left = out.motions[HandSide.LEFT]!;
+    const right = out.motions[HandSide.RIGHT]!;
     expect(out.startPosition).toBe(
-      getGridPositionFromLocations(blue.startLocation, red.startLocation)
+      getGridPositionFromLocations(left.startLocation, right.startLocation)
     );
     expect(out.endPosition).toBe(
-      getGridPositionFromLocations(blue.endLocation, red.endLocation)
+      getGridPositionFromLocations(left.endLocation, right.endLocation)
     );
   });
 });

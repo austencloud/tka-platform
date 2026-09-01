@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../svg-generator", () => ({
   getBaseMotionColors: () => ({
-    blue: "#canonical-blue",
-    red: "#canonical-red",
+    left: "#canonical-blue",
+    right: "#canonical-red",
   }),
 }));
 
@@ -11,19 +11,19 @@ import { PropTypeManager } from "../prop-type-manager";
 
 describe("Tunnel pictograph hand colors", () => {
   it("loads every generated layer with the canonical blue-Left/red-Right pair when spectrum is off", async () => {
-    const loads: Array<{ blue: string; red: string }> = [];
+    const loads: Array<{ left: string; right: string }> = [];
     const manager = new PropTypeManager();
     manager.updateRefs({
       animationRenderer: {
         loadAdditionalLayerPropTextures: vi.fn(
           (
             _index: number,
-            _bluePropType: string,
-            _redPropType: string,
-            blue: string,
-            red: string
+            _leftPropType: string,
+            _rightPropType: string,
+            left: string,
+            right: string
           ) => {
-            loads.push({ blue, red });
+            loads.push({ left, right });
             return Promise.resolve();
           }
         ),
@@ -34,8 +34,8 @@ describe("Tunnel pictograph hand colors", () => {
 
     expect(loads).toEqual(
       Array.from({ length: 4 }, () => ({
-        blue: "#canonical-blue",
-        red: "#canonical-red",
+        left: "#canonical-blue",
+        right: "#canonical-red",
       }))
     );
   });
@@ -46,28 +46,28 @@ describe("Tunnel pictograph hand colors", () => {
     manager.updateRefs({
       propTextureService: {
         state: {
-          blueDimensions: { width: 100, height: 20 },
-          redDimensions: { width: 100, height: 20 },
+          leftDimensions: { width: 100, height: 20 },
+          rightDimensions: { width: 100, height: 20 },
         },
         loadPropTextures,
       } as never,
       animationRenderer: {
-        prepareBluePropCrossfade: vi.fn(),
-        prepareRedPropCrossfade: vi.fn(),
-        startBluePropCrossfade: vi.fn(),
-        startRedPropCrossfade: vi.fn(),
+        prepareLeftPropCrossfade: vi.fn(),
+        prepareRightPropCrossfade: vi.fn(),
+        startLeftPropCrossfade: vi.fn(),
+        startRightPropCrossfade: vi.fn(),
       } as never,
     });
     const state = {
-      currentBluePropType: "staff",
-      currentRedPropType: "staff",
-      setBluePropDimensions: vi.fn(),
-      setRedPropDimensions: vi.fn(),
+      currentLeftPropType: "staff",
+      currentRightPropType: "staff",
+      setLeftPropDimensions: vi.fn(),
+      setRightPropDimensions: vi.fn(),
     } as never;
     const frame = () => ({}) as never;
     const baseProps = {
-      blueProp: null,
-      redProp: null,
+      leftProp: null,
+      rightProp: null,
       additionalLayers: [],
       tunnelSpectrum: false,
     };
@@ -75,7 +75,7 @@ describe("Tunnel pictograph hand colors", () => {
     manager.handleAdditionalLayers(
       {
         ...baseProps,
-        tunnelPropColors: { blue: "#123456", red: "#abcdef" },
+        tunnelPropColors: { left: "#123456", right: "#abcdef" },
       },
       state,
       frame,
@@ -83,14 +83,14 @@ describe("Tunnel pictograph hand colors", () => {
     );
     await vi.waitFor(() => expect(loadPropTextures).toHaveBeenCalledTimes(1));
     expect(loadPropTextures).toHaveBeenLastCalledWith("staff", "staff", true, {
-      blue: "#123456",
-      red: "#abcdef",
+      left: "#123456",
+      right: "#abcdef",
     });
 
     manager.handleAdditionalLayers(
       {
         ...baseProps,
-        tunnelPropColors: { blue: "#654321", red: "#fedcba" },
+        tunnelPropColors: { left: "#654321", right: "#fedcba" },
       },
       state,
       frame,
@@ -98,8 +98,8 @@ describe("Tunnel pictograph hand colors", () => {
     );
     await vi.waitFor(() => expect(loadPropTextures).toHaveBeenCalledTimes(2));
     expect(loadPropTextures).toHaveBeenLastCalledWith("staff", "staff", true, {
-      blue: "#654321",
-      red: "#fedcba",
+      left: "#654321",
+      right: "#fedcba",
     });
   });
 });

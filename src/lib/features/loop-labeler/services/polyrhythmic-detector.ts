@@ -6,14 +6,14 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 
 export interface StepProperties {
   step: number;
-  blueMotionType: string;
-  redMotionType: string;
-  blueRotDir: string;
-  redRotDir: string;
-  blueStartLoc: string;
-  redStartLoc: string;
-  blueEndLoc: string;
-  redEndLoc: string;
+  leftMotionType: string;
+  rightMotionType: string;
+  leftRotDir: string;
+  rightRotDir: string;
+  leftStartLoc: string;
+  rightStartLoc: string;
+  leftEndLoc: string;
+  rightEndLoc: string;
   timing: string;
   letterType: string;
   letter: string;
@@ -73,19 +73,19 @@ function allSame(values: string[]): boolean {
 function extractBeatProperties(
   rawStep: Record<string, unknown>
 ): StepProperties {
-  const blue = (rawStep.blueAttributes as Record<string, unknown>) || {};
-  const red = (rawStep.redAttributes as Record<string, unknown>) || {};
+  const left = (rawStep.leftAttributes as Record<string, unknown>) || {};
+  const right = (rawStep.rightAttributes as Record<string, unknown>) || {};
 
   return {
     step: (rawStep.beat as number) || 0,
-    blueMotionType: (blue.motionType as string) || "unknown",
-    redMotionType: (red.motionType as string) || "unknown",
-    blueRotDir: (blue.propRotDir as string) || "unknown",
-    redRotDir: (red.propRotDir as string) || "unknown",
-    blueStartLoc: (blue.startLoc as string) || "unknown",
-    redStartLoc: (red.startLoc as string) || "unknown",
-    blueEndLoc: (blue.endLoc as string) || "unknown",
-    redEndLoc: (red.endLoc as string) || "unknown",
+    leftMotionType: (left.motionType as string) || "unknown",
+    rightMotionType: (right.motionType as string) || "unknown",
+    leftRotDir: (left.propRotDir as string) || "unknown",
+    rightRotDir: (right.propRotDir as string) || "unknown",
+    leftStartLoc: (left.startLoc as string) || "unknown",
+    rightStartLoc: (right.startLoc as string) || "unknown",
+    leftEndLoc: (left.endLoc as string) || "unknown",
+    rightEndLoc: (right.endLoc as string) || "unknown",
     timing: (rawStep.timing as string) || "none",
     letterType: (rawStep.letterType as string) || "unknown",
     letter: (rawStep.letter as string) || "",
@@ -132,7 +132,9 @@ function checkPropertyConsistency(
   for (const group of positionGroups) {
     const values = group.map((stepNum) => {
       const matchingStep = steps.find((b) => b.step === stepNum);
-      return matchingStep ? getPropertyValue(matchingStep, property) : "unknown";
+      return matchingStep
+        ? getPropertyValue(matchingStep, property)
+        : "unknown";
     });
 
     if (!allSame(values)) {
@@ -171,14 +173,14 @@ function analyzePeriod(
   }
 
   const propertiesToCheck = [
-    "blueMotionType",
-    "redMotionType",
-    "blueRotDir",
-    "redRotDir",
-    "blueStartLoc",
-    "redStartLoc",
-    "blueEndLoc",
-    "redEndLoc",
+    "leftMotionType",
+    "rightMotionType",
+    "leftRotDir",
+    "rightRotDir",
+    "leftStartLoc",
+    "rightStartLoc",
+    "leftEndLoc",
+    "rightEndLoc",
     "timing",
     "letterType",
   ];
@@ -268,17 +270,13 @@ export function detectPolyrhythmic(
   const length = steps.length;
 
   if (length < 4) {
-    return noPolyrhythmResult(
-      "Sequence too short for polyrhythmic analysis"
-    );
+    return noPolyrhythmResult("Sequence too short for polyrhythmic analysis");
   }
 
   const factors = getProperFactors(length);
 
   if (factors.length < 2) {
-    return noPolyrhythmResult(
-      "Sequence length has insufficient factors"
-    );
+    return noPolyrhythmResult("Sequence length has insufficient factors");
   }
 
   const analyses: PeriodAnalysis[] = [];

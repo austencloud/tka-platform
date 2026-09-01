@@ -45,7 +45,7 @@
     layers.map((seq, i) => {
       const m = mods[i] ?? { staggerSteps: 0, speed: 1 };
       const p = sampleTunnelProps(seq, step, undefined, m.staggerSteps, m.speed);
-      return { blueProp: p.blue, redProp: p.red };
+      return { leftProp: p.left, rightProp: p.right };
     }),
   );
   const gridMode = $derived(base.gridMode);
@@ -54,12 +54,12 @@
 <div class="cell">
   <div class="stage">
     <AnimatorCanvas
-      blueProp={baseProps.blue}
-      redProp={baseProps.red}
+      leftProp={baseProps.left}
+      rightProp={baseProps.right}
       {additionalLayers}
       tunnelSpectrum={spectrum}
-      bluePropType={propType}
-      redPropType={propType}
+      leftPropType={propType}
+      rightPropType={propType}
       sequenceData={base}
       currentStep={step}
       isPlaying={true}

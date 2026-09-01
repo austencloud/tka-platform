@@ -15,23 +15,23 @@ import type { TurnAllocation } from "./TurnAllocator.js";
  * four separate `TurnValue` declarations in this repo and a fifth would be one
  * more thing to keep in step.
  */
-export type TurnValue = TurnAllocation["blue"][number];
-export type TurnColor = "blue" | "red";
+export type TurnValue = TurnAllocation["left"][number];
+export type TurnHand = "left" | "right";
 
 export interface TurnLanes {
-  readonly blue: readonly TurnValue[];
-  readonly red: readonly TurnValue[];
+  readonly left: readonly TurnValue[];
+  readonly right: readonly TurnValue[];
 }
 
 export interface TurnSource {
-  at(stepIndex: number, color: TurnColor): TurnValue | undefined;
+  at(stepIndex: number, hand: TurnHand): TurnValue | undefined;
 }
 
 /** Fixed-length allocation. Runs out past its end, which is today's behaviour. */
 export function allocationSource(lanes: TurnLanes): TurnSource {
   return {
-    at(stepIndex, color) {
-      const lane = lanes[color];
+    at(stepIndex, hand) {
+      const lane = lanes[hand];
       if (stepIndex < 0 || stepIndex >= lane.length) return undefined;
       return lane[stepIndex];
     },
@@ -41,8 +41,8 @@ export function allocationSource(lanes: TurnLanes): TurnSource {
 /** Repeating period. Never runs out. */
 export function patternSource(lanes: TurnLanes): TurnSource {
   return {
-    at(stepIndex, color) {
-      const lane = lanes[color];
+    at(stepIndex, hand) {
+      const lane = lanes[hand];
       if (lane.length === 0 || stepIndex < 0) return undefined;
       return lane[stepIndex % lane.length];
     },

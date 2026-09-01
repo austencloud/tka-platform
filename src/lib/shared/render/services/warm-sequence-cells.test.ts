@@ -82,8 +82,8 @@ describe("warmSequenceCells", () => {
   it("verifies start and every step under the exact canonical prop pair", async () => {
     const result = await warmSequenceCells(sequence, {
       isDark: true,
-      bluePropType: PropType.POI,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.POI,
+      rightPropType: PropType.FAN,
       catDogMode: true,
       requireComplete: true,
     });
@@ -93,15 +93,15 @@ describe("warmSequenceCells", () => {
     expect(cloudDownload).toHaveBeenCalledTimes(3);
     const options = renderCell.mock.calls[0]![3] as {
       size: number;
-      bluePropType: PropType;
-      redPropType: PropType;
+      leftPropType: PropType;
+      rightPropType: PropType;
       catDogModeEnabled: boolean;
       uploadCanonical: boolean;
     };
     expect(options).toMatchObject({
       size: 480,
-      bluePropType: PropType.POI,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.POI,
+      rightPropType: PropType.FAN,
       catDogModeEnabled: true,
       uploadCanonical: true,
     });
@@ -142,8 +142,8 @@ describe("warmSequenceCells", () => {
         {
           letter: null,
           motions: {
-            blue: { isVisible: true },
-            red: { isVisible: false },
+            left: { isVisible: true },
+            right: { isVisible: false },
           },
         },
       ],
@@ -152,12 +152,12 @@ describe("warmSequenceCells", () => {
     await warmSequenceCells(soloSequence);
 
     const options = renderCell.mock.calls[0]![3] as {
-      showBlueMotion: boolean;
-      showRedMotion: boolean;
+      showLeftMotion: boolean;
+      showRightMotion: boolean;
     };
     expect(options).toMatchObject({
-      showBlueMotion: true,
-      showRedMotion: false,
+      showLeftMotion: true,
+      showRightMotion: false,
     });
   });
 

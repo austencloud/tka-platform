@@ -72,8 +72,8 @@ captureEffectDiagnostics to the context menu.
 
   let {
     // Engine-driving props
-    blueProp,
-    redProp,
+    leftProp,
+    rightProp,
     additionalLayers = [],
     tunnelSpectrum = true,
     tunnelPropColors = null,
@@ -87,11 +87,11 @@ captureEffectDiagnostics to the context menu.
     currentStep = 0,
     isPlaying = false,
     trailSettings: externalTrailSettings = $bindable(),
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     fanAppearance = undefined,
-    blueBuugengFlipped = undefined,
-    redBuugengFlipped = undefined,
+    leftBuugengFlipped = undefined,
+    rightBuugengFlipped = undefined,
     previewDarkMode = null,
     isSeamlesslyLoopable = undefined,
     showNonRadialPoints = true,
@@ -109,8 +109,8 @@ captureEffectDiagnostics to the context menu.
     elementalGlyphVisible = false,
     effectiveBeatNumbersVisible = false,
     positionGlyphVisible = false,
-    bluePathLinesVisible = false,
-    redPathLinesVisible = false,
+    leftPathLinesVisible = false,
+    rightPathLinesVisible = false,
     suppress2DOverlays = false,
     // Engine wiring props
     resizePaused = false,
@@ -130,8 +130,8 @@ captureEffectDiagnostics to the context menu.
     // header/progress stack. Undefined → nothing rendered.
     cornerControl = undefined,
   }: {
-    blueProp: PropState | null;
-    redProp: PropState | null;
+    leftProp: PropState | null;
+    rightProp: PropState | null;
     additionalLayers?: AdditionalLayerProps[];
     tunnelSpectrum?: boolean;
     tunnelPropColors?: TunnelPropColorPair | null;
@@ -145,11 +145,11 @@ captureEffectDiagnostics to the context menu.
     currentStep?: number;
     isPlaying?: boolean;
     trailSettings?: TrailSettings;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     fanAppearance?: FanAppearance;
-    blueBuugengFlipped?: boolean;
-    redBuugengFlipped?: boolean;
+    leftBuugengFlipped?: boolean;
+    rightBuugengFlipped?: boolean;
     previewDarkMode?: boolean | null;
     isSeamlesslyLoopable?: boolean;
     showNonRadialPoints?: boolean;
@@ -169,8 +169,8 @@ captureEffectDiagnostics to the context menu.
     effectiveBeatNumbersVisible?: boolean;
     /** Show the α/β/γ start→end position indicator (guide hand-path exploration). */
     positionGlyphVisible?: boolean;
-    bluePathLinesVisible?: boolean;
-    redPathLinesVisible?: boolean;
+    leftPathLinesVisible?: boolean;
+    rightPathLinesVisible?: boolean;
     suppress2DOverlays?: boolean;
     resizePaused?: boolean;
     visibilityManagerOverride?: AnimationVisibilityStateManager;
@@ -262,8 +262,8 @@ captureEffectDiagnostics to the context menu.
   $effect(() => {
     if (!viewerVisibilityCtx) return;
     engineInstance.setMotionVisibility(
-      viewerVisibilityCtx.blueMotion,
-      viewerVisibilityCtx.redMotion
+      viewerVisibilityCtx.leftMotion,
+      viewerVisibilityCtx.rightMotion
     );
   });
 
@@ -404,8 +404,8 @@ captureEffectDiagnostics to the context menu.
     const currentCellTipEffectMap = cellTipEffectMap;
     const currentCellTipEffortMap = cellTipEffortMap;
     const props = {
-      blueProp,
-      redProp,
+      leftProp,
+      rightProp,
       additionalLayers,
       tunnelSpectrum,
       tunnelPropColors,
@@ -419,11 +419,11 @@ captureEffectDiagnostics to the context menu.
       currentStep,
       isPlaying,
       externalTrailSettings,
-      bluePropType,
-      redPropType,
+      leftPropType,
+      rightPropType,
       fanAppearance,
-      blueBuugengFlipped,
-      redBuugengFlipped,
+      leftBuugengFlipped,
+      rightBuugengFlipped,
       previewDarkMode,
       isSeamlesslyLoopable,
       virtualTime,
@@ -516,15 +516,15 @@ captureEffectDiagnostics to the context menu.
         currentStep >= (sequenceData.steps?.length ?? 0) + 0.99}
     />
 
-    <!-- Always mounted: PathLinesOverlay self-gates on showBlue/showRed and owns
+    <!-- Always mounted: PathLinesOverlay self-gates on showLeft/showRight and owns
          its own fade in/out, so the overlay must stay in the tree for its
          out-transition to play when the Paths toggle flips off. -->
     <PathLinesOverlay
       {sequenceData}
       {currentStep}
       {stepData}
-      showBlue={bluePathLinesVisible}
-      showRed={redPathLinesVisible}
+      showLeft={leftPathLinesVisible}
+      showRight={rightPathLinesVisible}
       vm={visibilityManager}
     />
 

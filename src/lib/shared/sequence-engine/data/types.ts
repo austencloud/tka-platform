@@ -15,21 +15,21 @@ export interface LetterVariationData {
   /** End position */
   endPosition: string;
   /** Blue motion type */
-  blueMotionType: string;
+  leftMotionType: string;
   /** Blue start location */
-  blueStartLocation: string;
+  leftStartLocation: string;
   /** Blue end location */
-  blueEndLocation: string;
+  leftEndLocation: string;
   /** Blue rotation direction */
-  blueRotationDirection: string;
+  leftRotationDirection: string;
   /** Red motion type */
-  redMotionType: string;
+  rightMotionType: string;
   /** Red start location */
-  redStartLocation: string;
+  rightStartLocation: string;
   /** Red end location */
-  redEndLocation: string;
+  rightEndLocation: string;
   /** Red rotation direction */
-  redRotationDirection: string;
+  rightRotationDirection: string;
   /** Grid mode (diamond, box, skewed) */
   gridMode?: string;
 }

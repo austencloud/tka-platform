@@ -29,8 +29,8 @@ function verticalStaff(x: number, y: number, z: number, halfLen = 0.4): SimPropT
   };
 }
 
-function torsoDepth(s: StancePose, blue: SimPropTarget, red: SimPropTarget): number {
-  const r = sim.evaluate(s, blue, red);
+function torsoDepth(s: StancePose, left: SimPropTarget, right: SimPropTarget): number {
+  const r = sim.evaluate(s, left, right);
   let d = 0;
   for (const c of r.collisions) if (c.zone === "prop-through-torso") d = Math.max(d, c.depth);
   return d;

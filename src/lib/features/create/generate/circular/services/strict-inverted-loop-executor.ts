@@ -14,7 +14,7 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/mot
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
@@ -95,13 +95,13 @@ export class StrictInvertedLOOPExecutor {
       startPosition: previousStep.endPosition ?? null,
       endPosition: sourceStep.endPosition ?? null,
       motions: {
-        [MotionColor.BLUE]: this._createInvertedMotion(
-          MotionColor.BLUE,
+        [HandSide.LEFT]: this._createInvertedMotion(
+          HandSide.LEFT,
           previousStep,
           sourceStep
         ),
-        [MotionColor.RED]: this._createInvertedMotion(
-          MotionColor.RED,
+        [HandSide.RIGHT]: this._createInvertedMotion(
+          HandSide.RIGHT,
           previousStep,
           sourceStep
         ),
@@ -120,9 +120,9 @@ export class StrictInvertedLOOPExecutor {
     previousStep: StepData,
     stepNumber: number
   ): StepData {
-    const sourceBlue = sourceStep.motions[MotionColor.BLUE];
-    const sourceRed = sourceStep.motions[MotionColor.RED];
-    if (!sourceBlue || !sourceRed) {
+    const sourceLeft = sourceStep.motions[HandSide.LEFT];
+    const sourceRight = sourceStep.motions[HandSide.RIGHT];
+    if (!sourceLeft || !sourceRight) {
       throw new Error(
         `Source step ${sourceStep.stepNumber} is missing motion data`
       );
@@ -135,17 +135,17 @@ export class StrictInvertedLOOPExecutor {
       startPosition: previousStep.endPosition ?? null,
       endPosition: sourceStep.endPosition,
       motions: {
-        [MotionColor.BLUE]: {
-          ...sourceBlue,
+        [HandSide.LEFT]: {
+          ...sourceLeft,
           startLocation:
-            previousStep.motions[MotionColor.BLUE]?.endLocation ??
-            sourceBlue.startLocation,
+            previousStep.motions[HandSide.LEFT]?.endLocation ??
+            sourceLeft.startLocation,
         },
-        [MotionColor.RED]: {
-          ...sourceRed,
+        [HandSide.RIGHT]: {
+          ...sourceRight,
           startLocation:
-            previousStep.motions[MotionColor.RED]?.endLocation ??
-            sourceRed.startLocation,
+            previousStep.motions[HandSide.RIGHT]?.endLocation ??
+            sourceRight.startLocation,
         },
       },
     };
@@ -166,7 +166,7 @@ export class StrictInvertedLOOPExecutor {
   }
 
   private _createInvertedMotion(
-    color: MotionColor,
+    color: HandSide,
     previousStep: StepData,
     sourceStep: StepData
   ): MotionData {

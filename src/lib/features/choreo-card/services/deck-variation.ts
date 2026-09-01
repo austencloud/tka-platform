@@ -41,7 +41,7 @@ import type {
   TurnValue,
 } from "$lib/shared/create/domain/turn-pattern-data";
 import type { CardVariation } from "../domain/models/DeckRelease";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
@@ -116,8 +116,8 @@ export const TURN_PATTERNS: TurnPatternPreset[] = [
 ];
 
 interface TurnBeat {
-  blue: TurnValue | null;
-  red: TurnValue | null;
+  left: TurnValue | null;
+  right: TurnValue | null;
 }
 
 function parseTurnSide(s: string | undefined): TurnValue | null {
@@ -136,21 +136,21 @@ export function parseTurnUnit(pattern: string): TurnBeat[] {
     const t = tok.trim();
     if (t === "") continue;
     const [b, r] = t.split("|");
-    beats.push({ blue: parseTurnSide(b), red: parseTurnSide(r) });
+    beats.push({ left: parseTurnSide(b), right: parseTurnSide(r) });
   }
   return beats;
 }
 
 /** Convert a raw reversal pattern string ("RRRR") into per-beat flags, tiled to N. */
-function tileFlags(sequence: string, stepCount: number): { blue: boolean[]; red: boolean[] } {
-  const blue: boolean[] = [];
-  const red: boolean[] = [];
+function tileFlags(sequence: string, stepCount: number): { left: boolean[]; right: boolean[] } {
+  const left: boolean[] = [];
+  const right: boolean[] = [];
   for (let i = 0; i < stepCount; i++) {
     const sym = sequence[i % sequence.length];
-    blue.push(sym === "P" || sym === "B");
-    red.push(sym === "P" || sym === "R");
+    left.push(sym === "P" || sym === "B");
+    right.push(sym === "P" || sym === "R");
   }
-  return { blue, red };
+  return { left, right };
 }
 
 /** Pick a random compatible + clean-loop book pattern from the enabled set. */
@@ -162,8 +162,8 @@ function pickReversal(
   const candidates = getCompatiblePatterns(stepCount)
     .filter((p) => p.family === "simple" && p.id !== "continuous" && enabled.includes(p.id))
     .map((def) => {
-      const { blue, red } = tileFlags(def.sequence, stepCount);
-      return resolvePattern(blue, red);
+      const { left, right } = tileFlags(def.sequence, stepCount);
+      return resolvePattern(left, right);
     })
     .filter((r) => r.isCleanLoop);
   if (candidates.length === 0) return null;
@@ -234,14 +234,14 @@ function applyStartOriMode(seq: SequenceData, mode: StartOriMode | undefined): S
   const family = positionFamilyOf(sp);
   if (!family) return seq; // unsupported family — leave at the radial default
   const pair = resolveStartOrientation(mode, family);
-  const reseed = (m: typeof sp.motions.blue, o: Orientation) =>
+  const reseed = (m: typeof sp.motions.left, o: Orientation) =>
     m ? createMotionData({ ...m, startOrientation: o, endOrientation: o }) : m;
   const newStart = {
     ...sp,
     motions: {
       ...sp.motions,
-      [MotionColor.BLUE]: reseed(sp.motions[MotionColor.BLUE], pair.blue),
-      [MotionColor.RED]: reseed(sp.motions[MotionColor.RED], pair.red),
+      [HandSide.LEFT]: reseed(sp.motions[HandSide.LEFT], pair.left),
+      [HandSide.RIGHT]: reseed(sp.motions[HandSide.RIGHT], pair.right),
     },
   };
   const seeded = updateSequenceData(seq, { startPosition: newStart });
@@ -256,19 +256,19 @@ function applyStartOriMode(seq: SequenceData, mode: StartOriMode | undefined): S
  */
 function applyStartOrientationPair(
   seq: SequenceData,
-  pair: { blue?: Orientation; red?: Orientation } | undefined,
+  pair: { left?: Orientation; right?: Orientation } | undefined,
 ): SequenceData {
-  if (!pair || (!pair.blue && !pair.red)) return seq;
+  if (!pair || (!pair.left && !pair.right)) return seq;
   const sp = seq.startPosition;
   if (!sp) return seq;
-  const reseed = (m: typeof sp.motions.blue, o: Orientation | undefined) =>
+  const reseed = (m: typeof sp.motions.left, o: Orientation | undefined) =>
     m && o ? createMotionData({ ...m, startOrientation: o, endOrientation: o }) : m;
   const newStart = {
     ...sp,
     motions: {
       ...sp.motions,
-      [MotionColor.BLUE]: reseed(sp.motions[MotionColor.BLUE], pair.blue),
-      [MotionColor.RED]: reseed(sp.motions[MotionColor.RED], pair.red),
+      [HandSide.LEFT]: reseed(sp.motions[HandSide.LEFT], pair.left),
+      [HandSide.RIGHT]: reseed(sp.motions[HandSide.RIGHT], pair.right),
     },
   };
   const seeded = updateSequenceData(seq, { startPosition: newStart });
@@ -330,7 +330,7 @@ export function applyVariationDescriptor(
       const entries: TurnPatternEntry[] = [];
       for (let i = 0; i < stepCount; i++) {
         const u = unit[i % unit.length]!;
-        entries.push({ stepIndex: i, blue: u.blue, red: u.red });
+        entries.push({ stepIndex: i, left: u.left, right: u.right });
       }
       const pattern: TurnPattern = {
         id: "variation",
@@ -344,7 +344,7 @@ export function applyVariationDescriptor(
       if (res.success && res.sequence) {
         working = res.sequence;
         const closed = loopCloses(working);
-        turnLoopClosed = (closed.blue || !base.blue) && (closed.red || !base.red);
+        turnLoopClosed = (closed.left || !base.left) && (closed.right || !base.right);
       }
     }
   }
@@ -388,18 +388,21 @@ export function resolveDeckSequences(
 }
 
 /** Does the loop close on each hand? (last endOrientation === first startOrientation) */
-function loopCloses(seq: SequenceData): { blue: boolean; red: boolean } {
+function loopCloses(seq: SequenceData): { left: boolean; right: boolean } {
   const steps = seq.steps;
   const first = steps[0];
   const last = steps[steps.length - 1];
-  function handCloses(hand: "blue" | "red"): boolean {
+  function handCloses(hand: HandSide): boolean {
     const fm = first?.motions?.[hand];
     const lm = last?.motions?.[hand];
     // Invisible placeholder = hand not really there: vacuously closed.
     if (!isVisibleMotion(fm) || !isVisibleMotion(lm)) return true;
     return lm.endOrientation === fm.startOrientation;
   }
-  return { blue: handCloses("blue"), red: handCloses("red") };
+  return {
+    left: handCloses(HandSide.LEFT),
+    right: handCloses(HandSide.RIGHT),
+  };
 }
 
 /**

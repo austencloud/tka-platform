@@ -36,7 +36,7 @@
     [UndoOperationType.MIRROR_SEQUENCE]: "Mirror",
     [UndoOperationType.FLIP_SEQUENCE]: "Flip",
     [UndoOperationType.ROTATE_SEQUENCE]: "Rotate",
-    [UndoOperationType.SWAP_COLORS]: "Swap Colors",
+    [UndoOperationType.SWAP_HANDS]: "Swap Hands",
     [UndoOperationType.INVERT_SEQUENCE]: "Invert",
     [UndoOperationType.REWIND_SEQUENCE]: "Rewind",
     [UndoOperationType.SHIFT_START]: "Shift Start",

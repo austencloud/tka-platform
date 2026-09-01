@@ -303,8 +303,8 @@
           currentStep={0}
           isPlaying={false}
           bpm={60}
-          bluePropType="staff"
-          redPropType="staff"
+          leftPropType="staff"
+          rightPropType="staff"
           onSceneReadyChange={(ready) => {
             sceneReady = ready;
             applyReviewCamera();

@@ -25,10 +25,10 @@
   } from "../services/fan-relation-geometry";
 
   interface Props {
-    blueLocation: GridLocation;
-    redLocation: GridLocation;
-    blueOrientation: Orientation;
-    redOrientation: Orientation;
+    leftLocation: GridLocation;
+    rightLocation: GridLocation;
+    leftOrientation: Orientation;
+    rightOrientation: Orientation;
     gridMode: GridMode;
     propType: PropType;
     presentationPlane: Plane;
@@ -36,10 +36,10 @@
   }
 
   let {
-    blueLocation,
-    redLocation,
-    blueOrientation,
-    redOrientation,
+    leftLocation,
+    rightLocation,
+    leftOrientation,
+    rightOrientation,
     gridMode,
     propType,
     presentationPlane,
@@ -48,26 +48,26 @@
 
   const sceneLayout = $derived(
     getFanSceneLayout({
-      blueLocation,
-      redLocation,
+      leftLocation,
+      rightLocation,
       propType,
       basePropLength: userProportionsState.staffLength,
     })
   );
 
-  const bluePropState = $derived(
+  const leftPropState = $derived(
     buildFanPropState({
-      location: blueLocation,
-      orientation: blueOrientation,
+      location: leftLocation,
+      orientation: leftOrientation,
       gridMode,
       presentationPlane,
       handRadius: sceneLayout.handRadius,
     })
   );
-  const redPropState = $derived(
+  const rightPropState = $derived(
     buildFanPropState({
-      location: redLocation,
-      orientation: redOrientation,
+      location: rightLocation,
+      orientation: rightOrientation,
       gridMode,
       presentationPlane,
       handRadius: sceneLayout.handRadius,
@@ -79,8 +79,8 @@
   );
   const visiblePlanes = new Set([Plane.WALL]);
 
-  let bluePropAnchorRef = $state<Group | undefined>(undefined);
-  let redPropAnchorRef = $state<Group | undefined>(undefined);
+  let leftPropAnchorRef = $state<Group | undefined>(undefined);
+  let rightPropAnchorRef = $state<Group | undefined>(undefined);
 </script>
 
 <div class="scene-shell" aria-label="Spatial fan inspection">
@@ -106,41 +106,41 @@
       <T.Group position={[0, STAGE.STAGE_DECK_HEIGHT, 0]}>
         <T.Group position.z={sceneLayout.forwardOffset}>
           <T.Group
-            bind:ref={bluePropAnchorRef}
+            bind:ref={leftPropAnchorRef}
             position={[
-              bluePropState.worldPosition.x,
-              bluePropState.worldPosition.y,
-              bluePropState.worldPosition.z,
+              leftPropState.worldPosition.x,
+              leftPropState.worldPosition.y,
+              leftPropState.worldPosition.z,
             ]}
           >
             <Prop3D
               propType={toScenePropType(propType)}
-              propState={bluePropState}
+              propState={leftPropState}
               color="blue"
             />
           </T.Group>
 
           <T.Group
-            bind:ref={redPropAnchorRef}
+            bind:ref={rightPropAnchorRef}
             position={[
-              redPropState.worldPosition.x,
-              redPropState.worldPosition.y,
-              redPropState.worldPosition.z,
+              rightPropState.worldPosition.x,
+              rightPropState.worldPosition.y,
+              rightPropState.worldPosition.z,
             ]}
           >
             <Prop3D
               propType={toScenePropType(propType)}
-              propState={redPropState}
+              propState={rightPropState}
               color="red"
             />
           </T.Group>
         </T.Group>
 
         <Avatar3D
-          {bluePropState}
-          {redPropState}
-          {bluePropAnchorRef}
-          {redPropAnchorRef}
+          {leftPropState}
+          {rightPropState}
+          {leftPropAnchorRef}
+          {rightPropAnchorRef}
           position={{ x: 0, y: 0, z: 0 }}
           facingAngle={0}
         />

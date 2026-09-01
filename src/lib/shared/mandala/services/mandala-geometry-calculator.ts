@@ -18,7 +18,11 @@ import {
 	LOCATION_ANGLES,
 	PI,
 } from "$lib/shared/foundation/domain/math-constants";
-import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  HandSide,
+  Orientation,
+  type HandSide as HandSideValue,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { RADIAL_CYCLE } from "$lib/shared/render/core/calculations/orientation-angle";
 import { handArcDirection } from "@tka/sequence-engine/analysis";
@@ -456,7 +460,7 @@ function extractMotion(
 
 function generatePathPoints(
 	steps: readonly StepLike[],
-	hand: "blue" | "red",
+	hand: HandSideValue,
 	tipOffset: TipOffset,
 	gridRadius: number,
 	samplesPerBeat: number,
@@ -543,14 +547,14 @@ const MAX_CACHE_SIZE = 50;
 
 function buildCacheKey(
 	steps: readonly StepLike[],
-	bluePropType?: string,
-	redPropType?: string,
+	leftPropType?: string,
+	rightPropType?: string,
 	options?: MandalaPathOptions
 ): string {
 	const parts: string[] = [];
 	for (const step of steps) {
-		const b = step.motions?.blue;
-		const r = step.motions?.red;
+		const b = step.motions?.left;
+		const r = step.motions?.right;
 		// Key must track geometry: invisible hands produce no paths, so they
 		// must not share a cache key with visible variants of the same motion.
 		if (isVisibleMotion(b))
@@ -576,7 +580,7 @@ function buildCacheKey(
 				(r.turns ?? 0)
 			);
 	}
-	parts.push(bluePropType ?? "staff", redPropType ?? "staff");
+	parts.push(leftPropType ?? "staff", rightPropType ?? "staff");
 	if (options?.pathShape) parts.push("ps:" + options.pathShape);
 	if (options?.motionAware) parts.push("ma:1");
 	if (options?.tipEnds === 1) parts.push("te:1");
@@ -587,7 +591,7 @@ function computePointSets(
 	stepsWithMotions: readonly StepLike[],
 	options: MandalaPathOptions | undefined,
 	tipOverrides?: MandalaTipOverrides | MandalaTipOffset,
-): { blue: MandalaPoint[][]; red: MandalaPoint[][] } {
+): { left: MandalaPoint[][]; right: MandalaPoint[][] } {
 	const defaultDx =
 		tipOverrides && "dx" in tipOverrides
 			? tipOverrides.dx
@@ -606,28 +610,28 @@ function computePointSets(
 					{ dx: -defaultDx, dy: defaultDy },
 					{ dx: defaultDx, dy: defaultDy },
 				];
-	const blueTips =
-		tipOverrides && "blue" in tipOverrides
-			? tipOverrides.blue
+	const leftTips =
+		tipOverrides && "left" in tipOverrides
+			? tipOverrides.left
 			: defaultTips;
-	const redTips =
-		tipOverrides && "red" in tipOverrides
-			? tipOverrides.red
+	const rightTips =
+		tipOverrides && "right" in tipOverrides
+			? tipOverrides.right
 			: defaultTips;
 	const gridRadius = MANDALA_GRID_RADIUS;
 	const samplesPerBeat = BASE_SAMPLES_PER_BEAT;
 
-	const blue: MandalaPoint[][] = [];
-	const red: MandalaPoint[][] = [];
+	const left: MandalaPoint[][] = [];
+	const right: MandalaPoint[][] = [];
 
-	for (const tip of blueTips) {
-		blue.push(generatePathPoints(stepsWithMotions, "blue", tip, gridRadius, samplesPerBeat, options));
+	for (const tip of leftTips) {
+		left.push(generatePathPoints(stepsWithMotions, HandSide.LEFT, tip, gridRadius, samplesPerBeat, options));
 	}
-	for (const tip of redTips) {
-		red.push(generatePathPoints(stepsWithMotions, "red", tip, gridRadius, samplesPerBeat, options));
+	for (const tip of rightTips) {
+		right.push(generatePathPoints(stepsWithMotions, HandSide.RIGHT, tip, gridRadius, samplesPerBeat, options));
 	}
 
-	return { blue, red };
+	return { left, right };
 }
 
 // Path geometry interpolated between two shapes (optionsFrom → optionsTo) at
@@ -636,44 +640,44 @@ function computePointSets(
 // breathing/rotation animation continues. Never cached (called per frame).
 export function calculateMorphed(
 	steps: readonly StepLike[],
-	_bluePropType: string | undefined,
-	_redPropType: string | undefined,
+	_leftPropType: string | undefined,
+	_rightPropType: string | undefined,
 	optionsFrom: MandalaPathOptions | undefined,
 	optionsTo: MandalaPathOptions | undefined,
 	t: number,
 	tipOverride?: MandalaTipOverrides | MandalaTipOffset,
 ): MandalaPaths {
 	const stepsWithMotions = steps.filter(
-		(s) => isVisibleMotion(s.motions?.blue) || isVisibleMotion(s.motions?.red)
+		(s) => isVisibleMotion(s.motions?.left) || isVisibleMotion(s.motions?.right)
 	);
 	if (stepsWithMotions.length === 0) {
-		return { blue: [], red: [], purple: [] };
+		return { left: [], right: [], purple: [] };
 	}
 
 	const from = computePointSets(stepsWithMotions, optionsFrom, tipOverride);
 	const to = computePointSets(stepsWithMotions, optionsTo, tipOverride);
 
-	const blueSets = from.blue.map((set, i) => lerpPointSet(set, to.blue[i] ?? set, t));
-	const redSets = from.red.map((set, i) => lerpPointSet(set, to.red[i] ?? set, t));
+	const leftSets = from.left.map((set, i) => lerpPointSet(set, to.left[i] ?? set, t));
+	const rightSets = from.right.map((set, i) => lerpPointSet(set, to.right[i] ?? set, t));
 
 	return {
-		blue: pointSetsToPaths(blueSets),
-		red: pointSetsToPaths(redSets),
+		left: pointSetsToPaths(leftSets),
+		right: pointSetsToPaths(rightSets),
 		purple: [],
 	};
 }
 
 export function calculate(
 	steps: readonly StepLike[],
-	_bluePropType?: string,
-	_redPropType?: string,
+	_leftPropType?: string,
+	_rightPropType?: string,
 	options?: MandalaPathOptions,
 	tipOverride?: MandalaTipOverrides | MandalaTipOffset,
 ): MandalaPaths {
 	const skipCache = tipOverride !== undefined;
 
 	if (!skipCache) {
-		const key = buildCacheKey(steps, _bluePropType, _redPropType, options);
+		const key = buildCacheKey(steps, _leftPropType, _rightPropType, options);
 		const cached = cache.get(key);
 		if (cached) {
 			cache.delete(key);
@@ -685,22 +689,22 @@ export function calculate(
 	// Filter to steps that have motions (skip start position / empty steps).
 	// Steps whose hands are all invisible placeholders count as motionless.
 	const stepsWithMotions = steps.filter(
-		(s) => isVisibleMotion(s.motions?.blue) || isVisibleMotion(s.motions?.red)
+		(s) => isVisibleMotion(s.motions?.left) || isVisibleMotion(s.motions?.right)
 	);
 
 	if (stepsWithMotions.length === 0) {
-		return { blue: [], red: [], purple: [] };
+		return { left: [], right: [], purple: [] };
 	}
 
 	const sets = computePointSets(stepsWithMotions, options, tipOverride);
 	const result: MandalaPaths = {
-		blue: pointSetsToPaths(sets.blue),
-		red: pointSetsToPaths(sets.red),
+		left: pointSetsToPaths(sets.left),
+		right: pointSetsToPaths(sets.right),
 		purple: [],
 	};
 
 	if (!skipCache) {
-		const key = buildCacheKey(steps, _bluePropType, _redPropType, options);
+		const key = buildCacheKey(steps, _leftPropType, _rightPropType, options);
 		if (cache.size >= MAX_CACHE_SIZE) {
 			const oldestKey = cache.keys().next().value;
 			if (oldestKey !== undefined) cache.delete(oldestKey);

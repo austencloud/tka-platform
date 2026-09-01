@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
   import {
-    MotionColor,
+    HandSide,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import PropControlPair from "./PropControlPair.svelte";
@@ -20,43 +20,43 @@
 
   interface Props {
     hasSelection: boolean;
-    blueTurns: number | "fl";
-    redTurns: number | "fl";
-    blueRotation: RotationDirection;
-    redRotation: RotationDirection;
-    showBlueRotation: boolean;
-    showRedRotation: boolean;
+    leftTurns: number | "fl";
+    rightTurns: number | "fl";
+    leftRotation: RotationDirection;
+    rightRotation: RotationDirection;
+    showLeftRotation: boolean;
+    showRightRotation: boolean;
     stacked?: boolean;
     /** Compact mode: single-row layout with icon-only prop selector */
     compact?: boolean;
-    bluePathShape?: PathShapeValue | undefined;
-    redPathShape?: PathShapeValue | undefined;
-    blueIsShift?: boolean;
-    redIsShift?: boolean;
-    onTurnsChange: (color: MotionColor, delta: number) => void;
+    leftPathShape?: PathShapeValue | undefined;
+    rightPathShape?: PathShapeValue | undefined;
+    leftIsShift?: boolean;
+    rightIsShift?: boolean;
+    onTurnsChange: (color: HandSide, delta: number) => void;
     onRotationChange: (
-      color: MotionColor,
+      color: HandSide,
       direction: RotationDirection
     ) => void;
-    onOpenPropSheet?: (color: "blue" | "red") => void;
-    onPathShapeChange?: (color: MotionColor, shape: PathShapeValue) => void;
-    onPathShapeClear?: (color: MotionColor) => void;
+    onOpenPropSheet?: (hand: "left" | "right") => void;
+    onPathShapeChange?: (color: HandSide, shape: PathShapeValue) => void;
+    onPathShapeClear?: (color: HandSide) => void;
   }
 
   let {
     hasSelection,
-    blueTurns,
-    redTurns,
-    blueRotation,
-    redRotation,
-    showBlueRotation,
-    showRedRotation,
+    leftTurns,
+    rightTurns,
+    leftRotation,
+    rightRotation,
+    showLeftRotation,
+    showRightRotation,
     stacked = false,
     compact = false,
-    bluePathShape,
-    redPathShape,
-    blueIsShift = true,
-    redIsShift = true,
+    leftPathShape,
+    rightPathShape,
+    leftIsShift = true,
+    rightIsShift = true,
     onTurnsChange,
     onRotationChange,
     onOpenPropSheet,
@@ -72,45 +72,45 @@
   </div>
 {:else}
   <PropControlPair {stacked} {compact}>
-    {#snippet blueContent()}
+    {#snippet leftContent()}
       <PropTurnsControl
-        color="blue"
-        turns={blueTurns}
-        rotationDirection={blueRotation}
-        showRotation={showBlueRotation}
+        hand="left"
+        turns={leftTurns}
+        rotationDirection={leftRotation}
+        showRotation={showLeftRotation}
         {compact}
-        pathShape={bluePathShape}
-        isShift={blueIsShift}
-        onTurnsChange={(delta) => onTurnsChange(MotionColor.BLUE, delta)}
-        onRotationChange={(dir) => onRotationChange(MotionColor.BLUE, dir)}
+        pathShape={leftPathShape}
+        isShift={leftIsShift}
+        onTurnsChange={(delta) => onTurnsChange(HandSide.LEFT, delta)}
+        onRotationChange={(dir) => onRotationChange(HandSide.LEFT, dir)}
         onPathShapeChange={onPathShapeChange
-          ? (shape) => onPathShapeChange(MotionColor.BLUE, shape)
+          ? (shape) => onPathShapeChange(HandSide.LEFT, shape)
           : undefined}
         onPathShapeClear={onPathShapeClear
-          ? () => onPathShapeClear(MotionColor.BLUE)
+          ? () => onPathShapeClear(HandSide.LEFT)
           : undefined}
       />
-      <PropTypeRow color="blue" {compact} {onOpenPropSheet} />
+      <PropTypeRow hand="left" {compact} {onOpenPropSheet} />
     {/snippet}
-    {#snippet redContent()}
+    {#snippet rightContent()}
       <PropTurnsControl
-        color="red"
-        turns={redTurns}
-        rotationDirection={redRotation}
-        showRotation={showRedRotation}
+        hand="right"
+        turns={rightTurns}
+        rotationDirection={rightRotation}
+        showRotation={showRightRotation}
         {compact}
-        pathShape={redPathShape}
-        isShift={redIsShift}
-        onTurnsChange={(delta) => onTurnsChange(MotionColor.RED, delta)}
-        onRotationChange={(dir) => onRotationChange(MotionColor.RED, dir)}
+        pathShape={rightPathShape}
+        isShift={rightIsShift}
+        onTurnsChange={(delta) => onTurnsChange(HandSide.RIGHT, delta)}
+        onRotationChange={(dir) => onRotationChange(HandSide.RIGHT, dir)}
         onPathShapeChange={onPathShapeChange
-          ? (shape) => onPathShapeChange(MotionColor.RED, shape)
+          ? (shape) => onPathShapeChange(HandSide.RIGHT, shape)
           : undefined}
         onPathShapeClear={onPathShapeClear
-          ? () => onPathShapeClear(MotionColor.RED)
+          ? () => onPathShapeClear(HandSide.RIGHT)
           : undefined}
       />
-      <PropTypeRow color="red" {compact} {onOpenPropSheet} />
+      <PropTypeRow hand="right" {compact} {onOpenPropSheet} />
     {/snippet}
   </PropControlPair>
 {/if}

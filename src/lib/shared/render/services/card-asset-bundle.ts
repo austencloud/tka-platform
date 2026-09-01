@@ -74,8 +74,8 @@ async function decodeIcon(path: string): Promise<ImageBitmap | null> {
 export async function buildAssetBundle(
   sequences: SequenceData[],
   opts: {
-    bluePropType: PropType;
-    redPropType: PropType;
+    leftPropType: PropType;
+    rightPropType: PropType;
     theme: string;
     iconPaths?: string[];
   },

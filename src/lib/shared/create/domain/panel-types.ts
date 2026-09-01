@@ -11,4 +11,4 @@
 /**
  * Target hand for transforms - which hand(s) to apply operations to
  */
-export type TargetHand = "blue" | "red" | "both";
+export type TargetHand = "left" | "right" | "both";

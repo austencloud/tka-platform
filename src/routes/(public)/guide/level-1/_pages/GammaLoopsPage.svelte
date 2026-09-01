@@ -29,7 +29,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -59,7 +59,7 @@
   const flip = (o: Orientation) => (o === IN ? OUT : IN);
   type HandStep = { anti: boolean; from: GridLocation; to: GridLocation; so: Orientation };
   const h = (anti: boolean, from: GridLocation, to: GridLocation, so: Orientation = IN): HandStep => ({ anti, from, to, so });
-  const handMotion = (color: MotionColor, x: HandStep) => {
+  const handMotion = (color: HandSide, x: HandStep) => {
     const dir = HP_CW.has(`${x.from}-${x.to}`) ? CW : CCW;
     return createMotionData({
       motionType: x.anti ? MotionType.ANTI : MotionType.PRO,
@@ -74,7 +74,7 @@
       gridMode: GridMode.DIAMOND,
     });
   };
-  const stat = (color: MotionColor, loc: GridLocation) =>
+  const stat = (color: HandSide, loc: GridLocation) =>
     createMotionData({
       motionType: MotionType.STATIC,
       startLocation: loc,
@@ -86,8 +86,8 @@
       gridMode: GridMode.DIAMOND,
     });
 
-  type Step = { letter: Letter; blue: HandStep; red: HandStep };
-  const st = (letter: Letter, blue: HandStep, red: HandStep): Step => ({ letter, blue, red });
+  type Step = { letter: Letter; left: HandStep; right: HandStep };
+  const st = (letter: Letter, left, right): Step => ({ letter, left, right });
   const { M, V, P, U, Q, O, T, R } = Letter;
   const NL = Letter.N;
   const SL = Letter.S;
@@ -155,12 +155,12 @@
       id: `${l.key}-${i + 1}`,
       letter: s.letter,
       gridMode: GridMode.DIAMOND,
-      startPosition: getGridPositionFromLocations(s.blue.from, s.red.from),
-      endPosition: getGridPositionFromLocations(s.blue.to, s.red.to),
+      startPosition: getGridPositionFromLocations(s.left.from, s.right.from),
+      endPosition: getGridPositionFromLocations(s.left.to, s.right.to),
       stepNumber: i + 1,
       motions: {
-        blue: handMotion(MotionColor.BLUE, s.blue),
-        red: handMotion(MotionColor.RED, s.red),
+        left: handMotion(HandSide.LEFT, s.left),
+        right: handMotion(HandSide.RIGHT, s.right),
       },
     } as unknown as StepData;
   };
@@ -174,8 +174,8 @@
       startPosition: getGridPositionFromLocations(SO_, E),
       endPosition: getGridPositionFromLocations(SO_, E),
       motions: {
-        blue: stat(MotionColor.BLUE, SO_),
-        red: stat(MotionColor.RED, E),
+        left: stat(HandSide.LEFT, SO_),
+        right: stat(HandSide.RIGHT, E),
       },
     }) as unknown as StepData;
 
@@ -274,8 +274,8 @@
         <PictographContainer
           pictographData={RESOLVED[l.key]![0]}
           gridMode={GridMode.DIAMOND}
-          bluePropTypeOverride={PropType.STAFF}
-          redPropTypeOverride={PropType.STAFF}
+          leftPropTypeOverride={PropType.STAFF}
+          rightPropTypeOverride={PropType.STAFF}
           stepNumberOverride={true}
           {...PICTO_FLAGS}
         />
@@ -289,8 +289,8 @@
           <PictographContainer
             pictographData={sd}
             gridMode={GridMode.DIAMOND}
-            bluePropTypeOverride={PropType.STAFF}
-            redPropTypeOverride={PropType.STAFF}
+            leftPropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
             stepNumberOverride={true}
             {...PICTO_FLAGS}
           />

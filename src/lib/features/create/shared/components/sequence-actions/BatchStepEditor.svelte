@@ -26,8 +26,8 @@
     totalBeats: number;
     onClose: () => void;
     onSelectAll: () => void;
-    bluePropTypeOverride?: PropType;
-    redPropTypeOverride?: PropType;
+    leftPropTypeOverride?: PropType;
+    rightPropTypeOverride?: PropType;
   }
 
   let {
@@ -36,8 +36,8 @@
     totalBeats,
     onClose,
     onSelectAll,
-    bluePropTypeOverride,
-    redPropTypeOverride,
+    leftPropTypeOverride,
+    rightPropTypeOverride,
   }: Props = $props();
 
   const count = $derived(steps.length);
@@ -129,8 +129,8 @@
             pictographData={step}
             disableTransitions={true}
             cellIndex={i}
-            {bluePropTypeOverride}
-            {redPropTypeOverride}
+            {leftPropTypeOverride}
+            {rightPropTypeOverride}
           />
         </div>
       {/each}

@@ -9,8 +9,8 @@ import type { MotionData } from "../../../../shared/domain/models/motion-data";
 import { isVisibleMotion } from "../../../../shared/domain/models/motion-data";
 import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
 import {
-  getBlueState,
-  getRedState,
+  getLeftState,
+  getRightState,
   getDashState,
   getStaticState,
 } from "./prop-rotation-state-tracker";
@@ -42,13 +42,13 @@ export class TurnsTupleGenerator {
    */
   generateTurnsTuple(pictographData: PictographData): string {
     try {
-      const blueMotion = pictographData.motions.blue;
-      const redMotion = pictographData.motions.red;
+      const leftMotion = pictographData.motions.left;
+      const rightMotion = pictographData.motions.right;
 
       // Invisible placeholder = hand not really there (both-required Step
       // shape): keep the "(0, 0)" fallback the old absent-hand path produced
       // (the tuple keys glyph caches + special-placement lookups).
-      if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) {
+      if (!isVisibleMotion(leftMotion) || !isVisibleMotion(rightMotion)) {
         return "(0, 0)";
       }
 
@@ -57,47 +57,47 @@ export class TurnsTupleGenerator {
       );
 
       if (letterType === "TYPE1_HYBRID") {
-        return this.generateType1HybridTuple(blueMotion, redMotion);
+        return this.generateType1HybridTuple(leftMotion, rightMotion);
       }
 
       if (letterType === "TYPE1_NON_HYBRID") {
-        return this.generateType1NonHybridTuple(blueMotion, redMotion);
+        return this.generateType1NonHybridTuple(leftMotion, rightMotion);
       }
 
       if (letterType === "TYPE2") {
-        return this.generateType2Tuple(blueMotion, redMotion);
+        return this.generateType2Tuple(leftMotion, rightMotion);
       }
 
       if (letterType === "TYPE3") {
-        return this.generateType3Tuple(blueMotion, redMotion);
+        return this.generateType3Tuple(leftMotion, rightMotion);
       }
 
       if (letterType === "TYPE4") {
         return this.generateType4Tuple(
-          blueMotion,
-          redMotion,
+          leftMotion,
+          rightMotion,
           pictographData.letter ?? undefined
         );
       }
 
       if (letterType === "TYPE5") {
         return this.generateType5Tuple(
-          blueMotion,
-          redMotion,
+          leftMotion,
+          rightMotion,
           pictographData.letter ?? undefined
         );
       }
 
       if (letterType === "TYPE6") {
         return this.generateType6Tuple(
-          blueMotion,
-          redMotion,
+          leftMotion,
+          rightMotion,
           pictographData.letter ?? undefined
         );
       }
 
       // Fallback
-      return this.generateType1NonHybridTuple(blueMotion, redMotion);
+      return this.generateType1NonHybridTuple(leftMotion, rightMotion);
     } catch {
       return "(0, 0)";
     }
@@ -154,23 +154,23 @@ export class TurnsTupleGenerator {
    * Used for: C, F, I, L, O, R, U, V
    */
   private generateType1HybridTuple(
-    blueMotion: MotionData,
-    redMotion: MotionData
+    leftMotion: MotionData,
+    rightMotion: MotionData
   ): string {
     // Check if one motion is float
     const hasFloat =
-      blueMotion.motionType.toLowerCase() === "float" ||
-      redMotion.motionType.toLowerCase() === "float";
+      leftMotion.motionType.toLowerCase() === "float" ||
+      rightMotion.motionType.toLowerCase() === "float";
 
     if (hasFloat) {
       // If has float, use blue/red ordering
-      return `(${this.formatTurns(this.normalizeTurns(blueMotion), blueMotion)}, ${this.formatTurns(this.normalizeTurns(redMotion), redMotion)})`;
+      return `(${this.formatTurns(this.normalizeTurns(leftMotion), leftMotion)}, ${this.formatTurns(this.normalizeTurns(rightMotion), rightMotion)})`;
     } else {
       // If no float, use pro/anti ordering
       const proMotion =
-        blueMotion.motionType.toLowerCase() === "pro" ? blueMotion : redMotion;
+        leftMotion.motionType.toLowerCase() === "pro" ? leftMotion : rightMotion;
       const antiMotion =
-        blueMotion.motionType.toLowerCase() === "anti" ? blueMotion : redMotion;
+        leftMotion.motionType.toLowerCase() === "anti" ? leftMotion : rightMotion;
 
       return `(${this.formatTurns(proMotion.turns, proMotion)}, ${this.formatTurns(antiMotion.turns, antiMotion)})`;
     }
@@ -181,13 +181,13 @@ export class TurnsTupleGenerator {
    * Used for: A, B, D, E, G, H, J, K, M, N, P, Q, S, T
    */
   private generateType1NonHybridTuple(
-    blueMotion: MotionData,
-    redMotion: MotionData
+    leftMotion: MotionData,
+    rightMotion: MotionData
   ): string {
-    const blueTurns = this.normalizeTurns(blueMotion);
-    const redTurns = this.normalizeTurns(redMotion);
+    const leftTurns = this.normalizeTurns(leftMotion);
+    const rightTurns = this.normalizeTurns(rightMotion);
 
-    return `(${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)})`;
+    return `(${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)})`;
   }
 
   /**
@@ -195,8 +195,8 @@ export class TurnsTupleGenerator {
    * Used for: W, X, Y, Z, Σ, Δ, Θ, Ω
    */
   private generateType2Tuple(
-    blueMotion: MotionData,
-    redMotion: MotionData
+    leftMotion: MotionData,
+    rightMotion: MotionData
   ): string {
     // Identify which is shift and which is static
     const isShift = (motion: MotionData) => {
@@ -204,8 +204,8 @@ export class TurnsTupleGenerator {
       return ["pro", "anti", "float"].includes(motionType || "");
     };
 
-    const shiftMotion = isShift(blueMotion) ? blueMotion : redMotion;
-    const staticMotion = isShift(blueMotion) ? redMotion : blueMotion;
+    const shiftMotion = isShift(leftMotion) ? leftMotion : rightMotion;
+    const staticMotion = isShift(leftMotion) ? rightMotion : leftMotion;
 
     const shiftType = shiftMotion.motionType.toLowerCase();
     const shiftTurns = this.normalizeTurns(shiftMotion);
@@ -258,13 +258,13 @@ export class TurnsTupleGenerator {
    * Used for Cross-Shift letters (W-, X-, Y-, Z-, Σ-, Δ-, Θ-, Ω-)
    */
   private generateType3Tuple(
-    blueMotion: MotionData,
-    redMotion: MotionData
+    leftMotion: MotionData,
+    rightMotion: MotionData
   ): string {
     // Identify shift and dash motions
-    const isDashBlue = blueMotion.motionType.toLowerCase() === "dash";
-    const shiftMotion = isDashBlue ? redMotion : blueMotion;
-    const dashMotion = isDashBlue ? blueMotion : redMotion;
+    const isDashBlue = leftMotion.motionType.toLowerCase() === "dash";
+    const shiftMotion = isDashBlue ? rightMotion : leftMotion;
+    const dashMotion = isDashBlue ? leftMotion : rightMotion;
 
     const shiftType = shiftMotion.motionType.toLowerCase();
     const shiftTurns = this.normalizeTurns(shiftMotion);
@@ -312,14 +312,14 @@ export class TurnsTupleGenerator {
    * Special case for Λ (Lambda): includes prop rotation state (opening/closing)
    */
   private generateType4Tuple(
-    blueMotion: MotionData,
-    redMotion: MotionData,
+    leftMotion: MotionData,
+    rightMotion: MotionData,
     letter?: string
   ): string {
     // Identify dash and static motions
-    const isDashBlue = blueMotion.motionType.toLowerCase() === "dash";
-    const dashMotion = isDashBlue ? blueMotion : redMotion;
-    const staticMotion = isDashBlue ? redMotion : blueMotion;
+    const isDashBlue = leftMotion.motionType.toLowerCase() === "dash";
+    const dashMotion = isDashBlue ? leftMotion : rightMotion;
+    const staticMotion = isDashBlue ? rightMotion : leftMotion;
 
     const dashTurns = this.normalizeTurns(dashMotion);
     const staticTurns = this.normalizeTurns(staticMotion);
@@ -424,38 +424,38 @@ export class TurnsTupleGenerator {
    * - Both turns non-zero: (direction, blue_turns, red_turns) where direction = 's' if same, 'o' if opposite
    */
   private generateType5Tuple(
-    blueMotion: MotionData,
-    redMotion: MotionData,
+    leftMotion: MotionData,
+    rightMotion: MotionData,
     letter?: string
   ): string {
-    const blueTurns = this.normalizeTurns(blueMotion);
-    const redTurns = this.normalizeTurns(redMotion);
+    const leftTurns = this.normalizeTurns(leftMotion);
+    const rightTurns = this.normalizeTurns(rightMotion);
 
     // Lambda Dash (Λ-) requires prop rotation state
     if (letter === "Λ-") {
       return this.generateLambdaDashTuple(
-        blueMotion,
-        redMotion,
-        blueTurns,
-        redTurns
+        leftMotion,
+        rightMotion,
+        leftTurns,
+        rightTurns
       );
     }
 
     // Standard TYPE5 logic for Φ-, Ψ-
-    if (blueTurns === 0 && redTurns === 0) {
-      return `(${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)})`;
-    } else if (blueTurns === 0 || redTurns === 0) {
-      const turningMotion = blueTurns !== 0 ? blueMotion : redMotion;
+    if (leftTurns === 0 && rightTurns === 0) {
+      return `(${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)})`;
+    } else if (leftTurns === 0 || rightTurns === 0) {
+      const turningMotion = leftTurns !== 0 ? leftMotion : rightMotion;
       const turningRotDir =
         turningMotion.rotationDirection.toLowerCase() || "cw";
-      return `(${turningRotDir}, ${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)})`;
+      return `(${turningRotDir}, ${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)})`;
     } else {
-      const blueRotDir =
-        blueMotion.rotationDirection.toLowerCase() || "norotation";
-      const redRotDir =
-        redMotion.rotationDirection.toLowerCase() || "norotation";
-      const direction = blueRotDir === redRotDir ? "s" : "o";
-      return `(${direction}, ${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)})`;
+      const leftRotDir =
+        leftMotion.rotationDirection.toLowerCase() || "norotation";
+      const rightRotDir =
+        rightMotion.rotationDirection.toLowerCase() || "norotation";
+      const direction = leftRotDir === rightRotDir ? "s" : "o";
+      return `(${direction}, ${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)})`;
     }
   }
 
@@ -464,58 +464,58 @@ export class TurnsTupleGenerator {
    * Format: (direction, blue_turns, red_turns, blue_open_close, red_open_close)
    */
   private generateLambdaDashTuple(
-    blueMotion: MotionData,
-    redMotion: MotionData,
-    blueTurns: number | "fl",
-    redTurns: number | "fl"
+    leftMotion: MotionData,
+    rightMotion: MotionData,
+    leftTurns: number | "fl",
+    rightTurns: number | "fl"
   ): string {
-    if (blueTurns === 0 && redTurns === 0) {
-      return `(${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)})`;
+    if (leftTurns === 0 && rightTurns === 0) {
+      return `(${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)})`;
     } else if (
-      blueTurns === 0 &&
-      typeof redTurns === "number" &&
-      redTurns > 0
+      leftTurns === 0 &&
+      typeof rightTurns === "number" &&
+      rightTurns > 0
     ) {
-      const redOpenClose = getRedState(
-        blueMotion.endLocation,
-        redMotion.endLocation,
-        redMotion.rotationDirection
+      const rightOpenClose = getRightState(
+        leftMotion.endLocation,
+        rightMotion.endLocation,
+        rightMotion.rotationDirection
       );
-      return `(${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)}, ${redOpenClose})`;
+      return `(${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)}, ${rightOpenClose})`;
     } else if (
-      typeof blueTurns === "number" &&
-      blueTurns > 0 &&
-      redTurns === 0
+      typeof leftTurns === "number" &&
+      leftTurns > 0 &&
+      rightTurns === 0
     ) {
-      const blueOpenClose = getBlueState(
-        blueMotion.endLocation,
-        redMotion.endLocation,
-        blueMotion.rotationDirection
+      const leftOpenClose = getLeftState(
+        leftMotion.endLocation,
+        rightMotion.endLocation,
+        leftMotion.rotationDirection
       );
-      return `(${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)}, ${blueOpenClose})`;
+      return `(${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)}, ${leftOpenClose})`;
     } else if (
-      typeof redTurns === "number" &&
-      redTurns > 0 &&
-      typeof blueTurns === "number" &&
-      blueTurns > 0
+      typeof rightTurns === "number" &&
+      rightTurns > 0 &&
+      typeof leftTurns === "number" &&
+      leftTurns > 0
     ) {
-      const redOpenClose = getRedState(
-        blueMotion.endLocation,
-        redMotion.endLocation,
-        redMotion.rotationDirection
+      const rightOpenClose = getRightState(
+        leftMotion.endLocation,
+        rightMotion.endLocation,
+        rightMotion.rotationDirection
       );
-      const blueOpenClose = getBlueState(
-        blueMotion.endLocation,
-        redMotion.endLocation,
-        blueMotion.rotationDirection
+      const leftOpenClose = getLeftState(
+        leftMotion.endLocation,
+        rightMotion.endLocation,
+        leftMotion.rotationDirection
       );
       const direction =
-        blueMotion.rotationDirection === redMotion.rotationDirection
+        leftMotion.rotationDirection === rightMotion.rotationDirection
           ? "s"
           : "o";
-      return `(${direction}, ${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)}, ${blueOpenClose}, ${redOpenClose})`;
+      return `(${direction}, ${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)}, ${leftOpenClose}, ${rightOpenClose})`;
     } else {
-      return `(${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)})`;
+      return `(${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)})`;
     }
   }
 
@@ -527,38 +527,38 @@ export class TurnsTupleGenerator {
    * For α and β: uses standard TYPE5 logic
    */
   private generateType6Tuple(
-    blueMotion: MotionData,
-    redMotion: MotionData,
+    leftMotion: MotionData,
+    rightMotion: MotionData,
     letter?: string
   ): string {
-    const blueTurns = this.normalizeTurns(blueMotion);
-    const redTurns = this.normalizeTurns(redMotion);
+    const leftTurns = this.normalizeTurns(leftMotion);
+    const rightTurns = this.normalizeTurns(rightMotion);
 
     // Gamma (γ) requires prop rotation state
     if (letter === "γ") {
       return this.generateGammaTuple(
-        blueMotion,
-        redMotion,
-        blueTurns,
-        redTurns
+        leftMotion,
+        rightMotion,
+        leftTurns,
+        rightTurns
       );
     }
 
     // Standard TYPE5/TYPE6 logic for α, β
-    if (blueTurns === 0 && redTurns === 0) {
-      return `(${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)})`;
-    } else if (blueTurns === 0 || redTurns === 0) {
-      const turningMotion = blueTurns !== 0 ? blueMotion : redMotion;
+    if (leftTurns === 0 && rightTurns === 0) {
+      return `(${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)})`;
+    } else if (leftTurns === 0 || rightTurns === 0) {
+      const turningMotion = leftTurns !== 0 ? leftMotion : rightMotion;
       const turningRotDir =
         turningMotion.rotationDirection.toLowerCase() || "cw";
-      return `(${turningRotDir}, ${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)})`;
+      return `(${turningRotDir}, ${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)})`;
     } else {
-      const blueRotDir =
-        blueMotion.rotationDirection.toLowerCase() || "norotation";
-      const redRotDir =
-        redMotion.rotationDirection.toLowerCase() || "norotation";
-      const direction = blueRotDir === redRotDir ? "s" : "o";
-      return `(${direction}, ${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)})`;
+      const leftRotDir =
+        leftMotion.rotationDirection.toLowerCase() || "norotation";
+      const rightRotDir =
+        rightMotion.rotationDirection.toLowerCase() || "norotation";
+      const direction = leftRotDir === rightRotDir ? "s" : "o";
+      return `(${direction}, ${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)})`;
     }
   }
 
@@ -567,58 +567,58 @@ export class TurnsTupleGenerator {
    * Format: (direction, blue_turns, red_turns, blue_open_close, red_open_close)
    */
   private generateGammaTuple(
-    blueMotion: MotionData,
-    redMotion: MotionData,
-    blueTurns: number | "fl",
-    redTurns: number | "fl"
+    leftMotion: MotionData,
+    rightMotion: MotionData,
+    leftTurns: number | "fl",
+    rightTurns: number | "fl"
   ): string {
-    if (blueTurns === 0 && redTurns === 0) {
-      return `(${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)})`;
+    if (leftTurns === 0 && rightTurns === 0) {
+      return `(${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)})`;
     } else if (
-      blueTurns === 0 &&
-      typeof redTurns === "number" &&
-      redTurns > 0
+      leftTurns === 0 &&
+      typeof rightTurns === "number" &&
+      rightTurns > 0
     ) {
-      const redOpenClose = getRedState(
-        blueMotion.endLocation,
-        redMotion.endLocation,
-        redMotion.rotationDirection
+      const rightOpenClose = getRightState(
+        leftMotion.endLocation,
+        rightMotion.endLocation,
+        rightMotion.rotationDirection
       );
-      return `(${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)}, ${redOpenClose})`;
+      return `(${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)}, ${rightOpenClose})`;
     } else if (
-      typeof blueTurns === "number" &&
-      blueTurns > 0 &&
-      redTurns === 0
+      typeof leftTurns === "number" &&
+      leftTurns > 0 &&
+      rightTurns === 0
     ) {
-      const blueOpenClose = getBlueState(
-        blueMotion.endLocation,
-        redMotion.endLocation,
-        blueMotion.rotationDirection
+      const leftOpenClose = getLeftState(
+        leftMotion.endLocation,
+        rightMotion.endLocation,
+        leftMotion.rotationDirection
       );
-      return `(${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)}, ${blueOpenClose})`;
+      return `(${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)}, ${leftOpenClose})`;
     } else if (
-      typeof redTurns === "number" &&
-      redTurns > 0 &&
-      typeof blueTurns === "number" &&
-      blueTurns > 0
+      typeof rightTurns === "number" &&
+      rightTurns > 0 &&
+      typeof leftTurns === "number" &&
+      leftTurns > 0
     ) {
-      const redOpenClose = getRedState(
-        blueMotion.endLocation,
-        redMotion.endLocation,
-        redMotion.rotationDirection
+      const rightOpenClose = getRightState(
+        leftMotion.endLocation,
+        rightMotion.endLocation,
+        rightMotion.rotationDirection
       );
-      const blueOpenClose = getBlueState(
-        blueMotion.endLocation,
-        redMotion.endLocation,
-        blueMotion.rotationDirection
+      const leftOpenClose = getLeftState(
+        leftMotion.endLocation,
+        rightMotion.endLocation,
+        leftMotion.rotationDirection
       );
       const direction =
-        blueMotion.rotationDirection === redMotion.rotationDirection
+        leftMotion.rotationDirection === rightMotion.rotationDirection
           ? "s"
           : "o";
-      return `(${direction}, ${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)}, ${blueOpenClose}, ${redOpenClose})`;
+      return `(${direction}, ${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)}, ${leftOpenClose}, ${rightOpenClose})`;
     } else {
-      return `(${this.formatTurns(blueTurns, blueMotion)}, ${this.formatTurns(redTurns, redMotion)})`;
+      return `(${this.formatTurns(leftTurns, leftMotion)}, ${this.formatTurns(rightTurns, rightMotion)})`;
     }
   }
 

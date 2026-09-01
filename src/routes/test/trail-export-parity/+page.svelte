@@ -78,8 +78,8 @@
     vm.setVisibility("progressBar", false);
     vm.setVisibility("tkaGlyph", false);
     vm.setVisibility("stepNumbers", false);
-    vm.setVisibility("bluePathLines", false);
-    vm.setVisibility("redPathLines", false);
+    vm.setVisibility("leftPathLines", false);
+    vm.setVisibility("rightPathLines", false);
   }
   let playbackController: AnimationPlaybackController | null = null;
   let loadedSequence: SequenceData | null = null;
@@ -125,7 +125,7 @@
     !!s &&
     Array.isArray(s.steps) &&
     s.steps.length > 0 &&
-    s.steps.some((st) => st?.motions?.blue && st?.motions?.red);
+    s.steps.some((st) => st?.motions?.left && st?.motions?.right);
 
   async function loadSequence(): Promise<boolean> {
     const wanted = word.trim();
@@ -299,8 +299,8 @@
         backgroundAlpha: 1,
         showNonRadialPoints: true,
         trailSettings: animationSettings.trail,
-        bluePropType: null,
-        redPropType: null,
+        leftPropType: null,
+        rightPropType: null,
         previewDarkMode: null,
       });
       liveCtx?.renderFrameSync(props, virtualTimeMs, stepSeconds);
@@ -584,8 +584,8 @@
      actual instance, but the viewer shouldn't watch it warm up + jump. -->
 <div class="offscreen">
   <AnimatorCanvas
-    blueProp={animationState.bluePropState}
-    redProp={animationState.redPropState}
+    leftProp={animationState.leftPropState}
+    rightProp={animationState.rightPropState}
     gridVisible={true}
     {gridMode}
     letter={currentLetter}

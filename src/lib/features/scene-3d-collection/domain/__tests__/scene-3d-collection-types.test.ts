@@ -13,7 +13,7 @@ const snapshot: Scene3DSnapshot = {
   scene: { backgroundType: "forest", oceanVariant: "abyss" },
   camera: { position: { x: 0, y: 1, z: 5 }, target: { x: 0, y: 0, z: 0 } } as never,
   performers: [
-    { position: { x: 0, z: 0 }, facingAngle: 0, customBluePlane: "wall", customRedPlane: "wall", name: null },
+    { position: { x: 0, z: 0 }, facingAngle: 0, customLeftPlane: "wall", customRightPlane: "wall", name: null },
   ],
   selectedPerformerIndex: null,
   activeFormation: "manual",
@@ -22,8 +22,8 @@ const snapshot: Scene3DSnapshot = {
     prop: "staff",
     effortId: "linear",
     planeMode: "wall",
-    customBluePlane: "wall",
-    customRedPlane: "wall",
+    customLeftPlane: "wall",
+    customRightPlane: "wall",
   },
   visiblePlanes: ["wall"],
   showGridLabels: false,
@@ -33,7 +33,7 @@ const snapshot: Scene3DSnapshot = {
   stageGroundOffset: 0,
   effectToggles: { fire: false, trails: true },
   sceneFeatures: { stage: true, campfire: false },
-  props: { bluePropType: "staff", redPropType: "staff" },
+  props: { leftPropType: "staff", rightPropType: "staff" },
 };
 
 describe("Scene3DSnapshotSchema", () => {

@@ -46,7 +46,7 @@ export function maxAdditionalTurns(sequence: SequenceWithSteps): number {
   let maxTurns = 0;
 
   for (const step of sequence.steps) {
-    for (const motion of [step.motions?.blue, step.motions?.red]) {
+    for (const motion of [step.motions?.left, step.motions?.right]) {
       if (!isVisibleMotion(motion)) continue;
       const turns = motion?.turns;
       if (typeof turns === "number" && Number.isFinite(turns)) {

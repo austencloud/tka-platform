@@ -225,8 +225,8 @@
     <Avatar3D
       id={`flow-fest-population-slot-${slot.key}`}
       avatarId={slot.avatarId}
-      bluePropState={null}
-      redPropState={null}
+      leftPropState={null}
+      rightPropState={null}
       visible={slot.visible}
       isActive={false}
       position={{ x: slot.x, y: slot.y, z: slot.z }}

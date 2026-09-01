@@ -18,15 +18,46 @@ function migrateLegacyCharacterField(
   return { ...rest, characterId: avatarId };
 }
 
-function migrateLegacyPerformanceCharacters(
+function migrateLegacyHandFields(value: unknown, location: string): unknown {
+  if (!isRecord(value)) return value;
+  const migrated = { ...value };
+  for (const [legacy, canonical] of [
+    ["bluePlane", "leftPlane"],
+    ["redPlane", "rightPlane"],
+  ] as const) {
+    if (legacy in migrated && canonical in migrated) {
+      throw new Error(
+        `${location} cannot contain both legacy "${legacy}" and "${canonical}".`
+      );
+    }
+    if (legacy in migrated) {
+      migrated[canonical] = migrated[legacy];
+      delete migrated[legacy];
+    }
+  }
+  return migrated;
+}
+
+function migrateLegacyPerformanceFields(
   performance: unknown,
-  sceneIndex: number
+  sceneIndex: number,
+  options: { characters: boolean; hands: boolean }
 ): unknown {
   if (!isRecord(performance)) return performance;
+  const migrate = (value: unknown, location: string): unknown => {
+    let migrated = isRecord(value) ? { ...value } : value;
+    if (options.characters) {
+      migrated = migrateLegacyCharacterField(migrated, location);
+    }
+    if (options.hands) {
+      migrated = migrateLegacyHandFields(migrated, location);
+    }
+    return migrated;
+  };
   const migrated = { ...performance };
   if (Array.isArray(performance.performers)) {
     migrated.performers = performance.performers.map((performer, index) =>
-      migrateLegacyCharacterField(
+      migrate(
         performer,
         `Film director scene ${sceneIndex + 1}, performer ${index + 1}`
       )
@@ -35,14 +66,14 @@ function migrateLegacyPerformanceCharacters(
   if (isRecord(performance.cast)) {
     const cast = { ...performance.cast };
     if (cast.defaults !== undefined) {
-      cast.defaults = migrateLegacyCharacterField(
+      cast.defaults = migrate(
         cast.defaults,
         `Film director scene ${sceneIndex + 1}, cast defaults`
       );
     }
     if (Array.isArray(cast.performers)) {
       cast.performers = cast.performers.map((performer, index) =>
-        migrateLegacyCharacterField(
+        migrate(
           performer,
           `Film director scene ${sceneIndex + 1}, cast performer ${index + 1}`
         )
@@ -63,6 +94,23 @@ export function normalizeFilmDirectorInput(raw: unknown): unknown {
   }
 
   const normalized = { ...raw };
+  const version =
+    typeof raw.version === "number" ? raw.version : Number.POSITIVE_INFINITY;
+  const migrateLegacyCharacters = version <= 3;
+  const migrateLegacyHands = version <= 4;
+  if (
+    migrateLegacyHands &&
+    isRecord(normalized.seed) &&
+    isRecord(normalized.seed.axes)
+  ) {
+    normalized.seed = {
+      ...normalized.seed,
+      axes: migrateLegacyHandFields(
+        normalized.seed.axes,
+        "Film director seed axes"
+      ),
+    };
+  }
   const units = "scenes" in raw ? raw.scenes : raw.shots;
   if (!Array.isArray(units)) {
     if ("shots" in raw) {
@@ -90,13 +138,16 @@ export function normalizeFilmDirectorInput(raw: unknown): unknown {
           })()
         : { ...unit };
 
-    // Versions 1-3 authored the visible model as `avatarId`. Version 4 makes
-    // `characterId` canonical; the old spelling is accepted only at this
-    // migration boundary, never inside the resolver or output model.
-    if (raw.version !== 4 && "performance" in normalizedUnit) {
-      normalizedUnit.performance = migrateLegacyPerformanceCharacters(
+    // Versions 1-3 used avatarId. Versions 1-4 used color-named hand fields.
+    // Both are normalized at this boundary and never reach the resolver.
+    if (
+      (migrateLegacyCharacters || migrateLegacyHands) &&
+      "performance" in normalizedUnit
+    ) {
+      normalizedUnit.performance = migrateLegacyPerformanceFields(
         normalizedUnit.performance,
-        index
+        index,
+        { characters: migrateLegacyCharacters, hands: migrateLegacyHands }
       );
     }
     return normalizedUnit;

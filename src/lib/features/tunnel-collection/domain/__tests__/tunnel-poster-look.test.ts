@@ -28,7 +28,7 @@ function tunnel(): CollectedTunnel {
         gridVisible: true,
         colors: {
           mode: "spectrum",
-          custom: { blue: "#2e8bf0", red: "#ed1c24" },
+          custom: { left: "#2e8bf0", right: "#ed1c24" },
         },
         section: "tunnel",
       },
@@ -37,16 +37,16 @@ function tunnel(): CollectedTunnel {
       paths: {
         pathShape: "arc",
         motionAwarePaths: false,
-        bluePathLines: false,
-        redPathLines: false,
+        leftPathLines: false,
+        rightPathLines: false,
       },
       playback: { bpm: 60, playbackMode: "continuous" },
-      props: { bluePropType: "staff", redPropType: "staff" },
+      props: { leftPropType: "staff", rightPropType: "staff" },
       trailRender: {
         ...DEFAULT_TRAIL_SETTINGS,
         lineWidth: 7,
-        blueColor: "#1e90ff",
-        redColor: "#ff2d55",
+        leftColor: "#1e90ff",
+        rightColor: "#ff2d55",
         glowBlur: 18,
         effect: TrailEffect.GLOW,
         hideProps: false,
@@ -81,8 +81,8 @@ describe("posterTrailSettings", () => {
     const source = tunnel().snapshot.trailRender;
     const poster = posterTrailSettings(source);
     expect(poster.lineWidth).toBe(source.lineWidth);
-    expect(poster.blueColor).toBe(source.blueColor);
-    expect(poster.redColor).toBe(source.redColor);
+    expect(poster.leftColor).toBe(source.leftColor);
+    expect(poster.rightColor).toBe(source.rightColor);
     expect(poster.glowBlur).toBe(source.glowBlur);
     expect(poster.effect).toBe(source.effect);
   });

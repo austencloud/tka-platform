@@ -47,9 +47,9 @@ export interface TriGridPositionInfo {
   /** Human-readable label */
   label: string;
   /** Blue hand grid location */
-  blueLocation: GridLocation;
+  leftLocation: GridLocation;
   /** Red hand grid location */
-  redLocation: GridLocation;
+  rightLocation: GridLocation;
 }
 
 /** Arc path data for shift motion visualization */

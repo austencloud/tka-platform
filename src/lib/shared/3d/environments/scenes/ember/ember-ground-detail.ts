@@ -140,9 +140,9 @@ export function patchEmberGroundDetailMaterial(
   return patchMaskedGroundDetailMaterial(
     material,
     {
-      red: detailMaps.youngLava,
+      right: detailMaps.youngLava,
       green: detailMaps.ironContact,
-      blue: detailMaps.fracturedBasalt,
+      left: detailMaps.fracturedBasalt,
       fourth: detailMaps.shelteredAsh,
     },
     familyMask,

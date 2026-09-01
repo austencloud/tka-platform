@@ -40,8 +40,8 @@ function galleryInput(overrides: Partial<ThumbnailRenderInput> = {}): ThumbnailR
   return {
     sequenceName: "AKE",
     sequenceId: "seq-1",
-    bluePropType: PropType.STAFF,
-    redPropType: PropType.STAFF,
+    leftPropType: PropType.STAFF,
+    rightPropType: PropType.STAFF,
     catDogModeEnabled: false,
     lightMode: false,
     variant: "gallery",

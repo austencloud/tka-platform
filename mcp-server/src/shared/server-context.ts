@@ -32,10 +32,10 @@ export interface UserPreferences {
   showGrid: boolean;
   showNonRadialPoints: boolean;
   handPointVisibility: "all" | "active" | "none";
-  showBlueMotion: boolean;
-  showRedMotion: boolean;
-  bluePropType: string | null;
-  redPropType: string | null;
+  showLeftMotion: boolean;
+  showRightMotion: boolean;
+  leftPropType: string | null;
+  rightPropType: string | null;
 }
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
@@ -49,10 +49,10 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   showGrid: true,
   showNonRadialPoints: false,
   handPointVisibility: "all",
-  showBlueMotion: true,
-  showRedMotion: true,
-  bluePropType: null,
-  redPropType: null,
+  showLeftMotion: true,
+  showRightMotion: true,
+  leftPropType: null,
+  rightPropType: null,
 };
 
 // Current session preferences (starts with defaults)
@@ -198,21 +198,21 @@ function loadDataframe(gridMode: GridMode): PictographData[] {
       // When building sequences, orientation-propagation.ts chains each step's
       // end orientation into the next step's start, so the correct orientations
       // propagate through the sequence regardless of this default.
-      const blueOrientations = calculateOrientations({
-        motionType: row.blueMotionType,
+      const leftOrientations = calculateOrientations({
+        motionType: row.leftMotionType,
         turns: 0,
-        rotationDirection: row.blueRotationDirection || "cw",
-        startLocation: row.blueStartLocation,
-        endLocation: row.blueEndLocation,
+        rotationDirection: row.leftRotationDirection || "cw",
+        startLocation: row.leftStartLocation,
+        endLocation: row.leftEndLocation,
         startOrientation: "in",
       });
 
-      const redOrientations = calculateOrientations({
-        motionType: row.redMotionType,
+      const rightOrientations = calculateOrientations({
+        motionType: row.rightMotionType,
         turns: 0,
-        rotationDirection: row.redRotationDirection || "cw",
-        startLocation: row.redStartLocation,
-        endLocation: row.redEndLocation,
+        rotationDirection: row.rightRotationDirection || "cw",
+        startLocation: row.rightStartLocation,
+        endLocation: row.rightEndLocation,
         startOrientation: "in",
       });
 
@@ -225,23 +225,23 @@ function loadDataframe(gridMode: GridMode): PictographData[] {
         endPosition: row.endPosition,
         timing: row.timing,
         direction: row.direction,
-        blueMotion: {
-          color: "blue",
-          startLocation: row.blueStartLocation,
-          endLocation: row.blueEndLocation,
-          motionType: row.blueMotionType,
-          rotationDirection: row.blueRotationDirection,
-          startOrientation: blueOrientations.startOrientation,
-          endOrientation: blueOrientations.endOrientation,
+        leftMotion: {
+          hand: "left",
+          startLocation: row.leftStartLocation,
+          endLocation: row.leftEndLocation,
+          motionType: row.leftMotionType,
+          rotationDirection: row.leftRotationDirection,
+          startOrientation: leftOrientations.startOrientation,
+          endOrientation: leftOrientations.endOrientation,
         },
-        redMotion: {
-          color: "red",
-          startLocation: row.redStartLocation,
-          endLocation: row.redEndLocation,
-          motionType: row.redMotionType,
-          rotationDirection: row.redRotationDirection,
-          startOrientation: redOrientations.startOrientation,
-          endOrientation: redOrientations.endOrientation,
+        rightMotion: {
+          hand: "right",
+          startLocation: row.rightStartLocation,
+          endLocation: row.rightEndLocation,
+          motionType: row.rightMotionType,
+          rotationDirection: row.rightRotationDirection,
+          startOrientation: rightOrientations.startOrientation,
+          endOrientation: rightOrientations.endOrientation,
         },
       });
     }

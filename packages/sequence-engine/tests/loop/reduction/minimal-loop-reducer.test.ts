@@ -43,7 +43,7 @@ function step(
   letter: string | null,
   startPosition: string,
   endPosition: string,
-  blue: ReturnType<typeof m>,
+  left: ReturnType<typeof m>,
 ): Step {
   return {
     id: `step-${stepNumber}`,
@@ -52,7 +52,7 @@ function step(
     startPosition: startPosition as Step["startPosition"],
     endPosition: endPosition as Step["endPosition"],
     duration: 1,
-    motions: { blue: blue as never, red: { ...RED_STATIC } as never },
+    motions: { left: left as never, right: { ...RED_STATIC } as never },
   } as Step;
 }
 

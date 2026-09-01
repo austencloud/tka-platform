@@ -7,10 +7,10 @@ import {
 
 describe("rhythm-mask", () => {
   it("maskAt decodes P/R/B/- and tiles", () => {
-    expect(maskAt("RB", 0)).toEqual({ blue: false, red: true });
-    expect(maskAt("RB", 1)).toEqual({ blue: true, red: false });
-    expect(maskAt("P", 5)).toEqual({ blue: true, red: true });
-    expect(maskAt("P-", 1)).toEqual({ blue: false, red: false });
+    expect(maskAt("RB", 0)).toEqual({ left: false, right: true });
+    expect(maskAt("RB", 1)).toEqual({ left: true, right: false });
+    expect(maskAt("P", 5)).toEqual({ left: true, right: true });
+    expect(maskAt("P-", 1)).toEqual({ left: false, right: false });
   });
   it("activeAt is true for any non-dash", () => {
     expect(activeAt("P---", 0)).toBe(true);
@@ -48,16 +48,16 @@ describe("rhythm-mask", () => {
   });
   it("stampPerHand renders the Solo 1 (RBBRBRRB) pattern at period 8", () => {
     const solo = { id: "solo-1", label: "Solo 1", sym: "RBBRBRRB", period: 8 };
-    const { blue, red } = stampPerHand(solo, 8, 1, 1, 0);
+    const { left, right } = stampPerHand(solo, 8, 1, 1, 0);
     // R=right(red), B=left(blue); one hand per beat, never both, never neither.
-    expect(red).toEqual([1, 0, 0, 1, 0, 1, 1, 0]);
-    expect(blue).toEqual([0, 1, 1, 0, 1, 0, 0, 1]);
-    expect(blue.every((b, i) => (b === 0) !== (red[i] === 0))).toBe(true);
+    expect(right).toEqual([1, 0, 0, 1, 0, 1, 1, 0]);
+    expect(left).toEqual([0, 1, 1, 0, 1, 0, 0, 1]);
+    expect(left.every((b, i) => (b === 0) !== (right[i] === 0))).toBe(true);
   });
   it("perHandRhythmMatches recognises a stamped Solo 1 strip at length 8", () => {
-    const { blue, red } = stampPerHand(
+    const { left, right } = stampPerHand(
       { id: "solo-1", label: "Solo 1", sym: "RBBRBRRB", period: 8 }, 8, 1, 1, 0
     );
-    expect(perHandRhythmMatches("RBBRBRRB", blue, red, 0)).toBe(true);
+    expect(perHandRhythmMatches("RBBRBRRB", left, right, 0)).toBe(true);
   });
 });

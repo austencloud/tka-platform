@@ -10,13 +10,13 @@ import {
 import voteSeed from "../data/festival-sampler-turn-vote-seed.json";
 
 export type FestivalTurnDecision = "yay" | "nay";
-export type FestivalTurnHand = "blue" | "red";
+export type FestivalTurnHand = "left" | "right";
 export type FestivalTurnValue = 0 | 0.5 | 1;
 export type FestivalTurnReviewFilter = "all" | "unreviewed" | "yay" | "nay";
 
 export interface FestivalTurnEntry {
-  blue: FestivalTurnValue;
-  red: FestivalTurnValue;
+  left: FestivalTurnValue;
+  right: FestivalTurnValue;
 }
 
 export interface FestivalTurnReviewManifest {
@@ -134,14 +134,14 @@ export function parseFestivalTurnPattern(pattern: string): FestivalTurnEntry[] {
     if (values.length !== 2) {
       throw new Error(`Turn pair is not blue|red: ${pair}`);
     }
-    const blue = Number(values[0]);
-    const red = Number(values[1]);
-    if (![0, 0.5, 1].includes(blue) || ![0, 0.5, 1].includes(red)) {
+    const left = Number(values[0]);
+    const right = Number(values[1]);
+    if (![0, 0.5, 1].includes(left) || ![0, 0.5, 1].includes(right)) {
       throw new Error(`Turn pair has an unsupported value: ${pair}`);
     }
     return {
-      blue: blue as FestivalTurnValue,
-      red: red as FestivalTurnValue,
+      left: left as FestivalTurnValue,
+      right: right as FestivalTurnValue,
     };
   });
 }
@@ -149,7 +149,7 @@ export function parseFestivalTurnPattern(pattern: string): FestivalTurnEntry[] {
 export function formatFestivalTurnPattern(
   entries: readonly FestivalTurnEntry[]
 ): string {
-  return entries.map(({ blue, red }) => `${blue}|${red}`).join("-");
+  return entries.map(({ left, right }) => `${left}|${right}`).join("-");
 }
 
 export function smallestFestivalTurnMotifLength(
@@ -159,7 +159,7 @@ export function smallestFestivalTurnMotifLength(
     if (entries.length % length !== 0) continue;
     const repeats = entries.every((entry, index) => {
       const motifEntry = entries[index % length];
-      return motifEntry?.blue === entry.blue && motifEntry.red === entry.red;
+      return motifEntry?.left === entry.left && motifEntry.right === entry.right;
     });
     if (repeats) return length;
   }
@@ -206,8 +206,8 @@ function swapPeriodForCard(card: FestivalSamplerCardManifest): number | null {
   if (!card.loopType) return null;
   const spec = loopSpecFromLegacyRhythm(card.loopType, card.period ?? 2);
   return (
-    spec.blue?.components.get(LOOPComponent.SWAPPED)?.period ??
-    spec.red?.components.get(LOOPComponent.SWAPPED)?.period ??
+    spec.left?.components.get(LOOPComponent.SWAPPED)?.period ??
+    spec.right?.components.get(LOOPComponent.SWAPPED)?.period ??
     null
   );
 }
@@ -251,7 +251,7 @@ export function resolveFestivalTurnPatternContext(
     Boolean(swapPeriod && Math.floor(index / sliceLength) % 2 === 1)
   );
   const effectiveEntries = assignedEntries.map((entry, index) =>
-    swapMask[index] ? { blue: entry.red, red: entry.blue } : { ...entry }
+    swapMask[index] ? { left: entry.right, right: entry.left } : { ...entry }
   );
 
   return {
@@ -490,9 +490,9 @@ function isSessionDraftValid(
     if (
       entries.length !== example.unitLength ||
       !entries.every(
-        ({ blue, red }) =>
-          (blue === 0 || blue === example.turnIntensity) &&
-          (red === 0 || red === example.turnIntensity)
+        ({ left, right }) =>
+          (left === 0 || left === example.turnIntensity) &&
+          (right === 0 || right === example.turnIntensity)
       )
     ) {
       return false;

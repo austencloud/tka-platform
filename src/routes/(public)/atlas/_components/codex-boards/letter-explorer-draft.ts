@@ -16,7 +16,7 @@ export function buildLetterDraftSequence(
     `letter-explorer-${pictograph.id}`
   );
   const startPosition = startPositionDeriver.deriveFromFirstStep(step);
-  const gridMode = step.motions.blue.gridMode;
+  const gridMode = step.motions.left.gridMode;
 
   return createSequenceData({
     id: `letter-explorer-${pictograph.id}`,

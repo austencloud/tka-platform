@@ -11,11 +11,14 @@ import { fileURLToPath } from "url";
 import { exec, spawn } from "child_process";
 import { tmpdir } from "os";
 import { calculateOrientations } from "@tka/render-core";
-import type { MotionData, PictographData, GridMode } from "../types/pictograph.js";
+import type {
+  MotionData,
+  PictographData,
+  GridMode,
+} from "../types/pictograph.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 
 /**
  * User preferences for pictograph rendering.
@@ -32,10 +35,10 @@ export interface UserPreferences {
   showGrid: boolean;
   showNonRadialPoints: boolean;
   handPointVisibility: "all" | "active" | "none";
-  showBlueMotion: boolean;
-  showRedMotion: boolean;
-  bluePropType: string | null;
-  redPropType: string | null;
+  showLeftMotion: boolean;
+  showRightMotion: boolean;
+  leftPropType: string | null;
+  rightPropType: string | null;
 }
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
@@ -49,10 +52,10 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   showGrid: true,
   showNonRadialPoints: false,
   handPointVisibility: "all",
-  showBlueMotion: true,
-  showRedMotion: true,
-  bluePropType: null,
-  redPropType: null,
+  showLeftMotion: true,
+  showRightMotion: true,
+  leftPropType: null,
+  rightPropType: null,
 };
 
 // Current session preferences (starts with defaults)
@@ -73,7 +76,6 @@ export function resetPreferences(): void {
 export function updatePreferences(partial: Partial<UserPreferences>): void {
   currentPreferences = { ...currentPreferences, ...partial };
 }
-
 
 export function openImageFile(filePath: string): void {
   const platform = process.platform;
@@ -121,7 +123,6 @@ export function saveAndOpenImage(pngBuffer: Buffer, label: string): string {
   return filePath;
 }
 
-
 // Resolve paths relative to the package root
 // When compiled, esbuild bundles everything to dist/index.js, so __dirname is dist
 // When running source, __dirname is src/shared
@@ -132,9 +133,15 @@ const PACKAGE_ROOT = isCompiled
 const ASSETS_ROOT = path.resolve(PACKAGE_ROOT, "assets");
 
 const DATAFRAME_PATHS: Record<GridMode, string> = {
-  diamond: path.resolve(ASSETS_ROOT, "data/pictographs/DiamondPictographDataframe.csv"),
+  diamond: path.resolve(
+    ASSETS_ROOT,
+    "data/pictographs/DiamondPictographDataframe.csv"
+  ),
   box: path.resolve(ASSETS_ROOT, "data/pictographs/BoxPictographDataframe.csv"),
-  skewed: path.resolve(ASSETS_ROOT, "data/pictographs/SkewedPictographDataframe.csv"),
+  skewed: path.resolve(
+    ASSETS_ROOT,
+    "data/pictographs/SkewedPictographDataframe.csv"
+  ),
 };
 
 // Cache for loaded dataframes
@@ -171,25 +178,36 @@ function loadDataframe(gridMode: GridMode): PictographData[] {
         row[header] = values[index] || "";
       });
 
+      const leftMotionType = row.leftMotionType || row.blueMotionType;
+      const leftStartLocation = row.leftStartLocation || row.blueStartLocation;
+      const leftEndLocation = row.leftEndLocation || row.blueEndLocation;
+      const leftRotationDirection =
+        row.leftRotationDirection || row.blueRotationDirection || "cw";
+      const rightMotionType = row.rightMotionType || row.redMotionType;
+      const rightStartLocation = row.rightStartLocation || row.redStartLocation;
+      const rightEndLocation = row.rightEndLocation || row.redEndLocation;
+      const rightRotationDirection =
+        row.rightRotationDirection || row.redRotationDirection || "cw";
+
       // Orientations for isolated variations default to "in" start.
       // When building sequences, orientation-propagation.ts chains each step's
       // end orientation into the next step's start, so the correct orientations
       // propagate through the sequence regardless of this default.
-      const blueOrientations = calculateOrientations({
-        motionType: row.blueMotionType,
+      const leftOrientations = calculateOrientations({
+        motionType: leftMotionType,
         turns: 0,
-        rotationDirection: row.blueRotationDirection || "cw",
-        startLocation: row.blueStartLocation,
-        endLocation: row.blueEndLocation,
+        rotationDirection: leftRotationDirection,
+        startLocation: leftStartLocation,
+        endLocation: leftEndLocation,
         startOrientation: "in",
       });
 
-      const redOrientations = calculateOrientations({
-        motionType: row.redMotionType,
+      const rightOrientations = calculateOrientations({
+        motionType: rightMotionType,
         turns: 0,
-        rotationDirection: row.redRotationDirection || "cw",
-        startLocation: row.redStartLocation,
-        endLocation: row.redEndLocation,
+        rotationDirection: rightRotationDirection,
+        startLocation: rightStartLocation,
+        endLocation: rightEndLocation,
         startOrientation: "in",
       });
 
@@ -202,23 +220,23 @@ function loadDataframe(gridMode: GridMode): PictographData[] {
         endPosition: row.endPosition,
         timing: row.timing,
         direction: row.direction,
-        blueMotion: {
-          color: "blue",
-          startLocation: row.blueStartLocation,
-          endLocation: row.blueEndLocation,
-          motionType: row.blueMotionType,
-          rotationDirection: row.blueRotationDirection,
-          startOrientation: blueOrientations.startOrientation,
-          endOrientation: blueOrientations.endOrientation,
+        leftMotion: {
+          hand: "left",
+          startLocation: leftStartLocation,
+          endLocation: leftEndLocation,
+          motionType: leftMotionType,
+          rotationDirection: leftRotationDirection,
+          startOrientation: leftOrientations.startOrientation,
+          endOrientation: leftOrientations.endOrientation,
         },
-        redMotion: {
-          color: "red",
-          startLocation: row.redStartLocation,
-          endLocation: row.redEndLocation,
-          motionType: row.redMotionType,
-          rotationDirection: row.redRotationDirection,
-          startOrientation: redOrientations.startOrientation,
-          endOrientation: redOrientations.endOrientation,
+        rightMotion: {
+          hand: "right",
+          startLocation: rightStartLocation,
+          endLocation: rightEndLocation,
+          motionType: rightMotionType,
+          rotationDirection: rightRotationDirection,
+          startOrientation: rightOrientations.startOrientation,
+          endOrientation: rightOrientations.endOrientation,
         },
       });
     }
@@ -230,11 +248,15 @@ function loadDataframe(gridMode: GridMode): PictographData[] {
   }
 }
 
-export function ensureDataLoaded(gridMode: GridMode = defaultGridMode): PictographData[] {
+export function ensureDataLoaded(
+  gridMode: GridMode = defaultGridMode
+): PictographData[] {
   if (pictographsByGridMode[gridMode].length === 0) {
     console.error(`[MCP] Loading ${gridMode} pictograph dataframe...`);
     pictographsByGridMode[gridMode] = loadDataframe(gridMode);
-    console.error(`[MCP] Loaded ${pictographsByGridMode[gridMode].length} pictographs for ${gridMode} mode`);
+    console.error(
+      `[MCP] Loaded ${pictographsByGridMode[gridMode].length} pictographs for ${gridMode} mode`
+    );
   }
   return pictographsByGridMode[gridMode];
 }
@@ -243,11 +265,11 @@ export function getAllPictographs(): PictographData[] {
   return ensureDataLoaded(defaultGridMode);
 }
 
-
 export const TKA_LETTER_TYPES = {
   type1: {
     name: "Type 1: Dual-Shift",
     description: "Both hands shift (move to adjacent grid point)",
+    // prettier-ignore
     letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"],
   },
   type2: {
@@ -257,12 +279,14 @@ export const TKA_LETTER_TYPES = {
   },
   type3: {
     name: "Type 3: Cross-Shift (Dash Letters)",
-    description: "One hand shifts + one hand dashes. The '-' suffix indicates Type 3.",
+    description:
+      "One hand shifts + one hand dashes. The '-' suffix indicates Type 3.",
     letters: ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-"],
   },
   type4: {
     name: "Type 4: Dash",
-    description: "One hand dashes (moves to opposite grid point), one stays static",
+    description:
+      "One hand dashes (moves to opposite grid point), one stays static",
     letters: ["Φ", "Ψ", "Λ"],
   },
   type5: {
@@ -277,13 +301,13 @@ export const TKA_LETTER_TYPES = {
   },
 };
 
-export const LETTER_TO_TYPE: Record<string, { type: string; name: string }> = {};
+export const LETTER_TO_TYPE: Record<string, { type: string; name: string }> =
+  {};
 for (const [typeKey, typeInfo] of Object.entries(TKA_LETTER_TYPES)) {
   for (const letter of typeInfo.letters) {
     LETTER_TO_TYPE[letter] = { type: typeKey, name: typeInfo.name };
   }
 }
-
 
 export interface GlossaryEntry {
   definition: string;
@@ -298,14 +322,17 @@ export interface LetterTypeInfo {
   characteristics: string[];
   letters: string[];
   motionPattern: {
-    blueMotion: string;
-    redMotion: string;
+    leftMotion: string;
+    rightMotion: string;
     note?: string;
   };
 }
 
 const GLOSSARY_PATH = path.resolve(PACKAGE_ROOT, "./data/tka-glossary.json");
-const LETTER_TYPES_PATH = path.resolve(PACKAGE_ROOT, "./data/letter-types.json");
+const LETTER_TYPES_PATH = path.resolve(
+  PACKAGE_ROOT,
+  "./data/letter-types.json"
+);
 const TERM_ALIASES_PATH = path.resolve(
   PACKAGE_ROOT,
   "./data/tka-term-aliases.json"
@@ -354,8 +381,10 @@ export function getLetterTypes(): Record<string, LetterTypeInfo> {
   return letterTypes;
 }
 
-
-export function generateRandomWord(length: number, excludeLetters?: string[]): string {
+export function generateRandomWord(
+  length: number,
+  excludeLetters?: string[]
+): string {
   const allPictographs = ensureDataLoaded();
   const allLetters = new Set<string>();
   for (const p of allPictographs) {

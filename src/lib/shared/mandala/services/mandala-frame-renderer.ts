@@ -16,6 +16,7 @@ import type {
   MandalaPalette,
   MandalaPaths,
   MandalaPathShape,
+  MandalaHandVisibility,
 } from "../domain/mandala-types";
 import {
   MANDALA_GRID_RADIUS,
@@ -80,9 +81,9 @@ function breatheEase(t: number): number {
 
 export interface MandalaFrameSpec {
   steps: readonly any[];
-  bluePropType?: string;
-  redPropType?: string;
-  show?: "blue" | "red" | "both";
+  leftPropType?: string;
+  rightPropType?: string;
+  show?: MandalaHandVisibility;
   pathShape: MandalaPathShape;
   lineWeight: number;
   bgColor: string;
@@ -139,7 +140,7 @@ export interface MandalaFrameOutput {
   cacheKey: number | null;
 }
 
-type FrameGradient = { blue: [string, string]; red: [string, string]; purple: [string, string] };
+type FrameGradient = { left: [string, string]; right: [string, string]; purple: [string, string] };
 
 export interface MandalaFrameRender {
   paths: MandalaPaths;
@@ -173,11 +174,11 @@ function computeFrameGeometry(
   const tipDx = spec.rangeMax * breatheEase(triangle);
   const paths = calculateMandalaGeometry(
     spec.steps as any,
-    spec.bluePropType,
-    spec.redPropType,
+    spec.leftPropType,
+    spec.rightPropType,
     getMandalaPathOptions(
       spec.pathShape,
-      pairTipEnds(spec.bluePropType, spec.redPropType),
+      pairTipEnds(spec.leftPropType, spec.rightPropType),
     ),
     { dx: tipDx, dy: 0 },
   );
@@ -199,7 +200,7 @@ function computeFrameColor(
     c2 = sampleGradient(spec.morphColors, (cPhase + 0.4) % 1);
     const c3 = sampleGradient(spec.morphColors, (cPhase + 0.7) % 1);
     const mix = mixColors(c1, c2);
-    gradient = { blue: [c1, c3], red: [c2, c1], purple: [mix, c3] };
+    gradient = { left: [c1, c3], right: [c2, c1], purple: [mix, c3] };
   } else {
     c1 = spec.solidPair![0];
     c2 = spec.solidPair![1];
@@ -207,8 +208,8 @@ function computeFrameColor(
 
   const mix = mixColors(c1, c2);
   const palette: MandalaPalette = {
-    blueStroke: c1, blueFill: withAlpha(c1, 0.15),
-    redStroke: c2, redFill: withAlpha(c2, 0.15),
+    leftStroke: c1, leftFill: withAlpha(c1, 0.15),
+    rightStroke: c2, rightFill: withAlpha(c2, 0.15),
     purpleStroke: mix, purpleFill: withAlpha(mix, 0.2),
   };
   return { palette, gradient };

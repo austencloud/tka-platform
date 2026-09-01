@@ -27,7 +27,7 @@ function tunnel(
         gridVisible: false,
         colors: {
           mode: "hands",
-          custom: { blue: "#2e8bf0", red: "#ed1c24" },
+          custom: { left: "#2e8bf0", right: "#ed1c24" },
         },
         section: "tunnel",
         presetRecipe: null,
@@ -37,13 +37,13 @@ function tunnel(
       paths: {
         pathShape: "arc",
         motionAwarePaths: false,
-        bluePathLines: true,
-        redPathLines: true,
+        leftPathLines: true,
+        rightPathLines: true,
       },
       playback: { bpm: 60, playbackMode: "continuous" },
       props: {
-        bluePropType: PropType.STAFF,
-        redPropType: PropType.STAFF,
+        leftPropType: PropType.STAFF,
+        rightPropType: PropType.STAFF,
       },
       trailRender: { mode: "off" },
     },
@@ -55,8 +55,8 @@ describe("tunnel discovery metadata", () => {
   it("describes props, authored performers, generated copies, and transforms", () => {
     const item = tunnel("orbit", "Orbit", 10);
     item.snapshot.props = {
-      bluePropType: PropType.FAN,
-      redPropType: PropType.CLUB,
+      leftPropType: PropType.FAN,
+      rightPropType: PropType.CLUB,
     };
     item.snapshot.tunnel.config = {
       ...DEFAULT_CONFIG,
@@ -102,8 +102,8 @@ describe("tunnel discovery metadata", () => {
   it("searches the rendered artifact details rather than only the title", () => {
     const item = tunnel("orbit", "Orbit", 10);
     item.snapshot.props = {
-      bluePropType: PropType.FAN,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.FAN,
+      rightPropType: PropType.FAN,
     };
     item.snapshot.tunnel.config = {
       ...DEFAULT_CONFIG,

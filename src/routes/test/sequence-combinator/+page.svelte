@@ -332,8 +332,8 @@
           label="Color swap"
           mode="toggle"
           size="sm"
-          active={lab.allowColorSwap}
-          onclick={() => (lab.allowColorSwap = !lab.allowColorSwap)}
+          active={lab.allowHandSwap}
+          onclick={() => (lab.allowHandSwap = !lab.allowHandSwap)}
         />
         <FilterChipBase
           label="Rotation-faithful twin"
@@ -498,7 +498,6 @@
     color: rgba(255, 255, 255, 0.5);
   }
 
-
   .slots {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -601,7 +600,6 @@
     overflow: hidden;
   }
 
-
   .rail {
     display: flex;
     flex-wrap: wrap;
@@ -632,7 +630,6 @@
     flex-wrap: wrap;
     gap: 0.4rem;
   }
-
 
   .btn {
     min-height: 2.75rem;
@@ -679,7 +676,6 @@
     min-width: 10rem;
     font-size: 0.9rem;
   }
-
 
   .report {
     display: flex;
@@ -792,7 +788,6 @@
     background: rgba(255, 255, 255, 0.06);
     color: rgba(255, 255, 255, 0.5);
   }
-
 
   .results {
     display: flex;

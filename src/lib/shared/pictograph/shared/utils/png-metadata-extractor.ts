@@ -247,7 +247,7 @@ export async function debugSequenceMetadata(sequenceName: string): Promise<{
   author: string;
   startPosition: string;
   level: string;
-  steps: Array<{ letter: string; blueMotion: string; redMotion: string }>;
+  steps: Array<{ letter: string; leftMotion: string; rightMotion: string }>;
 }> {
   const metadata = await extractSequenceMetadata(sequenceName);
 
@@ -269,16 +269,16 @@ export async function debugSequenceMetadata(sequenceName: string): Promise<{
         step["letter"] && !step["sequence_start_position"]
     );
   const steps = realBeats.map((step: Record<string, unknown>) => {
-    const blueAttrs = step["blueAttributes"] as
+    const leftAttrs = (step["leftAttributes"] ?? step["blueAttributes"]) as
       | Record<string, unknown>
       | undefined;
-    const redAttrs = step["redAttributes"] as
+    const rightAttrs = (step["rightAttributes"] ?? step["redAttributes"]) as
       | Record<string, unknown>
       | undefined;
     return {
       letter: String(step["letter"] ?? "?"),
-      blueMotion: String(blueAttrs?.["motionType"] ?? "unknown"),
-      redMotion: String(redAttrs?.["motionType"] ?? "unknown"),
+      leftMotion: String(leftAttrs?.["motionType"] ?? "unknown"),
+      rightMotion: String(rightAttrs?.["motionType"] ?? "unknown"),
     };
   });
 

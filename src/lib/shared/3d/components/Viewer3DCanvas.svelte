@@ -74,8 +74,8 @@
     isPlaying: boolean;
     bpm?: number;
     onBpmChange?: (bpm: number) => void;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     hideOverlays?: boolean;
     /** Hide in-world review markers while keeping the character and effects. */
     hideSceneMarkers?: boolean;
@@ -146,8 +146,8 @@
     isPlaying,
     bpm = 60,
     onBpmChange = () => {},
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     hideOverlays = false,
     hideSceneMarkers = false,
     hidePerformerBadges = false,
@@ -520,8 +520,8 @@
                 {currentStep}
                 {isPlaying}
                 {characterState}
-                bluePropTypeOverride={bluePropType}
-                redPropTypeOverride={redPropType}
+                leftPropTypeOverride={leftPropType}
+                rightPropTypeOverride={rightPropType}
                 {hideSceneMarkers}
                 {hidePerformerBadges}
                 {hideOrientationHelpers}

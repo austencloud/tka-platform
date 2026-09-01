@@ -242,8 +242,8 @@ const VIEWER_SEQUENCE_ID = "2LKS";
 const VIEWER_3D_PERFORMER = (x: number, z: number) => ({
   position: { x, z },
   facingAngle: 0,
-  customBluePlane: "wall",
-  customRedPlane: "wall",
+  customLeftPlane: "wall",
+  customRightPlane: "wall",
   name: null,
   settings: {
     prop: null,

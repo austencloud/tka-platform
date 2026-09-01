@@ -10,7 +10,7 @@
   }
 
   let { pose }: Props = $props();
-  const color = $derived(pose.color === "blue" ? "#3f86ff" : "#ff4057");
+  const color = $derived(pose.hand === "left" ? "#3f86ff" : "#ff4057");
 </script>
 
 <T.Group position={pose.position} rotation={pose.rotation}>

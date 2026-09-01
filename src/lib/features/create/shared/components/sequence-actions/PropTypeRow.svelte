@@ -18,43 +18,45 @@
   } from "$lib/shared/application/state/app-state.svelte";
 
   interface Props {
-    color: "blue" | "red";
+    hand: "left" | "right";
     compact?: boolean;
-    onOpenPropSheet?: (color: "blue" | "red") => void;
+    onOpenPropSheet?: (hand: "left" | "right") => void;
   }
 
-  let { color, compact = false, onOpenPropSheet }: Props = $props();
+  let { hand, compact = false, onOpenPropSheet }: Props = $props();
+
+  const tone = $derived(hand === "left" ? "blue" : "red");
 
   const settings = $derived(getSettings());
   const propType = $derived(
-    color === "blue"
-      ? (settings.bluePropType ?? PropType.STAFF)
-      : (settings.redPropType ?? PropType.STAFF)
+    hand === "left"
+      ? (settings.leftPropType ?? PropType.STAFF)
+      : (settings.rightPropType ?? PropType.STAFF)
   );
   const isBuugeng = $derived(isBuugengFamilyProp(propType));
   const flipped = $derived(
-    color === "blue"
-      ? (settings.blueBuugengFlipped ?? false)
-      : (settings.redBuugengFlipped ?? false)
+    hand === "left"
+      ? (settings.leftBuugengFlipped ?? false)
+      : (settings.rightBuugengFlipped ?? false)
   );
   const displayInfo = $derived(getPropTypeDisplayInfo(propType));
 
   function toggleChirality() {
-    if (color === "blue") {
-      updateSettings({ blueBuugengFlipped: !flipped });
+    if (hand === "left") {
+      updateSettings({ leftBuugengFlipped: !flipped });
     } else {
-      updateSettings({ redBuugengFlipped: !flipped });
+      updateSettings({ rightBuugengFlipped: !flipped });
     }
   }
 </script>
 
-<div class="prop-type-row {color}" class:compact>
+<div class="prop-type-row {tone}" class:compact>
   {#if compact}
     <!-- Icon-only button for compact mode -->
     <button
       class="prop-icon-btn"
-      onclick={() => onOpenPropSheet?.(color)}
-      aria-label="Change {color} prop type: {displayInfo.label}"
+      onclick={() => onOpenPropSheet?.(hand)}
+      aria-label="Change {hand} prop type: {displayInfo.label}"
     >
       <img
         src={displayInfo.image}
@@ -66,8 +68,8 @@
     <!-- Full button with label -->
     <button
       class="prop-type-btn"
-      onclick={() => onOpenPropSheet?.(color)}
-      aria-label="Change {color} prop type"
+      onclick={() => onOpenPropSheet?.(hand)}
+      aria-label="Change {hand} prop type"
     >
       <img src={displayInfo.image} alt={displayInfo.label} class="prop-icon" />
       <span class="prop-name">{displayInfo.label}</span>
@@ -87,7 +89,7 @@
       class:compact
       class:flipped
       onclick={toggleChirality}
-      aria-label="{color} buugeng chirality: {flipped ? 'B' : 'A'}"
+      aria-label="{hand} buugeng chirality: {flipped ? 'B' : 'A'}"
       aria-pressed={flipped}
     >
       <i class="fas fa-arrows-left-right" aria-hidden="true"></i>

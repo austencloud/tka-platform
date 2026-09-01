@@ -260,13 +260,20 @@ function buildTndPairs(records) {
   return pairs;
 }
 
+function motionForHand(step, hand) {
+  if (hand === "left") {
+    return step?.motions?.left ?? step?.motions?.blue;
+  }
+  return step?.motions?.right ?? step?.motions?.red;
+}
+
 function localCard(record, slot) {
   const startPosition = record?.startPosition?.gridPosition;
   const endPosition = record?.steps?.at(-1)?.endPosition;
   const requirement = SLOT_REQUIREMENTS[slot];
   const turns = (record?.steps ?? []).flatMap((step) => [
-    step?.motions?.blue?.turns,
-    step?.motions?.red?.turns,
+    motionForHand(step, "left")?.turns,
+    motionForHand(step, "right")?.turns,
   ]);
   const difficultyIsValid =
     record?.level === 1 &&

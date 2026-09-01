@@ -10,7 +10,10 @@ import {
   type TrailSettings,
   DEFAULT_TRAIL_SETTINGS,
 } from "$lib/shared/animation-engine/domain/types/trail-types";
-import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
+import type {
+  TipEffectMap,
+  TipEffortMap,
+} from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 
 // Grid Layout
 
@@ -47,12 +50,12 @@ export type LayoutPresetKey = keyof typeof LAYOUT_PRESETS;
  * Controls how cell content is rendered in the Arrange grid.
  */
 export type CellMediaType =
-  | "video"           // Recorded/uploaded video
-  | "animation"       // Pictograph animation (tunnel mode)
-  | "image"           // Static image or composite
-  | "choreo-card"     // Sequence choreo card
-  | "viewer-3d"       // 3D animation viewer
-  | "empty";          // Placeholder/empty cell
+  | "video" // Recorded/uploaded video
+  | "animation" // Pictograph animation (tunnel mode)
+  | "image" // Static image or composite
+  | "choreo-card" // Sequence choreo card
+  | "viewer-3d" // 3D animation viewer
+  | "empty"; // Placeholder/empty cell
 
 // Transform Types
 
@@ -69,7 +72,7 @@ export type TransformType =
   | "rotate270"
   | "mirror"
   | "flip"
-  | "swapColors"
+  | "swapHands"
   | "invert"
   | "rewind";
 
@@ -137,7 +140,10 @@ export type CellEffect = "none" | "fire" | "charcoal" | "led" | "trails";
 const DEFAULT_PROP_COLORS: PropColors = { left: "#3b82f6", right: "#ef4444" };
 
 export function getTunnelLayerColors(layerIndex: number): PropColors {
-  return TUNNEL_LAYER_COLORS[layerIndex % TUNNEL_LAYER_COLORS.length] ?? DEFAULT_PROP_COLORS;
+  return (
+    TUNNEL_LAYER_COLORS[layerIndex % TUNNEL_LAYER_COLORS.length] ??
+    DEFAULT_PROP_COLORS
+  );
 }
 
 // Cell Configuration

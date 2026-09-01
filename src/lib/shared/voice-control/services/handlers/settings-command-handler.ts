@@ -39,8 +39,8 @@ const SETTING_ROUTES: Record<string, SettingRoute> = {
   darkMode: { owner: "animVis", property: "darkMode", displayName: "dark mode" },
   tkaGlyph: { owner: "animVis", property: "tkaGlyph", displayName: "TKA glyph" },
   reversalIndicators: { owner: "animVis", property: "reversalIndicators", displayName: "reversal indicators" },
-  blueMotion: { owner: "animVis", property: "blueMotion", displayName: "blue motion" },
-  redMotion: { owner: "animVis", property: "redMotion", displayName: "red motion" },
+  leftMotion: { owner: "animVis", property: "leftPathLines", displayName: "left motion" },
+  rightMotion: { owner: "animVis", property: "rightPathLines", displayName: "right motion" },
 
   // Pictograph visibility settings
   showGrid: { owner: "pictVis", property: "showGrid", displayName: "grid" },

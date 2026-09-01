@@ -125,16 +125,16 @@
     const trailIntent = effectsConfigState.trails;
     void trailIntent.thickness;
     void trailIntent.brightness;
-    void trailIntent.blueColor;
-    void trailIntent.redColor;
+    void trailIntent.leftColor;
+    void trailIntent.rightColor;
 
     const settings = foldTrailIntentIntoSettings(animationTrail, trailIntent);
     if (settings.trackingMode === TrackingMode.BOTH_ENDS) {
-      const blue = propRendering.bluePropType;
-      const red = propRendering.redPropType;
+      const left = propRendering.leftPropType;
+      const right = propRendering.rightPropType;
       const hasBilateral =
-        (blue != null && isBilateralProp(String(blue))) ||
-        (red != null && isBilateralProp(String(red)));
+        (left != null && isBilateralProp(String(left))) ||
+        (right != null && isBilateralProp(String(right)));
       if (!hasBilateral) settings.trackingMode = TrackingMode.RIGHT_END;
     }
 

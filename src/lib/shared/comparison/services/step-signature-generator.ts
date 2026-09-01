@@ -12,23 +12,22 @@ import type {
   StepComparisonResult,
   MotionSignature,
 } from "../domain/models/signatures";
-import type {
-  GridPosition} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   GridLocation,
   GridPositionGroup,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getPositionGroup } from "$lib/shared/foundation/domain/models/generation/circular-position-maps";
 
 /**
  * Scoring weights for beat similarity calculation.
  */
 const SCORING_WEIGHTS = {
-  blueMotion: 0.35,
-  redMotion: 0.35,
-  positionGroup: 0.20,
-  handAngle: 0.10,
+  leftMotion: 0.35,
+  rightMotion: 0.35,
+  positionGroup: 0.2,
+  handAngle: 0.1,
 } as const;
 
 /**
@@ -47,34 +46,38 @@ const LOCATION_TO_ANGLE: Record<GridLocation, number> = {
 };
 
 export class StepSignatureGenerator {
-  constructor(private readonly motionSignatureGenerator: MotionSignatureGenerator) {}
+  constructor(
+    private readonly motionSignatureGenerator: MotionSignatureGenerator
+  ) {}
 
   generateSignature(step: StepLike): StepSignature {
-    const blueMotion = step.motions[MotionColor.BLUE];
-    const redMotion = step.motions[MotionColor.RED];
+    const leftMotion = step.motions[HandSide.LEFT];
+    const rightMotion = step.motions[HandSide.RIGHT];
 
-    if (!blueMotion || !redMotion) {
-      throw new Error("Beat must have both blue and red motions");
+    if (!leftMotion || !rightMotion) {
+      throw new Error("Beat must have both left and right motions");
     }
 
-    const blueSignature = this.motionSignatureGenerator.generateSignature(blueMotion);
-    const redSignature = this.motionSignatureGenerator.generateSignature(redMotion);
+    const leftSignature =
+      this.motionSignatureGenerator.generateSignature(leftMotion);
+    const rightSignature =
+      this.motionSignatureGenerator.generateSignature(rightMotion);
 
     const startPositionGroup = this.derivePositionGroup(step.startPosition);
     const endPositionGroup = this.derivePositionGroup(step.endPosition);
 
     const startHandAngle = this.calculateHandAngle(
-      blueMotion.startLocation,
-      redMotion.startLocation
+      leftMotion.startLocation,
+      rightMotion.startLocation
     );
     const endHandAngle = this.calculateHandAngle(
-      blueMotion.endLocation,
-      redMotion.endLocation
+      leftMotion.endLocation,
+      rightMotion.endLocation
     );
 
     const hash = this.generateHash(
-      blueSignature,
-      redSignature,
+      leftSignature,
+      rightSignature,
       startPositionGroup,
       endPositionGroup,
       startHandAngle,
@@ -84,8 +87,8 @@ export class StepSignatureGenerator {
     return {
       startPositionGroup,
       endPositionGroup,
-      blue: blueSignature,
-      red: redSignature,
+      left: leftSignature,
+      right: rightSignature,
       startHandAngle,
       endHandAngle,
       hash,
@@ -101,33 +104,40 @@ export class StepSignatureGenerator {
     return (
       a.startPositionGroup === b.startPositionGroup &&
       a.endPositionGroup === b.endPositionGroup &&
-      this.motionSignatureGenerator.signaturesMatch(a.blue, b.blue) &&
-      this.motionSignatureGenerator.signaturesMatch(a.red, b.red) &&
+      this.motionSignatureGenerator.signaturesMatch(a.left, b.left) &&
+      this.motionSignatureGenerator.signaturesMatch(a.right, b.right) &&
       a.startHandAngle === b.startHandAngle &&
       a.endHandAngle === b.endHandAngle
     );
   }
 
   compareSignatures(a: StepSignature, b: StepSignature): StepComparisonResult {
-    const blueComparison = this.motionSignatureGenerator.compareSignatures(a.blue, b.blue);
-    const redComparison = this.motionSignatureGenerator.compareSignatures(a.red, b.red);
+    const leftComparison = this.motionSignatureGenerator.compareSignatures(
+      a.left,
+      b.left
+    );
+    const rightComparison = this.motionSignatureGenerator.compareSignatures(
+      a.right,
+      b.right
+    );
 
     const positionGroupMatch =
       a.startPositionGroup === b.startPositionGroup &&
       a.endPositionGroup === b.endPositionGroup;
 
     const handAngleMatch =
-      a.startHandAngle === b.startHandAngle && a.endHandAngle === b.endHandAngle;
+      a.startHandAngle === b.startHandAngle &&
+      a.endHandAngle === b.endHandAngle;
 
     let score = 0;
-    score += SCORING_WEIGHTS.blueMotion * blueComparison.similarity;
-    score += SCORING_WEIGHTS.redMotion * redComparison.similarity;
+    score += SCORING_WEIGHTS.leftMotion * leftComparison.similarity;
+    score += SCORING_WEIGHTS.rightMotion * rightComparison.similarity;
     score += SCORING_WEIGHTS.positionGroup * (positionGroupMatch ? 1 : 0);
     score += SCORING_WEIGHTS.handAngle * (handAngleMatch ? 1 : 0);
 
     const isExactMatch =
-      blueComparison.isExactMatch &&
-      redComparison.isExactMatch &&
+      leftComparison.isExactMatch &&
+      rightComparison.isExactMatch &&
       positionGroupMatch &&
       handAngleMatch;
 
@@ -136,8 +146,8 @@ export class StepSignatureGenerator {
       similarity: Math.min(1, Math.max(0, score)),
       breakdown: {
         positionGroupMatch,
-        blueSimilarity: blueComparison.similarity,
-        redSimilarity: redComparison.similarity,
+        leftSimilarity: leftComparison.similarity,
+        rightSimilarity: rightComparison.similarity,
         handAngleMatch,
       },
     };
@@ -147,12 +157,13 @@ export class StepSignatureGenerator {
     return steps.map((step) => this.generateSignature(step));
   }
 
-
   /**
    * Derive position group from a GridPosition.
    * Falls back to ALPHA if position is not provided.
    */
-  private derivePositionGroup(position: GridPosition | null | undefined): GridPositionGroup {
+  private derivePositionGroup(
+    position: GridPosition | null | undefined
+  ): GridPositionGroup {
     if (!position) {
       return GridPositionGroup.ALPHA;
     }
@@ -186,12 +197,15 @@ export class StepSignatureGenerator {
    * - 3 = 135° apart (zeta)
    * - 4 = 180° apart (alpha)
    */
-  private calculateHandAngle(blueLocation: GridLocation, redLocation: GridLocation): number {
-    const blueAngle = LOCATION_TO_ANGLE[blueLocation];
-    const redAngle = LOCATION_TO_ANGLE[redLocation];
+  private calculateHandAngle(
+    leftLocation: GridLocation,
+    rightLocation: GridLocation
+  ): number {
+    const leftAngle = LOCATION_TO_ANGLE[leftLocation];
+    const rightAngle = LOCATION_TO_ANGLE[rightLocation];
 
     // Calculate absolute angular difference
-    let diff = Math.abs(blueAngle - redAngle);
+    let diff = Math.abs(leftAngle - rightAngle);
 
     // Normalize to 0-4 range (shortest path around the circle)
     if (diff > 4) {
@@ -205,15 +219,15 @@ export class StepSignatureGenerator {
    * Generate a hash for quick inequality checking.
    */
   private generateHash(
-    blue: MotionSignature,
-    red: MotionSignature,
+    left: MotionSignature,
+    right: MotionSignature,
     startPosGroup: GridPositionGroup,
     endPosGroup: GridPositionGroup,
     startAngle: number,
     endAngle: number
   ): string {
-    const blueHash = this.motionSignatureGenerator.hashSignature(blue);
-    const redHash = this.motionSignatureGenerator.hashSignature(red);
-    return `${startPosGroup}>${endPosGroup}:${startAngle}-${endAngle}:B[${blueHash}]R[${redHash}]`;
+    const leftHash = this.motionSignatureGenerator.hashSignature(left);
+    const rightHash = this.motionSignatureGenerator.hashSignature(right);
+    return `${startPosGroup}>${endPosGroup}:${startAngle}-${endAngle}:B[${leftHash}]R[${rightHash}]`;
   }
 }

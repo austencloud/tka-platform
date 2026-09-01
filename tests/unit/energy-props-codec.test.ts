@@ -101,10 +101,10 @@ describe("current codec round trip", () => {
     );
     const decoded = decodeSequence(encodeSequence(source));
 
-    expect(decoded.startPosition?.motions.blue?.propType).toBe(prop);
-    expect(decoded.startPosition?.motions.red?.propType).toBe(prop);
-    expect(decoded.steps[0]?.motions.blue.propType).toBe(prop);
-    expect(decoded.steps[0]?.motions.red.propType).toBe(prop);
+    expect(decoded.startPosition?.motions.left?.propType).toBe(prop);
+    expect(decoded.startPosition?.motions.right?.propType).toBe(prop);
+    expect(decoded.steps[0]?.motions.left.propType).toBe(prop);
+    expect(decoded.steps[0]?.motions.right.propType).toBe(prop);
   });
 
   it("keeps the two props distinct on a cat-dog pair", async () => {
@@ -120,21 +120,21 @@ describe("current codec round trip", () => {
         ...start,
         motions: {
           ...start.motions,
-          blue: { ...start.motions.blue!, propType: PropType.ENERGY_SABER },
-          red: { ...start.motions.red!, propType: PropType.ENERGY_STAFF },
+          left: { ...start.motions.left!, propType: PropType.ENERGY_SABER },
+          right: { ...start.motions.right!, propType: PropType.ENERGY_STAFF },
         },
       },
     } as SequenceData;
 
     const decoded = decodeSequence(encodeSequence(mixed));
-    expect(decoded.startPosition?.motions.blue?.propType).toBe(
+    expect(decoded.startPosition?.motions.left?.propType).toBe(
       PropType.ENERGY_SABER
     );
-    expect(decoded.startPosition?.motions.red?.propType).toBe(
+    expect(decoded.startPosition?.motions.right?.propType).toBe(
       PropType.ENERGY_STAFF
     );
-    expect(decoded.steps[0]?.motions.blue.propType).toBe(PropType.ENERGY_SABER);
-    expect(decoded.steps[0]?.motions.red.propType).toBe(PropType.ENERGY_STAFF);
+    expect(decoded.steps[0]?.motions.left.propType).toBe(PropType.ENERGY_SABER);
+    expect(decoded.steps[0]?.motions.right.propType).toBe(PropType.ENERGY_STAFF);
   });
 });
 
@@ -153,8 +153,8 @@ describe("legacy codec round trip", () => {
     expect(detectLegacySequenceFormat(encoded)).toBe(format);
 
     const decoded = decodeLegacySequence(encoded);
-    expect(decoded.startPosition?.motions.blue?.propType).toBe(prop);
-    expect(decoded.startPosition?.motions.red?.propType).toBe(prop);
+    expect(decoded.startPosition?.motions.left?.propType).toBe(prop);
+    expect(decoded.startPosition?.motions.right?.propType).toBe(prop);
     // Re-encoding is stable, so an old link keeps its exact bytes.
     expect(encodeLegacySequence(decoded, format)).toBe(encoded);
   });
@@ -167,10 +167,10 @@ describe("legacy codec round trip", () => {
       );
       const viaLegacy = decodeLegacySequence(encodeLegacySequence(source, 3));
       const viaCurrent = decodeSequence(encodeSequence(source));
-      expect(viaLegacy.startPosition?.motions.blue?.propType).toBe(
-        viaCurrent.startPosition?.motions.blue?.propType
+      expect(viaLegacy.startPosition?.motions.left?.propType).toBe(
+        viaCurrent.startPosition?.motions.left?.propType
       );
-      expect(viaLegacy.startPosition?.motions.blue?.propType).toBe(prop);
+      expect(viaLegacy.startPosition?.motions.left?.propType).toBe(prop);
     }
   });
 });

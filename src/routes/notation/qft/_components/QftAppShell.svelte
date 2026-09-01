@@ -29,8 +29,8 @@
   ];
 
   const TWO_HAND_TABS: ControlDockTab[] = [
-    { id: "blue", label: "Blue", accentColor: "var(--prop-blue, #3575e2)" },
-    { id: "red", label: "Red", accentColor: "var(--prop-red, #ed1c24)" },
+    { id: "left", label: "Left", accentColor: "var(--prop-blue, #3575e2)" },
+    { id: "right", label: "Right", accentColor: "var(--prop-red, #ed1c24)" },
     { id: "timing", label: "Timing", icon: "fa-arrows-left-right" },
     { id: "table", label: "Table", icon: "fa-table-list" },
     { id: "layers", label: "Layers", icon: "fa-layer-group" },
@@ -44,13 +44,13 @@
 {#snippet dockTray()}
   <div class="tray-content">
     {#if state.dockTab === "shape"}
-      <QftHandControls hand="blue" tone="accent" showPresets={false} />
+      <QftHandControls hand="left" tone="accent" showPresets={false} />
     {:else if state.dockTab === "presets"}
-      <QftPresetControls hand="blue" tone="accent" />
-    {:else if state.dockTab === "blue"}
-      <QftHandControls hand="blue" tone="blue" />
-    {:else if state.dockTab === "red"}
-      <QftHandControls hand="red" tone="red" />
+      <QftPresetControls hand="left" tone="accent" />
+    {:else if state.dockTab === "left"}
+      <QftHandControls hand="left" tone="blue" />
+    {:else if state.dockTab === "right"}
+      <QftHandControls hand="right" tone="red" />
     {:else if state.dockTab === "start" || state.dockTab === "timing"}
       <QftRelationshipControls />
     {:else if state.dockTab === "table"}

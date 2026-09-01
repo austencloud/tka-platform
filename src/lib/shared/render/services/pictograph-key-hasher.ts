@@ -24,14 +24,14 @@ interface MotionKeyData {
 
 interface PictographKeyInput {
   letter: string | undefined;
-  blue: MotionKeyData | null;
-  red: MotionKeyData | null;
+  left: MotionKeyData | null;
+  right: MotionKeyData | null;
   // Reversal dots are BAKED into the rendered blob (LayerCompositor reads
-  // stepData.blueReversal/redReversal), so the flags are image identity. The
+  // stepData.leftReversal/rightReversal), so the flags are image identity. The
   // same letter+motions can carry different reversal flags depending on the
   // preceding step — omitting them served dotted blobs to dot-free steps.
-  blueReversal: boolean;
-  redReversal: boolean;
+  leftReversal: boolean;
+  rightReversal: boolean;
   // betaSwapped changes prepared prop geometry (PictographPreparer keys it);
   // without it two identical-motion pictographs collide across the swap.
   betaSwapped: boolean;
@@ -49,18 +49,18 @@ interface PictographKeyInput {
     showNonRadialPoints: boolean;
     showGrid: boolean;
     darkMode: boolean;
-    bluePropType: string | undefined;
-    redPropType: string | undefined;
+    leftPropType: string | undefined;
+    rightPropType: string | undefined;
     handPathMode: boolean;
     handPointVisibility: string;
     printMode: boolean;
-    showBlueMotion: boolean;
-    showRedMotion: boolean;
+    showLeftMotion: boolean;
+    showRightMotion: boolean;
     // Chirality is image identity for buugeng-family props only, and only
     // when flipped. Present-when-it-matters keeps every unflipped render
     // byte-identical to the established lsp11/lsp12 key corpus.
-    blueBuugengFlipped?: boolean;
-    redBuugengFlipped?: boolean;
+    leftBuugengFlipped?: boolean;
+    rightBuugengFlipped?: boolean;
   };
 }
 
@@ -95,19 +95,19 @@ const LETTERS_WITH_INDEPENDENT_BETA_DIRECTION_MAPS = new Set(["G", "H", "I"]);
 export function getPictographGeometryRevision(
   data: StepData | PictographData
 ): string | undefined {
-  const blue = data.motions?.blue;
-  const red = data.motions?.red;
-  if (!blue || !red || blue.isVisible === false || red.isVisible === false) {
+  const left = data.motions?.left;
+  const right = data.motions?.right;
+  if (!left || !right || left.isVisible === false || right.isVisible === false) {
     return undefined;
   }
 
-  if (blue.endLocation.toLowerCase() !== red.endLocation.toLowerCase()) {
+  if (left.endLocation.toLowerCase() !== right.endLocation.toLowerCase()) {
     return undefined;
   }
 
   if (
-    !NON_RADIAL_ORIENTATIONS.has(blue.endOrientation.toLowerCase()) ||
-    !NON_RADIAL_ORIENTATIONS.has(red.endOrientation.toLowerCase())
+    !NON_RADIAL_ORIENTATIONS.has(left.endOrientation.toLowerCase()) ||
+    !NON_RADIAL_ORIENTATIONS.has(right.endOrientation.toLowerCase())
   ) {
     return undefined;
   }
@@ -116,25 +116,25 @@ export function getPictographGeometryRevision(
     return undefined;
   }
 
-  const blueIsShift = SHIFT_MOTION_TYPES.has(blue.motionType.toLowerCase());
-  const redIsShift = SHIFT_MOTION_TYPES.has(red.motionType.toLowerCase());
+  const leftIsShift = SHIFT_MOTION_TYPES.has(left.motionType.toLowerCase());
+  const rightIsShift = SHIFT_MOTION_TYPES.has(right.motionType.toLowerCase());
   const letter = data.letter ?? "";
 
   // Direction routing intentionally has one source motion. Y/Z prefer red;
   // ordinary dual shifts use blue; mixed shift/non-shift cells use the shift.
   const directionSource =
     letter === "Y" || letter === "Z" || letter === "Y-" || letter === "Z-"
-      ? redIsShift
-        ? red
-        : blueIsShift
-          ? blue
+      ? rightIsShift
+        ? right
+        : leftIsShift
+          ? left
           : undefined
-      : blueIsShift && redIsShift
-        ? blue
-        : blueIsShift
-          ? blue
-          : redIsShift
-            ? red
+      : leftIsShift && rightIsShift
+        ? left
+        : leftIsShift
+          ? left
+          : rightIsShift
+            ? right
             : undefined;
 
   const transition = directionSource
@@ -180,10 +180,10 @@ export function getTurnGlyphRevision(
  * the established cloud corpus for every unrelated prop.
  */
 export function getPropAppearanceRevision(
-  bluePropType: string,
-  redPropType: string
+  leftPropType: string,
+  rightPropType: string
 ): string | undefined {
-  const revisions = [bluePropType, redPropType]
+  const revisions = [leftPropType, rightPropType]
     .map((propType) => PROP_APPEARANCE_REVISIONS[propType.toLowerCase()])
     .filter((revision): revision is string => Boolean(revision));
 
@@ -204,16 +204,16 @@ export class PictographKeyHasher {
     data: StepData | PictographData,
     visibility: PictographVisibilityOptions
   ): PictographKeyInput {
-    const motions = data.motions ?? { blue: undefined, red: undefined };
+    const motions = data.motions ?? { left: undefined, right: undefined };
 
     // Callers (ImageComposer.getVisibilitySettings) always resolve prop types before
-    // calling deriveKey, so visibility.bluePropType/redPropType are always set.
+    // calling deriveKey, so visibility.leftPropType/rightPropType are always set.
     // Default to "staff" for safety. Previously this called getSettings() which pulled
     // $app/environment into the worker bundle via the static import chain.
-    const resolvedBlueProp = visibility.bluePropType ?? "staff";
-    const resolvedRedProp = visibility.redPropType ?? "staff";
+    const resolvedLeftProp = visibility.leftPropType ?? "staff";
+    const resolvedRightProp = visibility.rightPropType ?? "staff";
     const includeMotionVisibility =
-      motions.blue?.isVisible === false || motions.red?.isVisible === false;
+      motions.left?.isVisible === false || motions.right?.isVisible === false;
 
     // Flags only affect the image when the reversal layer actually draws;
     // neutralize them when showReversals is off so a flagged and unflagged
@@ -222,8 +222,8 @@ export class PictographKeyHasher {
     const step = data as Partial<StepData>;
     const propGeometryRevision = getPictographGeometryRevision(data);
     const propAppearanceRevision = getPropAppearanceRevision(
-      resolvedBlueProp,
-      resolvedRedProp
+      resolvedLeftProp,
+      resolvedRightProp
     );
     const turnGlyphRevision = getTurnGlyphRevision(
       data,
@@ -232,10 +232,10 @@ export class PictographKeyHasher {
 
     return {
       letter: data.letter ?? undefined,
-      blue: this.extractMotionKey(motions.blue, includeMotionVisibility),
-      red: this.extractMotionKey(motions.red, includeMotionVisibility),
-      blueReversal: reversalsVisible ? (step.blueReversal ?? false) : false,
-      redReversal: reversalsVisible ? (step.redReversal ?? false) : false,
+      left: this.extractMotionKey(motions.left, includeMotionVisibility),
+      right: this.extractMotionKey(motions.right, includeMotionVisibility),
+      leftReversal: reversalsVisible ? (step.leftReversal ?? false) : false,
+      rightReversal: reversalsVisible ? (step.rightReversal ?? false) : false,
       betaSwapped: data.betaSwapped ?? false,
       ...(propGeometryRevision && { propGeometryRevision }),
       ...(propAppearanceRevision && { propAppearanceRevision }),
@@ -249,17 +249,17 @@ export class PictographKeyHasher {
         showNonRadialPoints: visibility.showNonRadialPoints ?? true,
         showGrid: visibility.showGrid ?? true,
         darkMode: visibility.darkMode ?? false,
-        bluePropType: resolvedBlueProp,
-        redPropType: resolvedRedProp,
+        leftPropType: resolvedLeftProp,
+        rightPropType: resolvedRightProp,
         handPathMode: visibility.handPathMode ?? false,
         handPointVisibility: visibility.handPointVisibility ?? "all",
         printMode: visibility.printMode ?? false,
-        showBlueMotion: visibility.showBlueMotion ?? true,
-        showRedMotion: visibility.showRedMotion ?? true,
-        ...(isBuugengFamilyProp(resolvedBlueProp) &&
-          visibility.blueBuugengFlipped && { blueBuugengFlipped: true }),
-        ...(isBuugengFamilyProp(resolvedRedProp) &&
-          visibility.redBuugengFlipped && { redBuugengFlipped: true }),
+        showLeftMotion: visibility.showLeftMotion ?? true,
+        showRightMotion: visibility.showRightMotion ?? true,
+        ...(isBuugengFamilyProp(resolvedLeftProp) &&
+          visibility.leftBuugengFlipped && { leftBuugengFlipped: true }),
+        ...(isBuugengFamilyProp(resolvedRightProp) &&
+          visibility.rightBuugengFlipped && { rightBuugengFlipped: true }),
       },
     };
   }

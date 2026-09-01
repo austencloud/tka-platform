@@ -69,8 +69,8 @@ interface PropSnapshot {
 interface StepSnapshot {
   /** progress value (0–1) used to lerp between start and end for this beat */
   progress: number;
-  blue: PropSnapshot;
-  red: PropSnapshot;
+  left: PropSnapshot;
+  right: PropSnapshot;
 }
 
 interface Snapshot {
@@ -173,39 +173,39 @@ function captureWallMode(): Snapshot[] {
 
   function makeCase(
     caseLabel: string,
-    blueStartAngle: number,
-    blueEndAngle: number,
-    redStartAngle: number,
-    redEndAngle: number
+    leftStartAngle: number,
+    leftEndAngle: number,
+    rightStartAngle: number,
+    rightEndAngle: number
   ): Snapshot {
     const beats: StepSnapshot[] = progressValues.map((progress) => {
       // Linear interpolation of angles for this sample
-      const blueAngle = blueStartAngle + (blueEndAngle - blueStartAngle) * progress;
-      const redAngle = redStartAngle + (redEndAngle - redStartAngle) * progress;
+      const leftAngle = leftStartAngle + (leftEndAngle - leftStartAngle) * progress;
+      const rightAngle = rightStartAngle + (rightEndAngle - rightStartAngle) * progress;
 
       // Staff angle: prop points toward center (IN orientation) as default.
       // In → angle points opposite of location (angle + π).
-      const blueStaffAngle = blueAngle + Math.PI;
-      const redStaffAngle = redAngle + Math.PI;
+      const leftStaffAngle = leftAngle + Math.PI;
+      const rightStaffAngle = rightAngle + Math.PI;
 
       return {
         progress,
-        blue: captureOneProp(
+        left: captureOneProp(
           `blue@${progress.toFixed(2)}`,
           Plane.WALL,
-          blueAngle,
-          blueStaffAngle,
+          leftAngle,
+          leftStaffAngle,
           0,
           false,
           avatarPosition,
           facingAngle,
           gridOffset
         ),
-        red: captureOneProp(
+        right: captureOneProp(
           `red@${progress.toFixed(2)}`,
           Plane.WALL,
-          redAngle,
-          redStaffAngle,
+          rightAngle,
+          rightStaffAngle,
           0,
           false,
           avatarPosition,
@@ -249,39 +249,39 @@ function captureDualWheelMode(): Snapshot[] {
   const facingAngle = 0;
   const avatarPosition = { x: 0, y: SHOULDER_HEIGHT, z: 0 };
   const gridOffset = 0; // no forward offset in dual wheel
-  const blueLateralOffset = 0.4;
-  const redLateralOffset = -0.4;
+  const leftLateralOffset = 0.4;
+  const rightLateralOffset = -0.4;
 
   const progressValues = [0, 0.25, 0.5, 0.75, 1.0];
 
   const beats: StepSnapshot[] = progressValues.map((progress) => {
     // Blue: N → S on its wheel plane
-    const blueAngle = LOC.N + (LOC.S - LOC.N) * progress;
-    const blueStaffAngle = blueAngle + Math.PI;
+    const leftAngle = LOC.N + (LOC.S - LOC.N) * progress;
+    const leftStaffAngle = leftAngle + Math.PI;
 
     // Red: S → N (opposite direction)
-    const redAngle = LOC.S + (LOC.N - LOC.S) * progress;
-    const redStaffAngle = redAngle + Math.PI;
+    const rightAngle = LOC.S + (LOC.N - LOC.S) * progress;
+    const rightStaffAngle = rightAngle + Math.PI;
 
     return {
       progress,
-      blue: captureOneProp(
+      left: captureOneProp(
         `blue@${progress.toFixed(2)}`,
         Plane.WHEEL,
-        blueAngle,
-        blueStaffAngle,
-        blueLateralOffset,
+        leftAngle,
+        leftStaffAngle,
+        leftLateralOffset,
         true, // skipFacingTransform
         avatarPosition,
         facingAngle,
         gridOffset
       ),
-      red: captureOneProp(
+      right: captureOneProp(
         `red@${progress.toFixed(2)}`,
         Plane.WHEEL,
-        redAngle,
-        redStaffAngle,
-        redLateralOffset,
+        rightAngle,
+        rightStaffAngle,
+        rightLateralOffset,
         true, // skipFacingTransform
         avatarPosition,
         facingAngle,
@@ -321,35 +321,35 @@ function captureMuseumMode(): Snapshot[] {
 
   function makeCase(
     caseLabel: string,
-    blueStartAngle: number,
-    blueEndAngle: number,
-    redStartAngle: number,
-    redEndAngle: number
+    leftStartAngle: number,
+    leftEndAngle: number,
+    rightStartAngle: number,
+    rightEndAngle: number
   ): Snapshot {
     const beats: StepSnapshot[] = progressValues.map((progress) => {
-      const blueAngle = blueStartAngle + (blueEndAngle - blueStartAngle) * progress;
-      const redAngle = redStartAngle + (redEndAngle - redStartAngle) * progress;
-      const blueStaffAngle = blueAngle + Math.PI;
-      const redStaffAngle = redAngle + Math.PI;
+      const leftAngle = leftStartAngle + (leftEndAngle - leftStartAngle) * progress;
+      const rightAngle = rightStartAngle + (rightEndAngle - rightStartAngle) * progress;
+      const leftStaffAngle = leftAngle + Math.PI;
+      const rightStaffAngle = rightAngle + Math.PI;
 
       return {
         progress,
-        blue: captureOneProp(
+        left: captureOneProp(
           `blue@${progress.toFixed(2)}`,
           Plane.WALL,
-          blueAngle,
-          blueStaffAngle,
+          leftAngle,
+          leftStaffAngle,
           0,
           false,
           avatarPosition,
           facingAngle,
           gridOffset
         ),
-        red: captureOneProp(
+        right: captureOneProp(
           `red@${progress.toFixed(2)}`,
           Plane.WALL,
-          redAngle,
-          redStaffAngle,
+          rightAngle,
+          rightStaffAngle,
           0,
           false,
           avatarPosition,
@@ -391,8 +391,8 @@ function roundSnapshot(s: Snapshot): Snapshot {
     },
     beats: s.beats.map((b) => ({
       ...b,
-      blue: roundPropSnapshot(b.blue),
-      red: roundPropSnapshot(b.red),
+      left: roundPropSnapshot(b.left),
+      right: roundPropSnapshot(b.right),
     })),
   };
 }
@@ -443,22 +443,22 @@ if (wallA) {
   const beat0 = wallA.beats[0];
   if (beat0) {
     console.log("\nSpot check — wall-mode case A, progress=0:");
-    console.log("  blue propCenter:", beat0.blue.propCenter);
-    console.log("  red  propCenter:", beat0.red.propCenter);
-    console.log("  blue propRotation:", beat0.blue.propRotation);
+    console.log("  blue propCenter:", beat0.left.propCenter);
+    console.log("  red  propCenter:", beat0.right.propCenter);
+    console.log("  blue propRotation:", beat0.left.propRotation);
   }
 }
 
 const wallMid = wallSnapshots[0]?.beats[2]; // progress=0.5
 if (wallMid) {
   console.log("\nSpot check — wall-mode case A, progress=0.5:");
-  console.log("  blue propCenter:", wallMid.blue.propCenter);
-  console.log("  red  propCenter:", wallMid.red.propCenter);
+  console.log("  blue propCenter:", wallMid.left.propCenter);
+  console.log("  red  propCenter:", wallMid.right.propCenter);
 }
 
 const dualBeat0 = dualWheelSnapshots[0]?.beats[0];
 if (dualBeat0) {
   console.log("\nSpot check — dual-wheel, progress=0:");
-  console.log("  blue propCenter:", dualBeat0.blue.propCenter);
-  console.log("  red  propCenter:", dualBeat0.red.propCenter);
+  console.log("  blue propCenter:", dualBeat0.left.propCenter);
+  console.log("  red  propCenter:", dualBeat0.right.propCenter);
 }

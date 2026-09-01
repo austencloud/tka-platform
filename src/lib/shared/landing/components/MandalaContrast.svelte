@@ -46,8 +46,8 @@
             {active}
             props={{
               sequence,
-              bluePropType: cell.prop,
-              redPropType: cell.prop,
+              leftPropType: cell.prop,
+              rightPropType: cell.prop,
               show: "both",
               style: "stroke",
               size: 300,

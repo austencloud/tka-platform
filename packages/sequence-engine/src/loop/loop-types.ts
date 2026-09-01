@@ -15,7 +15,7 @@ export enum LOOPType {
   /** Mirrored - mirrors positions vertically */
   MIRRORED = "mirrored",
 
-  /** Swapped - swaps blue and red attributes */
+  /** Swapped - swaps left and right attributes */
   SWAPPED = "swapped",
 
   /** Inverted - uses inverted letters (opposite motion types) */
@@ -27,13 +27,13 @@ export enum LOOPType {
   /** Rotated inverted - combines rotation with inverted motion */
   ROTATED_INVERTED = "rotated_inverted",
 
-  /** Mirrored swapped - combines mirroring with color swapping */
+  /** Mirrored swapped - combines mirroring with hand swapping */
   MIRRORED_SWAPPED = "mirrored_swapped",
 
   /** Mirrored inverted - combines mirroring with inverted motion */
   MIRRORED_INVERTED = "mirrored_inverted",
 
-  /** Rotated swapped - combines rotation with color swapping */
+  /** Rotated swapped - combines rotation with hand swapping */
   ROTATED_SWAPPED = "rotated_swapped",
 
   /** Mirrored rotated - combines mirroring with rotation */
@@ -45,7 +45,7 @@ export enum LOOPType {
   /** Mirrored swapped inverted - combines mirroring, swapping, and inversion */
   MIRRORED_SWAPPED_INVERTED = "mirrored_swapped_inverted",
 
-  /** Rotated swapped inverted - combines rotation, color swapping, and inversion */
+  /** Rotated swapped inverted - combines rotation, hand swapping, and inversion */
   ROTATED_SWAPPED_INVERTED = "rotated_swapped_inverted",
 
   /** Mirrored rotated swapped - inner halved rotation + outer mirrored + swapped */
@@ -122,13 +122,13 @@ export const LOOP_TYPE_DESCRIPTIONS: Record<LOOPType, string> = {
   [LOOPType.ROTATED]: "Rotates positions around the grid",
   [LOOPType.MIRRORED]: "Mirrors positions vertically",
   [LOOPType.FLIPPED]: "Mirrors positions horizontally (north/south)",
-  [LOOPType.SWAPPED]: "Swaps blue and red props",
+  [LOOPType.SWAPPED]: "Swaps left and right props",
   [LOOPType.INVERTED]: "Inverts motion directions",
   [LOOPType.SWAPPED_INVERTED]: "Swaps colors with inverted motion",
   [LOOPType.ROTATED_INVERTED]: "Rotates with inverted motion",
-  [LOOPType.MIRRORED_SWAPPED]: "Mirrors with color swap",
+  [LOOPType.MIRRORED_SWAPPED]: "Mirrors with hand swap",
   [LOOPType.MIRRORED_INVERTED]: "Mirrors with inverted motion",
-  [LOOPType.ROTATED_SWAPPED]: "Rotates with color swap",
+  [LOOPType.ROTATED_SWAPPED]: "Rotates with hand swap",
   [LOOPType.MIRRORED_ROTATED]: "Combines mirroring and rotation",
   [LOOPType.MIRRORED_INVERTED_ROTATED]: "Mirror, invert, and rotate",
   [LOOPType.MIRRORED_SWAPPED_INVERTED]: "Mirror, swap, and invert motion",

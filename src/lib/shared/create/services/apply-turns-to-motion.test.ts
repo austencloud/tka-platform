@@ -20,26 +20,26 @@ const CCW = RotationDirection.COUNTER_CLOCKWISE;
 const NONE = RotationDirection.NO_ROTATION;
 
 function makeMotionOption(
-  blueType: MotionType,
-  redType: MotionType
+  leftType: MotionType,
+  rightType: MotionType
 ): PictographData {
   return {
     letter: "X",
     motions: {
-      blue: createMotionData({
-        motionType: blueType,
+      left: createMotionData({
+        motionType: leftType,
         rotationDirection:
-          blueType === MotionType.PRO ? CW : NONE,
+          leftType === MotionType.PRO ? CW : NONE,
         turns: 0,
         startOrientation: "in",
         endOrientation: "in",
         startLocation: "n",
         endLocation: "s",
       }),
-      red: createMotionData({
-        motionType: redType,
+      right: createMotionData({
+        motionType: rightType,
         rotationDirection:
-          redType === MotionType.PRO ? CCW : NONE,
+          rightType === MotionType.PRO ? CCW : NONE,
         turns: 0,
         startOrientation: "in",
         endOrientation: "in",
@@ -54,47 +54,47 @@ describe("applyPendingTurnsToOption", () => {
   it("applies turns per hand and recomputes end orientation", () => {
     const opt = makeMotionOption(MotionType.PRO, MotionType.PRO);
     const result = applyPendingTurnsToOption(opt, 1, 0, CW, CW);
-    expect(result.motions.blue!.turns).toBe(1);
-    expect(result.motions.blue!.endOrientation).toBe("out");
-    expect(result.motions.red!.turns).toBe(0);
-    expect(result.motions.red!.endOrientation).toBe("in");
+    expect(result.motions.left!.turns).toBe(1);
+    expect(result.motions.left!.endOrientation).toBe("out");
+    expect(result.motions.right!.turns).toBe(0);
+    expect(result.motions.right!.endOrientation).toBe("in");
   });
 
   it("returns a new object and does not mutate the input", () => {
     const opt = makeMotionOption(MotionType.PRO, MotionType.PRO);
     const result = applyPendingTurnsToOption(opt, 1, 1, CW, CW);
     expect(result).not.toBe(opt);
-    expect(opt.motions.blue!.turns).toBe(0);
+    expect(opt.motions.left!.turns).toBe(0);
   });
 
   it("returns the option unchanged when a motion is missing", () => {
-    const input = { letter: "A", motions: { blue: undefined, red: undefined } } as unknown as PictographData;
+    const input = { letter: "A", motions: { left: undefined, right: undefined } } as unknown as PictographData;
     expect(applyPendingTurnsToOption(input, 1, 1, CW, CW)).toBe(input);
   });
 
   it("applies the chosen spin direction to a dash/static hand with turns", () => {
     const opt = makeMotionOption(MotionType.STATIC, MotionType.DASH);
     const cw = applyPendingTurnsToOption(opt, 1, 1, CW, CW);
-    expect(cw.motions.blue!.rotationDirection).toBe(CW);
-    expect(cw.motions.red!.rotationDirection).toBe(CW);
+    expect(cw.motions.left!.rotationDirection).toBe(CW);
+    expect(cw.motions.right!.rotationDirection).toBe(CW);
 
     const ccw = applyPendingTurnsToOption(opt, 1, 1, CCW, CCW);
-    expect(ccw.motions.blue!.rotationDirection).toBe(CCW);
-    expect(ccw.motions.red!.rotationDirection).toBe(CCW);
+    expect(ccw.motions.left!.rotationDirection).toBe(CCW);
+    expect(ccw.motions.right!.rotationDirection).toBe(CCW);
   });
 
   it("leaves a shift hand's intrinsic direction alone (override ignored)", () => {
     const opt = makeMotionOption(MotionType.PRO, MotionType.STATIC);
     // blue is a shift (intrinsic CW); passing CCW must not flip it
     const result = applyPendingTurnsToOption(opt, 1, 1, CCW, CCW);
-    expect(result.motions.blue!.rotationDirection).toBe(CW);
-    expect(result.motions.red!.rotationDirection).toBe(CCW);
+    expect(result.motions.left!.rotationDirection).toBe(CW);
+    expect(result.motions.right!.rotationDirection).toBe(CCW);
   });
 
   it("a dash/static hand at 0 turns stays at no-rotation regardless of direction", () => {
     const opt = makeMotionOption(MotionType.STATIC, MotionType.STATIC);
     const result = applyPendingTurnsToOption(opt, 0, 0, CW, CW);
-    expect(result.motions.blue!.rotationDirection).toBe(NONE);
-    expect(result.motions.red!.rotationDirection).toBe(NONE);
+    expect(result.motions.left!.rotationDirection).toBe(NONE);
+    expect(result.motions.right!.rotationDirection).toBe(NONE);
   });
 });

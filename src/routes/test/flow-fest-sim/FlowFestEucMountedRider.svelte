@@ -137,8 +137,8 @@
   <Avatar3D
     id={PERFORMER_ID}
     avatarId={FLOW_FEST_EUC_CONFIG.riderAvatarId}
-    bluePropState={null}
-    redPropState={null}
+    leftPropState={null}
+    rightPropState={null}
     visible={true}
     isActive={false}
     position={{ x: 0, y: 0, z: 0 }}

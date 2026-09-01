@@ -89,7 +89,7 @@
   );
   const ruleLabel = $derived(fuseRuleLabel(fuseState.rule));
   const driverLabel = $derived(
-    fuseState.driverSide === "blue" ? "Blue" : "Red"
+    fuseState.driverSide === "left" ? "Left" : "Right"
   );
 
   function changeLength(offset: -1 | 1): void {

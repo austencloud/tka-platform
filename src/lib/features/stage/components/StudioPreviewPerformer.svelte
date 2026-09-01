@@ -58,8 +58,8 @@
   <Character3D
     id="studio-starter-performer-{index}"
     avatarId={DEFAULT_CHARACTER_ID}
-    bluePropState={null}
-    redPropState={null}
+    leftPropState={null}
+    rightPropState={null}
     isActive={false}
     enableLocomotion
     enableFootPlanting

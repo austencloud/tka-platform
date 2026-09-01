@@ -4,7 +4,7 @@
  * Type definitions for poi constraint validation and VTG terminology mapping.
  */
 
-import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { PoiMotionValidity, PoiTimingDirection, PoiPatternRatio } from "./poi-enums";
 
 /**
@@ -16,7 +16,7 @@ export interface PoiConstraintViolation {
   /** Human-readable explanation of the violation */
   readonly message: string;
   /** Which hand's motion caused the violation */
-  readonly motionColor: MotionColor;
+  readonly motionHand: HandSide;
 }
 
 /**

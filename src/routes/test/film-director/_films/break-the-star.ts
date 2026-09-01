@@ -25,7 +25,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * where the star's tip points instead of wherever the generator started.
  */
 export const breakTheStarFilm: FilmDirectorInput = {
-  version: 4,
+  version: 5,
   id: "break-the-star-r1",
   title: "Break the Star",
   brief:
@@ -58,8 +58,8 @@ export const breakTheStarFilm: FilmDirectorInput = {
             },
             position: { x: 0, z: -2.6 },
             facingDegrees: 180,
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
             blocking: [
               { move: "stand", durationSeconds: 7.6 },
               {
@@ -80,8 +80,8 @@ export const breakTheStarFilm: FilmDirectorInput = {
             sequence: { word: "SAILOR" },
             position: { x: -2.47, z: -0.8 },
             facingDegrees: 180,
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
             blocking: [
               { move: "stand", durationSeconds: 7.95 },
               // Straight out along x with the facing held: a pure strafe, and
@@ -104,8 +104,8 @@ export const breakTheStarFilm: FilmDirectorInput = {
             sequence: { mirrorOf: "fan-left" },
             position: { x: 2.47, z: -0.8 },
             facingDegrees: 180,
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
             blocking: [
               { move: "stand", durationSeconds: 7.95 },
               {
@@ -126,8 +126,8 @@ export const breakTheStarFilm: FilmDirectorInput = {
             sequence: { word: "ORBITS" },
             position: { x: -1.53, z: 2.1 },
             facingDegrees: 180,
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
             blocking: [
               { move: "stand", durationSeconds: 6.1 },
               // Nearly three metres, the longest crossing in the scene, so this
@@ -150,8 +150,8 @@ export const breakTheStarFilm: FilmDirectorInput = {
             sequence: { mirrorOf: "back-left" },
             position: { x: 1.53, z: 2.1 },
             facingDegrees: 180,
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
             blocking: [
               { move: "stand", durationSeconds: 6.1 },
               {

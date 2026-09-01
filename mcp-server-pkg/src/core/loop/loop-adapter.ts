@@ -1,8 +1,8 @@
 /**
  * LOOP Adapter — bridges MCP server step format to @tka/sequence-engine executors.
  *
- * MCP server steps use flat blueMotion/redMotion.
- * Engine steps use nested motions.blue/motions.red.
+ * MCP server steps use flat leftMotion/rightMotion.
+ * Engine steps use nested motions.left/motions.right.
  * This adapter converts at the boundary so the MCP server can use
  * the engine's full set of 15 LOOP executors.
  */
@@ -18,9 +18,8 @@ import {
   type LOOPDetectionResult,
 } from "@tka/sequence-engine/loop";
 
-
 interface MotionData {
-  color: string;
+  hand: "left" | "right";
   startLocation: string;
   endLocation: string;
   motionType: string;
@@ -35,8 +34,8 @@ export interface PictographData {
   endPosition: string;
   timing: string;
   direction: string;
-  blueMotion: MotionData;
-  redMotion: MotionData;
+  leftMotion: MotionData;
+  rightMotion: MotionData;
 }
 
 export interface LOOPExecutionResult {
@@ -53,12 +52,11 @@ export interface LOOPExecutionResult {
   error?: string;
 }
 
-
 function toEngineStep(mcp: McpStep): any {
-  const { blueMotion, redMotion, ...rest } = mcp as any;
+  const { leftMotion, rightMotion, ...rest } = mcp as any;
   return {
     ...rest,
-    motions: { blue: blueMotion, red: redMotion },
+    motions: { left: leftMotion, right: rightMotion },
     duration: 1,
   };
 }
@@ -67,11 +65,10 @@ function toMcpStep(engine: any): McpStep {
   const { motions, duration, id, ...rest } = engine;
   return {
     ...rest,
-    blueMotion: motions.blue,
-    redMotion: motions.red,
+    leftMotion: motions.left,
+    rightMotion: motions.right,
   };
 }
-
 
 export function executeLOOP(
   steps: McpStep[],
@@ -97,7 +94,9 @@ export function executeLOOP(
   });
 
   if (steps.length < 2) {
-    return errorResult("Sequence must have at least 2 steps (start position + 1 beat)");
+    return errorResult(
+      "Sequence must have at least 2 steps (start position + 1 beat)"
+    );
   }
 
   let executor;
@@ -129,8 +128,8 @@ export function executeLOOP(
     derivedBeatIndices.push(i);
 
     const derived = engineFindLetter(
-      step.blueMotion as any,
-      step.redMotion as any,
+      step.leftMotion as any,
+      step.rightMotion as any,
       allPictographs as any[]
     );
     if (derived) {
@@ -155,7 +154,6 @@ export function executeLOOP(
     derivedBeatIndices,
   };
 }
-
 
 export function detectLOOPFromSteps(steps: McpStep[]): LOOPDetectionResult {
   return engineDetectLOOP(steps.map(toEngineStep));
