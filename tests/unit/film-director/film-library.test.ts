@@ -224,6 +224,33 @@ describe("film library", () => {
     );
     expect(arrival).toBeDefined();
     expect(arrival!.position).toEqual({ x: -1.5, z: -1 });
+
+    const edges = resolved.scenes.find((s) => s.id === "camera-edges")!;
+    expect(edges.durationSeconds).toBe(12);
+    expect(edges.transition).toMatchObject({ durationSeconds: 1 });
+    const kf = edges.camera.keyframes;
+    const at = (t: number) =>
+      kf.find((frame) => Math.abs(frame.atSeconds - t) < 1e-6)!;
+    // Truck (0-4s): position and target translate by the same 1m ground vector.
+    const truckDelta = [0, 1, 2].map((axis) => at(4).position[axis]! - at(0).position[axis]!);
+    const targetDelta = [0, 1, 2].map((axis) => at(4).target[axis]! - at(0).target[axis]!);
+    // toBeCloseTo, not toEqual: position and target sit at different absolute
+    // magnitudes, so adding the identical translation vector to each rounds
+    // to a ~1e-16 difference on subtraction — real floating point, not a bug.
+    truckDelta.forEach((value, axis) => {
+      expect(value).toBeCloseTo(targetDelta[axis]!, 9);
+    });
+    expect(Math.hypot(...truckDelta)).toBeCloseTo(1, 4);
+    expect(truckDelta[1]).toBeCloseTo(0, 6);
+    // Zoom (4-8s): fov 50 -> 35 with the camera parked.
+    expect(at(4).fovDeg).toBe(50);
+    expect(at(8).fovDeg).toBe(35);
+    expect(at(8).position).toEqual(at(4).position);
+    // Roll (8-10s): explicit 0 anchor ramping to +10 (clockwise on screen).
+    expect(at(8).rollDeg).toBe(0);
+    expect(at(10).rollDeg).toBe(10);
+    // Scenes that never roll stay sparse:
+    expect(onBeat.camera.keyframes.every((frame) => !("rollDeg" in frame))).toBe(true);
   });
 
   it("Chance Suite's identical directives on different scenes draw from different streams", () => {

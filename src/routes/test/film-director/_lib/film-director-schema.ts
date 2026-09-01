@@ -285,6 +285,7 @@ const cameraKeyframeSchema = z
     position: vector3Schema,
     target: cameraTargetSchema.optional(),
     fovDeg: finiteNumber.min(20).max(100).optional(),
+    rollDeg: finiteNumber.min(-180).max(180).optional(),
     interpolation: z.enum(DIRECTOR_INTERPOLATIONS).optional(),
     easing: z.enum(DIRECTOR_EASINGS).optional(),
   })
@@ -624,9 +625,12 @@ const cameraSchema = z
               "orbit",
               "crane",
               "pan",
+              "truck",
+              "zoom",
+              "roll",
             ]),
             direction: z
-              .enum(["cw", "ccw", "up", "down", "left", "right"])
+              .enum(["cw", "ccw", "up", "down", "left", "right", "in", "out"])
               .optional(),
             amount: z
               .union([
@@ -816,6 +820,12 @@ export interface ResolvedDirectorCameraKeyframe {
   position: [number, number, number];
   target: [number, number, number];
   fovDeg: number;
+  /**
+   * Horizon tilt in degrees, positive = clockwise as the audience sees the
+   * frame. Present only on keyframe streams where a roll move ran, so films
+   * that never roll resolve byte-identically to their pre-roll snapshots.
+   */
+  rollDeg?: number;
   interpolation: DirectorInterpolation;
   easing: DirectorEasing;
 }
