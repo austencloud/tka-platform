@@ -33,6 +33,7 @@
   import PerfMonitor from "$lib/shared/3d/components/PerfMonitor.svelte";
   import InteractiveCanvasFrameBridge from "$lib/shared/3d/components/InteractiveCanvasFrameBridge.svelte";
   import type { RendererPerformanceSample } from "$lib/shared/3d/components/renderer-performance-window";
+  import AutumnProductionHarness from "./AutumnProductionHarness.svelte";
   import { autumnQualityOverride } from "$lib/shared/3d/environments/scenes/autumn/quality/autumn-quality-override.svelte";
   import type { AutumnQualityTier } from "$lib/shared/3d/environments/scenes/autumn/quality/autumn-quality";
   import {
@@ -132,6 +133,9 @@
   );
   const cameraKey = $derived(JSON.stringify(cameraPreset));
   const showPerf = $derived(page.url.searchParams.get("perf") === "1");
+  const productionGraph = $derived(
+    page.url.searchParams.get("graph") === "production"
+  );
   const renderDpr = $derived.by(() => {
     const requested = Number(page.url.searchParams.get("dpr") ?? "1");
     return Number.isFinite(requested)
@@ -205,90 +209,95 @@
 </svelte:head>
 
 <div class="page">
-  <Canvas
-    dpr={renderDpr}
-    shadows
-    createRenderer={(canvas) =>
-      new WebGLRenderer({ canvas, preserveDrawingBuffer: false })}
-  >
-    <InteractiveCanvasFrameBridge />
-    <ScenePostProcessing
-      backgroundType={BackgroundType.AUTUMN}
-      forceBloom={requestedQuality !== "low"}
-      bloomResolutionScale={requestedQuality === "high" ? 1 : 0.5}
-      bloomLevels={requestedQuality === "high" ? 8 : 5}
-      enableChromaticAberration={false}
-    />
-    <PerfMonitor
-      visible={showPerf}
-      active={showPerf}
-      onSample={recordRenderSample}
-    />
-
-    {#key cameraKey}
-      <EnvironmentReviewCamera
-        destinationId="autumn-scene-review"
-        preset={cameraPreset}
-        walk={view === "walk" || Boolean(replayPose)}
+  {#if productionGraph}
+    <AutumnProductionHarness onSample={recordRenderSample} />
+  {:else}
+    <Canvas
+      dpr={renderDpr}
+      shadows
+      createRenderer={(canvas) =>
+        new WebGLRenderer({ canvas, preserveDrawingBuffer: false })}
+    >
+      <InteractiveCanvasFrameBridge />
+      <ScenePostProcessing
+        backgroundType={BackgroundType.AUTUMN}
+        forceBloom={requestedQuality !== "low"}
+        bloomResolutionScale={requestedQuality === "high" ? 1 : 0.5}
+        bloomLevels={requestedQuality === "high" ? 8 : 5}
+        enableChromaticAberration={false}
       />
-    {/key}
+      <PerfMonitor
+        visible={showPerf}
+        active={showPerf}
+        warmupMs={5_000}
+        onSample={recordRenderSample}
+      />
 
-    <EnvironmentReviewViewSource
-      sceneId="autumn-scene"
-      state={() => ({
-        shot: view,
-        quality: requestedQuality,
-        dpr: renderDpr,
-      })}
-      onReading={(nextReading) => (reading = nextReading)}
-    />
+      {#key cameraKey}
+        <EnvironmentReviewCamera
+          destinationId="autumn-scene-review"
+          preset={cameraPreset}
+          walk={view === "walk" || Boolean(replayPose)}
+        />
+      {/key}
 
-    <!-- Real environment switcher. AUTUMN routes to AutumnScene, which
+      <EnvironmentReviewViewSource
+        sceneId="autumn-scene"
+        state={() => ({
+          shot: view,
+          quality: requestedQuality,
+          dpr: renderDpr,
+        })}
+        onReading={(nextReading) => (reading = nextReading)}
+      />
+
+      <!-- Real environment switcher. AUTUMN routes to AutumnScene, which
          supplies its own sky, ground, fog, trees, leaves and lighting. -->
-    <Environment3D
-      backgroundType={BackgroundType.AUTUMN}
-      performerCount={1}
-      stageWidth={6}
-      stageDepth={6}
-      stageZOffset={0}
-    />
-  </Canvas>
+      <Environment3D
+        backgroundType={BackgroundType.AUTUMN}
+        performerCount={1}
+        stageWidth={6}
+        stageDepth={6}
+        stageZOffset={0}
+      />
+    </Canvas>
 
-  <aside class="view-inspector" aria-label="Autumn review coordinates">
-    <button type="button" onclick={copyCurrentView}>
-      <span>Copy exact view</span>
-      <kbd>P</kbd>
-    </button>
-    {#if reading}
-      <dl>
-        <div>
-          <dt>Camera</dt>
-          <dd>{formatPoint(reading.camera)}</dd>
-        </div>
-        <div class="target-reading">
-          <dt>Centre target</dt>
-          <dd>{targetLabel}</dd>
-        </div>
-        {#if reading.target}
+    <aside class="view-inspector" aria-label="Autumn review coordinates">
+      <button type="button" onclick={copyCurrentView}>
+        <span>Copy exact view</span>
+        <kbd>P</kbd>
+      </button>
+      {#if reading}
+        <dl>
           <div>
-            <dt>Target origin</dt>
-            <dd>{formatPoint(reading.target.origin)}</dd>
+            <dt>Camera</dt>
+            <dd>{formatPoint(reading.camera)}</dd>
           </div>
-          <div>
-            <dt>Surface hit</dt>
-            <dd>{formatPoint(reading.target.point)}</dd>
+          <div class="target-reading">
+            <dt>Centre target</dt>
+            <dd>{targetLabel}</dd>
           </div>
-        {/if}
-      </dl>
-    {:else}
-      <span class="waiting">Reading camera…</span>
-    {/if}
-    {#if captureNote}
-      <span class="capture-note" role="status" aria-live="polite"
-        >{captureNote}</span
-      >
-    {/if}
-  </aside>
+          {#if reading.target}
+            <div>
+              <dt>Target origin</dt>
+              <dd>{formatPoint(reading.target.origin)}</dd>
+            </div>
+            <div>
+              <dt>Surface hit</dt>
+              <dd>{formatPoint(reading.target.point)}</dd>
+            </div>
+          {/if}
+        </dl>
+      {:else}
+        <span class="waiting">Reading camera…</span>
+      {/if}
+      {#if captureNote}
+        <span class="capture-note" role="status" aria-live="polite"
+          >{captureNote}</span
+        >
+      {/if}
+    </aside>
+  {/if}
 
   {#if showPerf && renderSample}
     <aside class="perf-readout" aria-label="Autumn renderer performance">

@@ -110,8 +110,36 @@ describe("Offline3DExporter cancellation checkpoints", () => {
     await expect(result).rejects.toThrow("Export cancelled");
     expect(harness.encoder.initialize).toHaveBeenCalledOnce();
     expect(harness.runFrame).toHaveBeenCalledOnce();
-    expect(harness.capture).not.toHaveBeenCalled();
-    expect(harness.encoder.addFrameCaptured).not.toHaveBeenCalled();
+    expect(harness.capture).toHaveBeenCalledOnce();
+    expect(harness.encoder.addFrameCaptured).toHaveBeenCalledOnce();
     expect(harness.resumeAutoLoop).toHaveBeenCalledOnce();
+  });
+
+  it("captures a nonpersistent framebuffer before yielding control", async () => {
+    const harness = createHarness();
+    let yieldCount = 0;
+    vi.stubGlobal("scheduler", {
+      yield: vi.fn(async () => {
+        yieldCount += 1;
+      }),
+    });
+    harness.capture.mockImplementation(() => {
+      // One startup yield is expected. A second yield here would let the
+      // browser discard the default framebuffer before this read.
+      expect(yieldCount).toBe(1);
+      return { kind: "image-data" };
+    });
+
+    await harness.exporter.exportOffline(harness.deps, vi.fn(), {
+      fps: 1,
+      resolution: 720,
+      loopCount: 1,
+      includeStartPosition: false,
+      includeEndHold: false,
+    });
+
+    expect(harness.runFrame).toHaveBeenCalledOnce();
+    expect(harness.capture).toHaveBeenCalledOnce();
+    expect(yieldCount).toBe(2);
   });
 });

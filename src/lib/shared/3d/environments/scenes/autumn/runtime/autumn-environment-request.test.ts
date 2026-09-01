@@ -29,7 +29,8 @@ describe("Autumn environment request", () => {
 
     expect(load).toHaveBeenCalledWith(
       "/models/autumn/autumn-environment.glb?retry=3",
-      expect.any(Function)
+      expect.any(Function),
+      expect.any(AbortSignal)
     );
     expect(onReady).toHaveBeenCalledOnce();
     expect(onReady).toHaveBeenCalledWith("loaded-scene");
@@ -60,10 +61,17 @@ describe("Autumn environment request", () => {
   it("times out once and ignores a late resolution", async () => {
     vi.useFakeTimers();
     let resolve!: (value: string) => void;
-    const load = () =>
-      new Promise<string>((nextResolve) => {
+    let signal!: AbortSignal;
+    const load = (
+      _url: string,
+      _onProgress: unknown,
+      nextSignal: AbortSignal
+    ) => {
+      signal = nextSignal;
+      return new Promise<string>((nextResolve) => {
         resolve = nextResolve;
       });
+    };
     const onReady = vi.fn();
     const onFailure = vi.fn();
 
@@ -82,6 +90,7 @@ describe("Autumn environment request", () => {
     expect(onFailure).toHaveBeenCalledWith(
       expect.objectContaining({ reason: "timeout" })
     );
+    expect(signal.aborted).toBe(true);
     expect(onReady).not.toHaveBeenCalled();
   });
 
@@ -149,12 +158,14 @@ describe("Autumn environment request", () => {
 
   it("silences callbacks after retained-scene teardown", async () => {
     let resolve!: (value: string) => void;
+    let signal!: AbortSignal;
     const onReady = vi.fn();
     const onFailure = vi.fn();
     const stop = startAutumnEnvironmentRequest({
       retryRequest: 0,
-      load: () =>
+      load: (_url, _onProgress, nextSignal) =>
         new Promise<string>((nextResolve) => {
+          signal = nextSignal;
           resolve = nextResolve;
         }),
       onReady,
@@ -163,6 +174,7 @@ describe("Autumn environment request", () => {
     await flushPromises();
 
     stop();
+    expect(signal.aborted).toBe(true);
     resolve("cancelled");
     await flushPromises();
 

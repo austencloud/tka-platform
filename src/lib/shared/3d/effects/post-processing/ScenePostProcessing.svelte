@@ -9,7 +9,6 @@
     Vector3,
     WebGLRenderTarget,
     ACESFilmicToneMapping,
-    NoToneMapping,
   } from "three";
   import {
     EffectComposer,
@@ -105,6 +104,11 @@
   let sceneDepthSourcePass: RenderPass | null = null;
   let lastW = 0;
   let lastH = 0;
+  let oceanRendererState: {
+    shadowMapEnabled: boolean;
+    toneMapping: import("three").ToneMapping;
+    toneMappingExposure: number;
+  } | null = null;
   const _sizeVec = new Vector2();
   const sceneColorTarget = new WebGLRenderTarget(1, 1, {
     type: HalfFloatType,
@@ -154,6 +158,11 @@
     composer.addPass(sceneDepthSourcePass);
 
     if (isOcean) {
+      oceanRendererState = {
+        shadowMapEnabled: renderer.shadowMap.enabled,
+        toneMapping: renderer.toneMapping,
+        toneMappingExposure: renderer.toneMappingExposure,
+      };
       renderer.shadowMap.enabled = tierConfig.enableShadows;
       // ACES, not AgX. AgX is a low-contrast, deliberately desaturating curve
       // intended to be finished with a look LUT; without one it rendered the
@@ -261,9 +270,12 @@
       sceneDepthSourcePass = null;
       waterAbsorption = null;
       renderer.autoClear = true;
-      renderer.shadowMap.enabled = false;
-      renderer.toneMapping = NoToneMapping;
-      renderer.toneMappingExposure = 1.0;
+    }
+    if (oceanRendererState) {
+      renderer.shadowMap.enabled = oceanRendererState.shadowMapEnabled;
+      renderer.toneMapping = oceanRendererState.toneMapping;
+      renderer.toneMappingExposure = oceanRendererState.toneMappingExposure;
+      oceanRendererState = null;
     }
     clearSceneColorSnapshot3D(renderer);
   }

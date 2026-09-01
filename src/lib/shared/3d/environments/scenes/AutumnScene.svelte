@@ -8,11 +8,10 @@
    * loading curtain.
    */
 
-  import { T, useLoader, useThrelte } from "@threlte/core";
+  import { T, useThrelte } from "@threlte/core";
   import { useKtx2, useMeshopt } from "@threlte/extras";
   import { FogExp2, Color } from "three";
   import { untrack } from "svelte";
-  import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { getAutumnQualityConfig } from "./autumn/quality/autumn-quality";
   import { autumnQualityOverride } from "./autumn/quality/autumn-quality-override.svelte";
@@ -49,6 +48,7 @@
     type AutumnBootStatus,
   } from "./autumn/runtime/autumn-boot-state";
   import { startAutumnEnvironmentRequest } from "./autumn/runtime/autumn-environment-request";
+  import { createAutumnEnvironmentTransport } from "./autumn/runtime/autumn-environment-transport";
   import type { Mesh } from "three";
 
   // ── Props (match what Environment3D passes) ───────────────────────────
@@ -97,14 +97,12 @@
 
   const autumnMeshoptDecoder = useMeshopt();
   const autumnKtx2Loader = useKtx2("/basis/");
-  const autumnEnvironmentLoader = useLoader(GLTFLoader, {
-    extend(loader) {
-      loader.setMeshoptDecoder(autumnMeshoptDecoder);
-      loader.setKTX2Loader(autumnKtx2Loader);
-    },
+  const loadAutumnEnvironment = createAutumnEnvironmentTransport((loader) => {
+    loader.setMeshoptDecoder(autumnMeshoptDecoder);
+    loader.setKTX2Loader(autumnKtx2Loader);
   });
   type AutumnEnvironmentGltf = Awaited<
-    ReturnType<typeof autumnEnvironmentLoader.load>
+    ReturnType<typeof loadAutumnEnvironment>
   >;
   let autumnEnvironmentGlb = $state<AutumnEnvironmentGltf | null>(null);
   let bootState = $state(createAutumnBootState());
@@ -128,14 +126,7 @@
 
     return startAutumnEnvironmentRequest({
       retryRequest: retry,
-      load: (url, onProgress) =>
-        autumnEnvironmentLoader.load(url, {
-          onProgress: (event) =>
-            onProgress({
-              loaded: event.loaded,
-              total: event.total > 0 ? event.total : undefined,
-            }),
-        }),
+      load: loadAutumnEnvironment,
       onReady: (loaded) => {
         autumnEnvironmentGlb = loaded;
         bootState = setAutumnBootAsset(bootState, "environment", "ready");

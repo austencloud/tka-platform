@@ -32,6 +32,7 @@
   import Viewer3DCamera from "./Viewer3DCamera.svelte";
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
   import PerfMonitor from "./PerfMonitor.svelte";
+  import type { RendererPerformanceSample } from "./renderer-performance-window";
   import InteractiveCanvasFrameBridge from "./InteractiveCanvasFrameBridge.svelte";
   import GaitProbe from "../diagnostics/gait/GaitProbe.svelte";
   import GaitOverlay from "../diagnostics/gait/GaitOverlay.svelte";
@@ -139,6 +140,9 @@
     onSettingChange?: ViewerControlSink;
     /** Mount the environment and camera before choreography adds a performer. */
     renderEmptyScene?: boolean;
+    /** Production-graph instrumentation hook used by focused benchmark hosts. */
+    onPerformanceSample?: (sample: RendererPerformanceSample) => void;
+    performanceWarmupMs?: number;
   }
 
   let {
@@ -181,6 +185,8 @@
     sceneLoadTimeoutMs = 15_000,
     onSettingChange,
     renderEmptyScene = false,
+    onPerformanceSample,
+    performanceWarmupMs = 0,
   }: Props = $props();
 
   type ScenePostProcessingModule =
@@ -491,6 +497,9 @@
           <PerfMonitor
             visible={viewer3DState.showPerf}
             adaptive={sceneReady && isPlaying && !viewer3DState.isExporting}
+            active={Boolean(onPerformanceSample) && sceneReady}
+            warmupMs={performanceWarmupMs}
+            onSample={onPerformanceSample}
           />
           <Viewer3DCanvasRef {onRendererReady} />
           <!-- Reads the legs every host in the app puts on screen. Renders

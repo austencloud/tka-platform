@@ -29,6 +29,57 @@ export interface RendererPerformanceWindow {
   snapshot(): RendererFrameWindowSnapshot;
 }
 
+export interface RendererInfoFrameCounters {
+  drawCalls: number;
+  triangles: number;
+  geometries: number;
+  textures: number;
+  programs: number;
+}
+
+interface RendererInfoSource {
+  autoReset: boolean;
+  render: { calls: number; triangles: number };
+  memory: { geometries: number; textures: number };
+  programs?: readonly unknown[] | null;
+  reset(): void;
+}
+
+export interface RendererInfoFrameSampler {
+  sampleAndReset(): RendererInfoFrameCounters;
+  dispose(): void;
+}
+
+/**
+ * Three resets renderer.info after each renderer.render() by default. A
+ * post-processing composer renders several times, so reading at frame end can
+ * otherwise report only the final fullscreen pass. This owner disables those
+ * per-pass resets and performs exactly one reset at the next frame boundary.
+ */
+export function createRendererInfoFrameSampler(
+  info: RendererInfoSource
+): RendererInfoFrameSampler {
+  const originalAutoReset = info.autoReset;
+  info.autoReset = false;
+
+  return {
+    sampleAndReset() {
+      const sample = {
+        drawCalls: info.render.calls,
+        triangles: info.render.triangles,
+        geometries: info.memory.geometries,
+        textures: info.memory.textures,
+        programs: info.programs?.length ?? 0,
+      };
+      info.reset();
+      return sample;
+    },
+    dispose() {
+      info.autoReset = originalAutoReset;
+    },
+  };
+}
+
 function percentile(sorted: readonly number[], ratio: number): number {
   if (sorted.length === 0) return 0;
   const index = Math.floor((sorted.length - 1) * ratio);
@@ -44,8 +95,28 @@ function median(values: readonly number[]): number {
     : (sorted[middle] ?? 0);
 }
 
+const THERMAL_EDGE_WINDOW_MS = 30_000;
+
+function takeDurationEdge(
+  values: readonly number[],
+  fromStart: boolean
+): number[] {
+  const edge: number[] = [];
+  let durationMs = 0;
+  for (
+    let index = fromStart ? 0 : values.length - 1;
+    index >= 0 && index < values.length && durationMs < THERMAL_EDGE_WINDOW_MS;
+    index += fromStart ? 1 : -1
+  ) {
+    const frameMs = values[index] ?? 0;
+    edge.push(frameMs);
+    durationMs += frameMs;
+  }
+  return edge;
+}
+
 export function createRendererPerformanceWindow(
-  maximumSamples = 7_200
+  maximumSamples = 14_400
 ): RendererPerformanceWindow {
   const frameTimes: number[] = [];
 
@@ -61,9 +132,17 @@ export function createRendererPerformanceWindow(
     snapshot() {
       const sorted = [...frameTimes].sort((a, b) => a - b);
       const sampleCount = sorted.length;
-      const fifthSize = Math.max(1, Math.floor(frameTimes.length / 5));
-      const openingMedian = median(frameTimes.slice(0, fifthSize));
-      const closingMedian = median(frameTimes.slice(-fifthSize));
+      const measuredDurationMs = frameTimes.reduce(
+        (total, frameMs) => total + frameMs,
+        0
+      );
+      const hasThermalWindow = measuredDurationMs >= THERMAL_EDGE_WINDOW_MS * 2;
+      const openingMedian = hasThermalWindow
+        ? median(takeDurationEdge(frameTimes, true))
+        : 0;
+      const closingMedian = hasThermalWindow
+        ? median(takeDurationEdge(frameTimes, false))
+        : 0;
 
       return {
         sampleCount,
