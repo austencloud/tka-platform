@@ -31,8 +31,22 @@
   let currentStep = $state(0);
   let animationFrame = 0;
   const bpm = 60;
+  const harnessControl = {
+    setEnvironment(environmentId: string): void {
+      viewer.setEnvironmentId(environmentId);
+    },
+    getEnvironment(): string {
+      return viewer.environmentId;
+    },
+  };
 
   onMount(() => {
+    (
+      globalThis as typeof globalThis & {
+        __autumnProductionHarness?: typeof harnessControl;
+      }
+    ).__autumnProductionHarness = harnessControl;
+    viewer.setEnvironmentId(BackgroundType.AUTUMN);
     void settingsService.updateSetting("backgroundType", BackgroundType.AUTUMN);
     let previousTime = performance.now();
     const advance = (time: number): void => {
@@ -45,7 +59,15 @@
     animationFrame = requestAnimationFrame(advance);
   });
 
-  onDestroy(() => cancelAnimationFrame(animationFrame));
+  onDestroy(() => {
+    cancelAnimationFrame(animationFrame);
+    const root = globalThis as typeof globalThis & {
+      __autumnProductionHarness?: typeof harnessControl;
+    };
+    if (root.__autumnProductionHarness === harnessControl) {
+      delete root.__autumnProductionHarness;
+    }
+  });
 </script>
 
 <Viewer3DCanvas
