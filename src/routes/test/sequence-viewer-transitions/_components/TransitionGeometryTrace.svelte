@@ -27,6 +27,9 @@
   const isMotionTrace = $derived(trace.command.startsWith("3d"));
   const isTunnelTrace = $derived(trace.command.startsWith("tunnel"));
   const isCardStageTrace = $derived(trace.command.startsWith("card-"));
+  const isPerformanceTrace = $derived(
+    trace.command.startsWith("performances-")
+  );
   const summary = $derived(summarizeTransitionGeometry(trace));
   const maximumSize = $derived(
     Math.max(
@@ -244,38 +247,113 @@
     <div>
       <span>Measured geometry</span>
       <h3 id="geometry-trace-title">
-        {isCardStageTrace
-          ? "Card and motion stage through the last replay"
-          : isMotionTrace
-            ? "2D and 3D through the last replay"
-            : isTunnelTrace
-              ? "One canvas becoming Tunnel through the last replay"
-              : "Pane size through the last replay"}
+        {isPerformanceTrace
+          ? "Stage and Performances through the last replay"
+          : isCardStageTrace
+            ? "Card and motion stage through the last replay"
+            : isMotionTrace
+              ? "2D and 3D through the last replay"
+              : isTunnelTrace
+                ? "One canvas becoming Tunnel through the last replay"
+                : "Pane size through the last replay"}
       </h3>
     </div>
     <div class="trace-legend" aria-label="Geometry trace legend">
       <span class="animation"
-        >{isCardStageTrace
-          ? "Stage allocation"
-          : isMotionTrace
-            ? "2D opacity"
-            : isTunnelTrace
-              ? "2D base"
-              : "Animation"}</span
+        >{isPerformanceTrace
+          ? "Stage opacity"
+          : isCardStageTrace
+            ? "Stage allocation"
+            : isMotionTrace
+              ? "2D opacity"
+              : isTunnelTrace
+                ? "2D base"
+                : "Animation"}</span
       >
       <span class="card"
-        >{isMotionTrace
-          ? "3D opacity"
-          : isTunnelTrace
-            ? "Tunnel layer blend"
-            : "Card visual"}</span
+        >{isPerformanceTrace
+          ? "Performances opacity"
+          : isMotionTrace
+            ? "3D opacity"
+            : isTunnelTrace
+              ? "Tunnel layer blend"
+              : "Card visual"}</span
       >
       <span class="stage">Stage</span>
     </div>
   </header>
 
   <div class="trace-summary">
-    {#if isCardStageTrace}
+    {#if isPerformanceTrace}
+      <span data-problem={summary.performanceStageIdentityChanges > 0}
+        >Stage remounts: {summary.performanceStageIdentityChanges}</span
+      >
+      <span data-problem={summary.performanceGalleryIdentityChanges > 0}
+        >Gallery remounts: {summary.performanceGalleryIdentityChanges}</span
+      >
+      <span data-problem={summary.performanceInspectorIdentityChanges > 0}
+        >Inspector remounts: {summary.performanceInspectorIdentityChanges}</span
+      >
+      <span data-problem={summary.performanceBlankFrames > 0}
+        >Blank workspace frames: {summary.performanceBlankFrames}</span
+      >
+      <span data-problem={summary.performanceDoubleOpaqueFrames > 0}
+        >Double-opaque frames: {summary.performanceDoubleOpaqueFrames}</span
+      >
+      <span data-dissolve={summary.performanceCrossfadeFrames > 0}
+        >Crossfade frames: {summary.performanceCrossfadeFrames}</span
+      >
+      <span data-dissolve={summary.dissolveFrames > 0}
+        >Workspace dissolve frames: {summary.dissolveFrames}</span
+      >
+      <span data-problem={summary.performanceUnreadyFrames > 0}
+        >Unready gallery frames: {summary.performanceUnreadyFrames}</span
+      >
+      <span
+        data-problem={summary.performanceOpacityComplementDriftMaximum > 0.04}
+        >Opacity complement drift: {summary.performanceOpacityComplementDriftMaximum.toFixed(
+          3
+        )}</span
+      >
+      <span data-problem={summary.performanceLayerWidthMismatchMaximum > 1}
+        >Layer width mismatch: {Math.round(
+          summary.performanceLayerWidthMismatchMaximum
+        )} px</span
+      >
+      <span
+        data-problem={(summary.performanceStageExit?.backtrack ?? 0) > 1 ||
+          (summary.performanceStageExit?.overshoot ?? 0) > 1}
+        >Stage expands: {formatTravel(summary.performanceStageExit)}</span
+      >
+      <span
+        data-problem={(summary.performanceStageEntry?.backtrack ?? 0) > 1 ||
+          (summary.performanceStageEntry?.overshoot ?? 0) > 1}
+        >Stage contracts: {formatTravel(summary.performanceStageEntry)}</span
+      >
+      <span
+        data-problem={(summary.performanceInspectorExit?.backtrack ?? 0) > 1 ||
+          (summary.performanceInspectorExit?.overshoot ?? 0) > 1}
+        >Inspector departure: {formatTravel(
+          summary.performanceInspectorExit
+        )}</span
+      >
+      <span
+        data-problem={(summary.performanceInspectorEntry?.backtrack ?? 0) > 1 ||
+          (summary.performanceInspectorEntry?.overshoot ?? 0) > 1}
+        >Inspector return: {formatTravel(
+          summary.performanceInspectorEntry
+        )}</span
+      >
+      <span
+        >Surface path: {summary.performanceSurfacePath.join(" → ") ||
+          "n/a"}</span
+      >
+      <span>Mode path: {summary.modePath.join(" → ") || "n/a"}</span>
+      <span data-problem={slowModeCommit}
+        >Mode commit: {modeCommitSummary || "n/a"}</span
+      >
+      <span>Outer axis: {summary.outerDirectionPath.join(" → ") || "n/a"}</span>
+    {:else if isCardStageTrace}
       <span data-problem={summary.cardStageCardIdentityChanges > 0}
         >Card remounts: {summary.cardStageCardIdentityChanges}</span
       >
@@ -692,13 +770,15 @@
     role="img"
     aria-label={isCardStageTrace
       ? `Card and motion-stage allocations during the ${trace.command} replay. ${summary.cardStageBlankFrames} blank workspace frames were sampled.`
-      : isMotionTrace
-        ? `2D and 3D opacity during the ${trace.command} replay. ${summary.motionBlankFrames} blank frames were sampled.`
-        : isTunnelTrace
-          ? `The persistent 2D base and Tunnel layer blend during the ${trace.command} replay. ${summary.tunnelAnimatorIdentityChanges} Animator remounts were sampled.`
-          : `Pane sizes during the ${trace.command} replay. The Card pane was visibly smaller than ${READABLE_PANE_SIZE} pixels for ${summary.tinyCardFrames} sampled frames.`}
+      : isPerformanceTrace
+        ? `Stage and Performances opacity during the ${trace.command} replay. ${summary.performanceBlankFrames} blank frames were sampled.`
+        : isMotionTrace
+          ? `2D and 3D opacity during the ${trace.command} replay. ${summary.motionBlankFrames} blank frames were sampled.`
+          : isTunnelTrace
+            ? `The persistent 2D base and Tunnel layer blend during the ${trace.command} replay. ${summary.tunnelAnimatorIdentityChanges} Animator remounts were sampled.`
+            : `Pane sizes during the ${trace.command} replay. The Card pane was visibly smaller than ${READABLE_PANE_SIZE} pixels for ${summary.tinyCardFrames} sampled frames.`}
   >
-    {#if !isMotionTrace && !isTunnelTrace}
+    {#if !isMotionTrace && !isTunnelTrace && !isPerformanceTrace}
       <line
         class="readable-threshold"
         x1={chartInset}
@@ -714,7 +794,22 @@
       class="stage-line"
       points={points(trace.samples, (sample) => sample.stageSize)}
     />
-    {#if isTunnelTrace}
+    {#if isPerformanceTrace}
+      <polyline
+        class="animation-line"
+        points={points(
+          trace.samples,
+          (sample) => sample.stageLayerOpacity * maximumSize
+        )}
+      />
+      <polyline
+        class="card-line"
+        points={points(
+          trace.samples,
+          (sample) => sample.performanceLayerOpacity * maximumSize
+        )}
+      />
+    {:else if isTunnelTrace}
       <polyline
         class="animation-line"
         points={points(trace.samples, () => maximumSize)}

@@ -27,6 +27,7 @@ describe("transition review decisions", () => {
       "2d-3d",
       "stage-tunnel",
       "card-stage",
+      "performances",
     ]);
   });
 

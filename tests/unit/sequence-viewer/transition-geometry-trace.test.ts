@@ -85,6 +85,15 @@ function sample(
     tunnelBackingHeight: 0,
     tunnelDisplayWidth: 0,
     tunnelDisplayHeight: 0,
+    stageLayerOpacity: 1,
+    performanceLayerOpacity: 0,
+    stageLayerIdentity: 2,
+    performanceLayerIdentity: 3,
+    stageLayerActive: true,
+    performanceLayerActive: false,
+    performanceGalleryReady: true,
+    stageLayerWidth: 900,
+    performanceLayerWidth: 900,
   };
 }
 
@@ -93,6 +102,80 @@ function trace(samples: TransitionGeometrySample[]): TransitionGeometryTrace {
 }
 
 describe("Sequence Viewer geometry trace", () => {
+  it("accepts one persistent Stage and Performances handoff", () => {
+    const stage = {
+      ...sample(0, 900, 1),
+      phase: "stage-to-performances" as const,
+      selectedMode: "animation" as const,
+      stageSize: 800,
+      inspectorSize: 400,
+    };
+    const enteringGallery = {
+      ...stage,
+      time: 120,
+      selectedMode: "videos" as const,
+      stageSize: 1000,
+      inspectorSize: 200,
+      stageLayerOpacity: 0.5,
+      performanceLayerOpacity: 0.5,
+      stageLayerActive: false,
+      performanceLayerActive: true,
+    };
+    const gallery = {
+      ...enteringGallery,
+      time: 280,
+      stageSize: 1200,
+      inspectorSize: 1,
+      stageLayerOpacity: 0,
+      performanceLayerOpacity: 1,
+    };
+    const leavingGallery = {
+      ...gallery,
+      time: 400,
+      phase: "performances-to-stage" as const,
+      selectedMode: "animation" as const,
+      stageSize: 1000,
+      inspectorSize: 200,
+      stageLayerOpacity: 0.5,
+      performanceLayerOpacity: 0.5,
+      stageLayerActive: true,
+      performanceLayerActive: false,
+    };
+    const returned = {
+      ...leavingGallery,
+      time: 560,
+      stageSize: 800,
+      inspectorSize: 400,
+      stageLayerOpacity: 1,
+      performanceLayerOpacity: 0,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "performances-2d",
+      duration: 560,
+      samples: [stage, enteringGallery, gallery, leavingGallery, returned],
+      modeCommits: [],
+    });
+
+    expect(summary.performanceStageIdentityChanges).toBe(0);
+    expect(summary.performanceGalleryIdentityChanges).toBe(0);
+    expect(summary.performanceBlankFrames).toBe(0);
+    expect(summary.performanceDoubleOpaqueFrames).toBe(0);
+    expect(summary.performanceCrossfadeFrames).toBe(2);
+    expect(summary.performanceUnreadyFrames).toBe(0);
+    expect(summary.performanceOpacityComplementDriftMaximum).toBe(0);
+    expect(summary.performanceLayerWidthMismatchMaximum).toBe(0);
+    expect(summary.performanceSurfacePath).toEqual([
+      "Stage",
+      "Stage + Performances",
+      "Performances",
+      "Stage + Performances",
+      "Stage",
+    ]);
+    expect(summary.performanceStageExit?.backtrack).toBe(0);
+    expect(summary.performanceStageEntry?.overshoot).toBe(0);
+  });
+
   it("accepts one continuous Card and stage exchange with a stable inspector", () => {
     const cardStart = {
       ...sample(0, 0, 0),
