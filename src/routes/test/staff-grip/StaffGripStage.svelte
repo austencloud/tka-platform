@@ -49,10 +49,13 @@
   }
 
   const WALL_PLANE = new Set([Plane.WALL]);
-  const BLUE_HOME_ANGLE = 0;
-  const RED_HOME_ANGLE = Math.PI;
-  const PATH_SWING = Math.PI / 10;
-  const STAFF_SWING = Math.PI / 9;
+  // Avatar3D's blue input drives the anatomical right hand and red drives the
+  // left. Their wall-grid targets therefore sit on opposite world-X sides;
+  // keeping this mapping explicit prevents a crossed-arm "successful" weld.
+  const BLUE_HOME_ANGLE = Math.PI;
+  const RED_HOME_ANGLE = 0;
+  const PATH_SWING = Math.PI / 18;
+  const STAFF_SWING = Math.PI / 15;
   const VERTICAL_STAFF_ANGLE = Math.PI / 2;
   const MOTION_RATE = (Math.PI * 2) / 7;
 
@@ -91,7 +94,7 @@
     const travel = Math.sin(phase) * PATH_SWING;
     const staff =
       VERTICAL_STAFF_ANGLE + Math.sin(phase + Math.PI / 2) * STAFF_SWING;
-    return makeStaffState(BLUE_HOME_ANGLE - travel, staff);
+    return makeStaffState(BLUE_HOME_ANGLE + travel, staff);
   });
   const redPropState = $derived.by(() => {
     const travel = Math.sin(phase) * PATH_SWING;
