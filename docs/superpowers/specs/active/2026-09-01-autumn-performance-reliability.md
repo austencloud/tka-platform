@@ -1,6 +1,6 @@
 # Autumn Performance Reliability
 
-**Status:** Approved for implementation
+**Status:** Implemented; release qualification pending
 **Date:** 2026-09-01
 **Owner:** Shared 3D environment runtime with Autumn-owned policy
 
@@ -164,6 +164,9 @@ threshold.
 2. Add the pond normals and tiled ground detail to the Autumn manifest.
 3. Replace total-duration timeout semantics with progress-aware stall
    detection and an explicit hard ceiling.
+4. Give each Autumn request its own abortable `LoadingManager`, and dispose the
+   dedicated GLTF's geometry, materials, and textures after restoring spatial
+   batches on unmount. No late request or retired scene may retain GPU assets.
 
 ### 6. Fixed quality policy
 
@@ -192,3 +195,44 @@ The work ships only when automated contracts, type checks, asset verification,
 capture/export regression tests, production-path performance captures, and the
 complete visual camera/viewport matrix pass. An independent adversarial audit
 must return no remaining P0/P1 performance or reliability issue.
+
+## Implementation Evidence and Open Release Gates
+
+- Production graph: real `Viewer3DCanvas`, three animated performers with staff
+  props, live performer shadows, effects, and the real postprocessing composer.
+- 137-second steady-state high-quality run after a five-second warm-up:
+  8,211 samples, 60 FPS, frame p50 16.7 ms, p95 18.7 ms, p99 20.3 ms,
+  0.0365% frames over 33 ms, and +0.6% thermal drift.
+- GPU timer query was supported: GPU p50 7.37 ms, p95 10.99 ms, and p99
+  15.39 ms at a 3,087×1,646 drawing buffer.
+- Ten real Autumn ↔ Void transitions exposed and then verified the GLTF
+  lifecycle fix. After both worlds compiled, every Autumn return stabilized at
+  178 geometries, 74 textures, and 172 programs; every Void return stabilized
+  at 67 geometries, 29 textures, and 137 programs. No WebGL context loss or
+  scene-owned console error occurred.
+- The complete 12-camera × 7-viewport current matrix passed. Paired baseline
+  desktop/mobile inspection covered the original transmission pond and every
+  adversarial camera; the final pond retune restored the dark-water depth that
+  the first alpha-composited pass had flattened.
+- Automated coverage includes performance windows and thermal drift, GPU timer
+  query behavior, exact spatial batching, front-sided material contracts,
+  progress-aware timeout and transport aborts, composed-frame capture, poster
+  capture, and standard/cinema offline video export cancellation.
+
+This evidence proves the implementation and the tested desktop configuration,
+but it does not close every approved release gate:
+
+- The measured request-animation-frame interval p99 was 20.3 ms. That sampler
+  includes display scheduling and is not yet a direct measure of complete-frame
+  render work, so it neither passes nor validly falsifies the approved 16.7 ms
+  complete-frame gate.
+- Browser viewport emulation proves layout and rendering coverage, not the
+  performance of every supported physical mobile GPU/resolution class.
+- The historical comparison server predates the production composer harness
+  and has no deterministic animation freeze. Its paired captures support human
+  review, but cannot supply the approved SSIM, ΔE2000, and silhouette metrics.
+
+Closing those gates requires a deterministic pre-change production-composer
+baseline plus runs on the declared physical hardware classes, or an explicitly
+approved revision to the release contract. The thresholds above remain intact
+until that decision is made.

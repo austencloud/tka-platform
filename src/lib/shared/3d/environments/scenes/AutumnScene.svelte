@@ -132,6 +132,7 @@
         autumnEnvironmentGlb = loaded;
         bootState = setAutumnBootAsset(bootState, "environment", "ready");
       },
+      onDiscard: (loaded) => disposeSceneGraph(loaded.scene),
       onFailure: (failure) => {
         environmentFailure = failure.error ?? new Error(failure.message);
         environmentFailureMessage = failure.message;

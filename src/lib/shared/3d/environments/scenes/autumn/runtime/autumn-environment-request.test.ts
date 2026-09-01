@@ -16,6 +16,7 @@ afterEach(() => vi.useRealTimers());
 describe("Autumn environment request", () => {
   it("delivers a successful retry request exactly once", async () => {
     const onReady = vi.fn();
+    const onDiscard = vi.fn();
     const onFailure = vi.fn();
     const load = vi.fn(async () => "loaded-scene");
 
@@ -23,6 +24,7 @@ describe("Autumn environment request", () => {
       retryRequest: 3,
       load,
       onReady,
+      onDiscard,
       onFailure,
     });
     await flushPromises();
@@ -34,6 +36,7 @@ describe("Autumn environment request", () => {
     );
     expect(onReady).toHaveBeenCalledOnce();
     expect(onReady).toHaveBeenCalledWith("loaded-scene");
+    expect(onDiscard).not.toHaveBeenCalled();
     expect(onFailure).not.toHaveBeenCalled();
   });
 
@@ -73,12 +76,14 @@ describe("Autumn environment request", () => {
       });
     };
     const onReady = vi.fn();
+    const onDiscard = vi.fn();
     const onFailure = vi.fn();
 
     startAutumnEnvironmentRequest({
       retryRequest: 0,
       load,
       onReady,
+      onDiscard,
       onFailure,
     });
     await flushPromises();
@@ -92,6 +97,8 @@ describe("Autumn environment request", () => {
     );
     expect(signal.aborted).toBe(true);
     expect(onReady).not.toHaveBeenCalled();
+    expect(onDiscard).toHaveBeenCalledOnce();
+    expect(onDiscard).toHaveBeenCalledWith("too-late");
   });
 
   it("keeps a healthy long download alive while bytes continue arriving", async () => {
@@ -99,6 +106,7 @@ describe("Autumn environment request", () => {
     let resolve!: (value: string) => void;
     let reportProgress!: (progress: { loaded: number; total?: number }) => void;
     const onReady = vi.fn();
+    const onDiscard = vi.fn();
     const onFailure = vi.fn();
 
     startAutumnEnvironmentRequest({
@@ -110,6 +118,7 @@ describe("Autumn environment request", () => {
         });
       },
       onReady,
+      onDiscard,
       onFailure,
     });
     await flushPromises();
@@ -123,6 +132,7 @@ describe("Autumn environment request", () => {
 
     expect(onFailure).not.toHaveBeenCalled();
     expect(onReady).toHaveBeenCalledWith("loaded-after-56-seconds");
+    expect(onDiscard).not.toHaveBeenCalled();
   });
 
   it("still enforces a bounded total request lifetime", async () => {
@@ -160,6 +170,7 @@ describe("Autumn environment request", () => {
     let resolve!: (value: string) => void;
     let signal!: AbortSignal;
     const onReady = vi.fn();
+    const onDiscard = vi.fn();
     const onFailure = vi.fn();
     const stop = startAutumnEnvironmentRequest({
       retryRequest: 0,
@@ -169,6 +180,7 @@ describe("Autumn environment request", () => {
           resolve = nextResolve;
         }),
       onReady,
+      onDiscard,
       onFailure,
     });
     await flushPromises();
@@ -180,5 +192,7 @@ describe("Autumn environment request", () => {
 
     expect(onReady).not.toHaveBeenCalled();
     expect(onFailure).not.toHaveBeenCalled();
+    expect(onDiscard).toHaveBeenCalledOnce();
+    expect(onDiscard).toHaveBeenCalledWith("cancelled");
   });
 });

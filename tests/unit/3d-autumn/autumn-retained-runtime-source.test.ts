@@ -109,6 +109,9 @@ describe("Autumn retained runtime lifecycle", () => {
     );
 
     expect(scene).toContain("load: loadAutumnEnvironment");
+    expect(scene).toContain(
+      "onDiscard: (loaded) => disposeSceneGraph(loaded.scene)"
+    );
     expect(transport).toContain("new LoadingManager()");
     expect(transport).toContain("manager.abort()");
   });

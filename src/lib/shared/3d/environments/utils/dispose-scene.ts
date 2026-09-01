@@ -3,6 +3,8 @@ import type { Object3D, Material, BufferGeometry, Texture } from "three";
 interface DisposableMesh {
   geometry?: BufferGeometry;
   material?: Material | Material[];
+  isInstancedMesh?: boolean;
+  dispose?: () => void;
 }
 
 function disposeMaterialTextures(mat: Material): void {
@@ -19,6 +21,10 @@ function disposeMaterialTextures(mat: Material): void {
 export function disposeSceneGraph(root: Object3D): void {
   root.traverse((child) => {
     const mesh = child as unknown as DisposableMesh;
+    // Geometry disposal does not release InstancedMesh's object-owned
+    // instanceMatrix/instanceColor GPU buffers. Its dispose event is the only
+    // signal WebGLObjects receives to remove those attributes.
+    if (mesh.isInstancedMesh) mesh.dispose?.();
     mesh.geometry?.dispose();
     if (mesh.material) {
       const mats = Array.isArray(mesh.material)
