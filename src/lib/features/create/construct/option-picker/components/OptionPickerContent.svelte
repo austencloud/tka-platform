@@ -314,7 +314,10 @@ Uses organizer and sizer services for section grouping and sizing.
       hasControls: controlsAvailable,
       wideInlineEligible: wideInlineControlsEligible,
       containerHeight,
-      hasTurnRows: turnControlsEditable && level > 1,
+      // Reserve the largest header this picker can reveal. Otherwise Level 1
+      // could fit inline, then selecting Level 2 would replace the controls
+      // with a disclosure button at the exact moment they are needed.
+      canShowTurnRows: turnControlsEditable,
     })
   );
   const useUnifiedHeader = $derived(controlsPresentation === "wide-inline");

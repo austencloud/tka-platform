@@ -63,22 +63,13 @@
   }
 
   .option-picker-icon-button.compact {
-    width: 36px;
-    height: 36px;
-    min-height: 36px;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
     border-radius: var(--radius-md, 10px);
     box-shadow:
       0 3px 10px var(--theme-shadow, rgba(0, 0, 0, 0.24)),
       inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  }
-
-  /* The compact header stays 40px tall while each edge control keeps a 44px
-     pointer target. The grid gap prevents this extension from overlapping the
-     movement tabs. */
-  .option-picker-icon-button.compact::before {
-    content: "";
-    position: absolute;
-    inset: -4px;
   }
 
   .option-picker-icon-button:hover {
