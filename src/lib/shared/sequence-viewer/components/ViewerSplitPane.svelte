@@ -33,7 +33,16 @@
   import { motionDuration } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import type { ViewerSplitPaneProps } from "./viewer-split-pane-types";
+  import { onDestroy } from "svelte";
   import { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
+  import type { TunnelViewState } from "../tunnel/tunnel-view-state";
+  import { tryGetViewerUrlSessionContext } from "../services/viewer-url-session";
+  import {
+    captureTnSlice,
+    persistedTnSliceFromStorage,
+    seedFromTnSlice,
+    type TnSlicePayload,
+  } from "../services/viewer-url-slices/tn-slice";
   import { createViewerTunnelStageState } from "../state/viewer-tunnel-stage-state.svelte";
   import { setViewerTunnelStageContext } from "../context/viewer-tunnel-stage-context";
   import "./viewer-split-pane.css";
@@ -90,18 +99,54 @@
     onTunnelSaved,
   }: ViewerSplitPaneProps = $props();
 
+  // ── tn URL slice ─────────────────────────────────────────────────────────
+  // This split pane now owns THE shared tunnel controller (adopted by ArtPane
+  // and the persistent 2D canvas alike), so the seed and the live capture both
+  // belong here — one construction site, one `registerSlice("tn")` owner. See
+  // tn-slice.ts for the pure instance seam and the preset-by-value contract.
+  const viewerUrlSession = tryGetViewerUrlSessionContext();
+  const tnSeedPayload =
+    (viewerUrlSession?.getSeed("tn") as TnSlicePayload | null) ?? null;
+  // Own-link rule in slice space, both sides through captureTnSlice: a link
+  // that matches what this visitor's own disk would load is not an override,
+  // so this pane keeps reading/writing localStorage normally.
+  const tnSeed: TunnelViewState | null =
+    tnSeedPayload &&
+    viewerUrlSession?.isOverride("tn", persistedTnSliceFromStorage())
+      ? seedFromTnSlice(tnSeedPayload)
+      : null;
+
   // The tunnel's controls, renderer, and export path all steer this one
   // controller. Keeping it above both pane surfaces lets the already-mounted 2D
   // canvas adopt the tunnel without growing a second controller or render loop.
   const tunnelController = new TunnelViewController({
     getSequence: () => playback.animationState.sequenceData ?? sequence,
     getComposition: () => tunnelComposition,
+    ...(tnSeed ? { initialViewState: tnSeed, persistViewState: false } : {}),
   });
   const tunnelStage = createViewerTunnelStageState(tunnelController);
   setViewerTunnelStageContext(tunnelStage);
 
-  // Both canvas renderers share one effects state. The orchestrator normally
-  // provides it; standalone shell consumers receive the same local fallback.
+  const captureTn = () => captureTnSlice(tunnelController);
+  if (viewerUrlSession) {
+    onDestroy(viewerUrlSession.registerSlice("tn", captureTn));
+    // The orchestrator never constructs tunnel state, so nothing upstream can
+    // track this controller's fields and re-run on them. This pane-side effect
+    // does that tracking and asks the session to write — the same gap-closer
+    // t3 uses in Viewer3DCanvas for its own lazily-mounted pane state.
+    $effect(() => {
+      void captureTn();
+      viewerUrlSession.scheduleUrlWrite();
+    });
+  }
+
+  // Both canvas renderers share one effects state, inherited from the
+  // orchestrator — which is what makes a URL-seeded view-only (persist:false)
+  // effects store reach every surface instead of being shadowed here. All three
+  // shell hosts (drawer, /sequence route, /from/spiroanim) mount inside
+  // SequenceViewerOrchestrator, so the local fallback below is unreachable
+  // while a URL session is live. Never construct an effects store in this
+  // subtree without going through the context, or link state leaks to disk.
   const inheritedEffectsConfig = getEffectsConfigContext();
   const effectsConfigState =
     inheritedEffectsConfig ?? createEffectsConfigState();

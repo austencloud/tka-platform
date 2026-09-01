@@ -82,6 +82,12 @@ export interface TunnelControllerSources {
   visibilityManager?: AnimationVisibilityStateManager;
   /** Embedded editors must not rewrite the viewer's last-used view state. */
   persistViewState?: boolean;
+  /** A URL-seeded view state (the `tn` slice). Takes the place of
+   *  `loadTunnelViewState()` entirely so a shared link's kaleidoscope never
+   *  reads the recipient's disk. Callers that pass this SHOULD also pass
+   *  `persistViewState: false` — the seam only replaces the read; it does not
+   *  itself suppress the write. */
+  initialViewState?: TunnelViewState;
   /** A parent-scoped pair shared with another art controller. */
   customColorState?: ViewerCustomColorState;
 }
@@ -199,8 +205,10 @@ export class TunnelViewController {
     this.#sources = sources;
 
     // Restore the last-left config before any effect wires up, clamped to the
-    // live budget (a persisted dense ring shrinks under reduced motion).
-    const view = loadTunnelViewState();
+    // live budget (a persisted dense ring shrinks under reduced motion). A
+    // `tn`-slice seed replaces the disk read outright — never merged with it —
+    // so a shared link never picks up the recipient's own leftover state.
+    const view = sources.initialViewState ?? loadTunnelViewState();
     const persistViewState = sources.persistViewState ?? true;
     if (sources.customColorState) {
       this.customColorState = sources.customColorState;
@@ -213,6 +221,13 @@ export class TunnelViewController {
         stagedColors ?? preferenceColors,
         persistViewState ? saveViewerCustomColorPreference : undefined
       );
+    }
+    if (sources.initialViewState && !sources.customColorState) {
+      // A seeded link carries the sender's exact pair; the freshly built
+      // (non-saving, given persistViewState:false) custom-color state must
+      // show it instead of the recipient's preference. A caller-supplied
+      // shared state is never overwritten from a seed.
+      this.customColorState.hydrate(sources.initialViewState.colors.custom);
     }
     const requestedConfig =
       sources.getComposition?.()?.formation ?? view.config;
