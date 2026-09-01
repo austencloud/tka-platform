@@ -6,19 +6,21 @@ interface RouteScopedParameter {
 const startsWith = (prefix: string) => (pathname: string) =>
   pathname === prefix || pathname.startsWith(`${prefix}/`);
 
+const isAtlasPath = (pathname: string) =>
+  startsWith("/atlas")(pathname) || startsWith("/glossary")(pathname);
+
 const ROUTE_SCOPED_PARAMETERS: readonly RouteScopedParameter[] = [
   {
     name: "letter",
     isValidForPath: (pathname) =>
-      startsWith("/glossary")(pathname) ||
-      pathname === "/browse/explore/sequences",
+      isAtlasPath(pathname) || pathname === "/browse/explore/sequences",
   },
-  { name: "grid", isValidForPath: startsWith("/glossary") },
-  { name: "variation", isValidForPath: startsWith("/glossary") },
-  { name: "blueTurns", isValidForPath: startsWith("/glossary") },
-  { name: "redTurns", isValidForPath: startsWith("/glossary") },
-  { name: "blueRotation", isValidForPath: startsWith("/glossary") },
-  { name: "redRotation", isValidForPath: startsWith("/glossary") },
+  { name: "grid", isValidForPath: isAtlasPath },
+  { name: "variation", isValidForPath: isAtlasPath },
+  { name: "blueTurns", isValidForPath: isAtlasPath },
+  { name: "redTurns", isValidForPath: isAtlasPath },
+  { name: "blueRotation", isValidForPath: isAtlasPath },
+  { name: "redRotation", isValidForPath: isAtlasPath },
   {
     name: "scan",
     isValidForPath: (pathname) =>

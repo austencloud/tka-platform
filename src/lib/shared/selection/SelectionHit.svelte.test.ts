@@ -39,12 +39,12 @@ describe("SelectionHit", () => {
       groupId: "G-0",
       isGroupStart: true,
       label: "Explore G variations",
-      href: "/glossary?board=atlas&letter=G#cat-letter",
+      href: "/atlas?board=atlas&letter=G#cat-letter",
     });
     const link = page.getByRole("link", { name: "Explore G variations" });
     await expect
       .element(link)
-      .toHaveAttribute("href", "/glossary?board=atlas&letter=G#cat-letter");
+      .toHaveAttribute("href", "/atlas?board=atlas&letter=G#cat-letter");
     await expect.element(link).not.toHaveAttribute("aria-pressed");
   });
 

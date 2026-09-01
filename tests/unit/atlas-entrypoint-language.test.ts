@@ -7,9 +7,9 @@ const readSource = (path: string): string =>
   readFileSync(resolve(process.cwd(), path), "utf-8");
 
 describe("Kinetic Atlas public entry points", () => {
-  it("names the Atlas consistently while preserving its stable route", () => {
+  it("names the Atlas consistently at its canonical route", () => {
     expect(
-      LAUNCHPAD_TILES.find((tile) => tile.href === "/glossary")
+      LAUNCHPAD_TILES.find((tile) => tile.href === "/atlas")
     ).toMatchObject({
       heading: "Kinetic Atlas",
       descriptor: "Explore letters, motion, notation, and technique.",
@@ -24,7 +24,7 @@ describe("Kinetic Atlas public entry points", () => {
     );
     for (const source of [header, footer]) {
       expect(source).toContain('label: "Kinetic Atlas"');
-      expect(source).toContain('href: "/glossary"');
+      expect(source).toContain('href: "/atlas"');
       expect(source).not.toContain('label: "Glossary"');
     }
   });
@@ -35,14 +35,14 @@ describe("Kinetic Atlas public entry points", () => {
       readSource("src/routes/(public)/notation/poi/+page.svelte"),
     ];
     for (const source of contextualLinks) {
-      expect(source).toContain('<a href="/glossary">Kinetic Atlas</a>');
+      expect(source).toContain('<a href="/atlas">Kinetic Atlas</a>');
     }
 
     const atlas = readSource(
-      "src/routes/(public)/glossary/_components/KineticAtlasDraft.svelte"
+      "src/routes/(public)/atlas/_components/KineticAtlasDraft.svelte"
     );
     const atlasNav = readSource(
-      "src/routes/(public)/glossary/_components/GlossaryNav.svelte"
+      "src/routes/(public)/atlas/_components/GlossaryNav.svelte"
     );
     expect(atlas).toContain('aria-label="Atlas navigation"');
     expect(atlas).toContain('aria-label="Atlas contents"');

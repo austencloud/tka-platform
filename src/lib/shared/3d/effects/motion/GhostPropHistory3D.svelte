@@ -78,7 +78,19 @@
   });
 
   useTask((delta) => {
-    if (!enabled || !propState) return;
+    if (!propState) return;
+
+    // Seed the fixed phantom pool while the scene is still behind its loading
+    // curtain. Selecting Ghost then changes samples and visibility only; it
+    // never mounts up to 160 Prop3D instances for an eight-person cast.
+    if (!fallbackState) {
+      fallbackState = captureGhostPropPose3D(
+        resolveRigLocalPropCenter3D(propState.worldPosition, handAnchor),
+        propState
+      ).propState;
+    }
+
+    if (!enabled) return;
 
     if (
       shouldResetGhostHistoryAtStepBoundary({
@@ -92,13 +104,6 @@
     }
     lastObservedStep = currentStep;
     history.advance(delta);
-
-    if (!fallbackState) {
-      fallbackState = captureGhostPropPose3D(
-        resolveRigLocalPropCenter3D(propState.worldPosition, handAnchor),
-        propState
-      ).propState;
-    }
 
     const center = resolveRigLocalPropCenter3D(
       propState.worldPosition,

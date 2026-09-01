@@ -20,6 +20,7 @@ export function createImageCompositionSync() {
   let imgShowStepNumbers = $state(imageComposition.addStepNumbers);
   let imgShowDifficulty = $state(imageComposition.addDifficultyLevel);
   let imgShowNotes = $state(imageComposition.showNotes);
+  let imgCustomNotesText = $state(imageComposition.customNotesText);
   let imgShowQRCode = $state(imageComposition.showQRCode);
   let imgShowMandala = $state(imageComposition.showMandala);
   let imgShowLoopGlyph = $state(imageComposition.showLoopGlyph);
@@ -32,6 +33,7 @@ export function createImageCompositionSync() {
     imgShowStartPos = imageComposition.includeStartPosition;
     imgShowDifficulty = imageComposition.addDifficultyLevel;
     imgShowNotes = imageComposition.showNotes;
+    imgCustomNotesText = imageComposition.customNotesText;
     imgShowQRCode = imageComposition.showQRCode;
     imgShowMandala = imageComposition.showMandala;
     imgShowLoopGlyph = imageComposition.showLoopGlyph;
@@ -45,19 +47,44 @@ export function createImageCompositionSync() {
   }
 
   return {
-    get imgShowWord() { return imgShowWord; },
-    get imgShowStartPos() { return imgShowStartPos; },
-    get imgShowStepNumbers() { return imgShowStepNumbers; },
-    get imgShowDifficulty() { return imgShowDifficulty; },
-    get imgShowNotes() { return imgShowNotes; },
-    get imgShowQRCode() { return imgShowQRCode; },
-    get imgShowMandala() { return imgShowMandala; },
-    get imgShowLoopGlyph() { return imgShowLoopGlyph; },
-    get imgDarkMode() { return imgDarkMode; },
-    set imgDarkMode(v: boolean) { imgDarkMode = v; },
+    get imgShowWord() {
+      return imgShowWord;
+    },
+    get imgShowStartPos() {
+      return imgShowStartPos;
+    },
+    get imgShowStepNumbers() {
+      return imgShowStepNumbers;
+    },
+    get imgShowDifficulty() {
+      return imgShowDifficulty;
+    },
+    get imgShowNotes() {
+      return imgShowNotes;
+    },
+    get imgCustomNotesText() {
+      return imgCustomNotesText;
+    },
+    get imgShowQRCode() {
+      return imgShowQRCode;
+    },
+    get imgShowMandala() {
+      return imgShowMandala;
+    },
+    get imgShowLoopGlyph() {
+      return imgShowLoopGlyph;
+    },
+    get imgDarkMode() {
+      return imgDarkMode;
+    },
+    set imgDarkMode(v: boolean) {
+      imgDarkMode = v;
+    },
     imageComposition,
     registerObserver,
   };
 }
 
-export type ImageCompositionSyncState = ReturnType<typeof createImageCompositionSync>;
+export type ImageCompositionSyncState = ReturnType<
+  typeof createImageCompositionSync
+>;

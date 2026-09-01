@@ -55,6 +55,25 @@ describe("Shape Matrix app boundary", () => {
     expect(drillSource).toContain("initialQualityTier: QualityTier.LOW");
     expect(drillSource).toContain("resolveRealizationEntryStep");
     expect(drillSource).toContain("initialStep: layer.initialStep");
+    expect(drillSource).toContain("onsettled={finishCrossfade}");
+    expect(drillSource).not.toContain("fadeSettlementTimer");
+    expect(drillSource).toContain("retryPlayerLoad");
+    expect(drillSource).toContain("railLoadError");
+    expect(drillSource).toContain(
+      '<i class="fas fa-arrow-right derivation-arrow" aria-hidden="true"></i>'
+    );
+    expect(drillSource).toContain('<span class="sr-only">produces</span>');
+  });
+
+  it("keeps each elemental button's visible mode and name in its accessible name", () => {
+    const elementChipSource = readFileSync(
+      resolve("src/lib/shared/shape-matrix/components/ElementChipRow.svelte"),
+      "utf8"
+    );
+
+    expect(elementChipSource).toContain(
+      "ariaLabel={`${c.mode} ${elementName(c.el.element)} (${c.label})${"
+    );
   });
 
   it("loads public base words from the checked-in snapshot, not Firebase", () => {

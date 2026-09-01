@@ -34,6 +34,12 @@ const geometryTrace = read(
 const motionSurface = read(
   "src/lib/shared/sequence-viewer/components/ViewerMotionSurface.svelte"
 );
+const sceneLoadingCurtain = read(
+  "src/lib/shared/3d/scene-features/components/SceneLoadingCurtain.svelte"
+);
+const scenePreparationSurface = read(
+  "src/lib/shared/3d/scene-features/components/ScenePreparationSurface.svelte"
+);
 const companionSurface = read(
   "src/lib/shared/sequence-viewer/components/ViewerCompanionSurface.svelte"
 );
@@ -149,29 +155,53 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(reviewPage).toContain("Reduced motion · dissolve");
   });
 
-  it("holds the live 2D frame until the first 3D frame is ready", () => {
+  it("presents an honest 3D-owned preparation surface on first activation", () => {
     expect(motionSurface).toContain("const is3DPresented = $derived(");
+    expect(motionSurface).toContain("is3DActive || keep3DUntilTunnelPaints");
     expect(motionSurface).toContain(
-      "(is3DActive && (scene3DReady || !is2DMounted)) ||"
+      "is2DActive || (isTunnelActive && !keep3DUntilTunnelPaints)"
+    );
+    expect(motionSurface).toContain('initialRevealMode: "gated"');
+    expect(motionSurface).toContain(
+      '<ScenePreparationSurface statusText="Opening 3D" />'
+    );
+    expect(sceneLoadingCurtain).toContain(
+      '<ScenePreparationSurface {statusText} {progress} />'
+    );
+    expect(scenePreparationSurface).toContain("data-scene-preparation");
+    expect(scenePreparationSurface).toContain("3D viewer");
+    expect(scenePreparationSurface).toContain('role="progressbar"');
+    expect(scenePreparationSurface).toContain('aria-valuenow={percent ?? undefined}');
+    expect(motionSurface).not.toContain("viewer-3d-handoff-status");
+    expect(motionSurface).toContain(
+      "class:canvas-2d-preparation-held={preparationCanvasWidth !== null}"
     );
     expect(motionSurface).toContain(
-      "(is3DActive && is2DMounted && !scene3DReady)"
+      "data-3d-preparation-held={preparationCanvasWidth !== null || undefined}"
     );
-    expect(motionSurface).toContain(
-      'side === "left" && is2DMounted ? "streaming" : "gated"'
+    expect(splitPaneCss).toContain(
+      ".canvas-2d-layer.canvas-2d-preparation-held"
     );
-    expect(motionSurface).toContain("Preparing 3D");
+    expect(splitPaneCss).toContain("width: var(--preparation-canvas-width)");
     expect(motionSurface).toContain("data-scene-ready={scene3DReady}");
     expect(motionSurface).toContain("inert={!is3DActive}");
     expect(motionSurface).toContain("inert={!isAnimatorActive}");
+    expect(motionSurface).toContain("const releaseWhenCovered = () =>");
+    expect(motionSurface).toContain("requestAnimationFrame(");
     expect(motionSurface).toContain(
-      "const duration = motionDuration(DURATION.emphasis);"
+      "getComputedStyle(pane2D).opacity"
     );
     expect(splitPaneCss).toContain("opacity var(--transition-emphasis)");
     expect(viewerModeDissolve).toContain(
       'previousMode === "animation" && nextMode === "animation-3d"'
     );
     expect(reviewFrame).toContain('message.command === "3d-first"');
+    expect(reviewFrame).toContain("await waitFor3DReady(version)");
+    expect(scenePreparationSurface).toContain(
+      "data-scene-preparation-progress"
+    );
+    expect(geometryTrace).toContain("Misidentified 3D frames");
+    expect(geometryTrace).toContain("Progress regressions");
     expect(reviewPage).toContain("Replay first 3D");
     expect(reviewPage).toContain("Replay repeat switch");
     expect(reviewPage).toContain(

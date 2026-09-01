@@ -26,6 +26,10 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { requestShapeMatrixTransition } from "$lib/shared/shape-matrix/debug/shape-matrix-transition-recorder";
 
 export type ShapeMatrixAppView = "matrix" | "detail";
+export interface ShapeMatrixCompactFocusRequest {
+  id: number;
+  target: ShapeMatrixAppView;
+}
 export type ShapeMatrixAxisTarget = "blue" | "both" | "red";
 export type ShapeMatrixRelationshipDriver = "hands" | "props";
 
@@ -151,6 +155,7 @@ export function createShapeMatrixAppState(
   let activeView = $state<ShapeMatrixAppView>(
     initialCompact && initial.pair ? "detail" : "matrix"
   );
+  let compactFocusRequest = $state<ShapeMatrixCompactFocusRequest | null>(null);
   let aboutOpen = $state(false);
   let propPickerOpen = $state(false);
 
@@ -303,7 +308,10 @@ export function createShapeMatrixAppState(
     };
     selectedMode ??= MODE_ORDER[0] ?? null;
     if (!supportsTimedPropRelationship(pair)) selectedPropMode = null;
-    if (compact) activeView = "detail";
+    if (compact) {
+      activeView = "detail";
+      requestCompactFocus("detail");
+    }
     syncState();
   }
 
@@ -326,9 +334,19 @@ export function createShapeMatrixAppState(
 
   function showMatrix(): void {
     activeView = "matrix";
+    if (compact) requestCompactFocus("matrix");
   }
   function showDetail(): void {
-    if (selectedPair) activeView = "detail";
+    if (selectedPair) {
+      activeView = "detail";
+      if (compact) requestCompactFocus("detail");
+    }
+  }
+  function requestCompactFocus(target: ShapeMatrixAppView): void {
+    compactFocusRequest = {
+      id: (compactFocusRequest?.id ?? 0) + 1,
+      target,
+    };
   }
   function setCompact(nextCompact: boolean): void {
     if (compact === nextCompact) return;
@@ -414,6 +432,9 @@ export function createShapeMatrixAppState(
     },
     get activeView() {
       return activeView;
+    },
+    get compactFocusRequest() {
+      return compactFocusRequest;
     },
     get aboutOpen() {
       return aboutOpen;

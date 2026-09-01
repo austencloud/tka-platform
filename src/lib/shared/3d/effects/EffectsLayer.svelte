@@ -9,7 +9,7 @@
    * Must be placed inside Scene3D's children snippet to be part of the 3D scene.
    */
 
-  import { Vector3, Quaternion, Euler } from "three";
+  import { Vector3, Quaternion, Euler, type Object3D } from "three";
   import {
     AUSTEN_STAFF,
     PropType,
@@ -55,6 +55,7 @@
   import PetalEmitter3D from "./petals/PetalEmitter3D.svelte";
   import PetalAmbientShower3D from "./petals/PetalAmbientShower3D.svelte";
   import SmokeRenderer3D from "./smoke/SmokeRenderer3D.svelte";
+  import type { SceneEffectsManager3D } from "./scene-effects/scene-effects-manager-3d";
 
   interface Props {
     /** Blue prop state from animation */
@@ -96,6 +97,8 @@
     /** Shared adaptive quality tier for bounded Ghost prop pools. */
     qualityTier?: QualityTier;
     propBuild?: PropBuild;
+    sceneEffectsManager?: SceneEffectsManager3D | null;
+    effectSpaceRoot?: Object3D;
   }
 
   let {
@@ -116,6 +119,8 @@
     seamlesslyLoopable = false,
     qualityTier = QualityTier.MEDIUM,
     propBuild: propBuildOverride,
+    sceneEffectsManager = null,
+    effectSpaceRoot,
   }: Props = $props();
 
   const propBuild = $derived(propBuildOverride ?? propFinishState.build);
@@ -388,7 +393,7 @@
 <!-- =============================================================================
      Electricity / Zap Effects (sourced from unified intent layer via resolveZap3D)
      ============================================================================= -->
-{#if zapEnabled && zap3D && isPlaying}
+{#if zap3D}
   {#if bluePropState && redPropState && blueEnds && redEnds}
     <!-- jitterAmount/segments/regenerateEveryFrames have been on Zap3DParams
          since it was defined and nothing read them; the arc hardcoded a
@@ -396,13 +401,15 @@
     <ElectricityArc
       start={blueEnds.positive}
       end={redEnds.positive}
-      enabled={true}
+      enabled={zapEnabled && isPlaying}
       intensity={zap3D.intensity}
       color={zap3D.leftColor}
       mode={zap3D.mode}
       displacement={zap3D.jitterAmount}
       segments={zap3D.segments}
       regenerateEveryFrames={zap3D.regenerateEveryFrames}
+      {sceneEffectsManager}
+      lightSpaceRoot={effectSpaceRoot}
     />
     <!-- The second arc needs a back end on BOTH props. One club in hand and
          there is nothing to arc between. -->
@@ -410,13 +417,15 @@
       <ElectricityArc
         start={blueEnds.negative}
         end={redEnds.negative}
-        enabled={true}
+        enabled={zapEnabled && isPlaying}
         intensity={zap3D.intensity}
         color={zap3D.rightColor}
         mode={zap3D.mode}
         displacement={zap3D.jitterAmount}
         segments={zap3D.segments}
         regenerateEveryFrames={zap3D.regenerateEveryFrames}
+        {sceneEffectsManager}
+        lightSpaceRoot={effectSpaceRoot}
       />
     {/if}
   {/if}
@@ -455,7 +464,7 @@
      Lives alongside the legacy PropMotionEffects mount above; Phase 3
      retires the legacy path.
      ============================================================================= -->
-{#if ghostEnabled && ghost3D}
+{#if ghost3D}
   <GhostPropHistory3D
     propState={bluePropState}
     propType={bluePropType}

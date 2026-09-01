@@ -19,7 +19,7 @@
    */
 
   import { useThrelte, useTask } from "@threlte/core";
-  import { onDestroy, untrack } from "svelte";
+  import { onDestroy } from "svelte";
   import { tryGetViewer3DContext } from "../context/viewer-3d-context";
   import { Vector3, Object3D, Matrix3, type Camera } from "three";
   import Trail3D from "./trails/Trail3D.svelte";
@@ -30,7 +30,6 @@
     type CharcoalTipInput,
   } from "./charcoal/charcoal-renderer-3d";
   import { FireRenderer3D, type FireTipInput } from "./fire/fire-renderer-3d";
-  import { DynamicLightManager } from "./lighting/dynamic-light-manager";
   import {
     resolveRigLocalPropCenter3D,
     resolveTrailSources3D,
@@ -49,12 +48,7 @@
     type TipEffectMap,
     type EffectType,
   } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
-  import {
-    TIER_CONFIGS,
-    type QualityTier,
-    type QualityTierConfig,
-    type TipPositionData3D,
-  } from "./types";
+  import { type QualityTier, type TipPositionData3D } from "./types";
   import {
     PROP_COLORS,
     PropType,
@@ -247,6 +241,7 @@
   const resolvedPulse = $derived(resolvePulse3D(effectsState.pulse));
   const resolvedBloom = $derived(resolveBloom3D(effectsState.bloom));
   const resolvedFire = $derived(resolveFire3D(effectsState.fire));
+  const resolvedCharcoal = $derived(resolveCharcoal3D(effectsState.charcoal));
 
   const pooledFrame: SceneEffectRigFrame3D = { playing: false, sources: [] };
   const pooledSources: Array<SceneEffectTipSource3D | null> = [
@@ -281,7 +276,8 @@
       effect !== "animal" &&
       effect !== "pulse" &&
       effect !== "bloom" &&
-      effect !== "fire"
+      effect !== "fire" &&
+      effect !== "charcoal"
     )
       return;
 
@@ -356,6 +352,17 @@
             jerk: 0,
           };
           break;
+        case "charcoal":
+          source = {
+            ...base,
+            effect,
+            params: resolvedCharcoal,
+            qualityTier,
+            jerk: 0,
+            totalSteps,
+            collisionFloorY: userProportionsState.groundY,
+          };
+          break;
       }
       pooledSources[slot] = source;
     }
@@ -398,6 +405,15 @@
         source.params = resolvedFire;
         source.qualityTier = qualityTier;
         source.jerk = Math.hypot(tip.jerk.x, tip.jerk.y, tip.jerk.z);
+        break;
+      case "charcoal":
+        source.params = resolvedCharcoal;
+        source.qualityTier = qualityTier;
+        source.jerk = Math.hypot(tip.jerk.x, tip.jerk.y, tip.jerk.z);
+        source.totalSteps = totalSteps;
+        pooledPosition.set(0, userProportionsState.groundY, 0);
+        if (effectsParentRef) effectsParentRef.localToWorld(pooledPosition);
+        source.collisionFloorY = pooledPosition.y;
         break;
     }
 
@@ -480,16 +496,20 @@
   function syncLedDevice(kind: string, ledCount: number): void {
     const key = `${kind}:${ledCount}`;
     if (key === _ledDeviceKey) return;
+    const previousKey = _ledDeviceKey;
     _ledDeviceKey = key;
 
-    blueLedRenderer?.dispose();
-    blueLedRenderer = null;
-    redLedRenderer?.dispose();
-    redLedRenderer = null;
-    bluePovRenderer?.dispose();
-    bluePovRenderer = null;
-    redPovRenderer?.dispose();
-    redPovRenderer = null;
+    // Capsule renderers and their ribbon buffers stay warm across device
+    // switches. POV buffers depend on the authored LED count, so only that
+    // family is rebuilt when its capacity actually changes.
+    blueLedRenderer?.reset();
+    redLedRenderer?.reset();
+    if (previousKey && previousKey !== key) {
+      bluePovRenderer?.dispose();
+      bluePovRenderer = null;
+      redPovRenderer?.dispose();
+      redPovRenderer = null;
+    }
     _ledPrevPositions.clear();
   }
 
@@ -578,28 +598,6 @@
     low: 1,
   };
 
-  // Reactive so it responds to runtime tier changes (e.g. user override or
-  // auto-downgrade after frame budget miss).
-  const tierConfig: QualityTierConfig = $derived(TIER_CONFIGS[qualityTier]);
-
-  // A light pool is only useful to Trail3D. Constructing one for every rig
-  // preallocated hundreds of invisible PointLights on the all-effects grid.
-  let lightManager = $state.raw<DynamicLightManager | null>(null);
-
-  $effect(() => {
-    const needsDynamicLights = layerActiveEffects.includes("trails");
-    const parent = effectsParentRef ?? scene;
-    const cfg = tierConfig;
-
-    // `untrack` keeps the manager assignment from becoming its own dependency.
-    untrack(() => {
-      lightManager?.dispose();
-      lightManager = needsDynamicLights
-        ? new DynamicLightManager(parent, cfg)
-        : null;
-    });
-  });
-
   // Trail sources are selected from the canonical tracking mode each frame.
   // Stable source IDs prevent a mode switch from connecting two unrelated paths.
   let blueTrailData = $state<TrailDatum[]>([]);
@@ -636,6 +634,29 @@
   const redLedTips: LedTipInput[] = [];
   const charcoalTips: CharcoalTipInput[] = [];
   const fireTips: FireTipInput[] = [];
+  let interactiveRenderersPrepared = false;
+
+  function prepareInteractiveRenderers(
+    parent: Object3D,
+    ledDeviceKind: string,
+    ledCount: number
+  ): void {
+    if (!interactiveRenderersPrepared) {
+      blueLedRenderer = new LedRenderer3D(qualityTier);
+      redLedRenderer = new LedRenderer3D(qualityTier);
+      blueLedRenderer.initialize(parent);
+      redLedRenderer.initialize(parent);
+      blueLedRenderer.primeTipCapacity(2);
+      redLedRenderer.primeTipCapacity(2);
+      interactiveRenderersPrepared = true;
+    }
+    if (ledDeviceKind === "pixel-staff" && !bluePovRenderer) {
+      bluePovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
+      redPovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
+      bluePovRenderer.initialize(parent);
+      redPovRenderer.initialize(parent);
+    }
+  }
 
   // Viewer3D context for offline export gating - null when rendered outside
   // the sequence viewer (museum, realm).
@@ -848,7 +869,7 @@
               color.b
             );
           }
-        } else if (effect === "charcoal") {
+        } else if (effect === "charcoal" && sceneEffectsManager === null) {
           charcoalTips.push({
             sourceId: tipIndex,
             position: new Vector3(
@@ -939,7 +960,7 @@
               color.b
             );
           }
-        } else if (effect === "charcoal") {
+        } else if (effect === "charcoal" && sceneEffectsManager === null) {
           charcoalTips.push({
             sourceId: 2 + tipIndex,
             position: new Vector3(
@@ -989,14 +1010,8 @@
       redEffectTips = [];
     }
 
-    // Bloom remains a live optical response while paused. The tip bridge was
-    // reset above, so it publishes the current pose with zero motion without
-    // inventing a trail across a pause or scrub. Every emitter below freezes.
-    if (!isPlaying) return;
-
-    // LED rendering - direct imperative update in the same frame tick.
-    // Determine the parent for imperative meshes: effectsParentRef (rig group)
-    // or fall back to scene root via camera parent chain.
+    // Determine the parent before the pause gate: LED geometry and ribbon
+    // histories must be prepared even when a scene opens on a still frame.
     const cam = camera.current;
     let imperativeParent: Object3D | null = effectsParentRef ?? null;
 
@@ -1008,7 +1023,20 @@
     }
 
     if (imperativeParent) {
+      prepareInteractiveRenderers(
+        imperativeParent,
+        resolvedLed.device.kind,
+        ledCount
+      );
       syncRendererQuality(imperativeParent);
+    }
+
+    // Bloom remains a live optical response while paused. The tip bridge was
+    // reset above, so it publishes the current pose with zero motion without
+    // inventing a trail across a pause or scrub. Every emitter below freezes.
+    if (!isPlaying) return;
+
+    if (imperativeParent) {
       const now = performance.now() / 1000;
 
       if (usePixelStaff) {
@@ -1140,17 +1168,14 @@
     updateEffectsFrame(delta);
   });
 
-  // Filter to only selected sources that have the "trails" effect assigned.
-  const blueTrailTips = $derived(
-    blueTrailData.filter((source) => source.effect === "trails")
-  );
-  const redTrailTips = $derived(
-    redTrailData.filter((source) => source.effect === "trails")
-  );
+  // Keep the bounded trail renderers mounted for every real prop end. The
+  // selected effect only changes their visibility, so choosing Trails never
+  // constructs geometry, buffers, materials, or light infrastructure.
+  const blueTrailTips = $derived(blueTrailData);
+  const redTrailTips = $derived(redTrailData);
 
   onDestroy(() => {
     pooledRegistration?.dispose();
-    lightManager?.dispose();
     tipBridge.reset();
     blueLedRenderer?.dispose();
     redLedRenderer?.dispose();
@@ -1171,10 +1196,11 @@
     opacity={resolvedTrails.brightness}
     maxPoints={resolvedTrails.maxPoints}
     rainbow={resolvedTrails.rainbow}
-    enabled={isPlaying}
+    enabled={tip.effect === "trails" && isPlaying}
     {qualityTier}
     emissiveStrength={resolvedTrails.emissive * trailTierBoost}
-    {lightManager}
+    {sceneEffectsManager}
+    lightSpaceRoot={effectsParentRef}
   />
 {/each}
 
@@ -1188,10 +1214,11 @@
     opacity={resolvedTrails.brightness}
     maxPoints={resolvedTrails.maxPoints}
     rainbow={resolvedTrails.rainbow}
-    enabled={isPlaying}
+    enabled={tip.effect === "trails" && isPlaying}
     {qualityTier}
     emissiveStrength={resolvedTrails.emissive * trailTierBoost}
-    {lightManager}
+    {sceneEffectsManager}
+    lightSpaceRoot={effectsParentRef}
   />
 {/each}
 
@@ -1222,6 +1249,8 @@
   blueTipData={blueEffectTips}
   redTipData={redEffectTips}
   pooledEffectsManaged={sceneEffectsManager !== null}
+  {sceneEffectsManager}
+  effectSpaceRoot={effectsParentRef}
   {currentStep}
   {totalSteps}
   {seamlesslyLoopable}

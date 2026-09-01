@@ -64,7 +64,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/learn/concepts",
   "/notation",
   "/composer",
-  "/glossary",
+  "/atlas",
   "/faq",
   "/guide",
   "/privacy",

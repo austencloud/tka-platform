@@ -19,6 +19,7 @@
   import { buildAdminSessionReplayUrl } from "$lib/features/admin/domain/session-replay-target";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { resolveAdminCreatedSequenceTarget } from "../../domain/admin-created-sequence-target";
+  import { openCreatorProfile } from "$lib/features/creators/state/creators-routing.svelte";
 
   interface Props {
     notification: UserNotification;
@@ -279,10 +280,12 @@
         break;
 
       case "user-followed":
-        // Navigate to the follower's profile
+        // Route through the Creators owner so the keep-alive app shell changes
+        // module as well as URL. A bare /profile/:uid navigation falls through
+        // the catch-all route and leaves the previous module running.
         if (n["fromUserId"]) {
           inboxState.close();
-          goto(`/profile/${n["fromUserId"]}`);
+          await openCreatorProfile(n["fromUserId"]);
         }
         break;
 
@@ -295,10 +298,11 @@
         break;
 
       case "achievement-unlocked":
-        // Navigate to user's profile to see achievements
+        // The profile is owned by Creators; use its routing seam so profile
+        // state, module state, URL, and browser history move together.
         inboxState.close();
         if (authState.effectiveUserId) {
-          goto(`/profile/${authState.effectiveUserId}`);
+          await openCreatorProfile(authState.effectiveUserId);
         }
         break;
 

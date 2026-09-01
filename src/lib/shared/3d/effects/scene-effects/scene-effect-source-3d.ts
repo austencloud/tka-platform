@@ -10,6 +10,7 @@ import type {
   Pulse3DParams,
   Bloom3DParams,
   Fire3DParams,
+  Charcoal3DParams,
 } from "$lib/shared/effects/translators/webgl3d-types";
 import type { QualityTier } from "../types";
 
@@ -100,6 +101,16 @@ export interface FireTipSource3D extends SceneEffectTipBase3D {
   jerk: number;
 }
 
+export interface CharcoalTipSource3D extends SceneEffectTipBase3D {
+  effect: "charcoal";
+  params: Charcoal3DParams;
+  qualityTier: QualityTier;
+  jerk: number;
+  totalSteps: number;
+  /** World-space stage floor used by falling ember fragments. */
+  collisionFloorY: number;
+}
+
 export type SceneEffectTipSource3D =
   | SparkleTipSource3D
   | GooTipSource3D
@@ -111,7 +122,8 @@ export type SceneEffectTipSource3D =
   | AnimalTipSource3D
   | PulseTipSource3D
   | BloomTipSource3D
-  | FireTipSource3D;
+  | FireTipSource3D
+  | CharcoalTipSource3D;
 
 export interface SceneEffectRigFrame3D {
   playing: boolean;

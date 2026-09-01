@@ -154,6 +154,7 @@ export function createViewerOrchestratorContextState(
     imgShowStartPos: inputs.imageComposition.imgShowStartPos,
     imgShowDifficulty: inputs.imageComposition.imgShowDifficulty,
     imgShowNotes: inputs.imageComposition.imgShowNotes,
+    imgCustomNotesText: inputs.imageComposition.imgCustomNotesText,
     imgDarkMode: inputs.imageComposition.imgDarkMode,
 
     isSyncToggling: inputs.lanSync.isSyncToggling,
@@ -184,6 +185,7 @@ export function createViewerOrchestratorContextState(
     handleFavoriteToggle: inputs.libraryActions.handleFavoriteToggle,
     handlePublishAction: inputs.libraryActions.handlePublishAction,
     handleUnpublishAction: inputs.libraryActions.handleUnpublishAction,
+    saveCardPresentation: inputs.libraryActions.saveCardPresentation,
 
     playbackMode: inputs.modalAnimationState.playbackMode,
     handlePlaybackModeChange: inputs.playback.handlePlaybackModeChange,
@@ -259,6 +261,7 @@ export function createViewerOrchestratorContextState(
         : inputs.imageComposition.imgShowDifficulty,
       showStartPos: inputs.imageComposition.imgShowStartPos,
       showNotes: inputs.imageComposition.imgShowNotes,
+      customNotesText: inputs.imageComposition.imgCustomNotesText,
       showQRCode: inputs.imageComposition.imgShowQRCode,
       showMandala: inputs.imageComposition.imgShowMandala,
       showLoopGlyph:

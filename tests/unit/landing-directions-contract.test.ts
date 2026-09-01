@@ -38,7 +38,7 @@ describe("landing direction mockups", () => {
       "/notation",
       "/composer",
       "/roots/software",
-      "/glossary",
+      "/atlas",
       "/about",
       "/shop",
       "/notation/shape-matrix",
