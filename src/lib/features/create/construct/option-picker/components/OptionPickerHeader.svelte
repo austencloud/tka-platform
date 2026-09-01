@@ -323,8 +323,9 @@
     display: none;
   }
 
-  /* Icon-sized. Two 44px targets plus the control's own padding — the ~130px
-     this gives back goes to the level buttons and the turn rows. */
+  /* Two genuine 44px targets plus the control's own padding. Keeping this at
+     seven rem also survives the app's compact root type scale; six rem made the
+     visible All / Continuous targets narrower than the touch-target floor. */
   .filter-seg {
     width: 7rem;
   }
@@ -336,11 +337,11 @@
      the tighter padding keeps the longest label comfortable at the floor. */
   @container (width < 900px) {
     .oph:not(.compact) .oph-bar:not(.filter-only) {
-      grid-template-columns: minmax(6rem, 1fr) auto minmax(6rem, 1fr);
+      grid-template-columns: minmax(7rem, 1fr) auto minmax(7rem, 1fr);
     }
 
     .oph:not(.compact) .filter-seg {
-      width: 6rem;
+      width: 7rem;
     }
 
     .oph:not(.compact) :global(.level-selector) {
