@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   '@austencloud/backgrounds@0.7.12':
-    hash: 3c64ecc6505ec1fb112c877cb83f3ee4b000d06eae166bf811c5889f5770f217
+    hash: f163e5ba342f1576ff6fd359c5e5795dfec1fd0415dce6617ebe03d3c3d995e7
     path: patches/@austencloud__backgrounds@0.7.12.patch
   '@austencloud/scene-3d@0.1.6':
     hash: 5bcec50b6175743e852ed1341b4035914dd26e25f4e5ae0888239d9d53596af7
@@ -36,7 +36,7 @@ importers:
         version: 4.0.70(svelte@5.49.2)(zod@4.3.6)
       '@austencloud/backgrounds':
         specifier: ^0.7.12
-        version: 0.7.12(patch_hash=3c64ecc6505ec1fb112c877cb83f3ee4b000d06eae166bf811c5889f5770f217)
+        version: 0.7.12(patch_hash=f163e5ba342f1576ff6fd359c5e5795dfec1fd0415dce6617ebe03d3c3d995e7)
       '@austencloud/camera-3d':
         specifier: workspace:*
         version: link:packages/camera-3d
@@ -8910,7 +8910,7 @@ snapshots:
 
   '@asamuzakjp/nwsapi@2.3.9': {}
 
-  '@austencloud/backgrounds@0.7.12(patch_hash=3c64ecc6505ec1fb112c877cb83f3ee4b000d06eae166bf811c5889f5770f217)': {}
+  '@austencloud/backgrounds@0.7.12(patch_hash=f163e5ba342f1576ff6fd359c5e5795dfec1fd0415dce6617ebe03d3c3d995e7)': {}
 
   '@austencloud/chip-toggle@0.1.0(svelte@5.49.2)':
     dependencies:

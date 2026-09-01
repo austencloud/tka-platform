@@ -18,6 +18,8 @@
 		buildPentatonicNotes,
 		midiToFreq
 	} from '$lib/shared/3d/environments/scenes/ocean/runtime/fauna/jellyfish/jellyfish-chime';
+	import { isBackgroundInteractionBlocked } from '../background-interaction-routing';
+	import { createOceanBubblePop } from '../ocean-bubble-pop';
 	import { isBackgroundSuppressed } from '../state/background-suppression.svelte';
 	import { holdBackground, releaseBackground } from '../state/background-hold.svelte';
 	import { sharedAnimationState } from '$lib/shared/animation-engine/state/shared-animation-state.svelte';
@@ -81,57 +83,14 @@
 		canvasB: HTMLCanvasElement | null;
 		container: HTMLElement | null;
 		updateCanvasDimensions: () => void;
-		// The active/incoming background systems. Read-only here to hover-test the
-		// ocean jellyfish swarm for a desktop pointer cursor (see pointerOverJelly).
-		systemA: unknown;
-		systemB: unknown;
 	}
 
-	// Read-only shape of the ocean system's jelly swarm, mirrored just enough to
-	// hit-test. The real state lives on the (TS-private) OceanBackgroundOrchestrator
-	// and is only reached to give a hover affordance; everything is optional-chained
-	// so a non-ocean background — or a future package that renames the field — is a
-	// silent no-op, exactly like the setPointer/pokeAt guards above.
-	interface OceanSystemLike {
-		state?: { jellyfish?: { x: number; y: number; size: number }[] };
-	}
 
-	function jellyHit(system: unknown, x: number, y: number): boolean {
-		const jellies = (system as OceanSystemLike | null)?.state?.jellyfish;
-		if (!Array.isArray(jellies)) return false;
-		for (const j of jellies) {
-			// Match pokeAt's generous hit radius (size * 0.6) so the cursor flips
-			// exactly where a poke would land.
-			const r = j.size * 0.6;
-			const dx = j.x - x;
-			const dy = j.y - y;
-			if (dx * dx + dy * dy <= r * r) return true;
-		}
-		return false;
-	}
-
-	// True when (x, y) — container CSS px — is over a pokeable jelly on either the
-	// active or incoming (mid-crossfade) system, mirroring pokeAt's systemA ?? systemB.
-	function pointerOverJelly(ctrl: NonNullable<typeof controller>, x: number, y: number): boolean {
-		const c = ctrl as unknown as BackgroundControllerPrivate;
-		return jellyHit(c.systemA, x, y) || jellyHit(c.systemB, x, y);
-	}
-
-	// The 2D background sits behind the whole app (pointer-events:none, z-index:-1),
-	// so the window-level pointerdown fires even when the click really landed on a
-	// control sitting on top of a jelly. Clicking that button must not also ring the
-	// jelly hiding behind it. A pointerdown/hover whose target resolves to an
-	// interactive element is "consumed by the UI" — skip the poke and the hover
-	// cursor there. Covers native controls plus the ARIA/tabbable widgets this app
-	// uses (role="button"/"switch" divs, per the no-checkboxes toggle pattern).
-	const INTERACTIVE_SELECTOR =
-		'a[href], button, input, select, textarea, label, summary, ' +
-		'[role="button"], [role="link"], [role="tab"], [role="menuitem"], ' +
-		'[role="switch"], [role="checkbox"], [role="radio"], [role="option"], ' +
-		'[contenteditable=""], [contenteditable="true"], [tabindex]:not([tabindex="-1"])';
-
-	function isInteractiveTarget(target: EventTarget | null): boolean {
-		return target instanceof Element && target.closest(INTERACTIVE_SELECTOR) !== null;
+	function foregroundOwnsPointer(event: PointerEvent): boolean {
+		// Pointer capture can retarget a move to the element where a drag began.
+		// elementFromPoint asks what is visibly on top at the pointer's current
+		// coordinates, while naturally ignoring the pointer-events:none canvas.
+		return isBackgroundInteractionBlocked(document.elementFromPoint(event.clientX, event.clientY));
 	}
 
 	// On a genuinely low-capability device (explicit data-saver, or a slow 3g-or-worse
@@ -197,8 +156,8 @@
 		// non-ocean backgrounds (their systems lack setPointer) AND for a stale
 		// HMR-persisted controller singleton from a pre-0.6.2 build that predates
 		// the setPointer API. Safe app-wide; a hard reload picks up the new method.
-		// Desktop-only: show a pointer cursor while hovering a pokeable 2D jelly, so a
-		// mouse user can tell the swarm is interactive (the pointerdown poke already
+		// Desktop-only: show a pointer cursor while hovering a pokeable 2D jelly or
+		// bubble, so a mouse user can tell the ocean is interactive (the pointerdown
 		// works window-wide). Touch has no hover state, so gate to a fine pointer with
 		// hover. The container is pointer-events:none behind the app, so the cursor is
 		// set on <body> — an inherited property, so descendants that don't set their
@@ -224,7 +183,9 @@
 			if (finePointer.matches) {
 				// Only claim the pointer cursor where a poke would actually fire — not
 				// over a control sitting on top of the jelly (it owns its own cursor).
-				setJellyCursor(inside && !isInteractiveTarget(e.target) && pointerOverJelly(controller, x, y));
+				setJellyCursor(
+					inside && !foregroundOwnsPointer(e) && controller.interactionAt?.(x, y) != null
+				);
 			}
 		};
 		const onPointerLeaveWin = () => {
@@ -242,12 +203,13 @@
 		// this is a safe no-op for non-ocean backgrounds and for a stale
 		// HMR-persisted controller from a pre-0.6.3 build that predates pokeAt.
 		const chime = createJellyfishChime();
+		const bubblePop = createOceanBubblePop();
 		const notes = buildPentatonicNotes(16);
 		const onPointerDown = (e: PointerEvent) => {
 			if (!controller || !containerRef) return;
-			// A click that landed on real UI on top of the background must not also
-			// poke a jelly hiding behind it.
-			if (isInteractiveTarget(e.target)) return;
+			// Every visible foreground surface owns its full area, not just the buttons
+			// inside it. Empty drawer and viewer space must never ring the ocean behind.
+			if (foregroundOwnsPointer(e)) return;
 			const rect = containerRef.getBoundingClientRect();
 			const x = e.clientX - rect.left;
 			const y = e.clientY - rect.top;
@@ -255,6 +217,12 @@
 			if (r?.hit) {
 				const idx = Math.round(r.pitch01 * (notes.length - 1));
 				chime.play(midiToFreq(notes[idx]!), r.pan);
+				return;
+			}
+
+			const bubble = controller.popBubbleAt?.(x, y);
+			if (bubble?.hit) {
+				bubblePop.play(bubble.size01, bubble.pan);
 			}
 		};
 		window.addEventListener('pointerdown', onPointerDown);
@@ -274,6 +242,7 @@
 			document.removeEventListener('visibilitychange', onVisibilityChange);
 			setJellyCursor(false); // never leave a stray pointer cursor on <body>
 			chime.dispose();
+			bubblePop.dispose();
 		};
 	});
 
