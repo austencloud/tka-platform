@@ -100,4 +100,21 @@ describe("sequence viewer orchestrator decomposition", () => {
       );
     }
   });
+
+  it("wires the seeded effects config to the visibility manager eagerly", () => {
+    // A full-state link can boot straight into the 3D pane, where no 2D
+    // CanvasSurface ever mounts — and CanvasSurface is otherwise the only
+    // assigner of `visibilityManager.effectsConfigState`. Viewer3DScene reads
+    // that field for its tip effect map, so without this eager assignment a
+    // seeded fx slice (e.g. sparkles) renders nowhere in 3D until an unrelated
+    // pane switch mounts a canvas.
+    const assignment =
+      "getAnimationVisibilityManager().effectsConfigState = effectsConfigState;";
+    expect(orchestrator).toContain(assignment);
+    // The assignment must precede fx slice registration so captures and the
+    // 3D bridge observe the same instance from the first frame.
+    expect(orchestrator.indexOf(assignment)).toBeLessThan(
+      orchestrator.indexOf('urlSession.registerSlice("fx"')
+    );
+  });
 });

@@ -31,7 +31,14 @@ export interface TunnelViewState {
 
 const STORAGE_KEY = "tka_tunnel_view_state";
 
-const DEFAULTS: TunnelViewState = {
+/**
+ * Post-normalize defaults: this IS what `loadTunnelViewState()` returns on
+ * empty storage (every return path below builds off it directly), so it is
+ * safe as the `tn` URL slice's diff baseline with no separate migration step.
+ * Exported (not just used internally) so `tn-slice.ts` never re-derives it
+ * from a second raw constant — the fx/an trap this project has hit before.
+ */
+export const DEFAULT_TUNNEL_VIEW_STATE: TunnelViewState = {
   config: { ...DEFAULT_CONFIG },
   gridVisible: false,
   colors: {
@@ -135,10 +142,10 @@ export function loadTunnelViewState(): TunnelViewState {
       p.section === "effort" ||
       p.section === "playback"
         ? p.section
-        : DEFAULTS.section;
+        : DEFAULT_TUNNEL_VIEW_STATE.section;
     return {
       config: resolveConfig(p),
-      gridVisible: bool(p.gridVisible, DEFAULTS.gridVisible),
+      gridVisible: bool(p.gridVisible, DEFAULT_TUNNEL_VIEW_STATE.gridVisible),
       colors: resolveTunnelPropColorState(p.colors, p.spectrum),
       section,
       // Older view state only had the live config. Preserve that uncertainty;
@@ -152,11 +159,11 @@ export function loadTunnelViewState(): TunnelViewState {
 
 function cloneDefaults(): TunnelViewState {
   return {
-    ...DEFAULTS,
+    ...DEFAULT_TUNNEL_VIEW_STATE,
     config: { ...DEFAULT_CONFIG },
     colors: {
-      mode: DEFAULTS.colors.mode,
-      custom: { ...DEFAULTS.colors.custom },
+      mode: DEFAULT_TUNNEL_VIEW_STATE.colors.mode,
+      custom: { ...DEFAULT_TUNNEL_VIEW_STATE.colors.custom },
     },
   };
 }

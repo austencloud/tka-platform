@@ -4,6 +4,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { ShareURLMetadata } from "$lib/shared/navigation/services/types";
 import type { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import type { PendingActionType } from "./pending-action-queue";
+import type { ViewerUrlParamPatch } from "./viewer-url-state-codec";
 import {
   buildViewerBrowserUrl,
   buildViewerShareDetails,
@@ -15,6 +16,8 @@ interface ViewerShareInputs {
   getBpm: () => number;
   getDarkMode: () => boolean;
   getHapticService: () => HapticFeedback | null;
+  /** Synchronous full-state snapshot as of the moment of Share/Copy. */
+  getStateParams?: () => ViewerUrlParamPatch;
 }
 
 interface ViewerShareDependencies {
@@ -38,6 +41,7 @@ export function createViewerShareActions(
       darkMode: inputs.getDarkMode(),
       fallbackUrl: dependencies.getCurrentUrl(),
       buildUrl: dependencies.buildUrl,
+      getStateParams: inputs.getStateParams,
     });
   }
 

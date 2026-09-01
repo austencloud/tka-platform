@@ -25,7 +25,7 @@ export interface AnimationPathPolicy {
   motionAwarePaths: boolean;
 }
 
-interface AnimationVisibilitySettings {
+export interface AnimationVisibilitySettings {
   gridMode: GridMode;
   stepNumbers: boolean;
   props: boolean;
@@ -69,6 +69,14 @@ export class AnimationVisibilityStateManager {
 
   /** Scoped instances neither persist nor alter the global theme class. */
   private readonly ephemeral: boolean;
+
+  /**
+   * Pauses disk writes without the `ephemeral` side effects. A viewer URL link
+   * session borrows this global instance (see `setPersistenceSuspended`), and
+   * `ephemeral` would also disable `syncDarkModeClass()` - which is exactly the
+   * setting a shared link most needs to render.
+   */
+  private persistenceSuspended: boolean = false;
 
   /**
    * Scoped canvases keep local display flags but share the policy used by the
@@ -173,6 +181,7 @@ export class AnimationVisibilityStateManager {
 
   private saveToStorage(): void {
     if (this.ephemeral) return;
+    if (this.persistenceSuspended) return;
     if (typeof window === "undefined") return;
 
     try {
@@ -244,6 +253,31 @@ export class AnimationVisibilityStateManager {
     this.settings = this.getDefaultSettings();
     this.saveToStorage();
     this.notifyObservers();
+  }
+
+  /**
+   * View-only link sessions (viewer URL state). The viewer reads this global
+   * singleton at ~7 call sites with no injection seam, so a shared link borrows
+   * the real instance: snapshot -> suspend -> replaceAll -> (on close)
+   * replaceAll(snapshot) -> resume. The recipient's disk is never written.
+   */
+  setPersistenceSuspended(suspended: boolean): void {
+    this.persistenceSuspended = suspended;
+  }
+
+  /** Deep copy of this instance's OWN settings, ignoring any policy overlay. */
+  snapshot(): AnimationVisibilitySettings {
+    return structuredClone(this.settings);
+  }
+
+  /**
+   * Applies a full settings object through the normal setter path so the theme
+   * class and motion-colour cache follow it. `setDarkMode` is called explicitly
+   * because `updateSettings` assigns the field without running that sync.
+   */
+  replaceAll(next: AnimationVisibilitySettings): void {
+    this.updateSettings(structuredClone(next));
+    this.setDarkMode(next.darkMode);
   }
 
 
