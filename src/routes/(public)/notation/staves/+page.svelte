@@ -120,7 +120,7 @@
         When you're ready to learn the notation, the <a href="/guide">guide</a>
         introduces every concept in order, the
         <a href="/guide/codex">Double Staff Codex</a> collects the pictographs
-        themselves, and the <a href="/glossary">Kinetic Atlas</a> defines every term used on this
+        themselves, and the <a href="/atlas">Kinetic Atlas</a> defines every term used on this
         page.
       </p>
     </div>

@@ -1,11 +1,11 @@
 <!--
-  /glossary — GATED 2026-08-30.
+  /atlas — GATED 2026-08-30.
 
   Production shows the shared Coming Soon page. Development renders the full
   Kinetic Atlas at its canonical URL so work can continue without exposing it.
 
   To un-gate: restore KineticAtlasDraft as the page, remove the production
-  noindex head below, re-list glossary in the sitemap, and update the focused
+  noindex head below, re-list Atlas in the sitemap, and update the focused
   gate contract test.
 -->
 <script lang="ts">
@@ -26,7 +26,7 @@
       content="The Kinetic Atlas is being rebuilt. Use the Guide or interactive lessons in the meantime."
     />
     <meta name="robots" content="noindex, follow" />
-    <link rel="canonical" href="https://tkaflowarts.com/glossary" />
+    <link rel="canonical" href="https://tkaflowarts.com/atlas" />
   {/if}
 </svelte:head>
 

@@ -49,7 +49,7 @@
   const TITLE = "The Kinetic Atlas | The Kinetic Alphabet";
   const DESCRIPTION =
     "A visual atlas of The Kinetic Alphabet: space, motion, letters, notation, patterns, and technique, backed by a searchable reference.";
-  const URL = "https://tkaflowarts.com/glossary";
+  const URL = "https://tkaflowarts.com/atlas";
   const LEXICON_ID = `${URL}#lexicon`;
 
   // schema.org graph: the page (CollectionPage) whose mainEntity is a

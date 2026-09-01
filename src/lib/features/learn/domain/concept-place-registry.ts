@@ -144,7 +144,7 @@ export const CONCEPT_RESOURCE_BINDINGS: Readonly<
       { slug: "codex", label: "Letter Codex", coverage: "focused" },
     ],
     exploration: {
-      href: "/glossary?board=atlas#cat-letter",
+      href: "/atlas?board=atlas#cat-letter",
       label: "Open the Letter Atlas",
     },
     practice: [

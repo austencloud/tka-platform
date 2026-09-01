@@ -130,7 +130,7 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
   },
   {
     id: "glossary",
-    href: "/glossary",
+    href: "/atlas",
     heading: "Kinetic Atlas",
     descriptor: "Explore letters, motion, notation, and technique.",
     span: "1x1",
