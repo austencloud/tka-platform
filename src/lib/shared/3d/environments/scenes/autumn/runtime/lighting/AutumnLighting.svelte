@@ -18,7 +18,8 @@
    *   4. Ambient    — a restrained lift so bark and floor survive tone mapping.
    *   5. Pond point — local violet bounce for the recessed pond and wet stones.
    *
-   * Purely declarative — no useTask, no $state, no $effect.
+   * The key stays live because production performers and props are animated
+   * shadow casters. Only retained, inactive worlds stop participating.
    */
 
   import { T } from "@threlte/core";
@@ -28,9 +29,14 @@
   interface Props {
     quality: AutumnQualityConfig;
     groundY?: number;
+    active?: boolean;
   }
 
-  let { quality, groundY = 0 }: Props = $props();
+  let {
+    quality,
+    groundY = 0,
+    active = true,
+  }: Props = $props();
 
   // The light is placed along the moon's direction, far enough out that its
   // orthographic shadow frustum comfortably clears the canopy.
@@ -52,7 +58,8 @@
   position.x={moonKey[0]}
   position.y={moonKey[1] + groundY}
   position.z={moonKey[2]}
-  castShadow={quality.shadows}
+  visible={active}
+  castShadow={quality.shadows && active}
   shadow.mapSize.width={quality.shadowMapSize}
   shadow.mapSize.height={quality.shadowMapSize}
   shadow.camera.near={1}
@@ -72,6 +79,7 @@
      the moon key leaves dark, but it casts nothing so there is exactly one
      shadow direction to read. -->
 <T.DirectionalLight
+  visible={active}
   color="#ff8748"
   intensity={1.05}
   position.x={14}
@@ -85,6 +93,7 @@
      for light scattered back off the clearing floor. It is what turns a hard
      shadow into a shaded area. -->
 <T.DirectionalLight
+  visible={active}
   color="#6f6396"
   intensity={0.62}
   position.x={-8}
@@ -94,17 +103,23 @@
 
 <!-- Dusk hemisphere ambient keeps bark, distant silhouettes, and understory
      readable on ordinary displays. -->
-<T.HemisphereLight color="#8a6ba0" groundColor="#462e28" intensity={0.92} />
+<T.HemisphereLight
+  visible={active}
+  color="#8a6ba0"
+  groundColor="#462e28"
+  intensity={0.92}
+/>
 
 <!-- A restrained ambient lift preserves scanned bark and floor detail after
      tone mapping without flattening the moon/ember split. -->
-<T.AmbientLight color="#c2a2c0" intensity={0.46} />
+<T.AmbientLight visible={active} color="#c2a2c0" intensity={0.46} />
 
 <!-- A local violet reflection source gives the recessed pond and its wet
      stones a readable cool edge without raising the whole forest floor. -->
 <!-- Dropped from 2.2: at that strength it lit the pond's stone bank at a
      grazing angle and produced a hot pale rim around the water. -->
 <T.PointLight
+  visible={active}
   color="#8170c5"
   intensity={0.45}
   distance={16}
@@ -118,6 +133,7 @@
      human-scale pool inside the vast forest without flattening the surrounding
      moonlit trunks. -->
 <T.PointLight
+  visible={active}
   color="#ffad67"
   intensity={1.15}
   distance={14}

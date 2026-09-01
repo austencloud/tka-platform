@@ -29,8 +29,10 @@
   import { setSceneFeatureContext } from "$lib/shared/3d/scene-features/context/scene-feature-context";
   import { createEnvironmentTransitionVisualState } from "$lib/shared/3d/environments/state/environment-transition-visual-state.svelte";
   import { setEnvironmentTransitionVisualContext } from "$lib/shared/3d/environments/context/environment-transition-visual-context";
-  import HarnessToneMapping from "./HarnessToneMapping.svelte";
+  import ScenePostProcessing from "$lib/shared/3d/effects/post-processing/ScenePostProcessing.svelte";
   import PerfMonitor from "$lib/shared/3d/components/PerfMonitor.svelte";
+  import InteractiveCanvasFrameBridge from "$lib/shared/3d/components/InteractiveCanvasFrameBridge.svelte";
+  import type { RendererPerformanceSample } from "$lib/shared/3d/components/renderer-performance-window";
   import { autumnQualityOverride } from "$lib/shared/3d/environments/scenes/autumn/quality/autumn-quality-override.svelte";
   import type { AutumnQualityTier } from "$lib/shared/3d/environments/scenes/autumn/quality/autumn-quality";
   import {
@@ -114,16 +116,6 @@
   } as const;
 
   type ViewName = keyof typeof VIEW_PRESETS;
-  interface RenderSample {
-    fps: number;
-    peakFrameMs: number;
-    drawCalls: number;
-    triangles: number;
-    geometries: number;
-    textures: number;
-    programs: number;
-  }
-
   const requestedView = $derived(page.url.searchParams.get("view"));
   const replayPose = $derived(parseViewParam(page.url.search));
   const view = $derived(
@@ -154,9 +146,18 @@
   });
 
   let reading = $state<EnvironmentReviewReading | null>(null);
-  let renderSample = $state<RenderSample | null>(null);
+  let renderSample = $state<RendererPerformanceSample | null>(null);
   let captureNote = $state<string | null>(null);
   let captureNoteTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function recordRenderSample(sample: RendererPerformanceSample): void {
+    renderSample = sample;
+    (
+      globalThis as typeof globalThis & {
+        __autumnPerformance?: RendererPerformanceSample;
+      }
+    ).__autumnPerformance = sample;
+  }
 
   const formatPoint = (value: { x: number; y: number; z: number }) =>
     `${value.x.toFixed(2)}, ${value.y.toFixed(2)}, ${value.z.toFixed(2)}`;
@@ -191,6 +192,11 @@
 
   onDestroy(() => {
     if (captureNoteTimer) clearTimeout(captureNoteTimer);
+    delete (
+      globalThis as typeof globalThis & {
+        __autumnPerformance?: RendererPerformanceSample;
+      }
+    ).__autumnPerformance;
   });
 </script>
 
@@ -203,15 +209,20 @@
     dpr={renderDpr}
     shadows
     createRenderer={(canvas) =>
-      new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
+      new WebGLRenderer({ canvas, preserveDrawingBuffer: false })}
   >
-    <!-- Match the real viewer's ScenePostProcessing tone mapping (AgX, 1.0)
-         so colors read the same here as in the sequence viewer. -->
-    <HarnessToneMapping />
+    <InteractiveCanvasFrameBridge />
+    <ScenePostProcessing
+      backgroundType={BackgroundType.AUTUMN}
+      forceBloom={requestedQuality !== "low"}
+      bloomResolutionScale={requestedQuality === "high" ? 1 : 0.5}
+      bloomLevels={requestedQuality === "high" ? 8 : 5}
+      enableChromaticAberration={false}
+    />
     <PerfMonitor
       visible={showPerf}
       active={showPerf}
-      onSample={(sample) => (renderSample = sample)}
+      onSample={recordRenderSample}
     />
 
     {#key cameraKey}
@@ -282,6 +293,15 @@
   {#if showPerf && renderSample}
     <aside class="perf-readout" aria-label="Autumn renderer performance">
       <span>{renderSample.fps} FPS</span>
+      <span>P95 {renderSample.frameP95Ms.toFixed(1)}ms</span>
+      <span>P99 {renderSample.frameP99Ms.toFixed(1)}ms</span>
+      <span
+        >GPU95 {renderSample.gpuTimingSupported
+          ? `${renderSample.gpuP95Ms.toFixed(1)}ms`
+          : "n/a"}</span
+      >
+      <span>{(renderSample.longFrameRate * 100).toFixed(2)}% long</span>
+      <span>{(renderSample.thermalDrift * 100).toFixed(1)}% drift</span>
       <span>{renderSample.drawCalls} draws</span>
       <span>{(renderSample.triangles / 1_000_000).toFixed(3)}M tris</span>
       <span>{renderSample.geometries} geo</span>

@@ -1,45 +1,62 @@
-import type { BufferGeometry, InstancedMesh, Material, Object3D } from "three";
+import {
+  Color,
+  InstancedMesh,
+  Matrix4,
+  type BufferGeometry,
+  type Material,
+  type Object3D,
+} from "three";
 import type { AutumnQualityTier } from "./autumn-quality";
 
-interface InstanceBudget {
-  materialPrefix: string;
-  medium: number;
-  low: number;
-}
+const SPATIAL_CELL_METERS = 48;
+const MINIMUM_SPATIAL_INSTANCES = 8;
 
-// The Blender placement order is part of this contract: hero trees precede
-// saplings, near-belt trees precede middle-depth trees, and every habitat is
-// authored in cluster order. Trimming the tail therefore removes secondary
-// density without scrambling the approved high-tier composition.
-export const AUTUMN_INSTANCE_BUDGETS: readonly InstanceBudget[] = [
-  { materialPrefix: "Autumn Hero B PBR", medium: 5, low: 3 },
-  { materialPrefix: "Autumn Birch PBR", medium: 9, low: 5 },
-  { materialPrefix: "Autumn Larch PBR", medium: 7, low: 4 },
-  { materialPrefix: "Autumn Snag PBR", medium: 7, low: 4 },
-  { materialPrefix: "Autumn Willow PBR", medium: 5, low: 3 },
-  { materialPrefix: "Autumn Fern PBR", medium: 34, low: 18 },
-  { materialPrefix: "Autumn Rounded Rock PBR", medium: 6, low: 4 },
-  { materialPrefix: "Autumn Boulder PBR", medium: 3, low: 2 },
-];
-
-const FULL_COUNT_KEY = "autumnGeometryFullInstanceCount";
+/** Repeated families broad enough for one global bound to defeat culling. */
+export const AUTUMN_SPATIAL_BATCH_MATERIAL_PREFIXES = [
+  "Autumn Hero B PBR",
+  "Autumn Birch PBR",
+  "Autumn Larch PBR",
+  "Autumn Snag PBR",
+  "Autumn Willow PBR",
+  "Autumn Fern PBR",
+  "Autumn Rounded Rock PBR",
+  "Autumn Boulder PBR",
+] as const;
 
 export interface AutumnGeometryTierReport {
   tier: AutumnQualityTier;
   authoredTriangles: number;
   visibleTriangles: number;
   trimmedInstances: number;
+  sourceBatches: number;
+  spatialBatches: number;
 }
+
+interface SpatialBatchRecord {
+  parent: Object3D;
+  original: InstancedMesh;
+  originalIndex: number;
+  buckets: InstancedMesh[];
+}
+
+interface SpatialBatchState {
+  authoredTriangles: number;
+  records: SpatialBatchRecord[];
+  frozenObjects: Array<{ object: Object3D; matrixAutoUpdate: boolean }>;
+}
+
+const spatialBatchStates = new WeakMap<Object3D, SpatialBatchState>();
 
 function materialNames(material: Material | Material[]): string[] {
   const materials = Array.isArray(material) ? material : [material];
   return materials.map((candidate) => candidate.name);
 }
 
-function findBudget(mesh: InstancedMesh): InstanceBudget | undefined {
+function isSpatialBatchCandidate(mesh: InstancedMesh): boolean {
+  if (mesh.count < MINIMUM_SPATIAL_INSTANCES || mesh.morphTexture) return false;
   const names = materialNames(mesh.material);
-  return AUTUMN_INSTANCE_BUDGETS.find((budget) =>
-    names.some((name) => name.startsWith(budget.materialPrefix))
+  return AUTUMN_SPATIAL_BATCH_MATERIAL_PREFIXES.some((prefix) =>
+    names.some((name) => name.startsWith(prefix))
   );
 }
 
@@ -60,49 +77,172 @@ export function getAutumnRenderedTriangleCount(scene: Object3D): number {
   return total;
 }
 
+function copyInstanceAppearance(
+  source: InstancedMesh,
+  sourceIndex: number,
+  target: InstancedMesh,
+  targetIndex: number,
+  matrix: Matrix4,
+  color: Color
+): void {
+  source.getMatrixAt(sourceIndex, matrix);
+  target.setMatrixAt(targetIndex, matrix);
+  if (source.instanceColor) {
+    source.getColorAt(sourceIndex, color);
+    target.setColorAt(targetIndex, color);
+  }
+}
+
+function createSpatialBucket(
+  source: InstancedMesh,
+  indices: readonly number[],
+  key: string
+): InstancedMesh {
+  const bucket = new InstancedMesh(
+    source.geometry,
+    source.material,
+    indices.length
+  );
+  bucket.name = source.name;
+  bucket.position.copy(source.position);
+  bucket.quaternion.copy(source.quaternion);
+  bucket.scale.copy(source.scale);
+  bucket.matrix.copy(source.matrix);
+  bucket.matrixAutoUpdate = source.matrixAutoUpdate;
+  bucket.matrixWorldAutoUpdate = source.matrixWorldAutoUpdate;
+  bucket.visible = source.visible;
+  bucket.castShadow = source.castShadow;
+  bucket.receiveShadow = source.receiveShadow;
+  bucket.renderOrder = source.renderOrder;
+  bucket.layers.mask = source.layers.mask;
+  bucket.frustumCulled = true;
+  bucket.onBeforeRender = source.onBeforeRender;
+  bucket.onAfterRender = source.onAfterRender;
+  bucket.customDepthMaterial = source.customDepthMaterial;
+  bucket.customDistanceMaterial = source.customDistanceMaterial;
+  bucket.userData = {
+    ...source.userData,
+    autumnSpatialSource: source.uuid,
+    autumnSpatialCell: key,
+  };
+
+  const matrix = new Matrix4();
+  const color = new Color();
+  indices.forEach((sourceIndex, targetIndex) =>
+    copyInstanceAppearance(
+      source,
+      sourceIndex,
+      bucket,
+      targetIndex,
+      matrix,
+      color
+    )
+  );
+  bucket.instanceMatrix.needsUpdate = true;
+  if (bucket.instanceColor) bucket.instanceColor.needsUpdate = true;
+  bucket.computeBoundingBox();
+  bucket.computeBoundingSphere();
+  return bucket;
+}
+
+function partitionSpatially(mesh: InstancedMesh): SpatialBatchRecord | null {
+  const parent = mesh.parent;
+  if (!parent) return null;
+
+  const cells = new Map<string, number[]>();
+  const matrix = new Matrix4();
+  for (let index = 0; index < mesh.count; index += 1) {
+    mesh.getMatrixAt(index, matrix);
+    const cellX = Math.floor(matrix.elements[12]! / SPATIAL_CELL_METERS);
+    const cellZ = Math.floor(matrix.elements[14]! / SPATIAL_CELL_METERS);
+    const key = `${cellX}_${cellZ}`;
+    const indices = cells.get(key) ?? [];
+    indices.push(index);
+    cells.set(key, indices);
+  }
+  if (cells.size < 2) return null;
+
+  const buckets = [...cells.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, indices]) => createSpatialBucket(mesh, indices, key));
+  const originalIndex = parent.children.indexOf(mesh);
+  parent.remove(mesh);
+  buckets.forEach((bucket, offset) => {
+    parent.add(bucket);
+    const appendedIndex = parent.children.indexOf(bucket);
+    parent.children.splice(appendedIndex, 1);
+    parent.children.splice(originalIndex + offset, 0, bucket);
+  });
+
+  return { parent, original: mesh, originalIndex, buckets };
+}
+
+/**
+ * Keeps every authored instance while replacing broad global instance bounds
+ * with exact 48-metre culling cells. Quality tiers now choose no ecology by
+ * deletion; the camera decides which unchanged spatial cells reach the GPU.
+ */
 export function applyAutumnGeometryTier(
   scene: Object3D,
   tier: AutumnQualityTier
 ): AutumnGeometryTierReport {
-  let authoredTriangles = 0;
-  let visibleTriangles = 0;
-  let trimmedInstances = 0;
+  let state = spatialBatchStates.get(scene);
+  if (!state) {
+    const authoredTriangles = getAutumnRenderedTriangleCount(scene);
+    const candidates: InstancedMesh[] = [];
+    const frozenObjects: Array<{
+      object: Object3D;
+      matrixAutoUpdate: boolean;
+    }> = [];
+    scene.traverse((child) => {
+      if (child !== scene) {
+        frozenObjects.push({
+          object: child,
+          matrixAutoUpdate: child.matrixAutoUpdate,
+        });
+        child.updateMatrix();
+        child.matrixAutoUpdate = false;
+      }
+      const mesh = child as InstancedMesh;
+      if (mesh.isInstancedMesh && isSpatialBatchCandidate(mesh)) {
+        candidates.push(mesh);
+      }
+    });
+    const records = candidates
+      .map(partitionSpatially)
+      .filter((record): record is SpatialBatchRecord => record !== null);
+    state = { authoredTriangles, records, frozenObjects };
+    spatialBatchStates.set(scene, state);
+  }
 
-  scene.traverse((child) => {
-    const mesh = child as InstancedMesh;
-    if (!mesh.isMesh) return;
-
-    const triangles = triangleCount(mesh.geometry);
-    if (!mesh.isInstancedMesh) {
-      authoredTriangles += triangles;
-      visibleTriangles += triangles;
-      return;
-    }
-
-    const storedFullCount = mesh.userData[FULL_COUNT_KEY] as number | undefined;
-    const fullCount = storedFullCount ?? mesh.count;
-    mesh.userData[FULL_COUNT_KEY] = fullCount;
-    const budget = findBudget(mesh);
-    const requestedCount =
-      tier === "high" || !budget ? fullCount : budget[tier];
-    const visibleCount = Math.min(fullCount, requestedCount);
-    mesh.count = visibleCount;
-
-    authoredTriangles += triangles * fullCount;
-    visibleTriangles += triangles * visibleCount;
-    trimmedInstances += fullCount - visibleCount;
-  });
-
-  return { tier, authoredTriangles, visibleTriangles, trimmedInstances };
+  return {
+    tier,
+    authoredTriangles: state.authoredTriangles,
+    visibleTriangles: state.authoredTriangles,
+    trimmedInstances: 0,
+    sourceBatches: state.records.length,
+    spatialBatches: state.records.reduce(
+      (total, record) => total + record.buckets.length,
+      0
+    ),
+  };
 }
 
 export function restoreAutumnGeometryTier(scene: Object3D): void {
-  scene.traverse((child) => {
-    const mesh = child as InstancedMesh;
-    if (!mesh.isInstancedMesh) return;
-    const fullCount = mesh.userData[FULL_COUNT_KEY] as number | undefined;
-    if (fullCount === undefined) return;
-    mesh.count = fullCount;
-    delete mesh.userData[FULL_COUNT_KEY];
-  });
+  const state = spatialBatchStates.get(scene);
+  if (!state) return;
+  for (const record of [...state.records].reverse()) {
+    for (const bucket of record.buckets) {
+      record.parent.remove(bucket);
+      bucket.dispose();
+    }
+    record.parent.add(record.original);
+    const appendedIndex = record.parent.children.indexOf(record.original);
+    record.parent.children.splice(appendedIndex, 1);
+    record.parent.children.splice(record.originalIndex, 0, record.original);
+  }
+  for (const { object, matrixAutoUpdate } of state.frozenObjects) {
+    object.matrixAutoUpdate = matrixAutoUpdate;
+  }
+  spatialBatchStates.delete(scene);
 }

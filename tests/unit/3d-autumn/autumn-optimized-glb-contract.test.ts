@@ -5,14 +5,15 @@ import { describe, expect, it } from "vitest";
 import { AUTUMN_DEPTH_MATERIAL_GRADES } from "../../../scripts/autumn-depth-material-grades.mjs";
 import { AUTUMN_HERO_MATERIAL_GRADES } from "../../../scripts/autumn-hero-material-grades.mjs";
 import { getAutumnDepthCohesionProfile } from "$lib/shared/3d/environments/scenes/autumn/runtime/atmosphere/autumn-depth-cohesion";
-import { AUTUMN_INSTANCE_BUDGETS } from "$lib/shared/3d/environments/scenes/autumn/quality/autumn-geometry-tier";
 import { resolveAutumnShadowRole } from "$lib/shared/3d/environments/scenes/autumn/runtime/lighting/autumn-shadow-roles";
+import { AUTUMN_FRONT_SIDE_MATERIAL_PREFIXES } from "../../../scripts/autumn-material-sidedness.mjs";
 
 interface OptimizedAutumnGltf {
   materials?: Array<{
     name?: string;
     alphaMode?: string;
     alphaCutoff?: number;
+    doubleSided?: boolean;
   }>;
   accessors?: Array<{ count?: number }>;
   meshes?: Array<{
@@ -66,7 +67,7 @@ describe("optimized Autumn GLB contracts", () => {
     );
   }
 
-  function projectedTriangleCount(tier: "high" | "medium" | "low"): number {
+  function authoredTriangleCount(): number {
     return (gltf.nodes ?? []).reduce((sum, node) => {
       if (!Number.isInteger(node.mesh)) return sum;
       const triangles = meshTriangleCount(node.mesh!);
@@ -75,12 +76,7 @@ describe("optimized Autumn GLB contracts", () => {
       if (translationAccessor === undefined) return sum + triangles;
 
       const fullCount = gltf.accessors?.[translationAccessor]?.count ?? 0;
-      if (tier === "high") return sum + triangles * fullCount;
-      const names = nodeMaterialNames(node);
-      const budget = AUTUMN_INSTANCE_BUDGETS.find((candidate) =>
-        names.some((name) => name.startsWith(candidate.materialPrefix))
-      );
-      return sum + triangles * Math.min(fullCount, budget?.[tier] ?? fullCount);
+      return sum + triangles * fullCount;
     }, 0);
   }
 
@@ -174,16 +170,11 @@ describe("optimized Autumn GLB contracts", () => {
     expect(heroBTriangles).toBeGreaterThan(220_000);
   });
 
-  it("delivers real geometry reductions at medium and low quality", () => {
-    const high = projectedTriangleCount("high");
-    const medium = projectedTriangleCount("medium");
-    const low = projectedTriangleCount("low");
+  it("retains the full authored ecology for spatial runtime culling", () => {
+    const triangles = authoredTriangleCount();
 
-    expect(high).toBeGreaterThan(1_900_000);
-    expect(medium).toBeLessThanOrEqual(1_550_000);
-    expect(low).toBeLessThanOrEqual(1_100_000);
-    expect(medium / high).toBeLessThan(0.8);
-    expect(low / high).toBeLessThan(0.56);
+    expect(triangles).toBeGreaterThan(1_900_000);
+    expect(triangles).toBeLessThan(2_050_000);
   });
 
   it("contains no authored shadow impostors", () => {
@@ -193,6 +184,36 @@ describe("optimized Autumn GLB contracts", () => {
     expect(materialNames.some((name) => name.startsWith("Autumn Shadow"))).toBe(
       false
     );
+  });
+
+  it("front-sides proven closed solids while retaining thin-sheet families", () => {
+    for (const prefix of AUTUMN_FRONT_SIDE_MATERIAL_PREFIXES) {
+      const material = (gltf.materials ?? []).find((candidate) =>
+        candidate.name?.startsWith(prefix)
+      );
+      expect(material, `${prefix} disappeared from the GLB`).toBeDefined();
+      expect(material?.doubleSided, `${prefix} regressed to double-sided`).toBe(
+        false
+      );
+    }
+
+    for (const prefix of [
+      "Autumn Hero A PBR",
+      "Autumn Hero B PBR",
+      "Autumn Birch PBR",
+      "Autumn Larch PBR",
+      "Autumn Snag PBR",
+      "Autumn Willow PBR",
+      "Autumn Fern PBR",
+      "PaletteMaterial001",
+    ]) {
+      const material = (gltf.materials ?? []).find((candidate) =>
+        candidate.name?.startsWith(prefix)
+      );
+      expect(material?.doubleSided, `${prefix} lost thin-sheet backfaces`).toBe(
+        true
+      );
+    }
   });
 
   it("keeps optimizer-surviving grass outside both shadow roles", () => {

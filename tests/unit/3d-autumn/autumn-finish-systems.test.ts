@@ -7,6 +7,7 @@ import {
 } from "$lib/shared/3d/environments/primitives/rooted-wind-material";
 import { sampleAutumnLanternFlicker } from "$lib/shared/3d/environments/scenes/autumn/runtime/lighting/autumn-lantern-flicker";
 import { patchAutumnGroundDetailMaterial } from "$lib/shared/3d/environments/scenes/autumn/runtime/ground/autumn-ground-detail";
+import { createAutumnPondSurfaceMaterial } from "$lib/shared/3d/environments/scenes/autumn/runtime/water/autumn-pond-surface-material";
 import {
   calculateAutumnDepthFogFactor,
   getAutumnDepthCohesionProfile,
@@ -14,6 +15,24 @@ import {
 } from "$lib/shared/3d/environments/scenes/autumn/runtime/atmosphere/autumn-depth-cohesion";
 
 describe("Autumn finish systems", () => {
+  it("renders the pond without triggering Three's full-scene transmission pass", () => {
+    const bodyNormal = new Texture();
+    const coatNormal = new Texture();
+    const material = createAutumnPondSurfaceMaterial(bodyNormal, coatNormal);
+
+    expect(material.transmission).toBe(0);
+    expect(material.transparent).toBe(true);
+    expect(material.opacity).toBeGreaterThanOrEqual(0.6);
+    expect(material.normalMap).toBe(bodyNormal);
+    expect(material.clearcoatNormalMap).toBe(coatNormal);
+    expect(material.clearcoat).toBeGreaterThan(0);
+    expect(material.depthWrite).toBe(false);
+
+    material.dispose();
+    bodyNormal.dispose();
+    coatNormal.dispose();
+  });
+
   it("keeps the lantern flicker restrained and deterministic", () => {
     const samples = Array.from({ length: 240 }, (_, index) =>
       sampleAutumnLanternFlicker(index / 30)

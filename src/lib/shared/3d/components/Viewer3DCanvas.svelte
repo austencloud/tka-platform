@@ -32,6 +32,7 @@
   import Viewer3DCamera from "./Viewer3DCamera.svelte";
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
   import PerfMonitor from "./PerfMonitor.svelte";
+  import InteractiveCanvasFrameBridge from "./InteractiveCanvasFrameBridge.svelte";
   import GaitProbe from "../diagnostics/gait/GaitProbe.svelte";
   import GaitOverlay from "../diagnostics/gait/GaitOverlay.svelte";
   import { gaitProbeState } from "../diagnostics/gait/gait-probe-state.svelte";
@@ -484,8 +485,9 @@
           dpr={adaptiveQuality.pixelRatio}
           shadows={adaptiveQuality.config.enableShadows}
           createRenderer={(canvas) =>
-            new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
+            new WebGLRenderer({ canvas, preserveDrawingBuffer: false })}
         >
+          <InteractiveCanvasFrameBridge />
           <PerfMonitor
             visible={viewer3DState.showPerf}
             adaptive={sceneReady && isPlaying && !viewer3DState.isExporting}
