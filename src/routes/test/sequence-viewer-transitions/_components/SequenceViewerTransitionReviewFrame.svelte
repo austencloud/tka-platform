@@ -7,6 +7,8 @@
   import { registerLibraryRepository } from "$lib/shared/composition-root/register-library-repository";
   import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
   import { registerLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
+  import { createCollaborativeVideo } from "$lib/shared/video-collaboration/domain/collaborative-video";
+  import { getSequenceVideosStore } from "$lib/shared/video-collaboration/state/sequence-videos-store.svelte";
   import SequenceViewerOrchestrator from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
   import SequenceViewerShell from "$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte";
   import {
@@ -32,8 +34,15 @@
     | "2D Animation"
     | "3D Animation"
     | "Card"
-    | "Tunnel";
-  type ReviewMode = "split" | "animation" | "animation-3d" | "card" | "tunnel";
+    | "Tunnel"
+    | "Performances";
+  type ReviewMode =
+    | "split"
+    | "animation"
+    | "animation-3d"
+    | "card"
+    | "tunnel"
+    | "videos";
 
   interface ReplayMessage {
     source: "sequence-viewer-transition-review";
@@ -53,6 +62,26 @@
     registerLibraryRepository();
     registerLoopDetector(loopDetector);
     registerLoopDisplayResolver(resolveLoopDisplay);
+    getSequenceVideosStore(TRANSITION_REVIEW_SEQUENCE.id).add(
+      createCollaborativeVideo(
+        {
+          id: "transition-review-performance",
+          videoUrl: "/transition-review-performance.mp4",
+          storagePath: "transition-review/performance.mp4",
+          duration: 48,
+          fileSize: 7_800_000,
+          mimeType: "video/mp4",
+          thumbnailUrl: "/images/austen-fire.webp",
+          sequenceId: TRANSITION_REVIEW_SEQUENCE.id,
+          sequenceName: TRANSITION_REVIEW_SEQUENCE.word,
+          creatorId: "transition-review-performer",
+          visibility: "public",
+          description:
+            "Fire performance footage staged for the workspace handoff review.",
+        },
+        "Austen"
+      )
+    );
   }
 
   let isMobile = $state(browser && window.innerWidth < 768);
@@ -212,6 +241,7 @@
       "3D Animation": "animation-3d",
       Card: "card",
       Tunnel: "tunnel",
+      Performances: "videos",
     } as const;
     for (const button of document.querySelectorAll<HTMLButtonElement>(
       "button[aria-label]"
@@ -232,6 +262,7 @@
     if (label === "2D Animation") return "animation";
     if (label === "3D Animation") return "animation-3d";
     if (label === "Tunnel") return "tunnel";
+    if (label === "Performances") return "videos";
     return "card";
   }
 
@@ -282,6 +313,22 @@
         throw new Error(
           "3D did not produce a ready frame within the motion gate."
         );
+      }
+      await wait(16);
+    }
+    return version === replayVersion;
+  }
+
+  async function waitForPerformanceGallery(version: number): Promise<boolean> {
+    const startedAt = performance.now();
+    while (
+      version === replayVersion &&
+      !document.querySelector<HTMLElement>(
+        '.sequence-videos[data-gallery-state="ready"]'
+      )
+    ) {
+      if (performance.now() - startedAt > DURATION.dramatic * 3) {
+        throw new Error("Performances did not present a ready gallery.");
       }
       await wait(16);
     }
@@ -350,6 +397,8 @@
       : 0;
     const activeTunnelSurface = tunnelSurface();
     const activeTunnelCanvas = tunnelCanvas();
+    const stageLayer = elementBounds(".viewer-motion-stage-layer");
+    const performanceLayer = elementBounds(".performance-gallery-layer");
     const persistentAnimator = document.querySelector<HTMLElement>(
       "[data-persistent-animator]"
     );
@@ -504,6 +553,21 @@
         : 0,
       tunnelDisplayWidth: tunnelBounds?.width ?? 0,
       tunnelDisplayHeight: tunnelBounds?.height ?? 0,
+      stageLayerOpacity: elementOpacity(".viewer-motion-stage-layer"),
+      performanceLayerOpacity: elementOpacity(".performance-gallery-layer"),
+      stageLayerIdentity: elementIdentity(".viewer-motion-stage-layer"),
+      performanceLayerIdentity: elementIdentity(".performance-gallery-layer"),
+      stageLayerActive: elementDataFlag(".viewer-motion-stage-layer", "active"),
+      performanceLayerActive: elementDataFlag(
+        ".performance-gallery-layer",
+        "active"
+      ),
+      performanceGalleryReady:
+        document
+          .querySelector(".sequence-videos")
+          ?.getAttribute("data-gallery-state") === "ready",
+      stageLayerWidth: stageLayer.width,
+      performanceLayerWidth: performanceLayer.width,
     };
     activeTrace.samples.push(sample);
     traceFrame = requestAnimationFrame(captureGeometrySample);
@@ -590,7 +654,23 @@
     report("running", command);
 
     try {
-      if (command.startsWith("card-")) {
+      if (command.startsWith("performances-")) {
+        const openingMode =
+          command === "performances-3d" ? "3D Animation" : "2D Animation";
+        if (
+          !(await chooseMode(
+            openingMode,
+            version,
+            command !== "performances-3d"
+          ))
+        )
+          return;
+        if (command === "performances-3d") {
+          if (!(await waitForMotionPresentation("3d", version))) return;
+          if (!(await waitFor3DReady(version))) return;
+          await wait(motionDuration(DURATION.emphasis) + 90);
+        }
+      } else if (command.startsWith("card-")) {
         if (!(await chooseMode("Card", version))) return;
       } else if (
         command === "2d" ||
@@ -707,6 +787,34 @@
         if (!(await chooseMode("Tunnel", version, false))) return;
         await wait(motionDuration(DURATION.instant));
         if (!(await chooseMode("Card", version))) return;
+      } else if (command === "performances-2d") {
+        beginGeometryTrace(command, "stage-to-performances");
+        if (!(await chooseMode("Performances", version, false))) return;
+        if (!(await waitForPerformanceGallery(version))) return;
+        await wait(motionDuration(DURATION.emphasis) + 90);
+        setTracePhase("performances-to-stage");
+        if (!(await chooseMode("2D Animation", version))) return;
+      } else if (command === "performances-3d") {
+        beginGeometryTrace(command, "stage-to-performances");
+        if (!(await chooseMode("Performances", version, false))) return;
+        if (!(await waitForPerformanceGallery(version))) return;
+        await wait(motionDuration(DURATION.emphasis) + 90);
+        setTracePhase("performances-to-stage");
+        if (!(await chooseMode("3D Animation", version, false))) return;
+        if (!(await waitForMotionPresentation("3d", version))) return;
+        if (!(await waitFor3DReady(version))) return;
+        await wait(motionDuration(DURATION.emphasis) + 90);
+      } else if (command === "performances-interrupt") {
+        beginGeometryTrace(command, "interrupt-performances");
+        if (!(await chooseMode("Performances", version, false))) return;
+        await wait(motionDuration(DURATION.instant));
+        setTracePhase("interrupt-performance-stage");
+        if (!(await chooseMode("2D Animation", version, false))) return;
+        setTracePhase("interrupt-performances");
+        if (!(await chooseMode("Performances", version, false))) return;
+        await wait(motionDuration(DURATION.instant));
+        setTracePhase("interrupt-performance-stage");
+        if (!(await chooseMode("2D Animation", version))) return;
       } else {
         beginGeometryTrace(command, "interrupt-tunnel");
         if (!(await chooseMode("Tunnel", version, false))) return;
@@ -756,7 +864,10 @@
           message.command === "card-2d" ||
           message.command === "card-3d" ||
           message.command === "card-tunnel" ||
-          message.command === "card-stage-interrupt")) ||
+          message.command === "card-stage-interrupt" ||
+          message.command === "performances-2d" ||
+          message.command === "performances-3d" ||
+          message.command === "performances-interrupt")) ||
         (message.action === "motion" &&
           (message.preference === "full" || message.preference === "reduce")))
     );

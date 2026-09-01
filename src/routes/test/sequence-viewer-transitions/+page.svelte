@@ -119,12 +119,20 @@
               "Card, 2D, and Tunnel controls trade places inside one inspector; 3D releases that track into its stage on the same clock",
               "rapid reversals and reduced motion never expose a blank workspace",
             ]
-          : [
-              "one continuous edge traveling across the workspace",
-              "no canvas or card remount flash",
-              "clean reversals during interrupted motion",
-              "an opacity-only dissolve with reduced motion",
-            ]
+          : review.activeGateId === "performances"
+            ? [
+                "the production stage and Performances gallery retain one DOM identity for every round trip",
+                "the gallery inherits the exact stage allocation while the inspector departs or returns on the same clock",
+                "the two full-workspace surfaces crossfade without a blank or double-opaque frame",
+                "an inactive gallery does not fetch, play video, or drive the shared sequence playhead",
+                "2D, ready 3D, rapid reversals, mobile layout, and reduced motion all remain stable",
+              ]
+            : [
+                "one continuous edge traveling across the workspace",
+                "no canvas or card remount flash",
+                "clean reversals during interrupted motion",
+                "an opacity-only dissolve with reduced motion",
+              ]
   );
   const replayOptions = $derived<
     Array<{
@@ -169,11 +177,32 @@
                 primary: true,
               },
             ]
-          : [
-              { command: "2d", label: "Replay 2D" },
-              { command: "card", label: "Replay Card" },
-              { command: "interrupt", label: "Stress reversal", primary: true },
-            ]
+          : review.activeGateId === "performances"
+            ? [
+                {
+                  command: "performances-2d",
+                  label: "Replay with 2D",
+                },
+                {
+                  command: "performances-3d",
+                  label: "Replay with 3D",
+                  requires3D: true,
+                },
+                {
+                  command: "performances-interrupt",
+                  label: "Stress reversal",
+                  primary: true,
+                },
+              ]
+            : [
+                { command: "2d", label: "Replay 2D" },
+                { command: "card", label: "Replay Card" },
+                {
+                  command: "interrupt",
+                  label: "Stress reversal",
+                  primary: true,
+                },
+              ]
   );
   const frameSource = $derived(
     `/test/sequence-viewer-transitions?frame=1&gate=${review.activeGateId}`
@@ -216,7 +245,8 @@
       command === "interrupt" ||
       command === "3d-interrupt" ||
       command === "tunnel-interrupt" ||
-      command === "card-stage-interrupt"
+      command === "card-stage-interrupt" ||
+      command === "performances-interrupt"
         ? "Reversing the workspace before each prior move settles…"
         : command === "3d-first"
           ? "Loading 3D behind the live 2D frame, then returning…"
@@ -232,7 +262,11 @@
                     ? "Moving directly from Card into a ready 3D stage and back…"
                     : command === "card-tunnel"
                       ? "Moving directly from Card into the shared Tunnel stage and back…"
-                      : `Replaying the ${command === "2d" ? "2D" : "Card"} round trip…`;
+                      : command === "performances-2d"
+                        ? "Letting Performances inherit the 2D stage and returning…"
+                        : command === "performances-3d"
+                          ? "Letting Performances inherit the ready 3D stage and returning…"
+                          : `Replaying the ${command === "2d" ? "2D" : "Card"} round trip…`;
     frameElement.contentWindow.postMessage(
       {
         source: "sequence-viewer-transition-review",
@@ -249,14 +283,19 @@
     if (
       command === "3d-first" ||
       command === "tunnel-first" ||
-      command === "card-3d"
+      command === "card-3d" ||
+      command === "performances-3d"
     ) {
       pendingReplay = command;
       replayStatus = "loading";
       replayDetail =
         command === "3d-first"
           ? "Reloading a fresh production viewer for first 3D…"
-          : "Reloading a fresh production viewer for first Tunnel…";
+          : command === "tunnel-first"
+            ? "Reloading a fresh production viewer for first Tunnel…"
+            : command === "card-3d"
+              ? "Reloading a fresh production viewer for Card and first 3D…"
+              : "Reloading a fresh production viewer for Performances and first 3D…";
       frameVersion += 1;
       return;
     }
@@ -303,6 +342,11 @@
     if (isFrame) return;
 
     review.load();
+    const requestedGateId = page.url.searchParams.get("gate");
+    const requestedGate = TRANSITION_REVIEW_GATES.find(
+      (gate) => gate.id === requestedGateId && gate.availability === "ready"
+    );
+    if (requestedGate) review.selectGate(requestedGate.id);
     const handleFrameMessage = (event: MessageEvent<unknown>) => {
       if (
         event.source !== frameElement?.contentWindow ||
@@ -339,7 +383,10 @@
             trace.command === "card-2d" ||
             trace.command === "card-3d" ||
             trace.command === "card-tunnel" ||
-            trace.command === "card-stage-interrupt") &&
+            trace.command === "card-stage-interrupt" ||
+            trace.command === "performances-2d" ||
+            trace.command === "performances-3d" ||
+            trace.command === "performances-interrupt") &&
           typeof trace.duration === "number" &&
           Array.isArray(trace.samples)
         ) {

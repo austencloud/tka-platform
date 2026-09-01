@@ -54,7 +54,7 @@ export const TRANSITION_REVIEW_GATES = [
     title: "Stage ⇄ Performances",
     summary: "The full-body gallery handoff keeps spatial continuity.",
     fromGrade: "D",
-    availability: "pending",
+    availability: "ready",
   },
   {
     id: "post-studio",

@@ -11,7 +11,10 @@ export type TransitionTraceCommand =
   | "card-2d"
   | "card-3d"
   | "card-tunnel"
-  | "card-stage-interrupt";
+  | "card-stage-interrupt"
+  | "performances-2d"
+  | "performances-3d"
+  | "performances-interrupt";
 
 export type TransitionTracePhase =
   | "focus-2d"
@@ -36,7 +39,11 @@ export type TransitionTracePhase =
   | "interrupt-stage"
   | "card-to-stage"
   | "stage-to-card"
-  | "card-stage-interrupt";
+  | "card-stage-interrupt"
+  | "stage-to-performances"
+  | "performances-to-stage"
+  | "interrupt-performances"
+  | "interrupt-performance-stage";
 
 export interface TransitionGeometrySample {
   time: number;
@@ -49,6 +56,7 @@ export interface TransitionGeometrySample {
     | "animation-3d"
     | "card"
     | "tunnel"
+    | "videos"
     | null;
   outerDirection: "horizontal" | "vertical";
   stageSize: number;
@@ -119,6 +127,15 @@ export interface TransitionGeometrySample {
   tunnelBackingHeight: number;
   tunnelDisplayWidth: number;
   tunnelDisplayHeight: number;
+  stageLayerOpacity: number;
+  performanceLayerOpacity: number;
+  stageLayerIdentity: number;
+  performanceLayerIdentity: number;
+  stageLayerActive: boolean;
+  performanceLayerActive: boolean;
+  performanceGalleryReady: boolean;
+  stageLayerWidth: number;
+  performanceLayerWidth: number;
 }
 
 export interface TransitionGeometryTrace {
@@ -126,7 +143,7 @@ export interface TransitionGeometryTrace {
   duration: number;
   samples: TransitionGeometrySample[];
   modeCommits: Array<{
-    mode: "split" | "animation" | "animation-3d" | "card" | "tunnel";
+    mode: "split" | "animation" | "animation-3d" | "card" | "tunnel" | "videos";
     latency: number;
   }>;
 }
@@ -215,6 +232,20 @@ export interface TransitionGeometrySummary {
   cardStageInspectorSize: TransitionValueRange | null;
   cardStageInspectorExit: TransitionTravelSummary | null;
   cardStageInspectorEntry: TransitionTravelSummary | null;
+  performanceStageIdentityChanges: number;
+  performanceGalleryIdentityChanges: number;
+  performanceInspectorIdentityChanges: number;
+  performanceBlankFrames: number;
+  performanceDoubleOpaqueFrames: number;
+  performanceCrossfadeFrames: number;
+  performanceUnreadyFrames: number;
+  performanceOpacityComplementDriftMaximum: number;
+  performanceLayerWidthMismatchMaximum: number;
+  performanceSurfacePath: string[];
+  performanceStageExit: TransitionTravelSummary | null;
+  performanceStageEntry: TransitionTravelSummary | null;
+  performanceInspectorExit: TransitionTravelSummary | null;
+  performanceInspectorEntry: TransitionTravelSummary | null;
 }
 
 export interface TransitionEndpointUndershoot {
@@ -625,12 +656,31 @@ function lateTunnelBackingChanges(samples: TransitionGeometrySample[]): number {
   return changes;
 }
 
+function uniquePerformanceSurfacePath(
+  samples: TransitionGeometrySample[]
+): string[] {
+  return uniqueValuePath(
+    samples.map((sample) => {
+      if (
+        sample.stageLayerOpacity >= 0.05 &&
+        sample.performanceLayerOpacity >= 0.05
+      ) {
+        return "Stage + Performances";
+      }
+      if (sample.performanceLayerOpacity >= 0.05) return "Performances";
+      if (sample.stageLayerOpacity >= 0.05) return "Stage";
+      return "Blank";
+    })
+  );
+}
+
 export function summarizeTransitionGeometry(
   trace: TransitionGeometryTrace
 ): TransitionGeometrySummary {
   const isMotionTrace = trace.command.startsWith("3d");
   const isTunnelTrace = trace.command.startsWith("tunnel");
   const isCardStageTrace = trace.command.startsWith("card-");
+  const isPerformanceTrace = trace.command.startsWith("performances-");
   const tinyCardFrames = trace.samples.filter(
     (sample) =>
       !sample.dissolveActive &&
@@ -1099,6 +1149,100 @@ export function summarizeTransitionGeometry(
       ? phaseTravelSummary(
           trace.samples,
           "stage-to-card",
+          (sample) => sample.inspectorSize
+        )
+      : null,
+    performanceStageIdentityChanges: isPerformanceTrace
+      ? identityChanges(trace.samples, (sample) => sample.stageLayerIdentity)
+      : 0,
+    performanceGalleryIdentityChanges: isPerformanceTrace
+      ? identityChanges(
+          trace.samples,
+          (sample) => sample.performanceLayerIdentity
+        )
+      : 0,
+    performanceInspectorIdentityChanges: isPerformanceTrace
+      ? identityChanges(
+          trace.samples.filter((sample) => sample.desktopInspectorExpected),
+          (sample) => sample.inspectorIdentity
+        )
+      : 0,
+    performanceBlankFrames: isPerformanceTrace
+      ? trace.samples.filter(
+          (sample) =>
+            !sample.dissolveActive &&
+            sample.stageLayerOpacity < 0.05 &&
+            sample.performanceLayerOpacity < 0.05
+        ).length
+      : 0,
+    performanceDoubleOpaqueFrames: isPerformanceTrace
+      ? trace.samples.filter(
+          (sample) =>
+            sample.stageLayerOpacity > 0.95 &&
+            sample.performanceLayerOpacity > 0.95
+        ).length
+      : 0,
+    performanceCrossfadeFrames: isPerformanceTrace
+      ? trace.samples.filter(
+          (sample) =>
+            sample.stageLayerOpacity >= 0.05 &&
+            sample.performanceLayerOpacity >= 0.05
+        ).length
+      : 0,
+    performanceUnreadyFrames: isPerformanceTrace
+      ? trace.samples.filter(
+          (sample) =>
+            sample.performanceLayerActive &&
+            sample.performanceLayerOpacity >= 0.05 &&
+            !sample.performanceGalleryReady
+        ).length
+      : 0,
+    performanceOpacityComplementDriftMaximum: isPerformanceTrace
+      ? Math.max(
+          0,
+          ...trace.samples.map((sample) =>
+            Math.abs(
+              sample.stageLayerOpacity + sample.performanceLayerOpacity - 1
+            )
+          )
+        )
+      : 0,
+    performanceLayerWidthMismatchMaximum: isPerformanceTrace
+      ? Math.max(
+          0,
+          ...trace.samples.map((sample) =>
+            Math.abs(sample.stageLayerWidth - sample.performanceLayerWidth)
+          )
+        )
+      : 0,
+    performanceSurfacePath: isPerformanceTrace
+      ? uniquePerformanceSurfacePath(trace.samples)
+      : [],
+    performanceStageExit: isPerformanceTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "stage-to-performances",
+          (sample) => sample.stageSize
+        )
+      : null,
+    performanceStageEntry: isPerformanceTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "performances-to-stage",
+          (sample) => sample.stageSize
+        )
+      : null,
+    performanceInspectorExit: isPerformanceTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "stage-to-performances",
+          (sample) => sample.inspectorSize
+        )
+      : null,
+    performanceInspectorEntry: isPerformanceTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "performances-to-stage",
           (sample) => sample.inspectorSize
         )
       : null,

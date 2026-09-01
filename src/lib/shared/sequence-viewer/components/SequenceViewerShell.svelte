@@ -743,137 +743,162 @@
                     onExported={adoptPostStudioRender}
                     onSharePost={() => share.sharePost()}
                   />
-                {:else if layout.showVideoGallery}
-                  <SequenceVideos
-                    {sequence}
-                    isOwned={ctx.isOwned || ctx.isOwnedLibraryRecord}
-                    isLoggedIn={ctx.isLoggedIn}
-                    bpm={ctx.bpmLocal}
-                    canUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED}
-                    uploadRequested={layout.isVideoUploadActive}
-                    onSaveFirst={interactions.handleVideoUploadSaveFirst}
-                    onSaveToLibrary={interactions.handleSave}
-                    onUploadOpenChange={interactions.handleVideoWorkOpenChange}
-                  />
                 {:else}
-                  <ViewerSplitPane
-                    sequence={ctx.effectiveSequence}
-                    {tunnelComposition}
-                    {tunnelSaveTarget}
-                    {onTunnelSaved}
-                    renderMode={ctx.renderMode}
-                    isExporting={interactions.videoBusy}
-                    bpm={ctx.bpmLocal}
-                    onBpmChange={(bpm) =>
-                      interactions.handleBpmChange(bpm, "viewer")}
-                    onSaveToLibrary={interactions.handleSave}
-                    onPropChange={(prop) =>
-                      interactions.handlePropChange(prop, "viewer")}
-                    onFanAppearanceChange={ctx.handleFanAppearanceChange}
-                    playback={ctx.splitPanePlayback}
-                    imageComposition={layout.isImageExportActive
-                      ? {
-                          ...currentCardImageComposition,
-                          darkMode: ctx.exportOptions.imageDarkMode,
-                          forceContain: true,
+                  <!-- The Animator and Performances share one stage allocation.
+                       Keeping both layers alive lets the gallery inherit the
+                       exact pixels released by the inspector instead of
+                       appearing after a full workspace replacement. -->
+                  <div
+                    class="stage-content-layer viewer-motion-stage-layer"
+                    data-active={!layout.showVideoGallery}
+                    inert={layout.showVideoGallery || undefined}
+                    aria-hidden={layout.showVideoGallery}
+                    data-persistent-viewer-stage
+                  >
+                    <ViewerSplitPane
+                      sequence={ctx.effectiveSequence}
+                      {tunnelComposition}
+                      {tunnelSaveTarget}
+                      {onTunnelSaved}
+                      renderMode={ctx.renderMode}
+                      isExporting={interactions.videoBusy}
+                      bpm={ctx.bpmLocal}
+                      onBpmChange={(bpm) =>
+                        interactions.handleBpmChange(bpm, "viewer")}
+                      onSaveToLibrary={interactions.handleSave}
+                      onPropChange={(prop) =>
+                        interactions.handlePropChange(prop, "viewer")}
+                      onFanAppearanceChange={ctx.handleFanAppearanceChange}
+                      playback={layout.showVideoGallery
+                        ? { ...ctx.splitPanePlayback, isPlaying: false }
+                        : ctx.splitPanePlayback}
+                      imageComposition={layout.isImageExportActive
+                        ? {
+                            ...currentCardImageComposition,
+                            darkMode: ctx.exportOptions.imageDarkMode,
+                            forceContain: true,
+                          }
+                        : currentCardImageComposition}
+                      propRendering={ctx.splitPanePropRendering}
+                      layout={{
+                        isFullscreen: ctx.isFullscreen,
+                        fullscreenStackVertical: ctx.fullscreenStackVertical,
+                        isMobile: layout.effectiveMobile,
+                        isLandscapeMobile: layout.isLandscape,
+                        focusedPane:
+                          ctx.viewerState.viewerMode !== "split"
+                            ? ctx.viewerState.viewerMode === "card"
+                              ? "image"
+                              : "animation"
+                            : ctx.editingPane,
+                        suppressCloseButton:
+                          ctx.viewerState.viewerMode !== "split",
+                      }}
+                      onRenderProgress={ctx.onRenderProgress}
+                      onFocusPane={interactions.handleFocusPane}
+                      onUnfocusPane={interactions.handleUnfocusPane}
+                      onStepClick={interactions.handleStepClick}
+                      onQrPlayClick={ctx.practiceActive
+                        ? undefined
+                        : layout.playFromQr}
+                      onCanvasReady={ctx.handleCanvasReady}
+                      cardAutoLayoutOverride={layout.cardAutoLayoutOverride}
+                      cardContainSizeMotion={layout.cardContainSizeMotion}
+                      onAutoLayoutResolved={(resolved, width, height) => {
+                        const cardOwnsReadablePane =
+                          ctx.viewerState.viewerMode === "card" ||
+                          (ctx.viewerState.viewerMode === "split" &&
+                            ctx.editingPane !== "animation");
+                        // Keep the last Card box that was large enough to read.
+                        // A collapsing hidden Card must not replace that shape
+                        // with the wide, shallow grid its exit briefly measures.
+                        if (cardOwnsReadablePane) {
+                          layout.rememberReadableCardAutoLayout(
+                            resolved,
+                            width,
+                            height
+                          );
                         }
-                      : currentCardImageComposition}
-                    propRendering={ctx.splitPanePropRendering}
-                    layout={{
-                      isFullscreen: ctx.isFullscreen,
-                      fullscreenStackVertical: ctx.fullscreenStackVertical,
-                      isMobile: layout.effectiveMobile,
-                      isLandscapeMobile: layout.isLandscape,
-                      focusedPane:
-                        ctx.viewerState.viewerMode !== "split"
-                          ? ctx.viewerState.viewerMode === "card"
-                            ? "image"
-                            : "animation"
-                          : ctx.editingPane,
-                      suppressCloseButton:
-                        ctx.viewerState.viewerMode !== "split",
-                    }}
-                    onRenderProgress={ctx.onRenderProgress}
-                    onFocusPane={interactions.handleFocusPane}
-                    onUnfocusPane={interactions.handleUnfocusPane}
-                    onStepClick={interactions.handleStepClick}
-                    onQrPlayClick={ctx.practiceActive
-                      ? undefined
-                      : layout.playFromQr}
-                    onCanvasReady={ctx.handleCanvasReady}
-                    cardAutoLayoutOverride={layout.cardAutoLayoutOverride}
-                    cardContainSizeMotion={layout.cardContainSizeMotion}
-                    onAutoLayoutResolved={(resolved, width, height) => {
-                      const cardOwnsReadablePane =
-                        ctx.viewerState.viewerMode === "card" ||
-                        (ctx.viewerState.viewerMode === "split" &&
-                          ctx.editingPane !== "animation");
-                      // Keep the last Card box that was large enough to read.
-                      // A collapsing hidden Card must not replace that shape
-                      // with the wide, shallow grid its exit briefly measures.
-                      if (cardOwnsReadablePane) {
-                        layout.rememberReadableCardAutoLayout(
-                          resolved,
-                          width,
-                          height
-                        );
-                      }
-                      if (
-                        cardOwnsReadablePane &&
-                        (resolved || layout.isImageExportActive)
-                      ) {
-                        ctx.setResolvedCardAutoLayout(resolved);
-                      }
-                    }}
-                    {rerenderTrigger}
-                    onChoreoCardContextMenu={(x, y) =>
-                      choreoCardMenuHost?.openContextMenu(x, y)}
-                    onPlaybackToggle={() =>
-                      interactions.handlePlaybackToggle("viewer_transport")}
-                    onSystemPlaybackChange={interactions.handleSystemPlaybackChange}
-                    onProgressBarSeek={interactions.handleProgressBarSeek}
-                    onProgressBarScrubStart={ctx.handleProgressBarScrubStart}
-                    onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
-                    playbackMode={ctx.playbackMode}
-                    onPlaybackModeChange={(mode) =>
-                      interactions.handlePlaybackModeChange(mode, "viewer")}
-                    onSceneReadyChange={(ready) => (sceneReady3d = ready)}
-                    splitConfig={ctx.viewerState.viewerMode === "split"
-                      ? { leftPane: "animation", rightPane: "card" }
-                      : ctx.viewerState.viewerMode === "card"
-                        ? { ...ctx.viewerState.splitConfig, rightPane: "card" }
-                        : ctx.viewerState.viewerMode === "animation" ||
-                            ctx.viewerState.viewerMode === "animation-3d" ||
-                            ctx.viewerState.viewerMode === "mandala" ||
-                            ctx.viewerState.viewerMode === "tunnel"
+                        if (
+                          cardOwnsReadablePane &&
+                          (resolved || layout.isImageExportActive)
+                        ) {
+                          ctx.setResolvedCardAutoLayout(resolved);
+                        }
+                      }}
+                      {rerenderTrigger}
+                      onChoreoCardContextMenu={(x, y) =>
+                        choreoCardMenuHost?.openContextMenu(x, y)}
+                      onPlaybackToggle={() =>
+                        interactions.handlePlaybackToggle("viewer_transport")}
+                      onSystemPlaybackChange={interactions.handleSystemPlaybackChange}
+                      onProgressBarSeek={interactions.handleProgressBarSeek}
+                      onProgressBarScrubStart={ctx.handleProgressBarScrubStart}
+                      onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
+                      playbackMode={ctx.playbackMode}
+                      onPlaybackModeChange={(mode) =>
+                        interactions.handlePlaybackModeChange(mode, "viewer")}
+                      onSceneReadyChange={(ready) => (sceneReady3d = ready)}
+                      splitConfig={ctx.viewerState.viewerMode === "split"
+                        ? { leftPane: "animation", rightPane: "card" }
+                        : ctx.viewerState.viewerMode === "card"
                           ? {
                               ...ctx.viewerState.splitConfig,
-                              leftPane: ctx.viewerState.viewerMode,
+                              rightPane: "card",
                             }
-                          : ctx.viewerState.splitConfig}
-                    isLoggedIn={ctx.isLoggedIn}
-                    onVideoUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED
-                      ? interactions.handleGalleryVideoUpload
-                      : undefined}
-                    onArtExport={interactions.handleArtExport}
-                    onArtShare={share.setArtShareTarget}
-                    artShareActive={!!share.artShare}
-                    onArtExportEvent={interactions.handleArtExportEvent}
-                    onArtSettingChange={interactions.handleArtSettingChange}
-                    onArtAction={interactions.handleArtAction}
-                    onViewer3DSettingChange={scanInstrumentationEnabled
-                      ? interactions.handleViewer3DSetting
-                      : undefined}
-                    onViewer3DAction={scanInstrumentationEnabled
-                      ? interactions.handleViewer3DAction
-                      : undefined}
-                    practiceActive={ctx.practiceActive}
-                    practiceRunning={ctx.practiceRunning}
-                    practiceCountdown={ctx.practiceCountdown}
-                    practiceCellSize={ctx.practiceViewPrefs.cellSize}
-                    practiceCanvasFraction={0.5}
-                    practiceMirrorEnabled={ctx.mirrorEnabled}
-                  />
+                          : ctx.viewerState.viewerMode === "animation" ||
+                              ctx.viewerState.viewerMode === "animation-3d" ||
+                              ctx.viewerState.viewerMode === "mandala" ||
+                              ctx.viewerState.viewerMode === "tunnel"
+                            ? {
+                                ...ctx.viewerState.splitConfig,
+                                leftPane: ctx.viewerState.viewerMode,
+                              }
+                            : ctx.viewerState.splitConfig}
+                      isLoggedIn={ctx.isLoggedIn}
+                      onVideoUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED
+                        ? interactions.handleGalleryVideoUpload
+                        : undefined}
+                      onArtExport={interactions.handleArtExport}
+                      onArtShare={share.setArtShareTarget}
+                      artShareActive={!!share.artShare}
+                      onArtExportEvent={interactions.handleArtExportEvent}
+                      onArtSettingChange={interactions.handleArtSettingChange}
+                      onArtAction={interactions.handleArtAction}
+                      onViewer3DSettingChange={scanInstrumentationEnabled
+                        ? interactions.handleViewer3DSetting
+                        : undefined}
+                      onViewer3DAction={scanInstrumentationEnabled
+                        ? interactions.handleViewer3DAction
+                        : undefined}
+                      practiceActive={ctx.practiceActive}
+                      practiceRunning={ctx.practiceRunning}
+                      practiceCountdown={ctx.practiceCountdown}
+                      practiceCellSize={ctx.practiceViewPrefs.cellSize}
+                      practiceCanvasFraction={0.5}
+                      practiceMirrorEnabled={ctx.mirrorEnabled}
+                    />
+                  </div>
+                  <div
+                    class="stage-content-layer performance-gallery-layer"
+                    data-active={layout.showVideoGallery}
+                    inert={!layout.showVideoGallery || undefined}
+                    aria-hidden={!layout.showVideoGallery}
+                    data-persistent-performance-gallery
+                  >
+                    <SequenceVideos
+                      {sequence}
+                      active={layout.showVideoGallery}
+                      isOwned={ctx.isOwned || ctx.isOwnedLibraryRecord}
+                      isLoggedIn={ctx.isLoggedIn}
+                      bpm={ctx.bpmLocal}
+                      canUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED}
+                      uploadRequested={layout.isVideoUploadActive}
+                      onSaveFirst={interactions.handleVideoUploadSaveFirst}
+                      onSaveToLibrary={interactions.handleSave}
+                      onUploadOpenChange={interactions.handleVideoWorkOpenChange}
+                    />
+                  </div>
                 {/if}
                 {#if ctx.renderMode === "3d" && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
                   <Recording3DOverlay
@@ -1353,6 +1378,35 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+    isolation: isolate;
+  }
+
+  .stage-content-layer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity var(--transition-emphasis),
+      visibility 0s linear var(--duration-emphasis);
+  }
+
+  .stage-content-layer[data-active="true"] {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+      opacity var(--transition-emphasis),
+      visibility 0s linear 0s;
+  }
+
+  .performance-gallery-layer {
+    z-index: 1;
   }
 
   /* The settings column never grew with the viewport, so on a big screen its
@@ -1493,6 +1547,10 @@
   }
 
   :global(:root[data-motion-preference="reduce"]) .inspector-content-layer {
+    transition-duration: 0ms, 0s;
+  }
+
+  :global(:root[data-motion-preference="reduce"]) .stage-content-layer {
     transition-duration: 0ms, 0s;
   }
 

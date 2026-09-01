@@ -37,6 +37,8 @@
   interface Props {
     sequence: SequenceData;
     isOwned: boolean;
+    /** Hidden shell layers retain browsing state without fetching or playing. */
+    active?: boolean;
     isLoggedIn?: boolean;
     /** Seeds the timing editor's even-spacing guess. Browsing never needs it. */
     bpm?: number;
@@ -57,6 +59,7 @@
   let {
     sequence,
     isOwned,
+    active = true,
     isLoggedIn = false,
     bpm = 120,
     canUpload = false,
@@ -80,7 +83,7 @@
   const store = $derived(getSequenceVideosStore(sequence?.id ?? ""));
 
   $effect(() => {
-    if (!sequence?.id) return;
+    if (!active || !sequence?.id) return;
     void store.load();
   });
 
@@ -217,9 +220,16 @@
   const playhead = tryGetVideoPlayheadContext();
 
   /** The timing on the performance being watched, if it has any. */
-  const activeMap = $derived(view === "browse" ? (selectedVideo?.beatMap ?? null) : null);
+  const activeMap = $derived(
+    active && view === "browse" ? (selectedVideo?.beatMap ?? null) : null
+  );
 
   let playerTime = $state(0);
+  let activePlayer = $state<HTMLVideoElement | null>(null);
+
+  $effect(() => {
+    if (!active) activePlayer?.pause();
+  });
 
   $effect(() => {
     // Reads activeMap so switching performance, or leaving browse for the
@@ -253,6 +263,7 @@
 
   /** Hand the player over so a click on the notation can drive it. */
   function adoptPlayer(player: HTMLVideoElement | null): void {
+    activePlayer = player;
     if (!playhead) return;
     playhead.registerSeek(
       player
@@ -275,6 +286,14 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="sequence-videos"
+  data-active={active}
+  data-gallery-state={store.loading
+    ? "loading"
+    : store.error
+      ? "error"
+      : videos.length > 0
+        ? "ready"
+        : "empty"}
   in:fade={{ duration: 200 }}
   oncontextmenu={handleVideoContextMenu}
 >
@@ -369,6 +388,7 @@
                   return () => adoptPlayer(null);
                 }}
                 src={selectedVideo.videoUrl}
+                poster={selectedVideo.thumbnailUrl}
                 class="video-player"
                 controls
                 playsinline
@@ -463,6 +483,7 @@
                     <!-- svelte-ignore a11y_media_has_caption -->
                     <video
                       src={video.videoUrl}
+                      poster={video.thumbnailUrl}
                       class="option-video-preview"
                       muted
                       playsinline
@@ -614,8 +635,7 @@
 
   .performance-empty .upload-btn {
     min-height: clamp(var(--min-touch-target, 44px), 3cqw, 4.5rem);
-    padding: clamp(0.75rem, 0.8cqw, 1.5rem)
-      clamp(1.125rem, 1.4cqw, 2.75rem);
+    padding: clamp(0.75rem, 0.8cqw, 1.5rem) clamp(1.125rem, 1.4cqw, 2.75rem);
     font-size: clamp(var(--font-size-min, 14px), 0.7cqw, 1.75rem);
   }
 
@@ -661,7 +681,6 @@
     font-size: clamp(1.375rem, 2cqw, 3rem);
     line-height: 1.1;
   }
-
 
   /* The featured card is as wide as the performance it holds - a phone-shot
      vertical video is narrow, a landscape one is wide - so the first track

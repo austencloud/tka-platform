@@ -52,6 +52,9 @@ const choreoCard = read(
 const artPane = read(
   "src/lib/shared/sequence-viewer/components/ArtPane.svelte"
 );
+const sequenceVideos = read(
+  "src/lib/shared/sequence-viewer/components/sequence-videos/SequenceVideos.svelte"
+);
 
 describe("Sequence Viewer transition orchestration contract", () => {
   it("routes split geometry through the canonical PanelGroup owner", () => {
@@ -169,6 +172,9 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(reviewFrame).toContain('action: "motion"');
     expect(reviewFrame).toContain("scheduleMetrics()");
     expect(reviewPage).toContain('onclick={() => review.mark("approved")}');
+    expect(reviewPage).toContain(
+      'const requestedGateId = page.url.searchParams.get("gate")'
+    );
   });
 
   it("starts mobile review frames at their final geometry and keeps the gate scrollable", () => {
@@ -315,5 +321,29 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(geometryTrace).toContain("Animator remounts:");
     expect(geometryTrace).toContain("Inspector remounts:");
     expect(geometryTrace).toContain("Non-singleton canvas frames:");
+  });
+
+  it("hands one persistent stage allocation to Performances without background work", () => {
+    expect(shell).toContain("data-persistent-viewer-stage");
+    expect(shell).toContain("data-persistent-performance-gallery");
+    expect(shell).toContain("data-active={!layout.showVideoGallery}");
+    expect(shell).toContain("data-active={layout.showVideoGallery}");
+    expect(shell).toContain("active={layout.showVideoGallery}");
+    expect(shell).toContain("viewer-motion-stage-layer");
+    expect(shell).toContain("performance-gallery-layer");
+    expect(shell).toContain("opacity var(--transition-emphasis)");
+    expect(sequenceVideos).toContain("if (!active || !sequence?.id) return;");
+    expect(sequenceVideos).toContain("if (!active) activePlayer?.pause();");
+    expect(sequenceVideos).toContain('active && view === "browse"');
+    expect(sequenceVideos).toContain("poster={selectedVideo.thumbnailUrl}");
+    expect(viewerModeDissolve).toContain("GATE_FIVE_STAGE_MODES");
+    expect(reviewFrame).toContain('message.command === "performances-2d"');
+    expect(reviewFrame).toContain('message.command === "performances-3d"');
+    expect(reviewFrame).toContain(
+      'message.command === "performances-interrupt"'
+    );
+    expect(geometryTrace).toContain("Stage remounts:");
+    expect(geometryTrace).toContain("Gallery remounts:");
+    expect(geometryTrace).toContain("Opacity complement drift:");
   });
 });
