@@ -201,6 +201,63 @@ grid, PanelGroup, readiness crossfade, and animation engine into a second
 rendering system. The proposed composition produces the continuous-object
 effect without creating a competing mandala owner.
 
+## Proposed release-boundary follow-up
+
+This phase records Austen's second 2026-09-01 branch review and is not yet
+approved for implementation.
+
+### One relationship bridge
+
+The current Prop result row and the relationship caption below the hero repeat
+the same Hand-to-Prop edge. Replace both with one full-width relationship
+bridge directly below the six canonical Hand choices:
+
+- the left side shows the selected Hand relationship;
+- the arrow explains derivation, so the word `Derived` is unnecessary;
+- the right side shows one centered passive Prop result when the edge is
+  deterministic;
+- when the selected Hand admits two exact prop phases, the right side becomes
+  two equal selectable results without changing the bridge geometry.
+
+Remove the duplicate caption below the hero. Keep play/pause, but move it into
+the dock's compact trailing-action slot instead of giving it a separate
+full-width row.
+
+### Prop selection owns a drawer
+
+The full prop catalogue is too large for `AnimationPanel`'s 250px-capped dense
+tray. Route the Shape Matrix Props destination through the existing
+`PropSelectionSheet`: bottom sheet on narrow layouts and right drawer on
+side-by-side layouts. It already owns the full-size `BentoPropGrid`, family
+variants, scrolling, dismiss gestures, and responsive placement. The other
+bounded animation controls can remain in the dock tray.
+
+### Canonical paths for release
+
+Motion path shape changes actual interpolation, not merely path-line
+visibility. The Flow Arts Knowledge MCP's hand-path reference says Shift is a
+curved arc, Dash is straight, and Static does not travel. Pro and Anti describe
+base prop rotation on the Shift arc; they do not choose different hand-path
+geometry.
+
+The current `By Motion` application policy maps Pro to Arc and Anti to Concave,
+which conflates rotation behavior with path geometry. Demote Arc, Linear,
+Concave, and the current `By Motion` policy from the ordinary Shape Matrix and
+Sequence Viewer release surface. Keep the renderer capability available only
+in a dedicated study/lab surface while the noncanonical outcomes are
+enumerated.
+
+The public canonical interpolation policy should be:
+
+- Shift, including both Pro and Anti: Arc;
+- Dash: Linear;
+- Static: no traveled path.
+
+Three-, five-, six-, and ten-point systems belong to a separate grid-topology
+and nomenclature project. They must not be smuggled in as playback path styles.
+The current multi-grid package composes diamond, box, and skewed grids; it does
+not yet encode those polygon families or their letter analogues.
+
 ## Implementation checklist
 
 - [x] Prove relationship graph cardinalities across representative level bands.
@@ -223,6 +280,9 @@ effect without creating a competing mandala owner.
       1440×900, 1920×1080, 2560×1440, and 3840×2160, plus 200% zoom.
 - [ ] Obtain approval for the mobile turn editor and shared-mandala transition.
 - [ ] Implement and verify the approved mobile continuity phase.
+- [ ] Obtain approval for the unified relationship bridge, responsive prop
+      drawer, compact play/pause action, and canonical-path release boundary.
+- [ ] Implement and verify the approved release-boundary follow-up.
 - [ ] Integrate the verified branch into local `main` with `wt:finish`.
 
 ## Risks

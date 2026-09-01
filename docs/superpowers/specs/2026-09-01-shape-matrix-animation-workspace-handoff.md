@@ -87,12 +87,42 @@ mandala and the hero. Repository tracing supports this composition:
 This produces the visual continuity of one object without physically
 reparenting a live canvas between two layout owners.
 
+### Relationship, prop picker, and motion-path release boundary
+
+Austen's branch review exposed three connected composition problems:
+
+1. `PropRelationshipChipRow` and the caption below the hero repeat the same
+   Hand-to-Prop derivation. Replace them with one full-width relationship bridge
+   beneath the six Hand choices. Its Prop side is a centered passive result for
+   one edge and two equal buttons for a genuine phase branch. Remove `Derived`
+   and the duplicate hero caption.
+2. The Props tab currently compresses `BentoPropGrid` into the dense, 250px
+   dock tray. Route it through the existing `PropSelectionSheet`, which already
+   opens as a bottom sheet on narrow layouts and a right drawer on side-by-side
+   layouts. Move play/pause into the dock's compact trailing slot instead of a
+   separate full-width row.
+3. Hide Motion paths from the ordinary release surface. MCP ground truth says
+   Shift uses a curved arc for both Pro and Anti, Dash is straight, and Static
+   does not travel. The current `By Motion` policy maps Anti to Concave and
+   therefore conflates prop rotation behavior with hand-path geometry. Public
+   playback should use Shift→Arc, Dash→Linear, Static→no path; arbitrary Arc,
+   Linear, Concave, and experimental topology work belong in a study/lab.
+
+The existing multi-grid package composes diamond, box, and skewed grids. It
+does not yet model Austen's three-, five-, six-, or ten-point nomenclature, so
+that work should become its own topology/enumeration specification rather than
+a playback toggle.
+
 ## Remaining work in order
 
-1. Receive explicit approval for the help copy and mobile continuity phase.
-2. Implement the approved compact turn tray and shared-mandala transition.
-3. Add focused state/motion tests for turn edits that remain in detail and for
-   unique shared-element ownership.
+1. Receive explicit approval for the help copy, mobile continuity phase,
+   unified relationship bridge, responsive prop drawer, compact play/pause,
+   and canonical-path release boundary.
+2. Implement the approved compact turn tray, shared-mandala transition,
+   relationship/control recomposition, and path-policy restriction.
+3. Add focused state/motion tests for turn edits that remain in detail, unique
+   shared-element ownership, conditional Prop branching, prop-drawer routing,
+   and canonical Shift/Dash/Static interpolation.
 4. With browser-test permission, complete the screenshot sweep at 375×667,
    960×412, 820×1180, 1440×900, 1920×1080, 2560×1440, 3840×2160, and 200%
    zoom. Exercise assembled/disassembled category changes and settings trays.
