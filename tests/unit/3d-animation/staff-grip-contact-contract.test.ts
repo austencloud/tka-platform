@@ -75,8 +75,28 @@ describe("staff grip contact contract", () => {
     expect(gripTestStage).toContain("weldGrip={true}");
     expect(gripTestStage).toContain("enableLocomotion={false}");
     expect(gripTestStage).toContain("enableFootPlanting={false}");
+    expect(gripTestStage).toContain("phaseOffsetSteps={phase}");
+    expect(gripTestStage).toContain("active={false}");
     expect(gripTestStage).not.toContain("useTask");
     expect(gripTestStage).not.toContain("Math.sin");
+  });
+
+  it("freezes one shared sequence phase across four inspectable camera views", () => {
+    expect(gripTestPage).toContain("const VIEWS: CameraView[]");
+    expect(gripTestPage).toContain("{#each VIEWS as view, index (view.id)}");
+    expect(gripTestPage).toContain("{phase}");
+    expect(gripTestPage).toContain('type="range"');
+    expect(gripTestPage).toContain('rightDragAction="rotate"');
+  });
+
+  it("publishes measured shaft-axis and palm-contact errors", () => {
+    expect(gripTestPage).toContain("diagnostics.leftGripAxis");
+    expect(gripTestPage).toContain("diagnostics.rightGripAxis");
+    expect(gripTestPage).toContain("data-left-axis-error-deg");
+    expect(gripTestPage).toContain("data-right-axis-error-deg");
+    expect(liveSequencePerformer).toContain(
+      "onCollisionEvents={props.onCollisionEvents}"
+    );
   });
 
   it("maps sequence hands into the rig's blue and red prop inputs", () => {

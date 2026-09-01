@@ -8,6 +8,7 @@ import type {
 import type { FingerBoneName } from "../../../node_modules/@austencloud/scene-3d/src/lib/domain/models/GripPose";
 
 type SocketTargetProbe = {
+  leftGripAxisLocal: Vector3 | null;
   rightGripAxisLocal: Vector3 | null;
   leftPalmLocal: Vector3 | null;
   rightPalmLocal: Vector3 | null;
@@ -243,7 +244,7 @@ describe("avatar wrist-side clearance", () => {
     expect(maximumWorldJitter).toBeLessThan(0.01);
   });
 
-  it("keeps a measured power-grip wrist longitudinal instead of folding across the knuckles", () => {
+  it("calibrates a cylindrical handle across the palm from index to pinky", () => {
     const left = createMeasuredPowerGripArm("left");
     const right = createMeasuredPowerGripArm("right");
     const skeleton = {
@@ -274,42 +275,15 @@ describe("avatar wrist-side clearance", () => {
     const longitudinal = new Vector3(...QUATERNIUS_FINGER_ROOTS.Middle1)
       .normalize()
       .negate();
-    const transverse = new Vector3(...QUATERNIUS_FINGER_ROOTS.Pinky1)
-      .sub(new Vector3(...QUATERNIUS_FINGER_ROOTS.Index1))
-      .normalize();
-    expect(animator.leftGripAxisLocal?.dot(longitudinal)).toBeGreaterThan(
-      0.999
+    const transverse = new Vector3(...QUATERNIUS_FINGER_ROOTS.Pinky1).sub(
+      new Vector3(...QUATERNIUS_FINGER_ROOTS.Index1)
     );
+    transverse.addScaledVector(longitudinal, -transverse.dot(longitudinal));
+    transverse.normalize();
+
+    expect(animator.leftGripAxisLocal?.dot(transverse)).toBeGreaterThan(0.999);
     expect(
-      Math.abs(animator.leftGripAxisLocal?.dot(transverse) ?? 1)
-    ).toBeLessThan(0.45);
-
-    const leftRest = left.chain.effector.quaternion.clone();
-    const rightRest = right.chain.effector.quaternion.clone();
-    for (let frame = 0; frame < 40; frame++) {
-      for (const [side, chain] of [
-        ["left", left.chain],
-        ["right", right.chain],
-      ] as const) {
-        animator.applyWristOrientation(
-          side,
-          chain,
-          {
-            targetPosition: new Vector3(),
-            wristRotation: new Quaternion(),
-            weight: 1,
-          },
-          1
-        );
-        chain.root.updateMatrixWorld(true);
-      }
-    }
-
-    expect(left.chain.effector.quaternion.angleTo(leftRest)).toBeLessThan(
-      (15 * Math.PI) / 180
-    );
-    expect(right.chain.effector.quaternion.angleTo(rightRest)).toBeLessThan(
-      (15 * Math.PI) / 180
-    );
+      Math.abs(animator.leftGripAxisLocal?.dot(longitudinal) ?? 1)
+    ).toBeLessThan(0.01);
   });
 });

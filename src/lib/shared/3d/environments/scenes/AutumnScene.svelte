@@ -272,10 +272,10 @@
     // while textures and shaders are still compiling.
     const backgroundColor = new Color("#120b2b");
     // The terrain owns a stitched, rolling fog apron, so haze no longer has to
-    // conceal a finite edge. At 0.020 the 54m cabin lane lost so much contrast
-    // that its authored surface vanished halfway to the shack. 0.016 keeps
-    // atmospheric separation across the tree belts while preserving the full
-    // lived-in sightline from the stage clearing to the cabin door.
+    // conceal a finite edge. Dense fog made the middle and far ground converge
+    // to one flat field, visually detaching otherwise grounded trees. The lower
+    // density retains surface evidence through the tree belts while the apron
+    // still reaches complete extinction long before its outer edge.
     const fog = new FogExp2(fogColor.getHex(), sceneConfig.fog.density);
     s.fog = fog;
     s.background = backgroundColor;
@@ -290,8 +290,8 @@
   topColor={sceneConfig.sky.topColor}
   midColor={sceneConfig.sky.midColor}
   bottomColor={sceneConfig.sky.bottomColor}
-  gradientStart={0.5}
-  gradientEnd={0.62}
+  gradientStart={0.44}
+  gradientEnd={0.7}
   moon={moonConfig}
 />
 <Starfield config={starfieldConfig} />

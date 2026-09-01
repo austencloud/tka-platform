@@ -10,6 +10,11 @@
     PlaneMode,
     userProportionsState,
   } from "@austencloud/scene-3d";
+  import type {
+    AvatarGripDiagnostics,
+    AvatarPoseDiagnostics,
+    CollisionEvent,
+  } from "@austencloud/scene-3d";
   import type { CharacterId } from "$lib/shared/3d/domain/character-model";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -38,6 +43,11 @@
     enableLocomotion?: boolean;
     enableFootPlanting?: boolean;
     onReady?: () => void;
+    onCollisionEvents?: (
+      events: CollisionEvent[],
+      diagnostics: AvatarPoseDiagnostics,
+      gripDiagnostics: AvatarGripDiagnostics
+    ) => void;
   }
 
   const props: Props = $props();
@@ -108,6 +118,7 @@
   showEffects={props.showEffects ?? true}
   {tipEffectMap}
   isPlaying={performerState.isPlaying}
+  onCollisionEvents={props.onCollisionEvents}
   onAvatarSwapped={() => {
     if (readyReported) return;
     readyReported = true;
