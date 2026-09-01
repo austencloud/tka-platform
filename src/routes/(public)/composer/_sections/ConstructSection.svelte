@@ -614,6 +614,7 @@
                     : undefined}
                   activeMode="construct"
                   manualColumnCount={STEP_COLUMNS}
+                  allowFewStepOverflowOnNarrow={false}
                   arrivalSequence={composedSequence}
                   leftPropTypeOverride={demoProp}
                   rightPropTypeOverride={demoProp}

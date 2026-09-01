@@ -40,6 +40,15 @@ export interface GridSizingConfig {
   /** Let a narrow grid scroll vertically instead of shrinking cells to its height. */
   preferWidthSizingOnNarrow?: boolean;
   /**
+   * Let a start position or two-step build grow from width on a narrow surface,
+   * even when that makes the cells taller than their host.
+   *
+   * This is useful in the full Composer workspace, where the user benefits from
+   * a large early-build target and can scroll. Embedded side-by-side demos can
+   * opt out so a narrow pane is not mistaken for a phone.
+   */
+  allowFewStepOverflowOnNarrow?: boolean;
+  /**
    * Fit every step inside the container instead of holding a column count.
    *
    * A preview pane receives a finished sequence in a box it cannot grow, so
@@ -78,6 +87,7 @@ const DEFAULT_SIZING: Omit<
   stableColumnCount: null,
   narrowMaxColumns: null,
   preferWidthSizingOnNarrow: false,
+  allowFewStepOverflowOnNarrow: true,
   fitAllSteps: false,
 };
 
@@ -107,7 +117,8 @@ export function calculateGridLayout(
   // sizing lets them fill the available space while the scroll container handles overflow.
   const isNarrowContainer =
     containerWidth > 0 && containerWidth < sizing.columnBreakpoint;
-  const isMobileFewSteps = isNarrowContainer && stepCount <= 2;
+  const isMobileFewSteps =
+    isNarrowContainer && stepCount <= 2 && sizing.allowFewStepOverflowOnNarrow;
   const stableWideColumnCount =
     containerWidth >= sizing.columnBreakpoint &&
     sizing.stableColumnCount !== null &&
