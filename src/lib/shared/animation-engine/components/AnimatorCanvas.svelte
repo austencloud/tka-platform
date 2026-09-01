@@ -63,6 +63,7 @@ Last audit: 2025-12-27
   import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import type { QualityTier } from "../domain/types/quality-types";
   import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+  import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   // Props
   let {
@@ -93,6 +94,7 @@ Last audit: 2025-12-27
     hideTkaGlyph = false,
     hideStepNumbers = false,
     positionGlyphVisible = false,
+    propElementalType = null,
     hidePathLines = false,
     hideProgressBar = false,
     hideHeader = false,
@@ -165,6 +167,8 @@ Last audit: 2025-12-27
     /** Show the α/β/γ start→end position indicator centered at the top. Educational
      *  overlay for the guide's hand-path exploration; off by default everywhere else. */
     positionGlyphVisible?: boolean;
+    /** Optional prop timing/direction relationship shown opposite the hand element. */
+    propElementalType?: ElementalType | null;
     /** Force-hide the dotted prop-center path lines regardless of the visibility
      *  manager (e.g. the Tunnel art view, which never wants path overlays). */
     hidePathLines?: boolean;
@@ -701,6 +705,7 @@ Last audit: 2025-12-27
       {darkModeEnabled}
       {effectiveTkaGlyphVisible}
       elementalGlyphVisible={effectiveElementalGlyphVisible}
+      {propElementalType}
       {effectiveBeatNumbersVisible}
       leftPathLinesVisible={effectiveLeftPathLinesVisible}
       rightPathLinesVisible={effectiveRightPathLinesVisible}
