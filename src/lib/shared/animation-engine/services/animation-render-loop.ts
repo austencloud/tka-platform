@@ -54,6 +54,7 @@ import {
   DEFAULT_MANDALA_OVERLAY_CONFIG,
   type MandalaOverlayConfig,
 } from "$lib/shared/mandala/domain/mandala-overlay-types";
+import type { MandalaHandVisibility } from "$lib/shared/mandala/domain/mandala-types";
 
 // Longtask observer singleton - one PerformanceObserver shared across every
 // AnimationRenderLoop instance. Without this, each loop attaches its own
@@ -1925,7 +1926,8 @@ export class AnimationRenderLoop {
       return;
     }
 
-    const show = showLeft && showRight ? "both" : showLeft ? "blue" : "red";
+    const show: MandalaHandVisibility =
+      showLeft && showRight ? "both" : showLeft ? "left" : "right";
     const preparedPaths = this.mandalaPathPreparer.prepare(
       steps,
       this.canvasSize,

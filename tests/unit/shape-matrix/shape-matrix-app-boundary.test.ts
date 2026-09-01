@@ -97,6 +97,12 @@ describe("Shape Matrix app boundary", () => {
       ),
       "utf8"
     );
+    const renderLoopSource = readFileSync(
+      resolve(
+        "src/lib/shared/animation-engine/services/animation-render-loop.ts"
+      ),
+      "utf8"
+    );
 
     expect(inlinePlayerSource).toContain("{disassemblyLayout}");
     expect(animatorSource).toContain(
@@ -117,6 +123,10 @@ describe("Shape Matrix app boundary", () => {
     );
     expect(playbackSyncSource).toContain(
       "this._lastPropsRef?.mandalaVisibleOverride ?? state.mandala"
+    );
+    expect(renderLoopSource).toContain("const show: MandalaHandVisibility");
+    expect(renderLoopSource).toContain(
+      'showLeft && showRight ? "both" : showLeft ? "left" : "right"'
     );
   });
 
