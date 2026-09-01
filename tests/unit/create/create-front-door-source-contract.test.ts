@@ -17,7 +17,8 @@ describe("Create front-door source contract", () => {
     expect(source).toContain("<DualSourceCrossfade");
     expect(source).toContain("first={frontDoorSurface}");
     expect(source).toContain("second={workspaceSurface}");
-    expect(source).toContain("All creation methods");
+    expect(source).toContain('aria-label="Back to Create"');
+    expect(source).toContain("trigger.blur();");
   });
 
   it("hands the active Construct guide sole ownership of its heading", () => {

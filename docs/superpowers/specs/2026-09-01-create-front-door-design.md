@@ -19,10 +19,9 @@ look like unexplained domain vocabulary.
 
 ## Outcome
 
-Generic Create intent opens a real in-module home titled **What do you want to
-create?** It explains the available creation methods as outcome-oriented
-cards, then enters the selected workspace without a modal or a launch-time
-timer.
+Generic Create intent opens a real in-module home titled **How do you want to
+create?** It lists the available creation methods, then enters the selected
+workspace without a modal or a launch-time timer.
 
 Ordinary users see:
 
@@ -45,7 +44,7 @@ The decision is based on intent, not elapsed time.
 | `/create/{method}`                                  | Requested workspace                     |
 | Sidebar method, command, import, edit, or deep link | Requested workspace                     |
 | Refresh while a method URL is active                | Same workspace and persisted draft      |
-| **All creation methods** from a workspace           | Create front door without clearing work |
+| **Create** from a workspace                         | Create front door without clearing work |
 | Browser Back from a selected method                 | Create front door                       |
 
 The active method remains remembered while the front door is visible. Returning
@@ -62,11 +61,9 @@ keeps global navigation available, and does not trap focus.
 
 Each card contains:
 
-- the canonical method name, icon, and color from `CREATE_TABS`;
-- a plain-language statement of the user's likely intent;
-- a small abstract diagram of the method's input and output;
-- one sentence describing what the method does; and
-- a visible arrow affordance showing that the card opens a workspace.
+- the canonical method name, icon, color, and description from `CREATE_TABS`;
+- the **Last used** label when applicable; and
+- a chevron showing that the card opens a workspace.
 
 Cards are native buttons. The entire card is the target, the focus ring is
 visible, and essential text remains at least 14px. Layout is one column on
@@ -76,10 +73,10 @@ deliberate final position instead of an accidental orphan.
 
 ### Workspace return
 
-Every creation workspace exposes a compact **All creation methods** action at
-the module edge. It returns to the chooser without clearing, resetting, or
-changing the active method. Selecting a different method uses the existing
-navigation and persistence path.
+Every creation workspace exposes a compact **Create / Current method**
+breadcrumb at the module edge. **Create** returns to the chooser without
+clearing, resetting, or changing the active method. Selecting a different
+method uses the existing navigation and persistence path.
 
 The chooser and workspace remain mounted as two stateful sources. The canonical
 dual-source crossfade owns the visual handoff, so returning to the chooser does
@@ -109,10 +106,8 @@ never written as a fake tab or persisted method.
 - History entries distinguish `/create` from `/create/{method}`.
 - Back/forward restores the matching surface without clearing method state.
 
-`CREATE_TABS` remains the canonical method registry. The new component adds
-only front-door presentation metadata such as the intent sentence and abstract
-diagram kind. A coverage test keeps that metadata aligned with every tab marked
-`isCreationMethod`.
+`CREATE_TABS` remains the canonical method registry. The front door does not
+maintain a second set of method explanations or diagrams.
 
 ## Analytics
 
@@ -130,7 +125,7 @@ as evidence that the method itself was used successfully.
 
 - The front door uses a heading hierarchy and a labelled method list.
 - Cards are native buttons with at least 44px targets and visible focus rings.
-- Decorative diagrams and icons are hidden from assistive technology.
+- Decorative icons are hidden from assistive technology.
 - The **Last used** label is text, not color alone.
 - Hidden crossfade sources are inert and `aria-hidden`.
 - Essential text remains at least 14px and supporting text at least 12px.
@@ -141,13 +136,13 @@ as evidence that the method itself was used successfully.
 ## Files and Systems
 
 - Create entry presentation under `src/lib/features/create/shared/components/`
-- Front-door presentation metadata and analytics under the Create shared domain
+- Front-door analytics under the Create shared services
 - `navigation-state.svelte.ts` for the session-only surface state
 - `navigation-coordinator.svelte.ts` for URL/history intent
 - `CreateModule.svelte` for dual-source composition and the return action
 - Construct tutorial entry for instruction arbitration
 - Canonical Create descriptions in `tab-definitions.ts`
-- Focused unit/component tests for entry decisions and presentation coverage
+- Focused unit/component tests for entry decisions and source contracts
 
 The deleted CreationMethodSelector is not restored. Residual
 `creationMethodSelected` panel coordination state has no consumer and should be
@@ -169,13 +164,13 @@ removed rather than wired into the new flow.
 ## Verification
 
 1. Focused unit tests for generic versus explicit Create intent, history
-   restoration, method presentation coverage, and access filtering seams.
+   restoration, and access filtering seams.
 2. Focused component proof that the active Construct guide suppresses the
    duplicate workspace heading.
 3. Targeted formatter and TypeScript/Svelte checks for touched files, followed
    by the repository check once focused failures are clear.
 4. Runtime interaction proof for bare `/create`, every available method,
-   **All creation methods**, refresh, and browser Back/Forward.
+   **Create**, refresh, and browser Back/Forward.
 5. Console review with no new errors and overflow/touch-target inspection.
 6. Visual screenshots at 1920×1080, 2560×1440, 3840×2160, 1440×900,
    820×1180, 960×412, and 375×667, plus 200% browser zoom.
