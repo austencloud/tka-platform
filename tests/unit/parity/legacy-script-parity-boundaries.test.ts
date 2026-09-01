@@ -39,6 +39,21 @@ const composer = require(
     rightSoloHash: string;
   };
 };
+const publisher = require(
+  path.join(projectRoot, "scripts/publish-sequence.cjs")
+) as {
+  parseCliArgs(argv: string[]): {
+    help: boolean;
+    sequenceId: string;
+    ownerId: string;
+    dryRun: boolean;
+  };
+  buildPublisherArguments(options: {
+    sequenceId: string;
+    ownerId: string;
+    dryRun: boolean;
+  }): string[];
+};
 
 function readProjectFile(relativePath: string): string {
   return readFileSync(path.join(projectRoot, relativePath), "utf8");
@@ -162,5 +177,61 @@ describe("legacy sequence script parity boundaries", () => {
     expect(showSequence).toContain('visibility: "private"');
     expect(showSequence).not.toContain('visibility: "public"');
     expect(showSequence).not.toContain("await pubRef.set");
+  });
+
+  it("turns public promotion into one guarded command", () => {
+    const options = publisher.parseCliArgs(["seq-123"]);
+    const invocation = publisher.buildPublisherArguments(options);
+    const packageJson = JSON.parse(readProjectFile("package.json")) as {
+      scripts: Record<string, string>;
+    };
+
+    expect(options).toEqual({
+      help: false,
+      sequenceId: "seq-123",
+      ownerId: "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      dryRun: false,
+    });
+    expect(invocation).toContain("--promote");
+    expect(invocation).toContain("--strict");
+    expect(invocation).toContain("--apply");
+    expect(invocation).toContain("PBp3GSBO6igCKPwJyLZNmVEmamI3:seq-123");
+    expect(packageJson.scripts["sequence:publish"]).toBe(
+      "node scripts/publish-sequence.cjs"
+    );
+  });
+
+  it("keeps dry runs non-mutating and supports an explicit owner", () => {
+    const options = publisher.parseCliArgs([
+      "seq-456",
+      "--owner",
+      "future-owner",
+      "--dry-run",
+    ]);
+    const invocation = publisher.buildPublisherArguments(options);
+
+    expect(options.ownerId).toBe("future-owner");
+    expect(invocation).toContain("future-owner:seq-456");
+    expect(invocation).toContain("--promote");
+    expect(invocation).not.toContain("--apply");
+  });
+
+  it("keeps promotion inside the public aggregate transaction", () => {
+    const migration = readProjectFile(
+      "scripts/migrations/publish-missing-public-mirrors.ts"
+    );
+    const transaction = migration.slice(
+      migration.indexOf("await db.runTransaction"),
+      migration.indexOf("const stamp =")
+    );
+
+    expect(transaction).toContain("retainedRevisionRef");
+    expect(transaction).toContain("t.set(publicRef, projection)");
+    expect(transaction).toContain(
+      "t.set(retainedRevisionRef, retainedRevision)"
+    );
+    expect(transaction).toContain("t.set(claimRef");
+    expect(transaction).toContain('visibility: "public"');
+    expect(transaction).toContain("publicProjectionDigest");
   });
 });
