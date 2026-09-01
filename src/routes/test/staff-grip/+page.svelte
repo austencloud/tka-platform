@@ -26,12 +26,12 @@
   <section class="stage" aria-label="Animated two-staff grip test">
     <Canvas shadows>
       <T.Color attach="background" args={["#0a101a"]} />
-      <T.PerspectiveCamera makeDefault position={[0, 1.12, 4.15]} fov={42}>
+      <T.PerspectiveCamera makeDefault position={[0, 1.08, 3.15]} fov={40}>
         <OrbitControls
           enableDamping
           enablePan={false}
           target={[0, 0.82, 0.22]}
-          minDistance={2.4}
+          minDistance={2.1}
           maxDistance={6}
           maxPolarAngle={Math.PI / 2}
         />
