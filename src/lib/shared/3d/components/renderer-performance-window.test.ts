@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { createRendererPerformanceWindow } from "./renderer-performance-window";
+import {
+  createRendererInfoFrameSampler,
+  createRendererPerformanceWindow,
+} from "./renderer-performance-window";
 
 describe("renderer performance window", () => {
   it("reports frame-time percentiles and long-frame rate over a bounded window", () => {
@@ -15,7 +18,7 @@ describe("renderer performance window", () => {
       frameP95Ms: 50,
       frameP99Ms: 50,
       longFrameRate: 0.3,
-      thermalDrift: 5.842105263157895,
+      thermalDrift: 0,
     });
   });
 
@@ -34,5 +37,42 @@ describe("renderer performance window", () => {
       longFrameRate: 0,
       thermalDrift: 0,
     });
+  });
+
+  it("compares exact opening and closing 30-second thermal windows", () => {
+    const window = createRendererPerformanceWindow(80);
+    Array.from({ length: 30 }, () => 1_000).forEach(window.record);
+    Array.from({ length: 30 }, () => 1_100).forEach(window.record);
+
+    expect(window.snapshot().thermalDrift).toBeCloseTo(0.1, 5);
+  });
+});
+
+describe("renderer info frame sampler", () => {
+  it("aggregates composer passes until the next frame boundary", () => {
+    const info = {
+      autoReset: true,
+      render: { calls: 252, triangles: 3_955_000 },
+      memory: { geometries: 119, textures: 56 },
+      programs: [{}, {}],
+      reset() {
+        this.render.calls = 0;
+        this.render.triangles = 0;
+      },
+    };
+
+    const sampler = createRendererInfoFrameSampler(info);
+    expect(info.autoReset).toBe(false);
+    expect(sampler.sampleAndReset()).toEqual({
+      drawCalls: 252,
+      triangles: 3_955_000,
+      geometries: 119,
+      textures: 56,
+      programs: 2,
+    });
+    expect(info.render).toEqual({ calls: 0, triangles: 0 });
+
+    sampler.dispose();
+    expect(info.autoReset).toBe(true);
   });
 });

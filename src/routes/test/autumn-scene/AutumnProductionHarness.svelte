@@ -1,0 +1,63 @@
+<script lang="ts">
+  import { onDestroy, onMount } from "svelte";
+  import { BackgroundType } from "@austencloud/backgrounds";
+  import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
+  import type { RendererPerformanceSample } from "$lib/shared/3d/components/renderer-performance-window";
+  import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
+  import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
+  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
+  import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import demoSequenceJson from "$lib/shared/landing/data/demo-sequence.json";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+
+  interface Props {
+    onSample?: (sample: RendererPerformanceSample) => void;
+  }
+
+  let { onSample }: Props = $props();
+
+  const viewer = createViewer3DState({ renderMode: "3d" });
+  setViewer3DContext(viewer);
+  setEffectsConfigContext(
+    createEffectsConfigState(undefined, { persist: false })
+  );
+  setScene3DRenderContext(createScene3DRenderState());
+
+  const sequence = demoSequenceJson as unknown as SequenceData;
+  viewer.enter3D(sequence);
+  let currentStep = $state(0);
+  let animationFrame = 0;
+  const bpm = 60;
+
+  onMount(() => {
+    void settingsService.updateSetting("backgroundType", BackgroundType.AUTUMN);
+    let previousTime = performance.now();
+    const advance = (time: number): void => {
+      const elapsedSeconds = Math.min((time - previousTime) / 1_000, 0.1);
+      previousTime = time;
+      currentStep =
+        (currentStep + elapsedSeconds * (bpm / 60)) % sequence.steps.length;
+      animationFrame = requestAnimationFrame(advance);
+    };
+    animationFrame = requestAnimationFrame(advance);
+  });
+
+  onDestroy(() => cancelAnimationFrame(animationFrame));
+</script>
+
+<Viewer3DCanvas
+  sequenceData={sequence}
+  {currentStep}
+  isPlaying={true}
+  {bpm}
+  leftPropType="staff"
+  rightPropType="staff"
+  hideOverlays={true}
+  hidePerformerBadges={true}
+  fullScreen={true}
+  performanceWarmupMs={5_000}
+  onPerformanceSample={onSample}
+/>

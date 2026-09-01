@@ -76,4 +76,26 @@ describe("Autumn retained runtime lifecycle", () => {
     expect(postProcessing).toContain("registerInteractiveCanvasFrameProvider");
     expect(postProcessing).toContain("renderCurrentFrame(0, true)");
   });
+
+  it("keeps Autumn shadows live when the composer pauses for export", () => {
+    const postProcessing = source(
+      "src/lib/shared/3d/effects/post-processing/ScenePostProcessing.svelte"
+    );
+
+    expect(postProcessing).not.toContain("renderer.shadowMap.enabled = false");
+    expect(postProcessing).toContain("oceanRendererState.shadowMapEnabled");
+  });
+
+  it("routes cancellation into an Autumn-owned GLTF transport", () => {
+    const scene = source(
+      "src/lib/shared/3d/environments/scenes/AutumnScene.svelte"
+    );
+    const transport = source(
+      "src/lib/shared/3d/environments/scenes/autumn/runtime/autumn-environment-transport.ts"
+    );
+
+    expect(scene).toContain("load: loadAutumnEnvironment");
+    expect(transport).toContain("new LoadingManager()");
+    expect(transport).toContain("manager.abort()");
+  });
 });

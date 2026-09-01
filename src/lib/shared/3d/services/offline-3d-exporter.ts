@@ -313,11 +313,14 @@ export class Offline3DExporter {
             compositorCtx.drawImage(deps.webglCanvas, 0, 0, width, height);
           }
 
-          // One render/sub-render is the smallest synchronous unit Three.js
-          // gives us. Yield after each one so a single Cancel click is handled
-          // before another expensive unit starts, including cinema subframes.
-          await yieldToEventLoop();
-          this.throwIfCancelled();
+          // Cinema has already copied this sub-render into its persistent 2D
+          // accumulator, so it can yield safely before the next expensive
+          // render. Standard mode must synchronously read Three's
+          // nonpersistent framebuffer first.
+          if (compositorCtx) {
+            await yieldToEventLoop();
+            this.throwIfCancelled();
+          }
         }
 
         diag.markDrawImage();
@@ -331,6 +334,14 @@ export class Offline3DExporter {
 
         this.backgroundEncoder.addFrameCaptured(frame, frameIndex, isKeyframe);
         diag.markAddFrame();
+
+        // Standard mode yields after the synchronous canvas read. Cancellation
+        // still lands before another render starts, without paying for a
+        // duplicate composed render or risking a discarded framebuffer.
+        if (!compositorCtx) {
+          await yieldToEventLoop();
+          this.throwIfCancelled();
+        }
 
         // Keep transferred GPU frames bounded. If encoding falls behind, this
         // wait is cancellation-aware and prevents the queued frames themselves

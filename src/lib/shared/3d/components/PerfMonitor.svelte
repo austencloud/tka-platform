@@ -4,6 +4,7 @@
   import type { WebGLRenderer } from "three";
   import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-context";
   import {
+    createRendererInfoFrameSampler,
     createRendererPerformanceWindow,
     type RendererPerformanceSample,
   } from "./renderer-performance-window";
@@ -13,6 +14,7 @@
     visible?: boolean;
     adaptive?: boolean;
     active?: boolean;
+    warmupMs?: number;
     onSample?: (sample: RendererPerformanceSample) => void;
   }
 
@@ -20,6 +22,7 @@
     visible = false,
     adaptive = false,
     active = false,
+    warmupMs = 0,
     onSample,
   }: Props = $props();
 
@@ -60,9 +63,15 @@
   const frameWindow = createRendererPerformanceWindow();
   const gpuWindow = createRendererPerformanceWindow();
   const gpuTimer = createWebGlGpuTimer(renderer.getContext());
+  const rendererInfoSampler = createRendererInfoFrameSampler(renderer.info);
   let frameSerial = 0;
+  let monitoringStartedAt = lastTime;
+  let warmupComplete = warmupMs === 0;
 
-  onDestroy(() => gpuTimer.dispose());
+  onDestroy(() => {
+    gpuTimer.dispose();
+    rendererInfoSampler.dispose();
+  });
 
   $effect(() => {
     const monitoring = visible || active;
@@ -81,11 +90,14 @@
       frameCount = 0;
       lastTime = performance.now();
       lastFrameTime = lastTime;
+      monitoringStartedAt = lastTime;
+      warmupComplete = warmupMs === 0;
     }
     wasMonitoring = monitoring;
   });
 
   useTask((delta) => {
+    const completeFrame = rendererInfoSampler.sampleAndReset();
     adaptiveQuality?.observeFrame(
       delta,
       adaptive &&
@@ -100,6 +112,20 @@
       typeof document !== "undefined" &&
       document.visibilityState !== "visible"
     ) {
+      lastFrameTime = now;
+      return;
+    }
+    if (!warmupComplete) {
+      if (now - monitoringStartedAt < warmupMs) {
+        lastFrameTime = now;
+        return;
+      }
+      warmupComplete = true;
+      frameWindow.reset();
+      gpuWindow.reset();
+      frameCount = 0;
+      observedPeakFrameMs = 0;
+      lastTime = now;
       lastFrameTime = now;
       return;
     }
@@ -140,12 +166,11 @@
       frameCount = 0;
       lastTime = now;
 
-      const info = renderer.info;
-      drawCalls = info.render.calls;
-      triangles = info.render.triangles;
-      geometries = info.memory.geometries;
-      textures = info.memory.textures;
-      programs = info.programs?.length ?? 0;
+      drawCalls = completeFrame.drawCalls;
+      triangles = completeFrame.triangles;
+      geometries = completeFrame.geometries;
+      textures = completeFrame.textures;
+      programs = completeFrame.programs;
       onSample?.({
         fps,
         peakFrameMs,

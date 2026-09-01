@@ -18,7 +18,8 @@ interface StartAutumnEnvironmentRequestOptions<T> {
   retryRequest: number;
   load: (
     url: string,
-    onProgress: (progress: AutumnEnvironmentProgress) => void
+    onProgress: (progress: AutumnEnvironmentProgress) => void,
+    signal: AbortSignal
   ) => PromiseLike<T>;
   onReady: (value: T) => void;
   onFailure: (failure: AutumnEnvironmentFailure) => void;
@@ -44,12 +45,14 @@ export function startAutumnEnvironmentRequest<T>({
   let settled = false;
   let lastLoadedBytes = -1;
   let stallTimer: ReturnType<typeof setTimeout>;
+  const abortController = new AbortController();
 
   function failForTimeout(message: string): void {
     if (cancelled || settled) return;
     settled = true;
     clearTimeout(stallTimer);
     clearTimeout(totalTimer);
+    abortController.abort();
     onFailure({
       reason: "timeout",
       message,
@@ -79,7 +82,13 @@ export function startAutumnEnvironmentRequest<T>({
   armStallTimer();
 
   Promise.resolve()
-    .then(() => load(getAutumnEnvironmentUrl(retryRequest), reportProgress))
+    .then(() =>
+      load(
+        getAutumnEnvironmentUrl(retryRequest),
+        reportProgress,
+        abortController.signal
+      )
+    )
     .then(
       (value) => {
         if (cancelled || settled) return;
@@ -103,6 +112,7 @@ export function startAutumnEnvironmentRequest<T>({
 
   return () => {
     cancelled = true;
+    abortController.abort();
     clearTimeout(stallTimer);
     clearTimeout(totalTimer);
   };
