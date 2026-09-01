@@ -53,6 +53,7 @@ describe("Shape Matrix app boundary", () => {
     );
     expect(drillSource).toContain("includeStartPosition: false");
     expect(drillSource).toContain("currentStep: visibleStep");
+    expect(drillSource).toContain("propElementalType: railPropElementalType");
     expect(drillSource).toContain("initialQualityTier: QualityTier.LOW");
     expect(drillSource).toContain("resolveRealizationEntryStep");
     expect(drillSource).toContain("initialStep: layer.initialStep");

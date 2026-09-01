@@ -51,6 +51,7 @@ Usage:
   import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
   import {
+    type ElementalType,
     HandSide,
     type HandSide as HandSideValue,
   } from "../domain/enums/pictograph-enums";
@@ -74,6 +75,7 @@ Usage:
     // Extended glyph visibility controls
     showTnD = false,
     showElemental = false,
+    propElementalType = null,
     showPositions = false,
     // Hand point visibility (all = show all 8, active = only where props are)
     handPointVisibility = "all",
@@ -151,6 +153,8 @@ Usage:
     showNonRadialPoints?: boolean;
     showTnD?: boolean;
     showElemental?: boolean;
+    /** Optional prop-path TnD element, rendered opposite the hand-path glyph. */
+    propElementalType?: ElementalType | null;
     showPositions?: boolean;
     /** Hand point visibility mode: "all" shows all 8 points, "active" shows only where props are, "none" hides all */
     handPointVisibility?: "all" | "active" | "none";
@@ -637,6 +641,25 @@ Usage:
         xOffset={rightGlyphOffset}
       />
     </g>
+
+    <!-- Optional prop-path relationship (top-right). The existing bottom-right
+         glyph remains the hand-path relationship. Position carries the visual
+         distinction without adding repeated labels to every pictograph. -->
+    {#if propElementalType}
+      <g opacity={glyphOpacity}>
+        <ElementalGlyph
+          elementalType={propElementalType}
+          {hasValidData}
+          visible={showElemental || showTnD}
+          {previewMode}
+          {animateVisibility}
+          onToggle={onToggleElemental ?? onToggleTnD}
+          xOffset={rightGlyphOffset}
+          corner="top-right"
+          ariaLabel={`Prop timing and direction element: ${propElementalType}`}
+        />
+      </g>
+    {/if}
 
     <!-- Position glyph -->
     <g opacity={glyphOpacity}>

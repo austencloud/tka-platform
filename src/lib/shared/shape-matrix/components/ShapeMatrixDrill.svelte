@@ -72,6 +72,7 @@
   import type { ShapeMatrixRelationshipDriver } from "../app/state/shape-matrix-app-state.svelte";
   import { QualityTier } from "$lib/shared/animation-engine/domain/types/quality-types";
   import { resolveRealizationEntryStep } from "../services/realization-phase-handoff";
+  import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   interface Props {
     /** Nullable: the drill renders its own "Pick a cell" state before any click. */
@@ -447,6 +448,11 @@
   });
 
   const activeReal = $derived(activeBuiltRealization);
+  const railPropElementalType = $derived(
+    railRealization?.propRelationship.kind === "full"
+      ? (railRealization.propRelationship.element.element as ElementalType)
+      : null
+  );
   const availableHandModes = $derived(
     MODE_ORDER.filter((mode) =>
       realizations.some((realization) => realization.mode === mode)
@@ -1124,6 +1130,7 @@
             loop: true,
             leftPropType: propType,
             rightPropType: propType,
+            propElementalType: railPropElementalType,
             stepPulse: false,
             staggerCellUpdates: true,
           }}
