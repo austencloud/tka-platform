@@ -60,6 +60,7 @@
     protectPerformerTree,
   } from "../environments/rendering/environment-transition-compositor";
   import PerformerPickProxy from "./performer-interaction/PerformerPickProxy.svelte";
+  import PerformerVisualPickTarget from "./performer-interaction/PerformerVisualPickTarget.svelte";
   import PerformerHoverRing from "./performer-interaction/PerformerHoverRing.svelte";
   import {
     createPerformerPointerInteraction,
@@ -797,117 +798,122 @@
         performer.totalSteps
       )}
       {@const upperBodyStance = resolveUpperBodyStance(performer)}
-      <CharacterSwapTransition
-        {performer}
+      <PerformerVisualPickTarget
         performerIndex={i}
-        groundOffset={stageGroundOffset}
-        presenceProgress={performer.presenceProgress}
+        register={performerInteraction?.registerVisualPickTarget}
       >
-        {#snippet children({ onCharacterSwapped, characterOpacity })}
-          <PerformerRig
-            position={performer.position}
-            groundOffset={stageGroundOffset}
-            facingAngle={performer.facingAngle}
-            planeMode={performer.planeMode}
-            avatarState={performer}
-            avatarId={performer.characterId}
-            visiblePlanes={explicitPlanes}
-            gridMode={performerGridMode}
-            bluePropType={toScenePropType(resolvedLeftProp)}
-            redPropType={toScenePropType(resolvedRightProp)}
-            bluePropFlipped={isBuugengFamilyProp(resolvedLeftProp) &&
-              leftBuugengFlipped}
-            redPropFlipped={isBuugengFamilyProp(resolvedRightProp) &&
-              rightBuugengFlipped}
-            bluePropState={performer.leftPropState}
-            redPropState={performer.rightPropState}
-            tipEffectMap={perfTipMap}
-            {propLength}
-            {propBuild}
-            isPlaying={renderEntry.presencePhase !== "exiting" &&
-              isPlaying &&
-              i < performerCount}
-            enableLocomotion={enablePerformerLocomotion}
-            enableFootPlanting={enablePerformerLocomotion}
-            isMoving={performer.isMoving}
-            moveSpeed={performer.moveSpeed}
-            moveDirection={performer.moveDirection}
-            gaitTimingSample={performer.gaitTimingSample}
-            terminalStepPlan={performer.terminalStepPlan}
-            stanceYaw={upperBodyStance.yawRad}
-            spinePitchOffset={upperBodyStance.pitchRad}
-            headDodge={true}
-            onCollisionEvents={collisionAudit || gripMotionAudit
-              ? (
-                  events: CollisionEvent[],
-                  diagnostics: AvatarPoseDiagnostics,
-                  gripDiagnostics: AvatarGripDiagnostics
-                ) => {
-                  collisionAudit?.record(performer.id, events, diagnostics);
-                  gripMotionAudit?.record(
-                    performer.id,
-                    gripDiagnostics,
-                    events
-                  );
-                }
-              : undefined}
-            onAvatarSwapped={(characterId) => {
-              onCharacterSwapped(characterId);
-              markPerformerCharacterReady(performer.id, characterId);
-            }}
-            avatarOpacity={characterOpacity}
-          >
-            {#snippet gridSlot()}
-              {#if !hideSceneMarkers}
-                <T.Group
-                  position.z={performerGridOffset}
-                  layers={BASE_SCENE_LAYER}
-                >
-                  <Grid3D
-                    visiblePlanes={explicitPlanes}
-                    gridMode={performerGridMode}
-                    planeMode={performer.planeMode}
-                    showLabels={viewer3DState.showGridLabels}
-                    showOrientationHelpers={!hideOrientationHelpers}
-                  />
-                </T.Group>
-              {/if}
-            {/snippet}
-            {#snippet effectsSlot({
-              leftPropState,
-              rightPropState,
-              leftHandPos,
-              rightHandPos,
-              isPlaying: rigPlaying,
-              staffHalfLength,
-              effectsParentRef,
-            })}
-              {#if sceneEffectsManager && effectOrchestratorModule}
-                {#await effectOrchestratorModule then { default: EffectOrchestrator3D }}
-                  <EffectOrchestrator3D
-                    {leftPropState}
-                    {rightPropState}
-                    leftPropType={toScenePropType(resolvedLeftProp)}
-                    rightPropType={toScenePropType(resolvedRightProp)}
-                    isPlaying={rigPlaying}
-                    {staffHalfLength}
-                    {propBuild}
-                    tipEffectMap={perfTipMap}
-                    {leftHandPos}
-                    {rightHandPos}
-                    {effectsParentRef}
-                    sceneEffectsManagerOverride={sceneEffectsManager}
-                    qualityTierOverride={effectQualityTier}
-                    currentStep={performerCurrentStep}
-                    totalSteps={sequenceData?.steps.length ?? 0}
-                    seamlesslyLoopable={sequenceIsSeamless}
-                  />
-                {/await}
-              {/if}
-            {/snippet}
-          </PerformerRig>
-        {/snippet}
-      </CharacterSwapTransition>
+        <CharacterSwapTransition
+          {performer}
+          performerIndex={i}
+          groundOffset={stageGroundOffset}
+          presenceProgress={performer.presenceProgress}
+        >
+          {#snippet children({ onCharacterSwapped, characterOpacity })}
+            <PerformerRig
+              position={performer.position}
+              groundOffset={stageGroundOffset}
+              facingAngle={performer.facingAngle}
+              planeMode={performer.planeMode}
+              avatarState={performer}
+              avatarId={performer.characterId}
+              visiblePlanes={explicitPlanes}
+              gridMode={performerGridMode}
+              bluePropType={toScenePropType(resolvedLeftProp)}
+              redPropType={toScenePropType(resolvedRightProp)}
+              bluePropFlipped={isBuugengFamilyProp(resolvedLeftProp) &&
+                leftBuugengFlipped}
+              redPropFlipped={isBuugengFamilyProp(resolvedRightProp) &&
+                rightBuugengFlipped}
+              bluePropState={performer.leftPropState}
+              redPropState={performer.rightPropState}
+              tipEffectMap={perfTipMap}
+              {propLength}
+              {propBuild}
+              isPlaying={renderEntry.presencePhase !== "exiting" &&
+                isPlaying &&
+                i < performerCount}
+              enableLocomotion={enablePerformerLocomotion}
+              enableFootPlanting={enablePerformerLocomotion}
+              isMoving={performer.isMoving}
+              moveSpeed={performer.moveSpeed}
+              moveDirection={performer.moveDirection}
+              gaitTimingSample={performer.gaitTimingSample}
+              terminalStepPlan={performer.terminalStepPlan}
+              stanceYaw={upperBodyStance.yawRad}
+              spinePitchOffset={upperBodyStance.pitchRad}
+              headDodge={true}
+              onCollisionEvents={collisionAudit || gripMotionAudit
+                ? (
+                    events: CollisionEvent[],
+                    diagnostics: AvatarPoseDiagnostics,
+                    gripDiagnostics: AvatarGripDiagnostics
+                  ) => {
+                    collisionAudit?.record(performer.id, events, diagnostics);
+                    gripMotionAudit?.record(
+                      performer.id,
+                      gripDiagnostics,
+                      events
+                    );
+                  }
+                : undefined}
+              onAvatarSwapped={(characterId) => {
+                onCharacterSwapped(characterId);
+                markPerformerCharacterReady(performer.id, characterId);
+              }}
+              avatarOpacity={characterOpacity}
+            >
+              {#snippet gridSlot()}
+                {#if !hideSceneMarkers}
+                  <T.Group
+                    position.z={performerGridOffset}
+                    layers={BASE_SCENE_LAYER}
+                  >
+                    <Grid3D
+                      visiblePlanes={explicitPlanes}
+                      gridMode={performerGridMode}
+                      planeMode={performer.planeMode}
+                      showLabels={viewer3DState.showGridLabels}
+                      showOrientationHelpers={!hideOrientationHelpers}
+                    />
+                  </T.Group>
+                {/if}
+              {/snippet}
+              {#snippet effectsSlot({
+                leftPropState,
+                rightPropState,
+                leftHandPos,
+                rightHandPos,
+                isPlaying: rigPlaying,
+                staffHalfLength,
+                effectsParentRef,
+              })}
+                {#if sceneEffectsManager && effectOrchestratorModule}
+                  {#await effectOrchestratorModule then { default: EffectOrchestrator3D }}
+                    <EffectOrchestrator3D
+                      {leftPropState}
+                      {rightPropState}
+                      leftPropType={toScenePropType(resolvedLeftProp)}
+                      rightPropType={toScenePropType(resolvedRightProp)}
+                      isPlaying={rigPlaying}
+                      {staffHalfLength}
+                      {propBuild}
+                      tipEffectMap={perfTipMap}
+                      {leftHandPos}
+                      {rightHandPos}
+                      {effectsParentRef}
+                      sceneEffectsManagerOverride={sceneEffectsManager}
+                      qualityTierOverride={effectQualityTier}
+                      currentStep={performerCurrentStep}
+                      totalSteps={sequenceData?.steps.length ?? 0}
+                      seamlesslyLoopable={sequenceIsSeamless}
+                    />
+                  {/await}
+                {/if}
+              {/snippet}
+            </PerformerRig>
+          {/snippet}
+        </CharacterSwapTransition>
+      </PerformerVisualPickTarget>
 
       {#if renderEntry.presencePhase !== "exiting" && viewer3DState.selectedPerformerIndex === null}
         <T.Mesh
