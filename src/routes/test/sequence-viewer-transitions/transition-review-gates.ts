@@ -1,5 +1,7 @@
 export type TransitionReviewStatus =
-  "not-reviewed" | "approved" | "needs-changes";
+  | "not-reviewed"
+  | "approved"
+  | "needs-changes";
 
 export interface TransitionReviewDecision {
   status: TransitionReviewStatus;
@@ -45,7 +47,7 @@ export const TRANSITION_REVIEW_GATES = [
     title: "Card ⇄ motion modes",
     summary: "The card crosses the workspace as one continuous surface.",
     fromGrade: "D",
-    availability: "pending",
+    availability: "ready",
   },
   {
     id: "performances",

@@ -398,6 +398,82 @@ Acceptance requires:
   warnings, `git diff --check` is clean, and the final in-app-browser run emits
   no console warning or error. Gate 3 is ready for Austen's visual review.
 
+## Gate 4 contract
+
+Card and the motion modes are persistent surfaces inside the same nested
+`PanelGroup` workspace. A direct Card selection never routes through Side by
+Side, and a direct motion selection never remounts the Card, Animator, or outer
+inspector. The selected pane allocation and inspector allocation publish in the
+same mode mutation, so the Card edge, stage edge, and settings content describe
+one structural change.
+
+The Card's Auto layout and last readable contained box are leased through the
+handoff. While its panel track is narrower than that box, the fixed Card is
+clipped by the canonical panel wrapper instead of being flex-compressed. This
+keeps every pictograph cell square and stationary while the Card is progressively
+covered or revealed. The existing Side-by-Side focus motion keeps its approved
+behavior; motion-mode restoration uses a distinct containment phase because it
+starts behind a zero-sized track.
+
+Card, 2D, and Tunnel retain the desktop inspector track while their persistent
+content layers crossfade. 3D owns its full stage and intentionally releases the
+inspector track while its preparation surface and scene take over; the track
+closes and reopens monotonically without losing its DOM identity. Compact
+layouts keep the production bottom-dock composition. Reduced motion removes the
+spatial interpolation and uses the existing workspace snapshot dissolve.
+
+Acceptance requires:
+
+1. Card ⇄ 2D, Card ⇄ 3D, and Card ⇄ Tunnel use direct mode paths with no
+   Side-by-Side intermediate frame.
+2. Card, Animator, and desktop inspector retain one DOM identity through every
+   round trip and rapid reversal.
+3. A visible Card never falls below the readable floor, changes aspect through
+   a sliver, or transforms its cells while the panel track moves.
+4. Card and stage center/allocation paths are monotonic in both directions,
+   with no backtrack or endpoint overshoot.
+5. Card/2D/Tunnel settings crossfade without a blank inspector; 3D's inspector
+   release and return remain monotonic on the structural clock.
+6. Reduced motion has no spatial tween, no blank workspace, and no delayed
+   state commit outside the canonical dissolve.
+7. Every required viewport passes overflow, responsive-axis, identity, blank,
+   squash, transformed-cell, and travel checks. 3D remains disabled where the
+   production viewport capability gate does not pass.
+
+### Gate 4 evidence · 2026-09-01
+
+- The first instrumented 1440×900 replay exposed the real failure: the Card's
+  panel collapsed to `6 px` while the live Card remained above `0.5` opacity.
+  The trace counted 22 squashed frames and two blank-inspector frames even
+  though the endpoints looked correct.
+- Card settings now remain in the shell-owned inspector layer, so Card, Motion,
+  and Tunnel controls trade places without removing the inspector content tree.
+  Card-to-2D and Card-to-Tunnel each record four crossfade frames, zero blank
+  inspector frames, and a fixed `560 px` desktop inspector.
+- Motion-mode restoration now reuses the existing Card containment lease and
+  disables flex compression while the track is below the leased box. The final
+  1440×900 Card-to-2D replay records zero squashed frames, zero transformed-cell
+  frames, and the direct `card → animation → card` path. Card travel is
+  `530 → 885 → 530 px`; stage allocation is `26 → 700 → 1 px`. Every leg has
+  zero backtrack and zero overshoot.
+- Card-to-Tunnel records the direct `card → tunnel → card` path with the same
+  zero remount, blank, squash, transform, backtrack, and overshoot counts.
+  Card-to-first-3D retains all three DOM identities and the honest 3D preparation
+  surface; its inspector closes `560 → 4 px` and reopens `4 → 560 px`
+  monotonically while the 3D stage takes the released space.
+- Rapid reversal records `card → animation → card → tunnel → card` with zero
+  intermediate split, remount, blank-workspace, blank-inspector, squash, or
+  transformed-cell frames. Reduced motion records 35 workspace-dissolve frames
+  with the same zero defect counts and no spatial Card layout change.
+- The full 375×667, 960×412, 820×1180, 1440×900, 1920×1080, 2560×1440, and
+  3840×2160 sweep reports no viewport overflow. Every reachable Card-to-2D
+  replay records zero remount, blank, squash, transform, backtrack, and
+  overshoot counts; 375×667 and 960×412 correctly withhold 3D through the shared
+  viewport capability predicate.
+- Forty-two focused tests pass, `svelte-check` reports zero errors and zero
+  warnings, `git diff --check` is clean, and the final in-app-browser console
+  contains no warnings or errors. Gate 4 is ready for Austen's visual review.
+
 ## Approval ledger
 
 | Gate                           | Status           | Approved by | Approved at          | Notes                                                              |
@@ -405,7 +481,7 @@ Acceptance requires:
 | 1. Side by Side ⇄ 2D / Card    | Approved         | Austen      | 2026-08-29 09:57 CDT | Approved after full/reduced, mobile-to-4K, and transformed-cell QA |
 | 2. 2D ⇄ 3D                     | Approved         | Austen      | 2026-08-30 16:27 CDT | Approved after shared-clock crossfade and canvas-settle QA         |
 | 3. 2D / 3D ⇄ Tunnel            | Ready for review |             |                      | Single-owner fade; 3D, reversal, reduced, mobile-to-4K green       |
-| 4. Card ⇄ left-side modes      | Pending          |             |                      |                                                                    |
+| 4. Card ⇄ left-side modes      | Ready for review |             |                      | Direct paths; persistent surfaces; mobile-to-4K geometry green     |
 | 5. Viewer stage ⇄ Performances | Pending          |             |                      |                                                                    |
 | 6. Viewer stage ⇄ Post Studio  | Pending          |             |                      |                                                                    |
 | 7. Export inspector            | Pending          |             |                      |                                                                    |

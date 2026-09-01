@@ -46,6 +46,9 @@ const scenePreparationSurface = read(
 const companionSurface = read(
   "src/lib/shared/sequence-viewer/components/ViewerCompanionSurface.svelte"
 );
+const choreoCard = read(
+  "src/lib/shared/sequence-viewer/components/ChoreoCard.svelte"
+);
 const artPane = read(
   "src/lib/shared/sequence-viewer/components/ArtPane.svelte"
 );
@@ -131,6 +134,24 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(geometryTrace).toContain("Card → Effects seam");
     expect(geometryTrace).toContain("2D return allocation");
     expect(shellLayoutState).not.toContain("splitModePromotionTimer");
+    expect(shell).toContain(
+      'class="inspector-content-layer card-settings-layer"'
+    );
+    expect(shell).toContain("data-active={layout.isImageExportActive}");
+    expect(shellLayoutState).toContain(
+      'if (previousMode !== "card" && mode === "card")'
+    );
+    expect(shellLayoutState).toContain(
+      'else if (previousMode === "card" && mode !== "card")'
+    );
+    expect(shellLayoutState).toContain(
+      'previousMode === "split" ? "focus" : "restore"'
+    );
+    expect(choreoCard).toContain(
+      '.choreo-card-root[data-contain-size-motion="restore"] .preview-stack'
+    );
+    expect(choreoCard).toContain("flex: 0 0 auto;");
+    expect(shell).toContain("const cardOwnsReadablePane =");
   });
 
   it("reviews the real production shell through production mode buttons", () => {
@@ -141,6 +162,8 @@ describe("Sequence Viewer transition orchestration contract", () => {
     );
     expect(reviewFrame).toContain("button.click()");
     expect(reviewPage).toContain("Stress reversal");
+    expect(reviewPage).toContain("Replay with 2D");
+    expect(reviewPage).toContain("Replay with Tunnel");
     expect(reviewPage).toContain('{ value: "reduce", label: "Reduced" }');
     expect(reviewPage).toContain("No viewport overflow");
     expect(reviewFrame).toContain('action: "motion"');
@@ -187,12 +210,14 @@ describe("Sequence Viewer transition orchestration contract", () => {
       '<ScenePreparationSurface statusText="Opening 3D" />'
     );
     expect(sceneLoadingCurtain).toContain(
-      '<ScenePreparationSurface {statusText} {progress} />'
+      "<ScenePreparationSurface {statusText} {progress} />"
     );
     expect(scenePreparationSurface).toContain("data-scene-preparation");
     expect(scenePreparationSurface).toContain("3D viewer");
     expect(scenePreparationSurface).toContain('role="progressbar"');
-    expect(scenePreparationSurface).toContain('aria-valuenow={percent ?? undefined}');
+    expect(scenePreparationSurface).toContain(
+      "aria-valuenow={percent ?? undefined}"
+    );
     expect(motionSurface).not.toContain("viewer-3d-handoff-status");
     expect(motionSurface).toContain(
       "class:canvas-2d-preparation-held={preparationCanvasWidth !== null}"
@@ -209,9 +234,7 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(motionSurface).toContain("inert={!isAnimatorActive}");
     expect(motionSurface).toContain("const releaseWhenCovered = () =>");
     expect(motionSurface).toContain("requestAnimationFrame(");
-    expect(motionSurface).toContain(
-      "getComputedStyle(pane2D).opacity"
-    );
+    expect(motionSurface).toContain("getComputedStyle(pane2D).opacity");
     expect(splitPaneCss).toContain("opacity var(--transition-emphasis)");
     expect(viewerModeDissolve).toContain(
       'previousMode === "animation" && nextMode === "animation-3d"'

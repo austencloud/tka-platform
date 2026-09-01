@@ -45,7 +45,9 @@ export function createViewerShellLayoutState(
   let cardAutoLayoutReleaseFrame = 0;
   let cardAutoLayoutReleaseSettleFrame = 0;
   let cardAutoLayoutReleaseVersion = 0;
-  let cardContainSizeMotion = $state<"focus" | "return" | null>(null);
+  let cardContainSizeMotion = $state<"focus" | "return" | "restore" | null>(
+    null
+  );
   let cardContainSizeMotionTimer: ReturnType<typeof setTimeout> | undefined;
   let cardLayoutSequenceKey = "";
   let progressivePromotionScheduled = false;
@@ -167,7 +169,9 @@ export function createViewerShellLayoutState(
     }
   }
 
-  function startCardContainSizeMotion(phase: "focus" | "return"): void {
+  function startCardContainSizeMotion(
+    phase: "focus" | "return" | "restore"
+  ): void {
     if (cardContainSizeMotionTimer !== undefined) {
       clearTimeout(cardContainSizeMotionTimer);
       cardContainSizeMotionTimer = undefined;
@@ -394,8 +398,16 @@ export function createViewerShellLayoutState(
     const ctx = inputs.getContext();
     const previousMode = ctx.viewerState.viewerMode;
     if (previousMode === mode) return;
-    if (previousMode === "split" && mode === "card") {
-      startCardContainSizeMotion("focus");
+    if (previousMode !== "card" && mode === "card") {
+      // Side-by-Side gives the Card a readable starting box that can grow into
+      // focus. A motion mode leaves the mounted Card behind a zero-sized track;
+      // restore the last readable box instead of recalculating it through that
+      // sliver and briefly painting a pencil-thin Card.
+      startCardContainSizeMotion(
+        previousMode === "split" ? "focus" : "restore"
+      );
+    } else if (previousMode === "card" && mode !== "card") {
+      startCardContainSizeMotion("return");
     }
     if (mode !== "card") ctx.ensureInteractiveServices();
     if (mode === "card") {

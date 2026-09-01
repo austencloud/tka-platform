@@ -123,7 +123,7 @@
     /** Holds a resolved Auto grid while a parent workspace changes geometry. */
     autoLayoutOverride?: ResolvedAutoLayout | null;
     /** Keeps contain sizing on the viewer's transition clock. */
-    containSizeMotion?: "focus" | "return" | null;
+    containSizeMotion?: "focus" | "return" | "restore" | null;
     /** Reports the measured Auto winner so Download Card can reuse it for PNG export. */
     onAutoLayoutResolved?: (
       layout: ResolvedAutoLayout | null,
@@ -1003,6 +1003,14 @@
   }
 
   .choreo-card-root[data-contain-size-motion="return"] .preview-stack {
+    flex: 0 0 auto;
+    transition:
+      width var(--transition-emphasis),
+      height var(--transition-emphasis);
+  }
+
+  .choreo-card-root[data-contain-size-motion="restore"] .preview-stack {
+    flex: 0 0 auto;
     transition:
       width var(--transition-emphasis),
       height var(--transition-emphasis);

@@ -22,7 +22,12 @@ describe("transition review decisions", () => {
       (gate) => gate.availability === "ready"
     ).map((gate) => gate.id);
 
-    expect(readyGateIds).toEqual(["split-focus", "2d-3d", "stage-tunnel"]);
+    expect(readyGateIds).toEqual([
+      "split-focus",
+      "2d-3d",
+      "stage-tunnel",
+      "card-stage",
+    ]);
   });
 
   it("restores valid decisions and ignores unknown gates", () => {

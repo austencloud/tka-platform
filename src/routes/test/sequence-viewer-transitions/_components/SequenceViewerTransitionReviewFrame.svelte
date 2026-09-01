@@ -28,7 +28,11 @@
 
   type ReplayCommand = TransitionTraceCommand;
   type ReviewModeLabel =
-    "Side by Side" | "2D Animation" | "3D Animation" | "Card" | "Tunnel";
+    | "Side by Side"
+    | "2D Animation"
+    | "3D Animation"
+    | "Card"
+    | "Tunnel";
   type ReviewMode = "split" | "animation" | "animation-3d" | "card" | "tunnel";
 
   interface ReplayMessage {
@@ -275,7 +279,9 @@
       )
     ) {
       if (performance.now() - startedAt > 20_000) {
-        throw new Error("3D did not produce a ready frame within the motion gate.");
+        throw new Error(
+          "3D did not produce a ready frame within the motion gate."
+        );
       }
       await wait(16);
     }
@@ -361,8 +367,8 @@
     const scenePreparation = document.querySelector<HTMLElement>(
       '[data-motion-surface="3d"][data-presented="true"] [data-scene-preparation]'
     );
-    const scenePreparationProgress = scenePreparation?.dataset
-      .scenePreparationProgress;
+    const scenePreparationProgress =
+      scenePreparation?.dataset.scenePreparationProgress;
     const motion3DReady = motion3DSurface?.dataset.sceneReady === "true";
     const sample: TransitionGeometrySample = {
       time: Math.round((performance.now() - traceStartedAt) * 10) / 10,
@@ -450,7 +456,8 @@
       cardSettingsWidth: cardSettings.width,
       cardSettingsHeight: cardSettings.height,
       cardSettingsCenterY: cardSettings.top + cardSettings.height / 2,
-      cardSettingsOpacity: elementOpacity('[aria-label="Card settings"]'),
+      cardSettingsOpacity: elementOpacity(".card-settings-layer"),
+      cardIdentity: elementIdentity(".preview-column .choreo-card-root"),
       dissolveActive: document.documentElement.classList.contains(
         VIEWER_MODE_DISSOLVE_CLASS
       ),
@@ -488,6 +495,7 @@
       activeArtSettingsCount: document.querySelectorAll(
         '[data-viewer-art-inspector-target] [data-active="true"][data-art-settings]'
       ).length,
+      artSettingsOpacity: elementOpacity(".art-settings-layer"),
       tunnelBackingWidth: activeTunnelCanvas
         ? activeTunnelCanvas.width / Math.max(1, window.devicePixelRatio || 1)
         : 0,
@@ -582,7 +590,13 @@
     report("running", command);
 
     try {
-      if (command === "2d" || command === "card" || command === "interrupt") {
+      if (command.startsWith("card-")) {
+        if (!(await chooseMode("Card", version))) return;
+      } else if (
+        command === "2d" ||
+        command === "card" ||
+        command === "interrupt"
+      ) {
         if (!(await chooseMode("Side by Side", version))) return;
       } else if (!(await chooseMode("2D Animation", version))) {
         return;
@@ -665,6 +679,34 @@
         if (!(await waitForMotionPresentation("3d", version))) return;
         if (!(await waitFor3DReady(version))) return;
         await wait(motionDuration(DURATION.emphasis) + 90);
+      } else if (command === "card-2d") {
+        beginGeometryTrace(command, "card-to-stage");
+        if (!(await chooseMode("2D Animation", version))) return;
+        setTracePhase("stage-to-card");
+        if (!(await chooseMode("Card", version))) return;
+      } else if (command === "card-3d") {
+        beginGeometryTrace(command, "card-to-stage");
+        if (!(await chooseMode("3D Animation", version, false))) return;
+        if (!(await waitForMotionPresentation("3d", version))) return;
+        if (!(await waitFor3DReady(version))) return;
+        await wait(motionDuration(DURATION.emphasis) + 90);
+        setTracePhase("stage-to-card");
+        if (!(await chooseMode("Card", version))) return;
+      } else if (command === "card-tunnel") {
+        beginGeometryTrace(command, "card-to-stage");
+        if (!(await chooseMode("Tunnel", version, false))) return;
+        if (!(await waitForTunnelPresentation(version))) return;
+        await wait(motionDuration(DURATION.emphasis) + 90);
+        setTracePhase("stage-to-card");
+        if (!(await chooseMode("Card", version))) return;
+      } else if (command === "card-stage-interrupt") {
+        beginGeometryTrace(command, "card-stage-interrupt");
+        if (!(await chooseMode("2D Animation", version, false))) return;
+        await wait(motionDuration(DURATION.instant));
+        if (!(await chooseMode("Card", version, false))) return;
+        if (!(await chooseMode("Tunnel", version, false))) return;
+        await wait(motionDuration(DURATION.instant));
+        if (!(await chooseMode("Card", version))) return;
       } else {
         beginGeometryTrace(command, "interrupt-tunnel");
         if (!(await chooseMode("Tunnel", version, false))) return;
@@ -710,7 +752,11 @@
           message.command === "3d-interrupt" ||
           message.command === "tunnel-first" ||
           message.command === "tunnel-3d" ||
-          message.command === "tunnel-interrupt")) ||
+          message.command === "tunnel-interrupt" ||
+          message.command === "card-2d" ||
+          message.command === "card-3d" ||
+          message.command === "card-tunnel" ||
+          message.command === "card-stage-interrupt")) ||
         (message.action === "motion" &&
           (message.preference === "full" || message.preference === "reduce")))
     );

@@ -7,7 +7,11 @@ export type TransitionTraceCommand =
   | "3d-interrupt"
   | "tunnel-first"
   | "tunnel-3d"
-  | "tunnel-interrupt";
+  | "tunnel-interrupt"
+  | "card-2d"
+  | "card-3d"
+  | "card-tunnel"
+  | "card-stage-interrupt";
 
 export type TransitionTracePhase =
   | "focus-2d"
@@ -29,7 +33,10 @@ export type TransitionTracePhase =
   | "prepare-tunnel-from-3d"
   | "return-3d"
   | "interrupt-tunnel"
-  | "interrupt-stage";
+  | "interrupt-stage"
+  | "card-to-stage"
+  | "stage-to-card"
+  | "card-stage-interrupt";
 
 export interface TransitionGeometrySample {
   time: number;
@@ -37,7 +44,12 @@ export interface TransitionGeometrySample {
   direction: "horizontal" | "vertical";
   focusedPane: string | null;
   selectedMode:
-    "split" | "animation" | "animation-3d" | "card" | "tunnel" | null;
+    | "split"
+    | "animation"
+    | "animation-3d"
+    | "card"
+    | "tunnel"
+    | null;
   outerDirection: "horizontal" | "vertical";
   stageSize: number;
   stageFlexGrow: number;
@@ -82,6 +94,7 @@ export interface TransitionGeometrySample {
   cardSettingsHeight: number;
   cardSettingsCenterY: number;
   cardSettingsOpacity: number;
+  cardIdentity: number;
   dissolveActive: boolean;
   animationOpacity: number;
   cardOpacity: number;
@@ -101,6 +114,7 @@ export interface TransitionGeometrySample {
   animatorIdentity: number;
   animatorCanvasCount: number;
   activeArtSettingsCount: number;
+  artSettingsOpacity: number;
   tunnelBackingWidth: number;
   tunnelBackingHeight: number;
   tunnelDisplayWidth: number;
@@ -187,6 +201,20 @@ export interface TransitionGeometrySummary {
   tunnelHandoffLatency: number | null;
   tunnelStageSize: TransitionValueRange | null;
   tunnelDisplaySize: TransitionValueRange | null;
+  cardStageCardIdentityChanges: number;
+  cardStageAnimatorIdentityChanges: number;
+  cardStageInspectorIdentityChanges: number;
+  cardStageBlankFrames: number;
+  cardStageSplitFrames: number;
+  cardStageSettingsBlankFrames: number;
+  cardStageSettingsCrossfadeFrames: number;
+  cardStageExitTravel: TransitionTravelSummary | null;
+  cardStageEntryTravel: TransitionTravelSummary | null;
+  cardStageExitAllocation: TransitionTravelSummary | null;
+  cardStageEntryAllocation: TransitionTravelSummary | null;
+  cardStageInspectorSize: TransitionValueRange | null;
+  cardStageInspectorExit: TransitionTravelSummary | null;
+  cardStageInspectorEntry: TransitionTravelSummary | null;
 }
 
 export interface TransitionEndpointUndershoot {
@@ -368,6 +396,35 @@ function travelSummary(
       ? Math.max(0, start - minimum)
       : Math.max(0, maximum - start),
     overshoot: movingRight
+      ? Math.max(0, maximum - end)
+      : Math.max(0, end - minimum),
+  };
+}
+
+function phaseTravelSummary(
+  samples: TransitionGeometrySample[],
+  phase: TransitionTracePhase,
+  value: (sample: TransitionGeometrySample) => number
+): TransitionTravelSummary | null {
+  const values = samples
+    .filter((sample) => sample.phase === phase && value(sample) > 0)
+    .map(value);
+  if (values.length < 2) return null;
+
+  const start = values[0];
+  const end = values.at(-1)!;
+  const minimum = Math.min(...values);
+  const maximum = Math.max(...values);
+  const increasing = end >= start;
+  return {
+    start,
+    end,
+    minimum,
+    maximum,
+    backtrack: increasing
+      ? Math.max(0, start - minimum)
+      : Math.max(0, maximum - start),
+    overshoot: increasing
       ? Math.max(0, maximum - end)
       : Math.max(0, end - minimum),
   };
@@ -573,6 +630,7 @@ export function summarizeTransitionGeometry(
 ): TransitionGeometrySummary {
   const isMotionTrace = trace.command.startsWith("3d");
   const isTunnelTrace = trace.command.startsWith("tunnel");
+  const isCardStageTrace = trace.command.startsWith("card-");
   const tinyCardFrames = trace.samples.filter(
     (sample) =>
       !sample.dissolveActive &&
@@ -953,6 +1011,95 @@ export function summarizeTransitionGeometry(
     tunnelDisplaySize: isTunnelTrace
       ? visibleTunnelRange(trace.samples, (sample) =>
           Math.min(sample.tunnelDisplayWidth, sample.tunnelDisplayHeight)
+        )
+      : null,
+    cardStageCardIdentityChanges: isCardStageTrace
+      ? identityChanges(trace.samples, (sample) => sample.cardIdentity)
+      : 0,
+    cardStageAnimatorIdentityChanges: isCardStageTrace
+      ? identityChanges(trace.samples, (sample) => sample.animatorIdentity)
+      : 0,
+    cardStageInspectorIdentityChanges: isCardStageTrace
+      ? identityChanges(
+          trace.samples.filter((sample) => sample.desktopInspectorExpected),
+          (sample) => sample.inspectorIdentity
+        )
+      : 0,
+    cardStageBlankFrames: isCardStageTrace
+      ? trace.samples.filter(
+          (sample) =>
+            !sample.dissolveActive &&
+            sample.cardOpacity < 0.05 &&
+            sample.animationOpacity < 0.05
+        ).length
+      : 0,
+    cardStageSplitFrames: isCardStageTrace
+      ? trace.samples.filter((sample) => sample.selectedMode === "split").length
+      : 0,
+    cardStageSettingsBlankFrames: isCardStageTrace
+      ? trace.samples.filter(
+          (sample) =>
+            sample.desktopInspectorExpected &&
+            !sample.dissolveActive &&
+            sample.cardSettingsOpacity < 0.05 &&
+            sample.effectsInspectorOpacity < 0.05 &&
+            sample.artSettingsOpacity < 0.05
+        ).length
+      : 0,
+    cardStageSettingsCrossfadeFrames: isCardStageTrace
+      ? trace.samples.filter(
+          (sample) =>
+            sample.desktopInspectorExpected &&
+            sample.cardSettingsOpacity >= 0.05 &&
+            Math.max(
+              sample.effectsInspectorOpacity,
+              sample.artSettingsOpacity
+            ) >= 0.05
+        ).length
+      : 0,
+    cardStageExitTravel: isCardStageTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "card-to-stage",
+          (sample) => sample.cardContentCenterX
+        )
+      : null,
+    cardStageEntryTravel: isCardStageTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "stage-to-card",
+          (sample) => sample.cardContentCenterX
+        )
+      : null,
+    cardStageExitAllocation: isCardStageTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "card-to-stage",
+          (sample) => sample.animationSize
+        )
+      : null,
+    cardStageEntryAllocation: isCardStageTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "stage-to-card",
+          (sample) => sample.animationSize
+        )
+      : null,
+    cardStageInspectorSize: isCardStageTrace
+      ? valueRange(trace.samples, (sample) => sample.inspectorSize)
+      : null,
+    cardStageInspectorExit: isCardStageTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "card-to-stage",
+          (sample) => sample.inspectorSize
+        )
+      : null,
+    cardStageInspectorEntry: isCardStageTrace
+      ? phaseTravelSummary(
+          trace.samples,
+          "stage-to-card",
+          (sample) => sample.inspectorSize
         )
       : null,
   };
