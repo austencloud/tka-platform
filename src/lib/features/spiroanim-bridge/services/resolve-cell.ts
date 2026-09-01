@@ -56,14 +56,18 @@ import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrat
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
 
-/** One step as SpiroAnim transcribed it. */
+/**
+ * One step as SpiroAnim transcribed it. Turns are recorded per prop colour —
+ * blue is TKA's left hand, red its right — and may be quarter values: the
+ * even-denominator and two-cycle ratios turn 0.25, 0.5, 0.75 or 1.5 per step.
+ */
 export interface TranscriptionStep {
   letter: string;
   startPosition: string;
   endPosition: string;
   swapped: boolean;
-  leftTurns: number;
-  rightTurns: number;
+  blueTurns: number;
+  redTurns: number;
 }
 
 /** One cell of SpiroAnim's VTG / QTR / 8-Step catalogues. */
@@ -188,8 +192,8 @@ function buildSteps(entry: TranscriptionEntry, rows: IndexedRow[]): StepData[] {
     // static hands, which never appear here.
     const withTurns = applyPendingTurnsToOption(
       row.pictograph,
-      transcribed.leftTurns,
-      transcribed.rightTurns,
+      transcribed.blueTurns,
+      transcribed.redTurns,
       left?.rotationDirection ?? RotationDirection.CLOCKWISE,
       right?.rotationDirection ?? RotationDirection.CLOCKWISE
     );
@@ -269,7 +273,7 @@ function withRequestedOrientation(
  * never guesses — for a malformed key, an unknown cell, or a cell whose steps
  * have no pictograph.
  *
- * The transcription is passed in rather than imported: it is 1,584 entries, and
+ * The transcription is passed in rather than imported: it is 3,312 entries, and
  * a static import would put all of it in the app's main chunk. The route
  * dynamic-imports it.
  */
