@@ -60,55 +60,138 @@ export type TunnelSavedCallback = (receipt: TunnelSaveReceipt) => void;
 // TunnelConfig / EffectsConfig / TrailSettings are large, internally-validated
 // shapes; the boundary schema guards the envelope + enums and passes the deep
 // blobs through as `z.any()` (same pattern mandala uses for nested StepData).
-const RawTunnelSnapshotSchema = z
-  .object({
-    version: z.number(),
-    tunnel: z.object({
-      config: z.any(),
-      gridVisible: z.boolean(),
-      colors: z
-        .object({
-          mode: z.enum(["hands", "spectrum", "custom"]),
-          custom: z.object({ left: z.string(), right: z.string() }),
-        })
-        .optional(),
-      spectrum: z.boolean().optional(),
-      section: z.enum([
-        "tunnel",
-        "props",
-        "speed",
-        "effects",
-        "effort",
-        "playback",
-      ]),
-      presetRecipe: z.any().optional(),
-    }),
-    effects: z.any(),
-    effort: z.string(),
-    paths: z.object({
-      pathShape: z.enum(["arc", "linear", "concave"]),
-      motionAwarePaths: z.boolean(),
-      leftPathLines: z.boolean(),
-      rightPathLines: z.boolean(),
-    }),
-    playback: z.object({
-      bpm: z.number(),
-      playbackMode: z.enum(["continuous", "step"]),
-    }),
-    props: z.object({
-      leftPropType: z.string(),
-      rightPropType: z.string(),
-      leftBuugengFlipped: z.boolean().optional(),
-      rightBuugengFlipped: z.boolean().optional(),
-    }),
-    trailRender: z.any(),
-  })
-  .refine(
-    (snapshot) =>
-      snapshot.tunnel.colors !== undefined ||
-      snapshot.tunnel.spectrum !== undefined,
-    { message: "Tunnel snapshot requires colors or legacy spectrum state" }
-  );
+function record(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function hasOwn(value: Record<string, unknown> | null, key: string): boolean {
+  return value !== null && Object.prototype.hasOwnProperty.call(value, key);
+}
+
+function normalizeLegacyTunnelHands(value: unknown): unknown {
+  const snapshot = record(value);
+  const tunnel = record(snapshot?.tunnel);
+  const colors = record(tunnel?.colors);
+  const customColors = record(colors?.custom);
+  const paths = record(snapshot?.paths);
+  const props = record(snapshot?.props);
+
+  const hasLegacyFields =
+    hasOwn(customColors, "blue") ||
+    hasOwn(customColors, "red") ||
+    hasOwn(paths, "bluePathLines") ||
+    hasOwn(paths, "redPathLines") ||
+    hasOwn(props, "bluePropType") ||
+    hasOwn(props, "redPropType") ||
+    hasOwn(props, "blueBuugengFlipped") ||
+    hasOwn(props, "redBuugengFlipped");
+
+  if (!snapshot || !hasLegacyFields) return value;
+
+  return {
+    ...snapshot,
+    ...(tunnel
+      ? {
+          tunnel: {
+            ...tunnel,
+            ...(colors
+              ? {
+                  colors: {
+                    ...colors,
+                    ...(customColors
+                      ? {
+                          custom: {
+                            ...customColors,
+                            left: customColors.left ?? customColors.blue,
+                            right: customColors.right ?? customColors.red,
+                          },
+                        }
+                      : {}),
+                  },
+                }
+              : {}),
+          },
+        }
+      : {}),
+    ...(paths
+      ? {
+          paths: {
+            ...paths,
+            leftPathLines: paths.leftPathLines ?? paths.bluePathLines,
+            rightPathLines: paths.rightPathLines ?? paths.redPathLines,
+          },
+        }
+      : {}),
+    ...(props
+      ? {
+          props: {
+            ...props,
+            leftPropType: props.leftPropType ?? props.bluePropType,
+            rightPropType: props.rightPropType ?? props.redPropType,
+            leftBuugengFlipped:
+              props.leftBuugengFlipped ?? props.blueBuugengFlipped,
+            rightBuugengFlipped:
+              props.rightBuugengFlipped ?? props.redBuugengFlipped,
+          },
+        }
+      : {}),
+  };
+}
+
+const RawTunnelSnapshotSchema = z.preprocess(
+  normalizeLegacyTunnelHands,
+  z
+    .object({
+      version: z.number(),
+      tunnel: z.object({
+        config: z.any(),
+        gridVisible: z.boolean(),
+        colors: z
+          .object({
+            mode: z.enum(["hands", "spectrum", "custom"]),
+            custom: z.object({ left: z.string(), right: z.string() }),
+          })
+          .optional(),
+        spectrum: z.boolean().optional(),
+        section: z.enum([
+          "tunnel",
+          "props",
+          "speed",
+          "effects",
+          "effort",
+          "playback",
+        ]),
+        presetRecipe: z.any().optional(),
+      }),
+      effects: z.any(),
+      effort: z.string(),
+      paths: z.object({
+        pathShape: z.enum(["arc", "linear", "concave"]),
+        motionAwarePaths: z.boolean(),
+        leftPathLines: z.boolean(),
+        rightPathLines: z.boolean(),
+      }),
+      playback: z.object({
+        bpm: z.number(),
+        playbackMode: z.enum(["continuous", "step"]),
+      }),
+      props: z.object({
+        leftPropType: z.string(),
+        rightPropType: z.string(),
+        leftBuugengFlipped: z.boolean().optional(),
+        rightBuugengFlipped: z.boolean().optional(),
+      }),
+      trailRender: z.any(),
+    })
+    .refine(
+      (snapshot) =>
+        snapshot.tunnel.colors !== undefined ||
+        snapshot.tunnel.spectrum !== undefined,
+      { message: "Tunnel snapshot requires colors or legacy spectrum state" }
+    )
+);
 
 export const TunnelSnapshotSchema = RawTunnelSnapshotSchema.transform(
   (snapshot) => migrateTunnelSnapshot(snapshot as LegacyTunnelSnapshot)
