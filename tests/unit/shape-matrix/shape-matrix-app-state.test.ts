@@ -51,7 +51,6 @@ function createState(compact: boolean) {
       activeAxis: "both",
       labelMode: "turns",
       propType: PropType.STAFF,
-      relationshipDriver: "hands",
       pair: null,
       mode: null,
       propMode: null,
@@ -214,7 +213,6 @@ describe("shape matrix app state", () => {
       activeAxis: "both",
       labelMode: "ratios",
       propType: PropType.STAFF,
-      relationshipDriver: "props",
       pair: { left, right },
       mode: "QS",
       propMode: "SO",
@@ -242,7 +240,6 @@ describe("shape matrix app state", () => {
     const right = flowers[1];
     if (!left || !right) throw new Error("Expected numeric flowers");
     state.selectPair({ left, right });
-    state.setRelationshipDriver("props");
     state.setPropMode("SS");
     expect(state.selectedPropMode).toBe("SS");
 

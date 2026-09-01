@@ -60,19 +60,20 @@
     type VtgMode,
   } from "../services/shape-matrix-realizations";
   import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
-  import {
-    HERO_TRAIL_PRESET,
-    HERO_TIP_EFFECT_MAP,
-  } from "$lib/shared/landing/data/hero-trail-preset";
+  import { HERO_TRAIL_PRESET } from "$lib/shared/landing/data/hero-trail-preset";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
+  import { growFade } from "$lib/shared/transitions/motion";
   import { getShapeMatrixTransitionRecorder } from "../debug/shape-matrix-transition-recorder";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
-  import type { ShapeMatrixRelationshipDriver } from "../app/state/shape-matrix-app-state.svelte";
   import { QualityTier } from "$lib/shared/animation-engine/domain/types/quality-types";
   import { resolveRealizationEntryStep } from "../services/realization-phase-handoff";
   import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import AnimationPanel from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
+  import type { ControlDockAction } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
+  import { getShapeMatrixAnimationContext } from "../app/context/shape-matrix-animation-context";
+  import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
 
   interface Props {
     /** Nullable: the drill renders its own "Pick a cell" state before any click. */
@@ -87,8 +88,8 @@
     selectedPropMode?: VtgMode | null;
     onmodechange?: (mode: VtgMode | null) => void;
     onpropmodechange?: (mode: VtgMode | null) => void;
-    relationshipDriver?: ShapeMatrixRelationshipDriver;
     propType?: PropType;
+    onproptypechange?: (propType: PropType) => void;
   }
   let {
     pair,
@@ -99,9 +100,11 @@
     selectedPropMode = $bindable(null),
     onmodechange,
     onpropmodechange,
-    relationshipDriver = "hands",
     propType = PropType.STAFF,
+    onproptypechange,
   }: Props = $props();
+
+  const animationState = getShapeMatrixAnimationContext();
 
   let animationPlayerModule: ReturnType<typeof importAnimationPlayer> | null =
     null;
@@ -121,14 +124,31 @@
     // The matrix stage is viewed much closer than the landing-page hero. Keep
     // its glow and stroke one tuning step quieter without changing that shared
     // attract-mode preset.
-    glowBlur: HERO_TRAIL_PRESET.glowBlur - 1,
-    lineWidth: HERO_TRAIL_PRESET.lineWidth - 1,
+    glowBlur: HERO_TRAIL_PRESET.glowBlur - 2,
+    lineWidth: HERO_TRAIL_PRESET.lineWidth - 2,
     // The generic player precomputes a full path cache whenever a sequence
     // changes. That is useful for long-lived editors but creates a 150–230 ms
     // main-thread task during rapid matrix exploration. Live capture is the
     // correct owner here: the player is already running continuously.
     usePathCache: false,
   };
+
+  const effectiveTrailSettings = $derived.by(() => {
+    const intent = animationState.scope.effects.trails;
+    void intent.thickness;
+    void intent.brightness;
+    void intent.leftColor;
+    void intent.rightColor;
+    return foldTrailIntentIntoSettings(SHAPE_MATRIX_TRAIL_PRESET, intent);
+  });
+
+  const animationActions = $derived<ControlDockAction[]>([
+    {
+      icon: animationState.playing ? "fa-pause" : "fa-play",
+      label: animationState.playing ? "Pause" : "Play",
+      onClick: animationState.togglePlaying,
+    },
+  ]);
 
   // Sticky across pair changes by design (spec: "Selection persistence").
   // Realizations are immutable payloads replaced as a unit. Raw state keeps
@@ -256,28 +276,19 @@
     requestedPropMode: VtgMode | null,
     allowFallback: boolean
   ): ModeRealization | null {
+    const handCandidates = candidates.filter(
+      (candidate) => candidate.mode === requestedMode
+    );
     if (requestedPropMode) {
-      const requested =
-        candidates.find(
-          (candidate) =>
-            candidate.mode === requestedMode &&
-            candidate.propMode === requestedPropMode
-        ) ??
-        candidates.find(
-          (candidate) => candidate.propMode === requestedPropMode
-        );
+      const requested = handCandidates.find(
+        (candidate) => candidate.propMode === requestedPropMode
+      );
       if (requested) return requested;
       return allowFallback
-        ? (candidates.find((candidate) => candidate.mode === requestedMode) ??
-            candidates[0] ??
-            null)
-        : null;
+        ? (handCandidates[0] ?? candidates[0] ?? null)
+        : (handCandidates[0] ?? null);
     }
-    return (
-      candidates.find((candidate) => candidate.mode === requestedMode) ??
-      (allowFallback ? candidates[0] : null) ??
-      null
-    );
+    return handCandidates[0] ?? (allowFallback ? candidates[0] : null) ?? null;
   }
 
   function syncSelection(
@@ -289,10 +300,7 @@
       selectedMode = realization.mode;
       onmodechange?.(realization.mode);
     }
-    if (
-      requestedPropMode !== null &&
-      realization.propMode !== requestedPropMode
-    ) {
+    if (realization.propMode !== requestedPropMode) {
       selectedPropMode = realization.propMode;
       onpropmodechange?.(realization.propMode);
     }
@@ -916,10 +924,6 @@
   }
 
   function selectHandMode(mode: VtgMode | null): void {
-    if (selectedPropMode !== null) {
-      selectedPropMode = null;
-      onpropmodechange?.(null);
-    }
     selectMode(mode);
   }
 
@@ -1001,13 +1005,20 @@
             autoPlayDelay: 0,
             chrome: "minimal",
             fill: true,
-            disassemblyLayout: "sidecar",
+            disassemblyLayout: "auto",
+            disassemblyTarget: animationState.disassembled,
+            onDisassemblyTargetChange: animationState.requestDisassembled,
             showWordHeader: true,
             beatIndicators: false,
             leftPropType: layer.propType,
             rightPropType: layer.propType,
-            trailSettingsOverride: SHAPE_MATRIX_TRAIL_PRESET,
-            tipEffectMap: HERO_TIP_EFFECT_MAP,
+            trailSettingsOverride: effectiveTrailSettings,
+            tipEffectMap: animationState.scope.effects.tipEffectMap,
+            effectsConfigState: animationState.scope.effects,
+            visibilityManagerOverride: animationState.scope.visibility,
+            externalBpm: animationState.bpm,
+            externalPlaying: animationState.playing,
+            onExternalPlayingChange: animationState.setPlaying,
             backgroundAlpha: 0,
             interactive: false,
             hoverHint: "none",
@@ -1043,13 +1054,14 @@
 
 <section
   class="drill"
+  class:controls-open={animationState.activeSection !== null}
   aria-label="Shape matrix realizations"
   style={captionRealization
     ? `--hand-el: ${captionRealization.element.accentColor}; --hand-dark: ${captionRealization.element.darkComplement}; --prop-el: ${captionRealization.propRelationship.element?.accentColor ?? captionRealization.element.accentColor}`
     : undefined}
 >
-  <div class="mode-picker">
-    {#if relationshipDriver === "hands"}
+  {#if animationState.activeSection === null}
+    <div class="mode-picker" transition:growFade={{ axis: "y" }}>
       <ElementChipRow
         selected={selectedMode}
         available={availableHandModes}
@@ -1057,23 +1069,17 @@
         disabled={!pair}
         onpick={selectHandMode}
       />
-    {:else}
       <PropRelationshipChipRow
         {realizations}
         {selectedMode}
         {selectedPropMode}
         activePropMode={activeReal?.propMode ?? null}
-        equalRotatingTurns={pair !== null &&
-          pair.left.turns !== "fl" &&
-          pair.right.turns !== "fl" &&
-          pair.left.turns === pair.right.turns}
         disabled={!pair}
         {building}
         ontarget={selectPropMode}
-        onhandpick={(mode) => selectMode(mode)}
       />
-    {/if}
-  </div>
+    </div>
+  {/if}
 
   <div class="media-stage">
     <div class="hero-stage">
@@ -1115,38 +1121,45 @@
       </div>
     </div>
 
-    <div class="strip-zone" role="group" aria-label="Pictograph timeline">
-      {#if railRealization && pictographRailReady}
-        <LazyMount
-          loader={() => import("$lib/shared/timeline/StepStrip.svelte")}
-          active={true}
-          keepAlive={false}
-          debugName="shape matrix pictograph carousel"
-          placeholder={railPlaceholder}
-          error={railLoadError}
-          props={{
-            sequence: railRealization.seq,
-            includeStartPosition: false,
-            currentStep: visibleStep,
-            bpm: 60,
-            density: "compact",
-            fillHeight: true,
-            anchor: "center",
-            orientation: "horizontal",
-            loop: true,
-            leftPropType: propType,
-            rightPropType: propType,
-            propElementalType: railPropElementalType,
-            stepPulse: false,
-            staggerCellUpdates: true,
-          }}
-        />
-      {:else if railRealization}
-        <p class="quarter-status">
-          Quarter-turn pictograph arrows are in visual calibration.
-        </p>
-      {/if}
-    </div>
+    {#if animationState.activeSection === null}
+      <div
+        class="strip-zone"
+        role="group"
+        aria-label="Pictograph timeline"
+        transition:growFade={{ axis: "y" }}
+      >
+        {#if railRealization && pictographRailReady}
+          <LazyMount
+            loader={() => import("$lib/shared/timeline/StepStrip.svelte")}
+            active={true}
+            keepAlive={false}
+            debugName="shape matrix pictograph carousel"
+            placeholder={railPlaceholder}
+            error={railLoadError}
+            props={{
+              sequence: railRealization.seq,
+              includeStartPosition: false,
+              currentStep: visibleStep,
+              bpm: animationState.bpm,
+              density: "compact",
+              fillHeight: true,
+              anchor: "center",
+              orientation: "horizontal",
+              loop: true,
+              leftPropType: propType,
+              rightPropType: propType,
+              propElementalType: railPropElementalType,
+              stepPulse: false,
+              staggerCellUpdates: true,
+            }}
+          />
+        {:else if railRealization}
+          <p class="quarter-status">
+            Quarter-turn pictograph arrows are in visual calibration.
+          </p>
+        {/if}
+      </div>
+    {/if}
   </div>
 
   <!-- The reserved box never changes size. Only the relationship inside it
@@ -1219,6 +1232,28 @@
     </Crossfade>
   </div>
 
+  <div class="animation-controls">
+    <AnimationPanel
+      isExporting={false}
+      layout="bottom"
+      isPlaying={animationState.playing}
+      bpm={animationState.bpm}
+      playbackMode={animationState.playbackMode}
+      onPlaybackToggle={animationState.togglePlaying}
+      onPlaybackModeChange={animationState.setPlaybackMode}
+      onBpmChange={animationState.setBpm}
+      showEffectsPlayback={false}
+      selectedPropType={propType}
+      onPropChange={onproptypechange}
+      sequence={captionRealization?.seq ?? null}
+      secondaryActions={animationActions}
+      showMotionVisibility={true}
+      onActiveSectionChange={animationState.setActiveSection}
+      closeRequest={animationState.closeRequest}
+      regionLabel="Shape animation controls"
+    />
+  </div>
+
   {#if onselectRealization}
     <div class="select-action" class:available={visibleRealization !== null}>
       <PanelButton
@@ -1240,11 +1275,12 @@
   .drill {
     height: 100%;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-rows: auto minmax(0, 1fr) auto auto auto;
     grid-template-areas:
       "modes"
       "media"
       "caption"
+      "controls"
       "action";
     min-height: 0;
     gap: 0.8rem;
@@ -1263,6 +1299,8 @@
 
   .mode-picker {
     grid-area: modes;
+    display: grid;
+    gap: 0.45rem;
     min-width: 0;
     min-height: 0;
   }
@@ -1448,6 +1486,11 @@
     height: 3rem;
     min-width: 0;
   }
+  .animation-controls {
+    grid-area: controls;
+    min-width: 0;
+    min-height: 0;
+  }
   .caption {
     width: 100%;
     height: 100%;
@@ -1575,11 +1618,12 @@
      reducing the hero to a thumbnail. */
   @container shape-matrix-drill (max-width: 25rem) {
     .drill {
-      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      grid-template-rows: auto minmax(0, 1fr) auto auto auto;
       grid-template-areas:
         "modes"
         "media"
         "caption"
+        "controls"
         "action";
     }
 
@@ -1599,7 +1643,7 @@
       grid-template-rows: minmax(0, 1fr) auto;
       grid-template-areas:
         "modes media"
-        "action media";
+        "action controls";
       column-gap: 0.8rem;
       row-gap: 0.55rem;
     }
@@ -1619,6 +1663,13 @@
 
     .select-action {
       grid-area: action;
+    }
+
+    .drill.controls-open {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        "media"
+        "controls";
     }
   }
 </style>

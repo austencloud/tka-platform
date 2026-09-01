@@ -131,6 +131,14 @@
     showMotionVisibility?: boolean;
     /** Optional semantic sink. Existing hosts keep the same behavior when absent. */
     onSettingChange?: ViewerControlSink;
+    /** Reports the open bottom-dock section. Sidebar hosts never close their
+     *  active page, so this callback is only meaningful for layout="bottom". */
+    onActiveSectionChange?: (section: PillId | null) => void;
+    /** Increment to close an open bottom tray from the host before another
+     *  structural transition begins. */
+    closeRequest?: number;
+    /** Accessible region name for non-export hosts. */
+    regionLabel?: string;
   }
 
   let {
@@ -161,6 +169,9 @@
     showInlineExportProgress = true,
     showMotionVisibility = false,
     onSettingChange,
+    onActiveSectionChange,
+    closeRequest = 0,
+    regionLabel = "Animation controls",
   }: Props = $props();
 
   const exportButtonLabel = $derived(
@@ -198,7 +209,27 @@
       previous,
       activePill
     );
+    onActiveSectionChange?.(activePill);
   }
+
+  let handledCloseRequest = closeRequest;
+  $effect(() => {
+    const request = closeRequest;
+    if (request === handledCloseRequest) return;
+    handledCloseRequest = request;
+    if (layout !== "bottom" || activePill === null) return;
+
+    const previous = activePill;
+    activePill = null;
+    reportViewerControlChange(
+      onSettingChange,
+      "animation_panel",
+      "section",
+      previous,
+      null
+    );
+    onActiveSectionChange?.(null);
+  });
 
   function reportSetting(
     group: string,
@@ -909,7 +940,7 @@
     class="mobile-export"
     transition:fade={{ duration: reduceMotion ? 0 : 200 }}
     role="region"
-    aria-label="Animation export"
+    aria-label={regionLabel}
   >
     {#if isExporting && showInlineExportProgress}
       <div class="mobile-progress" role="status" aria-live="polite">

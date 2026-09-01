@@ -1,93 +1,124 @@
-# Shape Matrix Animation Workspace — Handoff (2026-09-01)
+# Shape Matrix Animation Workspace Handoff (2026-09-01)
 
 ## Mission
 
-Complete the coordinated relationship selector and Sequence Viewer-grade
-animation workspace described in
-[the design spec](./2026-09-01-shape-matrix-animation-workspace-design.md).
-The work removes the hidden Hands/Props driver mode, exposes all exact
-flower-preserving Hand × Prop pairings, shares playback/disassembly intent
-across retained canvases, and fixes portrait disassembly composition.
+Finish and integrate the coordinated relationship selector and animation
+workspace described in
+[the design spec](./2026-09-01-shape-matrix-animation-workspace-design.md),
+then implement the mobile continuity phase only after Austen approves that
+composition.
 
-## Done — verified
-
-- Relationship reachability was measured on branch
-  `codex/shape-matrix-animation-workspace`. The focused Vitest run passed 8/8
-  tests and swept every pro/anti × in/out pairing at 0, 0.25, 0.5, and 1 turn.
-  It found six exact edges outside quarter bands and eight at quarter bands.
-  Commit `b4b31ae756`; verification command:
-  `pnpm exec vitest run --config tests/config/vitest.config.ts src/lib/shared/shape-matrix/services/__tests__/solve-prop-relationship-phase.test.ts`.
-
-## Believed done — unverified
-
-- Nothing. Existing Shape Matrix behavior mentioned below is treated as current
-  source evidence until the final runtime verification pass.
-
-## In flight
+## Work location
 
 - Worktree: `E:/tka-platform-shape-matrix-animation-workspace`
 - Branch: `codex/shape-matrix-animation-workspace`
-- Design/task ledger and the first stable graph assertions are committed in
-  `b4b31ae756`.
-- The primary checkout contains unrelated `human-generator/` work and must not
-  be edited, staged, reverted, or committed by this task.
+- Durable design checkpoint commits: `b4b31ae756`, `8a47d1c018`
+- The primary checkout has unrelated `human-generator/` work. Do not edit,
+  stage, revert, or commit it.
 
-## Loose ends (ranked)
+## Implemented in the uncommitted workspace
 
-1. Replace the driver UI with six canonical Hand choices plus the stable
-   contextual Prop result slot.
-2. Preserve old `driver=props&propMode=...` URLs while removing the driver from
-   new interaction state.
-3. Establish one local animation workspace and compose the canonical
-   `AnimationPanel`/`ControlDock` controls.
-4. Share play/pause and BPM intent across both retained crossfade players.
-5. Share assembled/disassembled intent across both retained players.
-6. Replace the hardcoded Shape Matrix `sidecar` layout with container-relative
-   automatic stacked/sidecar composition.
-7. Coordinate settings-tray, rail, picker, and disassembly motion.
-8. Move physical prop selection out of the desktop header only after the dock
-   covers the empty-detail state.
-9. Run focused tests, full check/build gates, transition exercises, and the
-   complete responsive screenshot sweep.
-10. Commit with explicit pathspecs, integrate with `wt:finish`, and open the
-    real `https://localhost:5173/notation/shape-matrix` route.
+- The persistent Hands/Props driver is gone. Hands is the canonical six-choice
+  row and Prop result is passive for one exact result or selectable for a real
+  two-phase branch.
+- Legacy `driver=props&propMode=...` URLs still restore the exact edge. New URL
+  writes retain only the disambiguating prop mode.
+- `ShapeMatrixDrill` composes the canonical animation panel and bottom control
+  dock for Prop, Effects, Effort, Playback/BPM/mode, Display, and play/pause.
+- The redundant desktop header prop selector is gone.
+- One feature-local animation workspace owns play intent, BPM, playback mode,
+  effects, the active tray, and the assembled/disassembled stage target.
+- Both retained crossfade players consume the same presentation intent.
+- Disassembly closes an open tray before changing the stage and persists across
+  Shape Detail category changes.
+- Automatic disassembly composition stacks square/portrait containers and uses
+  a sidecar only for genuinely landscape containers.
+- The initial trails are one additional notch quieter and use right-end
+  tracking without creating undo history during workspace initialization.
 
-## Decisions already made
+## Verified
 
-- On 2026-09-01 Austen approved implementation with “go.”
-- Austen wants the fewest decisions possible and does not want a hidden mode
-  where the app's behavior changes unexpectedly.
-- Both hand and prop TnD must remain visible and all exact variants must remain
-  reachable.
-- A twelve-button permanent two-row control is viable but too redundant. The
-  approved implementation direction is six canonical Hand choices plus a Prop
-  result slot that becomes a two-choice selector only for a genuine branch.
-- Sequence Viewer animation presentation capabilities belong in the Shape
-  Matrix detail workspace; sequence-artifact actions do not.
-- Disassembly is a stage mode and must survive category/source changes.
-- Portrait containers stack the combined and solo canvases; landscape
-  containers may use sidecar composition.
-- Earlier loose threads remain on the design-spec checklist: cumulative level
-  vocabulary with level-specific landing turns, quiet trails, solo mandalas,
-  responsive H/P glyphs, carousel proximity, picker geometry, and header prop
-  removal.
+- Focused Vitest suite: 4 files, 35 tests passed.
+- Command:
+  `pnpm exec vitest run --config tests/config/vitest.config.ts tests/unit/shape-matrix/shape-matrix-app-state.test.ts tests/unit/shape-matrix/shape-matrix-url.test.ts tests/unit/shape-matrix/shape-matrix-animation-state.test.ts src/lib/shared/shape-matrix/services/__tests__/solve-prop-relationship-phase.test.ts`
+- The graph sweep still proves six exact Hand × Prop edges outside quarter
+  bands and eight at quarter bands.
+- `git diff --check` was clean before the latest test/doc checkpoint.
+- A task-server runtime at 1920×1080 showed the new six-choice relationship
+  presentation, contextual two-result branch, hero, H-to-P footer, control dock,
+  and removed header prop control with no console errors.
+- `vite build` compiled the changed Svelte client and server bundles. Project
+  postbuild then stopped on the existing missing `#lineage` prerender id for
+  `/notation`; the ordinary build command also requires the absent local
+  `PUBLIC_GOOGLE_MAPS_API_KEY`.
+- The one allowed project `check:fast` capture contained 965 unrelated baseline
+  errors. Do not rerun the full check in this turn.
+
+## Approval still needed
+
+### Relationship help copy
+
+The existing About text still describes choosing Hands versus Props. Proposed
+replacement:
+
+> Choose a hand timing and direction. The prop result follows automatically.
+> When the selected flowers support two exact prop phases, both choices appear
+> so you can pick the result you want.
+
+### Mobile continuity phase
+
+Austen proposed editing individual hand turn values from the compact detail
+screen and a reversible shared-element transition between the selected matrix
+mandala and the hero. Repository tracing supports this composition:
+
+1. Replace the static compact summary with a turn trigger that exposes Blue,
+   Red, and Both targets plus the current cumulative turn choices.
+2. Reuse `ShapeMatrixAppState.setActiveAxis`, `setTurn`, `setLabelMode`, and
+   `updateSelectedPairTurns`; add a stay-on-detail seam instead of duplicating
+   matrix state.
+3. Establish one reusable mandala artwork primitive used by the grid tile and
+   hero cold floor.
+4. Use the canonical claimed native view-transition name for tile-to-hero and
+   hero-to-tile motion. Claim only the active endpoint because compact
+   PanelGroup retains both panes.
+5. Keep `AnimatorCanvas` as the moving renderer and crossfade from shared
+   artwork only when the animator is ready.
+
+This produces the visual continuity of one object without physically
+reparenting a live canvas between two layout owners.
+
+## Remaining work in order
+
+1. Receive explicit approval for the help copy and mobile continuity phase.
+2. Implement the approved compact turn tray and shared-mandala transition.
+3. Add focused state/motion tests for turn edits that remain in detail and for
+   unique shared-element ownership.
+4. With browser-test permission, complete the screenshot sweep at 375×667,
+   960×412, 820×1180, 1440×900, 1920×1080, 2560×1440, 3840×2160, and 200%
+   zoom. Exercise assembled/disassembled category changes and settings trays.
+5. Fix task-owned regressions found by that sweep. Treat the documented
+   `#lineage`, Maps key, and global check failures as baseline unless this diff
+   is proven to cause them.
+6. Commit only explicit task paths, bring the branch current with `main`, run
+   `npm run wt:finish -- codex/shape-matrix-animation-workspace --route
+/notation/shape-matrix` from the primary checkout, and report any safety
+   gate that prevents integration.
 
 ## Gotchas
 
-- `ShapeMatrixDrill` intentionally retains two complete animation players for
-  a readiness-gated soft crossfade. Do not replace that with keyed remounting.
-- `AnimatorCanvas.externalToggleDisassemble` currently belongs to Fuse's
-  external split-rendering contract; controlled internal disassembly needs a
-  new backwards-compatible seam.
-- Shape Matrix currently hardcodes `disassemblyLayout: "sidecar"`.
-- `selectedPropMode` is currently gated by `relationshipDriver === "props"` in
-  app state and URL parsing. Removing the presentation driver requires a
-  compatibility migration, not merely deleting the segmented control.
-- Quarter-turn arrows remain under separate visual calibration and must not be
-  silently re-enabled here.
-- Worktree `node_modules` is a junction to `E:/tka-platform/node_modules`. Never
-  recursively delete it; allow `git worktree remove`/`wt:finish` to manage the
-  task directory.
+- `ShapeMatrixDrill` deliberately retains two animation players for its
+  readiness-gated crossfade. Do not replace them with keyed remounting.
+- `AnimatorCanvas.externalToggleDisassemble` belongs to Fuse's external split
+  rendering contract. Preserve it while using the new controlled internal
+  disassembly seam.
+- Compact PanelGroup keeps both matrix and detail DOM mounted. A shared view
+  transition name cannot exist on both endpoints at once.
+- Grid cells currently display cached SVG data URLs from `renderCell`; the hero
+  cold floor uses a separate canvas and `drawAlignedMandala`. Consolidate their
+  artwork primitive without creating a second animation renderer.
+- The current compact `setTurn` path forces `activeView = "matrix"`; detail-side
+  editing needs an explicit stay-in-detail path.
 - Port 5173 belongs to Austen's primary checkout and must not be restarted or
-  killed. Use an existing agent server or one free task port only after the
-  resource-budget gate.
+  killed.
+- Worktree `node_modules` is a junction to the primary checkout. Never delete
+  it recursively.

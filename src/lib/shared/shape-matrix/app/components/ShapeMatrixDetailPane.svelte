@@ -1,57 +1,24 @@
 <script lang="ts">
   import ShapeMatrixDrill from "$lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte";
-  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { createShapeMatrixAnimationState } from "../state/shape-matrix-animation-state.svelte";
+  import { setShapeMatrixAnimationContext } from "../context/shape-matrix-animation-context";
+  import { setAnimationScopeContext } from "$lib/shared/animation-engine/state/animation-scope-context";
+  import { setAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
+  import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
-  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
-  import type { ShapeMatrixRelationshipDriver } from "../state/shape-matrix-app-state.svelte";
 
   const state = getShapeMatrixAppContext();
-  const DRIVER_OPTIONS = [
-    { value: "hands" as const, label: "Hands" },
-    {
-      value: "props" as const,
-      label: "Props",
-    },
-  ];
-  const driverHint = $derived(
-    state.relationshipDriver === "hands"
-      ? "Pick by where your hands travel."
-      : "Pick by what the prop does."
+  const animationState = setShapeMatrixAnimationContext(
+    createShapeMatrixAnimationState()
   );
+  setAnimationScopeContext(animationState.scope);
+  setAnimationVisibilityContext(animationState.scope.visibility);
+  setEffectsConfigContext(animationState.scope.effects);
 </script>
-
-{#snippet driverOption(driver: ShapeMatrixRelationshipDriver)}
-  <i
-    class={driver === "hands" ? "fas fa-hands" : "fas fa-wand-magic-sparkles"}
-    aria-hidden="true"
-  ></i>
-  <span>{driver === "hands" ? "Hands" : "Props"}</span>
-{/snippet}
 
 <aside class="detail-pane" aria-label="Shape detail">
   <header class="pane-heading">
-    <div class="heading-title">
-      <span class="eyebrow">Shape detail</span>
-      <div class="driver-hint-slot">
-        <Crossfade key={state.relationshipDriver}>
-          <span class="driver-hint">{driverHint}</span>
-        </Crossfade>
-      </div>
-    </div>
-    <div class="driver-control">
-      <SegmentedControl
-        options={DRIVER_OPTIONS}
-        value={state.relationshipDriver}
-        onchange={(driver: ShapeMatrixRelationshipDriver) =>
-          state.setRelationshipDriver(driver)}
-        color="accent"
-        size="sm"
-        density="tight"
-        semantics="radiogroup"
-        ariaLabel="Relationship selection source"
-        optionContent={driverOption}
-      />
-    </div>
+    <span class="eyebrow">Shape detail</span>
   </header>
 
   <div class="drill-stage">
@@ -63,8 +30,8 @@
         selectedPropMode={state.selectedPropMode}
         onmodechange={state.setMode}
         onpropmodechange={state.setPropMode}
-        relationshipDriver={state.relationshipDriver}
         propType={state.propType}
+        onproptypechange={(propType) => void state.setPropType(propType)}
       />
     {:else}
       <p class="status">Building the matrix…</p>
@@ -87,53 +54,11 @@
   .pane-heading {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
+    gap: 0.65rem;
     min-height: 3.5rem;
     padding: 0.35rem 0.75rem;
     border-bottom: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
-    /* The heading measures itself: the split-view divider can make this pane
-       narrower than any app-level band, and the driver labels must swap to
-       their short forms before they would wrap to two lines. */
     container: shape-matrix-detail-heading / inline-size;
-  }
-
-  .heading-title {
-    display: flex;
-    align-items: baseline;
-    gap: 0.6rem;
-    min-width: 0;
-    flex: 1 1 auto;
-    overflow: hidden;
-  }
-
-  .driver-hint-slot {
-    min-width: 0;
-    overflow: hidden;
-  }
-
-  .driver-hint {
-    display: block;
-    overflow: hidden;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.55));
-    font-size: var(--font-size-min, 0.875rem);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .driver-control {
-    width: min(14rem, 58%);
-    margin-left: auto;
-    flex: 0 0 auto;
-  }
-
-  /* The hint is a nicety, not chrome: once the divider squeezes the pane it
-     yields its space to the title and the control. The About modal carries
-     the full explanation for anyone who wants it. */
-  @container shape-matrix-detail-heading (max-width: 40rem) {
-    .driver-hint-slot {
-      display: none;
-    }
   }
 
   .eyebrow {
@@ -183,15 +108,6 @@
     .pane-heading {
       gap: 0.4rem;
       padding-inline: 0.45rem;
-    }
-
-    .heading-title {
-      flex: 1 1 auto;
-    }
-
-    .driver-control {
-      width: min(11.5rem, 54%);
-      flex: 0 0 auto;
     }
   }
 </style>

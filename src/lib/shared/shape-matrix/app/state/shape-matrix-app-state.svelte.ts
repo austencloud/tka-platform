@@ -31,7 +31,6 @@ export interface ShapeMatrixCompactFocusRequest {
   target: ShapeMatrixAppView;
 }
 export type ShapeMatrixAxisTarget = "left" | "both" | "right";
-export type ShapeMatrixRelationshipDriver = "hands" | "props";
 
 export interface ShapeMatrixAppSnapshot {
   level: TurnLevel;
@@ -40,7 +39,6 @@ export interface ShapeMatrixAppSnapshot {
   activeAxis: ShapeMatrixAxisTarget;
   labelMode: MatrixLabelMode;
   propType: PropType;
-  relationshipDriver: ShapeMatrixRelationshipDriver;
   pair: { left: Flower; right: Flower } | null;
   mode: VtgMode | null;
   propMode: VtgMode | null;
@@ -135,9 +133,6 @@ export function createShapeMatrixAppState(
   let activeAxis = $state<ShapeMatrixAxisTarget>(initial.activeAxis);
   let labelMode = $state(initial.labelMode);
   let propType = $state(initial.propType);
-  let relationshipDriver = $state<ShapeMatrixRelationshipDriver>(
-    initial.relationshipDriver
-  );
   let selectedPair = $state(initial.pair);
   let rememberedVariants = $state<{
     left: SemanticVariant;
@@ -150,10 +145,7 @@ export function createShapeMatrixAppState(
     initial.pair ? (initial.mode ?? MODE_ORDER[0] ?? null) : null
   );
   let selectedPropMode = $state<VtgMode | null>(
-    initial.relationshipDriver === "props" &&
-      supportsTimedPropRelationship(initial.pair)
-      ? initial.propMode
-      : null
+    supportsTimedPropRelationship(initial.pair) ? initial.propMode : null
   );
   let data = $state<ShapeMatrixData | null>(null);
   let loading = $state(false);
@@ -262,15 +254,6 @@ export function createShapeMatrixAppState(
     syncState();
   }
 
-  function setRelationshipDriver(
-    nextDriver: ShapeMatrixRelationshipDriver
-  ): void {
-    if (relationshipDriver === nextDriver) return;
-    relationshipDriver = nextDriver;
-    if (nextDriver === "hands") selectedPropMode = null;
-    syncState();
-  }
-
   async function setPropType(nextPropType: PropType): Promise<void> {
     if (propType === nextPropType) {
       propPickerOpen = false;
@@ -290,7 +273,6 @@ export function createShapeMatrixAppState(
     activeAxis = snapshot.activeAxis;
     labelMode = snapshot.labelMode;
     propType = snapshot.propType;
-    relationshipDriver = snapshot.relationshipDriver;
     if (snapshot.pair) {
       rememberedVariants = {
         left: semanticVariant(snapshot.pair.left),
@@ -306,11 +288,9 @@ export function createShapeMatrixAppState(
     selectedMode = selectedPair
       ? (snapshot.mode ?? MODE_ORDER[0] ?? null)
       : null;
-    selectedPropMode =
-      snapshot.relationshipDriver === "props" &&
-      supportsTimedPropRelationship(selectedPair)
-        ? snapshot.propMode
-        : null;
+    selectedPropMode = supportsTimedPropRelationship(selectedPair)
+      ? snapshot.propMode
+      : null;
   }
 
   function selectPair(pair: { left: Flower; right: Flower }): void {
@@ -332,16 +312,13 @@ export function createShapeMatrixAppState(
     selectedMode = selectedPair
       ? (mode ?? selectedMode ?? MODE_ORDER[0] ?? null)
       : null;
-    if (relationshipDriver === "hands") selectedPropMode = null;
     syncState();
   }
 
   function setPropMode(mode: VtgMode | null): void {
-    selectedPropMode =
-      relationshipDriver === "props" &&
-      supportsTimedPropRelationship(selectedPair)
-        ? mode
-        : null;
+    selectedPropMode = supportsTimedPropRelationship(selectedPair)
+      ? mode
+      : null;
     syncState();
   }
 
@@ -387,7 +364,6 @@ export function createShapeMatrixAppState(
       activeAxis,
       labelMode,
       propType,
-      relationshipDriver,
       pair: selectedPair,
       mode: selectedMode,
       propMode: selectedPropMode,
@@ -415,9 +391,6 @@ export function createShapeMatrixAppState(
     },
     get propType() {
       return propType;
-    },
-    get relationshipDriver() {
-      return relationshipDriver;
     },
     get availableTurns() {
       return availableTurns;
@@ -467,7 +440,6 @@ export function createShapeMatrixAppState(
     setTurn,
     setActiveAxis,
     setLabelMode,
-    setRelationshipDriver,
     setPropType,
     selectPair,
     setMode,

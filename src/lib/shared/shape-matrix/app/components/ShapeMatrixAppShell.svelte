@@ -16,7 +16,6 @@
   import ShapeMatrixMatrixPane from "./ShapeMatrixMatrixPane.svelte";
   import ShapeMatrixOverflowMenu from "./ShapeMatrixOverflowMenu.svelte";
   import type { ShapeMatrixAxisTarget } from "../state/shape-matrix-app-state.svelte";
-  import { getPropTypeDisplayInfo } from "$lib/shared/settings/components/tabs/prop-type/prop-type-registry";
   import { growFade } from "$lib/shared/transitions/motion";
 
   interface Props {
@@ -111,8 +110,6 @@
       ? "mixed"
       : turnValueToKey(appState.activeTurn)
   );
-  const selectedProp = $derived(getPropTypeDisplayInfo(appState.propType));
-  const selectedPropLabel = $derived(selectedProp.label);
   const compactSelectionSummary = $derived.by(() => {
     const selected = turnOptions.find(
       (option) => option.value === selectedTurnKey
@@ -276,22 +273,6 @@
             {/if}
           </div>
         </div>
-        {#if !appState.compact}
-          <div class="control-cell prop-control">
-            <span class="control-label">Prop</span>
-            <button
-              class="prop-action"
-              type="button"
-              aria-label={`Choose prop. Current prop: ${selectedPropLabel}`}
-              onclick={appState.openPropPicker}
-            >
-              <img class="selected-prop-icon" src={selectedProp.image} alt="" />
-              <span>{selectedPropLabel}</span>
-              <i class="fas fa-chevron-down disclosure-icon" aria-hidden="true"
-              ></i>
-            </button>
-          </div>
-        {/if}
       </div>
     {/if}
 
@@ -436,19 +417,6 @@
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  .selected-prop-icon {
-    width: 1.45rem;
-    height: 1.45rem;
-    flex: 0 0 auto;
-    object-fit: contain;
-  }
-
-  .disclosure-icon {
-    flex: 0 0 auto;
-    font-size: 0.62rem;
-    opacity: 0.55;
   }
 
   .top-action:hover {
@@ -705,56 +673,6 @@
     font-weight: 500;
   }
 
-  .prop-control {
-    flex: 0 0 auto;
-  }
-
-  .prop-action {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-height: var(--ribbon-control-h);
-    max-width: 11rem;
-    padding: 0.35rem 0.7rem;
-    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.12));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgb(255 255 255 / 0.05));
-    color: var(--theme-text, #fff);
-    cursor: pointer;
-    font: inherit;
-    font-size: var(--font-size-min, 0.875rem);
-    font-weight: 600;
-    white-space: nowrap;
-    transition:
-      color var(--duration-fast, 150ms) ease,
-      border-color var(--duration-fast, 150ms) ease,
-      background var(--duration-fast, 150ms) ease;
-  }
-
-  .prop-action span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .prop-action:hover {
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #f59e0b) 55%,
-      transparent
-    );
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #f59e0b) 8%,
-      transparent
-    );
-  }
-
-  .prop-action:focus-visible {
-    outline: 2px solid var(--theme-accent, #f59e0b);
-    outline-offset: 2px;
-  }
-
   .top-actions {
     grid-area: actions;
     min-width: max-content;
@@ -930,7 +848,6 @@
 
   @media (prefers-reduced-motion: reduce) {
     .top-action,
-    .prop-action,
     .back-to-matrix,
     .turn-control {
       transition: none;

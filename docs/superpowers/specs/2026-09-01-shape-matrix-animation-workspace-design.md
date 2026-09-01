@@ -160,25 +160,69 @@ Search terms: `ControlDock`, `AnimationPanel`, `playbackAllowed`,
 - Component container queries own recomposition. Ordinary control and type
   sizes remain stable at native 4K.
 
+## Proposed mobile continuity phase
+
+This phase records Austen's 2026-09-01 follow-up and is not yet approved for
+implementation.
+
+The compact detail screen should expose independent left-hand and right-hand
+turn values without forcing a return to the matrix. The existing
+`ShapeMatrixAppState` remains the owner: the control selects the active hand,
+calls the existing turn mutation, rebuilds the current matrix, and preserves
+the selected pro/anti plus in/out flower identities at the new turn band. The
+current compact-only redirect inside `setTurn` needs a host-controlled seam so
+the detail editor can stay on the hero while matrix-side edits retain their
+existing navigation behavior.
+
+Do not place every level-four turn value permanently in the compact top bar.
+Replace the static selection summary with a compact turn trigger that shows the
+blue and red values, then opens one canonical tray with Left, Right, and Both
+targeting plus the cumulative level-appropriate turn choices. The tray uses the
+existing label mode so Turns and Ratios remain two presentations of the same
+state, not separate controls.
+
+The selected matrix tile and the detail hero should read as one mandala moving
+between two layouts. Establish one reusable Shape Matrix mandala artwork
+primitive and consume it in both `ShapeMatrixGrid` and the hero cold-load
+floor. Bridge the active source and destination with the canonical claimed
+view-transition name and reduced-motion-aware morph wrapper:
+
+- selecting a tile expands that artwork into the hero;
+- returning to the matrix collapses it into the selected tile;
+- only the active source or destination may claim the name because both compact
+  panes remain mounted;
+- the moving `AnimatorCanvas` remains the animation owner after the handoff;
+- the shared artwork becomes the transition/cold-floor representation and must
+  crossfade cleanly when the animator reports ready.
+
+This is intentionally two instances of one artwork primitive connected by a
+native shared-element transition. Reparenting one live canvas would couple the
+grid, PanelGroup, readiness crossfade, and animation engine into a second
+rendering system. The proposed composition produces the continuous-object
+effect without creating a competing mandala owner.
+
 ## Implementation checklist
 
 - [x] Prove relationship graph cardinalities across representative level bands.
-- [ ] Replace the driver switch with canonical Hands + contextual Prop result.
-- [ ] Preserve legacy driver/prop URL restoration and serialize exact edges.
-- [ ] Add focused selection-graph and state round-trip tests.
-- [ ] Create the local Shape Matrix animation workspace state/context.
-- [ ] Compose `AnimationPanel`/`ControlDock` without export operations.
-- [ ] Route physical prop changes through `ShapeMatrixAppState`.
-- [ ] Add stage-level playback intent shared by both retained players.
-- [ ] Add stage-level disassembly intent shared by both retained players.
-- [ ] Add automatic stacked/sidecar disassembly layout.
-- [ ] Coordinate tray, relationship-picker, rail, and disassembly transitions.
-- [ ] Remove redundant header prop control only after the dock covers empty and
+- [x] Replace the driver switch with canonical Hands + contextual Prop result.
+- [x] Preserve legacy driver/prop URL restoration and serialize exact edges.
+- [x] Add focused selection-graph and state round-trip tests.
+- [x] Create the local Shape Matrix animation workspace state/context.
+- [x] Compose `AnimationPanel`/`ControlDock` without export operations.
+- [x] Route physical prop changes through `ShapeMatrixAppState`.
+- [x] Add stage-level playback intent shared by both retained players.
+- [x] Add stage-level disassembly intent shared by both retained players.
+- [x] Add automatic stacked/sidecar disassembly layout.
+- [x] Coordinate tray, relationship-picker, rail, and disassembly transitions.
+- [x] Remove redundant header prop control only after the dock covers empty and
       selected detail states.
 - [ ] Update About copy and accessible labels for the new relationship model.
-- [ ] Run focused tests and one full project check/build gate.
+- [x] Run focused relationship, URL, app-state, and animation-state tests.
+- [ ] Clear or formally baseline the full project check/build gates.
 - [ ] Verify transitions and final composition at 375×667, 960×412, 820×1180,
       1440×900, 1920×1080, 2560×1440, and 3840×2160, plus 200% zoom.
+- [ ] Obtain approval for the mobile turn editor and shared-mandala transition.
+- [ ] Implement and verify the approved mobile continuity phase.
 - [ ] Integrate the verified branch into local `main` with `wt:finish`.
 
 ## Risks

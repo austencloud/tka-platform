@@ -1,22 +1,17 @@
 <script lang="ts">
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import type { ModeRealization } from "../services/build-mode-realizations";
-  import {
-    MODE_FAMILY_ID,
-    MODE_ORDER,
-    type VtgMode,
-  } from "../services/shape-matrix-realizations";
-  import { TND_BY_FAMILY } from "$lib/features/choreo-card/domain/tnd-element";
-  import { growFade } from "$lib/shared/transitions/motion";
+  import type { VtgMode } from "../services/shape-matrix-realizations";
   import RelationshipChoiceChip from "./RelationshipChoiceChip.svelte";
 
-  interface TargetGroup {
+  interface PropResultDescription {
     key: string;
     label: string;
     detail: string;
     color: string;
     icon: string | null;
     mode: VtgMode | null;
-    candidates: ModeRealization[];
   }
 
   let {
@@ -24,43 +19,28 @@
     selectedMode,
     selectedPropMode,
     activePropMode,
-    equalRotatingTurns,
     disabled = false,
     building = false,
     ontarget,
-    onhandpick,
   }: {
     realizations: ModeRealization[];
     selectedMode: VtgMode | null;
     selectedPropMode: VtgMode | null;
     activePropMode: VtgMode | null;
-    equalRotatingTurns: boolean;
     disabled?: boolean;
     building?: boolean;
     ontarget: (mode: VtgMode) => void;
-    onhandpick: (mode: VtgMode) => void;
   } = $props();
 
   function elementName(raw: string): string {
     return raw.charAt(0).toUpperCase() + raw.slice(1);
   }
 
-  function targetKey(realization: ModeRealization): string {
-    const relationship = realization.propRelationship;
-    if (relationship.kind === "full") return relationship.element.familyId;
-    if (relationship.kind === "direction-only") {
-      return `direction-${relationship.direction}`;
-    }
-    return "float";
-  }
-
-  function describeTarget(
-    realization: ModeRealization
-  ): Omit<TargetGroup, "candidates"> {
+  function describe(realization: ModeRealization): PropResultDescription {
     const relationship = realization.propRelationship;
     if (relationship.kind === "full") {
       return {
-        key: targetKey(realization),
+        key: relationship.element.familyId,
         label: elementName(relationship.element.element),
         detail: relationship.element.name,
         color: relationship.element.accentColor,
@@ -71,7 +51,7 @@
     if (relationship.kind === "direction-only") {
       const same = relationship.direction === "same";
       return {
-        key: targetKey(realization),
+        key: `direction-${relationship.direction}`,
         label: same ? "Same" : "Opposite",
         detail: "Direction only · different rates",
         color: same
@@ -91,182 +71,218 @@
     };
   }
 
-  const groups = $derived.by<TargetGroup[]>(() => {
-    if (equalRotatingTurns) {
-      return MODE_ORDER.map((mode) => {
-        const element = TND_BY_FAMILY[MODE_FAMILY_ID[mode]]!;
-        return {
-          key: element.familyId,
-          label: elementName(element.element),
-          detail: element.name,
-          color: element.accentColor,
-          icon: element.iconPath,
-          mode,
-          candidates: realizations.filter(
-            (realization) => realization.propMode === mode
-          ),
-        };
-      });
-    }
-    const grouped = new Map<string, TargetGroup>();
-    for (const realization of realizations) {
-      const description = describeTarget(realization);
-      const existing = grouped.get(description.key);
-      if (existing) existing.candidates.push(realization);
-      else
-        grouped.set(description.key, {
-          ...description,
-          candidates: [realization],
-        });
-    }
-    return [...grouped.values()];
+  const choices = $derived.by<PropResultDescription[]>(() => {
+    if (!selectedMode) return [];
+    return realizations
+      .filter((realization) => realization.mode === selectedMode)
+      .map(describe);
   });
-
-  const selectedGroup = $derived(
-    groups.find(
-      (group) =>
-        group.mode === (selectedPropMode ?? activePropMode) ||
-        (group.mode === null &&
-          group.candidates.some((candidate) => candidate.mode === selectedMode))
-    ) ?? null
+  const selectedChoice = $derived(
+    choices.find(
+      (choice) => choice.mode === (selectedPropMode ?? activePropMode)
+    ) ??
+      choices[0] ??
+      null
   );
-  const compactColumns = $derived(
-    groups.length <= 4 ? Math.max(groups.length, 1) : 3
+  const resultKey = $derived(
+    disabled
+      ? "empty"
+      : choices.length > 1
+        ? `choices:${selectedMode}`
+        : (selectedChoice?.key ?? (building ? "building" : "unavailable"))
   );
 </script>
 
-<div class="prop-picker" aria-label="Prop timing and direction">
-  <div
-    class="target-row"
-    role="group"
-    aria-label="Prop relationships"
-    style="--target-count: {Math.max(
-      groups.length,
-      1
-    )}; --compact-count: {compactColumns}"
-  >
-    {#each groups as group (group.key)}
-      {@const unavailable = !building && group.candidates.length === 0}
-      <RelationshipChoiceChip
-        accent={group.color}
-        icon={group.icon}
-        code={group.detail}
-        compactCode={group.mode ?? group.detail}
-        label={group.label}
-        active={selectedGroup?.key === group.key}
-        disabled={disabled || unavailable}
-        ariaLabel={`${group.detail} ${group.label}`}
-        onpick={() => {
-          if (group.mode) ontarget(group.mode);
-          else if (group.candidates[0]) onhandpick(group.candidates[0].mode);
-        }}
-      />
-    {/each}
-  </div>
-
-  {#if selectedGroup && selectedGroup.candidates.length > 1}
-    <div
-      class="hand-choices"
-      role="group"
-      aria-label="Hand paths that produce this prop relationship"
-      transition:growFade={{ axis: "y" }}
-    >
-      <span>Hand path</span>
-      {#each selectedGroup.candidates as candidate (candidate.mode)}
-        <button
-          type="button"
-          class:active={candidate.mode === selectedMode}
-          style="--hand: {candidate.element.accentColor}"
-          aria-pressed={candidate.mode === selectedMode}
-          disabled={building}
-          onclick={() => onhandpick(candidate.mode)}
+<div
+  class="prop-result"
+  role="group"
+  aria-label="Prop timing and direction result"
+>
+  <span class="result-label">Prop result</span>
+  <div class="result-stage">
+    <Crossfade key={resultKey} fill duration={DURATION.fast}>
+      {#if disabled}
+        <div class="passive-result pending-result">
+          <span class="result-dot" aria-hidden="true"></span>
+          <span>Pick a cell</span>
+        </div>
+      {:else if choices.length > 1}
+        <div class="result-choices" aria-label="Exact prop phase choices">
+          {#each choices as choice (choice.key)}
+            {#if choice.mode}
+              <RelationshipChoiceChip
+                accent={choice.color}
+                icon={choice.icon}
+                code={choice.detail}
+                compactCode={choice.mode}
+                label={choice.label}
+                active={selectedChoice?.key === choice.key}
+                disabled={building}
+                ariaLabel={`${choice.detail} ${choice.label}`}
+                onpick={() => ontarget(choice.mode!)}
+              />
+            {/if}
+          {/each}
+        </div>
+      {:else if selectedChoice}
+        <output
+          class="passive-result"
+          style="--result-accent: {selectedChoice.color}"
+          aria-label={`Props: ${selectedChoice.detail} ${selectedChoice.label}`}
         >
-          <img src={candidate.element.iconPath} alt="" />
-          {candidate.mode}
-        </button>
-      {/each}
-    </div>
-  {/if}
+          {#if selectedChoice.icon}
+            <img src={selectedChoice.icon} alt="" />
+          {:else}
+            <span class="result-dot" aria-hidden="true"></span>
+          {/if}
+          <span class="passive-copy">
+            <strong>{selectedChoice.detail}</strong>
+            <small>{selectedChoice.label}</small>
+          </span>
+          <span class="derived-label">Derived</span>
+        </output>
+      {:else}
+        <div class="passive-result pending-result" aria-live="polite">
+          <span class="result-dot" aria-hidden="true"></span>
+          <span
+            >{building
+              ? "Finding exact prop result…"
+              : "No exact prop result"}</span
+          >
+        </div>
+      {/if}
+    </Crossfade>
+  </div>
 </div>
 
 <style>
-  .prop-picker {
+  .prop-result {
     display: grid;
-    gap: 0.45rem;
-  }
-  .target-row {
-    display: grid;
-    grid-template-columns: repeat(var(--target-count), minmax(0, 1fr));
-    gap: 0.5rem;
-  }
-  .hand-choices img {
-    width: 1.55rem;
-    height: 1.55rem;
-    object-fit: contain;
-  }
-  .hand-choices {
-    display: flex;
+    grid-template-columns: 5.4rem minmax(0, 1fr);
     align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-    min-height: var(--min-touch-target, 44px);
+    gap: 0.55rem;
+    min-width: 0;
   }
-  .hand-choices > span {
-    margin-right: 0.2rem;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 700;
-    letter-spacing: 0.06em;
-  }
-  .hand-choices button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    min-width: 3.2rem;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0.2rem 0.45rem;
-    border: 1px solid color-mix(in srgb, var(--hand) 34%, transparent);
-    border-radius: 999px;
-    background: transparent;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
-    font: inherit;
+
+  .result-label {
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
     font-size: var(--font-size-min, 0.875rem);
-    cursor: pointer;
+    font-weight: 700;
+    white-space: nowrap;
   }
-  .hand-choices button.active {
-    border-color: var(--hand);
-    background: color-mix(in srgb, var(--hand) 18%, transparent);
+
+  .result-stage {
+    position: relative;
+    width: min(100%, 24rem);
+    min-width: 0;
+    min-height: 3.25rem;
+  }
+
+  .result-choices {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+    width: 100%;
+  }
+
+  .result-choices :global(.relationship-choice) {
+    min-height: 3.25rem;
+    padding-block: 0.3rem;
+  }
+
+  .passive-result {
+    display: flex;
+    width: min(100%, 15rem);
+    min-height: 3.25rem;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--result-accent, var(--theme-text)) 32%,
+        transparent
+      );
+    border-radius: 10px;
+    background: color-mix(
+      in srgb,
+      var(--result-accent, var(--theme-text)) 7%,
+      transparent
+    );
     color: var(--theme-text, #fff);
   }
-  .hand-choices img {
-    width: 1rem;
-    height: 1rem;
+
+  .passive-result img {
+    width: 1.45rem;
+    height: 1.45rem;
+    flex: 0 0 auto;
+    object-fit: contain;
   }
-  button:focus-visible {
-    outline: 2px solid var(--target, var(--hand, var(--theme-text, #fff)));
-    outline-offset: 2px;
+
+  .passive-copy {
+    display: grid;
+    min-width: 0;
   }
+
+  .passive-copy strong,
+  .passive-copy small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .passive-copy strong {
+    color: color-mix(in srgb, var(--result-accent) 80%, white);
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .passive-copy small,
+  .derived-label {
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
+    font-size: var(--font-size-compact, 0.75rem);
+  }
+
+  .derived-label {
+    margin-left: auto;
+  }
+
+  .result-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: var(--result-accent, var(--theme-text-dim, #999));
+  }
+
+  .pending-result {
+    --result-accent: var(--theme-text-dim, #999);
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
   @container shape-matrix-drill (max-width: 30rem) {
-    .target-row {
-      grid-template-columns: repeat(var(--compact-count), minmax(0, 1fr));
+    .prop-result {
+      grid-template-columns: 1fr;
+      gap: 0.3rem;
+    }
+
+    .result-stage,
+    .passive-result {
+      width: 100%;
+      max-width: none;
     }
   }
+
   @container shape-matrix-drill (min-width: 42rem) and (max-height: 24rem) {
-    .target-row {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    .prop-result {
+      grid-template-columns: 1fr;
+      gap: 0.3rem;
     }
-  }
-  @container shape-matrix-app (max-width: 25rem) or (max-height: 41.99rem) {
-    .hand-choices > span {
-      display: none;
-    }
-    .hand-choices button {
-      min-width: 2.75rem;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .hand-choices button {
-      transition: none;
+
+    .result-stage,
+    .passive-result {
+      width: 100%;
+      max-width: none;
     }
   }
 </style>
