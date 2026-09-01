@@ -34,9 +34,9 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import {
     classifyComposerGenerationFailure,
-    shouldSyncComposerSequence,
     type ComposerGenerationResult,
   } from "./composer-generation-failure";
+  import { shouldAdoptCarriedSequence } from "./composer-sequence-ownership";
 
   /** Eight columns let a 16-step LOOP read as an overview instead of a second
       square competing with the focused animation. */
@@ -54,6 +54,7 @@
   } = $props();
 
   let current = $state<SequenceData | null>(null);
+  let hasGeneratedLocally = $state(false);
   let generating = $state(false);
   let result = $state<ComposerGenerationResult>("idle");
   let active = $state(false);
@@ -61,7 +62,9 @@
   const compactLayout = new MediaQuery("(max-width: 56rem)");
 
   $effect(() => {
-    if (shouldSyncComposerSequence(current, sequence)) current = sequence;
+    if (shouldAdoptCarriedSequence(current, sequence, hasGeneratedLocally)) {
+      current = sequence;
+    }
   });
 
   const word = $derived(
@@ -115,6 +118,7 @@
       // on its first render and runs the same staggered reveal the Generate tab
       // produces. It clears itself once consumed.
       setPendingGenerationAnimation(true);
+      hasGeneratedLocally = true;
       current = JSON.parse(JSON.stringify(seq)) as SequenceData;
       onGenerated?.(current);
       result = "success";

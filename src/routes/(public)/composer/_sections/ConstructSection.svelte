@@ -69,15 +69,16 @@
     createConstructAttractAct,
     type ConstructAttractAct,
   } from "./construct-attract-act.svelte";
+  import { isVisitorOwnedConstructSequence } from "../_components/composer-sequence-ownership";
 
   type ConstructPresentationMode = "full" | "guided-build";
 
   let {
     presentationMode = "full",
-    onComposed,
+    onVisitorComposed,
   }: {
     presentationMode?: ConstructPresentationMode;
-    onComposed?: (sequence: SequenceData) => void;
+    onVisitorComposed?: (sequence: SequenceData) => void;
   } = $props();
 
   const isGuidedBuild = $derived(presentationMode === "guided-build");
@@ -148,6 +149,7 @@
   let bandEl = $state<HTMLElement | null>(null);
   let act: ConstructAttractAct | null = $state(null);
   let tookOver = $state(false);
+  let visitorOwnsBuild = $state(false);
   let io: IntersectionObserver | null = null;
 
   onMount(() => {
@@ -211,6 +213,7 @@
   // resume button lives inside the section and would otherwise re-pause).
   function takeover(e?: Event) {
     if ((e?.target as HTMLElement | null)?.closest?.(".ghost")) return;
+    visitorOwnsBuild = true;
     if (act && !act.dead && !act.paused) {
       act.pause();
       tookOver = true;
@@ -222,6 +225,7 @@
     if (act && !act.dead) {
       act.resume();
       tookOver = false;
+      visitorOwnsBuild = false;
     }
   }
 
@@ -299,9 +303,9 @@
     }))
   );
 
-  // The public story carries exactly what the visitor has built into the
-  // demonstrations below it. Keeping this sequence live also gives StepGrid
-  // the complete frame it needs to animate a picked pictograph into place.
+  // StepGrid needs the complete live frame for its arrival animation. The
+  // attract act may update that local frame, but only visitor-owned work is
+  // allowed to leave this panel and replace the examples below it.
   const composedSequence = $derived<SequenceData | null>(
     startStepData && stepData.length > 0
       ? createSequenceData({
@@ -316,12 +320,15 @@
       : null
   );
 
-  let lastComposedSequenceId = "";
+  let lastObservedSequenceId = "";
   $effect(() => {
-    if (!composedSequence || composedSequence.id === lastComposedSequenceId)
+    if (!composedSequence || composedSequence.id === lastObservedSequenceId) {
       return;
-    lastComposedSequenceId = composedSequence.id;
-    onComposed?.(composedSequence);
+    }
+    lastObservedSequenceId = composedSequence.id;
+    if (!isVisitorOwnedConstructSequence(visitorOwnsBuild, composedSequence))
+      return;
+    onVisitorComposed?.(composedSequence);
   });
 
   let wsW = $state(0);
