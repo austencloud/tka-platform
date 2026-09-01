@@ -67,8 +67,8 @@ export class VideoHandAnalyzer {
     },
     timestamp: number
   ): DetectionFrame {
-    let bluePosition: DetectedPosition | null = null;
-    let redPosition: DetectedPosition | null = null;
+    let leftPosition: DetectedPosition | null = null;
+    let rightPosition: DetectedPosition | null = null;
 
     if (result.landmarks && result.landmarks.length > 0) {
       const hands: Array<{ position: DetectedPosition; wristX: number }> = [];
@@ -105,22 +105,22 @@ export class VideoHandAnalyzer {
       // Assign by horizontal position: leftmost = blue, rightmost = red
       if (hands.length >= 2) {
         const sorted = [...hands].sort((a, b) => a.wristX - b.wristX);
-        bluePosition = sorted[0]!.position;
-        redPosition = sorted[1]!.position;
+        leftPosition = sorted[0]!.position;
+        rightPosition = sorted[1]!.position;
       } else if (hands.length === 1) {
         const hand = hands[0]!;
         if (hand.wristX < 0.5) {
-          bluePosition = hand.position;
+          leftPosition = hand.position;
         } else {
-          redPosition = hand.position;
+          rightPosition = hand.position;
         }
       }
     }
 
     return {
       timestamp,
-      blue: bluePosition,
-      red: redPosition,
+      left: leftPosition,
+      right: rightPosition,
       source: "mediapipe",
     };
   }

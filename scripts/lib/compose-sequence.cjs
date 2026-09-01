@@ -2,7 +2,7 @@
  * Shared composition logic for decomposing sequences into compositional fields.
  *
  * Used by both import-sequence.cjs and migrate-compositional.cjs to populate
- * blueSoloProp, redSoloProp, stepPairings, and content hashes.
+ * leftSoloProp, rightSoloProp, stepPairings, and content hashes.
  *
  * Reimplements the TypeScript composition pipeline in pure CJS so it can run
  * in Node without building the app.
@@ -240,18 +240,26 @@ function makePlaceholderStep(location, orientation, duration) {
   };
 }
 
-function extractSoloProp(sequence, color) {
+function motionForHand(motions, hand) {
+  if (!motions) return undefined;
+  if (hand === "left") return motions.left ?? motions.blue;
+  return motions.right ?? motions.red;
+}
+
+function extractSoloProp(sequence, hand) {
   const startPositionMotions =
     sequence.startPosition?.motions ?? sequence.startingPosition?.motions;
 
-  const startLocationFromPos = startPositionMotions?.[color]?.startLocation;
-  const startOrientationFromPos =
-    startPositionMotions?.[color]?.startOrientation;
+  const startPositionMotion = motionForHand(startPositionMotions, hand);
+  const startLocationFromPos = startPositionMotion?.startLocation;
+  const startOrientationFromPos = startPositionMotion?.startOrientation;
 
-  const firstStepMotion = sequence.steps[0]?.motions?.[color];
+  const firstStepMotion = motionForHand(sequence.steps[0]?.motions, hand);
 
   const startLocation =
-    startLocationFromPos ?? firstStepMotion?.startLocation ?? GridLocation.NORTH;
+    startLocationFromPos ??
+    firstStepMotion?.startLocation ??
+    GridLocation.NORTH;
 
   const startOrientation =
     startOrientationFromPos ??
@@ -259,9 +267,13 @@ function extractSoloProp(sequence, color) {
     Orientation.IN;
 
   const steps = sequence.steps.map((step) => {
-    const motion = step.motions?.[color];
+    const motion = motionForHand(step.motions, hand);
     if (!motion) {
-      return makePlaceholderStep(startLocation, startOrientation, step.duration);
+      return makePlaceholderStep(
+        startLocation,
+        startOrientation,
+        step.duration
+      );
     }
     return motionToSoloPropStep(motion, step.duration ?? 1);
   });
@@ -272,8 +284,8 @@ function extractSoloProp(sequence, color) {
 function extractStepPairings(sequence) {
   return sequence.steps.map((step) => ({
     letter: step.letter ?? null,
-    blueReversal: step.blueReversal ?? false,
-    redReversal: step.redReversal ?? false,
+    leftReversal: step.leftReversal ?? false,
+    rightReversal: step.rightReversal ?? false,
     startPosition: step.startPosition ?? null,
     endPosition: step.endPosition ?? null,
   }));
@@ -286,8 +298,9 @@ function extractStepPairings(sequence) {
 /**
  * Decompose a sequence into its compositional fields.
  *
- * @param {object} sequence - Must have `steps[]` array with motions.blue/red,
- *   and optionally `startPosition` with motions.
+ * @param {object} sequence - Must have `steps[]` with current
+ *   motions.left/right or legacy motions.blue/red, and optionally a
+ *   `startPosition` with motions.
  * @returns {object|null} Compositional fields to merge into the Firestore doc,
  *   or null if the sequence has no steps.
  */
@@ -300,16 +313,16 @@ function decomposeSequence(sequence) {
     return null;
   }
 
-  const blueSoloProp = extractSoloProp(sequence, "blue");
-  const redSoloProp = extractSoloProp(sequence, "red");
+  const leftSoloProp = extractSoloProp(sequence, "left");
+  const rightSoloProp = extractSoloProp(sequence, "right");
   const stepPairings = extractStepPairings(sequence);
 
   return {
-    blueSoloProp,
-    redSoloProp,
+    leftSoloProp,
+    rightSoloProp,
     stepPairings,
-    blueSoloHash: blueSoloProp.contentHash,
-    redSoloHash: redSoloProp.contentHash,
+    leftSoloHash: leftSoloProp.contentHash,
+    rightSoloHash: rightSoloProp.contentHash,
   };
 }
 

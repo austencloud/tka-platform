@@ -10,8 +10,8 @@
  * the last visible motion automatically flips the other on.
  */
 export class SequenceViewerVisibilityState {
-  blueMotion = $state(true);
-  redMotion = $state(true);
+  leftMotion = $state(true);
+  rightMotion = $state(true);
 
   /**
    * @param allowNone When true, both motions may be hidden at once (the landing
@@ -21,45 +21,45 @@ export class SequenceViewerVisibilityState {
    */
   constructor(private readonly allowNone = false) {}
 
-  setBlueMotion(visible: boolean): void {
-    if (!visible && !this.redMotion && !this.allowNone) {
-      this.blueMotion = false;
-      this.redMotion = true;
+  setLeftMotion(visible: boolean): void {
+    if (!visible && !this.rightMotion && !this.allowNone) {
+      this.leftMotion = false;
+      this.rightMotion = true;
       return;
     }
-    this.blueMotion = visible;
+    this.leftMotion = visible;
   }
 
-  setRedMotion(visible: boolean): void {
-    if (!visible && !this.blueMotion && !this.allowNone) {
-      this.redMotion = false;
-      this.blueMotion = true;
+  setRightMotion(visible: boolean): void {
+    if (!visible && !this.leftMotion && !this.allowNone) {
+      this.rightMotion = false;
+      this.leftMotion = true;
       return;
     }
-    this.redMotion = visible;
+    this.rightMotion = visible;
   }
 
-  toggleBlue(): void {
-    this.setBlueMotion(!this.blueMotion);
+  toggleLeft(): void {
+    this.setLeftMotion(!this.leftMotion);
   }
 
-  toggleRed(): void {
-    this.setRedMotion(!this.redMotion);
+  toggleRight(): void {
+    this.setRightMotion(!this.rightMotion);
   }
 
   reset(): void {
-    this.blueMotion = true;
-    this.redMotion = true;
+    this.leftMotion = true;
+    this.rightMotion = true;
   }
 
   /** True when exactly one motion is visible. */
   get isSolo(): boolean {
-    return this.blueMotion !== this.redMotion;
+    return this.leftMotion !== this.rightMotion;
   }
 
-  /** The visible color when isSolo, otherwise undefined. */
-  get soloColor(): "blue" | "red" | undefined {
+  /** The visible performer hand when isSolo, otherwise undefined. */
+  get soloHand(): "left" | "right" | undefined {
     if (!this.isSolo) return undefined;
-    return this.blueMotion ? "blue" : "red";
+    return this.leftMotion ? "left" : "right";
   }
 }

@@ -17,8 +17,8 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     brightness: 1.0,
     // The colour-matched prop blue/red (bright "dark mode" prop colours). This is
     // the trail Default look — matches the blue/red props on the dark canvas.
-    blueColor: "#3575E2",
-    redColor: "#ED1C24",
+    leftColor: "#3575E2",
+    rightColor: "#ED1C24",
     rainbow: false,
   },
 
@@ -72,8 +72,8 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   // decay=Persistence (trail length), interval=Density (higher=denser).
   // See ghost-2d-renderer.ts.
   ghost: {
-    blueColor: "#3b82f6",
-    redColor: "#ef4444",
+    leftColor: "#3b82f6",
+    rightColor: "#ef4444",
     intensity: 0.85,
     decay: 8,
     interval: 0.5,

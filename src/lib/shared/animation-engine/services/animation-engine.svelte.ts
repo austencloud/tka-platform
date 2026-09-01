@@ -77,8 +77,8 @@ function hasEffectInMap(
  * Props passed to engine.update()
  */
 export interface AnimationEngineProps {
-  blueProp: PropState | null;
-  redProp: PropState | null;
+  leftProp: PropState | null;
+  rightProp: PropState | null;
   additionalLayers?: AdditionalLayerProps[];
   gridVisible?: boolean;
   gridMode?: GridMode | null;
@@ -90,13 +90,13 @@ export interface AnimationEngineProps {
   isPlaying?: boolean;
   externalTrailSettings?: TrailSettings;
   // Prop type overrides - bypass settings when provided (useful for demos/previews)
-  bluePropType?: string | null;
-  redPropType?: string | null;
+  leftPropType?: string | null;
+  rightPropType?: string | null;
   /** Visual fan build. The notation prop remains fan/bigfan. */
   fanAppearance?: FanAppearance;
   /** Per-document chirality overrides for isolated editors/previews. */
-  blueBuugengFlipped?: boolean;
-  redBuugengFlipped?: boolean;
+  leftBuugengFlipped?: boolean;
+  rightBuugengFlipped?: boolean;
   // Preview-only dark mode override - when provided, bypasses global setting
   // Used in sequence viewer preview so dark mode toggle doesn't affect global app state
   previewDarkMode?: boolean | null;
@@ -121,8 +121,8 @@ export interface AnimationEngineProps {
  * Default props for initial render (when no props have been passed yet)
  */
 const DEFAULT_ENGINE_PROPS: AnimationEngineProps = {
-  blueProp: null,
-  redProp: null,
+  leftProp: null,
+  rightProp: null,
 };
 
 /**
@@ -257,14 +257,14 @@ export class AnimationEngine {
    * next render frame reflects it. Also triggers an immediate re-render
    * so the change takes effect without waiting for the next animation tick.
    */
-  setMotionVisibility(blue: boolean, red: boolean): void {
+  setMotionVisibility(left: boolean, right: boolean): void {
     if (
-      this.state.blueMotionVisible === blue &&
-      this.state.redMotionVisible === red
+      this.state.leftMotionVisible === left &&
+      this.state.rightMotionVisible === right
     ) {
       return;
     }
-    this.state.setMotionVisibility(blue, red);
+    this.state.setMotionVisibility(left, right);
     if (this.state.isInitialized) {
       this.lifecycleManager.renderLoop?.triggerRender(() =>
         this.frameSystem.buildFrameParams(
@@ -435,10 +435,10 @@ export class AnimationEngine {
    * export engine is driven only through renderFrame(), which never touches
    * PlaybackSync, so that sync never happens. Without this the engine state
    * stays at the boot default ("staff", staff dimensions) and:
-   *   - frame-parameter-builder reads the prop TYPE from state.currentBluePropType
-   *     /currentRedPropType (frame-parameter-builder.ts:227-228,244-245), so a
+   *   - frame-parameter-builder reads the prop TYPE from state.currentLeftPropType
+   *     /currentRightPropType (frame-parameter-builder.ts:227-228,244-245), so a
    *     non-staff export drew the staff body.
-   *   - it reads prop DIMENSIONS from state.bluePropDimensions/redPropDimensions
+   *   - it reads prop DIMENSIONS from state.leftPropDimensions/rightPropDimensions
    *     (frame-parameter-builder.ts:209-210), so a non-staff prop drew at staff
    *     size.
    * A bare renderer.loadPerColorPropTextures() (the prior partial fix) loaded
@@ -449,8 +449,8 @@ export class AnimationEngine {
    * exact types), writes the types into AnimatorState, then runs the manager's
    * loadPropTextures — which loads the per-color textures via the prop texture
    * service AND syncs the resolved dimensions back into state (prop-type-manager.ts
-   * :305-308). End state after this resolves: state.currentBluePropType/RedPropType
-   * === the resolved types, state.bluePropDimensions/redPropDimensions === the
+   * :305-308). End state after this resolves: state.currentLeftPropType/currentRightPropType
+   * === the resolved types, state.leftPropDimensions/rightPropDimensions === the
    * loaded prop's real dimensions, and the image is present in the image loader.
    *
    * `darkMode` selects the prop color set (matches the renderer.setDarkMode that
@@ -458,19 +458,19 @@ export class AnimationEngine {
    * builder lowercases them when comparing, so the PropType value is fine.
    */
   async prepareExportPropTypes(
-    blue: string,
-    red: string,
+    left: string,
+    right: string,
     darkMode: boolean,
     colors: TunnelPropColorPair | null = null
   ): Promise<void> {
     const ptm = this.propSystem.propTypeManager;
     // Register overrides so loadPropTextures uses these exact types (not settings).
-    ptm.propTypeOverrideBlue = blue;
-    ptm.propTypeOverrideRed = red;
+    ptm.propTypeOverrideLeft = left;
+    ptm.propTypeOverrideRight = right;
     // Carry the type into engine state so frame-parameter-builder reads it.
-    this.state.setBluePropType(blue);
-    this.state.setRedPropType(red);
-    this.state.setLegacyPropType(blue);
+    this.state.setLeftPropType(left);
+    this.state.setRightPropType(right);
+    this.state.setLegacyPropType(left);
     // Load textures + sync dimensions into state via the canonical manager path.
     await this.propSystem.propPipeline.loadTextures(
       this.state,
@@ -495,7 +495,7 @@ export class AnimationEngine {
     await this.propSystem.propTypeManager.preloadAdditionalLayerTextures(
       layerCount,
       spectrum,
-      this.state.currentBluePropType,
+      this.state.currentLeftPropType,
       undefined,
       colors
     );
@@ -648,8 +648,8 @@ export class AnimationEngine {
           }
         : null,
       propTypes: {
-        blue: this.state.currentBluePropType,
-        red: this.state.currentRedPropType,
+        left: this.state.currentLeftPropType,
+        right: this.state.currentRightPropType,
       },
       userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
     };

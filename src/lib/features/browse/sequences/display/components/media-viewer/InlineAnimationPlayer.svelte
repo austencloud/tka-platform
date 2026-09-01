@@ -103,8 +103,8 @@
     autoPlay = true,
     autoPlayDelay = 300,
     showControls = true,
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     externalBpm = null,
     chrome = "full",
     fill = false,
@@ -146,8 +146,8 @@
      *  the incoming canvas remains hidden until motion is observed. */
     autoPlayDelay?: number;
     showControls?: boolean;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     /** When provided, overrides internal BPM and controls playback speed externally */
     externalBpm?: number | null;
     /**
@@ -371,8 +371,8 @@
   // the letter overlay entirely (start-position Greek letter + per-step letter).
   // Prop/staff renders (gallery, Arena) pass a non-hand type → unchanged.
   const isHandRender = $derived(
-    (bluePropType ?? "").toLowerCase() === "hand" ||
-      (redPropType ?? "").toLowerCase() === "hand"
+    (leftPropType ?? "").toLowerCase() === "hand" ||
+      (rightPropType ?? "").toLowerCase() === "hand"
   );
 
   let currentLetter = $derived.by(() => {
@@ -655,7 +655,7 @@
     const hasMotionData = (s: SequenceData) =>
       Array.isArray(s.steps) &&
       s.steps.length > 0 &&
-      s.steps.some((step) => step?.motions?.blue && step?.motions?.red);
+      s.steps.some((step) => step?.motions?.left && step?.motions?.right);
 
     if (hasMotionData(seq)) {
       return seq;
@@ -748,8 +748,8 @@
     <!-- Animation Canvas -->
     <div class="canvas-container" class:bare={backgroundAlpha === 0}>
       <AnimatorCanvas
-        blueProp={animationState.bluePropState}
-        redProp={animationState.redPropState}
+        leftProp={animationState.leftPropState}
+        rightProp={animationState.rightPropState}
         {gridVisible}
         {disableContextMenu}
         {visibilityManagerOverride}
@@ -767,8 +767,8 @@
         {tipEffortMap}
         {fireConfig}
         {effectsConfigState}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         positionGlyphVisible={showPositionGlyph}
         tapToToggle={minimal && interactive}
         progressLine={minimal && interactive}

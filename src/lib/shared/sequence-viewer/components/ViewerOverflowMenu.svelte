@@ -47,10 +47,10 @@
     onGuideAction?: () => void;
     guideActionLabel?: string;
     motionVisibility?: {
-      showBlue: boolean;
-      showRed: boolean;
-      onToggleBlue: () => void;
-      onToggleRed: () => void;
+      showLeft: boolean;
+      showRight: boolean;
+      onToggleLeft: () => void;
+      onToggleRight: () => void;
     };
     onOpenChange?: (open: boolean, reason: OverflowOpenReason) => void;
   }
@@ -288,10 +288,10 @@
               <div class="motion-vis-section">
                 <span class="motion-vis-label">Motion</span>
                 <MotionColorChips
-                  showBlue={motionVisibility.showBlue}
-                  showRed={motionVisibility.showRed}
-                  onToggleBlue={motionVisibility.onToggleBlue}
-                  onToggleRed={motionVisibility.onToggleRed}
+                  showLeft={motionVisibility.showLeft}
+                  showRight={motionVisibility.showRight}
+                  onToggleLeft={motionVisibility.onToggleLeft}
+                  onToggleRight={motionVisibility.onToggleRight}
                 />
               </div>
               {#if hasItems}

@@ -13,20 +13,20 @@ const pictographs = [
       letter: "A",
       startPosition: "alpha3",
       endPosition: "alpha5",
-      blueMotion: {
+      leftMotion: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "w",
         endLocation: "n",
-        color: "blue",
+        hand: "left",
         turns: 1,
       },
-      redMotion: {
+      rightMotion: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "e",
         endLocation: "s",
-        color: "red",
+        hand: "right",
         turns: 1,
       },
     },
@@ -37,20 +37,20 @@ const pictographs = [
       letter: "D",
       startPosition: "beta3",
       endPosition: "alpha5",
-      blueMotion: {
+      leftMotion: {
         motionType: "pro",
         rotationDirection: "ccw",
         startLocation: "e",
         endLocation: "n",
-        color: "blue",
+        hand: "left",
         turns: 1,
       },
-      redMotion: {
+      rightMotion: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "e",
         endLocation: "s",
-        color: "red",
+        hand: "right",
         turns: 1,
       },
     },
@@ -61,20 +61,20 @@ const pictographs = [
       letter: "G",
       startPosition: "beta3",
       endPosition: "beta5",
-      blueMotion: {
+      leftMotion: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "e",
         endLocation: "s",
-        color: "blue",
+        hand: "left",
         turns: 1,
       },
-      redMotion: {
+      rightMotion: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "e",
         endLocation: "s",
-        color: "red",
+        hand: "right",
         turns: 1,
       },
     },
@@ -85,20 +85,20 @@ const pictographs = [
       letter: "J",
       startPosition: "alpha3",
       endPosition: "beta5",
-      blueMotion: {
+      leftMotion: {
         motionType: "pro",
         rotationDirection: "ccw",
         startLocation: "w",
         endLocation: "s",
-        color: "blue",
+        hand: "left",
         turns: 1,
       },
-      redMotion: {
+      rightMotion: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "e",
         endLocation: "s",
-        color: "red",
+        hand: "right",
         turns: 1,
       },
     },
@@ -109,20 +109,20 @@ const pictographs = [
       letter: "S",
       startPosition: "gamma3",
       endPosition: "gamma5",
-      blueMotion: {
+      leftMotion: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "n",
         endLocation: "e",
-        color: "blue",
+        hand: "left",
         turns: 1,
       },
-      redMotion: {
+      rightMotion: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "e",
         endLocation: "s",
-        color: "red",
+        hand: "right",
         turns: 1,
       },
     },
@@ -133,20 +133,20 @@ const pictographs = [
       letter: "M",
       startPosition: "gamma3",
       endPosition: "gamma13",
-      blueMotion: {
+      leftMotion: {
         motionType: "pro",
         rotationDirection: "ccw",
         startLocation: "n",
         endLocation: "w",
-        color: "blue",
+        hand: "left",
         turns: 1,
       },
-      redMotion: {
+      rightMotion: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "e",
         endLocation: "s",
-        color: "red",
+        hand: "right",
         turns: 1,
       },
     },
@@ -177,8 +177,8 @@ async function main() {
       showElemental: true,
       showPositions: true,
       showGrid: true,
-      showBlueMotion: true,
-      showRedMotion: true,
+      showLeftMotion: true,
+      showRightMotion: true,
     });
 
     // Extract inner content (without xml declaration and outer svg tag)

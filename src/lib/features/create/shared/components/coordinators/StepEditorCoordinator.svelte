@@ -34,7 +34,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   import { canShowStepEditorDrawer } from "../../services/step-editor-availability";
   import { getSequenceOverlayState } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
   import {
-    MotionColor,
+    HandSide,
     MotionType,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -197,22 +197,22 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
 
   // Prop selection sheet state
   let propSheetOpen = $state(false);
-  let propSheetColor = $state<"blue" | "red">("blue");
+  let propSheetHand = $state<"left" | "right">("left");
 
   // Get current prop types from settings
   const settings = $derived(getSettings());
-  const bluePropType = $derived(settings.bluePropType ?? PropType.STAFF);
-  const redPropType = $derived(settings.redPropType ?? PropType.STAFF);
+  const leftPropType = $derived(settings.leftPropType ?? PropType.STAFF);
+  const rightPropType = $derived(settings.rightPropType ?? PropType.STAFF);
 
   // Derived state for turns calculations
-  const blueMotion = $derived(selectedStepData?.motions?.[MotionColor.BLUE]);
-  const redMotion = $derived(selectedStepData?.motions?.[MotionColor.RED]);
+  const leftMotion = $derived(selectedStepData?.motions?.[HandSide.LEFT]);
+  const rightMotion = $derived(selectedStepData?.motions?.[HandSide.RIGHT]);
 
   const normalizeTurns = (turns: number | string | undefined): number =>
     turns === "fl" ? -0.5 : Number(turns) || 0;
 
-  const currentBlueTurns = $derived(normalizeTurns(blueMotion?.turns));
-  const currentRedTurns = $derived(normalizeTurns(redMotion?.turns));
+  const currentLeftTurns = $derived(normalizeTurns(leftMotion?.turns));
+  const currentRightTurns = $derived(normalizeTurns(rightMotion?.turns));
 
   // Event handlers
   function handleClose() {
@@ -236,7 +236,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     }
   }
 
-  function handleTurnsChange(color: MotionColor, delta: number) {
+  function handleTurnsChange(color: HandSide, delta: number) {
     if (selectedStepNumber === null || !StepOperator) return;
     hapticService?.trigger("selection");
 
@@ -246,9 +246,9 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     );
 
     const motion =
-      color === MotionColor.BLUE ? blueMotion : redMotion;
+      color === HandSide.LEFT ? leftMotion : rightMotion;
     const currentTurns =
-      color === MotionColor.BLUE ? currentBlueTurns : currentRedTurns;
+      color === HandSide.LEFT ? currentLeftTurns : currentRightTurns;
     const isShift =
       motion?.motionType === MotionType.PRO ||
       motion?.motionType === MotionType.ANTI;
@@ -271,7 +271,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   // wraps the whole batch; steps are applied ascending so the final orientation
   // propagation is correct. Reuses the single-step turns write path per step.
   function handleBatchTurnsChange(
-    color: MotionColor,
+    color: HandSide,
     mode: "set" | "adjust",
     amount: number | "fl"
   ) {
@@ -321,7 +321,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   }
 
   function handleRotationChange(
-    color: MotionColor,
+    color: HandSide,
     direction: RotationDirection
   ) {
     if (selectedStepNumber === null || !StepOperator) return;
@@ -343,7 +343,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     );
   }
 
-  function handleOrientationChange(color: MotionColor, orientation: string) {
+  function handleOrientationChange(color: HandSide, orientation: string) {
     if (selectedStepNumber === null || !StepOperator) return;
     hapticService?.trigger("selection");
 
@@ -392,16 +392,16 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     activeSequenceState.selectStep(stepNumber);
   }
 
-  function handleOpenPropSheet(color: "blue" | "red") {
-    propSheetColor = color;
+  function handleOpenPropSheet(hand: "left" | "right") {
+    propSheetHand = hand;
     propSheetOpen = true;
   }
 
   function handlePropSelect(propType: PropType) {
-    if (propSheetColor === "blue") {
-      updateSettings({ bluePropType: propType });
+    if (propSheetHand === "left") {
+      updateSettings({ leftPropType: propType });
     } else {
-      updateSettings({ redPropType: propType });
+      updateSettings({ rightPropType: propType });
     }
   }
 
@@ -427,14 +427,14 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     );
   }
 
-  function handlePathShapeChange(color: MotionColor, shape: PathShapeValue) {
+  function handlePathShapeChange(color: HandSide, shape: PathShapeValue) {
     if (selectedStepNumber === null || !StepOperator) return;
     hapticService?.trigger("selection");
     CreateModuleState.pushUndoSnapshot(UndoOperationType.MODIFY_BEAT_PROPERTIES);
     StepOperator.setStepPathShape(selectedStepNumber, color, shape, CreateModuleState);
   }
 
-  function handlePathShapeClear(color: MotionColor) {
+  function handlePathShapeClear(color: HandSide) {
     if (selectedStepNumber === null || !StepOperator) return;
     hapticService?.trigger("selection");
     CreateModuleState.pushUndoSnapshot(UndoOperationType.MODIFY_BEAT_PROPERTIES);
@@ -509,8 +509,8 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
           {sequence}
           variant={mandalaSelection.variant}
           pathShape={mandalaSelection.pathShape}
-          bluePropType={bluePropType}
-          redPropType={redPropType}
+          {leftPropType}
+          {rightPropType}
           isMobile={!isSideBySideLayout}
           onClose={handleActiveClose}
         />
@@ -523,8 +523,8 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
                   steps={batchSteps}
                   stepNumbers={batchStepNumbers}
                   {totalBeats}
-                  bluePropTypeOverride={bluePropType}
-                  redPropTypeOverride={redPropType}
+                  leftPropTypeOverride={leftPropType}
+                  rightPropTypeOverride={rightPropType}
                   onClose={handleBatchClose}
                   onSelectAll={handleBatchSelectAll}
                 />
@@ -571,11 +571,11 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
 <!-- Prop Selection Sheet - rendered as sibling to StepEditorPanel -->
 <PropSelectionSheet
   bind:isOpen={propSheetOpen}
-  selectedPropType={propSheetColor === "blue" ? bluePropType : redPropType}
-  color={propSheetColor}
-  title={propSheetColor === "blue" ? "Select Blue Prop" : "Select Red Prop"}
+  selectedPropType={propSheetHand === "left" ? leftPropType : rightPropType}
+  color={propSheetHand === "left" ? "blue" : "red"}
+  title={propSheetHand === "left" ? "Select Left Prop" : "Select Right Prop"}
   onSelect={handlePropSelect}
-  chirality={createGlobalChiralitySeam(propSheetColor)}
+  chirality={createGlobalChiralitySeam(propSheetHand)}
 />
 
 <style>

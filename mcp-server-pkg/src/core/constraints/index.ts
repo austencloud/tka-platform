@@ -22,10 +22,17 @@ export type {
   MotionData,
 } from "./types.js";
 
-export { ConstraintType, ConstraintCategory, type ConstraintMode } from "./constraint-types.js";
+export {
+  ConstraintType,
+  ConstraintCategory,
+  type ConstraintMode,
+} from "./constraint-types.js";
 
 // Constraint implementations
-export { ContinuityConstraint, type ContinuityMode } from "./implementations/continuity-constraint.js";
+export {
+  ContinuityConstraint,
+  type ContinuityMode,
+} from "./implementations/continuity-constraint.js";
 
 export {
   MotionTypeConstraint,
@@ -47,15 +54,18 @@ export {
   type RotationDirectionMode,
   type RotationDirection,
   // Convenience factories
-  blueClockwise,
-  blueCounterClockwise,
-  redClockwise,
-  redCounterClockwise,
+  leftClockwise,
+  leftCounterClockwise,
+  rightClockwise,
+  rightCounterClockwise,
   allClockwise,
   allCounterClockwise,
 } from "./implementations/rotation-direction-constraint.js";
 
-export { ReversalConstraint, type ReversalMode } from "./implementations/reversal-constraint.js";
+export {
+  ReversalConstraint,
+  type ReversalMode,
+} from "./implementations/reversal-constraint.js";
 
 export {
   HandPathReversalConstraint,
@@ -86,14 +96,14 @@ export {
   type HandTarget as PerHandTarget,
   type HandDashMode,
   // Convenience factories
-  blueHandMaximizeDash,
-  blueHandMinimizeDash,
-  blueHandRequireDash,
-  blueHandForbidDash,
-  redHandMaximizeDash,
-  redHandMinimizeDash,
-  redHandRequireDash,
-  redHandForbidDash,
+  leftHandMaximizeDash,
+  leftHandMinimizeDash,
+  leftHandRequireDash,
+  leftHandForbidDash,
+  rightHandMaximizeDash,
+  rightHandMinimizeDash,
+  rightHandRequireDash,
+  rightHandForbidDash,
   perHandDash,
 } from "./implementations/per-hand-dash-constraint.js";
 

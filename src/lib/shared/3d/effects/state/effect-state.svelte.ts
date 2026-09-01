@@ -34,34 +34,34 @@ export function createEffectState(config: Partial<EffectStateConfig> = {}) {
   const mergedConfig: EffectStateConfig = { ...DEFAULT_CONFIG, ...config };
 
   // Position history for each prop
-  let blueHistory = $state<TrailPoint[]>([]);
-  let redHistory = $state<TrailPoint[]>([]);
+  let leftHistory = $state<TrailPoint[]>([]);
+  let rightHistory = $state<TrailPoint[]>([]);
 
   // Last update timestamps for throttling
-  let lastBlueUpdate = 0;
-  let lastRedUpdate = 0;
+  let lastLeftUpdate = 0;
+  let lastRightUpdate = 0;
 
   // Previous positions for velocity calculation
-  let prevBluePos: Vector3 | null = null;
-  let prevRedPos: Vector3 | null = null;
+  let prevLeftPos: Vector3 | null = null;
+  let prevRightPos: Vector3 | null = null;
 
   // Derived current velocities
-  const blueVelocity = $derived(
-    blueHistory.length > 0 ? (blueHistory[0]?.velocity ?? 0) : 0
+  const leftVelocity = $derived(
+    leftHistory.length > 0 ? (leftHistory[0]?.velocity ?? 0) : 0
   );
-  const redVelocity = $derived(
-    redHistory.length > 0 ? (redHistory[0]?.velocity ?? 0) : 0
+  const rightVelocity = $derived(
+    rightHistory.length > 0 ? (rightHistory[0]?.velocity ?? 0) : 0
   );
 
   // Derived full history objects
-  const bluePositionHistory = $derived<PropPositionHistory>({
-    points: blueHistory,
-    currentVelocity: blueVelocity,
+  const leftPositionHistory = $derived<PropPositionHistory>({
+    points: leftHistory,
+    currentVelocity: leftVelocity,
   });
 
-  const redPositionHistory = $derived<PropPositionHistory>({
-    points: redHistory,
-    currentVelocity: redVelocity,
+  const rightPositionHistory = $derived<PropPositionHistory>({
+    points: rightHistory,
+    currentVelocity: rightVelocity,
   });
 
   /**
@@ -105,28 +105,28 @@ export function createEffectState(config: Partial<EffectStateConfig> = {}) {
   /**
    * Update positions for both props (call each frame)
    */
-  function updatePositions(bluePos: Vector3 | null, redPos: Vector3 | null) {
+  function updatePositions(leftPos: Vector3 | null, rightPos: Vector3 | null) {
     const now = performance.now();
 
     // Update blue prop
-    if (bluePos) {
-      const deltaTime = now - lastBlueUpdate;
+    if (leftPos) {
+      const deltaTime = now - lastLeftUpdate;
       if (deltaTime >= mergedConfig.minUpdateInterval) {
-        const velocity = calculateVelocity(prevBluePos, bluePos, deltaTime);
-        blueHistory = addToHistory(blueHistory, bluePos, now, velocity);
-        prevBluePos = bluePos.clone();
-        lastBlueUpdate = now;
+        const velocity = calculateVelocity(prevLeftPos, leftPos, deltaTime);
+        leftHistory = addToHistory(leftHistory, leftPos, now, velocity);
+        prevLeftPos = leftPos.clone();
+        lastLeftUpdate = now;
       }
     }
 
     // Update red prop
-    if (redPos) {
-      const deltaTime = now - lastRedUpdate;
+    if (rightPos) {
+      const deltaTime = now - lastRightUpdate;
       if (deltaTime >= mergedConfig.minUpdateInterval) {
-        const velocity = calculateVelocity(prevRedPos, redPos, deltaTime);
-        redHistory = addToHistory(redHistory, redPos, now, velocity);
-        prevRedPos = redPos.clone();
-        lastRedUpdate = now;
+        const velocity = calculateVelocity(prevRightPos, rightPos, deltaTime);
+        rightHistory = addToHistory(rightHistory, rightPos, now, velocity);
+        prevRightPos = rightPos.clone();
+        lastRightUpdate = now;
       }
     }
   }
@@ -137,7 +137,7 @@ export function createEffectState(config: Partial<EffectStateConfig> = {}) {
    * @param count - Optional limit on number of points (default: all)
    */
   function getTrailPoints(prop: PropId, count?: number): TrailPoint[] {
-    const history = prop === "blue" ? blueHistory : redHistory;
+    const history = prop === "left" ? leftHistory : rightHistory;
     if (count === undefined || count >= history.length) {
       return history;
     }
@@ -159,7 +159,7 @@ export function createEffectState(config: Partial<EffectStateConfig> = {}) {
    * @param prop - Which prop to get velocity for
    */
   function getVelocity(prop: PropId): number {
-    return prop === "blue" ? blueVelocity : redVelocity;
+    return prop === "left" ? leftVelocity : rightVelocity;
   }
 
   /**
@@ -168,7 +168,7 @@ export function createEffectState(config: Partial<EffectStateConfig> = {}) {
    * @param sampleCount - Number of recent samples to average (default: 10)
    */
   function getAverageVelocity(prop: PropId, sampleCount = 10): number {
-    const history = prop === "blue" ? blueHistory : redHistory;
+    const history = prop === "left" ? leftHistory : rightHistory;
     if (history.length === 0) return 0;
 
     const samples = history.slice(0, Math.min(sampleCount, history.length));
@@ -181,33 +181,33 @@ export function createEffectState(config: Partial<EffectStateConfig> = {}) {
    * @param prop - Which prop to get history for
    */
   function getHistory(prop: PropId): PropPositionHistory {
-    return prop === "blue" ? bluePositionHistory : redPositionHistory;
+    return prop === "left" ? leftPositionHistory : rightPositionHistory;
   }
 
   /**
    * Clear all position history (call on sequence change)
    */
   function clear() {
-    blueHistory = [];
-    redHistory = [];
-    prevBluePos = null;
-    prevRedPos = null;
-    lastBlueUpdate = 0;
-    lastRedUpdate = 0;
+    leftHistory = [];
+    rightHistory = [];
+    prevLeftPos = null;
+    prevRightPos = null;
+    lastLeftUpdate = 0;
+    lastRightUpdate = 0;
   }
 
   /**
    * Clear history for a specific prop
    */
   function clearProp(prop: PropId) {
-    if (prop === "blue") {
-      blueHistory = [];
-      prevBluePos = null;
-      lastBlueUpdate = 0;
+    if (prop === "left") {
+      leftHistory = [];
+      prevLeftPos = null;
+      lastLeftUpdate = 0;
     } else {
-      redHistory = [];
-      prevRedPos = null;
-      lastRedUpdate = 0;
+      rightHistory = [];
+      prevRightPos = null;
+      lastRightUpdate = 0;
     }
   }
 
@@ -217,23 +217,23 @@ export function createEffectState(config: Partial<EffectStateConfig> = {}) {
    * @param minPoints - Minimum points needed (default: 2)
    */
   function hasEnoughHistory(prop: PropId, minPoints = 2): boolean {
-    const history = prop === "blue" ? blueHistory : redHistory;
+    const history = prop === "left" ? leftHistory : rightHistory;
     return history.length >= minPoints;
   }
 
   return {
     // Reactive state
-    get blueHistory() {
-      return bluePositionHistory;
+    get leftHistory() {
+      return leftPositionHistory;
     },
-    get redHistory() {
-      return redPositionHistory;
+    get rightHistory() {
+      return rightPositionHistory;
     },
-    get blueVelocity() {
-      return blueVelocity;
+    get leftVelocity() {
+      return leftVelocity;
     },
-    get redVelocity() {
-      return redVelocity;
+    get rightVelocity() {
+      return rightVelocity;
     },
 
     // Methods

@@ -135,7 +135,7 @@
 			if (cs.orchestrator.isInitialized()) {
 				cs.orchestrator.calculateState(step);
 				const states = cs.orchestrator.getCurrentPropStates();
-				cs.animState.setPropStates(states.blue, states.red);
+				cs.animState.setPropStates(states.left, states.right);
 			}
 		}
 	});
@@ -155,8 +155,8 @@
 				{@const stepIndex = Math.floor(Math.max(0, Math.min(step - 1, stepCount - 1)))}
 				{@const stepData = cs.sequence.steps?.[stepIndex] ?? null}
 				<AnimatorCanvas
-					blueProp={cs.animState.bluePropState}
-					redProp={cs.animState.redPropState}
+					leftProp={cs.animState.leftPropState}
+					rightProp={cs.animState.rightPropState}
 					gridVisible={true}
 					gridMode={cs.sequence.gridMode ?? null}
 					letter={stepData?.letter || null}

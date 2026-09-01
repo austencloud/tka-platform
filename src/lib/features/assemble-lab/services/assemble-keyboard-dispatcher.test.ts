@@ -4,7 +4,7 @@ import { dispatchAssembleKeyboardAction } from "./assemble-keyboard-dispatcher";
 import type { AssembleState } from "../state/assemble-state.svelte";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -16,7 +16,7 @@ import {
 function makeState(overrides: Partial<AssembleState> = {}) {
   const state = {
     phase: "building",
-    activeHand: MotionColor.BLUE,
+    activeHand: HandSide.LEFT,
     currentPosition: GridLocation.NORTH,
     currentOrientation: Orientation.IN,
     rotationDirection: RotationDirection.CLOCKWISE,
@@ -136,9 +136,9 @@ describe("dispatchAssembleKeyboardAction", () => {
     });
 
     it("switchHand swaps BLUE -> RED", () => {
-      const s = makeState({ activeHand: MotionColor.BLUE });
+      const s = makeState({ activeHand: HandSide.LEFT });
       dispatchAssembleKeyboardAction(s, { type: "switchHand" });
-      expect(s.switchToHand).toHaveBeenCalledWith(MotionColor.RED);
+      expect(s.switchToHand).toHaveBeenCalledWith(HandSide.RIGHT);
     });
 
     it("undo calls undoStep", () => {

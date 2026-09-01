@@ -71,7 +71,7 @@ vi.mock("$lib/features/library/state/library-state.svelte", () => ({
 }));
 vi.mock("$lib/shared/settings/state/settings-state.svelte", () => ({
   settingsService: {
-    settings: { bluePropType: "club", redPropType: "club", catDogMode: false },
+    settings: { leftPropType: "club", rightPropType: "club", catDogMode: false },
   },
 }));
 
@@ -301,8 +301,8 @@ describe("LibrarySaveService.saveSequence - publication-moment intent capture", 
       visibility: "public",
     });
     const expected = {
-      bluePropType: "club",
-      redPropType: "club",
+      leftPropType: "club",
+      rightPropType: "club",
       catDogMode: false,
     };
     expect(dbPutMock.mock.calls[0]?.[0]).toMatchObject({
@@ -313,8 +313,8 @@ describe("LibrarySaveService.saveSequence - publication-moment intent capture", 
 
   it("never restamps an existing recording on a public re-save", async () => {
     const recorded = {
-      bluePropType: "buugeng",
-      redPropType: "buugeng",
+      leftPropType: "buugeng",
+      rightPropType: "buugeng",
       catDogMode: false,
     };
     const service = new LibrarySaveService(null, null, makeRepository(), null);

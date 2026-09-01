@@ -311,10 +311,10 @@
               letter,
               gridMode: GridMode.DIAMOND,
               variation: 0,
-              blueTurns: 0,
-              redTurns: 0,
-              blueRotation: RotationDirection.CLOCKWISE,
-              redRotation: RotationDirection.CLOCKWISE,
+              leftTurns: 0,
+              rightTurns: 0,
+              leftRotation: RotationDirection.CLOCKWISE,
+              rightRotation: RotationDirection.CLOCKWISE,
             }
           : null;
         writeLetterExplorerRoute(url, state);

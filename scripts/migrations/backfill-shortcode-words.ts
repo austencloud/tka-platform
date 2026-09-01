@@ -41,8 +41,8 @@ import {
 import { decodeSequenceFromQR } from "../../src/lib/shared/navigation/services/sequence-encoder";
 import { getSequenceMotionProfile } from "../../src/lib/shared/foundation/services/sequence-motion-profile";
 import {
-  extractBlueSoloProp,
-  extractRedSoloProp,
+  extractLeftSoloProp,
+  extractRightSoloProp,
 } from "../../src/lib/shared/foundation/services/sequence-decomposer";
 import { hashSoloProp } from "../../src/lib/shared/foundation/services/content-hasher";
 import type { SoloPropData } from "../../src/lib/shared/foundation/domain/models/solo-prop-data";
@@ -140,8 +140,8 @@ async function validateSoloRecord(data: AnyRec): Promise<string | null> {
     }
     soloProp =
       expectedColor === "blue"
-        ? extractBlueSoloProp(decoded)
-        : extractRedSoloProp(decoded);
+        ? extractLeftSoloProp(decoded)
+        : extractRightSoloProp(decoded);
   } else {
     soloProp = data.soloData as SoloPropData;
     if (

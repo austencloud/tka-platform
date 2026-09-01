@@ -2,8 +2,8 @@
   BuilderControls.svelte - Hand switcher, undo, clear, save, and phase controls
 
   Guides the user through the three phases:
-  - Blue: tap locations, then "Next Hand" when done (min 2)
-  - Red: tap locations to match blue length, then "Complete"
+  - Left: tap locations, then "Next Hand" when done (min 2)
+  - Right: tap locations to match the left path length, then "Complete"
   - Complete: shows both path names, offers save
 
   Save calls HandPathFactory + HandPathRepository to persist both paths.
@@ -20,19 +20,19 @@ import { getHandPathSaveOrchestrator } from "$lib/features/library/get-hand-path
 
   let saving = $state(false);
   let saveError = $state<string | null>(null);
-  let savedBlue = $state<HandPathData | null>(null);
-  let savedRed = $state<HandPathData | null>(null);
+  let savedLeft = $state<HandPathData | null>(null);
+  let savedRight = $state<HandPathData | null>(null);
 
   // Phase instruction copy
   const instruction = $derived.by(() => {
-    if (builder.phase === "blue") {
-      if (builder.blueLocations.length === 0) return "Tap grid points to draw the blue hand path.";
-      if (builder.blueLocations.length === 1) return "Tap at least one more point, then switch to red.";
-      return `${builder.blueLocations.length} points - tap "Next Hand" when ready.`;
+    if (builder.phase === "left") {
+      if (builder.leftLocations.length === 0) return "Tap grid points to draw the left hand path.";
+      if (builder.leftLocations.length === 1) return "Tap at least one more point, then switch to red.";
+      return `${builder.leftLocations.length} points - tap "Next Hand" when ready.`;
     }
-    if (builder.phase === "red") {
-      const remaining = builder.blueLocations.length - builder.redLocations.length;
-      if (builder.redLocations.length === 0) return "Now draw the red hand path.";
+    if (builder.phase === "right") {
+      const remaining = builder.leftLocations.length - builder.rightLocations.length;
+      if (builder.rightLocations.length === 0) return "Now draw the right hand path.";
       if (remaining > 0) return `${remaining} more point${remaining > 1 ? "s" : ""} to match blue.`;
       return `Paths match - tap "Complete" to finish.`;
     }
@@ -43,26 +43,26 @@ import { getHandPathSaveOrchestrator } from "$lib/features/library/get-hand-path
     if (builder.phase !== "complete") return;
     saving = true;
     saveError = null;
-    savedBlue = null;
-    savedRed = null;
+    savedLeft = null;
+    savedRight = null;
 
     try {
       const orchestrator = getHandPathSaveOrchestrator();
 
-      const blue = createHandPath(builder.blueLocations, {
-        name: builder.bluePathName,
+      const left = createHandPath(builder.leftLocations, {
+        name: builder.leftPathName,
       });
-      const red = createHandPath(builder.redLocations, {
-        name: builder.redPathName,
+      const right = createHandPath(builder.rightLocations, {
+        name: builder.rightPathName,
       });
 
       await Promise.all([
-        orchestrator.save(blue, builder.bluePathName),
-        orchestrator.save(red, builder.redPathName),
+        orchestrator.save(left, builder.leftPathName),
+        orchestrator.save(right, builder.rightPathName),
       ]);
 
-      savedBlue = blue;
-      savedRed = red;
+      savedLeft = left;
+      savedRight = right;
     } catch (err) {
       saveError = err instanceof Error ? err.message : "Save failed.";
     } finally {
@@ -106,17 +106,17 @@ import { getHandPathSaveOrchestrator } from "$lib/features/library/get-hand-path
     </button>
 
     <!-- Phase advance buttons -->
-    {#if builder.phase === "blue"}
+    {#if builder.phase === "left"}
       <button
         class="btn btn-primary"
-        disabled={!builder.canSwitchToRed}
-        onclick={builder.switchToRed}
-        aria-label="Switch to red hand"
+        disabled={!builder.canSwitchToRight}
+        onclick={builder.switchToRight}
+        aria-label="Switch to right hand"
       >
         Next Hand
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </button>
-    {:else if builder.phase === "red"}
+    {:else if builder.phase === "right"}
       <button
         class="btn btn-primary"
         disabled={!builder.canComplete}
@@ -133,15 +133,15 @@ import { getHandPathSaveOrchestrator } from "$lib/features/library/get-hand-path
   {#if builder.phase === "complete"}
     <div class="result-panel">
       <div class="result-row">
-        <span class="result-label blue-label">Blue:</span>
-        <code class="result-name">{builder.bluePathName}</code>
+        <span class="result-label blue-label">Left:</span>
+        <code class="result-name">{builder.leftPathName}</code>
       </div>
       <div class="result-row">
-        <span class="result-label red-label">Red:</span>
-        <code class="result-name">{builder.redPathName}</code>
+        <span class="result-label red-label">Right:</span>
+        <code class="result-name">{builder.rightPathName}</code>
       </div>
 
-      {#if savedBlue && savedRed}
+      {#if savedLeft && savedRight}
         <p class="save-success">
           <i class="fas fa-check-circle" aria-hidden="true"></i>
           Saved to library.
@@ -163,7 +163,7 @@ import { getHandPathSaveOrchestrator } from "$lib/features/library/get-hand-path
           New Path
         </button>
 
-        {#if !savedBlue}
+        {#if !savedLeft}
           <button
             data-save-shortcut
             class="btn btn-primary"

@@ -24,7 +24,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
-    MotionColor,
+    HandSide,
     Orientation,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import {
@@ -61,7 +61,7 @@
     sequence?: SequenceData | null;
     removingStepIndices?: Set<number>;
     onClose: () => void;
-    onOrientationChange: (color: MotionColor, orientation: string) => void;
+    onOrientationChange: (color: HandSide, orientation: string) => void;
     onStepSelect?: (stepNumber: number) => void;
     onDelete?: () => void;
     onStepDataUpdate?: (updatedStepData: StepData) => void;
@@ -148,49 +148,49 @@
     displayedStepNumber !== null && displayedStepData !== null
   );
   const isStartPositionSelected = $derived(displayedStepNumber === 0);
-  const startBlueMotion = $derived(
-    displayedStepData?.motions?.[MotionColor.BLUE]
+  const startLeftMotion = $derived(displayedStepData?.motions?.[HandSide.LEFT]);
+  const startRightMotion = $derived(
+    displayedStepData?.motions?.[HandSide.RIGHT]
   );
-  const startRedMotion = $derived(
-    displayedStepData?.motions?.[MotionColor.RED]
+  const startLeftLocation = $derived(
+    isVisibleMotion(startLeftMotion) ? startLeftMotion.startLocation : null
   );
-  const startBlueLocation = $derived(
-    isVisibleMotion(startBlueMotion) ? startBlueMotion.startLocation : null
-  );
-  const startRedLocation = $derived(
-    isVisibleMotion(startRedMotion) ? startRedMotion.startLocation : null
+  const startRightLocation = $derived(
+    isVisibleMotion(startRightMotion) ? startRightMotion.startLocation : null
   );
   const startGridMode = $derived.by(() => {
-    if (isVisibleMotion(startBlueMotion) && isVisibleMotion(startRedMotion)) {
-      return deriveGridMode(startBlueMotion, startRedMotion);
+    if (isVisibleMotion(startLeftMotion) && isVisibleMotion(startRightMotion)) {
+      return deriveGridMode(startLeftMotion, startRightMotion);
     }
 
     return (
       displayedStepData?.gridMode ??
-      startBlueMotion?.gridMode ??
-      startRedMotion?.gridMode ??
+      startLeftMotion?.gridMode ??
+      startRightMotion?.gridMode ??
       GridMode.DIAMOND
     );
   });
-  const startBluePropType = $derived.by(
+  const startLeftPropType = $derived.by(
     () =>
-      getSettings().bluePropType ?? startBlueMotion?.propType ?? PropType.STAFF
+      getSettings().leftPropType ?? startLeftMotion?.propType ?? PropType.STAFF
   );
-  const startRedPropType = $derived.by(
+  const startRightPropType = $derived.by(
     () =>
-      getSettings().redPropType ?? startRedMotion?.propType ?? PropType.STAFF
+      getSettings().rightPropType ??
+      startRightMotion?.propType ??
+      PropType.STAFF
   );
   const canAimStartPosition = $derived(
     isStartPositionSelected &&
-      startBlueLocation !== null &&
-      startRedLocation !== null
+      startLeftLocation !== null &&
+      startRightLocation !== null
   );
   const startPositionUsesCenter = $derived(
-    startBlueLocation === GridLocation.CENTER ||
-      startRedLocation === GridLocation.CENTER
+    startLeftLocation === GridLocation.CENTER ||
+      startRightLocation === GridLocation.CENTER
   );
   let placementGrid = $state<ReturnType<typeof PropPlacementGrid> | null>(null);
-  let activeMoveColor = $state<MotionColor | null>(null);
+  let activeMoveHand = $state<HandSide | null>(null);
   let isRepositioning = $state(false);
   let placementResetEpoch = $state(0);
   let placementMotionMove = $state<PlacementMotionMove | null>(null);
@@ -225,12 +225,13 @@
     if (!sequence?.steps) return 0;
     // Use a combination that changes when any step's orientation changes
     return sequence.steps.reduce((acc, step, idx) => {
-      const blue = step?.motions?.[MotionColor.BLUE];
-      const red = step?.motions?.[MotionColor.RED];
-      const blueTurnsNum =
-        blue?.turns === "fl" ? -0.5 : Number(blue?.turns ?? 0);
-      const redTurnsNum = red?.turns === "fl" ? -0.5 : Number(red?.turns ?? 0);
-      return acc + idx * 1000 + blueTurnsNum * 100 + redTurnsNum * 10;
+      const left = step?.motions?.[HandSide.LEFT];
+      const right = step?.motions?.[HandSide.RIGHT];
+      const leftTurnsNum =
+        left?.turns === "fl" ? -0.5 : Number(left?.turns ?? 0);
+      const rightTurnsNum =
+        right?.turns === "fl" ? -0.5 : Number(right?.turns ?? 0);
+      return acc + idx * 1000 + leftTurnsNum * 100 + rightTurnsNum * 10;
     }, sequence.steps.length);
   });
 
@@ -283,12 +284,12 @@
   // hand not really there (both-required Step shape): not a beta position.
   const isBetaPosition = $derived.by(() => {
     if (!displayedStepData || isStartPositionSelected) return false;
-    const blue = displayedStepData.motions?.[MotionColor.BLUE];
-    const red = displayedStepData.motions?.[MotionColor.RED];
+    const left = displayedStepData.motions?.[HandSide.LEFT];
+    const right = displayedStepData.motions?.[HandSide.RIGHT];
     return !!(
-      isVisibleMotion(blue) &&
-      isVisibleMotion(red) &&
-      blue.endLocation === red.endLocation
+      isVisibleMotion(left) &&
+      isVisibleMotion(right) &&
+      left.endLocation === right.endLocation
     );
   });
   const isBetaSwapped = $derived(!!displayedStepData?.betaSwapped);
@@ -350,16 +351,16 @@
   }
 
   function handlePlacementChange(change: PropPlacementChange) {
-    activeMoveColor = change.activeColor;
+    activeMoveHand = change.activeHand;
   }
 
-  function handleMoveProp(color: MotionColor) {
+  function handleMoveProp(color: HandSide) {
     if (isRepositioning || startPositionUsesCenter) return;
     placementGrid?.moveProp(color);
   }
 
   async function rotateStartPositionLocation(
-    color: MotionColor,
+    color: HandSide,
     direction: "clockwise" | "counterclockwise",
     rotationSteps: number,
     targetLocation: GridLocation,
@@ -374,10 +375,10 @@
       return;
     }
 
-    const targetHand = color === MotionColor.BLUE ? "blue" : "red";
+    const targetHand = color === HandSide.LEFT ? "left" : "right";
     const directionStep = direction === "clockwise" ? 1 : -1;
     isRepositioning = true;
-    activeMoveColor = null;
+    activeMoveHand = null;
     CreateModuleState.pushUndoSnapshot(UndoOperationType.ROTATE_SEQUENCE);
     setGridRotationDirection(directionStep);
 
@@ -412,11 +413,11 @@
   }
 
   async function handleLocationRotate(
-    color: MotionColor,
+    color: HandSide,
     direction: "clockwise" | "counterclockwise"
   ) {
     const currentLocation =
-      color === MotionColor.BLUE ? startBlueLocation : startRedLocation;
+      color === HandSide.LEFT ? startLeftLocation : startRightLocation;
     if (currentLocation === null || currentLocation === GridLocation.CENTER) {
       return;
     }
@@ -439,33 +440,32 @@
     );
   }
 
-  async function handlePlacementComplete(
-    blueLocation: GridLocation,
-    redLocation: GridLocation
-  ) {
+  async function handlePlacementComplete(leftLocation, rightLocation) {
     if (
       !isStartPositionSelected ||
       isRepositioning ||
-      startBlueLocation === null ||
-      startRedLocation === null
+      startLeftLocation === null ||
+      startRightLocation === null
     ) {
       return;
     }
 
-    const blueChanged = blueLocation !== startBlueLocation;
-    const redChanged = redLocation !== startRedLocation;
+    const leftChanged = leftLocation !== startLeftLocation;
+    const rightChanged = rightLocation !== startRightLocation;
 
     // Move mode changes one prop at a time. Pressing an occupied prop before an
     // aim drag also publishes the current pair, which is intentionally a no-op.
-    if (!blueChanged && !redChanged) return;
-    if (blueChanged === redChanged) {
+    if (!leftChanged && !rightChanged) return;
+    if (leftChanged === rightChanged) {
       placementResetEpoch += 1;
       return;
     }
 
-    const targetColor = blueChanged ? MotionColor.BLUE : MotionColor.RED;
-    const previousLocation = blueChanged ? startBlueLocation : startRedLocation;
-    const targetLocation = blueChanged ? blueLocation : redLocation;
+    const targetColor = leftChanged ? HandSide.LEFT : HandSide.RIGHT;
+    const previousLocation = leftChanged
+      ? startLeftLocation
+      : startRightLocation;
+    const targetLocation = leftChanged ? leftLocation : rightLocation;
     const rotationSteps = getShortestRotationStepsBetweenLocations(
       previousLocation,
       targetLocation
@@ -599,19 +599,19 @@
         }}
       >
         <div class="pictograph-container" class:aiming={canAimStartPosition}>
-          {#if canAimStartPosition && startBlueLocation && startRedLocation}
+          {#if canAimStartPosition && startLeftLocation && startRightLocation}
             <div class="start-position-aim" data-swipe-block>
               <PropPlacementGrid
                 bind:this={placementGrid}
                 gridMode={startGridMode}
-                bluePropType={startBluePropType}
-                redPropType={startRedPropType}
-                blueOrientation={startBlueMotion?.startOrientation ??
+                leftPropType={startLeftPropType}
+                rightPropType={startRightPropType}
+                leftOrientation={startLeftMotion?.startOrientation ??
                   Orientation.IN}
-                redOrientation={startRedMotion?.startOrientation ??
+                rightOrientation={startRightMotion?.startOrientation ??
                   Orientation.IN}
-                initialBlueLocation={startBlueLocation}
-                initialRedLocation={startRedLocation}
+                initialLeftLocation={startLeftLocation}
+                initialRightLocation={startRightLocation}
                 betaSwapped={displayedStepData.betaSwapped}
                 previewPictographData={displayedStepData}
                 resetEpoch={placementResetEpoch}
@@ -656,7 +656,7 @@
           stacked={!isSideBySideLayout}
           compact={!isSideBySideLayout || isShortWideEditor}
           focused={isShortWideEditor}
-          {activeMoveColor}
+          {activeMoveHand}
           repositionDisabled={startPositionUsesCenter}
           {isRepositioning}
           {onOrientationChange}
@@ -701,7 +701,6 @@
 />
 
 <style>
-
   .editor-panel {
     display: flex;
     flex-direction: column;
@@ -736,7 +735,6 @@
   :global(.drawer-content.dragging) .editor-panel :global(*) {
     cursor: grabbing;
   }
-
 
   .panel-header {
     display: flex;
@@ -862,7 +860,6 @@
       flex-wrap: wrap;
     }
   }
-
 
   .icon-btn {
     display: flex;
@@ -1025,7 +1022,6 @@
     font-size: 0.9rem;
   }
 
-
   /* Small container height (< 600px) - tighter padding */
   @container step-editor (max-height: 600px) {
     .controls-section.mobile {
@@ -1045,8 +1041,6 @@
       }
     }
   }
-
-
 
   .tour-section {
     border-radius: 8px;
@@ -1072,7 +1066,6 @@
       opacity 0.3s ease,
       box-shadow 0.3s ease;
   }
-
 
   @media (prefers-reduced-motion: reduce) {
     .icon-btn {

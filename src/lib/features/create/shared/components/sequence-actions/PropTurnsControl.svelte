@@ -15,7 +15,7 @@
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   interface Props {
-    color: "blue" | "red";
+    hand: "left" | "right";
     turns: number | "fl";
     rotationDirection: RotationDirection;
     showRotation: boolean;
@@ -31,7 +31,7 @@
   }
 
   let {
-    color,
+    hand,
     turns,
     rotationDirection,
     showRotation,
@@ -89,8 +89,8 @@
 
 <div
   class="turns-controls"
-  class:blue={color === "blue"}
-  class:red={color === "red"}
+  class:blue={hand === "left"}
+  class:red={hand === "right"}
   class:compact
 >
   <!-- Turns row -->
@@ -98,7 +98,7 @@
     <button
       class="ctrl-btn"
       class:compact
-      aria-label="Decrease {color} turns"
+      aria-label="Decrease {hand} turns"
       onclick={(e) => handleTurnsChangeClick(e, -0.5)}
     >
       <i class="fas fa-minus" aria-hidden="true"></i>
@@ -107,7 +107,7 @@
     <button
       class="ctrl-btn"
       class:compact
-      aria-label="Increase {color} turns"
+      aria-label="Increase {hand} turns"
       onclick={(e) => handleTurnsChangeClick(e, 0.5)}
     >
       <i class="fas fa-plus" aria-hidden="true"></i>
@@ -119,7 +119,7 @@
     <button
       class="invert-btn"
       class:compact
-      aria-label="Toggle {color} rotation (currently {directionLabel})"
+      aria-label="Toggle {hand} rotation (currently {directionLabel})"
       onclick={handleInvert}
     >
       <i class="fas {directionIcon}" aria-hidden="true"></i>
@@ -136,7 +136,7 @@
           class:active={pathShape === shape}
           class:compact
           aria-pressed={pathShape === shape}
-          aria-label="{color} path: {shape}"
+          aria-label="{hand} path: {shape}"
           onclick={(e) => {
             e.stopPropagation();
             onPathShapeChange(shape);
@@ -149,7 +149,7 @@
         class="shape-pill reset"
         class:compact
         disabled={pathShape === undefined}
-        aria-label="Reset {color} path to global"
+        aria-label="Reset {hand} path to global"
         onclick={(e) => {
           e.stopPropagation();
           onPathShapeClear();

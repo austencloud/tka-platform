@@ -48,7 +48,7 @@
 
   {#if frame}
     <div class="hand-data">
-      {#each [{ key: "blue" as const, label: "Blue", color: "#3b82f6" }, { key: "red" as const, label: "Red", color: "#ef4444" }] as hand}
+      {#each [{ key: "left" as const, label: "Left", color: "#3b82f6" }, { key: "right" as const, label: "Right", color: "#ef4444" }] as hand}
         {@const detection = frame[hand.key]}
         <div class="hand-row">
           <span class="hand-dot" style="background: {hand.color}"></span>

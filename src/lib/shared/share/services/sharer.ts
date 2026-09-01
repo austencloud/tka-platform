@@ -120,7 +120,7 @@ export class Sharer {
     // them from the global manager at render time. That makes them real inputs
     // to the image and invisible to a key built from the options alone — toggle
     // TKA off and the cache hands back the card that still has it. (The same
-    // reasoning already put bluePropType/redPropType in the options object.)
+    // reasoning already put leftPropType/rightPropType in the options object.)
     const cacheKey = hashString(
       `${JSON.stringify(sequence)}\n${JSON.stringify(renderOptions)}\n${JSON.stringify(
         getVisibilityStateManager().getState()
@@ -240,8 +240,8 @@ export class Sharer {
       stepSize: shareOptions.stepSize,
       margin: shareOptions.margin,
 
-      redVisible: true,
-      blueVisible: true,
+      rightVisible: true,
+      leftVisible: true,
       visibilityOverrides: {
         darkMode: shareOptions.darkMode,
       },
@@ -276,8 +276,8 @@ export class Sharer {
       stepSize: shareOptions.stepSize,
       margin: shareOptions.margin,
 
-      redVisible: true,
-      blueVisible: true,
+      rightVisible: true,
+      leftVisible: true,
       visibilityOverrides: {
         darkMode: shareOptions.darkMode,
       },

@@ -66,8 +66,8 @@ Last audit: 2025-12-27
 
   // Props
   let {
-    blueProp,
-    redProp,
+    leftProp,
+    rightProp,
     additionalLayers = [],
     tunnelSpectrum = true,
     tunnelPropColors = null,
@@ -83,11 +83,11 @@ Last audit: 2025-12-27
     onCanvasReady = () => {},
     onPlaybackToggle = () => {},
     trailSettings: externalTrailSettings = $bindable(),
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     fanAppearance = undefined,
-    blueBuugengFlipped = undefined,
-    redBuugengFlipped = undefined,
+    leftBuugengFlipped = undefined,
+    rightBuugengFlipped = undefined,
     word = null,
     previewDarkMode = null,
     hideTkaGlyph = false,
@@ -135,8 +135,8 @@ Last audit: 2025-12-27
     onSaveToLibrary = undefined,
     initialQualityTier = undefined,
   }: {
-    blueProp: PropState | null;
-    redProp: PropState | null;
+    leftProp: PropState | null;
+    rightProp: PropState | null;
     additionalLayers?: AdditionalLayerProps[];
     tunnelSpectrum?: boolean;
     tunnelPropColors?: TunnelPropColorPair | null;
@@ -152,11 +152,11 @@ Last audit: 2025-12-27
     onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
     onPlaybackToggle?: () => void;
     trailSettings?: TrailSettings;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     fanAppearance?: FanAppearance;
-    blueBuugengFlipped?: boolean;
-    redBuugengFlipped?: boolean;
+    leftBuugengFlipped?: boolean;
+    rightBuugengFlipped?: boolean;
     word?: string | null;
     previewDarkMode?: boolean | null;
     hideTkaGlyph?: boolean;
@@ -484,8 +484,8 @@ Last audit: 2025-12-27
   let globalDarkMode = $state(false);
   let wordHeaderVisible = $state(false);
   let progressBarVisible = $state(false);
-  let bluePathLinesVisible = $state(false);
-  let redPathLinesVisible = $state(false);
+  let leftPathLinesVisible = $state(false);
+  let rightPathLinesVisible = $state(false);
   $effect.pre(() => {
     tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
     elementalGlyphVisible = visibilityManager.getVisibility("elementalGlyph");
@@ -493,8 +493,8 @@ Last audit: 2025-12-27
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
     progressBarVisible = visibilityManager.getVisibility("progressBar");
-    bluePathLinesVisible = visibilityManager.getVisibility("bluePathLines");
-    redPathLinesVisible = visibilityManager.getVisibility("redPathLines");
+    leftPathLinesVisible = visibilityManager.getVisibility("leftPathLines");
+    rightPathLinesVisible = visibilityManager.getVisibility("rightPathLines");
   });
 
   const darkModeEnabled = $derived(
@@ -511,11 +511,11 @@ Last audit: 2025-12-27
   const effectiveBeatNumbersVisible = $derived(
     stepNumbersVisible && !hideStepNumbers
   );
-  const effectiveBluePathLinesVisible = $derived(
-    bluePathLinesVisible && !hidePathLines
+  const effectiveLeftPathLinesVisible = $derived(
+    leftPathLinesVisible && !hidePathLines
   );
-  const effectiveRedPathLinesVisible = $derived(
-    redPathLinesVisible && !hidePathLines
+  const effectiveRightPathLinesVisible = $derived(
+    rightPathLinesVisible && !hidePathLines
   );
 
   function handleVisibilityChange() {
@@ -525,8 +525,8 @@ Last audit: 2025-12-27
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
     progressBarVisible = visibilityManager.getVisibility("progressBar");
-    bluePathLinesVisible = visibilityManager.getVisibility("bluePathLines");
-    redPathLinesVisible = visibilityManager.getVisibility("redPathLines");
+    leftPathLinesVisible = visibilityManager.getVisibility("leftPathLines");
+    rightPathLinesVisible = visibilityManager.getVisibility("rightPathLines");
   }
 
   // Register/unregister observer reactively so visibilityManager is tracked
@@ -662,8 +662,8 @@ Last audit: 2025-12-27
 
     <CanvasSurface
       bind:engine
-      {blueProp}
-      {redProp}
+      {leftProp}
+      {rightProp}
       {additionalLayers}
       {tunnelSpectrum}
       {tunnelPropColors}
@@ -677,11 +677,11 @@ Last audit: 2025-12-27
       {currentStep}
       {isPlaying}
       bind:trailSettings={externalTrailSettings}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
       {fanAppearance}
-      {blueBuugengFlipped}
-      {redBuugengFlipped}
+      {leftBuugengFlipped}
+      {rightBuugengFlipped}
       {previewDarkMode}
       {isSeamlesslyLoopable}
       {showNonRadialPoints}
@@ -697,8 +697,8 @@ Last audit: 2025-12-27
       {effectiveTkaGlyphVisible}
       elementalGlyphVisible={effectiveElementalGlyphVisible}
       {effectiveBeatNumbersVisible}
-      bluePathLinesVisible={effectiveBluePathLinesVisible}
-      redPathLinesVisible={effectiveRedPathLinesVisible}
+      leftPathLinesVisible={effectiveLeftPathLinesVisible}
+      rightPathLinesVisible={effectiveRightPathLinesVisible}
       {suppress2DOverlays}
       {resizePaused}
       {visibilityManagerOverride}
@@ -717,8 +717,8 @@ Last audit: 2025-12-27
          Rendered via SplitCanvasView (CanvasSurface leaves) - never a self-import. -->
     {#if showSplitCanvases}
       <SplitCanvasView
-        {blueProp}
-        {redProp}
+        {leftProp}
+        {rightProp}
         {gridVisible}
         {gridMode}
         {letter}
@@ -729,8 +729,8 @@ Last audit: 2025-12-27
         {fireConfig}
         {ledConfig}
         trailSettings={externalTrailSettings}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         {fanAppearance}
         tipEffectMap={cellTipEffectMap}
         {visibilityManagerOverride}
@@ -814,8 +814,8 @@ Last audit: 2025-12-27
     <CanvasContextMenuHost
       bind:this={contextMenuHost}
       sequence={sequenceData}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
       showSettings={!disableContextMenu}
       {onSaveToLibrary}
       disassembled={externalToggleDisassemble

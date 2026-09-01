@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from "vitest";
 // getBaseMotionColors pulls the SVG generator chain; stub it to fixed colors so
 // the spectrum-off assertion is deterministic and the import stays light.
 vi.mock("./svg-generator", () => ({
-  getBaseMotionColors: () => ({ blue: "#1111ff", red: "#ff1111" }),
+  getBaseMotionColors: () => ({ left: "#1111ff", right: "#ff1111" }),
 }));
 
 import { PropTypeManager } from "./prop-type-manager";
@@ -11,21 +11,21 @@ import { PropTypeManager } from "./prop-type-manager";
 function makeManager() {
   const calls: Array<{
     i: number;
-    bluePropType: string;
-    redPropType: string;
-    blue: string;
-    red: string;
+    leftPropType: string;
+    rightPropType: string;
+    left: string;
+    right: string;
   }> = [];
   const renderer = {
     loadAdditionalLayerPropTextures: vi.fn(
       (
         i: number,
-        bluePropType: string,
-        redPropType: string,
-        blue: string,
-        red: string
+        leftPropType: string,
+        rightPropType: string,
+        left: string,
+        right: string
       ) => {
-        calls.push({ i, bluePropType, redPropType, blue, red });
+        calls.push({ i, leftPropType, rightPropType, left, right });
         return Promise.resolve();
       }
     ),
@@ -46,50 +46,50 @@ describe("PropTypeManager.preloadAdditionalLayerTextures (tunnel export)", () =>
     expect(renderer.loadAdditionalLayerPropTextures).toHaveBeenCalledTimes(3);
     expect(calls.map((c) => c.i)).toEqual([0, 1, 2]);
     expect(
-      calls.every((c) => c.bluePropType === "club" && c.redPropType === "club")
+      calls.every((c) => c.leftPropType === "club" && c.rightPropType === "club")
     ).toBe(true);
   });
 
   it("forwards per-layer prop types (Performer Set export) when supplied", async () => {
     const { ptm, calls } = makeManager();
     await ptm.preloadAdditionalLayerTextures(2, true, "staff", [
-      { blue: "sword", red: "club" },
-      { blue: "fan", red: "fan" },
+      { left: "sword", right: "club" },
+      { left: "fan", right: "fan" },
     ]);
     expect(calls[0]).toMatchObject({
       i: 0,
-      bluePropType: "sword",
-      redPropType: "club",
+      leftPropType: "sword",
+      rightPropType: "club",
     });
     expect(calls[1]).toMatchObject({
       i: 1,
-      bluePropType: "fan",
-      redPropType: "fan",
+      leftPropType: "fan",
+      rightPropType: "fan",
     });
   });
 
   it("spectrum on → each layer fans to a distinct color", async () => {
     const { ptm, calls } = makeManager();
     await ptm.preloadAdditionalLayerTextures(3, true, "staff");
-    expect(new Set(calls.map((c) => c.blue)).size).toBe(3);
-    expect(new Set(calls.map((c) => c.red)).size).toBe(3);
+    expect(new Set(calls.map((c) => c.left)).size).toBe(3);
+    expect(new Set(calls.map((c) => c.right)).size).toBe(3);
   });
 
   it("spectrum off → every layer matches the base pair color", async () => {
     const { ptm, calls } = makeManager();
     await ptm.preloadAdditionalLayerTextures(3, false, "staff");
-    expect(calls.every((c) => c.blue === "#1111ff")).toBe(true);
-    expect(calls.every((c) => c.red === "#ff1111")).toBe(true);
+    expect(calls.every((c) => c.left === "#1111ff")).toBe(true);
+    expect(calls.every((c) => c.right === "#ff1111")).toBe(true);
   });
 
   it("custom pair → every layer uses the authored exact colors", async () => {
     const { ptm, calls } = makeManager();
     await ptm.preloadAdditionalLayerTextures(3, false, "staff", undefined, {
-      blue: "#123456",
-      red: "#abcdef",
+      left: "#123456",
+      right: "#abcdef",
     });
-    expect(calls.every((c) => c.blue === "#123456")).toBe(true);
-    expect(calls.every((c) => c.red === "#abcdef")).toBe(true);
+    expect(calls.every((c) => c.left === "#123456")).toBe(true);
+    expect(calls.every((c) => c.right === "#abcdef")).toBe(true);
   });
 
   it("no-op for zero layers", async () => {

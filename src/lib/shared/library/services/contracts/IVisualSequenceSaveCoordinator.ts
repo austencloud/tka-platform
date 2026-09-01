@@ -4,8 +4,8 @@ import type { SaveResult } from "$lib/shared/library/domain/library-contract-typ
 export type VisualSequencePathShape = "arc" | "linear" | "concave";
 
 export interface VisualSequenceSaveIntent {
-  bluePropType?: string | null;
-  redPropType?: string | null;
+  leftPropType?: string | null;
+  rightPropType?: string | null;
   catDogModeEnabled?: boolean | null;
   pathShape?: VisualSequencePathShape;
 }

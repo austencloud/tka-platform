@@ -121,7 +121,7 @@ describe("reflection axes in LOOPSpec", () => {
 
     const roundTrip = loopSpecFromWire(loopSpecToWire(spec));
     expect(
-      roundTrip.blue?.components.get(LOOPComponent.MIRRORED)?.reflectionAxis
+      roundTrip.left?.components.get(LOOPComponent.MIRRORED)?.reflectionAxis
     ).toBe("northeast-southwest");
     expect(loopSpecToWire(roundTrip)).toEqual(loopSpecToWire(spec));
   });
@@ -132,13 +132,13 @@ describe("reflection axes in LOOPSpec", () => {
     expect(
       getReflectionAxis(
         LOOPComponent.MIRRORED,
-        mirrored.blue!.components.get(LOOPComponent.MIRRORED)!
+        mirrored.left!.components.get(LOOPComponent.MIRRORED)!
       )
     ).toBe(DEFAULT_MIRRORED_AXIS);
     expect(
       getReflectionAxis(
         LOOPComponent.FLIPPED,
-        flipped.blue!.components.get(LOOPComponent.FLIPPED)!
+        flipped.left!.components.get(LOOPComponent.FLIPPED)!
       )
     ).toBe(DEFAULT_FLIPPED_AXIS);
   });
@@ -187,7 +187,7 @@ describe("reflection-axis detection", () => {
     expect(detected.isCircular).toBe(true);
     expect(detected.reflectionAxis).toBe("northeast-southwest");
     expect(
-      detected.spec?.blue?.components.get(LOOPComponent.MIRRORED)
+      detected.spec?.left?.components.get(LOOPComponent.MIRRORED)
         ?.reflectionAxis
     ).toBe("northeast-southwest");
   });
@@ -203,7 +203,7 @@ describe("reflection-axis detection", () => {
     expect(detected.isCircular).toBe(true);
     expect(detected.reflectionAxis).toBe("east-west");
     expect(
-      detected.spec?.blue?.components.get(LOOPComponent.FLIPPED)?.reflectionAxis
+      detected.spec?.left?.components.get(LOOPComponent.FLIPPED)?.reflectionAxis
     ).toBe("east-west");
   });
 });
@@ -221,20 +221,20 @@ function reflectionSpec(
 }
 
 function pair(
-  blueStart: string,
-  blueEnd: string,
-  redStart: string,
-  redEnd: string
+  leftStart: string,
+  leftEnd: string,
+  rightStart: string,
+  rightEnd: string
 ) {
   return {
-    blue: {
-      startLocation: blueStart,
-      endLocation: blueEnd,
+    left: {
+      startLocation: leftStart,
+      endLocation: leftEnd,
       motionType: "dash",
     },
-    red: {
-      startLocation: redStart,
-      endLocation: redEnd,
+    right: {
+      startLocation: rightStart,
+      endLocation: rightEnd,
       motionType: "dash",
     },
   };
@@ -283,8 +283,8 @@ function step(
     startPosition,
     endPosition,
     motions: {
-      blue: motion(start[0], end[0]),
-      red: motion(start[1], end[1]),
+      left: motion(start[0], end[0]),
+      right: motion(start[1], end[1]),
     },
   } as SequenceStep;
 }

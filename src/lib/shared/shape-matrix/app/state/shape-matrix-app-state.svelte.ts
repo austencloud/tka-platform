@@ -30,18 +30,18 @@ export interface ShapeMatrixCompactFocusRequest {
   id: number;
   target: ShapeMatrixAppView;
 }
-export type ShapeMatrixAxisTarget = "blue" | "both" | "red";
+export type ShapeMatrixAxisTarget = "left" | "both" | "right";
 export type ShapeMatrixRelationshipDriver = "hands" | "props";
 
 export interface ShapeMatrixAppSnapshot {
   level: TurnLevel;
-  blueTurn: TurnValue;
-  redTurn: TurnValue;
+  leftTurn: TurnValue;
+  rightTurn: TurnValue;
   activeAxis: ShapeMatrixAxisTarget;
   labelMode: MatrixLabelMode;
   propType: PropType;
   relationshipDriver: ShapeMatrixRelationshipDriver;
-  pair: { blue: Flower; red: Flower } | null;
+  pair: { left: Flower; right: Flower } | null;
   mode: VtgMode | null;
   propMode: VtgMode | null;
 }
@@ -103,13 +103,13 @@ function flowerAtTurn(
 }
 
 function supportsTimedPropRelationship(
-  pair: { blue: Flower; red: Flower } | null
+  pair: { left: Flower; right: Flower } | null
 ): boolean {
   return (
     pair !== null &&
-    pair.blue.turns !== "fl" &&
-    pair.red.turns !== "fl" &&
-    pair.blue.turns === pair.red.turns
+    pair.left.turns !== "fl" &&
+    pair.right.turns !== "fl" &&
+    pair.left.turns === pair.right.turns
   );
 }
 
@@ -119,11 +119,11 @@ export function createShapeMatrixAppState(
   initialCompact: boolean
 ) {
   let level = $state(initial.level);
-  let blueTurn = $state<TurnValue>(
-    clampTurnToLevel(initial.blueTurn, initial.level)
+  let leftTurn = $state<TurnValue>(
+    clampTurnToLevel(initial.leftTurn, initial.level)
   );
-  let redTurn = $state<TurnValue>(
-    clampTurnToLevel(initial.redTurn, initial.level)
+  let rightTurn = $state<TurnValue>(
+    clampTurnToLevel(initial.rightTurn, initial.level)
   );
   let activeAxis = $state<ShapeMatrixAxisTarget>(initial.activeAxis);
   let labelMode = $state(initial.labelMode);
@@ -133,11 +133,11 @@ export function createShapeMatrixAppState(
   );
   let selectedPair = $state(initial.pair);
   let rememberedVariants = $state<{
-    blue: SemanticVariant;
-    red: SemanticVariant;
+    left: SemanticVariant;
+    right: SemanticVariant;
   }>({
-    blue: initial.pair ? semanticVariant(initial.pair.blue) : 0,
-    red: initial.pair ? semanticVariant(initial.pair.red) : 2,
+    left: initial.pair ? semanticVariant(initial.pair.left) : 0,
+    right: initial.pair ? semanticVariant(initial.pair.right) : 2,
   });
   let selectedMode = $state<VtgMode | null>(
     initial.pair ? (initial.mode ?? MODE_ORDER[0] ?? null) : null
@@ -160,12 +160,12 @@ export function createShapeMatrixAppState(
   let propPickerOpen = $state(false);
 
   const availableTurns = $derived(turnValuesForLevel(level));
-  const filters = $derived(matrixFiltersForTurns(blueTurn, redTurn));
+  const filters = $derived(matrixFiltersForTurns(leftTurn, rightTurn));
   const rowAxis = $derived(
-    data ? applyFilter(data.axis, filters.blue, false) : []
+    data ? applyFilter(data.axis, filters.left, false) : []
   );
   const colAxis = $derived(
-    data ? applyFilter(data.axis, filters.red, false) : []
+    data ? applyFilter(data.axis, filters.right, false) : []
   );
 
   async function load(nextPropType: PropType = propType): Promise<void> {
@@ -184,27 +184,27 @@ export function createShapeMatrixAppState(
   }
 
   function updateSelectedPairTurns(
-    nextBlueTurn: TurnValue,
-    nextRedTurn: TurnValue
+    nextLeftTurn: TurnValue,
+    nextRightTurn: TurnValue
   ): void {
     if (!selectedPair) return;
     selectedPair = {
-      blue: flowerAtTurn(nextBlueTurn, rememberedVariants.blue),
-      red: flowerAtTurn(nextRedTurn, rememberedVariants.red),
+      left: flowerAtTurn(nextLeftTurn, rememberedVariants.left),
+      right: flowerAtTurn(nextRightTurn, rememberedVariants.right),
     };
   }
 
   function setLevel(nextLevel: TurnLevel): void {
     if (level === nextLevel) return;
     level = nextLevel;
-    const nextBlueTurn = clampTurnToLevel(blueTurn, level);
-    const nextRedTurn = clampTurnToLevel(redTurn, level);
-    updateSelectedPairTurns(nextBlueTurn, nextRedTurn);
-    if (nextBlueTurn === "fl" || nextBlueTurn !== nextRedTurn) {
+    const nextLeftTurn = clampTurnToLevel(leftTurn, level);
+    const nextRightTurn = clampTurnToLevel(rightTurn, level);
+    updateSelectedPairTurns(nextLeftTurn, nextRightTurn);
+    if (nextLeftTurn === "fl" || nextLeftTurn !== nextRightTurn) {
       selectedPropMode = null;
     }
-    blueTurn = nextBlueTurn;
-    redTurn = nextRedTurn;
+    leftTurn = nextLeftTurn;
+    rightTurn = nextRightTurn;
     if (compact) activeView = "matrix";
     syncState();
   }
@@ -213,26 +213,26 @@ export function createShapeMatrixAppState(
     if (!availableTurns.includes(nextTurn)) return;
     if (selectedPair) {
       rememberedVariants = {
-        blue: semanticVariant(selectedPair.blue),
-        red: semanticVariant(selectedPair.red),
+        left: semanticVariant(selectedPair.left),
+        right: semanticVariant(selectedPair.right),
       };
     }
 
-    const nextBlueTurn = activeAxis === "red" ? blueTurn : nextTurn;
-    const nextRedTurn = activeAxis === "blue" ? redTurn : nextTurn;
-    if (nextBlueTurn === blueTurn && nextRedTurn === redTurn) return;
+    const nextLeftTurn = activeAxis === "right" ? leftTurn : nextTurn;
+    const nextRightTurn = activeAxis === "left" ? rightTurn : nextTurn;
+    if (nextLeftTurn === leftTurn && nextRightTurn === rightTurn) return;
 
     if (selectedPair) {
       requestShapeMatrixTransition(
-        `turn:${activeAxis}:${String(nextBlueTurn)}:${String(nextRedTurn)}`
+        `turn:${activeAxis}:${String(nextLeftTurn)}:${String(nextRightTurn)}`
       );
     }
-    updateSelectedPairTurns(nextBlueTurn, nextRedTurn);
-    if (nextBlueTurn === "fl" || nextBlueTurn !== nextRedTurn) {
+    updateSelectedPairTurns(nextLeftTurn, nextRightTurn);
+    if (nextLeftTurn === "fl" || nextLeftTurn !== nextRightTurn) {
       selectedPropMode = null;
     }
-    blueTurn = nextBlueTurn;
-    redTurn = nextRedTurn;
+    leftTurn = nextLeftTurn;
+    rightTurn = nextRightTurn;
     if (compact) activeView = "matrix";
     syncState();
   }
@@ -272,22 +272,22 @@ export function createShapeMatrixAppState(
 
   function restoreState(snapshot: ShapeMatrixAppSnapshot): void {
     level = snapshot.level;
-    blueTurn = clampTurnToLevel(snapshot.blueTurn, snapshot.level);
-    redTurn = clampTurnToLevel(snapshot.redTurn, snapshot.level);
+    leftTurn = clampTurnToLevel(snapshot.leftTurn, snapshot.level);
+    rightTurn = clampTurnToLevel(snapshot.rightTurn, snapshot.level);
     activeAxis = snapshot.activeAxis;
     labelMode = snapshot.labelMode;
     propType = snapshot.propType;
     relationshipDriver = snapshot.relationshipDriver;
     if (snapshot.pair) {
       rememberedVariants = {
-        blue: semanticVariant(snapshot.pair.blue),
-        red: semanticVariant(snapshot.pair.red),
+        left: semanticVariant(snapshot.pair.left),
+        right: semanticVariant(snapshot.pair.right),
       };
     }
     selectedPair = snapshot.pair
       ? {
-          blue: flowerAtTurn(blueTurn, rememberedVariants.blue),
-          red: flowerAtTurn(redTurn, rememberedVariants.red),
+          left: flowerAtTurn(leftTurn, rememberedVariants.left),
+          right: flowerAtTurn(rightTurn, rememberedVariants.right),
         }
       : null;
     selectedMode = selectedPair
@@ -300,11 +300,11 @@ export function createShapeMatrixAppState(
         : null;
   }
 
-  function selectPair(pair: { blue: Flower; red: Flower }): void {
+  function selectPair(pair: { left: Flower; right: Flower }): void {
     selectedPair = pair;
     rememberedVariants = {
-      blue: semanticVariant(pair.blue),
-      red: semanticVariant(pair.red),
+      left: semanticVariant(pair.left),
+      right: semanticVariant(pair.right),
     };
     selectedMode ??= MODE_ORDER[0] ?? null;
     if (!supportsTimedPropRelationship(pair)) selectedPropMode = null;
@@ -369,8 +369,8 @@ export function createShapeMatrixAppState(
   function syncState(): void {
     dependencies.syncState({
       level,
-      blueTurn,
-      redTurn,
+      leftTurn,
+      rightTurn,
       activeAxis,
       labelMode,
       propType,
@@ -385,17 +385,17 @@ export function createShapeMatrixAppState(
     get level() {
       return level;
     },
-    get blueTurn() {
-      return blueTurn;
+    get leftTurn() {
+      return leftTurn;
     },
-    get redTurn() {
-      return redTurn;
+    get rightTurn() {
+      return rightTurn;
     },
     get activeAxis() {
       return activeAxis;
     },
     get activeTurn() {
-      return activeAxis === "red" ? redTurn : blueTurn;
+      return activeAxis === "right" ? rightTurn : leftTurn;
     },
     get labelMode() {
       return labelMode;

@@ -77,8 +77,8 @@
     // as the Choreo Card: unilateral props trace one central tip; bilateral
     // props trace both. The guide and live trail receive this same setting.
     trackingMode: resolveFusePreviewTrackingMode(
-      settings.bluePropType,
-      settings.redPropType
+      settings.leftPropType,
+      settings.rightPropType
     ),
   });
 
@@ -93,8 +93,8 @@
   let hasLoadedSequence = false;
 
   const animCurrentStep = $derived(animState.currentStep);
-  const bluePropState = $derived(animState.bluePropState);
-  const redPropState = $derived(animState.redPropState);
+  const leftPropState = $derived(animState.leftPropState);
+  const rightPropState = $derived(animState.rightPropState);
   const sequenceData = $derived(animState.sequenceData ?? sequence);
 
   const stepData = $derived.by(() => {
@@ -235,10 +235,10 @@
     <div class="preview-unit">
       {#if decomposed}
         <SplitCanvasView
-          blueProp={bluePropState}
-          redProp={redPropState}
-          bluePropType={settings.bluePropType}
-          redPropType={settings.redPropType}
+          leftProp={leftPropState}
+          rightProp={rightPropState}
+          leftPropType={settings.leftPropType}
+          rightPropType={settings.rightPropType}
           trailSettings={previewTrailSettings}
           tipEffectMap={FUSE_PREVIEW_TIP_EFFECT_MAP}
           visibilityManagerOverride={fuseVisibility}
@@ -256,10 +256,10 @@
 
       <div class="canvas-wrap">
         <AnimatorCanvas
-          blueProp={bluePropState}
-          redProp={redPropState}
-          bluePropType={settings.bluePropType}
-          redPropType={settings.redPropType}
+          leftProp={leftPropState}
+          rightProp={rightPropState}
+          leftPropType={settings.leftPropType}
+          rightPropType={settings.rightPropType}
           trailSettings={previewTrailSettings}
           tipEffectMap={FUSE_PREVIEW_TIP_EFFECT_MAP}
           gridVisible={true}

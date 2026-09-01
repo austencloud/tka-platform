@@ -43,14 +43,14 @@ function isReversal(prev: string, current: string): boolean {
  */
 function findLastDirection(
   steps: PictographData[],
-  color: "blue" | "red",
+  hand: "left" | "right",
 ): string | null {
   for (let i = steps.length - 1; i >= 0; i--) {
     const step = steps[i];
     if (!step) continue;
-    const dir = (color === "blue"
-      ? step.blueMotion.rotationDirection
-      : step.redMotion.rotationDirection) as string | undefined;
+    const dir = (hand === "left"
+      ? step.leftMotion.rotationDirection
+      : step.rightMotion.rotationDirection) as string | undefined;
     if (dir && dir !== "noRotation" && dir !== "no_rot") {
       return dir;
     }
@@ -69,12 +69,12 @@ function findLastDirection(
 function scoreHandContinuity(
   previousSteps: PictographData[],
   candidateDir: string,
-  color: "blue" | "red",
+  hand: "left" | "right",
 ): number {
   const hasNoDir = !candidateDir || candidateDir === "noRotation" || candidateDir === "no_rot";
   if (hasNoDir) return 0.5; // Candidate has no direction — neutral
 
-  const lastDir = findLastDirection(previousSteps, color);
+  const lastDir = findLastDirection(previousSteps, hand);
   if (!lastDir) return 0.5; // No previous direction — neutral
 
   return isReversal(lastDir, candidateDir) ? 0 : 1;
@@ -135,25 +135,25 @@ export class ContinuityConstraint implements IVariationConstraint {
     // Look back through ALL previous steps to find the last real direction,
     // not just the immediately preceding step. This prevents 0-turn statics
     // (noRotation) from hiding reversals.
-    const blueScore = scoreHandContinuity(
+    const leftScore = scoreHandContinuity(
       context.previousSteps,
-      context.candidate.blueMotion.rotationDirection,
-      "blue",
+      context.candidate.leftMotion.rotationDirection,
+      "left",
     );
-    const redScore = scoreHandContinuity(
+    const rightScore = scoreHandContinuity(
       context.previousSteps,
-      context.candidate.redMotion.rotationDirection,
-      "red",
+      context.candidate.rightMotion.rotationDirection,
+      "right",
     );
 
     // Average of both hands
-    const avgScore = (blueScore + redScore) / 2;
+    const avgScore = (leftScore + rightScore) / 2;
 
     // For "enforce" mode, block actual reversals (score 0) but allow
     // static transitions (score 0.5) — static isn't a reversal, it's neutral.
     const satisfied =
       this.continuityMode !== "enforce" ||
-      (blueScore > 0 && redScore > 0);
+      (leftScore > 0 && rightScore > 0);
 
     // Build reason string
     let reason: string;
@@ -161,10 +161,10 @@ export class ContinuityConstraint implements IVariationConstraint {
       reason = "Continuous (no reversals)";
     } else if (avgScore === 0) {
       reason = "Both hands reversed";
-    } else if (blueScore < 1 && redScore === 1) {
-      reason = "Blue hand reversal";
-    } else if (redScore < 1 && blueScore === 1) {
-      reason = "Red hand reversal";
+    } else if (leftScore < 1 && rightScore === 1) {
+      reason = "Left hand reversal";
+    } else if (rightScore < 1 && leftScore === 1) {
+      reason = "Right hand reversal";
     } else {
       reason = "Partial continuity";
     }

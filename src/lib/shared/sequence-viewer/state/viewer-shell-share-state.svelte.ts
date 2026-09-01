@@ -79,7 +79,7 @@ export function createViewerShellShareState(
     const sequence = inputs.getSequence();
     dependencies.captureScanAction("send");
     const propType =
-      sequence.intendedProp?.bluePropType ??
+      sequence.intendedProp?.leftPropType ??
       inputs.getDefaultBluePropType() ??
       "staff";
     const thumbnailUrl = dependencies.buildThumbnailUrl(

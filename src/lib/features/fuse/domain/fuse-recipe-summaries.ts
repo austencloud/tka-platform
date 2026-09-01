@@ -78,8 +78,8 @@ export function buildFuseRecipeSummaries(
     input.startLocation === null &&
     input.startOrientation === null &&
     input.traversalDirection === null;
-  const driver = input.driverSide === "blue" ? "Blue" : "Red";
-  const follower = input.driverSide === "blue" ? "Red" : "Blue";
+  const driver = input.driverSide === "left" ? "Left" : "Right";
+  const follower = input.driverSide === "left" ? "Right" : "Left";
   const transform = fuseRuleLabel(input.rule);
   const turnLabel = input.maxTurnIntensity === 1 ? "turn" : "turns";
 

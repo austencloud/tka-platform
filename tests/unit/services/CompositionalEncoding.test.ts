@@ -22,7 +22,7 @@ import {
   MotionType,
   RotationDirection,
   Orientation,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   GridLocation,
@@ -32,31 +32,31 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 function makeStep(
   stepNumber: number,
-  blue: Partial<Parameters<typeof createMotionData>[0]>,
-  red: Partial<Parameters<typeof createMotionData>[0]>
+  left: Partial<Parameters<typeof createMotionData>[0]>,
+  right: Partial<Parameters<typeof createMotionData>[0]>
 ): StepData {
   return {
     id: `step-${stepNumber}`,
     stepNumber,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     letter: null,
     startPosition: null,
     endPosition: null,
     motions: {
-      blue: createMotionData({ ...blue, color: MotionColor.BLUE }),
-      red: createMotionData({ ...red, color: MotionColor.RED }),
+      left: createMotionData({ ...left, hand: HandSide.LEFT }),
+      right: createMotionData({ ...right, hand: HandSide.RIGHT }),
     },
   };
 }
 
 function makeStartPosition(
-  blue: Partial<Parameters<typeof createMotionData>[0]>,
-  red: Partial<Parameters<typeof createMotionData>[0]>
+  left: Partial<Parameters<typeof createMotionData>[0]>,
+  right: Partial<Parameters<typeof createMotionData>[0]>
 ): StepData {
-  return makeStep(0, blue, red);
+  return makeStep(0, left, right);
 }
 
 function buildTestSequence(steps: StepData[]): SequenceData {
@@ -213,12 +213,12 @@ describe("CompositionalEncoding", () => {
 
       expect(decoded.steps).toHaveLength(3);
 
-      expect(decoded.steps[0].motions.blue!.motionType).toBe(MotionType.PRO);
-      expect(decoded.steps[0].motions.red!.motionType).toBe(MotionType.ANTI);
-      expect(decoded.steps[0].motions.blue!.startLocation).toBe(
+      expect(decoded.steps[0].motions.left!.motionType).toBe(MotionType.PRO);
+      expect(decoded.steps[0].motions.right!.motionType).toBe(MotionType.ANTI);
+      expect(decoded.steps[0].motions.left!.startLocation).toBe(
         GridLocation.NORTH
       );
-      expect(decoded.steps[0].motions.blue!.endLocation).toBe(
+      expect(decoded.steps[0].motions.left!.endLocation).toBe(
         GridLocation.EAST
       );
     });

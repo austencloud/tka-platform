@@ -83,8 +83,8 @@
       </div>
     {:else if context.state.servicesReady}
       <AnimatorCanvas
-        blueProp={context.state.bluePropState}
-        redProp={context.state.redPropState}
+        leftProp={context.state.leftPropState}
+        rightProp={context.state.rightPropState}
         gridVisible={true}
         gridMode={context.state.sequenceData?.gridMode ?? null}
         letter={currentLetter}
@@ -135,8 +135,8 @@
   <AnimationControlsPanel
     speed={context.state.speed}
     isPlaying={context.state.isPlaying}
-    blueMotionVisible={context.state.blueMotionVisible}
-    redMotionVisible={context.state.redMotionVisible}
+    leftMotionVisible={context.state.leftMotionVisible}
+    rightMotionVisible={context.state.rightMotionVisible}
     playbackMode={context.state.playbackMode}
     stepPlaybackPauseMs={context.state.stepPlaybackPauseMs}
     stepPlaybackStepSize={context.state.stepPlaybackStepSize}
@@ -164,8 +164,8 @@
     onStepHalfBeatForward={() => context.actions.onStepHalfBeatForward()}
     onStepFullBeatBackward={() => context.actions.onStepFullBeatBackward()}
     onStepFullBeatForward={() => context.actions.onStepFullBeatForward()}
-    onToggleBlue={() => context.actions.onToggleBlue()}
-    onToggleRed={() => context.actions.onToggleRed()}
+    onToggleLeft={() => context.actions.onToggleLeft()}
+    onToggleRight={() => context.actions.onToggleRight()}
     onExportVideo={() => context.actions.onExportVideo()}
     onCancelExport={() => context.actions.onCancelExport()}
     onLoopCountChange={(c) => context.actions.onLoopCountChange(c)}

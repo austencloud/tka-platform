@@ -108,8 +108,8 @@ describe("scan analytics runtime delivery", () => {
         sequence_word: null,
         deck_id: null,
         deck_name: null,
-        blue_prop: null,
-        red_prop: null,
+        left_prop: null,
+        right_prop: null,
         mixed_props: null,
         is_authenticated: false,
         device_id: "device-1",
@@ -170,8 +170,8 @@ describe("scan analytics runtime delivery", () => {
       sequenceWord: "Σ-OY-G",
       deckId: "deck-1",
       deckName: "Choreo Cards",
-      blueProp: "fan",
-      redProp: "hoop",
+      leftProp: "fan",
+      rightProp: "hoop",
     });
     const routeVisitId = scanBaseProperties()?.scan_session_id;
 
@@ -179,11 +179,11 @@ describe("scan analytics runtime delivery", () => {
     captureScanAction("first");
     authenticated = true;
     beginScanVisit("0017", {
-      blueProp: null,
-      redProp: null,
+      leftProp: null,
+      rightProp: null,
       isAuthenticated: () => authenticated,
     });
-    updateScanAttribution({ blueProp: null, redProp: null });
+    updateScanAttribution({ leftProp: null, rightProp: null });
 
     expect(scanBaseProperties()).toEqual(
       expect.objectContaining({
@@ -191,8 +191,8 @@ describe("scan analytics runtime delivery", () => {
         sequence_word: "Σ-OY-G",
         deck_id: "deck-1",
         deck_name: "Choreo Cards",
-        blue_prop: "fan",
-        red_prop: "hoop",
+        left_prop: "fan",
+        right_prop: "hoop",
         mixed_props: true,
         is_authenticated: true,
       })

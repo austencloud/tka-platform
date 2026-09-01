@@ -29,7 +29,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -59,7 +59,7 @@
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
 
-  const dash = (color: MotionColor, from: GridLocation, to: GridLocation) =>
+  const dash = (color: HandSide, from: GridLocation, to: GridLocation) =>
     createMotionData({
       motionType: MotionType.DASH,
       rotationDirection: NOROT,
@@ -72,7 +72,7 @@
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     });
-  const stat = (color: MotionColor, loc: GridLocation) =>
+  const stat = (color: HandSide, loc: GridLocation) =>
     createMotionData({
       motionType: MotionType.STATIC,
       startLocation: loc,
@@ -87,7 +87,7 @@
   type Hand = { from: GridLocation; to: GridLocation; dash: boolean };
   const mv = (from: GridLocation, to: GridLocation): Hand => ({ from, to, dash: true });
   const st = (loc: GridLocation): Hand => ({ from: loc, to: loc, dash: false });
-  type CellDef = { letter: Letter; name: string; blue: Hand; red: Hand; label?: { start: GridPosition; end: GridPosition; t: string } };
+  type CellDef = { letter: Letter; name: string; left: Hand; right: Hand; label?: { start: GridPosition; end: GridPosition; t: string } };
 
   type Section = {
     key: string;
@@ -109,9 +109,9 @@
       nameY: 181,
       labels: true,
       cells: [
-        { letter: Letter.PHI, name: "Φ", blue: st(W), red: mv(W, E), label: gp(GridPosition.BETA1, GridPosition.ALPHA1, "β→α") },
-        { letter: Letter.PSI, name: "Ψ", blue: st(SO_), red: mv(N, SO_), label: gp(GridPosition.ALPHA1, GridPosition.BETA1, "α→β") },
-        { letter: Letter.LAMBDA, name: "Λ", blue: st(SO_), red: mv(W, E), label: gp(GridPosition.GAMMA1, GridPosition.GAMMA1, "γ→γ") },
+        { letter: Letter.PHI, name: "Φ", left: st(W), right: mv(W, E), label: gp(GridPosition.BETA1, GridPosition.ALPHA1, "β→α") },
+        { letter: Letter.PSI, name: "Ψ", left: st(SO_), right: mv(N, SO_), label: gp(GridPosition.ALPHA1, GridPosition.BETA1, "α→β") },
+        { letter: Letter.LAMBDA, name: "Λ", left: st(SO_), right: mv(W, E), label: gp(GridPosition.GAMMA1, GridPosition.GAMMA1, "γ→γ") },
       ],
       names: ["Phi", "Psi", "Lambda"],
     },
@@ -123,9 +123,9 @@
       nameY: 462,
       labels: true,
       cells: [
-        { letter: Letter.PHI_DASH, name: "Φ-", blue: mv(W, E), red: mv(E, W), label: gp(GridPosition.ALPHA1, GridPosition.ALPHA1, "α→α") },
-        { letter: Letter.PSI_DASH, name: "Ψ-", blue: mv(N, SO_), red: mv(N, SO_), label: gp(GridPosition.BETA1, GridPosition.BETA1, "β→β") },
-        { letter: Letter.LAMBDA_DASH, name: "Λ-", blue: mv(N, SO_), red: mv(W, E), label: gp(GridPosition.GAMMA1, GridPosition.GAMMA1, "γ→γ") },
+        { letter: Letter.PHI_DASH, name: "Φ-", left: mv(W, E), right: mv(E, W), label: gp(GridPosition.ALPHA1, GridPosition.ALPHA1, "α→α") },
+        { letter: Letter.PSI_DASH, name: "Ψ-", left: mv(N, SO_), right: mv(N, SO_), label: gp(GridPosition.BETA1, GridPosition.BETA1, "β→β") },
+        { letter: Letter.LAMBDA_DASH, name: "Λ-", left: mv(N, SO_), right: mv(W, E), label: gp(GridPosition.GAMMA1, GridPosition.GAMMA1, "γ→γ") },
       ],
       names: ["Phi Dash", "Psi Dash", "Lam Dash"],
     },
@@ -137,27 +137,27 @@
       nameY: 710,
       labels: false,
       cells: [
-        { letter: Letter.ALPHA, name: "α", blue: st(W), red: st(E) },
-        { letter: Letter.BETA, name: "β", blue: st(SO_), red: st(SO_) },
-        { letter: Letter.GAMMA, name: "γ", blue: st(SO_), red: st(E) },
+        { letter: Letter.ALPHA, name: "α", left: st(W), right: st(E) },
+        { letter: Letter.BETA, name: "β", left: st(SO_), right: st(SO_) },
+        { letter: Letter.GAMMA, name: "γ", left: st(SO_), right: st(E) },
       ],
       names: ["Alpha", "Beta", "Gamma"],
     },
   ];
 
-  const hand = (color: MotionColor, h: Hand) => (h.dash ? dash(color, h.from, h.to) : stat(color, h.from));
+  const hand = (color: HandSide, h: Hand) => (h.dash ? dash(color, h.from, h.to) : stat(color, h.from));
 
   const cellStep = (c: CellDef, id: string, stepNumber: number | null): StepData =>
     ({
       id,
       letter: c.letter,
       gridMode: GridMode.DIAMOND,
-      startPosition: getGridPositionFromLocations(c.blue.from, c.red.from),
-      endPosition: getGridPositionFromLocations(c.blue.to, c.red.to),
+      startPosition: getGridPositionFromLocations(c.left.from, c.right.from),
+      endPosition: getGridPositionFromLocations(c.left.to, c.right.to),
       stepNumber,
       motions: {
-        blue: hand(MotionColor.BLUE, c.blue),
-        red: hand(MotionColor.RED, c.red),
+        left: hand(HandSide.LEFT, c.left),
+        right: hand(HandSide.RIGHT, c.right),
       },
     }) as unknown as StepData;
 
@@ -167,11 +167,11 @@
       letter: null,
       gridMode: GridMode.DIAMOND,
       stepNumber: 0,
-      startPosition: getGridPositionFromLocations(c.blue.from, c.red.from),
-      endPosition: getGridPositionFromLocations(c.blue.from, c.red.from),
+      startPosition: getGridPositionFromLocations(c.left.from, c.right.from),
+      endPosition: getGridPositionFromLocations(c.left.from, c.right.from),
       motions: {
-        blue: stat(MotionColor.BLUE, c.blue.from),
-        red: stat(MotionColor.RED, c.red.from),
+        left: stat(HandSide.LEFT, c.left.from),
+        right: stat(HandSide.RIGHT, c.right.from),
       },
     }) as unknown as StepData;
 
@@ -290,8 +290,8 @@
         <PictographContainer
           pictographData={RESOLVED[key]![1]}
           gridMode={GridMode.DIAMOND}
-          bluePropTypeOverride={PropType.STAFF}
-          redPropTypeOverride={PropType.STAFF}
+          leftPropTypeOverride={PropType.STAFF}
+          rightPropTypeOverride={PropType.STAFF}
           {...PICTO_FLAGS}
         />
         <SelectionHit

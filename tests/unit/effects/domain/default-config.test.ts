@@ -29,8 +29,8 @@ describe("DEFAULT_EFFECTS_CONFIG", () => {
     expect(t.thickness).toBeLessThanOrEqual(12);
     expect(t.brightness).toBeGreaterThanOrEqual(0.3);
     expect(t.brightness).toBeLessThanOrEqual(1.0);
-    expect(t.blueColor).toMatch(/^#[0-9a-fA-F]{6}$/);
-    expect(t.redColor).toMatch(/^#[0-9a-fA-F]{6}$/);
+    expect(t.leftColor).toMatch(/^#[0-9a-fA-F]{6}$/);
+    expect(t.rightColor).toMatch(/^#[0-9a-fA-F]{6}$/);
     expect(t.rainbow).toBe(false);
   });
 

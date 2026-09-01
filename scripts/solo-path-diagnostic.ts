@@ -58,7 +58,7 @@ function subsample(pts: [number, number][], target: number): [number, number][] 
 
 interface SoloPath {
   word: string;
-  prop: "blue" | "red";
+  prop: "left" | "right";
   tips: Array<{
     tipIndex: number;
     d: string;
@@ -70,7 +70,7 @@ interface SoloPath {
 
 function extractSolos(word: string, paths: MandalaPaths): SoloPath[] {
   const solos: SoloPath[] = [];
-  for (const [prop, group] of [["blue", paths.blue], ["red", paths.red]] as const) {
+  for (const [prop, group] of [["left", paths.left], ["right", paths.right]] as const) {
     const tips = group.map(p => {
       const allPts = samplePathPoints(p.d);
       const radii = allPts.map(([x, y]) => Math.sqrt(x * x + y * y));

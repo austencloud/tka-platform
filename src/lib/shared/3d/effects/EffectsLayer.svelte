@@ -59,12 +59,12 @@
 
   interface Props {
     /** Blue prop state from animation */
-    bluePropState: PropState3D | null;
+    leftPropState: PropState3D | null;
     /** Red prop state from animation */
-    redPropState: PropState3D | null;
+    rightPropState: PropState3D | null;
     /** Canonical 3D prop types used by the live rig. */
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
     /** Whether animation is currently playing */
     isPlaying: boolean;
     /** Staff length for end position calculations */
@@ -81,11 +81,11 @@
      */
     activeEffects?: readonly EffectType[];
     /** Hand-anchor offsets applied by PerformerRig before the live props. */
-    blueHandPos: { x: number; z: number };
-    redHandPos: { x: number; z: number };
+    leftHandPos: { x: number; z: number };
+    rightHandPos: { x: number; z: number };
     /** Rig-local tips and metres/second velocities from TipPositionBridge3D. */
-    blueTipData?: readonly TipPositionData3D[];
-    redTipData?: readonly TipPositionData3D[];
+    leftTipData?: readonly TipPositionData3D[];
+    rightTipData?: readonly TipPositionData3D[];
     /** A scene coordinator owns the scene-batched effects when present. */
     pooledEffectsManaged?: boolean;
     /** Current fractional animation step. Ghost uses backward movement to
@@ -102,17 +102,17 @@
   }
 
   let {
-    bluePropState,
-    redPropState,
-    bluePropType = PropType.STAFF,
-    redPropType = PropType.STAFF,
+    leftPropState,
+    rightPropState,
+    leftPropType = PropType.STAFF,
+    rightPropType = PropType.STAFF,
     isPlaying,
     staffLength = AUSTEN_STAFF.length,
     activeEffects = [],
-    blueHandPos,
-    redHandPos,
-    blueTipData = [],
-    redTipData = [],
+    leftHandPos,
+    rightHandPos,
+    leftTipData = [],
+    rightTipData = [],
     pooledEffectsManaged = false,
     currentStep = 0,
     totalSteps = 0,
@@ -274,30 +274,30 @@
 
   // Derived prop end positions. Read by slot, never by array index: a
   // single-ended prop publishes exactly one tip and it owns slot 1.
-  const blueEnds = $derived.by(() => {
-    const positive = tipAt(blueTipData, 1);
+  const leftEnds = $derived.by(() => {
+    const positive = tipAt(leftTipData, 1);
     if (positive) {
-      const negative = tipAt(blueTipData, 0);
+      const negative = tipAt(leftTipData, 0);
       return {
         positive: vectorFrom(positive.position),
         negative: negative ? vectorFrom(negative.position) : null,
       };
     }
-    if (!bluePropState) return null;
-    return calculatePropEnds(bluePropState, bluePropType);
+    if (!leftPropState) return null;
+    return calculatePropEnds(leftPropState, leftPropType);
   });
 
-  const redEnds = $derived.by(() => {
-    const positive = tipAt(redTipData, 1);
+  const rightEnds = $derived.by(() => {
+    const positive = tipAt(rightTipData, 1);
     if (positive) {
-      const negative = tipAt(redTipData, 0);
+      const negative = tipAt(rightTipData, 0);
       return {
         positive: vectorFrom(positive.position),
         negative: negative ? vectorFrom(negative.position) : null,
       };
     }
-    if (!redPropState) return null;
-    return calculatePropEnds(redPropState, redPropType);
+    if (!rightPropState) return null;
+    return calculatePropEnds(rightPropState, rightPropType);
   });
 
   function vectorFrom(
@@ -307,20 +307,20 @@
   }
 
   // Blue prop center for trail/motion effects
-  const blueCenter = $derived(bluePropState?.worldPosition ?? null);
-  const redCenter = $derived(redPropState?.worldPosition ?? null);
+  const leftCenter = $derived(leftPropState?.worldPosition ?? null);
+  const rightCenter = $derived(rightPropState?.worldPosition ?? null);
 
-  const bluePositiveVelocityVec = $derived(
-    vectorFrom(tipAt(blueTipData, 1)?.velocity)
+  const leftPositiveVelocityVec = $derived(
+    vectorFrom(tipAt(leftTipData, 1)?.velocity)
   );
-  const blueNegativeVelocityVec = $derived(
-    vectorFrom(tipAt(blueTipData, 0)?.velocity)
+  const leftNegativeVelocityVec = $derived(
+    vectorFrom(tipAt(leftTipData, 0)?.velocity)
   );
-  const redPositiveVelocityVec = $derived(
-    vectorFrom(tipAt(redTipData, 1)?.velocity)
+  const rightPositiveVelocityVec = $derived(
+    vectorFrom(tipAt(rightTipData, 1)?.velocity)
   );
-  const redNegativeVelocityVec = $derived(
-    vectorFrom(tipAt(redTipData, 0)?.velocity)
+  const rightNegativeVelocityVec = $derived(
+    vectorFrom(tipAt(rightTipData, 0)?.velocity)
   );
 </script>
 
@@ -339,9 +339,9 @@
   <!-- worldSpread / baseRadius / worldGravity, never the raw intent values:
        intent.spread is 2D canvas pixels and reading it as metres is what put
        7-metre sparkles on a 0.86m staff. -->
-  {#if blueEnds}
+  {#if leftEnds}
     <SparkleEmitter
-      position={blueEnds.positive}
+      position={leftEnds.positive}
       enabled={true}
       intensity={sparkles3D.rate}
       color={pickSparkleColor(0)}
@@ -350,9 +350,9 @@
       gravity={sparkles3D.worldGravity}
       lifetime={sparkles3D.lifetime}
     />
-    {#if blueEnds.negative}
+    {#if leftEnds.negative}
       <SparkleEmitter
-        position={blueEnds.negative}
+        position={leftEnds.negative}
         enabled={true}
         intensity={sparkles3D.rate * 0.7}
         color={pickSparkleColor(1)}
@@ -364,9 +364,9 @@
     {/if}
   {/if}
 
-  {#if redEnds}
+  {#if rightEnds}
     <SparkleEmitter
-      position={redEnds.positive}
+      position={rightEnds.positive}
       enabled={true}
       intensity={sparkles3D.rate}
       color={pickSparkleColor(2)}
@@ -375,9 +375,9 @@
       gravity={sparkles3D.worldGravity}
       lifetime={sparkles3D.lifetime}
     />
-    {#if redEnds.negative}
+    {#if rightEnds.negative}
       <SparkleEmitter
-        position={redEnds.negative}
+        position={rightEnds.negative}
         enabled={true}
         intensity={sparkles3D.rate * 0.7}
         color={pickSparkleColor(3)}
@@ -394,13 +394,13 @@
      Electricity / Zap Effects (sourced from unified intent layer via resolveZap3D)
      ============================================================================= -->
 {#if zap3D}
-  {#if bluePropState && redPropState && blueEnds && redEnds}
+  {#if leftPropState && rightPropState && leftEnds && rightEnds}
     <!-- jitterAmount/segments/regenerateEveryFrames have been on Zap3DParams
          since it was defined and nothing read them; the arc hardcoded a
          25-metre displacement instead. -->
     <ElectricityArc
-      start={blueEnds.positive}
-      end={redEnds.positive}
+      start={leftEnds.positive}
+      end={rightEnds.positive}
       enabled={zapEnabled && isPlaying}
       intensity={zap3D.intensity}
       color={zap3D.leftColor}
@@ -413,10 +413,10 @@
     />
     <!-- The second arc needs a back end on BOTH props. One club in hand and
          there is nothing to arc between. -->
-    {#if blueEnds.negative && redEnds.negative}
+    {#if leftEnds.negative && rightEnds.negative}
       <ElectricityArc
-        start={blueEnds.negative}
-        end={redEnds.negative}
+        start={leftEnds.negative}
+        end={rightEnds.negative}
         enabled={zapEnabled && isPlaying}
         intensity={zap3D.intensity}
         color={zap3D.rightColor}
@@ -435,10 +435,10 @@
      Motion Effects (blur and speed lines)
      ============================================================================= -->
 {#if scene3DRender && (scene3DRender.motion.blur || scene3DRender.motion.speedLines) && isPlaying}
-  {#if blueCenter}
+  {#if leftCenter}
     <PropMotionEffects
-      position={blueCenter}
-      color="blue"
+      position={leftCenter}
+      hand="left"
       enableBlur={scene3DRender.motion.blur}
       enableSpeedLines={scene3DRender.motion.speedLines}
       intensity={scene3DRender.motion.intensity}
@@ -446,10 +446,10 @@
     />
   {/if}
 
-  {#if redCenter}
+  {#if rightCenter}
     <PropMotionEffects
-      position={redCenter}
-      color="red"
+      position={rightCenter}
+      hand="right"
       enableBlur={scene3DRender.motion.blur}
       enableSpeedLines={scene3DRender.motion.speedLines}
       intensity={scene3DRender.motion.intensity}
@@ -466,26 +466,26 @@
      ============================================================================= -->
 {#if ghost3D}
   <GhostPropHistory3D
-    propState={bluePropState}
-    propType={bluePropType}
-    propColor="blue"
+    propState={leftPropState}
+    propType={leftPropType}
+    propHand="left"
     params={ghost3D}
     enabled={ghostEnabled && isPlaying}
     propLength={staffLength}
-    handAnchor={blueHandPos}
+    handAnchor={leftHandPos}
     {currentStep}
     {totalSteps}
     {seamlesslyLoopable}
     {qualityTier}
   />
   <GhostPropHistory3D
-    propState={redPropState}
-    propType={redPropType}
-    propColor="red"
+    propState={rightPropState}
+    propType={rightPropType}
+    propHand="right"
     params={ghost3D}
     enabled={ghostEnabled && isPlaying}
     propLength={staffLength}
-    handAnchor={redHandPos}
+    handAnchor={rightHandPos}
     {currentStep}
     {totalSteps}
     {seamlesslyLoopable}
@@ -499,34 +499,34 @@
      puddles / refraction.
      ============================================================================= -->
 {#if !pooledEffectsManaged && gooEnabled && goo3D && isPlaying}
-  {#if blueEnds && gooShowRightEnd}
+  {#if leftEnds && gooShowRightEnd}
     <WaterEmitter3D
-      position={blueEnds.positive}
-      propVelocity={bluePositiveVelocityVec}
+      position={leftEnds.positive}
+      propVelocity={leftPositiveVelocityVec}
       params={goo3D}
       enabled={true}
     />
   {/if}
-  {#if blueEnds?.negative && gooShowLeftEnd}
+  {#if leftEnds?.negative && gooShowLeftEnd}
     <WaterEmitter3D
-      position={blueEnds.negative}
-      propVelocity={blueNegativeVelocityVec}
+      position={leftEnds.negative}
+      propVelocity={leftNegativeVelocityVec}
       params={goo3D}
       enabled={true}
     />
   {/if}
-  {#if redEnds && gooShowRightEnd}
+  {#if rightEnds && gooShowRightEnd}
     <WaterEmitter3D
-      position={redEnds.positive}
-      propVelocity={redPositiveVelocityVec}
+      position={rightEnds.positive}
+      propVelocity={rightPositiveVelocityVec}
       params={goo3D}
       enabled={true}
     />
   {/if}
-  {#if redEnds?.negative && gooShowLeftEnd}
+  {#if rightEnds?.negative && gooShowLeftEnd}
     <WaterEmitter3D
-      position={redEnds.negative}
-      propVelocity={redNegativeVelocityVec}
+      position={rightEnds.negative}
+      propVelocity={rightNegativeVelocityVec}
       params={goo3D}
       enabled={true}
     />
@@ -539,37 +539,37 @@
      timeout or max-size.
      ============================================================================= -->
 {#if !pooledEffectsManaged && bubblesEnabled && bubbles3D && isPlaying}
-  {#if blueEnds}
+  {#if leftEnds}
     <BubbleEmitter3D
-      position={blueEnds.positive}
-      propVelocity={bluePositiveVelocityVec}
+      position={leftEnds.positive}
+      propVelocity={leftPositiveVelocityVec}
       params={bubbles3D}
       enabled={bubblesShowRightEnd}
       {qualityTier}
     />
   {/if}
-  {#if blueEnds?.negative}
+  {#if leftEnds?.negative}
     <BubbleEmitter3D
-      position={blueEnds.negative}
-      propVelocity={blueNegativeVelocityVec}
+      position={leftEnds.negative}
+      propVelocity={leftNegativeVelocityVec}
       params={bubbles3D}
       enabled={bubblesShowLeftEnd}
       {qualityTier}
     />
   {/if}
-  {#if redEnds}
+  {#if rightEnds}
     <BubbleEmitter3D
-      position={redEnds.positive}
-      propVelocity={redPositiveVelocityVec}
+      position={rightEnds.positive}
+      propVelocity={rightPositiveVelocityVec}
       params={bubbles3D}
       enabled={bubblesShowRightEnd}
       {qualityTier}
     />
   {/if}
-  {#if redEnds?.negative}
+  {#if rightEnds?.negative}
     <BubbleEmitter3D
-      position={redEnds.negative}
-      propVelocity={redNegativeVelocityVec}
+      position={rightEnds.negative}
+      propVelocity={rightNegativeVelocityVec}
       params={bubbles3D}
       enabled={bubblesShowLeftEnd}
       {qualityTier}
@@ -583,34 +583,34 @@
      ============================================================================= -->
 {#if !pooledEffectsManaged && petalsEnabled && petals3D && isPlaying}
   <PetalAmbientShower3D params={petals3D} enabled={true} />
-  {#if blueEnds && petalsShowRightEnd}
+  {#if leftEnds && petalsShowRightEnd}
     <PetalEmitter3D
-      position={blueEnds.positive}
-      propVelocity={bluePositiveVelocityVec}
+      position={leftEnds.positive}
+      propVelocity={leftPositiveVelocityVec}
       params={petals3D}
       enabled={true}
     />
   {/if}
-  {#if blueEnds?.negative && petalsShowLeftEnd}
+  {#if leftEnds?.negative && petalsShowLeftEnd}
     <PetalEmitter3D
-      position={blueEnds.negative}
-      propVelocity={blueNegativeVelocityVec}
+      position={leftEnds.negative}
+      propVelocity={leftNegativeVelocityVec}
       params={petals3D}
       enabled={true}
     />
   {/if}
-  {#if redEnds && petalsShowRightEnd}
+  {#if rightEnds && petalsShowRightEnd}
     <PetalEmitter3D
-      position={redEnds.positive}
-      propVelocity={redPositiveVelocityVec}
+      position={rightEnds.positive}
+      propVelocity={rightPositiveVelocityVec}
       params={petals3D}
       enabled={true}
     />
   {/if}
-  {#if redEnds?.negative && petalsShowLeftEnd}
+  {#if rightEnds?.negative && petalsShowLeftEnd}
     <PetalEmitter3D
-      position={redEnds.negative}
-      propVelocity={redNegativeVelocityVec}
+      position={rightEnds.negative}
+      propVelocity={rightNegativeVelocityVec}
       params={petals3D}
       enabled={true}
     />
@@ -623,34 +623,34 @@
      Sub-phases 1i.ii (blur) and 1i.iii (genie hue-shift) deferred.
      ============================================================================= -->
 {#if !pooledEffectsManaged && smokeEnabled && smoke3D && isPlaying}
-  {#if blueEnds && smokeShowRightEnd}
+  {#if leftEnds && smokeShowRightEnd}
     <SmokeRenderer3D
-      position={blueEnds.positive}
-      propVelocity={bluePositiveVelocityVec}
+      position={leftEnds.positive}
+      propVelocity={leftPositiveVelocityVec}
       params={smoke3D}
       enabled={true}
     />
   {/if}
-  {#if blueEnds?.negative && smokeShowLeftEnd}
+  {#if leftEnds?.negative && smokeShowLeftEnd}
     <SmokeRenderer3D
-      position={blueEnds.negative}
-      propVelocity={blueNegativeVelocityVec}
+      position={leftEnds.negative}
+      propVelocity={leftNegativeVelocityVec}
       params={smoke3D}
       enabled={true}
     />
   {/if}
-  {#if redEnds && smokeShowRightEnd}
+  {#if rightEnds && smokeShowRightEnd}
     <SmokeRenderer3D
-      position={redEnds.positive}
-      propVelocity={redPositiveVelocityVec}
+      position={rightEnds.positive}
+      propVelocity={rightPositiveVelocityVec}
       params={smoke3D}
       enabled={true}
     />
   {/if}
-  {#if redEnds?.negative && smokeShowLeftEnd}
+  {#if rightEnds?.negative && smokeShowLeftEnd}
     <SmokeRenderer3D
-      position={redEnds.negative}
-      propVelocity={redNegativeVelocityVec}
+      position={rightEnds.negative}
+      propVelocity={rightNegativeVelocityVec}
       params={smoke3D}
       enabled={true}
     />

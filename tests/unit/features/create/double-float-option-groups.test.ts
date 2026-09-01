@@ -28,10 +28,10 @@ function floatMotion(start: string, end: string): MotionData {
 function option(
   letter: string,
   endPosition: string,
-  blueStart: string,
-  blueEnd: string,
-  redStart: string,
-  redEnd: string,
+  leftStart: string,
+  leftEnd: string,
+  rightStart: string,
+  rightEnd: string,
   id = `${letter}-${endPosition}`
 ): PictographData {
   return {
@@ -40,8 +40,8 @@ function option(
     startPosition: "gamma3" as PictographData["startPosition"],
     endPosition: endPosition as PictographData["endPosition"],
     motions: {
-      blue: floatMotion(blueStart, blueEnd),
-      red: floatMotion(redStart, redEnd),
+      left: floatMotion(leftStart, leftEnd),
+      right: floatMotion(rightStart, rightEnd),
     },
   };
 }
@@ -93,11 +93,11 @@ describe("buildDoubleFloatOptionRows", () => {
     const counter = {
       ...option("P", "gamma13", "n", "e", "e", "n"),
       motions: {
-        blue: {
+        left: {
           ...floatMotion("n", "e"),
           endOrientation: Orientation.COUNTER,
         },
-        red: floatMotion("e", "n"),
+        right: floatMotion("e", "n"),
       },
     } as PictographData;
 
@@ -108,8 +108,8 @@ describe("buildDoubleFloatOptionRows", () => {
     const numeric = {
       ...fourContinuousPaths()[0]!,
       motions: {
-        blue: floatMotion("n", "e"),
-        red: {
+        left: floatMotion("n", "e"),
+        right: {
           ...floatMotion("e", "n"),
           motionType: MotionType.ANTI,
           turns: 0,

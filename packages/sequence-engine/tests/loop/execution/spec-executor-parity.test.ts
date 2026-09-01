@@ -47,8 +47,8 @@ function makeStep(
   stepNumber: number,
   startPos: string,
   endPos: string,
-  blueOverrides: Partial<MotionData> = {},
-  redOverrides: Partial<MotionData> = {},
+  leftOverrides: Partial<MotionData> = {},
+  rightOverrides: Partial<MotionData> = {},
   letter: string | null = "A",
 ): SequenceStep {
   return {
@@ -59,15 +59,15 @@ function makeStep(
     startPosition: startPos,
     endPosition: endPos,
     motions: {
-      blue: makeMotion({
+      left: makeMotion({
         startLocation: "n",
         endLocation: "e",
-        ...blueOverrides,
+        ...leftOverrides,
       }),
-      red: makeMotion({
+      right: makeMotion({
         startLocation: "s",
         endLocation: "w",
-        ...redOverrides,
+        ...rightOverrides,
       }),
     },
   } as SequenceStep;
@@ -80,8 +80,8 @@ function makeStep(
 
 /**
  * ROTATED (halved): start→end must be in HALF_POSITION_MAP.
- * alpha1 (blue=s, red=n) → alpha5 (blue=n, red=s).
- * Both hands travel CW 90: blue s→e→n, red n→w→s (conceptually).
+ * alpha1 (left=s, right=n) → alpha5 (left=n, right=s).
+ * Both hands travel CW 90: left s→e→n, right n→w→s (conceptually).
  * Minimal 2-step partial: step 1 goes alpha1→alpha5.
  */
 function makeRotatedSequence(): SequenceStep[] {
@@ -113,7 +113,7 @@ function makeMirroredSequence(): SequenceStep[] {
 
 /**
  * FLIPPED: start→end in HORIZONTAL_MIRROR_POSITION_MAP.
- * alpha3 (blue=w, red=e) flips to alpha3 (self-flipping horizontal axis).
+ * alpha3 (left=w, right=e) flips to alpha3 (self-flipping horizontal axis).
  */
 function makeFlippedSequence(): SequenceStep[] {
   return [
@@ -390,7 +390,7 @@ function structuralDiff(
     if (l.endPosition !== s.endPosition) {
       diffs.push(`${prefix}.endPosition: legacy="${l.endPosition}" spec="${s.endPosition}"`);
     }
-    for (const hand of ["blue", "red"] as const) {
+    for (const hand of ["left", "right"] as const) {
       const lm = l.motions[hand];
       const sm = s.motions[hand];
       if (lm.endLocation !== sm.endLocation) {

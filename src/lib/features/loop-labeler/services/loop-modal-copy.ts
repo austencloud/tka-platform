@@ -110,7 +110,7 @@ function singleComponentCopy(
         : {
             title: "Swapped LOOP (quartered)",
             body:
-              "Four quarters. Blue and red exchange roles every other pass; " +
+              "Four quarters. Left and right exchange roles every other pass; " +
               "orientations take all four to complete.",
           };
 

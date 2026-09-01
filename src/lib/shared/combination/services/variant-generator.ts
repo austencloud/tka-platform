@@ -4,10 +4,10 @@
  *
  * Two independent axes:
  *
- *  1. **Spatial / colour** — rotation (even 45° steps only, so grid mode is
- *     preserved), vertical mirror, blue<->red swap. These reuse the create
+ *  1. **Spatial / hand role** — rotation (even 45° steps only, so grid mode is
+ *     preserved), vertical mirror, and left↔right swap. These reuse the create
  *     module's transform pipeline verbatim (`rotateSequence`, `mirrorSequence`,
- *     `swapColors`).
+ *     `swapHands`).
  *  2. **The rotation-faithful twin** — see {@link buildRotationFaithfulTwin}.
  *
  * Full liberties enumerate 4 x 2 x 2 x 2 = 32 candidates, twin applied LAST so
@@ -16,8 +16,8 @@
  * {@link cyclicCanonicalSignature}) — a card whose four rotations are the same
  * loop phase-shifted would otherwise flood the walk search with duplicates.
  *
- * **Letter invariance.** The spatial/colour transforms are letter-preserving:
- * colour swap, vertical mirror and 90° rotation each map every diamond row to
+ * **Letter invariance.** The spatial/hand-role transforms are letter-preserving:
+ * hand swap, vertical mirror and 90° rotation each map every diamond row to
  * another diamond row with the SAME letter (verified 649/649 diamond and
  * 650/650 box rows), which is why the non-twin path never calls the async
  * letter derivation. Only the twin re-derives, because reversing the traversal
@@ -34,7 +34,7 @@ import {
   deriveSequenceLetters,
   mirrorSequence,
   rotateSequence,
-  swapColors,
+  swapHands,
 } from "$lib/shared/create/services/sequence-transformer";
 import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
@@ -47,7 +47,7 @@ import { deriveWordFromBeats } from "$lib/shared/foundation/services/word-derive
 import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-location-calculator";
 import type { HandPath } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
-  MotionColor,
+  HandSide,
   type MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
@@ -64,12 +64,12 @@ import type { VariantDescriptor, WalkSource } from "../domain/types";
 /** Even 45°-steps only — odd amounts toggle diamond<->box. */
 const ROTATIONS: readonly (0 | 2 | 4 | 6)[] = [0, 2, 4, 6];
 
-const COLORS = [MotionColor.BLUE, MotionColor.RED] as const;
+const HANDS = [HandSide.LEFT, HandSide.RIGHT] as const;
 
 export interface VariantLiberties {
   readonly allowMirror: boolean;
   readonly allowRotation: boolean;
-  readonly allowColorSwap: boolean;
+  readonly allowHandSwap: boolean;
   readonly exploreRotationFaithful: boolean;
 }
 
@@ -86,7 +86,7 @@ function describeVariant(variant: VariantDescriptor): string {
   const parts = [
     variant.rotation ? `r${variant.rotation}` : "",
     variant.mirrored ? "mirror" : "",
-    variant.colorSwapped ? "swap" : "",
+    variant.handsSwapped ? "swap" : "",
     variant.rotationFaithful ? "twin" : "",
   ].filter(Boolean);
   return parts.length > 0 ? parts.join("+") : "id";
@@ -164,17 +164,17 @@ function withArrowLocations(step: StepData): StepData {
   return createStepData({
     ...step,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
-        ...step.motions.blue,
+      [HandSide.LEFT]: createMotionData({
+        ...step.motions.left,
         arrowLocation: arrowLocationCalculator.calculateLocation(
-          step.motions.blue,
+          step.motions.left,
           step
         ),
       }),
-      [MotionColor.RED]: createMotionData({
-        ...step.motions.red,
+      [HandSide.RIGHT]: createMotionData({
+        ...step.motions.right,
         arrowLocation: arrowLocationCalculator.calculateLocation(
-          step.motions.red,
+          step.motions.right,
           step
         ),
       }),
@@ -191,12 +191,12 @@ function normalizeStep(
     createStepData({
       ...step,
       motions: {
-        [MotionColor.BLUE]: normalizeMotionDerivations(
-          step.motions.blue,
+        [HandSide.LEFT]: normalizeMotionDerivations(
+          step.motions.left,
           prefloatRotationDirectionIsTrusted
         ),
-        [MotionColor.RED]: normalizeMotionDerivations(
-          step.motions.red,
+        [HandSide.RIGHT]: normalizeMotionDerivations(
+          step.motions.right,
           prefloatRotationDirectionIsTrusted
         ),
       },
@@ -265,12 +265,12 @@ function reverseStep(step: StepData, stepNumber: number): StepData {
     // derivation means the reversed configuration is not a dataframe row.
     letter: null,
     motions: {
-      [MotionColor.BLUE]: reverseMotion(step.motions.blue),
-      [MotionColor.RED]: reverseMotion(step.motions.red),
+      [HandSide.LEFT]: reverseMotion(step.motions.left),
+      [HandSide.RIGHT]: reverseMotion(step.motions.right),
     },
     // Reversal flags describe adjacency in the OLD ordering.
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
   });
 }
 
@@ -327,7 +327,7 @@ export async function buildRotationFaithfulTwin(
 
 /**
  * Re-derive every step's letter from its motions. Used by the twin ONLY — the
- * spatial/colour transforms are letter-invariant, so paying for an async
+ * spatial/hand-role transforms are letter-invariant, so paying for an async
  * dataframe lookup on that path would be a no-op.
  *
  * `deriveSequenceLetters` keeps the existing letter when a lookup fails, and
@@ -384,9 +384,9 @@ function stepSignature(step: StepData): string {
     step.letter ?? "-",
     step.startPosition ?? "-",
     step.endPosition ?? "-",
-    ...COLORS.map((color) => {
-      const m = step.motions[color];
-      return `${color}:${m.motionType}:${m.rotationDirection}:${m.startLocation}>${m.endLocation}`;
+    ...HANDS.map((hand) => {
+      const m = step.motions[hand];
+      return `${hand}:${m.motionType}:${m.rotationDirection}:${m.startLocation}>${m.endLocation}`;
     }),
   ].join("/");
 }
@@ -426,8 +426,8 @@ function cyclicCanonicalSignature(seq: SequenceData): string {
  * keeps the preferred one. Fully deterministic across runs.
  *
  * Measured collapse on the fixture corpus: GGGG_CW 32 candidates -> 4 sources
- * (all four rotations are one loop, and its two hands are identical so colour
- * swap is a no-op); FALG 32 -> 16 (its halves are colour-mirrors).
+ * (all four rotations are one loop, and its two hands are identical so hand
+ * swap is a no-op); FALG 32 -> 16 (its halves exchange hand roles).
  */
 export async function buildVariants(
   card: SequenceData,
@@ -439,7 +439,7 @@ export async function buildVariants(
 
   const rotations = liberties.allowRotation ? ROTATIONS : ([0] as const);
   const mirrors = liberties.allowMirror ? [false, true] : [false];
-  const swaps = liberties.allowColorSwap ? [false, true] : [false];
+  const handSwaps = liberties.allowHandSwap ? [false, true] : [false];
   const twins = liberties.exploreRotationFaithful ? [false, true] : [false];
 
   const sources: WalkSource[] = [];
@@ -451,17 +451,17 @@ export async function buildVariants(
     for (const mirrored of mirrors) {
       const spatial = mirrored ? await mirrorSequence(rotated) : rotated;
 
-      for (const colorSwapped of swaps) {
-        const colored = colorSwapped ? swapColors(spatial) : spatial;
+      for (const handsSwapped of handSwaps) {
+        const handAdjusted = handsSwapped ? swapHands(spatial) : spatial;
         // A mirror flipped rotationDirection without flipping its prefloat
         // twin, so prefloat can no longer be trusted on this branch.
-        const base = normalizeSequence(colored, !mirrored);
+        const base = normalizeSequence(handAdjusted, !mirrored);
 
         for (const rotationFaithful of twins) {
           const variant: VariantDescriptor = {
             rotation,
             mirrored,
-            colorSwapped,
+            handsSwapped,
             rotationFaithful,
           };
           const sequence = rotationFaithful
@@ -490,7 +490,7 @@ export async function buildVariants(
 /**
  * Just the rotation-faithful twin of a card, as a ready-to-walk source.
  *
- * Card A is never rotated, mirrored or colour-swapped (it is the frame the
+ * Card A is never rotated, mirrored, or hand-swapped (it is the frame the
  * combination is expressed in), but its twin IS admissible material — this is
  * the one-call way for the walk search to get it without re-deriving the
  * source-construction rules.
@@ -503,7 +503,7 @@ export async function buildTwinSource(
   const variant: VariantDescriptor = {
     rotation: 0,
     mirrored: false,
-    colorSwapped: false,
+    handsSwapped: false,
     rotationFaithful: true,
   };
   const label = describeVariant(variant);

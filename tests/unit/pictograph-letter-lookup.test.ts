@@ -26,8 +26,8 @@ describe("lookupLetter", () => {
     const letter = lookupLetter(edges, {
       startPosition: "alpha1",
       endPosition: "alpha2",
-      blue: { motionType: "anti", startLocation: "s", endLocation: "w" },
-      red: { motionType: "anti", startLocation: "n", endLocation: "e" },
+      left: { motionType: "anti", startLocation: "s", endLocation: "w" },
+      right: { motionType: "anti", startLocation: "n", endLocation: "e" },
     });
     expect(letter).toBe("B");
   });
@@ -35,8 +35,8 @@ describe("lookupLetter", () => {
     const letter = lookupLetter(edges, {
       startPosition: "beta1",
       endPosition: "beta2",
-      blue: { motionType: "pro", startLocation: "s", endLocation: "w" },
-      red: { motionType: "pro", startLocation: "n", endLocation: "e" },
+      left: { motionType: "pro", startLocation: "s", endLocation: "w" },
+      right: { motionType: "pro", startLocation: "n", endLocation: "e" },
     });
     expect(letter).toBeNull();
   });

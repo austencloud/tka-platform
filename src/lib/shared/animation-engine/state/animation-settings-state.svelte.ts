@@ -38,8 +38,8 @@ export interface TrailAppearance {
   maxOpacity: number;
   minOpacity: number;
   glowBlur: number;
-  blueColor: string;
-  redColor: string;
+  leftColor: string;
+  rightColor: string;
 }
 
 /**
@@ -58,15 +58,15 @@ export interface AnimationSettings {
 
 
 import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export const DEFAULT_TRAIL_APPEARANCE: TrailAppearance = {
   lineWidth: 3.5,
   maxOpacity: 0.95,
   minOpacity: 0.15,
   glowBlur: 2,
-  blueColor: getMotionColor(MotionColor.BLUE, "dark"),
-  redColor: getMotionColor(MotionColor.RED, "dark"),
+  leftColor: getMotionColor(HandSide.LEFT, "dark"),
+  rightColor: getMotionColor(HandSide.RIGHT, "dark"),
 };
 
 export const DEFAULT_TRAIL_SETTINGS: TrailSettings = {
@@ -221,8 +221,8 @@ export function createAnimationSettingsState(
         void settings.trail.maxOpacity;
         void settings.trail.minOpacity;
         void settings.trail.glowBlur;
-        void settings.trail.blueColor;
-        void settings.trail.redColor;
+        void settings.trail.leftColor;
+        void settings.trail.rightColor;
         void settings.trail.fadeDurationMs;
         void settings.trail.tailLength;
         void settings.trail.hideProps;

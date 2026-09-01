@@ -46,7 +46,7 @@ function loadVariations(): unknown[] {
       endPosition: c[2]!,
       timing: c[3]!,
       direction: c[4]!,
-      blueMotion: {
+      leftMotion: {
         color: "blue",
         motionType: c[5]!,
         rotationDirection: c[6]!,
@@ -55,7 +55,7 @@ function loadVariations(): unknown[] {
         startOrientation: "in",
         endOrientation: "in",
       },
-      redMotion: {
+      rightMotion: {
         color: "red",
         motionType: c[9]!,
         rotationDirection: c[10]!,
@@ -99,7 +99,7 @@ describe("the layer readout tells the truth", () => {
   it("predicts the signature the builder goes on to produce", () => {
     // Blue crosses on every other step and red never does, so the sequence
     // should alternate between two layers and keep doing it forever.
-    const lanes = { blue: [0.5, 0], red: [0, 0] };
+    const lanes = { left: [0.5, 0], right: [0, 0] };
 
     for (const word of ["ABCD", "WXYZ", "JKLM"]) {
       const result = builder().build({
@@ -108,8 +108,8 @@ describe("the layer readout tells the truth", () => {
         level: 3,
         constraintPreset: "smooth",
         turnPattern: lanes,
-        blueStartOrientation: "in",
-        redStartOrientation: "in",
+        leftStartOrientation: "in",
+        rightStartOrientation: "in",
       } as never);
 
       const built = formatSignature(
@@ -118,8 +118,8 @@ describe("the layer readout tells the truth", () => {
 
       // The same answer, worked out with no sequence in hand at all.
       const predicted = predictLayerSignature({
-        blueStartOrientation: "in",
-        redStartOrientation: "in",
+        leftStartOrientation: "in",
+        rightStartOrientation: "in",
         lanes,
         length: built.length,
       });
@@ -140,9 +140,9 @@ describe("the layer readout tells the truth", () => {
     // and that is a property of the letter — which is exactly what has not been
     // chosen yet.
     const predicted = predictLayerSignature({
-      blueStartOrientation: "in",
-      redStartOrientation: "in",
-      lanes: { blue: ["fl", 0], red: [0, 0] },
+      leftStartOrientation: "in",
+      rightStartOrientation: "in",
+      lanes: { left: ["fl", 0], right: [0, 0] },
       length: 8,
     });
 

@@ -38,8 +38,8 @@ const event: ScanEventRow = {
   lng: -87.65,
   deviceId: "device-1",
   userId: null,
-  bluePropType: PropType.POI,
-  redPropType: PropType.FAN,
+  leftPropType: PropType.POI,
+  rightPropType: PropType.FAN,
   catDogMode: true,
 };
 
@@ -54,8 +54,8 @@ function entry(overrides: Partial<CodeEntry> = {}): CodeEntry {
     lastScannedAt: event.timestamp,
     lastCity: event.city,
     lastCountry: event.country,
-    bluePropType: PropType.STAFF,
-    redPropType: PropType.STAFF,
+    leftPropType: PropType.STAFF,
+    rightPropType: PropType.STAFF,
     catDogMode: false,
     metadataAvailable: true,
     embeddedFallback: null,
@@ -85,10 +85,10 @@ describe("ScanCardPeek", () => {
     const preview = page.getByTestId("prop-aware-preview");
     await expect
       .element(preview)
-      .toHaveAttribute("data-blue-prop", PropType.POI);
+      .toHaveAttribute("data-left-prop", PropType.POI);
     await expect
       .element(preview)
-      .toHaveAttribute("data-red-prop", PropType.FAN);
+      .toHaveAttribute("data-right-prop", PropType.FAN);
     await expect.element(preview).toHaveAttribute("data-cat-dog", "true");
     await expect
       .element(page.getByText("Card preview unavailable"))

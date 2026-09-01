@@ -211,8 +211,8 @@
             <CardBack
               sequence={backSequence}
               themeOverride={printedTheme}
-              bluePropTypeOverride={printedProp}
-              redPropTypeOverride={printedProp}
+              leftPropTypeOverride={printedProp}
+              rightPropTypeOverride={printedProp}
             />
           </div>
         {/if}

@@ -6,7 +6,7 @@ import {
 import { generatePlacementKey } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/arrow-placement-key-generator";
 import { ArrowPlacer } from "$lib/shared/pictograph/arrow/positioning/placement/services/arrow-placer";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -90,15 +90,15 @@ describe("quarter-turn default placement", () => {
   );
 
   it("routes interradial endpoints into the established layer-2 key", () => {
-    const blue = createMotionData({
-      color: MotionColor.BLUE,
+    const left = createMotionData({
+      hand: HandSide.LEFT,
       motionType: MotionType.PRO,
       startOrientation: Orientation.CLOCK_IN,
       endOrientation: Orientation.CLOCK_OUT,
       turns: 0.25,
     });
-    const red = createMotionData({
-      color: MotionColor.RED,
+    const right = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.ANTI,
       startOrientation: Orientation.COUNTER_OUT,
       endOrientation: Orientation.COUNTER_IN,
@@ -107,11 +107,11 @@ describe("quarter-turn default placement", () => {
     const pictograph = {
       letter: "A",
       endPosition: GridPosition.ALPHA1,
-      motions: { blue, red },
+      motions: { left, right },
     } as PictographData;
 
     expect(
-      generatePlacementKey(blue, pictograph, ["pro_to_layer2_alpha"])
+      generatePlacementKey(left, pictograph, ["pro_to_layer2_alpha"])
     ).toBe("pro_to_layer2_alpha");
   });
 });

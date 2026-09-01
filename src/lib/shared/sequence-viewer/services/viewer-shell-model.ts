@@ -59,8 +59,8 @@ export interface VideoExportAnalyticsInput {
   includeEndHold: boolean;
   renderMode: string;
   playbackMode: string;
-  bluePropType: PropType | undefined;
-  redPropType: PropType | undefined;
+  leftPropType: PropType | undefined;
+  rightPropType: PropType | undefined;
 }
 
 export function buildVideoExportAnalyticsConfig(
@@ -74,7 +74,7 @@ export function buildVideoExportAnalyticsConfig(
     include_end_hold: input.includeEndHold,
     render_mode: input.renderMode,
     playback_mode: input.playbackMode,
-    ...scanPropProperties(input.bluePropType, input.redPropType),
+    ...scanPropProperties(input.leftPropType, input.rightPropType),
   };
 }
 
@@ -83,8 +83,8 @@ export interface CardExportAnalyticsInput {
   darkMode: boolean;
   includeStartPosition: boolean;
   handPath: boolean;
-  bluePropType: PropType | undefined;
-  redPropType: PropType | undefined;
+  leftPropType: PropType | undefined;
+  rightPropType: PropType | undefined;
 }
 
 export function buildCardExportAnalyticsConfig(
@@ -95,7 +95,7 @@ export function buildCardExportAnalyticsConfig(
     dark_mode: input.darkMode,
     include_start_position: input.includeStartPosition,
     hand_path: input.handPath,
-    ...scanPropProperties(input.bluePropType, input.redPropType),
+    ...scanPropProperties(input.leftPropType, input.rightPropType),
   };
 }
 

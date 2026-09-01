@@ -2,12 +2,12 @@
   import { Plane, PLANE_COLORS } from "@austencloud/scene-3d";
 
   interface Props {
-    bluePlane: Plane | null;
-    redPlane: Plane | null;
+    leftPlane: Plane | null;
+    rightPlane: Plane | null;
     visiblePlanes: ReadonlySet<Plane>;
   }
 
-  let { bluePlane, redPlane, visiblePlanes }: Props = $props();
+  let { leftPlane, rightPlane, visiblePlanes }: Props = $props();
 
   interface RingState {
     strokeWidth: number;
@@ -19,7 +19,7 @@
   // PLANE_COLORS are WebGL scene colors and don't reliably clear contrast at
   // low opacity against either theme.
   function ringState(plane: Plane): RingState {
-    if (bluePlane === plane || redPlane === plane) {
+    if (leftPlane === plane || rightPlane === plane) {
       return { strokeWidth: 4, dasharray: undefined, opacity: 1 };
     }
     if (visiblePlanes.has(plane)) {
@@ -54,7 +54,7 @@
   const activeFusionRings = $derived(
     FUSION_RINGS.filter(
       ({ plane }) =>
-        bluePlane === plane || redPlane === plane || visiblePlanes.has(plane)
+        leftPlane === plane || rightPlane === plane || visiblePlanes.has(plane)
     )
   );
 </script>

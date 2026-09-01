@@ -37,22 +37,22 @@ export interface LetterVariationData {
   startPosition: string;
   /** End position */
   endPosition: string;
-  /** Blue motion type */
-  blueMotionType: string;
-  /** Blue start location */
-  blueStartLocation: string;
-  /** Blue end location */
-  blueEndLocation: string;
-  /** Blue rotation direction */
-  blueRotationDirection: string;
-  /** Red motion type */
-  redMotionType: string;
-  /** Red start location */
-  redStartLocation: string;
-  /** Red end location */
-  redEndLocation: string;
-  /** Red rotation direction */
-  redRotationDirection: string;
+  /** Left-hand motion type */
+  leftMotionType: string;
+  /** Left-hand start location */
+  leftStartLocation: string;
+  /** Left-hand end location */
+  leftEndLocation: string;
+  /** Left-hand rotation direction */
+  leftRotationDirection: string;
+  /** Right-hand motion type */
+  rightMotionType: string;
+  /** Right-hand start location */
+  rightStartLocation: string;
+  /** Right-hand end location */
+  rightEndLocation: string;
+  /** Right-hand rotation direction */
+  rightRotationDirection: string;
   /** Grid mode (diamond, box, skewed) */
   gridMode?: string;
 }

@@ -72,10 +72,10 @@ export interface TrailSettings {
   maxPoints: number; // Maximum trail points to store
   lineWidth: number;
   glowBlur: number;
-  blueColor: string;
-  redColor: string;
+  leftColor: string;
+  rightColor: string;
   /** Colors for additional tunnel layers (index 0 = layer 1, up to 2 entries for layers 1-3) */
-  additionalLayerColors: Array<{ blue: string; red: string }>;
+  additionalLayerColors: Array<{ left: string; right: string }>;
   minOpacity: number; // Minimum opacity for oldest points
   maxOpacity: number; // Maximum opacity for newest points
   trackingMode: TrackingMode; // Which end(s) to track
@@ -93,7 +93,7 @@ export interface TrailSettings {
 }
 
 import { getMotionColor } from "../../../utils/svg-color-utils";
-import { MotionColor } from "../../../pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "../../../pictograph/shared/domain/enums/pictograph-enums";
 
 /**
  * Default trail settings - Hardcoded "Vivid" style
@@ -108,12 +108,12 @@ export const DEFAULT_TRAIL_SETTINGS: TrailSettings = {
   maxPoints: 1000,
   lineWidth: 5,
   glowBlur: 3,
-  blueColor: getMotionColor(MotionColor.BLUE, "dark"),
-  redColor: getMotionColor(MotionColor.RED, "dark"),
+  leftColor: getMotionColor(HandSide.LEFT, "dark"),
+  rightColor: getMotionColor(HandSide.RIGHT, "dark"),
   additionalLayerColors: [
-    { blue: "#8b5cf6", red: "#f97316" }, // purple/orange - TUNNEL_LAYER_COLORS[1]
-    { blue: "#10b981", red: "#ec4899" }, // emerald/pink - TUNNEL_LAYER_COLORS[2]
-    { blue: "#06b6d4", red: "#eab308" }, // cyan/yellow - TUNNEL_LAYER_COLORS[3]
+    { left: "#8b5cf6", right: "#f97316" }, // purple/orange - TUNNEL_LAYER_COLORS[1]
+    { left: "#10b981", right: "#ec4899" }, // emerald/pink - TUNNEL_LAYER_COLORS[2]
+    { left: "#06b6d4", right: "#eab308" }, // cyan/yellow - TUNNEL_LAYER_COLORS[3]
   ],
   minOpacity: 0.25,
   maxOpacity: 1.0,

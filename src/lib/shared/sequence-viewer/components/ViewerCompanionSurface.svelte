@@ -114,8 +114,8 @@
       fitWidth={side === "right" &&
         layout.isMobile &&
         layout.focusedPane === "image"}
-      bluePropType={propRendering.bluePropType}
-      redPropType={propRendering.redPropType}
+      leftPropType={propRendering.leftPropType}
+      rightPropType={propRendering.rightPropType}
       catDogModeEnabled={propRendering.catDogModeEnabled}
       {rerenderTrigger}
       onContextMenu={onChoreoCardContextMenu}
@@ -158,11 +158,11 @@
       shown={mandala.shown}
       {sequence}
       {playback}
-      bluePropType={propRendering.bluePropType != null
-        ? String(propRendering.bluePropType)
+      leftPropType={propRendering.leftPropType != null
+        ? String(propRendering.leftPropType)
         : undefined}
-      redPropType={propRendering.redPropType != null
-        ? String(propRendering.redPropType)
+      rightPropType={propRendering.rightPropType != null
+        ? String(propRendering.rightPropType)
         : undefined}
       {bpm}
       {onBpmChange}
@@ -205,11 +205,11 @@
       shown={tunnel.shown}
       {sequence}
       {playback}
-      bluePropType={propRendering.bluePropType != null
-        ? String(propRendering.bluePropType)
+      leftPropType={propRendering.leftPropType != null
+        ? String(propRendering.leftPropType)
         : undefined}
-      redPropType={propRendering.redPropType != null
-        ? String(propRendering.redPropType)
+      rightPropType={propRendering.rightPropType != null
+        ? String(propRendering.rightPropType)
         : undefined}
       {bpm}
       {onBpmChange}

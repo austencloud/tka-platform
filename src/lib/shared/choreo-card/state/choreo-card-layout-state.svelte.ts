@@ -51,9 +51,9 @@ export interface ChoreoCardLayoutDeps {
   /** Force contain mode */
   readonly forceContain: boolean;
   /** Blue motion visibility */
-  readonly showBlueMotion: boolean;
+  readonly showLeftMotion: boolean;
   /** Red motion visibility */
-  readonly showRedMotion: boolean;
+  readonly showRightMotion: boolean;
   /** Per-instance override for start-position layout */
   readonly startPositionLayoutOverride: "row" | "column" | null;
   /** Reactive composition version counter (bumped by observer) */
@@ -237,8 +237,8 @@ export function createChoreoCardLayoutState(
       rows: baseRows,
       includeStartPosition: deps.includeStartPosition,
       showQRCode: deps.showQRCode,
-      blueVisible: deps.showBlueMotion,
-      redVisible: deps.showRedMotion,
+      leftVisible: deps.showLeftMotion,
+      rightVisible: deps.showRightMotion,
       mandalaEnabled: deps.showMandala,
       startPositionLayout,
     });

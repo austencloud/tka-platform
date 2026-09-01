@@ -41,8 +41,8 @@
     currentStep={playback.currentStep}
     {bpm}
     {cellSize}
-    bluePropType={propRendering.bluePropType}
-    redPropType={propRendering.redPropType}
+    leftPropType={propRendering.leftPropType}
+    rightPropType={propRendering.rightPropType}
     onSeek={onSeek ?? null}
     showStartCell={laneAtStart}
   />

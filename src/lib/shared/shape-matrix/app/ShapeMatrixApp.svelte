@@ -32,8 +32,8 @@
     },
     {
       level: 2,
-      blueTurn: 2,
-      redTurn: 2,
+      leftTurn: 2,
+      rightTurn: 2,
       activeAxis: "both",
       labelMode: "turns",
       propType: PropType.STAFF,

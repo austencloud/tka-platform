@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Popover } from "bits-ui";
   import {
-    MotionColor,
+    HandSide,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -16,7 +16,7 @@
   let guideOpen = $state(false);
 
   const handLabel = $derived(
-    builderState.activeHand === MotionColor.BLUE ? "Left hand" : "Right hand"
+    builderState.activeHand === HandSide.LEFT ? "Left hand" : "Right hand"
   );
   const rotationLabel = $derived(
     builderState.rotationDirection === RotationDirection.CLOCKWISE
@@ -39,7 +39,7 @@
     }
   });
   const guideHandColor = $derived(
-    builderState.activeHand === MotionColor.BLUE
+    builderState.activeHand === HandSide.LEFT
       ? "var(--prop-blue, #2e8bf0)"
       : "var(--prop-red, #ed1c24)"
   );

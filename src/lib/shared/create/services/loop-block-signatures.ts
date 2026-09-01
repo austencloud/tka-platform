@@ -28,7 +28,7 @@ export interface BlockTimelineModel {
 const FUSEABLE = ["mirrored", "flipped", "swapped", "inverted"] as const;
 
 export function blockSignatures(wire: LOOPSpecWire): BlockTimelineModel {
-  const prop = wire.blue ?? wire.red;
+  const prop = wire.left ?? wire.right;
   if (!prop) return { cells: [new Set()] };
 
   const reflectionAxes: Partial<

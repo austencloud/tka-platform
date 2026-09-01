@@ -31,8 +31,8 @@
     orientation = "horizontal",
     fillHeight = false,
     loop = false,
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     stepPulse = false,
     staggerCellUpdates = false,
     onCellClick = null,
@@ -67,8 +67,8 @@
     /** Seamless wrap: when the track reaches the end the first cell follows (the
      *  sequence repeats) instead of snapping back to the start. */
     loop?: boolean;
-    bluePropType?: PropType | null;
-    redPropType?: PropType | null;
+    leftPropType?: PropType | null;
+    rightPropType?: PropType | null;
     /** Flash the focus frame each time the active step advances. */
     stepPulse?: boolean;
     /** Replace a reused strip one pictograph per frame. Dense live surfaces use
@@ -373,8 +373,8 @@
               darkMode={true}
               disableTransitions={true}
               disableContentTransitions={true}
-              bluePropTypeOverride={bluePropType ?? undefined}
-              redPropTypeOverride={redPropType ?? undefined}
+              leftPropTypeOverride={leftPropType ?? undefined}
+              rightPropTypeOverride={rightPropType ?? undefined}
             />
           </div>
         </div>

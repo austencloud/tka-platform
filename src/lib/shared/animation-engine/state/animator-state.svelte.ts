@@ -42,14 +42,14 @@ export interface AnimatorState {
   readonly fadingOutStepNumber: number | null;
   readonly isNewLetter: boolean;
   readonly trailSettings: TrailSettings;
-  readonly bluePropDimensions: PropDimensions;
-  readonly redPropDimensions: PropDimensions;
-  readonly currentBluePropType: string;
-  readonly currentRedPropType: string;
+  readonly leftPropDimensions: PropDimensions;
+  readonly rightPropDimensions: PropDimensions;
+  readonly currentLeftPropType: string;
+  readonly currentRightPropType: string;
   readonly currentPropType: string;
   readonly suppress2DOverlays: boolean;
-  readonly blueMotionVisible: boolean;
-  readonly redMotionVisible: boolean;
+  readonly leftMotionVisible: boolean;
+  readonly rightMotionVisible: boolean;
 
   setInitialized(v: boolean): void;
   setRendererLoading(v: boolean): void;
@@ -70,13 +70,13 @@ export interface AnimatorState {
     isNewLetter: boolean;
   }): void;
   setTrailSettings(v: TrailSettings): void;
-  setBluePropDimensions(v: PropDimensions): void;
-  setRedPropDimensions(v: PropDimensions): void;
-  setBluePropType(v: string): void;
-  setRedPropType(v: string): void;
+  setLeftPropDimensions(v: PropDimensions): void;
+  setRightPropDimensions(v: PropDimensions): void;
+  setLeftPropType(v: string): void;
+  setRightPropType(v: string): void;
   setLegacyPropType(v: string): void;
   setSuppress2DOverlays(v: boolean): void;
-  setMotionVisibility(blue: boolean, red: boolean): void;
+  setMotionVisibility(left: boolean, right: boolean): void;
 }
 
 export function createAnimatorState(): AnimatorState {
@@ -110,14 +110,14 @@ export function createAnimatorState(): AnimatorState {
     fadingOutStepNumber: null as number | null,
     isNewLetter: false,
     trailSettings: loadTrailSettings(),
-    bluePropDimensions: DEFAULT_PROP_DIMENSIONS,
-    redPropDimensions: DEFAULT_PROP_DIMENSIONS,
-    currentBluePropType: "staff",
-    currentRedPropType: "staff",
+    leftPropDimensions: DEFAULT_PROP_DIMENSIONS,
+    rightPropDimensions: DEFAULT_PROP_DIMENSIONS,
+    currentLeftPropType: "staff",
+    currentRightPropType: "staff",
     currentPropType: "staff",
     suppress2DOverlays: false,
-    blueMotionVisible: true,
-    redMotionVisible: true,
+    leftMotionVisible: true,
+    rightMotionVisible: true,
   });
 
   return {
@@ -138,14 +138,14 @@ export function createAnimatorState(): AnimatorState {
     get fadingOutStepNumber() { return state.fadingOutStepNumber; },
     get isNewLetter() { return state.isNewLetter; },
     get trailSettings() { return state.trailSettings; },
-    get bluePropDimensions() { return state.bluePropDimensions; },
-    get redPropDimensions() { return state.redPropDimensions; },
-    get currentBluePropType() { return state.currentBluePropType; },
-    get currentRedPropType() { return state.currentRedPropType; },
+    get leftPropDimensions() { return state.leftPropDimensions; },
+    get rightPropDimensions() { return state.rightPropDimensions; },
+    get currentLeftPropType() { return state.currentLeftPropType; },
+    get currentRightPropType() { return state.currentRightPropType; },
     get currentPropType() { return state.currentPropType; },
     get suppress2DOverlays() { return state.suppress2DOverlays; },
-    get blueMotionVisible() { return state.blueMotionVisible; },
-    get redMotionVisible() { return state.redMotionVisible; },
+    get leftMotionVisible() { return state.leftMotionVisible; },
+    get rightMotionVisible() { return state.rightMotionVisible; },
 
     setInitialized(v) { state.isInitialized = v; },
     setRendererLoading(v) { state.rendererLoading = v; },
@@ -166,24 +166,24 @@ export function createAnimatorState(): AnimatorState {
       state.isNewLetter = v.isNewLetter;
     },
     setTrailSettings(v) { state.trailSettings = v; },
-    setBluePropDimensions(v) {
+    setLeftPropDimensions(v) {
       // Object guard: a new ref with equal w/h would otherwise retrigger every tick.
-      if (state.bluePropDimensions.width !== v.width || state.bluePropDimensions.height !== v.height) {
-        state.bluePropDimensions = v;
+      if (state.leftPropDimensions.width !== v.width || state.leftPropDimensions.height !== v.height) {
+        state.leftPropDimensions = v;
       }
     },
-    setRedPropDimensions(v) {
-      if (state.redPropDimensions.width !== v.width || state.redPropDimensions.height !== v.height) {
-        state.redPropDimensions = v;
+    setRightPropDimensions(v) {
+      if (state.rightPropDimensions.width !== v.width || state.rightPropDimensions.height !== v.height) {
+        state.rightPropDimensions = v;
       }
     },
-    setBluePropType(v) { state.currentBluePropType = v; },
-    setRedPropType(v) { state.currentRedPropType = v; },
+    setLeftPropType(v) { state.currentLeftPropType = v; },
+    setRightPropType(v) { state.currentRightPropType = v; },
     setLegacyPropType(v) { state.currentPropType = v; },
     setSuppress2DOverlays(v) { state.suppress2DOverlays = v; },
-    setMotionVisibility(blue, red) {
-      state.blueMotionVisible = blue;
-      state.redMotionVisible = red;
+    setMotionVisibility(left, right) {
+      state.leftMotionVisible = left;
+      state.rightMotionVisible = right;
     },
   };
 }

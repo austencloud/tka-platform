@@ -22,8 +22,8 @@ const events: ScanEventRow[] = [
     lng: -87.65,
     deviceId: "device-1",
     userId: null,
-    bluePropType: null,
-    redPropType: null,
+    leftPropType: null,
+    rightPropType: null,
     catDogMode: null,
   },
 ];

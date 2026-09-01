@@ -51,8 +51,9 @@ const PROP_ALIASES: Record<string, string> = {
 /** "change props to poi" or "change prop to fans" */
 const CHANGE_BOTH_PATTERN = /^change\s+(?:props?|prop type)\s+to\s+(.+)$/;
 
-/** "change blue prop to staff" or "change blue to fans" */
-const CHANGE_HAND_PATTERN = /^change\s+(blue|red)\s+(?:prop\s+)?to\s+(.+)$/;
+/** "change left prop to staff" or the legacy color phrasing "change blue to fans" */
+const CHANGE_HAND_PATTERN =
+  /^change\s+(left|right|blue|red)\s+(?:prop\s+)?to\s+(.+)$/;
 
 /** "use clubs" or "use poi" */
 const USE_PATTERN = /^use\s+(.+)$/;
@@ -61,7 +62,7 @@ export class PropSubInterpreter implements ISubInterpreter {
   readonly category: VoiceCommandCategory = "prop";
 
   tryInterpret(text: string, _context: CommandContext): VoiceCommand | null {
-    // "change blue prop to staff"
+    // "change left prop to staff"
     const handMatch = text.match(CHANGE_HAND_PATTERN);
     if (handMatch?.[1] && handMatch?.[2]) {
       const propType = this.resolveProp(handMatch[2].trim());
@@ -70,7 +71,14 @@ export class PropSubInterpreter implements ISubInterpreter {
           category: "prop",
           action: "change_prop",
           target: propType,
-          args: { hand: handMatch[1] },
+          args: {
+            hand:
+              handMatch[1] === "blue"
+                ? "left"
+                : handMatch[1] === "red"
+                  ? "right"
+                  : handMatch[1],
+          },
           rawText: text,
           confidence: 0.9,
         };

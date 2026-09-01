@@ -96,8 +96,8 @@
     const _version = renderVersion;
     // Track prop type settings for reactivity
     const _catDogMode = settingsService.settings.catDogMode;
-    const _bluePropType = settingsService.settings.bluePropType;
-    const _redPropType = settingsService.settings.redPropType;
+    const _leftPropType = settingsService.settings.leftPropType;
+    const _rightPropType = settingsService.settings.rightPropType;
     if (!sequence || !service) {
       previewDataUrl = null;
       return;
@@ -120,8 +120,8 @@
         addDifficultyLevel: _diff,
         showNotes: _notes,
         // Include prop type settings so preview updates when prop type changes
-        bluePropTypeOverride: _bluePropType,
-        redPropTypeOverride: _catDogMode ? _redPropType : _bluePropType,
+        leftPropTypeOverride: _leftPropType,
+        rightPropTypeOverride: _catDogMode ? _rightPropType : _leftPropType,
         // Pass dark mode as visibility override
         visibilityOverrides: {
           darkMode: _darkMode,

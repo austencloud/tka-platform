@@ -27,8 +27,8 @@ export const DIRECTIVE_PERFORMER_FIELDS = [
   "effect",
   "effort",
   "staffLengthCm",
-  "bluePlane",
-  "redPlane",
+  "leftPlane",
+  "rightPlane",
 ] as const;
 
 export type DirectivePerformerField = (typeof DIRECTIVE_PERFORMER_FIELDS)[number];

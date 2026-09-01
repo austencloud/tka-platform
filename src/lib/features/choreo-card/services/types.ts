@@ -32,10 +32,10 @@ export interface HandSkew {
  * Skew data is optional per-step, per-hand. Only shifts can be skewed.
  */
 export interface HandPathTrace {
-  blue: GridLocation[];
-  red: GridLocation[];
+  left: GridLocation[];
+  right: GridLocation[];
   /** Per-step skew overrides. Index aligns with step index (0 = first transition). */
-  skews?: { blue?: HandSkew; red?: HandSkew }[];
+  skews?: { left?: HandSkew; right?: HandSkew }[];
 }
 
 export interface InfoCardCanvasOptions {
@@ -97,8 +97,8 @@ export interface PrintRenderOptions {
   /** Override the default card back theme (e.g. "cosmic", "ocean") */
   theme?: string;
   /** Override prop types (reads from settings when not provided) */
-  bluePropType?: PropType;
-  redPropType?: PropType;
+  leftPropType?: PropType;
+  rightPropType?: PropType;
   /** TnD elemental theme for front frame coloring. Omit for neutral gray. */
   tndElement?: TnDElement;
   /**

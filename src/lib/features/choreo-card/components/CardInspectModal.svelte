@@ -30,8 +30,8 @@
     /** Async re-bake of THIS card's front (updates the preview image). */
     onRerender?: () => Promise<void>;
     /** Card's effective prop types (default: global settings, matching the bake). */
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
     /** "live" shows the responsive notation card. "print" keeps the physical
      * front-and-back inspector used by deck production. */
     presentation?: "print" | "live";
@@ -48,8 +48,8 @@
     backImageUrl,
     extraActions,
     onRerender,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     presentation = "print",
     browseViewMode,
   }: Props = $props();
@@ -61,11 +61,11 @@
   // Mirror PrintPreviewPages: explicit prop types win, else global settings,
   // else staff. Keeps the edited override key identical to the baked key.
   const settings = $derived(getSettings());
-  const effBlueProp = $derived(
-    bluePropType ?? settings.bluePropType ?? PropType.STAFF
+  const effLeftProp = $derived(
+    leftPropType ?? settings.leftPropType ?? PropType.STAFF
   );
-  const effRedProp = $derived(
-    redPropType ?? settings.redPropType ?? PropType.STAFF
+  const effRightProp = $derived(
+    rightPropType ?? settings.rightPropType ?? PropType.STAFF
   );
 
   async function enterFixMode(): Promise<void> {
@@ -246,8 +246,8 @@
               showMandala={true}
               {browseViewMode}
               darkMode={true}
-              bluePropType={effBlueProp}
-              redPropType={effRedProp}
+              leftPropType={effLeftProp}
+              rightPropType={effRightProp}
               forceContain={true}
               startPositionLayoutOverride={getCatalogLayoutPolicy(
                 sequence.steps?.length ?? 0
@@ -273,8 +273,8 @@
       {:else if sequence}
         <CardArrowFixGrid
           {sequence}
-          bluePropType={effBlueProp}
-          redPropType={effRedProp}
+          leftPropType={effLeftProp}
+          rightPropType={effRightProp}
           {includeStartPosition}
           onSelect={onCellSelected}
         />

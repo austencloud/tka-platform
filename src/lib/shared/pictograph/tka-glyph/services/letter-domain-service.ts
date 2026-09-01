@@ -4,8 +4,8 @@ export type TKALetter = keyof typeof letterMappings.letters;
 export interface LetterPositionData {
   startPosition: string;
   endPosition: string;
-  blueMotion: string;
-  redMotion: string;
+  leftMotion: string;
+  rightMotion: string;
 }
 
 const mappings = letterMappings.letters as Record<string, LetterPositionData>;

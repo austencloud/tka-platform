@@ -7,7 +7,7 @@
  * reading from AnimationVisibilityStateManager (for live display).
  */
 
-import type { MotionColor } from "../../../shared/domain/enums/pictograph-enums";
+import type { HandSide } from "../../../shared/domain/enums/pictograph-enums";
 import {
   getMotionColor,
   type ThemeMode,
@@ -31,7 +31,7 @@ function getCurrentThemeMode(): ThemeMode {
  */
 export function applyColorToSvg(
   svgText: string,
-  color: MotionColor,
+  color: HandSide,
   themeMode?: ThemeMode
 ): string {
   const effectiveThemeMode = themeMode ?? getCurrentThemeMode();

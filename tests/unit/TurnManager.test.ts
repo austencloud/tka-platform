@@ -22,42 +22,42 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import {
   MotionType,
   RotationDirection,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 function makeStep(overrides: {
-  blueMotionType?: MotionType;
-  redMotionType?: MotionType;
-  blueTurns?: number;
-  redTurns?: number;
-  blueRot?: RotationDirection;
-  redRot?: RotationDirection;
+  leftMotionType?: MotionType;
+  rightMotionType?: MotionType;
+  leftTurns?: number;
+  rightTurns?: number;
+  leftRot?: RotationDirection;
+  rightRot?: RotationDirection;
 }): StepData {
   return {
     id: crypto.randomUUID(),
     stepNumber: 1,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
-        motionType: overrides.blueMotionType ?? MotionType.STATIC,
-        turns: overrides.blueTurns ?? 0,
-        rotationDirection: overrides.blueRot ?? RotationDirection.NO_ROTATION,
+      [HandSide.LEFT]: createMotionData({
+        motionType: overrides.leftMotionType ?? MotionType.STATIC,
+        turns: overrides.leftTurns ?? 0,
+        rotationDirection: overrides.leftRot ?? RotationDirection.NO_ROTATION,
         startLocation: GridLocation.SOUTH,
         endLocation: GridLocation.SOUTH,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
       }),
-      [MotionColor.RED]: createMotionData({
-        motionType: overrides.redMotionType ?? MotionType.STATIC,
-        turns: overrides.redTurns ?? 0,
-        rotationDirection: overrides.redRot ?? RotationDirection.NO_ROTATION,
+      [HandSide.RIGHT]: createMotionData({
+        motionType: overrides.rightMotionType ?? MotionType.STATIC,
+        turns: overrides.rightTurns ?? 0,
+        rotationDirection: overrides.rightRot ?? RotationDirection.NO_ROTATION,
         startLocation: GridLocation.NORTH,
         endLocation: GridLocation.NORTH,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         gridMode: GridMode.DIAMOND,
       }),
     },
@@ -74,46 +74,46 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
 
   it("inherits previous cw rotation for a static motion with turns in CONTINUOUS mode", () => {
     const step = makeStep({
-      blueMotionType: MotionType.STATIC,
-      blueTurns: 1,
-      blueRot: RotationDirection.NO_ROTATION,
+      leftMotionType: MotionType.STATIC,
+      leftTurns: 1,
+      leftRot: RotationDirection.NO_ROTATION,
     });
 
     updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, "cw", "");
 
-    expect(step.motions.blue!.rotationDirection).toBe(RotationDirection.CLOCKWISE);
+    expect(step.motions.left!.rotationDirection).toBe(RotationDirection.CLOCKWISE);
   });
 
   it("inherits previous ccw rotation for a dash motion with turns in CONTINUOUS mode", () => {
     const step = makeStep({
-      blueMotionType: MotionType.DASH,
-      blueTurns: 1,
-      blueRot: RotationDirection.NO_ROTATION,
+      leftMotionType: MotionType.DASH,
+      leftTurns: 1,
+      leftRot: RotationDirection.NO_ROTATION,
     });
 
     updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, "ccw", "");
 
-    expect(step.motions.blue!.rotationDirection).toBe(RotationDirection.COUNTER_CLOCKWISE);
+    expect(step.motions.left!.rotationDirection).toBe(RotationDirection.COUNTER_CLOCKWISE);
   });
 
   it("falls back to a concrete rotation when CONTINUOUS mode receives an empty previous direction", () => {
     const step = makeStep({
-      blueMotionType: MotionType.STATIC,
-      blueTurns: 1,
-      blueRot: RotationDirection.NO_ROTATION,
+      leftMotionType: MotionType.STATIC,
+      leftTurns: 1,
+      leftRot: RotationDirection.NO_ROTATION,
     });
 
     updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, "", "");
 
     // The critical invariant — no empty string, no "noRotation" on a spinning motion
-    expect(isSpinningRotation(step.motions.blue!.rotationDirection)).toBe(true);
+    expect(isSpinningRotation(step.motions.left!.rotationDirection)).toBe(true);
   });
 
   it("falls back to a concrete rotation when CONTINUOUS mode receives 'noRotation' as previous", () => {
     const step = makeStep({
-      blueMotionType: MotionType.DASH,
-      blueTurns: 1,
-      blueRot: RotationDirection.NO_ROTATION,
+      leftMotionType: MotionType.DASH,
+      leftTurns: 1,
+      leftRot: RotationDirection.NO_ROTATION,
     });
 
     updateDashStaticRotationDirections(
@@ -123,74 +123,74 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
       "",
     );
 
-    expect(isSpinningRotation(step.motions.blue!.rotationDirection)).toBe(true);
+    expect(isSpinningRotation(step.motions.left!.rotationDirection)).toBe(true);
   });
 
   // RANDOM mode — already worked but pinning the invariant
 
   it("assigns a concrete rotation to static+turns in RANDOM mode", () => {
     const step = makeStep({
-      blueMotionType: MotionType.STATIC,
-      blueTurns: 1,
-      blueRot: RotationDirection.NO_ROTATION,
+      leftMotionType: MotionType.STATIC,
+      leftTurns: 1,
+      leftRot: RotationDirection.NO_ROTATION,
     });
 
     updateDashStaticRotationDirections(step, PropContinuity.RANDOM, "", "");
 
-    expect(isSpinningRotation(step.motions.blue!.rotationDirection)).toBe(true);
+    expect(isSpinningRotation(step.motions.left!.rotationDirection)).toBe(true);
   });
 
   it("assigns a concrete rotation to dash+turns in RANDOM mode", () => {
     const step = makeStep({
-      redMotionType: MotionType.DASH,
-      redTurns: 1,
-      redRot: RotationDirection.NO_ROTATION,
+      rightMotionType: MotionType.DASH,
+      rightTurns: 1,
+      rightRot: RotationDirection.NO_ROTATION,
     });
 
     updateDashStaticRotationDirections(step, PropContinuity.RANDOM, "", "");
 
-    expect(isSpinningRotation(step.motions.red!.rotationDirection)).toBe(true);
+    expect(isSpinningRotation(step.motions.right!.rotationDirection)).toBe(true);
   });
 
   // Zero-turn motions must stay noRotation — a held static has no spin
 
   it("leaves static at 0 turns as noRotation in CONTINUOUS mode", () => {
     const step = makeStep({
-      blueMotionType: MotionType.STATIC,
-      blueTurns: 0,
-      blueRot: RotationDirection.NO_ROTATION,
+      leftMotionType: MotionType.STATIC,
+      leftTurns: 0,
+      leftRot: RotationDirection.NO_ROTATION,
     });
 
     updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, "cw", "cw");
 
-    expect(step.motions.blue!.rotationDirection).toBe(RotationDirection.NO_ROTATION);
+    expect(step.motions.left!.rotationDirection).toBe(RotationDirection.NO_ROTATION);
   });
 
   it("leaves dash at 0 turns as noRotation in RANDOM mode", () => {
     const step = makeStep({
-      blueMotionType: MotionType.DASH,
-      blueTurns: 0,
-      blueRot: RotationDirection.NO_ROTATION,
+      leftMotionType: MotionType.DASH,
+      leftTurns: 0,
+      leftRot: RotationDirection.NO_ROTATION,
     });
 
     updateDashStaticRotationDirections(step, PropContinuity.RANDOM, "", "");
 
-    expect(step.motions.blue!.rotationDirection).toBe(RotationDirection.NO_ROTATION);
+    expect(step.motions.left!.rotationDirection).toBe(RotationDirection.NO_ROTATION);
   });
 
   // Non-static/dash motions are untouched
 
   it("leaves pro motions untouched regardless of turns or mode", () => {
     const step = makeStep({
-      blueMotionType: MotionType.PRO,
-      blueTurns: 2,
-      blueRot: RotationDirection.CLOCKWISE,
+      leftMotionType: MotionType.PRO,
+      leftTurns: 2,
+      leftRot: RotationDirection.CLOCKWISE,
     });
 
     updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, "ccw", "");
 
     // Pro motions keep their CSV-assigned direction; they already have one
-    expect(step.motions.blue!.rotationDirection).toBe(RotationDirection.CLOCKWISE);
+    expect(step.motions.left!.rotationDirection).toBe(RotationDirection.CLOCKWISE);
   });
 
   // Full-sequence invariant — the bug report scenario
@@ -199,34 +199,34 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
     // Simulate the caller pattern from generate-actions.svelte.ts: apply
     // turns to each beat in order, tracking the previous rotation per color.
     const steps: StepData[] = [
-      makeStep({ blueMotionType: MotionType.PRO, blueTurns: 0, blueRot: RotationDirection.CLOCKWISE }),
-      makeStep({ blueMotionType: MotionType.STATIC, blueTurns: 1, blueRot: RotationDirection.NO_ROTATION }),
-      makeStep({ blueMotionType: MotionType.DASH, blueTurns: 1, blueRot: RotationDirection.NO_ROTATION }),
-      makeStep({ blueMotionType: MotionType.STATIC, blueTurns: 1, blueRot: RotationDirection.NO_ROTATION }),
+      makeStep({ leftMotionType: MotionType.PRO, leftTurns: 0, leftRot: RotationDirection.CLOCKWISE }),
+      makeStep({ leftMotionType: MotionType.STATIC, leftTurns: 1, leftRot: RotationDirection.NO_ROTATION }),
+      makeStep({ leftMotionType: MotionType.DASH, leftTurns: 1, leftRot: RotationDirection.NO_ROTATION }),
+      makeStep({ leftMotionType: MotionType.STATIC, leftTurns: 1, leftRot: RotationDirection.NO_ROTATION }),
     ];
 
-    let prevBlueRot = "";
-    let prevRedRot = "";
+    let prevLeftRot = "";
+    let prevRightRot = "";
     for (const step of steps) {
-      updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, prevBlueRot, prevRedRot);
-      const blueRot = step.motions.blue!.rotationDirection;
-      const redRot = step.motions.red!.rotationDirection;
-      if (blueRot && blueRot !== RotationDirection.NO_ROTATION) prevBlueRot = blueRot;
-      if (redRot && redRot !== RotationDirection.NO_ROTATION) prevRedRot = redRot;
+      updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, prevLeftRot, prevRightRot);
+      const leftRot = step.motions.left!.rotationDirection;
+      const rightRot = step.motions.right!.rotationDirection;
+      if (leftRot && leftRot !== RotationDirection.NO_ROTATION) prevLeftRot = leftRot;
+      if (rightRot && rightRot !== RotationDirection.NO_ROTATION) prevRightRot = rightRot;
     }
 
     // Every spinning motion must have a concrete direction
     for (const step of steps) {
-      const blue = step.motions.blue!;
-      const hasBlueTurns = typeof blue.turns === "number" && blue.turns > 0;
+      const left = step.motions.left!;
+      const hasBlueTurns = typeof left.turns === "number" && left.turns > 0;
       if (hasBlueTurns) {
-        expect(isSpinningRotation(blue.rotationDirection)).toBe(true);
+        expect(isSpinningRotation(left.rotationDirection)).toBe(true);
       }
     }
 
     // CONTINUOUS should have propagated beat 1's cw to beats 2, 3, 4
-    expect(steps[1]!.motions.blue!.rotationDirection).toBe(RotationDirection.CLOCKWISE);
-    expect(steps[2]!.motions.blue!.rotationDirection).toBe(RotationDirection.CLOCKWISE);
-    expect(steps[3]!.motions.blue!.rotationDirection).toBe(RotationDirection.CLOCKWISE);
+    expect(steps[1]!.motions.left!.rotationDirection).toBe(RotationDirection.CLOCKWISE);
+    expect(steps[2]!.motions.left!.rotationDirection).toBe(RotationDirection.CLOCKWISE);
+    expect(steps[3]!.motions.left!.rotationDirection).toBe(RotationDirection.CLOCKWISE);
   });
 });

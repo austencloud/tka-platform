@@ -8,7 +8,7 @@ import {
   getMotionColor,
   type ThemeMode,
 } from "$lib/shared/utils/svg-color-utils";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   EDITOR_TORCH_PALETTE,
   recolorMarkedPart,
@@ -52,8 +52,8 @@ function getCurrentThemeMode(vm?: AnimationVisibilityStateManager): ThemeMode {
  * generateBluePropSvg/generateRedPropSvg bake in for the base pair.
  */
 export function getBaseMotionColors(darkMode?: boolean): {
-  blue: string;
-  red: string;
+  left: string;
+  right: string;
 } {
   const themeMode =
     darkMode !== undefined
@@ -62,8 +62,8 @@ export function getBaseMotionColors(darkMode?: boolean): {
         : "light"
       : getCurrentThemeMode();
   return {
-    blue: getMotionColor(MotionColor.BLUE, themeMode),
-    red: getMotionColor(MotionColor.RED, themeMode),
+    left: getMotionColor(HandSide.LEFT, themeMode),
+    right: getMotionColor(HandSide.RIGHT, themeMode),
   };
 }
 
@@ -194,20 +194,20 @@ function getFallbackGridSvg(gridMode: GridMode): string {
  * Generate blue staff SVG exactly as in standalone_animator.html
  * @deprecated Use generateBluePropSvg instead
  */
-export function generateBlueStaffSvg(): string {
+export function generateLeftStaffSvg(): string {
   const themeMode = getCurrentThemeMode();
-  const blueColor = getMotionColor(MotionColor.BLUE, themeMode);
-  return `<svg version="1.1" id="staff" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 252.8 77.8" style="enable-background:new 0 0 252.8 77.8;" xml:space="preserve"><path fill="${blueColor}" stroke="#555555" stroke-width="1" stroke-miterlimit="10" d="M251.4,67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1,3.9-9.1,8.7v19.2H10.3c-4.9,0-8.9,3.8-8.9,8.5V41 c0,4.6,4,8.5,8.9,8.5h222.9v18.2c0,4.8,4.1,8.7,9.1,8.7S251.4,72.5,251.4,67.7z"/><circle id="centerPoint" fill="#FF0000" cx="126.4" cy="38.9" r="5" /></svg>`;
+  const leftColor = getMotionColor(HandSide.LEFT, themeMode);
+  return `<svg version="1.1" id="staff" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 252.8 77.8" style="enable-background:new 0 0 252.8 77.8;" xml:space="preserve"><path fill="${leftColor}" stroke="#555555" stroke-width="1" stroke-miterlimit="10" d="M251.4,67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1,3.9-9.1,8.7v19.2H10.3c-4.9,0-8.9,3.8-8.9,8.5V41 c0,4.6,4,8.5,8.9,8.5h222.9v18.2c0,4.8,4.1,8.7,9.1,8.7S251.4,72.5,251.4,67.7z"/><circle id="centerPoint" fill="#FF0000" cx="126.4" cy="38.9" r="5" /></svg>`;
 }
 
 /**
  * Generate red staff SVG exactly as in standalone_animator.html
  * @deprecated Use generateRedPropSvg instead
  */
-export function generateRedStaffSvg(): string {
+export function generateRightStaffSvg(): string {
   const themeMode = getCurrentThemeMode();
-  const redColor = getMotionColor(MotionColor.RED, themeMode);
-  return `<svg version="1.1" id="staff" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 252.8 77.8" style="enable-background:new 0 0 252.8 77.8;" xml:space="preserve"><path fill="${redColor}" stroke="#555555" stroke-width="1" stroke-miterlimit="10" d="M251.4,67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1,3.9-9.1,8.7v19.2H10.3c-4.9,0-8.9,3.8-8.9,8.5V41 c0,4.6,4,8.5,8.9,8.5h222.9v18.2c0,4.8,4.1,8.7,9.1,8.7S251.4,72.5,251.4,67.7z"/><circle id="centerPoint" fill="#FF0000" cx="126.4" cy="38.9" r="5" /></svg>`;
+  const rightColor = getMotionColor(HandSide.RIGHT, themeMode);
+  return `<svg version="1.1" id="staff" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 252.8 77.8" style="enable-background:new 0 0 252.8 77.8;" xml:space="preserve"><path fill="${rightColor}" stroke="#555555" stroke-width="1" stroke-miterlimit="10" d="M251.4,67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1,3.9-9.1,8.7v19.2H10.3c-4.9,0-8.9,3.8-8.9,8.5V41 c0,4.6,4,8.5,8.9,8.5h222.9v18.2c0,4.8,4.1,8.7,9.1,8.7S251.4,72.5,251.4,67.7z"/><circle id="centerPoint" fill="#FF0000" cx="126.4" cy="38.9" r="5" /></svg>`;
 }
 
 /**
@@ -336,7 +336,7 @@ export async function generatePropSvg(
  * @param propType - Type of prop to generate
  * @param darkMode - When provided, uses this instead of global dark mode state (for preview isolation)
  */
-export async function generateBluePropSvg(
+export async function generateLeftPropSvg(
   propType: string = "staff",
   darkMode?: boolean
 ): Promise<PropSvgData> {
@@ -349,7 +349,7 @@ export async function generateBluePropSvg(
       : getCurrentThemeMode();
   return generatePropSvg(
     propType,
-    getMotionColor(MotionColor.BLUE, themeMode),
+    getMotionColor(HandSide.LEFT, themeMode),
     themeMode
   );
 }
@@ -360,7 +360,7 @@ export async function generateBluePropSvg(
  * @param propType - Type of prop to generate
  * @param darkMode - When provided, uses this instead of global dark mode state (for preview isolation)
  */
-export async function generateRedPropSvg(
+export async function generateRightPropSvg(
   propType: string = "staff",
   darkMode?: boolean
 ): Promise<PropSvgData> {
@@ -373,7 +373,7 @@ export async function generateRedPropSvg(
       : getCurrentThemeMode();
   return generatePropSvg(
     propType,
-    getMotionColor(MotionColor.RED, themeMode),
+    getMotionColor(HandSide.RIGHT, themeMode),
     themeMode
   );
 }

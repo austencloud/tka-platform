@@ -1,46 +1,46 @@
 <script lang="ts">
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
   let {
     activeHand,
-    blueCount,
-    redCount,
+    leftCount,
+    rightCount,
     disabled = false,
     onchange,
   }: {
-    activeHand: MotionColor;
-    blueCount: number;
-    redCount: number;
+    activeHand: HandSide;
+    leftCount: number;
+    rightCount: number;
     disabled?: boolean;
-    onchange: (hand: MotionColor) => void;
+    onchange: (hand: HandSide) => void;
   } = $props();
 
   const options = $derived([
     {
-      value: MotionColor.BLUE,
+      value: HandSide.LEFT,
       label: "Left",
-      ariaLabel: `Left hand, ${blueCount} step${blueCount === 1 ? "" : "s"}`,
+      ariaLabel: `Left hand, ${leftCount} step${leftCount === 1 ? "" : "s"}`,
       tone: "blue" as const,
       disabled,
     },
     {
-      value: MotionColor.RED,
+      value: HandSide.RIGHT,
       label: "Right",
-      ariaLabel: `Right hand, ${redCount} step${redCount === 1 ? "" : "s"}`,
+      ariaLabel: `Right hand, ${rightCount} step${rightCount === 1 ? "" : "s"}`,
       tone: "red" as const,
       disabled,
     },
   ]);
 
-  function stepCount(hand: MotionColor): number {
-    return hand === MotionColor.BLUE ? blueCount : redCount;
+  function stepCount(hand: HandSide): number {
+    return hand === HandSide.LEFT ? leftCount : rightCount;
   }
 </script>
 
-{#snippet handOption(hand: MotionColor)}
+{#snippet handOption(hand: HandSide)}
   {@const count = stepCount(hand)}
-  {@const isLeft = hand === MotionColor.BLUE}
+  {@const isLeft = hand === HandSide.LEFT}
   <span class="hand-option-content" class:left={isLeft} class:right={!isLeft}>
     <span class="hand-name">
       <span class="hand-color-mark" aria-hidden="true"></span>

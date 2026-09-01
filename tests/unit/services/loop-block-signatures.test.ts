@@ -10,7 +10,7 @@ const wire = (prop: Record<string, {
   mode?: "expand" | "overlay";
   reflectionAxis?: ReflectionAxis;
 }>): LOOPSpecWire =>
-  ({ blue: prop, red: prop }) as LOOPSpecWire;
+  ({ left: prop, right: prop }) as LOOPSpecWire;
 
 const sigs = (cells: Array<Set<string>>) => cells.map((c) => [...c].sort().join("+") || "base");
 

@@ -36,10 +36,10 @@ export class MandalaOverlayCanvas {
 	// module switch — at `emphasis` the old shape was gone before the eye had
 	// followed it across.
 	private readonly guideFadeManager = new Canvas2DFadeManager(DURATION.dramatic);
-	private blueMaskCanvas: OffscreenCanvas | null = null;
-	private blueMaskCtx: OffscreenCanvasRenderingContext2D | null = null;
-	private redMaskCanvas: OffscreenCanvas | null = null;
-	private redMaskCtx: OffscreenCanvasRenderingContext2D | null = null;
+	private leftMaskCanvas: OffscreenCanvas | null = null;
+	private leftMaskCtx: OffscreenCanvasRenderingContext2D | null = null;
+	private rightMaskCanvas: OffscreenCanvas | null = null;
+	private rightMaskCtx: OffscreenCanvasRenderingContext2D | null = null;
 	private width = 0;
 	private height = 0;
 	private dpr = 1;
@@ -339,10 +339,10 @@ export class MandalaOverlayCanvas {
 		this.previousGuideCtx = null;
 		this.hasPreviousGuideSnapshot = false;
 		this.guideFadeManager.reset();
-		this.blueMaskCanvas = null;
-		this.blueMaskCtx = null;
-		this.redMaskCanvas = null;
-		this.redMaskCtx = null;
+		this.leftMaskCanvas = null;
+		this.leftMaskCtx = null;
+		this.rightMaskCanvas = null;
+		this.rightMaskCtx = null;
 		this.width = 0;
 		this.height = 0;
 		this.firstLoopComplete = false;
@@ -455,17 +455,17 @@ export class MandalaOverlayCanvas {
 		renderProgress: number,
 		guideMode: boolean,
 	): void {
-		const hasBlue = paths.some((path) => path.hand === "blue");
-		const hasRed = paths.some((path) => path.hand === "red");
-		if (!hasBlue || !hasRed) return;
+		const hasLeft = paths.some((path) => path.hand === "left");
+		const hasRight = paths.some((path) => path.hand === "right");
+		if (!hasLeft || !hasRight) return;
 
 		const masks = this.ensureOverlapMasks();
 		if (!masks) return;
 
 		this.paintHandMask(
-			masks.blueContext,
+			masks.leftContext,
 			paths,
-			"blue",
+			"left",
 			center,
 			scale,
 			strokeWidth,
@@ -473,9 +473,9 @@ export class MandalaOverlayCanvas {
 			guideMode,
 		);
 		this.paintHandMask(
-			masks.redContext,
+			masks.rightContext,
 			paths,
-			"red",
+			"right",
 			center,
 			scale,
 			strokeWidth,
@@ -485,11 +485,11 @@ export class MandalaOverlayCanvas {
 
 		compositeMandalaOverlap({
 			targetContext,
-			overlapMaskContext: masks.blueContext,
-			overlapMaskCanvas: masks.blueCanvas,
-			otherMaskCanvas: masks.redCanvas,
-			width: masks.blueCanvas.width,
-			height: masks.blueCanvas.height,
+			overlapMaskContext: masks.leftContext,
+			overlapMaskCanvas: masks.leftCanvas,
+			otherMaskCanvas: masks.rightCanvas,
+			width: masks.leftCanvas.width,
+			height: masks.leftCanvas.height,
 			color: PURPLE_STROKE,
 		});
 	}
@@ -533,42 +533,42 @@ export class MandalaOverlayCanvas {
 	}
 
 	private ensureOverlapMasks(): {
-		blueCanvas: OffscreenCanvas;
-		blueContext: OffscreenCanvasRenderingContext2D;
-		redCanvas: OffscreenCanvas;
-		redContext: OffscreenCanvasRenderingContext2D;
+		leftCanvas: OffscreenCanvas;
+		leftContext: OffscreenCanvasRenderingContext2D;
+		rightCanvas: OffscreenCanvas;
+		rightContext: OffscreenCanvasRenderingContext2D;
 	} | null {
 		const width = this.bufferCanvas?.width ?? 0;
 		const height = this.bufferCanvas?.height ?? 0;
 		if (width === 0 || height === 0) return null;
 
 		const masksMatchBuffer =
-			this.blueMaskCanvas?.width === width &&
-			this.blueMaskCanvas?.height === height &&
-			this.redMaskCanvas?.width === width &&
-			this.redMaskCanvas?.height === height;
+			this.leftMaskCanvas?.width === width &&
+			this.leftMaskCanvas?.height === height &&
+			this.rightMaskCanvas?.width === width &&
+			this.rightMaskCanvas?.height === height;
 
 		if (!masksMatchBuffer) {
-			this.blueMaskCanvas = new OffscreenCanvas(width, height);
-			this.blueMaskCtx = this.blueMaskCanvas.getContext("2d");
-			this.redMaskCanvas = new OffscreenCanvas(width, height);
-			this.redMaskCtx = this.redMaskCanvas.getContext("2d");
+			this.leftMaskCanvas = new OffscreenCanvas(width, height);
+			this.leftMaskCtx = this.leftMaskCanvas.getContext("2d");
+			this.rightMaskCanvas = new OffscreenCanvas(width, height);
+			this.rightMaskCtx = this.rightMaskCanvas.getContext("2d");
 		}
 
 		if (
-			!this.blueMaskCanvas ||
-			!this.blueMaskCtx ||
-			!this.redMaskCanvas ||
-			!this.redMaskCtx
+			!this.leftMaskCanvas ||
+			!this.leftMaskCtx ||
+			!this.rightMaskCanvas ||
+			!this.rightMaskCtx
 		) {
 			return null;
 		}
 
 		return {
-			blueCanvas: this.blueMaskCanvas,
-			blueContext: this.blueMaskCtx,
-			redCanvas: this.redMaskCanvas,
-			redContext: this.redMaskCtx,
+			leftCanvas: this.leftMaskCanvas,
+			leftContext: this.leftMaskCtx,
+			rightCanvas: this.rightMaskCanvas,
+			rightContext: this.rightMaskCtx,
 		};
 	}
 

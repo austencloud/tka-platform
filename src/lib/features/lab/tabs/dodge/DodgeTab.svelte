@@ -45,7 +45,7 @@
   // One plane moved to WHEEL (blue/LH) so its prop sweeps the sagittal plane the
   // torso occupies (impales); red/RH stays on WALL. (orientation IN / 0 turns are
   // the base-shift defaults.) A letter/variation/plane picker is a later follow-up.
-  const blueConfig: MotionConfig3D = {
+  const leftConfig: MotionConfig3D = {
     plane: Plane.WHEEL,
     startLocation: GridLocation.SOUTH,
     endLocation: GridLocation.WEST,
@@ -56,7 +56,7 @@
     endOrientation: Orientation.IN,
     pathShape: "arc",
   };
-  const redConfig: MotionConfig3D = {
+  const rightConfig: MotionConfig3D = {
     plane: Plane.WALL,
     startLocation: GridLocation.NORTH,
     endLocation: GridLocation.EAST,
@@ -189,8 +189,8 @@
 
   async function copyDiagnostic() {
     const payload = {
-      blueConfig,
-      redConfig,
+      leftConfig,
+      rightConfig,
       knob,
       plan: plan && {
         knob: plan.knob,
@@ -243,8 +243,8 @@
     <DodgeDriver
       {controller}
       {rig}
-      {blueConfig}
-      {redConfig}
+      {leftConfig}
+      {rightConfig}
       {dodgeOn}
       {knob}
       {onClearance}

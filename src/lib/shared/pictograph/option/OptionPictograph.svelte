@@ -14,12 +14,12 @@
 
   let {
     pictograph,
-    blueReversal = false,
-    redReversal = false,
+    leftReversal = false,
+    rightReversal = false,
   } = $props<{
     pictograph: PreparedPictographData;
-    blueReversal?: boolean;
-    redReversal?: boolean;
+    leftReversal?: boolean;
+    rightReversal?: boolean;
   }>();
 
   const vm = getVisibilityStateManager();
@@ -62,20 +62,20 @@
   // Compute active locations from motion end positions (where props are)
   const activeLocations = $derived.by(() => {
     const locations: GridLocation[] = [];
-    const blue = pictograph.motions?.blue;
-    const red = pictograph.motions?.red;
-    if (isVisibleMotion(blue) && blue.endLocation) locations.push(blue.endLocation as GridLocation);
-    if (isVisibleMotion(red) && red.endLocation) locations.push(red.endLocation as GridLocation);
+    const left = pictograph.motions?.left;
+    const right = pictograph.motions?.right;
+    if (isVisibleMotion(left) && left.endLocation) locations.push(left.endLocation as GridLocation);
+    if (isVisibleMotion(right) && right.endLocation) locations.push(right.endLocation as GridLocation);
     return locations;
   });
 </script>
 
 <PictographRenderer
   {pictograph}
-  {blueReversal}
-  {redReversal}
-  blueMotionVisible={true}
-  redMotionVisible={true}
+  {leftReversal}
+  {rightReversal}
+  leftMotionVisible={true}
+  rightMotionVisible={true}
   {showGrid}
   {showTKA}
   {showReversals}

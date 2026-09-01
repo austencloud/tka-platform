@@ -104,7 +104,7 @@
   setAnimationVisibilityContext(animationVisibility);
 
   let selectedPropType = $state<PropType>(
-    settingsService.settings.bluePropType ?? PropType.STAFF
+    settingsService.settings.leftPropType ?? PropType.STAFF
   );
   const synchronizedCardRenderOptions = $derived(
     withPostStudioPropType(cardRenderOptions, selectedPropType)
@@ -413,8 +413,8 @@
   // ArtPane in the sequence viewer.
   const artControllers = new PostStudioArtControllers({
     getSequence: () => displaySequence,
-    getBluePropType: () => synchronizedCardRenderOptions?.bluePropTypeOverride,
-    getRedPropType: () => synchronizedCardRenderOptions?.redPropTypeOverride,
+    getLeftPropType: () => synchronizedCardRenderOptions?.leftPropTypeOverride,
+    getRightPropType: () => synchronizedCardRenderOptions?.rightPropTypeOverride,
     pathPolicy: animationVisibility,
   });
   setPostStudioArtContext(artControllers);

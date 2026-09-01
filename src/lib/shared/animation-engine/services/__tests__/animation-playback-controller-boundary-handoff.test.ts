@@ -86,7 +86,7 @@ function createEngine(options?: { rejectIncoming?: boolean }) {
     ),
     getStartPositionDuration: vi.fn(() => 1),
     calculateStateDurationAware,
-    getCurrentPropStates: vi.fn(() => ({ blue: {}, red: {} })),
+    getCurrentPropStates: vi.fn(() => ({ left: {}, right: {} })),
   } as unknown as SequenceAnimationOrchestrator;
 
   return { engine, calculateStateDurationAware };

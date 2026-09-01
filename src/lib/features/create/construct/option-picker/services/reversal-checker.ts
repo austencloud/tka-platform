@@ -8,6 +8,7 @@
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { getEffectiveRotationDirection } from "$lib/shared/pictograph/shared/domain/utils/effective-rotation-direction";
 import type { Motion } from "@tka/tka-types";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 /**
  * Coordinate point in a motion path
@@ -175,7 +176,7 @@ function analyzeSequenceContext(
 ): number {
   let reversalCount = 0;
 
-  (["blue", "red"] as const).forEach((color) => {
+  ([HandSide.LEFT, HandSide.RIGHT] as const).forEach((color) => {
     const currentMotion = option.motions[color];
     const currentRotation = getEffectiveRotationDirection(currentMotion);
 

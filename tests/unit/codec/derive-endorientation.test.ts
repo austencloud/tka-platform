@@ -67,13 +67,13 @@ describe("sequence encoding carries no version sentinel", () => {
     }
     const original = {
       id: "x", name: "", word: "", steps: [
-        { stepNumber: 0, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
-          motions: { blue: staticMotion(GridLocation.NORTH), red: staticMotion(GridLocation.SOUTH) },
+        { stepNumber: 0, duration: 1, leftReversal: false, rightReversal: false, isBlank: false,
+          motions: { left: staticMotion(GridLocation.NORTH), right: staticMotion(GridLocation.SOUTH) },
           id: "s0", letter: null, startPosition: null, endPosition: null },
-        { stepNumber: 1, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
+        { stepNumber: 1, duration: 1, leftReversal: false, rightReversal: false, isBlank: false,
           motions: {
-            blue: motion({ startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, rotationDirection: RotationDirection.CLOCKWISE, turns: 0 }),
-            red:  motion({ startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, rotationDirection: RotationDirection.CLOCKWISE, turns: 0 }),
+            left: motion({ startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, rotationDirection: RotationDirection.CLOCKWISE, turns: 0 }),
+            right:  motion({ startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, rotationDirection: RotationDirection.CLOCKWISE, turns: 0 }),
           },
           id: "s1", letter: null, startPosition: null, endPosition: null },
       ],

@@ -17,7 +17,7 @@
  */
 
 import {
-  MotionColor,
+  HandSide,
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
@@ -173,15 +173,15 @@ export class RotatedSwappedLOOPExecutor {
       endPosition: rotatedEndPosition,
       motions: {
         // SWAP: Blue does what Red did, but with rotated transformation
-        [MotionColor.BLUE]: this._createRotatedSwappedMotion(
-          MotionColor.BLUE,
+        [HandSide.LEFT]: this._createRotatedSwappedMotion(
+          HandSide.LEFT,
           previousStep,
           previousMatchingStep,
           true // isSwapped = true (use opposite color's data)
         ),
         // SWAP: Red does what Blue did, but with rotated transformation
-        [MotionColor.RED]: this._createRotatedSwappedMotion(
-          MotionColor.RED,
+        [HandSide.RIGHT]: this._createRotatedSwappedMotion(
+          HandSide.RIGHT,
           previousStep,
           previousMatchingStep,
           true // isSwapped = true (use opposite color's data)
@@ -281,37 +281,37 @@ export class RotatedSwappedLOOPExecutor {
     // Get hand rotation directions from the matching step (before swap)
     // Blue will use Red's handpath (due to swap)
     // Red will use Blue's handpath (due to swap)
-    const blueHandRotDir = getHandRotationDirection(
-      previousMatchingStep.motions[MotionColor.RED]!
+    const leftHandRotDir = getHandRotationDirection(
+      previousMatchingStep.motions[HandSide.RIGHT]!
         .startLocation as GridLocation,
-      previousMatchingStep.motions[MotionColor.RED]!.endLocation as GridLocation
+      previousMatchingStep.motions[HandSide.RIGHT]!.endLocation as GridLocation
     );
-    const redHandRotDir = getHandRotationDirection(
-      previousMatchingStep.motions[MotionColor.BLUE]!
+    const rightHandRotDir = getHandRotationDirection(
+      previousMatchingStep.motions[HandSide.LEFT]!
         .startLocation as GridLocation,
-      previousMatchingStep.motions[MotionColor.BLUE]!
+      previousMatchingStep.motions[HandSide.LEFT]!
         .endLocation as GridLocation
     );
 
     // Get the location maps for rotation
-    const blueLocationMap = getLocationMapForHandRotation(blueHandRotDir);
-    const redLocationMap = getLocationMapForHandRotation(redHandRotDir);
+    const leftLocationMap = getLocationMapForHandRotation(leftHandRotDir);
+    const rightLocationMap = getLocationMapForHandRotation(rightHandRotDir);
 
     // Rotate the locations from the previous step
-    const newBlueEndLoc =
-      blueLocationMap[
-        previousStep.motions[MotionColor.BLUE]!.endLocation as GridLocation
+    const newLeftEndLoc =
+      leftLocationMap[
+        previousStep.motions[HandSide.LEFT]!.endLocation as GridLocation
       ];
-    const newRedEndLoc =
-      redLocationMap[
-        previousStep.motions[MotionColor.RED]!.endLocation as GridLocation
+    const newRightEndLoc =
+      rightLocationMap[
+        previousStep.motions[HandSide.RIGHT]!.endLocation as GridLocation
       ];
 
     // Derive position from both locations
     const newEndPosition =
       getGridPositionFromLocations(
-        newBlueEndLoc,
-        newRedEndLoc
+        newLeftEndLoc,
+        newRightEndLoc
       );
 
     return newEndPosition;
@@ -322,14 +322,14 @@ export class RotatedSwappedLOOPExecutor {
    * Combines color swapping with location rotation
    */
   private _createRotatedSwappedMotion(
-    color: MotionColor,
+    color: HandSide,
     previousStep: StepData,
     previousMatchingStep: StepData,
     isSwapped: boolean
   ): MotionData {
     // SWAP: Get the opposite color's motion data for the PATTERN
     const oppositeColor =
-      color === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE;
+      color === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
 
     // For CONTINUITY: Always use same color from previous step
     // (Blue continues from where Blue ended, Red continues from where Red ended)

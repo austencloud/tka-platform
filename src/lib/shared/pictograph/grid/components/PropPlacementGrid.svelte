@@ -27,7 +27,7 @@
   import { createPropPlacementState } from "$lib/shared/pictograph/grid/state/prop-placement-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
-    MotionColor,
+    HandSide,
     Orientation,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -37,12 +37,12 @@
 
   interface Props {
     gridMode: GridMode;
-    bluePropType?: PropType;
-    redPropType?: PropType;
-    blueOrientation?: Orientation;
-    redOrientation?: Orientation;
-    initialBlueLocation?: GridLocation | null;
-    initialRedLocation?: GridLocation | null;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
+    leftOrientation?: Orientation;
+    rightOrientation?: Orientation;
+    initialLeftLocation?: GridLocation | null;
+    initialRightLocation?: GridLocation | null;
     betaSwapped?: boolean;
     previewPictographData?: StepData | PictographData | null;
     resetEpoch?: number;
@@ -52,36 +52,30 @@
     hitTargetRadius?: number;
     editAfterCompletion?: boolean;
     disabled?: boolean;
-    blueNoun?: string;
-    redNoun?: string;
+    leftNoun?: string;
+    rightNoun?: string;
     showUndo?: boolean;
     allowUndoAfterComplete?: boolean;
     renderTray?: boolean;
     showGuideLines?: boolean;
     guideLineType?: "alpha" | "beta" | "gamma";
     guideLineLocations?: {
-      blue: GridLocation;
-      red: GridLocation;
+      left: GridLocation;
+      right: GridLocation;
     } | null;
     onChange?: (change: PropPlacementChange) => void;
-    onPlacementComplete?: (
-      blueLocation: GridLocation,
-      redLocation: GridLocation
-    ) => void;
-    onOrientationChange?: (
-      color: MotionColor,
-      orientation: Orientation
-    ) => void;
+    onPlacementComplete?: (leftLocation, rightLocation) => void;
+    onOrientationChange?: (color: HandSide, orientation: Orientation) => void;
   }
 
   let {
     gridMode,
-    bluePropType = PropType.HAND,
-    redPropType = PropType.HAND,
-    blueOrientation = Orientation.IN,
-    redOrientation = Orientation.IN,
-    initialBlueLocation = null,
-    initialRedLocation = null,
+    leftPropType = PropType.HAND,
+    rightPropType = PropType.HAND,
+    leftOrientation = Orientation.IN,
+    rightOrientation = Orientation.IN,
+    initialLeftLocation = null,
+    initialRightLocation = null,
     betaSwapped = false,
     previewPictographData = null,
     resetEpoch = 0,
@@ -90,8 +84,8 @@
     hitTargetRadius = 75,
     editAfterCompletion = false,
     disabled = false,
-    blueNoun = "left prop",
-    redNoun = "right prop",
+    leftNoun = "left prop",
+    rightNoun = "right prop",
     showUndo = true,
     allowUndoAfterComplete = true,
     renderTray = true,
@@ -120,23 +114,23 @@
     {
       getGridMode: () => gridMode,
       getShowCenter: () => showCenter,
-      getInitialBlueLocation: () => initialBlueLocation,
-      getInitialRedLocation: () => initialRedLocation,
+      getInitialLeftLocation: () => initialLeftLocation,
+      getInitialRightLocation: () => initialRightLocation,
       getResetEpoch: () => resetEpoch,
       getDisabled: () => disabled,
       getEditAfterCompletion: () => editAfterCompletion,
       getShowUndo: () => showUndo,
       getAllowUndoAfterComplete: () => allowUndoAfterComplete,
-      getBlueOrientation: () => blueOrientation,
-      getRedOrientation: () => redOrientation,
-      getBlueNoun: () => blueNoun,
-      getRedNoun: () => redNoun,
+      getLeftOrientation: () => leftOrientation,
+      getRightOrientation: () => rightOrientation,
+      getLeftNoun: () => leftNoun,
+      getRightNoun: () => rightNoun,
       getActivePoints: () => activePoints,
     },
     {
       triggerHaptic,
       onChange: (change) => onChange(change),
-      onPlacementComplete: (blue, red) => onPlacementComplete?.(blue, red),
+      onPlacementComplete: (left, right) => onPlacementComplete?.(left, right),
       onOrientationChange: (color, orientation) =>
         onOrientationChange?.(color, orientation),
     }
@@ -149,10 +143,10 @@
       getActivePoints: () => activePoints,
       getCanAim: () => canAim,
       getEditAfterCompletion: () => editAfterCompletion,
-      getBlueOrientation: () => blueOrientation,
-      getRedOrientation: () => redOrientation,
-      getBluePropType: () => bluePropType,
-      getRedPropType: () => redPropType,
+      getLeftOrientation: () => leftOrientation,
+      getRightOrientation: () => rightOrientation,
+      getLeftPropType: () => leftPropType,
+      getRightPropType: () => rightPropType,
       getBetaSwapped: () => betaSwapped,
     },
     {
@@ -165,12 +159,12 @@
   const motion = createPropPlacementMotionState({
     getMove: () => motionMove,
     getGridMode: () => gridMode,
-    getBluePropType: () => bluePropType,
-    getRedPropType: () => redPropType,
-    getBlueOrientation: () => blueOrientation,
-    getRedOrientation: () => redOrientation,
-    getBlueLocation: () => placement.blueLocation,
-    getRedLocation: () => placement.redLocation,
+    getLeftPropType: () => leftPropType,
+    getRightPropType: () => rightPropType,
+    getLeftOrientation: () => leftOrientation,
+    getRightOrientation: () => rightOrientation,
+    getLeftLocation: () => placement.leftLocation,
+    getRightLocation: () => placement.rightLocation,
     getBetaSwapped: () => betaSwapped,
     getPreviewPictographData: () => previewPictographData,
   });
@@ -180,33 +174,33 @@
       disabled,
       isComplete: placement.isComplete,
       canAim,
-      activeColor: placement.activeColor,
-      dragColor: aim.dragColor,
+      activeHand: placement.activeHand,
+      dragHand: aim.dragHand,
       dragAim: aim.dragAim,
-      hoverColor: aim.hoverColor,
-      blueLocation: placement.blueLocation,
-      redLocation: placement.redLocation,
-      blueNoun,
-      redNoun,
+      hoverHand: aim.hoverHand,
+      leftLocation: placement.leftLocation,
+      rightLocation: placement.rightLocation,
+      leftNoun,
+      rightNoun,
     })
   );
 
   const pictographData = $derived.by(() =>
     buildPlacementPictographData({
       gridMode,
-      blueLocation: placement.blueLocation,
-      redLocation: placement.redLocation,
-      blueOrientation: aim.shownBlueOrientation,
-      redOrientation: aim.shownRedOrientation,
-      bluePropType,
-      redPropType,
+      leftLocation: placement.leftLocation,
+      rightLocation: placement.rightLocation,
+      leftOrientation: aim.shownLeftOrientation,
+      rightOrientation: aim.shownRightOrientation,
+      leftPropType,
+      rightPropType,
       betaSwapped,
       previewPictographData,
     })
   );
 
   const pulseColor = $derived(
-    placement.activeColor === MotionColor.RED
+    placement.activeHand === HandSide.RIGHT
       ? "var(--prop-red, #ef4444)"
       : "var(--prop-blue, #3b82f6)"
   );
@@ -238,7 +232,7 @@
     untrack(() => aim.retireCommittedPreview());
   });
 
-  export function moveProp(color: MotionColor) {
+  export function moveProp(color: HandSide) {
     placement.edit(color);
   }
 
@@ -257,7 +251,7 @@
   class:disabled
   class:complete={placement.isComplete}
   class:has-tray={renderTray}
-  class:aiming={aim.dragColor !== null}
+  class:aiming={aim.dragHand !== null}
 >
   {#if prompt.text}
     <p class="prompt-text" data-testid="placement-prompt">
@@ -266,8 +260,8 @@
           {prompt.parts.lead}
           <span
             class="prompt-noun"
-            class:blue={prompt.parts.color === MotionColor.BLUE}
-            class:red={prompt.parts.color === MotionColor.RED}
+            class:blue={prompt.parts.color === HandSide.LEFT}
+            class:red={prompt.parts.color === HandSide.RIGHT}
             >{prompt.parts.noun}</span
           >{#if prompt.parts.aim}:
             <span class="prompt-aim">{prompt.parts.aim}</span>{/if}
@@ -295,8 +289,8 @@
           showPositions={previewPictographData ? undefined : false}
           disableTransitions={true}
           cellIndex={null}
-          bluePropTypeOverride={bluePropType}
-          redPropTypeOverride={redPropType}
+          leftPropTypeOverride={leftPropType}
+          rightPropTypeOverride={rightPropType}
           propRenderContext="editor"
           motionStartData={motion.startData}
           motionProgress={motion.active ? motion.progress : null}
@@ -310,8 +304,8 @@
         {activePoints}
         {hitTargetRadius}
         {pulseColor}
-        {blueNoun}
-        {redNoun}
+        {leftNoun}
+        {rightNoun}
         {showGuideLines}
         {guideLineType}
         {guideCoordinates}
@@ -325,20 +319,20 @@
       {#if placement.isComplete && editAfterCompletion && !disabled}
         <button
           class="edit-button blue"
-          class:active={placement.activeColor === MotionColor.BLUE}
-          onclick={() => placement.edit(MotionColor.BLUE)}
-          aria-pressed={placement.activeColor === MotionColor.BLUE}
-          aria-label={`Move ${blueNoun}`}
+          class:active={placement.activeHand === HandSide.LEFT}
+          onclick={() => placement.edit(HandSide.LEFT)}
+          aria-pressed={placement.activeHand === HandSide.LEFT}
+          aria-label={`Move ${leftNoun}`}
         >
           <span class="label-full" aria-hidden="true">Move left</span>
           <span class="label-short" aria-hidden="true">Left</span>
         </button>
         <button
           class="edit-button red"
-          class:active={placement.activeColor === MotionColor.RED}
-          onclick={() => placement.edit(MotionColor.RED)}
-          aria-pressed={placement.activeColor === MotionColor.RED}
-          aria-label={`Move ${redNoun}`}
+          class:active={placement.activeHand === HandSide.RIGHT}
+          onclick={() => placement.edit(HandSide.RIGHT)}
+          aria-pressed={placement.activeHand === HandSide.RIGHT}
+          aria-label={`Move ${rightNoun}`}
         >
           <span class="label-full" aria-hidden="true">Move right</span>
           <span class="label-short" aria-hidden="true">Right</span>

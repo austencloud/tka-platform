@@ -25,7 +25,7 @@ import { staffAngleToOrientation } from "$lib/shared/render/core/calculations/or
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -62,11 +62,11 @@ function pathShapeFor(type: MotionType): "arc" | "linear" {
 export function calculateOrientationAt(
   m: OrientationAtInput,
   t: number,
-  color: MotionColor = MotionColor.RED
+  hand: HandSide = HandSide.RIGHT
 ): Orientation | null {
   if (isCenterOrientation(m.startOrientation)) return null; // center-family deferred
 
-  const angles = sampleAnglesAt(m, t, color);
+  const angles = sampleAnglesAt(m, t, hand);
   if (!angles) return null;
 
   return staffAngleToOrientation(angles.staffRotationAngle, angles.centerPathAngle);
@@ -87,17 +87,17 @@ export function calculateOrientationAt(
 export function calculateStaffAngleAt(
   m: OrientationAtInput,
   t: number,
-  color: MotionColor = MotionColor.RED
+  hand: HandSide = HandSide.RIGHT
 ): number | null {
   if (isCenterOrientation(m.startOrientation)) return null; // center-family deferred
-  return sampleAnglesAt(m, t, color)?.staffRotationAngle ?? null;
+  return sampleAnglesAt(m, t, hand)?.staffRotationAngle ?? null;
 }
 
 /** Shared engine sampling for the two calculators above. */
 function sampleAnglesAt(
   m: OrientationAtInput,
   t: number,
-  color: MotionColor
+  hand: HandSide
 ): { staffRotationAngle: number; centerPathAngle: number } | null {
   const motion = createMotionData({
     motionType: m.motionType,
@@ -107,7 +107,7 @@ function sampleAnglesAt(
     startOrientation: m.startOrientation,
     endOrientation: m.endOrientation,
     turns: m.turns ?? 0,
-    color,
+    hand,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
     pathShape: pathShapeFor(m.motionType),
@@ -116,9 +116,9 @@ function sampleAnglesAt(
     id: "orientation-at",
     letter: null,
     gridMode: GridMode.DIAMOND,
-    motions: { [color === MotionColor.BLUE ? "blue" : "red"]: motion },
+    motions: { [hand]: motion },
   } as unknown as StepData;
 
   const result = interpolatePropAngles(step, t);
-  return (color === MotionColor.BLUE ? result.blueAngles : result.redAngles) ?? null;
+  return (hand === HandSide.LEFT ? result.leftAngles : result.rightAngles) ?? null;
 }

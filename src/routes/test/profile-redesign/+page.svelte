@@ -104,7 +104,7 @@
         for (const doc of docs) {
           if (!doc.fields) continue;
           const data = decodeFields(doc.fields) as unknown as PublicSequenceIndex;
-          if (!data.blueSoloProp || !data.redSoloProp || !data.stepPairings) continue;
+          if (!data.leftSoloProp || !data.rightSoloProp || !data.stepPairings) continue;
 
           const id = doc.name.split("/").pop() ?? data.word ?? `seq-${built.length}`;
           const seq: SequenceData = {
@@ -121,13 +121,13 @@
             tags: [...(data.tags ?? [])],
             metadata: {},
             ownerId: data.ownerId,
-            blueSoloProp: data.blueSoloProp,
-            redSoloProp: data.redSoloProp,
+            leftSoloProp: data.leftSoloProp,
+            rightSoloProp: data.rightSoloProp,
             stepPairings: data.stepPairings,
-            bluePathHash: data.bluePathHash,
-            redPathHash: data.redPathHash,
-            blueSoloHash: data.blueSoloHash,
-            redSoloHash: data.redSoloHash,
+            leftPathHash: data.leftPathHash,
+            rightPathHash: data.rightPathHash,
+            leftSoloHash: data.leftSoloHash,
+            rightSoloHash: data.rightSoloHash,
           };
 
           const hydrated = hydrate(seq);

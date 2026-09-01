@@ -111,17 +111,17 @@ async function deriveLetterForBeat(
   }
 
   // Skip if motions are missing — nothing to derive from
-  if (!beat.motions.blue || !beat.motions.red) {
+  if (!beat.motions.left || !beat.motions.right) {
     return beat;
   }
 
   try {
     // Derive the correct grid mode from the motions
-    const gridMode = deriveGridMode(beat.motions.blue, beat.motions.red);
+    const gridMode = deriveGridMode(beat.motions.left, beat.motions.right);
 
     const letter = (await motionQueryHandler.findLetterByMotionConfiguration(
-      beat.motions.blue,
-      beat.motions.red,
+      beat.motions.left,
+      beat.motions.right,
       gridMode
     )) as StepData["letter"];
 

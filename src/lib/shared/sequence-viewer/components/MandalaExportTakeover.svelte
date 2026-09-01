@@ -8,8 +8,8 @@
   interface Props {
     ctrl: MandalaViewerController;
     sequence: any;
-    bluePropType?: string;
-    redPropType?: string;
+    leftPropType?: string;
+    rightPropType?: string;
     size: number;
     /**
      * The share sheet is driving this render and shows its own progress. The
@@ -23,8 +23,8 @@
   let {
     ctrl,
     sequence,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     size,
     suppressed = false,
     onCancel,
@@ -58,8 +58,8 @@
         animateRotation={ctrl.rotation}
         pathShape={ctrl.pathShape}
         {size}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         mode="card-back"
         style="stroke"
         show="both"

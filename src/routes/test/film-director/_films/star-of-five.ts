@@ -18,7 +18,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * - The second fan and the second buugeng mirror the first of their pair.
  */
 export const starOfFiveFilm: FilmDirectorInput = {
-  version: 4,
+  version: 5,
   id: "star-of-five-r1",
   title: "Star of Five",
   brief:
@@ -47,8 +47,8 @@ export const starOfFiveFilm: FilmDirectorInput = {
             sequence: { word: "DEFDEF" },
             position: { x: 0, z: -2.6 },
             facingDegrees: 180,
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
           },
           {
             id: "fan-left",
@@ -60,8 +60,8 @@ export const starOfFiveFilm: FilmDirectorInput = {
             sequence: { word: "SAILOR" },
             position: { x: -2.47, z: -0.8 },
             facingDegrees: 180,
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
           },
           {
             id: "fan-right",
@@ -78,8 +78,8 @@ export const starOfFiveFilm: FilmDirectorInput = {
             sequence: { mirrorOf: "fan-left" },
             position: { x: 2.47, z: -0.8 },
             facingDegrees: 180,
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
           },
           {
             id: "buugeng-left",
@@ -91,8 +91,8 @@ export const starOfFiveFilm: FilmDirectorInput = {
             sequence: { word: "ORBITS" },
             position: { x: -1.53, z: 2.1 },
             facingDegrees: 180,
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
           },
           {
             id: "buugeng-right",
@@ -106,8 +106,8 @@ export const starOfFiveFilm: FilmDirectorInput = {
             sequence: { mirrorOf: "buugeng-left" },
             position: { x: 1.53, z: 2.1 },
             facingDegrees: 180,
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
           },
         ],
       },

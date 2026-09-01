@@ -22,7 +22,7 @@ import {
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
-  MotionColor,
+  HandSide,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { Period } from "../domain/models/circular-models";
@@ -110,20 +110,20 @@ export class RewoundLOOPExecutor implements ILOOPExecutor {
       endPosition: sourceStep.startPosition ?? null,
       // Reverse motions
       motions: {
-        [MotionColor.BLUE]: this.createRewoundMotion(
-          MotionColor.BLUE,
-          sourceStep.motions[MotionColor.BLUE],
-          previousStep.motions[MotionColor.BLUE]
+        [HandSide.LEFT]: this.createRewoundMotion(
+          HandSide.LEFT,
+          sourceStep.motions[HandSide.LEFT],
+          previousStep.motions[HandSide.LEFT]
         ),
-        [MotionColor.RED]: this.createRewoundMotion(
-          MotionColor.RED,
-          sourceStep.motions[MotionColor.RED],
-          previousStep.motions[MotionColor.RED]
+        [HandSide.RIGHT]: this.createRewoundMotion(
+          HandSide.RIGHT,
+          sourceStep.motions[HandSide.RIGHT],
+          previousStep.motions[HandSide.RIGHT]
         ),
       },
       // Swap reversals
-      blueReversal: sourceStep.redReversal ?? false,
-      redReversal: sourceStep.blueReversal ?? false,
+      leftReversal: sourceStep.rightReversal ?? false,
+      rightReversal: sourceStep.leftReversal ?? false,
     };
   }
 
@@ -132,7 +132,7 @@ export class RewoundLOOPExecutor implements ILOOPExecutor {
    * Swaps start/end locations and reverses rotation direction
    */
   private createRewoundMotion(
-    color: MotionColor,
+    color: HandSide,
     sourceMotion: MotionData | undefined,
     previousMotion: MotionData | undefined
   ): MotionData {

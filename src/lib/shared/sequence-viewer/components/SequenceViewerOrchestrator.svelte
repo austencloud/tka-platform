@@ -120,8 +120,8 @@
     onCardReady?: () => void;
     /** Fires after both the card and animation surface are ready to paint. */
     onReadyForReveal?: () => void;
-    initialBlueVisible?: boolean;
-    initialRedVisible?: boolean;
+    initialLeftVisible?: boolean;
+    initialRightVisible?: boolean;
     /** Effect to activate on mount (e.g. "trails" for the QR scan landing page).
      *  Defaults to the stored/none config when omitted. */
     initialActiveEffect?: EffectType;
@@ -152,8 +152,8 @@
     deferInteractiveStartup = false,
     onCardReady,
     onReadyForReveal,
-    initialBlueVisible,
-    initialRedVisible,
+    initialLeftVisible,
+    initialRightVisible,
     initialActiveEffect,
     onGatedDownload,
     children,
@@ -189,7 +189,7 @@
     firstUseEnvironment: sceneEnvironmentIdForBackground(
       getSettings().backgroundType
     ),
-    appDefaultProp: getSettings().bluePropType ?? null,
+    appDefaultProp: getSettings().leftPropType ?? null,
   });
   setViewer3DContext(viewer3DState);
 
@@ -410,8 +410,8 @@
       imageComposition: imgComp,
       getSequence: () => sequence,
       getHandPathMode: () => handPathMode,
-      getInitialBlueVisible: () => initialBlueVisible,
-      getInitialRedVisible: () => initialRedVisible,
+      getInitialLeftVisible: () => initialLeftVisible,
+      getInitialRightVisible: () => initialRightVisible,
       getAnimationServicesReady: () => interactive.animationServicesReady,
       getHapticService: () => interactive.hapticService,
       onUrlParamChange,
@@ -420,10 +420,10 @@
       getSettings,
       updateSettings,
       getSequenceMotionVisibility,
-      updateAnimationPropTypes: (bluePropType, redPropType) =>
+      updateAnimationPropTypes: (leftPropType, rightPropType) =>
         getSequenceAnimationOrchestrator().updatePropTypes(
-          bluePropType,
-          redPropType
+          leftPropType,
+          rightPropType
         ),
       setAnimationDarkMode: (darkMode) =>
         getAnimationVisibilityManager().setDarkMode(darkMode),
@@ -460,8 +460,8 @@
   const libraryActions = createLibraryActionHandler({
     getSequence: () => sequence,
     getIsOwned: () => isOwned,
-    getBluePropType: () => getSettings().bluePropType,
-    getRedPropType: () => getSettings().redPropType,
+    getLeftPropType: () => getSettings().leftPropType,
+    getRightPropType: () => getSettings().rightPropType,
     getCatDogModeEnabled: () => getSettings().catDogMode,
     getHapticService: () => interactive.hapticService,
     onDeleteSuccess: () => handleClose(),
@@ -747,8 +747,8 @@
     getCardReady: () => cardReady,
     getResolvedCardAutoLayout: () => resolvedCardAutoLayout,
     getIsHandPath: () => propVisibility.isHandPath,
-    getBluePropType: () => propVisibility.activeBlueProp,
-    getRedPropType: () => propVisibility.activeRedProp,
+    getLeftPropType: () => propVisibility.activeLeftProp,
+    getRightPropType: () => propVisibility.activeRightProp,
     getCatDogModeEnabled: () => propVisibility.activeCatDog,
     getFanAppearance: () => normalizeFanAppearance(getSettings().fanAppearance),
     getIsLoggedIn: () => (forceGuest ? false : authState.isAuthenticated),

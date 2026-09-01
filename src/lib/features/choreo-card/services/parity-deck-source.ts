@@ -29,8 +29,8 @@ export interface ParityDeck {
   deckNumber: number;
   name: string;
   theme: string;
-  bluePropType: PropType;
-  redPropType: PropType;
+  leftPropType: PropType;
+  rightPropType: PropType;
   cards: ParityDeckCard[];
 }
 
@@ -101,8 +101,8 @@ export async function loadParityDeck(
     deckNumber: release.deckNumber,
     name: release.name ?? `Deck ${release.deckNumber}`,
     theme: release.theme,
-    bluePropType: (release.bluePropType ?? "staff") as PropType,
-    redPropType: (release.redPropType ?? "staff") as PropType,
+    leftPropType: (release.leftPropType ?? "staff") as PropType,
+    rightPropType: (release.rightPropType ?? "staff") as PropType,
     cards: out,
   };
 }

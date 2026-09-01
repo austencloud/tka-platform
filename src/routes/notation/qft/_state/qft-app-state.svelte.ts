@@ -31,12 +31,12 @@ export interface QftAppStateDeps {
   saveSession: (session: QftSession) => void;
 }
 
-const DEFAULT_BLUE: QftSessionHand = {
+const DEFAULT_LEFT: QftSessionHand = {
   source: { kind: "flower", index: 6 },
   radius: 1,
 };
 
-const DEFAULT_RED: QftSessionHand = {
+const DEFAULT_RIGHT: QftSessionHand = {
   source: { kind: "flower", index: 7 },
   radius: 1,
 };
@@ -52,8 +52,8 @@ const ONE_HAND_DOCK_TABS = new Set([
   "layers",
 ]);
 const TWO_HAND_DOCK_TABS = new Set([
-  "blue",
-  "red",
+  "left",
+  "right",
   "timing",
   "table",
   "layers",
@@ -86,8 +86,8 @@ export function createQftAppState(deps: QftAppStateDeps) {
 
   let entered = $state(restored?.entered ?? false);
   let handCount = $state<QftHandCount>(restored?.handCount ?? "two");
-  let blue = $state<QftSessionHand>(copyHand(restored?.blue ?? DEFAULT_BLUE));
-  let red = $state<QftSessionHand>(copyHand(restored?.red ?? DEFAULT_RED));
+  let left = $state<QftSessionHand>(copyHand(restored?.left ?? DEFAULT_LEFT));
+  let right = $state<QftSessionHand>(copyHand(restored?.right ?? DEFAULT_RIGHT));
   let originPhase = $state(restored?.originPhase ?? 0);
   let vtgMode = $state<VtgMode>(restored?.vtgMode ?? "SS");
   let layers = $state<QftLayers>({ ...(restored?.layers ?? ALL_LAYERS) });
@@ -112,30 +112,30 @@ export function createQftAppState(deps: QftAppStateDeps) {
   const position = $derived(((cursor % 8) + 8) % 8);
   const step = $derived(Math.floor(position) % 8);
   const hands = $derived(
-    buildActiveHands(handCount, blue, red, vtgMode, originPhase)
+    buildActiveHands(handCount, left, right, vtgMode, originPhase)
   );
-  const blueIncrements = $derived(buildTrajectoryIncrements(hands.blue));
-  const redIncrements = $derived(
-    hands.red ? buildTrajectoryIncrements(hands.red) : null
+  const leftIncrements = $derived(buildTrajectoryIncrements(hands.left));
+  const rightIncrements = $derived(
+    hands.right ? buildTrajectoryIncrements(hands.right) : null
   );
   const allowedOrigins = $derived(
-    validOriginPhases(handCount, blue, red, vtgMode)
+    validOriginPhases(handCount, left, right, vtgMode)
   );
-  const allowedModes = $derived(validVtgModes(blue, red, originPhase));
+  const allowedModes = $derived(validVtgModes(left, right, originPhase));
   const allStageLayersOn = $derived(allLayersOn(layers));
 
   function normalizeConfiguration(): void {
     if (
       activeHandsAreValid(
-        buildActiveHands(handCount, blue, red, vtgMode, originPhase)
+        buildActiveHands(handCount, left, right, vtgMode, originPhase)
       )
     ) {
       return;
     }
 
-    const nextModes = validVtgModes(blue, red, 0);
+    const nextModes = validVtgModes(left, right, 0);
     vtgMode = nextModes.includes(vtgMode) ? vtgMode : (nextModes[0] ?? "TS");
-    originPhase = validOriginPhases(handCount, blue, red, vtgMode)[0] ?? 0;
+    originPhase = validOriginPhases(handCount, left, right, vtgMode)[0] ?? 0;
   }
 
   function setHandCount(next: QftHandCount): void {
@@ -144,33 +144,33 @@ export function createQftAppState(deps: QftAppStateDeps) {
     normalizeConfiguration();
   }
 
-  function selectFlower(tone: "blue" | "red", index: number): void {
-    const current = tone === "blue" ? blue : red;
+  function selectFlower(hand: "left" | "right", index: number): void {
+    const current = hand === "left" ? left : right;
     const next: QftSessionHand = {
       ...current,
       source: { kind: "flower", index },
     };
-    if (tone === "blue") blue = next;
-    else red = next;
+    if (hand === "left") left = next;
+    else right = next;
     normalizeConfiguration();
   }
 
-  function selectPreset(tone: "blue" | "red", id: string): void {
+  function selectPreset(hand: "left" | "right", id: string): void {
     const move = GUIDE_MOVES.find((candidate) => candidate.id === id);
     if (!move) return;
     const next: QftSessionHand = {
       source: { kind: "preset", id },
       radius: move.trajectory.radius,
     };
-    if (tone === "blue") blue = next;
-    else red = next;
+    if (hand === "left") left = next;
+    else right = next;
     normalizeConfiguration();
   }
 
-  function setRadius(tone: "blue" | "red", radius: number): void {
+  function setRadius(hand: "left" | "right", radius: number): void {
     const nextRadius = Math.max(0, Math.min(1.5, radius));
-    if (tone === "blue") blue = { ...blue, radius: nextRadius };
-    else red = { ...red, radius: nextRadius };
+    if (hand === "left") left = { ...left, radius: nextRadius };
+    else right = { ...right, radius: nextRadius };
   }
 
   function setOriginPhase(next: number): void {
@@ -224,8 +224,8 @@ export function createQftAppState(deps: QftAppStateDeps) {
     return {
       entered,
       handCount,
-      blue: copyHand(blue),
-      red: copyHand(red),
+      left: copyHand(left),
+      right: copyHand(right),
       originPhase,
       vtgMode,
       cursor: position,
@@ -265,7 +265,7 @@ export function createQftAppState(deps: QftAppStateDeps) {
   });
 
   $effect(() => {
-    void [entered, handCount, blue, red, originPhase, vtgMode, playing, layers];
+    void [entered, handCount, left, right, originPhase, vtgMode, playing, layers];
     deps.saveSession(untrack(snapshot));
   });
 
@@ -331,35 +331,35 @@ export function createQftAppState(deps: QftAppStateDeps) {
     get handCount() {
       return handCount;
     },
-    get blue() {
-      return blue;
+    get left() {
+      return left;
     },
-    get red() {
-      return red;
+    get right() {
+      return right;
     },
-    get blueTrajectory() {
-      return hands.blue;
+    get leftTrajectory() {
+      return hands.left;
     },
-    get redTrajectory() {
-      return hands.red;
+    get rightTrajectory() {
+      return hands.right;
     },
-    get blueIncrements() {
-      return blueIncrements;
+    get leftIncrements() {
+      return leftIncrements;
     },
-    get redIncrements() {
-      return redIncrements;
+    get rightIncrements() {
+      return rightIncrements;
     },
-    get blueFlowerIndex() {
-      return selectedFlowerIndex(blue);
+    get leftFlowerIndex() {
+      return selectedFlowerIndex(left);
     },
-    get redFlowerIndex() {
-      return selectedFlowerIndex(red);
+    get rightFlowerIndex() {
+      return selectedFlowerIndex(right);
     },
-    get bluePresetId() {
-      return selectedPresetId(blue);
+    get leftPresetId() {
+      return selectedPresetId(left);
     },
-    get redPresetId() {
-      return selectedPresetId(red);
+    get rightPresetId() {
+      return selectedPresetId(right);
     },
     get originPhase() {
       return originPhase;

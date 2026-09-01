@@ -3,10 +3,10 @@ import { shapeKey } from "$lib/shared/mandala/services/mandala-fingerprint";
 import { colorSignature, orbitKey } from "$lib/shared/mandala/services/mandala-fingerprint";
 import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
 
-function paths(blue: string[], red: string[], purple: string[] = []): MandalaPaths {
+function paths(left: string[], right: string[], purple: string[] = []): MandalaPaths {
   return {
-    blue: blue.map((d, i) => ({ d, tipIndex: i })),
-    red: red.map((d, i) => ({ d, tipIndex: i })),
+    left: left.map((d, i) => ({ d, tipIndex: i })),
+    right: right.map((d, i) => ({ d, tipIndex: i })),
     purple: purple.map((d, i) => ({ d, tipIndex: i })),
   };
 }
@@ -61,19 +61,19 @@ describe("shapeKey", () => {
 describe("colorSignature", () => {
   it("flags blue-only", () => {
     const s = colorSignature(paths([ARC], []));
-    expect(s).toMatchObject({ blueOnly: true, redOnly: false });
+    expect(s).toMatchObject({ leftOnly: true, rightOnly: false });
     expect(s.comboPurpleRatio).toBe(0);
   });
   it("flags red-only", () => {
-    expect(colorSignature(paths([], [ARC]))).toMatchObject({ blueOnly: false, redOnly: true });
+    expect(colorSignature(paths([], [ARC]))).toMatchObject({ leftOnly: false, rightOnly: true });
   });
   it("reports full overlap as comboPurpleRatio 1", () => {
     expect(colorSignature(paths([ARC], [ARC])).comboPurpleRatio).toBe(1);
   });
   it("reports zero overlap as comboPurpleRatio 0 but combo true", () => {
     const s = colorSignature(paths([ARC], [LINE]));
-    expect(s.blueOnly).toBe(false);
-    expect(s.redOnly).toBe(false);
+    expect(s.leftOnly).toBe(false);
+    expect(s.rightOnly).toBe(false);
     expect(s.comboPurpleRatio).toBe(0);
   });
 });

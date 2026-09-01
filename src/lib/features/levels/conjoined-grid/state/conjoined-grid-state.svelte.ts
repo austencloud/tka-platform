@@ -66,16 +66,16 @@ export interface ConjoinedGridState {
   readonly isPlaying: boolean;
   readonly playbackSpeed: number;
   readonly manualPlacement: boolean;
-  readonly manualBlueRef: PointRef | null;
-  readonly manualRedRef: PointRef | null;
+  readonly manualLeftRef: PointRef | null;
+  readonly manualRightRef: PointRef | null;
   play(): void;
   pause(): void;
   stepForward(): void;
   stepBack(): void;
   setSpeed(ms: number): void;
   toggleManualPlacement(): void;
-  placeBlue(ref: PointRef): void;
-  placeRed(ref: PointRef): void;
+  placeLeft(ref: PointRef): void;
+  placeRight(ref: PointRef): void;
 
   // Shared derivations
   readonly currentPlacement: PropPlacement | null;
@@ -195,8 +195,8 @@ export function createConjoinedGridState(deps: ConjoinedGridDeps): ConjoinedGrid
   let isPlaying = $state(false);
   let playbackSpeed = $state(500);
   let manualPlacement = $state(false);
-  let manualBlueRef = $state<PointRef | null>(null);
-  let manualRedRef = $state<PointRef | null>(null);
+  let manualLeftRef = $state<PointRef | null>(null);
+  let manualRightRef = $state<PointRef | null>(null);
 
   // All (blue, red) position pair combinations for the current topology
   const allPairs: PositionPair[] = $derived(enumeratePositionPairs(topology));
@@ -227,17 +227,17 @@ export function createConjoinedGridState(deps: ConjoinedGridDeps): ConjoinedGrid
   function toggleManualPlacement(): void {
     manualPlacement = !manualPlacement;
     if (!manualPlacement) {
-      manualBlueRef = null;
-      manualRedRef = null;
+      manualLeftRef = null;
+      manualRightRef = null;
     }
   }
 
-  function placeBlue(ref: PointRef): void {
-    manualBlueRef = ref;
+  function placeLeft(ref: PointRef): void {
+    manualLeftRef = ref;
   }
 
-  function placeRed(ref: PointRef): void {
-    manualRedRef = ref;
+  function placeRight(ref: PointRef): void {
+    manualRightRef = ref;
   }
 
   // Playback timer - advances currentPairIndex while isPlaying is true
@@ -271,13 +271,13 @@ export function createConjoinedGridState(deps: ConjoinedGridDeps): ConjoinedGrid
 
     // Explore mode
     if (manualPlacement) {
-      if (!manualBlueRef || !manualRedRef) return null;
-      return { blue: manualBlueRef, red: manualRedRef };
+      if (!manualLeftRef || !manualRightRef) return null;
+      return { left: manualLeftRef, right: manualRightRef };
     }
 
     const pair = allPairs[currentPairIndex];
     if (!pair) return null;
-    return { blue: pair.blue, red: pair.red };
+    return { left: pair.left, right: pair.right };
   });
 
   // Junction overlaps for the current placement
@@ -342,11 +342,11 @@ export function createConjoinedGridState(deps: ConjoinedGridDeps): ConjoinedGrid
     get manualPlacement() {
       return manualPlacement;
     },
-    get manualBlueRef() {
-      return manualBlueRef;
+    get manualLeftRef() {
+      return manualLeftRef;
     },
-    get manualRedRef() {
-      return manualRedRef;
+    get manualRightRef() {
+      return manualRightRef;
     },
     play,
     pause,
@@ -354,8 +354,8 @@ export function createConjoinedGridState(deps: ConjoinedGridDeps): ConjoinedGrid
     stepBack,
     setSpeed,
     toggleManualPlacement,
-    placeBlue,
-    placeRed,
+    placeLeft,
+    placeRight,
 
     // Shared derivations
     get currentPlacement() {

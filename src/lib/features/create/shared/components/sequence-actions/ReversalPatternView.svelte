@@ -33,7 +33,7 @@
   import { applyReversalMatrix } from "$lib/features/choreo-card/services/reversal-seed-service";
   import { loadDiamondEdges } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
   import { reversalStripStore } from "./reversal-strip-store.svelte";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   interface Props {
@@ -72,8 +72,8 @@
     let left = 0;
     let right = 0;
     for (const s of steps) {
-      const b = s.motions?.[MotionColor.BLUE]?.rotationDirection;
-      const r = s.motions?.[MotionColor.RED]?.rotationDirection;
+      const b = s.motions?.[HandSide.LEFT]?.rotationDirection;
+      const r = s.motions?.[HandSide.RIGHT]?.rotationDirection;
       if (b === "cw" || b === "ccw") left++;
       if (r === "cw" || r === "ccw") right++;
     }
@@ -90,9 +90,9 @@
     const period = strip[0]?.length ?? 0;
     if (!len || !period) return undefined;
 
-    const spins = (color: MotionColor) =>
+    const spins = (hand: HandSide) =>
       steps.map((s) => {
-        const d = s.motions?.[color]?.rotationDirection;
+        const d = s.motions?.[hand]?.rotationDirection;
         return d === "cw" || d === "ccw";
       });
     const cellInert = (beatSpins: boolean[]) =>
@@ -103,8 +103,8 @@
 
     // Lane order matches binding.laneColors: [0] Left=blue, [1] Right=red.
     return [
-      cellInert(spins(MotionColor.BLUE)),
-      cellInert(spins(MotionColor.RED)),
+      cellInert(spins(HandSide.LEFT)),
+      cellInert(spins(HandSide.RIGHT)),
     ];
   });
 
@@ -114,7 +114,7 @@
    *  sentence read "Right reverses on no steps". */
   function seedAlternating(): StripValue[][] {
     const alt = stampPerHand(PER_HAND_RHYTHMS[2]!, initPeriod, true, true, false);
-    return [alt.blue, alt.red];
+    return [alt.left, alt.right];
   }
 
   // Restore the persisted matrix; the store outlives this component's mount so

@@ -4,7 +4,10 @@
  */
 
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
-import { simplifyRepeatedWord, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
+import {
+  simplifyRepeatedWord,
+  compressWord,
+} from "$lib/shared/foundation/utils/word-simplifier";
 import {
   renderHeader,
   type LOOPComponentId,
@@ -20,23 +23,23 @@ const GRID_HALFWAY_POINT_OFFSET = 150;
 
 /**
  * Render the complete animation scene
- * @param bluePropViewBoxDimensions - ViewBox dimensions from the blue prop SVG (default: staff 252.8 x 77.8)
- * @param redPropViewBoxDimensions - ViewBox dimensions from the red prop SVG (default: staff 252.8 x 77.8)
+ * @param leftPropViewBoxDimensions - ViewBox dimensions from the left prop SVG (default: staff 252.8 x 77.8)
+ * @param rightPropViewBoxDimensions - ViewBox dimensions from the right prop SVG (default: staff 252.8 x 77.8)
  */
 export function renderScene(
   ctx: CanvasRenderingContext2D,
   canvasSize: number,
   gridVisible: boolean,
   gridImage: HTMLImageElement | ImageBitmap | null,
-  blueStaffImage: HTMLImageElement | ImageBitmap | null,
-  redStaffImage: HTMLImageElement | ImageBitmap | null,
-  blueProp: PropState | null,
-  redProp: PropState | null,
-  bluePropViewBoxDimensions: { width: number; height: number } = {
+  leftStaffImage: HTMLImageElement | ImageBitmap | null,
+  rightStaffImage: HTMLImageElement | ImageBitmap | null,
+  leftProp: PropState | null,
+  rightProp: PropState | null,
+  leftPropViewBoxDimensions: { width: number; height: number } = {
     width: 252.8,
     height: 77.8,
   },
-  redPropViewBoxDimensions: { width: number; height: number } = {
+  rightPropViewBoxDimensions: { width: number; height: number } = {
     width: 252.8,
     height: 77.8,
   }
@@ -52,23 +55,23 @@ export function renderScene(
   drawGrid(ctx, canvasSize, gridVisible, gridImage);
 
   // Draw props with their viewBox dimensions (only if both image and prop state are available)
-  if (blueStaffImage && blueProp) {
+  if (leftStaffImage && leftProp) {
     drawStaff(
       ctx,
       canvasSize,
-      blueProp,
-      blueStaffImage,
-      bluePropViewBoxDimensions
+      leftProp,
+      leftStaffImage,
+      leftPropViewBoxDimensions
     );
   }
 
-  if (redStaffImage && redProp) {
+  if (rightStaffImage && rightProp) {
     drawStaff(
       ctx,
       canvasSize,
-      redProp,
-      redStaffImage,
-      redPropViewBoxDimensions
+      rightProp,
+      rightStaffImage,
+      rightPropViewBoxDimensions
     );
   }
 }
@@ -84,13 +87,7 @@ export function renderLetterToCanvas(
   letterViewBoxDimensions: { width: number; height: number },
   opacity: number = 1
 ): void {
-  drawLetter(
-    ctx,
-    canvasSize,
-    letterImage,
-    letterViewBoxDimensions,
-    opacity
-  );
+  drawLetter(ctx, canvasSize, letterImage, letterViewBoxDimensions, opacity);
 }
 
 /**
@@ -226,14 +223,10 @@ function drawStaff(
     // Regular motion: calculate from angle using polar coordinates
     x =
       centerX +
-      Math.cos(propState.centerPathAngle) *
-        scaledHalfwayRadius *
-        inwardFactor;
+      Math.cos(propState.centerPathAngle) * scaledHalfwayRadius * inwardFactor;
     y =
       centerY +
-      Math.sin(propState.centerPathAngle) *
-        scaledHalfwayRadius *
-        inwardFactor;
+      Math.sin(propState.centerPathAngle) * scaledHalfwayRadius * inwardFactor;
   }
 
   // Scale the prop dimensions from viewBox coordinate space to canvas pixels
@@ -363,7 +356,9 @@ function drawWordHeader(
   let letterStyles: Array<{ letter: string; dimmed: boolean }> | undefined;
   const letterUnits = parseLetterUnits(displayText);
   const hasHighlighting =
-    activeStepNumber !== null && activeStepNumber >= 1 && letterUnits.length > 0;
+    activeStepNumber !== null &&
+    activeStepNumber >= 1 &&
+    letterUnits.length > 0;
   if (hasHighlighting) {
     const activeIndex = (activeStepNumber! - 1) % letterUnits.length;
     letterStyles = [];
@@ -496,8 +491,7 @@ function drawProgressBar(
     completedDuration += stepDurations[i] ?? 1;
   }
   if (stepIndex < totalSteps) {
-    completedDuration +=
-      (stepDurations[stepIndex] ?? 1) * progressWithinStep;
+    completedDuration += (stepDurations[stepIndex] ?? 1) * progressWithinStep;
   }
 
   const progressPercent = Math.max(

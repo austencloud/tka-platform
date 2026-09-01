@@ -9,8 +9,8 @@ export interface ChoreoCardQrDeps {
   readonly showQRCode: boolean;
   readonly darkMode: boolean;
   readonly isAuthenticated: boolean;
-  readonly bluePropType: PropType | undefined;
-  readonly redPropType: PropType | undefined;
+  readonly leftPropType: PropType | undefined;
+  readonly rightPropType: PropType | undefined;
   readonly browseViewMode: BrowseViewMode | undefined;
 }
 
@@ -38,9 +38,9 @@ export function createChoreoCardQrState(
     if (!deps.showQRCode) return "";
     const sequenceId = deps.sequence.id ?? deps.sequence.word ?? "unknown";
     const authTag = deps.isAuthenticated ? "a" : "g";
-    const blueProp = deps.bluePropType ?? "default";
-    const redProp = deps.redPropType ?? "default";
-    return `${sequenceId}:${deps.darkMode}:${authTag}:${blueProp}:${redProp}${encodedViewMode ? `:${encodedViewMode}` : ""}`;
+    const leftProp = deps.leftPropType ?? "default";
+    const rightProp = deps.rightPropType ?? "default";
+    return `${sequenceId}:${deps.darkMode}:${authTag}:${leftProp}:${rightProp}${encodedViewMode ? `:${encodedViewMode}` : ""}`;
   });
 
   $effect(() => {
@@ -84,8 +84,8 @@ export function createChoreoCardQrState(
         margin: 1,
         style: "modern",
         darkMode: deps.darkMode,
-        bluePropType: deps.bluePropType ? String(deps.bluePropType) : undefined,
-        redPropType: deps.redPropType ? String(deps.redPropType) : undefined,
+        leftPropType: deps.leftPropType ? String(deps.leftPropType) : undefined,
+        rightPropType: deps.rightPropType ? String(deps.rightPropType) : undefined,
         viewMode: encodedViewMode,
       })
       .then((result) => {

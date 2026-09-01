@@ -24,7 +24,7 @@ import {
   type SequenceData,
 } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
@@ -33,8 +33,8 @@ type TestMotionStyle = "pro" | "anti";
 
 const seq = (
   word: string,
-  blue: TestMotionStyle,
-  red: TestMotionStyle
+  left: TestMotionStyle,
+  right: TestMotionStyle
 ): SequenceData =>
   createSequenceData({
     id: `l1-tnd-${word}`,
@@ -43,13 +43,13 @@ const seq = (
     steps: [
       createStepData({
         motions: {
-          blue: createMotionData({
-            color: MotionColor.BLUE,
-            motionType: blue === "pro" ? MotionType.PRO : MotionType.ANTI,
+          left: createMotionData({
+            hand: HandSide.LEFT,
+            motionType: left === "pro" ? MotionType.PRO : MotionType.ANTI,
           }),
-          red: createMotionData({
-            color: MotionColor.RED,
-            motionType: red === "pro" ? MotionType.PRO : MotionType.ANTI,
+          right: createMotionData({
+            hand: HandSide.RIGHT,
+            motionType: right === "pro" ? MotionType.PRO : MotionType.ANTI,
           }),
         },
       }),
@@ -94,16 +94,16 @@ describe("buildBaseIndex / resolveBase", () => {
     // The color-swapped twin keeps blue on blue's style.
     const r = resolveBase(idx, "TO", "pro", "anti");
     expect(r?.word).toBe("FLFL");
-    expect(r?.steps?.[0]?.motions?.blue?.motionType).toBe("pro");
-    expect(r?.steps?.[0]?.motions?.red?.motionType).toBe("anti");
+    expect(r?.steps?.[0]?.motions?.left?.motionType).toBe("pro");
+    expect(r?.steps?.[0]?.motions?.right?.motionType).toBe("anti");
   });
 
   it("resolves an anti×pro cell whose mode seeds only the pro×anti order", () => {
     const idx = buildBaseIndex(bases);
     const r = resolveBase(idx, "SS", "anti", "pro");
     expect(r?.word).toBe("CCCC");
-    expect(r?.steps?.[0]?.motions?.blue?.motionType).toBe("anti");
-    expect(r?.steps?.[0]?.motions?.red?.motionType).toBe("pro");
+    expect(r?.steps?.[0]?.motions?.left?.motionType).toBe("anti");
+    expect(r?.steps?.[0]?.motions?.right?.motionType).toBe("pro");
   });
 
   it("prefers a seeded word over a synthesized swap when both orders exist", () => {
@@ -113,9 +113,9 @@ describe("buildBaseIndex / resolveBase", () => {
     const proAnti = resolveBase(idx, "QS", "pro", "anti");
     const antiPro = resolveBase(idx, "QS", "anti", "pro");
     expect(proAnti?.word).toBe("UUUU");
-    expect(proAnti?.steps?.[0]?.motions?.blue?.motionType).toBe("pro");
+    expect(proAnti?.steps?.[0]?.motions?.left?.motionType).toBe("pro");
     expect(antiPro?.word).toBe("VVVV");
-    expect(antiPro?.steps?.[0]?.motions?.blue?.motionType).toBe("anti");
+    expect(antiPro?.steps?.[0]?.motions?.left?.motionType).toBe("anti");
   });
 
   it("returns null when a mode has no base word at all", () => {

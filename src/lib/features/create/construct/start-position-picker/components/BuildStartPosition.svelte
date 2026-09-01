@@ -12,7 +12,7 @@
   import { normalizeOrientationForLocation } from "$lib/shared/pictograph/grid/domain/orientation-from-drag";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
-    MotionColor,
+    HandSide,
     type Orientation,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -22,29 +22,31 @@
 
   let {
     gridMode,
-    bluePropType,
-    redPropType,
-    blueOrientation,
-    redOrientation,
-    initialBlueLocation = null,
-    initialRedLocation = null,
+    leftPropType,
+    rightPropType,
+    leftOrientation,
+    rightOrientation,
+    initialLeftLocation = null,
+    initialRightLocation = null,
     showCenter = false,
-    onBlueOrientationChange,
-    onRedOrientationChange,
+    onLeftOrientationChange,
+    onRightOrientationChange,
     onGridModeChange,
     onApply,
     onApplyPlacement,
   } = $props<{
     gridMode: GridMode;
-    bluePropType: PropType;
-    redPropType: PropType;
-    blueOrientation: Orientation;
-    redOrientation: Orientation;
-    initialBlueLocation?: GridLocation | null;
-    initialRedLocation?: GridLocation | null;
+    leftPropType: PropType;
+    rightPropType: PropType;
+    leftOrientation: Orientation;
+    rightOrientation: Orientation;
+    initialLeftLocation?: GridLocation | null;
+    initialRightLocation?: GridLocation | null;
     showCenter?: boolean;
-    onBlueOrientationChange: (orientation: Orientation) => void | Promise<void>;
-    onRedOrientationChange: (orientation: Orientation) => void | Promise<void>;
+    onLeftOrientationChange: (orientation: Orientation) => void | Promise<void>;
+    onRightOrientationChange: (
+      orientation: Orientation
+    ) => void | Promise<void>;
     onGridModeChange?: (gridMode: GridMode) => void | Promise<void>;
     onApply?: (position: PictographData) => void | Promise<void>;
     onApplyPlacement?: (
@@ -52,10 +54,10 @@
     ) => void | Promise<void>;
   }>();
 
-  let blueLocation = $state<GridLocation | null>(initialBlueLocation);
-  let redLocation = $state<GridLocation | null>(initialRedLocation);
+  let leftLocation = $state<GridLocation | null>(initialLeftLocation);
+  let rightLocation = $state<GridLocation | null>(initialRightLocation);
   let isApplying = $state(false);
-  let activeColor = $state<MotionColor | null>(null);
+  let activeHand = $state<HandSide | null>(null);
   let canUndo = $state(false);
   let grid = $state<ReturnType<typeof PropPlacementGrid> | null>(null);
 
@@ -71,22 +73,22 @@
   );
 
   const builtPlacement = $derived.by((): StartPositionPlacement | null => {
-    if (!blueLocation || !redLocation) return null;
+    if (!leftLocation || !rightLocation) return null;
 
     return {
-      blueLocation,
-      redLocation,
+      leftLocation,
+      rightLocation,
       gridMode,
-      blueOrientation: normalizeOrientationForLocation(
-        blueOrientation,
-        blueLocation
+      leftOrientation: normalizeOrientationForLocation(
+        leftOrientation,
+        leftLocation
       ),
-      redOrientation: normalizeOrientationForLocation(
-        redOrientation,
-        redLocation
+      rightOrientation: normalizeOrientationForLocation(
+        rightOrientation,
+        rightLocation
       ),
-      bluePropType,
-      redPropType,
+      leftPropType,
+      rightPropType,
       id: "start-built-position",
     };
   });
@@ -96,8 +98,8 @@
     // Center placements do not have a canonical TKA position name. Assemble
     // accepts the two poses directly, while Construct still requires one.
     if (
-      builtPlacement.blueLocation === GridLocation.CENTER ||
-      builtPlacement.redLocation === GridLocation.CENTER
+      builtPlacement.leftLocation === GridLocation.CENTER ||
+      builtPlacement.rightLocation === GridLocation.CENTER
     ) {
       return null;
     }
@@ -128,22 +130,19 @@
   );
 
   function handlePlacementChange(change: PropPlacementChange) {
-    blueLocation = change.blueLocation;
-    redLocation = change.redLocation;
-    activeColor = change.activeColor;
+    leftLocation = change.leftLocation;
+    rightLocation = change.rightLocation;
+    activeHand = change.activeHand;
     canUndo = change.canUndo;
   }
 
   /** A drag on the grid commits through the same per-hand handlers the cyclers
    *  use, so the cyclers stay in step with whatever the drag just aimed. */
-  function handleOrientationChange(
-    color: MotionColor,
-    orientation: Orientation
-  ) {
-    if (color === MotionColor.BLUE) {
-      void onBlueOrientationChange(orientation);
+  function handleOrientationChange(color: HandSide, orientation: Orientation) {
+    if (color === HandSide.LEFT) {
+      void onLeftOrientationChange(orientation);
     } else {
-      void onRedOrientationChange(orientation);
+      void onRightOrientationChange(orientation);
     }
   }
 
@@ -177,12 +176,12 @@
       <PropPlacementGrid
         bind:this={grid}
         {gridMode}
-        {bluePropType}
-        {redPropType}
-        {blueOrientation}
-        {redOrientation}
-        {initialBlueLocation}
-        {initialRedLocation}
+        {leftPropType}
+        {rightPropType}
+        {leftOrientation}
+        {rightOrientation}
+        {initialLeftLocation}
+        {initialRightLocation}
         {showCenter}
         editAfterCompletion
         renderTray={!isRowLayout}
@@ -201,10 +200,10 @@
           {#if builtPlacement}
             <button
               class="move-button blue"
-              class:active={activeColor === MotionColor.BLUE}
-              aria-pressed={activeColor === MotionColor.BLUE}
+              class:active={activeHand === HandSide.LEFT}
+              aria-pressed={activeHand === HandSide.LEFT}
               aria-label="Move left prop"
-              onclick={() => grid?.moveProp(MotionColor.BLUE)}
+              onclick={() => grid?.moveProp(HandSide.LEFT)}
             >
               <!-- Two labels, one accessible name — same mechanism the grid's own
                  tray uses. This column can be as narrow as 13rem, which is not
@@ -214,10 +213,10 @@
             </button>
             <button
               class="move-button red"
-              class:active={activeColor === MotionColor.RED}
-              aria-pressed={activeColor === MotionColor.RED}
+              class:active={activeHand === HandSide.RIGHT}
+              aria-pressed={activeHand === HandSide.RIGHT}
               aria-label="Move right prop"
-              onclick={() => grid?.moveProp(MotionColor.RED)}
+              onclick={() => grid?.moveProp(HandSide.RIGHT)}
             >
               <span class="label-full" aria-hidden="true">Move right</span>
               <span class="label-short" aria-hidden="true">Right</span>
@@ -243,16 +242,16 @@
         aria-label="Prop orientations: left is blue, right is red"
       >
         <OrientationCycler
-          orientation={blueOrientation}
-          onOrientationChange={onBlueOrientationChange}
+          orientation={leftOrientation}
+          onOrientationChange={onLeftOrientationChange}
           color="blue"
-          centered={blueLocation === GridLocation.CENTER}
+          centered={leftLocation === GridLocation.CENTER}
         />
         <OrientationCycler
-          orientation={redOrientation}
-          onOrientationChange={onRedOrientationChange}
+          orientation={rightOrientation}
+          onOrientationChange={onRightOrientationChange}
           color="red"
-          centered={redLocation === GridLocation.CENTER}
+          centered={rightLocation === GridLocation.CENTER}
         />
       </div>
 

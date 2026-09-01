@@ -49,8 +49,8 @@ export interface GuideCodexPrefs {
   version: number;
   propType: PropType;
   visibility: GuideCodexVisibility;
-  blueTurns: GuideCodexTurns;
-  redTurns: GuideCodexTurns;
+  leftTurns: GuideCodexTurns;
+  rightTurns: GuideCodexTurns;
 }
 
 /** Matches the printed sheet's hardcoded defaults exactly (grid + TKA glyph
@@ -73,8 +73,8 @@ export function defaultGuideCodexPrefs(): GuideCodexPrefs {
     version: GUIDE_CODEX_PREFS_VERSION,
     propType: PropType.STAFF,
     visibility: defaultGuideCodexVisibility(),
-    blueTurns: 0,
-    redTurns: 0,
+    leftTurns: 0,
+    rightTurns: 0,
   };
 }
 
@@ -108,7 +108,7 @@ export function restoreGuideCodexPrefs(raw: string | null): GuideCodexPrefs {
     version: GUIDE_CODEX_PREFS_VERSION,
     propType,
     visibility: { ...d.visibility, ...(p.visibility ?? {}) },
-    blueTurns: normalizeGuideCodexTurns(p.blueTurns),
-    redTurns: normalizeGuideCodexTurns(p.redTurns),
+    leftTurns: normalizeGuideCodexTurns(p.leftTurns),
+    rightTurns: normalizeGuideCodexTurns(p.rightTurns),
   };
 }

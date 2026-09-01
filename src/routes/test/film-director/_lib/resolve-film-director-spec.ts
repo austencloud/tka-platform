@@ -76,6 +76,26 @@ function createCharacterAxisStream(
   return createAxisStream(legacySeed, sceneId, "avatarId");
 }
 
+function createHandPlaneAxisStream(
+  seed: FilmSeed,
+  sceneId: string,
+  hand: "left" | "right"
+): () => number {
+  // Plane picks are persisted choreography. Keep the historical color-named
+  // hash namespace so a vocabulary migration cannot reshuffle an existing
+  // film, while canonical left/right salts remain the public reroll controls.
+  const canonicalAxis = `${hand}Plane`;
+  const legacyAxis = hand === "left" ? "bluePlane" : "redPlane";
+  const legacySeed: FilmSeed = {
+    ...seed,
+    axes: {
+      ...seed.axes,
+      [legacyAxis]: seed.axes[canonicalAxis] ?? seed.axes[legacyAxis] ?? 0,
+    },
+  };
+  return createAxisStream(legacySeed, sceneId, legacyAxis);
+}
+
 // Axis catalogs, built once at module scope. `effect` and `characterId` stay
 // loosely typed as `string` here (see the per-axis comments in resolveScene)
 // because their schema fields are un-narrowed `z.string()` refinements —
@@ -110,8 +130,8 @@ interface ResolvedPerformerFields {
   blocking?: DirectorBlockingMove[];
   beatOffset?: number;
   staffLengthCm: number | null;
-  bluePlane: Plane;
-  redPlane: Plane;
+  leftPlane: Plane;
+  rightPlane: Plane;
   stepPlanes: ResolvedDirectorStepPlane[];
 }
 
@@ -225,7 +245,7 @@ function resolveSceneDirective<T extends string>(
 function resolveStepPlanesForPerformer(
   entries: readonly {
     step: number;
-    hand: "blue" | "red";
+    hand: "left" | "right";
     plane: DirectiveValue<Plane>;
   }[],
   performerId: string,
@@ -248,7 +268,7 @@ function resolveStepPlanesForPerformer(
       PLANE_CATALOG,
       // NUL-separated like createAxisStream's own key: authored ids may
       // contain spaces, so a space-joined key would be ambiguous.
-      `${sceneId}\u0000${performerId}\u0000${entry.step}\u0000${entry.hand}`
+      `${sceneId}\u0000${performerId}\u0000${entry.step}\u0000${entry.hand === "left" ? "blue" : "red"}`
     ),
   }));
 }
@@ -468,8 +488,8 @@ function buildResolvedPerformers(
       }),
       beatOffset: input.beatOffset ?? 0,
       staffLengthCm: input.staffLengthCm,
-      bluePlane: input.bluePlane,
-      redPlane: input.redPlane,
+      leftPlane: input.leftPlane,
+      rightPlane: input.rightPlane,
       stepPlanes: input.stepPlanes,
     };
   });
@@ -489,7 +509,10 @@ function resolveScene(
   // the director never typed.
   const bpmStated = rawScene.performance?.bpm !== undefined;
   const bpm = rawScene.performance?.bpm ?? 90;
-  const scene = convertSceneBeatTimes(rawScene, { value: bpm, stated: bpmStated });
+  const scene = convertSceneBeatTimes(rawScene, {
+    value: bpm,
+    stated: bpmStated,
+  });
   const durationSeconds = scene.durationSeconds ?? 8;
   const cast = scene.performance?.cast;
 
@@ -531,7 +554,9 @@ function resolveScene(
   for (const value of characterIdValues) {
     if (isDirectiveExpression(value)) continue;
     if (!CHARACTER_DEFINITIONS.some((character) => character.id === value)) {
-      throw new Error(`Character "${value}" is not in the deployed 3D catalog.`);
+      throw new Error(
+        `Character "${value}" is not in the deployed 3D catalog.`
+      );
     }
   }
   const resolvedCharacterIds = resolveCastAxis<string>({
@@ -607,27 +632,27 @@ function resolveScene(
     });
   }
 
-  const bluePlaneValues: DirectiveValue<Plane>[] = rawInputs.map(
-    (input) => input.bluePlane ?? cast?.defaults?.bluePlane ?? Plane.WALL
+  const leftPlaneValues: DirectiveValue<Plane>[] = rawInputs.map(
+    (input) => input.leftPlane ?? cast?.defaults?.leftPlane ?? Plane.WALL
   );
-  const redPlaneValues: DirectiveValue<Plane>[] = rawInputs.map(
-    (input) => input.redPlane ?? cast?.defaults?.redPlane ?? Plane.WALL
+  const rightPlaneValues: DirectiveValue<Plane>[] = rawInputs.map(
+    (input) => input.rightPlane ?? cast?.defaults?.rightPlane ?? Plane.WALL
   );
-  const resolvedBluePlanes = resolveCastAxis<Plane>({
-    axis: "bluePlane",
+  const resolvedLeftPlanes = resolveCastAxis<Plane>({
+    axis: "leftPlane",
     sceneId: scene.id,
     performerIds,
-    values: bluePlaneValues,
+    values: leftPlaneValues,
     catalog: PLANE_CATALOG,
-    random: createAxisStream(filmSeed, scene.id, "bluePlane"),
+    random: createHandPlaneAxisStream(filmSeed, scene.id, "left"),
   });
-  const resolvedRedPlanes = resolveCastAxis<Plane>({
-    axis: "redPlane",
+  const resolvedRightPlanes = resolveCastAxis<Plane>({
+    axis: "rightPlane",
     sceneId: scene.id,
     performerIds,
-    values: redPlaneValues,
+    values: rightPlaneValues,
     catalog: PLANE_CATALOG,
-    random: createAxisStream(filmSeed, scene.id, "redPlane"),
+    random: createHandPlaneAxisStream(filmSeed, scene.id, "right"),
   });
 
   // A performer's own stepPlanes list REPLACES cast defaults entirely — it
@@ -693,8 +718,8 @@ function resolveScene(
       blocking: input.blocking ?? cast?.defaults?.blocking,
       beatOffset: input.beatOffset,
       staffLengthCm: resolvedStaffLengths[index]!,
-      bluePlane: resolvedBluePlanes[index]!,
-      redPlane: resolvedRedPlanes[index]!,
+      leftPlane: resolvedLeftPlanes[index]!,
+      rightPlane: resolvedRightPlanes[index]!,
       stepPlanes: resolvedStepPlanes[index]!,
     })
   );
@@ -702,8 +727,7 @@ function resolveScene(
   const environmentId = resolveSceneDirective<SceneEnvironmentId>(
     scene.location?.environmentId,
     "environmentId",
-    () =>
-      contextualEnvironmentFromEffects(resolvedFields.map((f) => f.effect)),
+    () => contextualEnvironmentFromEffects(resolvedFields.map((f) => f.effect)),
     scene.id,
     filmSeed,
     ENVIRONMENT_CATALOG
@@ -784,7 +808,13 @@ function resolveScene(
       durationSeconds:
         scene.transition?.durationSeconds ?? (sceneIndex === 0 ? 0 : 0.8),
     },
-    location: { environmentId, showStage, showAudience, sceneFeatures, visiblePlanes },
+    location: {
+      environmentId,
+      showStage,
+      showAudience,
+      sceneFeatures,
+      visiblePlanes,
+    },
     performance: {
       bpm,
       sequence: {
@@ -832,7 +862,13 @@ export function resolveFilmDirectorSpec(
     if (seenSceneIds.has(scene.id))
       throw new Error(`Scene id "${scene.id}" is duplicated.`);
     seenSceneIds.add(scene.id);
-    const resolved = resolveScene(scene, index, cursorSeconds, aspectRatio, filmSeed);
+    const resolved = resolveScene(
+      scene,
+      index,
+      cursorSeconds,
+      aspectRatio,
+      filmSeed
+    );
     cursorSeconds += resolved.durationSeconds;
     return resolved;
   });

@@ -6,7 +6,7 @@ import type {
 import { pointsToSVGPath } from "./mandala-geometry-calculator";
 import { parsePoints } from "./mandala-fingerprint";
 
-const PATH_GROUPS = ["blue", "red", "purple"] as const;
+const PATH_GROUPS = ["left", "right", "purple"] as const;
 
 function interpolatePoint(
   from: MandalaPoint,
@@ -118,8 +118,8 @@ export function interpolateMandalaPaths(
   if (t >= 1) return to;
 
   return {
-    blue: interpolatePathGroup(from.blue, to.blue, t),
-    red: interpolatePathGroup(from.red, to.red, t),
+    left: interpolatePathGroup(from.left, to.left, t),
+    right: interpolatePathGroup(from.right, to.right, t),
     purple: interpolatePathGroup(from.purple, to.purple, t),
   };
 }

@@ -2,8 +2,9 @@ import {
   getSettings,
   updateSettings,
 } from "$lib/shared/application/state/app-state.svelte";
+import type { HandSide } from "@tka/tka-types";
 
-export type ChiralityHand = "blue" | "red";
+export type ChiralityHand = HandSide;
 
 export interface PropChiralityHandState {
   readonly hand: ChiralityHand;
@@ -12,7 +13,7 @@ export interface PropChiralityHandState {
 
 export interface PropChiralitySeam {
   /**
-   * The hands this picker governs, blue first. A picker that chooses one
+   * The hands this picker governs, left first. A picker that chooses one
    * hand's prop carries one entry; a picker that sets both hands at once
    * carries both, because chirality is never shared the way prop type is.
    */
@@ -43,20 +44,20 @@ export function createGlobalChiralitySeam(
     get flipped() {
       const settings = getSettings();
       return (
-        (which === "red"
-          ? settings.redBuugengFlipped
-          : settings.blueBuugengFlipped) ?? false
+        (which === "right"
+          ? settings.rightBuugengFlipped
+          : settings.leftBuugengFlipped) ?? false
       );
     },
   });
 
   return {
-    hands: hand ? [handState(hand)] : [handState("blue"), handState("red")],
+    hands: hand ? [handState(hand)] : [handState("left"), handState("right")],
     onChange(which: ChiralityHand, flipped: boolean) {
       updateSettings(
-        which === "red"
-          ? { redBuugengFlipped: flipped }
-          : { blueBuugengFlipped: flipped }
+        which === "right"
+          ? { rightBuugengFlipped: flipped }
+          : { leftBuugengFlipped: flipped }
       );
     },
   };

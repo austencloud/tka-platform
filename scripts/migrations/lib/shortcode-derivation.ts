@@ -102,34 +102,34 @@ function effectiveRotation(m: Motion): string {
  *    underivable and quarantine. */
 function matchIn(
   edges: CsvEdge[],
-  blue: Motion,
-  red: Motion,
+  left: Motion,
+  right: Motion,
   floatAlternatives: boolean
 ): string | null {
-  const blueFloat = lc(blue.motionType) === "float" && !blue.prefloatMotionType;
-  const redFloat = lc(red.motionType) === "float" && !red.prefloatMotionType;
-  if ((blueFloat || redFloat) && !floatAlternatives) return null;
-  const blueTypes =
-    blueFloat && searchType(blue) === "pro" ? ["pro", "anti"] : [searchType(blue)];
-  const redTypes =
-    redFloat && searchType(red) === "pro" ? ["pro", "anti"] : [searchType(red)];
-  const blueRot = effectiveRotation(blue);
-  const redRot = effectiveRotation(red);
+  const leftFloat = lc(left.motionType) === "float" && !left.prefloatMotionType;
+  const rightFloat = lc(right.motionType) === "float" && !right.prefloatMotionType;
+  if ((leftFloat || rightFloat) && !floatAlternatives) return null;
+  const leftTypes =
+    leftFloat && searchType(left) === "pro" ? ["pro", "anti"] : [searchType(left)];
+  const rightTypes =
+    rightFloat && searchType(right) === "pro" ? ["pro", "anti"] : [searchType(right)];
+  const leftRot = effectiveRotation(left);
+  const rightRot = effectiveRotation(right);
 
-  for (const bt of blueTypes) {
-    for (const rt of redTypes) {
-      const bIgnore = bt === "static" || bt === "dash" || blueFloat;
-      const rIgnore = rt === "static" || rt === "dash" || redFloat;
+  for (const bt of leftTypes) {
+    for (const rt of rightTypes) {
+      const bIgnore = bt === "static" || bt === "dash" || leftFloat;
+      const rIgnore = rt === "static" || rt === "dash" || rightFloat;
       for (const e of edges) {
         if (
-          lc(e.blueMotionType) === bt &&
-          lc(e.blueStartLocation) === lc(blue.startLocation) &&
-          lc(e.blueEndLocation) === lc(blue.endLocation) &&
-          (bIgnore || lc(e.blueRotationDirection) === blueRot) &&
-          lc(e.redMotionType) === rt &&
-          lc(e.redStartLocation) === lc(red.startLocation) &&
-          lc(e.redEndLocation) === lc(red.endLocation) &&
-          (rIgnore || lc(e.redRotationDirection) === redRot)
+          lc(e.leftMotionType) === bt &&
+          lc(e.leftStartLocation) === lc(left.startLocation) &&
+          lc(e.leftEndLocation) === lc(left.endLocation) &&
+          (bIgnore || lc(e.leftRotationDirection) === leftRot) &&
+          lc(e.rightMotionType) === rt &&
+          lc(e.rightStartLocation) === lc(right.startLocation) &&
+          lc(e.rightEndLocation) === lc(right.endLocation) &&
+          (rIgnore || lc(e.rightRotationDirection) === rightRot)
         ) {
           return e.letter || null;
         }
@@ -144,15 +144,15 @@ export function letterForBeat(
   options?: { floatAlternatives?: boolean }
 ): string | null {
   if (typeof step.letter === "string" && step.letter) return step.letter;
-  const motions = step.motions as { blue?: Motion; red?: Motion } | undefined;
-  const blue = motions?.blue;
-  const red = motions?.red;
-  if (!blue || !red) return null;
+  const motions = step.motions as { left?: Motion; right?: Motion } | undefined;
+  const left = motions?.left;
+  const right = motions?.right;
+  if (!left || !right) return null;
   const floatAlternatives = options?.floatAlternatives ?? false;
   return (
-    matchIn(DIAMOND_EDGES, blue, red, floatAlternatives) ??
-    matchIn(BOX_EDGES, blue, red, floatAlternatives) ??
-    matchIn(SKEWED_EDGES, blue, red, floatAlternatives)
+    matchIn(DIAMOND_EDGES, left, right, floatAlternatives) ??
+    matchIn(BOX_EDGES, left, right, floatAlternatives) ??
+    matchIn(SKEWED_EDGES, left, right, floatAlternatives)
   );
 }
 

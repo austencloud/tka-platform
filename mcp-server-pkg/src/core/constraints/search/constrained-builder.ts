@@ -208,7 +208,10 @@ export function buildConstrainedSequence(
 
     if (startPictograph) {
       // Create initial state with start position + first letter
-      const initialState = createInitialState(startPictograph.variation, startPictograph.index);
+      const initialState = createInitialState(
+        startPictograph.variation,
+        startPictograph.index
+      );
       const state = extendState(initialState, scored.variation, scored);
       beam.push(state);
       statesBrowsed++;
@@ -245,7 +248,8 @@ export function buildConstrainedSequence(
     for (const state of beam) {
       // Find variations that match the current end position
       let validVariations = allPictographs.filter(
-        (p) => p.letter === letter && p.startPosition === state.currentEndPosition
+        (p) =>
+          p.letter === letter && p.startPosition === state.currentEndPosition
       );
 
       if (validVariations.length === 0) {
@@ -254,13 +258,19 @@ export function buildConstrainedSequence(
         if (!previousLetter) continue;
 
         // First try single-letter bridges (can be scored for constraint optimization)
-        let bridgeOptions = transitionGraph.findAllBridgeOptions(previousLetter, letter);
+        let bridgeOptions = transitionGraph.findAllBridgeOptions(
+          previousLetter,
+          letter
+        );
         let useMultiLetterBridge = false;
         let multiBridgePath: string[] = [];
 
         if (bridgeOptions.length === 0) {
           // No single-letter bridge - fall back to BFS for multi-letter path
-          multiBridgePath = transitionGraph.findBridgeLetters(previousLetter, letter);
+          multiBridgePath = transitionGraph.findBridgeLetters(
+            previousLetter,
+            letter
+          );
           if (multiBridgePath.length === 0) {
             // No bridge path available at all
             continue;
@@ -279,7 +289,11 @@ export function buildConstrainedSequence(
           let bridgeSuccess = true;
           const totalBridgeSteps = multiBridgePath.length;
 
-          for (let bridgeIdx = 0; bridgeIdx < multiBridgePath.length; bridgeIdx++) {
+          for (
+            let bridgeIdx = 0;
+            bridgeIdx < multiBridgePath.length;
+            bridgeIdx++
+          ) {
             const bridgeLetter = multiBridgePath[bridgeIdx];
             if (!bridgeLetter) {
               bridgeSuccess = false;
@@ -288,7 +302,9 @@ export function buildConstrainedSequence(
 
             // Find variations of this bridge letter at current position
             const bridgeVariations = allPictographs.filter(
-              (p) => p.letter === bridgeLetter && p.startPosition === currentState.currentEndPosition
+              (p) =>
+                p.letter === bridgeLetter &&
+                p.startPosition === currentState.currentEndPosition
             );
 
             if (bridgeVariations.length === 0) {
@@ -315,7 +331,12 @@ export function buildConstrainedSequence(
             }
 
             // Extend state with this bridge letter
-            currentState = extendState(currentState, bestBridgeScore.variation, bestBridgeScore, true);
+            currentState = extendState(
+              currentState,
+              bestBridgeScore.variation,
+              bestBridgeScore,
+              true
+            );
             statesBrowsed++;
           }
 
@@ -325,7 +346,9 @@ export function buildConstrainedSequence(
 
           // Now find target letter variations from final bridge's end position
           validVariations = allPictographs.filter(
-            (p) => p.letter === letter && p.startPosition === currentState.currentEndPosition
+            (p) =>
+              p.letter === letter &&
+              p.startPosition === currentState.currentEndPosition
           );
 
           if (validVariations.length === 0) {
@@ -348,14 +371,22 @@ export function buildConstrainedSequence(
           for (const scored of scores.slice(0, config.beamWidth)) {
             if (!scored.hardConstraintsSatisfied) continue;
 
-            const newState = extendState(currentState, scored.variation, scored);
+            const newState = extendState(
+              currentState,
+              scored.variation,
+              scored
+            );
             nextBeam.push(newState);
             statesBrowsed++;
           }
         } else {
           // Single-letter bridge: try ALL bridge options, not just the "best" one
           // The "best" bridge by constraint score may not have a variation at current position
-          const scoredBridges = scoreBridgeOptions(bridgeOptions, constraintSet, allPictographs);
+          const scoredBridges = scoreBridgeOptions(
+            bridgeOptions,
+            constraintSet,
+            allPictographs
+          );
 
           let bridgeSucceeded = false;
 
@@ -365,7 +396,9 @@ export function buildConstrainedSequence(
 
             // Find variations of this bridge letter that start at current position
             const bridgeVariations = allPictographs.filter(
-              (p) => p.letter === bridgeOption.letter && p.startPosition === state.currentEndPosition
+              (p) =>
+                p.letter === bridgeOption.letter &&
+                p.startPosition === state.currentEndPosition
             );
 
             if (bridgeVariations.length === 0) {
@@ -386,15 +419,23 @@ export function buildConstrainedSequence(
             );
 
             const bestBridgeScore = bridgeScores[0];
-            if (!bestBridgeScore || !bestBridgeScore.hardConstraintsSatisfied) continue;
+            if (!bestBridgeScore || !bestBridgeScore.hardConstraintsSatisfied)
+              continue;
 
             // Extend state with bridge letter (marked as bridge)
-            const stateWithBridge = extendState(state, bestBridgeScore.variation, bestBridgeScore, true);
+            const stateWithBridge = extendState(
+              state,
+              bestBridgeScore.variation,
+              bestBridgeScore,
+              true
+            );
             statesBrowsed++;
 
             // Now find target letter variations from bridge's end position
             const targetVariations = allPictographs.filter(
-              (p) => p.letter === letter && p.startPosition === stateWithBridge.currentEndPosition
+              (p) =>
+                p.letter === letter &&
+                p.startPosition === stateWithBridge.currentEndPosition
             );
 
             if (targetVariations.length === 0) {
@@ -418,7 +459,11 @@ export function buildConstrainedSequence(
             for (const scored of scores.slice(0, config.beamWidth)) {
               if (!scored.hardConstraintsSatisfied) continue;
 
-              const newState = extendState(stateWithBridge, scored.variation, scored);
+              const newState = extendState(
+                stateWithBridge,
+                scored.variation,
+                scored
+              );
               nextBeam.push(newState);
               statesBrowsed++;
               bridgeSucceeded = true;
@@ -486,7 +531,9 @@ export function buildConstrainedSequence(
     // No state meets minimum score
     // Return best available if partial allowed
     if (config.allowPartial && beam.length > 0) {
-      const partial = beam.sort((a, b) => b.cumulativeScore - a.cumulativeScore)[0];
+      const partial = beam.sort(
+        (a, b) => b.cumulativeScore - a.cumulativeScore
+      )[0];
       if (partial) {
         return buildResult(partial, word, constraintSet, statesBrowsed, true);
       }
@@ -547,8 +594,10 @@ function propagateOrientations(steps: PictographData[]): PictographData[] {
   const startPosition = steps[0];
   if (!startPosition) return steps;
 
-  let blueOrientation = (startPosition.blueMotion.endOrientation || "in") as Orientation;
-  let redOrientation = (startPosition.redMotion.endOrientation || "in") as Orientation;
+  let leftOrientation = (startPosition.leftMotion.endOrientation ||
+    "in") as Orientation;
+  let rightOrientation = (startPosition.rightMotion.endOrientation ||
+    "in") as Orientation;
 
   // Keep start position as-is
   result.push(startPosition);
@@ -558,45 +607,45 @@ function propagateOrientations(steps: PictographData[]): PictographData[] {
     const step = steps[i];
     if (!step) continue;
 
-    // Calculate blue end orientation
+    // Calculate left end orientation
     // Cast: render-core returns string literal Orientation, MCP uses enum Orientation (same values)
-    const blueEndOrientation = calculateEndOrientation({
-      motionType: step.blueMotion.motionType,
+    const leftEndOrientation = calculateEndOrientation({
+      motionType: step.leftMotion.motionType,
       turns: 0, // CSV variations are all 0 turns
-      rotationDirection: step.blueMotion.rotationDirection || "cw",
-      startLocation: step.blueMotion.startLocation,
-      endLocation: step.blueMotion.endLocation,
-      startOrientation: blueOrientation,
+      rotationDirection: step.leftMotion.rotationDirection || "cw",
+      startLocation: step.leftMotion.startLocation,
+      endLocation: step.leftMotion.endLocation,
+      startOrientation: leftOrientation,
     }) as Orientation;
 
-    // Calculate red end orientation
-    const redEndOrientation = calculateEndOrientation({
-      motionType: step.redMotion.motionType,
+    // Calculate right end orientation
+    const rightEndOrientation = calculateEndOrientation({
+      motionType: step.rightMotion.motionType,
       turns: 0,
-      rotationDirection: step.redMotion.rotationDirection || "cw",
-      startLocation: step.redMotion.startLocation,
-      endLocation: step.redMotion.endLocation,
-      startOrientation: redOrientation,
+      rotationDirection: step.rightMotion.rotationDirection || "cw",
+      startLocation: step.rightMotion.startLocation,
+      endLocation: step.rightMotion.endLocation,
+      startOrientation: rightOrientation,
     }) as Orientation;
 
     // Create updated step with correct orientations
     result.push({
       ...step,
-      blueMotion: {
-        ...step.blueMotion,
-        startOrientation: blueOrientation,
-        endOrientation: blueEndOrientation,
+      leftMotion: {
+        ...step.leftMotion,
+        startOrientation: leftOrientation,
+        endOrientation: leftEndOrientation,
       },
-      redMotion: {
-        ...step.redMotion,
-        startOrientation: redOrientation,
-        endOrientation: redEndOrientation,
+      rightMotion: {
+        ...step.rightMotion,
+        startOrientation: rightOrientation,
+        endOrientation: rightEndOrientation,
       },
     });
 
     // Update for next iteration
-    blueOrientation = blueEndOrientation;
-    redOrientation = redEndOrientation;
+    leftOrientation = leftEndOrientation;
+    rightOrientation = rightEndOrientation;
   }
 
   return result;
@@ -629,7 +678,10 @@ function buildResult(
     constraintReport: report,
     statesBrowsed,
     error: isPartial ? "Partial result (minimum score not met)" : undefined,
-    bridgeStepIndices: bridgeStepIndices && bridgeStepIndices.length > 0 ? bridgeStepIndices : undefined,
+    bridgeStepIndices:
+      bridgeStepIndices && bridgeStepIndices.length > 0
+        ? bridgeStepIndices
+        : undefined,
   };
 }
 

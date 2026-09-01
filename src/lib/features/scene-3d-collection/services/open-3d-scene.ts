@@ -62,8 +62,8 @@ export function applyScene3DLook(scene: Collected3DScene): void {
   //    state and never repaints the application.
   if (saved("props")) {
     const propUpdate: Record<string, PropType> = {};
-    if (snap.props.bluePropType) propUpdate.bluePropType = snap.props.bluePropType as PropType;
-    if (snap.props.redPropType) propUpdate.redPropType = snap.props.redPropType as PropType;
+    if (snap.props.leftPropType) propUpdate.leftPropType = snap.props.leftPropType as PropType;
+    if (snap.props.rightPropType) propUpdate.rightPropType = snap.props.rightPropType as PropType;
     if (Object.keys(propUpdate).length > 0) void settingsService.updateSettings(propUpdate);
   }
 

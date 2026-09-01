@@ -51,12 +51,12 @@ to three rows. Click opens the expanded overlay.
     level?: number;
     gridMode?: GridMode;
     isFreeformMode?: boolean;
-    turnPattern?: { blue: (number | "fl")[]; red: (number | "fl")[] } | null;
+    turnPattern?: { left: (number | "fl")[]; right: (number | "fl")[] } | null;
     turnIntensity?: number;
     sequenceLength?: number;
     loopPeriod?: number;
     onTurnPatternChange?: (
-      lanes: { blue: (number | "fl")[]; red: (number | "fl")[] } | null
+      lanes: { left: (number | "fl")[]; right: (number | "fl")[] } | null
     ) => void;
     /**
      * What "untouched" means on THIS surface. The public Composer demo opens

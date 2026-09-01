@@ -8,13 +8,13 @@ const pictographs = [
     endPosition: "alpha3",
     timing: "together",
     direction: "same",
-    blueMotion: {
+    leftMotion: {
       motionType: "pro",
       rotationDirection: "cw",
       startLocation: "s",
       endLocation: "e",
     },
-    redMotion: {
+    rightMotion: {
       motionType: "anti",
       rotationDirection: "ccw",
       startLocation: "n",

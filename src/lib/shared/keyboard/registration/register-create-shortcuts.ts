@@ -9,14 +9,17 @@
  */
 
 import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/keyboard-shortcut-manager'
+import type { KeyboardShortcutManager } from "$lib/shared/keyboard/services/keyboard-shortcut-manager";
 import type { createKeyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
 import { getCreateModuleRef } from "$lib/shared/create/state/create-module-state-ref.svelte";
 import { getAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
 import { executeClearSequenceWorkflow } from "$lib/shared/create/utils/clear-sequence-workflow";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
-import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
+import {
+  getSettings,
+  updateSettings,
+} from "$lib/shared/application/state/app-state.svelte";
 import { shiftStartPosition } from "$lib/shared/create/services/sequence-transforms";
 import { getAllPropTypes } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 import { filterPremiumCosmeticProps } from "$lib/shared/subscription/domain/premium-prop-access";
@@ -45,11 +48,11 @@ async function applyPropPreset(presetIndex: number): Promise<void> {
   // Apply the preset settings
   await updateSettings({
     selectedPresetIndex: presetIndex,
-    bluePropType: preset.bluePropType,
-    redPropType: preset.redPropType,
+    leftPropType: preset.leftPropType,
+    rightPropType: preset.rightPropType,
     catDogMode: preset.catDogMode,
-    blueBuugengFlipped: preset.blueBuugengFlipped ?? false,
-    redBuugengFlipped: preset.redBuugengFlipped ?? false,
+    leftBuugengFlipped: preset.leftBuugengFlipped ?? false,
+    rightBuugengFlipped: preset.rightBuugengFlipped ?? false,
   });
 
   debug.log(`Applied prop preset ${presetIndex}:`, preset);
@@ -84,7 +87,11 @@ export function registerCreateShortcuts(
       const { panelState } = ref;
 
       // Check if any animation panel is open (Animation Panel, Export Panel, or Sequence Viewer)
-      if (panelState.isAnimationPanelOpen || panelState.isExportPanelOpen || panelState.isSequenceViewerOpen) {
+      if (
+        panelState.isAnimationPanelOpen ||
+        panelState.isExportPanelOpen ||
+        panelState.isSequenceViewerOpen
+      ) {
         // Animation is visible - toggle play/pause
         const playbackController = getAnimationPlaybackRef();
         if (playbackController) {
@@ -455,7 +462,7 @@ export function registerCreateShortcuts(
     },
   });
 
-  // Alt+X - Swap hands (swap colors). Was Alt+S but Chrome/extensions steal it.
+  // Alt+X - Swap hands. Was Alt+S but Chrome/extensions steal it.
   service.register({
     id: "create.transform-swap-hands",
     label: "Swap Hands",
@@ -478,7 +485,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       if (!sequenceState?.hasSequence()) return;
 
-      await sequenceState.swapColors();
+      await sequenceState.swapHands();
     },
   });
 
@@ -697,17 +704,21 @@ export function registerCreateShortcuts(
     priority: "medium",
     action: async () => {
       const settings = getSettings();
-      const currentProp = settings.bluePropType ?? PropType.STAFF;
+      const currentProp = settings.leftPropType ?? PropType.STAFF;
       // Shuffle draws from the whole enum, so paid cosmetics drop out unless
       // the user may actually use them.
       const allProps = filterPremiumCosmeticProps(getAllPropTypes());
       const otherProps = allProps.filter((p) => p !== currentProp);
-      const randomProp = otherProps[Math.floor(Math.random() * otherProps.length)]!;
+      const randomProp =
+        otherProps[Math.floor(Math.random() * otherProps.length)]!;
 
       const hapticService = getHapticFeedback();
       hapticService?.trigger("selection");
 
-      await updateSettings({ bluePropType: randomProp, redPropType: randomProp });
+      await updateSettings({
+        leftPropType: randomProp,
+        rightPropType: randomProp,
+      });
       debug.log(`Shuffled prop to: ${randomProp}`);
     },
   });

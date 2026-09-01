@@ -65,8 +65,8 @@ export interface PerformerPositionSnapshot {
   id: string;
   position: { x: number; z: number };
   facingAngle: number;
-  customBluePlane: Plane;
-  customRedPlane: Plane;
+  customLeftPlane: Plane;
+  customRightPlane: Plane;
 }
 
 export interface PerformerDomainSnapshot {
@@ -80,10 +80,10 @@ export interface PerformerDomainSnapshot {
     propBuild: Partial<import("@austencloud/scene-3d").PropBuild> | null;
   };
   planes: {
-    customBluePlane: Plane | null;
-    customRedPlane: Plane | null;
+    customLeftPlane: Plane | null;
+    customRightPlane: Plane | null;
     planeMode: PlaneMode | null;
-    beatPlaneOverrides: Map<number, { blue?: Plane; red?: Plane }>;
+    beatPlaneOverrides: Map<number, { left?: Plane; right?: Plane }>;
   };
 }
 
@@ -101,8 +101,8 @@ export interface DefaultsDomainSnapshot {
   prop: PropType;
   effortId: EffortId;
   planeMode: PlaneMode;
-  customBluePlane: Plane;
-  customRedPlane: Plane;
+  customLeftPlane: Plane;
+  customRightPlane: Plane;
 }
 
 export interface SceneLabDomainSnapshot {

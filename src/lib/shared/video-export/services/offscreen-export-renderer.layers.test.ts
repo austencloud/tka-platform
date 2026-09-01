@@ -9,7 +9,7 @@ vi.mock("$lib/shared/animation-engine/services/render-context-factory", () => ({
   RenderContextFactory: class {},
 }));
 vi.mock("./export-engine-props", () => ({
-  assembleExportEngineProps: () => ({ blueProp: null, redProp: null }),
+  assembleExportEngineProps: () => ({ leftProp: null, rightProp: null }),
 }));
 vi.mock(
   "$lib/shared/animation-engine/state/animation-settings-state.svelte",
@@ -30,14 +30,14 @@ describe("OffscreenExportRenderer layer provider", () => {
   it("invokes the layer provider with the rendered beat", () => {
     // The renderer requires an initialized engine; we assert the provider-call
     // contract via a partial instance whose handle is stubbed.
-    const provider = vi.fn(() => [{ blueProp: null, redProp: null }]);
+    const provider = vi.fn(() => [{ leftProp: null, rightProp: null }]);
     const r = Object.create(OffscreenExportRenderer.prototype) as any;
     r.handle = {
       context: { trailCapturer: { captureFrame: () => {} } },
       engine: { renderFrame: () => {} },
     };
     r.playback = {
-      computePropStatesForStep: () => ({ blue: null, red: null }),
+      computePropStatesForStep: () => ({ left: null, right: null }),
       isSeamlesslyLoopable: false,
     };
     r.panelState = {};
@@ -65,17 +65,17 @@ describe("OffscreenExportRenderer layer provider", () => {
       engine: { renderFrame },
     };
     r.playback = {
-      computePropStatesForStep: () => ({ blue: null, red: null }),
+      computePropStatesForStep: () => ({ left: null, right: null }),
       isSeamlesslyLoopable: false,
     };
     r.panelState = {};
     r.init = {
       tunnelSpectrum: false,
-      tunnelPropColors: { blue: "#123456", red: "#abcdef" },
+      tunnelPropColors: { left: "#123456", right: "#abcdef" },
       showNonRadialPoints: true,
       previewDarkMode: true,
-      bluePropType: "staff",
-      redPropType: "staff",
+      leftPropType: "staff",
+      rightPropType: "staff",
     };
     r.internalClockMs = 0;
     r.accumulatorMs = 0;
@@ -87,7 +87,7 @@ describe("OffscreenExportRenderer layer provider", () => {
     expect(renderFrame).toHaveBeenCalledWith(
       expect.objectContaining({
         tunnelSpectrum: false,
-        tunnelPropColors: { blue: "#123456", red: "#abcdef" },
+        tunnelPropColors: { left: "#123456", right: "#abcdef" },
       }),
       expect.any(Number),
       expect.any(Number)

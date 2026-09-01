@@ -23,7 +23,7 @@ vi.mock(
 
 import PropSvg from "./PropSvg.svelte";
 import {
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "../../shared/domain/enums/pictograph-enums";
@@ -33,7 +33,7 @@ import { EDITOR_TORCH_PALETTE } from "../domain/prop-render-context";
 // Minimal, static motion — turns:0 + NO_ROTATION keeps the rotation animator inert
 // so the test isolates the SVG-swap fade behaviour.
 const motion = (
-  color: MotionColor = MotionColor.BLUE,
+  color: HandSide = HandSide.LEFT,
   propType: PropType = PropType.TRIAD
 ) =>
   ({
@@ -116,7 +116,7 @@ describe("PropSvg fade-on-swap regression", () => {
 describe("PropSvg editor contrast", () => {
   it("does not alter torch rendering unless an editor opts in", () => {
     render(PropSvg, {
-      motionData: motion(MotionColor.BLUE, PropType.TORCH),
+      motionData: motion(HandSide.LEFT, PropType.TORCH),
       propAssets: assets(TORCH_ARTWORK, PropType.TORCH),
       propPosition,
     });
@@ -132,10 +132,10 @@ describe("PropSvg editor contrast", () => {
   });
 
   it.each([
-    [MotionColor.BLUE, PropType.TORCH],
-    [MotionColor.RED, PropType.TORCH],
-    [MotionColor.BLUE, PropType.BIGTORCH],
-    [MotionColor.RED, PropType.BIGTORCH],
+    [HandSide.LEFT, PropType.TORCH],
+    [HandSide.RIGHT, PropType.TORCH],
+    [HandSide.LEFT, PropType.BIGTORCH],
+    [HandSide.RIGHT, PropType.BIGTORCH],
   ])("recolors %s %s assets on dark editor grids", (color, propType) => {
     render(PropSvg, {
       motionData: motion(color, propType),
@@ -168,7 +168,7 @@ describe("PropSvg editor contrast", () => {
 
   it("uses the prepared asset type after a render-time prop override", () => {
     render(PropSvg, {
-      motionData: motion(MotionColor.BLUE, PropType.STAFF),
+      motionData: motion(HandSide.LEFT, PropType.STAFF),
       propAssets: assets(TORCH_ARTWORK, PropType.TORCH),
       propPosition,
       propRenderContext: "editor",
@@ -181,7 +181,7 @@ describe("PropSvg editor contrast", () => {
 
   it("leaves non-torch props unchanged in editor grids", () => {
     render(PropSvg, {
-      motionData: motion(MotionColor.BLUE, PropType.STAFF),
+      motionData: motion(HandSide.LEFT, PropType.STAFF),
       propAssets: assets(TORCH_ARTWORK, PropType.STAFF),
       propPosition,
       propRenderContext: "editor",
@@ -204,7 +204,7 @@ describe("PropSvg editor contrast", () => {
       const palette = EDITOR_TORCH_PALETTE[paletteName];
 
       render(PropSvg, {
-        motionData: motion(MotionColor.BLUE, PropType.TORCH),
+        motionData: motion(HandSide.LEFT, PropType.TORCH),
         propAssets: assets(TORCH_ARTWORK, PropType.TORCH),
         propPosition,
         propRenderContext: "editor",
@@ -222,7 +222,7 @@ describe("PropSvg editor contrast", () => {
 
   it("keeps the original artwork for non-torch editor props", () => {
     render(PropSvg, {
-      motionData: motion(MotionColor.BLUE, PropType.STAFF),
+      motionData: motion(HandSide.LEFT, PropType.STAFF),
       propAssets: assets(TORCH_ARTWORK, PropType.STAFF),
       propPosition,
       propRenderContext: "editor",

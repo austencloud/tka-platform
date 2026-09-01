@@ -68,8 +68,8 @@ export function foldTrailIntentIntoSettings(
     lineWidth: intent.thickness,
     maxOpacity: intent.brightness,
     minOpacity: intent.brightness * 0.3,
-    blueColor: intent.blueColor,
-    redColor: intent.redColor,
+    leftColor: intent.leftColor,
+    rightColor: intent.rightColor,
   };
 }
 

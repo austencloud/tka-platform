@@ -182,18 +182,18 @@
                  single paired glyph rather than two more icons in the row. -->
             <div
               class="catdog"
-              title="Catdog: {getPropTypeDisplayInfo(catdog.bluePropType)
-                .label} + {getPropTypeDisplayInfo(catdog.redPropType).label}"
+              title="Catdog: {getPropTypeDisplayInfo(catdog.leftPropType)
+                .label} + {getPropTypeDisplayInfo(catdog.rightPropType).label}"
             >
               <img
                 class="catdog-blue"
-                src={getPropTypeDisplayInfo(catdog.bluePropType).image}
-                alt={getPropTypeDisplayInfo(catdog.bluePropType).label}
+                src={getPropTypeDisplayInfo(catdog.leftPropType).image}
+                alt={getPropTypeDisplayInfo(catdog.leftPropType).label}
               />
               <img
                 class="catdog-red"
-                src={getPropTypeDisplayInfo(catdog.redPropType).image}
-                alt={getPropTypeDisplayInfo(catdog.redPropType).label}
+                src={getPropTypeDisplayInfo(catdog.rightPropType).image}
+                alt={getPropTypeDisplayInfo(catdog.rightPropType).label}
               />
             </div>
           {/if}

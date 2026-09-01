@@ -175,8 +175,8 @@ export function getPropDimensions(propType: string): PropDimensions {
  * Reactive state for prop textures
  */
 export interface PropTextureState {
-  blueDimensions: PropDimensions;
-  redDimensions: PropDimensions;
+  leftDimensions: PropDimensions;
+  rightDimensions: PropDimensions;
   isLoaded: boolean;
   isLoading: boolean;
   error: string | null;
@@ -201,14 +201,14 @@ export interface IPropTextureLoader {
   ): void;
 
   /**
-   * Load textures for both prop colors
-   * @param bluePropType - Type of blue prop
-   * @param redPropType - Type of red prop
+   * Load textures for both performer hands
+   * @param leftPropType - Type of left-hand prop
+   * @param rightPropType - Type of right-hand prop
    * @param darkMode - When provided, uses this instead of global dark mode state (for preview isolation)
    */
   loadPropTextures(
-    bluePropType: string,
-    redPropType: string,
+    leftPropType: string,
+    rightPropType: string,
     darkMode?: boolean,
     colors?: TunnelPropColorPair | null
   ): Promise<void>;

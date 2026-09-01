@@ -2,7 +2,7 @@
  * arrange-layer-transformer - Applies geometric transforms to sequences
  *
  * Wraps the shared SequenceTransformer to apply rotate, mirror, flip,
- * swapColors, invert, and rewind transforms to arrange grid layers.
+ * swapHands, invert, and rewind transforms to arrange grid layers.
  */
 
 import type { TransformResult } from "./types";
@@ -48,8 +48,8 @@ export async function applyTransform(
       case "flip":
         transformed = await sequenceTransformer.flipSequence(sequence);
         break;
-      case "swapColors":
-        transformed = sequenceTransformer.swapColors(sequence);
+      case "swapHands":
+        transformed = sequenceTransformer.swapHands(sequence);
         break;
       case "invert":
         transformed = await sequenceTransformer.invertSequence(sequence);

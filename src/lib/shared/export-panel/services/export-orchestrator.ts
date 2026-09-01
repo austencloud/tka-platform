@@ -274,8 +274,8 @@ export class ExportOrchestrator {
         format: "mp4",
         // App mode: thread the user's chosen prop so the offscreen export engine
         // loads the matching textures instead of falling back to default "staff".
-        bluePropType: settingsService.settings.bluePropType ?? settingsService.settings.propType ?? "staff",
-        redPropType: settingsService.settings.redPropType ?? settingsService.settings.propType ?? "staff",
+        leftPropType: settingsService.settings.leftPropType ?? settingsService.settings.propType ?? "staff",
+        rightPropType: settingsService.settings.rightPropType ?? settingsService.settings.propType ?? "staff",
       }
     );
 

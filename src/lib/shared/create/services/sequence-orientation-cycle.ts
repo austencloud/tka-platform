@@ -8,16 +8,16 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 function resolveStartOrientations(sequence: SequenceData): {
-  blue: EngineOrientation;
-  red: EngineOrientation;
+  left: EngineOrientation;
+  right: EngineOrientation;
 } {
   const startPosition = sequence.startPosition ?? sequence.startingPosition;
   return {
-    blue: (startPosition?.motions?.blue?.startOrientation ??
-      sequence.steps[0]?.motions.blue?.startOrientation ??
+    left: (startPosition?.motions?.left?.startOrientation ??
+      sequence.steps[0]?.motions.left?.startOrientation ??
       "in") as EngineOrientation,
-    red: (startPosition?.motions?.red?.startOrientation ??
-      sequence.steps[0]?.motions.red?.startOrientation ??
+    right: (startPosition?.motions?.right?.startOrientation ??
+      sequence.steps[0]?.motions.right?.startOrientation ??
       "in") as EngineOrientation,
   };
 }

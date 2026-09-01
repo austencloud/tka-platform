@@ -14,4 +14,4 @@ export type LetterCategory =
   | "dual_dash" // Φ-, Ψ-, Λ-
   | "static"; // α, β, γ
 
-export type CodexTransformationOperation = "rotate" | "mirror" | "colorSwap";
+export type CodexTransformationOperation = "rotate" | "mirror" | "handSwap";

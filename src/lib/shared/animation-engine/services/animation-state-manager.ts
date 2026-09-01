@@ -11,13 +11,13 @@ import type {
 } from "$lib/shared/foundation/domain/types/prop-state";
 
 export interface InterpolationResult {
-  blueAngles: {
+  leftAngles: {
     centerPathAngle: number;
     staffRotationAngle: number;
     x?: number; // Optional Cartesian x coordinate (for dash motions)
     y?: number; // Optional Cartesian y coordinate (for dash motions)
   } | null; // null = hand not present in sequence
-  redAngles: {
+  rightAngles: {
     centerPathAngle: number;
     staffRotationAngle: number;
     x?: number; // Optional Cartesian x coordinate (for dash motions)
@@ -27,12 +27,12 @@ export interface InterpolationResult {
 }
 export class AnimationStateManager {
 
-  private bluePropState: PropState = {
+  private leftPropState: PropState = {
     centerPathAngle: 0,
     staffRotationAngle: 0,
   };
 
-  private redPropState: PropState = {
+  private rightPropState: PropState = {
     centerPathAngle: 0,
     staffRotationAngle: 0,
   };
@@ -40,15 +40,15 @@ export class AnimationStateManager {
   /**
    * Get current blue prop state
    */
-  getBluePropState(): PropState {
-    return { ...this.bluePropState };
+  getLeftPropState(): PropState {
+    return { ...this.leftPropState };
   }
 
   /**
    * Get current red prop state
    */
-  getRedPropState(): PropState {
-    return { ...this.redPropState };
+  getRightPropState(): PropState {
+    return { ...this.rightPropState };
   }
 
   /**
@@ -56,8 +56,8 @@ export class AnimationStateManager {
    */
   getPropStates(): PropStates {
     return {
-      blue: this.getBluePropState(),
-      red: this.getRedPropState(),
+      left: this.getLeftPropState(),
+      right: this.getRightPropState(),
     };
   }
 
@@ -66,35 +66,35 @@ export class AnimationStateManager {
    */
   updatePropStates(interpolationResult: InterpolationResult): PropStates {
     // Only update blue prop state if hand is present (null = hand not in sequence)
-    if (interpolationResult.blueAngles) {
-      const blueUpdate: Partial<PropState> = {
-        centerPathAngle: interpolationResult.blueAngles.centerPathAngle,
-        staffRotationAngle: interpolationResult.blueAngles.staffRotationAngle,
+    if (interpolationResult.leftAngles) {
+      const leftUpdate: Partial<PropState> = {
+        centerPathAngle: interpolationResult.leftAngles.centerPathAngle,
+        staffRotationAngle: interpolationResult.leftAngles.staffRotationAngle,
       };
       if (
-        "x" in interpolationResult.blueAngles &&
-        "y" in interpolationResult.blueAngles
+        "x" in interpolationResult.leftAngles &&
+        "y" in interpolationResult.leftAngles
       ) {
-        blueUpdate.x = interpolationResult.blueAngles.x;
-        blueUpdate.y = interpolationResult.blueAngles.y;
+        leftUpdate.x = interpolationResult.leftAngles.x;
+        leftUpdate.y = interpolationResult.leftAngles.y;
       }
-      this.updateBluePropState(blueUpdate);
+      this.updateLeftPropState(leftUpdate);
     }
 
     // Only update red prop state if hand is present (null = hand not in sequence)
-    if (interpolationResult.redAngles) {
-      const redUpdate: Partial<PropState> = {
-        centerPathAngle: interpolationResult.redAngles.centerPathAngle,
-        staffRotationAngle: interpolationResult.redAngles.staffRotationAngle,
+    if (interpolationResult.rightAngles) {
+      const rightUpdate: Partial<PropState> = {
+        centerPathAngle: interpolationResult.rightAngles.centerPathAngle,
+        staffRotationAngle: interpolationResult.rightAngles.staffRotationAngle,
       };
       if (
-        "x" in interpolationResult.redAngles &&
-        "y" in interpolationResult.redAngles
+        "x" in interpolationResult.rightAngles &&
+        "y" in interpolationResult.rightAngles
       ) {
-        redUpdate.x = interpolationResult.redAngles.x;
-        redUpdate.y = interpolationResult.redAngles.y;
+        rightUpdate.x = interpolationResult.rightAngles.x;
+        rightUpdate.y = interpolationResult.rightAngles.y;
       }
-      this.updateRedPropState(redUpdate);
+      this.updateRightPropState(rightUpdate);
     }
 
     return this.getPropStates();
@@ -105,12 +105,12 @@ export class AnimationStateManager {
    * Dash motions provide their own x,y coordinates, other motions only provide angles
    * CRITICAL: Must clear x,y when not provided to avoid stale DASH coordinates persisting
    */
-  updateBluePropState(updates: Partial<PropState>): void {
+  updateLeftPropState(updates: Partial<PropState>): void {
     const newState: PropState = {
       centerPathAngle:
-        updates.centerPathAngle ?? this.bluePropState.centerPathAngle,
+        updates.centerPathAngle ?? this.leftPropState.centerPathAngle,
       staffRotationAngle:
-        updates.staffRotationAngle ?? this.bluePropState.staffRotationAngle,
+        updates.staffRotationAngle ?? this.leftPropState.staffRotationAngle,
     };
 
     // Only include x,y if explicitly provided in updates (DASH motions)
@@ -118,7 +118,7 @@ export class AnimationStateManager {
     if (updates.x !== undefined) newState.x = updates.x;
     if (updates.y !== undefined) newState.y = updates.y;
 
-    this.bluePropState = newState;
+    this.leftPropState = newState;
   }
 
   /**
@@ -126,12 +126,12 @@ export class AnimationStateManager {
    * Dash motions provide their own x,y coordinates, other motions only provide angles
    * CRITICAL: Must clear x,y when not provided to avoid stale DASH coordinates persisting
    */
-  updateRedPropState(updates: Partial<PropState>): void {
+  updateRightPropState(updates: Partial<PropState>): void {
     const newState: PropState = {
       centerPathAngle:
-        updates.centerPathAngle ?? this.redPropState.centerPathAngle,
+        updates.centerPathAngle ?? this.rightPropState.centerPathAngle,
       staffRotationAngle:
-        updates.staffRotationAngle ?? this.redPropState.staffRotationAngle,
+        updates.staffRotationAngle ?? this.rightPropState.staffRotationAngle,
     };
 
     // Only include x,y if explicitly provided in updates (DASH motions)
@@ -139,26 +139,26 @@ export class AnimationStateManager {
     if (updates.x !== undefined) newState.x = updates.x;
     if (updates.y !== undefined) newState.y = updates.y;
 
-    this.redPropState = newState;
+    this.rightPropState = newState;
   }
 
   /**
    * Set prop states directly (for initialization)
    */
-  setPropStates(blue: PropState, red: PropState): void {
-    this.bluePropState = { ...blue };
-    this.redPropState = { ...red };
+  setPropStates(left: PropState, right: PropState): void {
+    this.leftPropState = { ...left };
+    this.rightPropState = { ...right };
   }
 
   /**
    * Reset prop states to default
    */
   resetPropStates(): void {
-    this.bluePropState = {
+    this.leftPropState = {
       centerPathAngle: 0,
       staffRotationAngle: Math.PI,
     };
-    this.redPropState = {
+    this.rightPropState = {
       centerPathAngle: Math.PI,
       staffRotationAngle: 0,
     };

@@ -187,8 +187,8 @@ export class SequenceRenderer {
       stepSize: getBaseBeatSize(),
       margin: 0, 
 
-      redVisible: true,
-      blueVisible: true,
+      rightVisible: true,
+      leftVisible: true,
 
       notes: "",
 

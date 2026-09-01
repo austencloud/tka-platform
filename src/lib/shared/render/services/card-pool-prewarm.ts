@@ -14,8 +14,8 @@ import { buildOverridePlacementBundle } from "./override-placement-bundle";
 
 export interface PrewarmOptions {
   sequences: SequenceData[];
-  bluePropType: PropType;
-  redPropType: PropType;
+  leftPropType: PropType;
+  rightPropType: PropType;
   theme: string;
   iconPaths?: string[];
 }
@@ -32,15 +32,15 @@ const SEED_SCHEMA = "v1";
  */
 export function computeBundleSignature(opts: {
   sequences: SequenceData[];
-  bluePropType: PropType;
-  redPropType: PropType;
+  leftPropType: PropType;
+  rightPropType: PropType;
 }): string {
   const ids = opts.sequences
     .map((s) => s.id ?? s.word ?? "")
     .filter(Boolean)
     .sort()
     .join(",");
-  return [SEED_SCHEMA, opts.bluePropType, opts.redPropType, ids].join("|");
+  return [SEED_SCHEMA, opts.leftPropType, opts.rightPropType, ids].join("|");
 }
 
 /**
@@ -68,8 +68,8 @@ export function prewarmCardPool(opts: PrewarmOptions): void {
       const ok = await CompositionDispatcher.probeWorkerSupport();
       if (!ok) return; // worker unusable → main-thread fallback (finally opens gate)
       const bundle = await getCardAssetBundle(opts.sequences, {
-        bluePropType: opts.bluePropType,
-        redPropType: opts.redPropType,
+        leftPropType: opts.leftPropType,
+        rightPropType: opts.rightPropType,
         theme: opts.theme,
         iconPaths: opts.iconPaths,
       });

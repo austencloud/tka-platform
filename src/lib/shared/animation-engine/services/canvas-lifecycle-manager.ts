@@ -234,7 +234,7 @@ export class CanvasLifecycleManager {
     const startRenderLoopFn = (): void => {
       this._renderLoop?.triggerRender(() => {
         const props = getLastPropsRef();
-        return buildFrameParams(props ?? { blueProp: null, redProp: null });
+        return buildFrameParams(props ?? { leftProp: null, rightProp: null });
       });
     };
 
@@ -317,7 +317,7 @@ export class CanvasLifecycleManager {
       orchestrator: this._orchestrator,
       TrailCapturer: this._trailCapturer,
       renderer: this._animationRenderer,
-      propDimensions: state.bluePropDimensions,
+      propDimensions: state.leftPropDimensions,
       canvasSize,
       instanceId,
     });
@@ -396,7 +396,7 @@ export class CanvasLifecycleManager {
       containerElement,
       canvasSize,
       renderLoopService: renderLoop,
-      getFrameParams: () => buildFrameParams(getLastPropsRef() ?? { blueProp: null, redProp: null }),
+      getFrameParams: () => buildFrameParams(getLastPropsRef() ?? { leftProp: null, rightProp: null }),
       getVM,
     });
 

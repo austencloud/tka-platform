@@ -48,7 +48,7 @@ export class Type6Constraint implements IConstraint {
     }
 
     const turns = context.turnAllocation;
-    if (!turns || (turns.blue <= 0 && turns.red <= 0)) {
+    if (!turns || (turns.left <= 0 && turns.right <= 0)) {
       return {
         score: 0,
         satisfied: false,

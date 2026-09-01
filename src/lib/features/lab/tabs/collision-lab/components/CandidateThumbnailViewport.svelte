@@ -41,22 +41,22 @@
 
   interface Props {
     stance: StancePose;
-    bluePlane: Plane;
-    bluePosition: DiamondPosition;
-    blueOrientation: HandOrientation;
-    redPlane: Plane;
-    redPosition: DiamondPosition;
-    redOrientation: HandOrientation;
+    leftPlane: Plane;
+    leftPosition: DiamondPosition;
+    leftOrientation: HandOrientation;
+    rightPlane: Plane;
+    rightPosition: DiamondPosition;
+    rightOrientation: HandOrientation;
   }
 
   let {
     stance,
-    bluePlane,
-    bluePosition,
-    blueOrientation,
-    redPlane,
-    redPosition,
-    redOrientation,
+    leftPlane,
+    leftPosition,
+    leftOrientation,
+    rightPlane,
+    rightPosition,
+    rightOrientation,
   }: Props = $props();
 
 
@@ -96,14 +96,14 @@
     };
   }
 
-  const bluePropState = $derived(
-    buildPropState(bluePlane, bluePosition, blueOrientation)
+  const leftPropState = $derived(
+    buildPropState(leftPlane, leftPosition, leftOrientation)
   );
-  const redPropState = $derived(
-    buildPropState(redPlane, redPosition, redOrientation)
+  const rightPropState = $derived(
+    buildPropState(rightPlane, rightPosition, rightOrientation)
   );
 
-  const visiblePlanes = $derived(new Set<Plane>([bluePlane, redPlane]));
+  const visiblePlanes = $derived(new Set<Plane>([leftPlane, rightPlane]));
 
   // Lift the rig root onto the stage deck so the avatar's feet stand
   // on top of the raised wooden platform instead of the bare ground.
@@ -133,8 +133,8 @@
   const THUMB_CAMERA_TARGET: [number, number, number] = [0, 1.0, 0];
 
   // PropAnchor refs - Avatar3D reads world positions from these for IK.
-  let bluePropAnchorRef = $state<Group | undefined>(undefined);
-  let redPropAnchorRef = $state<Group | undefined>(undefined);
+  let leftPropAnchorRef = $state<Group | undefined>(undefined);
+  let rightPropAnchorRef = $state<Group | undefined>(undefined);
 </script>
 
 <div class="thumbnail-viewport">
@@ -156,16 +156,16 @@
         rotation.y={facingAngle}
       >
         <Avatar3D
-          {bluePropState}
-          {redPropState}
+          {leftPropState}
+          {rightPropState}
           position={{ x: 0, y: 0, z: 0 }}
           facingAngle={0}
           {spinePitchOffset}
           visible={true}
           isActive={false}
           enableLocomotion={false}
-          {bluePropAnchorRef}
-          {redPropAnchorRef}
+          {leftPropAnchorRef}
+          {rightPropAnchorRef}
         />
       </T.Group>
 
@@ -176,26 +176,26 @@
       -->
       <T.Group position={[0, STAGE.STAGE_DECK_HEIGHT, GRID_FORWARD_OFFSET]}>
         <T.Group
-          bind:ref={bluePropAnchorRef}
-          position.x={bluePropState.worldPosition.x}
-          position.y={bluePropState.worldPosition.y}
-          position.z={bluePropState.worldPosition.z}
+          bind:ref={leftPropAnchorRef}
+          position.x={leftPropState.worldPosition.x}
+          position.y={leftPropState.worldPosition.y}
+          position.z={leftPropState.worldPosition.z}
         >
           <Prop3D
             propType={toScenePropType(PropType.STAFF)}
-            propState={bluePropState}
+            propState={leftPropState}
             color="blue"
           />
         </T.Group>
         <T.Group
-          bind:ref={redPropAnchorRef}
-          position.x={redPropState.worldPosition.x}
-          position.y={redPropState.worldPosition.y}
-          position.z={redPropState.worldPosition.z}
+          bind:ref={rightPropAnchorRef}
+          position.x={rightPropState.worldPosition.x}
+          position.y={rightPropState.worldPosition.y}
+          position.z={rightPropState.worldPosition.z}
         >
           <Prop3D
             propType={toScenePropType(PropType.STAFF)}
-            propState={redPropState}
+            propState={rightPropState}
             color="red"
           />
         </T.Group>

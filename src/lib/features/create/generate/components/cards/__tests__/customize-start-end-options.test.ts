@@ -12,24 +12,24 @@ const SNAPSHOT: StartEndOptions = {
   endPositions: [],
   mustContainLetters: [],
   mustNotContainLetters: [],
-  blueStartOrientation: Orientation.IN,
-  redStartOrientation: Orientation.IN,
+  leftStartOrientation: Orientation.IN,
+  rightStartOrientation: Orientation.IN,
 };
 
 // Mirror of the overlay's live local state.
 interface Local {
   blockedStartPositions: GridPosition[];
   endPositions: GridPosition[];
-  blueStartOrientation: Orientation;
-  redStartOrientation: Orientation;
+  leftStartOrientation: Orientation;
+  rightStartOrientation: Orientation;
 }
 
 function localFrom(base: StartEndOptions): Local {
   return {
     blockedStartPositions: base.blockedStartPositions,
     endPositions: base.endPositions,
-    blueStartOrientation: base.blueStartOrientation ?? Orientation.IN,
-    redStartOrientation: base.redStartOrientation ?? Orientation.IN,
+    leftStartOrientation: base.leftStartOrientation ?? Orientation.IN,
+    rightStartOrientation: base.rightStartOrientation ?? Orientation.IN,
   };
 }
 
@@ -42,17 +42,17 @@ describe("buildStartEndOptions", () => {
     let engine: StartEndOptions = { ...snapshot };
 
     // User changes blue → OUT
-    local.blueStartOrientation = Orientation.OUT;
+    local.leftStartOrientation = Orientation.OUT;
     engine = buildStartEndOptions(snapshot, local);
-    expect(engine.blueStartOrientation).toBe(Orientation.OUT);
-    expect(engine.redStartOrientation).toBe(Orientation.IN);
+    expect(engine.leftStartOrientation).toBe(Orientation.OUT);
+    expect(engine.rightStartOrientation).toBe(Orientation.IN);
 
     // User then changes red → CLOCK. Blue MUST survive (the original bug reset
     // it because the handler spread the frozen IN/IN snapshot).
-    local.redStartOrientation = Orientation.CLOCK;
+    local.rightStartOrientation = Orientation.CLOCK;
     engine = buildStartEndOptions(snapshot, local);
-    expect(engine.blueStartOrientation).toBe(Orientation.OUT);
-    expect(engine.redStartOrientation).toBe(Orientation.CLOCK);
+    expect(engine.leftStartOrientation).toBe(Orientation.OUT);
+    expect(engine.rightStartOrientation).toBe(Orientation.CLOCK);
   });
 
   it("changing orientation preserves blocked start positions", () => {
@@ -66,10 +66,10 @@ describe("buildStartEndOptions", () => {
     expect(engine.blockedStartPositions).toEqual(blocked);
 
     // Now change blue orientation — blocked positions must not revert to [].
-    local.blueStartOrientation = Orientation.COUNTER;
+    local.leftStartOrientation = Orientation.COUNTER;
     engine = buildStartEndOptions(snapshot, local);
     expect(engine.blockedStartPositions).toEqual(blocked);
-    expect(engine.blueStartOrientation).toBe(Orientation.COUNTER);
+    expect(engine.leftStartOrientation).toBe(Orientation.COUNTER);
   });
 
   it("changing a position preserves both start orientations", () => {
@@ -77,15 +77,15 @@ describe("buildStartEndOptions", () => {
     const local = localFrom(snapshot);
     let engine: StartEndOptions;
 
-    local.blueStartOrientation = Orientation.OUT;
-    local.redStartOrientation = Orientation.COUNTER;
+    local.leftStartOrientation = Orientation.OUT;
+    local.rightStartOrientation = Orientation.COUNTER;
     buildStartEndOptions(snapshot, local);
 
     // User toggles a position. Orientations must persist.
     local.blockedStartPositions = ["gamma11"] as unknown as GridPosition[];
     engine = buildStartEndOptions(snapshot, local);
-    expect(engine.blueStartOrientation).toBe(Orientation.OUT);
-    expect(engine.redStartOrientation).toBe(Orientation.COUNTER);
+    expect(engine.leftStartOrientation).toBe(Orientation.OUT);
+    expect(engine.rightStartOrientation).toBe(Orientation.COUNTER);
     expect(engine.blockedStartPositions).toEqual(["gamma11"]);
   });
 
@@ -95,7 +95,7 @@ describe("buildStartEndOptions", () => {
       mustContainLetters: ["A"] as unknown as StartEndOptions["mustContainLetters"],
     };
     const local = localFrom(snapshot);
-    local.blueStartOrientation = Orientation.CLOCK;
+    local.leftStartOrientation = Orientation.CLOCK;
     const engine = buildStartEndOptions(snapshot, local);
     expect(engine.mustContainLetters).toEqual(snapshot.mustContainLetters);
   });

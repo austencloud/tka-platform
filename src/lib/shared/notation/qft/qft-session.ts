@@ -36,8 +36,8 @@ export interface QftSessionHand {
 export interface QftSession {
   entered: boolean;
   handCount: QftHandCount;
-  blue: QftSessionHand;
-  red: QftSessionHand;
+  left: QftSessionHand;
+  right: QftSessionHand;
   /** Whole-app rotation in compass eighths. */
   originPhase: number;
   vtgMode: VtgMode;
@@ -87,17 +87,16 @@ function readTrajectory(value: unknown): QftTrajectory | null {
   if (raw.handDirection !== 1 && raw.handDirection !== -1) return null;
   // The length-8 check above proves this is a full tuple; map() cannot carry
   // that proof through, so the destructure asserts it.
-  const [rate0, rate1, rate2, rate3, rate4, rate5, rate6, rate7] =
-    propRate as [
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-    ];
+  const [rate0, rate1, rate2, rate3, rate4, rate5, rate6, rate7] = propRate as [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ];
 
   return {
     radius: num(raw.radius, 0, MAX_RADIUS, 1),
@@ -147,8 +146,8 @@ function readV3(raw: unknown): QftSession | null {
   return {
     entered: session.entered === true,
     handCount: session.handCount === "one" ? "one" : "two",
-    blue: readHand(session.blue, DEFAULT_BLUE),
-    red: readHand(session.red, DEFAULT_RED),
+    left: readHand(session.left, DEFAULT_BLUE),
+    right: readHand(session.right, DEFAULT_RED),
     originPhase: normalizedPhase(session.originPhase),
     vtgMode: MODE_ORDER.includes(session.vtgMode as VtgMode)
       ? (session.vtgMode as VtgMode)
@@ -192,24 +191,24 @@ function readV2(raw: unknown): QftSession | null {
   const move = GUIDE_MOVES[moveIndex] ?? GUIDE_MOVES[0]!;
   const radius = num(session.radius, 0, MAX_RADIUS, 1);
 
-  const blueSource: QftHandSource =
+  const leftSource: QftHandSource =
     appMode === "guide"
       ? { kind: "preset", id: move.id }
       : appMode === "instrument"
         ? legacyInstrumentSource(session)
         : {
             kind: "flower",
-            index: Math.floor(num(session.blueIndex, 0, AXIS_LENGTH - 1, 6)),
+            index: Math.floor(num(session.leftIndex, 0, AXIS_LENGTH - 1, 6)),
           };
 
   return {
     entered: session.entered === undefined ? true : session.entered === true,
     handCount: appMode === "matrix" ? "two" : "one",
-    blue: { source: blueSource, radius },
-    red: {
+    left: { source: leftSource, radius },
+    right: {
       source: {
         kind: "flower",
-        index: Math.floor(num(session.redIndex, 0, AXIS_LENGTH - 1, 7)),
+        index: Math.floor(num(session.rightIndex, 0, AXIS_LENGTH - 1, 7)),
       },
       radius: 1,
     },

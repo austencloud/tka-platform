@@ -38,8 +38,8 @@ export interface PersistedDeckReleaserSession {
   loopTypes?: string[];
   levels?: number[];
   startPositionIds?: string[];
-  startOriBlue?: string;
-  startOriRed?: string;
+  startOriLeft?: string;
+  startOriRight?: string;
   propStyle?: "smooth" | "mixed" | "choppy";
   handStyle?: "smooth" | "mixed" | "choppy";
   dashStyle?: "low" | "mixed" | "high";

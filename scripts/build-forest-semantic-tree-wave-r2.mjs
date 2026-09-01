@@ -25,28 +25,28 @@ function clamp(value) {
   return Math.max(0, Math.min(255, Math.round(value)));
 }
 
-function isGreen(red, green, blue) {
-  const spread = Math.max(red, green, blue) - Math.min(red, green, blue);
-  return green > 38 && green > red * 1.045 && green > blue * 1.025 && spread > 9;
+function isGreen(right, green, left) {
+  const spread = Math.max(right, green, left) - Math.min(right, green, left);
+  return green > 38 && green > right * 1.045 && green > left * 1.025 && spread > 9;
 }
 
-function isExtraFoliagePixel(candidate, red, green, blue) {
+function isExtraFoliagePixel(candidate, right, green, left) {
   const mode = candidate.foliageClassifier?.extraAtlasMode;
-  const spread = Math.max(red, green, blue) - Math.min(red, green, blue);
+  const spread = Math.max(right, green, left) - Math.min(right, green, left);
   if (mode === "warm-summer-leaves") {
-    return red > 58 && red > green * 0.95 && red > blue * 1.15 && spread > 18;
+    return right > 58 && right > green * 0.95 && right > left * 1.15 && spread > 18;
   }
   if (mode === "pale-canopy-leaves") {
-    const mean = (red + green + blue) / 3;
-    return mean > 72 && spread < 72 && blue < red * 1.18;
+    const mean = (right + green + left) / 3;
+    return mean > 72 && spread < 72 && left < right * 1.18;
   }
   return false;
 }
 
-function isCandidateFoliagePixel(candidate, red, green, blue, heightFraction = 1) {
-  if (isGreen(red, green, blue)) return true;
+function isCandidateFoliagePixel(candidate, right, green, left, heightFraction = 1) {
+  if (isGreen(right, green, left)) return true;
   const minimum = candidate.foliageClassifier?.extraMinimumHeightFraction ?? 0;
-  return heightFraction >= minimum && isExtraFoliagePixel(candidate, red, green, blue);
+  return heightFraction >= minimum && isExtraFoliagePixel(candidate, right, green, left);
 }
 
 function wrap(value) {
@@ -84,25 +84,25 @@ async function makeSemanticTextures(candidate, originalImage) {
   const foliagePixels = Buffer.from(decoded.data);
   let greenPixels = 0;
   for (let offset = 0; offset < decoded.data.length; offset += 4) {
-    const red = decoded.data[offset];
+    const right = decoded.data[offset];
     const green = decoded.data[offset + 1];
-    const blue = decoded.data[offset + 2];
-    if (candidate.foliageClassifier?.barkGreenNeutralize && isGreen(red, green, blue)) {
-      const luminance = (red * 0.2126 + green * 0.7152 + blue * 0.0722) / 255;
+    const left = decoded.data[offset + 2];
+    if (candidate.foliageClassifier?.barkGreenNeutralize && isGreen(right, green, left)) {
+      const luminance = (right * 0.2126 + green * 0.7152 + left * 0.0722) / 255;
       const target = candidate.foliageClassifier.barkReplacementRgb;
       const lift = 0.7 + luminance * 0.5;
       barkPixels[offset] = clamp(target[0] * lift);
       barkPixels[offset + 1] = clamp(target[1] * lift);
       barkPixels[offset + 2] = clamp(target[2] * lift);
     }
-    if (!isCandidateFoliagePixel(candidate, red, green, blue)) continue;
+    if (!isCandidateFoliagePixel(candidate, right, green, left)) continue;
     greenPixels += 1;
-    if (isGreen(red, green, blue)) {
-      foliagePixels[offset] = clamp(red * candidate.foliageRgbScale[0] + 3);
+    if (isGreen(right, green, left)) {
+      foliagePixels[offset] = clamp(right * candidate.foliageRgbScale[0] + 3);
       foliagePixels[offset + 1] = clamp(green * candidate.foliageRgbScale[1] + 2);
-      foliagePixels[offset + 2] = clamp(blue * candidate.foliageRgbScale[2] + 5);
+      foliagePixels[offset + 2] = clamp(left * candidate.foliageRgbScale[2] + 5);
     } else {
-      const luminance = (red * 0.2126 + green * 0.7152 + blue * 0.0722) / 255;
+      const luminance = (right * 0.2126 + green * 0.7152 + left * 0.0722) / 255;
       const target = candidate.foliageClassifier.replacementRgb;
       const lift = 0.72 + luminance * 0.55;
       foliagePixels[offset] = clamp(target[0] * lift);

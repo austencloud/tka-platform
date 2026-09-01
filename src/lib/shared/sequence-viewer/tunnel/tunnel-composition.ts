@@ -23,8 +23,8 @@ export interface ShapeMatrixTunnelSourceProvenance {
   mode: VtgMode;
   /** Present when prop-first selection rephased the realization. */
   propMode?: VtgMode;
-  blueFlower: Flower;
-  redFlower: Flower;
+  leftFlower: Flower;
+  rightFlower: Flower;
 }
 
 /** The complete generator recipe that produced an embedded performer source.
@@ -163,8 +163,8 @@ export const TunnelSourceProvenanceSchema = z.discriminatedUnion("kind", [
     version: z.literal(1),
     baseSequenceId: z.string().min(1),
     mode: z.enum(["SS", "TS", "QS", "SO", "TO", "QO"]),
-    blueFlower: FlowerSchema,
-    redFlower: FlowerSchema,
+    leftFlower: FlowerSchema,
+    rightFlower: FlowerSchema,
   }),
   z.object({
     kind: z.literal("generator-recipe"),
@@ -342,8 +342,8 @@ function cloneSourceProvenance(
   if (provenance.kind === "shape-matrix-realization") {
     return {
       ...provenance,
-      blueFlower: { ...provenance.blueFlower },
-      redFlower: { ...provenance.redFlower },
+      leftFlower: { ...provenance.leftFlower },
+      rightFlower: { ...provenance.rightFlower },
     };
   }
   if (provenance.kind === "generator-recipe") {

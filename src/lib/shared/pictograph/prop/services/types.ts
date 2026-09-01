@@ -9,8 +9,8 @@
  *  this prop's beta offset (no collision → no offset needed). Omitted fields
  *  default to visible. */
 export interface PropPlacementVisibility {
-  showBlue?: boolean;
-  showRed?: boolean;
+  showLeft?: boolean;
+  showRight?: boolean;
 }
 
 /**

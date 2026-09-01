@@ -25,8 +25,9 @@
   <div class="container">
     <h2>Level 2: Letter Motion Types</h2>
     <p class="section-intro">
-      Most Type 1 letters follow the same pattern in groups of three (Quarter-Same is the exception, with four).
-      Here are the first three letters showing the <strong>thesis → antithesis → synthesis</strong> structure.
+      Most Type 1 letters follow the same pattern in groups of three
+      (Quarter-Same is the exception, with four). Here are the first three
+      letters showing the <strong>thesis → antithesis → synthesis</strong> structure.
     </p>
 
     <div class="triad-grid">
@@ -40,7 +41,9 @@
 
           <div class="pictograph-wrapper">
             <PictographContainer
-              pictographData={pictographs[item.label as keyof typeof pictographs]}
+              pictographData={pictographs[
+                item.label as keyof typeof pictographs
+              ]}
               showTKA={true}
               showReversals={false}
               disableTransitions={true}
@@ -49,12 +52,12 @@
 
           <div class="motion-breakdown">
             <div class="motion blue">
-              <span class="hand">Blue:</span>
-              <span class="type">{item.blueMotion}</span>
+              <span class="hand">Left:</span>
+              <span class="type">{item.leftMotion}</span>
             </div>
             <div class="motion red">
-              <span class="hand">Red:</span>
-              <span class="type">{item.redMotion}</span>
+              <span class="hand">Right:</span>
+              <span class="type">{item.rightMotion}</span>
             </div>
           </div>
 
@@ -81,8 +84,9 @@
         <span class="ellipsis">...</span>
       </div>
       <p class="insight-text">
-        The entire Type 1 alphabet follows this triadic structure. Once you recognize the pattern,
-        you can predict the third letter's behavior from knowing the first two.
+        The entire Type 1 alphabet follows this triadic structure. Once you
+        recognize the pattern, you can predict the third letter's behavior from
+        knowing the first two.
       </p>
     </div>
   </div>

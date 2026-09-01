@@ -147,7 +147,7 @@ describe("startGalleryWarm", () => {
     for (const input of inputs) {
       expect(input.variant).toBe("gallery");
       expect(input.startPositionLayout).toBe("row");
-      expect(input.bluePropType).toBe(PropType.STAFF);
+      expect(input.leftPropType).toBe(PropType.STAFF);
       expect((input.visibility as { showMandala: boolean }).showMandala).toBe(true);
     }
     const qrFlags = inputs.map((i) => (i.visibility as { showQRCode: boolean }).showQRCode);

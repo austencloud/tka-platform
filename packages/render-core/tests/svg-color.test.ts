@@ -9,18 +9,18 @@ const FAN_SVG = `
 `;
 
 describe("applyMotionColorToSvg", () => {
-  it("scopes duplicated prop classes by motion color", () => {
-    const blue = applyMotionColorToSvg(FAN_SVG, "blue", {
+  it("scopes duplicated prop classes by performer hand", () => {
+    const left = applyMotionColorToSvg(FAN_SVG, "left", {
       makeClassNamesUnique: true,
     });
-    const red = applyMotionColorToSvg(FAN_SVG, "red", {
+    const right = applyMotionColorToSvg(FAN_SVG, "right", {
       makeClassNamesUnique: true,
     });
 
-    expect(blue).toContain(".st0-blue{fill:#3575E2;}");
-    expect(blue).toContain('class="st0-blue"');
-    expect(red).toContain(".st0-red{fill:#ED1C24;}");
-    expect(red).toContain('class="st0-red"');
-    expect(`${blue}${red}`).not.toMatch(/class="st0"/);
+    expect(left).toContain(".st0-left{fill:#3575E2;}");
+    expect(left).toContain('class="st0-left"');
+    expect(right).toContain(".st0-right{fill:#ED1C24;}");
+    expect(right).toContain('class="st0-right"');
+    expect(`${left}${right}`).not.toMatch(/class="st0"/);
   });
 });

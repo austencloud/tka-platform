@@ -115,20 +115,20 @@ export class StrictRotatedExecutor implements ILOOPExecutor {
     previousStep: SequenceStep,
     stepNumber: number
   ): SequenceStep {
-    const newBlueEndLoc = translateHandPath(
-      matchingStep.motions.blue.startLocation,
-      matchingStep.motions.blue.endLocation,
-      previousStep.motions.blue.endLocation
+    const newLeftEndLoc = translateHandPath(
+      matchingStep.motions.left.startLocation,
+      matchingStep.motions.left.endLocation,
+      previousStep.motions.left.endLocation
     );
-    const newRedEndLoc = translateHandPath(
-      matchingStep.motions.red.startLocation,
-      matchingStep.motions.red.endLocation,
-      previousStep.motions.red.endLocation
+    const newRightEndLoc = translateHandPath(
+      matchingStep.motions.right.startLocation,
+      matchingStep.motions.right.endLocation,
+      previousStep.motions.right.endLocation
     );
 
     const newEndPosition = gridPositionDeriver.getGridPositionFromLocations(
-      newBlueEndLoc,
-      newRedEndLoc
+      newLeftEndLoc,
+      newRightEndLoc
     );
 
     return {
@@ -137,17 +137,17 @@ export class StrictRotatedExecutor implements ILOOPExecutor {
       startPosition: previousStep.endPosition as SequenceStep["startPosition"],
       endPosition: newEndPosition as SequenceStep["endPosition"],
       motions: {
-        blue: {
-          ...matchingStep.motions.blue,
-          startLocation: previousStep.motions.blue
+        left: {
+          ...matchingStep.motions.left,
+          startLocation: previousStep.motions.left
             .endLocation as MotionData["startLocation"],
-          endLocation: newBlueEndLoc as MotionData["endLocation"],
+          endLocation: newLeftEndLoc as MotionData["endLocation"],
         },
-        red: {
-          ...matchingStep.motions.red,
-          startLocation: previousStep.motions.red
+        right: {
+          ...matchingStep.motions.right,
+          startLocation: previousStep.motions.right
             .endLocation as MotionData["startLocation"],
-          endLocation: newRedEndLoc as MotionData["endLocation"],
+          endLocation: newRightEndLoc as MotionData["endLocation"],
         },
       },
     };

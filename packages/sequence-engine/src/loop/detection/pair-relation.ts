@@ -5,7 +5,7 @@
  * Domain grounding (Flow Arts Knowledge MCP, "LOOP System and Compositional
  * Theory"): the LOOP algebra operates on a reduced space of grid positions
  * (where hands are), motion types (pro/anti/static/dash/float), and hand
- * identity (blue/red). Letters, turns, and orientations do NOT determine the
+ * identity (left/right). Letters, turns, and orientations do NOT determine the
  * LOOP classification. Per transform:
  *
  *   ROTATED   moves locations (90°/180°), keeps motionType + hand identity
@@ -24,7 +24,7 @@
  * A onto pair member B, then read inversion as a pro↔anti flip ALONG THAT
  * CORRESPONDENCE. One signal per question:
  *
- *   hand correspondence  ← which hand's location path does each color follow
+ *   hand correspondence  ← which hand owns each location path
  *   position component   ← the location map that aligns the paths
  *   inverted             ← motionType flip along the matched correspondence
  */
@@ -72,8 +72,8 @@ export interface PairMotion {
 }
 
 export interface PairMotions {
-  blue: PairMotion;
-  red: PairMotion;
+  left: PairMotion;
+  right: PairMotion;
 }
 
 export interface PairRelation {
@@ -168,30 +168,30 @@ function locationsMatch(
 export function relationsForPair(a: PairMotions, b: PairMotions): PairRelation[] {
   const relations: PairRelation[] = [];
   if (
-    !a?.blue?.startLocation || !a?.red?.startLocation ||
-    !b?.blue?.startLocation || !b?.red?.startLocation
+    !a?.left?.startLocation || !a?.right?.startLocation ||
+    !b?.left?.startLocation || !b?.right?.startLocation
   ) {
     return relations;
   }
 
   for (const swapped of [false, true]) {
     // The hand each of b's colors corresponds to in a.
-    const blueSource = swapped ? a.red : a.blue;
-    const redSource = swapped ? a.blue : a.red;
+    const leftSource = swapped ? a.right : a.left;
+    const rightSource = swapped ? a.left : a.right;
 
     for (const t of LOCATION_TRANSFORMS) {
       if (
-        !locationsMatch(t.map, blueSource, b.blue) ||
-        !locationsMatch(t.map, redSource, b.red)
+        !locationsMatch(t.map, leftSource, b.left) ||
+        !locationsMatch(t.map, rightSource, b.right)
       ) {
         continue;
       }
 
       // Location hypothesis holds — read inversion along this correspondence.
-      const blueAxis = motionAxis(blueSource.motionType, b.blue.motionType);
-      const redAxis = motionAxis(redSource.motionType, b.red.motionType);
-      if (blueAxis === "mismatch" || redAxis === "mismatch") continue;
-      const axes = [blueAxis, redAxis];
+      const leftAxis = motionAxis(leftSource.motionType, b.left.motionType);
+      const rightAxis = motionAxis(rightSource.motionType, b.right.motionType);
+      if (leftAxis === "mismatch" || rightAxis === "mismatch") continue;
+      const axes = [leftAxis, rightAxis];
       const hasFlip = axes.includes("flipped");
       const hasSame = axes.includes("same");
       // Mixed flip+same is neither the transform nor its inversion.
@@ -312,9 +312,9 @@ export function detectRewoundPattern(steps: readonly PairMotions[]): boolean {
   for (let i = 0; i < n / 2; i++) {
     const fwd = steps[i]!;
     const rev = steps[n - 1 - i]!;
-    for (const color of ["blue", "red"] as const) {
-      const f = fwd[color];
-      const r = rev[color];
+    for (const hand of ["left", "right"] as const) {
+      const f = fwd[hand];
+      const r = rev[hand];
       if (!f?.startLocation || !r?.startLocation) return false;
       if (
         f.startLocation !== r.endLocation ||

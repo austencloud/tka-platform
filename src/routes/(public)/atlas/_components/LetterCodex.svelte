@@ -39,7 +39,7 @@
     type GridMode as GridModeValue,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
-    MotionColor,
+    HandSide,
     MotionType,
     RotationDirection,
     type RotationDirection as RotationDirectionValue,
@@ -76,12 +76,12 @@
 
   let gridMode = $state<GridModeValue>(GridMode.DIAMOND);
   let selectedVariationIndex = $state(0);
-  let blueTurns = $state<TurnValue>(0);
-  let redTurns = $state<TurnValue>(0);
-  let blueRotation = $state<RotationDirectionValue>(
+  let leftTurns = $state<TurnValue>(0);
+  let rightTurns = $state<TurnValue>(0);
+  let leftRotation = $state<RotationDirectionValue>(
     RotationDirection.CLOCKWISE
   );
-  let redRotation = $state<RotationDirectionValue>(RotationDirection.CLOCKWISE);
+  let rightRotation = $state<RotationDirectionValue>(RotationDirection.CLOCKWISE);
   let overlayOpen = $state(false);
   let stageBoard = $state<ReturnType<typeof BoardStage> | undefined>();
 
@@ -115,10 +115,10 @@
   const editedVariations = $derived(
     applyTurnsToVariations(
       variations,
-      blueTurns,
-      redTurns,
-      blueRotation,
-      redRotation
+      leftTurns,
+      rightTurns,
+      leftRotation,
+      rightRotation
     )
   );
   const selectedBase = $derived(
@@ -147,10 +147,10 @@
       letter: info.label,
       gridMode,
       variation: selectedVariationIndex,
-      blueTurns,
-      redTurns,
-      blueRotation,
-      redRotation,
+      leftTurns,
+      rightTurns,
+      leftRotation,
+      rightRotation,
     };
   }
 
@@ -161,10 +161,10 @@
   }
 
   function resetEdits(): void {
-    blueTurns = 0;
-    redTurns = 0;
-    blueRotation = RotationDirection.CLOCKWISE;
-    redRotation = RotationDirection.CLOCKWISE;
+    leftTurns = 0;
+    rightTurns = 0;
+    leftRotation = RotationDirection.CLOCKWISE;
+    rightRotation = RotationDirection.CLOCKWISE;
   }
 
   function syncFromUrl(): void {
@@ -183,10 +183,10 @@
     selection.select(selectedInfo.id);
     gridMode = state.gridMode;
     selectedVariationIndex = state.variation;
-    blueTurns = state.blueTurns;
-    redTurns = state.redTurns;
-    blueRotation = state.blueRotation;
-    redRotation = state.redRotation;
+    leftTurns = state.leftTurns;
+    rightTurns = state.rightTurns;
+    leftRotation = state.leftRotation;
+    rightRotation = state.rightRotation;
     overlayOpen = overlayBoard;
   }
 
@@ -289,29 +289,29 @@
     return value === -0.5 ? "fl" : value;
   }
 
-  function motionAllowsFloat(color: MotionColor): boolean {
-    const motion = selectedBase?.motions?.[color];
+  function motionAllowsFloat(color: HandSide): boolean {
+    const motion = selectedBase?.motions?.[hand];
     return (
       motion?.motionType !== MotionType.DASH &&
       motion?.motionType !== MotionType.STATIC
     );
   }
 
-  function changeTurns(color: MotionColor, delta: number): void {
-    if (color === MotionColor.BLUE) {
-      blueTurns = nextTurns(blueTurns, delta, motionAllowsFloat(color));
+  function changeTurns(color: HandSide, delta: number): void {
+    if (color === HandSide.LEFT) {
+      leftTurns = nextTurns(leftTurns, delta, motionAllowsFloat(color));
     } else {
-      redTurns = nextTurns(redTurns, delta, motionAllowsFloat(color));
+      rightTurns = nextTurns(rightTurns, delta, motionAllowsFloat(color));
     }
     commitRoute();
   }
 
   function changeRotation(
-    color: MotionColor,
+    color: HandSide,
     direction: RotationDirectionValue
   ): void {
-    if (color === MotionColor.BLUE) blueRotation = direction;
-    else redRotation = direction;
+    if (color === HandSide.LEFT) leftRotation = direction;
+    else rightRotation = direction;
     commitRoute();
   }
 
@@ -378,10 +378,10 @@
       variations={editedVariations}
       selectedIndex={selectedVariationIndex}
       {draft}
-      {blueTurns}
-      {redTurns}
-      {blueRotation}
-      {redRotation}
+      {leftTurns}
+      {rightTurns}
+      {leftRotation}
+      {rightRotation}
       edited={hasLetterExplorerEdits(routeState())}
       {isLoading}
       {loadError}

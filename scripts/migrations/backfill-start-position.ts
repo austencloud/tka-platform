@@ -91,8 +91,8 @@ async function processCollection(
       continue;
     }
     const m = sp["motions"] as AnyRec;
-    const blue = (m["blue"] as AnyRec)?.["startLocation"];
-    const red = (m["red"] as AnyRec)?.["startLocation"];
+    const left = (m["blue"] as AnyRec)?.["startLocation"];
+    const right = (m["red"] as AnyRec)?.["startLocation"];
     if (APPLY) {
       try {
         await (d.ref as AnyRec)["update"]({ startPosition: stripUndefined(sp) });
@@ -102,7 +102,7 @@ async function processCollection(
         continue;
       }
     }
-    console.log(`  ${APPLY ? "✅" : "·"} "${word}" ${d.id} → blue@${blue} red@${red} letter=${JSON.stringify(sp["letter"])}`);
+    console.log(`  ${APPLY ? "✅" : "·"} "${word}" ${d.id} → blue@${left} red@${right} letter=${JSON.stringify(sp["letter"])}`);
     fixed++;
   }
   console.log(`  scanned=${scanned} needs-start-pos=${needed} ${APPLY ? "written" : "would-write"}=${fixed} unfixable=${failed}`);

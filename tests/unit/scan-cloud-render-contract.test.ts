@@ -78,7 +78,7 @@ describe("QR scan cloud-render contract", () => {
 
   it("builds the complete viewer in card mode before interactive startup", () => {
     const page = source("src/routes/sequence/[id]/SequenceViewerPage.svelte");
-    expect(page).toContain('initialViewerMode={scanOriginCode ? "card"');
+    expect(page).toMatch(/initialViewerMode=\{scanOriginCode\s*\?\s*"card"/);
     expect(page).toContain("deferInteractiveStartup");
     expect(page).toContain("startInCardThenSplit");
     expect(page).toContain("setScanCardCloudProbe(true)");

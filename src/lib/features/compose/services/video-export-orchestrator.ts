@@ -414,8 +414,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       const showElementalGlyph =
         ov?.elementalGlyph ?? visibilityManager.getVisibility("elementalGlyph");
       const showStepNumbers = ov?.stepNumbers ?? visibilityManager.getVisibility("stepNumbers");
-      const showBluePathLines = ov?.bluePathLines ?? visibilityManager.getVisibility("bluePathLines");
-      const showRedPathLines = ov?.redPathLines ?? visibilityManager.getVisibility("redPathLines");
+      const showLeftPathLines = ov?.leftPathLines ?? visibilityManager.getVisibility("leftPathLines");
+      const showRightPathLines = ov?.rightPathLines ?? visibilityManager.getVisibility("rightPathLines");
       const isDarkMode = visibilityManager.isDarkMode();
       // Grid is read from the global animation visibility/settings inside the
       // offscreen engine — there is no per-export grid flag on the offscreen init
@@ -468,8 +468,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           // the right prop BODY textures in initialize() (without them the renderer
           // boot-loads global settings → wrong/blank prop on the QR landing page,
           // which has no DI/settings bootstrap). null falls back to "staff".
-          bluePropType: options.bluePropType ?? null,
-          redPropType: options.redPropType ?? null,
+          leftPropType: options.leftPropType ?? null,
+          rightPropType: options.rightPropType ?? null,
           // Match the live theme + grid. previewDarkMode falls back to the export's
           // resolved isDarkMode; the visibility manager exposes no non-radial-points
           // key, so default to true (the prior hardcoded value) for unchanged behavior.
@@ -526,8 +526,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         inversionPeriod,
         reflectionAxis,
         overlayComponents,
-        showBluePathLines,
-        showRedPathLines,
+        showLeftPathLines,
+        showRightPathLines,
         sequenceSteps: steps,
         frameOverlayDraw: options.frameOverlayDraw,
       };

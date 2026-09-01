@@ -63,11 +63,11 @@ function makeStep(stepNumber: number): StepData {
     endPosition: "alpha3" as unknown as StepData["endPosition"],
     stepNumber,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     motions: {
-      blue: {
+      left: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "n",
@@ -79,7 +79,7 @@ function makeStep(stepNumber: number): StepData {
         propType: "staff",
         gridMode: "diamond",
       } as unknown as StepData["motions"]["blue"],
-      red: {
+      right: {
         motionType: "pro",
         rotationDirection: "ccw",
         startLocation: "s",

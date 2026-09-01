@@ -101,6 +101,6 @@ export interface LoopViabilityArgs {
  * Calculates turn distribution across steps based on level and turn intensity.
  */
 export interface TurnAllocation {
-  blue: (number | "fl")[];
-  red: (number | "fl")[];
+  left: (number | "fl")[];
+  right: (number | "fl")[];
 }

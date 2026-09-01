@@ -284,17 +284,17 @@ export class QRCodeGenerator {
   ): Promise<QRCodeResult> {
     throwIfAborted(options?.signal);
     const explicitCatDogMode =
-      options?.bluePropType && options.redPropType
-        ? options.bluePropType !== options.redPropType
+      options?.leftPropType && options.rightPropType
+        ? options.leftPropType !== options.rightPropType
         : undefined;
     const propConfig = resolveScanPropConfig(sequence, {
-      bluePropType: options?.bluePropType,
-      redPropType: options?.redPropType,
+      leftPropType: options?.leftPropType,
+      rightPropType: options?.rightPropType,
       catDogMode: explicitCatDogMode,
     });
     const propOptions = {
-      bluePropType: propConfig.bluePropType,
-      redPropType: propConfig.redPropType,
+      leftPropType: propConfig.leftPropType,
+      rightPropType: propConfig.rightPropType,
       catDogMode: propConfig.catDogMode,
       viewMode: options?.viewMode,
       deckId: options?.deckId,
@@ -308,8 +308,8 @@ export class QRCodeGenerator {
     for (const isDark of [true, false]) {
       await this.cellWarmer(sequence, {
         isDark,
-        bluePropType: propConfig.bluePropType,
-        redPropType: propConfig.redPropType,
+        leftPropType: propConfig.leftPropType,
+        rightPropType: propConfig.rightPropType,
         catDogMode: propConfig.catDogMode,
         requireComplete: true,
         signal: options?.signal,

@@ -19,9 +19,9 @@ import { resolveFlowerArchetype } from "./flower-archetype";
 export interface ShapeMatrixData {
   axis: Flower[];
   /** flowerKey → blue-hand MandalaPaths (its .blue populated). */
-  blue: Map<string, MandalaPaths>;
+  left: Map<string, MandalaPaths>;
   /** flowerKey → red-hand MandalaPaths (its .red populated). */
-  red: Map<string, MandalaPaths>;
+  right: Map<string, MandalaPaths>;
   propType?: PropType;
   /** Canonical single tracked source used by paths, parity, and live trails. */
   tipPoint?: TipPoint;
@@ -91,13 +91,13 @@ async function build(propType: PropType): Promise<ShapeMatrixData> {
     if (!f) return undefined;
     const startedAt = import.meta.env.DEV ? performance.now() : 0;
     const arch = f.style === "anti" ? antiArch : proArch;
-    // ONE canonical locus per flower descriptor (computed from the blue hand),
+    // ONE canonical locus per flower descriptor (computed from the left hand),
     // reused on both axes so the row header, the column header, and the diagonal
     // cell are geometrically identical — only the stroke color differs.
-    // Computing the red axis from its own hand point-reflects the shape (the
+    // Computing the right axis from its own hand point-reflects the shape (the
     // hands are anchored at opposite points), which desyncs the two axes and
     // stops the diagonal from overlapping into a clean purple pictograph.
-    const seq = buildFlowerSequence(arch, f, "blue", edges, propType);
+    const seq = buildFlowerSequence(arch, f, "left", edges, propType);
     const paths = calculateMandalaGeometry(
       seq.steps,
       undefined,
@@ -119,11 +119,11 @@ async function build(propType: PropType): Promise<ShapeMatrixData> {
   // descriptors here made every cold visit pay for paths the user might never
   // open. These maps retain the same geometry owner while computing a flower
   // on first use and sharing that locus between the blue and red axes.
-  const blue = new LazyPathMap(pathsFor);
-  const red = new LazyPathMap((key) => {
+  const left = new LazyPathMap(pathsFor);
+  const right = new LazyPathMap((key) => {
     const paths = pathsFor(key);
-    return paths ? { blue: [], red: paths.blue, purple: [] } : undefined;
+    return paths ? { left: [], right: paths.left, purple: [] } : undefined;
   });
 
-  return { axis, blue, red, propType, tipPoint: tip, clubTipDx };
+  return { axis, left, right, propType, tipPoint: tip, clubTipDx };
 }

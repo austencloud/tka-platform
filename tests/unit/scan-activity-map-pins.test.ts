@@ -52,8 +52,8 @@ function ev(partial: Partial<ScanEventRow>): ScanEventRow {
     lng: null,
     deviceId: null,
     userId: null,
-    bluePropType: null,
-    redPropType: null,
+    leftPropType: null,
+    rightPropType: null,
     catDogMode: null,
     ...partial,
   };
@@ -62,13 +62,13 @@ function ev(partial: Partial<ScanEventRow>): ScanEventRow {
 describe("scan preview prop configuration", () => {
   const entry = {
     code: "PROP",
-    bluePropType: PropType.FAN,
-    redPropType: PropType.FAN,
+    leftPropType: PropType.FAN,
+    rightPropType: PropType.FAN,
     catDogMode: false,
     decoded: {
       intendedProp: {
-        bluePropType: PropType.STAFF,
-        redPropType: PropType.STAFF,
+        leftPropType: PropType.STAFF,
+        rightPropType: PropType.STAFF,
         catDogMode: false,
       },
     } as SequenceData,
@@ -77,22 +77,22 @@ describe("scan preview prop configuration", () => {
 
   it("uses the physical scan event ahead of card and sequence defaults", () => {
     const event = ev({
-      bluePropType: PropType.POI,
-      redPropType: PropType.CLUB,
+      leftPropType: PropType.POI,
+      rightPropType: PropType.CLUB,
       catDogMode: true,
     });
 
     expect(scanPropConfigForPreview(entry, event)).toEqual({
-      bluePropType: PropType.POI,
-      redPropType: PropType.CLUB,
+      leftPropType: PropType.POI,
+      rightPropType: PropType.CLUB,
       catDogMode: true,
     });
   });
 
   it("uses stored card props for events recorded before prop telemetry", () => {
     expect(scanPropConfigForPreview(entry, ev({}))).toEqual({
-      bluePropType: PropType.FAN,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.FAN,
+      rightPropType: PropType.FAN,
       catDogMode: false,
     });
   });
@@ -281,7 +281,7 @@ describe("scan activity state", () => {
                   gridPosition: "alpha1",
                   isStartPosition: true,
                   motions: {
-                    blue: {
+                    left: {
                       color: "blue",
                       motionType: "static",
                       rotationDirection: "noRotation",
@@ -291,7 +291,7 @@ describe("scan activity state", () => {
                       startOrientation: "in",
                       endOrientation: "in",
                     },
-                    red: {
+                    right: {
                       color: "red",
                       motionType: "static",
                       rotationDirection: "noRotation",
@@ -311,7 +311,7 @@ describe("scan activity state", () => {
                     startPosition: "alpha1",
                     endPosition: "beta1",
                     motions: {
-                      blue: {
+                      left: {
                         color: "blue",
                         motionType: "pro",
                         rotationDirection: "cw",
@@ -321,7 +321,7 @@ describe("scan activity state", () => {
                         startOrientation: "in",
                         endOrientation: "out",
                       },
-                      red: {
+                      right: {
                         color: "red",
                         motionType: "dash",
                         rotationDirection: "noRotation",
@@ -370,18 +370,20 @@ describe("scan activity state", () => {
     });
 
     const decoded = state.codes[0]?.decoded;
-    expect(decoded?.steps[0]?.motions.blue).toMatchObject({
+    expect(decoded?.steps[0]?.motions.left).toMatchObject({
       propType: "staff",
-      color: "blue",
+      hand: "left",
     });
-    expect(decoded?.steps[0]?.motions.blue.arrowPlacementData).toBeDefined();
-    expect(decoded?.steps[0]?.motions.blue.propPlacementData).toBeDefined();
-    expect(decoded?.steps[0]?.motions.red.arrowPlacementData).toBeDefined();
-    expect(decoded?.steps[0]?.motions.red.propPlacementData).toBeDefined();
+    expect(decoded?.steps[0]?.motions.left.arrowPlacementData).toBeDefined();
+    expect(decoded?.steps[0]?.motions.left.propPlacementData).toBeDefined();
+    expect(decoded?.steps[0]?.motions.right.arrowPlacementData).toBeDefined();
+    expect(decoded?.steps[0]?.motions.right.propPlacementData).toBeDefined();
     expect(
-      decoded?.startPosition?.motions.blue.propPlacementData
+      decoded?.startPosition?.motions.left.propPlacementData
     ).toBeDefined();
-    expect(decoded?.startPosition?.motions.red.propPlacementData).toBeDefined();
+    expect(
+      decoded?.startPosition?.motions.right.propPlacementData
+    ).toBeDefined();
     expect(sequenceForScanPreview(state.codes[0] ?? null)?.id).toBe(
       "scan-activity-embedded-v1-LEGACY"
     );
@@ -920,7 +922,7 @@ describe("scan activity state", () => {
               stepNumber: 1,
               duration: 1,
               motions: {
-                blue: {
+                left: {
                   color: "blue",
                   motionType: "static",
                   rotationDirection: "noRotation",
@@ -931,7 +933,7 @@ describe("scan activity state", () => {
                   endOrientation: "in",
                   propType: PropType.POI,
                 },
-                red: {
+                right: {
                   color: "red",
                   motionType: "static",
                   rotationDirection: "noRotation",
@@ -972,13 +974,13 @@ describe("scan activity state", () => {
     await vi.waitFor(() => expect(state.codes[0]?.decoding).toBe(false));
 
     const decoded = state.codes[0]?.decoded;
-    expect(decoded?.steps[0]?.motions.blue.propType).toBe(PropType.POI);
-    expect(decoded?.steps[0]?.motions.red.propType).toBe(PropType.FAN);
-    expect(decoded?.steps[0]?.motions.blue.propPlacementData).toBeDefined();
-    expect(decoded?.steps[0]?.motions.red.propPlacementData).toBeDefined();
+    expect(decoded?.steps[0]?.motions.left.propType).toBe(PropType.POI);
+    expect(decoded?.steps[0]?.motions.right.propType).toBe(PropType.FAN);
+    expect(decoded?.steps[0]?.motions.left.propPlacementData).toBeDefined();
+    expect(decoded?.steps[0]?.motions.right.propPlacementData).toBeDefined();
     expect(scanPropConfigForPreview(state.codes[0] ?? null, event)).toEqual({
-      bluePropType: PropType.POI,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.POI,
+      rightPropType: PropType.FAN,
       catDogMode: true,
     });
     state.disconnect();
@@ -1090,8 +1092,8 @@ describe("ScanActivityWatcher", () => {
             ref: { path: "shortcodes/PROP/scanEvents/event-1" },
             data: () => ({
               timestamp: "2026-07-20T12:00:00.000Z",
-              bluePropType: "P",
-              redPropType: "fan",
+              leftPropType: "P",
+              rightPropType: "fan",
               catDogMode: true,
             }),
           },
@@ -1106,8 +1108,8 @@ describe("ScanActivityWatcher", () => {
     expect(receiveEvents).toHaveBeenCalledWith([
       expect.objectContaining({
         code: "PROP",
-        bluePropType: PropType.POI,
-        redPropType: PropType.FAN,
+        leftPropType: PropType.POI,
+        rightPropType: PropType.FAN,
         catDogMode: true,
       }),
     ]);

@@ -32,12 +32,12 @@ const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
 	pathShape: "arc",
 };
 
-function drawMandala(opts: ExportOptions, steps: StepLike[], bluePropType: string | undefined, redPropType: string | undefined): HTMLCanvasElement {
-	const tipEnds = pairTipEnds(bluePropType, redPropType);
+function drawMandala(opts: ExportOptions, steps: StepLike[], leftPropType: string | undefined, rightPropType: string | undefined): HTMLCanvasElement {
+	const tipEnds = pairTipEnds(leftPropType, rightPropType);
 	const paths = calculateMandalaGeometry(
 		steps,
-		bluePropType,
-		redPropType,
+		leftPropType,
+		rightPropType,
 		getMandalaPathOptions(opts.pathShape, tipEnds),
 	);
 
@@ -71,12 +71,12 @@ function drawMandala(opts: ExportOptions, steps: StepLike[], bluePropType: strin
 
 export async function exportMandalaPNG(
 	steps: StepLike[],
-	bluePropType: string | undefined,
-	redPropType: string | undefined,
+	leftPropType: string | undefined,
+	rightPropType: string | undefined,
 	options: Partial<ExportOptions> = {},
 ): Promise<Blob> {
 	const opts = { ...DEFAULT_EXPORT_OPTIONS, ...options };
-	const canvas = drawMandala(opts, steps, bluePropType, redPropType);
+	const canvas = drawMandala(opts, steps, leftPropType, rightPropType);
 
 	return new Promise<Blob>((resolve, reject) => {
 		canvas.toBlob(
@@ -108,8 +108,8 @@ const POSTER_QUALITIES = [0.85, 0.7, 0.55] as const;
 
 export function renderMandalaPosterDataUrl(
 	steps: StepLike[],
-	bluePropType: string | undefined,
-	redPropType: string | undefined,
+	leftPropType: string | undefined,
+	rightPropType: string | undefined,
 	options: Partial<Pick<ExportOptions, "show" | "pathShape">> = {},
 ): string {
 	const canvas = drawMandala(
@@ -121,8 +121,8 @@ export function renderMandalaPosterDataUrl(
 			...options,
 		},
 		steps,
-		bluePropType,
-		redPropType,
+		leftPropType,
+		rightPropType,
 	);
 
 	let dataUrl = "";

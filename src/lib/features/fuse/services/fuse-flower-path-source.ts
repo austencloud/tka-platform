@@ -4,7 +4,7 @@ import { applyVariationDescriptor } from "$lib/features/choreo-card/services/dec
 import { shiftStartPosition } from "$lib/shared/create/services/sequence-transforms";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   type Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
@@ -75,8 +75,13 @@ export async function buildFuseFlowerPath(
 ): Promise<SequenceData> {
   const { matrices, edges } = await loadBuildContext();
   const archetype = resolveFlowerArchetype(matrices, flower.style);
-  const flowerSequence = buildFlowerSequence(archetype, flower, side, edges);
-  const color = side === "blue" ? MotionColor.BLUE : MotionColor.RED;
+  const flowerSequence = buildFlowerSequence(
+    archetype,
+    flower,
+    side === "left" ? "blue" : "red",
+    edges
+  );
+  const color = side === "left" ? HandSide.LEFT : HandSide.RIGHT;
   const locationBeat = variation.startLocation
     ? flowerSequence.steps.findIndex(
         (step) => step.motions[color].startLocation === variation.startLocation
@@ -90,9 +95,9 @@ export async function buildFuseFlowerPath(
   if (!variation.startOrientation) return rephased;
 
   const startOriPair =
-    side === "blue"
-      ? { blue: variation.startOrientation }
-      : { red: variation.startOrientation };
+    side === "left"
+      ? { left: variation.startOrientation }
+      : { right: variation.startOrientation };
   return applyVariationDescriptor(
     rephased,
     { startOriPair } satisfies CardVariation,

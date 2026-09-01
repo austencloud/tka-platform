@@ -29,12 +29,12 @@ export function isSpinnerViewerProp(
 }
 
 export function sceneNeedsContactViewer(
-  bluePropType: PropType | string | null | undefined,
-  redPropType: PropType | string | null | undefined
+  leftPropType: PropType | string | null | undefined,
+  rightPropType: PropType | string | null | undefined
 ): boolean {
   return (
-    resolvePropMotionDiscipline(bluePropType) === "contact" ||
-    resolvePropMotionDiscipline(redPropType) === "contact"
+    resolvePropMotionDiscipline(leftPropType) === "contact" ||
+    resolvePropMotionDiscipline(rightPropType) === "contact"
   );
 }
 

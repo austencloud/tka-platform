@@ -23,7 +23,7 @@
     onBpmChange = () => {},
     onPlaybackModeChange = () => {},
     onPlaybackToggle = () => {},
-    bluePropType = null,
+    leftPropType = null,
     onPropChange,
     fanAppearance,
     onFanAppearanceChange,
@@ -57,7 +57,7 @@
     {onBpmChange}
     {onPlaybackModeChange}
     {onPlaybackToggle}
-    {bluePropType}
+    {leftPropType}
     {onPropChange}
     {fanAppearance}
     {onFanAppearanceChange}

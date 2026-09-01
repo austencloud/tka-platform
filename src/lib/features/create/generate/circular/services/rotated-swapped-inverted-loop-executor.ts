@@ -34,7 +34,7 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/mot
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
@@ -174,13 +174,13 @@ export class RotatedSwappedInvertedLOOPExecutor implements ILOOPExecutor {
       startPosition: previousStep.endPosition ?? null,
       endPosition: rotatedEndPosition,
       motions: {
-        [MotionColor.BLUE]: this._createRotatedSwappedInvertedMotion(
-          MotionColor.BLUE,
+        [HandSide.LEFT]: this._createRotatedSwappedInvertedMotion(
+          HandSide.LEFT,
           previousStep,
           previousMatchingStep
         ),
-        [MotionColor.RED]: this._createRotatedSwappedInvertedMotion(
-          MotionColor.RED,
+        [HandSide.RIGHT]: this._createRotatedSwappedInvertedMotion(
+          HandSide.RIGHT,
           previousStep,
           previousMatchingStep
         ),
@@ -238,31 +238,31 @@ export class RotatedSwappedInvertedLOOPExecutor implements ILOOPExecutor {
     previousStep: StepData,
     previousMatchingStep: StepData
   ): GridPosition | null {
-    const blueHandRotDir = getHandRotationDirection(
-      previousMatchingStep.motions[MotionColor.RED]!
+    const leftHandRotDir = getHandRotationDirection(
+      previousMatchingStep.motions[HandSide.RIGHT]!
         .startLocation as GridLocation,
-      previousMatchingStep.motions[MotionColor.RED]!.endLocation as GridLocation
+      previousMatchingStep.motions[HandSide.RIGHT]!.endLocation as GridLocation
     );
-    const redHandRotDir = getHandRotationDirection(
-      previousMatchingStep.motions[MotionColor.BLUE]!
+    const rightHandRotDir = getHandRotationDirection(
+      previousMatchingStep.motions[HandSide.LEFT]!
         .startLocation as GridLocation,
-      previousMatchingStep.motions[MotionColor.BLUE]!
+      previousMatchingStep.motions[HandSide.LEFT]!
         .endLocation as GridLocation
     );
 
-    const blueLocationMap = getLocationMapForHandRotation(blueHandRotDir);
-    const redLocationMap = getLocationMapForHandRotation(redHandRotDir);
+    const leftLocationMap = getLocationMapForHandRotation(leftHandRotDir);
+    const rightLocationMap = getLocationMapForHandRotation(rightHandRotDir);
 
-    const newBlueEndLoc =
-      blueLocationMap[
-        previousStep.motions[MotionColor.BLUE]!.endLocation as GridLocation
+    const newLeftEndLoc =
+      leftLocationMap[
+        previousStep.motions[HandSide.LEFT]!.endLocation as GridLocation
       ];
-    const newRedEndLoc =
-      redLocationMap[
-        previousStep.motions[MotionColor.RED]!.endLocation as GridLocation
+    const newRightEndLoc =
+      rightLocationMap[
+        previousStep.motions[HandSide.RIGHT]!.endLocation as GridLocation
       ];
 
-    return getGridPositionFromLocations(newBlueEndLoc, newRedEndLoc);
+    return getGridPositionFromLocations(newLeftEndLoc, newRightEndLoc);
   }
 
   /**
@@ -272,18 +272,18 @@ export class RotatedSwappedInvertedLOOPExecutor implements ILOOPExecutor {
    * flip-contributing transform in this combo — see file header).
    */
   private _createRotatedSwappedInvertedMotion(
-    color: MotionColor,
+    hand: HandSide,
     previousStep: StepData,
     previousMatchingStep: StepData
   ): MotionData {
-    const oppositeColor =
-      color === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE;
+    const oppositeHand =
+      hand === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
 
-    const previousMotion = previousStep.motions[color];
-    const matchingMotion = previousMatchingStep.motions[oppositeColor];
+    const previousMotion = previousStep.motions[hand];
+    const matchingMotion = previousMatchingStep.motions[oppositeHand];
 
     if (!previousMotion || !matchingMotion) {
-      throw new Error(`Missing motion data for ${color}`);
+      throw new Error(`Missing motion data for ${hand}`);
     }
 
     const startLocation = previousMotion.endLocation;
@@ -309,7 +309,7 @@ export class RotatedSwappedInvertedLOOPExecutor implements ILOOPExecutor {
 
     return {
       ...matchingMotion,
-      color,
+      hand,
       motionType: invertedMotionType,
       startLocation,
       endLocation,

@@ -10,7 +10,7 @@
   type LocationRotationDirection = "clockwise" | "counterclockwise";
 
   interface Props {
-    color: "blue" | "red";
+    hand: "left" | "right";
     location: GridLocation;
     active?: boolean;
     disabled?: boolean;
@@ -20,7 +20,7 @@
   }
 
   let {
-    color,
+    hand,
     location,
     active = false,
     disabled = false,
@@ -47,11 +47,11 @@
 
 <PropCycleControl
   valueLabel={currentLabel.short}
-  previousLabel="Rotate {color} location counterclockwise"
-  nextLabel="Rotate {color} location clockwise"
+  previousLabel="Rotate {hand} location counterclockwise"
+  nextLabel="Rotate {hand} location clockwise"
   selectLabel={disabled
     ? "Location changes are unavailable while a prop is at center"
-    : `Choose ${color} location on the placement grid. Current location: ${currentLabel.full}`}
+    : `Choose ${hand} location on the placement grid. Current location: ${currentLabel.full}`}
   {active}
   {disabled}
   {compact}
