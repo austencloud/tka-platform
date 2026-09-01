@@ -6,6 +6,7 @@
     type VtgMode,
   } from "../services/shape-matrix-realizations";
   import { TND_BY_FAMILY } from "$lib/features/choreo-card/domain/tnd-element";
+  import { growFade } from "$lib/shared/transitions/motion";
   import RelationshipChoiceChip from "./RelationshipChoiceChip.svelte";
 
   interface TargetGroup {
@@ -163,30 +164,29 @@
     {/each}
   </div>
 
-  <div class="hand-choice-slot">
-    {#if selectedGroup && selectedGroup.candidates.length > 1}
-      <div
-        class="hand-choices"
-        role="group"
-        aria-label="Hand paths that produce this prop relationship"
-      >
-        <span>Hand path</span>
-        {#each selectedGroup.candidates as candidate (candidate.mode)}
-          <button
-            type="button"
-            class:active={candidate.mode === selectedMode}
-            style="--hand: {candidate.element.accentColor}"
-            aria-pressed={candidate.mode === selectedMode}
-            disabled={building}
-            onclick={() => onhandpick(candidate.mode)}
-          >
-            <img src={candidate.element.iconPath} alt="" />
-            {candidate.mode}
-          </button>
-        {/each}
-      </div>
-    {/if}
-  </div>
+  {#if selectedGroup && selectedGroup.candidates.length > 1}
+    <div
+      class="hand-choices"
+      role="group"
+      aria-label="Hand paths that produce this prop relationship"
+      transition:growFade={{ axis: "y" }}
+    >
+      <span>Hand path</span>
+      {#each selectedGroup.candidates as candidate (candidate.mode)}
+        <button
+          type="button"
+          class:active={candidate.mode === selectedMode}
+          style="--hand: {candidate.element.accentColor}"
+          aria-pressed={candidate.mode === selectedMode}
+          disabled={building}
+          onclick={() => onhandpick(candidate.mode)}
+        >
+          <img src={candidate.element.iconPath} alt="" />
+          {candidate.mode}
+        </button>
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -203,9 +203,6 @@
     width: 1.55rem;
     height: 1.55rem;
     object-fit: contain;
-  }
-  .hand-choice-slot {
-    min-height: var(--min-touch-target, 44px);
   }
   .hand-choices {
     display: flex;
