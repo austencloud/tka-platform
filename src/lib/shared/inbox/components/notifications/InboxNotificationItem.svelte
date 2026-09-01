@@ -12,6 +12,7 @@
   import { goto } from "$app/navigation";
   import { inboxState } from "../../state/inbox-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import { CHOREO_CARD_SCAN_ATLAS_TAB_ID } from "$lib/shared/navigation/config/tab-definitions";
   import { setNotificationTargetFeedback } from "$lib/shared/feedback/state/notification-action-state.svelte";
   import { setScanNotificationTarget } from "$lib/features/choreo-card/state/scan-notification-target.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
@@ -329,7 +330,7 @@
         break;
 
       case "admin-qr-scan":
-        // Open the Scan Activity tab, flown to the scan and peeking the card.
+        // Open Scan Atlas, flown to the scan and peeking the card.
         if (n["shortCode"]) {
           setScanNotificationTarget({
             code: n["shortCode"] as string,
@@ -337,7 +338,10 @@
             lng: typeof n.scanLng === "number" ? n.scanLng : null,
           });
           inboxState.close();
-          await handleModuleChange("choreo_card", "scan-activity");
+          await handleModuleChange(
+            "choreo_card",
+            CHOREO_CARD_SCAN_ATLAS_TAB_ID
+          );
         }
         break;
 

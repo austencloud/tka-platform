@@ -45,7 +45,10 @@ import { resolveFrostPalette } from "../domain/frost-palettes";
 import { resolveSilkPalette } from "../domain/silk-palettes";
 import { resolveAnimalPalette } from "../domain/animal-palettes";
 import { resolvePulsePalette } from "../domain/pulse-palettes";
-import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
+import {
+  DEFAULT_TRAIL_GLOW_BLUR,
+  type TrailSettings,
+} from "$lib/shared/animation-engine/domain/types/trail-types";
 
 /**
  * Fold the effects-config trail VISUALS into a legacy TrailSettings base.
@@ -81,7 +84,7 @@ export function resolveTrails2D(
     lineWidth: intent.thickness,
     maxOpacity: intent.brightness,
     minOpacity: intent.brightness * 0.3,
-    glowBlur: 3,
+    glowBlur: DEFAULT_TRAIL_GLOW_BLUR,
   };
   return { ...intent, ...defaults, ...override };
 }

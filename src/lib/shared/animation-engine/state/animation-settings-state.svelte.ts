@@ -129,7 +129,7 @@ export function migrateAnimationSettings(
 
 /**
  * Load animation settings with migration logic
- * Forces vivid trail preset for all users
+ * Applies the canonical trail presentation for all users.
  */
 function loadSettings(): AnimationSettings {
   const settings = migrateAnimationSettings(
@@ -137,18 +137,17 @@ function loadSettings(): AnimationSettings {
     readStoredSettingsVersion(),
   );
 
-  // MIGRATION: Force the vivid trail preset for everyone
+  // Keep the shared presentation consistent across legacy animation surfaces.
   // The rendering now always uses exponential fade and tapered width (hardcoded)
   if (settings.trail) {
-    // Always force these "vivid" settings - they're what makes trails look good
-    settings.trail.mode = TrailMode.FADE;
-    settings.trail.effect = TrailEffect.GLOW;
-    // Thicker line width to compensate for tapering (tapered trails thin at tail)
-    settings.trail.lineWidth = 5;
-    settings.trail.maxOpacity = 1.0; // Full opacity at head
-    settings.trail.minOpacity = 0.25; // Higher minimum so tail doesn't fade too much
-    settings.trail.glowBlur = 3; // Stronger glow for more visibility
-    settings.trail.fadeDurationMs = 2500;
+    settings.trail.mode = MODULE_DEFAULT_TRAIL_SETTINGS.mode;
+    settings.trail.effect = MODULE_DEFAULT_TRAIL_SETTINGS.effect;
+    settings.trail.lineWidth = MODULE_DEFAULT_TRAIL_SETTINGS.lineWidth;
+    settings.trail.maxOpacity = MODULE_DEFAULT_TRAIL_SETTINGS.maxOpacity;
+    settings.trail.minOpacity = MODULE_DEFAULT_TRAIL_SETTINGS.minOpacity;
+    settings.trail.glowBlur = MODULE_DEFAULT_TRAIL_SETTINGS.glowBlur;
+    settings.trail.fadeDurationMs =
+      MODULE_DEFAULT_TRAIL_SETTINGS.fadeDurationMs;
     // Backfill tailLength for users persisted before this setting existed.
     if (
       typeof settings.trail.tailLength !== "number" ||

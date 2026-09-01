@@ -848,67 +848,73 @@
                 class:sidebar={!layout.effectiveMobile &&
                   (layout.isVideoExportActive || layout.isVideoUploadActive)}
               >
-                {#if layout.isVideoExportActive || layout.isArtInspectorActive}
-                  <div
-                    class="inspector-content-layer motion-settings-layer"
-                    data-active={layout.isVideoExportActive}
-                    inert={!layout.isVideoExportActive || undefined}
-                    aria-hidden={!layout.isVideoExportActive}
-                  >
-                    {#if ctx.previewBlobUrl}
-                      <VideoPreviewPanel
-                        blobUrl={ctx.previewBlobUrl}
-                        saveLabel="Save"
-                        onDismiss={interactions.handleDismissExportedVideo}
-                        onRedownload={() =>
-                          void interactions.handleRedownloadExportedVideo()}
-                      />
-                    {:else}
-                      <!-- No tempo and no playback mode on the Motion page: the
-                       transport under the canvas carries both and is visible
-                       from every page of this panel. Showing them here too put
-                       one setting on screen twice in two different controls.
-                       `bpm` and `playbackMode` still come in — the export page
-                       reads them for its duration estimate. -->
-                      <ExportVideoDrawer
-                        exportOptions={ctx.exportOptions}
-                        isExporting={interactions.videoBusy}
-                        exportProgress={interactions.videoProgress}
-                        canvasReady={ctx.canvasReady}
-                        layout={layout.effectiveMobile ? "bottom" : "sidebar"}
-                        singlePlayDuration={ctx.singlePlayDuration}
-                        isPlaying={ctx.isPlayingLocal}
-                        bpm={ctx.bpmLocal}
-                        renderMode={ctx.renderMode}
-                        playbackMode={ctx.playbackMode}
-                        selectedPropType={ctx.leftPropType}
-                        fanAppearance={ctx.fanAppearance}
-                        onFanAppearanceChange={ctx.handleFanAppearanceChange}
-                        propChirality={createGlobalChiralitySeam()}
-                        sequence={ctx.effectiveSequence}
-                        showInlineExportProgress={false}
-                        showTempoControls={false}
-                        onPropChange={(prop) =>
-                          interactions.handlePropChange(prop, "video_export")}
-                        onPlaybackToggle={() =>
-                          interactions.handlePlaybackToggle("video_export")}
-                        onBpmChange={(bpm) =>
-                          interactions.handleBpmChange(bpm, "video_export")}
-                        onExport={() => interactions.handleVideoExport()}
-                        onCancel={interactions.handleCancelVideoExport}
-                        onSettingChange={scanInstrumentationEnabled
-                          ? interactions.handleViewerControlSetting
-                          : undefined}
-                      />
-                    {/if}
-                  </div>
-                  <div
-                    class="inspector-content-layer art-settings-layer"
-                    data-active={layout.isArtInspectorActive}
-                    bind:this={artInspectorTarget}
-                    data-viewer-art-inspector-target
-                  ></div>
-                {:else if layout.isImageExportActive && !isMobile}
+                <!-- These layers share the inspector track for their entire
+                     lifetime. Changing data-active now starts the content
+                     crossfade in the same frame that PanelGroup moves the
+                     Card/inspector seam; there is no second mount-intro. -->
+                <div
+                  class="inspector-content-layer motion-settings-layer"
+                  data-active={layout.isVideoExportActive}
+                  inert={!layout.isVideoExportActive || undefined}
+                  aria-hidden={!layout.isVideoExportActive}
+                  data-effects-inspector
+                >
+                  {#if ctx.previewBlobUrl}
+                    <VideoPreviewPanel
+                      blobUrl={ctx.previewBlobUrl}
+                      saveLabel="Save"
+                      onDismiss={interactions.handleDismissExportedVideo}
+                      onRedownload={() =>
+                        void interactions.handleRedownloadExportedVideo()}
+                    />
+                  {:else}
+                    <!-- No tempo and no playback mode on the Motion page: the
+                         transport under the canvas carries both and is visible
+                         from every page of this panel. Showing them here too put
+                         one setting on screen twice in two different controls.
+                         `bpm` and `playbackMode` still come in — the export page
+                         reads them for its duration estimate. -->
+                    <ExportVideoDrawer
+                      exportOptions={ctx.exportOptions}
+                      isExporting={interactions.videoBusy}
+                      exportProgress={interactions.videoProgress}
+                      canvasReady={ctx.canvasReady}
+                      layout={layout.effectiveMobile ? "bottom" : "sidebar"}
+                      singlePlayDuration={ctx.singlePlayDuration}
+                      isPlaying={ctx.isPlayingLocal}
+                      bpm={ctx.bpmLocal}
+                      renderMode={ctx.renderMode}
+                      playbackMode={ctx.playbackMode}
+                      selectedPropType={ctx.leftPropType}
+                      fanAppearance={ctx.fanAppearance}
+                      onFanAppearanceChange={ctx.handleFanAppearanceChange}
+                      propChirality={createGlobalChiralitySeam()}
+                      sequence={ctx.effectiveSequence}
+                      showInlineExportProgress={false}
+                      showTempoControls={false}
+                      onPropChange={(prop) =>
+                        interactions.handlePropChange(prop, "video_export")}
+                      onPlaybackToggle={() =>
+                        interactions.handlePlaybackToggle("video_export")}
+                      onBpmChange={(bpm) =>
+                        interactions.handleBpmChange(bpm, "video_export")}
+                      onExport={() => interactions.handleVideoExport()}
+                      onCancel={interactions.handleCancelVideoExport}
+                      onSettingChange={scanInstrumentationEnabled
+                        ? interactions.handleViewerControlSetting
+                        : undefined}
+                    />
+                  {/if}
+                </div>
+                <div
+                  class="inspector-content-layer art-settings-layer"
+                  data-active={layout.isArtInspectorActive}
+                  inert={!layout.isArtInspectorActive || undefined}
+                  aria-hidden={!layout.isArtInspectorActive}
+                  bind:this={artInspectorTarget}
+                  data-viewer-art-inspector-target
+                ></div>
+                {#if layout.isImageExportActive && !isMobile}
                   <!-- No onClose on desktop widths: the card settings shape what
                      Share hands over and must stay put. Leave the Card pane via
                      the content rail. Below the sidebar threshold the panel
@@ -1330,8 +1336,8 @@
     visibility: hidden;
     pointer-events: none;
     transition:
-      opacity var(--transition-normal),
-      visibility 0s linear var(--duration-normal);
+      opacity var(--transition-fast),
+      visibility 0s linear var(--duration-fast);
   }
 
   .inspector-content-layer[data-active="true"] {
@@ -1339,12 +1345,27 @@
     visibility: visible;
     pointer-events: auto;
     transition:
-      opacity var(--transition-normal),
+      opacity var(--transition-fast),
       visibility 0s linear 0s;
   }
 
   .motion-settings-layer {
+    display: flex;
+    justify-content: flex-start;
+    overflow-x: hidden;
     overflow-y: auto;
+  }
+
+  /* The persistent Effects workspace is already composed at its destination
+     width while the zero-width inspector track is closed. PanelGroup then
+     reveals that stable surface through a moving clip instead of asking every
+     control row to rewrap at each intermediate width. */
+  .viewer-and-export.desktop
+    .motion-settings-layer
+    > :global(.export-panel.sidebar) {
+    width: var(--export-sidebar-width);
+    min-width: var(--export-sidebar-width);
+    flex: 0 0 var(--export-sidebar-width);
   }
 
   :global(:root[data-motion-preference="reduce"]) .inspector-content-layer {

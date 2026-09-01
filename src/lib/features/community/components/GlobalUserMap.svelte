@@ -28,7 +28,7 @@
     userLocation: { lat: number; lng: number } | null;
     apiKey: string;
     onMapReady?: () => void;
-    /** Scan-origin pins injected by the ChoreoCard Scan Activity view. */
+    /** Scan-origin pins injected by Choreo Card's Scan Atlas. */
     scanMarkers?: Array<{
       id: string;
       lat: number;
@@ -37,7 +37,7 @@
       styleClass?: "pin" | "pin-new";
       selected?: boolean;
     }>;
-    /** Fired when a scan-origin pin is clicked (Scan Activity view). */
+    /** Fired when a Scan Atlas pin is clicked. */
     onScanMarkerClick?: (id: string) => void;
     /** Lets feature views provide their own domain-specific empty state. */
     showEmptyState?: boolean;

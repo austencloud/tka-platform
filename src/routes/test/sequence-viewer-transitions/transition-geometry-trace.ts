@@ -75,6 +75,8 @@ export interface TransitionGeometrySample {
   inspectorSize: number;
   inspectorFlexGrow: number;
   inspectorIdentity: number;
+  effectsInspectorOpacity: number;
+  cardEffectsSeamGap: number;
   desktopInspectorExpected: boolean;
   cardSettingsWidth: number;
   cardSettingsHeight: number;
@@ -144,12 +146,17 @@ export interface TransitionGeometrySummary {
   cardReturnVisualWidth: TransitionEndpointUndershoot | null;
   cardReturnVisualHeight: TransitionEndpointUndershoot | null;
   cardReturnTravel: TransitionTravelSummary | null;
+  animationReturnSizeTravel: TransitionTravelSummary | null;
   cardSettingsFocusWidth: TransitionValueRange | null;
   cardSettingsFocusHeight: TransitionValueRange | null;
   cardSettingsFocusCenterY: TransitionValueRange | null;
   cardSettingsReturnWidth: TransitionValueRange | null;
   cardSettingsReturnHeight: TransitionValueRange | null;
   cardSettingsReturnCenterY: TransitionValueRange | null;
+  cardEffectsSeamGapMaximum: number;
+  cardEffectsOpacityOnsetSkew: number | null;
+  cardEffectsCrossfadeFrames: number;
+  cardEffectsBlankFrames: number;
   motionBlankFrames: number;
   motionUnready3DFrames: number;
   motionCurtainFrames: number;
@@ -390,6 +397,26 @@ function visiblePhaseRange(
     maximum,
     variation: maximum - minimum,
   };
+}
+
+function cardEffectsOpacityOnsetSkew(
+  samples: TransitionGeometrySample[]
+): number | null {
+  const handoff = samples.filter(
+    (sample) => sample.phase === "focus-2d" && sample.desktopInspectorExpected
+  );
+  const first = handoff[0];
+  if (!first || handoff.some((sample) => sample.dissolveActive)) return null;
+
+  const cardOnset = handoff.find(
+    (sample) => sample.cardOpacity < first.cardOpacity - 0.02
+  );
+  const effectsOnset = handoff.find(
+    (sample) =>
+      sample.effectsInspectorOpacity > first.effectsInspectorOpacity + 0.02
+  );
+  if (!cardOnset || !effectsOnset) return null;
+  return Math.abs(cardOnset.time - effectsOnset.time);
 }
 
 function valueRange(
@@ -717,6 +744,10 @@ export function summarizeTransitionGeometry(
       trace.samples,
       (sample) => sample.cardContentCenterX
     ),
+    animationReturnSizeTravel: travelSummary(
+      trace.samples,
+      (sample) => sample.animationSize
+    ),
     cardSettingsFocusWidth: visiblePhaseRange(
       trace.samples,
       "focus-card",
@@ -747,6 +778,35 @@ export function summarizeTransitionGeometry(
       "return-split",
       (sample) => sample.cardSettingsCenterY
     ),
+    cardEffectsSeamGapMaximum: Math.max(
+      0,
+      ...trace.samples
+        .filter(
+          (sample) =>
+            sample.phase === "focus-2d" &&
+            sample.desktopInspectorExpected &&
+            sample.cardPanelWidth > 0 &&
+            sample.inspectorSize > 0
+        )
+        .map((sample) => sample.cardEffectsSeamGap)
+    ),
+    cardEffectsOpacityOnsetSkew: cardEffectsOpacityOnsetSkew(trace.samples),
+    cardEffectsCrossfadeFrames: trace.samples.filter(
+      (sample) =>
+        sample.phase === "focus-2d" &&
+        sample.desktopInspectorExpected &&
+        !sample.dissolveActive &&
+        sample.cardOpacity >= 0.05 &&
+        sample.effectsInspectorOpacity >= 0.05
+    ).length,
+    cardEffectsBlankFrames: trace.samples.filter(
+      (sample) =>
+        sample.phase === "focus-2d" &&
+        sample.desktopInspectorExpected &&
+        !sample.dissolveActive &&
+        sample.cardOpacity < 0.05 &&
+        sample.effectsInspectorOpacity < 0.05
+    ).length,
     motionBlankFrames: isMotionTrace
       ? trace.samples.filter(
           (sample) =>

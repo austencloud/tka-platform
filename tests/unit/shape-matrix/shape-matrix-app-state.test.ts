@@ -62,6 +62,46 @@ function createState(compact: boolean) {
 }
 
 describe("shape matrix app state", () => {
+  it("lands each level on the turn band it introduces", () => {
+    const { state } = createState(false);
+
+    state.setLevel(3);
+    expect(state.leftTurn).toBe(0.5);
+    expect(state.rightTurn).toBe(0.5);
+    expect(state.availableTurns).toEqual(["fl", 0, 0.5, 1, 1.5, 2, 2.5, 3]);
+
+    state.setLevel(4);
+    expect(state.leftTurn).toBe(0.25);
+    expect(state.rightTurn).toBe(0.25);
+
+    state.setLevel(1);
+    expect(state.leftTurn).toBe(0);
+    expect(state.rightTurn).toBe(0);
+
+    state.setLevel(2);
+    expect(state.leftTurn).toBe(1);
+    expect(state.rightTurn).toBe(1);
+  });
+
+  it("applies the level landing to the edited axis and clamps the other", () => {
+    const { state } = createState(false);
+
+    state.setActiveAxis("left");
+    state.setLevel(3);
+    expect(state.leftTurn).toBe(0.5);
+    expect(state.rightTurn).toBe(0);
+
+    state.setTurn(2.5);
+    state.setActiveAxis("right");
+    state.setLevel(4);
+    expect(state.leftTurn).toBe(2.5);
+    expect(state.rightTurn).toBe(0.25);
+
+    state.setLevel(2);
+    expect(state.leftTurn).toBe(2);
+    expect(state.rightTurn).toBe(1);
+  });
+
   it("changes an empty matrix turn without inventing a transition", () => {
     requestShapeMatrixTransition.mockClear();
     const { state, syncState } = createState(false);
@@ -208,7 +248,7 @@ describe("shape matrix app state", () => {
 
     state.setLevel(4);
     state.setActiveAxis("left");
-    state.setTurn(0.25);
+    state.setTurn(0.75);
     expect(state.selectedPropMode).toBeNull();
   });
 
@@ -242,13 +282,13 @@ describe("shape matrix app state", () => {
     state.setTurn(0.75);
 
     expect(state.leftTurn).toBe(0.75);
-    expect(state.rightTurn).toBe(0);
+    expect(state.rightTurn).toBe(0.25);
     expect(state.selectedPair?.left.turns).toBe(0.75);
-    expect(state.selectedPair?.right.turns).toBe(0);
+    expect(state.selectedPair?.right.turns).toBe(0.25);
   });
 
   it("preserves each semantic row and column through every L4 turn and ratio band", () => {
-    const axis = buildFlowerAxis([0]).filter(
+    const axis = buildFlowerAxis([0.25]).filter(
       (flower) => flower.grid === "diamond"
     );
 
@@ -266,7 +306,7 @@ describe("shape matrix app state", () => {
         state.setTurn(turn);
         expect(semanticVariant(state.selectedPair!.left)).toBe(variant);
         expect(semanticVariant(state.selectedPair!.right)).toBe(3 - variant);
-        expect(state.rightTurn).toBe(0);
+        expect(state.rightTurn).toBe(0.25);
       }
 
       state.setActiveAxis("right");

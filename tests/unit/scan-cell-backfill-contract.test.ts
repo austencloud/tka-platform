@@ -11,7 +11,7 @@ const choreoCardTab = readFileSync(
 );
 
 describe("scan cell backfill wiring", () => {
-  it("mounts the cache controls inside Scan Activity", () => {
+  it("mounts the cache controls inside Scan Atlas", () => {
     expect(scanTab).toContain("<ScanCellWarmControls");
     expect(scanTab).toContain("selectedCode={scanState.selectedCode}");
   });

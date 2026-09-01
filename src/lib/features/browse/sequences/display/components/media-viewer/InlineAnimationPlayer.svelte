@@ -108,6 +108,7 @@
     externalBpm = null,
     chrome = "full",
     fill = false,
+    disassemblyLayout = "stacked",
     showWordHeader = false,
     showPositionGlyph = false,
     onStepChange = undefined,
@@ -180,6 +181,10 @@
      * header back in; other minimal hosts keep their current sizing.
      */
     fill?: boolean;
+    /** Arrangement used when the canonical canvas is disassembled. The default
+     *  vertical stack preserves viewer behavior; square embedded stages can
+     *  keep all three canvases inside one atmosphere with the sidecar layout. */
+    disassemblyLayout?: "stacked" | "sidecar";
     /** Show the sequence word above the canvas and highlight its live step.
      *  Explicit opt-in keeps existing fill-mode embeds canvas-only. */
     showWordHeader?: boolean;
@@ -774,6 +779,7 @@
         progressLine={minimal && interactive}
         hoverHint={minimal && interactive ? hoverHint : "none"}
         fillContainer={fill}
+        {disassemblyLayout}
         {hideTkaGlyph}
         {hideStepNumbers}
         hideHeader={fill && !showWordHeader}

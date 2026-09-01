@@ -51,7 +51,8 @@
     <RelationshipChoiceChip
       accent={c.el.accentColor}
       icon={c.el.iconPath}
-      code={c.mode}
+      code={c.el.name}
+      compactCode={c.mode}
       label={elementName(c.el.element)}
       active={selected === c.mode}
       disabled={disabled || (availabilityReady && !available.includes(c.mode))}

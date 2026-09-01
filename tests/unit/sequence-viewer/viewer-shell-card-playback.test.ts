@@ -261,8 +261,7 @@ describe("sequence viewer Card playback", () => {
     expect(harness.layout.cardAutoLayoutOverride).toEqual(stable);
   });
 
-  it("lets the export dock lead the focused pane by one motion stagger", () => {
-    vi.useFakeTimers();
+  it("returns the inspector and split panes in one state commit", () => {
     const harness = createHarness(false);
     disposals.push(harness.dispose);
 
@@ -270,10 +269,6 @@ describe("sequence viewer Card playback", () => {
     harness.layout.selectSplitMode();
 
     expect(harness.exportContext).toBeNull();
-    expect(harness.viewerMode).toBe("card");
-    vi.advanceTimersByTime(STAGGER.normal - 1);
-    expect(harness.viewerMode).toBe("card");
-    vi.advanceTimersByTime(1);
     expect(harness.viewerMode).toBe("split");
   });
 
@@ -283,7 +278,6 @@ describe("sequence viewer Card playback", () => {
     disposals.push(harness.dispose);
 
     harness.layout.selectSplitMode();
-    vi.advanceTimersByTime(STAGGER.normal);
     harness.layout.selectViewerMode("card");
     expect(harness.layout.cardContainSizeMotion).toBe("focus");
     vi.advanceTimersByTime(DURATION.emphasis + DURATION.normal - 1);
@@ -292,8 +286,6 @@ describe("sequence viewer Card playback", () => {
     expect(harness.layout.cardContainSizeMotion).toBeNull();
 
     harness.layout.selectSplitMode();
-    expect(harness.layout.cardContainSizeMotion).toBeNull();
-    vi.advanceTimersByTime(STAGGER.normal);
     expect(harness.layout.cardContainSizeMotion).toBe("return");
     vi.advanceTimersByTime(DURATION.emphasis + DURATION.normal);
     expect(harness.layout.cardContainSizeMotion).toBeNull();
@@ -333,7 +325,6 @@ describe("sequence viewer Card playback", () => {
 
     harness.layout.rememberReadableCardAutoLayout(resolved, 581, 839);
     harness.layout.selectSplitMode();
-    vi.advanceTimersByTime(STAGGER.normal);
     harness.layout.selectViewerMode("animation");
 
     expect(harness.layout.cardAutoLayoutOverride).toEqual(resolved);

@@ -101,13 +101,18 @@ import { HandSide } from "../../../pictograph/shared/domain/enums/pictograph-enu
  * These are THE trail settings. No presets, no customization.
  * Users can toggle trails on/off, but when ON, these exact settings are used.
  */
+/** Canonical factory width shared by legacy settings and unified effects. */
+export const DEFAULT_TRAIL_LINE_WIDTH = 4;
+/** Canonical halo radius; enough separation without turning the path into a band. */
+export const DEFAULT_TRAIL_GLOW_BLUR = 2.5;
+
 export const DEFAULT_TRAIL_SETTINGS: TrailSettings = {
   mode: TrailMode.FADE,
   effect: TrailEffect.GLOW,
   fadeDurationMs: 2500,
   maxPoints: 1000,
-  lineWidth: 5,
-  glowBlur: 3,
+  lineWidth: DEFAULT_TRAIL_LINE_WIDTH,
+  glowBlur: DEFAULT_TRAIL_GLOW_BLUR,
   leftColor: getMotionColor(HandSide.LEFT, "dark"),
   rightColor: getMotionColor(HandSide.RIGHT, "dark"),
   additionalLayerColors: [

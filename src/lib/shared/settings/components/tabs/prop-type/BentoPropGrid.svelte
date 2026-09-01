@@ -327,6 +327,10 @@
           {/snippet}
         </Popover.Trigger>
         <Popover.Portal>
+          <Popover.Overlay
+            class="variant-popover-overlay"
+            data-testid="prop-style-overlay"
+          />
           <Popover.Content
             side="bottom"
             sideOffset={8}
@@ -335,7 +339,11 @@
             forceMount
           >
             {#snippet child({ open, wrapperProps, props })}
-              <div {...wrapperProps}>
+              <div
+                {...wrapperProps}
+                class="drawer-interactive-portal"
+                style:z-index="var(--z-dropdown, 300)"
+              >
                 {#if open}
                   <section
                     {...props}
@@ -529,7 +537,7 @@
   }
 
   .variant-popover {
-    z-index: 60;
+    z-index: var(--z-dropdown, 300);
     container-type: inline-size;
     display: flex;
     width: min(420px, calc(100vw - 24px));
@@ -554,6 +562,16 @@
       var(--theme-card-bg, transparent)
     );
     box-shadow: 0 16px 52px var(--theme-shadow, rgba(0, 0, 0, 0.62));
+  }
+
+  /* The chooser is visually small, but it temporarily owns the pointer. A
+     transparent portaled shield keeps mobile hit-testing from handing the same
+     tap to whichever prop card happens to sit behind the animated popover. */
+  :global(.variant-popover-overlay) {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-dropdown, 300) - 1);
+    background: transparent;
   }
 
   .variant-popover-label {

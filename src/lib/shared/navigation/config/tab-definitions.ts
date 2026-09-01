@@ -579,12 +579,14 @@ export const ARENA_TABS: Section[] = [
 ];
 
 // Choreo Card tabs configuration
+export const CHOREO_CARD_SCAN_ATLAS_TAB_ID = "scan-atlas";
+
 export const CHOREO_CARD_TABS: Section[] = [
   {
-    id: "scan-activity",
+    id: CHOREO_CARD_SCAN_ATLAS_TAB_ID,
     labelKey: "tab_choreo_card_scan_activity",
     descKey: "tab_desc_choreo_card_scan_activity",
-    label: "Scan Activity",
+    label: "Scan Atlas",
     icon: '<i class="fas fa-satellite-dish" aria-hidden="true"></i>',
     description: "Live feed of Choreo Card scans worldwide",
     color: "#10b981",

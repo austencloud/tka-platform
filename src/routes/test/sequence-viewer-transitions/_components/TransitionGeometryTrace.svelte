@@ -515,6 +515,14 @@
         >Return travel: {formatTravel(summary.cardReturnTravel)}</span
       >
       <span
+        data-problem={summary.dissolveFrames === 0 &&
+          ((summary.animationReturnSizeTravel?.backtrack ?? 0) > 1 ||
+            (summary.animationReturnSizeTravel?.overshoot ?? 0) > 1)}
+        >2D return allocation: {formatTravel(
+          summary.animationReturnSizeTravel
+        )}</span
+      >
+      <span
         data-problem={settingsReflow(
           summary.cardSettingsFocusWidth,
           summary.cardSettingsFocusHeight,
@@ -533,6 +541,19 @@
         >Settings leave: width {formatRange(summary.cardSettingsReturnWidth)} · height
         {formatRange(summary.cardSettingsReturnHeight)} · center Y
         {formatRange(summary.cardSettingsReturnCenterY)}</span
+      >
+      <span
+        data-problem={summary.dissolveFrames === 0 &&
+          (summary.cardEffectsSeamGapMaximum > 1 ||
+            (summary.cardEffectsOpacityOnsetSkew ?? 0) > maxCardClockSkew ||
+            summary.cardEffectsBlankFrames > 0)}
+        >Card → Effects seam: max gap {Math.round(
+          summary.cardEffectsSeamGapMaximum
+        )} px · opacity onset skew {summary.cardEffectsOpacityOnsetSkew === null
+          ? "n/a"
+          : `${Math.round(summary.cardEffectsOpacityOnsetSkew)} ms`} · crossfade
+        {summary.cardEffectsCrossfadeFrames} frames · blank {summary.cardEffectsBlankFrames}
+        frames</span
       >
       {#if returnPanelMinimumSample}
         <span data-problem={(summary.cardReturnPanelWidth?.undershoot ?? 0) > 1}

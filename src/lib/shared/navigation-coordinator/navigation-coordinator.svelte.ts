@@ -32,6 +32,7 @@ function afterViewTransitionSettles(
 }
 
 import type { ModuleId } from "../navigation/domain/types";
+import { normalizeSectionId } from "../navigation/config/module-definitions";
 import {
   MODULE_DEFINITIONS,
   ENABLED_MODULE_DEFINITIONS,
@@ -619,12 +620,14 @@ const RETIRED_DEFAULT_SECTIONS: ReadonlyMap<string, string> = new Map([
 ]);
 
 function buildPath(moduleId: ModuleId, sectionId?: string) {
+  const normalizedSectionId = normalizeSectionId(moduleId, sectionId);
+
   // Browse's outer navigation only knows Explore and You, but those buttons
   // still need to land on a complete inner route. Writing the alias here races
   // Browse's own resolver at the end of the View Transition and used to leave
   // the address bar at /browse/you after the content had already changed.
   if (moduleId === "browse") {
-    return normalizeBrowsePrimary(sectionId) === "you"
+    return normalizeBrowsePrimary(normalizedSectionId) === "you"
       ? "/browse/you/sequences"
       : "/browse/explore/sequences";
   }
@@ -634,23 +637,29 @@ function buildPath(moduleId: ModuleId, sectionId?: string) {
     const moduleDef = getModuleDefinitions().find((m) => m.id === moduleId);
     const defaultSection =
       moduleDef?.sections?.[0]?.id ?? RETIRED_DEFAULT_SECTIONS.get(moduleId);
-    if (!sectionId || sectionId === defaultSection) {
+    if (!normalizedSectionId || normalizedSectionId === defaultSection) {
       return `/${moduleId}`;
     }
   }
-  return sectionId ? `/${moduleId}/${sectionId}` : `/${moduleId}`;
+  return normalizedSectionId
+    ? `/${moduleId}/${normalizedSectionId}`
+    : `/${moduleId}`;
 }
 
 function recordNavigationVisit(moduleId: ModuleId, sectionId?: string): void {
   getNavigationVisitPersister().recordVisit(
-    buildNavigationDestinationId(moduleId, sectionId)
+    buildNavigationDestinationId(
+      moduleId,
+      normalizeSectionId(moduleId, sectionId)
+    )
   );
 }
 
 function replaceHistoryState(moduleId: ModuleId, sectionId?: string) {
   if (typeof window === "undefined") return;
+  const normalizedSectionId = normalizeSectionId(moduleId, sectionId);
   const url = new URL(window.location.href);
-  const canonical = buildPath(moduleId, sectionId);
+  const canonical = buildPath(moduleId, normalizedSectionId);
   // Deep links carry more path than the canonical /module/tab —
   // /browse/library/{id}?scan=1 (the phone scan handoff) or
   // /creators/{userId}. This runs at boot BEFORE the lazy-loaded
@@ -658,7 +667,7 @@ function replaceHistoryState(moduleId: ModuleId, sectionId?: string) {
   // eat those segments and strand the deep link on the tab's list view.
   // Keep the longer pathname whenever it sits under the canonical path.
   const browsePrimary =
-    moduleId === "browse" ? normalizeBrowsePrimary(sectionId) : null;
+    moduleId === "browse" ? normalizeBrowsePrimary(normalizedSectionId) : null;
   const preservesBrowseInnerRoute =
     browsePrimary !== null &&
     (url.pathname === `/browse/${browsePrimary}` ||
@@ -668,21 +677,22 @@ function replaceHistoryState(moduleId: ModuleId, sectionId?: string) {
   }
   url.hash = "";
   pruneRouteScopedParams(url, url.pathname);
-  writeUrl(url, { state: { moduleId, sectionId } });
-  recordNavigationVisit(moduleId, sectionId);
+  writeUrl(url, { state: { moduleId, sectionId: normalizedSectionId } });
+  recordNavigationVisit(moduleId, normalizedSectionId);
 }
 
 function pushHistoryState(moduleId: ModuleId, sectionId?: string) {
   if (typeof window === "undefined") return;
+  const normalizedSectionId = normalizeSectionId(moduleId, sectionId);
   const url = new URL(window.location.href);
-  url.pathname = buildPath(moduleId, sectionId);
+  url.pathname = buildPath(moduleId, normalizedSectionId);
   url.hash = "";
   pruneParamsForNavigation(url, url.pathname);
   writeUrl(url, {
     mode: "push",
-    state: { moduleId, sectionId },
+    state: { moduleId, sectionId: normalizedSectionId },
   });
-  recordNavigationVisit(moduleId, sectionId);
+  recordNavigationVisit(moduleId, normalizedSectionId);
 }
 
 let historyInitialized = false;
@@ -751,6 +761,7 @@ function parsePathNavigation(): {
     // Validate module exists
     const moduleDefinition = MODULE_DEFINITIONS.find((m) => m.id === moduleId);
     if (moduleDefinition) {
+      sectionId = normalizeSectionId(moduleId, sectionId);
       // If section is provided, validate it exists for this module
       if (sectionId) {
         const validSection = moduleDefinition.sections.some(
@@ -772,7 +783,7 @@ function parsePathNavigation(): {
   if (hash && hash !== "#") {
     const parts = hash.substring(1).split("/");
     let moduleId = parts[0] as ModuleId;
-    const sectionId = parts[1];
+    let sectionId = parts[1];
 
     // Redirect legacy hash URLs to their new locations
     // (Note: these IDs are not in ModuleId type but may exist in legacy hash URLs)
@@ -785,6 +796,7 @@ function parsePathNavigation(): {
 
     const moduleDefinition = MODULE_DEFINITIONS.find((m) => m.id === moduleId);
     if (moduleDefinition) {
+      sectionId = normalizeSectionId(moduleId, sectionId);
       if (sectionId) {
         const validSection = moduleDefinition.sections.some(
           (s) => s.id === sectionId
@@ -893,6 +905,15 @@ export function initializeNavigationHistory() {
       // Dashboard removed Jan 2026 - Create is now the default landing
       targetModule = "create" as ModuleId;
       targetSection = undefined;
+      needsHistoryUpdate = true;
+    }
+
+    const normalizedTargetSection = normalizeSectionId(
+      targetModule,
+      targetSection
+    );
+    if (normalizedTargetSection !== targetSection) {
+      targetSection = normalizedTargetSection;
       needsHistoryUpdate = true;
     }
 

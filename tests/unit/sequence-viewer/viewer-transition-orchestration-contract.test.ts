@@ -17,6 +17,9 @@ const shell = read(
 const workspacePanels = read(
   "src/lib/shared/sequence-viewer/components/ViewerWorkspacePanels.svelte"
 );
+const shellLayoutState = read(
+  "src/lib/shared/sequence-viewer/state/viewer-shell-layout-state.svelte.ts"
+);
 const panelGroup = read("src/lib/shared/panels/PanelGroup.svelte");
 const viewerModeDissolve = read(
   "src/lib/shared/transitions/viewer-mode-dissolve.ts"
@@ -101,7 +104,11 @@ describe("Sequence Viewer transition orchestration contract", () => {
       'import PanelGroup, {\n    type PanelDefinition,\n  } from "$lib/shared/panels/PanelGroup.svelte"'
     );
     expect(workspacePanels).toContain('id: "export-inspector"');
-    expect(workspacePanels).toContain("fixedSize: inspectorCollapsed");
+    expect(workspacePanels).toContain('id: "export-inspector-stacked"');
+    expect(workspacePanels).toContain("!inspectorActive || inspectorCollapsed");
+    expect(workspacePanels).toContain('if (direction === "horizontal")');
+    expect(workspacePanels).toContain("else if (inspectorActive)");
+    expect(workspacePanels).toContain("fixedSize:");
     expect(workspacePanels).toContain(
       "if (inspectorActive) workspaceDirection = direction;"
     );
@@ -110,6 +117,11 @@ describe("Sequence Viewer transition orchestration contract", () => {
     );
     expect(panelGroup).toContain("style={getFlexStyle(panel, i)}");
     expect(panelGroup).toContain("const fixedSize = panel.fixedSize;");
+    expect(shell).toContain("data-effects-inspector");
+    expect(shell).toContain("> :global(.export-panel.sidebar)");
+    expect(geometryTrace).toContain("Card → Effects seam");
+    expect(geometryTrace).toContain("2D return allocation");
+    expect(shellLayoutState).not.toContain("splitModePromotionTimer");
   });
 
   it("reviews the real production shell through production mode buttons", () => {

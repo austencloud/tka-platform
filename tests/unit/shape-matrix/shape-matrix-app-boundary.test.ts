@@ -47,6 +47,7 @@ describe("Shape Matrix app boundary", () => {
     );
 
     expect(drillSource).toContain("disableContextMenu: false");
+    expect(drillSource).toContain('disassemblyLayout: "sidecar"');
     expect(drillSource).toContain(
       'import("$lib/shared/timeline/StepStrip.svelte")'
     );
@@ -63,6 +64,51 @@ describe("Shape Matrix app boundary", () => {
       '<i class="fas fa-arrow-right derivation-arrow" aria-hidden="true"></i>'
     );
     expect(drillSource).toContain('<span class="sr-only">produces</span>');
+  });
+
+  it("keeps embedded disassembly inside the Shape Matrix atmosphere", () => {
+    const inlinePlayerSource = readFileSync(
+      resolve(
+        "src/lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
+      ),
+      "utf8"
+    );
+    const animatorSource = readFileSync(
+      resolve(
+        "src/lib/shared/animation-engine/components/AnimatorCanvas.svelte"
+      ),
+      "utf8"
+    );
+    const splitSource = readFileSync(
+      resolve(
+        "src/lib/shared/animation-engine/components/SplitCanvasView.svelte"
+      ),
+      "utf8"
+    );
+
+    expect(inlinePlayerSource).toContain("{disassemblyLayout}");
+    expect(animatorSource).toContain(
+      "data-disassembly-layout={disassemblyLayout}"
+    );
+    expect(animatorSource).toContain("layout={disassemblyLayout}");
+    expect(animatorSource).toContain("{backgroundAlpha}");
+    expect(splitSource.match(/\{backgroundAlpha\}/g)).toHaveLength(2);
+    expect(splitSource).not.toContain("backgroundAlpha={1}");
+  });
+
+  it("does not reserve an empty hand-path row for ordinary prop relationships", () => {
+    const propPickerSource = readFileSync(
+      resolve(
+        "src/lib/shared/shape-matrix/components/PropRelationshipChipRow.svelte"
+      ),
+      "utf8"
+    );
+
+    expect(propPickerSource).not.toContain("hand-choice-slot");
+    expect(propPickerSource).toContain(
+      "selectedGroup && selectedGroup.candidates.length > 1"
+    );
+    expect(propPickerSource).toContain('transition:growFade={{ axis: "y" }}');
   });
 
   it("keeps each elemental button's visible mode and name in its accessible name", () => {

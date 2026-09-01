@@ -58,6 +58,13 @@ interface ShapeMatrixAppDependencies {
 
 type SemanticVariant = 0 | 1 | 2 | 3;
 
+const LEVEL_LANDING_TURN: Record<TurnLevel, TurnValue> = {
+  1: 0,
+  2: 1,
+  3: 0.5,
+  4: 0.25,
+};
+
 function semanticVariant(flower: Flower): SemanticVariant {
   if (flower.style === "float") {
     return ({ in: 0, out: 1, clock: 2, counter: 3 } as const)[flower.ori];
@@ -197,8 +204,14 @@ export function createShapeMatrixAppState(
   function setLevel(nextLevel: TurnLevel): void {
     if (level === nextLevel) return;
     level = nextLevel;
-    const nextLeftTurn = clampTurnToLevel(leftTurn, level);
-    const nextRightTurn = clampTurnToLevel(rightTurn, level);
+    const landingTurn = LEVEL_LANDING_TURN[level];
+    // A higher level should change the picture, not merely add quiet options
+    // around the current Level 1 matrix. Move the edited axis into the new
+    // vocabulary while preserving the other axis whenever it remains legal.
+    const nextLeftTurn =
+      activeAxis === "right" ? clampTurnToLevel(leftTurn, level) : landingTurn;
+    const nextRightTurn =
+      activeAxis === "left" ? clampTurnToLevel(rightTurn, level) : landingTurn;
     updateSelectedPairTurns(nextLeftTurn, nextRightTurn);
     if (nextLeftTurn === "fl" || nextLeftTurn !== nextRightTurn) {
       selectedPropMode = null;

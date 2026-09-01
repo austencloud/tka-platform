@@ -31,11 +31,11 @@
   const LEVEL_DESCRIPTIONS: Record<TurnLevel, { name: string; blurb: string }> =
     {
       1: { name: "Base Motions", blurb: "Zero turns" },
-      2: { name: "Whole Turns", blurb: "Zero through three whole turns" },
-      3: { name: "Half Turns + Float", blurb: "Half turns and Float" },
+      2: { name: "Whole Turns", blurb: "Adds whole turns" },
+      3: { name: "Half Turns + Float", blurb: "Adds half turns and Float" },
       4: {
         name: "Quarter Turns",
-        blurb: "Quarter turns, Float, and every prior band",
+        blurb: "Adds quarter turns",
       },
     };
   const AXIS_OPTIONS = [

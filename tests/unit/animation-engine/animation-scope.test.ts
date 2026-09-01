@@ -33,6 +33,8 @@ describe("ephemeral animation settings", () => {
     const settings = createAnimationSettingsState({ ephemeral: true });
 
     expect(settings.trail.trackingMode).toBe(TrackingMode.BOTH_ENDS);
+    expect(settings.trail.lineWidth).toBe(4);
+    expect(settings.trail.glowBlur).toBe(2.5);
   });
 
   it("seeds from defaults and does not write localStorage", () => {

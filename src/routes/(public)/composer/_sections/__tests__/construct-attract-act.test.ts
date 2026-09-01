@@ -222,6 +222,8 @@ describe("Construct animation rendering", () => {
     );
 
     expect(HERO_TRAIL_PRESET.mode).toBe(TrailMode.FADE);
+    expect(HERO_TRAIL_PRESET.lineWidth).toBe(5);
+    expect(HERO_TRAIL_PRESET.glowBlur).toBe(8);
     expect(HERO_TIP_EFFECT_MAP["*"]?.effect).toBe("trails");
     expect(constructSource).toContain(
       "trailSettingsOverride={HERO_TRAIL_PRESET}"

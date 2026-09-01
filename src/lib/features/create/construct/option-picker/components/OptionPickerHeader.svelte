@@ -329,6 +329,31 @@
     width: 7rem;
   }
 
+  /* The wide picker starts at 750px, before the full 608px level rail can sit
+     between two 7rem counterweights. Compact just this header in that band:
+     reserve a real slot for the filter, then let the equal-width level buttons
+     consume the exact remainder. The outer width is what prevents overlap;
+     the tighter padding keeps the longest label comfortable at the floor. */
+  @container (width < 900px) {
+    .oph:not(.compact) .oph-bar:not(.filter-only) {
+      grid-template-columns: minmax(6rem, 1fr) auto minmax(6rem, 1fr);
+    }
+
+    .oph:not(.compact) .filter-seg {
+      width: 6rem;
+    }
+
+    .oph:not(.compact) :global(.level-selector) {
+      gap: 0.5rem;
+    }
+
+    .oph:not(.compact) :global(.level-selector .lvl) {
+      width: clamp(10rem, calc((100cqw - 16.5rem) / 3), 12.25rem);
+      gap: 0.45rem;
+      padding-inline: 0.5rem;
+    }
+  }
+
   /* Row 2: two equal halves — blue (left), red (right) — revealed by sliding
      down. Each half centers [label][stepper]; the spin button is pinned to the
      half's colored edge, out of flow. */
