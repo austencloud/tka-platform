@@ -9,7 +9,7 @@
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 export const GUIDE_CODEX_STORAGE_KEY = "guide-codex-view-prefs";
-const GUIDE_CODEX_PREFS_VERSION = 3;
+const GUIDE_CODEX_PREFS_VERSION = 4;
 
 /** A turn count applied uniformly to every cell - 0 by default (the canonical
  *  base codex; letters.json bakes in 1, which the codex normalizes away).
@@ -93,11 +93,16 @@ export function restoreGuideCodexPrefs(raw: string | null): GuideCodexPrefs {
   if (
     typeof parsed !== "object" ||
     parsed === null ||
-    (parsed as { version?: unknown }).version !== GUIDE_CODEX_PREFS_VERSION
+    ![3, GUIDE_CODEX_PREFS_VERSION].includes(
+      (parsed as { version?: number }).version ?? -1
+    )
   ) {
     return defaultGuideCodexPrefs();
   }
-  const p = parsed as Partial<GuideCodexPrefs>;
+  const p = parsed as Partial<GuideCodexPrefs> & {
+    blueTurns?: GuideCodexTurns;
+    redTurns?: GuideCodexTurns;
+  };
   const d = defaultGuideCodexPrefs();
   const propType = (GUIDE_CODEX_PROP_TYPES as readonly PropType[]).includes(
     p.propType as PropType
@@ -108,7 +113,7 @@ export function restoreGuideCodexPrefs(raw: string | null): GuideCodexPrefs {
     version: GUIDE_CODEX_PREFS_VERSION,
     propType,
     visibility: { ...d.visibility, ...(p.visibility ?? {}) },
-    leftTurns: normalizeGuideCodexTurns(p.leftTurns),
-    rightTurns: normalizeGuideCodexTurns(p.rightTurns),
+    leftTurns: normalizeGuideCodexTurns(p.leftTurns ?? p.blueTurns),
+    rightTurns: normalizeGuideCodexTurns(p.rightTurns ?? p.redTurns),
   };
 }

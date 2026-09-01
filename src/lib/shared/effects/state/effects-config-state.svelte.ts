@@ -51,7 +51,10 @@ export interface EffectConfigMap {
 }
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 import { DEFAULT_EFFECTS_CONFIG } from "../domain/defaults";
-import { migrateEffectsConfig } from "../domain/migrations";
+import {
+  migrateEffectsConfig,
+  normalizeLegacyEffectIntentColors,
+} from "../domain/migrations";
 import { migrateLedConfig } from "$lib/shared/animation-engine/domain/types/led-config-migration";
 import {
   getDefaultEffectLayer,
@@ -271,7 +274,10 @@ function loadStoredConfig(): EffectsConfig | null {
     // brightness 5 is the same stale pre-v16 default — apply the v16 remap
     // to the overlaid value too.
     if (storedVersion < 16 && withVm.led.look.brightness === 5) {
-      withVm.led = { ...withVm.led, look: { ...withVm.led.look, brightness: 3 } };
+      withVm.led = {
+        ...withVm.led,
+        look: { ...withVm.led.look, brightness: 3 },
+      };
     }
     return withVm;
   } catch {
@@ -323,9 +329,7 @@ export function createEffectsConfigState(
   let config = $state<EffectsConfig>(
     normalizeEffectsConfig(
       stored ??
-        migrateFromVmStorageOnce(
-          migrateEffectsConfig(structuredClone(initial))
-        )
+        migrateFromVmStorageOnce(migrateEffectsConfig(structuredClone(initial)))
     )
   );
   let version = $state(0);
@@ -406,7 +410,12 @@ export function createEffectsConfigState(
   for (const id of EFFECT_IDS) {
     const stored = storedDefaults?.[id];
     personalDefaults[id] =
-      stored != null ? normalizeEffectIntent(id, cloneOne(stored)) : null;
+      stored != null
+        ? normalizeEffectIntent(
+            id,
+            normalizeLegacyEffectIntentColors(id, cloneOne(stored))
+          )
+        : null;
   }
 
   // Heal stale trail colours. The retired trail "Custom" preset seeded magenta/

@@ -205,6 +205,34 @@ describe("Fuse state", () => {
     expect(state.left.canGoBack).toBe(true);
   });
 
+  it("restores the literal blue/red source pair saved before migration", async () => {
+    const left = makeSequence("legacy-left", 8);
+    const right = makeSequence("legacy-right", 8);
+    const loader = createLoader([left, right]);
+    localStorage.setItem(
+      "fuse-tab-state",
+      JSON.stringify({
+        length: 8,
+        blue: { id: left.id, word: left.word, name: left.name },
+        red: { id: right.id, word: right.word, name: right.name },
+      })
+    );
+
+    const state = createState(loader);
+    await state.initialize();
+
+    expect(loader.loadFullSequenceData).toHaveBeenCalledWith(
+      left.word,
+      left.id
+    );
+    expect(loader.loadFullSequenceData).toHaveBeenCalledWith(
+      right.word,
+      right.id
+    );
+    expect(state.left.sequence?.id).toBe(left.id);
+    expect(state.right.sequence?.id).toBe(right.id);
+  });
+
   it("classifies fused letters on the live preview", async () => {
     const state = createState(createLoader([]), {
       generateSoloLoop: createSoloGenerator(),

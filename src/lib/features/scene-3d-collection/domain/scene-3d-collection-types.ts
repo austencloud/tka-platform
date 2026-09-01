@@ -6,6 +6,7 @@ import {
   normalizeSceneEnvironmentId,
   type SceneEnvironmentId,
 } from "$lib/shared/3d/environments/domain/scene-environment";
+import { normalizeLegacyScene3DSnapshot } from "$lib/shared/3d/state/legacy-viewer-3d-snapshots";
 
 /**
  * A reproducible snapshot of the 3D viewer configuration. Aggregates the four
@@ -117,48 +118,54 @@ const StoredPerformerSnapshotSchema = z.object({
 
 const GroupsSchema = z.record(z.enum(SCENE_3D_GROUPS), z.boolean());
 
-export const Scene3DSnapshotSchema = z.object({
-  version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-  scene: z
-    .object({
-      environmentId: z.string().optional(),
-      backgroundType: z.string().optional(),
-      oceanVariant: z.string(),
-    })
-    .refine(
-      (scene) => Boolean(scene.environmentId || scene.backgroundType),
-      "A saved 3D scene needs an environment identity"
-    ),
-  camera: z.any().nullable(),
-  performers: z.array(StoredPerformerSnapshotSchema),
-  selectedPerformerIndex: z.number().nullable(),
-  activeFormation: z.string(),
-  propSizeLinked: z.boolean(),
-  defaultSettings: z.object({
-    prop: z.string(),
-    effortId: z.string(),
-    planeMode: z.string(),
-    customLeftPlane: z.string(),
-    customRightPlane: z.string(),
-  }),
-  visiblePlanes: z.array(z.string()),
-  showGridLabels: z.boolean(),
-  navMode: z.enum(["orbit", "fly", "walk"]),
-  activePreset: z.string().nullable(),
-  activeCameraPreset: z.string(),
-  stageGroundOffset: z.number(),
-  effectToggles: z.record(z.string(), z.boolean()),
-  sceneFeatures: z.record(z.string(), z.boolean()),
-  props: z.object({
-    leftPropType: z.string().optional(),
-    rightPropType: z.string().optional(),
-  }),
-  bpm: z.number().optional(),
-  groups: GroupsSchema.optional(),
-});
+export const Scene3DSnapshotSchema = z.preprocess(
+  normalizeLegacyScene3DSnapshot,
+  z.object({
+    version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+    scene: z
+      .object({
+        environmentId: z.string().optional(),
+        backgroundType: z.string().optional(),
+        oceanVariant: z.string(),
+      })
+      .refine(
+        (scene) => Boolean(scene.environmentId || scene.backgroundType),
+        "A saved 3D scene needs an environment identity"
+      ),
+    camera: z.any().nullable(),
+    performers: z.array(StoredPerformerSnapshotSchema),
+    selectedPerformerIndex: z.number().nullable(),
+    activeFormation: z.string(),
+    propSizeLinked: z.boolean(),
+    defaultSettings: z.object({
+      prop: z.string(),
+      effortId: z.string(),
+      planeMode: z.string(),
+      customLeftPlane: z.string(),
+      customRightPlane: z.string(),
+    }),
+    visiblePlanes: z.array(z.string()),
+    showGridLabels: z.boolean(),
+    navMode: z.enum(["orbit", "fly", "walk"]),
+    activePreset: z.string().nullable(),
+    activeCameraPreset: z.string(),
+    stageGroundOffset: z.number(),
+    effectToggles: z.record(z.string(), z.boolean()),
+    sceneFeatures: z.record(z.string(), z.boolean()),
+    props: z.object({
+      leftPropType: z.string().optional(),
+      rightPropType: z.string().optional(),
+    }),
+    bpm: z.number().optional(),
+    groups: GroupsSchema.optional(),
+  })
+);
 
 /** Whether a group was saved. Absent mask (v1) = everything saved. */
-export function isGroupSaved(snapshot: Scene3DSnapshot, group: Scene3DGroupId): boolean {
+export function isGroupSaved(
+  snapshot: Scene3DSnapshot,
+  group: Scene3DGroupId
+): boolean {
   return snapshot.groups?.[group] ?? true;
 }
 
