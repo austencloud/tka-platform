@@ -135,6 +135,7 @@ export interface TransitionGeometrySample {
   performanceLayerActive: boolean;
   performanceGalleryReady: boolean;
   performanceLayoutColumns: number;
+  performancePlayerCount: number;
   stageLayerWidth: number;
   performanceLayerWidth: number;
 }
@@ -241,6 +242,7 @@ export interface TransitionGeometrySummary {
   performanceCrossfadeFrames: number;
   performanceUnreadyFrames: number;
   performanceLayoutChanges: number;
+  performancePlayerCountMaximum: number;
   performanceOpacityComplementDriftMaximum: number;
   performanceLayerWidthMismatchMaximum: number;
   performanceSurfacePath: string[];
@@ -667,10 +669,10 @@ function uniquePerformanceSurfacePath(
         sample.stageLayerOpacity >= 0.05 &&
         sample.performanceLayerOpacity >= 0.05
       ) {
-        return "Viewer stage + Performances";
+        return "Motion stage + Performance stage";
       }
-      if (sample.performanceLayerOpacity >= 0.05) return "Performances";
-      if (sample.stageLayerOpacity >= 0.05) return "Viewer stage";
+      if (sample.performanceLayerOpacity >= 0.05) return "Performance stage";
+      if (sample.stageLayerOpacity >= 0.05) return "Motion stage";
       return "Blank";
     })
   );
@@ -1208,6 +1210,12 @@ export function summarizeTransitionGeometry(
               .map((sample) => sample.performanceLayoutColumns)
               .filter((columns) => columns > 0)
           ).length - 1
+        )
+      : 0,
+    performancePlayerCountMaximum: isPerformanceTrace
+      ? Math.max(
+          0,
+          ...trace.samples.map((sample) => sample.performancePlayerCount)
         )
       : 0,
     performanceOpacityComplementDriftMaximum: isPerformanceTrace

@@ -61,6 +61,12 @@ const artPane = read(
 const sequenceVideos = read(
   "src/lib/shared/sequence-viewer/components/sequence-videos/SequenceVideos.svelte"
 );
+const performanceState = read(
+  "src/lib/shared/sequence-viewer/components/sequence-videos/state/performance-workspace-state.svelte.ts"
+);
+const performanceStage = read(
+  "src/lib/shared/sequence-viewer/components/sequence-videos/PerformanceStage.svelte"
+);
 
 describe("Sequence Viewer transition orchestration contract", () => {
   it("names both responsive switchers as Sequence views", () => {
@@ -332,23 +338,39 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(geometryTrace).toContain("Non-singleton canvas frames:");
   });
 
-  it("hands one fixed workspace allocation to Performances without background work", () => {
+  it("composes Performances through the persistent stage and inspector tracks", () => {
     expect(workspacePanels).toContain("data-persistent-viewer-stage");
-    expect(shell).toContain("data-persistent-performance-gallery");
+    expect(shell).toContain("data-persistent-performance-stage");
+    expect(shell).toContain("data-persistent-performance-inspector");
+    expect(shell).toContain("data-persistent-performance-editor");
     expect(workspacePanels).toContain("data-active={!takeoverActive}");
     expect(shell).toContain("data-active={layout.showVideoGallery}");
-    expect(shell).toContain("active={layout.showVideoGallery}");
+    expect(shell).toContain(
+      'active={layout.showVideoGallery ? "second" : "first"}'
+    );
     expect(workspacePanels).toContain("viewer-motion-stage-layer");
-    expect(shell).toContain("performance-gallery-layer");
-    expect(shell).toContain("takeoverActive={layout.showVideoGallery}");
+    expect(shell).toContain("performance-stage-layer");
+    expect(shell).toContain("performance-inspector-layer");
+    expect(shell).toContain("takeoverActive={performanceEditorActive}");
+    expect(shellLayoutState).toContain("showVideoGallery ||");
+    expect(shellLayoutState).toContain(
+      "isVideoExportActive || showVideoGallery"
+    );
     expect(workspacePanels).toContain("<DualSourceCrossfade");
+    expect(shell).toContain("<DualSourceCrossfade");
     expect(workspacePanels).toContain('profile="soft-dissolve"');
     expect(workspacePanels).toContain("panel-workspace-transition-stage");
     expect(sequenceVideos).not.toContain("in:fade");
-    expect(sequenceVideos).toContain("if (!active || !sequence?.id) return;");
-    expect(sequenceVideos).toContain("if (!active) activePlayer?.pause();");
-    expect(sequenceVideos).toContain('active && view === "browse"');
-    expect(sequenceVideos).toContain("poster={selectedVideo.thumbnailUrl}");
+    expect(sequenceVideos).toContain("<PerformanceStage");
+    expect(sequenceVideos).toContain("<PerformanceInspector");
+    expect(performanceState).toContain(
+      "if (!inputs.getActive() || !sequence?.id) return;"
+    );
+    expect(performanceState).toContain("activePlayer?.pause();");
+    expect(performanceState).toContain('view === "browse"');
+    expect(performanceStage).toContain(
+      "poster={workspace.selectedVideo.thumbnailUrl}"
+    );
     expect(viewerModeDissolve).toContain("GATE_FIVE_STAGE_MODES");
     expect(reviewFrame).toContain('message.command === "performances-2d"');
     expect(reviewFrame).toContain('message.command === "performances-3d"');
@@ -356,8 +378,9 @@ describe("Sequence Viewer transition orchestration contract", () => {
       'message.command === "performances-interrupt"'
     );
     expect(geometryTrace).toContain("Viewer stage remounts:");
-    expect(geometryTrace).toContain("Gallery remounts:");
-    expect(geometryTrace).toContain("Visible gallery layout changes:");
+    expect(geometryTrace).toContain("Performance stage remounts:");
+    expect(geometryTrace).toContain("Visible inspector layout changes:");
+    expect(geometryTrace).toContain("Maximum performance players:");
     expect(geometryTrace).toContain("Shared-background dip:");
   });
 });

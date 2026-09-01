@@ -78,7 +78,13 @@
 
     <div class="method-index" role="list" aria-label="Creation methods">
       {#each orderedMethods as method (method.id)}
-        <div class="method-item" role="listitem">
+        <div
+          class="method-item"
+          class:primary-method={method.id === "construct" ||
+            method.id === "generate"}
+          class:default-method={method.id === "construct"}
+          role="listitem"
+        >
           <button
             type="button"
             class="method-card"
@@ -101,10 +107,6 @@
                 <span class="method-description">{method.description}</span>
               {/if}
             </span>
-
-            <span class="open-indicator" aria-hidden="true">
-              <i class="fas fa-chevron-right"></i>
-            </span>
           </button>
         </div>
       {/each}
@@ -121,14 +123,14 @@
   }
 
   .front-door-inner {
-    width: min(calc(100% - clamp(24px, 6cqi, 120px)), 1120px);
+    width: min(calc(100% - clamp(20px, 5cqi, 80px)), 960px);
     min-height: 100%;
     margin: 0 auto;
-    padding-block: clamp(28px, 5cqh, 64px);
+    padding-block: clamp(20px, 4cqh, 52px);
     box-sizing: border-box;
     display: grid;
-    align-content: center;
-    gap: clamp(20px, 3cqh, 28px);
+    align-content: start;
+    gap: clamp(16px, 2.5cqh, 24px);
   }
 
   .front-door-header {
@@ -138,7 +140,7 @@
   h1 {
     margin: 0;
     color: var(--theme-text);
-    font-size: calc(var(--font-size-3xl, 1.875rem) * 1.2);
+    font-size: var(--font-size-3xl, 1.875rem);
     font-weight: 720;
     line-height: 1.08;
     letter-spacing: -0.025em;
@@ -147,24 +149,30 @@
 
   .method-index {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
     width: 100%;
   }
 
   .method-item {
     min-width: 0;
+    display: flex;
+  }
+
+  .method-item.default-method {
+    grid-column: 1 / -1;
   }
 
   .method-card {
     position: relative;
     width: 100%;
-    min-height: 96px;
-    display: grid;
-    grid-template-columns: 48px minmax(0, 1fr) 18px;
-    align-items: center;
-    gap: 18px;
-    padding: 16px 20px;
+    min-height: 174px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 14px;
     box-sizing: border-box;
     border: 1px solid
       color-mix(in srgb, var(--method-color) 30%, var(--theme-stroke));
@@ -178,8 +186,16 @@
     text-align: left;
     cursor: pointer;
     transition:
-      background-color var(--duration-normal) var(--ease-out),
-      border-color var(--duration-normal) var(--ease-out);
+      background-color var(--transition-normal),
+      border-color var(--transition-normal);
+  }
+
+  .method-item.default-method .method-card {
+    min-height: 92px;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
   }
 
   .method-card:hover {
@@ -211,8 +227,8 @@
   }
 
   .method-icon {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     display: grid;
     place-items: center;
     border: 1px solid
@@ -224,7 +240,8 @@
       var(--theme-card-bg)
     );
     color: var(--method-color);
-    font-size: var(--font-size-lg, 1.125rem);
+    font-size: var(--font-size-base, 1rem);
+    flex: 0 0 auto;
   }
 
   .method-copy {
@@ -243,7 +260,7 @@
 
   .method-name {
     color: var(--theme-text);
-    font-size: var(--font-size-xl, 1.25rem);
+    font-size: var(--font-size-lg, 1.125rem);
     font-weight: 720;
     line-height: 1.15;
   }
@@ -263,59 +280,82 @@
     white-space: nowrap;
   }
 
-  .open-indicator {
-    display: grid;
-    place-items: center;
-    color: color-mix(
-      in srgb,
-      var(--method-color) 68%,
-      var(--theme-text-dim)
-    );
-    font-size: 0.85rem;
-    transition: color var(--duration-normal) var(--ease-out);
-  }
-
-  .method-card:hover .open-indicator {
-    color: var(--method-color);
-  }
-
-  @container create-entry (max-width: 520px) {
+  @container create-entry (min-width: 480px) and (max-width: 619px) {
     .front-door-inner {
-      width: calc(100% - 20px);
-      align-content: start;
-      gap: 16px;
-      padding-block: 20px 28px;
+      width: min(calc(100% - 28px), 560px);
     }
 
-    h1 {
-      font-size: var(--font-size-3xl, 1.875rem);
-    }
-
-    .method-index {
-      gap: 8px;
-    }
-
-    .method-card {
-      min-height: 88px;
-      grid-template-columns: 40px minmax(0, 1fr) 14px;
-      gap: 12px;
-      padding: 12px 14px;
+    .method-card,
+    .method-item.default-method .method-card {
+      min-height: 132px;
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr);
+      align-items: center;
+      gap: 14px;
+      padding: 14px;
     }
 
     .method-icon {
-      width: 40px;
-      height: 40px;
-      font-size: var(--font-size-base, 1rem);
+      width: 44px;
+      height: 44px;
+      font-size: var(--font-size-lg, 1.125rem);
+    }
+  }
+
+  @container create-entry (min-width: 620px) {
+    .front-door-inner {
+      align-content: center;
+    }
+
+    .method-index {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    h1 {
+      font-size: calc(var(--font-size-3xl, 1.875rem) * 1.2);
+    }
+
+    .method-item.primary-method {
+      grid-column: span 3;
+    }
+
+    .method-item:not(.primary-method) {
+      grid-column: span 2;
+    }
+
+    .method-card,
+    .method-item.default-method .method-card {
+      min-height: 132px;
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr);
+      align-items: center;
+      gap: 16px;
+      padding: 18px;
+    }
+
+    .method-item.primary-method .method-card {
+      min-height: 144px;
+    }
+
+    .method-card {
+      height: 100%;
+    }
+
+    .method-icon {
+      width: 48px;
+      height: 48px;
+      font-size: var(--font-size-lg, 1.125rem);
     }
 
     .method-name {
-      font-size: var(--font-size-lg, 1.125rem);
+      font-size: var(--font-size-xl, 1.25rem);
     }
   }
 
   @media (max-height: 640px) and (min-width: 760px) {
     .front-door-inner {
-      width: min(calc(100% - 28px), 1120px);
+      width: min(calc(100% - 28px), 960px);
       gap: 8px;
       padding-block: 6px 8px;
     }
@@ -329,10 +369,15 @@
     }
 
     .method-card {
-      min-height: 64px;
-      grid-template-columns: 36px minmax(0, 1fr) 14px;
+      min-height: 104px;
+      grid-template-columns: 36px minmax(0, 1fr);
       gap: 10px;
       padding: 8px 12px;
+    }
+
+    .method-item.primary-method .method-card,
+    .method-item.default-method .method-card {
+      min-height: 104px;
     }
 
     .method-icon {
@@ -355,8 +400,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .method-card,
-    .open-indicator {
+    .method-card {
       transition: none;
     }
   }

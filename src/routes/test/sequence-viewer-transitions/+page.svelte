@@ -121,10 +121,10 @@
             ]
           : review.activeGateId === "performances"
             ? [
-                "the production viewer stage and Performances gallery retain one DOM identity for every round trip",
-                "the gallery inherits the exact viewer-stage allocation while the inspector departs or returns on the same clock",
-                "the fixed-width gallery dips through one shared background without a blank, double-opaque frame, or visible breakpoint swap",
-                "an inactive gallery does not fetch, play video, or drive the shared sequence playhead",
+                "the outer viewer stage and inspector retain one DOM identity for every round trip",
+                "the selected performance replaces the motion source inside the same stage allocation",
+                "Performance details replace Motion settings inside the same prepared inspector width",
+                "one shared state owns selection, one player, upload, mapping, and the sequence playhead",
                 "2D, ready 3D, rapid reversals, mobile layout, and reduced motion all remain stable",
               ]
             : [
