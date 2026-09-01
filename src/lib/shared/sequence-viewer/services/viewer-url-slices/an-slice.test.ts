@@ -273,4 +273,20 @@ describe("an slice", () => {
     visibility.replaceAll({ ...seeded.visibility, darkMode: true });
     expect(document.documentElement.classList.contains("dark")).toBe(true);
   });
+
+  it("seedFromAnSlice ignores unknown and __proto__ keys from a hand-edited blob", () => {
+    const payload = JSON.parse(
+      '{"settings":{"__proto__":{"polluted":true},"bogus":1,"bpm":77,"trail":{"__proto__":{"polluted":true},"nope":2}},' +
+        '"visibility":{"__proto__":{"polluted":true},"stepNumbers":false,"junk":true}}'
+    );
+    const seeded = seedFromAnSlice(payload);
+    for (const obj of [seeded.settings, seeded.settings.trail, seeded.visibility]) {
+      expect(Object.getPrototypeOf(obj)).toBe(Object.prototype);
+      expect((obj as { polluted?: boolean }).polluted).toBeUndefined();
+    }
+    expect("bogus" in seeded.settings).toBe(false);
+    expect("junk" in seeded.visibility).toBe(false);
+    expect(seeded.settings.bpm).toBe(77);
+    expect(seeded.visibility.stepNumbers).toBe(false);
+  });
 });
