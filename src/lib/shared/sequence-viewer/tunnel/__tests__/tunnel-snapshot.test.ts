@@ -41,6 +41,52 @@ describe("TunnelSnapshotSchema", () => {
   it("accepts a well-formed snapshot", () => {
     expect(TunnelSnapshotSchema.safeParse(validSnapshot).success).toBe(true);
   });
+
+  it("normalizes saved palette-keyed snapshots before validation", () => {
+    const legacySnapshot = {
+      ...validSnapshot,
+      version: 2,
+      tunnel: {
+        ...validSnapshot.tunnel,
+        colors: {
+          mode: "custom",
+          custom: { blue: "#123456", red: "#abcdef" },
+        },
+      },
+      paths: {
+        pathShape: "arc",
+        motionAwarePaths: false,
+        bluePathLines: true,
+        redPathLines: false,
+      },
+      props: {
+        bluePropType: "poi",
+        redPropType: "fan",
+        blueBuugengFlipped: true,
+        redBuugengFlipped: false,
+      },
+    };
+
+    const parsed = TunnelSnapshotSchema.safeParse(legacySnapshot);
+
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    expect(parsed.data.tunnel.colors.custom).toEqual({
+      left: "#123456",
+      right: "#abcdef",
+    });
+    expect(parsed.data.paths).toMatchObject({
+      leftPathLines: true,
+      rightPathLines: false,
+    });
+    expect(parsed.data.props).toEqual({
+      leftPropType: "poi",
+      rightPropType: "fan",
+      leftBuugengFlipped: true,
+      rightBuugengFlipped: false,
+    });
+  });
+
   it("rejects a snapshot missing the tunnel block", () => {
     const { tunnel: _drop, ...rest } = validSnapshot;
     expect(TunnelSnapshotSchema.safeParse(rest).success).toBe(false);

@@ -339,7 +339,11 @@
             forceMount
           >
             {#snippet child({ open, wrapperProps, props })}
-              <div {...wrapperProps} style:z-index="var(--z-dropdown, 300)">
+              <div
+                {...wrapperProps}
+                class="drawer-interactive-portal"
+                style:z-index="var(--z-dropdown, 300)"
+              >
                 {#if open}
                   <section
                     {...props}
