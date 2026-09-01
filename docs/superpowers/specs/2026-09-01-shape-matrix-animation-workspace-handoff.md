@@ -15,8 +15,8 @@ across retained canvases, and fixes portrait disassembly composition.
   `codex/shape-matrix-animation-workspace`. The focused Vitest run passed 8/8
   tests and swept every pro/anti × in/out pairing at 0, 0.25, 0.5, and 1 turn.
   It found six exact edges outside quarter bands and eight at quarter bands.
-  This item has no commit yet; move it to a commit-backed entry when the first
-  task commit lands.
+  Commit `b4b31ae756`; verification command:
+  `pnpm exec vitest run --config tests/config/vitest.config.ts src/lib/shared/shape-matrix/services/__tests__/solve-prop-relationship-phase.test.ts`.
 
 ## Believed done — unverified
 
@@ -27,9 +27,8 @@ across retained canvases, and fixes portrait disassembly composition.
 
 - Worktree: `E:/tka-platform-shape-matrix-animation-workspace`
 - Branch: `codex/shape-matrix-animation-workspace`
-- The design spec and this living handoff are uncommitted.
-- The relationship solver test contains a temporary diagnostic graph sweep. It
-  must become stable assertions with no console logging before commit.
+- Design/task ledger and the first stable graph assertions are committed in
+  `b4b31ae756`.
 - The primary checkout contains unrelated `human-generator/` work and must not
   be edited, staged, reverted, or committed by this task.
 
