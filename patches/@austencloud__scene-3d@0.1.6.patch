@@ -7096,19 +7096,20 @@ diff --git a/dist/lib/services/implementations/AvatarAnimator.d.ts.map b/dist/li
 deleted file mode 100644
 index f8e47d42167b6ea9bb4fd8f44f41273f48f1943b..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/AvatarAnimator.js b/dist/lib/services/implementations/AvatarAnimator.js
-index bdd5ae35ed47c58d29c537a7805705783f9b9066..703a8870a897bd0ae834b8ed25416203ac47dde5 100644
+index bdd5ae35ed47c58d29c537a7805705783f9b9066..e3d7377974dd19078983dcfcb913be8fccdc8b79 100644
 --- a/dist/lib/services/implementations/AvatarAnimator.js
 +++ b/dist/lib/services/implementations/AvatarAnimator.js
-@@ -4,7 +4,52 @@
+@@ -4,7 +4,53 @@
   * Manages avatar pose states and smooth animation blending.
   * Bridges TKA prop states to skeleton IK targets.
   */
 -import { Vector3, Quaternion } from "three";
 +import { Vector3, Quaternion, Matrix4 } from "three";
 +import { computeFaceCenter, FOREARM_FACE_CLEARANCE, FOREARM_NECK_CLEARANCE, FOREARM_TORSO_CLEARANCE, pointToSegmentDistance, } from "../geometry/BodyCollisionGeometry";
-+/** Max wrist swing toward the staff axis. Beyond this the alignment is
-+ *  anatomically implausible - bend partway and let the rest read as strain. */
-+const MAX_WRIST_SWING = (55 * Math.PI) / 180;
++/** Max wrist swing toward the staff axis. The staff-alignment frame should
++ *  keep a power grip close to the forearm axis; this cap prevents a malformed
++ *  rig calibration from collapsing the wrist before the body can compensate. */
++const MAX_WRIST_SWING = (35 * Math.PI) / 180;
 +/** Max wrist twist (pronation/supination) about the forearm axis. Roll is
 + *  anatomically much cheaper than deviation, so it gets its own bigger
 + *  clamp - one combined clamp starved the roll and left the hand off the
@@ -7153,7 +7154,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..703a8870a897bd0ae834b8ed25416203
  export class AvatarAnimator {
      ikSolver;
      skeleton;
-@@ -14,6 +59,10 @@ export class AvatarAnimator {
+@@ -14,6 +60,10 @@ export class AvatarAnimator {
      // Per-arm IK blend weights: 0 = animation drives the arm, 1 = IK drives the arm
      leftArmIK = { weight: 0, targetWeight: 0 };
      rightArmIK = { weight: 0, targetWeight: 0 };
@@ -7164,19 +7165,19 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..703a8870a897bd0ae834b8ed25416203
      ikBlendSpeed = 1 / 0.3; // ~0.3s ramp time
      smoothBlending = true;
      smoothingFactor = 0.15; // 0-1, higher = smoother but laggier
-@@ -67,6 +116,99 @@ export class AvatarAnimator {
+@@ -67,6 +117,99 @@ export class AvatarAnimator {
       * on top of the twist rest pose before arm IK runs. 0 = disabled.
       */
      externalSpinePitchRad = 0;
 +    // --- Wrist orientation goal + palm socket (grip geometry) ---
-+    // Hand-local grip geometry calibrated once from the finger chains: the
-+    // Index1->Pinky1 knuckle line is the axis a staff shaft crosses the palm
-+    // along, and the palm center sits partway to the Middle1 knuckle. MCP
-+    // bone ORIGINS don't move when fingers curl, so this is pose-invariant.
++    // Hand-local power-grip frame calibrated once from the finger chains.
++    // MCP bone origins don't move when fingers curl, so this is pose-invariant.
 +    leftGripAxisLocal = null;
 +    rightGripAxisLocal = null;
 +    leftPalmLocal = null;
 +    rightPalmLocal = null;
++    leftPalmNormalLocal = null;
++    rightPalmNormalLocal = null;
 +    leftPalmWorldLength = 0;
 +    rightPalmWorldLength = 0;
 +    gripCalibrated = false;
@@ -7264,7 +7265,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..703a8870a897bd0ae834b8ed25416203
      constructor(ikSolver, skeleton, poleComputer, clavicleRaiser, spineTwister) {
          this.ikSolver = ikSolver;
          this.skeleton = skeleton;
-@@ -140,9 +282,41 @@ export class AvatarAnimator {
+@@ -140,9 +283,41 @@ export class AvatarAnimator {
                  weight: 1,
              }
              : null;
@@ -7307,7 +7308,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..703a8870a897bd0ae834b8ed25416203
          this.leftArmIK.targetWeight = blueProp ? 1 : 0;
          this.rightArmIK.targetWeight = redProp ? 1 : 0;
          const ox = offset?.x ?? 0;
-@@ -154,6 +328,7 @@ export class AvatarAnimator {
+@@ -154,6 +329,7 @@ export class AvatarAnimator {
          this.targetPose.leftHand = blueProp
              ? {
                  targetPosition: new Vector3(blueProp.worldPosition.x - ox, blueProp.worldPosition.y - oy, blueProp.worldPosition.z - oz),
@@ -7315,7 +7316,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..703a8870a897bd0ae834b8ed25416203
                  staffAngle: blueProp.staffRotationAngle,
                  plane: blueProp.plane,
                  weight: 1,
-@@ -162,13 +337,55 @@ export class AvatarAnimator {
+@@ -162,13 +338,54 @@ export class AvatarAnimator {
          this.targetPose.rightHand = redProp
              ? {
                  targetPosition: new Vector3(redProp.worldPosition.x - ox, redProp.worldPosition.y - oy, redProp.worldPosition.z - oz),
@@ -7352,11 +7353,10 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..703a8870a897bd0ae834b8ed25416203
 +        return out;
 +    }
 +    /**
-+     * Achieved pinky-ward knuckle line (Index1->Pinky1) in world space,
-+     * AFTER this frame's solve - the direction a gripped staff's pinky end
-+     * (-Y) actually points given the wrist clamps. This is the render-side
-+     * weld target: rotate the prop onto this line and it sits in the fist
-+     * exactly as the wrist managed to hold it.
++     * Achieved directed power-grip axis in world space, AFTER this frame's
++     * solve. This is the render-side weld target: rotate the prop onto this
++     * line and it sits in the fist exactly as the wrist managed to hold it.
++     * The legacy method name is retained for package compatibility.
 +     */
 +    getKnuckleLineWorld(side, out) {
 +        const gripAxis = side === "left" ? this.leftGripAxisLocal : this.rightGripAxisLocal;
@@ -7767,7 +7767,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..703a8870a897bd0ae834b8ed25416203
                  // Save IK results BEFORE blending - .copy() would overwrite them
                  const ikRootQuat = rightChain.root.quaternion.clone();
                  const ikMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -476,11 +960,494 @@ export class AvatarAnimator {
+@@ -476,11 +960,520 @@ export class AvatarAnimator {
                  rightChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
                  rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
                  rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
@@ -7897,11 +7897,16 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..703a8870a897bd0ae834b8ed25416203
 +        bone.updateMatrixWorld(true);
 +    }
 +    /**
-+     * Calibrate hand-local grip geometry from the finger chains, once.
-+     * The Index1->Pinky1 MCP knuckle line is the axis a staff shaft lies
-+     * along when gripped; the palm center sits partway toward the Middle1
-+     * knuckle. Bone ORIGINS are invariant to finger curls, so this never
-+     * needs recalibrating.
++     * Calibrate a hand-local power-grip frame from the finger chains, once.
++     *
++     * A cylindrical handle runs longitudinally through a power grip, close to
++     * the wrist-to-middle-MCP axis. The Index1->Pinky1 line is transverse across
++     * the palm; aligning that line to a staff forces an otherwise neutral wrist
++     * into roughly 90 degrees of deviation. The thumb disambiguates which side
++     * of the palm plane is palmar so staff roll remains deterministic.
++     *
++     * Bone origins are invariant to finger curls, so this never needs
++     * recalibrating.
 +     */
 +    calibrateGrips(state) {
 +        const leftChain = this.skeleton.getLeftArmChain();
@@ -7919,7 +7924,8 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..703a8870a897bd0ae834b8ed25416203
 +            const index1 = fingers.get("Index1");
 +            const pinky1 = fingers.get("Pinky1");
 +            const middle1 = fingers.get("Middle1");
-+            if (!index1 || !pinky1 || !middle1)
++            const thumb1 = fingers.get("Thumb1");
++            if (!index1 || !pinky1 || !middle1 || !thumb1)
 +                return null;
 +            hand.updateWorldMatrix(true, false);
 +            this._m1.copy(hand.matrixWorld).invert();
@@ -7928,24 +7934,43 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..703a8870a897bd0ae834b8ed25416203
 +            const handWorld = hand.getWorldPosition(new Vector3());
 +            const middleWorld = middle1.getWorldPosition(new Vector3());
 +            const m = middleWorld.clone().applyMatrix4(this._m1);
-+            const axis = new Vector3().subVectors(p, i);
-+            if (axis.lengthSq() < 1e-10)
++            const thumb = thumb1
++                .getWorldPosition(new Vector3())
++                .applyMatrix4(this._m1);
++            const longitudinal = m.clone();
++            if (longitudinal.lengthSq() < 1e-10)
 +                return null;
-+            axis.normalize();
++            longitudinal.normalize();
++            const transverse = new Vector3().subVectors(p, i);
++            transverse.addScaledVector(longitudinal, -transverse.dot(longitudinal));
++            if (transverse.lengthSq() < 1e-10)
++                return null;
++            transverse.normalize();
++            const palmNormal = new Vector3()
++                .crossVectors(transverse, longitudinal)
++                .normalize();
++            if (palmNormal.dot(thumb.sub(m)) < 0)
++                palmNormal.negate();
++            // Directed toward the wrist/pinky end so it matches staff -Y. The
++            // opposite direction would silently flip which end of the staff the
++            // thumb faces.
++            const axis = longitudinal.clone().negate();
 +            const palm = m.clone().multiplyScalar(PALM_CENTER_FRACTION);
 +            const worldPalmLength = handWorld.distanceTo(middleWorld) * PALM_CENTER_FRACTION;
-+            return { axis, palm, worldPalmLength };
++            return { axis, palm, palmNormal, worldPalmLength };
 +        };
 +        const left = calibrateSide(leftChain.effector, chains.left);
 +        const right = calibrateSide(rightChain.effector, chains.right);
 +        if (left) {
 +            this.leftGripAxisLocal = left.axis;
 +            this.leftPalmLocal = left.palm;
++            this.leftPalmNormalLocal = left.palmNormal;
 +            this.leftPalmWorldLength = left.worldPalmLength;
 +        }
 +        if (right) {
 +            this.rightGripAxisLocal = right.axis;
 +            this.rightPalmLocal = right.palm;
++            this.rightPalmNormalLocal = right.palmNormal;
 +            this.rightPalmWorldLength = right.worldPalmLength;
 +        }
 +        this.gripCalibrated = true;
@@ -8164,12 +8189,12 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..703a8870a897bd0ae834b8ed25416203
 +        return pointToSegmentDistance(point, start, end, this._segmentOffsetScratch, this._segmentDirectionScratch, this._segmentClosestScratch);
 +    }
 +    /**
-+     * Rotate the hand so its knuckle line lies along the staff axis - the
-+     * wrist orientation goal. The remaining roll about the staff is resolved
++     * Rotate the hand so its longitudinal power-grip axis lies along the staff
++     * axis. The remaining roll about the staff is resolved
 +     * so each palm approaches from the medial side and leaves its wrist on
 +     * the outside of its own staff. The result is clamped to anatomical range
 +     * and THUMB-LOCKED: the staff ends are NOT
-+     * interchangeable. The knuckle line (Index1->Pinky1, pinky-ward) tracks
++     * interchangeable. The longitudinal axis (finger tips toward wrist) tracks
 +     * the staff's pinky end (-Y) as a directed constraint, so the hand can
 +     * never take the flipped solution - a real grip cannot swap which end
 +     * the thumb faces without regrasping. Demand beyond the anatomical
@@ -8180,25 +8205,26 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..703a8870a897bd0ae834b8ed25416203
 +        const staffQuat = hand.wristRotation;
 +        const gripAxis = side === "left" ? this.leftGripAxisLocal : this.rightGripAxisLocal;
 +        const palmLocal = side === "left" ? this.leftPalmLocal : this.rightPalmLocal;
++        const palmNormalLocal = side === "left" ? this.leftPalmNormalLocal : this.rightPalmNormalLocal;
 +        const eff = chain.effector;
-+        if (!staffQuat || !gripAxis || !palmLocal || !eff.parent)
++        if (!staffQuat || !gripAxis || !palmLocal || !palmNormalLocal || !eff.parent)
 +            return;
 +        // Bone quaternions changed since the last matrix update - refresh so
-+        // the knuckle line reflects THIS frame's solve.
++        // the grip frame reflects THIS frame's solve.
 +        chain.root.updateMatrixWorld(true);
-+        // Knuckle line in world space
++        // Longitudinal power-grip axis in world space
 +        eff.getWorldQuaternion(this._q1);
 +        this._v1.copy(gripAxis).applyQuaternion(this._q1);
 +        // Staff PINKY end in world space (-Y; +Y is the thumb end / T-bar).
 +        // Directed on purpose: no nearest-end negate, ever.
 +        this._v2.set(0, -1, 0).applyQuaternion(staffQuat);
-+        // Correction that carries the knuckle line onto the directed staff axis
++        // Correction that carries the grip axis onto the directed staff axis
 +        this._q2.setFromUnitVectors(this._v1, this._v2);
 +        // Align the wrist-to-palm vector with the medial side of the body. The
 +        // knuckle constraint alone leaves a free 180-degree roll about the staff;
 +        // for adjacent staffs that ambiguous roll placed both wrists in the gap.
 +        this._v4
-+            .copy(palmLocal)
++            .copy(palmNormalLocal)
 +            .applyQuaternion(this._q1)
 +            .applyQuaternion(this._q2)
 +            .addScaledVector(this._v2, -this._v4.dot(this._v2));
@@ -8262,7 +8288,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..703a8870a897bd0ae834b8ed25416203
      addLayer(layer) {
          this.layers.set(layer.id, layer);
      }
-@@ -521,6 +1488,12 @@ export class AvatarAnimator {
+@@ -521,6 +1514,12 @@ export class AvatarAnimator {
      setExternalSpinePitch(radians) {
          this.externalSpinePitchRad = radians;
      }
@@ -20307,7 +20333,7 @@ index 0000000000000000000000000000000000000000..b05226657be65de8dbaf442b0ac11500
 +  return scratch.distanceTo(b.getWorldPosition(new Vector3()));
 +}
 diff --git a/src/lib/services/contracts/IAvatarAnimator.ts b/src/lib/services/contracts/IAvatarAnimator.ts
-index 42a46ac294719f16470ed72c27286e50c55a35f2..71282acaf6dd4e2af82330692028add9afcd325f 100644
+index 42a46ac294719f16470ed72c27286e50c55a35f2..07496d0c69055bdf051280b4cfbdc393059b8dea 100644
 --- a/src/lib/services/contracts/IAvatarAnimator.ts
 +++ b/src/lib/services/contracts/IAvatarAnimator.ts
 @@ -8,6 +8,7 @@
@@ -20370,7 +20396,7 @@ index 42a46ac294719f16470ed72c27286e50c55a35f2..71282acaf6dd4e2af82330692028add9
  export interface IAvatarAnimator {
    /**
     * Set the hand targets from prop states
-@@ -140,13 +186,47 @@ export interface IAvatarAnimator {
+@@ -140,13 +186,51 @@ export interface IAvatarAnimator {
     * Set prop states and compute per-arm IK blend weights.
     * Arms with props ramp toward IK (weight 1).
     * Arms without props ramp toward animation (weight 0).
@@ -20413,6 +20439,10 @@ index 42a46ac294719f16470ed72c27286e50c55a35f2..71282acaf6dd4e2af82330692028add9
 +   * solve - the direction the gripped staff's pinky end (-Y) actually
 +   * points given the wrist clamps. Used by the grip weld to rotate the
 +   * rendered prop into the fist.
++   */
++  /**
++   * Achieved directed power-grip axis after wrist constraints. The historical
++   * name remains part of the public package contract.
 +   */
 +  getKnuckleLineWorld?(side: "left" | "right", out: Vector3): Vector3 | null;
 +
@@ -21131,10 +21161,10 @@ index 0000000000000000000000000000000000000000..804080e43f4dc206951115861d4b871f
 +  return point.distanceTo(closestOut);
 +}
 diff --git a/src/lib/services/implementations/AvatarAnimator.ts b/src/lib/services/implementations/AvatarAnimator.ts
-index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275cb798acd 100644
+index c73bcabe86e07dd117e6f737532aea88ac9ec194..2cdf9b0addd1dc733fd592ea259f90dae1ed95da 100644
 --- a/src/lib/services/implementations/AvatarAnimator.ts
 +++ b/src/lib/services/implementations/AvatarAnimator.ts
-@@ -5,21 +5,98 @@
+@@ -5,21 +5,99 @@
   * Bridges TKA prop states to skeleton IK targets.
   */
  
@@ -21178,9 +21208,10 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
 +  pointToSegmentDistance,
 +} from "../geometry/BodyCollisionGeometry";
 +
-+/** Max wrist swing toward the staff axis. Beyond this the alignment is
-+ *  anatomically implausible - bend partway and let the rest read as strain. */
-+const MAX_WRIST_SWING = (55 * Math.PI) / 180;
++/** Max wrist swing toward the staff axis. The staff-alignment frame should
++ *  keep a power grip close to the forearm axis; this cap prevents a malformed
++ *  rig calibration from collapsing the wrist before the body can compensate. */
++const MAX_WRIST_SWING = (35 * Math.PI) / 180;
 +
 +/** Max wrist twist (pronation/supination) about the forearm axis. Roll is
 + *  anatomically much cheaper than deviation, so it gets its own bigger
@@ -21237,7 +21268,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
  
  export class AvatarAnimator implements IAvatarAnimator {
    private currentPose: BodyPose;
-@@ -29,6 +106,10 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -29,6 +107,10 @@ export class AvatarAnimator implements IAvatarAnimator {
    // Per-arm IK blend weights: 0 = animation drives the arm, 1 = IK drives the arm
    private leftArmIK = { weight: 0, targetWeight: 0 };
    private rightArmIK = { weight: 0, targetWeight: 0 };
@@ -21248,7 +21279,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
    private ikBlendSpeed = 1 / 0.3; // ~0.3s ramp time
    private smoothBlending = true;
    private smoothingFactor = 0.15; // 0-1, higher = smoother but laggier
-@@ -85,6 +166,109 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -85,6 +167,111 @@ export class AvatarAnimator implements IAvatarAnimator {
     */
    private externalSpinePitchRad = 0;
  
@@ -21261,6 +21292,8 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
 +  private rightGripAxisLocal: Vector3 | null = null;
 +  private leftPalmLocal: Vector3 | null = null;
 +  private rightPalmLocal: Vector3 | null = null;
++  private leftPalmNormalLocal: Vector3 | null = null;
++  private rightPalmNormalLocal: Vector3 | null = null;
 +  private leftPalmWorldLength = 0;
 +  private rightPalmWorldLength = 0;
 +  private gripCalibrated = false;
@@ -21358,7 +21391,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
    constructor(
      private ikSolver: IIKSolver,
      private skeleton: IAvatarSkeletonBuilder,
-@@ -180,13 +364,58 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -180,13 +367,58 @@ export class AvatarAnimator implements IAvatarAnimator {
          }
        : null;
  
@@ -21418,7 +21451,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
    ): void {
      this.leftArmIK.targetWeight = blueProp ? 1 : 0;
      this.rightArmIK.targetWeight = redProp ? 1 : 0;
-@@ -205,6 +434,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -205,6 +437,7 @@ export class AvatarAnimator implements IAvatarAnimator {
              blueProp.worldPosition.y - oy,
              blueProp.worldPosition.z - oz
            ),
@@ -21426,7 +21459,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
            staffAngle: blueProp.staffRotationAngle,
            plane: blueProp.plane,
            weight: 1,
-@@ -218,15 +448,65 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -218,15 +451,64 @@ export class AvatarAnimator implements IAvatarAnimator {
              redProp.worldPosition.y - oy,
              redProp.worldPosition.z - oz
            ),
@@ -21471,11 +21504,10 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
 +  }
 +
 +  /**
-+   * Achieved pinky-ward knuckle line (Index1->Pinky1) in world space,
-+   * AFTER this frame's solve - the direction a gripped staff's pinky end
-+   * (-Y) actually points given the wrist clamps. This is the render-side
-+   * weld target: rotate the prop onto this line and it sits in the fist
-+   * exactly as the wrist managed to hold it.
++   * Achieved directed power-grip axis in world space, AFTER this frame's
++   * solve. This is the render-side weld target: rotate the prop onto this
++   * line and it sits in the fist exactly as the wrist managed to hold it.
++   * The legacy method name is retained for package compatibility.
 +   */
 +  getKnuckleLineWorld(side: "left" | "right", out: Vector3): Vector3 | null {
 +    const gripAxis =
@@ -21492,7 +21524,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
    setLeftHandTarget(target: HandPose): void {
      this.targetPose.leftHand = { ...target };
      this.targetPose.timestamp = Date.now();
-@@ -259,7 +539,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -259,7 +541,7 @@ export class AvatarAnimator implements IAvatarAnimator {
      const finalPose = this.computeFinalPose();
  
      // Solve IK for arms
@@ -21501,7 +21533,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
    }
  
    private blendToTarget(_deltaTime: number): void {
-@@ -378,13 +658,130 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -378,13 +660,130 @@ export class AvatarAnimator implements IAvatarAnimator {
      return result;
    }
  
@@ -21633,7 +21665,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
      // Compute body center from Hips bone (or default to origin)
      const bodyCenter = new Vector3(0, 0, 0);
      const hipsBone = state.bones.get("Hips");
-@@ -392,6 +789,12 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -392,6 +791,12 @@ export class AvatarAnimator implements IAvatarAnimator {
        hipsBone.getWorldPosition(bodyCenter);
      }
  
@@ -21646,7 +21678,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
      // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
      // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
      // position feeds back and causes oscillation.
-@@ -445,7 +848,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -445,7 +850,8 @@ export class AvatarAnimator implements IAvatarAnimator {
          pose.leftHand?.targetPosition ?? null,
          pose.rightHand?.targetPosition ?? null,
          bodyCenter,
@@ -21656,7 +21688,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
        );
  
        // Apply twist to each bone individually for a natural spinal curve.
-@@ -511,12 +915,140 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -511,12 +917,140 @@ export class AvatarAnimator implements IAvatarAnimator {
        }
      }
  
@@ -21798,7 +21830,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = leftChain.root.quaternion.clone();
          const animMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -527,7 +1059,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -527,7 +1061,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const leftShoulder = state.bones.get("LeftShoulder");
            if (leftShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -21807,7 +21839,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
                "left",
                this.leftShoulderRestY,
                leftChain.totalLength
-@@ -540,6 +1072,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -540,6 +1074,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -21822,7 +21854,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: leftTarget,
-@@ -547,19 +1087,76 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -547,19 +1089,76 @@ export class AvatarAnimator implements IAvatarAnimator {
          };
  
          if (this._poleVectorsEnabled && this.poleComputer && leftHand.plane) {
@@ -21902,7 +21934,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
  
          // Save IK results BEFORE blending - .copy() would overwrite them
          const ikRootQuat = leftChain.root.quaternion.clone();
-@@ -572,13 +1169,24 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -572,13 +1171,24 @@ export class AvatarAnimator implements IAvatarAnimator {
          leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -21928,7 +21960,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = rightChain.root.quaternion.clone();
          const animMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -589,7 +1197,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -589,7 +1199,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const rightShoulder = state.bones.get("RightShoulder");
            if (rightShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -21937,7 +21969,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
                "right",
                this.rightShoulderRestY,
                rightChain.totalLength
-@@ -602,6 +1210,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -602,6 +1212,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -21952,7 +21984,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: rightTarget,
-@@ -609,19 +1225,69 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -609,19 +1227,69 @@ export class AvatarAnimator implements IAvatarAnimator {
          };
  
          if (this._poleVectorsEnabled && this.poleComputer && rightHand.plane) {
@@ -22025,7 +22057,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
  
          // Save IK results BEFORE blending - .copy() would overwrite them
          const ikRootQuat = rightChain.root.quaternion.clone();
-@@ -634,13 +1300,670 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -634,13 +1302,712 @@ export class AvatarAnimator implements IAvatarAnimator {
          rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -22182,11 +22214,16 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
 +  }
 +
 +  /**
-+   * Calibrate hand-local grip geometry from the finger chains, once.
-+   * The Index1->Pinky1 MCP knuckle line is the axis a staff shaft lies
-+   * along when gripped; the palm center sits partway toward the Middle1
-+   * knuckle. Bone ORIGINS are invariant to finger curls, so this never
-+   * needs recalibrating.
++   * Calibrate a hand-local power-grip frame from the finger chains, once.
++   *
++   * A cylindrical handle runs longitudinally through a power grip, close to
++   * the wrist-to-middle-MCP axis. The Index1->Pinky1 line is transverse across
++   * the palm; aligning that line to a staff forces an otherwise neutral wrist
++   * into roughly 90 degrees of deviation. The thumb disambiguates which side
++   * of the palm plane is palmar so staff roll remains deterministic.
++   *
++   * Bone origins are invariant to finger curls, so this never needs
++   * recalibrating.
 +   */
 +  private calibrateGrips(state: SkeletonState): void {
 +    const leftChain = this.skeleton.getLeftArmChain();
@@ -22204,11 +22241,17 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
 +    const calibrateSide = (
 +      hand: Bone,
 +      fingers: Map<FingerBoneName, Bone>
-+    ): { axis: Vector3; palm: Vector3; worldPalmLength: number } | null => {
++    ): {
++      axis: Vector3;
++      palm: Vector3;
++      palmNormal: Vector3;
++      worldPalmLength: number;
++    } | null => {
 +      const index1 = fingers.get("Index1");
 +      const pinky1 = fingers.get("Pinky1");
 +      const middle1 = fingers.get("Middle1");
-+      if (!index1 || !pinky1 || !middle1) return null;
++      const thumb1 = fingers.get("Thumb1");
++      if (!index1 || !pinky1 || !middle1 || !thumb1) return null;
 +      hand.updateWorldMatrix(true, false);
 +      this._m1.copy(hand.matrixWorld).invert();
 +      const i = index1.getWorldPosition(this._v1).applyMatrix4(this._m1);
@@ -22216,13 +22259,33 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
 +      const handWorld = hand.getWorldPosition(new Vector3());
 +      const middleWorld = middle1.getWorldPosition(new Vector3());
 +      const m = middleWorld.clone().applyMatrix4(this._m1);
-+      const axis = new Vector3().subVectors(p, i);
-+      if (axis.lengthSq() < 1e-10) return null;
-+      axis.normalize();
++      const thumb = thumb1
++        .getWorldPosition(new Vector3())
++        .applyMatrix4(this._m1);
++      const longitudinal = m.clone();
++      if (longitudinal.lengthSq() < 1e-10) return null;
++      longitudinal.normalize();
++      const transverse = new Vector3().subVectors(p, i);
++      transverse.addScaledVector(
++        longitudinal,
++        -transverse.dot(longitudinal)
++      );
++      if (transverse.lengthSq() < 1e-10) return null;
++      transverse.normalize();
++
++      const palmNormal = new Vector3()
++        .crossVectors(transverse, longitudinal)
++        .normalize();
++      if (palmNormal.dot(thumb.sub(m)) < 0) palmNormal.negate();
++
++      // Directed toward the wrist/pinky end so it matches staff -Y. The
++      // opposite direction would silently flip which end of the staff the
++      // thumb faces.
++      const axis = longitudinal.clone().negate();
 +      const palm = m.clone().multiplyScalar(PALM_CENTER_FRACTION);
 +      const worldPalmLength =
 +        handWorld.distanceTo(middleWorld) * PALM_CENTER_FRACTION;
-+      return { axis, palm, worldPalmLength };
++      return { axis, palm, palmNormal, worldPalmLength };
 +    };
 +
 +    const left = calibrateSide(leftChain.effector, chains.left);
@@ -22230,11 +22293,13 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
 +    if (left) {
 +      this.leftGripAxisLocal = left.axis;
 +      this.leftPalmLocal = left.palm;
++      this.leftPalmNormalLocal = left.palmNormal;
 +      this.leftPalmWorldLength = left.worldPalmLength;
 +    }
 +    if (right) {
 +      this.rightGripAxisLocal = right.axis;
 +      this.rightPalmLocal = right.palm;
++      this.rightPalmNormalLocal = right.palmNormal;
 +      this.rightPalmWorldLength = right.worldPalmLength;
 +    }
 +    this.gripCalibrated = true;
@@ -22577,12 +22642,12 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
 +  }
 +
 +  /**
-+   * Rotate the hand so its knuckle line lies along the staff axis - the
-+   * wrist orientation goal. The remaining roll about the staff is resolved
++   * Rotate the hand so its longitudinal power-grip axis lies along the staff
++   * axis - the wrist orientation goal. The remaining roll about the staff is resolved
 +   * so each palm approaches from the medial side and leaves its wrist on
 +   * the outside of its own staff. The result is clamped to anatomical range
 +   * and THUMB-LOCKED: the staff ends are NOT
-+   * interchangeable. The knuckle line (Index1->Pinky1, pinky-ward) tracks
++   * interchangeable. The longitudinal axis (finger tips toward wrist) tracks
 +   * the staff's pinky end (-Y) as a directed constraint, so the hand can
 +   * never take the flipped solution - a real grip cannot swap which end
 +   * the thumb faces without regrasping. Demand beyond the anatomical
@@ -22600,14 +22665,23 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
 +      side === "left" ? this.leftGripAxisLocal : this.rightGripAxisLocal;
 +    const palmLocal =
 +      side === "left" ? this.leftPalmLocal : this.rightPalmLocal;
++    const palmNormalLocal =
++      side === "left" ? this.leftPalmNormalLocal : this.rightPalmNormalLocal;
 +    const eff = chain.effector;
-+    if (!staffQuat || !gripAxis || !palmLocal || !eff.parent) return;
++    if (
++      !staffQuat ||
++      !gripAxis ||
++      !palmLocal ||
++      !palmNormalLocal ||
++      !eff.parent
++    )
++      return;
 +
 +    // Bone quaternions changed since the last matrix update - refresh so
-+    // the knuckle line reflects THIS frame's solve.
++    // the grip frame reflects THIS frame's solve.
 +    chain.root.updateMatrixWorld(true);
 +
-+    // Knuckle line in world space
++    // Longitudinal power-grip axis in world space
 +    eff.getWorldQuaternion(this._q1);
 +    this._v1.copy(gripAxis).applyQuaternion(this._q1);
 +
@@ -22615,14 +22689,14 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
 +    // Directed on purpose: no nearest-end negate, ever.
 +    this._v2.set(0, -1, 0).applyQuaternion(staffQuat);
 +
-+    // Correction that carries the knuckle line onto the directed staff axis
++    // Correction that carries the grip axis onto the directed staff axis
 +    this._q2.setFromUnitVectors(this._v1, this._v2);
 +
 +    // Align the wrist-to-palm vector with the medial side of the body. The
 +    // knuckle constraint alone leaves a free 180-degree roll about the staff;
 +    // for adjacent staffs that ambiguous roll placed both wrists in the gap.
 +    this._v4
-+      .copy(palmLocal)
++      .copy(palmNormalLocal)
 +      .applyQuaternion(this._q1)
 +      .applyQuaternion(this._q2)
 +      .addScaledVector(this._v2, -this._v4.dot(this._v2));
@@ -22696,7 +22770,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..ec691e8db63b5f7bc5c0d48de6e3d275
  
    addLayer(layer: AnimationLayer): void {
      this.layers.set(layer.id, layer);
-@@ -689,6 +2012,20 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -689,6 +2056,20 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.externalSpinePitchRad = radians;
    }
  
