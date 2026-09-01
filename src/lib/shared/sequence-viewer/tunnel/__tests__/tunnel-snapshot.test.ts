@@ -65,6 +65,12 @@ describe("TunnelSnapshotSchema", () => {
         blueBuugengFlipped: true,
         redBuugengFlipped: false,
       },
+      trailRender: {
+        ...validSnapshot.trailRender,
+        blueColor: "#112233",
+        redColor: "#445566",
+        additionalLayerColors: [{ blue: "#778899", red: "#aabbcc" }],
+      },
     };
 
     const parsed = TunnelSnapshotSchema.safeParse(legacySnapshot);
@@ -84,6 +90,11 @@ describe("TunnelSnapshotSchema", () => {
       rightPropType: "fan",
       leftBuugengFlipped: true,
       rightBuugengFlipped: false,
+    });
+    expect(parsed.data.trailRender).toMatchObject({
+      leftColor: "#112233",
+      rightColor: "#445566",
+      additionalLayerColors: [{ left: "#778899", right: "#aabbcc" }],
     });
   });
 

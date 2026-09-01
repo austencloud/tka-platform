@@ -1728,7 +1728,7 @@ diff --git a/dist/lib/components/PerformerRig.svelte.d.ts.map b/dist/lib/compone
 deleted file mode 100644
 index 9ec67da0c77ac3ae765e84157869663c61696d90..0000000000000000000000000000000000000000
 diff --git a/dist/lib/components/Staff3D.svelte b/dist/lib/components/Staff3D.svelte
-index c483f07b26cd339a40a34fafe5c34d9f003d5d05..46e3afcb2276b2d9f15a8a5e2f9e1dc5c6ffd92f 100644
+index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3fed7dc3d8 100644
 --- a/dist/lib/components/Staff3D.svelte
 +++ b/dist/lib/components/Staff3D.svelte
 @@ -1,3 +1,87 @@
@@ -1819,7 +1819,14 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..46e3afcb2276b2d9f15a8a5e2f9e1dc5
  <script lang="ts">
    /**
     * Staff3D Component
-@@ -58,15 +142,10 @@
+@@ -52,21 +136,16 @@
+   // Use user proportions as defaults if not explicitly provided
+   const effectiveLength = $derived(length ?? userProportionsState.staffLength);
+   const effectiveThickness = $derived(
+-    thickness ?? userProportionsState.dimensions.staffRadius * 2
++    thickness ?? userProportionsState.dimensions.staffRadius
+   );
+
    // T-bar dimensions - proportional to staff
    // T-bar length (perpendicular extent) from SVG ratio: 57.6/252.8 = 22.8%
    const tBarLength = $derived(effectiveLength * 0.228); // ~68 for length 300
@@ -12856,7 +12863,7 @@ diff --git a/dist/lib/state/user-proportions-state.svelte.d.ts.map b/dist/lib/st
 deleted file mode 100644
 index a8fd5a41c1434bf568841daf28c8443ba1515e65..0000000000000000000000000000000000000000
 diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6fb8b89f2 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..2264e029453a34391d9f2c6f7fe54b211ba1fdd9 100644
 --- a/src/lib/components/Avatar3D.svelte
 +++ b/src/lib/components/Avatar3D.svelte
 @@ -16,29 +16,44 @@
@@ -13126,12 +13133,14 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
    const _blueSegA = new Vector3();
    const _blueSegB = new Vector3();
    const _redSegA = new Vector3();
-@@ -245,42 +358,229 @@
+@@ -245,42 +358,233 @@
  
    const blueSeg: PropSegment = { a: _blueSegA, b: _blueSegB, radius: 0.012 };
    const redSeg: PropSegment = { a: _redSegA, b: _redSegB, radius: 0.012 };
 +  const _leftPalmDiagnostic = new Vector3();
 +  const _rightPalmDiagnostic = new Vector3();
++  const _leftGripAxisDiagnostic = new Vector3();
++  const _rightGripAxisDiagnostic = new Vector3();
 +  const _gripDiagnostics: AvatarGripDiagnostics = {
 +    stepNumber: 0,
 +    beatProgress: 0,
@@ -13143,6 +13152,8 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
 +    rightWrist: null,
 +    leftPalm: null,
 +    rightPalm: null,
++    leftGripAxis: null,
++    rightGripAxis: null,
 +    renderedBlueGrip: null,
 +    renderedRedGrip: null,
 +    blueCorrectionLocal: null,
@@ -13382,7 +13393,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
    let currentLoadedAvatarId = $state<string | null>(null);
    let isLoading = $state(false);
    let hasShownFallbackToast = $state(false);
-@@ -302,14 +602,68 @@
+@@ -302,14 +606,68 @@
    // feetOffset adjusts so feet touch the ground (it's negative)
    const baseGroupY = $derived(
      position.y !== undefined && position.y !== 0
@@ -13453,7 +13464,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
    // Load a GLTF model for a specific avatar
    // Uses hot-swap pattern: keeps old avatar visible until new one is ready
    async function loadAvatar(targetAvatarId: string) {
-@@ -319,12 +673,23 @@
+@@ -319,12 +677,23 @@
      if (currentLoadedAvatarId === targetAvatarId) return;
  
      const url = getAvatarModelPath(targetAvatarId);
@@ -13478,7 +13489,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
  
        // Scale model to match user's height
        // setHeight() calculates proper scale and stores feet offset
-@@ -333,19 +698,43 @@
+@@ -333,19 +702,43 @@
        // Get the feet offset for positioning (negative value)
        feetOffset = skeletonService.getFeetOffset();
  
@@ -13531,7 +13542,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
        currentLoadedAvatarId = targetAvatarId;
        modelLoaded = true;
        useProceduralFallback = false;
-@@ -363,8 +752,14 @@
+@@ -363,8 +756,14 @@
        const rightUpLeg = skState.bones.get("RightUpLeg");
        if (leftUpLeg && rightUpLeg) {
          const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
@@ -13548,7 +13559,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
          leftUpLeg.quaternion.multiply(leftTilt);
          rightUpLeg.quaternion.multiply(rightTilt);
          leftUpLeg.updateMatrixWorld(true);
-@@ -388,17 +783,21 @@
+@@ -388,17 +787,21 @@
        // use IK only and don't need idle/walk animations.
        if (enableLocomotion && locomotionAnimator && cachedRoot) {
          // Configure before initialize so clips are prepared correctly
@@ -13575,7 +13586,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
            const hipsBone = locomotionAnimator.getHipsBone();
            if (hipsBone) {
              rootMotionExtractor.initialize(hipsBone);
-@@ -416,12 +815,39 @@
+@@ -416,12 +819,39 @@
              idle: `${animBase}idle${rmSuffix}.glb`,
              forward: `${animBase}walk-forward${rmSuffix}.glb`,
              backward: `${animBase}walk-backward${rmSuffix}.glb`,
@@ -13618,7 +13629,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
            })
            .catch((err) => {
              console.warn(
-@@ -444,18 +870,39 @@
+@@ -444,18 +874,39 @@
          const turnsBase = "/animations/turns/";
          const probeUrl = `${turnsBase}turn-left-90.glb`;
          const rootForTurns = cachedRoot;
@@ -13667,7 +13678,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
                ])
                .then(() => {
                  // Register turn clip contact curves so FootPlanter can query them
-@@ -476,7 +923,13 @@
+@@ -476,7 +927,13 @@
        // ikSolver, which is still used by arm IK elsewhere in this file).
        // Gated on enableFootPlanting - off by default so the museum FPS player
        // (which wants responsive code-driven movement) isn't affected.
@@ -13682,7 +13693,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
          footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
        }
  
-@@ -502,6 +955,16 @@
+@@ -502,6 +959,16 @@
        }
      } finally {
        isLoading = false;
@@ -13699,7 +13710,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
      }
    }
  
-@@ -560,6 +1023,15 @@
+@@ -560,6 +1027,15 @@
      }
    });
  
@@ -13715,7 +13726,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
    // React to height changes - update avatar scale
    $effect(() => {
      if (!skeletonService || !modelLoaded || useProceduralFallback) return;
-@@ -587,25 +1059,30 @@
+@@ -587,25 +1063,30 @@
  
      // Disable spine twist in dual-wheel mode - wide lateral IK targets
      // twist the torso and shift the feet on the ground.
@@ -13757,7 +13768,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
  
          // Feed state to LocomotionAnimator for clip selection
          locomotionAnimator.setActiveState?.(stateOutput.state);
-@@ -614,6 +1091,7 @@
+@@ -614,6 +1095,7 @@
            speed: stateOutput.animationSpeed,
            facingAngle: stateOutput.facingAngle,
            moveDirection: stateOutput.moveDirection,
@@ -13765,7 +13776,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
          });
          // Track state for FootPlanter (airborne states skip foot planting)
          currentLocomotionState = stateOutput.state;
-@@ -624,9 +1102,19 @@
+@@ -624,9 +1106,19 @@
            speed: moveSpeed,
            facingAngle,
            moveDirection,
@@ -13785,7 +13796,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
  
        // Turn clip overlay - when a turn is active, overwrite lower-body
        // and spine bones with the turn clip's authored pose at the current
-@@ -639,20 +1127,52 @@
+@@ -639,20 +1131,52 @@
        if (turnRequestProp && turnAnimator?.isReady() && skeletonService) {
          const sample = turnAnimator.sample(turnRequestProp);
          const bones = skeletonService.getState().bones;
@@ -13849,7 +13860,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
            }
          }
  
-@@ -681,7 +1201,11 @@
+@@ -681,7 +1205,11 @@
        // displacement needs the same conversion.
        if (rootMotionExtractor?.isReady() && onRootMotion) {
          const localDelta = rootMotionExtractor.extract();
@@ -13862,7 +13873,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
            // Convert Mixamo centimeters to scene units.
            // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
            // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
-@@ -708,28 +1232,97 @@
+@@ -708,28 +1236,97 @@
        // clips without authored curves. Gated on enableFootPlanting so the
        // museum FPS player stays fully code-driven.
        if (enableFootPlanting && footPlanter?.isReady()) {
@@ -13965,7 +13976,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
      }
  
      if (redPropAnchorRef && redPropState) {
-@@ -737,6 +1330,10 @@
+@@ -737,6 +1334,10 @@
        redPropAnchorRef.getWorldPosition(redIKTarget);
      } else if (redPropState) {
        redIKTarget.copy(redPropState.worldPosition);
@@ -13976,7 +13987,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
      }
  
      const blueWorldProp = bluePropState
-@@ -746,15 +1343,126 @@
+@@ -746,15 +1347,126 @@
        ? { ...redPropState, worldPosition: redIKTarget }
        : null;
  
@@ -14103,7 +14114,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
      // 2b. Collision detection - run after IK so bones are at final positions
      if (collisionDetector.enabled && skeletonService) {
        const state = skeletonService.getState();
-@@ -768,56 +1476,55 @@
+@@ -768,56 +1480,55 @@
        bones.get("Spine2")?.getWorldPosition(_boneVecs.spine2);
        bones.get("Spine1")?.getWorldPosition(_boneVecs.spine1);
        bones.get("Hips")?.getWorldPosition(_boneVecs.hips);
@@ -14190,7 +14201,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
            halfStaffLength,
            _redSegA,
            _redSegB
-@@ -825,14 +1532,113 @@
+@@ -825,14 +1536,117 @@
          redSegOrNull = redSeg;
        }
  
@@ -14291,6 +14302,10 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
 +        animationService.getPalmWorldPoint?.("left", _leftPalmDiagnostic) ?? null;
 +      _gripDiagnostics.rightPalm =
 +        animationService.getPalmWorldPoint?.("right", _rightPalmDiagnostic) ?? null;
++      _gripDiagnostics.leftGripAxis =
++        animationService.getKnuckleLineWorld?.("left", _leftGripAxisDiagnostic) ?? null;
++      _gripDiagnostics.rightGripAxis =
++        animationService.getKnuckleLineWorld?.("right", _rightGripAxisDiagnostic) ?? null;
 +      _gripDiagnostics.renderedBlueGrip = blueSegOrNull
 +        ? _blueRenderedGrip
 +        : null;
@@ -14311,7 +14326,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
      }
  
      // 3. Finger grips
-@@ -867,20 +1673,15 @@
+@@ -867,20 +1681,15 @@
    // transparent with depth-write off so the fade blends correctly.
    $effect(() => {
      if (!cachedRoot) return;
@@ -14338,7 +14353,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
      // Dispose locomotion animator, state machine, and foot planter
      if (locomotionAnimator) {
        locomotionAnimator.dispose();
-@@ -913,13 +1714,19 @@
+@@ -913,13 +1722,19 @@
  </script>
  
  {#if visible}
@@ -14365,7 +14380,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..7b7464f4399e81b8b22c4eda50520ca6
      <T.Group
        name={`PERFORMER_${id}`}
        position={[position.x, position.y ?? 0, position.z]}
-@@ -950,6 +1757,7 @@
+@@ -950,6 +1765,7 @@
        preventing visual glitches during avatar swap.
      -->
      <T.Group
@@ -14832,7 +14847,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..136a81cd765d6e1404993f4b66e3ff7a
        {@render effectsSlot({
          bluePropState,
 diff --git a/src/lib/components/Staff3D.svelte b/src/lib/components/Staff3D.svelte
-index c483f07b26cd339a40a34fafe5c34d9f003d5d05..46e3afcb2276b2d9f15a8a5e2f9e1dc5c6ffd92f 100644
+index c483f07b26cd339a40a34fafe5c34d9f003d5d05..dd94ec3021ecfb0e0c9c4067a1d5ac3fed7dc3d8 100644
 --- a/src/lib/components/Staff3D.svelte
 +++ b/src/lib/components/Staff3D.svelte
 @@ -1,3 +1,87 @@
@@ -14923,7 +14938,14 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..46e3afcb2276b2d9f15a8a5e2f9e1dc5
  <script lang="ts">
    /**
     * Staff3D Component
-@@ -58,15 +142,10 @@
+@@ -52,21 +136,16 @@
+   // Use user proportions as defaults if not explicitly provided
+   const effectiveLength = $derived(length ?? userProportionsState.staffLength);
+   const effectiveThickness = $derived(
+-    thickness ?? userProportionsState.dimensions.staffRadius * 2
++    thickness ?? userProportionsState.dimensions.staffRadius
+   );
+
    // T-bar dimensions - proportional to staff
    // T-bar length (perpendicular extent) from SVG ratio: 57.6/252.8 = 22.8%
    const tBarLength = $derived(effectiveLength * 0.228); // ~68 for length 300
@@ -20375,7 +20397,7 @@ index 0000000000000000000000000000000000000000..b05226657be65de8dbaf442b0ac11500
 +  return scratch.distanceTo(b.getWorldPosition(new Vector3()));
 +}
 diff --git a/src/lib/services/contracts/IAvatarAnimator.ts b/src/lib/services/contracts/IAvatarAnimator.ts
-index 42a46ac294719f16470ed72c27286e50c55a35f2..07496d0c69055bdf051280b4cfbdc393059b8dea 100644
+index 42a46ac294719f16470ed72c27286e50c55a35f2..8b7ef1f90d4aed4e87728b971108afdbd46ff5bc 100644
 --- a/src/lib/services/contracts/IAvatarAnimator.ts
 +++ b/src/lib/services/contracts/IAvatarAnimator.ts
 @@ -8,6 +8,7 @@
@@ -20386,7 +20408,7 @@ index 42a46ac294719f16470ed72c27286e50c55a35f2..07496d0c69055bdf051280b4cfbdc393
  
  /**
   * Pose for a single hand/arm
-@@ -82,6 +83,51 @@ export interface PositionOffset {
+@@ -82,6 +83,53 @@ export interface PositionOffset {
    z: number;
  }
  
@@ -20427,6 +20449,8 @@ index 42a46ac294719f16470ed72c27286e50c55a35f2..07496d0c69055bdf051280b4cfbdc393
 +  rightWrist: Readonly<Vector3> | null;
 +  leftPalm: Readonly<Vector3> | null;
 +  rightPalm: Readonly<Vector3> | null;
++  leftGripAxis: Readonly<Vector3> | null;
++  rightGripAxis: Readonly<Vector3> | null;
 +  renderedBlueGrip: Readonly<Vector3> | null;
 +  renderedRedGrip: Readonly<Vector3> | null;
 +  blueCorrectionLocal: Readonly<Vector3> | null;
@@ -20438,7 +20462,7 @@ index 42a46ac294719f16470ed72c27286e50c55a35f2..07496d0c69055bdf051280b4cfbdc393
  export interface IAvatarAnimator {
    /**
     * Set the hand targets from prop states
-@@ -140,13 +186,51 @@ export interface IAvatarAnimator {
+@@ -140,13 +188,46 @@ export interface IAvatarAnimator {
     * Set prop states and compute per-arm IK blend weights.
     * Arms with props ramp toward IK (weight 1).
     * Arms without props ramp toward animation (weight 0).
@@ -20477,14 +20501,9 @@ index 42a46ac294719f16470ed72c27286e50c55a35f2..07496d0c69055bdf051280b4cfbdc393
 +  getPalmWorldPoint?(side: "left" | "right", out: Vector3): Vector3 | null;
 +
 +  /**
-+   * Achieved pinky-ward knuckle line in world space after this frame's
-+   * solve - the direction the gripped staff's pinky end (-Y) actually
-+   * points given the wrist clamps. Used by the grip weld to rotate the
-+   * rendered prop into the fist.
-+   */
-+  /**
-+   * Achieved directed power-grip axis after wrist constraints. The historical
-+   * name remains part of the public package contract.
++   * Achieved pinky-ward index-to-pinky knuckle axis after wrist constraints.
++   * A cylindrical handle crosses the palm on this axis. Used by the grip weld
++   * to rotate the rendered prop into the fist.
 +   */
 +  getKnuckleLineWorld?(side: "left" | "right", out: Vector3): Vector3 | null;
 +
@@ -21203,7 +21222,7 @@ index 0000000000000000000000000000000000000000..804080e43f4dc206951115861d4b871f
 +  return point.distanceTo(closestOut);
 +}
 diff --git a/src/lib/services/implementations/AvatarAnimator.ts b/src/lib/services/implementations/AvatarAnimator.ts
-index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd11225456 100644
+index c73bcabe86e07dd117e6f737532aea88ac9ec194..4e09ae759c0e516c152b0ea7f79c98411a681edf 100644
 --- a/src/lib/services/implementations/AvatarAnimator.ts
 +++ b/src/lib/services/implementations/AvatarAnimator.ts
 @@ -5,21 +5,99 @@
@@ -21516,7 +21535,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
            staffAngle: blueProp.staffRotationAngle,
            plane: blueProp.plane,
            weight: 1,
-@@ -218,15 +457,64 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -218,15 +457,63 @@ export class AvatarAnimator implements IAvatarAnimator {
              redProp.worldPosition.y - oy,
              redProp.worldPosition.z - oz
            ),
@@ -21561,10 +21580,9 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
 +  }
 +
 +  /**
-+   * Achieved directed power-grip axis in world space, AFTER this frame's
-+   * solve. This is the render-side weld target: rotate the prop onto this
-+   * line and it sits in the fist exactly as the wrist managed to hold it.
-+   * The legacy method name is retained for package compatibility.
++   * Achieved pinky-ward knuckle axis in world space, AFTER this frame's solve.
++   * A cylindrical handle crosses the palm on this axis; the render-side weld
++   * rotates the prop onto it so the shaft sits inside the closed fingers.
 +   */
 +  getKnuckleLineWorld(side: "left" | "right", out: Vector3): Vector3 | null {
 +    const gripAxis =
@@ -21581,7 +21599,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
    setLeftHandTarget(target: HandPose): void {
      this.targetPose.leftHand = { ...target };
      this.targetPose.timestamp = Date.now();
-@@ -259,7 +547,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -259,7 +546,7 @@ export class AvatarAnimator implements IAvatarAnimator {
      const finalPose = this.computeFinalPose();
  
      // Solve IK for arms
@@ -21590,7 +21608,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
    }
  
    private blendToTarget(_deltaTime: number): void {
-@@ -378,13 +666,130 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -378,13 +665,130 @@ export class AvatarAnimator implements IAvatarAnimator {
      return result;
    }
  
@@ -21722,7 +21740,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
      // Compute body center from Hips bone (or default to origin)
      const bodyCenter = new Vector3(0, 0, 0);
      const hipsBone = state.bones.get("Hips");
-@@ -392,6 +797,12 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -392,6 +796,12 @@ export class AvatarAnimator implements IAvatarAnimator {
        hipsBone.getWorldPosition(bodyCenter);
      }
  
@@ -21735,7 +21753,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
      // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
      // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
      // position feeds back and causes oscillation.
-@@ -445,7 +856,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -445,7 +855,8 @@ export class AvatarAnimator implements IAvatarAnimator {
          pose.leftHand?.targetPosition ?? null,
          pose.rightHand?.targetPosition ?? null,
          bodyCenter,
@@ -21745,7 +21763,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
        );
  
        // Apply twist to each bone individually for a natural spinal curve.
-@@ -511,12 +923,140 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -511,12 +922,140 @@ export class AvatarAnimator implements IAvatarAnimator {
        }
      }
  
@@ -21887,7 +21905,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = leftChain.root.quaternion.clone();
          const animMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -527,7 +1067,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -527,7 +1066,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const leftShoulder = state.bones.get("LeftShoulder");
            if (leftShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -21896,7 +21914,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
                "left",
                this.leftShoulderRestY,
                leftChain.totalLength
-@@ -540,6 +1080,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -540,6 +1079,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -21911,7 +21929,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: leftTarget,
-@@ -547,19 +1095,75 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -547,19 +1094,75 @@ export class AvatarAnimator implements IAvatarAnimator {
          };
  
          if (this._poleVectorsEnabled && this.poleComputer && leftHand.plane) {
@@ -21990,7 +22008,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
  
          // Save IK results BEFORE blending - .copy() would overwrite them
          const ikRootQuat = leftChain.root.quaternion.clone();
-@@ -572,13 +1176,24 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -572,13 +1175,24 @@ export class AvatarAnimator implements IAvatarAnimator {
          leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -22016,7 +22034,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = rightChain.root.quaternion.clone();
          const animMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -589,7 +1204,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -589,7 +1203,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const rightShoulder = state.bones.get("RightShoulder");
            if (rightShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -22025,7 +22043,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
                "right",
                this.rightShoulderRestY,
                rightChain.totalLength
-@@ -602,6 +1217,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -602,6 +1216,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -22040,7 +22058,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: rightTarget,
-@@ -609,19 +1232,68 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -609,19 +1231,68 @@ export class AvatarAnimator implements IAvatarAnimator {
          };
  
          if (this._poleVectorsEnabled && this.poleComputer && rightHand.plane) {
@@ -22112,7 +22130,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
  
          // Save IK results BEFORE blending - .copy() would overwrite them
          const ikRootQuat = rightChain.root.quaternion.clone();
-@@ -634,13 +1306,725 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -634,13 +1305,723 @@ export class AvatarAnimator implements IAvatarAnimator {
          rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -22269,13 +22287,12 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
 +  }
 +
 +  /**
-+   * Calibrate a hand-local power-grip frame from the finger chains, once.
++   * Calibrate a hand-local cylindrical-grip frame from the finger chains once.
 +   *
-+   * A cylindrical handle runs longitudinally through a power grip, close to
-+   * the wrist-to-middle-MCP axis. The Index1->Pinky1 line is transverse across
-+   * the palm; aligning that line to a staff forces an otherwise neutral wrist
-+   * into roughly 90 degrees of deviation. The thumb disambiguates which side
-+   * of the palm plane is palmar so staff roll remains deterministic.
++   * The handle axis crosses the palm from the index side toward the pinky side.
++   * Wrist-to-middle-MCP is the hand's longitudinal axis and is perpendicular to
++   * the handle in a neutral cylindrical grasp. The thumb disambiguates which
++   * side of the palm plane is palmar so staff roll remains deterministic.
 +   *
 +   * Bone origins are invariant to finger curls, so this never needs
 +   * recalibrating.
@@ -22333,10 +22350,9 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
 +        .normalize();
 +      if (palmNormal.dot(thumb.sub(m)) < 0) palmNormal.negate();
 +
-+      // Directed toward the wrist/pinky end so it matches staff -Y. The
-+      // opposite direction would silently flip which end of the staff the
-+      // thumb faces.
-+      const axis = longitudinal.clone().negate();
++      // Index -> pinky is directed toward the staff's pinky end (-Y). The
++      // opposite direction would silently flip which end the thumb faces.
++      const axis = transverse.clone();
 +      const palm = m.clone().multiplyScalar(PALM_CENTER_FRACTION);
 +      const worldPalmLength =
 +        handWorld.distanceTo(middleWorld) * PALM_CENTER_FRACTION;
@@ -22706,13 +22722,13 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
 +  }
 +
 +  /**
-+   * Rotate the hand so its longitudinal power-grip axis lies along the staff
-+   * axis - the wrist orientation goal. The remaining roll about the staff is resolved
++   * Rotate the hand so its transverse knuckle axis lies along the staff axis,
++   * the wrist orientation goal. The remaining roll about the staff is resolved
 +   * so each palm approaches from the medial side and leaves its wrist on
 +   * the outside of its own staff. The result is clamped to anatomical range
 +   * and THUMB-LOCKED: the staff ends are NOT
-+   * interchangeable. The longitudinal axis (finger tips toward wrist) tracks
-+   * the staff's pinky end (-Y) as a directed constraint, so the hand can
++   * interchangeable. The transverse index-to-pinky axis tracks the staff's
++   * pinky end (-Y) as a directed constraint, so the hand can
 +   * never take the flipped solution - a real grip cannot swap which end
 +   * the thumb faces without regrasping. Demand beyond the anatomical
 +   * clamp reads as strain; absorbing it is the body's job (plane sweep,
@@ -22746,7 +22762,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
 +    // the grip frame reflects THIS frame's solve.
 +    chain.root.updateMatrixWorld(true);
 +
-+    // Longitudinal power-grip axis in world space
++    // Transverse index-to-pinky grip axis in world space
 +    eff.getWorldQuaternion(this._q1);
 +    this._v1.copy(gripAxis).applyQuaternion(this._q1);
 +
@@ -22838,7 +22854,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
  
    addLayer(layer: AnimationLayer): void {
      this.layers.set(layer.id, layer);
-@@ -689,6 +2073,20 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -689,6 +2070,20 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.externalSpinePitchRad = radians;
    }
  
@@ -22859,7 +22875,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..f889cbf9f17ac4a3db4453903aade3fd
    /** Debug toggle: disable pole vectors to compare old vs new elbow behavior */
    togglePoleVectors(): boolean {
      this._poleVectorsEnabled = !this._poleVectorsEnabled;
-@@ -696,10 +2094,18 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -696,10 +2091,18 @@ export class AvatarAnimator implements IAvatarAnimator {
        // Reset to default backward poles so difference is visible immediately
        this.leftPoleVector.set(0, 0, -1);
        this.rightPoleVector.set(0, 0, -1);
@@ -30062,21 +30078,3 @@ index 0000000000000000000000000000000000000000..525b1b46458e2aae1c4110ab138eb859
 +export function propHasFanAppearanceOptions(propType: PropType): boolean {
 +	return PROPS_WITH_FAN_APPEARANCE.has(propType);
 +}
-diff --git a/dist/lib/components/Staff3D.svelte b/dist/lib/components/Staff3D.svelte
---- a/dist/lib/components/Staff3D.svelte
-+++ b/dist/lib/components/Staff3D.svelte
-@@ -137,4 +137,4 @@
-   const effectiveLength = $derived(length ?? userProportionsState.staffLength);
-   const effectiveThickness = $derived(
--    thickness ?? userProportionsState.dimensions.staffRadius * 2
-+    thickness ?? userProportionsState.dimensions.staffRadius
-   );
-diff --git a/src/lib/components/Staff3D.svelte b/src/lib/components/Staff3D.svelte
---- a/src/lib/components/Staff3D.svelte
-+++ b/src/lib/components/Staff3D.svelte
-@@ -137,4 +137,4 @@
-   const effectiveLength = $derived(length ?? userProportionsState.staffLength);
-   const effectiveThickness = $derived(
--    thickness ?? userProportionsState.dimensions.staffRadius * 2
-+    thickness ?? userProportionsState.dimensions.staffRadius
-   );

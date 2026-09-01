@@ -20,10 +20,11 @@
 
   interface Props {
     onSample?: (sample: RendererPerformanceSample) => void;
+    onReadyChange?: (ready: boolean) => void;
     cameraPreset: EnvironmentReviewCameraPreset;
   }
 
-  let { onSample, cameraPreset }: Props = $props();
+  let { onSample, onReadyChange, cameraPreset }: Props = $props();
 
   const REVIEW_PERFORMERS: StoredPerformerSnapshot[] = [
     {
@@ -122,7 +123,9 @@
   });
 
   onDestroy(() => {
-    cancelAnimationFrame(animationFrame);
+    if (animationFrame !== 0 && typeof cancelAnimationFrame === "function") {
+      cancelAnimationFrame(animationFrame);
+    }
     const root = globalThis as typeof globalThis & {
       __autumnProductionHarness?: typeof harnessControl;
     };
@@ -144,6 +147,7 @@
   fullScreen={true}
   performanceWarmupMs={5_000}
   onPerformanceSample={onSample}
+  onSceneReadyChange={onReadyChange}
   cameraMaxOrbitDistance={128}
   cameraFov={cameraPreset.fov}
 />

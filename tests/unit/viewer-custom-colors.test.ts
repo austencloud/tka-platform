@@ -66,7 +66,7 @@ describe("viewer custom color preference", () => {
     expect(
       JSON.parse(storage.getItem(VIEWER_CUSTOM_COLORS_STORAGE_KEY)!)
     ).toEqual({
-      version: 1,
+      version: 2,
       colors: { left: "#00ddff", right: "#ffb000" },
     });
   });
@@ -76,12 +76,18 @@ describe("viewer custom color preference", () => {
     storage.setItem(
       "tka_tunnel_view_state",
       JSON.stringify({
-        colors: { mode: "custom", custom: DEFAULT_VIEWER_CUSTOM_COLORS },
+        colors: {
+          mode: "custom",
+          custom: {
+            blue: DEFAULT_VIEWER_CUSTOM_COLORS.left,
+            red: DEFAULT_VIEWER_CUSTOM_COLORS.right,
+          },
+        },
       })
     );
     storage.setItem(
       "tka_mandala_view_state",
-      JSON.stringify({ customLeft: "#123456", customRight: "#abcdef" })
+      JSON.stringify({ customBlue: "#123456", customRed: "#abcdef" })
     );
 
     expect(loadViewerCustomColorPreference(storage)).toEqual({
@@ -97,13 +103,13 @@ describe("viewer custom color preference", () => {
       JSON.stringify({
         colors: {
           mode: "custom",
-          custom: { left: "#112233", right: "#445566" },
+          custom: { blue: "#112233", red: "#445566" },
         },
       })
     );
     storage.setItem(
       "tka_mandala_view_state",
-      JSON.stringify({ customLeft: "#778899", customRight: "#aabbcc" })
+      JSON.stringify({ customBlue: "#778899", customRed: "#aabbcc" })
     );
 
     expect(loadViewerCustomColorPreference(storage)).toEqual({
@@ -116,7 +122,7 @@ describe("viewer custom color preference", () => {
     const storage = new MemoryStorage();
     storage.setItem(
       "tka_mandala_view_state",
-      JSON.stringify({ customLeft: "#123456", customRight: "#abcdef" })
+      JSON.stringify({ customBlue: "#123456", customRed: "#abcdef" })
     );
 
     expect(loadViewerCustomColorPreference(storage, false)).toEqual({

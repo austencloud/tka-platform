@@ -93,7 +93,7 @@
     });
   }
 
-  let sequence = $state<SequenceData>(FALLBACK_DEMO);
+  let carriedSequence = $state<SequenceData>(FALLBACK_DEMO);
   const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
   let constructActive = $state(false);
   let outputsActive = $state(false);
@@ -111,8 +111,8 @@
     webglChecked = true;
   });
 
-  function carrySequence(next: SequenceData): void {
-    sequence = next;
+  function carryVisitorSequence(next: SequenceData): void {
+    carriedSequence = next;
     composed = true;
   }
 
@@ -260,7 +260,7 @@
 
     <div class="opening-player">
       <SequenceHeroDemo
-        {sequence}
+        sequence={carriedSequence}
         note="a real sequence playing in Composer"
         showNotationStrip={true}
         showWordHeader={true}
@@ -289,7 +289,7 @@
           active={constructActive}
           props={{
             presentationMode: "guided-build",
-            onComposed: carrySequence,
+            onVisitorComposed: carryVisitorSequence,
           }}
           error={constructLoadError}
           debugName="composer guided construct"
@@ -300,7 +300,10 @@
         </LazyMount>
       </div>
       <div class="generator-surface">
-        <ComposerGenerateDemo {sequence} onGenerated={carrySequence} />
+        <ComposerGenerateDemo
+          sequence={carriedSequence}
+          onGenerated={carryVisitorSequence}
+        />
       </div>
     </div>
   </section>
@@ -324,11 +327,11 @@
 
       <figure class="tunnel-output">
         <div class="product-frame square-frame">
-          {#key sequence.id}
+          {#key carriedSequence.id}
             <LazyMount
               loader={() => import("./_components/ComposerTunnelDemo.svelte")}
               active={outputsActive}
-              props={{ sequence }}
+              props={{ sequence: carriedSequence }}
               error={tunnelLoadError}
               debugName="composer tunnel"
             >
@@ -353,11 +356,11 @@
             <p>3D is unavailable in this browser.</p>
           </div>
         {:else}
-          {#key sequence.id}
+          {#key carriedSequence.id}
             <LazyMount
               loader={() => import("./_components/Composer3DViewerDemo.svelte")}
               active={outputsActive && canShow3D}
-              props={{ sequence }}
+              props={{ sequence: carriedSequence }}
               error={viewerLoadError}
               debugName="composer 3D viewer"
             >
@@ -392,7 +395,7 @@
       <LazyMount
         loader={() => import("./_components/ComposerGalleryShelf.svelte")}
         active={shelfActive}
-        props={{ sequence, composed }}
+        props={{ sequence: carriedSequence, composed }}
         error={shelfLoadError}
         debugName="composer gallery shelf"
       >

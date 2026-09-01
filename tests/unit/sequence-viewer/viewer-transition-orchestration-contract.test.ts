@@ -134,9 +134,7 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(workspacePanels).toContain(
       "if (inspectorActive) workspaceDirection = direction;"
     );
-    expect(workspacePanels).toContain(
-      "<PanelGroup\n  direction={workspaceDirection}"
-    );
+    expect(workspacePanels).toContain("direction={workspaceDirection}");
     expect(panelGroup).toContain("style={getFlexStyle(panel, i)}");
     expect(panelGroup).toContain("const fixedSize = panel.fixedSize;");
     expect(panelGroup).toContain("data-manually-sized=");
@@ -334,15 +332,19 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(geometryTrace).toContain("Non-singleton canvas frames:");
   });
 
-  it("hands one persistent viewer-stage allocation to Performances without background work", () => {
-    expect(shell).toContain("data-persistent-viewer-stage");
+  it("hands one fixed workspace allocation to Performances without background work", () => {
+    expect(workspacePanels).toContain("data-persistent-viewer-stage");
     expect(shell).toContain("data-persistent-performance-gallery");
-    expect(shell).toContain("data-active={!layout.showVideoGallery}");
+    expect(workspacePanels).toContain("data-active={!takeoverActive}");
     expect(shell).toContain("data-active={layout.showVideoGallery}");
     expect(shell).toContain("active={layout.showVideoGallery}");
-    expect(shell).toContain("viewer-motion-stage-layer");
+    expect(workspacePanels).toContain("viewer-motion-stage-layer");
     expect(shell).toContain("performance-gallery-layer");
-    expect(shell).toContain("opacity var(--transition-emphasis)");
+    expect(shell).toContain("takeoverActive={layout.showVideoGallery}");
+    expect(workspacePanels).toContain("<DualSourceCrossfade");
+    expect(workspacePanels).toContain('profile="soft-dissolve"');
+    expect(workspacePanels).toContain("panel-workspace-transition-stage");
+    expect(sequenceVideos).not.toContain("in:fade");
     expect(sequenceVideos).toContain("if (!active || !sequence?.id) return;");
     expect(sequenceVideos).toContain("if (!active) activePlayer?.pause();");
     expect(sequenceVideos).toContain('active && view === "browse"');
@@ -355,6 +357,7 @@ describe("Sequence Viewer transition orchestration contract", () => {
     );
     expect(geometryTrace).toContain("Viewer stage remounts:");
     expect(geometryTrace).toContain("Gallery remounts:");
-    expect(geometryTrace).toContain("Opacity complement drift:");
+    expect(geometryTrace).toContain("Visible gallery layout changes:");
+    expect(geometryTrace).toContain("Shared-background dip:");
   });
 });

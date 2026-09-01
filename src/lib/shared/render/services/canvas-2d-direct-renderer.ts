@@ -511,13 +511,13 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     // shows where the arrow overlaps a same-colored prop. Shared definition.
     const isDarkMode = options.visibility.darkMode ?? true;
 
-    for (const color of ["blue", "red"]) {
-      if (color === "blue" && !showLeft) continue;
-      if (color === "red" && !showRight) continue;
+    for (const hand of [HandSide.LEFT, HandSide.RIGHT]) {
+      if (hand === HandSide.LEFT && !showLeft) continue;
+      if (hand === HandSide.RIGHT && !showRight) continue;
 
-      const position = arrowPositions[color];
-      const assets = arrowAssets[color];
-      const mirror = arrowMirroring[color] ?? false;
+      const position = arrowPositions[hand];
+      const assets = arrowAssets[hand];
+      const mirror = arrowMirroring[hand] ?? false;
 
       if (!position || !assets?.imageSrc) continue;
 
@@ -527,11 +527,11 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
         const fullViewBox = assets.viewBox.fullViewBox;
 
         const wrapped = wrapSvgContent(assets.imageSrc, viewBoxWidth, viewBoxHeight, true, fullViewBox, {
-          id: `arrow-halo-${color}`,
+          id: `arrow-halo-${hand}`,
           isDarkMode,
         });
 
-        const cacheKey = `arrow_${color}_exp_${this.hashString(wrapped.svg)}`;
+        const cacheKey = `arrow_${hand}_exp_${this.hashString(wrapped.svg)}`;
         const img = await svgCache.getImage(wrapped.svg, cacheKey);
 
         let viewBoxMinX = 0, viewBoxMinY = 0;
@@ -556,7 +556,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
           shouldMirror: mirror,
         });
       } catch (error) {
-        console.warn(`[Canvas2D] Failed to draw ${color} arrow:`, error);
+        console.warn(`[Canvas2D] Failed to draw ${hand} arrow:`, error);
       }
     }
   }

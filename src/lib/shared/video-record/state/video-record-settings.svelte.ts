@@ -44,9 +44,31 @@ const DEFAULT_SETTINGS: VideoRecordSettings = {
   },
 };
 
+export function normalizeLegacyVideoRecordSettings(
+  value: unknown
+): VideoRecordSettings {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return structuredClone(DEFAULT_SETTINGS);
+  }
+  const source = value as Record<string, unknown>;
+  const animationSource =
+    source.animationSettings &&
+    typeof source.animationSettings === "object" &&
+    !Array.isArray(source.animationSettings)
+      ? (source.animationSettings as Record<string, unknown>)
+      : {};
+  const animationSettings = { ...animationSource };
+  animationSettings.leftMotionVisible ??= animationSource.blueMotionVisible;
+  animationSettings.rightMotionVisible ??= animationSource.redMotionVisible;
+  delete animationSettings.blueMotionVisible;
+  delete animationSettings.redMotionVisible;
+  return { ...source, animationSettings } as unknown as VideoRecordSettings;
+}
+
 const settingsPersistence = createPersistenceHelper({
   key: "tka-video-record-settings",
   defaultValue: DEFAULT_SETTINGS,
+  migrate: normalizeLegacyVideoRecordSettings,
 });
 
 export function createVideoRecordSettings() {

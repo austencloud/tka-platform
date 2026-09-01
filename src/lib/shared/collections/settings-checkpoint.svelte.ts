@@ -35,6 +35,8 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { BackgroundType } from "@austencloud/backgrounds";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
+import { normalizeLegacyPropConfig } from "@tka/tka-types";
+import { normalizeLegacyTrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
 
 const CHECKPOINT_STORAGE_KEY = "tka_settings_checkpoint";
 
@@ -71,6 +73,31 @@ export interface SettingsCheckpoint {
      *  so revert deletes it rather than writing back a value it never had. */
     viewer3d: Record<string, string>;
   };
+}
+
+export function normalizeLegacySettingsCheckpoint<T>(value: T): T {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const source = value as Record<string, unknown>;
+  if (
+    !source.semantic ||
+    typeof source.semantic !== "object" ||
+    Array.isArray(source.semantic)
+  ) {
+    return value;
+  }
+  const legacySemantic = source.semantic as Record<string, unknown>;
+  const semantic = normalizeLegacyPropConfig({ ...legacySemantic }) as Record<
+    string,
+    unknown
+  >;
+  semantic.leftPathLines ??= legacySemantic.bluePathLines;
+  semantic.rightPathLines ??= legacySemantic.redPathLines;
+  delete semantic.bluePathLines;
+  delete semantic.redPathLines;
+  if (legacySemantic.trail !== undefined) {
+    semantic.trail = normalizeLegacyTrailSettings(legacySemantic.trail);
+  }
+  return { ...source, semantic } as T;
 }
 
 function readViewer3DKeys(): Record<string, string> {
@@ -167,7 +194,9 @@ export function revertSettingsCheckpoint(): string | null {
   try {
     const raw = localStorage.getItem(CHECKPOINT_STORAGE_KEY);
     if (!raw) return null;
-    checkpoint = JSON.parse(raw) as SettingsCheckpoint;
+    checkpoint = normalizeLegacySettingsCheckpoint(
+      JSON.parse(raw) as SettingsCheckpoint
+    );
   } catch {
     return null;
   }

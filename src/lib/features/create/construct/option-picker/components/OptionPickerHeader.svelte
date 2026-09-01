@@ -1,9 +1,9 @@
 <!--
   OptionPickerHeader.svelte
 
-  Shared controls for the construct option picker. The wide layout renders this
-  as its pinned header; narrow layouts render the compact variant inside either
-  the shared utility tray or the continuous-grid popover. Every surface exposes:
+  Shared controls for the construct option picker. Every inline width renders
+  the same header and lets container queries recompose its geometry. The compact
+  variant is reserved for a genuine disclosure surface. Every surface exposes:
     • the All / Continuous filter (left),
     • the working Level (centered, wearing the canonical level colours),
   over a turns row that appears when the level HAS turns.
@@ -331,11 +331,9 @@
     width: calc(var(--min-touch-target, 44px) * 2 + 10px);
   }
 
-  /* The wide picker starts at 750px, before the full 608px level rail can sit
-     between two 7rem counterweights. Compact just this header in that band:
-     reserve a real slot for the filter, then let the equal-width level buttons
-     consume the exact remainder. The outer width is what prevents overlap;
-     the tighter padding keeps the longest label comfortable at the floor. */
+  /* The full level rail fits between equal counterweights at this width. Keep
+     compressing the same controls below it; the option grid's breakpoint must
+     never switch the header into a different visual system. */
   @container (width < 900px) {
     .oph:not(.compact) .oph-bar:not(.filter-only) {
       grid-template-columns:
@@ -351,6 +349,41 @@
       width: clamp(10rem, calc((100cqw - 16.5rem) / 3), 12.25rem);
       gap: 0.45rem;
       padding-inline: 0.5rem;
+    }
+  }
+
+  /* Counterweight centering is useful only while there is room to spend on an
+     empty third column. Below that point the level rail borrows the space and
+     every control keeps the same icon, colour, surface, and interaction model. */
+  @container (width < 1000px) {
+    .oph:not(.compact) .oph-bar:not(.filter-only) {
+      grid-template-columns:
+        calc(var(--min-touch-target, 44px) * 2 + 10px)
+        minmax(0, 1fr);
+      gap: 10px;
+    }
+
+    .oph:not(.compact) .oph-side.end {
+      display: none;
+    }
+
+    .oph:not(.compact) .oph-bar.turns-only {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .oph:not(.compact) .oph-bar.turns-only .oph-side.start {
+      display: none;
+    }
+
+    .oph:not(.compact) .level-control,
+    .oph:not(.compact) :global(.level-selector) {
+      width: 100%;
+    }
+
+    .oph:not(.compact) :global(.level-selector .lvl) {
+      flex: 1 1 0;
+      width: auto;
+      min-width: 0;
     }
   }
 
@@ -437,7 +470,8 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    height: 34px;
+    min-width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
     padding: 0 10px;
     border-radius: 7px;
     border: 1px solid rgba(var(--prop-color-rgb), 0.5);
@@ -447,7 +481,10 @@
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     cursor: pointer;
-    transition: all var(--duration-fast, 0.15s) ease;
+    transition:
+      background-color var(--duration-fast, 0.15s) ease,
+      border-color var(--duration-fast, 0.15s) ease,
+      transform var(--duration-fast, 0.15s) ease;
   }
 
   .spin-inline:hover {
@@ -484,6 +521,78 @@
     display: inline-block;
     min-width: 2.4ch;
     text-align: left;
+  }
+
+  /* Two full hand palettes need width, not a second visual treatment. Stack
+     their existing surfaces in narrow panes and spend the ample vertical room
+     the picker already has. Resize-driven recomposition intentionally has no
+     transition so it follows the divider directly. */
+  @container (width < 1000px) {
+    .oph:not(.compact) .oph-turns-row {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .oph:not(.compact) .hand-half {
+      flex: 0 0 auto;
+      width: 100%;
+      min-width: 0;
+    }
+  }
+
+  /* At phone-width inline surfaces, names yield before targets do. The level
+     colours and numerals remain identical to desktop, while the spin direction
+     keeps its full accessible name in aria-label and a genuine 44px target. */
+  @container (width < 560px) {
+    .oph:not(.compact) {
+      padding: 8px 8px 10px;
+    }
+
+    .oph:not(.compact) .oph-bar:not(.filter-only) {
+      gap: 8px;
+    }
+
+    .oph:not(.compact) :global(.level-selector) {
+      gap: 6px;
+    }
+
+    .oph:not(.compact) :global(.level-selector .lvl) {
+      height: var(--min-touch-target, 44px);
+      padding-inline: 0.25rem;
+    }
+
+    .oph:not(.compact) :global(.level-selector .name) {
+      display: none;
+    }
+
+    .oph:not(.compact) .hand-half {
+      --spin-gutter: 58px;
+      padding: 6px 8px;
+      border-radius: 10px;
+    }
+
+    .oph:not(.compact) .hand-half.blue .spin-inline.edge {
+      left: 8px;
+    }
+
+    .oph:not(.compact) .hand-half.red .spin-inline.edge {
+      right: 8px;
+    }
+
+    .oph:not(.compact) .spin-inline.edge {
+      justify-content: center;
+      width: var(--min-touch-target, 44px);
+      height: var(--min-touch-target, 44px);
+      padding: 0;
+    }
+
+    .oph:not(.compact) .spin-inline .dir {
+      display: none;
+    }
+
+    .oph:not(.compact) .turn-seg :global(.segment) {
+      padding-inline: 0.2rem;
+    }
   }
 
   /* Popover layout: Options and Level share the first row; each hand gets one
@@ -584,8 +693,6 @@
       var(--hand-color) 26%,
       var(--theme-stroke, rgba(255, 255, 255, 0.12))
     );
-    box-shadow: inset 3px 0 0
-      color-mix(in srgb, var(--hand-color) 62%, transparent);
   }
 
   .oph.compact .hand-half.blue,

@@ -76,6 +76,7 @@ import {
   type FuseShufflePool,
   type FuseSide,
 } from "./fuse-shuffle-pool.svelte";
+import { normalizeLegacyHandPair } from "@tka/tka-types";
 
 const STORAGE_KEY = "fuse-tab-state";
 const DEFAULT_BPM = 60;
@@ -329,6 +330,7 @@ function readPersistedState(): PersistedFuseState {
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return {};
     const record = parsed as Record<string, unknown>;
+    const handPair = normalizeLegacyHandPair(record);
 
     // Every field is optional, so an older store holding only { bpm } still
     // parses cleanly into this widened shape.
@@ -407,9 +409,9 @@ function readPersistedState(): PersistedFuseState {
     ) {
       result.traversalDirection = record.traversalDirection;
     }
-    const left = parsePersistedSelection(record.left);
+    const left = parsePersistedSelection(handPair.left);
     if (left) result.left = left;
-    const right = parsePersistedSelection(record.right);
+    const right = parsePersistedSelection(handPair.right);
     if (right) result.right = right;
     return result;
   } catch {

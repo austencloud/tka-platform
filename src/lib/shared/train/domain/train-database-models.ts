@@ -4,7 +4,10 @@
  */
 
 import type { DetectionSource } from "$lib/shared/train/domain/detection-frame";
-import type { PerformanceGrade, TimingGrade } from "$lib/shared/train/domain/performance-data";
+import type {
+  PerformanceGrade,
+  TimingGrade,
+} from "$lib/shared/train/domain/performance-data";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 /**
@@ -50,6 +53,41 @@ export interface StoredBeatResult {
   timing: TimingGrade;
   timingDeltaMs: number;
   positionCorrect: { left: boolean; right: boolean };
+}
+
+/** Restores per-hand detail inside the JSON field used by old Train records. */
+export function normalizeStoredBeatResultsJson(value: string): string {
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!Array.isArray(parsed)) return value;
+    const normalized = parsed.map((beat) => {
+      if (!beat || typeof beat !== "object" || Array.isArray(beat)) return beat;
+      const source = beat as Record<string, unknown>;
+      const normalizePair = (pair: unknown) => {
+        if (!pair || typeof pair !== "object" || Array.isArray(pair)) {
+          return pair;
+        }
+        const record = pair as Record<string, unknown>;
+        const out = {
+          ...record,
+          left: record.left ?? record.blue,
+          right: record.right ?? record.red,
+        };
+        delete out.blue;
+        delete out.red;
+        return out;
+      };
+      return {
+        ...source,
+        expected: normalizePair(source.expected),
+        detected: normalizePair(source.detected),
+        positionCorrect: normalizePair(source.positionCorrect),
+      };
+    });
+    return JSON.stringify(normalized);
+  } catch {
+    return value;
+  }
 }
 
 /**

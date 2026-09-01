@@ -121,18 +121,18 @@
   }
 
   .front-door-inner {
-    width: min(calc(100% - clamp(32px, 5cqi, 96px)), 1560px);
+    width: min(calc(100% - clamp(24px, 6cqi, 120px)), 1120px);
     min-height: 100%;
     margin: 0 auto;
     padding-block: clamp(28px, 5cqh, 64px);
     box-sizing: border-box;
     display: grid;
     align-content: center;
-    gap: clamp(24px, 4cqh, 40px);
+    gap: clamp(20px, 3cqh, 28px);
   }
 
   .front-door-header {
-    max-width: 540px;
+    width: 100%;
   }
 
   h1 {
@@ -148,56 +148,66 @@
   .method-index {
     display: grid;
     grid-template-columns: 1fr;
+    gap: 10px;
     width: 100%;
-    overflow: hidden;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-2026-lg, 18px);
-    background: var(--theme-panel-bg);
-    box-shadow: var(--theme-panel-shadow, 0 10px 30px rgba(0, 0, 0, 0.18));
   }
 
   .method-item {
     min-width: 0;
   }
 
-  .method-item:not(:last-child) {
-    border-bottom: 1px solid var(--theme-stroke);
-  }
-
   .method-card {
     position: relative;
     width: 100%;
-    min-height: 102px;
+    min-height: 96px;
     display: grid;
     grid-template-columns: 48px minmax(0, 1fr) 18px;
     align-items: center;
     gap: 18px;
-    padding: 18px 20px;
+    padding: 16px 20px;
     box-sizing: border-box;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
+    border: 1px solid
+      color-mix(in srgb, var(--method-color) 30%, var(--theme-stroke));
+    border-radius: var(--radius-2026-md, 14px);
+    background: color-mix(
+      in srgb,
+      var(--method-color) 11%,
+      var(--theme-card-bg)
+    );
     color: var(--theme-text);
     text-align: left;
     cursor: pointer;
     transition:
       background-color var(--duration-normal) var(--ease-out),
-      color var(--duration-normal) var(--ease-out);
+      border-color var(--duration-normal) var(--ease-out);
   }
 
   .method-card:hover {
     background: color-mix(
       in srgb,
-      var(--method-color) 8%,
+      var(--method-color) 18%,
+      var(--theme-card-bg)
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--method-color) 58%,
+      var(--theme-stroke-strong)
+    );
+  }
+
+  .method-card:active {
+    background: color-mix(
+      in srgb,
+      var(--method-color) 22%,
       var(--theme-card-bg)
     );
   }
 
   .method-card:focus-visible {
     z-index: 1;
-    outline: none;
-    box-shadow: inset 0 0 0 3px
-      color-mix(in srgb, var(--method-color) 72%, var(--theme-text));
+    outline: 3px solid
+      color-mix(in srgb, var(--method-color) 76%, var(--theme-text));
+    outline-offset: 2px;
   }
 
   .method-icon {
@@ -206,9 +216,13 @@
     display: grid;
     place-items: center;
     border: 1px solid
-      color-mix(in srgb, var(--method-color) 20%, var(--theme-stroke));
+      color-mix(in srgb, var(--method-color) 42%, var(--theme-stroke));
     border-radius: var(--radius-2026-sm, 10px);
-    background: color-mix(in srgb, var(--method-color) 12%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--method-color) 20%,
+      var(--theme-card-bg)
+    );
     color: var(--method-color);
     font-size: var(--font-size-lg, 1.125rem);
   }
@@ -252,34 +266,17 @@
   .open-indicator {
     display: grid;
     place-items: center;
-    color: var(--theme-text-dim);
+    color: color-mix(
+      in srgb,
+      var(--method-color) 68%,
+      var(--theme-text-dim)
+    );
     font-size: 0.85rem;
     transition: color var(--duration-normal) var(--ease-out);
   }
 
   .method-card:hover .open-indicator {
     color: var(--method-color);
-  }
-
-  @container create-entry (min-width: 960px) {
-    .front-door-inner {
-      grid-template-columns: minmax(280px, 0.62fr) minmax(620px, 1.38fr);
-      align-items: center;
-      gap: clamp(48px, 6cqi, 104px);
-    }
-  }
-
-  @container create-entry (min-width: 1680px) {
-    .front-door-inner {
-      width: min(calc(100% - clamp(48px, 5cqi, 120px)), 1900px);
-      grid-template-columns: minmax(340px, 0.55fr) minmax(840px, 1.45fr);
-    }
-  }
-
-  @container create-entry (min-width: 2600px) {
-    .front-door-inner {
-      width: min(calc(100% - clamp(64px, 5cqi, 160px)), 2300px);
-    }
   }
 
   @container create-entry (max-width: 520px) {
@@ -294,8 +291,12 @@
       font-size: var(--font-size-3xl, 1.875rem);
     }
 
+    .method-index {
+      gap: 8px;
+    }
+
     .method-card {
-      min-height: 92px;
+      min-height: 88px;
       grid-template-columns: 40px minmax(0, 1fr) 14px;
       gap: 12px;
       padding: 12px 14px;
@@ -312,21 +313,23 @@
     }
   }
 
-  @media (max-height: 520px) and (min-width: 760px) {
+  @media (max-height: 640px) and (min-width: 760px) {
     .front-door-inner {
-      width: calc(100% - 28px);
-      grid-template-columns: minmax(210px, 0.62fr) minmax(0, 1.38fr);
-      align-items: center;
-      gap: 24px;
-      padding-block: 12px 18px;
+      width: min(calc(100% - 28px), 1120px);
+      gap: 8px;
+      padding-block: 6px 8px;
     }
 
     h1 {
       font-size: var(--font-size-3xl, 1.875rem);
     }
 
+    .method-index {
+      gap: 6px;
+    }
+
     .method-card {
-      min-height: 68px;
+      min-height: 64px;
       grid-template-columns: 36px minmax(0, 1fr) 14px;
       gap: 10px;
       padding: 8px 12px;
