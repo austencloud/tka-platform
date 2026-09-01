@@ -8,6 +8,31 @@ permissions:
   contents: write
 
 jobs:
+  release-preflight:
+    name: Validate desktop release signing
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Validate signing secrets for tagged releases
+        if: github.ref_type == 'tag'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          missing=()
+          [[ -n "$TAURI_SIGNING_PRIVATE_KEY" ]] || missing+=(TAURI_SIGNING_PRIVATE_KEY)
+          [[ -n "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" ]] || missing+=(TAURI_SIGNING_PRIVATE_KEY_PASSWORD)
+          if (( ${#missing[@]} )); then
+            printf '::error::Missing required desktop release secret(s): %s\n' "${missing[*]}"
+            exit 1
+          fi
+
+      - name: Confirm unsigned smoke-build mode
+        if: github.ref_type != 'tag'
+        run: echo "Branch dispatch uses unsigned packages and does not create a GitHub release."
+
   prepare-sequence-bundle:
     name: Export and verify offline sequence data
     runs-on: ubuntu-latest
@@ -54,7 +79,7 @@ jobs:
           compression-level: 9
 
   build:
-    needs: prepare-sequence-bundle
+    needs: [release-preflight, prepare-sequence-bundle]
     strategy:
       fail-fast: false
       matrix:
