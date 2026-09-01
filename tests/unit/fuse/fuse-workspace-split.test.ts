@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  FUSE_LIVE_GRID_GAP,
   fitsFuseRecipeColumn,
   fuseRecipeColumnFloor,
   getBestFuseStepColumns,
+  getFittedFuseCellSize,
   resolveBalancedFuseWorkspaceSplit,
 } from "$lib/features/fuse/services/fuse-workspace-split";
 
@@ -43,8 +45,7 @@ describe("Fuse recipe column fit", () => {
     // What the split solver is handed once the recipe takes its width off the
     // top: the canvas must still clear CANVAS_FLOOR, the paths MIN_LEFT.
     for (const containerWidth of [1328, 1462, 1548]) {
-      const available =
-        containerWidth - FIT.recipeMinWidth - 2 * FIT.columnGap;
+      const available = containerWidth - FIT.recipeMinWidth - 2 * FIT.columnGap;
       const paths = available - FIT.canvasFloor;
 
       expect(paths).toBeGreaterThanOrEqual(FIT.pathHardMinWidth);
@@ -53,6 +54,28 @@ describe("Fuse recipe column fit", () => {
 });
 
 describe("Fuse desktop workspace split", () => {
+  it("fits every pictograph and grid seam inside the notation stage", () => {
+    const columns = 3;
+    const rows = 4;
+    const stageWidth = 300;
+    const stageHeight = 400;
+    const cellSize = getFittedFuseCellSize(
+      stageWidth,
+      stageHeight,
+      columns,
+      rows
+    );
+
+    expect(
+      cellSize * columns + FUSE_LIVE_GRID_GAP * (columns - 1)
+    ).toBeLessThanOrEqual(stageWidth);
+    expect(cellSize * rows + FUSE_LIVE_GRID_GAP * (rows - 1)).toBe(stageHeight);
+  });
+
+  it("shrinks cells to fit a tight stage instead of enforcing an overflow floor", () => {
+    expect(getFittedFuseCellSize(120, 60, 3, 4)).toBe(14.25);
+  });
+
   it("balances an eight-step source workbench against the 4K preview ideal", () => {
     const result = resolveBalancedFuseWorkspaceSplit({
       availableWidth: 3752,

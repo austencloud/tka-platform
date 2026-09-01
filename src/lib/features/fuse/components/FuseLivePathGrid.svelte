@@ -5,6 +5,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
+  import { FUSE_LIVE_GRID_GAP } from "../services/fuse-workspace-split";
 
   let {
     sequence,
@@ -41,7 +42,8 @@
   // Match the canonical Choreo Card's mandala-to-cell ratio. A full-cell
   // mandala pushes its outer glow into the cell edge and reads as cropped,
   // especially in the large Fuse cards.
-  const mandalaSize = $derived(Math.round(Math.max(72, cellSize) * 0.78));
+  const safeCellSize = $derived(Math.max(1, cellSize));
+  const mandalaSize = $derived(Math.max(1, Math.round(safeCellSize * 0.78)));
   const startPosition = $derived(
     sequence.startPosition ??
       sequence.startingPosition ??
@@ -86,7 +88,8 @@
   class="live-path-grid"
   style:--live-grid-columns={gridColumns}
   style:--live-grid-rows={gridRows}
-  style:--live-cell-size={`${Math.max(72, cellSize)}px`}
+  style:--live-cell-size={`${safeCellSize}px`}
+  style:--live-grid-gap={`${FUSE_LIVE_GRID_GAP}px`}
   aria-label="{side === 'left' ? 'Left' : 'Right'} one-hand LOOP notation"
 >
   {#if includeStart && startPosition}
@@ -172,7 +175,7 @@
     );
     grid-template-rows: repeat(var(--live-grid-rows), var(--live-cell-size));
     place-content: center;
-    gap: 1px;
+    gap: var(--live-grid-gap);
     width: 100%;
     min-width: 100%;
     min-height: 100%;
