@@ -35,7 +35,7 @@ const routeSourceByPath: Record<string, string[]> = {
     "src/routes/(public)/notation/_components/archive/PlayableArchive.svelte",
   ],
   "/faq": ["src/routes/(public)/faq/+page.svelte"],
-  "/glossary": ["src/routes/(public)/glossary/+page.svelte"],
+  "/atlas": ["src/routes/(public)/atlas/+page.svelte"],
 };
 
 const location = (pathname: string, routeId = pathname) => ({

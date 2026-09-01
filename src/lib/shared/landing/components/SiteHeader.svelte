@@ -222,7 +222,7 @@
         },
         {
           label: "Kinetic Atlas",
-          href: "/glossary",
+          href: "/atlas",
           icon: "fa-compass",
           desc: "Letters, motion, notation, and technique",
         },

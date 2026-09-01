@@ -1912,7 +1912,7 @@
       "hiddenMonster": false
     },
     {
-      "file": "routes/(public)/glossary/+page.svelte",
+      "file": "routes/(public)/atlas/+page.svelte",
       "total": 1520,
       "scriptLines": 317,
       "templateLines": 335,
@@ -19745,7 +19745,7 @@
       "hiddenMonster": false
     },
     {
-      "file": "routes/(public)/glossary/_components/GlossaryNav.svelte",
+      "file": "routes/(public)/atlas/_components/GlossaryNav.svelte",
       "total": 292,
       "scriptLines": 57,
       "templateLines": 54,
@@ -27395,7 +27395,7 @@
       "hiddenMonster": false
     },
     {
-      "file": "routes/(public)/glossary/_components/GlossaryTermDetail.svelte",
+      "file": "routes/(public)/atlas/_components/GlossaryTermDetail.svelte",
       "total": 230,
       "scriptLines": 33,
       "templateLines": 50,

@@ -18,7 +18,7 @@ export interface LetterExplorerRouteState {
   redRotation: RotationDirectionValue;
 }
 
-const CANONICAL_LETTER_EXPLORER_PATH = "/glossary";
+const CANONICAL_LETTER_EXPLORER_PATH = "/atlas";
 const CANONICAL_LETTER_EXPLORER_BOARD = "atlas";
 
 export const LETTER_EXPLORER_PARAMS = [
@@ -101,7 +101,7 @@ export function writeLetterExplorerRoute(
 }
 
 /**
- * Stable entry point for an unedited dataframe letter. Glossary type lists use
+ * Stable entry point for an unedited dataframe letter. Atlas type lists use
  * this same route contract as the explorer instead of assembling a second URL
  * shape that can drift from the share-link behavior.
  */

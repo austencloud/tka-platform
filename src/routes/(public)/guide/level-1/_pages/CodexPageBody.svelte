@@ -41,7 +41,7 @@
   import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideCodexState } from "../_data/guide-codex-state.svelte";
   import { registerCodexCellTrigger } from "../_data/guide-scan-intent";
-  import { buildCanonicalLetterExplorerHref } from "../../../glossary/_components/codex-boards/letter-explorer-url";
+  import { buildCanonicalLetterExplorerHref } from "../../../atlas/_components/codex-boards/letter-explorer-url";
   import CodexSheet from "../../codex/_components/CodexSheet.svelte";
   import {
     SHEET1,

@@ -72,7 +72,7 @@
       links: [
         { label: "Interactive lessons", href: "/learn/concepts" },
         { label: "Read the Guide", href: "/guide" },
-        { label: "Kinetic Atlas", href: "/glossary" },
+        { label: "Kinetic Atlas", href: "/atlas" },
         { label: "FAQ", href: "/faq" },
       ],
     },

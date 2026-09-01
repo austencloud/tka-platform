@@ -51,7 +51,7 @@ describe("SvelteKit dev error recovery", () => {
       installGeneratedRouteRecovery({
         location: {
           hostname: "dev.tkaflowarts.com",
-          href: "https://dev.tkaflowarts.com/glossary",
+          href: "https://dev.tkaflowarts.com/atlas",
         },
         document,
         fetch,
