@@ -1,7 +1,7 @@
 # Scan Activity: TKA-First Scan Atlas
 
 **Date:** 2026-08-31
-**Module:** Choreo Cards > Scan Activity
+**Module:** Choreo Cards > Scan Atlas
 **Status:** Shipped
 
 ## Problem
@@ -28,6 +28,10 @@ Build a **TKA-first Scan Atlas**: a map-led operational workspace with a compact
 word-first activity rail. The resting view contains only the live atlas and its
 activity stream. Selecting a scan introduces the card inspector as a deliberate
 workspace change; there is no permanent empty third rail.
+
+The canonical route is `/choreo_card/scan-atlas`. The former
+`/choreo_card/scan-activity` route remains a migrated alias so bookmarks,
+persisted tabs, notification targets, and browser history keep their intent.
 
 ## Canonical owners
 

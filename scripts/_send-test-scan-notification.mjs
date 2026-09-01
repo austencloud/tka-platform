@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Send test admin QR-scan notifications to Austen's inbox so the new look can
- * be seen end to end (inbox card → click → Scan Activity map + card peek).
+ * be seen end to end (inbox card → click → Scan Atlas map + card peek).
  *
  * Writes real notification docs into users/{uid}/notifications, which also
  * triggers the deployed onNewNotification → FCM push. Picks a real owned card
