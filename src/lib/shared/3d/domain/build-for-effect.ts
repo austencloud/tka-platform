@@ -130,6 +130,9 @@ export function buildForEffect(
     case "fire":
       return fireEquip(propType, current);
     case "led":
+      if (FAN_PROPS.has(propType)) {
+        return equipBuild({ fanBuild: "moon", fanCover: "bare" }, current);
+      }
       return equipProp(DOUBLE_STAFF_FAMILY, PropType.CAPSULE_BATON, propType);
     default:
       // Coal, trails, sparkles and the rest read whatever build is in hand.
