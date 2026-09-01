@@ -25,10 +25,10 @@ furthest tip. Club → 280 of a 475 half-canvas. Sword → 430. Guitar → 440.
 
 `static/images/props/` holds the same artwork twice:
 
-| family | regular props | notes |
-|---|---|---|
-| `pictograph/` | ~250–262 wide | the tuned family; club is `258.67` here |
-| `animated/` | 300 / 600 | the same paths, each uniformly scaled **up** |
+| family        | regular props | notes                                        |
+| ------------- | ------------- | -------------------------------------------- |
+| `pictograph/` | ~250–262 wide | the tuned family; club is `258.67` here      |
+| `animated/`   | 300 / 600     | the same paths, each uniformly scaled **up** |
 
 `animated/club.svg` and `pictograph/club.svg` are **byte-identical**. The club
 tuning was a migration onto the pictograph family that stopped after one prop.
@@ -114,6 +114,18 @@ Reach after convergence, against the club's 129.3:
 - The short group (eight rings, quiad, mini hoop, triad) sits under 130 rather
   than on it. Faithful proportional scaling put them there; pulling them onto
   exactly 130 is a separate decision.
+
+### 2026-09-01 triad follow-up
+
+That separate decision was made for the regular triad. Its three canonical tip
+points now use the club's exact `129.335` reach at 120-degree intervals, while
+preserving the saved upper-left → right → lower-left point order so per-tip
+effects stay on the same arms. The pictograph SVG is uniformly scaled by
+`1.0398375944685643` to a `258.67 × 227.818` viewBox, keeping the center pivot
+and proportions unchanged while bringing the artwork to those points. The live
+`config/effectPoints.triad` override is migrated with the same coordinates by a
+guarded, idempotent script; it refuses any values other than the known legacy
+set or the normalized target.
 
 ## Verification
 
