@@ -50,6 +50,9 @@
  * - lsp12-: Added per-motion isVisible only when a pictograph contains an
  *   invisible placeholder. Fully-visible pictographs intentionally retain
  *   their exact lsp11 identity so the established cloud corpus stays usable.
+ * - Canonical hand-arrow revision: the prefix remains lsp11/lsp12, while
+ *   PictographKeyHasher rekeys visible-motion renders so arrowless blobs made
+ *   by the legacy blue/red compositor cannot survive locally or in the cloud.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
