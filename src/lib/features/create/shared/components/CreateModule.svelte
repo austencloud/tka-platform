@@ -671,8 +671,9 @@
     handleSectionChange(methodId);
   }
 
-  function handleReturnToCreateFrontDoor(): void {
+  function handleReturnToCreateFrontDoor(trigger: HTMLButtonElement): void {
     logCreateFrontDoorReturned(navigationState.activeTab);
+    trigger.blur();
     handleCreateFrontDoor("workspace");
   }
 
@@ -918,25 +919,16 @@
       <button
         type="button"
         class="all-methods-button"
-        onclick={handleReturnToCreateFrontDoor}
+        aria-label="Back to Create"
+        onclick={(event) => handleReturnToCreateFrontDoor(event.currentTarget)}
       >
         <i class="fas fa-arrow-left" aria-hidden="true"></i>
-        <span class="all-methods-label">All creation methods</span>
-        <span class="all-methods-label-compact">Methods</span>
+        <span>Create</span>
       </button>
 
       {#if activeCreateMethod}
-        <span class="method-divider" aria-hidden="true"></span>
-        <span
-          class="active-method"
-          style:--active-method-color={activeCreateMethod.color ??
-            "var(--theme-accent)"}
-        >
-          <span class="active-method-icon" aria-hidden="true">
-            {@html activeCreateMethod.icon}
-          </span>
-          <span>{activeCreateMethod.label}</span>
-        </span>
+        <span class="method-divider" aria-hidden="true">/</span>
+        <span class="active-method">{activeCreateMethod.label}</span>
       {/if}
     </nav>
 
@@ -1107,22 +1099,21 @@
     min-height: var(--min-touch-target, 44px);
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 5px clamp(10px, 1.5cqi, 20px);
+    gap: 8px;
+    padding: 4px clamp(8px, 1.2cqi, 16px);
     box-sizing: border-box;
     border-bottom: 1px solid var(--theme-stroke);
-    background: color-mix(in srgb, var(--theme-panel-bg) 84%, transparent);
-    backdrop-filter: blur(12px);
+    background: var(--theme-panel-bg);
   }
 
   .all-methods-button {
     min-height: var(--min-touch-target, 44px);
     display: inline-flex;
     align-items: center;
-    gap: 9px;
-    padding: 0 12px;
+    gap: 8px;
+    padding: 0 8px;
     border: 1px solid transparent;
-    border-radius: 10px;
+    border-radius: 8px;
     background: transparent;
     color: var(--theme-text-dim);
     font-size: var(--font-size-min, 14px);
@@ -1145,34 +1136,16 @@
     outline-offset: 2px;
   }
 
-  .all-methods-label-compact {
-    display: none;
-  }
-
   .method-divider {
-    width: 1px;
-    height: 22px;
-    background: var(--theme-stroke);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min, 14px);
   }
 
   .active-method {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
     min-width: 0;
     color: var(--theme-text);
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
-  }
-
-  .active-method-icon {
-    display: grid;
-    place-items: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--active-method-color) 13%, transparent);
-    color: var(--active-method-color);
   }
 
   .create-workspace-body {
@@ -1201,37 +1174,6 @@
     margin: 0;
     font-size: var(--font-size-sm, 13px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-  }
-
-  @container (max-width: 520px) {
-    .create-method-bar {
-      gap: 7px;
-      padding-inline: 6px;
-    }
-
-    .all-methods-button {
-      padding-inline: 10px;
-    }
-
-    .all-methods-label {
-      display: none;
-    }
-
-    .all-methods-label-compact {
-      display: inline;
-    }
-  }
-
-  @media (min-width: 2600px) {
-    .create-method-bar {
-      min-height: 64px;
-      padding-inline: 28px;
-    }
-
-    .all-methods-button,
-    .active-method {
-      font-size: 1.05rem;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {
