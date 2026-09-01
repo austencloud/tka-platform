@@ -5,7 +5,10 @@ import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-a
 import type { ContentType } from "./viewer-state.svelte";
 import type { SelectableViewerMode } from "../services/viewer-modes";
 import type { OrchestratorContext } from "../domain/viewer-orchestrator-context";
-import { resolveExportSidebarMinWidth } from "../services/viewer-shell-model";
+import {
+  resolveExportSidebarMinWidth,
+  type ViewerInspectorProfile,
+} from "../services/viewer-shell-model";
 import { withViewerModeDissolve } from "$lib/shared/transitions/viewer-mode-dissolve";
 import { motionDuration } from "$lib/shared/transitions/motion";
 import { DURATION, STAGGER } from "$lib/shared/transitions/transitions";
@@ -88,28 +91,38 @@ export function createViewerShellLayoutState(
       !isSidebarExportActive
   );
 
-  const exportSidebarMinWidth = $derived.by(() => {
-    let persistedRailWidth: string | null = null;
+  const persistedRailWidth = $derived.by(() => {
+    let storedRailWidth: string | null = null;
     try {
-      persistedRailWidth = localStorage.getItem("tka-viewer-rail-width");
+      storedRailWidth = localStorage.getItem("tka-viewer-rail-width");
     } catch {
       // Private browsing and locked-down embeds can deny storage. The default
       // rail width keeps the preview usable without persistence.
     }
-    return resolveExportSidebarMinWidth(persistedRailWidth);
+    return storedRailWidth;
   });
 
   const cardExportNarrow = $derived(
-    isImageExportActive && !isMobile && bodyWidth < exportSidebarMinWidth
+    isImageExportActive &&
+      !isMobile &&
+      bodyWidth < resolveExportSidebarMinWidth(persistedRailWidth, "card")
   );
   const videoExportNarrow = $derived(
     isVideoExportActive &&
       !isRecordSceneActive &&
       !isMobile &&
-      bodyWidth < exportSidebarMinWidth
+      bodyWidth < resolveExportSidebarMinWidth(persistedRailWidth, "motion")
+  );
+  const artInspectorNarrow = $derived(
+    isArtInspectorActive &&
+      !isMobile &&
+      bodyWidth < resolveExportSidebarMinWidth(persistedRailWidth, "art")
   );
   const effectiveMobile = $derived(
-    isMobile || cardExportNarrow || videoExportNarrow
+    isMobile || cardExportNarrow || videoExportNarrow || artInspectorNarrow
+  );
+  const inspectorProfile = $derived<ViewerInspectorProfile>(
+    isImageExportActive ? "card" : isVideoExportActive ? "motion" : "art"
   );
   const isWorkspaceInspectorActive = $derived(
     isSidebarExportActive || (isArtInspectorActive && !effectiveMobile)
@@ -509,6 +522,9 @@ export function createViewerShellLayoutState(
     },
     get effectiveMobile() {
       return effectiveMobile;
+    },
+    get inspectorProfile() {
+      return inspectorProfile;
     },
     get showRail() {
       return showRail;

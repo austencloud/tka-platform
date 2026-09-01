@@ -3,11 +3,18 @@
   import PanelGroup, {
     type PanelDefinition,
   } from "$lib/shared/panels/PanelGroup.svelte";
+  import {
+    VIEWER_INSPECTOR_HANDLE_SIZE,
+    VIEWER_STAGE_MIN_WIDTH,
+    viewerInspectorConstraints,
+    type ViewerInspectorProfile,
+  } from "../services/viewer-shell-model";
 
   interface Props {
     direction: "horizontal" | "vertical";
     inspectorActive: boolean;
     inspectorCollapsed: boolean;
+    inspectorProfile: ViewerInspectorProfile;
     stage: Snippet;
     inspector: Snippet;
   }
@@ -16,6 +23,7 @@
     direction,
     inspectorActive,
     inspectorCollapsed,
+    inspectorProfile,
     stage,
     inspector,
   }: Props = $props();
@@ -29,30 +37,45 @@
     if (inspectorActive) workspaceDirection = direction;
   });
 
+  const inspectorConstraints = $derived(
+    viewerInspectorConstraints(inspectorProfile)
+  );
+  const inspectorResizable = $derived(
+    direction === "horizontal" && inspectorActive && !inspectorCollapsed
+  );
+
   const panels = $derived.by(() => {
     const definitions: PanelDefinition[] = [
       {
         id: "viewer-stage",
         content: stage,
         defaultSize: 1,
-        resizable: false,
+        minSize: VIEWER_STAGE_MIN_WIDTH,
+        resizable: inspectorResizable,
+        resizeLabel: `Resize viewer and ${inspectorProfile} settings`,
       },
     ];
 
     if (direction === "horizontal") {
       definitions.push({
-        // Keep the fixed-width inspector track mounted at zero between desktop
-        // visits. A conditional second panel starts its intro one lifecycle
-        // boundary after the Card begins collapsing, which makes one mode
-        // change read as two swipes. The persistent track lets both allocations
-        // change in the same PanelGroup layout frame.
+        // Keep the inspector track mounted at zero between desktop visits. A
+        // conditional second panel starts its intro one lifecycle boundary
+        // after the Card begins collapsing, which makes one mode change read as
+        // two swipes. The persistent track lets both allocations change in the
+        // same PanelGroup layout frame, then hands its seam to the resize handle.
         id: "export-inspector",
         content: inspector,
         defaultSize: 1,
+        minSize: inspectorConstraints.minWidth,
+        maxSize: inspectorConstraints.maxWidth,
         fixedSize:
           !inspectorActive || inspectorCollapsed
             ? "0px"
-            : "var(--export-sidebar-width)",
+            : undefined,
+        preferredSize:
+          inspectorActive && !inspectorCollapsed
+            ? "var(--active-inspector-width)"
+            : undefined,
       });
     } else if (inspectorActive) {
       // A stacked dock discovers its intrinsic open height from its contents.
@@ -70,4 +93,8 @@
   });
 </script>
 
-<PanelGroup direction={workspaceDirection} {panels} gap={0} />
+<PanelGroup
+  direction={workspaceDirection}
+  {panels}
+  gap={inspectorResizable ? VIEWER_INSPECTOR_HANDLE_SIZE : 0}
+/>
