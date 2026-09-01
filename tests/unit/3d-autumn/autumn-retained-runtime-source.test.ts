@@ -65,6 +65,20 @@ describe("Autumn retained runtime lifecycle", () => {
     );
   });
 
+  it("releases the dedicated Autumn GLTF after restoring spatial batches", () => {
+    const scene = source(
+      "src/lib/shared/3d/environments/scenes/AutumnScene.svelte"
+    );
+    const restore = scene.indexOf("restoreAutumnGeometryTier(loaded)");
+    const dispose = scene.indexOf("disposeSceneGraph(loaded)");
+
+    expect(scene).toContain(
+      'import { disposeSceneGraph } from "../utils/dispose-scene"'
+    );
+    expect(restore).toBeGreaterThan(-1);
+    expect(dispose).toBeGreaterThan(restore);
+  });
+
   it("keeps the interactive framebuffer discardable without breaking capture", () => {
     const viewer = source("src/lib/shared/3d/components/Viewer3DCanvas.svelte");
     const postProcessing = source(

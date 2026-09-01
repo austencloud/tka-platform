@@ -49,6 +49,7 @@
   } from "./autumn/runtime/autumn-boot-state";
   import { startAutumnEnvironmentRequest } from "./autumn/runtime/autumn-environment-request";
   import { createAutumnEnvironmentTransport } from "./autumn/runtime/autumn-environment-transport";
+  import { disposeSceneGraph } from "../utils/dispose-scene";
   import type { Mesh } from "three";
 
   // ── Props (match what Environment3D passes) ───────────────────────────
@@ -180,6 +181,11 @@
     return () => {
       delete loaded.userData.autumnGeometryTierReport;
       restoreAutumnGeometryTier(loaded);
+      // Autumn owns a dedicated, uncached GLTFLoader request. Its geometry,
+      // materials, and KTX2 texture objects therefore belong to this mount;
+      // leaving Threlte disposal disabled without releasing them here leaked
+      // one full 18 MB environment on every scene round-trip.
+      disposeSceneGraph(loaded);
     };
   });
 
