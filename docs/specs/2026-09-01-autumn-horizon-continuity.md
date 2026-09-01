@@ -47,6 +47,8 @@ renderer, duplicate readiness mechanism, or scene-specific screenshot delay.
 8. The review route removes the product boot surface at its layout boundary.
    A valid capture must still prove that no loader or transition veil is
    present and that the document did not change between readiness and capture.
+9. `cam`, `look`, and `fov` URL coordinates replay through the canonical camera
+   URL parser. Reloading a copied view must preserve its position and target.
 
 ## Visual rejection conditions
 
