@@ -21,6 +21,8 @@ tests are necessary evidence, but none can substitute for the rendered image.
 - `SceneShaderWarmup.svelte` owns renderer compilation and the smooth-frame
   gate used before a scene can be called visually ready.
 - `/test/autumn-scene` owns deterministic camera and production-graph replay.
+- The route reset layout owns isolation from product boot, account, and cloud
+  loading surfaces during deterministic review.
 
 The implementation extends these owners. It does not add another ground
 renderer, duplicate readiness mechanism, or scene-specific screenshot delay.
@@ -42,6 +44,11 @@ renderer, duplicate readiness mechanism, or scene-specific screenshot delay.
    `Viewer3DCanvas` reports its complete scene ready. It includes three
    performers using trail, fire, and LED effects with glide, punch, and elastic
    efforts.
+8. The review route removes the product boot surface at its layout boundary.
+   A valid capture must still prove that no loader or transition veil is
+   present and that the document did not change between readiness and capture.
+9. `cam`, `look`, and `fov` URL coordinates replay through the canonical camera
+   URL parser. Reloading a copied view must preserve its position and target.
 
 ## Visual rejection conditions
 
@@ -58,8 +65,10 @@ Reject the candidate immediately if any proof image shows:
 
 ## Required proof matrix
 
-Every capture waits for `data-autumn-ready="true"`; an arbitrary timeout or
-the disappearance of a loader is not readiness.
+Every capture waits for `data-autumn-ready="true"` and proves that no loader or
+transition veil is present. An arbitrary timeout or the disappearance of a
+loader alone is not readiness. The capture transaction records the document's
+time origin before and after the image; a changed document invalidates it.
 
 Named camera sweep at desktop size:
 

@@ -1211,6 +1211,11 @@
     .workspace {
       flex: 1;
     }
+
+    .action-slot {
+      margin-top: auto;
+    }
+
     .picker-pane {
       /* flex-basis 0: the pane fills whatever the row gives it but its
          CONTENT never drives the row height — the start picker's intrinsic
@@ -1455,12 +1460,6 @@
     .ws-frame {
       flex: 0 0 auto;
       height: clamp(18rem, 19.5cqw, 32rem);
-    }
-  }
-
-  @container (min-width: 1100px) {
-    .demo-columns {
-      align-items: start;
     }
   }
 
