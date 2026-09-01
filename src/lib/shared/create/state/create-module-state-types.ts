@@ -37,13 +37,14 @@ export interface SequenceStateMinimal {
   mirrorSequence(targetHand?: TargetHand): Promise<void>;
   flipSequence(targetHand?: TargetHand): Promise<void>;
   swapHands(): Promise<void>;
-  invertSequence(): Promise<void>;
+  invertSequence(targetHand?: TargetHand): Promise<void>;
   rewindSequence(targetHand?: TargetHand): Promise<void>;
   rotateSequence(
     direction: "clockwise" | "counterclockwise",
     targetHand?: TargetHand,
     rotationSteps?: number
   ): Promise<void>;
+  shiftStartPosition(stepNumber: number): Promise<void>;
 }
 
 /**

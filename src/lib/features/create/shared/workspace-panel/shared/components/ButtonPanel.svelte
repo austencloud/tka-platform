@@ -193,9 +193,13 @@
       <div class="right-zone">
         {#each rightButtons as btn (btn.id)}
           {#if btn.id === "sequence-actions" && showSequenceActions}
-            <div transition:presenceTransition>
+            <div
+              class="sequence-actions-workspace-trigger"
+              transition:presenceTransition
+            >
               <SequenceActionsButton
-                onclick={() => panelState.openSequenceActionsPanel()}
+                onclick={() =>
+                  panelState.openSequenceActionsPanel("workspace_button")}
               />
             </div>
           {:else if btn.id === "share" && canShareSequence}
@@ -502,6 +506,14 @@
     .button-panel.assemble-layout .right-zone {
       grid-area: right;
       justify-self: end;
+    }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    @container create-module-workspace (min-width: 1180px) {
+      .sequence-actions-workspace-trigger {
+        display: none;
+      }
     }
   }
 </style>
