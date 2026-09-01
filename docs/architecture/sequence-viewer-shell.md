@@ -18,6 +18,19 @@ shared no code.
 Extract the entire viewer chrome into one component and render it from every
 host. Parity by construction, not by discipline.
 
+### Terminology
+
+- **Sequence Viewer** is the complete shell: header, switchers, visual workspace,
+  inspectors, transport, and supporting actions.
+- **Viewer stage** is the persistent visual region inside that shell. Diagnostic
+  copy qualifies the term because the separate 3D Studio product already owns a
+  user-facing Stage workspace.
+- **View** is one selection shown on the viewer stage: Side by Side, 2D
+  Animation, 3D Animation, Card, Performances, Tunnel, or Post Studio. Switchers
+  name the concrete view instead of presenting Stage as another selectable mode.
+- **3D Studio → Stage** remains the authoring workspace for cast choreography.
+  A viewer stage displays one sequence; the 3D Studio Stage authors a project.
+
 ```
 physical QR -> /q/[code] -> attribution + cached handoff -> /sequence/[id]
 
