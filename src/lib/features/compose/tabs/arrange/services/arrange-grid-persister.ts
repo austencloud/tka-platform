@@ -15,7 +15,7 @@ import type { CellMediaType } from "$lib/shared/animation-engine/domain/compose-
 import type { TunnelLayerConfig } from "$lib/shared/animation-engine/domain/compose-types";
 import { gridCellsToComposition } from "./arrange-composition-converter";
 import { saveComposition as dexieSaveComposition } from "../../../services/dexie-composition-repository";
-import type { GridCell } from '../state/arrange-grid-state.svelte';
+import type { GridCell } from "../state/arrange-grid-state.svelte";
 
 const STORAGE_KEY = "compose-arrange-grid-v7";
 const STORAGE_KEY_V6 = "compose-arrange-grid-v6";
@@ -48,6 +48,17 @@ interface SavedComposition {
   gridCols: number;
 }
 
+export function normalizePersistedGridCell<T>(value: T): T {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const source = value as Record<string, unknown>;
+  const normalized: Record<string, unknown> = { ...source };
+  normalized.leftMotionVisible ??= source.blueMotionVisible;
+  normalized.rightMotionVisible ??= source.redMotionVisible;
+  delete normalized.blueMotionVisible;
+  delete normalized.redMotionVisible;
+  return normalized as T;
+}
+
 function clampDimension(n: number): number {
   return Math.max(1, Math.min(MAX_GRID_SIZE, Math.round(n)));
 }
@@ -68,7 +79,7 @@ export function loadGrid(): GridConfig {
       const config = JSON.parse(stored) as GridConfig;
       if (config.cells.length === MAX_GRID_SIZE * MAX_GRID_SIZE) {
         const migratedCells = config.cells.map((cell) => ({
-          ...cell,
+          ...normalizePersistedGridCell(cell),
           mediaType: cell.mediaType ?? "animation",
         }));
         return {
@@ -153,17 +164,13 @@ export async function migrateLocalStorageCompositions(): Promise<void> {
     }
 
     for (const comp of saved) {
-      const composition = gridCellsToComposition(
-        comp.id,
-        comp.name,
-        {
-          cells: comp.cells,
-          gridRows: comp.gridRows ?? 2,
-          gridCols: comp.gridCols ?? 2,
-          bpm: comp.bpm ?? 120,
-          skipStartPosition: comp.skipStartPosition ?? true,
-        }
-      );
+      const composition = gridCellsToComposition(comp.id, comp.name, {
+        cells: comp.cells.map(normalizePersistedGridCell),
+        gridRows: comp.gridRows ?? 2,
+        gridCols: comp.gridCols ?? 2,
+        bpm: comp.bpm ?? 120,
+        skipStartPosition: comp.skipStartPosition ?? true,
+      });
       // Preserve original creation date
       composition.createdAt = new Date(comp.createdAt);
       composition.updatedAt = new Date(comp.createdAt);

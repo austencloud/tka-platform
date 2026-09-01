@@ -15,7 +15,7 @@ import type {
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 import type { LedSimulatorConfig } from "$lib/shared/animation-engine/domain/types/led-types";
 
-export const EFFECTS_CONFIG_VERSION = 37;
+export const EFFECTS_CONFIG_VERSION = 38;
 
 /** User-facing 2D Fire look. The renderer translates this into its internal profile. */
 export type FireRenderingStyle = "natural" | "liquid";

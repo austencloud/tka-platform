@@ -263,8 +263,12 @@ function entryFromDocument(document: ScanActivityCardDocument): CodeEntry {
     lastScannedAt: toISOString(data.lastScannedAt),
     lastCity: nullableText(data.lastCity),
     lastCountry: nullableText(data.lastCountry),
-    leftPropType: parsePropTypeFromURLValue(text(data.leftPropType)) ?? null,
-    rightPropType: parsePropTypeFromURLValue(text(data.rightPropType)) ?? null,
+    leftPropType:
+      parsePropTypeFromURLValue(text(data.leftPropType ?? data.bluePropType)) ??
+      null,
+    rightPropType:
+      parsePropTypeFromURLValue(text(data.rightPropType ?? data.redPropType)) ??
+      null,
     catDogMode: typeof data.catDogMode === "boolean" ? data.catDogMode : null,
     metadataAvailable: true,
     embeddedFallback: embeddedSequence,

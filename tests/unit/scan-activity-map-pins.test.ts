@@ -259,6 +259,40 @@ describe("scan activity view transforms", () => {
 });
 
 describe("scan activity state", () => {
+  it("restores literal blue/red prop metadata from historical cards", async () => {
+    let pushEvents: (events: ScanEventRow[]) => void = () => {};
+    const state = createScanActivityState({
+      data: {
+        watchRecentEvents: vi.fn(async (onEvents) => {
+          pushEvents = onEvents;
+          return vi.fn();
+        }),
+        loadCards: vi.fn(async () => [
+          {
+            code: "LEGACY-PROPS",
+            data: {
+              encoded: "encoded",
+              bluePropType: "poi",
+              redPropType: "fan",
+            },
+          },
+        ]),
+        loadAuthor: vi.fn(async () => ({ displayName: "Unknown" })),
+      },
+      decodeSequence: decoder(),
+    });
+
+    await state.connect("owner-1", true);
+    pushEvents([ev({ code: "LEGACY-PROPS" })]);
+    await vi.waitFor(() => expect(state.codes).toHaveLength(1));
+
+    expect(state.codes[0]).toMatchObject({
+      leftPropType: PropType.POI,
+      rightPropType: PropType.FAN,
+    });
+    state.disconnect();
+  });
+
   it("builds previews from embedded sequence data when legacy cards have no encoded blob", async () => {
     let pushEvents: (events: ScanEventRow[]) => void = () => {};
     const decodeSequence = decoder();

@@ -11,11 +11,15 @@ import { fileURLToPath } from "url";
 import { exec, spawn } from "child_process";
 import { homedir, tmpdir } from "os";
 import { calculateOrientations } from "../core/orientation-calculator.js";
-import type { MotionData, PictographData, GridMode } from "../types/pictograph.js";
+import type {
+  MotionData,
+  PictographData,
+  GridMode,
+} from "../types/pictograph.js";
+import { readPictographCsvMotion } from "./pictograph-csv-row.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 
 /**
  * User preferences for pictograph rendering.
@@ -74,7 +78,6 @@ export function updatePreferences(partial: Partial<UserPreferences>): void {
   currentPreferences = { ...currentPreferences, ...partial };
 }
 
-
 /**
  * Resolve a user-writable temp directory. os.tmpdir() can return
  * C:\WINDOWS\TEMP when the MCP server inherits a system env, which
@@ -118,7 +121,8 @@ export function openImageFile(filePath: string): void {
     return;
   }
 
-  const command = platform === "darwin" ? `open "${filePath}"` : `xdg-open "${filePath}"`;
+  const command =
+    platform === "darwin" ? `open "${filePath}"` : `xdg-open "${filePath}"`;
   exec(command, (error) => {
     if (error) {
       console.error(`[MCP] Failed to open image: ${error.message}`);
@@ -155,9 +159,18 @@ const MCP_SERVER_ROOT = isCompiled
 const PROJECT_ROOT = path.resolve(MCP_SERVER_ROOT, "..");
 
 const DATAFRAME_PATHS: Record<GridMode, string> = {
-  diamond: path.resolve(PROJECT_ROOT, "static/data/pictographs/DiamondPictographDataframe.csv"),
-  box: path.resolve(PROJECT_ROOT, "static/data/pictographs/BoxPictographDataframe.csv"),
-  skewed: path.resolve(PROJECT_ROOT, "static/data/pictographs/SkewedPictographDataframe.csv"),
+  diamond: path.resolve(
+    PROJECT_ROOT,
+    "static/data/pictographs/DiamondPictographDataframe.csv"
+  ),
+  box: path.resolve(
+    PROJECT_ROOT,
+    "static/data/pictographs/BoxPictographDataframe.csv"
+  ),
+  skewed: path.resolve(
+    PROJECT_ROOT,
+    "static/data/pictographs/SkewedPictographDataframe.csv"
+  ),
 };
 
 // Cache for loaded dataframes
@@ -198,21 +211,23 @@ function loadDataframe(gridMode: GridMode): PictographData[] {
       // When building sequences, orientation-propagation.ts chains each step's
       // end orientation into the next step's start, so the correct orientations
       // propagate through the sequence regardless of this default.
+      const left = readPictographCsvMotion(row, "left");
+      const right = readPictographCsvMotion(row, "right");
       const leftOrientations = calculateOrientations({
-        motionType: row.leftMotionType,
+        motionType: left.motionType,
         turns: 0,
-        rotationDirection: row.leftRotationDirection || "cw",
-        startLocation: row.leftStartLocation,
-        endLocation: row.leftEndLocation,
+        rotationDirection: left.rotationDirection,
+        startLocation: left.startLocation,
+        endLocation: left.endLocation,
         startOrientation: "in",
       });
 
       const rightOrientations = calculateOrientations({
-        motionType: row.rightMotionType,
+        motionType: right.motionType,
         turns: 0,
-        rotationDirection: row.rightRotationDirection || "cw",
-        startLocation: row.rightStartLocation,
-        endLocation: row.rightEndLocation,
+        rotationDirection: right.rotationDirection,
+        startLocation: right.startLocation,
+        endLocation: right.endLocation,
         startOrientation: "in",
       });
 
@@ -227,19 +242,19 @@ function loadDataframe(gridMode: GridMode): PictographData[] {
         direction: row.direction,
         leftMotion: {
           hand: "left",
-          startLocation: row.leftStartLocation,
-          endLocation: row.leftEndLocation,
-          motionType: row.leftMotionType,
-          rotationDirection: row.leftRotationDirection,
+          startLocation: left.startLocation,
+          endLocation: left.endLocation,
+          motionType: left.motionType,
+          rotationDirection: left.rotationDirection,
           startOrientation: leftOrientations.startOrientation,
           endOrientation: leftOrientations.endOrientation,
         },
         rightMotion: {
           hand: "right",
-          startLocation: row.rightStartLocation,
-          endLocation: row.rightEndLocation,
-          motionType: row.rightMotionType,
-          rotationDirection: row.rightRotationDirection,
+          startLocation: right.startLocation,
+          endLocation: right.endLocation,
+          motionType: right.motionType,
+          rotationDirection: right.rotationDirection,
           startOrientation: rightOrientations.startOrientation,
           endOrientation: rightOrientations.endOrientation,
         },
@@ -253,11 +268,15 @@ function loadDataframe(gridMode: GridMode): PictographData[] {
   }
 }
 
-export function ensureDataLoaded(gridMode: GridMode = defaultGridMode): PictographData[] {
+export function ensureDataLoaded(
+  gridMode: GridMode = defaultGridMode
+): PictographData[] {
   if (pictographsByGridMode[gridMode].length === 0) {
     console.error(`[MCP] Loading ${gridMode} pictograph dataframe...`);
     pictographsByGridMode[gridMode] = loadDataframe(gridMode);
-    console.error(`[MCP] Loaded ${pictographsByGridMode[gridMode].length} pictographs for ${gridMode} mode`);
+    console.error(
+      `[MCP] Loaded ${pictographsByGridMode[gridMode].length} pictographs for ${gridMode} mode`
+    );
   }
   return pictographsByGridMode[gridMode];
 }
@@ -266,7 +285,9 @@ export function ensureDataLoaded(gridMode: GridMode = defaultGridMode): Pictogra
  * Async version of ensureDataLoaded that also awaits engine TransitionGraph init.
  * Use this in async tool handlers to guarantee the engine graph is ready.
  */
-export async function ensureDataLoadedAsync(gridMode: GridMode = defaultGridMode): Promise<PictographData[]> {
+export async function ensureDataLoadedAsync(
+  gridMode: GridMode = defaultGridMode
+): Promise<PictographData[]> {
   const data = ensureDataLoaded(gridMode);
   await initEngineTransitionGraph();
   return data;
@@ -276,7 +297,8 @@ let engineTransitionGraphReady = false;
 async function initEngineTransitionGraph(): Promise<void> {
   if (engineTransitionGraphReady) return;
   try {
-    const { ensureTransitionGraphInitialized } = await import("../core/letter-transition-graph.js");
+    const { ensureTransitionGraphInitialized } =
+      await import("../core/letter-transition-graph.js");
     const { setLetterTransitionGraph } = await import("@tka/sequence-engine");
     const localGraph = await ensureTransitionGraphInitialized();
     if (localGraph?.engineGraph) {
@@ -307,7 +329,8 @@ import type { GlossaryEntry, LetterTypeDefinition } from "@tka/domain";
 export { GLOSSARY, LETTER_TYPES };
 
 /** Letter→type lookup. Re-exported for consumers that use { type, name } shape. */
-export const LETTER_TO_TYPE: Record<string, { type: string; name: string }> = {};
+export const LETTER_TO_TYPE: Record<string, { type: string; name: string }> =
+  {};
 for (const [letter, info] of Object.entries(DOMAIN_LETTER_TO_TYPE)) {
   LETTER_TO_TYPE[letter] = { type: info.type, name: info.name };
 }
@@ -328,7 +351,10 @@ export function getLetterTypes(): Record<string, LetterTypeDefinition> {
 // UTILITY FUNCTIONS
 // ============================================================================
 
-export function generateRandomWord(length: number, excludeLetters?: string[]): string {
+export function generateRandomWord(
+  length: number,
+  excludeLetters?: string[]
+): string {
   const allPictographs = ensureDataLoaded();
   const allLetters = new Set<string>();
   for (const p of allPictographs) {

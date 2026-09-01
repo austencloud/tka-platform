@@ -1,11 +1,17 @@
 import { z } from "zod";
 import { firestoreDate } from "$lib/shared/firestore";
+import { normalizeLegacySequence } from "@tka/tka-types";
+
+const PersistedSequenceSchema = z.preprocess(
+  normalizeLegacySequence,
+  z.record(z.string(), z.unknown())
+);
 
 const CellConfigSchema = z
   .object({
     id: z.string(),
     type: z.string(),
-    sequences: z.array(z.record(z.string(), z.unknown())),
+    sequences: z.array(PersistedSequenceSchema),
     trailSettings: z.record(z.string(), z.unknown()),
   })
   .passthrough();
