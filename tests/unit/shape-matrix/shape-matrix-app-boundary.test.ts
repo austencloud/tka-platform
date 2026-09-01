@@ -85,6 +85,12 @@ describe("Shape Matrix app boundary", () => {
       ),
       "utf8"
     );
+    const frameSystemSource = readFileSync(
+      resolve(
+        "src/lib/shared/animation-engine/services/managers/frame-system.ts"
+      ),
+      "utf8"
+    );
 
     expect(inlinePlayerSource).toContain("{disassemblyLayout}");
     expect(animatorSource).toContain(
@@ -94,6 +100,12 @@ describe("Shape Matrix app boundary", () => {
     expect(animatorSource).toContain("{backgroundAlpha}");
     expect(splitSource.match(/\{backgroundAlpha\}/g)).toHaveLength(2);
     expect(splitSource).not.toContain("backgroundAlpha={1}");
+    expect(splitSource.match(/mandalaVisibleOverride=\{true\}/g)).toHaveLength(
+      2
+    );
+    expect(frameSystemSource).toContain(
+      "props.mandalaVisibleOverride ?? this.state.visibilityState.mandala"
+    );
   });
 
   it("does not reserve an empty hand-path row for ordinary prop relationships", () => {

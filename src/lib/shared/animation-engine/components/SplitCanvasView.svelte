@@ -194,6 +194,7 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
       {tipEffectMap}
       {visibilityManagerOverride}
       {showNonRadialPoints}
+      mandalaVisibleOverride={true}
       hideTkaGlyph={true}
       hideStepNumbers={true}
       {resizePaused}
@@ -222,6 +223,7 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
       {tipEffectMap}
       {visibilityManagerOverride}
       {showNonRadialPoints}
+      mandalaVisibleOverride={true}
       hideTkaGlyph={true}
       hideStepNumbers={true}
       {resizePaused}
