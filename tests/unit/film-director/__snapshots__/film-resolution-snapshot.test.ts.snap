@@ -10247,20 +10247,20 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
               {
                 "atSeconds": 4,
                 "position": {
-                  "x": -2.1,
-                  "z": 0
+                  "x": -1.5,
+                  "z": -1.8
                 },
-                "facingAngle": -1.570796,
+                "facingAngle": -2.214297,
                 "walking": false,
                 "easing": "linear"
               },
               {
                 "atSeconds": 8,
                 "position": {
-                  "x": -2.1,
-                  "z": 0
+                  "x": -1.5,
+                  "z": -1.8
                 },
-                "facingAngle": -1.570796,
+                "facingAngle": -2.214297,
                 "walking": false,
                 "easing": "linear"
               }
@@ -10294,12 +10294,12 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
             "z": 0
           },
           {
-            "x": -2.1,
-            "z": 0
+            "x": -1.5,
+            "z": -1.8
           },
           {
-            "x": -2.1,
-            "z": 0
+            "x": -1.5,
+            "z": -1.8
           }
         ]
       },

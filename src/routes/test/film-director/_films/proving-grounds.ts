@@ -185,11 +185,13 @@ export const provingGroundsFilm: FilmDirectorInput = {
             {
               id: "performer-2",
               // Side-by-side puts performer-2 at (0.9, 0). A 3 m crossing in
-              // the four seconds eight beats buy is 0.75 m/s — a walk.
+              // the four seconds eight beats buy is 0.75 m/s, a walk. The
+              // path runs downstage of the partner's mark at (-0.9, 0); a
+              // straight walk along z = 0 passed through their body.
               blocking: [
                 {
                   move: "walk",
-                  to: { x: -2.1, z: 0 },
+                  to: { x: -1.5, z: -1.8 },
                   durationBeats: 8,
                   facing: "travel",
                 },
