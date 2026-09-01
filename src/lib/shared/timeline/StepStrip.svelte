@@ -17,6 +17,7 @@
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { buildNotationCells, type NotationCell } from "./notation-cell";
 
   let {
@@ -33,6 +34,7 @@
     loop = false,
     leftPropType = null,
     rightPropType = null,
+    propElementalType = null,
     stepPulse = false,
     staggerCellUpdates = false,
     onCellClick = null,
@@ -69,6 +71,8 @@
     loop?: boolean;
     leftPropType?: PropType | null;
     rightPropType?: PropType | null;
+    /** Optional prop-path relationship shared by this realized sequence. */
+    propElementalType?: ElementalType | null;
     /** Flash the focus frame each time the active step advances. */
     stepPulse?: boolean;
     /** Replace a reused strip one pictograph per frame. Dense live surfaces use
@@ -375,6 +379,7 @@
               disableContentTransitions={true}
               leftPropTypeOverride={leftPropType ?? undefined}
               rightPropTypeOverride={rightPropType ?? undefined}
+              {propElementalType}
             />
           </div>
         </div>
