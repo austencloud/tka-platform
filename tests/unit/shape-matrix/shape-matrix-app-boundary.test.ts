@@ -91,6 +91,12 @@ describe("Shape Matrix app boundary", () => {
       ),
       "utf8"
     );
+    const playbackSyncSource = readFileSync(
+      resolve(
+        "src/lib/shared/animation-engine/services/managers/playback-sync.ts"
+      ),
+      "utf8"
+    );
 
     expect(inlinePlayerSource).toContain("{disassemblyLayout}");
     expect(animatorSource).toContain(
@@ -105,6 +111,12 @@ describe("Shape Matrix app boundary", () => {
     );
     expect(frameSystemSource).toContain(
       "props.mandalaVisibleOverride ?? this.state.visibilityState.mandala"
+    );
+    expect(playbackSyncSource).toContain(
+      "props.mandalaVisibleOverride ?? this.state.visibilityState.mandala"
+    );
+    expect(playbackSyncSource).toContain(
+      "this._lastPropsRef?.mandalaVisibleOverride ?? state.mandala"
     );
   });
 
