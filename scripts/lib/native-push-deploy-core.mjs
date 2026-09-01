@@ -1,4 +1,4 @@
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 
 const ZERO_OID = /^0+$/;
 const ZIP_CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50;
@@ -259,6 +259,27 @@ export function readJavaProperty(contents, key) {
     .replace(/\\\\/g, "\\")
     .replace(/\\:/g, ":")
     .replace(/\\ /g, " ");
+}
+
+export function selectAndroidSdkRoot(
+  {
+    androidHome = "",
+    androidSdkRoot = "",
+    localProperties = "",
+    localAppData = "",
+  },
+  pathExists = () => true
+) {
+  const propertyRoot = readJavaProperty(localProperties, "sdk.dir");
+  const defaultRoot = localAppData
+    ? join(localAppData, "Android", "Sdk")
+    : null;
+
+  return (
+    [androidHome, androidSdkRoot, propertyRoot, defaultRoot]
+      .filter(Boolean)
+      .find((candidate) => pathExists(candidate)) ?? null
+  );
 }
 
 export function parseJavaMajor(versionOutput) {

@@ -22,6 +22,7 @@ import {
   parsePushUpdates,
   readJavaProperty,
   selectAndroidDevice,
+  selectAndroidSdkRoot,
 } from "../../../scripts/lib/native-push-deploy-core.mjs";
 
 describe("native release surface verification", () => {
@@ -331,6 +332,36 @@ describe("Android SDK property parsing", () => {
         "sdk.dir"
       )
     ).toBe("C:\\Users\\Austen\\AppData\\Local\\Android\\Sdk");
+  });
+
+  it("falls back to the standard user SDK when a worktree has no local.properties", () => {
+    const localAppData = resolve("test-results", "local-app-data");
+    const expected = join(localAppData, "Android", "Sdk");
+
+    expect(
+      selectAndroidSdkRoot(
+        {
+          androidHome: resolve("test-results", "missing-sdk"),
+          localAppData,
+        },
+        (candidate) => candidate === expected
+      )
+    ).toBe(expected);
+  });
+
+  it("prefers a valid explicit SDK over local and default candidates", () => {
+    const explicit = resolve("test-results", "explicit-sdk");
+
+    expect(
+      selectAndroidSdkRoot(
+        {
+          androidHome: explicit,
+          localProperties: `sdk.dir=${resolve("test-results", "property-sdk")}`,
+          localAppData: resolve("test-results", "local-app-data"),
+        },
+        (candidate) => candidate === explicit
+      )
+    ).toBe(explicit);
   });
 });
 
