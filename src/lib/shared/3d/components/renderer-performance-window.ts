@@ -4,7 +4,7 @@ export interface RendererFrameWindowSnapshot {
   frameP95Ms: number;
   frameP99Ms: number;
   longFrameRate: number;
-  /** Relative median-frame slowdown between the first and final fifth. */
+  /** Relative median-frame slowdown between the first and final 30-second windows. */
   thermalDrift: number;
 }
 

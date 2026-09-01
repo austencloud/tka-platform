@@ -208,7 +208,7 @@
     </div>
     <div class="perf-row">
       <span class="perf-label">P99</span>
-      <span class="perf-value" class:perf-warn={frameP99Ms > 33}
+      <span class="perf-value" class:perf-warn={frameP99Ms > 16.7}
         >{frameP99Ms.toFixed(1)} ms</span
       >
     </div>

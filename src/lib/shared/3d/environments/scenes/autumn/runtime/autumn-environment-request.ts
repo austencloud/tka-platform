@@ -22,6 +22,8 @@ interface StartAutumnEnvironmentRequestOptions<T> {
     signal: AbortSignal
   ) => PromiseLike<T>;
   onReady: (value: T) => void;
+  /** Releases a value that finished parsing after timeout or teardown. */
+  onDiscard?: (value: T) => void;
   onFailure: (failure: AutumnEnvironmentFailure) => void;
   stallTimeoutMs?: number;
   totalTimeoutMs?: number;
@@ -37,6 +39,7 @@ export function startAutumnEnvironmentRequest<T>({
   retryRequest,
   load,
   onReady,
+  onDiscard,
   onFailure,
   stallTimeoutMs = AUTUMN_ENVIRONMENT_STALL_TIMEOUT_MS,
   totalTimeoutMs = AUTUMN_ENVIRONMENT_TOTAL_TIMEOUT_MS,
@@ -91,7 +94,10 @@ export function startAutumnEnvironmentRequest<T>({
     )
     .then(
       (value) => {
-        if (cancelled || settled) return;
+        if (cancelled || settled) {
+          onDiscard?.(value);
+          return;
+        }
         settled = true;
         clearTimeout(stallTimer);
         clearTimeout(totalTimer);
