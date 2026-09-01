@@ -123,7 +123,9 @@
   });
 
   onDestroy(() => {
-    cancelAnimationFrame(animationFrame);
+    if (animationFrame !== 0 && typeof cancelAnimationFrame === "function") {
+      cancelAnimationFrame(animationFrame);
+    }
     const root = globalThis as typeof globalThis & {
       __autumnProductionHarness?: typeof harnessControl;
     };
