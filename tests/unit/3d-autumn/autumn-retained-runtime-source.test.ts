@@ -110,12 +110,17 @@ describe("Autumn retained runtime lifecycle", () => {
     expect(route).toContain("position: [-51.21, 43.81, 25.07]");
     expect(route).toContain("target: [1.27, 8.56, -4.99]");
     expect(route).toContain("{cameraPreset}");
+    expect(route).toContain("<SceneShaderWarmup");
+    expect(route).toContain("waitForAllFeatures={true}");
+    expect(route).toContain("sceneFeatureState.allEnabledReady");
+    expect(route).toContain("productionReady");
     expect(harness).toContain("performers: REVIEW_PERFORMERS");
     expect(harness).toContain('effect: "trails"');
     expect(harness).toContain('effect: "fire"');
     expect(harness).toContain('effect: "led"');
     expect(harness).toContain("cameraMaxOrbitDistance={128}");
     expect(harness).toContain("cameraFov={cameraPreset.fov}");
+    expect(harness).toContain("onSceneReadyChange={onReadyChange}");
   });
 
   it("routes cancellation into an Autumn-owned GLTF transport", () => {

@@ -47,7 +47,10 @@ export interface AutumnGroundDetailPatch {
 export function isAutumnGroundMaterial(
   material: MeshStandardMaterial
 ): boolean {
-  return material.name === "Autumn Living Forest Floor";
+  return (
+    material.name === "Autumn Living Forest Floor" ||
+    material.name === "Autumn Fog Apron"
+  );
 }
 
 export function patchAutumnGroundDetailMaterial(
@@ -87,16 +90,30 @@ export function patchAutumnGroundDetailMaterial(
           varying vec3 vAutumnGroundWorldPosition;`
       )
       .replace(
-        "#include <uv_vertex>",
-        /* glsl */ `#include <uv_vertex>
-          vAutumnGroundDetailUv = uv;`
-      )
-      .replace(
         "#include <begin_vertex>",
         /* glsl */ `#include <begin_vertex>
           vAutumnGroundWorldPosition = (
             modelMatrix * vec4(transformed, 1.0)
-          ).xyz;`
+          ).xyz;
+          vec2 autumnGroundDetailPoint = vec2(
+            vAutumnGroundWorldPosition.x,
+            -vAutumnGroundWorldPosition.z
+          );
+          vec2 autumnGroundDetailWarp = vec2(
+            0.075 * sin(autumnGroundDetailPoint.y * 0.29)
+              + 0.032 * sin(
+                autumnGroundDetailPoint.x * 0.73
+                  + autumnGroundDetailPoint.y * 0.18
+              ),
+            0.068 * cos(autumnGroundDetailPoint.x * 0.31)
+              + 0.028 * sin(
+                autumnGroundDetailPoint.y * 0.67
+                  - autumnGroundDetailPoint.x * 0.16
+              )
+          );
+          vAutumnGroundDetailUv =
+            autumnGroundDetailPoint / ${glslNumber(groundLayout.detailMetres)}
+              + autumnGroundDetailWarp;`
       );
 
     shader.fragmentShader = shader.fragmentShader
@@ -173,9 +190,9 @@ export function patchAutumnGroundDetailMaterial(
             vec3(1.36)
           );
 
-          // Broad, low-amplitude value drift keeps the 330-metre floor from
-          // reading as one repeated tile. It is evaluated in world space, so
-          // it remains stable while the performer and review camera move.
+          // Broad, low-amplitude value drift keeps the full terrain and fog
+          // apron from reading as one repeated tile. It is evaluated in world
+          // space, so it remains stable while the performer and camera move.
           diffuseColor.rgb *= mix(
             vec3(0.93, 0.88, 0.80),
             vec3(1.08, 0.91, 0.72),
@@ -224,7 +241,7 @@ export function patchAutumnGroundDetailMaterial(
       );
   };
   material.customProgramCacheKey = () =>
-    `${previousCacheKey.call(material)}|autumn-ground-detail-v5`;
+    `${previousCacheKey.call(material)}|autumn-ground-detail-v6`;
 
   const patch: AutumnGroundDetailPatch = {
     uniforms,

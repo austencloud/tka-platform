@@ -66,8 +66,10 @@ describe("optimized Autumn GLB contracts", () => {
     expect(buildSource).not.toContain(
       "faces.append((base + i, base + j, nxt + j, nxt + i))"
     );
-    expect(buildSource).toContain("((0, 1, 2, 3),)");
-    expect(buildSource).toContain('"Autumn_Terrain_Apron", plane_mesh');
+    expect(buildSource).toContain("APRON_HORIZON_RING_HALF_SIZES");
+    expect(buildSource).toContain("fog_horizon_height(x, y)");
+    expect(buildSource).toContain('"Autumn_Terrain_Apron", horizon_mesh');
+    expect(buildSource).not.toContain("FOG_PLANE_HEIGHT");
   });
 
   function nodeMaterialNames(node: NonNullable<typeof gltf.nodes>[number]) {
@@ -208,6 +210,11 @@ describe("optimized Autumn GLB contracts", () => {
     expect(
       Number(apron?.extras?.tka_ground_visible_extent)
     ).toBeGreaterThanOrEqual(1_024);
+    expect(apron?.extras?.tka_ground_treatment).toBe(
+      "fog-dissolved-rolling-horizon"
+    );
+    expect(meshTriangleCount(apron!.mesh!)).toBeGreaterThan(3_500);
+    expect(meshTriangleCount(apron!.mesh!)).toBeLessThan(7_500);
 
     const fogMaterial = (gltf.materials ?? []).find(
       (material) => material.name === "Autumn Fog Apron"
