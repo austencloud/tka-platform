@@ -1,4 +1,7 @@
-import { isBackgroundInteractionBlocked } from "$lib/shared/background/shared/background-interaction-routing";
+import {
+  isBackgroundInteractionBlocked,
+  toBackgroundCoordinates,
+} from "$lib/shared/background/shared/background-interaction-routing";
 import { afterEach, describe, expect, it } from "vitest";
 
 function mount(markup: string): HTMLElement {
@@ -53,5 +56,16 @@ describe("background interaction routing", () => {
     expect(
       isBackgroundInteractionBlocked(surface.querySelector("#empty"))
     ).toBe(true);
+  });
+
+  it("maps full-size pointer coordinates to a capped backing canvas", () => {
+    expect(
+      toBackgroundCoordinates(
+        1060,
+        590,
+        { left: 100, top: 50, width: 1920, height: 1080 },
+        { width: 960, height: 540 }
+      )
+    ).toEqual({ x: 480, y: 270 });
   });
 });
