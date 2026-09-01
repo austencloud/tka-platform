@@ -290,8 +290,8 @@
   topColor={sceneConfig.sky.topColor}
   midColor={sceneConfig.sky.midColor}
   bottomColor={sceneConfig.sky.bottomColor}
-  gradientStart={0.44}
-  gradientEnd={0.7}
+  gradientStart={0.56}
+  gradientEnd={0.78}
   moon={moonConfig}
 />
 <Starfield config={starfieldConfig} />
