@@ -579,6 +579,17 @@ EARTH = forest_floor_material(
     diffuse_uv_name="Autumn Ground Macro UV",
     detail_uv_name="Autumn Ground Detail UV",
 )
+FOG_APRON_EARTH = forest_floor_material(
+    "Autumn Fog Apron",
+    (1.0, 1.0, 1.0),
+    0.0,
+    1.0,
+    AUTUMN_FLOOR_TEXTURE_DIR,
+    "autumn-ground-zoned.jpg",
+    "no-normal-map",
+    "no-roughness-map",
+    diffuse_uv_name="Autumn Ground Macro UV",
+)
 DAMP_EARTH = forest_floor_material(
     "Damp Pond Bank",
     (1.0, 1.0, 1.0),
@@ -728,6 +739,8 @@ GROUND_ATLAS_HALF_SIZE = float(GROUND_LAYOUT["worldExtent"])
 # intersect the floor hundreds of metres away. At 1,024m the shipped fog has
 # effectively zero remaining transmittance, so the geometric edge cannot read.
 APRON_OUTER_HALF_SIZE = 1_024.0
+APRON_FLAT_HALF_SIZE = 256.0
+FAR_GROUND_HEIGHT = -8.5
 
 
 def chaikin_path(points, iterations=2):
@@ -818,9 +831,24 @@ def world_surface_height(x, y):
         (half_size - TERRAIN_HALF_SIZE)
         / (GROUND_ATLAS_HALF_SIZE - TERRAIN_HALF_SIZE),
     )
-    far = -1.0 - 7.5 * blend**1.15
-    far += (1.4 * math.sin(x * 0.041) + 1.1 * math.cos(y * 0.035)) * blend
-    return terrain_height(x, y) * (1.0 - blend) + far * blend
+    rolling_far = -1.0 - 7.5 * blend**1.15
+    rolling_far += (
+        1.4 * math.sin(x * 0.041) + 1.1 * math.cos(y * 0.035)
+    ) * blend
+    authored_surface = terrain_height(x, y) * (1.0 - blend) + rolling_far * blend
+    if half_size <= GROUND_ATLAS_HALF_SIZE:
+        return authored_surface
+
+    # Past the baked ecology atlas, ease the ground onto one fog-hidden plane.
+    # Carrying the near-field normal response over sparse 100m+ quads created
+    # bright diagonal stitching even though the mesh itself was continuous.
+    flatten = min(
+        1.0,
+        (half_size - GROUND_ATLAS_HALF_SIZE)
+        / (APRON_FLAT_HALF_SIZE - GROUND_ATLAS_HALF_SIZE),
+    )
+    flatten = flatten * flatten * (3.0 - 2.0 * flatten)
+    return authored_surface * (1.0 - flatten) + FAR_GROUND_HEIGHT * flatten
 
 
 def autumn_ground_uv(x, y):
@@ -959,9 +987,13 @@ def create_terrain_apron():
     mesh.from_pydata(vertices, [], faces)
     mesh.update()
     mesh.materials.append(EARTH)
+    mesh.materials.append(FOG_APRON_EARTH)
     detail_uv = mesh.uv_layers.new(name="Autumn Ground Detail UV")
     macro_uv = mesh.uv_layers.new(name="Autumn Ground Macro UV")
     for polygon in mesh.polygons:
+        ring_index = polygon.index // perimeter
+        if ring_half_sizes[ring_index] >= GROUND_ATLAS_HALF_SIZE:
+            polygon.material_index = 1
         polygon.use_smooth = True
         for loop_index in polygon.loop_indices:
             vertex = mesh.vertices[mesh.loops[loop_index].vertex_index]
