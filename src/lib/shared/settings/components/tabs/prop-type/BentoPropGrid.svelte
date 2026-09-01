@@ -327,6 +327,10 @@
           {/snippet}
         </Popover.Trigger>
         <Popover.Portal>
+          <Popover.Overlay
+            class="variant-popover-overlay"
+            data-testid="prop-style-overlay"
+          />
           <Popover.Content
             side="bottom"
             sideOffset={8}
@@ -554,6 +558,16 @@
       var(--theme-card-bg, transparent)
     );
     box-shadow: 0 16px 52px var(--theme-shadow, rgba(0, 0, 0, 0.62));
+  }
+
+  /* The chooser is visually small, but it temporarily owns the pointer. A
+     transparent portaled shield keeps mobile hit-testing from handing the same
+     tap to whichever prop card happens to sit behind the animated popover. */
+  :global(.variant-popover-overlay) {
+    position: fixed;
+    inset: 0;
+    z-index: 59;
+    background: transparent;
   }
 
   .variant-popover-label {
