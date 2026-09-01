@@ -153,15 +153,24 @@ branch, not the schema.
 ## Camera roll direction convention
 
 `roll` moves take `direction: "cw" | "ccw"` and accumulate into a resolved
-keyframe's `rollDeg`. Positive `rollDeg` is defined as clockwise as the
-audience sees the frame: the adapter applies it via `camera.rotateZ(+rollRad)`
-after `lookAt`, so `cw` adds to `rollDeg` and `ccw` subtracts. A scene's first
-roll anchors the ramp with an explicit `rollDeg: 0` keyframe before it starts
-turning, so the tilt reads as departing from level rather than snapping in
-partway rolled. Like the orbit convention above, the on-screen sense has not
-been visually confirmed — if a `cw` roll reads as tilting the wrong way, the
-fix is a one-line sign flip in `applyDirectorCameraFrame`
-(`director-viewer-adapter.ts`), not the schema or the compiler.
+keyframe's `rollDeg`; `cw` adds, `ccw` subtracts. Positive `rollDeg` rolls the
+camera body clockwise as seen from behind the camera, so the world in the frame
+tips the other way: verticals lean left and the horizon's right side drops.
+That is the cinematographer's sense of "roll clockwise" (the camera moves, the
+picture counter-rotates) and it was confirmed on screen 2026-09-01 at
+`rollDeg: 10` — the camera's local x-axis measured 9.975 degrees off the world
+horizontal and the performers leaned left. If a director wants the picture to
+tip clockwise instead, they say `ccw`.
+
+The roll lives in viewer state (`viewer3DState.cameraRollDeg`), not on the
+camera directly: camera-controls rewrites the camera's position and `lookAt`
+every frame, so a one-shot `rotateZ` was erased before the next render.
+`Viewer3DCamera` re-applies the roll after the controls' task each frame
+(`useTask(..., { after: ORBIT_UPDATE_TASK })`), from scratch — reset `up`,
+`lookAt` the controls' target, then `rotateZ` — so it cannot accumulate on a
+frame where the controls did not run. A scene's first roll anchors the ramp
+with an explicit `rollDeg: 0` keyframe before it starts turning, so the tilt
+reads as departing from level rather than snapping in partway rolled.
 
 ## Real but not yet speakable
 
@@ -230,8 +239,11 @@ None open. Closed so far:
   (always `0` when absent). Positive `rollDeg` means clockwise as the audience
   sees the frame — see "Camera roll direction convention" above for the sign,
   including that it has not yet been visually confirmed. `/test/film-director?film=proving`
-  scene 3 ("camera-edges") states all three in one breath: a two-meter truck,
-  a fifteen-degree zoom, and a ten-degree clockwise roll.
+  scene 3 ("camera-edges") states all three in one breath: a one-meter truck,
+  a fifteen-degree zoom, and a ten-degree clockwise roll. A `truck` from a
+  framing that looks straight up or down rejects (no sideways to slide along),
+  and the sampler holds a flat fov or roll segment exactly instead of letting
+  Catmull-Rom bow it toward the neighbouring keyframes.
 
 ## Spoken but not real (proven rejections)
 

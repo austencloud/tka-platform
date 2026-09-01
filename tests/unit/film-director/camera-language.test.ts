@@ -233,8 +233,7 @@ describe("compileCameraMoves", () => {
 
 describe("truck", () => {
   it("translates position and target together along camera-right", () => {
-    // Framing looking down -z from +z: camera-right is +x on screen-left?
-    // No geometry guessing: assert the INVARIANTS.
+    // Assert the invariants rather than a hand-derived world vector.
     const frames = compileCameraMoves(
       [{ move: "truck", direction: "right", amount: { meters: 2 } }],
       framing50,
@@ -269,6 +268,30 @@ describe("truck", () => {
     expect(dLeft[0]).toBeCloseTo(-dRight[0], 6);
     expect(dLeft[1]).toBeCloseTo(-dRight[1], 6);
     expect(dLeft[2]).toBeCloseTo(-dRight[2], 6);
+  });
+
+  it("rejects a truck from a framing that looks straight down", () => {
+    const overhead = {
+      ...framing50,
+      position: [framing50.target[0], framing50.target[1] + 5, framing50.target[2]] as V3,
+    };
+    expect(() =>
+      compileCameraMoves(
+        [{ move: "truck", direction: "right", amount: { meters: 1 } }],
+        overhead,
+        context({ durationSeconds: 4 })
+      )
+    ).toThrow(/has no sideways/);
+  });
+
+  it("an old move rejects the new lens directions", () => {
+    expect(() =>
+      compileCameraMoves(
+        [{ move: "pan", direction: "in" as never }],
+        framing50,
+        context({ durationSeconds: 4 })
+      )
+    ).toThrow(/direction must be one of/);
   });
 });
 
@@ -307,6 +330,21 @@ describe("zoom", () => {
         context({ durationSeconds: 4 })
       )
     ).toThrow(/outside the 20-100 degree range/);
+  });
+
+  it("accepts a zoom that lands exactly on the 20 and 100 degree edges", () => {
+    const tight = compileCameraMoves(
+      [{ move: "zoom", direction: "in", amount: { degrees: 30 } }],
+      framing50,
+      context({ durationSeconds: 4 })
+    );
+    expect(tight.at(-1)!.fovDeg).toBe(20);
+    const wide = compileCameraMoves(
+      [{ move: "zoom", direction: "out", amount: { degrees: 50 } }],
+      framing50,
+      context({ durationSeconds: 4 })
+    );
+    expect(wide.at(-1)!.fovDeg).toBe(100);
   });
 });
 

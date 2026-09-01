@@ -329,7 +329,12 @@ export function compileCameraMoves(
         (move.direction === "right" ? 1 : -1);
       const fx = target[0] - position[0];
       const fz = target[2] - position[2];
-      const groundLength = Math.hypot(fx, fz) || 1;
+      const groundLength = Math.hypot(fx, fz);
+      if (groundLength < 1e-6) {
+        throw new Error(
+          'A "truck" slides the camera sideways to its view, but this framing looks straight up or down, so it has no sideways. Give the camera an angle before trucking.'
+        );
+      }
       const right: [number, number] = [-fz / groundLength, fx / groundLength];
       const nextPosition: [number, number, number] = [
         position[0] + right[0] * meters,

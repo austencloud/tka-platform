@@ -164,4 +164,26 @@ describe("rollDeg sampling", () => {
     const legacyFrames = [kf({ atSeconds: 0 }), kf({ atSeconds: 4 })];
     expect(sampleDirectorCameraTrack(legacyFrames, 2).rollDeg).toBe(0);
   });
+
+  it("a held fov or roll stays exactly held under smooth interpolation", () => {
+    // Catmull-Rom bows a flat segment toward its neighbours unless the sampler
+    // short-circuits it: fov crept to 50.2 before a zoom, roll dipped below 0
+    // before a clockwise roll. A hold is a hold.
+    const frames = [
+      kf({ atSeconds: 0, fovDeg: 50, rollDeg: 0, interpolation: "smooth" }),
+      kf({ atSeconds: 4, fovDeg: 50, rollDeg: 0, interpolation: "smooth" }),
+      kf({ atSeconds: 8, fovDeg: 35, rollDeg: 0, interpolation: "smooth" }),
+      kf({ atSeconds: 10, fovDeg: 35, rollDeg: 10, interpolation: "smooth" }),
+    ];
+    for (const t of [0.5, 1.2, 2, 3.7]) {
+      expect(sampleDirectorCameraTrack(frames, t).fovDeg).toBe(50);
+    }
+    for (const t of [1, 4.5, 6.7, 7.9]) {
+      expect(sampleDirectorCameraTrack(frames, t).rollDeg).toBe(0);
+    }
+    // The moving segments still ease rather than step.
+    const midZoom = sampleDirectorCameraTrack(frames, 6).fovDeg;
+    expect(midZoom).toBeGreaterThan(35);
+    expect(midZoom).toBeLessThan(50);
+  });
 });

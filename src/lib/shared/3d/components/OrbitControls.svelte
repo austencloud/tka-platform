@@ -80,6 +80,13 @@
      * the controls' internal target.
      */
     paused?: boolean;
+    /**
+     * Threlte task key for the per-frame `controls.update()`. A host that must
+     * run after the controls have written the camera transform (camera roll,
+     * post-orbit corrections) passes its own key here and orders its task
+     * `{ after: taskKey }`. Anonymous when omitted.
+     */
+    taskKey?: string | symbol;
     target?: Vec3Tuple | Vector3;
     /** Fires on every internal update tick (i.e. while animating). */
     onchange?: (controls: CameraControls) => void;
@@ -111,6 +118,7 @@
     autoRotate = false,
     autoRotateSpeed = 2.0,
     paused = false,
+    taskKey = Symbol("orbit-controls-update"),
     target,
     onchange,
     oncontrolstart,
@@ -231,7 +239,7 @@
   // Matches three.js OrbitControls: ~6deg/sec per unit of speed at 60fps.
   const AUTO_ROTATE_RAD_PER_SEC = Math.PI / 30;
 
-  useTask((delta) => {
+  useTask(taskKey, (delta) => {
     if (!controls || paused) return;
     const clampedDelta = Math.min(delta, 0.1);
     if (autoRotate) {

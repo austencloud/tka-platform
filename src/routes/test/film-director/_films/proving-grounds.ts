@@ -31,7 +31,7 @@ export const provingGroundsFilm: FilmDirectorInput = {
   id: "proving-grounds-r1",
   title: "Proving Grounds",
   brief:
-    "One scene per closed gap. Three performers draw distinct blue and red planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a two-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll.",
+    "One scene per closed gap. Three performers draw distinct blue and red planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll.",
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
   // The grammar only guarantees distinctness PER axis; three blues and three
@@ -139,7 +139,7 @@ export const provingGroundsFilm: FilmDirectorInput = {
       id: "camera-edges",
       title: "Camera Edges",
       intent:
-        "Gap 8a: the frame slides two meters sideways without turning (truck), the lens tightens fifteen degrees while the camera stands still (zoom), and the horizon tilts ten degrees clockwise and holds (roll).",
+        "Gap 8a: the frame slides one meter sideways without turning (truck), the lens tightens fifteen degrees while the camera stands still (zoom), and the horizon tilts ten degrees clockwise and holds (roll). One meter, not two: with the zoom stacked on top, two meters pushed the blue performer out of frame.",
       durationBeats: 24,
       transition: { kind: "fade-through-black", durationBeats: 2 },
       location: { environmentId: "forest" },
@@ -154,7 +154,7 @@ export const provingGroundsFilm: FilmDirectorInput = {
         angle: "eye",
         position: "front",
         moves: [
-          { move: "truck", direction: "right", amount: { meters: 2 }, durationBeats: 8 },
+          { move: "truck", direction: "right", amount: { meters: 1 }, durationBeats: 8 },
           { move: "zoom", direction: "in", amount: { degrees: 15 }, durationBeats: 8 },
           { move: "roll", direction: "cw", amount: { degrees: 10 }, durationBeats: 4 },
           { move: "hold", durationBeats: 4 },

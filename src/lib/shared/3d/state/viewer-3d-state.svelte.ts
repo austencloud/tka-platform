@@ -1354,6 +1354,13 @@ function buildViewer3DState(
   // Legacy - kept for any remaining references but no longer used for gating.
   let autoRenderEnabled = $state(true);
 
+  // Camera roll about the view axis, in degrees; positive reads clockwise to
+  // the audience. camera-controls owns the camera's position and lookAt and
+  // rewrites both every frame, so roll cannot be applied once - Viewer3DCamera
+  // re-applies this value after the controls update on every frame. 0 leaves
+  // the controls' own orientation untouched.
+  let cameraRollDeg = $state(0);
+
   // Camera choreography sub-state - tracks the preset selected in the
   // Export popover. The recording driver that consumes this lands in
   // Phase 1 of the camera-choreography plan.
@@ -2043,6 +2050,12 @@ function buildViewer3DState(
     },
     get cameraChoreography() {
       return cameraChoreography;
+    },
+    get cameraRollDeg() {
+      return cameraRollDeg;
+    },
+    set cameraRollDeg(value: number) {
+      cameraRollDeg = value;
     },
     get showPerf() {
       return showPerf;

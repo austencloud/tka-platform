@@ -65,17 +65,24 @@ proving-film scenes author at version 4.
       early in `resolveScene`, via `beats * 60 / bpm` (the scene's own bpm);
       compilers stay seconds-only. Bounds validated post-conversion with
       beats-speaking error text. Version bump to 4 lands here.
-- [ ] **Gap 8a — camera edges: truck / zoom / roll.** New moves in the
+- [x] **Gap 8a — camera edges: truck / zoom / roll.** New moves in the
       framing-grammar move compiler: `truck` (lateral meters, left/right —
       position AND target translate together along the camera-right ground
-      axis), `zoom` (fov delta in degrees, in/out, clamped 20–100 — the
-      compiler gains fov as mutable move state; the sampler already
-      interpolates fovDeg), `roll` (degrees, cw/ccw). Roll seam VERIFIED
-      2026-08-30: `applyDirectorCameraFrame` holds a raw THREE
-      `PerspectiveCamera` after `snapCameraTo`'s lookAt, so roll is a local-Z
-      rotation applied there; carried as OPTIONAL `rollDeg?` on resolved
-      keyframes + `DirectorCameraFrame` so the 8 shipped films' snapshots
-      stay untouched.
+      axis; rejects from a straight-down framing), `zoom` (fov delta in
+      degrees, in/out, rejects outside 20–100 with the numbers named), `roll`
+      (degrees, cw/ccw, sparse `rollDeg?` on resolved keyframes so the 8
+      shipped films' snapshots stayed byte-identical). The 2026-08-30 roll-seam
+      note was WRONG in practice: a one-shot `rotateZ` in
+      `applyDirectorCameraFrame` was erased every tick by camera-controls'
+      `update()` (visual gate 2026-08-31 measured a level horizon at
+      `rollDeg: 10`). Fixed 2026-09-01 by moving roll into viewer state
+      (`viewer3DState.cameraRollDeg`) re-applied by `Viewer3DCamera` in a task
+      ordered `after` the controls' keyed task. Also fixed from the gate: flat
+      fov/roll segments no longer bow under Catmull-Rom (`interpolateLensScalar`),
+      and the proving truck dropped 2 m → 1 m so blue stays in frame at the
+      zoom. Visual proof: camera x-axis 9.975° off horizontal at `rollDeg: 10`,
+      performers leaning left (camera rolled cw, picture counter-rotates), fov
+      35.17 at zoom end, horizon level through the truck. 596/596 unit tests.
 - [ ] **Gap 3 — camera tracks a walking performer.** Resolved camera track
       gains `tracking: { performerId, mode: "aim" | "follow", height? } | null`
       spoken as `subject: {kind:"performer", performerId, track: true|"follow"}`.

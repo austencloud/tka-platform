@@ -290,6 +290,25 @@ function interpolateScalar(
   );
 }
 
+/**
+ * Lens scalars (fov, roll) that hold a value across a segment hold it exactly.
+ * Catmull-Rom would bow the flat segment toward its neighbours — fov creeping
+ * to 50.2 before a zoom, roll dipping negative before a clockwise roll — and a
+ * director who stated a hold expects a hold. Position keeps the plain spline:
+ * a per-axis short-circuit there would flatten curved paths.
+ */
+function interpolateLensScalar(
+  before: number,
+  start: number,
+  end: number,
+  after: number,
+  progress: number,
+  smooth: boolean
+): number {
+  if (start === end) return start;
+  return interpolateScalar(before, start, end, after, progress, smooth);
+}
+
 function interpolateVector(
   before: [number, number, number],
   start: [number, number, number],
@@ -377,7 +396,7 @@ export function sampleDirectorCameraTrack(
       progress,
       smooth
     ),
-    fovDeg: interpolateScalar(
+    fovDeg: interpolateLensScalar(
       before.fovDeg,
       start.fovDeg,
       end.fovDeg,
@@ -385,7 +404,7 @@ export function sampleDirectorCameraTrack(
       progress,
       smooth
     ),
-    rollDeg: interpolateScalar(
+    rollDeg: interpolateLensScalar(
       before.rollDeg ?? 0,
       start.rollDeg ?? 0,
       end.rollDeg ?? 0,

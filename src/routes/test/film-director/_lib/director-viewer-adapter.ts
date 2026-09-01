@@ -230,17 +230,12 @@ export function applyDirectorCameraFrame(
     false
   );
 
+  // The viewer re-applies roll after its orbit controls update each frame;
+  // writing the camera's quaternion here would be overwritten next tick.
+  viewer.cameraRollDeg = frame.rollDeg;
+
   const camera = viewer.threlteCamera as PerspectiveCamera | null;
   if (!camera) return;
-
-  if (frame.rollDeg !== 0) {
-    // Re-derive the orientation locally: snapCameraTo may skip its lookAt on
-    // an unchanged position, and during a pure roll the position IS
-    // unchanged frame to frame — an accumulated rotateZ would spin out.
-    camera.up.set(0, 1, 0);
-    camera.lookAt(frame.target[0], frame.target[1], frame.target[2]);
-    camera.rotateZ((frame.rollDeg * Math.PI) / 180);
-  }
 
   if (Math.abs(camera.fov - previewFovDeg) >= 0.001) {
     camera.fov = previewFovDeg;

@@ -9430,7 +9430,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
   "version": 4,
   "id": "proving-grounds-r1",
   "title": "Proving Grounds",
-  "brief": "One scene per closed gap. Three performers draw distinct blue and red planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a two-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll.",
+  "brief": "One scene per closed gap. Three performers draw distinct blue and red planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll.",
   "format": {
     "width": 1920,
     "height": 1080,
@@ -9910,7 +9910,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
     {
       "id": "camera-edges",
       "title": "Camera Edges",
-      "intent": "Gap 8a: the frame slides two meters sideways without turning (truck), the lens tightens fifteen degrees while the camera stands still (zoom), and the horizon tilts ten degrees clockwise and holds (roll).",
+      "intent": "Gap 8a: the frame slides one meter sideways without turning (truck), the lens tightens fifteen degrees while the camera stands still (zoom), and the horizon tilts ten degrees clockwise and holds (roll). One meter, not two: with the zoom stacked on top, two meters pushed the blue performer out of frame.",
       "startSeconds": 20,
       "durationSeconds": 12,
       "transition": {
@@ -10077,12 +10077,12 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "atSeconds": 4,
             "position": [
-              -2,
+              -1,
               0.852639,
               -4.532137
             ],
             "target": [
-              -2,
+              -1,
               0.535721,
               0
             ],
@@ -10093,12 +10093,12 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "atSeconds": 8,
             "position": [
-              -2,
+              -1,
               0.852639,
               -4.532137
             ],
             "target": [
-              -2,
+              -1,
               0.535721,
               0
             ],
@@ -10110,12 +10110,12 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "atSeconds": 10,
             "position": [
-              -2,
+              -1,
               0.852639,
               -4.532137
             ],
             "target": [
-              -2,
+              -1,
               0.535721,
               0
             ],
@@ -10127,12 +10127,12 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           {
             "atSeconds": 12,
             "position": [
-              -2,
+              -1,
               0.852639,
               -4.532137
             ],
             "target": [
-              -2,
+              -1,
               0.535721,
               0
             ],
