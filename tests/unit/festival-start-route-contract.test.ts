@@ -32,7 +32,7 @@ describe("festival /start route contract", () => {
       "if (isStandaloneAppSurface(window.location.pathname)) return;"
     );
     const historySeed = coordinator.indexOf(
-      "replaceHistoryState(navigationState.currentModule, navigationState.activeTab);"
+      "replaceHistoryState(\n    navigationState.currentModule,\n    historySectionFor(navigationState.currentModule)"
     );
 
     expect(standaloneGuard).toBeGreaterThan(-1);

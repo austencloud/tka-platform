@@ -17,7 +17,8 @@ function expectAssets(
   options: readonly PropBuildPreviewOption<string>[]
 ): void {
   for (const option of options) {
-    const file = resolve(process.cwd(), "static", option.image.slice(1));
+    const assetPath = option.image.split("?", 1)[0] ?? option.image;
+    const file = resolve(process.cwd(), "static", assetPath.slice(1));
     expect(existsSync(file), option.image).toBe(true);
   }
 }
@@ -80,7 +81,7 @@ describe("prop studio build previews", () => {
       }
     );
     expect(builds.find((option) => option.id === "lotus")?.image).toBe(
-      "/images/props/build-previews/fan-lotus-bare-complete.webp"
+      "/images/props/build-previews/fan-lotus-bare-complete.webp?v=6"
     );
     expect(
       builds.find((option) => option.id === "lotus")?.designCredit

@@ -43,7 +43,9 @@ describe("compact character sheet layout", () => {
 
   it("makes room by folding the host timeline and restores its prior state", () => {
     expect(mobileControlsSource).toContain("onSheetChange?.(");
-    expect(workspaceSource).toContain("onSheetChange={onCompactSheetChange}");
+    expect(workspaceSource).toContain(
+      "onSheetChange={handleCompactSheetChange}"
+    );
     expect(stageSource).toContain(
       "onCompactSceneSheetChange={handleCompactSceneSheetChange}"
     );

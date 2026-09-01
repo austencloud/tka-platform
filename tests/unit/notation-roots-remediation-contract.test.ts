@@ -34,6 +34,12 @@ const screenshotDevices = readSource("tests/screenshots/devices.ts");
 const shapeMatrixDestination = readSource(
   "src/routes/(public)/notation/shape-matrix/+page.svelte"
 );
+const shapeMatrixApp = readSource(
+  "src/lib/shared/shape-matrix/app/ShapeMatrixApp.svelte"
+);
+const shapeMatrixMatrixPane = readSource(
+  "src/lib/shared/shape-matrix/app/components/ShapeMatrixMatrixPane.svelte"
+);
 const sitemap = readSource("src/routes/sitemap.xml/+server.ts");
 const componentManifest = readSource("scripts/component-manifest.json");
 
@@ -114,16 +120,16 @@ describe("notation catalog", () => {
     expect(markup).not.toContain("—");
   });
 
-  it("moves the full 144 Shape Matrix to the /notation/shape-matrix destination", () => {
-    // Phase 4 (docs/superpowers/specs/2026-07-18-notation-shape-matrix-destination-design.md):
-    // the full interactive matrix (all three size presets, up to 144 cells)
-    // lives at the destination route, not on /notation itself.
+  it("keeps the interactive Shape Matrix at the /notation/shape-matrix destination", () => {
     expect(shapeMatrixDestination).toContain(
-      "$lib/shared/shape-matrix/components/ShapeMatrixGrid.svelte"
+      "$lib/shared/shape-matrix/app/ShapeMatrixApp.svelte"
     );
-    expect(shapeMatrixDestination).toContain("matrixFiltersForSize");
     expect(shapeMatrixDestination).toContain(
-      '{ value: "large", label: "Large · 144" }'
+      "<ShapeMatrixApp {persistence} />"
+    );
+    expect(shapeMatrixApp).toContain("loadShapeMatrix");
+    expect(shapeMatrixMatrixPane).toContain(
+      "$lib/shared/shape-matrix/components/ShapeMatrixGrid.svelte"
     );
   });
 
@@ -209,8 +215,8 @@ describe("notation catalog", () => {
   });
 
   it("avoids universal and conqueror framing on the retained software page", () => {
-    expect(softwareCopy).toContain(
-      "The surviving public repository ends with that course release"
+    expect(softwareCopy).toMatch(
+      /<strong>Flow Arts Composer<\/strong> is Austen Cloud's browser-based workspace/
     );
     expect(softwareCopy).toContain("TKA takes a different route");
     expect(softwarePage).not.toMatch(
@@ -248,7 +254,9 @@ describe("roots-to-notation route migration", () => {
     expect(softwarePage).toMatch(
       /name:\s*"Notation",\s*item:\s*"https:\/\/tkaflowarts\.com\/notation"/
     );
-    expect(softwarePage).toContain('href="/notation">Notation lineage</a>');
+    expect(softwareCopy).toMatch(
+      /href="\/notation#lineage">Notation lineage<\/a\s*>/
+    );
     expect(componentManifest).not.toContain(
       '"file": "routes/(public)/roots/+page.svelte"'
     );

@@ -85,7 +85,7 @@ describe("Create workspace share control contract", () => {
     expect(shareButtonSource).toContain("openSendSequenceSheet({");
   });
 
-  it("gates every share path behind a full account", () => {
+  it("gates account-only share actions behind a full account", () => {
     expect(shareButtonSource).toContain(
       "const hasFullAccount = $derived(authState.isFullAccount)"
     );
@@ -103,10 +103,12 @@ describe("Create workspace share control contract", () => {
     expect(shareButtonSource).toContain(
       "if (!requireFullAccount() || controlDisabled) return"
     );
-    expect(shareControlSource).toContain("canOpen={hasFullAccount}");
-    expect(shareControlSource).toContain("onBlockedOpen={onGuestShare}");
-    expect(sharedShareMenuSource).toContain("if (!canOpen)");
-    expect(sharedShareMenuSource).toContain("onBlockedOpen()");
+    expect(shareControlSource).toContain("canOpen={true}");
+    expect(shareButtonSource).toContain("onDirectOpen={openPostSheet}");
+    expect(shareButtonSource).toContain("canCreateLink={hasFullAccount}");
+    expect(shareButtonSource).toContain(
+      "onSendInTka={hasFullAccount ? sendSequenceToInbox : undefined}"
+    );
   });
 
   it("prepares signed-in actions on open and preserves fresh browser gestures", () => {
