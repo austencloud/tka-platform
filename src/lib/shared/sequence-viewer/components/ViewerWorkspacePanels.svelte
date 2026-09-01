@@ -60,7 +60,10 @@
         defaultSize: 1,
         minSize: VIEWER_STAGE_MIN_WIDTH,
         resizable: inspectorResizable,
-        resizeLabel: `Resize viewer and ${inspectorProfile} settings`,
+        resizeLabel:
+          inspectorProfile === "performance"
+            ? "Resize viewer and performances"
+            : `Resize viewer and ${inspectorProfile} settings`,
       },
     ];
 

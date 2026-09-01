@@ -27,6 +27,9 @@ const shellLayoutState = read(
   "src/lib/shared/sequence-viewer/state/viewer-shell-layout-state.svelte.ts"
 );
 const panelGroup = read("src/lib/shared/panels/PanelGroup.svelte");
+const shellModel = read(
+  "src/lib/shared/sequence-viewer/services/viewer-shell-model.ts"
+);
 const viewerModeDissolve = read(
   "src/lib/shared/transitions/viewer-mode-dissolve.ts"
 );
@@ -353,8 +356,13 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(shell).toContain("performance-inspector-layer");
     expect(shell).toContain("takeoverActive={performanceEditorActive}");
     expect(shellLayoutState).toContain("showVideoGallery ||");
-    expect(shellLayoutState).toContain(
-      "isVideoExportActive || showVideoGallery"
+    // Performances owns its own inspector profile. The gap between its width
+    // and the effects inspector width is the seam travel Gate 5 animates.
+    expect(shellLayoutState).toContain('? "performance"');
+    expect(shellModel).toContain("performance: { defaultWidth: 400");
+    expect(shell).toContain("--performance-sidebar-width");
+    expect(shell).toContain(
+      "class:performance-inspector={layout.inspectorProfile ==="
     );
     expect(workspacePanels).toContain("<DualSourceCrossfade");
     expect(shell).toContain("<DualSourceCrossfade");
