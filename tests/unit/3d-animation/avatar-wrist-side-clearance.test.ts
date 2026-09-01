@@ -124,16 +124,8 @@ describe("avatar wrist-side clearance", () => {
 
     const leftGrip = anatomicalRight.clone().multiplyScalar(-0.03);
     const rightGrip = anatomicalRight.clone().multiplyScalar(0.03);
-    const leftWrist = animator.computeSocketTarget(
-      "left",
-      chain,
-      leftGrip
-    );
-    const rightWrist = animator.computeSocketTarget(
-      "right",
-      chain,
-      rightGrip
-    );
+    const leftWrist = animator.computeSocketTarget("left", chain, leftGrip);
+    const rightWrist = animator.computeSocketTarget("right", chain, rightGrip);
 
     const lateral = (point: Vector3) => point.dot(anatomicalRight);
     expect(lateral(leftWrist)).toBeCloseTo(-0.04);
@@ -205,6 +197,52 @@ describe("avatar wrist-side clearance", () => {
     expect(palmDirection.dot(animator._bodyFrame.lateral)).toBeLessThan(-0.9);
   });
 
+  it("keeps the world-space wrist goal steady while the forearm frame moves", () => {
+    const animator = new AvatarAnimator(
+      {} as never,
+      {} as never
+    ) as unknown as SocketTargetProbe;
+    const chain = createArmChain();
+    const palmLocal = new Vector3(0.04, 0, 0);
+    const worldPalmDirections: Vector3[] = [];
+
+    animator.rightGripAxisLocal = new Vector3(0, -1, 0);
+    animator.rightPalmLocal = palmLocal.clone();
+    animator.rightPalmNormalLocal = palmLocal.clone();
+    animator._bodyFrame.lateral.set(1, 0, 0);
+
+    for (let frame = 0; frame < 80; frame++) {
+      chain.middle.quaternion.setFromAxisAngle(
+        new Vector3(0, 0, 1),
+        frame % 2 === 0 ? -0.04 : 0.04
+      );
+      chain.root.updateMatrixWorld(true);
+      animator.applyWristOrientation(
+        "right",
+        chain,
+        {
+          targetPosition: new Vector3(),
+          wristRotation: new Quaternion(),
+          weight: 1,
+        },
+        1
+      );
+      chain.root.updateMatrixWorld(true);
+      const wrist = chain.effector.getWorldPosition(new Vector3());
+      worldPalmDirections.push(
+        chain.effector.localToWorld(palmLocal.clone()).sub(wrist).normalize()
+      );
+    }
+
+    const settled = worldPalmDirections.slice(-20);
+    const maximumWorldJitter = Math.max(
+      ...settled
+        .slice(1)
+        .map((direction, index) => direction.angleTo(settled[index]!))
+    );
+    expect(maximumWorldJitter).toBeLessThan(0.01);
+  });
+
   it("keeps a measured power-grip wrist longitudinal instead of folding across the knuckles", () => {
     const left = createMeasuredPowerGripArm("left");
     const right = createMeasuredPowerGripArm("right");
@@ -239,7 +277,9 @@ describe("avatar wrist-side clearance", () => {
     const transverse = new Vector3(...QUATERNIUS_FINGER_ROOTS.Pinky1)
       .sub(new Vector3(...QUATERNIUS_FINGER_ROOTS.Index1))
       .normalize();
-    expect(animator.leftGripAxisLocal?.dot(longitudinal)).toBeGreaterThan(0.999);
+    expect(animator.leftGripAxisLocal?.dot(longitudinal)).toBeGreaterThan(
+      0.999
+    );
     expect(
       Math.abs(animator.leftGripAxisLocal?.dot(transverse) ?? 1)
     ).toBeLessThan(0.45);
