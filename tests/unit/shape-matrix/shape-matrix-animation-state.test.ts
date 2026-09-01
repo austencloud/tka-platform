@@ -11,6 +11,10 @@ describe("Shape Matrix animation state", () => {
     expect(state.playbackMode).toBe("continuous");
     expect(state.scope.effects.config.activeEffect).toBe("trails");
     expect(state.scope.effects.trails.trackingMode).toBe("right_end");
+    expect(state.scope.visibility.getPathPolicy()).toEqual({
+      pathShape: "arc",
+      motionAwarePaths: false,
+    });
   });
 
   it("keeps playback settings in one workspace owner", () => {
@@ -48,5 +52,18 @@ describe("Shape Matrix animation state", () => {
 
     state.requestDisassembled(false);
     expect(state.disassembled).toBe(false);
+  });
+
+  it("uses the relationship header to close whichever control tray is open", () => {
+    const state = createShapeMatrixAnimationState();
+
+    state.setActiveSection("playback");
+    state.showRelationships();
+
+    expect(state.closeRequest).toBe(1);
+    expect(state.activeSection).toBe("playback");
+
+    state.setActiveSection(null);
+    expect(state.activeSection).toBeNull();
   });
 });
