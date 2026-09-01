@@ -77,9 +77,9 @@ decoration and is banned.
 Existing instances are legacy violations, not precedent. Remove one whenever
 its owning surface is deliberately restyled. Do not copy it into new work.
 
-`CreateFrontDoor.svelte` is a known violation: each method card draws a thin
-identity-colored strip with a pseudo-element. It will be corrected as part of
-the separately approved front-door restyle, after the visual canon is reviewed.
+The Create front door is the reference correction: each creation method carries
+its identity through the icon and a restrained whole-surface tint with a full
+perimeter border. It does not attach color to one edge.
 
 ## Review Check
 
