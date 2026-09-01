@@ -89,6 +89,11 @@
       target: [-11.05, 1.92, -53.92],
       fov: 46,
     },
+    pond: {
+      position: [-4.8, 3.2, 13.5],
+      target: [-10.5, -1.25, 7],
+      fov: 45,
+    },
     fungi: {
       position: [4, 0.35, -7.8],
       target: [4, -1.2, -12],
@@ -148,11 +153,15 @@
       ? requested
       : "auto";
   });
-
   let reading = $state<EnvironmentReviewReading | null>(null);
   let renderSample = $state<RendererPerformanceSample | null>(null);
   let captureNote = $state<string | null>(null);
   let captureNoteTimer: ReturnType<typeof setTimeout> | null = null;
+  const reviewReady = $derived(
+    sceneFeatureState.allInitialRevealFeaturesSettled &&
+      sceneFeatureState.warmupProgress >= 1 &&
+      reading !== null
+  );
 
   function recordRenderSample(sample: RendererPerformanceSample): void {
     renderSample = sample;
@@ -208,7 +217,7 @@
   <title>Autumn Scene — verification harness</title>
 </svelte:head>
 
-<div class="page">
+<div class="page" data-autumn-ready={reviewReady ? "true" : "false"}>
   {#if productionGraph}
     <AutumnProductionHarness onSample={recordRenderSample} />
   {:else}
