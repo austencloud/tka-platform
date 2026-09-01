@@ -4,8 +4,35 @@ import type {
   WebGLProgramParametersWithUniforms,
   WebGLRenderer,
 } from "three";
+import groundLayout from "../../../../../../../../../scripts/autumn-ground-layout.json";
 
 const STORAGE_KEY = "autumnGroundDetailPatch";
+
+interface GroundPathDefinition {
+  id: string;
+  points: [number, number, number][];
+}
+
+const cabinLane = (groundLayout.paths as GroundPathDefinition[]).find(
+  (path) => path.id === "cabin_lane"
+);
+
+if (!cabinLane) {
+  throw new Error("Autumn ground layout is missing the cabin_lane path");
+}
+
+function glslNumber(value: number): string {
+  return Number.isInteger(value) ? `${value.toFixed(1)}` : `${value}`;
+}
+
+/** GLSL generated from the same route definition consumed by Blender. */
+export const AUTUMN_CABIN_LANE_GLSL = cabinLane.points
+  .slice(0, -1)
+  .map((point, index) => {
+    const next = cabinLane.points[index + 1]!;
+    return `lane = max(lane, autumnGroundSegment(point, vec2(${glslNumber(point[0])}, ${glslNumber(point[1])}), vec2(${glslNumber(next[0])}, ${glslNumber(next[1])}), ${glslNumber(point[2])}));`;
+  })
+  .join("\n            ");
 
 export interface AutumnGroundDetailUniforms {
   detailMap: { value: Texture };
@@ -105,17 +132,7 @@ export function patchAutumnGroundDetailMaterial(
 
           float autumnCabinLane(vec2 point) {
             float lane = 0.0;
-            lane = max(lane, autumnGroundSegment(point, vec2(0.0, 2.9), vec2(-0.35, 6.0), 1.68));
-            lane = max(lane, autumnGroundSegment(point, vec2(-0.35, 6.0), vec2(-1.0, 9.5), 1.64));
-            lane = max(lane, autumnGroundSegment(point, vec2(-1.0, 9.5), vec2(-2.7, 13.0), 1.58));
-            lane = max(lane, autumnGroundSegment(point, vec2(-2.7, 13.0), vec2(-3.2, 17.5), 1.72));
-            lane = max(lane, autumnGroundSegment(point, vec2(-3.2, 17.5), vec2(-2.4, 22.0), 1.82));
-            lane = max(lane, autumnGroundSegment(point, vec2(-2.4, 22.0), vec2(-2.0, 27.0), 1.72));
-            lane = max(lane, autumnGroundSegment(point, vec2(-2.0, 27.0), vec2(-3.2, 33.0), 1.58));
-            lane = max(lane, autumnGroundSegment(point, vec2(-3.2, 33.0), vec2(-4.8, 39.5), 1.46));
-            lane = max(lane, autumnGroundSegment(point, vec2(-4.8, 39.5), vec2(-6.5, 45.0), 1.34));
-            lane = max(lane, autumnGroundSegment(point, vec2(-6.5, 45.0), vec2(-8.5, 50.0), 1.22));
-            lane = max(lane, autumnGroundSegment(point, vec2(-8.5, 50.0), vec2(-10.0, 54.5), 1.02));
+            ${AUTUMN_CABIN_LANE_GLSL}
             return lane;
           }
 
@@ -168,7 +185,7 @@ export function patchAutumnGroundDetailMaterial(
           // Moonlight is deliberately violet. Grade only the ground toward
           // copper-brown, then deepen the maintained route enough to survive
           // fog, mip reduction, and the settlement camera's grazing angle.
-          diffuseColor.rgb *= vec3(1.10, 0.80, 0.62);
+          diffuseColor.rgb *= vec3(1.15, 0.67, 0.42);
           diffuseColor.rgb *= mix(
             vec3(1.0),
             vec3(1.12, 0.62, 0.34),
@@ -181,17 +198,33 @@ export function patchAutumnGroundDetailMaterial(
           // A restrained material-local bounce prevents the moon from
           // bleaching compacted soil back to lavender after PBR lighting.
           gl_FragColor.rgb += diffuseColor.rgb * 0.028;
-          gl_FragColor.rgb *= vec3(1.08, 0.78, 0.58);
+          gl_FragColor.rgb *= vec3(1.18, 0.62, 0.38);
           gl_FragColor.rgb *= mix(0.92, 1.07, autumnGroundMacro);
           gl_FragColor.rgb = mix(
             gl_FragColor.rgb,
             gl_FragColor.rgb * vec3(0.45, 0.30, 0.20),
             autumnGroundRouteMask * 0.78
+          );
+
+          // Cool moon-facing slopes used to wash toward pink-grey even though
+          // the same material read as rich leaf mould in shadow. Pull every
+          // lighting result toward a luminance-matched copper target so relief
+          // remains legible without fragmenting the floor into pale islands.
+          float autumnGroundLuminance = dot(
+            gl_FragColor.rgb,
+            vec3(0.2126, 0.7152, 0.0722)
+          );
+          vec3 autumnGroundCopper = autumnGroundLuminance
+            * vec3(1.35, 0.52, 0.28);
+          gl_FragColor.rgb = mix(
+            gl_FragColor.rgb,
+            autumnGroundCopper,
+            0.45
           );`
       );
   };
   material.customProgramCacheKey = () =>
-    `${previousCacheKey.call(material)}|autumn-ground-detail-v3`;
+    `${previousCacheKey.call(material)}|autumn-ground-detail-v5`;
 
   const patch: AutumnGroundDetailPatch = {
     uniforms,

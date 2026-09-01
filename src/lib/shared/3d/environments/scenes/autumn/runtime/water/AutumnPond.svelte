@@ -39,10 +39,14 @@
     prefersReducedMotion,
     resolveMotionScale,
   } from "../../../../primitives/motion-preference";
+  import type { AutumnBootStatus } from "../autumn-boot-state";
 
   interface Props {
     quality: AutumnQualityConfig;
     groundY?: number;
+    active?: boolean;
+    retryRequest?: number;
+    onStatus?: (status: AutumnBootStatus) => void;
     position?: [number, number, number];
     radiusX?: number;
     radiusZ?: number;
@@ -53,6 +57,9 @@
   let {
     quality,
     groundY = 0,
+    active = true,
+    retryRequest = 0,
+    onStatus,
     position = [0, 0, 0],
     radiusX = AUTUMN_POND_LAYOUT.radiusX,
     radiusZ = AUTUMN_POND_LAYOUT.radiusZ,
@@ -60,7 +67,7 @@
     waterLevelOffset = AUTUMN_POND_LAYOUT.waterLevelOffset,
   }: Props = $props();
 
-  const WATER_BODY_COLOR = "#283650";
+  const WATER_BODY_COLOR = "#324553";
   const NORMAL_MAP_PATH = "/textures/water/Water_1_M_Normal.jpg";
   const COAT_NORMAL_MAP_PATH = "/textures/water/Water_2_M_Normal.jpg";
 
@@ -82,14 +89,47 @@
   let bodyNormal = $state<Texture | null>(null);
   let coatNormal = $state<Texture | null>(null);
 
+  function reportStatus(status: AutumnBootStatus): void {
+    untrack(() => onStatus?.(status));
+  }
+
   $effect(() => {
+    const retry = retryRequest;
+    let cancelled = false;
+    let loadedNormals = 0;
+    let normalLoadFailed = false;
+    reportStatus("pending");
+
+    const markNormalReady = () => {
+      if (cancelled || normalLoadFailed) return;
+      loadedNormals += 1;
+      if (loadedNormals === 2) reportStatus("ready");
+    };
+    const markNormalFailed = (error: unknown) => {
+      if (cancelled || normalLoadFailed) return;
+      normalLoadFailed = true;
+      console.warn("[AutumnPond] water normal failed to load", error);
+      reportStatus("failed");
+    };
+
     const geometry = new ShapeGeometry(
       createOrganicPondShape({ radiusX, radiusZ, seed }),
       48
     );
     const loader = new TextureLoader();
-    const normal0 = loader.load(NORMAL_MAP_PATH);
-    const normal1 = loader.load(COAT_NORMAL_MAP_PATH);
+    const retrySuffix = retry > 0 ? `?retry=${retry}` : "";
+    const normal0 = loader.load(
+      `${NORMAL_MAP_PATH}${retrySuffix}`,
+      markNormalReady,
+      undefined,
+      markNormalFailed
+    );
+    const normal1 = loader.load(
+      `${COAT_NORMAL_MAP_PATH}${retrySuffix}`,
+      markNormalReady,
+      undefined,
+      markNormalFailed
+    );
     configureWaterNormal(normal0, 3.6);
     configureWaterNormal(normal1, 5.2);
     normal1.center.set(0.5, 0.5);
@@ -100,21 +140,21 @@
     // rather than an opaque cut-out in the ground.
     const material = new MeshPhysicalMaterial({
       color: new Color(WATER_BODY_COLOR),
-      emissive: new Color("#0b1d2d"),
-      emissiveIntensity: 0.18,
-      roughness: 0.46,
+      emissive: new Color("#12333a"),
+      emissiveIntensity: 0.22,
+      roughness: 0.36,
       metalness: 0.04,
       transparent: true,
-      opacity: 0.76,
+      opacity: 0.6,
       ior: 1.333,
-      transmission: 0.18,
-      thickness: 0.42,
-      attenuationColor: new Color("#31264a"),
-      attenuationDistance: 2.4,
-      clearcoat: 0.1,
-      clearcoatRoughness: 0.48,
-      specularIntensity: 0.24,
-      specularColor: new Color("#7786a8"),
+      transmission: 0.34,
+      thickness: 0.3,
+      attenuationColor: new Color("#4a4052"),
+      attenuationDistance: 3.2,
+      clearcoat: 0.14,
+      clearcoatRoughness: 0.4,
+      specularIntensity: 0.38,
+      specularColor: new Color("#91a5c4"),
       normalMap: normal0,
       normalScale: new Vector2(0.16, 0.16),
       clearcoatNormalMap: normal1,
@@ -135,6 +175,7 @@
     });
 
     return () => {
+      cancelled = true;
       geometry.dispose();
       material.dispose();
       normal0.dispose();
@@ -164,7 +205,7 @@
         uniforms: {
           uTime: { value: 0 },
           uColor: { value: new Color("#cddcff") },
-          uStrength: { value: 0.055 },
+          uStrength: { value: 0.075 },
         },
         transparent: true,
         depthWrite: false,
@@ -209,20 +250,29 @@
   );
 
   let elapsed = 0;
-  useTask((delta) => {
-    const scaled = delta * motionScale;
-    const normal0 = bodyNormal;
-    const normal1 = coatNormal;
-    if (normal0) {
-      normal0.offset.x = (normal0.offset.x + scaled * 0.0045) % 1;
-      normal0.offset.y = (normal0.offset.y + scaled * 0.0022) % 1;
-    }
-    if (normal1) {
-      normal1.offset.x = (normal1.offset.x - scaled * 0.0031 + 1) % 1;
-      normal1.offset.y = (normal1.offset.y + scaled * 0.0048) % 1;
-    }
-    elapsed += scaled;
-    glintMaterial.uniforms.uTime!.value = elapsed;
+  const waterTask = useTask(
+    (delta) => {
+      const scaled = delta * motionScale;
+      const normal0 = bodyNormal;
+      const normal1 = coatNormal;
+      if (normal0) {
+        normal0.offset.x = (normal0.offset.x + scaled * 0.0045) % 1;
+        normal0.offset.y = (normal0.offset.y + scaled * 0.0022) % 1;
+      }
+      if (normal1) {
+        normal1.offset.x = (normal1.offset.x - scaled * 0.0031 + 1) % 1;
+        normal1.offset.y = (normal1.offset.y + scaled * 0.0048) % 1;
+      }
+      elapsed += scaled;
+      glintMaterial.uniforms.uTime!.value = elapsed;
+    },
+    { autoStart: false }
+  );
+
+  $effect(() => {
+    if (active) waterTask.start();
+    else waterTask.stop();
+    return () => waterTask.stop();
   });
 
   onDestroy(() => {

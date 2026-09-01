@@ -1,26 +1,45 @@
 import {
-  type ForestSceneConfig,
-  type AutumnSceneConfig,
-  type WinterSceneConfig,
-  type CosmicSceneConfig,
-  type OceanSceneConfig,
-  type EmberSceneConfig,
-  type BlossomSceneConfig,
-  type CelestialSceneConfig,
-  type RainbowSceneConfig,
-  type VoidSceneConfig,
   createDefaultAutumnConfig,
-  createDefaultForestFireflyConfig,
-  createDefaultWinterConfig,
-  createDefaultCosmicNightConfig,
-  createDefaultCosmicAuroraConfig,
-  createDefaultOceanReefConfig,
-  createDefaultEmberConfig,
+  normalizeAutumnConfig,
+  type AutumnSceneConfig,
+} from "$lib/shared/3d/environments/domain/models/scene-configs/autumn-scene-config";
+import {
   createDefaultBlossomConfig,
+  type BlossomSceneConfig,
+} from "$lib/shared/3d/environments/domain/models/scene-configs/blossom-scene-config";
+import {
   createDefaultCelestialConfig,
+  type CelestialSceneConfig,
+} from "$lib/shared/3d/environments/domain/models/scene-configs/celestial-scene-config";
+import {
+  createDefaultCosmicAuroraConfig,
+  createDefaultCosmicNightConfig,
+  type CosmicSceneConfig,
+} from "$lib/shared/3d/environments/domain/models/scene-configs/cosmic-scene-config";
+import {
+  createDefaultEmberConfig,
+  type EmberSceneConfig,
+} from "$lib/shared/3d/environments/domain/models/scene-configs/ember-scene-config";
+import {
+  createDefaultForestFireflyConfig,
+  type ForestSceneConfig,
+} from "$lib/shared/3d/environments/domain/models/scene-configs/forest-scene-config";
+import {
+  createDefaultOceanReefConfig,
+  type OceanSceneConfig,
+} from "$lib/shared/3d/environments/domain/models/scene-configs/ocean-scene-config";
+import {
   createDefaultRainbowConfig,
+  type RainbowSceneConfig,
+} from "$lib/shared/3d/environments/domain/models/scene-configs/rainbow-scene-config";
+import {
   createDefaultVoidConfig,
-} from "$lib/shared/3d/environments/domain/models/scene-configs";
+  type VoidSceneConfig,
+} from "$lib/shared/3d/environments/domain/models/scene-configs/void-scene-config";
+import {
+  createDefaultWinterConfig,
+  type WinterSceneConfig,
+} from "$lib/shared/3d/environments/domain/models/scene-configs/winter-scene-config";
 import type { SceneId } from "../domain/scene-lab-types";
 import type { CosmicVariant } from "../services/scene-lab-persistence";
 import { loadSceneLabState } from "../services/scene-lab-persistence";
@@ -61,7 +80,7 @@ export function createSceneLabState() {
     persisted?.configs.forest ?? createDefaultForestFireflyConfig()
   );
   let autumnConfig = $state<AutumnSceneConfig>(
-    persisted?.configs.autumn ?? createDefaultAutumnConfig()
+    normalizeAutumnConfig(persisted?.configs.autumn)
   );
   let cosmicNightConfig = $state<CosmicSceneConfig>(
     persisted?.configs.cosmicNight ?? createDefaultCosmicNightConfig()
@@ -101,7 +120,7 @@ export function createSceneLabState() {
 
   $effect(() => {
     const serialized = JSON.stringify({
-      version: 2,
+      version: 3,
       sceneId,
       cosmicVariant,
       configs: {
@@ -121,8 +140,8 @@ export function createSceneLabState() {
     const timer = setTimeout(() => {
       try {
         localStorage.setItem("scene-lab-state", serialized);
-      } catch {
-        // noop
+      } catch (error) {
+        console.warn("Failed to persist scene lab state:", error);
       }
     }, 500);
     return () => clearTimeout(timer);
@@ -149,7 +168,7 @@ export function createSceneLabState() {
   function restoreAllConfigs(configs: Record<string, unknown>): void {
     if (configs.winter) winterConfig = configs.winter as WinterSceneConfig;
     if (configs.forest) forestConfig = configs.forest as ForestSceneConfig;
-    if (configs.autumn) autumnConfig = configs.autumn as AutumnSceneConfig;
+    if (configs.autumn) autumnConfig = normalizeAutumnConfig(configs.autumn);
     if (configs.cosmicNight)
       cosmicNightConfig = configs.cosmicNight as CosmicSceneConfig;
     if (configs.cosmicAurora)

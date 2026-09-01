@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { AUTUMN_DEPTH_MATERIAL_GRADES } from "../../../scripts/autumn-depth-material-grades.mjs";
 import { AUTUMN_HERO_MATERIAL_GRADES } from "../../../scripts/autumn-hero-material-grades.mjs";
 import { getAutumnDepthCohesionProfile } from "$lib/shared/3d/environments/scenes/autumn/runtime/atmosphere/autumn-depth-cohesion";
+import { AUTUMN_INSTANCE_BUDGETS } from "$lib/shared/3d/environments/scenes/autumn/quality/autumn-geometry-tier";
 import { resolveAutumnShadowRole } from "$lib/shared/3d/environments/scenes/autumn/runtime/lighting/autumn-shadow-roles";
 
 interface OptimizedAutumnGltf {
@@ -65,6 +66,24 @@ describe("optimized Autumn GLB contracts", () => {
     );
   }
 
+  function projectedTriangleCount(tier: "high" | "medium" | "low"): number {
+    return (gltf.nodes ?? []).reduce((sum, node) => {
+      if (!Number.isInteger(node.mesh)) return sum;
+      const triangles = meshTriangleCount(node.mesh!);
+      const translationAccessor =
+        node.extensions?.EXT_mesh_gpu_instancing?.attributes?.TRANSLATION;
+      if (translationAccessor === undefined) return sum + triangles;
+
+      const fullCount = gltf.accessors?.[translationAccessor]?.count ?? 0;
+      if (tier === "high") return sum + triangles * fullCount;
+      const names = nodeMaterialNames(node);
+      const budget = AUTUMN_INSTANCE_BUDGETS.find((candidate) =>
+        names.some((name) => name.startsWith(candidate.materialPrefix))
+      );
+      return sum + triangles * Math.min(fullCount, budget?.[tier] ?? fullCount);
+    }, 0);
+  }
+
   it("keeps optimizer and runtime depth-family prefixes joined to the GLB", () => {
     for (const profile of Object.values(AUTUMN_DEPTH_MATERIAL_GRADES)) {
       expect(
@@ -99,15 +118,12 @@ describe("optimized Autumn GLB contracts", () => {
         resolveAutumnShadowRole(node.name ?? "", nodeMaterialNames(node)).cast
     );
     const expectedCasterCounts = new Map([
-      ["HeroTreeA_", 4],
       ["FallenLog", 3],
       ["Shore_Boulder", 2],
       ["Autumn_Owl", 2],
     ]);
 
-    // Hero B is the twelfth caster node. The optimizer batches its three hero
-    // placements and four saplings into one unnamed node, identified by material.
-    expect(casterNodes).toHaveLength(12);
+    expect(casterNodes).toHaveLength(7);
     for (const [prefix, count] of expectedCasterCounts) {
       expect(
         casterNodes.filter((node) => node.name?.startsWith(prefix))
@@ -115,7 +131,7 @@ describe("optimized Autumn GLB contracts", () => {
     }
   });
 
-  it("casts all eleven foreground trees from their optimized GLB geometry", () => {
+  it("keeps both hero-tree families receive-only", () => {
     const heroANodes = (gltf.nodes ?? []).filter((node) =>
       node.name?.startsWith("HeroTreeA_")
     );
@@ -125,7 +141,7 @@ describe("optimized Autumn GLB contracts", () => {
         (node) =>
           resolveAutumnShadowRole(node.name ?? "", nodeMaterialNames(node)).cast
       )
-    ).toBe(true);
+    ).toBe(false);
 
     const heroBNodes = (gltf.nodes ?? []).filter((node) =>
       nodeMaterialNames(node).some((name) =>
@@ -139,7 +155,7 @@ describe("optimized Autumn GLB contracts", () => {
         heroBNode.name ?? "",
         nodeMaterialNames(heroBNode)
       ).cast
-    ).toBe(true);
+    ).toBe(false);
 
     const translationAccessor =
       heroBNode.extensions?.EXT_mesh_gpu_instancing?.attributes?.TRANSLATION;
@@ -153,8 +169,21 @@ describe("optimized Autumn GLB contracts", () => {
     );
     const heroBTriangles =
       meshTriangleCount(heroBNode.mesh!) * heroBInstanceCount;
-    expect(heroATriangles + heroBTriangles).toBeGreaterThan(390_000);
-    expect(heroATriangles + heroBTriangles).toBeLessThan(405_000);
+    expect(heroATriangles).toBeGreaterThan(170_000);
+    expect(heroATriangles).toBeLessThan(175_000);
+    expect(heroBTriangles).toBeGreaterThan(220_000);
+  });
+
+  it("delivers real geometry reductions at medium and low quality", () => {
+    const high = projectedTriangleCount("high");
+    const medium = projectedTriangleCount("medium");
+    const low = projectedTriangleCount("low");
+
+    expect(high).toBeGreaterThan(1_900_000);
+    expect(medium).toBeLessThanOrEqual(1_550_000);
+    expect(low).toBeLessThanOrEqual(1_100_000);
+    expect(medium / high).toBeLessThan(0.8);
+    expect(low / high).toBeLessThan(0.56);
   });
 
   it("contains no authored shadow impostors", () => {

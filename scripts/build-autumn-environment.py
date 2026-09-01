@@ -27,6 +27,10 @@ with open(GROUND_LAYOUT_PATH, "rb") as ground_layout_file:
     GROUND_LAYOUT_BYTES = ground_layout_file.read()
 GROUND_LAYOUT = json.loads(GROUND_LAYOUT_BYTES)
 GROUND_LAYOUT_SHA256 = hashlib.sha256(GROUND_LAYOUT_BYTES).hexdigest()
+
+MUSHROOM_LAYOUT_PATH = os.path.join(SCRIPT_DIR, "autumn-mushroom-layout.json")
+with open(MUSHROOM_LAYOUT_PATH, "r", encoding="utf-8") as mushroom_layout_file:
+    MUSHROOM_LAYOUT = json.load(mushroom_layout_file)
 MODEL_DIR = os.path.join(PROJECT_ROOT, "static", "models", "autumn")
 AUTUMN_FLOOR_TEXTURE_DIR = os.path.join(PROJECT_ROOT, "static", "textures", "autumn-floor")
 FOREST_FLOOR_TEXTURE_DIR = os.path.join(PROJECT_ROOT, "static", "textures", "forest-floor")
@@ -222,6 +226,29 @@ FAR_DEPTH_TREE_PLACEMENTS = (
     ("FarDepthGold_S_02", "FarGold", 53.0, -49.0, 6.6, -1.74, 0.95, False),
     ("FarDepthLarch_SW_01", "FarLarch", -67.0, -70.0, 8.0, 2.46, 0.98, False),
     ("FarDepthRed_SE_01", "FarRed", 68.0, -72.0, 7.5, -2.62, 0.97, True),
+    # The first complete orbit exposed an empty reverse/side backlot between
+    # the hero grove and the outer silhouette belt. These inexpensive inner
+    # silhouettes close that gap without spending imported-tree geometry.
+    ("FarDepthGold_SW_Inner", "FarGold", -42.0, -34.0, 6.5, -0.62, 0.94, False),
+    ("FarDepthRed_SW_Inner", "FarRed", -30.0, -46.0, 7.0, 1.18, 0.96, True),
+    ("FarDepthLarch_S_Inner", "FarLarch", -10.0, -48.0, 7.6, -1.86, 0.98, False),
+    ("FarDepthGold_S_Inner", "FarGold", 10.0, -50.0, 6.7, 2.38, 0.93, True),
+    ("FarDepthRed_SE_Inner", "FarRed", 30.0, -45.0, 7.1, -0.94, 0.95, False),
+    ("FarDepthLarch_SE_Inner", "FarLarch", 43.0, -34.0, 7.8, 1.72, 0.97, True),
+    ("FarDepthSnag_W_Inner", "FarSnag", -49.0, -8.0, 7.0, -2.24, 0.96, False),
+    ("FarDepthGold_W_Inner", "FarGold", -51.0, 18.0, 6.6, 0.82, 0.94, True),
+    ("FarDepthRed_E_Inner", "FarRed", 50.0, -8.0, 6.9, -1.42, 0.95, True),
+    ("FarDepthLarch_E_Inner", "FarLarch", 52.0, 18.0, 7.7, 2.16, 0.98, False),
+    ("FarDepthSnag_S_Inner", "FarSnag", 0.0, -56.0, 7.2, 0.34, 0.97, True),
+    ("FarDepthGold_S_Closer", "FarGold", -13.0, -35.0, 7.1, -1.08, 0.97, True),
+    ("FarDepthRed_S_Closer", "FarRed", 0.0, -38.0, 7.4, 0.46, 0.98, False),
+    ("FarDepthLarch_S_Closer", "FarLarch", 14.0, -34.0, 7.8, 1.94, 0.97, True),
+    ("FarDepthRed_S_Grove_01", "FarRed", -25.0, -43.0, 7.5, 0.82, 0.96, False),
+    ("FarDepthLarch_S_Grove_01", "FarLarch", -19.0, -37.0, 8.4, -1.64, 0.98, True),
+    ("FarDepthGold_S_Grove_01", "FarGold", -7.0, -44.0, 7.0, 2.28, 0.95, False),
+    ("FarDepthGold_S_Grove_02", "FarGold", 7.0, -42.0, 7.2, -0.72, 0.96, True),
+    ("FarDepthLarch_S_Grove_02", "FarLarch", 19.0, -38.0, 8.2, 1.42, 0.97, False),
+    ("FarDepthRed_S_Grove_02", "FarRed", 26.0, -44.0, 7.4, -2.08, 0.96, True),
 )
 
 # The settlement now has a route with an actual destination. The broad lane
@@ -298,17 +325,34 @@ FERN_CLUSTERS = (
 # arc of small buff champignons in the open grass. Purple amethyst deceivers
 # appear as loose individuals in leaf litter near mature roots, while denser
 # honey-fungus colonies are reserved for fallen wood.
-FAIRY_CHAMPIGNON_ARC = ("FairyChampignonArc", 4.0, 12.0, 2.15, 24, 0.34)
+_FAIRY_CHAMPIGNON_ARC = MUSHROOM_LAYOUT["fairyChampignonArc"]
+FAIRY_CHAMPIGNON_ARC = (
+    _FAIRY_CHAMPIGNON_ARC["name"],
+    *_FAIRY_CHAMPIGNON_ARC["center"],
+    _FAIRY_CHAMPIGNON_ARC["radius"],
+    _FAIRY_CHAMPIGNON_ARC["count"],
+    _FAIRY_CHAMPIGNON_ARC["phase"],
+)
+FAIRY_CHAMPIGNON_GAPS = set(_FAIRY_CHAMPIGNON_ARC["gaps"])
 
-AMETHYST_DECEIVER_DRIFTS = (
-    ("AmethystWestRoot", -9.55, 5.45, 5, 0.62, 0.42),
-    ("AmethystEastRoot", 13.25, -5.75, 5, 0.58, 0.38),
-    ("AmethystFrontRoot", -15.35, -10.05, 5, 0.60, 0.40),
+AMETHYST_DECEIVER_DRIFTS = tuple(
+    (
+        drift["name"],
+        *drift["center"],
+        drift["count"],
+        *drift["spread"],
+    )
+    for drift in MUSHROOM_LAYOUT["amethystDeceiverDrifts"]
 )
 
-HONEY_FUNGUS_COLONIES = (
-    ("HoneyFungusLogOne", 10.35, 6.75, 8, 0.48, 0.34),
-    ("HoneyFungusLogTwo", -12.20, 12.85, 7, 0.44, 0.30),
+HONEY_FUNGUS_COLONIES = tuple(
+    (
+        colony["name"],
+        *colony["center"],
+        colony["count"],
+        *colony["spread"],
+    )
+    for colony in MUSHROOM_LAYOUT["honeyFungusColonies"]
 )
 
 GRASS_COLONIES = (
@@ -575,6 +619,13 @@ HABITATION_LANTERN = principled_material(
     emission=(1.0, 0.20, 0.025),
     emission_strength=1.35,
 )
+HABITATION_CABIN_GLOW = principled_material(
+    "Low Amber Cabin Window",
+    (0.32, 0.11, 0.018),
+    roughness=0.46,
+    emission=(1.0, 0.16, 0.018),
+    emission_strength=1.8,
+)
 FAR_TRUNK = principled_material("Far Autumn Trunk", (0.075, 0.043, 0.052), roughness=0.98)
 FAR_CANOPY_RED = principled_material(
     "Far Autumn Canopy Red", (0.20, 0.048, 0.035), roughness=0.96
@@ -595,17 +646,25 @@ MUSHROOM_STEM_LILAC = principled_material(
     "Autumn Mushroom Lilac Stem", (0.24, 0.11, 0.24), roughness=0.88
 )
 MUSHROOM_CHAMPIGNON_CAP = principled_material(
-    "Autumn Fairy Champignon Cap", (0.38, 0.25, 0.13), roughness=0.90
+    "Autumn Fairy Champignon Cap",
+    (0.38, 0.25, 0.13),
+    roughness=0.90,
+    emission=(0.20, 0.08, 0.018),
+    emission_strength=0.12,
 )
 MUSHROOM_AMETHYST_CAP = principled_material(
     "Autumn Amethyst Deceiver Cap",
     (0.24, 0.055, 0.28),
     roughness=0.82,
     emission=(0.15, 0.025, 0.18),
-    emission_strength=0.035,
+    emission_strength=0.18,
 )
 MUSHROOM_HONEY_CAP = principled_material(
-    "Autumn Honey Fungus Cap", (0.47, 0.21, 0.055), roughness=0.87
+    "Autumn Honey Fungus Cap",
+    (0.47, 0.21, 0.055),
+    roughness=0.87,
+    emission=(0.28, 0.075, 0.012),
+    emission_strength=0.15,
 )
 for grass_material in (GRASS_BASE, GRASS_MEDIUM, GRASS_HIGH):
     grass_material.diffuse_color = (*grass_material.diffuse_color[:3], 1.0)
@@ -616,10 +675,10 @@ for grass_material in (GRASS_BASE, GRASS_MEDIUM, GRASS_HIGH):
 # visible is what makes water look like water.
 POND_GLOW = principled_material(
     "Pond Underlight",
-    (0.055, 0.072, 0.068),
+    (0.070, 0.095, 0.090),
     roughness=0.78,
-    emission=(0.006, 0.026, 0.030),
-    emission_strength=0.06,
+    emission=(0.008, 0.040, 0.044),
+    emission_strength=0.12,
 )
 QA_WATER = preview_water_material()
 
@@ -1012,6 +1071,33 @@ def add_habitation_cylinder(
 def create_habitation_props():
     """Add a few practical objects that explain who keeps using this route."""
     props = []
+
+    # A single warm pane makes the distant destination readable through the
+    # trunks. It is emissive only: no extra light or shadow pass at runtime.
+    cabin_window_x, cabin_window_y = -11.05, 53.92
+    cabin_window_ground = world_surface_height(cabin_window_x, cabin_window_y)
+    props.append(
+        add_habitation_box(
+            "Autumn_Cabin_Window_Glow",
+            (cabin_window_x, cabin_window_y, cabin_window_ground + 1.92),
+            (0.54, 0.045, 0.62),
+            HABITATION_CABIN_GLOW,
+            DISTANT_CABIN_PLACEMENT[4],
+        )
+    )
+    for name, dimensions in (
+        ("Autumn_Cabin_Window_Mullion_V", (0.045, 0.052, 0.64)),
+        ("Autumn_Cabin_Window_Mullion_H", (0.56, 0.052, 0.045)),
+    ):
+        props.append(
+            add_habitation_box(
+                name,
+                (cabin_window_x, cabin_window_y - 0.012, cabin_window_ground + 1.92),
+                dimensions,
+                HABITATION_WOOD,
+                DISTANT_CABIN_PLACEMENT[4],
+            )
+        )
 
     # Three irregular stones finish the lane at the south-facing shack door.
     for index, (x, y, scale_x, scale_y, rotation) in enumerate(
@@ -2210,9 +2296,8 @@ def create_mushroom_ecology(rock_placements):
     mushroom_rng = random.Random(14731)
 
     ring_name, center_x, center_y, radius, count, phase = FAIRY_CHAMPIGNON_ARC
-    ring_gaps = {4, 5, 6, 17}
     for index in range(count):
-        if index in ring_gaps:
+        if index in FAIRY_CHAMPIGNON_GAPS:
             continue
         angle = phase + index * math.tau / count
         local_radius = radius * mushroom_rng.uniform(0.93, 1.08)
@@ -2228,7 +2313,7 @@ def create_mushroom_ecology(rock_placements):
                 "broken-fairy-ring",
                 x,
                 y,
-                mushroom_rng.uniform(0.105, 0.17),
+                mushroom_rng.uniform(0.18, 0.30),
                 angle + mushroom_rng.uniform(-0.35, 0.35),
                 mushroom_rng.uniform(0.82, 1.18),
             )
@@ -2253,7 +2338,7 @@ def create_mushroom_ecology(rock_placements):
                     "root-zone-leaf-litter",
                     x,
                     y,
-                    mushroom_rng.uniform(0.11, 0.19),
+                    mushroom_rng.uniform(0.18, 0.29),
                     mushroom_rng.uniform(-math.pi, math.pi),
                     mushroom_rng.uniform(0.78, 1.12),
                 )
@@ -2278,7 +2363,7 @@ def create_mushroom_ecology(rock_placements):
                     "fallen-deadwood",
                     x,
                     y,
-                    mushroom_rng.uniform(0.14, 0.25),
+                    mushroom_rng.uniform(0.22, 0.36),
                     angle + mushroom_rng.uniform(-0.4, 0.4),
                     mushroom_rng.uniform(0.82, 1.15),
                 )
@@ -3021,7 +3106,7 @@ def verify_ecology(
     far_family_counts = {}
     for _name, family, *_rest in FAR_DEPTH_TREE_PLACEMENTS:
         far_family_counts[family] = far_family_counts.get(family, 0) + 1
-    expected_far_families = {"FarRed": 10, "FarGold": 9, "FarLarch": 9, "FarSnag": 5}
+    expected_far_families = {"FarRed": 16, "FarGold": 15, "FarLarch": 15, "FarSnag": 7}
     far_family_error = (
         far_family_counts
         if far_family_counts != expected_far_families
@@ -3117,6 +3202,7 @@ def verify_ecology(
             "Autumn_Chopping_Block",
             "Autumn_Water_Pail",
             "Autumn_Wayfinding_Lantern_Glow",
+            "Autumn_Cabin_Window_Glow",
             "Autumn_Door_Step_01",
         )
         if bpy.data.objects.get(name) is None
