@@ -54,7 +54,6 @@
   import { setSideBySideLayout } from "$lib/shared/application/state/animation-visibility-state.svelte";
   import { onMount, setContext, tick } from "svelte";
   import ErrorBanner from "./ErrorBanner.svelte";
-  import AltHotkeyOverlay from "../../components/AltHotkeyOverlay.svelte";
   import type { CreateModuleOrchestrators } from "../types/create-module-services";
   import type { CreateModuleInitializer } from "../services/create-module-initializer";
   import type { CreateModuleHandlers } from "../services/create-module-handlers";
@@ -69,6 +68,7 @@
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import StandardWorkspaceLayout from "./StandardWorkspaceLayout.svelte";
   import CreateFrontDoor from "./CreateFrontDoor.svelte";
+  import CreateShortcutHeader from "./CreateShortcutHeader.svelte";
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { setCreateModuleContext } from "../context/create-module-context";
@@ -930,15 +930,14 @@
         <span class="method-divider" aria-hidden="true">/</span>
         <span class="active-method">{activeCreateMethod.label}</span>
       {/if}
+
+      <CreateShortcutHeader />
     </nav>
 
     <div class="create-workspace-body">
       {#if error}
         <ErrorBanner message={error} onDismiss={clearError} />
       {:else if CreateModuleState && constructTabState && services}
-        <!-- Alt Hotkey Overlay (desktop only, shows on Alt hold) -->
-        <AltHotkeyOverlay />
-
         <div class="create-tab">
           <StandardWorkspaceLayout
             {shouldUseSideBySideLayout}
@@ -1095,6 +1094,8 @@
   }
 
   .create-method-bar {
+    position: relative;
+    z-index: 1;
     flex: 0 0 auto;
     min-height: var(--min-touch-target, 44px);
     display: flex;

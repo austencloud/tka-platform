@@ -177,7 +177,10 @@
   $effect(() => {
     const loaded = environmentScene;
     if (!loaded) return;
-    const report = applyAutumnGeometryTier(loaded, untrack(() => tier));
+    const report = applyAutumnGeometryTier(
+      loaded,
+      untrack(() => tier)
+    );
     loaded.userData.autumnGeometryTierReport = report;
     return () => {
       delete loaded.userData.autumnGeometryTierReport;
@@ -261,19 +264,14 @@
   $effect(() => {
     if (!active) return;
     const s = scene;
-    // Fog and background are deliberately DIFFERENT colours now. The fog is a
-    // lighter, warmer violet than the sky, so distant geometry fades toward a
-    // haze that separates it from the near-black upper sky instead of
-    // dissolving into it. That is what gives the belt atmospheric perspective.
-    // A warm plum haze belongs to the leaf-and-bark palette while retaining
-    // enough blue to read as moonlit air. The previous violet pushed pale bark
-    // and distant crowns toward silver, making the imported depth belt look
-    // like a separate winter biome.
+    // The fog remains warmer than the upper sky, preserving atmospheric depth
+    // through the tree belts. The gradient's lowest band now meets this exact
+    // colour so fully fogged ground cannot draw a geometric horizon seam.
     const fogColor = new Color(sceneConfig.fog.color);
     // The gradient dome owns the visible sky; this is its near-black fallback
     // while textures and shaders are still compiling.
     const backgroundColor = new Color("#120b2b");
-    // The terrain now owns a stitched 165m fog apron, so haze no longer has to
+    // The terrain owns a stitched, rolling fog apron, so haze no longer has to
     // conceal a finite edge. At 0.020 the 54m cabin lane lost so much contrast
     // that its authored surface vanished halfway to the shack. 0.016 keeps
     // atmospheric separation across the tree belts while preserving the full
@@ -292,8 +290,8 @@
   topColor={sceneConfig.sky.topColor}
   midColor={sceneConfig.sky.midColor}
   bottomColor={sceneConfig.sky.bottomColor}
-  gradientStart={0.43}
-  gradientEnd={0.53}
+  gradientStart={0.5}
+  gradientEnd={0.62}
   moon={moonConfig}
 />
 <Starfield config={starfieldConfig} />

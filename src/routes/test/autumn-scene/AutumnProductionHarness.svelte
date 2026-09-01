@@ -20,10 +20,11 @@
 
   interface Props {
     onSample?: (sample: RendererPerformanceSample) => void;
+    onReadyChange?: (ready: boolean) => void;
     cameraPreset: EnvironmentReviewCameraPreset;
   }
 
-  let { onSample, cameraPreset }: Props = $props();
+  let { onSample, onReadyChange, cameraPreset }: Props = $props();
 
   const REVIEW_PERFORMERS: StoredPerformerSnapshot[] = [
     {
@@ -144,6 +145,7 @@
   fullScreen={true}
   performanceWarmupMs={5_000}
   onPerformanceSample={onSample}
+  onSceneReadyChange={onReadyChange}
   cameraMaxOrbitDistance={128}
   cameraFov={cameraPreset.fov}
 />
