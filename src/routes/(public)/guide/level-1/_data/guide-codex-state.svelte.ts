@@ -140,7 +140,7 @@ class GuideCodexState {
       localStorage.setItem(
         GUIDE_CODEX_STORAGE_KEY,
         serializeGuideCodexPrefs({
-          version: 3,
+          version: 4,
           propType: this.propType,
           visibility: $state.snapshot(this.visibility),
           leftTurns: this.leftTurns,

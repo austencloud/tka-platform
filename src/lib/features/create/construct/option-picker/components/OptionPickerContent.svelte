@@ -164,6 +164,10 @@ Uses organizer and sizer services for section grouping and sizing.
   // Wide layout (>= 750px): 8-column grouped vertical layout
   // Narrow layout (< 750px): Horizontal swipe layout between type sections
   const WIDE_LAYOUT_THRESHOLD = 750;
+  // Above this width both hand palettes fit on one row, so the header remains
+  // economical even in a short pane. Narrower panes need enough height to
+  // stack those same surfaces before controls stay inline.
+  const FULL_INLINE_CONTROLS_WIDTH = 1000;
   const shouldUseWideLayout = $derived(containerWidth >= WIDE_LAYOUT_THRESHOLD);
   const interactionHintPresentation = $derived(
     selectOptionInteractionHintPresentation({
@@ -297,22 +301,22 @@ Uses organizer and sizer services for section grouping and sizing.
     return shouldShowFilterToggle() && !hideFilters;
   });
 
-  // Width decides which header density fits; height decides whether compact
-  // controls need disclosure at all. A tall split-screen pane should keep every
-  // choice visible even when it is too narrow for the full desktop rail.
+  // Height decides whether controls need disclosure. Width only changes how
+  // the one inline header recomposes; it must not swap the user into a second
+  // visual system just because the option grid crossed its own breakpoint.
   const controlsAvailable = $derived(
     shouldShowFilterControl() || turnControlsEditable
   );
-  const wideInlineControlsEligible = $derived(
+  const fullInlineControlsEligible = $derived(
     !shouldUseCompact4x4() &&
       !shouldUseSwipeLayout() &&
-      shouldUseWideLayout &&
+      containerWidth >= FULL_INLINE_CONTROLS_WIDTH &&
       !isMobileStackedLayout()
   );
   const controlsPresentation = $derived(
     selectOptionControlsPresentation({
       hasControls: controlsAvailable,
-      wideInlineEligible: wideInlineControlsEligible,
+      fullInlineEligible: fullInlineControlsEligible,
       containerHeight,
       // Reserve the largest header this picker can reveal. Otherwise Level 1
       // could fit inline, then selecting Level 2 would replace the controls
@@ -320,10 +324,7 @@ Uses organizer and sizer services for section grouping and sizing.
       canShowTurnRows: turnControlsEditable,
     })
   );
-  const useUnifiedHeader = $derived(controlsPresentation === "wide-inline");
-  const useInlineCompactControls = $derived(
-    controlsPresentation === "compact-inline"
-  );
+  const useInlineControls = $derived(controlsPresentation === "inline");
   const useDisclosedCompactControls = $derived(
     controlsPresentation === "disclosed"
   );
@@ -511,6 +512,25 @@ Uses organizer and sizer services for section grouping and sizing.
   />
 {/snippet}
 
+{#snippet inlineControls()}
+  <OptionPickerHeader
+    showFilter={shouldShowFilterControl()}
+    showTurnControls={turnControlsEditable}
+    {isContinuousOnly}
+    {onToggleContinuous}
+    {leftTurns}
+    {rightTurns}
+    {level}
+    {onLevelChange}
+    {leftRotation}
+    {rightRotation}
+    onLeftChange={onLeftTurnsChange}
+    onRightChange={onRightTurnsChange}
+    {onLeftRotationChange}
+    {onRightRotationChange}
+  />
+{/snippet}
+
 <div
   class="option-picker-content"
   data-testid="option-picker"
@@ -520,32 +540,12 @@ Uses organizer and sizer services for section grouping and sizing.
   {#if sizingStable}
     <!-- Content stays mounted so pictographs transition in place instead of remounting -->
     <div class="animated-content">
-      <!-- Unified header: pinned to the top of the picker (outside the scrolling
-           grid) so its position is consistent. Desktop wide layout only. -->
-      {#if useUnifiedHeader && controlsAvailable}
+      <!-- One pinned header serves every inline width. Container queries inside
+           the owner recompose it without swapping visual systems or remounting
+           the controls when the option grid crosses its own breakpoint. -->
+      {#if useInlineControls && controlsAvailable}
         <div class="picker-header-slot">
-          <OptionPickerHeader
-            showFilter={shouldShowFilterControl()}
-            showTurnControls={turnControlsEditable}
-            {isContinuousOnly}
-            {onToggleContinuous}
-            {leftTurns}
-            {rightTurns}
-            {level}
-            {onLevelChange}
-            {leftRotation}
-            {rightRotation}
-            onLeftChange={onLeftTurnsChange}
-            onRightChange={onRightTurnsChange}
-            {onLeftRotationChange}
-            {onRightRotationChange}
-          />
-        </div>
-      {/if}
-
-      {#if useInlineCompactControls}
-        <div class="compact-header-slot">
-          {@render compactControls()}
+          {@render inlineControls()}
         </div>
       {/if}
 
@@ -729,19 +729,6 @@ Uses organizer and sizer services for section grouping and sizing.
     position: sticky;
     top: 0;
     z-index: 5;
-  }
-
-  /* Narrow does not mean short. Tall split-screen, tablet, and embedded panes
-     keep the compact controls in front of the user and spend their remaining
-     height on the option surface. Disclosure is reserved for genuinely short
-     panes where the header would take usable rows away from the grid. */
-  .compact-header-slot {
-    position: relative;
-    z-index: 6;
-    width: 100%;
-    flex: 0 0 auto;
-    background: var(--theme-panel-bg, rgba(0, 0, 0, 0.75));
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   /* Continuous mode has no letter-type header to host this trigger. */

@@ -6,7 +6,7 @@
   context-free service the app's own Generate tab uses). Tap it and a fresh
   rotated LOOP cascades into the workspace on the left and plays on the right.
 
-  The two stages show the sequence's two halves — the notation it IS and the
+  The two regions show the sequence's two halves — the notation it IS and the
   movement it BECOMES. An earlier version paired the player with a mandala, but
   the player's own trails already draw that figure, so the pair said one thing
   twice.
@@ -21,8 +21,8 @@
   Engine, grid, and player chunks are all dynamically imported so the
   prerendered page pays nothing until the section is reached (grid/player mount
   on idle, seeded with the page's per-visit generated sequence; the engine chunk
-  loads on the first button tap). Stages are fixed aspect-ratio so nothing
-  shifts.
+  loads on the first button tap). The presentation stage reserves a bounded
+  footprint so nothing shifts while those chunks arrive.
 -->
 <script lang="ts">
   import { MediaQuery } from "svelte/reactivity";
@@ -34,15 +34,17 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import {
     classifyComposerGenerationFailure,
-    shouldSyncComposerSequence,
     type ComposerGenerationResult,
   } from "./composer-generation-failure";
+  import { shouldAdoptCarriedSequence } from "./composer-sequence-ownership";
 
-  /** Four columns keeps a 16-step LOOP square inside a square stage. */
-  const STEP_COLUMNS = 4;
+  /** Eight columns let a 16-step LOOP read as an overview instead of a second
+      square competing with the focused animation. */
+  const STEP_COLUMNS = 8;
+  const COMPACT_STEP_COLUMNS = 4;
 
   /** The page's per-visit demo sequence seeds the stages; null while it is
-      still generating (the fixed-aspect stages hold the footprint). */
+      still generating (the bounded stages hold the footprint). */
   let {
     sequence,
     onGenerated,
@@ -52,13 +54,17 @@
   } = $props();
 
   let current = $state<SequenceData | null>(null);
+  let hasGeneratedLocally = $state(false);
   let generating = $state(false);
   let result = $state<ComposerGenerationResult>("idle");
   let active = $state(false);
   const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
+  const compactLayout = new MediaQuery("(max-width: 56rem)");
 
   $effect(() => {
-    if (shouldSyncComposerSequence(current, sequence)) current = sequence;
+    if (shouldAdoptCarriedSequence(current, sequence, hasGeneratedLocally)) {
+      current = sequence;
+    }
   });
 
   const word = $derived(
@@ -112,6 +118,7 @@
       // on its first render and runs the same staggered reveal the Generate tab
       // produces. It clears itself once consumed.
       setPendingGenerationAnimation(true);
+      hasGeneratedLocally = true;
       current = JSON.parse(JSON.stringify(seq)) as SequenceData;
       onGenerated?.(current);
       result = "success";
@@ -130,133 +137,207 @@
   <div class="stages">
     <!-- The notation: the real workspace grid, cascading in on each draw.
          fitAllSteps scales the cells to the box instead of sizing them from the
-         column count alone, which left a 16-step draw occupying the top third of
-         a square stage. No arrivalSequence: it draws a mandala chip into the
+         column count alone. No arrivalSequence: it draws a mandala chip into the
          grid, and the player beside it already traces that same figure. -->
 
-    <div class="stage">
-      {#key current?.id}
-        <LazyMount
-          loader={() =>
-            import("$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte")}
-          active={active && !!current}
-          props={{
-            steps: stepData,
-            startPosition: current?.startPosition ?? null,
-            manualColumnCount: STEP_COLUMNS,
-            activeMode: "generate",
-            fitAllSteps: true,
-            sequenceWord: current?.word ?? "",
-          }}
-        />
-      {/key}
+    <div class="stage notation-stage">
+      <header class="stage-heading">
+        <strong>Sequence</strong>
+        <span>Notation</span>
+      </header>
+      <div class="stage-content">
+        {#key current?.id}
+          <LazyMount
+            loader={() =>
+              import("$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte")}
+            active={active && !!current}
+            props={{
+              steps: stepData,
+              startPosition: current?.startPosition ?? null,
+              manualColumnCount: compactLayout.current
+                ? COMPACT_STEP_COLUMNS
+                : STEP_COLUMNS,
+              activeMode: "generate",
+              fitAllSteps: true,
+              sequenceWord: current?.word ?? "",
+            }}
+          />
+        {/key}
+      </div>
     </div>
     <!-- The movement: the same steps, playing. -->
-    <div class="stage">
-      {#key current?.id}
-        <LazyMount
-          loader={() =>
-            import("$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte")}
-          active={active && !!current}
-          props={{
-            sequence: current,
-            autoPlay: !reduceMotion.current,
-            chrome: "minimal",
-            fill: true,
-            cornerToggle: true,
-          }}
-        />
-      {/key}
+    <div class="stage movement-stage">
+      <header class="stage-heading">
+        <strong>Movement</strong>
+        <span>Animation</span>
+      </header>
+      <div class="stage-content">
+        {#key current?.id}
+          <LazyMount
+            loader={() =>
+              import("$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte")}
+            active={active && !!current}
+            props={{
+              sequence: current,
+              autoPlay: !reduceMotion.current,
+              chrome: "minimal",
+              fill: true,
+              cornerToggle: true,
+            }}
+          />
+        {/key}
+      </div>
     </div>
   </div>
 
-  <!-- Reserved line; visible once the word is known (no sideways shift). -->
-  <div class="caption-row" class:pending={!current}>
-    <span class="tka-font caption-word">{word}</span>
-  </div>
+  <div class="demo-footer">
+    <!-- The word slot stays reserved while a sequence loads, so the action
+         never moves sideways. -->
+    <div class="caption-row">
+      <span class="caption-label">Sequence word</span>
+      <span class="tka-font caption-word" class:pending={!current}>{word}</span>
+    </div>
 
-  <div class="action-row">
-    <button
-      type="button"
-      class="generate-button"
-      onclick={generate}
-      disabled={generating}
-    >
-      <i
-        class="fas {generating ? 'fa-circle-notch fa-spin' : 'fa-dice'}"
-        aria-hidden="true"
-      ></i>
-      <span>{generating ? "Generating..." : "Generate a new one"}</span>
-    </button>
-    <!-- The line is always reserved so either failure state can arrive without
-         moving the controls or demonstrations around it. Success says nothing:
-         the grid cascading and the player restarting ARE the confirmation, and
-         narrating them adds a line of copy that tells the visitor what they can
-         already see. -->
-    <span
-      class="retry-note"
-      class:shown={result === "no-result" || result === "error"}
-      aria-live="polite"
-    >
-      {result === "no-result"
-        ? "That recipe found no valid sequence. Draw again."
-        : result === "error"
-          ? "The generator couldn't run. Try again."
-          : ""}
-    </span>
+    <div class="action-row">
+      <button
+        type="button"
+        class="generate-button"
+        onclick={generate}
+        disabled={generating}
+      >
+        <i
+          class="fas {generating ? 'fa-circle-notch fa-spin' : 'fa-dice'}"
+          aria-hidden="true"
+        ></i>
+        <span>{generating ? "Generating..." : "Generate a new one"}</span>
+      </button>
+      <!-- The line is always reserved so either failure state can arrive without
+           moving the controls or demonstrations around it. Success says nothing:
+           the grid cascading and the player restarting ARE the confirmation, and
+           narrating them adds a line of copy that tells the visitor what they can
+           already see. -->
+      <span
+        class="retry-note"
+        class:shown={result === "no-result" || result === "error"}
+        aria-live="polite"
+      >
+        {result === "no-result"
+          ? "That recipe found no valid sequence. Draw again."
+          : result === "error"
+            ? "The generator couldn't run. Try again."
+            : ""}
+      </span>
+    </div>
   </div>
 </div>
 
 <style>
-  .stages {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+  .generate-demo {
+    padding: clamp(1rem, 1.8cqw, 1.5rem);
+    border: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
+    border-radius: clamp(1.1rem, 2cqw, 1.5rem);
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, oklch(0.13 0.025 270 / 0.92)) 85%,
+      transparent
+    );
+    box-shadow: 0 2rem 5rem oklch(0.04 0.03 270 / 0.28);
   }
 
-  /* Both stages hand their whole square to one component — the grid sizes its
-     cells from the box it is given, and the player fills. `stretch` rather than
-     `center`: a centered grid child sizes to its content, which for StepGrid is
-     zero until it has measured a box it never got. */
-  .stage {
-    position: relative;
-    aspect-ratio: 1;
-    border-radius: 18px;
-    overflow: hidden;
-    background: oklch(0.16 0.018 270 / 0.45);
-    border: 1px solid oklch(0.4 0.04 270 / 0.14);
+  .stages {
     display: grid;
-    place-items: stretch;
+    grid-template-columns: minmax(0, 1.45fr) minmax(20rem, 0.72fr);
+    gap: 0;
   }
-  .stage > :global(*) {
+
+  /* The overview gets the wider track. Both components keep a definite block
+     size for their size-container math, but the stage stops growing once the
+     artifacts have enough room to explain themselves. */
+  .stage {
+    min-width: 0;
+    height: clamp(22rem, 30cqw, 34rem);
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .movement-stage {
+    padding-left: clamp(1.25rem, 2.4cqw, 2.5rem);
+    border-left: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
+  }
+
+  .stage-heading {
+    min-height: 1.5rem;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--theme-text, #fff);
+  }
+
+  .stage-heading strong {
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 650;
+  }
+
+  .stage-heading span {
+    color: var(--theme-text-dim, oklch(0.7 0.018 270));
+    font-size: var(--font-size-compact, 0.75rem);
+  }
+
+  .stage-content {
     min-width: 0;
     min-height: 0;
+    display: grid;
+    place-items: stretch;
+    overflow: hidden;
+    border-radius: 1rem;
+    background: var(--theme-card-bg, oklch(0.16 0.018 270 / 0.45));
+  }
+
+  .stage-content > :global(*) {
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .demo-footer {
+    min-height: 5.5rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.16));
   }
 
   .caption-row {
     display: flex;
     align-items: baseline;
-    justify-content: center;
     flex-wrap: wrap;
     gap: 0.55rem;
-    margin-top: 0.8rem;
-    font-size: clamp(0.85rem, 0.8rem + 0.12vw, 1rem);
     color: oklch(0.74 0.018 270);
   }
+
+  .caption-label {
+    color: var(--theme-text-dim, oklch(0.7 0.018 270));
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
   .caption-word {
-    font-size: clamp(1.05rem, 1rem + 0.15vw, 1.25rem);
+    font-size: var(--font-size-lg, 1.125rem);
     color: oklch(0.88 0.03 270);
   }
-  .caption-row.pending {
+
+  .caption-word.pending {
     visibility: hidden;
   }
 
   .action-row {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-end;
     gap: 0.5rem;
-    margin-top: 1.3rem;
   }
 
   .generate-button {
@@ -265,31 +346,46 @@
     gap: 0.65rem;
     min-height: 48px;
     padding: 0 1.8rem;
-    font-size: clamp(1.02rem, 0.97rem + 0.12vw, 1.18rem);
+    font-size: var(--font-size-base, 1rem);
     font-weight: 650;
     font-family: inherit;
     color: #fff;
-    border: none;
-    border-radius: 13px;
-    background: linear-gradient(135deg, #ec4899, #8b5cf6);
-    box-shadow: 0 14px 32px oklch(0.5 0.2 340 / 0.35);
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 58%, transparent);
+    border-radius: 999px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 20%,
+      var(--theme-card-bg, transparent)
+    );
+    box-shadow: 0 0.75rem 1.75rem
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 20%, transparent);
     cursor: pointer;
     transition:
-      transform 160ms ease,
-      box-shadow 160ms ease,
-      opacity 160ms ease;
+      transform var(--transition-fast, 150ms ease),
+      background var(--transition-fast, 150ms ease),
+      box-shadow var(--transition-fast, 150ms ease),
+      opacity var(--transition-fast, 150ms ease);
   }
+
   .generate-button:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 20px 44px oklch(0.5 0.2 340 / 0.5);
+    transform: translateY(-1px);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 30%,
+      var(--theme-card-bg, transparent)
+    );
+    box-shadow: 0 1rem 2.25rem
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 28%, transparent);
   }
+
   .generate-button:disabled {
     opacity: 0.7;
     cursor: default;
   }
 
   .retry-note {
-    font-size: clamp(0.82rem, 0.78rem + 0.1vw, 0.95rem);
+    font-size: var(--font-size-min, 0.875rem);
     color: oklch(0.74 0.018 270);
     font-style: italic;
     visibility: hidden;
@@ -298,27 +394,36 @@
     visibility: visible;
   }
 
-  @media (max-width: 560px) {
+  @container (max-width: 56rem) {
     .stages {
       grid-template-columns: 1fr;
     }
-  }
 
-  /* Ultrawide: the pair fills the duo's demo column, so the supporting layout
-     opens up. Type is on the base ramps above; this block is layout-only. */
-  @media (min-width: 1680px) {
-    .stages {
-      gap: 1.5rem;
+    .stage {
+      height: clamp(15rem, 66cqw, 24rem);
     }
-    .caption-row {
-      margin-top: 1.1rem;
+
+    .movement-stage {
+      height: auto;
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      padding-left: 0;
+      border-top: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
+      border-left: 0;
     }
+
+    .movement-stage .stage-content {
+      height: clamp(18rem, 70cqw, 30rem);
+    }
+
+    .demo-footer {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      text-align: center;
+    }
+
     .action-row {
-      margin-top: 1.7rem;
-    }
-    .generate-button {
-      min-height: 58px;
-      padding: 0 2.2rem;
+      align-items: center;
     }
   }
 

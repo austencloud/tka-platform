@@ -69,15 +69,16 @@
     createConstructAttractAct,
     type ConstructAttractAct,
   } from "./construct-attract-act.svelte";
+  import { isVisitorOwnedConstructSequence } from "../_components/composer-sequence-ownership";
 
   type ConstructPresentationMode = "full" | "guided-build";
 
   let {
     presentationMode = "full",
-    onComposed,
+    onVisitorComposed,
   }: {
     presentationMode?: ConstructPresentationMode;
-    onComposed?: (sequence: SequenceData) => void;
+    onVisitorComposed?: (sequence: SequenceData) => void;
   } = $props();
 
   const isGuidedBuild = $derived(presentationMode === "guided-build");
@@ -148,6 +149,7 @@
   let bandEl = $state<HTMLElement | null>(null);
   let act: ConstructAttractAct | null = $state(null);
   let tookOver = $state(false);
+  let visitorOwnsBuild = $state(false);
   let io: IntersectionObserver | null = null;
 
   onMount(() => {
@@ -211,6 +213,7 @@
   // resume button lives inside the section and would otherwise re-pause).
   function takeover(e?: Event) {
     if ((e?.target as HTMLElement | null)?.closest?.(".ghost")) return;
+    visitorOwnsBuild = true;
     if (act && !act.dead && !act.paused) {
       act.pause();
       tookOver = true;
@@ -222,6 +225,7 @@
     if (act && !act.dead) {
       act.resume();
       tookOver = false;
+      visitorOwnsBuild = false;
     }
   }
 
@@ -299,9 +303,9 @@
     }))
   );
 
-  // The public story carries exactly what the visitor has built into the
-  // demonstrations below it. Keeping this sequence live also gives StepGrid
-  // the complete frame it needs to animate a picked pictograph into place.
+  // StepGrid needs the complete live frame for its arrival animation. The
+  // attract act may update that local frame, but only visitor-owned work is
+  // allowed to leave this panel and replace the examples below it.
   const composedSequence = $derived<SequenceData | null>(
     startStepData && stepData.length > 0
       ? createSequenceData({
@@ -316,12 +320,15 @@
       : null
   );
 
-  let lastComposedSequenceId = "";
+  let lastObservedSequenceId = "";
   $effect(() => {
-    if (!composedSequence || composedSequence.id === lastComposedSequenceId)
+    if (!composedSequence || composedSequence.id === lastObservedSequenceId) {
       return;
-    lastComposedSequenceId = composedSequence.id;
-    onComposed?.(composedSequence);
+    }
+    lastObservedSequenceId = composedSequence.id;
+    if (!isVisitorOwnedConstructSequence(visitorOwnsBuild, composedSequence))
+      return;
+    onVisitorComposed?.(composedSequence);
   });
 
   let wsW = $state(0);
@@ -577,24 +584,27 @@
             class="demo-status word-label-area"
             aria-live={tookOver ? "polite" : "off"}
           >
-            {#if rawWord}
-              <WordLabel
-                word={rawWord}
-                activeStepNumber={phase === "play" && playingStepNumber
-                  ? playingStepNumber
-                  : null}
-              />
-            {:else}
-              <p class="hint">
-                {#if phase === "pick-start" && act && !tookOver}
-                  Watch it build. Tap anything to take over.
-                {:else if phase === "pick-start"}
-                  Pick a starting position to begin.
-                {:else}
-                  Tap a pictograph to add it.
-                {/if}
-              </p>
-            {/if}
+            <span class="region-label">Your sequence</span>
+            <div class="status-content">
+              {#if rawWord}
+                <WordLabel
+                  word={rawWord}
+                  activeStepNumber={phase === "play" && playingStepNumber
+                    ? playingStepNumber
+                    : null}
+                />
+              {:else}
+                <p class="hint">
+                  {#if phase === "pick-start" && act && !tookOver}
+                    Watch it build. Tap anything to take over.
+                  {:else if phase === "pick-start"}
+                    Pick a starting position to begin.
+                  {:else}
+                    Tap a pictograph to add it.
+                  {/if}
+                </p>
+              {/if}
+            </div>
           </header>
 
           <div class="ws-frame" bind:clientWidth={wsW} bind:clientHeight={wsH}>
@@ -663,26 +673,28 @@
                 <ClearSequenceButton onclick={reset} />
               {/if}
             </div>
-            <Crossfade key={phase} duration={DURATION.normal}>
-              {#if phase === "add-step"}
-                <span
-                  data-demo-play
-                  style:visibility={steps.length > 0 ? "visible" : "hidden"}
-                >
-                  <ViewSequenceButton
-                    purpose="play"
-                    onclick={() => {
-                      playing = true;
-                      compactPane = "build";
-                    }}
-                  />
-                </span>
-              {:else if phase === "play"}
-                {#if !isCompactDemo}
-                  {@render playPhaseActions()}
-                {/if}
-              {/if}
-            </Crossfade>
+            <div class="action-swap">
+              <Crossfade key={phase} duration={DURATION.normal} mode="swap">
+                <div class="action-swap-state">
+                  {#if phase === "add-step"}
+                    <span
+                      data-demo-play
+                      style:visibility={steps.length > 0 ? "visible" : "hidden"}
+                    >
+                      <ViewSequenceButton
+                        purpose="play"
+                        onclick={() => {
+                          playing = true;
+                          compactPane = "build";
+                        }}
+                      />
+                    </span>
+                  {:else if phase === "play" && !isCompactDemo}
+                    {@render playPhaseActions()}
+                  {/if}
+                </div>
+              </Crossfade>
+            </div>
             <!-- Right zone: step-by-step history. Always mounted and merely
              disabled when a direction is empty — the app's own undo button does
              the same, and a slot that appeared on the first pick would shove
@@ -775,6 +787,9 @@
             class="guided-build-status"
             aria-live={tookOver ? "polite" : "off"}
           >
+            <span class="region-label">
+              {phase === "play" ? "Playback" : "Next move"}
+            </span>
             <strong>
               {phase === "pick-start"
                 ? "Choose where the props begin"
@@ -876,23 +891,17 @@
     color: var(--theme-text, #fff);
   }
 
-  /* The toy box: one framed panel holds the whole demo, so toolbar, workspace
-     and picker read as a single self-contained unit instead of controls
-     floating in the section void. */
-  /* Sizes here are rem so browser zoom and user font preferences carry through
-     the whole demo. Viewport width changes its composition, not its root size. */
+  /* One presentation stage holds the real Composer surfaces. Internal regions
+     separate through hierarchy and spacing instead of each becoming another
+     bordered card. */
   .demo-shell {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    /* Contained toy, not a full-bleed slab: on ultrawide viewports the panel
-       caps out and centers, so the controls never drift apart into voids.
-       4K-native cap per the shell standard (min(1720px, 92vw)) — 1360 left
-       the toy inset from its own heading at 2560 CSS. */
     width: 100%;
     max-width: var(--shell-w, min(1720px, 92vw));
     margin-inline: auto;
-    padding: clamp(1rem, 2.2cqw, 1.75rem);
+    padding: clamp(1rem, 1.8cqw, 1.5rem);
     border-radius: 1.5rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: color-mix(
@@ -901,6 +910,13 @@
       transparent
     );
     box-sizing: border-box;
+  }
+
+  /* The public page already owns the composition band. Applying its shell cap
+     again here created a second inset at laptop widths, so the two examples
+     missed each other's edge even though they belong to the same story. */
+  .guided-build .demo-shell {
+    max-width: none;
   }
 
   /* ===== Column stacks =====
@@ -1053,8 +1069,9 @@
   .guided-build-status {
     min-height: 2.75rem;
     display: flex;
-    align-items: center;
-    padding-inline: 0.25rem;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
     font-size: clamp(1rem, 0.96rem + 0.14vw, 1.15rem);
   }
 
@@ -1062,6 +1079,15 @@
     color: var(--theme-text, #fff);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .region-label {
+    flex: 0 0 auto;
+    min-width: 6rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.56));
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 600;
   }
 
   .hand-dot {
@@ -1167,11 +1193,21 @@
   @container (min-width: 1100px) {
     .demo-columns {
       display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-      gap: 0 clamp(1.5rem, 3cqw, 3rem);
+      grid-template-columns: minmax(0, 1.4fr) minmax(22rem, 0.86fr);
+      gap: 0;
       align-items: stretch;
       min-height: calc(clamp(18.75rem, 38vh, 33.75rem) + 6.75rem);
     }
+
+    .sequence-column {
+      padding-right: clamp(1.5rem, 2.6cqw, 2.75rem);
+    }
+
+    .build-column {
+      padding-left: clamp(1.5rem, 2.6cqw, 2.75rem);
+      border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    }
+
     .workspace {
       flex: 1;
     }
@@ -1187,15 +1223,12 @@
     }
   }
 
-  /* Both halves are framed sub-panels — defined edges instead of controls
-     floating in the shell. Symmetric margins INSIDE a visible frame read as a
-     stage; the same pixels outside one read as accidental void. */
   .workspace,
   .picker-pane {
-    border-radius: 1.125rem;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    background: rgba(255, 255, 255, 0.025);
-    padding: 0.75rem 1rem 0.875rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
     box-sizing: border-box;
   }
 
@@ -1212,9 +1245,22 @@
   .demo-status {
     min-height: 3.25rem;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
     --text-color: var(--theme-text, #fff);
+  }
+
+  .status-content {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  .status-content :global(.word-label-container) {
+    justify-content: flex-end;
   }
 
   .hint {
@@ -1232,10 +1278,37 @@
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
 
     /* Clear, play, and history share the global touch-target floor. The rem
        side lets browser zoom enlarge the controls with their labels. */
     --min-touch-target: max(44px, 2.75rem);
+  }
+
+  /* Play and the wider playback actions are one control state, not two boxes.
+     Reserving their shared width keeps the outgoing Play button centered while
+     the replacement arrives; swap mode then prevents two actionable labels
+     from becoming readable at the same time. */
+  .action-swap {
+    min-inline-size: var(--min-touch-target);
+  }
+
+  .action-swap-state {
+    min-block-size: var(--min-touch-target);
+    display: grid;
+    place-items: center;
+  }
+
+  .action-swap-state [data-demo-play] {
+    display: grid;
+    place-items: center;
+  }
+
+  @container (min-width: 1100px) {
+    .action-swap {
+      inline-size: 21rem;
+    }
   }
 
   .slot-side {
@@ -1385,14 +1458,9 @@
     }
   }
 
-  /* Each column is its own height now rather than one stretching to match the
-     other, and whichever is shorter centers against its neighbour. Which one
-     that is changes with the phase — the workspace is taller while picking,
-     the player taller during play — so balanced space reads as breathing room
-     either way, where top-aligning banked it all under one column. */
   @container (min-width: 1100px) {
     .demo-columns {
-      align-items: center;
+      align-items: start;
     }
   }
 
@@ -1480,8 +1548,8 @@
     font-weight: 600;
     cursor: pointer;
     transition:
-      background 0.16s ease,
-      transform 0.16s ease;
+      background var(--transition-fast),
+      transform var(--transition-fast);
   }
 
   .cta-btn:hover {

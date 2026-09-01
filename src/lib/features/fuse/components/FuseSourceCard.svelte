@@ -28,6 +28,10 @@
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
   import { resolveFusePictographMotionFrame } from "../services/fuse-pictograph-motion-frame";
   import { createCircularFuseSoloSequence } from "../services/fuse-solo-sequence";
+  import {
+    FUSE_LIVE_GRID_GAP,
+    getFittedFuseCellSize,
+  } from "../services/fuse-workspace-split";
 
   let {
     side,
@@ -107,14 +111,13 @@
     if (!isSymmetryFollower) return source.sequence;
 
     const preview = fuseState.symmetryPreview;
-    const solo = side === "left" ? preview?.leftSoloProp : preview?.rightSoloProp;
+    const solo =
+      side === "left" ? preview?.leftSoloProp : preview?.rightSoloProp;
     if (!solo) return null;
 
     return createCircularFuseSoloSequence(side, solo);
   });
-  const followerTransformLabel = $derived(
-    fuseRuleLabel(fuseState.previewRule)
-  );
+  const followerTransformLabel = $derived(fuseRuleLabel(fuseState.previewRule));
   const driverLabel = $derived(
     fuseState.previewDriverSide === "left" ? "Left" : "Right"
   );
@@ -164,13 +167,16 @@
   const liveGridTotalColumns = $derived(liveGridColumns + (full ? 1 : 0));
   const liveCellSize = $derived(
     Math.max(
-      72,
+      1,
       Math.floor(
-        Math.min(
-          stageW / Math.max(1, liveGridTotalColumns),
-          stageH / Math.max(1, liveGridRows)
+        getFittedFuseCellSize(
+          stageW,
+          stageH,
+          liveGridTotalColumns,
+          liveGridRows,
+          FUSE_LIVE_GRID_GAP
         )
-      ) || 120
+      )
     )
   );
 
@@ -255,7 +261,8 @@
     sequence: SequenceData | null = source.sequence
   ): Promise<void> {
     if (isSavingLoop || !sequence) return;
-    const solo = side === "left" ? sequence.leftSoloProp : sequence.rightSoloProp;
+    const solo =
+      side === "left" ? sequence.leftSoloProp : sequence.rightSoloProp;
     if (!solo) {
       showToast("This path is not ready to save yet", "info");
       return;
@@ -748,7 +755,7 @@
     z-index: 0;
     width: 100%;
     height: 100%;
-    overflow: auto;
+    overflow: hidden;
   }
 
   .compact-live-pictograph {
@@ -1002,8 +1009,8 @@
     );
     color: var(--theme-text, #fff);
     font-weight: 700;
-    box-shadow: 0 0 0 1px
-        color-mix(in srgb, var(--source-color) 45%, transparent),
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--source-color) 45%, transparent),
       0 6px 18px color-mix(in srgb, var(--source-color) 22%, transparent);
   }
 
@@ -1273,7 +1280,7 @@
   /* One-page fit layouts only (mirrors FuseLayout's fr-row conditions).
      min-height: 0 lets the card shrink inside its fr row; anywhere else it
      zeroes the card's minimum contribution and collapses the auto grid rows.
-     The notation stage gives up its tall floor and scrolls internally. */
+     The fitted pictographs shrink with the stage instead of making it scroll. */
   @container fuse (min-width: 600px) and (min-height: 600px) {
     .source-card {
       min-height: 0;

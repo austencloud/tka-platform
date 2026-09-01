@@ -19,6 +19,7 @@ import {
   type DeckReleaseCard,
   type DeckRecipe,
 } from "../domain/models/DeckRelease";
+import { normalizeDeckRelease } from "../domain/normalize-deck-release";
 
 export async function getNextDeckNumber(): Promise<number> {
   const db = await getFirestoreInstance();
@@ -39,7 +40,7 @@ export async function releaseDeck(
   theme: string,
   notes: string,
   meta: ReleaseMeta,
-  recipe?: DeckRecipe,
+  recipe?: DeckRecipe
 ): Promise<DeckRelease> {
   const db = await getFirestoreInstance();
   const counterRef = doc(db, getDeckReleaseCounterPath());
@@ -85,7 +86,7 @@ export async function releaseDeck(
 /** Patch the editable name/description of an already-released deck. */
 export async function updateDeckMeta(
   deckNumber: number,
-  patch: { name?: string; description?: string },
+  patch: { name?: string; description?: string }
 ): Promise<void> {
   const db = await getFirestoreInstance();
   const manifestRef = doc(db, getDeckReleaseManifestPath(deckNumber));
@@ -97,7 +98,7 @@ export async function getAllReleases(): Promise<DeckRelease[]> {
   const manifestsRef = collection(db, getDeckReleaseManifestsPath());
   const snapshot = await getDocs(manifestsRef);
   return snapshot.docs
-    .map(d => d.data() as DeckRelease)
+    .map((d) => normalizeDeckRelease(d.data() as DeckRelease))
     .sort((a, b) => b.deckNumber - a.deckNumber);
 }
 
