@@ -4,10 +4,11 @@ import {
   COMPOSER_3D_DEMO_SEED,
   normalizeComposer3DDemoState,
 } from "../../src/routes/(public)/composer/_components/composer-3d-demo-state";
+import { classifyComposerGenerationFailure } from "../../src/routes/(public)/composer/_components/composer-generation-failure";
 import {
-  classifyComposerGenerationFailure,
-  shouldSyncComposerSequence,
-} from "../../src/routes/(public)/composer/_components/composer-generation-failure";
+  isVisitorOwnedConstructSequence,
+  shouldAdoptCarriedSequence,
+} from "../../src/routes/(public)/composer/_components/composer-sequence-ownership";
 import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import {
@@ -175,15 +176,24 @@ describe("Composer presentation state", () => {
     expect(classifyComposerGenerationFailure("unknown failure")).toBe("error");
   });
 
-  it("accepts a constructed sequence carried in from the page", () => {
+  it("accepts carried sequences until the visitor generates one locally", () => {
     const current = sequenceFixture();
     const incoming = createSequenceData({
       ...current,
       id: `${current.id}-guided-build-1`,
     });
 
-    expect(shouldSyncComposerSequence(current, incoming)).toBe(true);
-    expect(shouldSyncComposerSequence(incoming, incoming)).toBe(false);
-    expect(shouldSyncComposerSequence(current, null)).toBe(false);
+    expect(shouldAdoptCarriedSequence(current, incoming, false)).toBe(true);
+    expect(shouldAdoptCarriedSequence(incoming, incoming, false)).toBe(false);
+    expect(shouldAdoptCarriedSequence(current, null, false)).toBe(false);
+    expect(shouldAdoptCarriedSequence(current, incoming, true)).toBe(false);
+  });
+
+  it("keeps autonomous construct changes inside the construct panel", () => {
+    const candidate = sequenceFixture();
+
+    expect(isVisitorOwnedConstructSequence(false, candidate)).toBe(false);
+    expect(isVisitorOwnedConstructSequence(true, candidate)).toBe(true);
+    expect(isVisitorOwnedConstructSequence(true, null)).toBe(false);
   });
 });
