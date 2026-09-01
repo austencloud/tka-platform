@@ -102,7 +102,7 @@ function trace(samples: TransitionGeometrySample[]): TransitionGeometryTrace {
 }
 
 describe("Sequence Viewer geometry trace", () => {
-  it("accepts one persistent Stage and Performances handoff", () => {
+  it("accepts one persistent viewer stage and Performances handoff", () => {
     const stage = {
       ...sample(0, 900, 1),
       phase: "stage-to-performances" as const,
@@ -166,17 +166,17 @@ describe("Sequence Viewer geometry trace", () => {
     expect(summary.performanceOpacityComplementDriftMaximum).toBe(0);
     expect(summary.performanceLayerWidthMismatchMaximum).toBe(0);
     expect(summary.performanceSurfacePath).toEqual([
-      "Stage",
-      "Stage + Performances",
+      "Viewer stage",
+      "Viewer stage + Performances",
       "Performances",
-      "Stage + Performances",
-      "Stage",
+      "Viewer stage + Performances",
+      "Viewer stage",
     ]);
     expect(summary.performanceStageExit?.backtrack).toBe(0);
     expect(summary.performanceStageEntry?.overshoot).toBe(0);
   });
 
-  it("accepts one continuous Card and stage exchange with a stable inspector", () => {
+  it("accepts one continuous Card and viewer-stage exchange with a stable inspector", () => {
     const cardStart = {
       ...sample(0, 0, 0),
       phase: "card-to-stage" as const,

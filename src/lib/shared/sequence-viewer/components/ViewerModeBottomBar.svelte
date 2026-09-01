@@ -46,7 +46,7 @@
 	}
 </script>
 
-<nav class="viewer-bottom-bar" aria-label="View switcher">
+<nav class="viewer-bottom-bar" aria-label="Sequence views">
 	{#each modes as mode (mode.id)}
 		<NavButton
 			icon={`<i class="fas ${mode.icon}"></i>`}

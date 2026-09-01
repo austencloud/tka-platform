@@ -51,14 +51,14 @@ export const TRANSITION_REVIEW_GATES = [
   },
   {
     id: "performances",
-    title: "Stage ⇄ Performances",
+    title: "2D / 3D ⇄ Performances",
     summary: "The full-body gallery handoff keeps spatial continuity.",
     fromGrade: "D",
     availability: "ready",
   },
   {
     id: "post-studio",
-    title: "Stage ⇄ Post Studio",
+    title: "2D / 3D ⇄ Post Studio",
     summary: "The studio enters as an intentional workspace change.",
     fromGrade: "D",
     availability: "pending",

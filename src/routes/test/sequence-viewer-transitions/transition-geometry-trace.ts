@@ -665,10 +665,10 @@ function uniquePerformanceSurfacePath(
         sample.stageLayerOpacity >= 0.05 &&
         sample.performanceLayerOpacity >= 0.05
       ) {
-        return "Stage + Performances";
+        return "Viewer stage + Performances";
       }
       if (sample.performanceLayerOpacity >= 0.05) return "Performances";
-      if (sample.stageLayerOpacity >= 0.05) return "Stage";
+      if (sample.stageLayerOpacity >= 0.05) return "Viewer stage";
       return "Blank";
     })
   );
