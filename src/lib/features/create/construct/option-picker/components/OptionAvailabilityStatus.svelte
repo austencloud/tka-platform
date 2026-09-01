@@ -68,12 +68,11 @@
     justify-content: center;
     gap: 8px;
     padding: 6px 16px;
-    background: color-mix(
-      in srgb,
-      var(--theme-card-bg, rgba(255, 255, 255, 0.06)) 58%,
-      transparent
+    background: var(
+      --theme-panel-bg,
+      var(--theme-card-bg, rgba(0, 0, 0, 0.75))
     );
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
+    color: var(--theme-text, #fff);
     font-size: var(--font-size-min, 0.875rem);
     font-variant-numeric: tabular-nums;
     font-weight: 600;
@@ -88,7 +87,7 @@
 
   .availability-status > i {
     flex: 0 0 auto;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.58));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
     font-size: 0.875rem;
   }
 
