@@ -505,6 +505,25 @@
     viewer3DState.cameraChoreography.tick(delta);
   });
 
+  // camera-controls rewrites position + lookAt every tick, so roll has to be
+  // re-applied after its update, every frame, from scratch: reset up, lookAt
+  // the controls' own target, then tilt. Absolute rather than incremental so
+  // a frame where the controls did not run (paused) cannot accumulate.
+  const ORBIT_UPDATE_TASK = Symbol("viewer-orbit-controls-update");
+  const rollTarget = new Vector3();
+  useTask(
+    Symbol("viewer-camera-roll"),
+    () => {
+      const rollDeg = viewer3DState.cameraRollDeg;
+      if (rollDeg === 0 || !cameraRef || !controlsInstance) return;
+      controlsInstance.getTarget(rollTarget);
+      cameraRef.up.set(0, 1, 0);
+      cameraRef.lookAt(rollTarget);
+      cameraRef.rotateZ((rollDeg * Math.PI) / 180);
+    },
+    { after: ORBIT_UPDATE_TASK }
+  );
+
   onDestroy(() => {
     cancelCameraReframe();
     flushCameraSave(controlsInstance);
@@ -524,6 +543,7 @@
     maxDistance={resolvedMaxOrbitDistance}
     maxPolarAngle={Math.PI / 2}
     paused={viewer3DState.isExporting}
+    taskKey={ORBIT_UPDATE_TASK}
     autoRotate={viewer3DState.seededAutoOrbit}
     autoRotateSpeed={viewer3DState.seededAutoOrbitSpeed}
     oncreate={(c) => {

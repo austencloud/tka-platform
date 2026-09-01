@@ -19,13 +19,19 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
  * duration it has in beats — the scene, the camera push, the walk — and the
  * resolved seconds are what the conversion produced, not what a default
  * supplied.
+ *
+ * Gap 8a, camera edges. Before this wave the camera vocabulary stopped at
+ * push/pull/orbit/crane/pan — no way to slide sideways without turning, no
+ * way to tighten the lens without moving the rig, no way to tilt the
+ * horizon. Scene 3 states all three in one breath: a truck, a zoom, and a
+ * roll, each proven by an invariant the old moves couldn't produce.
  */
 export const provingGroundsFilm: FilmDirectorInput = {
   version: 5,
   id: "proving-grounds-r1",
   title: "Proving Grounds",
   brief:
-    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing.",
+    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll.",
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
   // The grammar only guarantees distinctness PER axis; three blues and three
@@ -126,6 +132,32 @@ export const provingGroundsFilm: FilmDirectorInput = {
         moves: [
           { move: "push-in", amount: { meters: 1 }, durationBeats: 8 },
           { move: "hold", durationBeats: 8 },
+        ],
+      },
+    },
+    {
+      id: "camera-edges",
+      title: "Camera Edges",
+      intent:
+        "Gap 8a: the frame slides one meter sideways without turning (truck), the lens tightens fifteen degrees while the camera stands still (zoom), and the horizon tilts ten degrees clockwise and holds (roll). One meter, not two: with the zoom stacked on top, two meters pushed the blue performer out of frame.",
+      durationBeats: 24,
+      transition: { kind: "fade-through-black", durationBeats: 2 },
+      location: { environmentId: "forest" },
+      performance: {
+        bpm: 120,
+        formation: "side-by-side",
+        cast: { count: 2, defaults: { effect: "none" } },
+      },
+      camera: {
+        subject: { kind: "group" },
+        shotSize: "wide",
+        angle: "eye",
+        position: "front",
+        moves: [
+          { move: "truck", direction: "right", amount: { meters: 1 }, durationBeats: 8 },
+          { move: "zoom", direction: "in", amount: { degrees: 15 }, durationBeats: 8 },
+          { move: "roll", direction: "cw", amount: { degrees: 10 }, durationBeats: 4 },
+          { move: "hold", durationBeats: 4 },
         ],
       },
     },
