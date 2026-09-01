@@ -32,8 +32,12 @@
   let animationFrame = 0;
   const bpm = 60;
   const harnessControl = {
-    setEnvironment(environmentId: string): void {
+    async setEnvironment(environmentId: string): Promise<void> {
       viewer.setEnvironmentId(environmentId);
+      await settingsService.updateSetting(
+        "backgroundType",
+        environmentId as BackgroundType
+      );
     },
     getEnvironment(): string {
       return viewer.environmentId;
@@ -46,8 +50,7 @@
         __autumnProductionHarness?: typeof harnessControl;
       }
     ).__autumnProductionHarness = harnessControl;
-    viewer.setEnvironmentId(BackgroundType.AUTUMN);
-    void settingsService.updateSetting("backgroundType", BackgroundType.AUTUMN);
+    void harnessControl.setEnvironment(BackgroundType.AUTUMN);
     let previousTime = performance.now();
     const advance = (time: number): void => {
       const elapsedSeconds = Math.min((time - previousTime) / 1_000, 0.1);
