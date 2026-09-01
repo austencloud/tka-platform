@@ -1458,12 +1458,6 @@
     }
   }
 
-  @container (min-width: 1100px) {
-    .demo-columns {
-      align-items: start;
-    }
-  }
-
   .ws-empty {
     margin: 0;
     text-align: center;
