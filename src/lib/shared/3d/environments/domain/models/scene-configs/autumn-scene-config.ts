@@ -25,9 +25,9 @@ export function createDefaultAutumnConfig(): AutumnSceneConfig {
       midColor: "#38265a",
       // The lowest sky band meets fully fogged geometry. Sharing the fog colour
       // keeps that join atmospheric instead of drawing a lavender horizon line.
-      bottomColor: "#2b172f",
+      bottomColor: "#3b2948",
     },
-    fog: { color: "#2b172f", density: 0.016 },
+    fog: { color: "#3b2948", density: 0.011 },
     stars: {
       enabled: true,
       countScale: 1,

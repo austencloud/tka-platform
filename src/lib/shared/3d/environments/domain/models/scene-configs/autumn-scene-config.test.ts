@@ -25,7 +25,7 @@ describe("Autumn Scene Lab config", () => {
     expect(normalized.stars.enabled).toBe(false);
     expect(normalized.stars.countScale).toBe(1);
     expect(normalized.fog.density).toBe(0.02);
-    expect(normalized.fog.color).toBe("#2b172f");
+    expect(normalized.fog.color).toBe("#3b2948");
     expect(normalized.sky.bottomColor).toBe(normalized.fog.color);
     expect(normalized.magicIntensity).toBe(1.4);
   });
@@ -46,7 +46,7 @@ describe("Autumn Scene Lab config", () => {
 
     expect(normalized.sky.topColor).toBe("#120b2b");
     expect(normalized.sky.bottomColor).toBe("#aBc123");
-    expect(normalized.fog).toEqual({ color: "#2b172f", density: 0.016 });
+    expect(normalized.fog).toEqual({ color: "#3b2948", density: 0.011 });
     expect(normalized.stars.enabled).toBe(true);
     expect(normalized.stars.countScale).toBe(1.5);
     expect(normalized.stars.sizeScale).toBe(0.5);
