@@ -27,6 +27,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   import { deriveTnDFromPictograph } from "$lib/shared/pictograph/shared/domain/utils/tnd-deriver";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { motionDuration } from "$lib/shared/transitions/motion";
+  import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   let {
     // Current glyph state
@@ -40,6 +41,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     // Visibility
     tkaGlyphVisible = true,
     elementalGlyphVisible = false,
+    propElementalType = null,
     stepNumbersVisible = true,
     // Start→end position indicator (α/β/γ) centered at the top. Educational
     // overlay for the guide's hand-path exploration; off elsewhere.
@@ -59,6 +61,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     stepData?: PictographData | null;
     tkaGlyphVisible?: boolean;
     elementalGlyphVisible?: boolean;
+    propElementalType?: ElementalType | null;
     stepNumbersVisible?: boolean;
     positionGlyphVisible?: boolean;
     darkMode?: boolean;
@@ -126,6 +129,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   // The artwork itself is keyed by element. Consecutive steps that share the
   // same symbol stay visually steady; an actual symbol change crossfades once.
   const elementalKey = $derived(elementalInfo.elementalType);
+  const propElementalKey = $derived(propElementalType);
 
   // Current step's start/end grid positions (α/β/γ) for the PositionGlyph.
   // StepData carries both; StartPositionData/PictographData without them just
@@ -211,6 +215,32 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
             elementalType={elementalInfo.elementalType}
             letter={elementalLetter}
             visible={true}
+          />
+        </g>
+      {/key}
+    {/if}
+
+    <!-- The hand relationship owns the bottom-right corner. Hosts with a fully
+         derived prop relationship can place its sister in the opposite corner
+         without adding another label to every pictograph. -->
+    {#if elementalGlyphVisible && propElementalType}
+      {#key propElementalKey}
+        <g
+          class="prop-elemental-glyph-transition"
+          in:fade|global={{
+            duration: motionDuration(FADE_DURATION),
+            easing: cubicOut,
+          }}
+          out:fade|global={{
+            duration: motionDuration(FADE_DURATION),
+            easing: cubicOut,
+          }}
+        >
+          <ElementalGlyph
+            elementalType={propElementalType}
+            visible={true}
+            corner="top-right"
+            ariaLabel={`Prop timing and direction element: ${propElementalType}`}
           />
         </g>
       {/key}
