@@ -269,6 +269,11 @@ const cameraTargetSchema = z.discriminatedUnion("kind", [
       kind: z.literal("performer"),
       performerId: z.string().min(1),
       height: finiteNumber.optional(),
+      // Keep this performer in frame while they walk. `true` aims: the camera
+      // stays put and turns its target with the walker. "follow" travels:
+      // camera and target both move with them, holding the framing constant.
+      // Only meaningful on `subject` — see the cameraSchema refine below.
+      track: z.union([z.literal(true), z.literal("follow")]).optional(),
     })
     .strict(),
   z.object({ kind: z.literal("point"), position: vector3Schema }).strict(),
@@ -686,7 +691,23 @@ const cameraSchema = z
     message:
       'Use "subject" with framing grammar, "target" with presets/keyframes.',
     path: ["subject"],
-  });
+  })
+  // cameraTargetSchema is shared by subject, target, and keyframe targets, so
+  // `track` is syntactically sayable in all three. It only means something on
+  // `subject`: a preset or a raw keyframe aims exactly where its target says,
+  // and silently ignoring the word would read as a camera that refused to move.
+  .refine(
+    (camera) =>
+      !(camera.target?.kind === "performer" && camera.target.track) &&
+      !camera.keyframes?.some(
+        (frame) => frame.target?.kind === "performer" && frame.target.track
+      ),
+    {
+      message:
+        'Tracking is spoken on "subject" with framing grammar. Presets and raw keyframes aim where their targets say.',
+      path: ["target"],
+    }
+  );
 
 const transitionSchema = z
   .object({
@@ -872,6 +893,14 @@ export interface ResolvedDirectorScene {
      */
     substitutedFor: DirectorCameraPreset | null;
     keyframes: ResolvedDirectorCameraKeyframe[];
+    /**
+     * Present only when the scene's subject asked to be tracked. The sampler
+     * offsets the compiled camera by this performer's live displacement from
+     * their opening mark: "aim" moves the target, "follow" moves target and
+     * position together. Absent (not null) on every other scene so films that
+     * never track resolve byte-identically to their pre-tracking snapshots.
+     */
+    tracking?: { performerId: string; mode: "aim" | "follow" };
   };
 }
 

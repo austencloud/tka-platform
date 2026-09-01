@@ -72,6 +72,13 @@ export interface ResolvedDirectorCameraTrack {
   preset: DirectorCameraPreset;
   substitutedFor: DirectorCameraPreset | null;
   keyframes: ResolvedDirectorCameraKeyframe[];
+  /**
+   * Present only when the scene's subject asked to be tracked. The compiler
+   * frames the walker at their opening mark; the sampler shifts that framing
+   * by wherever they have walked since. Absent (not null) otherwise, so films
+   * that never track resolve byte-identically to their earlier snapshots.
+   */
+  tracking?: { performerId: string; mode: "aim" | "follow" };
 }
 
 function vec3(value: {
@@ -215,6 +222,15 @@ export function resolveDirectorCameraTrack(
       },
       context
     );
+    const subject = input!.subject;
+    const tracking =
+      subject?.kind === "performer" && subject.track
+        ? {
+            performerId: subject.performerId,
+            mode:
+              subject.track === "follow" ? ("follow" as const) : ("aim" as const),
+          }
+        : undefined;
     return {
       preset: "custom",
       substitutedFor: null,
@@ -223,6 +239,7 @@ export function resolveDirectorCameraTrack(
         framing,
         context
       ),
+      ...(tracking ? { tracking } : {}),
     };
   }
 
