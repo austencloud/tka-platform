@@ -14,8 +14,6 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
-    env:
-      GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
     steps:
       - uses: actions/checkout@v6
 
@@ -31,7 +29,10 @@ jobs:
       - name: Create Firebase credential file
         env:
           SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
-        run: printf '%s' "$SERVICE_ACCOUNT_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
+        run: |
+          credential_path="$RUNNER_TEMP/firebase-service-account.json"
+          printf '%s' "$SERVICE_ACCOUNT_KEY" > "$credential_path"
+          printf 'GOOGLE_APPLICATION_CREDENTIALS=%s\n' "$credential_path" >> "$GITHUB_ENV"
 
       - name: Export desktop sequence bundle
         run: pnpm export:deck-bundle
