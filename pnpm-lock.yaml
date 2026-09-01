@@ -9,7 +9,7 @@ patchedDependencies:
     hash: 3c64ecc6505ec1fb112c877cb83f3ee4b000d06eae166bf811c5889f5770f217
     path: patches/@austencloud__backgrounds@0.7.12.patch
   '@austencloud/scene-3d@0.1.6':
-    hash: e6567b35092928e15b974a7458fe2f15a1f7a5b359b71e1e765658c913416520
+    hash: 4c7a1e02f2749f33dbf0cbf31098140bd30f58c33f9b0bc875b508109880282d
     path: patches/@austencloud__scene-3d@0.1.6.patch
   svelte-fast-check@0.4.5:
     hash: 79c185fc32c5583774bc91ec4fa0ebcbac5c790d9b132fc5728f5d13a3d72474
@@ -57,7 +57,7 @@ importers:
         version: 0.1.0(svelte@5.49.2)
       '@austencloud/scene-3d':
         specifier: ^0.1.6
-        version: 0.1.6(patch_hash=e6567b35092928e15b974a7458fe2f15a1f7a5b359b71e1e765658c913416520)(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)
+        version: 0.1.6(patch_hash=4c7a1e02f2749f33dbf0cbf31098140bd30f58c33f9b0bc875b508109880282d)(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)
       '@austencloud/sidebar':
         specifier: ^1.0.1
         version: 1.0.1(svelte@5.49.2)
@@ -8937,7 +8937,7 @@ snapshots:
       '@austencloud/media-tagging-types': 0.1.0
       svelte: 5.49.2
 
-  '@austencloud/scene-3d@0.1.6(patch_hash=e6567b35092928e15b974a7458fe2f15a1f7a5b359b71e1e765658c913416520)(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)':
+  '@austencloud/scene-3d@0.1.6(patch_hash=4c7a1e02f2749f33dbf0cbf31098140bd30f58c33f9b0bc875b508109880282d)(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)':
     dependencies:
       '@threlte/core': 8.3.1(svelte@5.49.2)(three@0.182.0)
       '@threlte/extras': 9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0)
