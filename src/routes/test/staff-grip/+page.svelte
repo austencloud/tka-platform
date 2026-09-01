@@ -6,11 +6,25 @@
 
   let playing = $state(true);
   let ready = $state(false);
+  let portraitFraming = $state(false);
+
+  const cameraPosition = $derived<[number, number, number]>(
+    portraitFraming ? [0, 1.02, 5.15] : [0, 1.08, 3.15]
+  );
+  const cameraFov = $derived(portraitFraming ? 48 : 40);
 
   onMount(() => {
+    const syncCameraFraming = () => {
+      portraitFraming = window.innerWidth / window.innerHeight < 0.75;
+    };
+
+    syncCameraFraming();
+    window.addEventListener("resize", syncCameraFraming);
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       playing = false;
     }
+
+    return () => window.removeEventListener("resize", syncCameraFraming);
   });
 </script>
 
@@ -26,13 +40,17 @@
   <section class="stage" aria-label="Animated two-staff grip test">
     <Canvas shadows>
       <T.Color attach="background" args={["#0a101a"]} />
-      <T.PerspectiveCamera makeDefault position={[0, 1.08, 3.15]} fov={40}>
+      <T.PerspectiveCamera
+        makeDefault
+        position={cameraPosition}
+        fov={cameraFov}
+      >
         <OrbitControls
           enableDamping
           enablePan={false}
           target={[0, 0.82, 0.22]}
-          minDistance={2.1}
-          maxDistance={6}
+          minDistance={portraitFraming ? 3.5 : 2.1}
+          maxDistance={7}
           maxPolarAngle={Math.PI / 2}
         />
       </T.PerspectiveCamera>
