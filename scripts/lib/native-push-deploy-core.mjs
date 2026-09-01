@@ -1,4 +1,4 @@
-import { isAbsolute, relative, sep, win32 } from "node:path";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 
 const ZERO_OID = /^0+$/;
 const ZIP_CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50;
@@ -124,47 +124,39 @@ export function inspectZipFilenameFlags(bytes) {
   };
 }
 
-export function createArchiveExtractionPlan(
+export function createSnapshotCheckoutPlan(
   buildRoot,
-  archivePath,
-  snapshotRoot
+  snapshotRoot,
+  indexPath,
+  commit
 ) {
-  const archive = relative(buildRoot, archivePath);
-  const destination = relative(buildRoot, snapshotRoot);
-  const paths = [archive, destination];
+  const paths = [snapshotRoot, indexPath].map((path) =>
+    relative(buildRoot, path)
+  );
   const escapesBuildRoot = (path) =>
     !path || path === ".." || path.startsWith(`..${sep}`) || isAbsolute(path);
 
   if (paths.some(escapesBuildRoot)) {
     throw new Error(
-      "Archive extraction paths must stay inside the native build root."
+      "Snapshot checkout paths must stay inside the native build root."
     );
   }
 
+  if (!/^[0-9a-f]{40,64}$/i.test(commit)) {
+    throw new Error("Snapshot commit must be a resolved Git object ID.");
+  }
+
+  const prefix = `${resolve(snapshotRoot).replaceAll("\\", "/")}/`;
   return {
-    cwd: buildRoot,
-    args: ["-xf", archive, "-C", destination],
+    indexPath: resolve(indexPath),
+    readTreeArgs: ["read-tree", "--no-sparse-checkout", commit],
+    checkoutArgs: [
+      "checkout-index",
+      "--all",
+      "--ignore-skip-worktree-bits",
+      `--prefix=${prefix}`,
+    ],
   };
-}
-
-export function selectSnapshotArchive(platform = process.platform) {
-  return platform === "win32"
-    ? { filename: "source.zip", format: "zip" }
-    : { filename: "source.tar", format: "tar" };
-}
-
-export function selectSnapshotExtractor(
-  platform = process.platform,
-  systemRoot = process.env.SystemRoot
-) {
-  if (platform !== "win32") return "tar";
-  if (!systemRoot) {
-    throw new Error(
-      "SystemRoot is required to locate the Windows ZIP-capable tar executable."
-    );
-  }
-
-  return win32.join(systemRoot, "System32", "tar.exe");
 }
 
 export function parsePushUpdates(input) {
