@@ -219,6 +219,11 @@ bridge directly below the six canonical Hand choices:
 - when the selected Hand admits two exact prop phases, the right side becomes
   two equal selectable results without changing the bridge geometry.
 
+A direction-only projection caused by mixed prop rates is not one of the six
+elemental relationships. Present it as a neutral gray `Not available` result
+with `Mixed prop rates` as the explanation. Do not color or name it as Same or
+Opposite beside the elemental results.
+
 Remove the duplicate caption below the hero. Keep play/pause, but move it into
 the dock's compact trailing-action slot instead of giving it a separate
 full-width row.

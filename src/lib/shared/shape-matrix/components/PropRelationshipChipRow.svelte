@@ -49,14 +49,11 @@
       };
     }
     if (relationship.kind === "direction-only") {
-      const same = relationship.direction === "same";
       return {
         key: `direction-${relationship.direction}`,
-        label: same ? "Same" : "Opposite",
-        detail: "Direction only · different rates",
-        color: same
-          ? "var(--prop-blue, #73b8ff)"
-          : "var(--theme-accent, #f4b54c)",
+        label: "Not available",
+        detail: "Mixed prop rates",
+        color: "var(--theme-text-dim, rgb(255 255 255 / 0.62))",
         icon: null,
         mode: null,
       };
