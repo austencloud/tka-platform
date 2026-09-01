@@ -152,8 +152,7 @@ const BATCH_SIZE = 30; // Firestore 'in' query limit
 export async function batchFetchSequences(
   firestore: Firestore,
   userId: string,
-  sequenceIds: readonly string[],
-  filterPublic = false
+  sequenceIds: readonly string[]
 ): Promise<LibrarySequence[]> {
   if (sequenceIds.length === 0) {
     return [];
@@ -184,9 +183,6 @@ export async function batchFetchSequences(
 
     for (const docSnap of batchSnapshot.docs) {
       const data = docSnap.data();
-      if (filterPublic && data["visibility"] !== "public") {
-        continue;
-      }
       sequences.push(mapDocToSequence(data, docSnap.id));
     }
   }
@@ -195,20 +191,28 @@ export async function batchFetchSequences(
 }
 
 /**
- * Fetch sequences from the public index by ID.
+ * Fetch sequences from the public index by ID, optionally scoped to one owner.
  * Used when a sequence ID doesn't resolve in the user's own library,
- * e.g. when they've favorited someone else's public sequence.
+ * e.g. when they've favorited someone else's public sequence. Public
+ * collections pass their owner because word-derived IDs can collide.
  */
 export async function batchFetchPublicSequences(
   firestore: Firestore,
-  sequenceIds: string[]
+  sequenceIds: readonly string[],
+  ownerId?: string
 ): Promise<LibrarySequence[]> {
   const results: LibrarySequence[] = [];
 
   for (let i = 0; i < sequenceIds.length; i += BATCH_SIZE) {
     const chunk = sequenceIds.slice(i, i + BATCH_SIZE);
     const publicRef = collection(firestore, "publicSequences");
-    const q = query(publicRef, where(documentId(), "in", chunk));
+    const q = ownerId
+      ? query(
+          publicRef,
+          where("ownerId", "==", ownerId),
+          where(documentId(), "in", chunk)
+        )
+      : query(publicRef, where(documentId(), "in", chunk));
     const snapshot = await getDocs(q);
 
     for (const docSnap of snapshot.docs) {

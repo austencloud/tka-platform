@@ -81,7 +81,7 @@ export async function buildTunnelCompositionLayers(
  * SPATIAL result only. The per-copy Stagger + Speed modulators are applied at
  * sample time (see {@link copyModulators} + `sampleTunnelProps`), so tweaking
  * them never re-runs these transforms. The base is NOT included — the caller
- * draws it as blueProp/redProp.
+ * draws it as the left/right prop pair.
  */
 export async function buildTunnelLayers(
   base: SequenceData,

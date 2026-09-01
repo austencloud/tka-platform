@@ -44,12 +44,16 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { CREATE_TABS } from "$lib/shared/navigation/config/tab-definitions";
+  import {
+    handleCreateFrontDoor,
+    handleSectionChange,
+  } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { setSideBySideLayout } from "$lib/shared/application/state/animation-visibility-state.svelte";
   import { onMount, setContext, tick } from "svelte";
   import ErrorBanner from "./ErrorBanner.svelte";
-  import AltHotkeyOverlay from "../../components/AltHotkeyOverlay.svelte";
   import type { CreateModuleOrchestrators } from "../types/create-module-services";
   import type { CreateModuleInitializer } from "../services/create-module-initializer";
   import type { CreateModuleHandlers } from "../services/create-module-handlers";
@@ -63,6 +67,10 @@
   import TransferConfirmDialog from "./TransferConfirmDialog.svelte";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import StandardWorkspaceLayout from "./StandardWorkspaceLayout.svelte";
+  import CreateFrontDoor from "./CreateFrontDoor.svelte";
+  import CreateShortcutHeader from "./CreateShortcutHeader.svelte";
+  import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import { setCreateModuleContext } from "../context/create-module-context";
   import LOOPCoordinator from "./coordinators/LOOPCoordinator.svelte";
   import StartEndCoordinator from "./coordinators/StartEndCoordinator.svelte";
@@ -75,6 +83,10 @@
   import { SessionManager } from "../services/session-manager.svelte";
   import { Autosaver } from "../services/autosaver";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import {
+    featureFlagService,
+    featureFlagState,
+  } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte";
   import {
@@ -82,6 +94,7 @@
     getMaxSteps,
   } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
+  import { isTabAccessible } from "$lib/shared/auth/domain/guest-access-config";
   import { createPanelHeightTracker } from "../state/managers/panel-height-tracker.svelte";
   import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
@@ -94,6 +107,13 @@
   import { createConstructTutorialState } from "../../construct/tutorial/state/construct-tutorial-state.svelte";
   import { logConstructOptionApplied } from "../../construct/services/construct-analytics";
   import { tryGetAccountSetupContext } from "$lib/shared/onboarding/context/account-setup-context";
+  import { logCreateFrontDoorReturned } from "../services/create-entry-analytics";
+  import {
+    createSequenceTransformActionDispatcher,
+    type SequenceTransformActionDispatcher,
+  } from "../services/sequence-transform-action-dispatcher";
+  import type { SequenceTransformCommandId } from "$lib/shared/create/domain/sequence-action-types";
+  import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
 
   const logger = createComponentLogger("CreateModule");
   const accountSetupState = tryGetAccountSetupContext();
@@ -117,6 +137,7 @@
   let panelPersistenceService: PanelPersister | null = $state(null);
   let CreateModuleState: CreateModuleState | null = $state(null);
   let constructTabState: ConstructTabState | null = $state(null);
+  let sequenceTransformActions: SequenceTransformActionDispatcher | null = null;
 
   // Session management services
   let sessionManager: SessionManager | null = $state(null);
@@ -144,6 +165,24 @@
       authState.isAnonymous,
       isPremiumOrAbove(authState.role)
     )
+  );
+  const availableCreateMethods = $derived.by(() => {
+    // Establish the same reactive flag dependency as the navigation surfaces.
+    void featureFlagState.flagsVersion;
+    return CREATE_TABS.filter(
+      (tab) =>
+        tab.metadata?.isCreationMethod === true &&
+        featureFlagService.canAccessTab("create", tab.id) &&
+        isTabAccessible("create", tab.id, accessTier)
+    );
+  });
+  const activeCreateMethod = $derived(
+    CREATE_TABS.find((tab) => tab.id === navigationState.activeTab) ?? null
+  );
+  const lastUsedCreateMode = $derived(
+    navigationState.hasRememberedCreateMode
+      ? navigationState.currentCreateMode
+      : null
   );
   // Only guests get a step-cap ask — straight to the auth screen, whose
   // contextual copy carries the why; no intermediate nudge (Austen,
@@ -175,6 +214,9 @@
   const canShowSaveToLibraryPanel = $derived(
     CreateModuleState?.isPersistenceInitialized === true &&
       CreateModuleState.canShowActionButtons()
+  );
+  const canShowHeaderSequenceActions = $derived(
+    CreateModuleState?.canShowSequenceActionsButton() ?? false
   );
 
   setContext("panelState", panelState);
@@ -209,6 +251,7 @@
     },
     constructTutorialState,
     panelState,
+    getSequenceTransformActions: () => sequenceTransformActions,
     get services() {
       if (!services) {
         throw new Error("Services not yet initialized");
@@ -232,6 +275,20 @@
       requestClearSequence: () => handleClearSequence(),
     },
   });
+
+  async function handleHeaderSequenceAction(
+    action: SequenceTransformCommandId
+  ): Promise<void> {
+    const result = await sequenceTransformActions?.execute(action, {
+      source: "header",
+      targetHand: "both",
+    });
+    if (result?.status === "failed") toast.error(result.message);
+  }
+
+  function handleOpenHeaderSequenceActions(): void {
+    panelState.openSequenceActionsPanel("header");
+  }
 
   let entryTutorialWasActive = false;
   let tutorialWorkspacePrepared = false;
@@ -422,11 +479,22 @@
           );
         }
 
+        sequenceTransformActions = createSequenceTransformActionDispatcher({
+          getSequenceState: () =>
+            CreateModuleState?.getActiveTabSequenceState() ?? null,
+          getCreateMode: () => navigationState.activeTab,
+          pushUndoSnapshot: (type) => CreateModuleState?.pushUndoSnapshot(type),
+          hapticService: getHapticFeedback(),
+          setGridRotationDirection,
+        });
+
         // Set global reference for keyboard shortcuts
         setCreateModuleStateRef({
           CreateModuleState,
           constructTabState,
           panelState,
+          executeSequenceAction: (action, options) =>
+            sequenceTransformActions!.execute(action, options),
           requestClearSequence: () => handleClearSequence(),
         });
 
@@ -574,6 +642,7 @@
         window.removeEventListener("resize", checkIsMobile);
       }
       setCreateModuleStateRef(null);
+      sequenceTransformActions = null;
 
       // Cleanup effect coordinator
       if (effectCleanup) {
@@ -633,6 +702,16 @@
 
   function clearError() {
     error = null;
+  }
+
+  function handleCreateMethodSelected(methodId: string): void {
+    handleSectionChange(methodId);
+  }
+
+  function handleReturnToCreateFrontDoor(trigger: HTMLButtonElement): void {
+    logCreateFrontDoorReturned(navigationState.activeTab);
+    trigger.blur();
+    handleCreateFrontDoor("workspace");
   }
 
   function handleOpenExportPanel() {
@@ -861,132 +940,270 @@
   });
 </script>
 
-{#if error}
-  <ErrorBanner message={error} onDismiss={clearError} />
-{:else if CreateModuleState && constructTabState && services}
-  <!-- Alt Hotkey Overlay (desktop only, shows on Alt hold) -->
-  <AltHotkeyOverlay />
-
-  <div class="create-tab">
-    <StandardWorkspaceLayout
-      {shouldUseSideBySideLayout}
-      {CreateModuleState}
-      {panelState}
-      {currentDisplayWord}
-      {currentLetterSources}
-      {isInputMode}
-      bind:animatingStepNumber
-      bind:toolPanelRef
-      bind:buttonPanelElement
-      bind:toolPanelElement
-      onClearSequence={handleClearSequence}
-      onViewSequence={handleOpenExportPanel}
-      onOptionSelected={handleOptionSelected}
-      onOpenFilters={handleOpenFilterPanel}
-      onCloseFilters={() => {
-        panelState.closeFilterPanel();
-      }}
-    />
-  </div>
-
-  <!-- Video Record Coordinator (deferred until first opened) -->
-  <LazyMount
-    loader={() => import("./coordinators/VideoRecordCoordinator.svelte")}
-    active={panelState.isVideoRecordPanelOpen}
+{#snippet frontDoorSurface()}
+  <CreateFrontDoor
+    methods={availableCreateMethods}
+    active={navigationState.isCreateFrontDoorOpen}
+    source={navigationState.createFrontDoorSource}
+    lastUsedMode={lastUsedCreateMode}
+    onSelect={handleCreateMethodSelected}
   />
+{/snippet}
 
-  <!-- Always-mounted launcher (light): owns deep-link open + view-sequence redirect.
+{#snippet workspaceSurface()}
+  <div class="create-workspace-source">
+    <nav class="create-method-bar" aria-label="Current creation method">
+      <button
+        type="button"
+        class="all-methods-button"
+        aria-label="Back to Create"
+        onclick={(event) => handleReturnToCreateFrontDoor(event.currentTarget)}
+      >
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        <span>Create</span>
+      </button>
+
+      {#if activeCreateMethod}
+        <span class="method-divider" aria-hidden="true">/</span>
+        <span class="active-method">{activeCreateMethod.label}</span>
+      {/if}
+
+      <CreateShortcutHeader
+        hasSequenceActions={canShowHeaderSequenceActions}
+        onSequenceAction={handleHeaderSequenceAction}
+        onOpenSequenceActions={handleOpenHeaderSequenceActions}
+      />
+    </nav>
+
+    <div class="create-workspace-body">
+      {#if error}
+        <ErrorBanner message={error} onDismiss={clearError} />
+      {:else if CreateModuleState && constructTabState && services}
+        <div class="create-tab">
+          <StandardWorkspaceLayout
+            {shouldUseSideBySideLayout}
+            {CreateModuleState}
+            {panelState}
+            {currentDisplayWord}
+            {currentLetterSources}
+            {isInputMode}
+            bind:animatingStepNumber
+            bind:toolPanelRef
+            bind:buttonPanelElement
+            bind:toolPanelElement
+            onClearSequence={handleClearSequence}
+            onViewSequence={handleOpenExportPanel}
+            onOptionSelected={handleOptionSelected}
+            onOpenFilters={handleOpenFilterPanel}
+            onCloseFilters={() => {
+              panelState.closeFilterPanel();
+            }}
+          />
+        </div>
+
+        <!-- Video Record Coordinator (deferred until first opened) -->
+        <LazyMount
+          loader={() => import("./coordinators/VideoRecordCoordinator.svelte")}
+          active={panelState.isVideoRecordPanelOpen}
+        />
+
+        <!-- Always-mounted launcher (light): owns deep-link open + view-sequence redirect.
        The heavy export/animation drawer host is deferred until first open via
        LazyMount, then idle-prefetched so the first open is instant. -->
-  <SequenceDrawerLauncher />
-  <LazyMount
-    loader={() => import("./coordinators/SequenceDrawerHost.svelte")}
-    active={panelState.isExportPanelOpen}
-    prefetch
-  />
+        <SequenceDrawerLauncher />
+        <LazyMount
+          loader={() => import("./coordinators/SequenceDrawerHost.svelte")}
+          active={panelState.isExportPanelOpen}
+          prefetch
+        />
 
-  <!-- Sequence Actions Coordinator (deferred until first opened) -->
-  <LazyMount
-    loader={() => import("./coordinators/SequenceActionsCoordinator.svelte")}
-    active={panelState.isSequenceActionsPanelOpen}
-  />
+        <!-- Sequence Actions Coordinator (deferred until first opened) -->
+        <LazyMount
+          loader={() =>
+            import("./coordinators/SequenceActionsCoordinator.svelte")}
+          active={panelState.isSequenceActionsPanelOpen}
+        />
 
-  <!-- Step Editor Coordinator - Opens when clicking a pictograph (deferred until first opened) -->
-  <LazyMount
-    loader={() => import("./coordinators/StepEditorCoordinator.svelte")}
-    active={panelState.isStepEditorPanelOpen}
-    prefetch
-  />
+        <!-- Step Editor Coordinator - Opens when clicking a pictograph (deferred until first opened) -->
+        <LazyMount
+          loader={() => import("./coordinators/StepEditorCoordinator.svelte")}
+          active={panelState.isStepEditorPanelOpen}
+          prefetch
+        />
 
-  <!-- LOOP Coordinator -->
-  <LOOPCoordinator />
+        <!-- LOOP Coordinator -->
+        <LOOPCoordinator />
 
-  <!-- Start/End Options Coordinator -->
-  <StartEndCoordinator />
+        <!-- Start/End Options Coordinator -->
+        <StartEndCoordinator />
 
-  <!-- Save to Library Panel - Rendered at root level to avoid stacking context
+        <!-- Save to Library Panel - Rendered at root level to avoid stacking context
        issues. Deferred until first opened; keep-alive preserves close animation. -->
-  <LazyMount
-    loader={() => import("./SaveToLibraryPanel.svelte")}
-    active={panelState.isSaveToLibraryPanelOpen && canShowSaveToLibraryPanel}
-    props={{
-      show: panelState.isSaveToLibraryPanelOpen && canShowSaveToLibraryPanel,
-      word: currentDisplayWord,
-      onClose: () => panelState.closeSaveToLibraryPanel(),
-    }}
-  />
+        <LazyMount
+          loader={() => import("./SaveToLibraryPanel.svelte")}
+          active={panelState.isSaveToLibraryPanelOpen &&
+            canShowSaveToLibraryPanel}
+          props={{
+            show:
+              panelState.isSaveToLibraryPanelOpen && canShowSaveToLibraryPanel,
+            word: currentDisplayWord,
+            onClose: () => panelState.closeSaveToLibraryPanel(),
+          }}
+        />
 
-  <!-- Sequence Transfer Confirmation Dialog -->
-  <TransferConfirmDialog
-    bind:isOpen={showTransferConfirmation}
-    {isMobile}
-    onConfirm={handleConfirmTransfer}
-    onCancel={handleCancelTransfer}
-  />
+        <!-- Sequence Transfer Confirmation Dialog -->
+        <TransferConfirmDialog
+          bind:isOpen={showTransferConfirmation}
+          {isMobile}
+          onConfirm={handleConfirmTransfer}
+          onCancel={handleCancelTransfer}
+        />
 
-  <!-- Clear Sequence Confirmation Dialog -->
-  <ConfirmDialog
-    bind:isOpen={showClearSequenceConfirm}
-    title="Clear Sequence?"
-    message="This will remove all steps and the start position. Use undo to restore if needed."
-    confirmText="Clear All"
-    cancelText="Keep"
-    variant="danger"
-    showDontAskAgain={true}
-    ghostConfirm={true}
-    onConfirm={confirmClearSequence}
-    onCancel={cancelClearSequence}
-    onDontAskAgainChange={handleSkipClearConfirmationChange}
-  />
+        <!-- Clear Sequence Confirmation Dialog -->
+        <ConfirmDialog
+          bind:isOpen={showClearSequenceConfirm}
+          title="Clear Sequence?"
+          message="This will remove all steps and the start position. Use undo to restore if needed."
+          confirmText="Clear All"
+          cancelText="Keep"
+          variant="danger"
+          showDontAskAgain={true}
+          ghostConfirm={true}
+          onConfirm={confirmClearSequence}
+          onCancel={cancelClearSequence}
+          onDontAskAgainChange={handleSkipClearConfirmationChange}
+        />
 
-  <!-- LOOP Completion Confirmation Dialog -->
-  <ConfirmDialog
-    bind:isOpen={showLoopConfirm}
-    title="Apply {pendingLoopComponentName} LOOP?"
-    message="This will add {pendingLoopStepCount} steps to your sequence."
-    confirmText="Apply"
-    cancelText="Cancel"
-    variant="info"
-    showDontAskAgain={true}
-    onConfirm={confirmLoopCompletion}
-    onCancel={cancelLoopCompletion}
-    onDontAskAgainChange={handleSkipLoopConfirmationChange}
-  />
+        <!-- LOOP Completion Confirmation Dialog -->
+        <ConfirmDialog
+          bind:isOpen={showLoopConfirm}
+          title="Apply {pendingLoopComponentName} LOOP?"
+          message="This will add {pendingLoopStepCount} steps to your sequence."
+          confirmText="Apply"
+          cancelText="Cancel"
+          variant="info"
+          showDontAskAgain={true}
+          onConfirm={confirmLoopCompletion}
+          onCancel={cancelLoopCompletion}
+          onDontAskAgainChange={handleSkipLoopConfirmationChange}
+        />
 
-  <!-- Prop unlock celebration - opens on milestone or via the prop-button
+        <!-- Prop unlock celebration - opens on milestone or via the prop-button
        redemption badge; renders above module content at the module root. -->
-  <PropUnlockCelebration />
-{:else}
-  <!-- Loading state while async initialization completes -->
-  <div class="create-tab create-loading">
-    <IndeterminateBar height={3} position="top" />
-    {#if initProgress}
-      <p class="init-status">{initProgress}</p>
-    {/if}
+        <PropUnlockCelebration />
+      {:else}
+        <!-- Loading state while async initialization completes -->
+        <div class="create-tab create-loading">
+          <IndeterminateBar height={3} position="top" />
+          {#if initProgress}
+            <p class="init-status">{initProgress}</p>
+          {/if}
+        </div>
+      {/if}
+    </div>
   </div>
-{/if}
+{/snippet}
+
+<div class="create-module-stage">
+  <DualSourceCrossfade
+    active={navigationState.isCreateFrontDoorOpen ? "first" : "second"}
+    first={frontDoorSurface}
+    second={workspaceSurface}
+    duration={DURATION.emphasis}
+  />
+</div>
 
 <style>
+  .create-module-stage,
+  .create-workspace-source,
+  .create-workspace-body {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .create-module-stage {
+    overflow: hidden;
+  }
+
+  .create-workspace-source {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    container-type: inline-size;
+    container-name: create-module-workspace;
+  }
+
+  .create-method-bar {
+    position: relative;
+    z-index: 1;
+    display: none;
+    flex: 0 0 auto;
+    min-height: var(--min-touch-target, 44px);
+    align-items: center;
+    gap: 8px;
+    padding: 4px clamp(8px, 1.2cqi, 16px);
+    box-sizing: border-box;
+    border-bottom: 1px solid var(--theme-stroke);
+    background: var(--theme-panel-bg);
+  }
+
+  @media (min-width: 1280px) {
+    .create-method-bar {
+      display: flex;
+    }
+  }
+
+  .all-methods-button {
+    min-height: var(--min-touch-target, 44px);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+    cursor: pointer;
+    transition:
+      background-color var(--duration-normal) ease,
+      border-color var(--duration-normal) ease,
+      color var(--duration-normal) ease;
+  }
+
+  .all-methods-button:hover {
+    border-color: var(--theme-stroke);
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+  }
+
+  .all-methods-button:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .method-divider {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .active-method {
+    min-width: 0;
+    color: var(--theme-text);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+  }
+
+  .create-workspace-body {
+    flex: 1;
+    height: auto;
+    position: relative;
+    overflow: hidden;
+  }
+
   .create-tab {
     display: flex;
     flex-direction: column;
@@ -1006,5 +1223,11 @@
     margin: 0;
     font-size: var(--font-size-sm, 13px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .all-methods-button {
+      transition: none;
+    }
   }
 </style>

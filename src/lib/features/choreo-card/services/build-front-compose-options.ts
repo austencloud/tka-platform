@@ -63,8 +63,8 @@ export function buildFrontComposeOptions(
   // Source word + pictograph visibility from the canonical locked profile.
   const canonical = buildCanonicalCardVisibility({
     tndElement: options.tndElement,
-    bluePropType: options.bluePropType,
-    redPropType: options.redPropType,
+    leftPropType: options.leftPropType,
+    rightPropType: options.rightPropType,
   });
 
   const composeOptions: Partial<SequenceExportOptions> = {
@@ -87,8 +87,8 @@ export function buildFrontComposeOptions(
     format: "PNG",
     quality: 1,
     scale: 1,
-    redVisible: true,
-    blueVisible: true,
+    rightVisible: true,
+    leftVisible: true,
     addReversalSymbols: true,
     combinedGrids: false,
     notes: options.notes ?? "",
@@ -105,8 +105,8 @@ export function buildFrontComposeOptions(
     accentTintOpacity: options.tndElement?.cardTintOpacity,
     loopType: sequence.loopType ?? undefined,
     showLoopGlyph: true,
-    ...(options.bluePropType && { bluePropTypeOverride: options.bluePropType }),
-    ...(options.redPropType && { redPropTypeOverride: options.redPropType }),
+    ...(options.leftPropType && { leftPropTypeOverride: options.leftPropType }),
+    ...(options.rightPropType && { rightPropTypeOverride: options.rightPropType }),
     ...(options.deckId && { deckId: options.deckId }),
     ...(options.deckName && { deckName: options.deckName }),
     visibilityOverrides: {

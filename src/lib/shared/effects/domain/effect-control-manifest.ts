@@ -43,7 +43,7 @@ export interface ControlDescriptor {
   pct?: boolean;
   // segmented / select
   options?: { value: string; label: string }[];
-  // colorPair: the two fields (e.g. blueColor/redColor)
+  // colorPair: the two hand-relative color fields.
   pairFields?: [string, string];
   // palette: named options (swatch optional, cosmetic)
   paletteOptions?: { value: string; label: string; swatch?: string }[];
@@ -135,7 +135,7 @@ const slider = (
 
 export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
   trails: [
-    { id: "trails-color", label: "Colors", type: "colorPair", field: "blueColor", pairFields: ["blueColor", "redColor"], tier: "primary" },
+    { id: "trails-color", label: "Colors", type: "colorPair", field: "leftColor", pairFields: ["leftColor", "rightColor"], tier: "primary" },
     { id: "trails-rainbow", label: "Rainbow", type: "chip", field: "rainbow", tier: "primary", swatch: "rainbow" },
     slider("trails", "brightness", "Brightness", { min: 0.3, max: 1, tier: "primary" }),
     slider("trails", "thickness", "Thickness", { min: 1, max: 12, step: 0.5, pct: false, tier: "primary" }),
@@ -193,7 +193,7 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
     slider("sparkles", "gravity", "Gravity", { tier: "advanced" }),
   ],
   ghost: [
-    { id: "ghost-color", label: "Colors", type: "colorPair", field: "blueColor", pairFields: ["blueColor", "redColor"], tier: "primary" },
+    { id: "ghost-color", label: "Colors", type: "colorPair", field: "leftColor", pairFields: ["leftColor", "rightColor"], tier: "primary" },
     slider("ghost", "intensity", "Intensity", { tier: "primary" }),
     slider("ghost", "decay", "Persistence", { min: 1, max: 10, step: 0.5, pct: false, tier: "primary" }),
     slider("ghost", "interval", "Density", { tier: "primary" }),

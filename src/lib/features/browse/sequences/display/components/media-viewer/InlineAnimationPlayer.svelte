@@ -25,6 +25,8 @@
   import type { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { QualityTier } from "$lib/shared/animation-engine/domain/types/quality-types";
+  import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { GlyphOverlayFrameMode } from "$lib/shared/animation-engine/domain/glyph-overlay-frame";
 
   // Per-instance playback stack imports (avoid shared singleton)
   import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
@@ -103,11 +105,12 @@
     autoPlay = true,
     autoPlayDelay = 300,
     showControls = true,
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     externalBpm = null,
     chrome = "full",
     fill = false,
+    disassemblyLayout = "stacked",
     showWordHeader = false,
     showPositionGlyph = false,
     onStepChange = undefined,
@@ -136,6 +139,8 @@
     onCanvasInitialized = undefined,
     onLoadError = undefined,
     visibilityManagerOverride = undefined,
+    propElementalType = null,
+    glyphFrame = "pictograph",
     initialQualityTier = undefined,
     initialStep = null,
   }: {
@@ -146,8 +151,8 @@
      *  the incoming canvas remains hidden until motion is observed. */
     autoPlayDelay?: number;
     showControls?: boolean;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     /** When provided, overrides internal BPM and controls playback speed externally */
     externalBpm?: number | null;
     /**
@@ -180,6 +185,10 @@
      * header back in; other minimal hosts keep their current sizing.
      */
     fill?: boolean;
+    /** Arrangement used when the canonical canvas is disassembled. The default
+     *  vertical stack preserves viewer behavior; square embedded stages can
+     *  keep all three canvases inside one atmosphere with the sidecar layout. */
+    disassemblyLayout?: "stacked" | "sidecar";
     /** Show the sequence word above the canvas and highlight its live step.
      *  Explicit opt-in keeps existing fill-mode embeds canvas-only. */
     showWordHeader?: boolean;
@@ -299,6 +308,11 @@
      *  visitor's in-app settings nor mutates them. Forwarded to AnimatorCanvas
      *  so the engine-side reads scope the same way. */
     visibilityManagerOverride?: AnimationVisibilityStateManager;
+    /** Optional prop timing/direction relationship for the canvas's top-right corner. */
+    propElementalType?: ElementalType | null;
+    /** Let annotation chrome use a rectangular host while preserving the
+     *  centered square motion plane. */
+    glyphFrame?: GlyphOverlayFrameMode;
     /** Optional adaptive-quality ceiling for performance-sensitive embeds. */
     initialQualityTier?: QualityTier;
     /** Fractional playback position applied immediately after each load. */
@@ -371,8 +385,8 @@
   // the letter overlay entirely (start-position Greek letter + per-step letter).
   // Prop/staff renders (gallery, Arena) pass a non-hand type → unchanged.
   const isHandRender = $derived(
-    (bluePropType ?? "").toLowerCase() === "hand" ||
-      (redPropType ?? "").toLowerCase() === "hand"
+    (leftPropType ?? "").toLowerCase() === "hand" ||
+      (rightPropType ?? "").toLowerCase() === "hand"
   );
 
   let currentLetter = $derived.by(() => {
@@ -655,7 +669,7 @@
     const hasMotionData = (s: SequenceData) =>
       Array.isArray(s.steps) &&
       s.steps.length > 0 &&
-      s.steps.some((step) => step?.motions?.blue && step?.motions?.red);
+      s.steps.some((step) => step?.motions?.left && step?.motions?.right);
 
     if (hasMotionData(seq)) {
       return seq;
@@ -748,8 +762,8 @@
     <!-- Animation Canvas -->
     <div class="canvas-container" class:bare={backgroundAlpha === 0}>
       <AnimatorCanvas
-        blueProp={animationState.bluePropState}
-        redProp={animationState.redPropState}
+        leftProp={animationState.leftPropState}
+        rightProp={animationState.rightPropState}
         {gridVisible}
         {disableContextMenu}
         {visibilityManagerOverride}
@@ -767,13 +781,16 @@
         {tipEffortMap}
         {fireConfig}
         {effectsConfigState}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         positionGlyphVisible={showPositionGlyph}
+        {propElementalType}
+        {glyphFrame}
         tapToToggle={minimal && interactive}
         progressLine={minimal && interactive}
         hoverHint={minimal && interactive ? hoverHint : "none"}
         fillContainer={fill}
+        {disassemblyLayout}
         {hideTkaGlyph}
         {hideStepNumbers}
         hideHeader={fill && !showWordHeader}

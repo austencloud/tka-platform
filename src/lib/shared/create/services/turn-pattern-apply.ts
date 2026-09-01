@@ -24,7 +24,7 @@ import {
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
-  MotionColor,
+  HandSide,
   type Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
@@ -36,7 +36,7 @@ const logger = createComponentLogger("TurnPatternApply");
 /**
  * Specifies which hand(s) to apply pattern changes to
  */
-export type TargetHand = "blue" | "red" | "both";
+export type TargetHand = "left" | "right" | "both";
 
 /**
  * Result of applying a turn pattern to a sequence
@@ -66,13 +66,13 @@ export function extractPattern(sequence: SequenceData, name: string): TurnPatter
 
     // Invisible placeholder = hand not really there (both-required Step
     // shape): extract null (the "skip this hand" signal), never placeholder turns.
-    const blueMotion = isVisibleMotion(beat.motions?.blue) ? beat.motions.blue : undefined;
-    const redMotion = isVisibleMotion(beat.motions?.red) ? beat.motions.red : undefined;
+    const leftMotion = isVisibleMotion(beat.motions?.left) ? beat.motions.left : undefined;
+    const rightMotion = isVisibleMotion(beat.motions?.right) ? beat.motions.right : undefined;
 
     entries.push({
       stepIndex: i,
-      blue: blueMotion?.turns ?? null,
-      red: redMotion?.turns ?? null,
+      left: leftMotion?.turns ?? null,
+      right: rightMotion?.turns ?? null,
     });
   }
 
@@ -109,47 +109,47 @@ export function applyPattern(
     let stepModified = false;
     const updatedMotions = { ...step.motions };
 
-    // Apply blue turns (if targeting blue or both)
+    // Apply left-hand turns (if targeting left or both)
     if (
-      (targetHand === "both" || targetHand === "blue") &&
-      entry.blue !== null &&
-      isVisibleMotion(step.motions?.blue)
+      (targetHand === "both" || targetHand === "left") &&
+      entry.left !== null &&
+      isVisibleMotion(step.motions?.left)
     ) {
       const result = applyTurnToMotion(
-        entry.blue,
-        step.motions.blue,
-        MotionColor.BLUE,
+        entry.left,
+        step.motions.left,
+        HandSide.LEFT,
         sequence.steps,
         stepIndex
       );
       if (result.motion) {
-        updatedMotions.blue = result.motion;
+        updatedMotions.left = result.motion;
         stepModified = true;
       }
       if (result.warning) {
-        warnings.push(`Beat ${stepIndex + 1} blue: ${result.warning}`);
+        warnings.push(`Beat ${stepIndex + 1} left: ${result.warning}`);
       }
     }
 
-    // Apply red turns (if targeting red or both)
+    // Apply right-hand turns (if targeting right or both)
     if (
-      (targetHand === "both" || targetHand === "red") &&
-      entry.red !== null &&
-      isVisibleMotion(step.motions?.red)
+      (targetHand === "both" || targetHand === "right") &&
+      entry.right !== null &&
+      isVisibleMotion(step.motions?.right)
     ) {
       const result = applyTurnToMotion(
-        entry.red,
-        step.motions.red,
-        MotionColor.RED,
+        entry.right,
+        step.motions.right,
+        HandSide.RIGHT,
         sequence.steps,
         stepIndex
       );
       if (result.motion) {
-        updatedMotions.red = result.motion;
+        updatedMotions.right = result.motion;
         stepModified = true;
       }
       if (result.warning) {
-        warnings.push(`Beat ${stepIndex + 1} red: ${result.warning}`);
+        warnings.push(`Beat ${stepIndex + 1} right: ${result.warning}`);
       }
     }
 
@@ -169,37 +169,37 @@ export function applyPattern(
 
     // Propagate blue motion orientation (skip invisible placeholders — the
     // hand isn't really there on that beat)
-    if (isVisibleMotion(currentStep.motions?.blue) && isVisibleMotion(nextStep.motions?.blue)) {
-      const currentEndOrientation = currentStep.motions.blue.endOrientation;
-      const nextStartOrientation = nextStep.motions.blue.startOrientation;
+    if (isVisibleMotion(currentStep.motions?.left) && isVisibleMotion(nextStep.motions?.left)) {
+      const currentEndOrientation = currentStep.motions.left.endOrientation;
+      const nextStartOrientation = nextStep.motions.left.startOrientation;
 
       if (currentEndOrientation !== nextStartOrientation) {
         const updatedNextMotion = updateMotionStartOrientation(
-          nextStep.motions.blue,
+          nextStep.motions.left,
           currentEndOrientation,
-          MotionColor.BLUE
+          HandSide.LEFT
         );
 
         updatedSteps[i + 1] = {
           ...nextStep,
           motions: {
             ...nextStep.motions,
-            blue: updatedNextMotion,
+            left: updatedNextMotion,
           },
         };
       }
     }
 
     // Propagate red motion orientation
-    if (isVisibleMotion(currentStep.motions?.red) && isVisibleMotion(nextStep.motions?.red)) {
-      const currentEndOrientation = currentStep.motions.red.endOrientation;
-      const nextStartOrientation = nextStep.motions.red.startOrientation;
+    if (isVisibleMotion(currentStep.motions?.right) && isVisibleMotion(nextStep.motions?.right)) {
+      const currentEndOrientation = currentStep.motions.right.endOrientation;
+      const nextStartOrientation = nextStep.motions.right.startOrientation;
 
       if (currentEndOrientation !== nextStartOrientation) {
         const updatedNextMotion = updateMotionStartOrientation(
-          nextStep.motions.red,
+          nextStep.motions.right,
           currentEndOrientation,
-          MotionColor.RED
+          HandSide.RIGHT
         );
 
         // Get latest step data (might have been updated for blue already)
@@ -209,7 +209,7 @@ export function applyPattern(
           ...latestNextStep,
           motions: {
             ...latestNextStep.motions,
-            red: updatedNextMotion,
+            right: updatedNextMotion,
           },
         };
       }
@@ -256,7 +256,7 @@ export function validateForSequence(
 function updateMotionStartOrientation(
   motion: MotionData,
   newStartOrientation: Orientation,
-  color: MotionColor
+  color: HandSide
 ): MotionData {
   const tempMotion = createMotionData({
     ...motion,

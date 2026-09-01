@@ -26,6 +26,9 @@ function sample(
     mandalaBackingSize: 630,
     mandalaDisplaySize: 630,
     mandalaRasterScale: 1,
+    mandalaDisplayWidth: 630,
+    mandalaDisplayHeight: 630,
+    mandalaMaximumRasterScale: 1,
     cardSize: 450,
     cardFlexGrow: 1,
     cardHidden: false,
@@ -50,11 +53,14 @@ function sample(
     inspectorSize: 0,
     inspectorFlexGrow: 0,
     inspectorIdentity: 0,
+    effectsInspectorOpacity: 0,
+    cardEffectsSeamGap: 0,
     desktopInspectorExpected: true,
     cardSettingsWidth: 0,
     cardSettingsHeight: 0,
     cardSettingsCenterY: 0,
     cardSettingsOpacity: 0,
+    cardIdentity: 1,
     dissolveActive: false,
     animationOpacity,
     cardOpacity: 1,
@@ -64,17 +70,32 @@ function sample(
     motion3DPresented: false,
     motion3DReady: false,
     motion3DPreparing: false,
+    motion2DPreparationHeld: false,
     sceneCurtainVisible: false,
+    scenePreparationProgress: null,
+    scenePreparationLabel: null,
     tunnelOpacity: 0,
     tunnelPresented: false,
     tunnelCanvasReady: true,
     animatorIdentity: 1,
     animatorCanvasCount: 1,
     activeArtSettingsCount: 0,
+    artSettingsOpacity: 0,
     tunnelBackingWidth: 0,
     tunnelBackingHeight: 0,
     tunnelDisplayWidth: 0,
     tunnelDisplayHeight: 0,
+    stageLayerOpacity: 1,
+    performanceLayerOpacity: 0,
+    stageLayerIdentity: 2,
+    performanceLayerIdentity: 3,
+    stageLayerActive: true,
+    performanceLayerActive: false,
+    performanceGalleryReady: true,
+    performanceLayoutColumns: 2,
+    performancePlayerCount: 1,
+    stageLayerWidth: 900,
+    performanceLayerWidth: 900,
   };
 }
 
@@ -83,6 +104,272 @@ function trace(samples: TransitionGeometrySample[]): TransitionGeometryTrace {
 }
 
 describe("Sequence Viewer geometry trace", () => {
+  it("accepts one persistent viewer stage and Performances handoff", () => {
+    const stage = {
+      ...sample(0, 900, 1),
+      phase: "stage-to-performances" as const,
+      selectedMode: "animation" as const,
+      stageSize: 800,
+      inspectorSize: 400,
+    };
+    const enteringGallery = {
+      ...stage,
+      time: 120,
+      selectedMode: "videos" as const,
+      stageSize: 1000,
+      inspectorSize: 200,
+      stageLayerOpacity: 0.5,
+      performanceLayerOpacity: 0.5,
+      stageLayerActive: false,
+      performanceLayerActive: true,
+    };
+    const gallery = {
+      ...enteringGallery,
+      time: 280,
+      stageSize: 1200,
+      inspectorSize: 1,
+      stageLayerOpacity: 0,
+      performanceLayerOpacity: 1,
+    };
+    const leavingGallery = {
+      ...gallery,
+      time: 400,
+      phase: "performances-to-stage" as const,
+      selectedMode: "animation" as const,
+      stageSize: 1000,
+      inspectorSize: 200,
+      stageLayerOpacity: 0.5,
+      performanceLayerOpacity: 0.5,
+      stageLayerActive: true,
+      performanceLayerActive: false,
+    };
+    const returned = {
+      ...leavingGallery,
+      time: 560,
+      stageSize: 800,
+      inspectorSize: 400,
+      stageLayerOpacity: 1,
+      performanceLayerOpacity: 0,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "performances-2d",
+      duration: 560,
+      samples: [stage, enteringGallery, gallery, leavingGallery, returned],
+      modeCommits: [],
+    });
+
+    expect(summary.performanceStageIdentityChanges).toBe(0);
+    expect(summary.performanceGalleryIdentityChanges).toBe(0);
+    expect(summary.performanceBlankFrames).toBe(0);
+    expect(summary.performanceDoubleOpaqueFrames).toBe(0);
+    expect(summary.performanceLayoutChanges).toBe(0);
+    expect(summary.performancePlayerCountMaximum).toBe(1);
+    expect(summary.performanceCrossfadeFrames).toBe(2);
+    expect(summary.performanceUnreadyFrames).toBe(0);
+    expect(summary.performanceOpacityComplementDriftMaximum).toBe(0);
+    expect(summary.performanceLayerWidthMismatchMaximum).toBe(0);
+    expect(summary.performanceSurfacePath).toEqual([
+      "Motion stage",
+      "Motion stage + Performance stage",
+      "Performance stage",
+      "Motion stage + Performance stage",
+      "Motion stage",
+    ]);
+    expect(summary.performanceStageExit?.backtrack).toBe(0);
+    expect(summary.performanceStageEntry?.overshoot).toBe(0);
+  });
+
+  it("reports a gallery breakpoint swap while the gallery is visible", () => {
+    const stacked = {
+      ...sample(0, 900, 1),
+      phase: "stage-to-performances" as const,
+      selectedMode: "videos" as const,
+      stageLayerOpacity: 0.6,
+      performanceLayerOpacity: 0.4,
+      performanceLayoutColumns: 1,
+    };
+    const columns = {
+      ...stacked,
+      time: 16,
+      stageLayerOpacity: 0.4,
+      performanceLayerOpacity: 0.6,
+      performanceLayoutColumns: 2,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "performances-2d",
+      duration: 16,
+      samples: [stacked, columns],
+      modeCommits: [],
+    });
+
+    expect(summary.performanceLayoutChanges).toBe(1);
+  });
+
+  it("accepts one continuous Card and viewer-stage exchange with a stable inspector", () => {
+    const cardStart = {
+      ...sample(0, 0, 0),
+      phase: "card-to-stage" as const,
+      selectedMode: "card" as const,
+      cardPanelCenterX: 600,
+      cardContentCenterX: 600,
+      cardSettingsOpacity: 1,
+      inspectorSize: 560,
+    };
+    const crossing = {
+      ...cardStart,
+      time: 120,
+      selectedMode: "animation" as const,
+      animationSize: 450,
+      animationOpacity: 1,
+      cardPanelCenterX: 750,
+      cardContentCenterX: 750,
+      cardSettingsOpacity: 0.5,
+      effectsInspectorOpacity: 0.5,
+    };
+    const stage = {
+      ...crossing,
+      time: 280,
+      animationSize: 900,
+      cardPanelCenterX: 900,
+      cardContentCenterX: 900,
+      cardOpacity: 0,
+      cardSettingsOpacity: 0,
+      effectsInspectorOpacity: 1,
+    };
+    const returnCrossing = {
+      ...crossing,
+      phase: "stage-to-card" as const,
+      time: 400,
+    };
+    const cardEnd = {
+      ...cardStart,
+      phase: "stage-to-card" as const,
+      time: 560,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "card-2d",
+      duration: 560,
+      samples: [cardStart, crossing, stage, returnCrossing, cardEnd],
+      modeCommits: [],
+    });
+
+    expect(summary.cardStageCardIdentityChanges).toBe(0);
+    expect(summary.cardStageAnimatorIdentityChanges).toBe(0);
+    expect(summary.cardStageInspectorIdentityChanges).toBe(0);
+    expect(summary.cardStageSplitFrames).toBe(0);
+    expect(summary.cardStageBlankFrames).toBe(0);
+    expect(summary.cardStageSettingsBlankFrames).toBe(0);
+    expect(summary.cardStageSettingsCrossfadeFrames).toBe(2);
+    expect(summary.cardStageExitTravel).toMatchObject({
+      backtrack: 0,
+      overshoot: 0,
+    });
+    expect(summary.cardStageEntryTravel).toMatchObject({
+      backtrack: 0,
+      overshoot: 0,
+    });
+    expect(summary.cardStageInspectorSize?.variation).toBe(0);
+    expect(summary.cardStageInspectorExit).toMatchObject({
+      start: 560,
+      end: 560,
+      backtrack: 0,
+      overshoot: 0,
+    });
+    expect(summary.cardStageInspectorEntry).toMatchObject({
+      start: 560,
+      end: 560,
+      backtrack: 0,
+      overshoot: 0,
+    });
+  });
+
+  it("accepts an intentional monotonic inspector release for 3D", () => {
+    const card = {
+      ...sample(0, 0, 0),
+      phase: "card-to-stage" as const,
+      selectedMode: "card" as const,
+      inspectorSize: 560,
+    };
+    const closing = {
+      ...card,
+      time: 120,
+      selectedMode: "animation-3d" as const,
+      inspectorSize: 280,
+    };
+    const stage = { ...closing, time: 280, inspectorSize: 4 };
+    const opening = {
+      ...closing,
+      phase: "stage-to-card" as const,
+      time: 400,
+    };
+    const restored = {
+      ...card,
+      phase: "stage-to-card" as const,
+      time: 560,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "card-3d",
+      duration: 560,
+      samples: [card, closing, stage, opening, restored],
+      modeCommits: [],
+    });
+
+    expect(summary.cardStageInspectorExit).toMatchObject({
+      start: 560,
+      end: 4,
+      backtrack: 0,
+      overshoot: 0,
+    });
+    expect(summary.cardStageInspectorEntry).toMatchObject({
+      start: 280,
+      end: 560,
+      backtrack: 0,
+      overshoot: 0,
+    });
+  });
+
+  it("flags remounts, transformed cells, and an intermediate split during a Card handoff", () => {
+    const start = {
+      ...sample(0, 0, 0),
+      phase: "card-to-stage" as const,
+      selectedMode: "card" as const,
+      cardIdentity: 1,
+    };
+    const broken = {
+      ...start,
+      time: 100,
+      selectedMode: "split" as const,
+      cardIdentity: 2,
+      cardOpacity: 0,
+      animationOpacity: 0,
+    };
+    const transformed = {
+      ...start,
+      time: 50,
+      selectedMode: "animation" as const,
+      cardTransformedCellCount: 8,
+      cardOpacity: 0.5,
+      animationOpacity: 1,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "card-2d",
+      duration: 100,
+      samples: [start, transformed, broken],
+      modeCommits: [],
+    });
+
+    expect(summary.cardStageCardIdentityChanges).toBe(1);
+    expect(summary.cardStageSplitFrames).toBe(1);
+    expect(summary.cardStageBlankFrames).toBe(1);
+    expect(summary.transformedCardCellFrames).toBe(1);
+    expect(summary.maximumTransformedCardCells).toBe(8);
+  });
+
   it("flags a returning animation surface that becomes visible as a sliver", () => {
     const summary = summarizeTransitionGeometry(
       trace([sample(0, 0, 0), sample(80, 147, 0.2), sample(280, 450, 1)])
@@ -109,6 +396,79 @@ describe("Sequence Viewer geometry trace", () => {
     expect(
       summarizeTransitionGeometry(trace([first, middle, last])).dissolveFrames
     ).toBe(1);
+  });
+
+  it("flags a 2D return that expands before settling smaller", () => {
+    const summary = summarizeTransitionGeometry(
+      trace([
+        sample(0, 880, 1),
+        sample(80, 1040, 1),
+        sample(180, 760, 1),
+        sample(280, 720, 1),
+      ])
+    );
+
+    expect(summary.animationReturnSizeTravel).toMatchObject({
+      start: 880,
+      end: 720,
+      backtrack: 160,
+      overshoot: 0,
+    });
+  });
+
+  it("accepts a monotonic 2D return into its split allocation", () => {
+    const summary = summarizeTransitionGeometry(
+      trace([
+        sample(0, 880, 1),
+        sample(80, 840, 1),
+        sample(180, 770, 1),
+        sample(280, 720, 1),
+      ])
+    );
+
+    expect(summary.animationReturnSizeTravel).toMatchObject({
+      start: 880,
+      end: 720,
+      backtrack: 0,
+      overshoot: 0,
+    });
+  });
+
+  it("measures the Card and Effects handoff as one continuous seam", () => {
+    const start = {
+      ...sample(0, 450, 1),
+      phase: "focus-2d" as const,
+      cardOpacity: 1,
+      effectsInspectorOpacity: 0,
+    };
+    const overlap = {
+      ...start,
+      time: 80,
+      cardOpacity: 0.55,
+      effectsInspectorOpacity: 0.45,
+      inspectorSize: 240,
+      cardEffectsSeamGap: 0.4,
+    };
+    const settled = {
+      ...start,
+      time: 280,
+      cardOpacity: 0,
+      effectsInspectorOpacity: 1,
+      inspectorSize: 560,
+      cardEffectsSeamGap: 0,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "2d",
+      duration: 280,
+      samples: [start, overlap, settled],
+      modeCommits: [],
+    });
+
+    expect(summary.cardEffectsSeamGapMaximum).toBe(0.4);
+    expect(summary.cardEffectsOpacityOnsetSkew).toBe(0);
+    expect(summary.cardEffectsCrossfadeFrames).toBe(1);
+    expect(summary.cardEffectsBlankFrames).toBe(0);
   });
 
   it("flags a returning mandala raster that is enlarged from a collapsed backing store", () => {
@@ -319,45 +679,123 @@ describe("Sequence Viewer geometry trace", () => {
     expect(summary.motionHandoffLatency).toBe(80);
   });
 
-  it("accepts a first 3D reveal that stays behind 2D until ready", () => {
-    const preparing = {
+  it("accepts an honest first-3D preparation surface with monotonic progress", () => {
+    const crossfade = {
       ...sample(40, 450, 1),
       phase: "prepare-3d" as const,
       selectedMode: "animation-3d" as const,
-      motion3DPreparing: true,
-    };
-    const reveal = {
-      ...preparing,
-      time: 180,
-      phase: "show-3d" as const,
       motion2DOpacity: 0.7,
       motion3DOpacity: 0.3,
       motion2DPresented: false,
       motion3DPresented: true,
-      motion3DReady: true,
-      motion3DPreparing: false,
+      motion3DPreparing: true,
+      motion2DPreparationHeld: true,
+      sceneCurtainVisible: true,
+      scenePreparationLabel: "Opening 3D",
     };
-    const settled = {
-      ...reveal,
-      time: 260,
+    const preparing = {
+      ...crossfade,
+      time: 100,
       motion2DOpacity: 0,
       motion3DOpacity: 1,
+      scenePreparationProgress: 0.42,
+      scenePreparationLabel: "Setting the stage",
+    };
+    const warming = {
+      ...preparing,
+      time: 160,
+      scenePreparationProgress: 0.84,
+      scenePreparationLabel: "Warming up",
+    };
+    const ready = {
+      ...warming,
+      time: 220,
+      phase: "show-3d" as const,
+      motion3DReady: true,
+      motion3DPreparing: false,
+      sceneCurtainVisible: false,
+      scenePreparationProgress: null,
+      scenePreparationLabel: null,
     };
 
     const summary = summarizeTransitionGeometry({
       command: "3d-first",
-      duration: 260,
-      samples: [sample(0, 450, 1), preparing, reveal, settled],
+      duration: 220,
+      samples: [sample(0, 450, 1), crossfade, preparing, warming, ready],
       modeCommits: [],
     });
 
     expect(summary.motionBlankFrames).toBe(0);
     expect(summary.motionUnready3DFrames).toBe(0);
-    expect(summary.motionCurtainFrames).toBe(0);
+    expect(summary.motionCurtainFrames).toBe(3);
+    expect(summary.motionMisidentified3DFrames).toBe(0);
+    expect(summary.motionPreparationProgressRegressions).toBe(0);
+    expect(summary.motionPreparationLabels).toEqual([
+      "Opening 3D",
+      "Setting the stage",
+      "Warming up",
+    ]);
     expect(summary.motionCrossfadeFrames).toBe(1);
-    expect(summary.motionPreparationFrames).toBe(1);
+    expect(summary.motionPreparationFrames).toBe(3);
+    expect(summary.motionPreparationGeometryHeldFrames).toBe(3);
+    expect(summary.motionPreparationRasterScaleMaximum).toBe(1);
+    expect(summary.motionPreparationRasterGrowthMaximum).toBe(1);
+    expect(summary.motionMagnifiedPreparationFrames).toBe(0);
     expect(summary.motionSurfacePath).toEqual(["2D", "3D"]);
-    expect(summary.motionHandoffLatency).toBe(140);
+    expect(summary.motionHandoffLatency).toBe(180);
+  });
+
+  it("flags stale 2D identity and backwards scene progress after selecting 3D", () => {
+    const stale2D = {
+      ...sample(40, 450, 1),
+      phase: "prepare-3d" as const,
+      selectedMode: "animation-3d" as const,
+      motion3DPresented: true,
+      motion3DPreparing: true,
+      sceneCurtainVisible: true,
+      scenePreparationProgress: 0.72,
+      scenePreparationLabel: "Setting the stage",
+    };
+    const regressed = {
+      ...stale2D,
+      time: 80,
+      motion2DPresented: false,
+      scenePreparationProgress: 0.51,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "3d-first",
+      duration: 80,
+      samples: [sample(0, 450, 1), stale2D, regressed],
+      modeCommits: [],
+    });
+
+    expect(summary.motionMisidentified3DFrames).toBe(1);
+    expect(summary.motionPreparationProgressRegressions).toBe(1);
+  });
+
+  it("flags a first-3D placeholder stretched beyond its backing raster", () => {
+    const stretched = {
+      ...sample(80, 900, 1),
+      phase: "prepare-3d" as const,
+      selectedMode: "animation-3d" as const,
+      motion3DPreparing: true,
+      mandalaDisplayWidth: 1260,
+      mandalaDisplayHeight: 700,
+      mandalaMaximumRasterScale: 2,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "3d-first",
+      duration: 80,
+      samples: [sample(0, 900, 1), stretched],
+      modeCommits: [],
+    });
+
+    expect(summary.motionPreparationRasterScaleMaximum).toBe(2);
+    expect(summary.motionPreparationRasterGrowthMaximum).toBe(2);
+    expect(summary.motionMagnifiedPreparationFrames).toBe(1);
+    expect(summary.motionPreparationGeometryHeldFrames).toBe(0);
   });
 
   it("flags a 2D backing-store rebuild after the returning surface is opaque", () => {

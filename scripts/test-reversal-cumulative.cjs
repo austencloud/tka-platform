@@ -12,13 +12,13 @@ console.log("═══ Model Comparison: Per-Beat vs Cumulative ═══\n");
 console.log("Per-beat: each step flips from ORIGINAL (what the seeder stores)");
 console.log("Cumulative: each reversal flips from CURRENT running direction (physical reality)\n");
 
-function testPattern(name, blueRevs, redRevs, n) {
+function testPattern(name, leftRevs, rightRevs, n) {
   // Pad/tile patterns
   const bPat = [];
   const rPat = [];
   for (let i = 0; i < n; i++) {
-    bPat.push(blueRevs[i % blueRevs.length]);
-    rPat.push(redRevs[i % redRevs.length]);
+    bPat.push(leftRevs[i % leftRevs.length]);
+    rPat.push(rightRevs[i % rightRevs.length]);
   }
 
   console.log(`── ${name} (${n} steps) ──`);
@@ -29,29 +29,29 @@ function testPattern(name, blueRevs, redRevs, n) {
 
   // MODEL A: Per-beat from original
   // Each step is independently pro or anti based on whether it's reversed from original
-  const perBeatBlue = bPat.map(r => r ? 'anti' : 'pro');
-  const perBeatRed = rPat.map(r => r ? 'anti' : 'pro');
-  const perBeatBoundary = perBeatBlue[n-1] === perBeatBlue[0] && perBeatRed[n-1] === perBeatRed[0];
+  const perBeatLeft = bPat.map(r => r ? 'anti' : 'pro');
+  const perBeatRight = rPat.map(r => r ? 'anti' : 'pro');
+  const perBeatBoundary = perBeatLeft[n-1] === perBeatLeft[0] && perBeatRight[n-1] === perBeatRight[0];
 
   // MODEL B: Cumulative
   // Start CW/pro. Each reversal flips from current running state.
-  let blueDir = 'CW';
-  let redDir = 'CW';
-  const cumBlue = [];
-  const cumRed = [];
+  let leftDir = 'CW';
+  let rightDir = 'CW';
+  const cumLeft = [];
+  const cumRight = [];
   for (let i = 0; i < n; i++) {
-    if (bPat[i]) blueDir = blueDir === 'CW' ? 'CCW' : 'CW';
-    if (rPat[i]) redDir = redDir === 'CW' ? 'CCW' : 'CW';
-    cumBlue.push(blueDir);
-    cumRed.push(redDir);
+    if (bPat[i]) leftDir = leftDir === 'CW' ? 'CCW' : 'CW';
+    if (rPat[i]) rightDir = rightDir === 'CW' ? 'CCW' : 'CW';
+    cumLeft.push(leftDir);
+    cumRight.push(rightDir);
   }
-  const cumBoundary = cumBlue[n-1] === 'CW' && cumRed[n-1] === 'CW'; // returns to start?
+  const cumBoundary = cumLeft[n-1] === 'CW' && cumRight[n-1] === 'CW'; // returns to start?
 
-  console.log(`\n  Per-beat model (seeder):     blue=[${perBeatBlue.join(',')}]  red=[${perBeatRed.join(',')}]`);
-  console.log(`    Boundary: last=${perBeatBlue[n-1]}/${perBeatRed[n-1]} vs first=${perBeatBlue[0]}/${perBeatRed[0]} → ${perBeatBoundary ? '✓ CLEAN' : '✗ MISMATCH'}`);
+  console.log(`\n  Per-beat model (seeder):     blue=[${perBeatLeft.join(',')}]  red=[${perBeatRight.join(',')}]`);
+  console.log(`    Boundary: last=${perBeatLeft[n-1]}/${perBeatRight[n-1]} vs first=${perBeatLeft[0]}/${perBeatRight[0]} → ${perBeatBoundary ? '✓ CLEAN' : '✗ MISMATCH'}`);
 
-  console.log(`\n  Cumulative model (physical): blue=[${cumBlue.join(',')}]  red=[${cumRed.join(',')}]`);
-  console.log(`    End state: blue=${cumBlue[n-1]} red=${cumRed[n-1]} → ${cumBoundary ? '✓ RETURNS TO START' : '✗ DOES NOT RETURN'}`);
+  console.log(`\n  Cumulative model (physical): blue=[${cumLeft.join(',')}]  red=[${cumRight.join(',')}]`);
+  console.log(`    End state: blue=${cumLeft[n-1]} red=${cumRight[n-1]} → ${cumBoundary ? '✓ RETURNS TO START' : '✗ DOES NOT RETURN'}`);
 
   // Show step-by-step for cumulative
   console.log(`\n  Step-by-step (cumulative):`);
@@ -78,17 +78,17 @@ function testPattern(name, blueRevs, redRevs, n) {
 }
 
 const patterns = [
-  { name: 'Continuous',  blue: [false,false,false,false], red: [false,false,false,false] },
-  { name: 'Book',        blue: [true,true,true,true],     red: [true,true,true,true] },
-  { name: 'Red Book',    blue: [false,false,false,false], red: [true,true,true,true] },
-  { name: 'Blue Book',   blue: [true,true,true,true],     red: [false,false,false,false] },
-  { name: 'Long Book',   blue: [true,false,true,false],   red: [true,false,true,false] },
-  { name: 'Alternating', blue: [false,true,false,true],   red: [true,false,true,false] },
+  { name: 'Continuous',  left: [false,false,false,false], right: [false,false,false,false] },
+  { name: 'Book',        left: [true,true,true,true],     right: [true,true,true,true] },
+  { name: 'Red Book',    left: [false,false,false,false], right: [true,true,true,true] },
+  { name: 'Blue Book',   left: [true,true,true,true],     right: [false,false,false,false] },
+  { name: 'Long Book',   left: [true,false,true,false],   right: [true,false,true,false] },
+  { name: 'Alternating', left: [false,true,false,true],   right: [true,false,true,false] },
 ];
 
 console.log("═══ 4-Step Patterns ═══\n");
 for (const p of patterns) {
-  testPattern(p.name, p.blue, p.red, 4);
+  testPattern(p.name, p.left, p.right, 4);
 }
 
 console.log("═══ 6-Step Patterns (Alternating & Long Book) ═══\n");

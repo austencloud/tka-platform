@@ -172,10 +172,10 @@ export function isStrictPlacedProp(propType: string): boolean {
  * If either prop is non-strict, normal handpoints are used for both.
  */
 export function pictographRequiresStrictHandpoints(
-  bluePropType: string,
-  redPropType: string
+  leftPropType: string,
+  rightPropType: string
 ): boolean {
-  return isStrictPlacedProp(bluePropType) && isStrictPlacedProp(redPropType);
+  return isStrictPlacedProp(leftPropType) && isStrictPlacedProp(rightPropType);
 }
 
 /**

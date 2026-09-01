@@ -11,7 +11,7 @@
   import { layoutTurnGlyph } from "./turn-glyph-layout";
 
   interface Props {
-    entries: { blue: number; red: number; blueFloat?: boolean; redFloat?: boolean }[];
+    entries: { left: number; right: number; leftFloat?: boolean; rightFloat?: boolean }[];
     /** Width of the containing glyph box, cqi. CardBack's box is 10cqi. */
     maxWidthCqi?: number;
   }
@@ -39,13 +39,13 @@
       <div class="bar-group">
         <div
           class="bar blue"
-          class:float={entry.blueFloat}
-          style="height: {barHeight(entry.blue, !!entry.blueFloat)}cqi;"
+          class:float={entry.leftFloat}
+          style="height: {barHeight(entry.left, !!entry.leftFloat)}cqi;"
         ></div>
         <div
           class="bar red"
-          class:float={entry.redFloat}
-          style="height: {barHeight(entry.red, !!entry.redFloat)}cqi;"
+          class:float={entry.rightFloat}
+          style="height: {barHeight(entry.right, !!entry.rightFloat)}cqi;"
         ></div>
       </div>
     {/each}

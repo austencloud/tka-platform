@@ -10,7 +10,7 @@ Child components (GridSvg, ArrowSvg) detect dark mode via MutationObserver.
 
 Props:
 - pictograph: Pre-calculated pictograph data with positions
-- blueReversal/redReversal: Reversal indicator states
+- leftReversal/rightReversal: Reversal indicator states
 - All visibility controls (explicit, not from global state)
 
 Usage:
@@ -50,18 +50,23 @@ Usage:
   import { turnsTupleGenerator } from "../../arrow/positioning/placement/services/turns-tuple-generator";
   import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
+  import {
+    type ElementalType,
+    HandSide,
+    type HandSide as HandSideValue,
+  } from "../domain/enums/pictograph-enums";
   import { deriveTnDFromPictograph } from "../domain/utils/tnd-deriver";
 
   // Props - all explicit, no global state dependencies
   let {
     pictograph,
-    blueReversal = false,
-    redReversal = false,
+    leftReversal = false,
+    rightReversal = false,
     // Motion visibility (hides arrows + props for that hand)
-    blueMotionVisible = true,
-    redMotionVisible = true,
-    blueColorOverride = undefined,
-    redColorOverride = undefined,
+    leftMotionVisible = true,
+    rightMotionVisible = true,
+    leftColorOverride = undefined,
+    rightColorOverride = undefined,
     // Core visibility controls
     showGrid = true,
     showTKA = true,
@@ -70,6 +75,7 @@ Usage:
     // Extended glyph visibility controls
     showTnD = false,
     showElemental = false,
+    propElementalType = null,
     showPositions = false,
     // Hand point visibility (all = show all 8, active = only where props are)
     handPointVisibility = "all",
@@ -131,15 +137,15 @@ Usage:
     onGridReady = undefined,
   } = $props<{
     pictograph: PreparedPictographData;
-    blueReversal?: boolean;
-    redReversal?: boolean;
+    leftReversal?: boolean;
+    rightReversal?: boolean;
     /** Hide blue hand arrows + props when false */
-    blueMotionVisible?: boolean;
+    leftMotionVisible?: boolean;
     /** Hide red hand arrows + props when false */
-    redMotionVisible?: boolean;
+    rightMotionVisible?: boolean;
     /** Display-only hand colors for Tunnel performer cards. */
-    blueColorOverride?: string;
-    redColorOverride?: string;
+    leftColorOverride?: string;
+    rightColorOverride?: string;
     /** Master toggle for grid visibility */
     showGrid?: boolean;
     showTKA?: boolean;
@@ -147,6 +153,8 @@ Usage:
     showNonRadialPoints?: boolean;
     showTnD?: boolean;
     showElemental?: boolean;
+    /** Optional prop-path TnD element, rendered opposite the hand-path glyph. */
+    propElementalType?: ElementalType | null;
     showPositions?: boolean;
     /** Hand point visibility mode: "all" shows all 8 points, "active" shows only where props are, "none" hides all */
     handPointVisibility?: "all" | "active" | "none";
@@ -158,13 +166,13 @@ Usage:
     /** Keep overlays mounted while hidden so opacity fades play (live DOM, not export) */
     animateVisibility?: boolean;
     gridModeOverride?: GridMode | null;
-    visibleHand?: "blue" | "red" | null;
+    visibleHand?: HandSideValue | null;
     arrowsClickable?: boolean;
     /** Renderable option: hide arrows entirely (props + grid still render). Default true. */
     showArrow?: boolean;
     propsClickable?: boolean;
-    selectedPropHand?: "blue" | "red" | null;
-    onPropClick?: (hand: "blue" | "red") => void;
+    selectedPropHand?: HandSideValue | null;
+    onPropClick?: (hand: HandSideValue) => void;
     /** Dark Mode override for export. When set, overrides CSS-based detection. */
     darkMode?: boolean;
     /** Editor grids opt in to context-scoped prop contrast. */
@@ -186,9 +194,7 @@ Usage:
     /** Stable editor identity for prop and arrow position caching. */
     transitionKey?: string | null;
     /** Per-hand live positions for an in-place pictograph motion. */
-    propPositionOverrides?: Partial<
-      Record<"blue" | "red", PropPosition>
-    > | null;
+    propPositionOverrides?: Partial<Record<HandSideValue, PropPosition>> | null;
     /** Opacity applied to the complete arrow layer. */
     arrowOpacity?: number;
     /** Duration multiplier for the step (1 = default one beat, shown when != 1) */
@@ -223,13 +229,16 @@ Usage:
         return pictograph._prepared.gridMode;
       }
       if (
-        !isVisibleMotion(pictograph.motions?.blue) ||
-        !isVisibleMotion(pictograph.motions?.red)
+        !isVisibleMotion(pictograph.motions?.left) ||
+        !isVisibleMotion(pictograph.motions?.right)
       ) {
         return GridMode.DIAMOND;
       }
       try {
-        return deriveGridMode(pictograph.motions.blue, pictograph.motions.red);
+        return deriveGridMode(
+          pictograph.motions.left,
+          pictograph.motions.right
+        );
       } catch {
         return GridMode.DIAMOND;
       }
@@ -253,17 +262,19 @@ Usage:
   const motions = $derived.by(() => {
     if (!pictograph.motions) return [];
     return (
-      Object.entries(pictograph.motions)
+      [HandSide.LEFT, HandSide.RIGHT]
+        .map((hand) => [hand, pictograph.motions[hand]] as const)
         // invisible placeholder = hand not really there (both-required Step shape)
-        .filter((entry): entry is [string, MotionData] =>
-          isVisibleMotion(entry[1] as MotionData | undefined)
+        .filter((entry): entry is readonly [HandSideValue, MotionData] =>
+          isVisibleMotion(entry[1])
         )
-        .filter(([color]) => visibleHand === null || color === visibleHand)
-        .sort(([a], [b]) => (a === "blue" ? -1 : 1))
-        .map(([color, data]) => ({
-          color: color as "blue" | "red",
+        .filter(([hand]) => visibleHand === null || hand === visibleHand)
+        .map(([hand, data]) => ({
+          hand,
           data,
-          opacity: (color === "blue" ? blueMotionVisible : redMotionVisible)
+          opacity: (
+            hand === HandSide.LEFT ? leftMotionVisible : rightMotionVisible
+          )
             ? 1
             : DIMMED_OPACITY,
         }))
@@ -275,47 +286,48 @@ Usage:
     // Need exactly 2 arrows with split data to detect overlap
     if (motions.length < 2) return false;
 
-    const blue = motions.find((m) => m.color === "blue");
-    const red = motions.find((m) => m.color === "red");
-    if (!blue || !red) return false;
+    const left = motions.find((m) => m.hand === HandSide.LEFT);
+    const right = motions.find((m) => m.hand === HandSide.RIGHT);
+    if (!left || !right) return false;
 
-    const blueAssets = arrowAssets["blue"];
-    const redAssets = arrowAssets["red"];
-    const bluePos = arrowPositions["blue"];
-    const redPos = arrowPositions["red"];
+    const leftAssets = arrowAssets[HandSide.LEFT];
+    const rightAssets = arrowAssets[HandSide.RIGHT];
+    const leftPos = arrowPositions[HandSide.LEFT];
+    const rightPos = arrowPositions[HandSide.RIGHT];
 
     // Both arrows need split data and positions
-    if (!blueAssets?.tipBBox || !bluePos || !redAssets || !redPos) return false;
+    if (!leftAssets?.tipBBox || !leftPos || !rightAssets || !rightPos)
+      return false;
 
-    // Transform blue tip bbox to pictograph space
+    // Transform left tip bbox to pictograph space
     // (simplified: offset by arrow position, ignore rotation for AABB approximation)
-    const blueTip = {
-      x: bluePos.x + blueAssets.tipBBox.x - (blueAssets.center?.x ?? 0),
-      y: bluePos.y + blueAssets.tipBBox.y - (blueAssets.center?.y ?? 0),
-      width: blueAssets.tipBBox.width,
-      height: blueAssets.tipBBox.height,
+    const leftTip = {
+      x: leftPos.x + leftAssets.tipBBox.x - (leftAssets.center?.x ?? 0),
+      y: leftPos.y + leftAssets.tipBBox.y - (leftAssets.center?.y ?? 0),
+      width: leftAssets.tipBBox.width,
+      height: leftAssets.tipBBox.height,
     };
 
-    // Red arrow overall bbox in pictograph space
-    const redBox = {
-      x: redPos.x - (redAssets.center?.x ?? 0),
-      y: redPos.y - (redAssets.center?.y ?? 0),
-      width: redAssets.viewBox.width,
-      height: redAssets.viewBox.height,
+    // Right arrow overall bbox in pictograph space
+    const rightBox = {
+      x: rightPos.x - (rightAssets.center?.x ?? 0),
+      y: rightPos.y - (rightAssets.center?.y ?? 0),
+      width: rightAssets.viewBox.width,
+      height: rightAssets.viewBox.height,
     };
 
     // AABB intersection test
     return (
-      blueTip.x < redBox.x + redBox.width &&
-      blueTip.x + blueTip.width > redBox.x &&
-      blueTip.y < redBox.y + redBox.height &&
-      blueTip.y + blueTip.height > redBox.y
+      leftTip.x < rightBox.x + rightBox.width &&
+      leftTip.x + leftTip.width > rightBox.x &&
+      leftTip.y < rightBox.y + rightBox.height &&
+      leftTip.y + leftTip.height > rightBox.y
     );
   });
 
   // Both motions fully visible - glyphs that depend on both hands use this
   const bothMotionsFullyVisible = $derived(
-    blueMotionVisible && redMotionVisible
+    leftMotionVisible && rightMotionVisible
   );
 
   // Glyph opacity: full when both motions visible, dimmed when one is off
@@ -341,8 +353,8 @@ Usage:
   // DirectionDot to show incorrectly on all pictographs
   const turnsTuple = $derived.by(() => {
     if (
-      !isVisibleMotion(pictograph?.motions?.blue) ||
-      !isVisibleMotion(pictograph?.motions?.red)
+      !isVisibleMotion(pictograph?.motions?.left) ||
+      !isVisibleMotion(pictograph?.motions?.right)
     ) {
       return "(0, 0)";
     }
@@ -355,8 +367,8 @@ Usage:
 
   // Check if we have valid data for glyphs
   const hasValidData = $derived(
-    isVisibleMotion(pictograph?.motions?.blue) ||
-      isVisibleMotion(pictograph?.motions?.red)
+    isVisibleMotion(pictograph?.motions?.left) ||
+      isVisibleMotion(pictograph?.motions?.right)
   );
 
   // Track loaded letter dimensions with $state for reactivity
@@ -443,29 +455,29 @@ Usage:
       {/if}
 
       <!-- Props -->
-      {#each motions as { color, data, opacity } (color)}
+      {#each motions as { hand, data, opacity } (hand)}
         {@const motionPosition =
-          propPositionOverrides?.[color] ?? propPositions[color]}
-        {#if propAssets[color] && motionPosition}
+          propPositionOverrides?.[hand] ?? propPositions[hand]}
+        {#if propAssets[hand] && motionPosition}
           <g {opacity}>
             <PropSvg
               motionData={data}
-              propAssets={propAssets[color]}
+              propAssets={propAssets[hand]}
               propPosition={motionPosition}
               showProp={true}
               isClickable={propsClickable}
-              isSelected={selectedPropHand === color}
+              isSelected={selectedPropHand === hand}
               onPropClick={propsClickable && onPropClick
-                ? () => onPropClick(color)
+                ? () => onPropClick(hand)
                 : undefined}
               {cellIndex}
               {transitionKey}
-              directPositioning={propPositionOverrides?.[color] !== undefined}
+              directPositioning={propPositionOverrides?.[hand] !== undefined}
               {propRenderContext}
               darkMode={darkMode ?? false}
-              colorOverride={color === "blue"
-                ? blueColorOverride
-                : redColorOverride}
+              colorOverride={hand === HandSide.LEFT
+                ? leftColorOverride
+                : rightColorOverride}
             />
           </g>
         {/if}
@@ -475,72 +487,72 @@ Usage:
       <g class="pictograph-arrows" opacity={effectiveArrowOpacity}>
         {#if tipPromotionNeeded}
           <!-- Split rendering: shafts first, then tips on top -->
-          {#each motions as { color, data, opacity } (color + "-shaft")}
-            {#if arrowAssets[color] && arrowPositions[color]}
+          {#each motions as { hand, data, opacity } (hand + "-shaft")}
+            {#if arrowAssets[hand] && arrowPositions[hand]}
               <g {opacity}>
                 <ArrowSvg
                   motionData={data}
-                  {color}
+                  color={hand}
                   pictographData={pictograph}
-                  arrowAssets={arrowAssets[color]}
-                  arrowPosition={arrowPositions[color]}
-                  shouldMirror={arrowMirroring[color] || false}
+                  arrowAssets={arrowAssets[hand]}
+                  arrowPosition={arrowPositions[hand]}
+                  shouldMirror={arrowMirroring[hand] || false}
                   {showArrow}
                   isClickable={arrowsClickable}
                   {cellIndex}
                   {transitionKey}
                   {darkMode}
                   renderPart="shaft"
-                  colorOverride={color === "blue"
-                    ? blueColorOverride
-                    : redColorOverride}
+                  colorOverride={hand === HandSide.LEFT
+                    ? leftColorOverride
+                    : rightColorOverride}
                 />
               </g>
             {/if}
           {/each}
-          {#each motions as { color, data, opacity } (color + "-tip")}
-            {#if arrowAssets[color] && arrowPositions[color]}
+          {#each motions as { hand, data, opacity } (hand + "-tip")}
+            {#if arrowAssets[hand] && arrowPositions[hand]}
               <g {opacity}>
                 <ArrowSvg
                   motionData={data}
-                  {color}
+                  color={hand}
                   pictographData={pictograph}
-                  arrowAssets={arrowAssets[color]}
-                  arrowPosition={arrowPositions[color]}
-                  shouldMirror={arrowMirroring[color] || false}
+                  arrowAssets={arrowAssets[hand]}
+                  arrowPosition={arrowPositions[hand]}
+                  shouldMirror={arrowMirroring[hand] || false}
                   {showArrow}
                   isClickable={arrowsClickable}
                   {cellIndex}
                   {transitionKey}
                   {darkMode}
                   renderPart="tip"
-                  colorOverride={color === "blue"
-                    ? blueColorOverride
-                    : redColorOverride}
+                  colorOverride={hand === HandSide.LEFT
+                    ? leftColorOverride
+                    : rightColorOverride}
                 />
               </g>
             {/if}
           {/each}
         {:else}
           <!-- Normal rendering: single combined path per arrow (identical to current behavior) -->
-          {#each motions as { color, data, opacity } (color)}
-            {#if arrowAssets[color] && arrowPositions[color]}
+          {#each motions as { hand, data, opacity } (hand)}
+            {#if arrowAssets[hand] && arrowPositions[hand]}
               <g {opacity}>
                 <ArrowSvg
                   motionData={data}
-                  {color}
+                  color={hand}
                   pictographData={pictograph}
-                  arrowAssets={arrowAssets[color]}
-                  arrowPosition={arrowPositions[color]}
-                  shouldMirror={arrowMirroring[color] || false}
+                  arrowAssets={arrowAssets[hand]}
+                  arrowPosition={arrowPositions[hand]}
+                  shouldMirror={arrowMirroring[hand] || false}
                   {showArrow}
                   isClickable={arrowsClickable}
                   {cellIndex}
                   {transitionKey}
                   {darkMode}
-                  colorOverride={color === "blue"
-                    ? blueColorOverride
-                    : redColorOverride}
+                  colorOverride={hand === HandSide.LEFT
+                    ? leftColorOverride
+                    : rightColorOverride}
                 />
               </g>
             {/if}
@@ -606,14 +618,14 @@ Usage:
 
     <!-- Reversal indicators -->
     <ReversalIndicators
-      {blueReversal}
-      {redReversal}
+      {leftReversal}
+      {rightReversal}
       {hasValidData}
       visible={showReversals}
       {previewMode}
       onToggle={onToggleReversals}
-      {blueMotionVisible}
-      {redMotionVisible}
+      {leftMotionVisible}
+      {rightMotionVisible}
     />
 
     <!-- Fused Elemental + TnD glyph (bottom-right) -->
@@ -629,6 +641,25 @@ Usage:
         xOffset={rightGlyphOffset}
       />
     </g>
+
+    <!-- Optional prop-path relationship (top-right). The existing bottom-right
+         glyph remains the hand-path relationship. Position carries the visual
+         distinction without adding repeated labels to every pictograph. -->
+    {#if propElementalType}
+      <g opacity={glyphOpacity}>
+        <ElementalGlyph
+          elementalType={propElementalType}
+          {hasValidData}
+          visible={showElemental || showTnD}
+          {previewMode}
+          {animateVisibility}
+          onToggle={onToggleElemental ?? onToggleTnD}
+          xOffset={rightGlyphOffset}
+          corner="top-right"
+          ariaLabel={`Prop timing and direction element: ${propElementalType}`}
+        />
+      </g>
+    {/if}
 
     <!-- Position glyph -->
     <g opacity={glyphOpacity}>
@@ -656,8 +687,8 @@ Usage:
 
     <!-- Path shape accidental glyph (top center, only when per-step override set) -->
     <PathShapeGlyph
-      blueMotion={pictograph.motions?.blue}
-      redMotion={pictograph.motions?.red}
+      leftMotion={pictograph.motions?.left}
+      rightMotion={pictograph.motions?.right}
       {darkMode}
     />
   </svg>

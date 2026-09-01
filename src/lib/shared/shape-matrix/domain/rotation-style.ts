@@ -1,6 +1,6 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -27,11 +27,11 @@ export function classifyRotationStyle(sequence: SequenceData): RotationStyle {
     const motions = step.motions as unknown as Partial<
       Record<string, { motionType?: string; prefloatMotionType?: string }>
     >;
-    const blue = spin(motions[MotionColor.BLUE]);
-    const red = spin(motions[MotionColor.RED]);
-    if (!blue || !red) continue;
-    if (blue === "pro" && red === "pro") return "iso";
-    if (blue === "anti" && red === "anti") return "antispin";
+    const left = spin(motions[HandSide.LEFT]);
+    const right = spin(motions[HandSide.RIGHT]);
+    if (!left || !right) continue;
+    if (left === "pro" && right === "pro") return "iso";
+    if (left === "anti" && right === "anti") return "antispin";
     return "hybrid";
   }
   return "hybrid";

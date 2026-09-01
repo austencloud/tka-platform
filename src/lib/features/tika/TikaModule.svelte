@@ -16,6 +16,7 @@
   import { Chat, type UIMessage } from "@ai-sdk/svelte";
   import { DefaultChatTransport } from "ai";
   import { browser } from "$app/environment";
+  import { trackTikaQuestionSubmitted } from "$lib/features/tika/analytics/tika-events";
   import { onMount } from "svelte";
   import TikaConversation from "./components/TikaConversation.svelte";
   import TikaReviewPanel from "./components/TikaReviewPanel.svelte";
@@ -446,7 +447,13 @@
         console.warn("[TIKA] Failed to load conversation memory:", error);
       }
     }
-    chat?.sendMessage({ text: question });
+    if (!chat) return;
+    trackTikaQuestionSubmitted({
+      mode: "single",
+      modelCount: 1,
+      authenticated: isAuthenticated,
+    });
+    chat.sendMessage({ text: question });
   }
 
   // Handle stop/abort streaming
@@ -484,8 +491,14 @@
         console.warn("[TIKA] Failed to load conversation memory:", error);
       }
     }
-    chatA?.sendMessage({ text: question });
-    chatB?.sendMessage({ text: question });
+    if (!chatA || !chatB) return;
+    trackTikaQuestionSubmitted({
+      mode: "compare",
+      modelCount: 2,
+      authenticated: isAuthenticated,
+    });
+    chatA.sendMessage({ text: question });
+    chatB.sendMessage({ text: question });
   }
 
   function handleCompareStop() {

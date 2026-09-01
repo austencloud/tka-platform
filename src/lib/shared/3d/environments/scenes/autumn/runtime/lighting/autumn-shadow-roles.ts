@@ -5,11 +5,7 @@
  * caster set is deliberate. A caster costs a second depth rasterisation every
  * frame, so the list is limited to things whose silhouette actually lands
  * inside the clearing-sized shadow camera and reads at performance distance:
- * the eleven imported foreground trees, logs, boulders, ferns and the owl.
- *
- * Hero trees cast from their loaded GLB geometry. That costs more than an
- * approximation, but it keeps every trunk, branch, root, and crown projection
- * joined to the object the viewer can actually see.
+ * the logs, boulders, ferns and the owl.
  *
  * The near belt and the new middle/far depth groves are excluded on purpose.
  * They begin outside the clearing-sized shadow camera and continue beyond the
@@ -25,10 +21,12 @@
  * small procedural fungi, birches, snags, the Poly Haven rocks) into unnamed
  * InstancedMesh batches. Those hit the receive-only default rather than the
  * caster list. That is the right outcome anyway - they are small understory and
- * far-belt geometry. Hero B is the exception: its three hero placements and
- * four saplings collapse into one unnamed InstancedMesh. Shadow participation
- * applies to the whole batch, so its authored material name is part of the
- * role contract alongside the individually named Hero A meshes.
+ * far-belt geometry. Hero B's three hero placements and four saplings collapse
+ * into one unnamed InstancedMesh. Casting from that mixed batch produced the
+ * disconnected shadow islands found in the walk audit, so it stays receive-only.
+ * The individually named Hero A meshes stay receive-only for the same reason:
+ * their full crowns project clearing-sized silhouettes that read as unrelated
+ * grey ground patches instead of useful contact darkening.
  */
 
 import type { Mesh } from "three";
@@ -42,11 +40,11 @@ const NEITHER: AutumnShadowRole = { cast: false, receive: false };
 const RECEIVE_ONLY: AutumnShadowRole = { cast: false, receive: true };
 const CAST_AND_RECEIVE: AutumnShadowRole = { cast: true, receive: true };
 
-const HERO_TREE_PREFIXES = ["HeroTreeA_", "HeroTreeB_"];
-const HERO_TREE_MATERIAL_PREFIXES = ["Autumn Hero A PBR", "Autumn Hero B PBR"];
-
 /** Owned by AutumnWind, or too far out to reach the shadow camera. */
 const EXCLUDED_PREFIXES = [
+  // Starts beyond the +/-20m shadow camera. Sampling that map on the 1,024m
+  // fog apron creates false diagonal seams without receiving any real caster.
+  "Autumn_Terrain_Apron",
   "Autumn_Grass_",
   "DistantBirch",
   "DistantLarch",
@@ -97,14 +95,6 @@ export function resolveAutumnShadowRole(
   name: string,
   materialNames: readonly string[] = []
 ): AutumnShadowRole {
-  if (
-    hasPrefix(name, HERO_TREE_PREFIXES) ||
-    materialNames.some((materialName) =>
-      hasPrefix(materialName, HERO_TREE_MATERIAL_PREFIXES)
-    )
-  ) {
-    return CAST_AND_RECEIVE;
-  }
   if (!name) return RECEIVE_ONLY;
   if (hasPrefix(name, EXCLUDED_PREFIXES)) return NEITHER;
   if (hasPrefix(name, RECEIVER_PREFIXES)) return RECEIVE_ONLY;

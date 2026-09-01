@@ -15,7 +15,7 @@ import { loopExecutorSelector } from "./LOOPExecutorSelector.js";
 import { closeOrientationCycle } from "./orientation-cycle.js";
 
 export interface MotionData {
-  color: string;
+  hand: string;
   startLocation: string;
   endLocation: string;
   motionType: string;
@@ -30,8 +30,8 @@ export interface PictographData {
   endPosition: string;
   timing: string;
   direction: string;
-  blueMotion: MotionData;
-  redMotion: MotionData;
+  leftMotion: MotionData;
+  rightMotion: MotionData;
 }
 
 export interface LOOPExecutionResult {
@@ -123,8 +123,8 @@ function recoverLetters(
     if (step.stepNumber === 0 || step.stepNumber <= seedStepCount) return step;
 
     const letter = findLetterByMotions(
-      step.motions.blue,
-      step.motions.red,
+      step.motions.left,
+      step.motions.right,
       allPictographs
     );
     return letter
@@ -158,8 +158,8 @@ function cloneStep(step: SequenceStep): SequenceStep {
   return {
     ...step,
     motions: {
-      blue: { ...step.motions.blue } as Motion,
-      red: { ...step.motions.red } as Motion,
+      left: { ...step.motions.left } as Motion,
+      right: { ...step.motions.right } as Motion,
     },
   };
 }

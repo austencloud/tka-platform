@@ -13,8 +13,8 @@
 
   const state = getQftAppContext();
 
-  function handName(hand: "blue" | "red"): string {
-    const selection = hand === "blue" ? state.blue : state.red;
+  function handName(hand: "left" | "right"): string {
+    const selection = hand === "left" ? state.left : state.right;
     const source = selection.source;
     if (source.kind === "preset") {
       return (
@@ -29,33 +29,33 @@
 
   const title = $derived(
     state.handCount === "one"
-      ? handName("blue")
-      : `${handName("blue")} × ${handName("red")}`
+      ? handName("left")
+      : `${handName("left")} × ${handName("right")}`
   );
   const detail = $derived(
     state.handCount === "one"
-      ? `radius ${state.blue.radius.toFixed(2)} prop lengths`
-      : `${MODE_LABEL[state.vtgMode]} · blue radius ${state.blue.radius.toFixed(2)} · red radius ${state.red.radius.toFixed(2)}`
+      ? `radius ${state.left.radius.toFixed(2)} prop lengths`
+      : `${MODE_LABEL[state.vtgMode]} · blue radius ${state.left.radius.toFixed(2)} · red radius ${state.right.radius.toFixed(2)}`
   );
 
   const stageHands = $derived<QftStageHand[]>(
     state.handCount === "one"
       ? [
           {
-            trajectory: state.blueTrajectory,
-            increments: state.blueIncrements,
+            trajectory: state.leftTrajectory,
+            increments: state.leftIncrements,
             tone: "accent",
           },
         ]
       : [
           {
-            trajectory: state.blueTrajectory,
-            increments: state.blueIncrements,
+            trajectory: state.leftTrajectory,
+            increments: state.leftIncrements,
             tone: "blue",
           },
           {
-            trajectory: state.redTrajectory,
-            increments: state.redIncrements ?? [],
+            trajectory: state.rightTrajectory,
+            increments: state.rightIncrements ?? [],
             tone: "red",
           },
         ]
@@ -81,11 +81,11 @@
   {#if !state.phone}
     <aside class="controls-panel themed-scrollbar" aria-label="QfT controls">
       {#if state.handCount === "one"}
-        <QftHandControls hand="blue" tone="accent" />
+        <QftHandControls hand="left" tone="accent" />
       {:else}
         <div class="hand-pair">
-          <QftHandControls hand="blue" tone="blue" />
-          <QftHandControls hand="red" tone="red" />
+          <QftHandControls hand="left" tone="blue" />
+          <QftHandControls hand="right" tone="red" />
         </div>
       {/if}
       <QftRelationshipControls />

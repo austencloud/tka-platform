@@ -11,7 +11,10 @@ import type { StepPairRelationship, LetterRelationshipInfo } from "./types";
 /**
  * Analyze the relationship between two steps.
  */
-export function analyzeBeatPair(step1: StepData, step2: StepData): StepPairRelationship {
+export function analyzeBeatPair(
+  step1: StepData,
+  step2: StepData
+): StepPairRelationship {
   const transformations: string[] = [];
 
   // Check IDENTICAL first (no transformation)
@@ -118,22 +121,22 @@ function analyzeLetterRelationship(
 }
 
 function isIdentical(step1: Step, step2: Step): boolean {
-  const blue1 = step1.motions.blue;
-  const blue2 = step2.motions.blue;
-  const red1 = step1.motions.red;
-  const red2 = step2.motions.red;
+  const left1 = step1.motions.left;
+  const left2 = step2.motions.left;
+  const right1 = step1.motions.right;
+  const right2 = step2.motions.right;
 
-  if (!blue1 || !blue2 || !red1 || !red2) {
+  if (!left1 || !left2 || !right1 || !right2) {
     return false;
   }
 
   return (
-    blue1.startLocation === blue2.startLocation &&
-    blue1.endLocation === blue2.endLocation &&
-    blue1.motionType === blue2.motionType &&
-    red1.startLocation === red2.startLocation &&
-    red1.endLocation === red2.endLocation &&
-    red1.motionType === red2.motionType
+    left1.startLocation === left2.startLocation &&
+    left1.endLocation === left2.endLocation &&
+    left1.motionType === left2.motionType &&
+    right1.startLocation === right2.startLocation &&
+    right1.endLocation === right2.endLocation &&
+    right1.motionType === right2.motionType
   );
 }
 
@@ -153,41 +156,41 @@ function isRotated(step1: Step, step2: Step): boolean {
     return map[loc.toLowerCase()] || loc;
   };
 
-  const blue1 = step1.motions.blue;
-  const blue2 = step2.motions.blue;
-  const red1 = step1.motions.red;
-  const red2 = step2.motions.red;
+  const left1 = step1.motions.left;
+  const left2 = step2.motions.left;
+  const right1 = step1.motions.right;
+  const right2 = step2.motions.right;
 
-  if (!blue1 || !blue2 || !red1 || !red2) {
+  if (!left1 || !left2 || !right1 || !right2) {
     return false;
   }
 
   return (
-    rotate180(blue1.startLocation) === blue2.startLocation.toLowerCase() &&
-    rotate180(blue1.endLocation) === blue2.endLocation.toLowerCase() &&
-    rotate180(red1.startLocation) === red2.startLocation.toLowerCase() &&
-    rotate180(red1.endLocation) === red2.endLocation.toLowerCase()
+    rotate180(left1.startLocation) === left2.startLocation.toLowerCase() &&
+    rotate180(left1.endLocation) === left2.endLocation.toLowerCase() &&
+    rotate180(right1.startLocation) === right2.startLocation.toLowerCase() &&
+    rotate180(right1.endLocation) === right2.endLocation.toLowerCase()
   );
 }
 
 function isSwapped(step1: Step, step2: Step): boolean {
-  const blue1 = step1.motions.blue;
-  const blue2 = step2.motions.blue;
-  const red1 = step1.motions.red;
-  const red2 = step2.motions.red;
+  const left1 = step1.motions.left;
+  const left2 = step2.motions.left;
+  const right1 = step1.motions.right;
+  const right2 = step2.motions.right;
 
-  if (!blue1 || !blue2 || !red1 || !red2) {
+  if (!left1 || !left2 || !right1 || !right2) {
     return false;
   }
 
   // Swapped means blue↔red swap - locations AND motion types must match
   return (
-    blue1.startLocation === red2.startLocation &&
-    blue1.endLocation === red2.endLocation &&
-    blue1.motionType === red2.motionType &&
-    red1.startLocation === blue2.startLocation &&
-    red1.endLocation === blue2.endLocation &&
-    red1.motionType === blue2.motionType
+    left1.startLocation === right2.startLocation &&
+    left1.endLocation === right2.endLocation &&
+    left1.motionType === right2.motionType &&
+    right1.startLocation === left2.startLocation &&
+    right1.endLocation === left2.endLocation &&
+    right1.motionType === left2.motionType
   );
 }
 
@@ -207,21 +210,21 @@ function isMirrored(step1: Step, step2: Step): boolean {
     return map[loc.toLowerCase()] || loc;
   };
 
-  const blue1 = step1.motions.blue;
-  const blue2 = step2.motions.blue;
-  const red1 = step1.motions.red;
-  const red2 = step2.motions.red;
+  const left1 = step1.motions.left;
+  const left2 = step2.motions.left;
+  const right1 = step1.motions.right;
+  const right2 = step2.motions.right;
 
-  if (!blue1 || !blue2 || !red1 || !red2) {
+  if (!left1 || !left2 || !right1 || !right2) {
     return false;
   }
 
   return (
-    mirrorVertical(blue1.startLocation) ===
-      blue2.startLocation.toLowerCase() &&
-    mirrorVertical(blue1.endLocation) === blue2.endLocation.toLowerCase() &&
-    mirrorVertical(red1.startLocation) === red2.startLocation.toLowerCase() &&
-    mirrorVertical(red1.endLocation) === red2.endLocation.toLowerCase()
+    mirrorVertical(left1.startLocation) === left2.startLocation.toLowerCase() &&
+    mirrorVertical(left1.endLocation) === left2.endLocation.toLowerCase() &&
+    mirrorVertical(right1.startLocation) ===
+      right2.startLocation.toLowerCase() &&
+    mirrorVertical(right1.endLocation) === right2.endLocation.toLowerCase()
   );
 }
 
@@ -241,21 +244,21 @@ function isFlipped(step1: Step, step2: Step): boolean {
     return map[loc.toLowerCase()] || loc;
   };
 
-  const blue1 = step1.motions.blue;
-  const blue2 = step2.motions.blue;
-  const red1 = step1.motions.red;
-  const red2 = step2.motions.red;
+  const left1 = step1.motions.left;
+  const left2 = step2.motions.left;
+  const right1 = step1.motions.right;
+  const right2 = step2.motions.right;
 
-  if (!blue1 || !blue2 || !red1 || !red2) {
+  if (!left1 || !left2 || !right1 || !right2) {
     return false;
   }
 
   return (
-    flipHorizontal(blue1.startLocation) ===
-      blue2.startLocation.toLowerCase() &&
-    flipHorizontal(blue1.endLocation) === blue2.endLocation.toLowerCase() &&
-    flipHorizontal(red1.startLocation) === red2.startLocation.toLowerCase() &&
-    flipHorizontal(red1.endLocation) === red2.endLocation.toLowerCase()
+    flipHorizontal(left1.startLocation) === left2.startLocation.toLowerCase() &&
+    flipHorizontal(left1.endLocation) === left2.endLocation.toLowerCase() &&
+    flipHorizontal(right1.startLocation) ===
+      right2.startLocation.toLowerCase() &&
+    flipHorizontal(right1.endLocation) === right2.endLocation.toLowerCase()
   );
 }
 
@@ -268,30 +271,30 @@ function isInverted(step1: StepData, step2: StepData): boolean {
     return type;
   };
 
-  const blue1 = step1.motions.blue;
-  const blue2 = step2.motions.blue;
-  const red1 = step1.motions.red;
-  const red2 = step2.motions.red;
+  const left1 = step1.motions.left;
+  const left2 = step2.motions.left;
+  const right1 = step1.motions.right;
+  const right2 = step2.motions.right;
 
-  if (!blue1 || !blue2 || !red1 || !red2) {
+  if (!left1 || !left2 || !right1 || !right2) {
     return false;
   }
 
   // Check positions are identical AND motion types are inverted
   return (
-    blue1.startLocation === blue2.startLocation &&
-    blue1.endLocation === blue2.endLocation &&
-    red1.startLocation === red2.startLocation &&
-    red1.endLocation === red2.endLocation &&
-    invert(blue1.motionType) === blue2.motionType &&
-    invert(red1.motionType) === red2.motionType
+    left1.startLocation === left2.startLocation &&
+    left1.endLocation === left2.endLocation &&
+    right1.startLocation === right2.startLocation &&
+    right1.endLocation === right2.endLocation &&
+    invert(left1.motionType) === left2.motionType &&
+    invert(right1.motionType) === right2.motionType
   );
 }
 
 // Combined transformation checks - apply transformations in sequence
 
 function isRotatedThenSwapped(step1: Step, step2: Step): boolean {
-  // Apply rotation to step1, then swap colors, check if matches step2
+  // Apply rotation to step1, then swap hands, check if matches step2
   const rotate180 = (loc: string) => {
     const map: Record<string, string> = {
       n: "s",
@@ -306,12 +309,12 @@ function isRotatedThenSwapped(step1: Step, step2: Step): boolean {
     return map[loc.toLowerCase()] || loc;
   };
 
-  const blue1 = step1.motions.blue;
-  const blue2 = step2.motions.blue;
-  const red1 = step1.motions.red;
-  const red2 = step2.motions.red;
+  const left1 = step1.motions.left;
+  const left2 = step2.motions.left;
+  const right1 = step1.motions.right;
+  const right2 = step2.motions.right;
 
-  if (!blue1 || !blue2 || !red1 || !red2) {
+  if (!left1 || !left2 || !right1 || !right2) {
     return false;
   }
 
@@ -319,12 +322,12 @@ function isRotatedThenSwapped(step1: Step, step2: Step): boolean {
   // After swap: the rotated blue1 becomes new red, rotated red1 becomes new blue
   // So: new blue = rotated red1, new red = rotated blue1
   return (
-    rotate180(red1.startLocation) === blue2.startLocation.toLowerCase() &&
-    rotate180(red1.endLocation) === blue2.endLocation.toLowerCase() &&
-    red1.motionType === blue2.motionType &&
-    rotate180(blue1.startLocation) === red2.startLocation.toLowerCase() &&
-    rotate180(blue1.endLocation) === red2.endLocation.toLowerCase() &&
-    blue1.motionType === red2.motionType
+    rotate180(right1.startLocation) === left2.startLocation.toLowerCase() &&
+    rotate180(right1.endLocation) === left2.endLocation.toLowerCase() &&
+    right1.motionType === left2.motionType &&
+    rotate180(left1.startLocation) === right2.startLocation.toLowerCase() &&
+    rotate180(left1.endLocation) === right2.endLocation.toLowerCase() &&
+    left1.motionType === right2.motionType
   );
 }
 
@@ -350,22 +353,22 @@ function isRotatedThenInverted(step1: StepData, step2: StepData): boolean {
     return type;
   };
 
-  const blue1 = step1.motions.blue;
-  const blue2 = step2.motions.blue;
-  const red1 = step1.motions.red;
-  const red2 = step2.motions.red;
+  const left1 = step1.motions.left;
+  const left2 = step2.motions.left;
+  const right1 = step1.motions.right;
+  const right2 = step2.motions.right;
 
-  if (!blue1 || !blue2 || !red1 || !red2) {
+  if (!left1 || !left2 || !right1 || !right2) {
     return false;
   }
 
   return (
-    rotate180(blue1.startLocation) === blue2.startLocation.toLowerCase() &&
-    rotate180(blue1.endLocation) === blue2.endLocation.toLowerCase() &&
-    invert(blue1.motionType) === blue2.motionType &&
-    rotate180(red1.startLocation) === red2.startLocation.toLowerCase() &&
-    rotate180(red1.endLocation) === red2.endLocation.toLowerCase() &&
-    invert(red1.motionType) === red2.motionType
+    rotate180(left1.startLocation) === left2.startLocation.toLowerCase() &&
+    rotate180(left1.endLocation) === left2.endLocation.toLowerCase() &&
+    invert(left1.motionType) === left2.motionType &&
+    rotate180(right1.startLocation) === right2.startLocation.toLowerCase() &&
+    rotate180(right1.endLocation) === right2.endLocation.toLowerCase() &&
+    invert(right1.motionType) === right2.motionType
   );
 }
 
@@ -398,26 +401,26 @@ function isMirroredThenFlipped(step1: Step, step2: Step): boolean {
     return flipMap[mirrored] || mirrored;
   };
 
-  const blue1 = step1.motions.blue;
-  const blue2 = step2.motions.blue;
-  const red1 = step1.motions.red;
-  const red2 = step2.motions.red;
+  const left1 = step1.motions.left;
+  const left2 = step2.motions.left;
+  const right1 = step1.motions.right;
+  const right2 = step2.motions.right;
 
-  if (!blue1 || !blue2 || !red1 || !red2) {
+  if (!left1 || !left2 || !right1 || !right2) {
     return false;
   }
 
   return (
-    mirrorThenFlip(blue1.startLocation) ===
-      blue2.startLocation.toLowerCase() &&
-    mirrorThenFlip(blue1.endLocation) === blue2.endLocation.toLowerCase() &&
-    mirrorThenFlip(red1.startLocation) === red2.startLocation.toLowerCase() &&
-    mirrorThenFlip(red1.endLocation) === red2.endLocation.toLowerCase()
+    mirrorThenFlip(left1.startLocation) === left2.startLocation.toLowerCase() &&
+    mirrorThenFlip(left1.endLocation) === left2.endLocation.toLowerCase() &&
+    mirrorThenFlip(right1.startLocation) ===
+      right2.startLocation.toLowerCase() &&
+    mirrorThenFlip(right1.endLocation) === right2.endLocation.toLowerCase()
   );
 }
 
 function isMirroredThenSwapped(step1: Step, step2: Step): boolean {
-  // Apply mirror (e↔w) to step1, then swap colors, check if matches step2
+  // Apply mirror (e↔w) to step1, then swap hands, check if matches step2
   const mirrorVertical = (loc: string) => {
     const map: Record<string, string> = {
       n: "n",
@@ -432,12 +435,12 @@ function isMirroredThenSwapped(step1: Step, step2: Step): boolean {
     return map[loc.toLowerCase()] || loc;
   };
 
-  const blue1 = step1.motions.blue;
-  const blue2 = step2.motions.blue;
-  const red1 = step1.motions.red;
-  const red2 = step2.motions.red;
+  const left1 = step1.motions.left;
+  const left2 = step2.motions.left;
+  const right1 = step1.motions.right;
+  const right2 = step2.motions.right;
 
-  if (!blue1 || !blue2 || !red1 || !red2) {
+  if (!left1 || !left2 || !right1 || !right2) {
     return false;
   }
 
@@ -445,19 +448,19 @@ function isMirroredThenSwapped(step1: Step, step2: Step): boolean {
   // After swap: the mirrored blue1 becomes new red, mirrored red1 becomes new blue
   // So: new blue = mirrored red1, new red = mirrored blue1
   return (
-    mirrorVertical(red1.startLocation) ===
-      blue2.startLocation.toLowerCase() &&
-    mirrorVertical(red1.endLocation) === blue2.endLocation.toLowerCase() &&
-    red1.motionType === blue2.motionType &&
-    mirrorVertical(blue1.startLocation) ===
-      red2.startLocation.toLowerCase() &&
-    mirrorVertical(blue1.endLocation) === red2.endLocation.toLowerCase() &&
-    blue1.motionType === red2.motionType
+    mirrorVertical(right1.startLocation) ===
+      left2.startLocation.toLowerCase() &&
+    mirrorVertical(right1.endLocation) === left2.endLocation.toLowerCase() &&
+    right1.motionType === left2.motionType &&
+    mirrorVertical(left1.startLocation) ===
+      right2.startLocation.toLowerCase() &&
+    mirrorVertical(left1.endLocation) === right2.endLocation.toLowerCase() &&
+    left1.motionType === right2.motionType
   );
 }
 
 function isFlippedThenSwapped(step1: Step, step2: Step): boolean {
-  // Apply flip (n↔s) to step1, then swap colors, check if matches step2
+  // Apply flip (n↔s) to step1, then swap hands, check if matches step2
   const flipHorizontal = (loc: string) => {
     const map: Record<string, string> = {
       n: "s",
@@ -472,12 +475,12 @@ function isFlippedThenSwapped(step1: Step, step2: Step): boolean {
     return map[loc.toLowerCase()] || loc;
   };
 
-  const blue1 = step1.motions.blue;
-  const blue2 = step2.motions.blue;
-  const red1 = step1.motions.red;
-  const red2 = step2.motions.red;
+  const left1 = step1.motions.left;
+  const left2 = step2.motions.left;
+  const right1 = step1.motions.right;
+  const right2 = step2.motions.right;
 
-  if (!blue1 || !blue2 || !red1 || !red2) {
+  if (!left1 || !left2 || !right1 || !right2) {
     return false;
   }
 
@@ -485,13 +488,13 @@ function isFlippedThenSwapped(step1: Step, step2: Step): boolean {
   // After swap: the flipped blue1 becomes new red, flipped red1 becomes new blue
   // So: new blue = flipped red1, new red = flipped blue1
   return (
-    flipHorizontal(red1.startLocation) ===
-      blue2.startLocation.toLowerCase() &&
-    flipHorizontal(red1.endLocation) === blue2.endLocation.toLowerCase() &&
-    red1.motionType === blue2.motionType &&
-    flipHorizontal(blue1.startLocation) ===
-      red2.startLocation.toLowerCase() &&
-    flipHorizontal(blue1.endLocation) === red2.endLocation.toLowerCase() &&
-    blue1.motionType === red2.motionType
+    flipHorizontal(right1.startLocation) ===
+      left2.startLocation.toLowerCase() &&
+    flipHorizontal(right1.endLocation) === left2.endLocation.toLowerCase() &&
+    right1.motionType === left2.motionType &&
+    flipHorizontal(left1.startLocation) ===
+      right2.startLocation.toLowerCase() &&
+    flipHorizontal(left1.endLocation) === right2.endLocation.toLowerCase() &&
+    left1.motionType === right2.motionType
   );
 }

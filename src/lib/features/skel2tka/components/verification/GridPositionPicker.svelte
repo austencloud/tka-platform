@@ -14,11 +14,11 @@
     onSelect,
   }: {
     selected: GridLocation | null;
-    hand: "blue" | "red";
+    hand: "left" | "right";
     onSelect: (location: GridLocation) => void;
   } = $props();
 
-  const handColor = $derived(hand === "blue" ? "#3b82f6" : "#ef4444");
+  const handColor = $derived(hand === "left" ? "#3b82f6" : "#ef4444");
 
   interface GridButton {
     location: GridLocation;

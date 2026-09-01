@@ -37,9 +37,9 @@ export function resolveDisplayedPlacementGridMode(
   if (pictographData.gridMode) return pictographData.gridMode;
   if (motionData.gridMode) return motionData.gridMode;
 
-  const blue = pictographData.motions.blue;
-  const red = pictographData.motions.red;
-  return blue && red ? deriveGridMode(blue, red) : GridMode.DIAMOND;
+  const left = pictographData.motions.left;
+  const right = pictographData.motions.right;
+  return left && right ? deriveGridMode(left, right) : GridMode.DIAMOND;
 }
 
 /**
@@ -75,7 +75,7 @@ export function createCanonicalPlacementContext(
     ])
   ) as PictographData["motions"];
   const canonicalMotion = toDiamondMotion(motionData);
-  canonicalMotions[motionData.color] = canonicalMotion;
+  canonicalMotions[motionData.hand] = canonicalMotion;
 
   return {
     pictographData: {

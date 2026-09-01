@@ -14,7 +14,7 @@ import {
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type {
-  MotionColor} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  HandSide} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   MotionType,
   RotationDirection,
@@ -52,7 +52,7 @@ export function updateStepTurns(
   }
 
   const currentMotion: MotionData | undefined =
-    stepData.motions[color as MotionColor];
+    stepData.motions[color as HandSide];
   if (!currentMotion) {
     logger.warn(`No motion data for ${color}`);
     return;
@@ -105,7 +105,7 @@ export function updateStepTurns(
       ) {
         const steps = createModuleState.sequenceState.currentSequence?.steps;
         updatedRotationDirection = steps
-          ? findPreviousRotationDirection(steps, stepNumber, color as MotionColor)
+          ? findPreviousRotationDirection(steps, stepNumber, color as HandSide)
           : RotationDirection.CLOCKWISE;
         logger.log(
           `Auto-assigned ${updatedRotationDirection} rotation to ${updatedMotionType} motion with ${turnAmount} turns`
@@ -125,7 +125,7 @@ export function updateStepTurns(
   });
   const newEndOrientation = calculateEndOrientation(
     tempMotionData,
-    color as MotionColor
+    color as HandSide
   );
 
   // Create updated step data
@@ -222,7 +222,7 @@ export function updateStepTurns(
 export function findPreviousRotationDirection(
   steps: readonly StepData[],
   stepNumber: number,
-  color: MotionColor
+  color: HandSide
 ): RotationDirection {
   for (let i = stepNumber - 2; i >= 0; i--) {
     const motion = steps[i]?.motions?.[color];

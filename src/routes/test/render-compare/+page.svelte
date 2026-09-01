@@ -419,8 +419,8 @@
           const defaultPropType = PropType.STAFF;
 
           const motionsWithPropType = beat.motions ? {
-            blue: beat.motions.blue ? { ...beat.motions.blue, propType: beat.motions.blue.propType || defaultPropType } : undefined,
-            red: beat.motions.red ? { ...beat.motions.red, propType: beat.motions.red.propType || defaultPropType } : undefined
+            left: beat.motions.left ? { ...beat.motions.left, propType: beat.motions.left.propType || defaultPropType } : undefined,
+            right: beat.motions.right ? { ...beat.motions.right, propType: beat.motions.right.propType || defaultPropType } : undefined
           } : undefined;
 
           const pictograph: PictographData = {
@@ -438,8 +438,8 @@
             const svgString = await renderPictographToSVG(pictograph, BULK_SIZE, undefined, {
               showTKA: true,
               darkMode: true,
-              bluePropType: defaultPropType,
-              redPropType: defaultPropType
+              leftPropType: defaultPropType,
+              rightPropType: defaultPropType
             });
             const svgMs = performance.now() - svgStart;
             seqSvgTime += svgMs;
@@ -454,8 +454,8 @@
                 showReversals: true,
                 showNonRadialPoints: false,
                 darkMode: true,
-                bluePropType: defaultPropType,
-                redPropType: defaultPropType
+                leftPropType: defaultPropType,
+                rightPropType: defaultPropType
               }
             });
             const canvasMs = performance.now() - canvasStart;
@@ -578,8 +578,8 @@
         Letter: {realPictograph.letter} |
         Start: {realPictograph.startPosition} |
         End: {realPictograph.endPosition} |
-        Blue: {realPictograph.motions?.blue?.motionType} ({realPictograph.motions?.blue?.turns} turns) |
-        Red: {realPictograph.motions?.red?.motionType} ({realPictograph.motions?.red?.turns} turns)
+        Blue: {realPictograph.motions?.left?.motionType} ({realPictograph.motions?.left?.turns} turns) |
+        Red: {realPictograph.motions?.right?.motionType} ({realPictograph.motions?.right?.turns} turns)
       </div>
     {/if}
 

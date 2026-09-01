@@ -539,8 +539,15 @@ export class ThumbnailRenderOrchestrator {
               : ("qr_inconsistent" as const),
           };
         },
-        request.priority,
-        request.signal
+        {
+          priority: request.priority,
+          consumerSignal: request.signal,
+          // A QR thumbnail verifies and may rasterize every scan cell in both
+          // themes before composition. Production traces showed three of these
+          // competing in qr_bitmap for minutes, so they use the queue's
+          // exclusive lane while ordinary worker renders remain concurrent.
+          exclusive: key.inputs.visibility?.showQRCode === true,
+        }
       );
 
       // A second card requesting the same key shares the queue promise. Its

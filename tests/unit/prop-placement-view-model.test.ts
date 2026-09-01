@@ -12,7 +12,7 @@ import {
 } from "$lib/shared/pictograph/grid/services/prop-placement-view-model";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
-  MotionColor,
+  HandSide,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -22,14 +22,14 @@ describe("prop placement view model", () => {
       disabled: false,
       isComplete: false,
       canAim: true,
-      activeColor: MotionColor.BLUE as MotionColor | null,
-      dragColor: null as MotionColor | null,
+      activeHand: HandSide.LEFT as HandSide | null,
+      dragHand: null as HandSide | null,
       dragAim: null as Orientation | null,
-      hoverColor: null as MotionColor | null,
-      blueLocation: null,
-      redLocation: null,
-      blueNoun: "left prop",
-      redNoun: "right prop",
+      hoverHand: null as HandSide | null,
+      leftLocation: null,
+      rightLocation: null,
+      leftNoun: "left prop",
+      rightNoun: "right prop",
     };
 
     expect(buildPlacementPrompt(base).text).toBe(
@@ -38,14 +38,14 @@ describe("prop placement view model", () => {
     expect(
       buildPlacementPrompt({
         ...base,
-        activeColor: null,
-        hoverColor: MotionColor.RED,
+        activeHand: null,
+        hoverHand: HandSide.RIGHT,
       }).text
     ).toBe("Drag to aim the right prop");
     expect(
       buildPlacementPrompt({
         ...base,
-        dragColor: MotionColor.BLUE,
+        dragHand: HandSide.LEFT,
         dragAim: Orientation.COUNTER,
       }).text
     ).toBe("Aiming the left prop: Counter");
@@ -53,7 +53,7 @@ describe("prop placement view model", () => {
       buildPlacementPrompt({
         ...base,
         isComplete: true,
-        activeColor: null,
+        activeHand: null,
       }).text
     ).toBe("Drag a prop to aim it");
   });
@@ -61,12 +61,12 @@ describe("prop placement view model", () => {
   it("builds live placement motions without losing preview notation", () => {
     const result = buildPlacementPictographData({
       gridMode: GridMode.DIAMOND,
-      blueLocation: GridLocation.NORTH,
-      redLocation: GridLocation.SOUTH,
-      blueOrientation: Orientation.IN,
-      redOrientation: Orientation.OUT,
-      bluePropType: PropType.STAFF,
-      redPropType: PropType.FAN,
+      leftLocation: GridLocation.NORTH,
+      rightLocation: GridLocation.SOUTH,
+      leftOrientation: Orientation.IN,
+      rightOrientation: Orientation.OUT,
+      leftPropType: PropType.STAFF,
+      rightPropType: PropType.FAN,
       betaSwapped: false,
       previewPictographData: {
         id: "preview-id",
@@ -76,10 +76,10 @@ describe("prop placement view model", () => {
 
     expect(result.id).toBe("preview-id");
     expect(result.letter).toBe("A");
-    expect(result.motions[MotionColor.BLUE]?.startLocation).toBe(
+    expect(result.motions[HandSide.LEFT]?.startLocation).toBe(
       GridLocation.NORTH
     );
-    expect(result.motions[MotionColor.RED]?.endOrientation).toBe(
+    expect(result.motions[HandSide.RIGHT]?.endOrientation).toBe(
       Orientation.OUT
     );
   });
@@ -87,12 +87,12 @@ describe("prop placement view model", () => {
   it("mirrors the canonical beta offsets when the pair is swapped", () => {
     const input = {
       gridMode: GridMode.DIAMOND,
-      blueLocation: GridLocation.EAST,
-      redLocation: GridLocation.EAST,
-      blueOrientation: Orientation.IN,
-      redOrientation: Orientation.IN,
-      bluePropType: PropType.STAFF,
-      redPropType: PropType.STAFF,
+      leftLocation: GridLocation.EAST,
+      rightLocation: GridLocation.EAST,
+      leftOrientation: Orientation.IN,
+      rightOrientation: Orientation.IN,
+      leftPropType: PropType.STAFF,
+      rightPropType: PropType.STAFF,
     };
     const normal = calculatePlacementBetaOffsets({
       ...input,
@@ -103,20 +103,20 @@ describe("prop placement view model", () => {
       betaSwapped: true,
     });
 
-    expect(swapped.blue.x).toBeCloseTo(-normal.blue.x);
-    expect(swapped.blue.y).toBeCloseTo(-normal.blue.y);
-    expect(swapped.red.x).toBeCloseTo(-normal.red.x);
-    expect(swapped.red.y).toBeCloseTo(-normal.red.y);
+    expect(swapped.left.x).toBeCloseTo(-normal.left.x);
+    expect(swapped.left.y).toBeCloseTo(-normal.left.y);
+    expect(swapped.right.x).toBeCloseTo(-normal.right.x);
+    expect(swapped.right.y).toBeCloseTo(-normal.right.y);
   });
 
   it("derives guide coordinates and the gamma arc from canonical grid points", () => {
     const coordinates = getPlacementGuideCoordinates({
-      blue: GridLocation.NORTH,
-      red: GridLocation.EAST,
+      left: GridLocation.NORTH,
+      right: GridLocation.EAST,
     });
 
-    expect(coordinates?.blue.location).toBe(GridLocation.NORTH);
-    expect(coordinates?.red.location).toBe(GridLocation.EAST);
+    expect(coordinates?.left.location).toBe(GridLocation.NORTH);
+    expect(coordinates?.right.location).toBe(GridLocation.EAST);
     expect(computeGammaGuideArc(coordinates)).toMatch(/^M .+ A 60 60 /);
     expect(computeGammaGuideArc(null)).toBe("");
   });

@@ -1,9 +1,9 @@
 export interface LoadedAssets {
   gridImage: ImageBitmap;
-  bluePropImage: ImageBitmap;
-  redPropImage: ImageBitmap;
-  bluePropViewBox: { width: number; height: number };
-  redPropViewBox: { width: number; height: number };
+  leftPropImage: ImageBitmap;
+  rightPropImage: ImageBitmap;
+  leftPropViewBox: { width: number; height: number };
+  rightPropViewBox: { width: number; height: number };
 }
 
 const GRID_SVGS: Record<string, string> = {
@@ -145,16 +145,16 @@ export async function loadAssets(
   const gridVb = parseViewBox(gridSvg);
   const gridBitmap = await rasterizeSvgViaImage(gridSvg, gridVb.width, gridVb.height);
 
-  const [bluePropResult, redPropResult] = await Promise.all([
+  const [leftPropResult, rightPropResult] = await Promise.all([
     loadSvgAsBitmap(`${baseUrl}${propPath}`, "#2E5BFF"),
     loadSvgAsBitmap(`${baseUrl}${propPath}`, "#ED1C24"),
   ]);
 
   return {
     gridImage: gridBitmap,
-    bluePropImage: bluePropResult.bitmap,
-    redPropImage: redPropResult.bitmap,
-    bluePropViewBox: bluePropResult.viewBox,
-    redPropViewBox: redPropResult.viewBox,
+    leftPropImage: leftPropResult.bitmap,
+    rightPropImage: rightPropResult.bitmap,
+    leftPropViewBox: leftPropResult.viewBox,
+    rightPropViewBox: rightPropResult.viewBox,
   };
 }

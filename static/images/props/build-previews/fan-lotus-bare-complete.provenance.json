@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "referenceVersion": 6,
+  "variant": "fan-lotus-bare",
+  "output": {
+    "path": "static/images/props/build-previews/fan-lotus-bare-complete.webp",
+    "width": 640,
+    "height": 240
+  },
+  "capture": {
+    "modelBuilder": "scripts/build-fan-model.py",
+    "proofName": "fan-lotus-bare.png"
+  },
+  "sourceSha256": {
+    "scripts/assets/lotus-fire-reference.svg": "28300f76d877c8cb2f1125638d6cec192f61551cb72fa44aa063ae95ae89dc04",
+    "scripts/assets/lotus-fire-reference.json": "75b95e7eb6fec016a5f4baaf5777cac830846bb8338c6b2278a8ab46bcf6ced3",
+    "scripts/build-fan-model.py": "be4ab86558855f6ab7c1c77d8c7074f965907aa43cb55decad6ed26e8dee8f0e"
+  }
+}

@@ -19,6 +19,8 @@ import { getSharer } from "$lib/shared/share/get-sharer";
 import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
+import type { CardPresentation } from "$lib/shared/share/domain/models/card-presentation";
+import { buildCardPreviewRenderKey } from "$lib/shared/share/state/card-preview-render-key";
 
 interface CardPreviewInputs {
   /** The sequence to draw. Null suspends rendering. */
@@ -32,6 +34,8 @@ interface CardPreviewInputs {
    */
   getDarkMode: () => boolean;
   getResolvedAutoLayout: () => ResolvedAutoLayout | null;
+  /** Current card or one-share footer override. */
+  getCardPresentation?: () => CardPresentation | undefined;
   onError?: (error: unknown) => void;
 }
 
@@ -68,10 +72,12 @@ export function createCardPreviewState(inputs: CardPreviewInputs) {
     void settingsVersion;
     const darkMode = inputs.getDarkMode();
     const resolvedAutoLayout = inputs.getResolvedAutoLayout();
+    const cardPresentation = inputs.getCardPresentation?.();
     const options = buildCardRenderOptions(target, {
       darkMode,
       isHandPath: !!target.metadata?.isHandPathVisualization,
       resolvedAutoLayout,
+      cardPresentation,
     });
     renderOptions = options;
 
@@ -79,9 +85,10 @@ export function createCardPreviewState(inputs: CardPreviewInputs) {
     // non-radial points never enter the options — the composer inherits them
     // from the global manager at render time. Keyed on the options alone, this
     // guard would return early on the one class of setting it cannot see.
-    const settingsKey = `${JSON.stringify(options)}|${JSON.stringify(
+    const settingsKey = buildCardPreviewRenderKey(
+      options,
       visibility.getState()
-    )}`;
+    );
     if (settingsKey === renderedKey && target === renderedTarget) return;
 
     let stale = false;
@@ -91,6 +98,7 @@ export function createCardPreviewState(inputs: CardPreviewInputs) {
         const rendered = await getSharer().getCardImageBlob(target, {
           darkMode,
           resolvedAutoLayout,
+          cardPresentation,
         });
         if (stale) return;
         if (url) URL.revokeObjectURL(url);

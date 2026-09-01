@@ -275,8 +275,8 @@
               {:else}
                 <div class="station-canvas">
                   <AnimatorCanvas
-                    blueProp={animationState.bluePropState}
-                    redProp={animationState.redPropState}
+                    leftProp={animationState.leftPropState}
+                    rightProp={animationState.rightPropState}
                     {gridVisible}
                     {gridMode}
                     sequenceData={animationState.sequenceData}

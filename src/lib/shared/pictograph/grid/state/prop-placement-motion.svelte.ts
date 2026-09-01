@@ -22,7 +22,7 @@ import {
 } from "$lib/shared/pictograph/grid/services/prop-placement-view-model";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
-  MotionColor,
+  HandSide,
   type Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -33,7 +33,7 @@ import { DURATION } from "$lib/shared/transitions/transitions";
 export interface PlacementMotionMove {
   /** Increment per committed move; the state ignores repeats of the same epoch. */
   epoch: number;
-  color: MotionColor;
+  color: HandSide;
   from: GridLocation;
   to: GridLocation;
   direction: "clockwise" | "counterclockwise";
@@ -42,13 +42,13 @@ export interface PlacementMotionMove {
 interface PlacementMotionDeps {
   getMove: () => PlacementMotionMove | null;
   getGridMode: () => GridMode;
-  getBluePropType: () => PropType;
-  getRedPropType: () => PropType;
-  getBlueOrientation: () => Orientation;
-  getRedOrientation: () => Orientation;
+  getLeftPropType: () => PropType;
+  getRightPropType: () => PropType;
+  getLeftOrientation: () => Orientation;
+  getRightOrientation: () => Orientation;
   /** Committed (post-move) locations — the partner prop's spot comes from here. */
-  getBlueLocation: () => GridLocation | null;
-  getRedLocation: () => GridLocation | null;
+  getLeftLocation: () => GridLocation | null;
+  getRightLocation: () => GridLocation | null;
   getBetaSwapped: () => boolean;
   getPreviewPictographData: () => StepData | PictographData | null;
 }
@@ -81,10 +81,10 @@ export function createPropPlacementMotionState(deps: PlacementMotionDeps) {
       return;
     }
 
-    const isBlueMoving = move.color === MotionColor.BLUE;
-    const blueLocation = isBlueMoving ? move.to : deps.getBlueLocation();
-    const redLocation = isBlueMoving ? deps.getRedLocation() : move.to;
-    if (!blueLocation || !redLocation) {
+    const isBlueMoving = move.color === HandSide.LEFT;
+    const leftLocation = isBlueMoving ? move.to : deps.getLeftLocation();
+    const rightLocation = isBlueMoving ? deps.getRightLocation() : move.to;
+    if (!leftLocation || !rightLocation) {
       finish();
       return;
     }
@@ -95,12 +95,12 @@ export function createPropPlacementMotionState(deps: PlacementMotionDeps) {
       fromLocation: move.from,
       toLocation: move.to,
       direction: move.direction,
-      blueLocation,
-      redLocation,
-      blueOrientation: deps.getBlueOrientation(),
-      redOrientation: deps.getRedOrientation(),
-      bluePropType: deps.getBluePropType(),
-      redPropType: deps.getRedPropType(),
+      leftLocation,
+      rightLocation,
+      leftOrientation: deps.getLeftOrientation(),
+      rightOrientation: deps.getRightOrientation(),
+      leftPropType: deps.getLeftPropType(),
+      rightPropType: deps.getRightPropType(),
       betaSwapped: deps.getBetaSwapped(),
       previewPictographData: deps.getPreviewPictographData(),
     });

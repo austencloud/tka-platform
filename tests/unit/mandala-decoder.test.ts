@@ -3,10 +3,10 @@ import { decode } from "$lib/shared/mandala/services/mandala-decoder";
 import { buildIndex, type IndexInput } from "$lib/shared/mandala/services/mandala-index-builder";
 import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
 
-function paths(blue: string[], red: string[]): MandalaPaths {
+function paths(left: string[], right: string[]): MandalaPaths {
   return {
-    blue: blue.map((d, i) => ({ d, tipIndex: i })),
-    red: red.map((d, i) => ({ d, tipIndex: i })),
+    left: left.map((d, i) => ({ d, tipIndex: i })),
+    right: right.map((d, i) => ({ d, tipIndex: i })),
     purple: [],
   };
 }
@@ -29,8 +29,8 @@ describe("decode", () => {
 
   it("splits the class by color lens", () => {
     const result = decode(paths([ARC], []), index);
-    expect(result.colorVariants.blueOnly.map((r) => r.seqId)).toEqual(["a"]);
-    expect(result.colorVariants.redOnly.map((r) => r.seqId)).toEqual(["b"]);
+    expect(result.colorVariants.leftOnly.map((r) => r.seqId)).toEqual(["a"]);
+    expect(result.colorVariants.rightOnly.map((r) => r.seqId)).toEqual(["b"]);
     expect(result.colorVariants.combo.map((r) => r.seqId)).toEqual(["c"]);
   });
 

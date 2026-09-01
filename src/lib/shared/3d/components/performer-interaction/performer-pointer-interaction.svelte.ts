@@ -1,6 +1,16 @@
 import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 import type CameraControls from "camera-controls";
-import { Camera, Object3D, Plane, Raycaster, Vector2, Vector3 } from "three";
+import {
+  Camera,
+  Object3D,
+  Plane,
+  Raycaster,
+  Triangle,
+  Vector2,
+  Vector3,
+  type Intersection,
+  type Material,
+} from "three";
 
 export const POINTER_DRAG_THRESHOLD_PX = 8;
 export const TOUCH_HOLD_MS = 250;
@@ -8,6 +18,9 @@ export const TOUCH_MOVE_TOLERANCE_PX = 5;
 export const MIN_TOUCH_TARGET_PX = 44;
 export const PERFORMER_CLEARANCE_METRES = 0.5;
 const GRAZING_RAY_EPSILON = 0.001;
+const TOUCH_FALLBACK_PICK_HEIGHT_METRES = 1;
+const EIGHT_DIRECTION_STEP_RADIANS = Math.PI / 4;
+const POSITION_EPSILON = 1e-10;
 
 export type PointerIntent = "click" | "drag";
 export type TouchIntent = "tap" | "drag" | "camera";
@@ -61,14 +74,14 @@ export function resolveTouchIntent(input: {
   return "tap";
 }
 
-export function intersectGroundPlane(
+export function intersectHorizontalPlane(
   origin: { x: number; y: number; z: number },
   direction: { x: number; y: number; z: number },
-  groundY: number,
+  planeY: number,
   grabOffset: StagePosition
 ): StagePosition | null {
   if (Math.abs(direction.y) < GRAZING_RAY_EPSILON) return null;
-  const distance = (groundY - origin.y) / direction.y;
+  const distance = (planeY - origin.y) / direction.y;
   if (distance < 0) return null;
   return {
     x: origin.x + direction.x * distance + grabOffset.x,
@@ -88,6 +101,73 @@ export function clampPerformerPosition(
     x: Math.max(-halfWidth, Math.min(halfWidth, position.x)),
     z: Math.max(centerZ - halfDepth, Math.min(centerZ + halfDepth, position.z)),
   };
+}
+
+export function snapStagePositionToEightDirections(
+  origin: StagePosition,
+  target: StagePosition
+): StagePosition {
+  const deltaX = target.x - origin.x;
+  const deltaZ = target.z - origin.z;
+  if (Math.hypot(deltaX, deltaZ) < POSITION_EPSILON) return { ...origin };
+
+  const snappedAngle =
+    Math.round(Math.atan2(deltaZ, deltaX) / EIGHT_DIRECTION_STEP_RADIANS) *
+    EIGHT_DIRECTION_STEP_RADIANS;
+  const directionX = cleanPositionValue(Math.cos(snappedAngle));
+  const directionZ = cleanPositionValue(Math.sin(snappedAngle));
+  const projectedDistance = Math.max(
+    0,
+    deltaX * directionX + deltaZ * directionZ
+  );
+
+  return {
+    x: cleanPositionValue(origin.x + directionX * projectedDistance),
+    z: cleanPositionValue(origin.z + directionZ * projectedDistance),
+  };
+}
+
+export function resolvePerformerDragPosition(
+  start: StagePosition,
+  target: StagePosition,
+  bounds: StageBounds,
+  constrainToEightDirections: boolean,
+  clearance = PERFORMER_CLEARANCE_METRES
+): StagePosition {
+  if (!constrainToEightDirections)
+    return clampPerformerPosition(target, bounds, clearance);
+
+  const origin = clampPerformerPosition(start, bounds, clearance);
+  const snapped = snapStagePositionToEightDirections(origin, target);
+  const deltaX = snapped.x - origin.x;
+  const deltaZ = snapped.z - origin.z;
+  const halfWidth = Math.max(0, bounds.width / 2 - clearance);
+  const halfDepth = Math.max(0, bounds.depth / 2 - clearance);
+  const centerZ = bounds.zOffset ?? 0;
+  const minX = -halfWidth;
+  const maxX = halfWidth;
+  const minZ = centerZ - halfDepth;
+  const maxZ = centerZ + halfDepth;
+  let scale = 1;
+
+  if (deltaX > POSITION_EPSILON)
+    scale = Math.min(scale, (maxX - origin.x) / deltaX);
+  else if (deltaX < -POSITION_EPSILON)
+    scale = Math.min(scale, (minX - origin.x) / deltaX);
+  if (deltaZ > POSITION_EPSILON)
+    scale = Math.min(scale, (maxZ - origin.z) / deltaZ);
+  else if (deltaZ < -POSITION_EPSILON)
+    scale = Math.min(scale, (minZ - origin.z) / deltaZ);
+
+  const boundedScale = Math.max(0, Math.min(1, scale));
+  return {
+    x: cleanPositionValue(origin.x + deltaX * boundedScale),
+    z: cleanPositionValue(origin.z + deltaZ * boundedScale),
+  };
+}
+
+function cleanPositionValue(value: number): number {
+  return Math.abs(value) < POSITION_EPSILON ? 0 : value;
 }
 
 export function resolveCameraRelativeNudge(
@@ -140,6 +220,19 @@ interface InteractionOptions {
   onHintDismissed?: () => void;
 }
 
+interface SurfaceTriangleAnchor {
+  a: number;
+  b: number;
+  c: number;
+  barycentric: Vector3;
+}
+
+interface VisualSurfaceAnchor {
+  object: Object3D;
+  localPoint: Vector3;
+  triangle: SurfaceTriangleAnchor | null;
+}
+
 interface PressedPointer {
   pointerId: number;
   pointerType: string;
@@ -147,13 +240,36 @@ interface PressedPointer {
   start: Point2;
   startedAt: number;
   startPosition: StagePosition;
+  dragPlaneY: number;
   grabOffset: StagePosition;
+  anchorSource: "visual" | "proxy" | "touch";
+  visualAnchor: VisualSurfaceAnchor | null;
+}
+
+interface PerformerHit {
+  performerIndex: number;
+  dragPlaneY: number;
+  anchorSource: "visual" | "proxy" | "touch";
+  visualAnchor: VisualSurfaceAnchor | null;
+}
+
+export interface PerformerDragDiagnostic {
+  performerIndex: number;
+  anchorSource: PressedPointer["anchorSource"];
+  pointer: Point2;
+  projectedAnchor: Point2;
+  errorPx: number;
 }
 
 export function createPerformerPointerInteraction(options: InteractionOptions) {
   const raycaster = new Raycaster();
   const pointer = new Vector2();
+  const anchorVertexA = new Vector3();
+  const anchorVertexB = new Vector3();
+  const anchorVertexC = new Vector3();
+  const anchorLocalPoint = new Vector3();
   const pickTargets = new Set<Object3D>();
+  const visualPickTargets = new Map<number, Object3D>();
   const activePointers = new Set<number>();
   let pressed = $state<PressedPointer | null>(null);
   let hoveredIndex = $state<number | null>(null);
@@ -161,6 +277,7 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
   let announcement = $state("");
   let emptyPress = $state<{ pointerId: number; start: Point2 } | null>(null);
   let holdTimer: ReturnType<typeof setTimeout> | null = null;
+  let diagnosticFrame: number | null = null;
   let cameraWasEnabled = true;
 
   function setRayFromEvent(event: PointerEvent): boolean {
@@ -196,7 +313,7 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
     options.viewer.performerManager.performers.forEach((performer, index) => {
       const projected = new Vector3(
         performer.position.x,
-        options.groundY() + 1,
+        options.groundY() + TOUCH_FALLBACK_PICK_HEIGHT_METRES,
         performer.position.z
       ).project(camera);
       const x = rect.left + ((projected.x + 1) * rect.width) / 2;
@@ -214,21 +331,165 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
     return nearest?.index ?? null;
   }
 
-  function hitTest(event: PointerEvent): number | null {
-    if (!setRayFromEvent(event)) return null;
+  function coarseHitFromCurrentRay(event: PointerEvent): PerformerHit | null {
     const hit = raycaster.intersectObjects([...pickTargets], false)[0];
-    return (
-      performerIndexFromObject(hit?.object ?? null) ??
-      screenSpaceTouchFallback(event)
+    const performerIndex = performerIndexFromObject(hit?.object ?? null);
+    if (hit && performerIndex !== null)
+      return {
+        performerIndex,
+        dragPlaneY: hit.point.y,
+        anchorSource: "proxy",
+        visualAnchor: null,
+      };
+
+    const touchIndex = screenSpaceTouchFallback(event);
+    return touchIndex === null
+      ? null
+      : {
+          performerIndex: touchIndex,
+          dragPlaneY: options.groundY() + TOUCH_FALLBACK_PICK_HEIGHT_METRES,
+          anchorSource: "touch",
+          visualAnchor: null,
+        };
+  }
+
+  function isRenderedMesh(
+    hit: Intersection<Object3D>,
+    root: Object3D
+  ): boolean {
+    const { object } = hit;
+    let current: Object3D | null = object;
+    while (current) {
+      if (!current.visible) return false;
+      if (current === root) break;
+      current = current.parent;
+    }
+    if (current !== root) return false;
+
+    const mesh = object as Object3D & {
+      isMesh?: boolean;
+      material?: Material | Material[];
+    };
+    if (!mesh.isMesh || !mesh.material) return false;
+    const material = Array.isArray(mesh.material)
+      ? mesh.material[hit.face?.materialIndex ?? 0]
+      : mesh.material;
+    return Boolean(
+      material?.visible &&
+      material.colorWrite &&
+      (!material.transparent || material.opacity > 0.001)
     );
   }
 
-  function groundTarget(): StagePosition | null {
+  function createVisualSurfaceAnchor(
+    hit: Intersection<Object3D>
+  ): VisualSurfaceAnchor {
+    const localPoint = hit.object.worldToLocal(hit.point.clone());
+    const mesh = hit.object as Object3D & {
+      getVertexPosition?: (index: number, target: Vector3) => Vector3;
+    };
+    if (!hit.face || !mesh.getVertexPosition)
+      return { object: hit.object, localPoint, triangle: null };
+
+    mesh.getVertexPosition(hit.face.a, anchorVertexA);
+    mesh.getVertexPosition(hit.face.b, anchorVertexB);
+    mesh.getVertexPosition(hit.face.c, anchorVertexC);
+    const barycentric = Triangle.getBarycoord(
+      localPoint,
+      anchorVertexA,
+      anchorVertexB,
+      anchorVertexC,
+      new Vector3()
+    );
+    return {
+      object: hit.object,
+      localPoint,
+      triangle: barycentric
+        ? {
+            a: hit.face.a,
+            b: hit.face.b,
+            c: hit.face.c,
+            barycentric,
+          }
+        : null,
+    };
+  }
+
+  function getVisualAnchorWorldPoint(anchor: VisualSurfaceAnchor): Vector3 {
+    const mesh = anchor.object as Object3D & {
+      getVertexPosition?: (index: number, target: Vector3) => Vector3;
+    };
+    if (anchor.triangle && mesh.getVertexPosition) {
+      mesh.getVertexPosition(anchor.triangle.a, anchorVertexA);
+      mesh.getVertexPosition(anchor.triangle.b, anchorVertexB);
+      mesh.getVertexPosition(anchor.triangle.c, anchorVertexC);
+      anchorLocalPoint
+        .set(0, 0, 0)
+        .addScaledVector(anchorVertexA, anchor.triangle.barycentric.x)
+        .addScaledVector(anchorVertexB, anchor.triangle.barycentric.y)
+        .addScaledVector(anchorVertexC, anchor.triangle.barycentric.z);
+    } else {
+      anchorLocalPoint.copy(anchor.localPoint);
+    }
+    anchor.object.updateWorldMatrix(true, false);
+    return anchor.object.localToWorld(anchorLocalPoint);
+  }
+
+  function visualHitFromCurrentRay(): PerformerHit | null {
+    const hits = raycaster.intersectObjects(
+      [...visualPickTargets.values()],
+      true
+    );
+    for (const hit of hits) {
+      const performerIndex = performerIndexFromObject(hit.object);
+      if (performerIndex === null) continue;
+      const root = visualPickTargets.get(performerIndex);
+      if (!root || !isRenderedMesh(hit, root)) continue;
+      return {
+        performerIndex,
+        dragPlaneY: hit.point.y,
+        anchorSource: "visual",
+        visualAnchor: createVisualSurfaceAnchor(hit),
+      };
+    }
+    return null;
+  }
+
+  function hitTest(event: PointerEvent): PerformerHit | null {
+    if (!setRayFromEvent(event)) return null;
+    return coarseHitFromCurrentRay(event);
+  }
+
+  function pressHitTest(event: PointerEvent): PerformerHit | null {
+    if (!setRayFromEvent(event)) return null;
+    // The capsule makes acquisition forgiving, but it is not the thing the
+    // user sees. A single precise pick at press time gives the visible knee,
+    // hand, or prop the same direct-manipulation contract as the cursor.
+    return visualHitFromCurrentRay() ?? coarseHitFromCurrentRay(event);
+  }
+
+  function dragTarget(): StagePosition | null {
     if (!pressed) return null;
-    return intersectGroundPlane(
+    if (pressed.visualAnchor) {
+      const performer =
+        options.viewer.performerManager.performers[pressed.performerIndex];
+      if (performer) {
+        const anchorWorld = getVisualAnchorWorldPoint(pressed.visualAnchor);
+        return intersectHorizontalPlane(
+          raycaster.ray.origin,
+          raycaster.ray.direction,
+          anchorWorld.y,
+          {
+            x: performer.position.x - anchorWorld.x,
+            z: performer.position.z - anchorWorld.z,
+          }
+        );
+      }
+    }
+    return intersectHorizontalPlane(
       raycaster.ray.origin,
       raycaster.ray.direction,
-      options.groundY(),
+      pressed.dragPlaneY,
       pressed.grabOffset
     );
   }
@@ -236,6 +497,48 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
   function clearHoldTimer(): void {
     if (holdTimer) clearTimeout(holdTimer);
     holdTimer = null;
+  }
+
+  function scheduleDragDiagnostic(
+    event: PointerEvent,
+    pointerPress: PressedPointer
+  ): void {
+    if (!import.meta.env.DEV || !pointerPress.visualAnchor) return;
+    if (diagnosticFrame !== null) cancelAnimationFrame(diagnosticFrame);
+    const pointerPosition = { x: event.clientX, y: event.clientY };
+    const { performerIndex, anchorSource } = pointerPress;
+    const visualAnchor = pointerPress.visualAnchor;
+    diagnosticFrame = requestAnimationFrame(() => {
+      diagnosticFrame = null;
+      const camera = options.camera();
+      if (!camera) return;
+      const projected = getVisualAnchorWorldPoint(visualAnchor).project(camera);
+      const rect = options.canvas.getBoundingClientRect();
+      const projectedAnchor = {
+        x: rect.left + ((projected.x + 1) * rect.width) / 2,
+        y: rect.top + ((1 - projected.y) * rect.height) / 2,
+      };
+      const detail: PerformerDragDiagnostic = {
+        performerIndex,
+        anchorSource,
+        pointer: pointerPosition,
+        projectedAnchor,
+        errorPx: Math.hypot(
+          pointerPosition.x - projectedAnchor.x,
+          pointerPosition.y - projectedAnchor.y
+        ),
+      };
+      options.canvas.dataset.performerDragAnchorSource = anchorSource;
+      options.canvas.dataset.performerDragErrorPx = detail.errorPx.toFixed(3);
+      options.canvas.dataset.performerDragPointer = `${pointerPosition.x.toFixed(1)},${pointerPosition.y.toFixed(1)}`;
+      options.canvas.dataset.performerDragProjectedAnchor = `${projectedAnchor.x.toFixed(1)},${projectedAnchor.y.toFixed(1)}`;
+      window.dispatchEvent(
+        new CustomEvent<PerformerDragDiagnostic>(
+          "tka-performer-drag-diagnostic",
+          { detail }
+        )
+      );
+    });
   }
 
   function startDrag(): void {
@@ -288,18 +591,24 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
       return;
     }
     if (options.viewer.isCameraDragging) return;
-    const performerIndex = hitTest(event);
-    if (performerIndex === null) {
+    const hit = pressHitTest(event);
+    if (hit === null) {
       emptyPress = {
         pointerId: event.pointerId,
         start: { x: event.clientX, y: event.clientY },
       };
       return;
     }
+    const { performerIndex } = hit;
     const performer =
       options.viewer.performerManager.performers[performerIndex];
     if (!performer) return;
-    const hit = groundTargetFromEvent(event);
+    const dragPoint = intersectHorizontalPlane(
+      raycaster.ray.origin,
+      raycaster.ray.direction,
+      hit.dragPlaneY,
+      { x: 0, z: 0 }
+    );
     pressed = {
       pointerId: event.pointerId,
       pointerType: event.pointerType,
@@ -307,10 +616,18 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
       start: { x: event.clientX, y: event.clientY },
       startedAt: performance.now(),
       startPosition: { ...performer.position },
-      grabOffset: hit
-        ? { x: performer.position.x - hit.x, z: performer.position.z - hit.z }
+      dragPlaneY: hit.dragPlaneY,
+      grabOffset: dragPoint
+        ? {
+            x: performer.position.x - dragPoint.x,
+            z: performer.position.z - dragPoint.z,
+          }
         : { x: 0, z: 0 },
+      anchorSource: hit.anchorSource,
+      visualAnchor: hit.visualAnchor,
     };
+    if (import.meta.env.DEV)
+      options.canvas.dataset.performerDragAnchorSource = hit.anchorSource;
     options.canvas.setPointerCapture(event.pointerId);
     if (event.pointerType !== "touch") {
       // Orbit controls listen on this same canvas in the bubble phase; this
@@ -332,16 +649,6 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
         }
       }, TOUCH_HOLD_MS);
     }
-  }
-
-  function groundTargetFromEvent(event: PointerEvent): StagePosition | null {
-    if (!setRayFromEvent(event)) return null;
-    return intersectGroundPlane(
-      raycaster.ray.origin,
-      raycaster.ray.direction,
-      options.groundY(),
-      { x: 0, z: 0 }
-    );
   }
 
   function onPointerMove(event: PointerEvent): void {
@@ -373,17 +680,25 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
       }
       if (draggingIndex !== null) {
         event.preventDefault();
-        const target = groundTarget();
-        if (target)
+        const target = dragTarget();
+        if (target && pressed) {
+          const pointerPress = pressed;
           options.viewer.performerManager.handleDrag(
             draggingIndex,
-            clampPerformerPosition(target, options.stageBounds())
+            resolvePerformerDragPosition(
+              pressed.startPosition,
+              target,
+              options.stageBounds(),
+              event.shiftKey
+            )
           );
+          scheduleDragDiagnostic(event, pointerPress);
+        }
       }
       return;
     }
     if (options.viewer.isCameraDragging || activePointers.size > 0) return;
-    const next = hitTest(event);
+    const next = hitTest(event)?.performerIndex ?? null;
     if (next !== hoveredIndex) {
       hoveredIndex = next;
       options.canvas.style.cursor = next === null ? "" : "grab";
@@ -489,6 +804,7 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
     options.canvas.addEventListener("keydown", onKeyDown);
     return () => {
       clearHoldTimer();
+      if (diagnosticFrame !== null) cancelAnimationFrame(diagnosticFrame);
       options.canvas.removeEventListener("pointerdown", onPointerDown, {
         capture: true,
       });
@@ -515,6 +831,16 @@ export function createPerformerPointerInteraction(options: InteractionOptions) {
     registerPickTarget(object: Object3D): () => void {
       pickTargets.add(object);
       return () => pickTargets.delete(object);
+    },
+    registerVisualPickTarget(
+      performerIndex: number,
+      object: Object3D
+    ): () => void {
+      visualPickTargets.set(performerIndex, object);
+      return () => {
+        if (visualPickTargets.get(performerIndex) === object)
+          visualPickTargets.delete(performerIndex);
+      };
     },
     attach,
   };

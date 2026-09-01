@@ -1,16 +1,43 @@
 <script lang="ts">
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { getCompositionRecipe } from "$lib/shared/pictograph/prop/domain/prop-composition-recipes";
+  import {
+    DEFAULT_FAN_APPEARANCE,
+    fanAppearanceArtwork,
+    fanAppearanceSignature,
+    isFanPropType,
+    normalizeFanAppearance,
+    type FanAppearance,
+  } from "$lib/shared/pictograph/prop/domain/fan-appearance";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import { DURATION } from "$lib/shared/transitions/transitions";
-  import { getRailPropOpticalScale } from "./rail-prop-optical-fit";
+  import { getRailPropGlyphPresentation } from "./rail-prop-optical-fit";
 
-  let { propType, size = 24 }: { propType: PropType; size?: number } = $props();
+  let {
+    propType,
+    size = 24,
+    fanAppearance = DEFAULT_FAN_APPEARANCE,
+  }: {
+    propType: PropType;
+    size?: number;
+    fanAppearance?: FanAppearance;
+  } = $props();
 
-  const propImage = $derived(getPropTypeDisplayInfo(propType).image);
-  const propRotation = $derived(getCompositionRecipe(propType).blue.rotation);
-  const propScale = $derived(getRailPropOpticalScale(propType));
+  const resolvedFanAppearance = $derived(normalizeFanAppearance(fanAppearance));
+  const presentation = $derived(getRailPropGlyphPresentation(propType));
+  const propImage = $derived(
+    (isFanPropType(propType)
+      ? fanAppearanceArtwork(
+          resolvedFanAppearance.build,
+          resolvedFanAppearance.cover
+        )
+      : null) ?? getPropTypeDisplayInfo(propType).image
+  );
+  const artworkKey = $derived(
+    isFanPropType(propType)
+      ? `${propType}:${fanAppearanceSignature(resolvedFanAppearance)}`
+      : propType
+  );
 </script>
 
 <!-- The slot never changes size. A prop swap changes its meaning, not the rail's geometry. -->
@@ -19,11 +46,11 @@
   style:--rail-prop-glyph-size={`${size}px`}
   aria-hidden="true"
 >
-  <Crossfade key={propType} duration={DURATION.fast} fill>
+  <Crossfade key={artworkKey} duration={DURATION.fast} fill>
     <span
       class="rail-prop-art"
       style:--rail-prop-image={`url("${propImage}")`}
-      style:transform={`rotate(${propRotation}deg) scale(${propScale})`}
+      style:transform={`translate(${presentation.translateX}%, ${presentation.translateY}%) rotate(${presentation.rotation}deg) scale(${presentation.scale})`}
     ></span>
   </Crossfade>
 </span>
@@ -35,6 +62,10 @@
     width: var(--rail-prop-glyph-size);
     height: var(--rail-prop-glyph-size);
     flex: 0 0 auto;
+    /* Optical fitting may intentionally extend beyond this stable measuring
+       slot. The button is the visual boundary; clipping here amputates wide
+       shapes such as Mini Hoop and the physical fan builds. */
+    overflow: visible;
   }
 
   .rail-prop-glyph :global(.layer) {

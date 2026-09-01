@@ -21,7 +21,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -36,13 +36,13 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
   const NOROT = RotationDirection.NO_ROTATION;
-  const B = MotionColor.BLUE;
-  const R = MotionColor.RED;
+  const B = HandSide.LEFT;
+  const R = HandSide.RIGHT;
   const PRO = MotionType.PRO;
   const ANTI = MotionType.ANTI;
 
   const mo = (
-    color: MotionColor,
+    color: HandSide,
     type: MotionType,
     from: GridLocation,
     to: GridLocation,
@@ -63,7 +63,7 @@
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     });
-  const stat = (color: MotionColor, loc: GridLocation, ori: Orientation) =>
+  const stat = (color: HandSide, loc: GridLocation, ori: Orientation) =>
     mo(color, MotionType.STATIC, loc, loc, NOROT, ori, ori);
 
   type Hand = { type: MotionType; from: GridLocation; to: GridLocation; rot: RotationDirection };
@@ -71,9 +71,9 @@
   const half = (t: MotionType): number => (t === ANTI ? 1 : 0) + 1;
   const endOf = (t: MotionType): Orientation => (half(t) % 2 === 0 ? IN : OUT);
 
-  function makeStrip(opts: { id: string; word: string; endThumb: string; halfThumb?: string; blue: Hand; red: Hand }) {
-    const bEnd = endOf(opts.blue.type);
-    const rEnd = endOf(opts.red.type);
+  function makeStrip(opts: { id: string; word: string; endThumb: string; halfThumb?: string; left: Hand; right: Hand }) {
+    const bEnd = endOf(opts.left.type);
+    const rEnd = endOf(opts.right.type);
     const hm = (h: Hand, eo: Orientation): HalfwayMotion => ({
       type: h.type,
       from: h.from,
@@ -83,18 +83,18 @@
       endOri: eo,
       turns: 1,
     });
-    const step = (id: string, blue: ReturnType<typeof mo>, red: ReturnType<typeof mo>) => ({
+    const step = (id: string, left, right) => ({
       id: `l2oo1-${opts.id}-${id}`,
       letter: null,
       gridMode: GridMode.DIAMOND,
-      motions: { blue, red },
+      motions: { left, right },
     });
-    const startStep = step("start", stat(B, opts.blue.from, IN), stat(R, opts.red.from, IN)) as unknown as StepData;
-    const endStep = step("end", stat(B, opts.blue.to, bEnd), stat(R, opts.red.to, rEnd)) as unknown as StepData;
+    const startStep = step("start", stat(B, opts.left.from, IN), stat(R, opts.right.from, IN)) as unknown as StepData;
+    const endStep = step("end", stat(B, opts.left.to, bEnd), stat(R, opts.right.to, rEnd)) as unknown as StepData;
     const combinedData = step(
       "full",
-      mo(B, opts.blue.type, opts.blue.from, opts.blue.to, opts.blue.rot, IN, bEnd, 1),
-      mo(R, opts.red.type, opts.red.from, opts.red.to, opts.red.rot, IN, rEnd, 1)
+      mo(B, opts.left.type, opts.left.from, opts.left.to, opts.left.rot, IN, bEnd, 1),
+      mo(R, opts.right.type, opts.right.from, opts.right.to, opts.right.rot, IN, rEnd, 1)
     );
     const combinedStep = { ...combinedData, stepNumber: 1 } as unknown as StepData;
     const animKey = `l2oo1-${opts.id}`;
@@ -107,8 +107,8 @@
       {
         kind: "dual-pose",
         poses: [
-          { motion: hm(opts.blue, bEnd), color: B, t: 0.5 },
-          { motion: hm(opts.red, rEnd), color: R, t: 0.5 },
+          { motion: hm(opts.left, bEnd), color: B, t: 0.5 },
+          { motion: hm(opts.right, rEnd), color: R, t: 0.5 },
         ],
         frameLabel: "halfway",
         thumbLabel: opts.halfThumb,
@@ -122,19 +122,19 @@
 
   const { frames: dFrames, sequence: dSequence } = makeStrip({
     id: "d", word: "D-One-One", endThumb: "out",
-    blue: H(PRO, N, W, CCW), red: H(PRO, N, E, CW),
+    left: H(PRO, N, W, CCW), right: H(PRO, N, E, CW),
   });
   const { frames: iFrames, sequence: iSequence } = makeStrip({
     id: "i", word: "I-One-One", endThumb: "mixed",
-    blue: H(ANTI, E, SO_, CCW), red: H(PRO, E, SO_, CW),
+    left: H(ANTI, E, SO_, CCW), right: H(PRO, E, SO_, CW),
   });
   const { frames: nFrames, sequence: nSequence } = makeStrip({
     id: "n", word: "N-One-One", endThumb: "in", halfThumb: "out",
-    blue: H(ANTI, SO_, E, CW), red: H(ANTI, W, N, CCW),
+    left: H(ANTI, SO_, E, CW), right: H(ANTI, W, N, CCW),
   });
   const { frames: vFrames, sequence: vSequence } = makeStrip({
     id: "v", word: "V-One-One", endThumb: "mixed",
-    blue: H(ANTI, W, N, CCW), red: H(PRO, SO_, W, CW),
+    left: H(ANTI, W, N, CCW), right: H(PRO, SO_, W, CW),
   });
 </script>
 

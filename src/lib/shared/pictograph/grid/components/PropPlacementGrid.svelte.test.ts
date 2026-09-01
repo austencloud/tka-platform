@@ -7,7 +7,7 @@ import {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -32,13 +32,13 @@ import {
 } from "$lib/shared/render/core/calculations/beta-offset";
 
 /** A staff parked at east, which is what the beta test renders. */
-function betaMotion(color: "blue" | "red"): BetaMotionInput {
+function betaMotion(color: HandSide): BetaMotionInput {
   return {
     startLocation: GridLocation.EAST,
     endLocation: GridLocation.EAST,
     endOrientation: Orientation.IN,
     motionType: "static",
-    color,
+    hand: color,
     propType: PropType.STAFF,
   };
 }
@@ -51,8 +51,8 @@ describe("PropPlacementGrid", () => {
       letter: "A",
       gridMode: GridMode.SKEWED,
       motions: {
-        blue: createMotionData({
-          color: MotionColor.BLUE,
+        left: createMotionData({
+          hand: HandSide.LEFT,
           motionType: MotionType.STATIC,
           rotationDirection: RotationDirection.NO_ROTATION,
           startLocation: GridLocation.SOUTH,
@@ -63,8 +63,8 @@ describe("PropPlacementGrid", () => {
           propType: PropType.STAFF,
           isVisible: true,
         }),
-        red: createMotionData({
-          color: MotionColor.RED,
+        right: createMotionData({
+          hand: HandSide.RIGHT,
           motionType: MotionType.STATIC,
           rotationDirection: RotationDirection.NO_ROTATION,
           startLocation: GridLocation.SOUTHWEST,
@@ -80,8 +80,8 @@ describe("PropPlacementGrid", () => {
 
     render(PropPlacementGrid, {
       gridMode: GridMode.SKEWED,
-      initialBlueLocation: GridLocation.SOUTH,
-      initialRedLocation: GridLocation.SOUTHWEST,
+      initialLeftLocation: GridLocation.SOUTH,
+      initialRightLocation: GridLocation.SOUTHWEST,
       previewPictographData,
       editAfterCompletion: true,
     });
@@ -108,8 +108,8 @@ describe("PropPlacementGrid", () => {
     const onPlacementComplete = vi.fn();
     render(PropPlacementGrid, {
       gridMode: GridMode.DIAMOND,
-      bluePropType: PropType.TORCH,
-      redPropType: PropType.BIGTORCH,
+      leftPropType: PropType.TORCH,
+      rightPropType: PropType.BIGTORCH,
       onChange,
       onPlacementComplete,
     });
@@ -120,9 +120,9 @@ describe("PropPlacementGrid", () => {
 
     await page.getByRole("button", { name: "East point" }).click();
     expect(onChange).toHaveBeenLastCalledWith({
-      blueLocation: GridLocation.EAST,
-      redLocation: null,
-      activeColor: "red",
+      leftLocation: GridLocation.EAST,
+      rightLocation: null,
+      activeHand: "red",
       complete: false,
       canUndo: true,
     });
@@ -144,8 +144,8 @@ describe("PropPlacementGrid", () => {
     const onChange = vi.fn();
     render(PropPlacementGrid, {
       gridMode: GridMode.DIAMOND,
-      initialBlueLocation: GridLocation.EAST,
-      initialRedLocation: GridLocation.WEST,
+      initialLeftLocation: GridLocation.EAST,
+      initialRightLocation: GridLocation.WEST,
       editAfterCompletion: true,
       onChange,
     });
@@ -153,18 +153,18 @@ describe("PropPlacementGrid", () => {
     await page.getByRole("button", { name: "Move right prop" }).click();
     await page.getByRole("button", { name: "North point" }).click();
     expect(onChange).toHaveBeenLastCalledWith({
-      blueLocation: GridLocation.EAST,
-      redLocation: GridLocation.NORTH,
-      activeColor: null,
+      leftLocation: GridLocation.EAST,
+      rightLocation: GridLocation.NORTH,
+      activeHand: null,
       complete: true,
       canUndo: true,
     });
 
     await page.getByRole("button", { name: "Undo placement" }).click();
     expect(onChange).toHaveBeenLastCalledWith({
-      blueLocation: GridLocation.EAST,
-      redLocation: GridLocation.WEST,
-      activeColor: "red",
+      leftLocation: GridLocation.EAST,
+      rightLocation: GridLocation.WEST,
+      activeHand: "red",
       complete: true,
       // The undo just consumed the only entry in the history.
       canUndo: false,
@@ -193,7 +193,7 @@ describe("PropPlacementGrid", () => {
     await commands.dispatchRealTouchDrag(from, { x: from.x, y: from.y - 80 });
 
     expect(onOrientationChange).toHaveBeenCalledWith(
-      MotionColor.BLUE,
+      HandSide.LEFT,
       Orientation.OUT
     );
   });
@@ -202,8 +202,8 @@ describe("PropPlacementGrid", () => {
     const onOrientationChange = vi.fn();
     render(PropPlacementGrid, {
       gridMode: GridMode.DIAMOND,
-      initialBlueLocation: GridLocation.EAST,
-      initialRedLocation: GridLocation.WEST,
+      initialLeftLocation: GridLocation.EAST,
+      initialRightLocation: GridLocation.WEST,
       betaSwapped: true,
       editAfterCompletion: true,
       renderTray: false,
@@ -233,7 +233,7 @@ describe("PropPlacementGrid", () => {
     });
 
     expect(onOrientationChange).toHaveBeenCalledWith(
-      MotionColor.BLUE,
+      HandSide.LEFT,
       Orientation.OUT
     );
   });
@@ -244,10 +244,10 @@ describe("PropPlacementGrid", () => {
     const onOrientationChange = vi.fn();
     render(PropPlacementGrid, {
       gridMode: GridMode.DIAMOND,
-      bluePropType: PropType.STAFF,
-      redPropType: PropType.STAFF,
-      initialBlueLocation: GridLocation.EAST,
-      initialRedLocation: GridLocation.EAST,
+      leftPropType: PropType.STAFF,
+      rightPropType: PropType.STAFF,
+      initialLeftLocation: GridLocation.EAST,
+      initialRightLocation: GridLocation.EAST,
       editAfterCompletion: true,
       renderTray: false,
       hitTargetRadius: 160,
@@ -268,12 +268,12 @@ describe("PropPlacementGrid", () => {
     const scale = overlay.getBoundingClientRect().width / 950;
     const redOffset = calculateBetaOffset(
       {
-        blueMotion: betaMotion("blue"),
-        redMotion: betaMotion("red"),
+        leftMotion: betaMotion(HandSide.LEFT),
+        rightMotion: betaMotion(HandSide.RIGHT),
         letter: "",
         gridMode: "diamond",
       },
-      betaMotion("red")
+      betaMotion(HandSide.RIGHT)
     );
     expect(redOffset.x !== 0 || redOffset.y !== 0).toBe(true);
 
@@ -284,11 +284,11 @@ describe("PropPlacementGrid", () => {
     await commands.dispatchRealTouchDrag(from, { x: from.x + 90, y: from.y });
 
     expect(onOrientationChange).toHaveBeenCalledWith(
-      MotionColor.RED,
+      HandSide.RIGHT,
       expect.any(String)
     );
     expect(onOrientationChange).not.toHaveBeenCalledWith(
-      MotionColor.BLUE,
+      HandSide.LEFT,
       expect.any(String)
     );
   });
@@ -310,9 +310,9 @@ describe("PropPlacementGrid", () => {
     );
 
     expect(onChange).toHaveBeenLastCalledWith({
-      blueLocation: GridLocation.NORTHEAST,
-      redLocation: null,
-      activeColor: "red",
+      leftLocation: GridLocation.NORTHEAST,
+      rightLocation: null,
+      activeHand: "red",
       complete: false,
       canUndo: true,
     });
@@ -330,7 +330,7 @@ describe("PropPlacementGrid", () => {
     await page.getByRole("button", { name: "Center point" }).click();
 
     expect(onOrientationChange).toHaveBeenCalledWith(
-      MotionColor.BLUE,
+      HandSide.LEFT,
       Orientation.CENTER_N
     );
   });

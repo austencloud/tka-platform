@@ -45,13 +45,34 @@ vi.mock("$lib/shared/share/get-sharer", () => ({
 vi.mock("$lib/shared/share/state/image-composition-state.svelte", () => ({
   getImageCompositionManager: () => ({
     darkMode: true,
+    showNotes: false,
+    customNotesText: "Created using Flow Arts Composer",
+    includeStartPosition: true,
+    addStepNumbers: true,
+    addWord: true,
+    addDifficultyLevel: true,
+    showLoopGlyph: true,
+    showQRCode: false,
+    showMandala: false,
+    getColumnCountForStepCount: () => 4,
+    getStartPositionLayoutForStepCount: () => "row",
+    getInfoCellChoiceForStepCount: () => "none",
     registerObserver: vi.fn(),
     unregisterObserver: vi.fn(),
   }),
 }));
 
+vi.mock("$lib/shared/render/get-glyph-cache", () => ({
+  getGlyphCache: () => ({
+    getGlyphDataUrl: () => null,
+    loadGlyphsByLetter: vi.fn().mockResolvedValue(undefined),
+  }),
+}));
+
 vi.mock("$lib/shared/pictograph/shared/state/visibility-state.svelte", () => ({
   getVisibilityStateManager: () => ({
+    getGridVisibility: () => true,
+    getState: () => ({}),
     registerObserver: vi.fn(),
     unregisterObserver: vi.fn(),
   }),
@@ -64,6 +85,7 @@ vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
     },
     user: { displayName: "Austen" },
   },
+  getUser: () => null,
 }));
 
 vi.mock("$lib/shared/auth/state/auth-drawer-state.svelte", () => ({
@@ -132,83 +154,38 @@ afterEach(() => {
 });
 
 describe("ShareButton", () => {
-  it("opens the existing Send Sequence flow with the rendered Choreo Card", async () => {
+  it("opens the unified card-only share sheet directly", async () => {
     render(ShareButton, { sequence });
 
     await page.getByRole("button", { name: "Share sequence" }).click();
-    await page.getByRole("menuitem", { name: "Send Sequence" }).click();
 
-    await vi.waitFor(() => {
-      expect(shareButtonMocks.openSendSequenceSheet).toHaveBeenCalledOnce();
-    });
-
-    const payload = shareButtonMocks.openSendSequenceSheet.mock.calls[0]?.[0];
-    expect(payload).toMatchObject({
-      sequence,
-      sequenceId: "copy-link",
-      sequenceWord: "COPY",
-      sequencePreviewBlob: expect.any(Blob),
-    });
-    expect(await payload.sequencePreviewBlob.text()).toBe("card");
-    expect(payload.sequence).not.toHaveProperty("sequencePreviewBlob");
-    expect(shareButtonMocks.getCardImageBlob).toHaveBeenCalledOnce();
+    await expect
+      .element(page.getByRole("dialog", { name: "Share this sequence" }))
+      .toBeInTheDocument();
+    await expect.element(page.getByText("Card footer")).toBeInTheDocument();
+    await expect.element(page.getByText("Post caption")).toBeInTheDocument();
+    await expect
+      .element(page.getByText("Video", { exact: true }))
+      .not.toBeInTheDocument();
+    await expect
+      .element(page.getByRole("menuitem", { name: "Send Sequence" }))
+      .not.toBeInTheDocument();
   });
 
-  it("does not open a stack-only Send sheet when card rendering fails", async () => {
-    shareButtonMocks.getCardImageBlob.mockRejectedValue(
-      new Error("render failed")
-    );
-    render(ShareButton, { sequence });
-
-    await page.getByRole("button", { name: "Share sequence" }).click();
-    await page.getByRole("menuitem", { name: "Send Sequence" }).click();
-
-    await vi.waitFor(() => {
-      expect(shareButtonMocks.showToast).toHaveBeenCalledWith({
-        message: "Couldn't prepare this card. Try again.",
-        type: "error",
-        duration: 6000,
-      });
-    });
-    expect(shareButtonMocks.openSendSequenceSheet).not.toHaveBeenCalled();
-  });
-
-  it("gives a clear retryable error when Clipboard API access is unavailable", async () => {
-    render(ShareButton, { sequence });
-
-    await page.getByRole("button", { name: "Share sequence" }).click();
-    const copyLink = page.getByRole("menuitem", { name: "Copy Link" });
-    await expect.element(copyLink).toBeEnabled();
-
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: undefined,
-    });
-
-    await copyLink.click();
-
-    expect(shareButtonMocks.showToast).toHaveBeenCalledWith({
-      message: "Couldn't copy the link. Try again.",
-      type: "error",
-      duration: 6000,
-    });
-  });
-
-  it("sends guests to account creation without preparing share data", async () => {
+  it("lets guests open the card-only share draft without minting account data", async () => {
     shareButtonMocks.fullAccount = false;
     render(ShareButton, { sequence });
 
     await page.getByRole("button", { name: "Share sequence" }).click();
 
-    expect(shareButtonMocks.authDrawerShow).toHaveBeenCalledWith(
-      "signup",
-      "share-sequence"
-    );
-    expect(shareButtonMocks.getCardImageBlob).not.toHaveBeenCalled();
+    await expect
+      .element(page.getByRole("dialog", { name: "Share this sequence" }))
+      .toBeInTheDocument();
+    expect(shareButtonMocks.authDrawerShow).not.toHaveBeenCalled();
     expect(shareButtonMocks.createShortCode).not.toHaveBeenCalled();
     expect(shareButtonMocks.openSendSequenceSheet).not.toHaveBeenCalled();
     await expect
-      .element(page.getByText("Send Sequence", { exact: true }))
+      .element(page.getByText("Video", { exact: true }))
       .not.toBeInTheDocument();
   });
 });

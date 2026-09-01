@@ -21,6 +21,7 @@ import {
   normalizeViewerHexColor,
   type ViewerCustomColorPair,
 } from "../domain/viewer-custom-colors";
+import { normalizeLegacyHandPair } from "@tka/tka-types";
 
 export type TunnelPropColorMode = "hands" | "spectrum" | "custom";
 
@@ -59,9 +60,10 @@ export function resolveTunnelPropColorState(
     value && typeof value === "object"
       ? (value as {
           mode?: unknown;
-          custom?: { blue?: unknown; red?: unknown } | null;
+          custom?: { left?: unknown; right?: unknown } | null;
         })
       : null;
+  const custom = normalizeLegacyHandPair(candidate?.custom);
   const mode: TunnelPropColorMode =
     candidate?.mode === "hands" ||
     candidate?.mode === "spectrum" ||
@@ -73,13 +75,13 @@ export function resolveTunnelPropColorState(
   return {
     mode,
     custom: {
-      blue: normalizeTunnelHexColor(
-        candidate?.custom?.blue,
-        DEFAULT_TUNNEL_CUSTOM_PROP_COLORS.blue
+      left: normalizeTunnelHexColor(
+        custom?.left,
+        DEFAULT_TUNNEL_CUSTOM_PROP_COLORS.left
       ),
-      red: normalizeTunnelHexColor(
-        candidate?.custom?.red,
-        DEFAULT_TUNNEL_CUSTOM_PROP_COLORS.red
+      right: normalizeTunnelHexColor(
+        custom?.right,
+        DEFAULT_TUNNEL_CUSTOM_PROP_COLORS.right
       ),
     },
   };
@@ -164,7 +166,7 @@ function toHex2(n: number): string {
 /**
  * Color for one prop in the tunnel stack.
  *
- * @param propIndex  base blue=0, red=1; layer blue=2+2*li, red=3+2*li.
+ * @param propIndex base left=0, right=1; layer left=2+2*li, right=3+2*li.
  * @param layerCount number of overlaid layers (`additionalLayers.length`); the
  *                   family spans `layerCount + 1` props (base + layers), so the
  *                   fan stretches to fill exactly the active stack.
@@ -173,12 +175,12 @@ export function tunnelPropColor(
   propIndex: number,
   layerCount: number
 ): TunnelColor {
-  const isBlue = propIndex % 2 === 0;
+  const isLeft = propIndex % 2 === 0;
   const familyIndex = Math.floor(propIndex / 2); // 0 = base
   const familyCount = Math.max(1, layerCount + 1);
   const t = familyCount <= 1 ? 0 : Math.min(1, familyIndex / (familyCount - 1));
 
-  const hue = isBlue
+  const hue = isLeft
     ? lerp(BLUE_ANCHOR_HUE, BLUE_FAR_HUE, t)
     : lerp(RED_ANCHOR_HUE, RED_FAR_HUE, t);
 

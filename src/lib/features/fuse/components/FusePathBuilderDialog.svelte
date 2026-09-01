@@ -8,7 +8,7 @@
   import { startOrientationsForLevel } from "$lib/features/create/generate/domain/level-orientation-policy";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { getFuseContext } from "../context/fuse-context";
   import {
     buildFusePathSource,
@@ -31,18 +31,18 @@
 
   const { state: fuseState } = getFuseContext();
   const builderState = createAssembleState();
-  const resolvedSide = $derived<FuseSide>(side ?? "blue");
-  const sourceLabel = $derived(resolvedSide === "blue" ? "Blue" : "Red");
+  const resolvedSide = $derived<FuseSide>(side ?? "left");
+  const sourceLabel = $derived(resolvedSide === "left" ? "Left" : "Right");
   const sourceColor = $derived(
-    resolvedSide === "blue"
+    resolvedSide === "left"
       ? "var(--prop-blue, #2e8bf0)"
       : "var(--prop-red, #ed1c24)"
   );
   const activeHand = $derived(
-    resolvedSide === "blue" ? MotionColor.BLUE : MotionColor.RED
+    resolvedSide === "left" ? HandSide.LEFT : HandSide.RIGHT
   );
   const activeSteps = $derived(
-    resolvedSide === "blue" ? builderState.blueSteps : builderState.redSteps
+    resolvedSide === "left" ? builderState.leftSteps : builderState.rightSteps
   );
   const targetLength = $derived(
     fuseState.appliedLength ?? fuseState.requestedLength

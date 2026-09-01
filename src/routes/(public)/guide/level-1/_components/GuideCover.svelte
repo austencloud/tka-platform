@@ -66,7 +66,7 @@
   );
 
   function mono(s: string, f: string): MandalaPalette {
-    return { blueStroke: s, blueFill: f, redStroke: s, redFill: f, purpleStroke: s, purpleFill: f };
+    return { leftStroke: s, leftFill: f, rightStroke: s, rightFill: f, purpleStroke: s, purpleFill: f };
   }
   // Bright on navy, deep ink on ivory.
   const NAVY = { iso: mono("#6f8cff", "#6f8cff10"), dash: mono("#c0a3ff", "#c0a3ff10"), anti: mono("#ff7a7a", "#ff7a7a10") };
@@ -75,8 +75,8 @@
 
   const m = (mt: string, rd: string, sl: string, el: string, so: string, eo: string) =>
     ({ motionType: mt, rotationDirection: rd, startLocation: sl, endLocation: el, startOrientation: so, endOrientation: eo });
-  const step = (blue: any, red: any) => ({ motions: { blue, red } });
-  const seq = (steps: any[]) => ({ bluePropType: "staff", redPropType: "staff", steps });
+  const step = (left, right) => ({ motions: { left, right } });
+  const seq = (steps: any[]) => ({ leftPropType: "staff", rightPropType: "staff", steps });
 
   const ISO = seq([
     step(m("pro", "cw", "n", "e", "in", "in"), m("pro", "cw", "s", "w", "in", "in")),
@@ -152,7 +152,7 @@
   >
     {#each FORMS as f}
       <div class="layer">
-        {#if emblemSize}<SequenceMandala sequence={f.seq} size={emblemSize} darkMode={false} palette={f.palette} bluePropType="staff" redPropType="staff" pathShape="arc" strokeWidth={3} />{/if}
+        {#if emblemSize}<SequenceMandala sequence={f.seq} size={emblemSize} darkMode={false} palette={f.palette} leftPropType="staff" rightPropType="staff" pathShape="arc" strokeWidth={3} />{/if}
       </div>
     {/each}
   </div>
@@ -167,7 +167,7 @@
           style={tf(OFF.forms[i] ?? { x: 0, y: 0 })}
           use:ptDrag={pt(`cover-form-${i}`, `Trio form ${i + 1}`, OFF.forms[i] ?? { x: 0, y: 0 })}
         >
-          {#if trioSize}<SequenceMandala sequence={f.seq} size={trioSize} darkMode={false} palette={f.palette} bluePropType="staff" redPropType="staff" pathShape="arc" strokeWidth={2.5} />{/if}
+          {#if trioSize}<SequenceMandala sequence={f.seq} size={trioSize} darkMode={false} palette={f.palette} leftPropType="staff" rightPropType="staff" pathShape="arc" strokeWidth={2.5} />{/if}
         </div>
       </div>
     {/each}

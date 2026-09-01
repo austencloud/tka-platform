@@ -29,6 +29,11 @@ import {
   updateFavorite as firebaseUpdateFavorite,
 } from "./firebase-composition-repository";
 import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
+import {
+  trackCompositionDeleted,
+  trackCompositionFavoriteChanged,
+  trackCompositionSaved,
+} from "$lib/features/compose/analytics/compose-events";
 
 export class CompositionSyncer {
   private hasSynced = false;
@@ -54,6 +59,13 @@ export class CompositionSyncer {
       });
     }
 
+    trackCompositionSaved({
+      compositionId: saved.id,
+      cellCount: saved.cells.length,
+      rows: saved.layout.rows,
+      columns: saved.layout.cols,
+    });
+
     return saved;
   }
 
@@ -73,6 +85,8 @@ export class CompositionSyncer {
         }
       });
     }
+
+    trackCompositionDeleted(compositionId);
   }
 
   /**
@@ -93,6 +107,8 @@ export class CompositionSyncer {
           }
         });
     }
+
+    trackCompositionFavoriteChanged(compositionId, newStatus);
 
     return newStatus;
   }

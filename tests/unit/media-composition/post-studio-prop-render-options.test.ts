@@ -10,8 +10,8 @@ describe("withPostStudioPropType", () => {
         visibilityOverrides: {
           darkMode: true,
           showQRCode: true,
-          bluePropType: PropType.STAFF,
-          redPropType: PropType.CLUB,
+          leftPropType: PropType.STAFF,
+          rightPropType: PropType.CLUB,
         },
       },
       PropType.FAN
@@ -19,13 +19,13 @@ describe("withPostStudioPropType", () => {
 
     expect(result.addWord).toBe(false);
     expect(result.propTypeOverride).toBe(PropType.FAN);
-    expect(result.bluePropTypeOverride).toBe(PropType.FAN);
-    expect(result.redPropTypeOverride).toBe(PropType.FAN);
+    expect(result.leftPropTypeOverride).toBe(PropType.FAN);
+    expect(result.rightPropTypeOverride).toBe(PropType.FAN);
     expect(result.visibilityOverrides).toMatchObject({
       darkMode: true,
       showQRCode: true,
-      bluePropType: PropType.FAN,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.FAN,
+      rightPropType: PropType.FAN,
     });
   });
 });

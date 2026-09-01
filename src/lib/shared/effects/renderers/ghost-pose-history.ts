@@ -1,3 +1,8 @@
+import {
+  shouldResetEffectStateAtStepBoundary,
+  type EffectStepBoundary,
+} from "../domain/effect-step-boundary";
+
 export interface GhostPoseSample<TSnapshot> {
   key: string;
   snapshot: TSnapshot;
@@ -10,35 +15,9 @@ interface StoredGhostPose<TSnapshot> {
   seenAt: number;
 }
 
-export interface GhostHistoryStepBoundary {
-  previousStep: number;
-  currentStep: number;
-  totalSteps: number;
-  seamlesslyLoopable: boolean;
-}
-
-/**
- * Scrubbing backward starts a different visual timeline, so old exposures must
- * go. A seamless LOOP wrap is the opposite: its first pose is the continuation
- * of its last pose, and clearing there creates a rhythmic blackout once per
- * pass. Keep the history across that one boundary.
- */
-export function shouldResetGhostHistoryAtStepBoundary({
-  previousStep,
-  currentStep,
-  totalSteps,
-  seamlesslyLoopable,
-}: GhostHistoryStepBoundary): boolean {
-  if (currentStep + 0.0001 >= previousStep) return false;
-
-  const crossedSeam =
-    seamlesslyLoopable &&
-    totalSteps > 0 &&
-    previousStep >= totalSteps - 1 &&
-    currentStep < 1;
-
-  return !crossedSeam;
-}
+export type GhostHistoryStepBoundary = EffectStepBoundary;
+export const shouldResetGhostHistoryAtStepBoundary =
+  shouldResetEffectStateAtStepBoundary;
 
 /**
  * Keep the visible exposures spread across the retained time window.

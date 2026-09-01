@@ -2,7 +2,7 @@ import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -35,7 +35,7 @@ const flip = (o: Orientation) => (o === IN ? OUT : IN);
 type HandStep = { anti?: boolean; still?: boolean; from: GridLocation; to: GridLocation; so: Orientation };
 const h = (anti: boolean, from: GridLocation, to: GridLocation, so: Orientation = IN): HandStep => ({ anti, from, to, so });
 const sh = (loc: GridLocation, so: Orientation = IN): HandStep => ({ still: true, from: loc, to: loc, so });
-const handMotion = (color: MotionColor, x: HandStep) => {
+const handMotion = (color: HandSide, x: HandStep) => {
   if (x.still) {
     return createMotionData({
       motionType: MotionType.STATIC,
@@ -43,7 +43,7 @@ const handMotion = (color: MotionColor, x: HandStep) => {
       endLocation: x.to,
       startOrientation: x.so,
       endOrientation: x.so,
-      color,
+      hand: color,
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     });
@@ -57,14 +57,14 @@ const handMotion = (color: MotionColor, x: HandStep) => {
     startOrientation: x.so,
     endOrientation: x.anti ? flip(x.so) : x.so,
     turns: 0,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
 };
 
-type Step = { letter: Letter; blue: HandStep; red: HandStep };
-const st = (letter: Letter, blue: HandStep, red: HandStep): Step => ({ letter, blue, red });
+type Step = { letter: Letter; left: HandStep; right: HandStep };
+const st = (letter: Letter, left: HandStep, right: HandStep): Step => ({ letter, left, right });
 const { B, U, O, T, H: HL, X, Y, Z } = Letter;
 const EL = Letter.E;
 const SIG = Letter.SIGMA;
@@ -75,8 +75,8 @@ type LoopDef = {
   key: string;
   word: string;
   startLetter: Letter;
-  startBlue: GridLocation;
-  startRed: GridLocation;
+  startLeft: GridLocation;
+  startRight: GridLocation;
   steps: Step[];
 };
 const LOOPS: LoopDef[] = [
@@ -85,8 +85,8 @@ const LOOPS: LoopDef[] = [
     key: "t2l-bstx",
     word: "BΣTX Rotated",
     startLetter: Letter.ALPHA,
-    startBlue: SO_,
-    startRed: N,
+    startLeft: SO_,
+    startRight: N,
     steps: [
       st(B, h(true, SO_, W), h(true, N, E)),
       st(SIG, sh(W, OUT), h(false, E, N, OUT)),
@@ -103,8 +103,8 @@ const LOOPS: LoopDef[] = [
     key: "t2l-eduz",
     word: "EΔUZ Rotated",
     startLetter: Letter.BETA,
-    startBlue: SO_,
-    startRed: SO_,
+    startLeft: SO_,
+    startRight: SO_,
     steps: [
       st(EL, h(true, SO_, W), h(true, SO_, E)),
       st(DEL, sh(W, OUT), h(true, E, N, OUT)),
@@ -121,8 +121,8 @@ const LOOPS: LoopDef[] = [
     key: "t2l-oyht",
     word: "OYHΘ Rotated",
     startLetter: Letter.GAMMA,
-    startBlue: W,
-    startRed: SO_,
+    startLeft: W,
+    startRight: SO_,
     steps: [
       st(O, h(true, W, N), h(false, SO_, E)),
       st(Y, sh(N, OUT), h(false, E, N)),
@@ -142,12 +142,12 @@ const stepData = (l: LoopDef, i: number): StepData => {
     id: `${l.key}-${i + 1}`,
     letter: s.letter,
     gridMode: GridMode.DIAMOND,
-    startPosition: getGridPositionFromLocations(s.blue.from, s.red.from),
-    endPosition: getGridPositionFromLocations(s.blue.to, s.red.to),
+    startPosition: getGridPositionFromLocations(s.left.from, s.right.from),
+    endPosition: getGridPositionFromLocations(s.left.to, s.right.to),
     stepNumber: i + 1,
     motions: {
-      blue: handMotion(MotionColor.BLUE, s.blue),
-      red: handMotion(MotionColor.RED, s.red),
+      left: handMotion(HandSide.LEFT, s.left),
+      right: handMotion(HandSide.RIGHT, s.right),
     },
   } as unknown as StepData;
 };
@@ -157,11 +157,11 @@ const startBox = (l: LoopDef): StepData =>
     letter: l.startLetter,
     gridMode: GridMode.DIAMOND,
     stepNumber: 0,
-    startPosition: getGridPositionFromLocations(l.startBlue, l.startRed),
-    endPosition: getGridPositionFromLocations(l.startBlue, l.startRed),
+    startPosition: getGridPositionFromLocations(l.startLeft, l.startRight),
+    endPosition: getGridPositionFromLocations(l.startLeft, l.startRight),
     motions: {
-      blue: handMotion(MotionColor.BLUE, sh(l.startBlue)),
-      red: handMotion(MotionColor.RED, sh(l.startRed)),
+      left: handMotion(HandSide.LEFT, sh(l.startLeft)),
+      right: handMotion(HandSide.RIGHT, sh(l.startRight)),
     },
   }) as unknown as StepData;
 

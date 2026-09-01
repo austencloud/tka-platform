@@ -80,7 +80,7 @@
  *
  * ## Diff baseline: per-session live value, not a fixed constant
  *
- * `selectedPropType`'s fallback (`settingsService.settings.bluePropType ??
+ * `selectedPropType`'s fallback (`settingsService.settings.leftPropType ??
  * PropType.STAFF`) is PER-USER, not a fixed app default — unlike
  * `DEFAULT_EFFECTS_CONFIG.activeEffect` or `DEFAULT_TUNNEL_VIEW_STATE`. A
  * fixed-constant diff would be wrong in both directions: it would capture a
@@ -89,7 +89,7 @@
  * picker), and a seeded viewer would need to out-rank the recipient's own
  * preference regardless. So `capturePsSlice` diffs `propType` against
  * `defaultPropType`, which callers MUST pass as the live
- * `settingsService.settings.bluePropType ?? PropType.STAFF` read at capture
+ * `settingsService.settings.leftPropType ?? PropType.STAFF` read at capture
  * time in THAT SAME session — never a stored/cached value. Because
  * `selectedPropType` is itself initialized from that identical expression
  * (absent a seed), a truly untouched mount always diffs to itself and never
@@ -157,7 +157,7 @@ export interface PsSliceSource {
   propType: PropTypeValue;
   /**
    * What THIS session's own fresh mount would resolve `propType` to absent
-   * any seed — read live (`settingsService.settings.bluePropType ??
+   * any seed — read live (`settingsService.settings.leftPropType ??
    * PropType.STAFF`) by the caller at capture time, never a stored constant.
    * See the module doc comment, "Diff baseline".
    */

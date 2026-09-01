@@ -8,6 +8,7 @@
 import type * as performanceHistoryTrackerModule from "./performance-history-tracker";
 import type { StoredPerformance } from "$lib/shared/train/domain/train-database-models";
 import { PracticeMode } from "../domain/enums/train-enums";
+import { trackTrainSessionCompleted } from "../analytics/train-events";
 
 export interface SessionCompletionParams {
   totalSteps: number;
@@ -41,6 +42,19 @@ export class SessionCompletionProcessor {
     const grade = this.calculateGrade(accuracy);
 
     await this.savePerformanceHistory(params, accuracy, grade);
+    trackTrainSessionCompleted({
+      sequenceId: params.sequenceId,
+      bpm: params.bpm,
+      practiceMode: params.practiceMode,
+      totalSteps: params.totalSteps,
+      totalHits: params.totalHits,
+      totalMisses: params.totalMisses,
+      maxCombo: params.maxCombo,
+      score: params.currentScore,
+      accuracy,
+      grade,
+      durationSeconds: params.sessionDuration,
+    });
 
     return { grade, accuracy };
   }

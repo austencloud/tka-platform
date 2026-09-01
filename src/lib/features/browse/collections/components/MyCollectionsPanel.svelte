@@ -768,7 +768,11 @@ instead of showing an empty shell.
       onUnfollow={previewReadOnly
         ? undefined
         : () =>
-            followedCollectionsState.unfollow(item.ownerId, item.collection.id)}
+            followedCollectionsState.unfollow(
+              item.ownerId,
+              item.collection.id,
+              "followed_collection"
+            )}
       onOpen={() =>
         openForeignCollection(
           item.ownerId,

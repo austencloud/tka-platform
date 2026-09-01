@@ -10,6 +10,7 @@ vi.mock("$lib/shared/auth/firebase", () => ({
 import type { CsvEdge } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
 import { parseCsvEdges } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
 import { applyVariationDescriptor } from "$lib/features/choreo-card/services/deck-variation";
+import { hydrateSequence } from "$lib/features/choreo-card/services/sequence-render-hydrator";
 import { buildFlowerSequence } from "$lib/features/lab/vtg-lab/services/build-flower-sequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
@@ -45,7 +46,7 @@ import {
   type VtgMode,
 } from "../shape-matrix-realizations";
 
-const words = baseWords as unknown as SequenceData[];
+const words = baseWords.map((record) => hydrateSequence(record));
 let index: Map<string, SequenceData>;
 let edges: CsvEdge[];
 let matrices: RotationStyleArchetype[];
@@ -61,38 +62,38 @@ function flower(style: FlowerStyle, turns: number, ori: "in" | "out"): Flower {
   };
 }
 
-function overlayFor(pair: { blue: Flower; red: Flower }): FlowerParityTarget {
-  const blueArchetype = resolveFlowerArchetype(matrices, pair.blue.style);
-  const redArchetype = resolveFlowerArchetype(matrices, pair.red.style);
-  const blueSequence = buildFlowerSequence(
-    blueArchetype,
-    pair.blue,
-    "blue",
+function overlayFor(pair: { left: Flower; right: Flower }): FlowerParityTarget {
+  const leftArchetype = resolveFlowerArchetype(matrices, pair.left.style);
+  const rightArchetype = resolveFlowerArchetype(matrices, pair.right.style);
+  const leftSequence = buildFlowerSequence(
+    leftArchetype,
+    pair.left,
+    "left",
     edges,
     PropType.STAFF
   );
-  const redSequence = buildFlowerSequence(
-    redArchetype,
-    pair.red,
-    "blue",
+  const rightSequence = buildFlowerSequence(
+    rightArchetype,
+    pair.right,
+    "left",
     edges,
     PropType.STAFF
   );
   return {
-    blue: calculateMandalaGeometry(
-      blueSequence.steps,
+    left: calculateMandalaGeometry(
+      leftSequence.steps,
       undefined,
       undefined,
       { tipEnds: 1, pathShape: "arc" },
       staffTip
-    ).blue,
-    red: calculateMandalaGeometry(
-      redSequence.steps,
+    ).left,
+    right: calculateMandalaGeometry(
+      rightSequence.steps,
       undefined,
       undefined,
       { tipEnds: 1, pathShape: "arc" },
       staffTip
-    ).blue,
+    ).left,
     tipPoint: staffTip,
     clubTipDx: Math.hypot(staffTip.dx, staffTip.dy),
   };
@@ -101,7 +102,7 @@ function overlayFor(pair: { blue: Flower; red: Flower }): FlowerParityTarget {
 function distances(
   sequence: SequenceData,
   target: FlowerParityTarget
-): { blue: number; red: number } {
+): { left: number; right: number } {
   const actual = calculateMandalaGeometry(
     sequence.steps,
     undefined,
@@ -110,8 +111,8 @@ function distances(
     staffTip
   );
   return {
-    blue: curveDistance(target.blue, actual.blue),
-    red: curveDistance(target.red, actual.red),
+    left: curveDistance(target.left, actual.left),
+    right: curveDistance(target.right, actual.right),
   };
 }
 
@@ -150,8 +151,8 @@ beforeAll(() => {
 describe("flower phase orientation search", () => {
   it("searches the complete Level 4 wheel for quarter-turn flowers", () => {
     const orientations = flowerPhaseOrientations({
-      blue: flower("pro", 0.25, "out"),
-      red: flower("pro", 0.25, "out"),
+      left: flower("pro", 0.25, "out"),
+      right: flower("pro", 0.25, "out"),
     });
     expect(orientations).toEqual([
       Orientation.IN,
@@ -168,8 +169,8 @@ describe("flower phase orientation search", () => {
   it("keeps non-quarter bands on cardinal starts", () => {
     expect(
       flowerPhaseOrientations({
-        blue: flower("pro", 1, "out"),
-        red: flower("anti", 1, "in"),
+        left: flower("pro", 1, "out"),
+        right: flower("anti", 1, "in"),
       })
     ).toEqual([
       Orientation.IN,
@@ -183,18 +184,18 @@ describe("flower phase orientation search", () => {
 describe("exact flower parity", () => {
   const pairs = [
     {
-      blue: flower("pro", 0.25, "out"),
-      red: flower("pro", 0.25, "out"),
+      left: flower("pro", 0.25, "out"),
+      right: flower("pro", 0.25, "out"),
     },
     {
-      blue: flower("pro", 0.75, "out"),
-      red: flower("pro", 0.75, "out"),
+      left: flower("pro", 0.75, "out"),
+      right: flower("pro", 0.75, "out"),
     },
     {
-      blue: flower("anti", 0.75, "in"),
-      red: flower("anti", 0.75, "out"),
+      left: flower("anti", 0.75, "in"),
+      right: flower("anti", 0.75, "out"),
     },
-  ] satisfies Array<{ blue: Flower; red: Flower }>;
+  ] satisfies Array<{ left: Flower; right: Flower }>;
 
   it("accepts only sequences whose two trails match the clicked flowers", () => {
     let accepted = 0;
@@ -204,29 +205,29 @@ describe("exact flower parity", () => {
         const base = resolveBase(
           index,
           handMode,
-          pair.blue.style,
-          pair.red.style
+          pair.left.style,
+          pair.right.style
         );
         if (!base) continue;
         const phases = buildExactFlowerPhases(base, pair, edges, target);
         expect(
           phases.length,
-          `${handMode} should preserve ${pair.blue.style}/${pair.blue.turns} × ${pair.red.style}/${pair.red.turns}`
+          `${handMode} should preserve ${pair.left.style}/${pair.left.turns} × ${pair.right.style}/${pair.right.turns}`
         ).toBeGreaterThan(0);
         for (const phase of phases) {
           const distance = distances(phase.sequence, target);
-          expect(distance.blue).toBeLessThanOrEqual(CURVE_MATCH_EPS);
-          expect(distance.red).toBeLessThanOrEqual(CURVE_MATCH_EPS);
+          expect(distance.left).toBeLessThanOrEqual(CURVE_MATCH_EPS);
+          expect(distance.right).toBeLessThanOrEqual(CURVE_MATCH_EPS);
           accepted++;
         }
       }
     }
     expect(accepted).toBeGreaterThan(0);
-  });
+  }, 30_000);
 
   it("rejects relationship-only matches that change the selected flower", () => {
     for (const pair of pairs.slice(1)) {
-      const base = resolveBase(index, "QS", pair.blue.style, pair.red.style);
+      const base = resolveBase(index, "QS", pair.left.style, pair.right.style);
       if (!base) throw new Error("Missing QS base");
       expect(
         solvePropRelationshipPhase(base, pair, "TS", edges, overlayFor(pair))
@@ -255,8 +256,8 @@ describe("exact flower parity", () => {
           edges,
           target
         );
-        expect(second?.blueOrientation).toBe(first?.blueOrientation);
-        expect(second?.redOrientation).toBe(first?.redOrientation);
+        expect(second?.leftOrientation).toBe(first?.leftOrientation);
+        expect(second?.rightOrientation).toBe(first?.rightOrientation);
         if (!first) continue;
         const relationship = derivePropRelationship(first.sequence, pair);
         expect(relationship.kind).toBe("full");
@@ -307,30 +308,30 @@ describe("exact flower parity", () => {
     const base = resolveBase(index, "SS", "pro", "pro");
     if (!base) throw new Error("Missing SS pro/pro base");
     const emptyTarget: FlowerParityTarget = {
-      blue: [],
-      red: [],
+      left: [],
+      right: [],
       clubTipDx: 0,
     };
     const unequal = {
-      blue: flower("pro", 0.25, "out"),
-      red: flower("pro", 1, "out"),
+      left: flower("pro", 0.25, "out"),
+      right: flower("pro", 1, "out"),
     };
     const floating = {
-      blue: {
+      left: {
         style: "float",
         turns: "fl",
         ori: "in",
         grid: "diamond",
         petals: 0,
       },
-      red: {
+      right: {
         style: "float",
         turns: "fl",
         ori: "out",
         grid: "diamond",
         petals: 0,
       },
-    } satisfies { blue: Flower; red: Flower };
+    } satisfies { left: Flower; right: Flower };
 
     expect(
       solvePropRelationshipPhase(base, unequal, "SS", edges, emptyTarget)

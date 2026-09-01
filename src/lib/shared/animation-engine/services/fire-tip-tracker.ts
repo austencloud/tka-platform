@@ -21,18 +21,18 @@ import {
 
 export interface FireTipTrackerConfig {
   canvasSize: number;
-  bluePropDimensions: { width: number; height: number };
-  redPropDimensions: { width: number; height: number };
-  bluePropType?: string;
-  redPropType?: string;
+  leftPropDimensions: { width: number; height: number };
+  rightPropDimensions: { width: number; height: number };
+  leftPropType?: string;
+  rightPropType?: string;
   /** Transforms from the Canvas2D renderer. When provided, used instead of recomputing positions. */
   renderedTransforms?: {
-    blue: RenderedPropTransform | null;
-    red: RenderedPropTransform | null;
+    left: RenderedPropTransform | null;
+    right: RenderedPropTransform | null;
   };
   /**
    * Overlaid tunnel layers (rotated/mirrored copies of the base sequence). When
-   * present, the tracker also emits tips for each layer's blue/red props at
+   * present, the tracker also emits tips for each layer's left/right props at
    * propIndex >= 2, so per-tip effects (which filter by propIndex, with "*"
    * matching any) decorate the whole kaleidoscope instead of just the base
    * pair. Layers share the base blue/red dimensions + types and use the
@@ -40,8 +40,8 @@ export interface FireTipTrackerConfig {
    * identical legacy behavior.
    */
   additionalLayers?: Array<{
-    blueProp: PropState | null;
-    redProp: PropState | null;
+    leftProp: PropState | null;
+    rightProp: PropState | null;
     opacity?: number;
   }>;
 }
@@ -131,8 +131,8 @@ export class FireTipTracker {
   }
 
   update(
-    blueProp: PropState | null,
-    redProp: PropState | null,
+    leftProp: PropState | null,
+    rightProp: PropState | null,
     config: FireTipTrackerConfig,
     currentTime: number
   ): FireTipUpdateResult {
@@ -164,34 +164,34 @@ export class FireTipTracker {
     this.outputTips.length = 0;
     let totalTips = 0;
 
-    if (blueProp) {
+    if (leftProp) {
       totalTips = this.emitPropTips(
-        blueProp,
+        leftProp,
         config.canvasSize,
-        config.bluePropDimensions,
-        config.bluePropType ?? null,
+        config.leftPropDimensions,
+        config.leftPropType ?? null,
         0, // propIndex
         0, // prevTipOffset
         currentTime,
         totalTips,
-        config.renderedTransforms?.blue
+        config.renderedTransforms?.left
       );
     } else {
       // Invalidate blue prop stored tips
       this.invalidateRange(0, MAX_TOTAL_TIPS / 2);
     }
 
-    if (redProp) {
+    if (rightProp) {
       totalTips = this.emitPropTips(
-        redProp,
+        rightProp,
         config.canvasSize,
-        config.redPropDimensions,
-        config.redPropType ?? null,
+        config.rightPropDimensions,
+        config.rightPropType ?? null,
         1, // propIndex
         MAX_TOTAL_TIPS / 2, // prevTipOffset (red starts at slot 8)
         currentTime,
         totalTips,
-        config.renderedTransforms?.red
+        config.renderedTransforms?.right
       );
     } else {
       // Invalidate red prop stored tips
@@ -217,12 +217,12 @@ export class FireTipTracker {
         // Distinct propIndex per layer/hand: base blue=0, red=1; layer li
         // blue=2+2*li, red=3+2*li. Only the "*"-vs-specific distinction
         // matters downstream, so exact values are irrelevant past uniqueness.
-        if (layer.blueProp) {
+        if (layer.leftProp) {
           layerOutputIndex = this.emitLayerPropTips(
-            layer.blueProp,
+            layer.leftProp,
             config.canvasSize,
-            config.bluePropDimensions,
-            config.bluePropType ?? null,
+            config.leftPropDimensions,
+            config.leftPropType ?? null,
             2 + li * 2,
             `${li}-b`,
             currentTime,
@@ -231,12 +231,12 @@ export class FireTipTracker {
             layer.opacity ?? 1
           );
         }
-        if (layer.redProp) {
+        if (layer.rightProp) {
           layerOutputIndex = this.emitLayerPropTips(
-            layer.redProp,
+            layer.rightProp,
             config.canvasSize,
-            config.redPropDimensions,
-            config.redPropType ?? null,
+            config.rightPropDimensions,
+            config.rightPropType ?? null,
             3 + li * 2,
             `${li}-r`,
             currentTime,

@@ -14,6 +14,7 @@ import type {
 } from "@tka/sequence-engine";
 import type { LetterMappingsJson } from "@tka/sequence-engine";
 import { calculateOrientations } from "../core/orientation-calculator.js";
+import { readPictographCsvMotion } from "../shared/pictograph-csv-row.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,12 +29,24 @@ const PROJECT_ROOT = path.resolve(MCP_SERVER_ROOT, "..");
 type GridMode = "diamond" | "box" | "skewed";
 
 const DATAFRAME_PATHS: Record<GridMode, string> = {
-  diamond: path.resolve(PROJECT_ROOT, "static/data/pictographs/DiamondPictographDataframe.csv"),
-  box: path.resolve(PROJECT_ROOT, "static/data/pictographs/BoxPictographDataframe.csv"),
-  skewed: path.resolve(PROJECT_ROOT, "static/data/pictographs/SkewedPictographDataframe.csv"),
+  diamond: path.resolve(
+    PROJECT_ROOT,
+    "static/data/pictographs/DiamondPictographDataframe.csv"
+  ),
+  box: path.resolve(
+    PROJECT_ROOT,
+    "static/data/pictographs/BoxPictographDataframe.csv"
+  ),
+  skewed: path.resolve(
+    PROJECT_ROOT,
+    "static/data/pictographs/SkewedPictographDataframe.csv"
+  ),
 };
 
-const LETTER_MAPPINGS_PATH = path.resolve(PROJECT_ROOT, "static/data/learn/letter-mappings.json");
+const LETTER_MAPPINGS_PATH = path.resolve(
+  PROJECT_ROOT,
+  "static/data/learn/letter-mappings.json"
+);
 
 /**
  * Node.js-specific data provider using synchronous file reads.
@@ -105,25 +118,29 @@ export class NodeDataProvider implements ISequenceDataProvider {
           row[header] = values[index] || "";
         });
 
+        const left = readPictographCsvMotion(row, "left");
+        const right = readPictographCsvMotion(row, "right");
         variations.push({
           letter: row.letter,
           startPosition: row.startPosition,
           endPosition: row.endPosition,
-          blueMotionType: row.blueMotionType,
-          blueStartLocation: row.blueStartLocation,
-          blueEndLocation: row.blueEndLocation,
-          blueRotationDirection: row.blueRotationDirection || "cw",
-          redMotionType: row.redMotionType,
-          redStartLocation: row.redStartLocation,
-          redEndLocation: row.redEndLocation,
-          redRotationDirection: row.redRotationDirection || "cw",
+          leftMotionType: left.motionType,
+          leftStartLocation: left.startLocation,
+          leftEndLocation: left.endLocation,
+          leftRotationDirection: left.rotationDirection,
+          rightMotionType: right.motionType,
+          rightStartLocation: right.startLocation,
+          rightEndLocation: right.endLocation,
+          rightRotationDirection: right.rotationDirection,
           gridMode: this.gridMode,
         });
       }
 
       this.allVariations = variations;
       this.allVariationsLoaded = true;
-      console.error(`[MCP] Loaded ${variations.length} variations for ${this.gridMode} mode`);
+      console.error(
+        `[MCP] Loaded ${variations.length} variations for ${this.gridMode} mode`
+      );
     } catch (error) {
       console.error(`[MCP] Failed to load variations from CSV:`, error);
       this.allVariationsLoaded = true;
@@ -153,7 +170,9 @@ let defaultProvider: NodeDataProvider | null = null;
 /**
  * Get or create the default NodeDataProvider.
  */
-export function getNodeDataProvider(gridMode: GridMode = "diamond"): NodeDataProvider {
+export function getNodeDataProvider(
+  gridMode: GridMode = "diamond"
+): NodeDataProvider {
   if (!defaultProvider || defaultProvider["gridMode"] !== gridMode) {
     defaultProvider = new NodeDataProvider(gridMode);
   }

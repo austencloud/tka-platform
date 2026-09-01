@@ -6,6 +6,7 @@
     type VtgMode,
   } from "../services/shape-matrix-realizations";
   import { TND_BY_FAMILY } from "$lib/features/choreo-card/domain/tnd-element";
+  import { growFade } from "$lib/shared/transitions/motion";
   import RelationshipChoiceChip from "./RelationshipChoiceChip.svelte";
 
   interface TargetGroup {
@@ -73,7 +74,9 @@
         key: targetKey(realization),
         label: same ? "Same" : "Opposite",
         detail: "Direction only · different rates",
-        color: same ? "#73b8ff" : "#f4b54c",
+        color: same
+          ? "var(--prop-blue, #73b8ff)"
+          : "var(--theme-accent, #f4b54c)",
         icon: null,
         mode: null,
       };
@@ -82,7 +85,7 @@
       key: "float",
       label: "Float",
       detail: "No prop rotation",
-      color: "#b7c0cc",
+      color: "color-mix(in srgb, var(--theme-text, #fff) 72%, transparent)",
       icon: null,
       mode: null,
     };
@@ -148,12 +151,11 @@
         accent={group.color}
         icon={group.icon}
         code={group.detail}
+        compactCode={group.mode ?? group.detail}
         label={group.label}
         active={selectedGroup?.key === group.key}
         disabled={disabled || unavailable}
-        ariaLabel={`${group.label}: ${group.detail}${
-          unavailable ? ", unavailable for these flowers" : ""
-        }`}
+        ariaLabel={`${group.detail} ${group.label}`}
         onpick={() => {
           if (group.mode) ontarget(group.mode);
           else if (group.candidates[0]) onhandpick(group.candidates[0].mode);
@@ -162,30 +164,29 @@
     {/each}
   </div>
 
-  <div class="hand-choice-slot">
-    {#if selectedGroup && selectedGroup.candidates.length > 1}
-      <div
-        class="hand-choices"
-        role="group"
-        aria-label="Hand paths that produce this prop relationship"
-      >
-        <span>Hand path</span>
-        {#each selectedGroup.candidates as candidate (candidate.mode)}
-          <button
-            type="button"
-            class:active={candidate.mode === selectedMode}
-            style="--hand: {candidate.element.accentColor}"
-            aria-pressed={candidate.mode === selectedMode}
-            disabled={building}
-            onclick={() => onhandpick(candidate.mode)}
-          >
-            <img src={candidate.element.iconPath} alt="" />
-            {candidate.mode}
-          </button>
-        {/each}
-      </div>
-    {/if}
-  </div>
+  {#if selectedGroup && selectedGroup.candidates.length > 1}
+    <div
+      class="hand-choices"
+      role="group"
+      aria-label="Hand paths that produce this prop relationship"
+      transition:growFade={{ axis: "y" }}
+    >
+      <span>Hand path</span>
+      {#each selectedGroup.candidates as candidate (candidate.mode)}
+        <button
+          type="button"
+          class:active={candidate.mode === selectedMode}
+          style="--hand: {candidate.element.accentColor}"
+          aria-pressed={candidate.mode === selectedMode}
+          disabled={building}
+          onclick={() => onhandpick(candidate.mode)}
+        >
+          <img src={candidate.element.iconPath} alt="" />
+          {candidate.mode}
+        </button>
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -203,15 +204,12 @@
     height: 1.55rem;
     object-fit: contain;
   }
-  .hand-choice-slot {
-    min-height: 2.2rem;
-  }
   .hand-choices {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.35rem;
-    min-height: 2.2rem;
+    min-height: var(--min-touch-target, 44px);
   }
   .hand-choices > span {
     margin-right: 0.2rem;
@@ -225,27 +223,27 @@
     align-items: center;
     gap: 0.25rem;
     min-width: 3.2rem;
-    min-height: 2rem;
+    min-height: var(--min-touch-target, 44px);
     padding: 0.2rem 0.45rem;
     border: 1px solid color-mix(in srgb, var(--hand) 34%, transparent);
     border-radius: 999px;
     background: transparent;
     color: var(--theme-text-dim, rgb(255 255 255 / 0.72));
     font: inherit;
-    font-size: var(--font-size-compact, 0.75rem);
+    font-size: var(--font-size-min, 0.875rem);
     cursor: pointer;
   }
   .hand-choices button.active {
     border-color: var(--hand);
     background: color-mix(in srgb, var(--hand) 18%, transparent);
-    color: #fff;
+    color: var(--theme-text, #fff);
   }
   .hand-choices img {
     width: 1rem;
     height: 1rem;
   }
   button:focus-visible {
-    outline: 2px solid var(--target, var(--hand, #fff));
+    outline: 2px solid var(--target, var(--hand, var(--theme-text, #fff)));
     outline-offset: 2px;
   }
   @container shape-matrix-drill (max-width: 30rem) {

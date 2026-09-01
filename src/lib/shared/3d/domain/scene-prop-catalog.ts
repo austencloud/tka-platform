@@ -1,11 +1,13 @@
-import type {
-  FanBuild,
-  FanCover,
-  FanFrameColor,
-  PropFinish,
-} from "@austencloud/scene-3d";
+import type { PropFinish } from "@austencloud/scene-3d";
 
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { PropBuildPreviewOption } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+export {
+  fanBuildPreviewOptions,
+  fanCoverPreviewOptions,
+  fanFramePreviewOptions,
+} from "$lib/shared/pictograph/prop/domain/fan-appearance";
+export type { PropBuildPreviewOption } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
 export interface ScenePropVariant {
   id: PropType;
@@ -146,17 +148,6 @@ export function findScenePropFamilyByRepresentative(
    set of pictures would be a second catalog.
    ------------------------------------------------------------------------- */
 
-export interface PropBuildPreviewOption<T extends string> {
-  id: T;
-  label: string;
-  image: string;
-  imageScale?: number;
-  designCredit?: {
-    originator: string;
-    sourceUrl: string;
-  };
-}
-
 const PREVIEW_ROOT = "/images/props/build-previews";
 
 const PROP_PREVIEW_IMAGES: Partial<Record<PropType, string>> = {
@@ -192,80 +183,5 @@ export function finishPreviewOptions(
   return [
     { id: "fire", label: "Fire", image: previewImage(`${stem}-fire.webp`) },
     { id: "day", label: "Day", image: previewImage(`${stem}-day.webp`) },
-  ];
-}
-
-function fanImage(
-  build: FanBuild,
-  frame: FanFrameColor,
-  cover: FanCover
-): string {
-  if (build === "pictograph") return previewImage("fan-pictograph-front.webp");
-  if (build === "fire") return previewImage(`fan-fire-${cover}-complete.webp`);
-  if (build === "lotus") return previewImage("fan-lotus-bare-complete.webp");
-  return previewImage(`fan-day-${frame}-${cover}-complete.webp`);
-}
-
-export function fanBuildPreviewOptions(
-  frame: FanFrameColor,
-  cover: FanCover
-): readonly PropBuildPreviewOption<FanBuild>[] {
-  return [
-    {
-      id: "pictograph",
-      label: "Pictograph",
-      image: fanImage("pictograph", frame, cover),
-    },
-    {
-      id: "fire",
-      label: "Fire",
-      image: fanImage("fire", frame, cover),
-      designCredit: {
-        originator: "Doodle",
-        sourceUrl: "https://forgedfans.com/products/doodlegrip-fire-fans",
-      },
-    },
-    {
-      id: "lotus",
-      label: "Lotus",
-      image: fanImage("lotus", frame, cover),
-      designCredit: {
-        originator: "Home of Poi",
-        sourceUrl:
-          "https://www.homeofpoi.com/en/shop/listItems/Medium-Lotus-Fire-Fans",
-      },
-    },
-    {
-      id: "day",
-      label: "Day",
-      image: fanImage("day", frame, cover),
-      designCredit: {
-        originator: "Doodle",
-        sourceUrl: "https://flowtoys.com/products/doodlegrip-practice-fans",
-      },
-    },
-  ];
-}
-
-export function fanFramePreviewOptions(
-  cover: FanCover
-): readonly PropBuildPreviewOption<FanFrameColor>[] {
-  return [
-    { id: "black", label: "Black", image: fanImage("day", "black", cover) },
-    { id: "white", label: "White", image: fanImage("day", "white", cover) },
-  ];
-}
-
-export function fanCoverPreviewOptions(
-  build: Extract<FanBuild, "fire" | "day">,
-  frame: FanFrameColor
-): readonly PropBuildPreviewOption<FanCover>[] {
-  return [
-    { id: "bare", label: "Bare", image: fanImage(build, frame, "bare") },
-    {
-      id: "covered",
-      label: "Covered",
-      image: fanImage(build, frame, "covered"),
-    },
   ];
 }

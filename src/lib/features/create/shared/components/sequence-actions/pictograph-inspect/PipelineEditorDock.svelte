@@ -39,13 +39,17 @@
     createCanonicalPlacementContext,
     rotateScreenVectorToCanonical,
   } from "$lib/shared/pictograph/arrow/positioning/calculation/services/canonical-placement-frame";
+  import {
+    HandSide,
+    type HandSide as HandSideValue,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   const logger = createComponentLogger("PipelineEditorDock");
 
   interface Props {
     stepData: StepData;
-    blueDiagnostics: PipelineDiagnostics | null;
-    redDiagnostics: PipelineDiagnostics | null;
+    leftDiagnostics: PipelineDiagnostics | null;
+    rightDiagnostics: PipelineDiagnostics | null;
     onDiagnosticsChanged?: () => void;
     /** When set, the dock shows a single "Done" button (instead of Save) that
         persists the current edit then calls this — for one-shot flows like the
@@ -55,19 +59,19 @@
   }
   let {
     stepData,
-    blueDiagnostics,
-    redDiagnostics,
+    leftDiagnostics,
+    rightDiagnostics,
     onDiagnosticsChanged,
     onDone,
   }: Props = $props();
 
-  // Selection-driven binding (live re-bind on color switch)
-  const activeColor = $derived<"blue" | "red" | null>(
-    (selectedArrowState.selectedArrow?.color as "blue" | "red" | undefined) ??
+  // Selection-driven binding (live re-bind on hand switch)
+  const activeHand = $derived<HandSideValue | null>(
+    (selectedArrowState.selectedArrow?.hand as HandSideValue | undefined) ??
       null
   );
   const diagnostics = $derived(
-    activeColor === "red" ? redDiagnostics : blueDiagnostics
+    activeHand === HandSide.RIGHT ? rightDiagnostics : leftDiagnostics
   );
 
   let editTarget = $state<"special-json" | "default">("special-json");
@@ -92,7 +96,7 @@
   // Global-shadows-Special and Prop-Geometry-shadow-Default read identically
   // to a user and would otherwise reproduce the same silent confusion.
   const shadowedBy = $derived.by((): PipelineTier | null => {
-    if (!diagnostics || !activeColor) return null;
+    if (!diagnostics || !activeHand) return null;
     const active = diagnostics.activeTier;
     // Rank, not inequality: a LOWER-priority active tier means the tier being
     // edited is simply empty (editing Special on a letter with no special entry),
@@ -106,23 +110,23 @@
   );
 
   // Head identity derived
-  const colorName = $derived(activeColor === "red" ? "Red" : "Blue");
+  const handName = $derived(activeHand === HandSide.RIGHT ? "Right" : "Left");
   const colorToken = $derived(
-    activeColor === "red"
+    activeHand === HandSide.RIGHT
       ? "var(--prop-red, #f85149)"
       : "var(--prop-blue, #58a6ff)"
   );
   const segColor = $derived<"blue" | "red">(
-    activeColor === "red" ? "red" : "blue"
+    activeHand === HandSide.RIGHT ? "red" : "blue"
   );
 
   // Publish the in-flight edit so PipelineTraceSection can show the edited tier's
   // value live (before Save). Only while an actual edit is pending on this color;
   // cleared on Save/tier-switch/deselect (hasLocalChanges resets) and on teardown.
   $effect(() => {
-    if (hasLocalChanges && activeColor) {
+    if (hasLocalChanges && activeHand) {
       livePipelineEdit.publish({
-        color: activeColor,
+        hand: activeHand,
         tier: editTarget,
         x: editX,
         y: editY,
@@ -150,8 +154,8 @@
   // fabricated motion would write special-placement overrides keyed off
   // placeholder data (Wave 0 straggler fix: dead presence gate).
   const selectedArrowContext = $derived.by((): SelectedArrowContext | null => {
-    if (!activeColor) return null;
-    const motion = stepData.motions?.[activeColor];
+    if (!activeHand) return null;
+    const motion = stepData.motions?.[activeHand];
     if (!isVisibleMotion(motion)) return null;
     const pictographData: PictographData = {
       id: stepData.id,
@@ -160,14 +164,14 @@
       endPosition: stepData.endPosition,
       motions: stepData.motions as PictographData["motions"],
     };
-    return { motionData: motion, color: activeColor, pictographData };
+    return { motionData: motion, hand: activeHand, pictographData };
   });
 
   // The arrow's calculated grid location — needed to invert the per-quadrant
   // directional-tuple matrix so a pressed screen direction maps to the right
   // reference-space delta (correct even for 90°/270° rotated quadrants).
   const arrowLocation = $derived.by((): GridLocation | null => {
-    const c = activeColor;
+    const c = activeHand;
     if (!c) return null;
     const motion = stepData.motions?.[c];
     const pd = selectedArrowContext?.pictographData;
@@ -180,18 +184,18 @@
     // withEffectivePropTypes) wins over global settings — so fixing arrows on a
     // fan/club deck card shows the right prop and the Default-tier label matches
     // the key computeSpecialOverrideKey writes (which reads motion.propType).
-    const c = activeColor ?? "blue";
+    const c = activeHand ?? HandSide.LEFT;
     const motion = stepData.motions?.[c];
     const settings = getSettings();
     const settingsPropType =
-      c === "blue" ? settings.bluePropType : settings.redPropType;
+      c === HandSide.LEFT ? settings.leftPropType : settings.rightPropType;
     return (motion?.propType ?? settingsPropType)?.toLowerCase() || "staff";
   });
 
   // THE canonical key, identical to what the renderer reads (write-key ===
   // read-key by construction). Includes the prop-scoped propType segment.
   const specialOverrideKey = $derived.by((): string | null => {
-    const c = activeColor ?? "blue";
+    const c = activeHand ?? HandSide.LEFT;
     const motion = stepData.motions?.[c];
     if (!motion || !stepData.letter) return null;
     const pd: PictographData = selectedArrowContext?.pictographData ?? {
@@ -244,8 +248,8 @@
 
   const dockTitleText = $derived(
     editTarget === "default"
-      ? `${colorName} · ${thisPropType} · Default`
-      : `${colorName} · ${tierLabel(editTarget)}`
+      ? `${handName} · ${thisPropType} · Default`
+      : `${handName} · ${tierLabel(editTarget)}`
   );
 
   function tierLabel(tier: PipelineTier): string {
@@ -266,10 +270,10 @@
     return "special-json";
   }
 
-  // Re-bind on color switch (replaces old enterEditMode/toggleEditing).
-  let lastBoundColor: "blue" | "red" | null = null;
+  // Re-bind on hand switch (replaces old enterEditMode/toggleEditing).
+  let lastBoundColor: HandSideValue | null = null;
   $effect(() => {
-    const c = activeColor;
+    const c = activeHand;
     if (c === lastBoundColor) return;
     lastBoundColor = c;
     if (!c) {
@@ -291,7 +295,7 @@
   // of the reverted baseline.
   $effect(() => {
     void diagnostics; // re-run when diagnostics change
-    if (!activeColor || hasLocalChanges || saveState === "saving") return;
+    if (!activeHand || hasLocalChanges || saveState === "saving") return;
     syncNumericInputs();
   });
 
@@ -416,7 +420,7 @@
       target.isContentEditable
     )
       return false;
-    if (!activeColor) return false;
+    if (!activeHand) return false;
     const key = event.key.toLowerCase();
 
     // Z (no modifier): revert the current tier's override for the selected arrow
@@ -466,7 +470,7 @@
       d: { dx: increment, dy: 0 },
     };
     const dir = directionMap[key]!;
-    const motion = stepData.motions?.[activeColor!];
+    const motion = stepData.motions?.[activeHand!];
     const pd = selectedArrowContext?.pictographData;
     if (motion && arrowLocation && pd) {
       const placementFrame = createCanonicalPlacementContext(
@@ -496,7 +500,7 @@
         (globalThis as { __DBG_ARROW?: boolean }).__DBG_ARROW
       ) {
         console.log(
-          `[WASD] key=${key} screenDelta=(${dir.dx},${dir.dy}) ${activeColor}` +
+          `[WASD] key=${key} screenDelta=(${dir.dx},${dir.dy}) ${activeHand}` +
             ` mt=${String(motion.motionType).toLowerCase()} rot=${String(motion.rotationDirection).toLowerCase()}` +
             ` prop=${motion.propType?.toLowerCase() ?? "staff"} arrowLoc=${arrowLocation}` +
             ` → refDelta=(${refDelta.x},${refDelta.y}) editXY=(${editX},${editY})`
@@ -606,7 +610,7 @@
     y: number,
     original: { x: number; y: number } | null
   ): SpecialArrowPlacementInput | null {
-    const c = activeColor ?? "blue";
+    const c = activeHand ?? HandSide.LEFT;
     const motion = stepData.motions?.[c];
     if (!motion || !stepData.letter) return null;
 
@@ -759,7 +763,7 @@
 
 <svelte:window
   onkeydown={(e) => {
-    if (!activeColor) return;
+    if (!activeHand) return;
     if (handleSaveHotkey(e)) return;
     handleKeydown(e);
   }}
@@ -768,10 +772,10 @@
 <footer
   data-save-shortcut-scope
   class="editor-dock"
-  class:idle={!activeColor}
+  class:idle={!activeHand}
   style="--c: {colorToken}"
 >
-  {#if !activeColor}
+  {#if !activeHand}
     <span class="dock-idle"
       ><i class="fas fa-hand-pointer" aria-hidden="true"></i> Select an arrow to adjust
       its position →</span
@@ -782,10 +786,10 @@
       <!-- Ghost-sizer: the title box reserves the width of the longest possible
            variant so flipping color (Red↔Blue) or tier never resizes the head
            and shoves the rest of the dock row. The hidden sizer must hold the
-           widest combination of {colorName} · {tierLabel}. -->
+           widest combination of {handName} · {tierLabel}. -->
       <span class="dock-title">
         <span class="dock-title-sizer" aria-hidden="true"
-          >Blue · bigdoublecontactball · Default</span
+          >Left · bigdoublecontactball · Default</span
         >
         <span class="dock-title-live">{dockTitleText}</span>
       </span>

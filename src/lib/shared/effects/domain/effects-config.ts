@@ -15,7 +15,7 @@ import type {
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 import type { LedSimulatorConfig } from "$lib/shared/animation-engine/domain/types/led-types";
 
-export const EFFECTS_CONFIG_VERSION = 36;
+export const EFFECTS_CONFIG_VERSION = 38;
 
 /** User-facing 2D Fire look. The renderer translates this into its internal profile. */
 export type FireRenderingStyle = "natural" | "liquid";
@@ -62,10 +62,10 @@ export interface TrailsIntent {
   /** 0.3-1.0. Drives opacity in 2D, emissive + alpha in 3D. */
   brightness: number;
   /** Hex string. Ignored when `rainbow` is true. */
-  blueColor: string;
+  leftColor: string;
   /** Hex string. Ignored when `rainbow` is true. */
-  redColor: string;
-  /** Hue-cycling mode. Overrides blueColor/redColor. */
+  rightColor: string;
+  /** Hue-cycling mode. Overrides the left/right channel colors. */
   rainbow: boolean;
 }
 
@@ -189,9 +189,9 @@ export interface SparklesIntent {
  */
 export interface GhostIntent {
   /** Hex — frozen exposures from the blue prop. */
-  blueColor: string;
+  leftColor: string;
   /** Hex — frozen exposures from the red prop. */
-  redColor: string;
+  rightColor: string;
   /** 0-1 — overall trail opacity (master brightness). */
   intensity: number;
   /** 1-10 — Persistence: how long each ghost lingers before fading to nothing. */

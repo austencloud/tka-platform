@@ -27,6 +27,7 @@
   import {
     getGridMarkerGeometry,
     getGridMaterial,
+    getGridOrientationHelperArgs,
   } from "./grid-render-resources";
 
   interface Props {
@@ -78,6 +79,9 @@
   const { camera } = useThrelte();
   const centerPointGeometry = getGridMarkerGeometry(0.04, 32);
   const centerPointMaterial = getGridMaterial(0xf59e0b);
+  const orientationHelpers = $derived(
+    getGridOrientationHelperArgs(effectiveSize)
+  );
 
   // Stable render order so the {#each} keys don't churn as planes toggle.
   const visiblePlaneList = $derived(
@@ -145,7 +149,7 @@
   {/if}
 {/each}
 
-{#if showOrientationHelpers}
+{#if showOrientationHelpers && visiblePlaneList.length > 0}
   <!-- Center point indicator - 4cm sphere -->
   <T.Mesh
     geometry={centerPointGeometry}
@@ -156,17 +160,8 @@
 
   <!-- Axis helpers for orientation reference -->
   <T.Group>
-    <!-- X axis (red) - performer's right -->
-    <T.ArrowHelper
-      args={[[1, 0, 0], [0, 0, 0], effectiveSize * 1.2, 0xff4444, 0.06, 0.03]}
-    />
-    <!-- Y axis (green) - up/sky -->
-    <T.ArrowHelper
-      args={[[0, 1, 0], [0, 0, 0], effectiveSize * 1.2, 0x44ff44, 0.06, 0.03]}
-    />
-    <!-- Z axis (blue) - toward audience -->
-    <T.ArrowHelper
-      args={[[0, 0, 1], [0, 0, 0], effectiveSize * 1.2, 0x4444ff, 0.06, 0.03]}
-    />
+    {#each orientationHelpers as args, index (index)}
+      <T.ArrowHelper {args} />
+    {/each}
   </T.Group>
 {/if}

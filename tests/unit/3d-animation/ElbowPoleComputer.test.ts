@@ -416,7 +416,7 @@ describe("ElbowPoleComputer", () => {
 });
 
 describe("SpineTwister crossed-arm posture", () => {
-  it("activates the same forward hunch on conventional and mirrored rigs", () => {
+  it("keeps crossed-arm posture upright on conventional and mirrored rigs", () => {
     const twister = new SpineTwister();
     const conventional = twister.computeSpineTwist(
       new Vector3(0.34, 1.3, 0.2),
@@ -433,13 +433,67 @@ describe("SpineTwister crossed-arm posture", () => {
       mirroredFrame
     );
 
-    expect(conventional.spine1.x).toBeGreaterThan(0.01);
+    expect(conventional.spine1.x).toBeCloseTo(0, 6);
     expect(mirrored.spine1.x).toBeCloseTo(conventional.spine1.x, 6);
     expect(mirrored.spine2.x).toBeCloseTo(conventional.spine2.x, 6);
   });
 });
 
-describe("AvatarAnimator forearm reflex", () => {
+describe("AvatarAnimator body routing", () => {
+  it("retracts only as far as needed to clear an otherwise locked arm", () => {
+    const chain = makeArm(
+      new Vector3(0, 0, 0),
+      new Vector3(0, 1, 0),
+      0.3,
+      0.27
+    );
+    const animator = new AvatarAnimator(
+      new IKSolver(),
+      {} as never,
+      new ElbowPoleComputer()
+    ) as unknown as {
+      solveArmWithBodyClearance: (
+        side: "left" | "right",
+        arm: BoneChain,
+        target: { position: Vector3; poleHint: Vector3 },
+        context: {
+          faceCenter: Vector3;
+          neckCenter: Vector3;
+          shoulderPosition: Vector3;
+          upperArmLength: number;
+          forearmLength: number;
+        }
+      ) => void;
+    };
+    const target = {
+      position: new Vector3(0, 0.56, 0),
+      poleHint: new Vector3(1, 0, 0),
+    };
+    const neck = new Vector3(0.06, 0.15, 0);
+
+    animator.solveArmWithBodyClearance("left", chain, target, {
+      faceCenter: new Vector3(2, 2, 2),
+      neckCenter: neck,
+      shoulderPosition: new Vector3(0, 0, 0),
+      upperArmLength: chain.upperLength,
+      forearmLength: chain.lowerLength,
+    });
+
+    const elbow = chain.middle.getWorldPosition(new Vector3());
+    const hand = chain.effector.getWorldPosition(new Vector3());
+    const upperArmBodyStart = new Vector3().lerpVectors(
+      new Vector3(0, 0, 0),
+      elbow,
+      0.35
+    );
+
+    expect(target.position.y).toBeLessThan(0.56);
+    expect(hand.distanceTo(target.position)).toBeLessThan(0.002);
+    expect(
+      pointToSegmentDistance(neck, upperArmBodyStart, elbow)
+    ).toBeGreaterThanOrEqual(0.13);
+  });
+
   it("subtracts the spine twist already present from the stance target", () => {
     const animator = new AvatarAnimator(
       {} as never,
@@ -509,7 +563,7 @@ describe("AvatarAnimator forearm reflex", () => {
     expect(animator._bodyFrame.forward.dot(achievedForward)).toBeCloseTo(1, 6);
   });
 
-  it("moves the head backward even when optional staff dodging is disabled", () => {
+  it("does not move the head after the elbow solver has routed a forearm", () => {
     const rig = makeFaceCollisionRig();
     const animator = new AvatarAnimator(
       {} as never,
@@ -529,8 +583,7 @@ describe("AvatarAnimator forearm reflex", () => {
     rig.root.updateMatrixWorld(true);
 
     const after = head.getWorldPosition(new Vector3());
-    expect(after.z).toBeLessThan(before.z - 0.005);
-    expect(animator.headDodgeAngleSmoothed).toBeGreaterThan(0.5);
-    expect(animator.headDodgeAngleSmoothed).toBeLessThanOrEqual(0.8);
+    expect(after.distanceTo(before)).toBeLessThan(1e-8);
+    expect(animator.headDodgeAngleSmoothed).toBe(0);
   });
 });

@@ -10,7 +10,7 @@ import {
   STICKER_ART_DIAMETER_PX,
 } from "$lib/features/sticker-lab/domain/sticker-constants";
 
-const emptyPaths: MandalaPaths = { blue: [], red: [], purple: [] };
+const emptyPaths: MandalaPaths = { left: [], right: [], purple: [] };
 
 const testRef: MandalaPrimitiveRef = {
   shapeHash: "shape-1",
@@ -58,43 +58,43 @@ describe("StickerUnitRenderer", () => {
     expect(svg).toMatch(/fill="url\(#sticker-bg-gradient[^)]*\)"/);
   });
 
-  it("variant=blue passes show=blue to the mandala renderer", () => {
+  it("variant=left renders only the left-hand path", () => {
     const unit = createDefaultStickerUnit({
       primitiveRef: testRef,
-      variant: "blue",
+      variant: "left",
     });
     const svg = renderStickerUnitSVG(unit, {
-      blue: [{ d: "M0 0 L10 10", tipIndex: 0 }],
-      red: [{ d: "M0 0 L20 20", tipIndex: 0 }],
+      left: [{ d: "M0 0 L10 10", tipIndex: 0 }],
+      right: [{ d: "M0 0 L20 20", tipIndex: 0 }],
       purple: [],
     });
-    // Only blue path (from position coordinates) should appear. Red should not.
+    // Only the left-hand path should appear. The right-hand path should not.
     expect(svg).toContain("M0 0 L10 10");
     expect(svg).not.toContain("M0 0 L20 20");
   });
 
-  it("variant=red renders only the red path", () => {
+  it("variant=right renders only the right-hand path", () => {
     const unit = createDefaultStickerUnit({
       primitiveRef: testRef,
-      variant: "red",
+      variant: "right",
     });
     const svg = renderStickerUnitSVG(unit, {
-      blue: [{ d: "M0 0 L10 10", tipIndex: 0 }],
-      red: [{ d: "M0 0 L20 20", tipIndex: 0 }],
+      left: [{ d: "M0 0 L10 10", tipIndex: 0 }],
+      right: [{ d: "M0 0 L20 20", tipIndex: 0 }],
       purple: [],
     });
     expect(svg).not.toContain("M0 0 L10 10");
     expect(svg).toContain("M0 0 L20 20");
   });
 
-  it("variant=full renders blue and red paths with purple overlap mask", () => {
+  it("variant=full renders both paths with the overlap mask", () => {
     const unit = createDefaultStickerUnit({
       primitiveRef: testRef,
       variant: "full",
     });
     const svg = renderStickerUnitSVG(unit, {
-      blue: [{ d: "M0 0 L10 10", tipIndex: 0 }],
-      red: [{ d: "M0 0 L20 20", tipIndex: 0 }],
+      left: [{ d: "M0 0 L10 10", tipIndex: 0 }],
+      right: [{ d: "M0 0 L20 20", tipIndex: 0 }],
       purple: [],
     });
     expect(svg).toContain("M0 0 L10 10");

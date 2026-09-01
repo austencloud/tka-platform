@@ -1,5 +1,6 @@
 import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ArtExportEventSink } from "../domain/art-export-analytics";
@@ -35,6 +36,7 @@ export interface ViewerSplitPaneProps {
   onBpmChange?: (bpm: number) => void;
   onSaveToLibrary?: () => void | Promise<void>;
   onPropChange?: (propType: PropType) => void;
+  onFanAppearanceChange?: (appearance: FanAppearance) => void;
   onRenderProgress?: (loaded: number, total: number) => void;
   onFocusPane: (pane: "animation" | "image") => void;
   onUnfocusPane: () => void;
@@ -43,7 +45,7 @@ export interface ViewerSplitPaneProps {
   onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
   onChoreoCardContextMenu?: (x: number, y: number) => void;
   cardAutoLayoutOverride?: ResolvedAutoLayout | null;
-  cardContainSizeMotion?: "focus" | "return" | null;
+  cardContainSizeMotion?: "focus" | "return" | "restore" | null;
   onAutoLayoutResolved?: (
     layout: ResolvedAutoLayout | null,
     width: number,
@@ -148,13 +150,14 @@ export interface ViewerCompanionSurfaceProps {
   onBpmChange: (bpm: number) => void;
   onSaveToLibrary?: () => void | Promise<void>;
   onPropChange?: (propType: PropType) => void;
+  onFanAppearanceChange?: (appearance: FanAppearance) => void;
   onRenderProgress?: (loaded: number, total: number) => void;
   onUnfocusPane: () => void;
   onStepClick: (stepIndex: number) => void;
   onQrPlayClick?: () => void;
   onChoreoCardContextMenu?: (x: number, y: number) => void;
   cardAutoLayoutOverride?: ResolvedAutoLayout | null;
-  cardContainSizeMotion?: "focus" | "return" | null;
+  cardContainSizeMotion?: "focus" | "return" | "restore" | null;
   onAutoLayoutResolved?: ViewerSplitPaneProps["onAutoLayoutResolved"];
   onPlaybackToggle?: () => void;
   playbackMode?: "continuous" | "step";

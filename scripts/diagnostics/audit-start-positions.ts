@@ -41,10 +41,17 @@ function inspectStartPosition(data: AnyRec): {
 } {
   const sp = data["startPosition"] as AnyRec | undefined;
   if (!sp || typeof sp !== "object") {
-    return { present: false, hasMotions: false, motionKeys: [], letter: undefined, endPosition: undefined };
+    return {
+      present: false,
+      hasMotions: false,
+      motionKeys: [],
+      letter: undefined,
+      endPosition: undefined,
+    };
   }
   const motions = sp["motions"] as AnyRec | undefined;
-  const motionKeys = motions && typeof motions === "object" ? Object.keys(motions) : [];
+  const motionKeys =
+    motions && typeof motions === "object" ? Object.keys(motions) : [];
   return {
     present: true,
     hasMotions: motionKeys.length > 0,
@@ -69,7 +76,12 @@ async function scanCollection(
   let total = 0;
   let missingField = 0;
   let presentNoMotions = 0;
-  const bad: Array<{ id: string; word: string; reason: string; letter: unknown }> = [];
+  const bad: Array<{
+    id: string;
+    word: string;
+    reason: string;
+    letter: unknown;
+  }> = [];
 
   for (const d of snap.docs) {
     total++;
@@ -79,10 +91,20 @@ async function scanCollection(
     const word = (data["word"] as string) ?? (data["name"] as string) ?? d.id;
     if (!sp.present) {
       missingField++;
-      bad.push({ id: d.id, word, reason: "no startPosition field", letter: undefined });
+      bad.push({
+        id: d.id,
+        word,
+        reason: "no startPosition field",
+        letter: undefined,
+      });
     } else if (!sp.hasMotions) {
       presentNoMotions++;
-      bad.push({ id: d.id, word, reason: "startPosition present but motions empty", letter: sp.letter });
+      bad.push({
+        id: d.id,
+        word,
+        reason: "startPosition present but motions empty",
+        letter: sp.letter,
+      });
     }
   }
 
@@ -94,7 +116,9 @@ async function scanCollection(
   if (bad.length) {
     console.log(`  offenders (up to 40):`);
     for (const b of bad.slice(0, 40)) {
-      console.log(`    [${b.reason}] "${b.word}"  ${b.id}  letter=${JSON.stringify(b.letter)}`);
+      console.log(
+        `    [${b.reason}] "${b.word}"  ${b.id}  letter=${JSON.stringify(b.letter)}`
+      );
     }
   }
 }
@@ -102,20 +126,26 @@ async function scanCollection(
 async function main(): Promise<void> {
   const init = await initFirestore();
   const db = init.db as AnyRec;
-  console.log(`Firestore via ${init.sdk} SDK (admin=${init.isAdmin}) — user ${userId}`);
+  console.log(
+    `Firestore via ${init.sdk} SDK (admin=${init.isAdmin}) — user ${userId}`
+  );
 
   // ── Scan 1: community gallery source ───────────────────────────────
   await scanCollection(db, "publicSequences", async () =>
-    (db.collection as (p: string) => { get: () => Promise<{ docs: Array<{ id: string; data: () => AnyRec }> }> })(
-      "publicSequences"
-    ).get()
+    (
+      db.collection as (p: string) => {
+        get: () => Promise<{ docs: Array<{ id: string; data: () => AnyRec }> }>;
+      }
+    )("publicSequences").get()
   );
 
   // ── Scan 2: this user's library ────────────────────────────────────
   await scanCollection(db, `users/${userId}/sequences`, async () =>
-    (db.collection as (p: string) => { get: () => Promise<{ docs: Array<{ id: string; data: () => AnyRec }> }> })(
-      `users/${userId}/sequences`
-    ).get()
+    (
+      db.collection as (p: string) => {
+        get: () => Promise<{ docs: Array<{ id: string; data: () => AnyRec }> }>;
+      }
+    )(`users/${userId}/sequences`).get()
   );
 
   // ── Targeted dump: the flagged words, wherever they live ───────────
@@ -125,14 +155,17 @@ async function main(): Promise<void> {
     { label: "library", path: `users/${userId}/sequences` },
   ];
   for (const src of sources) {
-    const snap = await (db.collection as (p: string) => { get: () => Promise<{ docs: Array<{ id: string; data: () => AnyRec }> }> })(
-      src.path
-    ).get();
+    const snap = await (
+      db.collection as (p: string) => {
+        get: () => Promise<{ docs: Array<{ id: string; data: () => AnyRec }> }>;
+      }
+    )(src.path).get();
     for (const d of snap.docs) {
       const data = d.data();
       const word = (data["word"] as string) ?? "";
       const name = (data["name"] as string) ?? "";
-      if (!FLAGGED_WORDS.includes(word) && !FLAGGED_WORDS.includes(name)) continue;
+      if (!FLAGGED_WORDS.includes(word) && !FLAGGED_WORDS.includes(name))
+        continue;
       const sp = inspectStartPosition(data);
       console.log(
         `[${src.label}] "${word}" (${name})  ${d.id}  ` +
@@ -146,49 +179,106 @@ async function main(): Promise<void> {
   // ── Probe a specific id across owner + public ──────────────────────
   console.log(`\n──────── id probe: ${probeId} ────────`);
   // Public mirror
-  const pub = await (db.collection as (p: string) => { doc: (id: string) => { get: () => Promise<{ exists: boolean; data: () => AnyRec | undefined }> } })(
-    "publicSequences"
-  ).doc(probeId).get();
-  const pubExists = (pub as AnyRec).exists === true || (pub as AnyRec).exists === undefined ? (typeof (pub as AnyRec).exists === "boolean" ? (pub as AnyRec).exists : !!pub.data()) : !!pub.data();
-  console.log(`publicSequences/${probeId}: exists=${!!pub.data()}  owner=${pub.data()?.["ownerId"]}  word=${pub.data()?.["word"]}  vis=n/a`);
+  const pub = await (
+    db.collection as (p: string) => {
+      doc: (id: string) => {
+        get: () => Promise<{ exists: boolean; data: () => AnyRec | undefined }>;
+      };
+    }
+  )("publicSequences")
+    .doc(probeId)
+    .get();
+  const pubExists =
+    (pub as AnyRec).exists === true || (pub as AnyRec).exists === undefined
+      ? typeof (pub as AnyRec).exists === "boolean"
+        ? (pub as AnyRec).exists
+        : !!pub.data()
+      : !!pub.data();
+  console.log(
+    `publicSequences/${probeId}: exists=${!!pub.data()}  owner=${pub.data()?.["ownerId"]}  word=${pub.data()?.["word"]}  vis=n/a`
+  );
   void pubExists;
   // This user's copy
-  const mine = await (db.collection as (p: string) => { doc: (id: string) => { get: () => Promise<{ data: () => AnyRec | undefined }> } })(
-    `users/${userId}/sequences`
-  ).doc(probeId).get();
-  console.log(`users/${userId}/sequences/${probeId}: exists=${!!mine.data()}  vis=${mine.data()?.["visibility"]}  deleted=${mine.data()?.["isDeleted"]}  word=${mine.data()?.["word"]}`);
+  const mine = await (
+    db.collection as (p: string) => {
+      doc: (id: string) => {
+        get: () => Promise<{ data: () => AnyRec | undefined }>;
+      };
+    }
+  )(`users/${userId}/sequences`)
+    .doc(probeId)
+    .get();
+  console.log(
+    `users/${userId}/sequences/${probeId}: exists=${!!mine.data()}  vis=${mine.data()?.["visibility"]}  deleted=${mine.data()?.["isDeleted"]}  word=${mine.data()?.["word"]}`
+  );
 
   // If the public doc names an owner, check the owner's source doc too.
   const ownerId = pub.data()?.["ownerId"] as string | undefined;
   if (ownerId && ownerId !== userId) {
-    const ownerDoc = await (db.collection as (p: string) => { doc: (id: string) => { get: () => Promise<{ data: () => AnyRec | undefined }> } })(
-      `users/${ownerId}/sequences`
-    ).doc(probeId).get();
-    console.log(`users/${ownerId}/sequences/${probeId} (owner): exists=${!!ownerDoc.data()}  vis=${ownerDoc.data()?.["visibility"]}  deleted=${ownerDoc.data()?.["isDeleted"]}`);
+    const ownerDoc = await (
+      db.collection as (p: string) => {
+        doc: (id: string) => {
+          get: () => Promise<{ data: () => AnyRec | undefined }>;
+        };
+      }
+    )(`users/${ownerId}/sequences`)
+      .doc(probeId)
+      .get();
+    console.log(
+      `users/${ownerId}/sequences/${probeId} (owner): exists=${!!ownerDoc.data()}  vis=${ownerDoc.data()?.["visibility"]}  deleted=${ownerDoc.data()?.["isDeleted"]}`
+    );
   }
 
   // ── Deep dump: good (V) vs broken, to design the fix ───────────────
   console.log(`\n──────── deep dump (library) ────────`);
-  const dumpIds = ["V", "3275fe30-64ce-404b-8b06-2fe36c2e1cc1", "0889f6cf-5fb5-4ecd-96de-89cdd54ba77f", "b3306fcf-a8f7-4dcf-b482-d9b656724aec"];
+  const dumpIds = [
+    "V",
+    "3275fe30-64ce-404b-8b06-2fe36c2e1cc1",
+    "0889f6cf-5fb5-4ecd-96de-89cdd54ba77f",
+    "b3306fcf-a8f7-4dcf-b482-d9b656724aec",
+  ];
   for (const id of dumpIds) {
-    const snap = await (db.collection as (p: string) => { doc: (i: string) => { get: () => Promise<{ data: () => AnyRec | undefined }> } })(
-      `users/${userId}/sequences`
-    ).doc(id).get();
+    const snap = await (
+      db.collection as (p: string) => {
+        doc: (i: string) => {
+          get: () => Promise<{ data: () => AnyRec | undefined }>;
+        };
+      }
+    )(`users/${userId}/sequences`)
+      .doc(id)
+      .get();
     const data = snap.data();
-    if (!data) { console.log(`\n[${id}] MISSING`); continue; }
-    const blueSolo = data["blueSoloProp"] as AnyRec | undefined;
-    const redSolo = data["redSoloProp"] as AnyRec | undefined;
+    if (!data) {
+      console.log(`\n[${id}] MISSING`);
+      continue;
+    }
+    const leftSolo = (data["leftSoloProp"] ?? data["blueSoloProp"]) as
+      | AnyRec
+      | undefined;
+    const rightSolo = (data["rightSoloProp"] ?? data["redSoloProp"]) as
+      | AnyRec
+      | undefined;
     console.log(`\n[${id}] word="${data["word"]}"`);
     console.log(`  fields: ${Object.keys(data).sort().join(", ")}`);
-    console.log(`  startPosition: ${JSON.stringify(data["startPosition"])?.slice(0, 600)}`);
-    console.log(`  has stepPairings=${Array.isArray(data["stepPairings"])} blueSoloProp=${!!blueSolo} redSoloProp=${!!redSolo}`);
-    if (blueSolo) {
-      console.log(`  blueSolo.startLocation=${JSON.stringify(blueSolo["startLocation"])} startOrientation=${JSON.stringify(blueSolo["startOrientation"])}`);
-      const bsteps = blueSolo["steps"] as AnyRec[] | undefined;
-      console.log(`  blueSolo.steps[0]=${JSON.stringify(bsteps?.[0])?.slice(0, 300)}`);
+    console.log(
+      `  startPosition: ${JSON.stringify(data["startPosition"])?.slice(0, 600)}`
+    );
+    console.log(
+      `  has stepPairings=${Array.isArray(data["stepPairings"])} leftSoloProp=${!!leftSolo} rightSoloProp=${!!rightSolo}`
+    );
+    if (leftSolo) {
+      console.log(
+        `  leftSolo.startLocation=${JSON.stringify(leftSolo["startLocation"])} startOrientation=${JSON.stringify(leftSolo["startOrientation"])}`
+      );
+      const bsteps = leftSolo["steps"] as AnyRec[] | undefined;
+      console.log(
+        `  leftSolo.steps[0]=${JSON.stringify(bsteps?.[0])?.slice(0, 300)}`
+      );
     }
-    if (redSolo) {
-      console.log(`  redSolo.startLocation=${JSON.stringify(redSolo["startLocation"])} startOrientation=${JSON.stringify(redSolo["startOrientation"])}`);
+    if (rightSolo) {
+      console.log(
+        `  rightSolo.startLocation=${JSON.stringify(rightSolo["startLocation"])} startOrientation=${JSON.stringify(rightSolo["startOrientation"])}`
+      );
     }
     const sp0 = (data["stepPairings"] as AnyRec[] | undefined)?.[0];
     console.log(`  stepPairings[0]=${JSON.stringify(sp0)?.slice(0, 400)}`);

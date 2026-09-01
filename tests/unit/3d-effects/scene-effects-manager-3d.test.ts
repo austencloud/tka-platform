@@ -4,7 +4,10 @@ import { BackgroundType } from "@austencloud/backgrounds";
 import { SceneEffectsManager3D } from "$lib/shared/3d/effects/scene-effects/scene-effects-manager-3d";
 import { isTrackedTip } from "$lib/shared/3d/effects/scene-effects/scene-effect-source-3d";
 import { resolvePetalEnvironmentProfile } from "$lib/shared/3d/effects/petals/petal-world-art-direction";
-import { resolveBloom3D } from "$lib/shared/effects/translators/webgl3d-translator";
+import {
+  resolveBloom3D,
+  resolveFire3D,
+} from "$lib/shared/effects/translators/webgl3d-translator";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import { QualityTier } from "$lib/shared/3d/effects/types";
 
@@ -14,9 +17,10 @@ describe("SceneEffectsManager3D", () => {
     const manager = new SceneEffectsManager3D();
     manager.initialize(scene);
 
-    // Existing six particle/material variants, twelve scene-level visual
-    // layers for Ink, Silk, Animal, and Pulse, plus one Bloom optical batch.
-    expect(scene.children).toHaveLength(19);
+    // Existing pooled visuals, one shared Coal renderer (two draws), Fire's
+    // four stable lights, and the four-light scene pool shared by Bloom,
+    // Trails, and Zap.
+    expect(scene.children).toHaveLength(30);
     manager.update(1 / 60);
     manager.dispose();
     expect(scene.children).toHaveLength(0);
@@ -83,6 +87,45 @@ describe("SceneEffectsManager3D", () => {
     expect(bloom?.count).toBe(1);
 
     registration.dispose();
+    manager.dispose();
+  });
+
+  it("batches eight performers into one preallocated Fire renderer", () => {
+    const scene = new Scene();
+    const manager = new SceneEffectsManager3D();
+    const registrations = Array.from({ length: 8 }, (_, performerIndex) =>
+      manager.registerRig({
+        playing: true,
+        sources: [
+          {
+            sourceId: performerIndex * 4 + 1,
+            propIndex: 0,
+            tipIndex: 0,
+            position: { x: performerIndex, y: 1.4, z: 0 },
+            velocity: { x: 0, y: 0, z: 0 },
+            speed: 0,
+            currentStep: 0,
+            propColor: "#3b82f6",
+            effect: "fire",
+            params: resolveFire3D(DEFAULT_EFFECTS_CONFIG.fire),
+            qualityTier: QualityTier.HIGH,
+            jerk: 0,
+          },
+        ],
+      })
+    );
+
+    manager.initialize(scene);
+    manager.update(1 / 60);
+
+    const fireMeshes = scene.children.filter(
+      (child): child is InstancedMesh =>
+        child instanceof InstancedMesh && child.renderOrder === 100
+    );
+    expect(fireMeshes).toHaveLength(1);
+    expect(fireMeshes[0]!.count).toBeGreaterThan(0);
+
+    for (const registration of registrations) registration.dispose();
     manager.dispose();
   });
 });

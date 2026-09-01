@@ -19,6 +19,7 @@
   import type { MandalaExportDelivery } from "../services/mandala-export-delivery";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
   import type { ViewerPlaybackState } from "../domain/viewer-prop-groups";
   import type {
     PlaybackMode,
@@ -85,14 +86,16 @@
     shown,
     layout = "sidebar",
     sharedTunnelCanvas = false,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     bpm = 60,
     onBpmChange = () => {},
     playbackMode = "continuous",
     onPlaybackModeChange = () => {},
     onPlaybackToggle = () => {},
     onPropChange,
+    fanAppearance,
+    onFanAppearanceChange,
     onArtExport,
     onArtShare,
     artShareActive = false,
@@ -124,8 +127,8 @@
     layout?: "sidebar" | "bottom";
     /** The viewer's already-mounted AnimatorCanvas renders Tunnel in place. */
     sharedTunnelCanvas?: boolean;
-    bluePropType?: string;
-    redPropType?: string;
+    leftPropType?: string;
+    rightPropType?: string;
     bpm?: number;
     onBpmChange?: (bpm: number) => void;
     playbackMode?: PlaybackMode;
@@ -134,6 +137,8 @@
     /** Change the art view's prop type (routes through the viewer's shared
      *  handlePropTypeChange). Surfaces the Props rail section in the tunnel. */
     onPropChange?: (propType: PropType) => void;
+    fanAppearance?: FanAppearance;
+    onFanAppearanceChange?: (appearance: FanAppearance) => void;
     /**
      * Resolved viewer export entry. When the type is "tunnel" the caller MUST
      * thread `additionalLayersForBeat` + the all-false `overlayOverrides`
@@ -210,8 +215,8 @@
   // export orchestrator).
   const mandalaController = new MandalaViewerController({
     getSequence: () => playback.animationState.sequenceData ?? sequence,
-    getBluePropType: () => bluePropType,
-    getRedPropType: () => redPropType,
+    getLeftPropType: () => leftPropType,
+    getRightPropType: () => rightPropType,
     pathPolicy: getAnimationVisibilityManager(),
     customColorState: controller.customColorState,
   });
@@ -259,8 +264,8 @@
   function artExportConfig(): Record<string, ArtExportAnalyticsValue> {
     const common = {
       bpm,
-      blue_prop: bluePropType ?? null,
-      red_prop: redPropType ?? null,
+      left_prop: leftPropType ?? null,
+      right_prop: rightPropType ?? null,
     };
     if (artType === "tunnel") {
       return {
@@ -275,11 +280,11 @@
         color_mode: controller.colorMode,
         left_prop_color:
           controller.colorMode === "custom"
-            ? controller.customPropColors.blue
+            ? controller.customPropColors.left
             : null,
         right_prop_color:
           controller.colorMode === "custom"
-            ? controller.customPropColors.red
+            ? controller.customPropColors.right
             : null,
         grid_visible: controller.gridVisible,
         performer_count: controller.performerCount,
@@ -598,11 +603,11 @@
       effects: effectsForSave,
       visibility: getAnimationVisibilityManager(),
       settings: {
-        bluePropType: bluePropType ?? "staff",
-        redPropType: redPropType ?? "staff",
-        blueBuugengFlipped:
-          settingsService.settings.blueBuugengFlipped ?? false,
-        redBuugengFlipped: settingsService.settings.redBuugengFlipped ?? false,
+        leftPropType: leftPropType ?? "staff",
+        rightPropType: rightPropType ?? "staff",
+        leftBuugengFlipped:
+          settingsService.settings.leftBuugengFlipped ?? false,
+        rightBuugengFlipped: settingsService.settings.rightBuugengFlipped ?? false,
         updateSettings: () => {},
       },
       animationSettings,
@@ -777,8 +782,8 @@
         ctrl={mandalaController}
         controlsPlacement="external"
         {sequence}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         exportTakeoverSuppressed={artShareActive}
         onExportCancel={cancelMandalaExport}
         onExportRetry={retryMandalaExport}
@@ -789,8 +794,8 @@
         {playback}
         {controller}
         {bpm}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         onSaveTunnel={() => void handleSaveTunnel("canvas_context_menu")}
         {saveTunnelLabel}
         playing={tunnelPlaying}
@@ -860,9 +865,11 @@
         : artType === "tunnel"
           ? () => handleTunnelPlaybackToggle("sidebar")
           : onPlaybackToggle}
-      bluePropType={bluePropType ?? null}
-      redPropType={redPropType ?? null}
+      leftPropType={leftPropType ?? null}
+      rightPropType={rightPropType ?? null}
       {onPropChange}
+      {fanAppearance}
+      {onFanAppearanceChange}
       {onArtSettingChange}
       exporting={exportAttemptBusy}
     />

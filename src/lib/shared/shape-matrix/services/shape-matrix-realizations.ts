@@ -61,12 +61,12 @@ function modeOf(timing: string, direction: string): VtgMode {
  */
 export function filterRealizations(
   edges: CsvEdge[],
-  blueStyle: FlowerStyle,
-  redStyle: FlowerStyle
+  leftStyle: FlowerStyle,
+  rightStyle: FlowerStyle
 ): Realization[] {
   const byMode = new Map<VtgMode, Realization>();
   for (const e of edges) {
-    if (e.blueMotionType !== blueStyle || e.redMotionType !== redStyle)
+    if (e.leftMotionType !== leftStyle || e.rightMotionType !== rightStyle)
       continue;
     const mode = modeOf(e.timing, e.direction);
     if (byMode.has(mode)) continue;
@@ -84,8 +84,8 @@ export function filterRealizations(
 
 /** Runtime convenience: load the diamond edges then filter. */
 export async function loadRealizations(
-  blueStyle: FlowerStyle,
-  redStyle: FlowerStyle
+  leftStyle: FlowerStyle,
+  rightStyle: FlowerStyle
 ): Promise<Realization[]> {
-  return filterRealizations(await loadDiamondEdges(), blueStyle, redStyle);
+  return filterRealizations(await loadDiamondEdges(), leftStyle, rightStyle);
 }

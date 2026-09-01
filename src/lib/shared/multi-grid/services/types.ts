@@ -5,8 +5,8 @@ import type { Plane } from "@austencloud/scene-3d";
 
 /** Pixel offsets to apply to each prop to separate them */
 export interface BetaOffset {
-  readonly blue: Vec2;
-  readonly red: Vec2;
+  readonly left: Vec2;
+  readonly right: Vec2;
 }
 
 
@@ -23,8 +23,8 @@ export interface GridOptions {
 
 
 export interface PositionPair {
-  readonly blue: PointRef;
-  readonly red: PointRef;
+  readonly left: PointRef;
+  readonly right: PointRef;
 }
 
 

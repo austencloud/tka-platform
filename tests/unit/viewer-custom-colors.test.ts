@@ -55,19 +55,19 @@ describe("viewer custom color preference", () => {
     const storage = new MemoryStorage();
 
     saveViewerCustomColorPreference(
-      { blue: " #0DF ", red: "#FFB000" },
+      { left: " #0DF ", right: "#FFB000" },
       storage
     );
 
     expect(loadViewerCustomColorPreference(storage)).toEqual({
-      blue: "#00ddff",
-      red: "#ffb000",
+      left: "#00ddff",
+      right: "#ffb000",
     });
     expect(
       JSON.parse(storage.getItem(VIEWER_CUSTOM_COLORS_STORAGE_KEY)!)
     ).toEqual({
-      version: 1,
-      colors: { blue: "#00ddff", red: "#ffb000" },
+      version: 2,
+      colors: { left: "#00ddff", right: "#ffb000" },
     });
   });
 
@@ -76,7 +76,13 @@ describe("viewer custom color preference", () => {
     storage.setItem(
       "tka_tunnel_view_state",
       JSON.stringify({
-        colors: { mode: "custom", custom: DEFAULT_VIEWER_CUSTOM_COLORS },
+        colors: {
+          mode: "custom",
+          custom: {
+            blue: DEFAULT_VIEWER_CUSTOM_COLORS.left,
+            red: DEFAULT_VIEWER_CUSTOM_COLORS.right,
+          },
+        },
       })
     );
     storage.setItem(
@@ -85,8 +91,8 @@ describe("viewer custom color preference", () => {
     );
 
     expect(loadViewerCustomColorPreference(storage)).toEqual({
-      blue: "#123456",
-      red: "#abcdef",
+      left: "#123456",
+      right: "#abcdef",
     });
   });
 
@@ -107,8 +113,8 @@ describe("viewer custom color preference", () => {
     );
 
     expect(loadViewerCustomColorPreference(storage)).toEqual({
-      blue: "#112233",
-      red: "#445566",
+      left: "#112233",
+      right: "#445566",
     });
   });
 
@@ -120,19 +126,19 @@ describe("viewer custom color preference", () => {
     );
 
     expect(loadViewerCustomColorPreference(storage, false)).toEqual({
-      blue: "#123456",
-      red: "#abcdef",
+      left: "#123456",
+      right: "#abcdef",
     });
     expect(storage.getItem(VIEWER_CUSTOM_COLORS_STORAGE_KEY)).toBeNull();
   });
 
   it("consumes a staged artifact pair once without writing a preference", () => {
     const storage = new MemoryStorage();
-    stageViewerCustomColors({ blue: "#123456", red: "#abcdef" }, storage);
+    stageViewerCustomColors({ left: "#123456", right: "#abcdef" }, storage);
 
     expect(consumeStagedViewerCustomColors(storage)).toEqual({
-      blue: "#123456",
-      red: "#abcdef",
+      left: "#123456",
+      right: "#abcdef",
     });
     expect(storage.getItem(STAGED_VIEWER_CUSTOM_COLORS_STORAGE_KEY)).toBeNull();
     expect(consumeStagedViewerCustomColors(storage)).toBeNull();
@@ -143,7 +149,7 @@ describe("shared viewer custom color state", () => {
   it("synchronizes both controllers without changing either appearance mode", () => {
     const persist = vi.fn();
     const state = createViewerCustomColorState(
-      resolveViewerCustomColorPair({ blue: "#001122", red: "#334455" }),
+      resolveViewerCustomColorPair({ left: "#001122", right: "#334455" }),
       persist
     );
     const pathPolicy = new AnimationVisibilityStateManager({ ephemeral: true });
@@ -159,8 +165,8 @@ describe("shared viewer custom color state", () => {
       mandala = new MandalaViewerController(
         {
           getSequence: () => ({ steps: [] }) as SequenceData,
-          getBluePropType: () => "staff",
-          getRedPropType: () => "staff",
+          getLeftPropType: () => "staff",
+          getRightPropType: () => "staff",
           pathPolicy,
           customColorState: state,
         },
@@ -172,34 +178,34 @@ describe("shared viewer custom color state", () => {
     mandala.preset = "aurora";
     mandala.colorMode = "flow";
 
-    tunnel.setCustomPropColor("blue", "#00d4ff");
-    expect(mandala.customBlue).toBe("#00d4ff");
+    tunnel.setCustomPropColor("left", "#00d4ff");
+    expect(mandala.customLeft).toBe("#00d4ff");
     expect(tunnel.colorMode).toBe("hands");
     expect(tunnel.exactPropColors).toBeNull();
     expect(mandala.preset).toBe("aurora");
 
-    mandala.customRed = "#ffb000";
-    expect(tunnel.customPropColors.red).toBe("#ffb000");
+    mandala.customRight = "#ffb000";
+    expect(tunnel.customPropColors.right).toBe("#ffb000");
     expect(mandala.colorMode).toBe("flow");
     expect(persist).toHaveBeenLastCalledWith({
-      blue: "#00d4ff",
-      red: "#ffb000",
+      left: "#00d4ff",
+      right: "#ffb000",
     });
 
     tunnel.colors = {
       mode: "custom",
-      custom: { blue: "#abcdef", red: "#123456" },
+      custom: { left: "#abcdef", right: "#123456" },
     };
-    expect(mandala.customBlue).toBe("#abcdef");
-    expect(mandala.customRed).toBe("#123456");
+    expect(mandala.customLeft).toBe("#abcdef");
+    expect(mandala.customRight).toBe("#123456");
     expect(persist).toHaveBeenCalledTimes(2);
 
     mandala.preset = "custom";
     expect(mandala.accentPair).toEqual(["#abcdef", "#123456"]);
     tunnel.colorMode = "custom";
     expect(tunnel.exactPropColors).toEqual({
-      blue: "#abcdef",
-      red: "#123456",
+      left: "#abcdef",
+      right: "#123456",
     });
 
     cleanup();
@@ -215,8 +221,8 @@ describe("shared viewer custom color state", () => {
       mandala = new MandalaViewerController(
         {
           getSequence: () => ({ steps: [] }) as SequenceData,
-          getBluePropType: () => "staff",
-          getRedPropType: () => "staff",
+          getLeftPropType: () => "staff",
+          getRightPropType: () => "staff",
           pathPolicy,
         },
         {
@@ -227,11 +233,11 @@ describe("shared viewer custom color state", () => {
       );
     });
 
-    mandala.customBlue = "#00d4ff";
+    mandala.customLeft = "#00d4ff";
 
     expect(
       JSON.parse(storage.getItem(VIEWER_CUSTOM_COLORS_STORAGE_KEY)!)
-    ).toMatchObject({ colors: { blue: "#00d4ff" } });
+    ).toMatchObject({ colors: { left: "#00d4ff" } });
     expect(storage.getItem("tka_mandala_view_state")).toBeNull();
 
     cleanup();

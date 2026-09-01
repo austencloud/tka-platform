@@ -19,7 +19,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -35,11 +35,11 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
   const NOROT = RotationDirection.NO_ROTATION;
-  const B = MotionColor.BLUE;
-  const R = MotionColor.RED;
+  const B = HandSide.LEFT;
+  const R = HandSide.RIGHT;
 
   const mo = (
-    color: MotionColor,
+    color: HandSide,
     type: MotionType,
     from: GridLocation,
     to: GridLocation,
@@ -60,16 +60,16 @@
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     });
-  const stat = (color: MotionColor, loc: GridLocation, ori: Orientation) =>
+  const stat = (color: HandSide, loc: GridLocation, ori: Orientation) =>
     mo(color, MotionType.STATIC, loc, loc, NOROT, ori, ori);
 
   type Hand = { type: MotionType; from: GridLocation; to: GridLocation; rot: RotationDirection; turns: number };
   const half = (h: Hand): number => (h.type === MotionType.ANTI || h.type === MotionType.DASH ? 1 : 0) + h.turns;
   const endOf = (h: Hand): Orientation => (half(h) % 2 === 0 ? IN : OUT);
 
-  function makeStrip(opts: { id: string; word: string; blue: Hand; red: Hand }): { frames: TurnStripFrame[]; sequence: SequenceData } {
-    const bEnd = endOf(opts.blue);
-    const rEnd = endOf(opts.red);
+  function makeStrip(opts: { id: string; word: string; left: Hand; right: Hand }): { frames: TurnStripFrame[]; sequence: SequenceData } {
+    const bEnd = endOf(opts.left);
+    const rEnd = endOf(opts.right);
     const hm = (h: Hand, eo: Orientation): HalfwayMotion => ({
       type: h.type,
       from: h.from,
@@ -79,19 +79,19 @@
       endOri: eo,
       turns: h.turns,
     });
-    const step = (id: string, blue: ReturnType<typeof mo>, red: ReturnType<typeof mo>) => ({
+    const step = (id: string, left, right) => ({
       id: `l2lam-${opts.id}-${id}`,
       letter: null,
       gridMode: GridMode.DIAMOND,
-      motions: { blue, red },
+      motions: { left, right },
     });
-    const startStep = { ...step("start", stat(B, opts.blue.from, IN), stat(R, opts.red.from, IN)), stepNumber: 0 } as unknown as StepData;
-    const endStep = { ...step("end", stat(B, opts.blue.to, bEnd), stat(R, opts.red.to, rEnd)), stepNumber: 0 } as unknown as StepData;
+    const startStep = { ...step("start", stat(B, opts.left.from, IN), stat(R, opts.right.from, IN)), stepNumber: 0 } as unknown as StepData;
+    const endStep = { ...step("end", stat(B, opts.left.to, bEnd), stat(R, opts.right.to, rEnd)), stepNumber: 0 } as unknown as StepData;
     const combinedStep = {
       ...step(
         "full",
-        mo(B, opts.blue.type, opts.blue.from, opts.blue.to, opts.blue.rot, IN, bEnd, opts.blue.turns),
-        mo(R, opts.red.type, opts.red.from, opts.red.to, opts.red.rot, IN, rEnd, opts.red.turns)
+        mo(B, opts.left.type, opts.left.from, opts.left.to, opts.left.rot, IN, bEnd, opts.left.turns),
+        mo(R, opts.right.type, opts.right.from, opts.right.to, opts.right.rot, IN, rEnd, opts.right.turns)
       ),
       stepNumber: 1,
     } as unknown as StepData;
@@ -102,8 +102,8 @@
       {
         kind: "dual-pose",
         poses: [
-          { motion: hm(opts.blue, bEnd), color: B, t: 0.5 },
-          { motion: hm(opts.red, rEnd), color: R, t: 0.5 },
+          { motion: hm(opts.left, bEnd), color: B, t: 0.5 },
+          { motion: hm(opts.right, rEnd), color: R, t: 0.5 },
         ],
         frameLabel: "halfway",
       },
@@ -120,19 +120,19 @@
 
   const { frames: highOpenFrames, sequence: highOpenSequence } = makeStrip({
     id: "hi-op", word: "Lam-High-One opening",
-    blue: STAT_BLUE(0, NOROT), red: DASH_RED(1, CW),
+    left: STAT_BLUE(0, NOROT), right: DASH_RED(1, CW),
   });
   const { frames: highCloseFrames, sequence: highCloseSequence } = makeStrip({
     id: "hi-cl", word: "Lam-High-One closing",
-    blue: STAT_BLUE(0, NOROT), red: DASH_RED(1, CCW),
+    left: STAT_BLUE(0, NOROT), right: DASH_RED(1, CCW),
   });
   const { frames: lowOpenFrames, sequence: lowOpenSequence } = makeStrip({
     id: "lo-op", word: "Lam-Low-One opening",
-    blue: STAT_BLUE(1, CCW), red: DASH_RED(0, NOROT),
+    left: STAT_BLUE(1, CCW), right: DASH_RED(0, NOROT),
   });
   const { frames: lowCloseFrames, sequence: lowCloseSequence } = makeStrip({
     id: "lo-cl", word: "Lam-Low-One closing",
-    blue: STAT_BLUE(1, CW), red: DASH_RED(0, NOROT),
+    left: STAT_BLUE(1, CW), right: DASH_RED(0, NOROT),
   });
 </script>
 

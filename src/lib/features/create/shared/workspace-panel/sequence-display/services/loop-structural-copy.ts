@@ -26,7 +26,11 @@ function cycleText(cycleCount: number): string {
   return `Play it ${cycleCount} times and you're back where you started.`;
 }
 
-function structureText(stepCount: number, word: string, period: number): string {
+function structureText(
+  stepCount: number,
+  word: string,
+  period: number
+): string {
   const half = stepCount / 2;
   if (period === 4) {
     return `${stepCount} steps. ${word} repeats four times. `;
@@ -39,7 +43,7 @@ function singleComponentCopy(
   stepCount: number,
   word: string,
   period: number,
-  cc: number,
+  cc: number
 ): StructuralCopy {
   const structure = structureText(stepCount, word, period);
 
@@ -53,7 +57,10 @@ function singleComponentCopy(
         lead: structure,
         parts: [
           { text: "The positions rotate", bold: true },
-          { text: ": where the first half places your hands, the second half continues around the grid. ", bold: false },
+          {
+            text: ": where the first half places your hands, the second half continues around the grid. ",
+            bold: false,
+          },
           { text: cycleText(cc), bold: false },
         ],
       };
@@ -63,7 +70,10 @@ function singleComponentCopy(
         parts: [
           { text: "Same letters, but every position ", bold: false },
           { text: "flips left-to-right", bold: true },
-          { text: ". The second half is the mirror image of the first. ", bold: false },
+          {
+            text: ". The second half is the mirror image of the first. ",
+            bold: false,
+          },
           { text: cycleText(cc), bold: false },
         ],
       };
@@ -73,7 +83,10 @@ function singleComponentCopy(
         parts: [
           { text: "Same letters, but every position ", bold: false },
           { text: "flips top-to-bottom", bold: true },
-          { text: ". The second half inverts the vertical axis. ", bold: false },
+          {
+            text: ". The second half inverts the vertical axis. ",
+            bold: false,
+          },
           { text: cycleText(cc), bold: false },
         ],
       };
@@ -83,7 +96,10 @@ function singleComponentCopy(
         parts: [
           { text: "Same positions, same motions, but ", bold: false },
           { text: "blue and red trade roles", bold: true },
-          { text: ". What one hand did in the first half, the other does in the second. ", bold: false },
+          {
+            text: ". What one hand did in the first half, the other does in the second. ",
+            bold: false,
+          },
           { text: cycleText(cc), bold: false },
         ],
       };
@@ -93,7 +109,10 @@ function singleComponentCopy(
         parts: [
           { text: "Same positions, but ", bold: false },
           { text: "pro motions become anti and vice versa", bold: true },
-          { text: ". The rotation direction reverses while the path stays the same. ", bold: false },
+          {
+            text: ". The rotation direction reverses while the path stays the same. ",
+            bold: false,
+          },
           { text: cycleText(cc), bold: false },
         ],
       };
@@ -103,7 +122,10 @@ function singleComponentCopy(
         parts: [
           { text: "The second half ", bold: false },
           { text: "plays the first in reverse", bold: true },
-          { text: ". A temporal mirror that loops back to start.", bold: false },
+          {
+            text: ". A temporal mirror that loops back to start.",
+            bold: false,
+          },
         ],
       };
     default:
@@ -117,7 +139,7 @@ function singleComponentCopy(
 function quarteredSingleCopy(
   component: LOOPComponent,
   structure: string,
-  cc: number,
+  cc: number
 ): StructuralCopy {
   switch (component) {
     case "rotated":
@@ -136,7 +158,10 @@ function quarteredSingleCopy(
         parts: [
           { text: "Positions ", bold: false },
           { text: "mirror every two passes", bold: true },
-          { text: "; orientations take all four to complete their cycle. ", bold: false },
+          {
+            text: "; orientations take all four to complete their cycle. ",
+            bold: false,
+          },
           { text: cycleText(cc), bold: false },
         ],
       };
@@ -144,7 +169,7 @@ function quarteredSingleCopy(
       return {
         lead: structure,
         parts: [
-          { text: "Blue and red ", bold: false },
+          { text: "Left and right ", bold: false },
           { text: "exchange roles every other pass", bold: true },
           { text: ". ", bold: false },
           { text: cycleText(cc), bold: false },
@@ -153,9 +178,7 @@ function quarteredSingleCopy(
     default:
       return {
         lead: structure,
-        parts: [
-          { text: cycleText(cc), bold: false },
-        ],
+        parts: [{ text: cycleText(cc), bold: false }],
       };
   }
 }
@@ -165,12 +188,10 @@ function multiComponentCopy(
   stepCount: number,
   word: string,
   period: number,
-  cc: number,
+  cc: number
 ): StructuralCopy {
   const structure = structureText(stepCount, word, period);
-  const verbs = components
-    .map((c) => COMPONENT_VERB[c])
-    .filter(Boolean);
+  const verbs = components.map((c) => COMPONENT_VERB[c]).filter(Boolean);
 
   const verbText = verbs.join(" and ");
   const subject = period === 4 ? "Each pass " : "The second half ";
@@ -200,7 +221,7 @@ function extractRepeatingUnit(word: string, period: number): string {
 export function generateLoopStructuralCopy(
   sequence: SequenceData,
   activeComponents: Set<LOOPComponent>,
-  period: number,
+  period: number
 ): StructuralCopy {
   const stepCount = sequence.steps?.length ?? 0;
   const fullWord = sequence.word || `${stepCount}-step sequence`;

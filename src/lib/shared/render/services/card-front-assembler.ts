@@ -299,12 +299,12 @@ export function buildCellLayerOptions(
     showNonRadialPoints: visibility.showNonRadialPoints ?? false,
     showGrid: visibility.showGrid ?? true,
     handPointVisibility: handVisibility,
-    bluePropType: visibility.bluePropType,
-    redPropType: visibility.redPropType,
-    blueBuugengFlipped: visibility.blueBuugengFlipped,
-    redBuugengFlipped: visibility.redBuugengFlipped,
-    showBlueMotion: visibility.showBlueMotion,
-    showRedMotion: visibility.showRedMotion,
+    leftPropType: visibility.leftPropType,
+    rightPropType: visibility.rightPropType,
+    leftBuugengFlipped: visibility.leftBuugengFlipped,
+    rightBuugengFlipped: visibility.rightBuugengFlipped,
+    showLeftMotion: visibility.showLeftMotion,
+    showRightMotion: visibility.showRightMotion,
     showPositions: visibility.showPositions ?? false,
     handPathMode: visibility.handPathMode ?? false,
   };
@@ -431,7 +431,7 @@ export async function paintCardFrontChrome(
   if (loopComponents) {
     const isHandPath = visibility.handPathMode ?? false;
     const isSolo =
-      visibility.showBlueMotion === false || visibility.showRedMotion === false;
+      visibility.showLeftMotion === false || visibility.showRightMotion === false;
     if (isHandPath || isSolo) {
       const filtered = new Set(loopComponents);
       if (isSolo) filtered.delete(LOOPComponent.SWAPPED);

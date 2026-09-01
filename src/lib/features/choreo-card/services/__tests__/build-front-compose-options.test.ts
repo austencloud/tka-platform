@@ -116,8 +116,8 @@ describe("buildFrontComposeOptions", () => {
 
   it("emits prop-type overrides only when provided", () => {
     const none = buildFrontComposeOptions(SEQ, BASE_OPTS).composeOptions;
-    expect(none.bluePropTypeOverride).toBeUndefined();
-    expect(none.redPropTypeOverride).toBeUndefined();
+    expect(none.leftPropTypeOverride).toBeUndefined();
+    expect(none.rightPropTypeOverride).toBeUndefined();
   });
 
   it("includes difficulty and LOOP indicators on the card front", () => {

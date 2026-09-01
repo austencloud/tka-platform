@@ -23,8 +23,8 @@
     playback,
     controller,
     bpm = 60,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     onSaveTunnel,
     saveTunnelLabel = "Save tunnel",
     onPlayingChange,
@@ -32,8 +32,8 @@
     stageFit = "cover",
     animationSettingsState = animationSettings,
     visibilityManager,
-    blueBuugengFlipped,
-    redBuugengFlipped,
+    leftBuugengFlipped,
+    rightBuugengFlipped,
     onCanvasReady,
   }: {
     sequence: SequenceData;
@@ -43,8 +43,8 @@
     /** Global tempo from the sidebar's Playback section. Drives the playhead so
      *  the tempo selector controls the kaleidoscope (60 BPM = 1 beat/sec). */
     bpm?: number;
-    bluePropType?: string;
-    redPropType?: string;
+    leftPropType?: string;
+    rightPropType?: string;
     /** Save the live tunnel to the collection (owned by ArtPane). Absent = no
      *  save entry in the canvas right-click menu. */
     onSaveTunnel?: () => void;
@@ -60,8 +60,8 @@
     stageFit?: "cover" | "contain";
     animationSettingsState?: AnimationSettingsState;
     visibilityManager?: AnimationVisibilityStateManager;
-    blueBuugengFlipped?: boolean;
-    redBuugengFlipped?: boolean;
+    leftBuugengFlipped?: boolean;
+    rightBuugengFlipped?: boolean;
     onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
   } = $props();
 
@@ -206,16 +206,16 @@
       </div>
     {:else if seq}
       <AnimatorCanvas
-        blueProp={base.blue}
-        redProp={base.red}
+        leftProp={base.left}
+        rightProp={base.right}
         {additionalLayers}
         tunnelSpectrum={controller.spectrum}
         tunnelPropColors={controller.exactPropColors}
         tunnelSelectedLayer={controller.spotlightLayers}
-        {bluePropType}
-        {redPropType}
-        {blueBuugengFlipped}
-        {redBuugengFlipped}
+        {leftPropType}
+        {rightPropType}
+        {leftBuugengFlipped}
+        {rightBuugengFlipped}
         sequenceData={seq}
         currentStep={displayStep}
         isPlaying={playing}

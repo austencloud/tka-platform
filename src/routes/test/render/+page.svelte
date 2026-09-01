@@ -54,7 +54,7 @@
         id: `pictograph-${letter}`,
         letter: letter,
         motions: {
-          blue: {
+          left: {
             motionType: row[headers.indexOf('blueMotionType')],
             rotationDirection: row[headers.indexOf('blueRotationDirection')],
             startLocation: row[headers.indexOf('blueStartLocation')],
@@ -65,7 +65,7 @@
             propType: 'staff',
             propPlacementData: { propType: 'staff' }
           },
-          red: {
+          right: {
             motionType: row[headers.indexOf('redMotionType')],
             rotationDirection: row[headers.indexOf('redRotationDirection')],
             startLocation: row[headers.indexOf('redStartLocation')],

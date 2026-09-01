@@ -22,11 +22,11 @@ export interface DetectedPosition {
 
 export interface DetectionFrame {
   timestamp: number;
-  blue: DetectedPosition | null;
-  red: DetectedPosition | null;
+  left: DetectedPosition | null;
+  right: DetectedPosition | null;
   orientations?: {
-    blue?: Orientation;
-    red?: Orientation;
+    left?: Orientation;
+    right?: Orientation;
   };
   source: DetectionSource;
 }

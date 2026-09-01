@@ -6,8 +6,8 @@ function makeUniform(turnValue: number, stepCount: number = 3) {
   return {
     steps: Array.from({ length: stepCount }, () => ({
       motions: {
-        blue: { turns: turnValue, motionType: "pro", rotationDirection: "cw" },
-        red: { turns: turnValue, motionType: "anti", rotationDirection: "ccw" },
+        left: { turns: turnValue, motionType: "pro", rotationDirection: "cw" },
+        right: { turns: turnValue, motionType: "anti", rotationDirection: "ccw" },
       },
     })),
   } as any;
@@ -18,8 +18,8 @@ function makeMixed(turnValues: number[]) {
   return {
     steps: turnValues.map((t) => ({
       motions: {
-        blue: { turns: t, motionType: "pro", rotationDirection: "cw" },
-        red: { turns: t, motionType: "anti", rotationDirection: "ccw" },
+        left: { turns: t, motionType: "pro", rotationDirection: "cw" },
+        right: { turns: t, motionType: "anti", rotationDirection: "ccw" },
       },
     })),
   } as any;
@@ -50,8 +50,8 @@ describe("deriveTnDRatio", () => {
     const seq = {
       steps: [{
         motions: {
-          blue: { turns: 1, motionType: "pro", rotationDirection: "cw" },
-          red: { turns: 0.5, motionType: "anti", rotationDirection: "ccw" },
+          left: { turns: 1, motionType: "pro", rotationDirection: "cw" },
+          right: { turns: 0.5, motionType: "anti", rotationDirection: "ccw" },
         },
       }],
     } as any;
@@ -71,14 +71,14 @@ describe("deriveTnDRatio", () => {
       steps: [
         {
           motions: {
-            blue: { turns: "fl", motionType: "float" },
-            red: { turns: 1, motionType: "pro", rotationDirection: "cw" },
+            left: { turns: "fl", motionType: "float" },
+            right: { turns: 1, motionType: "pro", rotationDirection: "cw" },
           },
         },
         {
           motions: {
-            blue: { turns: 1, motionType: "pro", rotationDirection: "cw" },
-            red: { turns: 1, motionType: "anti", rotationDirection: "ccw" },
+            left: { turns: 1, motionType: "pro", rotationDirection: "cw" },
+            right: { turns: 1, motionType: "anti", rotationDirection: "ccw" },
           },
         },
       ],

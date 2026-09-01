@@ -4,8 +4,8 @@ export interface GripTargetXZ {
 }
 
 export interface UpperBodyStanceTargets {
-  blue: GripTargetXZ | null;
-  red: GripTargetXZ | null;
+  left: GripTargetXZ | null;
+  right: GripTargetXZ | null;
 }
 
 export interface UpperBodyStancePlan {
@@ -14,10 +14,8 @@ export interface UpperBodyStancePlan {
 }
 
 const MAX_STANCE_YAW_RAD = (75 * Math.PI) / 180;
-const MAX_STANCE_PITCH_RAD = (18 * Math.PI) / 180;
 const LATERAL_DEAD_ZONE_M = 0.1;
 const FULL_ASSIST_LATERAL_M = 0.28;
-const MIN_FORWARD_REFERENCE_M = 0.14;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -29,24 +27,24 @@ function smoothstep01(value: number): number {
 }
 
 /**
- * Aim the shoulder line toward a coherent same-side pair of hand targets.
+ * Turn a coherent same-side pair of targets into the body's forward reach
+ * corridor.
  *
  * Split targets intentionally cancel: when one hand is east and the other is
- * west, the avatar should stay square. When both gather on the same side, the
- * body shares the reach instead of forcing both arms across the neck.
+ * west, the avatar stays square. A coherent same-side pair uses the same yaw
+ * sign as its lateral placement so the performer's shoulders and face turn
+ * toward the props and both arms remain in front of the chest.
  */
 export function planUpperBodyStance(
   targets: UpperBodyStanceTargets
 ): UpperBodyStancePlan {
-  const active = [targets.blue, targets.red].filter(
+  const active = [targets.left, targets.right].filter(
     (target): target is GripTargetXZ => target !== null
   );
   if (active.length < 2) return { yawRad: 0, pitchRad: 0 };
 
   const meanX =
     active.reduce((sum, target) => sum + target.x, 0) / active.length;
-  const meanZ =
-    active.reduce((sum, target) => sum + target.z, 0) / active.length;
   const meanAbsX =
     active.reduce((sum, target) => sum + Math.abs(target.x), 0) / active.length;
   if (meanAbsX < 1e-6) return { yawRad: 0, pitchRad: 0 };
@@ -60,19 +58,19 @@ export function planUpperBodyStance(
     return { yawRad: 0, pitchRad: 0 };
   }
 
-  const desiredYaw = Math.atan2(
-    meanX,
-    Math.max(MIN_FORWARD_REFERENCE_M, meanZ)
-  );
+  // Every wall-grid point carries the same forward plane offset. Folding that
+  // depth into atan2 made a true E/W two-hand hold look merely diagonal and
+  // left the far shoulder reaching through the neck. Lateral placement owns
+  // the stance direction; coherence and lateralWeight still soften entrances.
+  const desiredYaw = Math.sign(meanX) * MAX_STANCE_YAW_RAD;
   const assistance = smoothstep01(coherence) * lateralWeight;
   return {
     yawRad:
-      clamp(desiredYaw, -MAX_STANCE_YAW_RAD, MAX_STANCE_YAW_RAD) *
-      assistance,
-    // The built-in cross-body pitch contributes up to 10°. Collision Lab's
-    // same-side E/E solve needs about 29° total, so this track supplies the
-    // missing shoulder carry without moving the hips or hand targets.
-    pitchRad: MAX_STANCE_PITCH_RAD * assistance,
+      clamp(desiredYaw, -MAX_STANCE_YAW_RAD, MAX_STANCE_YAW_RAD) * assistance,
+    // Same-side reaches need shoulder facing, not a permanent bow. Cross-body
+    // pitch and reach-deficit lean remain owned by the animator and engage only
+    // when their geometry actually calls for them.
+    pitchRad: 0,
   };
 }
 

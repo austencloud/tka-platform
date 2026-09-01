@@ -35,7 +35,7 @@ const routeSourceByPath: Record<string, string[]> = {
     "src/routes/(public)/notation/_components/archive/PlayableArchive.svelte",
   ],
   "/faq": ["src/routes/(public)/faq/+page.svelte"],
-  "/glossary": ["src/routes/(public)/glossary/+page.svelte"],
+  "/atlas": ["src/routes/(public)/atlas/+page.svelte"],
 };
 
 const location = (pathname: string, routeId = pathname) => ({
@@ -248,7 +248,7 @@ describe("landing shared-element contract", () => {
     expect(guideShell).toContain("{#if ownsStandaloneChrome}");
     expect(guidePage).not.toContain("joinWaitlist");
     expect(guidePage).toContain('href="/learn/concepts"');
-    expect(guidePage).toContain("Start learning");
+    expect(guidePage).toContain("Start with {firstTopicLabel}");
     expect(guideCss).toContain("html:has(.guide-layout):not(:has(.mkt-shell))");
   });
 

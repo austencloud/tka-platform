@@ -44,6 +44,8 @@ import {
 } from "$lib/shared/create/state/customize-overlay-hmr";
 import type { CreateModuleState } from "$lib/shared/create/state/create-module-state-types";
 import type { ConstructOptionAudition } from "$lib/shared/create/domain/construct-option-audition";
+import { logSequenceActionsOpened } from "$lib/shared/create/analytics/sequence-action-events";
+import type { SequenceActionsOpenSource } from "$lib/shared/create/domain/sequence-action-types";
 
 // Lazy import to break circular dependency
 // panel-coordination-state ↔ create-module-state-ref ↔ construct-tab-state (cycle)
@@ -71,7 +73,6 @@ export interface MandalaViewerSelection {
   variant: MandalaRenderOptions["show"];
   pathShape: MandalaPathShape;
 }
-
 
 const sequenceActionsPanelPersistence = createPersistenceHelper({
   key: "tka_sequence_actions_panel_open",
@@ -135,16 +136,16 @@ export interface StartEndOptions {
   mustContainLetters: Letter[];
   mustNotContainLetters: Letter[];
   /**
-   * Starting orientation for the blue prop. Defaults to IN ("in/in").
-   * Feeds the engine's blueStartOrientation override (seeds beat 0 +
+   * Starting orientation for the left prop. Defaults to IN ("in/in").
+   * Feeds the engine's leftStartOrientation override (seeds beat 0 +
    * propagates forward). Undefined = engine default (IN).
    */
-  blueStartOrientation?: Orientation;
+  leftStartOrientation?: Orientation;
   /**
-   * Starting orientation for the red prop. Defaults to IN ("in/in").
-   * Feeds the engine's redStartOrientation override.
+   * Starting orientation for the right prop. Defaults to IN ("in/in").
+   * Feeds the engine's rightStartOrientation override.
    */
-  redStartOrientation?: Orientation;
+  rightStartOrientation?: Orientation;
 }
 
 /** @deprecated Use StartEndOptions instead */
@@ -176,7 +177,7 @@ export interface CustomizeOverlayProps {
     motionTypeFilter: "no-dash" | "prefer-dash" | null;
   };
   /** Absent means the generator rolls its own turns under the intensity ceiling. */
-  turnPattern: { blue: (number | "fl")[]; red: (number | "fl")[] } | null;
+  turnPattern: { left: (number | "fl")[]; right: (number | "fl")[] } | null;
   /** The ceiling from the bento's Turn Intensity card, which caps the strip's values. */
   turnIntensity: number;
   sequenceLength: number;
@@ -187,7 +188,7 @@ export interface CustomizeOverlayProps {
   onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
   onStartEndChange: ((options: StartEndOptions) => void) | null;
   onTurnPatternChange: (
-    lanes: { blue: (number | "fl")[]; red: (number | "fl")[] } | null
+    lanes: { left: (number | "fl")[]; right: (number | "fl")[] } | null
   ) => void;
   /** "Reset all" — every persisted generation setting back to first-run. */
   onResetAll: (() => void) | null;
@@ -259,7 +260,7 @@ export interface PanelCoordinationState {
   // Sequence Actions Panel State
   get isSequenceActionsPanelOpen(): boolean;
 
-  openSequenceActionsPanel(): void;
+  openSequenceActionsPanel(source?: SequenceActionsOpenSource): void;
   closeSequenceActionsPanel(): void;
 
   // Target Hand Selection (for single-hand transforms)
@@ -310,12 +311,6 @@ export interface PanelCoordinationState {
   ): void;
   setLoopSelectedComponents(components: Set<LOOPComponent>): void;
   closeLOOPPanel(): void;
-
-  // Creation Method Panel State
-  get isCreationMethodPanelOpen(): boolean;
-
-  openCreationMethodPanel(): void;
-  closeCreationMethodPanel(): void;
 
   // Sequence Viewer State (triggers SequenceViewerDrawerHost on mobile, /sequence/[id] on desktop)
   get isSequenceViewerOpen(): boolean;
@@ -459,9 +454,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let loopCurrentType = $state<LOOPType | null>(null);
   let loopOnChange = $state<((loopType: LOOPType) => void) | null>(null);
 
-  // Creation method panel state
-  let isCreationMethodPanelOpen = $state(false);
-
   // Duration preview mode state (for live preview in duration pattern drawer)
   let isDurationPreviewMode = $state(false);
   let previewSequence = $state<SequenceData | null>(null);
@@ -513,8 +505,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     loopSelectedComponents = null;
     loopCurrentType = null;
     loopOnChange = null;
-
-    isCreationMethodPanelOpen = false;
 
     isCustomizeOverlayOpen = false;
     customizeOverlayProps = null;
@@ -740,11 +730,12 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       return isSequenceActionsPanelOpen;
     },
 
-    openSequenceActionsPanel() {
+    openSequenceActionsPanel(source: SequenceActionsOpenSource = "unknown") {
       // Only close other panels if this panel isn't already open
       // This prevents the panel from closing when beat operations update state
       if (!isSequenceActionsPanelOpen) {
         closeAllPanels();
+        logSequenceActionsOpened(source);
       }
       isSequenceActionsPanelOpen = true;
     },
@@ -923,20 +914,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       isPresetDrawerOpen = false;
     },
 
-    // Creation Method Panel Getters
-    get isCreationMethodPanelOpen() {
-      return isCreationMethodPanelOpen;
-    },
-
-    openCreationMethodPanel() {
-      closeAllPanels();
-      isCreationMethodPanelOpen = true;
-    },
-
-    closeCreationMethodPanel() {
-      isCreationMethodPanelOpen = false;
-    },
-
     // Sequence Viewer Getters
     get isSequenceViewerOpen() {
       return isSequenceViewerOpen;
@@ -955,7 +932,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     closeAllPanels,
 
     // Derived: Check if any modal/slide panel is open
-    // NOTE: Creation Method Panel is NOT included here because it should not hide navigation tabs
     get isAnyPanelOpen() {
       return (
         isEditPanelOpen ||

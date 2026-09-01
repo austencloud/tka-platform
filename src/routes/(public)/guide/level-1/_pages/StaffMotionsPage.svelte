@@ -33,17 +33,29 @@
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
   import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
-  import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import {
+    createMotionData,
+    createPlaceholderMotion,
+  } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    GridLocation,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import {
+    pt,
+    ptDrag,
+    editText,
+    guideEdit,
+    registerEditSource,
+  } from "../_data/guide-edit.svelte";
   import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
@@ -58,7 +70,7 @@
   const emitSequence = getGuideSequenceClick();
 
   // ── Real single-staff pictographs (red hand only) ───────────────────────────
-  const redStaff = (
+  const rightStaff = (
     id: string,
     type: MotionType,
     from: GridLocation,
@@ -71,7 +83,7 @@
     letter: null,
     gridMode: GridMode.DIAMOND,
     motions: {
-      red: createMotionData({
+      right: createMotionData({
         motionType: type,
         rotationDirection: rot,
         startLocation: from,
@@ -79,7 +91,7 @@
         startOrientation: startOri,
         endOrientation: endOri,
         turns: 0,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
@@ -92,8 +104,8 @@
     letter: null,
     gridMode: GridMode.DIAMOND,
     motions: {
-      blue: createPlaceholderMotion(MotionColor.BLUE),
-      red: createPlaceholderMotion(MotionColor.RED),
+      left: createPlaceholderMotion(HandSide.LEFT),
+      right: createPlaceholderMotion(HandSide.RIGHT),
     },
   });
 
@@ -104,7 +116,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const NOROT = RotationDirection.NO_ROTATION;
   const stat = (id: string, loc: GridLocation, ori: Orientation) =>
-    redStaff(id, MotionType.STATIC, loc, loc, ori, ori, NOROT);
+    rightStaff(id, MotionType.STATIC, loc, loc, ori, ori, NOROT);
 
   // ── The staff SVG path (static/images/props/staff.svg), renderer's own asset.
   // Native 252.8×77.8, centerPoint (126.4, 38.9); crossbar at the +x end.
@@ -121,10 +133,10 @@
   const SIZE = 100;
   type RowDef = {
     y: number;
-    start: ReturnType<typeof redStaff>;
+    start: ReturnType<typeof rightStaff>;
     halfway: Halfway;
-    end: ReturnType<typeof redStaff>;
-    combined: ReturnType<typeof redStaff>;
+    end: ReturnType<typeof rightStaff>;
+    combined: ReturnType<typeof rightStaff>;
   };
   const ROWS: RowDef[] = [
     {
@@ -133,7 +145,7 @@
       start: stat("pro-start", SO_, IN),
       halfway: { x: 576.2, y: 576.2, deg: 225 },
       end: stat("pro-end", E, IN),
-      combined: redStaff("pro-full", MotionType.PRO, SO_, E, IN, IN, CCW),
+      combined: rightStaff("pro-full", MotionType.PRO, SO_, E, IN, IN, CCW),
     },
     {
       // Antispin: S→E, prop counter-rotates; thumb flips in → out.
@@ -141,7 +153,7 @@
       start: stat("anti-start", SO_, IN),
       halfway: { x: 576.2, y: 576.2, deg: -45 },
       end: stat("anti-end", E, OUT),
-      combined: redStaff("anti-full", MotionType.ANTI, SO_, E, IN, OUT, CW),
+      combined: rightStaff("anti-full", MotionType.ANTI, SO_, E, IN, OUT, CW),
     },
     {
       // Dash: S→N through the center; thumb flips in → out.
@@ -149,7 +161,15 @@
       start: stat("dash-start", SO_, IN),
       halfway: { x: 475, y: 475, deg: -90 },
       end: stat("dash-end", N, OUT),
-      combined: redStaff("dash-full", MotionType.DASH, SO_, N, IN, OUT, NOROT),
+      combined: rightStaff(
+        "dash-full",
+        MotionType.DASH,
+        SO_,
+        N,
+        IN,
+        OUT,
+        NOROT
+      ),
     },
   ];
 
@@ -160,17 +180,26 @@
   // Space strips; blue is an invisible placeholder - both-hands step contract).
   const ROW_KEYS = ["sm-pro", "sm-anti", "sm-dash"];
   const ROW_WORDS = ["Prospin", "Antispin", "Dash"];
-  const animStep = (data: ReturnType<typeof redStaff>, stepNumber: number): StepData =>
+  const animStep = (
+    data: ReturnType<typeof rightStaff>,
+    stepNumber: number
+  ): StepData =>
     ({
       ...data,
       id: `${data.id}-anim-${stepNumber}`,
       stepNumber,
       motions: {
-        blue: createPlaceholderMotion(MotionColor.BLUE, { location: SO_, orientation: IN }),
-        red: data.motions.red,
+        left: createPlaceholderMotion(HandSide.LEFT, {
+          location: SO_,
+          orientation: IN,
+        }),
+        right: data.motions.right,
       },
     }) as unknown as StepData;
-  const authoredRowSteps = (row: RowDef): StepData[] => [animStep(row.start, 0), animStep(row.combined, 1)];
+  const authoredRowSteps = (row: RowDef): StepData[] => [
+    animStep(row.start, 0),
+    animStep(row.combined, 1),
+  ];
 
   // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
   // present, resolved before baking - reversal dots stay derived either way.
@@ -183,7 +212,12 @@
     return [start!, ...bakeReversals(steps)];
   };
   const RESOLVED: Record<string, StepData[]> = $derived(
-    Object.fromEntries(ROWS.map((row, ri) => [ROW_KEYS[ri]!, resolvedRowStrip(row, ROW_KEYS[ri]!)]))
+    Object.fromEntries(
+      ROWS.map((row, ri) => [
+        ROW_KEYS[ri]!,
+        resolvedRowStrip(row, ROW_KEYS[ri]!),
+      ])
+    )
   );
   const rowSteps = (row: RowDef, key: string): StepData[] => RESOLVED[key]!;
 
@@ -208,9 +242,22 @@
   ];
 
   // ── Text at proof coords ────────────────────────────────────────────────────
-  type Para = { x: number; y: number; fs: number; lh: number; left?: boolean; html: string };
+  type Para = {
+    x: number;
+    y: number;
+    fs: number;
+    lh: number;
+    left?: boolean;
+    html: string;
+  };
   let PARAS: Para[] = $state([
-    { x: 0, y: 101.1, fs: 16, lh: 19, html: "During a shift, a prop can rotate in one of two directions - Prospin or Antispin" },
+    {
+      x: 0,
+      y: 101.1,
+      fs: 16,
+      lh: 19,
+      html: "During a shift, a prop can rotate in one of two directions - Prospin or Antispin",
+    },
     {
       x: 95.2,
       y: 141.9,
@@ -219,7 +266,13 @@
       left: true,
       html: "• <strong>Prospin</strong> - The prop rotates the same direction as the handpath<br>A 90 degree isolation is our base unit of a prospin.",
     },
-    { x: 0, y: 326.7, fs: 16, lh: 19, html: "In a base isolation, the thumb orientation remains the same for the entire motion." },
+    {
+      x: 0,
+      y: 326.7,
+      fs: 16,
+      lh: 19,
+      html: "In a base isolation, the thumb orientation remains the same for the entire motion.",
+    },
     {
       x: 95.2,
       y: 372.4,
@@ -228,13 +281,38 @@
       left: true,
       html: "• <strong>Antispin</strong> - The prop rotates in the opposite direction of the handpath<br>A 90 degree antispin is our base unit of antispin.",
     },
-    { x: 0, y: 555, fs: 16, lh: 19, html: "In an antispin, the ends swap orientation. Here, it moves from thumb in to thumb out." },
-    { x: 0, y: 622.2, fs: 16, lh: 19, html: "In a base dash, the thumb ends also swap orientation." },
-    { x: 0, y: 766.7, fs: 16, lh: 19, html: "Halfway through the motion, the center of the staff is at the grid’s center point." },
+    {
+      x: 0,
+      y: 555,
+      fs: 16,
+      lh: 19,
+      html: "In an antispin, the ends swap orientation. Here, it moves from thumb in to thumb out.",
+    },
+    {
+      x: 0,
+      y: 622.2,
+      fs: 16,
+      lh: 19,
+      html: "In a base dash, the thumb ends also swap orientation.",
+    },
+    {
+      x: 0,
+      y: 766.7,
+      fs: 16,
+      lh: 19,
+      html: "Halfway through the motion, the center of the staff is at the grid’s center point.",
+    },
   ]);
 
   // Positioned single runs: side mode labels, frame labels, thumb captions.
-  type Run = { x: number; y: number; w: number; fs: number; style: "mode" | "frame" | "cap"; t: string };
+  type Run = {
+    x: number;
+    y: number;
+    w: number;
+    fs: number;
+    style: "mode" | "frame" | "cap";
+    t: string;
+  };
   let RUNS: Run[] = $state([
     { x: 11.9, y: 139.8, w: 63.5, fs: 20, style: "mode", t: "Prospin" },
     { x: 11.9, y: 371.9, w: 68.9, fs: 20, style: "mode", t: "Antispin" },
@@ -279,10 +357,16 @@
 
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
-    registerEditSource("Staff Motions (p10)", () =>
-      PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n") +
-      "\n" +
-      RUNS.map((r, i) => `  ${JSON.stringify(r.t)}: x: ${r1(r.x)}, y: ${r1(r.y)}`).join("\n")
+    registerEditSource(
+      "Staff Motions (p10)",
+      () =>
+        PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join(
+          "\n"
+        ) +
+        "\n" +
+        RUNS.map(
+          (r, i) => `  ${JSON.stringify(r.t)}: x: ${r1(r.x)}, y: ${r1(r.y)}`
+        ).join("\n")
     )
   );
 </script>
@@ -295,28 +379,63 @@
 
   <!-- Heavy rules + hairline. -->
   {#each HEAVY_RULES as ry (ry)}
-    <div class="rule heavy" style="left:0; top:{ry * S}px; width:{612 * S}px"></div>
+    <div
+      class="rule heavy"
+      style="left:0; top:{ry * S}px; width:{612 * S}px"
+    ></div>
   {/each}
-  <div class="rule hair" style="left:{20 * S}px; top:{HAIRLINE * S}px; width:{572 * S}px"></div>
+  <div
+    class="rule hair"
+    style="left:{20 * S}px; top:{HAIRLINE * S}px; width:{572 * S}px"
+  ></div>
 
   <!-- The three motion rows. -->
   {#each ROWS as row, ri (ri)}
     <!-- start -->
-    <div class="mini" style="left:{COLS[0]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={row.start} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+    <div
+      class="mini"
+      style="left:{COLS[0]! * S}px; top:{row.y * S}px; width:{SIZE *
+        S}px; height:{SIZE * S}px"
+    >
+      <PictographContainer
+        pictographData={row.start}
+        gridMode={GridMode.DIAMOND}
+        rightPropTypeOverride={PropType.STAFF}
+        {...PICTO_FLAGS}
+      />
     </div>
     <!-- halfway: bare grid + the real staff asset at the mid-motion pose -->
-    <div class="mini" style="left:{COLS[1]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={bareGrids[ri]} gridMode={GridMode.DIAMOND} {...PICTO_FLAGS} />
+    <div
+      class="mini"
+      style="left:{COLS[1]! * S}px; top:{row.y * S}px; width:{SIZE *
+        S}px; height:{SIZE * S}px"
+    >
+      <PictographContainer
+        pictographData={bareGrids[ri]}
+        gridMode={GridMode.DIAMOND}
+        {...PICTO_FLAGS}
+      />
       <svg class="halfway-staff" viewBox="0 0 950 950" aria-hidden="true">
-        <g transform="translate({row.halfway.x}, {row.halfway.y}) rotate({row.halfway.deg}) translate(-126.4, -38.9)">
+        <g
+          transform="translate({row.halfway.x}, {row.halfway.y}) rotate({row
+            .halfway.deg}) translate(-126.4, -38.9)"
+        >
           <path d={STAFF_D} fill={RED} />
         </g>
       </svg>
     </div>
     <!-- end -->
-    <div class="mini" style="left:{COLS[2]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={row.end} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+    <div
+      class="mini"
+      style="left:{COLS[2]! * S}px; top:{row.y * S}px; width:{SIZE *
+        S}px; height:{SIZE * S}px"
+    >
+      <PictographContainer
+        pictographData={row.end}
+        gridMode={GridMode.DIAMOND}
+        rightPropTypeOverride={PropType.STAFF}
+        {...PICTO_FLAGS}
+      />
     </div>
     <!-- combined: the real motion pictograph (system arrow); in the reader it's
          clickable and plays Start → motion with the staff in the companion. -->
@@ -326,14 +445,29 @@
       class:is-hovered={selection?.isHovered(key)}
       class:is-selected={selection?.isSelected(key)}
       class:guide-step-active={activeStep?.key === key}
-      style="left:{COLS[3]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px"
+      style="left:{COLS[3]! * S}px; top:{row.y * S}px; width:{SIZE *
+        S}px; height:{SIZE * S}px"
     >
-      <PictographContainer pictographData={{ ...RESOLVED[key]![1], stepNumber: undefined } as unknown as StepData} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+      <PictographContainer
+        pictographData={{
+          ...RESOLVED[key]![1],
+          stepNumber: undefined,
+        } as unknown as StepData}
+        gridMode={GridMode.DIAMOND}
+        rightPropTypeOverride={PropType.STAFF}
+        {...PICTO_FLAGS}
+      />
       <SelectionHit
         groupId={key}
         isGroupStart
         label={`Animate the ${ROW_WORDS[ri]} motion`}
-        onselect={() => emitSequence?.({ strip: rowSteps(row, key), word: ROW_WORDS[ri]!, key, propType: "staff" })}
+        onselect={() =>
+          emitSequence?.({
+            strip: rowSteps(row, key),
+            word: ROW_WORDS[ri]!,
+            key,
+            propType: "staff",
+          })}
       />
     </div>
   {/each}
@@ -342,12 +476,23 @@
   {#each FLOW_ARROWS as a (a.x)}
     <svg
       class="flow-arrow"
-      style="left:{a.x * S}px; top:{(a.y - 5) * S}px; width:{ARROW_W * S}px; height:{10 * S}px"
+      style="left:{a.x * S}px; top:{(a.y - 5) * S}px; width:{ARROW_W *
+        S}px; height:{10 * S}px"
       viewBox="0 0 {ARROW_W} 10"
       aria-hidden="true"
     >
-      <line x1="0" y1="5" x2={ARROW_W - 7} y2="5" stroke="#141414" stroke-width="2" />
-      <polygon points="{ARROW_W - 8},1.3 {ARROW_W},5 {ARROW_W - 8},8.7" fill="#141414" />
+      <line
+        x1="0"
+        y1="5"
+        x2={ARROW_W - 7}
+        y2="5"
+        stroke="#141414"
+        stroke-width="2"
+      />
+      <polygon
+        points="{ARROW_W - 8},1.3 {ARROW_W},5 {ARROW_W - 8},8.7"
+        fill="#141414"
+      />
     </svg>
   {/each}
 
@@ -363,9 +508,15 @@
       class:left={p.left}
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `sm-para-${i}`}
-      style="top:{p.y * S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px; {p.left ? `left:${p.x * S}px; right:auto; text-align:left;` : ''}"
+      style="top:{p.y * S}px; font-size:{p.fs * S}px; line-height:{p.lh *
+        S}px; {p.left ? `left:${p.x * S}px; right:auto; text-align:left;` : ''}"
       use:ptDrag={pt(`sm-para-${i}`, "para", p)}
-      use:editText={{ id: `sm-para-${i}`, label: "para", get: () => p.html, set: (h) => (p.html = h) }}
+      use:editText={{
+        id: `sm-para-${i}`,
+        label: "para",
+        get: () => p.html,
+        set: (h) => (p.html = h),
+      }}
     >
       {@html p.html}
     </p>
@@ -377,9 +528,16 @@
       class="run {r.style}"
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `sm-run-${i}`}
-      style="left:{r.x * S}px; top:{r.y * S}px; width:{r.w * S}px; font-size:{r.fs * S}px"
+      style="left:{r.x * S}px; top:{r.y * S}px; width:{r.w *
+        S}px; font-size:{r.fs * S}px"
       use:ptDrag={pt(`sm-run-${i}`, r.t, r)}
-      use:editText={{ id: `sm-run-${i}`, label: r.t, get: () => r.t, set: (v) => (r.t = v), plain: true }}>{r.t}</span
+      use:editText={{
+        id: `sm-run-${i}`,
+        label: r.t,
+        get: () => r.t,
+        set: (v) => (r.t = v),
+        plain: true,
+      }}>{r.t}</span
     >
   {/each}
 </div>

@@ -9,6 +9,7 @@ import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/I
 import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import type { ISVGGenerator } from "$lib/shared/animation-engine/services/ISVGGenerator";
 import type { ITrailCapturer } from "$lib/shared/animation-engine/services/ITrailCapturer";
+import { parseFanRenderKey } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
 /**
  * Prop dimensions
@@ -161,6 +162,12 @@ export const DEFAULT_PROP_DIMENSIONS: PropDimensions = {
  */
 export function getPropDimensions(propType: string): PropDimensions {
   const normalized = propType.toLowerCase();
+  const fanRenderKey = parseFanRenderKey(normalized);
+  if (fanRenderKey) {
+    return fanRenderKey.propType === "bigfan"
+      ? { width: 600, height: 566.9 }
+      : { width: 260, height: 207 };
+  }
   return PROP_DIMENSIONS[normalized] ?? { ...DEFAULT_PROP_DIMENSIONS };
 }
 
@@ -168,8 +175,8 @@ export function getPropDimensions(propType: string): PropDimensions {
  * Reactive state for prop textures
  */
 export interface PropTextureState {
-  blueDimensions: PropDimensions;
-  redDimensions: PropDimensions;
+  leftDimensions: PropDimensions;
+  rightDimensions: PropDimensions;
   isLoaded: boolean;
   isLoading: boolean;
   error: string | null;
@@ -194,14 +201,14 @@ export interface IPropTextureLoader {
   ): void;
 
   /**
-   * Load textures for both prop colors
-   * @param bluePropType - Type of blue prop
-   * @param redPropType - Type of red prop
+   * Load textures for both performer hands
+   * @param leftPropType - Type of left-hand prop
+   * @param rightPropType - Type of right-hand prop
    * @param darkMode - When provided, uses this instead of global dark mode state (for preview isolation)
    */
   loadPropTextures(
-    bluePropType: string,
-    redPropType: string,
+    leftPropType: string,
+    rightPropType: string,
     darkMode?: boolean,
     colors?: TunnelPropColorPair | null
   ): Promise<void>;

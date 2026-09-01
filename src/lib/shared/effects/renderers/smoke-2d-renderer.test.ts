@@ -5,19 +5,19 @@ import { SMOKE_PALETTES } from "../domain/smoke-palettes";
 import type { EmitterTip } from "./emitter-tip";
 
 type PosBag = {
-  bluePosA?: { x: number; y: number };
-  bluePosB?: { x: number; y: number };
-  redPosA?: { x: number; y: number };
-  redPosB?: { x: number; y: number };
+  leftPosA?: { x: number; y: number };
+  leftPosB?: { x: number; y: number };
+  rightPosA?: { x: number; y: number };
+  rightPosB?: { x: number; y: number };
 };
 
 /** Convert the legacy 4-slot bag to the flat emitter contract (base props). */
 function toEmitters(s: PosBag): EmitterTip[] {
   const out: EmitterTip[] = [];
-  if (s.bluePosA) out.push({ ...s.bluePosA, propIndex: 0, tipIndex: 0, end: "A", color: "#3a7fd9" });
-  if (s.bluePosB) out.push({ ...s.bluePosB, propIndex: 0, tipIndex: 1, end: "B", color: "#3a7fd9" });
-  if (s.redPosA) out.push({ ...s.redPosA, propIndex: 1, tipIndex: 0, end: "A", color: "#d94f4f" });
-  if (s.redPosB) out.push({ ...s.redPosB, propIndex: 1, tipIndex: 1, end: "B", color: "#d94f4f" });
+  if (s.leftPosA) out.push({ ...s.leftPosA, propIndex: 0, tipIndex: 0, end: "A", color: "#3a7fd9" });
+  if (s.leftPosB) out.push({ ...s.leftPosB, propIndex: 0, tipIndex: 1, end: "B", color: "#3a7fd9" });
+  if (s.rightPosA) out.push({ ...s.rightPosA, propIndex: 1, tipIndex: 0, end: "A", color: "#d94f4f" });
+  if (s.rightPosB) out.push({ ...s.rightPosB, propIndex: 1, tipIndex: 1, end: "B", color: "#d94f4f" });
   return out;
 }
 
@@ -87,10 +87,10 @@ function makeParams(overrides: Partial<Smoke2DParams> = {}): Smoke2DParams {
 }
 
 const ALL_TIPS = toEmitters({
-  bluePosA: { x: 100, y: 400 },
-  bluePosB: { x: 120, y: 400 },
-  redPosA: { x: 200, y: 400 },
-  redPosB: { x: 220, y: 400 },
+  leftPosA: { x: 100, y: 400 },
+  leftPosB: { x: 120, y: 400 },
+  rightPosA: { x: 200, y: 400 },
+  rightPosB: { x: 220, y: 400 },
 });
 
 /** Two base props + one tunnel layer (propIndex 2/3) to prove layer coverage. */
@@ -170,10 +170,10 @@ describe("Smoke2DRenderer", () => {
     for (let i = 0; i < 20; i++) {
       rA.render(ctxA, restParams, ALL_TIPS, step);
       const moving = toEmitters({
-        bluePosA: { x: 100 + i * 30, y: 400 },
-        bluePosB: { x: 120 + i * 30, y: 400 },
-        redPosA: { x: 200 + i * 30, y: 400 },
-        redPosB: { x: 220 + i * 30, y: 400 },
+        leftPosA: { x: 100 + i * 30, y: 400 },
+        leftPosB: { x: 120 + i * 30, y: 400 },
+        rightPosA: { x: 200 + i * 30, y: 400 },
+        rightPosB: { x: 220 + i * 30, y: 400 },
       });
       rB.render(ctxB, moveParams, moving, step);
     }

@@ -41,6 +41,7 @@ import { pathToFileURL } from "node:url";
 import sharp from "sharp";
 import { AUTUMN_DEPTH_MATERIAL_GRADES } from "./autumn-depth-material-grades.mjs";
 import { AUTUMN_HERO_MATERIAL_GRADES } from "./autumn-hero-material-grades.mjs";
+import { isAutumnFrontSideMaterial } from "./autumn-material-sidedness.mjs";
 
 const INPUT = resolve("static/models/autumn/autumn-environment_raw.glb");
 const OUTPUT = resolve("static/models/autumn/autumn-environment.glb");
@@ -145,6 +146,9 @@ function harmonizeAutumnMaterials(document) {
   );
 
   for (const material of document.getRoot().listMaterials()) {
+    if (isAutumnFrontSideMaterial(material.getName())) {
+      material.setDoubleSided(false);
+    }
     const profile = AUTUMN_MATERIAL_PROFILES.find(({ prefix }) =>
       material.getName().startsWith(prefix)
     );

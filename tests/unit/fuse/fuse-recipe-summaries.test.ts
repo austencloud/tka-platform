@@ -55,7 +55,7 @@ describe("Fuse recipe summaries", () => {
     );
 
     expect(summaries.level).toBe("Level 3 · ≤1.5 turns");
-    expect(summaries.pairing).toBe("Red → Mirror + Invert → Blue");
+    expect(summaries.pairing).toBe("Right → Mirror + Invert → Left");
   });
 
   it("names non-default style and starting-condition choices", () => {

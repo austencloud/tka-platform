@@ -1,10 +1,11 @@
 <script lang="ts">
   import { T, useTask, useThrelte, useScheduler } from "@threlte/core";
   import { layers, type ThrelteLayers } from "@threlte/extras";
-  import { onMount, onDestroy, type Snippet } from "svelte";
+  import { onMount, onDestroy, tick, type Snippet } from "svelte";
   import {
     PerformerRig,
     PLANE_MODE_CONFIGS,
+    type AvatarGripDiagnostics,
     type AvatarPoseDiagnostics,
     type CollisionEvent,
   } from "@austencloud/scene-3d";
@@ -59,6 +60,7 @@
     protectPerformerTree,
   } from "../environments/rendering/environment-transition-compositor";
   import PerformerPickProxy from "./performer-interaction/PerformerPickProxy.svelte";
+  import PerformerVisualPickTarget from "./performer-interaction/PerformerVisualPickTarget.svelte";
   import PerformerHoverRing from "./performer-interaction/PerformerHoverRing.svelte";
   import {
     createPerformerPointerInteraction,
@@ -66,6 +68,7 @@
   } from "./performer-interaction/performer-pointer-interaction.svelte";
   import { planUpperBodyStance } from "../collision/upper-body-stance-planner";
   import { getAvatarSequenceCollisionAudit } from "../collision/avatar-sequence-collision-audit";
+  import { getAvatarGripMotionAudit } from "../diagnostics/avatar-grip-motion-audit";
 
   // Performer layer membership inherits through the nested PerformerRig tree.
   layers();
@@ -76,23 +79,24 @@
   const collisionAudit = import.meta.env.DEV
     ? getAvatarSequenceCollisionAudit()
     : null;
+  const gripMotionAudit = import.meta.env.DEV
+    ? getAvatarGripMotionAudit()
+    : null;
 
-  function resolveUpperBodyStance(
-    performer: CharacterInstanceState
-  ) {
+  function resolveUpperBodyStance(performer: CharacterInstanceState) {
     const mode = PLANE_MODE_CONFIGS[performer.planeMode];
     const gridOffset = GRID_OFFSETS[performer.planeMode];
     return planUpperBodyStance({
-      blue: performer.bluePropState
+      left: performer.leftPropState
         ? {
-            x: mode.blueLateralOffset + performer.bluePropState.worldPosition.x,
-            z: gridOffset + performer.bluePropState.worldPosition.z,
+            x: mode.blueLateralOffset + performer.leftPropState.worldPosition.x,
+            z: gridOffset + performer.leftPropState.worldPosition.z,
           }
         : null,
-      red: performer.redPropState
+      right: performer.rightPropState
         ? {
-            x: mode.redLateralOffset + performer.redPropState.worldPosition.x,
-            z: gridOffset + performer.redPropState.worldPosition.z,
+            x: mode.redLateralOffset + performer.rightPropState.worldPosition.x,
+            z: gridOffset + performer.rightPropState.worldPosition.z,
           }
         : null,
     });
@@ -108,8 +112,8 @@
      *  creatorIntent.propConfig so the viewer's prop-context choice is
      *  respected in the 3D scene. Accepts string so Viewer3DCanvas can
      *  pass through without needing to import PropType. */
-    bluePropTypeOverride?: string | null;
-    redPropTypeOverride?: string | null;
+    leftPropTypeOverride?: string | null;
+    rightPropTypeOverride?: string | null;
     /** Hide grid references and performer numbers in cinematic review embeds. */
     hideSceneMarkers?: boolean;
     /** Hide performer numbers while leaving grid references available. */
@@ -170,6 +174,8 @@
     onEnvironmentTransitionChange?: (
       observation: EnvironmentTransitionObservation<BackgroundType>
     ) => void;
+    /** Holds shader warmup until the full interactive effects tree is mounted. */
+    onEffectsRuntimeReadyChange?: (ready: boolean) => void;
   }
 
   let {
@@ -177,8 +183,8 @@
     currentStep,
     isPlaying,
     characterState,
-    bluePropTypeOverride = null,
-    redPropTypeOverride = null,
+    leftPropTypeOverride = null,
+    rightPropTypeOverride = null,
     hideSceneMarkers = false,
     hidePerformerBadges = false,
     hideOrientationHelpers = false,
@@ -195,6 +201,7 @@
     environmentTransitionVisualMode = "internal",
     onPerformerReadinessChange,
     onEnvironmentTransitionChange,
+    onEffectsRuntimeReadyChange,
   }: Props = $props();
   // The scene now iterates viewer3DState.performerManager. This compatibility
   // prop can be empty while 3D Studio shows the environment before choreography.
@@ -211,6 +218,27 @@
   );
   const sceneFeatures = getSceneFeatureContext();
   let sceneEffectsManager = $state<SceneEffectsManager3D | null>(null);
+  let effectsReadyToken = 0;
+
+  function handleEffectsManagerReady(ready: boolean): void {
+    const token = ++effectsReadyToken;
+    if (!ready) {
+      onEffectsRuntimeReadyChange?.(false);
+      return;
+    }
+    // The manager and every performer orchestrator mount in the same Svelte
+    // update. Wait through that flush and one real frame before allowing the
+    // whole-scene shader compile to take its snapshot.
+    const afterPaint = () =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    void (async () => {
+      await tick();
+      await afterPaint();
+      await tick();
+      await afterPaint();
+      if (token === effectsReadyToken) onEffectsRuntimeReadyChange?.(true);
+    })();
+  }
   let readyCharacterKeys = $state<Record<string, true>>({});
   const sceneEffectsCoordinatorModule = enableEffects
     ? import("../effects/scene-effects/SceneEffectsCoordinator3D.svelte")
@@ -362,7 +390,7 @@
     // prop `currentStep` (which is frozen because playback is paused).
     // This keeps state distribution inside useTask - the same code path
     // as live playback - so the $derived chain (currentStepIndex →
-    // bluePropState → Avatar3D props) resolves within the same frame.
+    // leftPropState → Avatar3D props) resolves within the same frame.
     const step = viewer3DState.isExporting
       ? (viewer3DState.exportCurrentStep ?? currentStep)
       : currentStep;
@@ -400,7 +428,7 @@
     let mounted = true;
 
     // Prop fallbacks still belong to app settings. Environment choice does not.
-    if (!bluePropTypeOverride || !redPropTypeOverride) {
+    if (!leftPropTypeOverride || !rightPropTypeOverride) {
       void import("$lib/shared/settings/state/settings-state.svelte").then(
         ({ settingsService }) => {
           if (mounted) viewerSettings = settingsService;
@@ -409,12 +437,13 @@
     }
 
     if (enableEffects) {
+      onEffectsRuntimeReadyChange?.(false);
       void import("../effects/scene-effects/scene-effects-manager-3d").then(
         ({ SceneEffectsManager3D }) => {
           if (mounted) sceneEffectsManager = new SceneEffectsManager3D();
         }
       );
-    }
+    } else onEffectsRuntimeReadyChange?.(true);
 
     const interactionCanvas = renderer.domElement;
     if (interactionCanvas) {
@@ -458,35 +487,35 @@
 
   // Resolve prop type: explicit viewer override wins, then sequence's intended
   // prop, then creator config, then global settings.
-  const bluePropType = $derived.by((): PropType => {
-    if (bluePropTypeOverride) return bluePropTypeOverride as PropType;
-    if (sequenceData?.intendedProp?.bluePropType)
-      return sequenceData.intendedProp.bluePropType;
-    if (sequenceData?.creatorIntent?.propConfig?.bluePropType)
-      return sequenceData.creatorIntent.propConfig.bluePropType;
+  const leftPropType = $derived.by((): PropType => {
+    if (leftPropTypeOverride) return leftPropTypeOverride as PropType;
+    if (sequenceData?.intendedProp?.leftPropType)
+      return sequenceData.intendedProp.leftPropType;
+    if (sequenceData?.creatorIntent?.propConfig?.leftPropType)
+      return sequenceData.creatorIntent.propConfig.leftPropType;
     try {
-      return viewerSettings?.settings?.bluePropType ?? PropType.STAFF;
+      return viewerSettings?.settings?.leftPropType ?? PropType.STAFF;
     } catch {
       return PropType.STAFF;
     }
   });
-  const redPropType = $derived.by((): PropType => {
-    if (redPropTypeOverride) return redPropTypeOverride as PropType;
-    if (sequenceData?.intendedProp?.redPropType)
-      return sequenceData.intendedProp.redPropType;
-    if (sequenceData?.creatorIntent?.propConfig?.redPropType)
-      return sequenceData.creatorIntent.propConfig.redPropType;
+  const rightPropType = $derived.by((): PropType => {
+    if (rightPropTypeOverride) return rightPropTypeOverride as PropType;
+    if (sequenceData?.intendedProp?.rightPropType)
+      return sequenceData.intendedProp.rightPropType;
+    if (sequenceData?.creatorIntent?.propConfig?.rightPropType)
+      return sequenceData.creatorIntent.propConfig.rightPropType;
     try {
-      return viewerSettings?.settings?.redPropType ?? PropType.STAFF;
+      return viewerSettings?.settings?.rightPropType ?? PropType.STAFF;
     } catch {
       return PropType.STAFF;
     }
   });
-  const blueBuugengFlipped = $derived(
-    viewerSettings?.settings?.blueBuugengFlipped ?? false
+  const leftBuugengFlipped = $derived(
+    viewerSettings?.settings?.leftBuugengFlipped ?? false
   );
-  const redBuugengFlipped = $derived(
-    viewerSettings?.settings?.redBuugengFlipped ?? false
+  const rightBuugengFlipped = $derived(
+    viewerSettings?.settings?.rightBuugengFlipped ?? false
   );
 
   const explicitPlanes = $derived(viewer3DState.visiblePlanes as Set<Plane>);
@@ -542,6 +571,11 @@
       performerManager.performers.length,
       visiblePerformerCount ?? performerManager.performers.length
     )
+  );
+  const environmentPerformerPositions = $derived(
+    performerManager.performers
+      .slice(0, performerCount)
+      .map((performer) => performer.position)
   );
 
   // The deck is a property of the venue, not of where the cast happens to be
@@ -606,6 +640,7 @@
       manager={sceneEffectsManager}
       parent={sceneEffectsLayerRoot}
       {petalEnvironmentProfile}
+      onReadyChange={handleEffectsManagerReady}
     />
   {/await}
 {/if}
@@ -615,6 +650,7 @@
   <Environment3D
     {backgroundType}
     {performerCount}
+    performerPositions={environmentPerformerPositions}
     stageWidth={stageDimensions.width}
     stageDepth={stageDimensions.depth}
     stageRadius={stageDimensions.radius}
@@ -739,15 +775,15 @@
       {@const propLength =
         perfStaffCm != null ? cmToUnits(perfStaffCm) : undefined}
       {@const propBuild = performer.effectivePropBuild}
-      {@const resolvedBlueProp = resolvePerformerProp(
+      {@const resolvedLeftProp = resolvePerformerProp(
         performer,
-        bluePropType,
-        bluePropTypeOverride as PropType | null
+        leftPropType,
+        leftPropTypeOverride as PropType | null
       )}
-      {@const resolvedRedProp = resolvePerformerProp(
+      {@const resolvedRightProp = resolvePerformerProp(
         performer,
-        redPropType,
-        redPropTypeOverride as PropType | null
+        rightPropType,
+        rightPropTypeOverride as PropType | null
       )}
       <!-- Per-performer effect cascade: this performer's override, else the
          global default (effects-config wildcard). This is what makes the
@@ -762,109 +798,122 @@
         performer.totalSteps
       )}
       {@const upperBodyStance = resolveUpperBodyStance(performer)}
-      <CharacterSwapTransition
-        {performer}
+      <PerformerVisualPickTarget
         performerIndex={i}
-        groundOffset={stageGroundOffset}
-        presenceProgress={performer.presenceProgress}
+        register={performerInteraction?.registerVisualPickTarget}
       >
-        {#snippet children({ onCharacterSwapped, characterOpacity })}
-          <PerformerRig
-            position={performer.position}
-            groundOffset={stageGroundOffset}
-            facingAngle={performer.facingAngle}
-            planeMode={performer.planeMode}
-            avatarState={performer}
-            avatarId={performer.characterId}
-            visiblePlanes={explicitPlanes}
-            gridMode={performerGridMode}
-            bluePropType={toScenePropType(resolvedBlueProp)}
-            redPropType={toScenePropType(resolvedRedProp)}
-            bluePropFlipped={isBuugengFamilyProp(resolvedBlueProp) &&
-              blueBuugengFlipped}
-            redPropFlipped={isBuugengFamilyProp(resolvedRedProp) &&
-              redBuugengFlipped}
-            bluePropState={performer.bluePropState}
-            redPropState={performer.redPropState}
-            tipEffectMap={perfTipMap}
-            {propLength}
-            {propBuild}
-            isPlaying={renderEntry.presencePhase !== "exiting" &&
-              isPlaying &&
-              i < performerCount}
-            enableLocomotion={enablePerformerLocomotion}
-            enableFootPlanting={enablePerformerLocomotion}
-            isMoving={performer.isMoving}
-            moveSpeed={performer.moveSpeed}
-            moveDirection={performer.moveDirection}
-            gaitTimingSample={performer.gaitTimingSample}
-            terminalStepPlan={performer.terminalStepPlan}
-            stanceYaw={upperBodyStance.yawRad}
-            spinePitchOffset={upperBodyStance.pitchRad}
-            headDodge={true}
-            onCollisionEvents={collisionAudit
-              ? (
-                  events: CollisionEvent[],
-                  diagnostics: AvatarPoseDiagnostics
-                ) => collisionAudit.record(performer.id, events, diagnostics)
-              : undefined}
-            onAvatarSwapped={(characterId) => {
-              onCharacterSwapped(characterId);
-              markPerformerCharacterReady(performer.id, characterId);
-            }}
-            avatarOpacity={characterOpacity}
-          >
-            {#snippet gridSlot()}
-              {#if !hideSceneMarkers}
-                <T.Group
-                  position.z={performerGridOffset}
-                  layers={BASE_SCENE_LAYER}
-                >
-                  <Grid3D
-                    visiblePlanes={explicitPlanes}
-                    gridMode={performerGridMode}
-                    planeMode={performer.planeMode}
-                    showLabels={viewer3DState.showGridLabels}
-                    showOrientationHelpers={!hideOrientationHelpers}
-                  />
-                </T.Group>
-              {/if}
-            {/snippet}
-            {#snippet effectsSlot({
-              bluePropState,
-              redPropState,
-              blueHandPos,
-              redHandPos,
-              isPlaying: rigPlaying,
-              staffHalfLength,
-              effectsParentRef,
-            })}
-              {#if sceneEffectsManager && effectOrchestratorModule}
-                {#await effectOrchestratorModule then { default: EffectOrchestrator3D }}
-                  <EffectOrchestrator3D
-                    {bluePropState}
-                    {redPropState}
-                    bluePropType={toScenePropType(resolvedBlueProp)}
-                    redPropType={toScenePropType(resolvedRedProp)}
-                    isPlaying={rigPlaying}
-                    {staffHalfLength}
-                    {propBuild}
-                    tipEffectMap={perfTipMap}
-                    {blueHandPos}
-                    {redHandPos}
-                    {effectsParentRef}
-                    sceneEffectsManagerOverride={sceneEffectsManager}
-                    qualityTierOverride={effectQualityTier}
-                    currentStep={performerCurrentStep}
-                    totalSteps={sequenceData?.steps.length ?? 0}
-                    seamlesslyLoopable={sequenceIsSeamless}
-                  />
-                {/await}
-              {/if}
-            {/snippet}
-          </PerformerRig>
-        {/snippet}
-      </CharacterSwapTransition>
+        <CharacterSwapTransition
+          {performer}
+          performerIndex={i}
+          groundOffset={stageGroundOffset}
+          presenceProgress={performer.presenceProgress}
+        >
+          {#snippet children({ onCharacterSwapped, characterOpacity })}
+            <PerformerRig
+              position={performer.position}
+              groundOffset={stageGroundOffset}
+              facingAngle={performer.facingAngle}
+              planeMode={performer.planeMode}
+              avatarState={performer}
+              avatarId={performer.characterId}
+              visiblePlanes={explicitPlanes}
+              gridMode={performerGridMode}
+              bluePropType={toScenePropType(resolvedLeftProp)}
+              redPropType={toScenePropType(resolvedRightProp)}
+              bluePropFlipped={isBuugengFamilyProp(resolvedLeftProp) &&
+                leftBuugengFlipped}
+              redPropFlipped={isBuugengFamilyProp(resolvedRightProp) &&
+                rightBuugengFlipped}
+              bluePropState={performer.leftPropState}
+              redPropState={performer.rightPropState}
+              tipEffectMap={perfTipMap}
+              {propLength}
+              {propBuild}
+              isPlaying={renderEntry.presencePhase !== "exiting" &&
+                isPlaying &&
+                i < performerCount}
+              enableLocomotion={enablePerformerLocomotion}
+              enableFootPlanting={enablePerformerLocomotion}
+              isMoving={performer.isMoving}
+              moveSpeed={performer.moveSpeed}
+              moveDirection={performer.moveDirection}
+              gaitTimingSample={performer.gaitTimingSample}
+              terminalStepPlan={performer.terminalStepPlan}
+              stanceYaw={upperBodyStance.yawRad}
+              spinePitchOffset={upperBodyStance.pitchRad}
+              headDodge={true}
+              onCollisionEvents={collisionAudit || gripMotionAudit
+                ? (
+                    events: CollisionEvent[],
+                    diagnostics: AvatarPoseDiagnostics,
+                    gripDiagnostics: AvatarGripDiagnostics
+                  ) => {
+                    collisionAudit?.record(performer.id, events, diagnostics);
+                    gripMotionAudit?.record(
+                      performer.id,
+                      gripDiagnostics,
+                      events
+                    );
+                  }
+                : undefined}
+              onAvatarSwapped={(characterId) => {
+                onCharacterSwapped(characterId);
+                markPerformerCharacterReady(performer.id, characterId);
+              }}
+              avatarOpacity={characterOpacity}
+            >
+              {#snippet gridSlot()}
+                {#if !hideSceneMarkers}
+                  <T.Group
+                    position.z={performerGridOffset}
+                    layers={BASE_SCENE_LAYER}
+                  >
+                    <Grid3D
+                      visiblePlanes={explicitPlanes}
+                      gridMode={performerGridMode}
+                      planeMode={performer.planeMode}
+                      showLabels={viewer3DState.showGridLabels}
+                      showOrientationHelpers={!hideOrientationHelpers}
+                    />
+                  </T.Group>
+                {/if}
+              {/snippet}
+              {#snippet effectsSlot({
+                leftPropState,
+                rightPropState,
+                leftHandPos,
+                rightHandPos,
+                isPlaying: rigPlaying,
+                staffHalfLength,
+                effectsParentRef,
+              })}
+                {#if sceneEffectsManager && effectOrchestratorModule}
+                  {#await effectOrchestratorModule then { default: EffectOrchestrator3D }}
+                    <EffectOrchestrator3D
+                      {leftPropState}
+                      {rightPropState}
+                      leftPropType={toScenePropType(resolvedLeftProp)}
+                      rightPropType={toScenePropType(resolvedRightProp)}
+                      isPlaying={rigPlaying}
+                      {staffHalfLength}
+                      {propBuild}
+                      tipEffectMap={perfTipMap}
+                      {leftHandPos}
+                      {rightHandPos}
+                      {effectsParentRef}
+                      sceneEffectsManagerOverride={sceneEffectsManager}
+                      qualityTierOverride={effectQualityTier}
+                      currentStep={performerCurrentStep}
+                      totalSteps={sequenceData?.steps.length ?? 0}
+                      seamlesslyLoopable={sequenceIsSeamless}
+                    />
+                  {/await}
+                {/if}
+              {/snippet}
+            </PerformerRig>
+          {/snippet}
+        </CharacterSwapTransition>
+      </PerformerVisualPickTarget>
 
       {#if renderEntry.presencePhase !== "exiting" && viewer3DState.selectedPerformerIndex === null}
         <T.Mesh

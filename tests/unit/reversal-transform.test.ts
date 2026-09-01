@@ -24,10 +24,10 @@ describe("applyReversalToMotion", () => {
 
 describe("getReversalFlagsForBeat", () => {
   it("maps P/R/B/- symbols", () => {
-    expect(getReversalFlagsForBeat("PPPP", 0)).toEqual({ blueReversal: true, redReversal: true });
-    expect(getReversalFlagsForBeat("RRRR", 0)).toEqual({ blueReversal: false, redReversal: true });
-    expect(getReversalFlagsForBeat("BBBB", 0)).toEqual({ blueReversal: true, redReversal: false });
-    expect(getReversalFlagsForBeat("----", 0)).toEqual({ blueReversal: false, redReversal: false });
+    expect(getReversalFlagsForBeat("PPPP", 0)).toEqual({ leftReversal: true, rightReversal: true });
+    expect(getReversalFlagsForBeat("RRRR", 0)).toEqual({ leftReversal: false, rightReversal: true });
+    expect(getReversalFlagsForBeat("BBBB", 0)).toEqual({ leftReversal: true, rightReversal: false });
+    expect(getReversalFlagsForBeat("----", 0)).toEqual({ leftReversal: false, rightReversal: false });
   });
   it("wraps via modulo", () => {
     expect(getReversalFlagsForBeat("P-", 4)).toEqual(getReversalFlagsForBeat("P-", 0));
@@ -39,29 +39,29 @@ describe("getReversalFlagsForBeat", () => {
 
 describe("cumulativeParities", () => {
   it("PPPP alternates parity per hand (not uniform)", () => {
-    const { blue, red } = cumulativeParities("PPPP", 4);
-    expect(blue).toEqual([true, false, true, false]);
-    expect(red).toEqual([true, false, true, false]);
+    const { left, right } = cumulativeParities("PPPP", 4);
+    expect(left).toEqual([true, false, true, false]);
+    expect(right).toEqual([true, false, true, false]);
   });
 
   it("long-book P-P- → both hands flip then hold: [T,T,F,F]", () => {
-    const { blue, red } = cumulativeParities("P-P-", 4);
-    expect(blue).toEqual([true, true, false, false]);
-    expect(red).toEqual([true, true, false, false]);
+    const { left, right } = cumulativeParities("P-P-", 4);
+    expect(left).toEqual([true, true, false, false]);
+    expect(right).toEqual([true, true, false, false]);
   });
 
   it("alternating RBRB toggles each hand on its own beats", () => {
-    const { blue, red } = cumulativeParities("RBRB", 4);
-    expect(red).toEqual([true, true, false, false]); // R on beats 0,2
-    expect(blue).toEqual([false, true, true, false]); // B on beats 1,3
+    const { left, right } = cumulativeParities("RBRB", 4);
+    expect(right).toEqual([true, true, false, false]); // R on beats 0,2
+    expect(left).toEqual([false, true, true, false]); // B on beats 1,3
   });
 
   it("round-trips through relative detection: construct PPPP rotations → detector reads PPPP", () => {
     // Build a rotation sequence from cumulative parity (base cw, flipped→ccw),
     // then apply reversal-detector.ts's rule (a beat reverses when its spin
     // differs from the previous beat, wrapping at the loop boundary).
-    const { blue } = cumulativeParities("PPPP", 4);
-    const rot = blue.map((p) => (p ? "ccw" : "cw"));
+    const { left } = cumulativeParities("PPPP", 4);
+    const rot = left.map((p) => (p ? "ccw" : "cw"));
     const detected = rot.map((r, i) => r !== rot[(i + rot.length - 1) % rot.length]);
     expect(detected).toEqual([true, true, true, true]); // every beat reverses → book
   });

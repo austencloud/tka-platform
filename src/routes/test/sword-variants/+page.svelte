@@ -6,7 +6,7 @@
     getMotionColor,
     SELECTIVE_COLOR_PROP_TYPES,
   } from "$lib/shared/utils/svg-color-utils";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   type Variant = { id: string; label: string; note: string; file: string };
   type Concept = Variant & { parent: string; tradeoff: string };
@@ -87,12 +87,12 @@
     "sword"
   );
 
-  type Rendered = { raw: string; blue: string; red: string; compact: string };
+  type Rendered = { raw: string; left: string; right: string; compact: string };
   let rendered = $state<Record<string, Rendered>>({});
   let failed = $state<Record<string, string>>({});
   let darkBg = $state(true);
 
-  function colorize(raw: string, color: MotionColor): string {
+  function colorize(raw: string, color: HandSide): string {
     return applyMotionColorToSvg(raw, color, {
       makeClassNamesUnique: true,
       themeMode: "dark",
@@ -104,7 +104,7 @@
   // picker-size copy cannot collide with the full-size blue copy in this
   // document. applyMotionColorToSvg pins colorSuffix to the motion color.
   function colorizeCompact(raw: string): string {
-    return applyColorToSvg(raw, getMotionColor(MotionColor.BLUE, "dark"), {
+    return applyColorToSvg(raw, getMotionColor(HandSide.LEFT, "dark"), {
       makeClassNamesUnique: true,
       colorSuffix: "bluetile",
       selectiveColorMode: selective,
@@ -120,8 +120,8 @@
     const raw = await res.text();
     rendered[entry.id] = {
       raw,
-      blue: colorize(raw, MotionColor.BLUE),
-      red: colorize(raw, MotionColor.RED),
+      left: colorize(raw, HandSide.LEFT),
+      right: colorize(raw, HandSide.RIGHT),
       compact: colorizeCompact(raw),
     };
   }
@@ -138,7 +138,7 @@
       Every sample is rendered through the real <code
         >applyMotionColorToSvg</code
       >
-      pipeline (selective mode = {String(selective)}). Blue / Red show the
+      pipeline (selective mode = {String(selective)}). Left / Right show the
       recolored region; preserved fills stay put.
     </p>
     <button onclick={() => (darkBg = !darkBg)}>
@@ -172,12 +172,12 @@
               <figcaption>raw</figcaption>
             </figure>
             <figure>
-              <div class="stage">{@html r.blue}</div>
-              <figcaption>blue prop</figcaption>
+              <div class="stage">{@html r.left}</div>
+              <figcaption>left prop</figcaption>
             </figure>
             <figure>
-              <div class="stage">{@html r.red}</div>
-              <figcaption>red prop</figcaption>
+              <div class="stage">{@html r.right}</div>
+              <figcaption>right prop</figcaption>
             </figure>
             <figure>
               <div class="stage tile-cell">
@@ -216,15 +216,15 @@
             </figure>
             <figure>
               <div class="stage">
-                {@html r.blue}
+                {@html r.left}
               </div>
-              <figcaption>blue prop</figcaption>
+              <figcaption>left prop</figcaption>
             </figure>
             <figure>
               <div class="stage">
-                {@html r.red}
+                {@html r.right}
               </div>
-              <figcaption>red prop</figcaption>
+              <figcaption>right prop</figcaption>
             </figure>
           </div>
         {:else if failed[v.id]}

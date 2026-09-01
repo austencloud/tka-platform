@@ -257,8 +257,8 @@ export function detectLOOPFromSteps(
     if (rotationAngle === "90cw") direction = "cw";
     else if (rotationAngle === "90ccw") direction = "ccw";
     else {
-      const blueRotDir = letterSteps[0]?.motions.blue?.rotationDirection;
-      if (blueRotDir === "cw" || blueRotDir === "ccw") direction = blueRotDir;
+      const leftRotDir = letterSteps[0]?.motions.left?.rotationDirection;
+      if (leftRotDir === "cw" || leftRotDir === "ccw") direction = leftRotDir;
     }
   }
 
@@ -295,15 +295,15 @@ export function hasRewoundStructure(
  */
 function toPairMotions(steps: readonly SequenceStep[]): PairMotions[] {
   return steps.map((s) => ({
-    blue: {
-      startLocation: s.motions.blue?.startLocation ?? "",
-      endLocation: s.motions.blue?.endLocation ?? "",
-      motionType: s.motions.blue?.motionType ?? "",
+    left: {
+      startLocation: s.motions.left?.startLocation ?? "",
+      endLocation: s.motions.left?.endLocation ?? "",
+      motionType: s.motions.left?.motionType ?? "",
     },
-    red: {
-      startLocation: s.motions.red?.startLocation ?? "",
-      endLocation: s.motions.red?.endLocation ?? "",
-      motionType: s.motions.red?.motionType ?? "",
+    right: {
+      startLocation: s.motions.right?.startLocation ?? "",
+      endLocation: s.motions.right?.endLocation ?? "",
+      motionType: s.motions.right?.motionType ?? "",
     },
   }));
 }
@@ -336,7 +336,7 @@ function reduceRepeatedMotionSkeleton(
 }
 
 function sameLOOPSignal(a: SequenceStep, b: SequenceStep): boolean {
-  return (["blue", "red"] as const).every((side) => {
+  return (["left", "right"] as const).every((side) => {
     const am = a.motions[side];
     const bm = b.motions[side];
     return (
@@ -354,14 +354,14 @@ function sameLOOPSignal(a: SequenceStep, b: SequenceStep): boolean {
  */
 export class LOOPDetectorClass {
   private deriveStartPosition(step: SequenceStep): string | null {
-    const blue = step.motions.blue;
-    const red = step.motions.red;
-    if (!blue?.startLocation || !red?.startLocation) return null;
+    const left = step.motions.left;
+    const right = step.motions.right;
+    if (!left?.startLocation || !right?.startLocation) return null;
 
     try {
       return gridPositionDeriver.getGridPositionFromLocations(
-        blue.startLocation,
-        red.startLocation
+        left.startLocation,
+        right.startLocation
       );
     } catch {
       return null;
@@ -407,7 +407,7 @@ export class LOOPDetectorClass {
     }
 
     const prop: PropLOOPSpec = { components: compMap };
-    return { blue: prop, red: prop };
+    return { left: prop, right: prop };
   }
 
   /**

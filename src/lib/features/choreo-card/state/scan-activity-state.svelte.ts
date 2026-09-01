@@ -7,6 +7,7 @@ import {
   type ScanPropConfig,
 } from "$lib/shared/qr/services/scan-prop-resolver";
 import { hydrateSequence as hydrateDecodedForRender } from "$lib/shared/navigation/services/sequence-hydrator";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { hydrateSequence } from "../services/sequence-render-hydrator";
 import type {
   IScanActivityWatcher,
@@ -25,8 +26,8 @@ export interface CodeEntry {
   lastScannedAt: string | null;
   lastCity: string | null;
   lastCountry: string | null;
-  bluePropType: PropType | null;
-  redPropType: PropType | null;
+  leftPropType: PropType | null;
+  rightPropType: PropType | null;
   catDogMode: boolean | null;
   metadataAvailable: boolean;
   embeddedFallback: SequenceData | null;
@@ -128,7 +129,9 @@ function codeWord(data: Record<string, unknown>): string {
   // 2:21:45 PM", "Assemble Sequence"), so the stored name can't be trusted as
   // the display word. Returns raw joined letters; callers simplify.
   const fromSteps = Array.isArray(embedded?.steps)
-    ? deriveWordFromBeats(embedded.steps as Parameters<typeof deriveWordFromBeats>[0])
+    ? deriveWordFromBeats(
+        embedded.steps as Parameters<typeof deriveWordFromBeats>[0]
+      )
     : "";
   return (
     fromSteps ||
@@ -183,7 +186,7 @@ export function buildScanMapPins(
       id: event.id,
       lat: event.lat,
       lng: event.lng,
-      label: `${wordFor?.(event.code) || event.code} · ${event.city}`,
+      label: `${simplifyRepeatedWord(wordFor?.(event.code) || event.code)} · ${event.city}`,
       styleClass: pins.length === 0 ? "pin-new" : "pin",
     });
   }
@@ -260,17 +263,19 @@ function entryFromDocument(document: ScanActivityCardDocument): CodeEntry {
     lastScannedAt: toISOString(data.lastScannedAt),
     lastCity: nullableText(data.lastCity),
     lastCountry: nullableText(data.lastCountry),
-    bluePropType: parsePropTypeFromURLValue(text(data.bluePropType)) ?? null,
-    redPropType: parsePropTypeFromURLValue(text(data.redPropType)) ?? null,
+    leftPropType:
+      parsePropTypeFromURLValue(text(data.leftPropType ?? data.bluePropType)) ??
+      null,
+    rightPropType:
+      parsePropTypeFromURLValue(text(data.rightPropType ?? data.redPropType)) ??
+      null,
     catDogMode: typeof data.catDogMode === "boolean" ? data.catDogMode : null,
     metadataAvailable: true,
     embeddedFallback: embeddedSequence,
     decoded: initialPreview,
     previewSource: initialPreview ? "embedded" : null,
     integrityOk: hasPreviewSource,
-    integrityReason: hasPreviewSource
-      ? undefined
-      : "Card data is unavailable.",
+    integrityReason: hasPreviewSource ? undefined : "Card data is unavailable.",
     decoding: false,
   };
 }
@@ -286,8 +291,8 @@ function unavailableEntry(code: string): CodeEntry {
     lastScannedAt: null,
     lastCity: null,
     lastCountry: null,
-    bluePropType: null,
-    redPropType: null,
+    leftPropType: null,
+    rightPropType: null,
     catDogMode: null,
     metadataAvailable: false,
     embeddedFallback: null,
@@ -386,7 +391,7 @@ export function createScanActivityState({
     //
     // Every other decoded-shortcode surface (/q/[code], /sequence/[id], the
     // viewer drawer, the scan-cell warmer) runs the canonical hydrator, which
-    // derives letters before render. Scan Activity was the one that didn't.
+    // derives letters before render. Scan Atlas was the one that didn't.
     // The local render hydrator still runs after it to keep the step/motion
     // placement shape this module's preview path expects.
     const withLetters = await hydrateDecodedForRender(decoded, {

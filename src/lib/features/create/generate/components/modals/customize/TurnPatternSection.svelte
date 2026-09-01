@@ -25,28 +25,28 @@
     turnPattern,
     level,
     turnIntensity,
-    blueStartOrientation,
-    redStartOrientation,
+    leftStartOrientation,
+    rightStartOrientation,
     sequenceLength,
     loopPeriod,
     onTurnPatternChange,
   }: {
-    turnPattern: { blue: TurnValue[]; red: TurnValue[] } | null;
+    turnPattern: { left: TurnValue[]; right: TurnValue[] } | null;
     level: number;
     turnIntensity: number;
-    blueStartOrientation: string;
-    redStartOrientation: string;
+    leftStartOrientation: string;
+    rightStartOrientation: string;
     sequenceLength: number;
     loopPeriod?: number;
     onTurnPatternChange: (
-      lanes: { blue: TurnValue[]; red: TurnValue[] } | null
+      lanes: { left: TurnValue[]; right: TurnValue[] } | null
     ) => void;
   } = $props();
 
   // Local copy: the overlay's props are a snapshot taken when it opened, so every
   // edit is reported upward as it happens rather than on a save press.
   let lanes = $state<StripValue[][]>(
-    turnPattern ? [[...turnPattern.blue], [...turnPattern.red]] : [[1, 0], [0, 1]]
+    turnPattern ? [[...turnPattern.left], [...turnPattern.right]] : [[1, 0], [0, 1]]
   );
 
   // The strip may only offer values this level actually has. getTurnPool owns
@@ -89,9 +89,9 @@
 
   const prediction = $derived(
     predictLayerSignature({
-      blueStartOrientation,
-      redStartOrientation,
-      lanes: { blue: toTurnLane(lanes[0] ?? []), red: toTurnLane(lanes[1] ?? []) },
+      leftStartOrientation,
+      rightStartOrientation,
+      lanes: { left: toTurnLane(lanes[0] ?? []), right: toTurnLane(lanes[1] ?? []) },
       length: sequenceLength,
     })
   );
@@ -103,8 +103,8 @@
   function handleStripChange(next: StripValue[][]) {
     lanes = next;
     onTurnPatternChange({
-      blue: toTurnLane(next[0] ?? []),
-      red: toTurnLane(next[1] ?? []),
+      left: toTurnLane(next[0] ?? []),
+      right: toTurnLane(next[1] ?? []),
     });
   }
 

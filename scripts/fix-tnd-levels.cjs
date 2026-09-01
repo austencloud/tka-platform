@@ -46,10 +46,10 @@ function computeLevel(steps) {
 
   for (const step of steps) {
     if (!step.motions) continue;
-    const blue = step.motions.blue;
-    const red = step.motions.red;
+    const left = step.motions.left;
+    const right = step.motions.right;
 
-    for (const motion of [blue, red]) {
+    for (const motion of [left, right]) {
       if (!motion) continue;
 
       // Check turns

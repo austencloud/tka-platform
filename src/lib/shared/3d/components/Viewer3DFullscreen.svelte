@@ -41,8 +41,8 @@
     word: string | null;
     /** A stage the host authored, in metres — see Viewer3DScene. */
     stageExtent?: { width: number; depth: number } | null;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     onClose?: () => void;
     onPlaybackToggle: () => void;
     onBpmChange: (bpm: number) => void;
@@ -102,8 +102,8 @@
     bpm,
     word,
     stageExtent = null,
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     onClose,
     onPlaybackToggle,
     onBpmChange,
@@ -259,8 +259,8 @@
       {isPlaying}
       {bpm}
       {onBpmChange}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
       hideOverlays={immersive || hideCanvasOverlays}
       {initialRevealMode}
       {initialRevealDeferredFeatures}

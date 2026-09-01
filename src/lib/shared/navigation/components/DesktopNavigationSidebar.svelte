@@ -214,7 +214,10 @@
   async function handleSettingsBack() {
     hapticService?.trigger("selection");
     const previousModule = navigationState.previousModule || "create";
-    await onModuleChange?.(previousModule as ModuleId);
+    await onModuleChange?.(
+      previousModule as ModuleId,
+      navigationState.previousTab || undefined
+    );
   }
 
   // Settings is one flat destination list, not a Settings menu containing a

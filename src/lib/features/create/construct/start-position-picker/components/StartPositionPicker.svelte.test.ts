@@ -5,15 +5,11 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 vi.mock("./PictographGrid.svelte", async () => ({
-  default: (
-    await import("./StartPositionPickerPresetTestStub.svelte")
-  ).default,
+  default: (await import("./StartPositionPickerPresetTestStub.svelte")).default,
 }));
 
 vi.mock("./BuildStartPosition.svelte", async () => ({
-  default: (
-    await import("./StartPositionPickerBuildTestStub.svelte")
-  ).default,
+  default: (await import("./StartPositionPickerBuildTestStub.svelte")).default,
 }));
 
 import StartPositionPicker from "./StartPositionPicker.svelte";
@@ -24,11 +20,11 @@ function pickerState() {
     allVariations: [],
     selectedPosition: null,
     currentGridMode: GridMode.DIAMOND,
-    blueOrientation: Orientation.IN,
-    redOrientation: Orientation.IN,
+    leftOrientation: Orientation.IN,
+    rightOrientation: Orientation.IN,
     selectPosition: vi.fn(),
-    setBlueOrientation: vi.fn(),
-    setRedOrientation: vi.fn(),
+    setLeftOrientation: vi.fn(),
+    setRightOrientation: vi.fn(),
     setOrientation: vi.fn(),
     setSelectedPosition: vi.fn(),
     clearSelectedPosition: vi.fn(),
@@ -60,5 +56,24 @@ describe("StartPositionPicker paths", () => {
     await expect
       .element(page.getByRole("button", { name: "Build" }))
       .toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("restores literal blue/red orientation preferences", async () => {
+    localStorage.setItem(
+      "tka-start-position-picker-prefs",
+      JSON.stringify({ blueOrientation: "clock", redOrientation: "counter" })
+    );
+    const state = pickerState();
+    render(StartPositionPicker, {
+      startPositionState: state as never,
+      embedded: true,
+    });
+
+    await vi.waitFor(() => {
+      expect(state.setLeftOrientation).toHaveBeenCalledWith(Orientation.CLOCK);
+      expect(state.setRightOrientation).toHaveBeenCalledWith(
+        Orientation.COUNTER
+      );
+    });
   });
 });

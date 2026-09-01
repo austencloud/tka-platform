@@ -62,9 +62,9 @@
     showQRCode={cardRenderOptions?.visibilityOverrides?.showQRCode ?? false}
     showMandala={cardRenderOptions?.visibilityOverrides?.showMandala ?? false}
     handPathMode={cardRenderOptions?.visibilityOverrides?.handPathMode ?? false}
-    bluePropType={cardRenderOptions?.bluePropTypeOverride ??
+    leftPropType={cardRenderOptions?.leftPropTypeOverride ??
       cardRenderOptions?.propTypeOverride}
-    redPropType={cardRenderOptions?.redPropTypeOverride ??
+    rightPropType={cardRenderOptions?.rightPropTypeOverride ??
       cardRenderOptions?.propTypeOverride}
     {columnCount}
     {startPositionLayoutOverride}

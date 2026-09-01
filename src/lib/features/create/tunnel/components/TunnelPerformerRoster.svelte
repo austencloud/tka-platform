@@ -25,8 +25,8 @@
 
   let {
     displays,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     colorMode,
     customPropColors,
     renderedInstanceCount,
@@ -38,8 +38,8 @@
     onSelectPerformer,
   }: {
     displays: Record<string, TunnelPerformerDisplay>;
-    bluePropType: PropType;
-    redPropType: PropType;
+    leftPropType: PropType;
+    rightPropType: PropType;
     colorMode: TunnelPropColorMode;
     customPropColors: TunnelPropColorPair;
     renderedInstanceCount: number;
@@ -100,15 +100,15 @@
       arm,
       left:
         colorMode === "custom"
-          ? customPropColors.blue
+          ? customPropColors.left
           : colorMode !== "spectrum" || arm === 0
-            ? baseMotionColors.blue
+            ? baseMotionColors.left
             : tunnelPropColor(arm * 2, layerCount).hex,
       right:
         colorMode === "custom"
-          ? customPropColors.red
+          ? customPropColors.right
           : colorMode !== "spectrum" || arm === 0
-            ? baseMotionColors.red
+            ? baseMotionColors.right
             : tunnelPropColor(arm * 2 + 1, layerCount).hex,
     }));
   }
@@ -161,8 +161,8 @@
           creator.selectedPerformerId === slot.id}
         sourceOrigin={slot.origin}
         previousCount={slot.previousCount}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         stageColors={stageColorPairs(slot.id)}
         canMoveUp={creator.canMovePerformer(slot.id, -1)}
         canMoveDown={creator.canMovePerformer(slot.id, 1)}

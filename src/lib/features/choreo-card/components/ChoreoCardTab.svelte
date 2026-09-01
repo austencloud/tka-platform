@@ -13,6 +13,7 @@
   import DeckReleaserTab from "./deck-releaser/DeckReleaserTab.svelte";
   import CodexPrintPage from "./CodexPrintPage.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { CHOREO_CARD_SCAN_ATLAS_TAB_ID } from "$lib/shared/navigation/config/tab-definitions";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type {
     ContextMenuState,
@@ -93,13 +94,16 @@
   });
 
   // Mode state - synced with global navigation (sidebar tab selection)
-  type ChoreoCardMode = "scan-activity" | "releaser" | "codex";
-  let mode = $state<ChoreoCardMode>("scan-activity");
+  type ChoreoCardMode =
+    | typeof CHOREO_CARD_SCAN_ATLAS_TAB_ID
+    | "releaser"
+    | "codex";
+  let mode = $state<ChoreoCardMode>(CHOREO_CARD_SCAN_ATLAS_TAB_ID);
 
   $effect(() => {
     const navTab = navigationState.activeTab;
     if (
-      navTab === "scan-activity" ||
+      navTab === CHOREO_CARD_SCAN_ATLAS_TAB_ID ||
       navTab === "releaser" ||
       navTab === "codex"
     ) {
@@ -116,7 +120,7 @@
 
 <div class="choreo-card-tab">
   <div class="main-content">
-    {#if mode === "scan-activity"}
+    {#if mode === CHOREO_CARD_SCAN_ATLAS_TAB_ID}
       <ScanActivityTab cellWarmState={scanCellWarm} />
     {:else if mode === "releaser"}
       <main class="content-area">

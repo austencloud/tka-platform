@@ -30,7 +30,7 @@
     /** Material customization */
     materialOptions?: LedMaterialOptions;
     /** Prop identifier for light coloring */
-    propId?: "blue" | "red";
+    propId?: "left" | "right";
   }
 
   let {
@@ -39,7 +39,7 @@
     qualityTier = "medium" as QualityTier,
     lightManager = null,
     materialOptions,
-    propId = "blue",
+    propId = "left",
   }: Props = $props();
 
   const { scene, camera } = useThrelte();

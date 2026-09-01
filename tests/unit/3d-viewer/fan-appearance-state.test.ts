@@ -56,4 +56,10 @@ describe("fan appearance state", () => {
     expect(propFinishState.fanBuild).toBe("lotus");
     expect(propFinishState.build.fanBuild).toBe("lotus");
   });
+
+  it("stores the Moon diffuser as the fan's LED build", () => {
+    propFinishState.setFanBuild("moon");
+    expect(propFinishState.fanBuild).toBe("moon");
+    expect(propFinishState.build.fanBuild).toBe("moon");
+  });
 });

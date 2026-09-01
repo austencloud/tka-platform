@@ -27,6 +27,10 @@ import {
 } from "$lib/features/arena/services/arena-repository";
 import { computeUpdate, displayRating } from "$lib/features/arena/services/rating-calculator";
 import { selectMatchup } from "$lib/features/arena/services/matchup-selector";
+import {
+  trackArenaMatchupSkipped,
+  trackArenaVoteCompleted,
+} from "$lib/features/arena/analytics/arena-events";
 
 export class ArenaOrchestrator {
   private userId = "";
@@ -147,6 +151,12 @@ export class ArenaOrchestrator {
     // Advance state
     this.sessionStreak++;
     this.matchupsCompleted++;
+    trackArenaVoteCompleted({
+      winnerSequenceId: winnerId,
+      loserSequenceId: isWinnerA ? entryB.id : entryA.id,
+      matchupReason: reason,
+      sessionVoteNumber: this.matchupsCompleted,
+    });
 
     // Promote prefetched matchup, start prefetching the next one
     await this.selectNextMatchup();
@@ -155,6 +165,7 @@ export class ArenaOrchestrator {
   async skip(): Promise<void> {
     this.sessionStreak = 0;
     await this.selectNextMatchup();
+    trackArenaMatchupSkipped();
   }
 
   async loadLeaderboard(limit = 50): Promise<ArenaLeaderboardEntry[]> {

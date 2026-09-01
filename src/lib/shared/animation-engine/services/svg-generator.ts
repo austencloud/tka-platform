@@ -8,12 +8,19 @@ import {
   getMotionColor,
   type ThemeMode,
 } from "$lib/shared/utils/svg-color-utils";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   EDITOR_TORCH_PALETTE,
   recolorMarkedPart,
 } from "$lib/shared/pictograph/prop/domain/prop-render-context";
-import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import {
+  getAnimationVisibilityManager,
+  type AnimationVisibilityStateManager,
+} from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import {
+  fanAppearanceArtwork,
+  parseFanRenderKey,
+} from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
 /**
  * SVG Generator for creating prop staff images and grid
@@ -44,12 +51,19 @@ function getCurrentThemeMode(vm?: AnimationVisibilityStateManager): ThemeMode {
  * exactly instead of approximating with a separate palette. Mirrors the color
  * generateBluePropSvg/generateRedPropSvg bake in for the base pair.
  */
-export function getBaseMotionColors(darkMode?: boolean): { blue: string; red: string } {
+export function getBaseMotionColors(darkMode?: boolean): {
+  left: string;
+  right: string;
+} {
   const themeMode =
-    darkMode !== undefined ? (darkMode ? "dark" : "light") : getCurrentThemeMode();
+    darkMode !== undefined
+      ? darkMode
+        ? "dark"
+        : "light"
+      : getCurrentThemeMode();
   return {
-    blue: getMotionColor(MotionColor.BLUE, themeMode),
-    red: getMotionColor(MotionColor.RED, themeMode),
+    left: getMotionColor(HandSide.LEFT, themeMode),
+    right: getMotionColor(HandSide.RIGHT, themeMode),
   };
 }
 
@@ -68,9 +82,15 @@ export async function generateGridSvg(
   // Load from actual grid SVG files to get the complete grid with all point layers
   let gridFileName: string;
   switch (gridMode) {
-    case GridMode.BOX: gridFileName = "box_grid.svg"; break;
-    case GridMode.DIAMOND: gridFileName = "diamond_grid.svg"; break;
-    default: gridFileName = "8point_grid.svg"; break;
+    case GridMode.BOX:
+      gridFileName = "box_grid.svg";
+      break;
+    case GridMode.DIAMOND:
+      gridFileName = "diamond_grid.svg";
+      break;
+    default:
+      gridFileName = "8point_grid.svg";
+      break;
   }
 
   try {
@@ -102,8 +122,8 @@ export async function generateGridSvg(
     // Hide nonradial (layer2) points when requested
     if (!showNonRadialPoints) {
       svgContent = svgContent.replace(
-        '</style>',
-        '.strict-layer2-point{fill:none !important}.normal-layer2-point{fill:none !important}\n</style>'
+        "</style>",
+        ".strict-layer2-point{fill:none !important}.normal-layer2-point{fill:none !important}\n</style>"
       );
     }
 
@@ -174,20 +194,20 @@ function getFallbackGridSvg(gridMode: GridMode): string {
  * Generate blue staff SVG exactly as in standalone_animator.html
  * @deprecated Use generateBluePropSvg instead
  */
-export function generateBlueStaffSvg(): string {
+export function generateLeftStaffSvg(): string {
   const themeMode = getCurrentThemeMode();
-  const blueColor = getMotionColor(MotionColor.BLUE, themeMode);
-  return `<svg version="1.1" id="staff" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 252.8 77.8" style="enable-background:new 0 0 252.8 77.8;" xml:space="preserve"><path fill="${blueColor}" stroke="#555555" stroke-width="1" stroke-miterlimit="10" d="M251.4,67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1,3.9-9.1,8.7v19.2H10.3c-4.9,0-8.9,3.8-8.9,8.5V41 c0,4.6,4,8.5,8.9,8.5h222.9v18.2c0,4.8,4.1,8.7,9.1,8.7S251.4,72.5,251.4,67.7z"/><circle id="centerPoint" fill="#FF0000" cx="126.4" cy="38.9" r="5" /></svg>`;
+  const leftColor = getMotionColor(HandSide.LEFT, themeMode);
+  return `<svg version="1.1" id="staff" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 252.8 77.8" style="enable-background:new 0 0 252.8 77.8;" xml:space="preserve"><path fill="${leftColor}" stroke="#555555" stroke-width="1" stroke-miterlimit="10" d="M251.4,67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1,3.9-9.1,8.7v19.2H10.3c-4.9,0-8.9,3.8-8.9,8.5V41 c0,4.6,4,8.5,8.9,8.5h222.9v18.2c0,4.8,4.1,8.7,9.1,8.7S251.4,72.5,251.4,67.7z"/><circle id="centerPoint" fill="#FF0000" cx="126.4" cy="38.9" r="5" /></svg>`;
 }
 
 /**
  * Generate red staff SVG exactly as in standalone_animator.html
  * @deprecated Use generateRedPropSvg instead
  */
-export function generateRedStaffSvg(): string {
+export function generateRightStaffSvg(): string {
   const themeMode = getCurrentThemeMode();
-  const redColor = getMotionColor(MotionColor.RED, themeMode);
-  return `<svg version="1.1" id="staff" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 252.8 77.8" style="enable-background:new 0 0 252.8 77.8;" xml:space="preserve"><path fill="${redColor}" stroke="#555555" stroke-width="1" stroke-miterlimit="10" d="M251.4,67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1,3.9-9.1,8.7v19.2H10.3c-4.9,0-8.9,3.8-8.9,8.5V41 c0,4.6,4,8.5,8.9,8.5h222.9v18.2c0,4.8,4.1,8.7,9.1,8.7S251.4,72.5,251.4,67.7z"/><circle id="centerPoint" fill="#FF0000" cx="126.4" cy="38.9" r="5" /></svg>`;
+  const rightColor = getMotionColor(HandSide.RIGHT, themeMode);
+  return `<svg version="1.1" id="staff" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 252.8 77.8" style="enable-background:new 0 0 252.8 77.8;" xml:space="preserve"><path fill="${rightColor}" stroke="#555555" stroke-width="1" stroke-miterlimit="10" d="M251.4,67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1,3.9-9.1,8.7v19.2H10.3c-4.9,0-8.9,3.8-8.9,8.5V41 c0,4.6,4,8.5,8.9,8.5h222.9v18.2c0,4.8,4.1,8.7,9.1,8.7S251.4,72.5,251.4,67.7z"/><circle id="centerPoint" fill="#FF0000" cx="126.4" cy="38.9" r="5" /></svg>`;
 }
 
 /**
@@ -222,8 +242,55 @@ function isAnimatedOnlyProp(propTypeLower: string): boolean {
  * with it, landing regular props on a ~130 reach.
  */
 export function resolvePropSvgPath(propTypeLower: string): string {
+  const fanRenderKey = parseFanRenderKey(propTypeLower);
+  if (fanRenderKey) {
+    return fanAppearanceArtwork(fanRenderKey.build, fanRenderKey.cover)!;
+  }
   const family = isAnimatedOnlyProp(propTypeLower) ? "animated" : "pictograph";
   return `/images/props/${family}/${propTypeLower}.svg`;
+}
+
+/** Scale the regular measured build around its hand pivot into Big Fan's box. */
+function scaleFanAppearanceForBigFan(svg: string): string {
+  const body = svg.replace(/^\s*<svg\b[^>]*>/i, "").replace(/<\/svg>\s*$/i, "");
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 566.9"><g transform="translate(60 92.3731) scale(1.8461538)">${body}</g></svg>`;
+}
+
+function appendFanAppearanceDetails(
+  svg: string,
+  fanRenderKey: NonNullable<ReturnType<typeof parseFanRenderKey>>
+): string {
+  const frameColor =
+    fanRenderKey.frameColor === "white" ? "#f5f7ff" : "#171923";
+  const frameOverlay =
+    fanRenderKey.build === "day"
+      ? `<g data-fan-frame-color="${fanRenderKey.frameColor}" fill="none" stroke="${frameColor}" stroke-width="2.5" stroke-linecap="round" opacity="0.92"><path d="M139 91 L202 3 M143 96 L229 46 M145 103.5 H258 M143 111 L229 161 M139 116 L202 204"/></g>`
+      : "";
+  const coverOverlay =
+    fanRenderKey.cover === "covered" && fanRenderKey.build === "day"
+      ? `<g data-fan-wick-cover="covered" fill="#f5aec9" stroke="#7b3653" stroke-width="2"><circle cx="202" cy="5" r="8"/><circle cx="230" cy="46" r="9"/><circle cx="255" cy="103.5" r="8"/><circle cx="230" cy="161" r="9"/><circle cx="202" cy="202" r="8"/></g>`
+      : "";
+
+  return svg.replace(/<\/svg>\s*$/i, `${frameOverlay}${coverOverlay}</svg>`);
+}
+
+/**
+ * Physical fire-fan artwork owns its material colors. Only the marked metal
+ * frame follows the motion color; Kevlar wicks and fitted covers stay physical.
+ */
+export function applyFanFrameColor(svg: string, color: string): string {
+  return svg.replace(
+    /<g\b(?=[^>]*\bdata-fan-frame=(?:""|''))[^>]*>/i,
+    (tag) => {
+      if (/\bstroke=(?:"[^"]*"|'[^']*')/i.test(tag)) {
+        return tag.replace(
+          /\bstroke=(?:"[^"]*"|'[^']*')/i,
+          `stroke="${color}"`
+        );
+      }
+      return tag.replace(/>$/, ` stroke="${color}">`);
+    }
+  );
 }
 
 /**
@@ -236,17 +303,32 @@ export async function generatePropSvg(
 ): Promise<PropSvgData> {
   const propTypeLower = propType.toLowerCase();
   const path = resolvePropSvgPath(propTypeLower);
-  const originalSvg = await fetchPropSvg(path);
-  const coloredSvg = applyColorToPropSvg(originalSvg, color, propTypeLower);
+  const fanRenderKey = parseFanRenderKey(propTypeLower);
+  const fetchedSvg = await fetchPropSvg(path);
+  const semanticPropType = fanRenderKey?.propType ?? propTypeLower;
+  const isMaterialColoredFan =
+    fanRenderKey?.build === "fire" ||
+    fanRenderKey?.build === "lotus" ||
+    fanRenderKey?.build === "moon";
+  const coloredSvg = isMaterialColoredFan
+    ? applyFanFrameColor(fetchedSvg, color)
+    : applyColorToPropSvg(fetchedSvg, color, semanticPropType);
+  const detailedSvg = fanRenderKey
+    ? appendFanAppearanceDetails(coloredSvg, fanRenderKey)
+    : coloredSvg;
+  const sizedSvg =
+    fanRenderKey?.propType === "bigfan"
+      ? scaleFanAppearanceForBigFan(detailedSvg)
+      : detailedSvg;
   const contrastAdjustedSvg =
-    propTypeLower === "torch" || propTypeLower === "bigtorch"
+    semanticPropType === "torch" || semanticPropType === "bigtorch"
       ? recolorMarkedPart(
-          coloredSvg,
+          sizedSvg,
           "data-animated-torch-shaft",
           EDITOR_TORCH_PALETTE[themeMode].shaft
         )
-      : coloredSvg;
-  const { width, height } = extractViewBoxDimensions(originalSvg);
+      : sizedSvg;
+  const { width, height } = extractViewBoxDimensions(sizedSvg);
   return { svg: contrastAdjustedSvg, width, height };
 }
 
@@ -256,7 +338,7 @@ export async function generatePropSvg(
  * @param propType - Type of prop to generate
  * @param darkMode - When provided, uses this instead of global dark mode state (for preview isolation)
  */
-export async function generateBluePropSvg(
+export async function generateLeftPropSvg(
   propType: string = "staff",
   darkMode?: boolean
 ): Promise<PropSvgData> {
@@ -269,7 +351,7 @@ export async function generateBluePropSvg(
       : getCurrentThemeMode();
   return generatePropSvg(
     propType,
-    getMotionColor(MotionColor.BLUE, themeMode),
+    getMotionColor(HandSide.LEFT, themeMode),
     themeMode
   );
 }
@@ -280,7 +362,7 @@ export async function generateBluePropSvg(
  * @param propType - Type of prop to generate
  * @param darkMode - When provided, uses this instead of global dark mode state (for preview isolation)
  */
-export async function generateRedPropSvg(
+export async function generateRightPropSvg(
   propType: string = "staff",
   darkMode?: boolean
 ): Promise<PropSvgData> {
@@ -293,7 +375,7 @@ export async function generateRedPropSvg(
       : getCurrentThemeMode();
   return generatePropSvg(
     propType,
-    getMotionColor(MotionColor.RED, themeMode),
+    getMotionColor(HandSide.RIGHT, themeMode),
     themeMode
   );
 }
@@ -381,9 +463,15 @@ async function loadFromIDB(path: string): Promise<string | null> {
  * Apply color to prop SVG while preserving transparent sections and accent colors.
  * Torch-family props preserve dark body fills (only knob/handle gets colored).
  */
-function applyColorToPropSvg(svgText: string, color: string, propType?: string): string {
+function applyColorToPropSvg(
+  svgText: string,
+  color: string,
+  propType?: string
+): string {
   const isSelective = propType
-    ? (SELECTIVE_COLOR_PROP_TYPES as readonly string[]).includes(propType.toLowerCase())
+    ? (SELECTIVE_COLOR_PROP_TYPES as readonly string[]).includes(
+        propType.toLowerCase()
+      )
     : false;
 
   return applyColorToSvg(svgText, color, {

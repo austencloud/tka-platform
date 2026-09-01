@@ -97,6 +97,12 @@
   import { sceneEnvironmentIdForBackground } from "$lib/shared/3d/environments/domain/scene-environment";
   import { viewportFits3D } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
   import { setViewerVisibilityContext } from "../context/viewer-visibility-context";
+  import { propFinishState } from "@austencloud/scene-3d";
+  import {
+    fanAppearanceSignature,
+    normalizeFanAppearance,
+    type FanAppearance,
+  } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
   import { createPlaybackController } from "./playback-controller.svelte";
   import { createExportCoordinator } from "./export-coordinator.svelte";
@@ -156,8 +162,8 @@
     onCardReady?: () => void;
     /** Fires after both the card and animation surface are ready to paint. */
     onReadyForReveal?: () => void;
-    initialBlueVisible?: boolean;
-    initialRedVisible?: boolean;
+    initialLeftVisible?: boolean;
+    initialRightVisible?: boolean;
     /** Effect to activate on mount (e.g. "trails" for the QR scan landing page).
      *  Defaults to the stored/none config when omitted. */
     initialActiveEffect?: EffectType;
@@ -188,8 +194,8 @@
     deferInteractiveStartup = false,
     onCardReady,
     onReadyForReveal,
-    initialBlueVisible,
-    initialRedVisible,
+    initialLeftVisible,
+    initialRightVisible,
     initialActiveEffect,
     onGatedDownload,
     children,
@@ -296,7 +302,7 @@
 
   const viewer3DState = createViewer3DState(undefined, {
     firstUseEnvironment,
-    appDefaultProp: getSettings().bluePropType ?? null,
+    appDefaultProp: getSettings().leftPropType ?? null,
     ...(t3Seed
       ? {
           viewOnlyEnvironmentId: t3Seed.environmentId,
@@ -308,6 +314,48 @@
   // Published for viewer-internal hosts whose store is built per pane rather
   // than here — today `Viewer3DCanvas`, which registers the `t3` capture.
   setViewerUrlSessionContext(urlSession);
+
+  // AppSettings owns the shared fan appearance. The scene package keeps a
+  // legacy default-build adapter for performer inheritance, so synchronize the
+  // two without replacing performer-scoped overrides.
+  let lastSettingsFanSignature: string | null = null;
+  let lastSceneFanSignature: string | null = null;
+  $effect(() => {
+    const settingsAppearance = normalizeFanAppearance(
+      getSettings().fanAppearance
+    );
+    const sceneAppearance: FanAppearance = {
+      build: propFinishState.fanBuild,
+      frameColor: propFinishState.fanFrameColor,
+      cover: propFinishState.fanCover,
+    };
+    const settingsSignature = fanAppearanceSignature(settingsAppearance);
+    const sceneSignature = fanAppearanceSignature(sceneAppearance);
+
+    if (
+      lastSettingsFanSignature === null ||
+      settingsSignature !== lastSettingsFanSignature
+    ) {
+      if (sceneSignature !== settingsSignature) {
+        propFinishState.setFanBuild(settingsAppearance.build);
+        propFinishState.setFanFrameColor(settingsAppearance.frameColor);
+        propFinishState.setFanCover(settingsAppearance.cover);
+      }
+      lastSettingsFanSignature = settingsSignature;
+      lastSceneFanSignature = settingsSignature;
+      return;
+    }
+
+    if (sceneSignature !== lastSceneFanSignature) {
+      lastSceneFanSignature = sceneSignature;
+      lastSettingsFanSignature = sceneSignature;
+      void updateSettings({ fanAppearance: sceneAppearance });
+    }
+  });
+
+  function handleFanAppearanceChange(appearance: FanAppearance): void {
+    void updateSettings({ fanAppearance: normalizeFanAppearance(appearance) });
+  }
 
   const accessibilityHelper = createModalAccessibilityHelper();
 
@@ -507,8 +555,8 @@
       imageComposition: imgComp,
       getSequence: () => sequence,
       getHandPathMode: () => handPathMode,
-      getInitialBlueVisible: () => initialBlueVisible,
-      getInitialRedVisible: () => initialRedVisible,
+      getInitialLeftVisible: () => initialLeftVisible,
+      getInitialRightVisible: () => initialRightVisible,
       getAnimationServicesReady: () => interactive.animationServicesReady,
       getHapticService: () => interactive.hapticService,
       onUrlParamChange,
@@ -517,10 +565,10 @@
       getSettings,
       updateSettings,
       getSequenceMotionVisibility,
-      updateAnimationPropTypes: (bluePropType, redPropType) =>
+      updateAnimationPropTypes: (leftPropType, rightPropType) =>
         getSequenceAnimationOrchestrator().updatePropTypes(
-          bluePropType,
-          redPropType
+          leftPropType,
+          rightPropType
         ),
       setAnimationDarkMode: (darkMode) =>
         getAnimationVisibilityManager().setDarkMode(darkMode),
@@ -687,8 +735,8 @@
   const libraryActions = createLibraryActionHandler({
     getSequence: () => sequence,
     getIsOwned: () => isOwned,
-    getBluePropType: () => getSettings().bluePropType,
-    getRedPropType: () => getSettings().redPropType,
+    getLeftPropType: () => getSettings().leftPropType,
+    getRightPropType: () => getSettings().rightPropType,
     getCatDogModeEnabled: () => getSettings().catDogMode,
     getHapticService: () => interactive.hapticService,
     onDeleteSuccess: () => handleClose(),
@@ -976,6 +1024,7 @@
       setResolvedCardAutoLayout,
       onRenderProgress: handleRenderProgress,
       handlePropTypeChange: propVisibility.handlePropTypeChange,
+      handleFanAppearanceChange,
       enterEditMode: editMode.enterEditMode,
       exitEditMode: editMode.exitEditMode,
       handleExport: editMode.handleExport,
@@ -1008,9 +1057,10 @@
     getCardReady: () => cardReady,
     getResolvedCardAutoLayout: () => resolvedCardAutoLayout,
     getIsHandPath: () => propVisibility.isHandPath,
-    getBluePropType: () => propVisibility.activeBlueProp,
-    getRedPropType: () => propVisibility.activeRedProp,
+    getLeftPropType: () => propVisibility.activeLeftProp,
+    getRightPropType: () => propVisibility.activeRightProp,
     getCatDogModeEnabled: () => propVisibility.activeCatDog,
+    getFanAppearance: () => normalizeFanAppearance(getSettings().fanAppearance),
     getIsLoggedIn: () => (forceGuest ? false : authState.isAuthenticated),
     getIsOwned: () => isOwned,
     getIsPublished: () => isPublished,

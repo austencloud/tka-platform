@@ -105,7 +105,6 @@ interface AdminDb {
   runTransaction<T>(fn: (t: AdminTransaction) => Promise<T>): Promise<T>;
 }
 
-
 const argv = process.argv.slice(2);
 const APPLY = argv.includes("--apply");
 const LIMIT = (() => {
@@ -177,7 +176,10 @@ function timestampMillis(value: unknown): number | null {
 
 // Context preparation (Admin-SDK replica of the runtime preparer)
 
-const profileCache = new Map<string, { displayName: string; avatarUrl?: string }>();
+const profileCache = new Map<
+  string,
+  { displayName: string; avatarUrl?: string }
+>();
 const tagNameCache = new Map<string, Map<string, string>>();
 
 async function readOwnerProfile(db: AdminDb, ownerId: string) {
@@ -274,7 +276,9 @@ async function detectLoop(
       try {
         const detection = loopDetector.detectLOOPType(hydrated);
         const display = resolveLoopDisplay(hydrated);
-        period = detection.period ? periodToNumber(detection.period) : undefined;
+        period = detection.period
+          ? periodToNumber(detection.period)
+          : undefined;
         components =
           display.components.size > 0 ? [...display.components] : undefined;
         loopType = loopType ?? detection.loopType;
@@ -299,7 +303,8 @@ async function detectLoop(
   if (hydrated.loopType) return detected(hydrated.loopType, true);
   const curated = await fetchCuratedLoopType(db, hydrated.word ?? "");
   if (curated) return detected(curated, true);
-  if (!isSeamlesslyLoopable(hydrated)) return { isCircular: false, loopType: null };
+  if (!isSeamlesslyLoopable(hydrated))
+    return { isCircular: false, loopType: null };
   return detected(null, true);
 }
 
@@ -321,8 +326,9 @@ async function classify(
     typeof data["ownerId"] === "string" && data["ownerId"].length > 0
       ? (data["ownerId"] as string)
       : typeof data["sourceRef"] === "string"
-        ? (/^users\/([^/]+)\/sequences\//.exec(data["sourceRef"] as string)?.[1] ??
-          null)
+        ? (/^users\/([^/]+)\/sequences\//.exec(
+            data["sourceRef"] as string
+          )?.[1] ?? null)
         : null;
 
   if (!ownerId) {
@@ -410,7 +416,9 @@ async function classify(
   const context: PublicProjectionContext = {
     ownerId,
     ownerDisplayName: profile.displayName,
-    ...(profile.avatarUrl !== undefined && { ownerAvatarUrl: profile.avatarUrl }),
+    ...(profile.avatarUrl !== undefined && {
+      ownerAvatarUrl: profile.avatarUrl,
+    }),
     tagNames,
     encoderHash,
     loop,
@@ -468,7 +476,7 @@ async function classify(
     normalized.exactWord.startsWith(storedWord);
 
   // Manifest diff: which DIGEST-COVERED keys change. The digest's exclusion
-  // list is reused verbatim — blueSoloProp/redSoloProp/stepPairings mint fresh
+  // list is reused verbatim — leftSoloProp/rightSoloProp/stepPairings mint fresh
   // UUIDs on every normalization pass, so diffing them would report every
   // record as changed forever and IN_SYNC would be unreachable (their content
   // identity is covered by the four tier hashes + contentHash). JSON compare
@@ -728,7 +736,8 @@ async function main(): Promise<void> {
       !claims.has(r.expectedClaimId)
     ) {
       r.classification = "SAFE_REPROJECT";
-      (r as { detail?: string }).detail = "in sync, but its hash claim is missing";
+      (r as { detail?: string }).detail =
+        "in sync, but its hash claim is missing";
     }
   }
 

@@ -68,7 +68,7 @@ interface CatalogEntry {
   sequenceLength: number;
   metadata: { handPathId: string; familyLabel: string };
   steps: Array<{
-    motions: { blue: CatalogMotion; red: CatalogMotion };
+    motions: { left: CatalogMotion; right: CatalogMotion };
   }>;
 }
 
@@ -316,7 +316,7 @@ function buildBoard(
         <rect x="${x}" y="852" width="220" height="154" rx="14" fill="${COLORS.panelRaised}" stroke="${color}" stroke-width="2"/>
         ${text(x + 18, 882, [performer.label], { size: 26, fill: color, weight: 800 })}
         ${motif(performer, x + 170, 880)}
-        ${text(x + 18, 918, [`blue ${first.blue.rotationDirection}`, `red ${first.red.rotationDirection}`, "same path · same clock"], { size: 13, lineHeight: 19 })}
+        ${text(x + 18, 918, [`blue ${first.left.rotationDirection}`, `red ${first.right.rotationDirection}`, "same path · same clock"], { size: 13, lineHeight: 19 })}
         ${text(x + 18, 988, [performer.traceMeaning], { size: 11, fill: COLORS.muted })}
       </g>`;
     })

@@ -53,8 +53,8 @@ describe("scan attribution at PostHog readiness", () => {
       sequenceWord: "Σ-OY-G",
       deckId: "deck-1",
       deckName: "Choreo Cards",
-      blueProp: "fan",
-      redProp: "hoop",
+      leftProp: "fan",
+      rightProp: "hoop",
     });
 
     await initPostHog();
@@ -66,8 +66,8 @@ describe("scan attribution at PostHog readiness", () => {
       sequence_word: "Σ-OY-G",
       deck_id: "deck-1",
       deck_name: "Choreo Cards",
-      blue_prop: "fan",
-      red_prop: "hoop",
+      left_prop: "fan",
+      right_prop: "hoop",
       mixed_props: true,
       is_authenticated: true,
       device_id: "device-1",

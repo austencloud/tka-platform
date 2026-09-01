@@ -8,11 +8,12 @@
  */
 
 import { GridLocation, GridMode } from "./enums.js";
+import type { HandSide } from "@tka/tka-types";
 
 // Input for dash location calculation
 export interface DashLocationInput {
   letter: string;
-  motionColor: "blue" | "red";
+  motionHand: HandSide;
   motionStartLocation: string;
   motionEndLocation: string;
   motionTurns: number | "fl" | undefined;
@@ -55,22 +56,22 @@ function calculateShiftLocation(startLoc: GridLocation, endLoc: GridLocation): G
 
 // Φ_DASH and Ψ_DASH special handling map
 const PHI_DASH_PSI_DASH_LOCATION_MAP: Record<string, GridLocation> = {
-  [`red,${GridLocation.NORTH},${GridLocation.SOUTH}`]: GridLocation.EAST,
-  [`red,${GridLocation.EAST},${GridLocation.WEST}`]: GridLocation.NORTH,
-  [`red,${GridLocation.SOUTH},${GridLocation.NORTH}`]: GridLocation.EAST,
-  [`red,${GridLocation.WEST},${GridLocation.EAST}`]: GridLocation.NORTH,
-  [`blue,${GridLocation.NORTH},${GridLocation.SOUTH}`]: GridLocation.WEST,
-  [`blue,${GridLocation.EAST},${GridLocation.WEST}`]: GridLocation.SOUTH,
-  [`blue,${GridLocation.SOUTH},${GridLocation.NORTH}`]: GridLocation.WEST,
-  [`blue,${GridLocation.WEST},${GridLocation.EAST}`]: GridLocation.SOUTH,
-  [`red,${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST}`]: GridLocation.NORTHEAST,
-  [`red,${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST}`]: GridLocation.SOUTHEAST,
-  [`red,${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST}`]: GridLocation.SOUTHEAST,
-  [`red,${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST}`]: GridLocation.NORTHEAST,
-  [`blue,${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST}`]: GridLocation.SOUTHWEST,
-  [`blue,${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST}`]: GridLocation.NORTHWEST,
-  [`blue,${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST}`]: GridLocation.NORTHWEST,
-  [`blue,${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST}`]: GridLocation.SOUTHWEST,
+  [`right,${GridLocation.NORTH},${GridLocation.SOUTH}`]: GridLocation.EAST,
+  [`right,${GridLocation.EAST},${GridLocation.WEST}`]: GridLocation.NORTH,
+  [`right,${GridLocation.SOUTH},${GridLocation.NORTH}`]: GridLocation.EAST,
+  [`right,${GridLocation.WEST},${GridLocation.EAST}`]: GridLocation.NORTH,
+  [`left,${GridLocation.NORTH},${GridLocation.SOUTH}`]: GridLocation.WEST,
+  [`left,${GridLocation.EAST},${GridLocation.WEST}`]: GridLocation.SOUTH,
+  [`left,${GridLocation.SOUTH},${GridLocation.NORTH}`]: GridLocation.WEST,
+  [`left,${GridLocation.WEST},${GridLocation.EAST}`]: GridLocation.SOUTH,
+  [`right,${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST}`]: GridLocation.NORTHEAST,
+  [`right,${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST}`]: GridLocation.SOUTHEAST,
+  [`right,${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST}`]: GridLocation.SOUTHEAST,
+  [`right,${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST}`]: GridLocation.NORTHEAST,
+  [`left,${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST}`]: GridLocation.SOUTHWEST,
+  [`left,${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST}`]: GridLocation.NORTHWEST,
+  [`left,${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST}`]: GridLocation.NORTHWEST,
+  [`left,${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST}`]: GridLocation.SOUTHWEST,
 };
 
 // Lambda zero turns special case
@@ -183,7 +184,7 @@ const TYPE3_LETTERS = ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-"];
 export function calculateDashLocation(input: DashLocationInput): GridLocation {
   const {
     letter,
-    motionColor,
+    motionHand,
     motionStartLocation,
     motionEndLocation,
     motionTurns,
@@ -203,7 +204,7 @@ export function calculateDashLocation(input: DashLocationInput): GridLocation {
   if (PHI_DASH_LETTERS.includes(letter) || PSI_DASH_LETTERS.includes(letter)) {
     // Both motions have zero turns
     if (turns === 0 && otherTurns === 0) {
-      const key = `${motionColor},${startLoc},${endLoc}`;
+      const key = `${motionHand},${startLoc},${endLoc}`;
       const location = PHI_DASH_PSI_DASH_LOCATION_MAP[key];
       if (location) return location;
     }

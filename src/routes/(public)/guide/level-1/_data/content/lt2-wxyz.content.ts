@@ -12,11 +12,14 @@ import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  GridMode,
+  GridLocation,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -30,8 +33,14 @@ const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
 // ── Motion authoring - copied from Type2ShiftLettersPage.svelte ────────────
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
-const hpDir = (from: GridLocation, to: GridLocation) => (HP_CW.has(`${from}-${to}`) ? CW : CCW);
-const redShift = (from: GridLocation, to: GridLocation, anti: boolean, so: Orientation) => {
+const hpDir = (from: GridLocation, to: GridLocation) =>
+  HP_CW.has(`${from}-${to}`) ? CW : CCW;
+const rightShift = (
+  from: GridLocation,
+  to: GridLocation,
+  anti: boolean,
+  so: Orientation
+) => {
   const dir = hpDir(from, to);
   return createMotionData({
     motionType: anti ? MotionType.ANTI : MotionType.PRO,
@@ -41,19 +50,19 @@ const redShift = (from: GridLocation, to: GridLocation, anti: boolean, so: Orien
     startOrientation: so,
     endOrientation: anti ? (so === IN ? OUT : IN) : so,
     turns: 0,
-    color: MotionColor.RED,
+    hand: HandSide.RIGHT,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
 };
-const staticHand = (color: MotionColor, loc: GridLocation) =>
+const staticHand = (color: HandSide, loc: GridLocation) =>
   createMotionData({
     motionType: MotionType.STATIC,
     startLocation: loc,
     endLocation: loc,
     startOrientation: IN,
     endOrientation: IN,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
@@ -61,7 +70,7 @@ const staticHand = (color: MotionColor, loc: GridLocation) =>
 type CellDef = {
   letter: Letter;
   name: string;
-  blueLoc: GridLocation;
+  leftLoc: GridLocation;
   from: GridLocation;
   to: GridLocation;
   anti: boolean;
@@ -72,26 +81,31 @@ const step = (c: CellDef, id: string, stepNumber: number | null): StepData =>
     id,
     letter: c.letter,
     gridMode: GridMode.DIAMOND,
-    startPosition: getGridPositionFromLocations(c.blueLoc, c.from),
-    endPosition: getGridPositionFromLocations(c.blueLoc, c.to),
+    startPosition: getGridPositionFromLocations(c.leftLoc, c.from),
+    endPosition: getGridPositionFromLocations(c.leftLoc, c.to),
     stepNumber,
     motions: {
-      blue: staticHand(MotionColor.BLUE, c.blueLoc),
-      red: redShift(c.from, c.to, c.anti, c.so ?? IN),
+      left: staticHand(HandSide.LEFT, c.leftLoc),
+      right: rightShift(c.from, c.to, c.anti, c.so ?? IN),
     },
   }) as unknown as StepData;
 
-const startFor = (blueLoc: GridLocation, redLoc: GridLocation, id: string, letter: Letter | null = null): StepData =>
+const startFor = (
+  leftLoc: GridLocation,
+  rightLoc: GridLocation,
+  id: string,
+  letter: Letter | null = null
+): StepData =>
   ({
     id,
     letter,
     gridMode: GridMode.DIAMOND,
     stepNumber: 0,
-    startPosition: getGridPositionFromLocations(blueLoc, redLoc),
-    endPosition: getGridPositionFromLocations(blueLoc, redLoc),
+    startPosition: getGridPositionFromLocations(leftLoc, rightLoc),
+    endPosition: getGridPositionFromLocations(leftLoc, rightLoc),
     motions: {
-      blue: staticHand(MotionColor.BLUE, blueLoc),
-      red: staticHand(MotionColor.RED, redLoc),
+      left: staticHand(HandSide.LEFT, leftLoc),
+      right: staticHand(HandSide.RIGHT, rightLoc),
     },
   }) as unknown as StepData;
 
@@ -102,38 +116,89 @@ const BOXES: BoxDef[] = [
     label: "γ→α",
     tag: "OPEN",
     cells: [
-      { letter: Letter.W, name: "W", blueLoc: W, from: SO_, to: E, anti: false },
-      { letter: Letter.X, name: "X", blueLoc: W, from: SO_, to: E, anti: true },
+      {
+        letter: Letter.W,
+        name: "W",
+        leftLoc: W,
+        from: SO_,
+        to: E,
+        anti: false,
+      },
+      { letter: Letter.X, name: "X", leftLoc: W, from: SO_, to: E, anti: true },
     ],
   },
   {
     label: "γ→β",
     tag: "CLOSE",
     cells: [
-      { letter: Letter.Y, name: "Y", blueLoc: SO_, from: W, to: SO_, anti: false },
-      { letter: Letter.Z, name: "Z", blueLoc: SO_, from: W, to: SO_, anti: true },
+      {
+        letter: Letter.Y,
+        name: "Y",
+        leftLoc: SO_,
+        from: W,
+        to: SO_,
+        anti: false,
+      },
+      {
+        letter: Letter.Z,
+        name: "Z",
+        leftLoc: SO_,
+        from: W,
+        to: SO_,
+        anti: true,
+      },
     ],
   },
   {
     label: "α→γ",
     tag: "CLOSE",
     cells: [
-      { letter: Letter.SIGMA, name: "Σ", blueLoc: W, from: E, to: SO_, anti: false },
-      { letter: Letter.DELTA, name: "Δ", blueLoc: W, from: E, to: SO_, anti: true },
+      {
+        letter: Letter.SIGMA,
+        name: "Σ",
+        leftLoc: W,
+        from: E,
+        to: SO_,
+        anti: false,
+      },
+      {
+        letter: Letter.DELTA,
+        name: "Δ",
+        leftLoc: W,
+        from: E,
+        to: SO_,
+        anti: true,
+      },
     ],
   },
   {
     label: "β→γ",
     tag: "OPEN",
     cells: [
-      { letter: Letter.THETA, name: "Θ", blueLoc: SO_, from: SO_, to: E, anti: false },
-      { letter: Letter.OMEGA, name: "Ω", blueLoc: SO_, from: SO_, to: E, anti: true },
+      {
+        letter: Letter.THETA,
+        name: "Θ",
+        leftLoc: SO_,
+        from: SO_,
+        to: E,
+        anti: false,
+      },
+      {
+        letter: Letter.OMEGA,
+        name: "Ω",
+        leftLoc: SO_,
+        from: SO_,
+        to: E,
+        anti: true,
+      },
     ],
   },
 ];
 
 const boxGroup = (box: BoxDef, key: string): PictographData[] =>
-  box.cells.map((c) => step(c, `${key}-${c.name}`, null)) as unknown as PictographData[];
+  box.cells.map((c) =>
+    step(c, `${key}-${c.name}`, null)
+  ) as unknown as PictographData[];
 
 // ── The two word rows: red cycles the CCW loop e→n→w→s→e from the shared γ
 // Start; blue rests - copied from Type2ShiftLettersPage.svelte. ────────────
@@ -143,15 +208,33 @@ const RED_CCW: [GridLocation, GridLocation][] = [
   [W, SO_],
   [SO_, E],
 ];
-type RowDef = { key: string; word: string; letters: Letter[]; names: string[]; anti: boolean };
+type RowDef = {
+  key: string;
+  word: string;
+  letters: Letter[];
+  names: string[];
+  anti: boolean;
+};
 const ROWS: RowDef[] = [
-  { key: "t2w-pro", word: "WΣYΘ", letters: [Letter.W, Letter.SIGMA, Letter.Y, Letter.THETA], names: ["W", "Σ", "Y", "Θ"], anti: false },
-  { key: "t2w-anti", word: "XΔZΩ", letters: [Letter.X, Letter.DELTA, Letter.Z, Letter.OMEGA], names: ["X", "Δ", "Z", "Ω"], anti: true },
+  {
+    key: "t2w-pro",
+    word: "WΣYΘ",
+    letters: [Letter.W, Letter.SIGMA, Letter.Y, Letter.THETA],
+    names: ["W", "Σ", "Y", "Θ"],
+    anti: false,
+  },
+  {
+    key: "t2w-anti",
+    word: "XΔZΩ",
+    letters: [Letter.X, Letter.DELTA, Letter.Z, Letter.OMEGA],
+    names: ["X", "Δ", "Z", "Ω"],
+    anti: true,
+  },
 ];
 const rowCell = (r: RowDef, i: number): CellDef => ({
   letter: r.letters[i]!,
   name: r.names[i]!,
-  blueLoc: SO_,
+  leftLoc: SO_,
   from: RED_CCW[i]![0],
   to: RED_CCW[i]![1],
   anti: r.anti,
@@ -162,7 +245,9 @@ const rowCell = (r: RowDef, i: number): CellDef => ({
 const rowStrip = (r: RowDef): PictographData[] =>
   [
     startFor(SO_, E, "t2w-start"),
-    ...[0, 1, 2, 3].map((i) => step(rowCell(r, i), `${r.key}-s-${i + 1}`, i + 1)),
+    ...[0, 1, 2, 3].map((i) =>
+      step(rowCell(r, i), `${r.key}-s-${i + 1}`, i + 1)
+    ),
   ] as unknown as PictographData[];
 
 /** STAFF props, TKA letter glyph on - matching Type2ShiftLettersPage's PICTO_FLAGS. */
@@ -183,10 +268,34 @@ export const lt2WxyzContent: GuideBlock[] = [
       "Their letters are organized by end position: α, β, then γ.<br>" +
       "These can also be categorized by opening or closing.",
   },
-  { kind: "pictographGroup", items: boxGroup(BOXES[0]!, "t2-a"), flowCols: 2, render: RENDER, caption: "γ→α OPEN: W, X" },
-  { kind: "pictographGroup", items: boxGroup(BOXES[1]!, "t2-b"), flowCols: 2, render: RENDER, caption: "γ→β CLOSE: Y, Z" },
-  { kind: "pictographGroup", items: boxGroup(BOXES[2]!, "t2-c"), flowCols: 2, render: RENDER, caption: "α→γ CLOSE: Sigma, Delta" },
-  { kind: "pictographGroup", items: boxGroup(BOXES[3]!, "t2-d"), flowCols: 2, render: RENDER, caption: "β→γ OPEN: Theta, Omega" },
+  {
+    kind: "pictographGroup",
+    items: boxGroup(BOXES[0]!, "t2-a"),
+    flowCols: 2,
+    render: RENDER,
+    caption: "γ→α OPEN: W, X",
+  },
+  {
+    kind: "pictographGroup",
+    items: boxGroup(BOXES[1]!, "t2-b"),
+    flowCols: 2,
+    render: RENDER,
+    caption: "γ→β CLOSE: Y, Z",
+  },
+  {
+    kind: "pictographGroup",
+    items: boxGroup(BOXES[2]!, "t2-c"),
+    flowCols: 2,
+    render: RENDER,
+    caption: "α→γ CLOSE: Sigma, Delta",
+  },
+  {
+    kind: "pictographGroup",
+    items: boxGroup(BOXES[3]!, "t2-d"),
+    flowCols: 2,
+    render: RENDER,
+    caption: "β→γ OPEN: Theta, Omega",
+  },
   {
     kind: "prose",
     html: "When we arrange them in continuous motions, we get the words WΣYΘ and XΔZΩ.",

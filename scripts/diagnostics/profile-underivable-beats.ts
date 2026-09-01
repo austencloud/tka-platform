@@ -61,9 +61,9 @@ async function main(): Promise<void> {
       if (letters[i] !== null) continue;
       failing++;
       const step = steps[steps.length === letters.length ? i : i + 1] as AnyRec;
-      const motions = step.motions as { blue?: AnyRec; red?: AnyRec } | undefined;
-      const b = motions?.blue ?? {};
-      const r = motions?.red ?? {};
+      const motions = step.motions as { left?: AnyRec; right?: AnyRec } | undefined;
+      const b = motions?.left ?? {};
+      const r = motions?.right ?? {};
       const hand = (m: AnyRec): string => {
         const isFloat = String(m.motionType).toLowerCase() === "float";
         const travel =

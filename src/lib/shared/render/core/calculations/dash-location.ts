@@ -16,7 +16,7 @@ import {
 
 export interface DashLocationInput {
   letter: string;
-  motionColor: "blue" | "red";
+  motionHand: "left" | "right";
   motionStartLocation: string;
   motionEndLocation: string;
   motionTurns: number | "fl" | undefined;
@@ -78,7 +78,7 @@ function dashLocationNonZeroTurns(startLocation: GridLocation, rotationDirection
 export function calculateDashLocation(input: DashLocationInput): GridLocation {
   const {
     letter,
-    motionColor,
+    motionHand,
     motionStartLocation,
     motionEndLocation,
     motionTurns,
@@ -99,7 +99,7 @@ export function calculateDashLocation(input: DashLocationInput): GridLocation {
 
   if (PHI_DASH_LETTERS.includes(letter) || PSI_DASH_LETTERS.includes(letter)) {
     if (turns === 0 && otherTurns === 0) {
-      const key = `${motionColor},${startLoc},${endLoc}`;
+      const key = `${motionHand},${startLoc},${endLoc}`;
       const location = PHI_DASH_PSI_DASH_LOCATION_MAP[key];
       if (location) return location;
     }

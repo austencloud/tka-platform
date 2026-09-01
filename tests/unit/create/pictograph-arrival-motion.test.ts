@@ -7,15 +7,15 @@ import {
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
-function staticSpin(color: MotionColor, turns: number) {
+function staticSpin(color: HandSide, turns: number) {
   return createMotionData({
-    color,
+    hand: color,
     motionType: MotionType.STATIC,
     rotationDirection: RotationDirection.CLOCKWISE,
     turns,
@@ -26,8 +26,8 @@ describe("pictograph arrival prop timing", () => {
   it("keeps ordinary motions on the readable 850ms floor", () => {
     const step = createStepData({
       motions: {
-        blue: staticSpin(MotionColor.BLUE, 1),
-        red: staticSpin(MotionColor.RED, 0),
+        left: staticSpin(HandSide.LEFT, 1),
+        right: staticSpin(HandSide.RIGHT, 0),
       },
     });
 
@@ -39,8 +39,8 @@ describe("pictograph arrival prop timing", () => {
   it("extends the shared clock for the prop with the larger effective rotation", () => {
     const step = createStepData({
       motions: {
-        blue: staticSpin(MotionColor.BLUE, 2),
-        red: staticSpin(MotionColor.RED, 3),
+        left: staticSpin(HandSide.LEFT, 2),
+        right: staticSpin(HandSide.RIGHT, 3),
       },
     });
 
@@ -50,8 +50,8 @@ describe("pictograph arrival prop timing", () => {
   it("includes a shift's base rotation instead of timing from turns alone", () => {
     const step = createStepData({
       motions: {
-        blue: createMotionData({
-          color: MotionColor.BLUE,
+        left: createMotionData({
+          hand: HandSide.LEFT,
           motionType: MotionType.PRO,
           rotationDirection: RotationDirection.CLOCKWISE,
           startLocation: GridLocation.NORTH,
@@ -66,7 +66,7 @@ describe("pictograph arrival prop timing", () => {
 
   it("caps extreme imported motion data at two seconds", () => {
     const step = createStepData({
-      motions: { blue: staticSpin(MotionColor.BLUE, 10) },
+      motions: { left: staticSpin(HandSide.LEFT, 10) },
     });
 
     expect(getPictographArrivalPropMotionDurationMs(step)).toBe(

@@ -32,8 +32,8 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
     stepPlaybackPauseMs = 300,
     stepPlaybackStepSize = 1,
     visible = true,
-    blueVisible = true,
-    redVisible = true,
+    leftVisible = true,
+    rightVisible = true,
     onOpenSettings,
   }: {
     sequence: SequenceData | null;
@@ -44,8 +44,8 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
     stepPlaybackPauseMs?: number;
     stepPlaybackStepSize?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").StepPlaybackStepSize;
     visible?: boolean;
-    blueVisible?: boolean;
-    redVisible?: boolean;
+    leftVisible?: boolean;
+    rightVisible?: boolean;
     onOpenSettings: (canvasId: string) => void;
   } = $props();
 
@@ -258,8 +258,8 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   {:else if sequence}
     <CanvasControls canvasId="single" {onOpenSettings} />
     <AnimatorCanvas
-      blueProp={blueVisible && visible ? animationState.bluePropState : null}
-      redProp={redVisible && visible ? animationState.redPropState : null}
+      leftProp={leftVisible && visible ? animationState.leftPropState : null}
+      rightProp={rightVisible && visible ? animationState.rightPropState : null}
       gridVisible={true}
       gridMode={effectiveGridMode}
       letter={currentLetter}

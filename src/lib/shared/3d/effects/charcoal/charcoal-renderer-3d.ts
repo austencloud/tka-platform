@@ -44,7 +44,7 @@ const FRAGMENT_POOL_SIZE: Record<QualityTier, number> = {
   [QualityTier.LOW]: 300,
 };
 
-const MAX_TIPS = 4;
+const DEFAULT_MAX_TIPS = 4;
 const MAX_SEGMENT_DISTANCE = 0.18;
 const MAX_STEP_ADVANCE = 0.5;
 const BURST_IMPULSE_THRESHOLD = 0.85;
@@ -409,14 +409,17 @@ export class CharcoalRenderer3D {
   private suppressedDiscontinuityCount = 0;
   private lastBurst: BurstDebugSnapshot | null = null;
 
-  constructor(qualityTier: QualityTier = QualityTier.HIGH) {
+  constructor(
+    qualityTier: QualityTier = QualityTier.HIGH,
+    maxTips = DEFAULT_MAX_TIPS
+  ) {
     this.qualityTier = qualityTier;
     this.sparkCapacity = SPARK_POOL_SIZE[qualityTier];
     this.fragmentCapacity = FRAGMENT_POOL_SIZE[qualityTier];
     this.pointCapacity =
       this.sparkCapacity +
       this.fragmentCapacity +
-      MAX_TIPS * HEAD_POINTS_PER_TIP;
+      maxTips * HEAD_POINTS_PER_TIP;
     this.sparks = Array.from(
       { length: this.sparkCapacity },
       createSparkParticle
@@ -432,20 +435,23 @@ export class CharcoalRenderer3D {
     this.temperatures = new Float32Array(this.pointCapacity);
     this.kinds = new Float32Array(this.pointCapacity);
     this.seeds = new Float32Array(this.pointCapacity);
-    this.tipStates = Array.from({ length: MAX_TIPS }, (_, index) => ({
-      previousPosition: new ThreeVector3(),
-      currentPosition: new ThreeVector3(),
-      previousVelocity: new ThreeVector3(),
-      sourceId: null,
-      hasPrevious: false,
-      ambientAccumulator: 0,
-      ambientClusterTarget: this.motionProfile.packetMin,
-      ambientEmissionIndex: 0,
-      burstArmed: true,
-      burstCooldown: 0,
-      present: false,
-      seed: (index + 1) * 0.173,
-    }));
+    this.tipStates = Array.from(
+      { length: Math.max(1, Math.floor(maxTips)) },
+      (_, index) => ({
+        previousPosition: new ThreeVector3(),
+        currentPosition: new ThreeVector3(),
+        previousVelocity: new ThreeVector3(),
+        sourceId: null,
+        hasPrevious: false,
+        ambientAccumulator: 0,
+        ambientClusterTarget: this.motionProfile.packetMin,
+        ambientEmissionIndex: 0,
+        burstArmed: true,
+        burstCooldown: 0,
+        present: false,
+        seed: (index + 1) * 0.173,
+      })
+    );
   }
 
   initialize(
@@ -528,7 +534,7 @@ export class CharcoalRenderer3D {
 
     for (const state of this.tipStates) state.present = false;
 
-    const tipCount = Math.min(tips.length, MAX_TIPS);
+    const tipCount = Math.min(tips.length, this.tipStates.length);
     for (let index = 0; index < tipCount; index++) {
       const tip = tips[index]!;
       const state = this.claimTipState(tip.sourceId, tips, tipCount);
@@ -1036,9 +1042,9 @@ export class CharcoalRenderer3D {
         quaternionY: this.fragmentQuaternion.y,
         quaternionZ: this.fragmentQuaternion.z,
         quaternionW: this.fragmentQuaternion.w,
-        red: this.fragmentColor.r,
+        right: this.fragmentColor.r,
         green: this.fragmentColor.g,
-        blue: this.fragmentColor.b,
+        left: this.fragmentColor.b,
         alpha: Math.min(1, lifeRatio * 3),
       });
       visibleCount++;

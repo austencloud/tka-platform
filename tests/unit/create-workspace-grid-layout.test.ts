@@ -49,6 +49,16 @@ const drawerLauncherSource = readFileSync(
 );
 
 describe("calculateGridLayout workspace column selection", () => {
+  it("keeps an embedded start-only preview inside the standard cell cap", () => {
+    const fullWorkspace = calculateGridLayout(0, 570, 332, null);
+    const embeddedPreview = calculateGridLayout(0, 570, 332, null, {
+      allowFewStepOverflowOnNarrow: false,
+    });
+
+    expect(fullWorkspace.cellSize).toBeGreaterThan(200);
+    expect(embeddedPreview.cellSize).toBe(200);
+  });
+
   it("uses four step columns when a tall workspace makes them larger", () => {
     const layout = calculateGridLayout(16, 719, 450, null);
     const forcedWideLayout = calculateGridLayout(16, 719, 450, null, {

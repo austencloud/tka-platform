@@ -18,8 +18,8 @@
 
   let {
     propType = null,
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     bpm = $bindable(60),
     playbackMode = "continuous",
     stepPlaybackStepSize = 1,
@@ -30,8 +30,8 @@
     onPlaybackToggle = () => {},
   }: {
     propType?: PropType | string | null;
-    bluePropType?: PropType | string | null;
-    redPropType?: PropType | string | null;
+    leftPropType?: PropType | string | null;
+    rightPropType?: PropType | string | null;
     bpm: number;
     playbackMode?: PlaybackMode;
     stepPlaybackStepSize?: StepPlaybackStepSize;
@@ -61,7 +61,7 @@
         {onPlaybackToggle}
       />
     {:else}
-      <VisualPane {propType} {bluePropType} {redPropType} />
+      <VisualPane {propType} {leftPropType} {rightPropType} />
     {/if}
   </div>
 </div>

@@ -84,6 +84,7 @@ import { getDeepLinkResolver } from "$lib/shared/application/get-deep-link-resol
 
     // Navigate to sequence viewer (drawer on mobile, route on desktop)
     openSequenceViewer(result.sequence, {
+      source: "url_restore",
       returnPath: window.location.pathname,
       returnLabel: "Back",
     });

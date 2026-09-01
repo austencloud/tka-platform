@@ -105,15 +105,15 @@ export class PropSystem {
     const propTypeChanger = this.deps.lifecycleManager.propTypeChanger;
     if (
       propTypeChanger &&
-      this.propTypeManager.propTypeOverrideBlue == null &&
-      this.propTypeManager.propTypeOverrideRed == null
+      this.propTypeManager.propTypeOverrideLeft == null &&
+      this.propTypeManager.propTypeOverrideRight == null
     ) {
       const pts = propTypeChanger.state;
-      this.state.setBluePropType(pts.bluePropType);
-      this.state.setRedPropType(pts.redPropType);
+      this.state.setLeftPropType(pts.leftPropType);
+      this.state.setRightPropType(pts.rightPropType);
       if (this.state.currentPropType !== pts.legacyPropType) {
         this.state.setLegacyPropType(pts.legacyPropType);
-        animationSettingsState.setCurrentPropType(pts.bluePropType);
+        animationSettingsState.setCurrentPropType(pts.leftPropType);
       }
     }
   }

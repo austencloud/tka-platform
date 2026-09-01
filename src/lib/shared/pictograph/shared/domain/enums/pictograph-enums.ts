@@ -68,12 +68,13 @@ export enum SkewDirection {
   MINUS = "-",
 }
 
-export const MotionColor = {
-  BLUE: "blue",
-  RED: "red",
-} as const;
+import {
+  HandSide as CanonicalHandSide,
+  type HandSide as CanonicalHandSideValue,
+} from "@tka/tka-types";
 
-export type MotionColor = (typeof MotionColor)[keyof typeof MotionColor];
+export const HandSide = CanonicalHandSide;
+export type HandSide = CanonicalHandSideValue;
 
 export const RotationDirection = {
   CLOCKWISE: "cw",

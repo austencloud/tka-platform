@@ -1,5 +1,7 @@
 export type TransitionReviewStatus =
-  "not-reviewed" | "approved" | "needs-changes";
+  | "not-reviewed"
+  | "approved"
+  | "needs-changes";
 
 export interface TransitionReviewDecision {
   status: TransitionReviewStatus;
@@ -45,18 +47,19 @@ export const TRANSITION_REVIEW_GATES = [
     title: "Card ⇄ motion modes",
     summary: "The card crosses the workspace as one continuous surface.",
     fromGrade: "D",
-    availability: "pending",
+    availability: "ready",
   },
   {
     id: "performances",
-    title: "Stage ⇄ Performances",
-    summary: "The full-body gallery handoff keeps spatial continuity.",
+    title: "2D / 3D ⇄ Performances",
+    summary:
+      "One stage changes its moving source while one inspector changes its information.",
     fromGrade: "D",
-    availability: "pending",
+    availability: "ready",
   },
   {
     id: "post-studio",
-    title: "Stage ⇄ Post Studio",
+    title: "2D / 3D ⇄ Post Studio",
     summary: "The studio enters as an intentional workspace change.",
     fromGrade: "D",
     availability: "pending",

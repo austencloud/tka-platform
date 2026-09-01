@@ -30,8 +30,11 @@ export async function loadSequences(): Promise<SequenceEntry[]> {
       const data = docSnap.data();
       // sourceRef points to the full sequence doc: "users/{ownerId}/sequences/{id}"
       // Fall back to constructing it from ownerId if sourceRef is missing (legacy docs)
-      const sourceRef = (data.sourceRef as string)
-        || (data.ownerId ? `users/${data.ownerId}/sequences/${docSnap.id}` : undefined);
+      const sourceRef =
+        (data.sourceRef as string) ||
+        (data.ownerId
+          ? `users/${data.ownerId}/sequences/${docSnap.id}`
+          : undefined);
 
       sequences.push({
         id: docSnap.id,
@@ -52,7 +55,9 @@ export async function loadSequences(): Promise<SequenceEntry[]> {
   }
 }
 
-export async function loadSequenceDetail(sourceRef: string): Promise<RawStepData[] | null> {
+export async function loadSequenceDetail(
+  sourceRef: string
+): Promise<RawStepData[] | null> {
   try {
     const firestore = await getFirestoreInstance();
     const docSnap = await getDoc(doc(firestore, sourceRef));
@@ -66,7 +71,10 @@ export async function loadSequenceDetail(sourceRef: string): Promise<RawStepData
     const result = convertToRawSequence(data);
     return result;
   } catch (error) {
-    console.error(`[SequenceLoader] Failed to load detail from ${sourceRef}:`, error);
+    console.error(
+      `[SequenceLoader] Failed to load detail from ${sourceRef}:`,
+      error
+    );
     return null;
   }
 }
@@ -76,9 +84,10 @@ export async function loadSequenceDetail(sourceRef: string): Promise<RawStepData
  * expected by the Loop Labeler's detection pipeline.
  *
  * Handles two storage formats:
- * 1. Legacy "beats" array: Already in raw format (blueAttributes/redAttributes, beat numbers).
+ * 1. Legacy "beats" array: Raw attributes with beat numbers. Historical
+ *    blueAttributes/redAttributes fields are normalized at this boundary.
  *    Includes metadata at [0], start position at [1], steps at [2+].
- * 2. Modern "steps" array: StepData format (motions.blue/motions.red, stepNumber).
+ * 2. Modern "steps" array: StepData format (motions.left/motions.right, stepNumber).
  *    Separate startPosition field. Needs conversion.
  */
 function convertToRawSequence(data: Record<string, unknown>): RawStepData[] {
@@ -87,18 +96,21 @@ function convertToRawSequence(data: Record<string, unknown>): RawStepData[] {
   const beats = data["beats"] as Array<Record<string, unknown>> | undefined;
   if (beats && beats.length > 0) {
     const firstStep = beats[0];
-    // Detect raw format: has "blueAttributes" or "beat" field, or is metadata (has "word")
-    const isRawFormat = firstStep &&
-      ("blueAttributes" in firstStep || "beat" in firstStep || "word" in firstStep);
+    // Detect raw format: has hand attributes or a beat field, or is metadata.
+    const isRawFormat =
+      firstStep &&
+      ("leftAttributes" in firstStep ||
+        "blueAttributes" in firstStep ||
+        "beat" in firstStep ||
+        "word" in firstStep);
 
     if (isRawFormat) {
-      // Already in the right format - validated by field checks above
-      return beats as RawStepData[];
+      return normalizeRawSteps(beats);
     }
 
-    // Library beats format: has "motions" with blue/red sub-objects and "stepNumber"
-    const isLibraryBeatsFormat = firstStep &&
-      ("motions" in firstStep && "stepNumber" in firstStep);
+    // Library beats format: has nested hand motions and a stepNumber.
+    const isLibraryBeatsFormat =
+      firstStep && "motions" in firstStep && "stepNumber" in firstStep;
 
     if (isLibraryBeatsFormat) {
       return convertLibraryBeats(data, beats);
@@ -118,29 +130,43 @@ function convertToRawSequence(data: Record<string, unknown>): RawStepData[] {
   });
 
   // Element 1: Start position (beat 0)
-  const startPos = (data["startPosition"] || data["startingPosition"]) as Record<string, unknown> | undefined;
+  const startPos = (data["startPosition"] || data["startingPosition"]) as
+    | Record<string, unknown>
+    | undefined;
   if (startPos) {
-    const motions = startPos["motions"] as Record<string, Record<string, unknown>> | undefined;
-    const gridPos = (startPos["gridPosition"] as string) || (startPos["startPosition"] as string) || "";
+    const motions = startPos["motions"] as
+      | Record<string, Record<string, unknown>>
+      | undefined;
+    const gridPos =
+      (startPos["gridPosition"] as string) ||
+      (startPos["startPosition"] as string) ||
+      "";
     result.push({
       beat: 0,
       sequenceStartPosition: gridPos,
       endPos: gridPos,
       letter: (startPos["letter"] as string) || undefined,
-      blueAttributes: motions ? convertMotionToRawAttributes(motions["blue"]) : undefined,
-      redAttributes: motions ? convertMotionToRawAttributes(motions["red"]) : undefined,
+      leftAttributes: motions
+        ? convertMotionToRawAttributes(motionFor(motions, "left"))
+        : undefined,
+      rightAttributes: motions
+        ? convertMotionToRawAttributes(motionFor(motions, "right"))
+        : undefined,
     });
   }
 
   // Elements 2+: Actual steps (beat >= 1)
   const steps = (data["steps"] || []) as Array<Record<string, unknown>>;
   const seqData = data["sequenceData"] as Record<string, unknown> | undefined;
-  const actualSteps = steps.length > 0
-    ? steps
-    : ((seqData?.["steps"] || []) as Array<Record<string, unknown>>);
+  const actualSteps =
+    steps.length > 0
+      ? steps
+      : ((seqData?.["steps"] || []) as Array<Record<string, unknown>>);
 
   for (const step of actualSteps) {
-    const motions = step["motions"] as Record<string, Record<string, unknown>> | undefined;
+    const motions = step["motions"] as
+      | Record<string, Record<string, unknown>>
+      | undefined;
     const stepNumber = (step["stepNumber"] as number) ?? 0;
     if (stepNumber < 1) continue;
 
@@ -149,8 +175,12 @@ function convertToRawSequence(data: Record<string, unknown>): RawStepData[] {
       letter: (step["letter"] as string) || undefined,
       startPos: (step["startPosition"] as string) || undefined,
       endPos: (step["endPosition"] as string) || undefined,
-      blueAttributes: motions ? convertMotionToRawAttributes(motions["blue"]) : undefined,
-      redAttributes: motions ? convertMotionToRawAttributes(motions["red"]) : undefined,
+      leftAttributes: motions
+        ? convertMotionToRawAttributes(motionFor(motions, "left"))
+        : undefined,
+      rightAttributes: motions
+        ? convertMotionToRawAttributes(motionFor(motions, "right"))
+        : undefined,
     });
   }
 
@@ -158,7 +188,7 @@ function convertToRawSequence(data: Record<string, unknown>): RawStepData[] {
 }
 
 /**
- * Convert library-format beats (motions.blue/red + stepNumber) to RawStepData[].
+ * Convert library-format beats (motions.left/right + stepNumber) to RawStepData[].
  * This format stores beats with full motion objects directly in a "beats" array,
  * using "stepNumber" (not "beat") and "motions" (not "blueAttributes"/"redAttributes").
  */
@@ -179,18 +209,46 @@ function convertLibraryBeats(
 
   // Convert each beat to RawStepData
   for (const step of beats) {
-    const motions = step["motions"] as Record<string, Record<string, unknown>> | undefined;
+    const motions = step["motions"] as
+      | Record<string, Record<string, unknown>>
+      | undefined;
     const stepNumber = Number(step["stepNumber"]) || 0;
 
     result.push({
       beat: stepNumber,
       letter: (step["letter"] as string) || undefined,
-      blueAttributes: motions ? convertMotionToRawAttributes(motions["blue"]) : undefined,
-      redAttributes: motions ? convertMotionToRawAttributes(motions["red"]) : undefined,
+      leftAttributes: motions
+        ? convertMotionToRawAttributes(motionFor(motions, "left"))
+        : undefined,
+      rightAttributes: motions
+        ? convertMotionToRawAttributes(motionFor(motions, "right"))
+        : undefined,
     });
   }
 
   return result;
+}
+
+function motionFor(
+  motions: Record<string, Record<string, unknown>>,
+  hand: "left" | "right"
+): Record<string, unknown> | undefined {
+  return hand === "left"
+    ? (motions["left"] ?? motions["blue"])
+    : (motions["right"] ?? motions["red"]);
+}
+
+function normalizeRawSteps(
+  beats: Array<Record<string, unknown>>
+): RawStepData[] {
+  return beats.map((beat) => {
+    const normalized = { ...beat };
+    normalized["leftAttributes"] ??= normalized["blueAttributes"];
+    normalized["rightAttributes"] ??= normalized["redAttributes"];
+    delete normalized["blueAttributes"];
+    delete normalized["redAttributes"];
+    return normalized as RawStepData;
+  });
 }
 
 /**

@@ -1,6 +1,7 @@
 import { BackgroundType } from "@austencloud/backgrounds";
 
 import { oceanFloraSceneUrl } from "../environments/scenes/ocean/authored/ocean-flora-url";
+import { AUTUMN_MOON_TEXTURE_URL } from "../environments/scenes/autumn/runtime/lighting/autumn-moon";
 
 /**
  * What each 3D environment downloads before its loading curtain can lift, so
@@ -62,6 +63,22 @@ export const SCENE_ASSET_MANIFEST: Readonly<
 };
 
 /**
+ * Runtime textures that should already be in the HTTP cache when a scene
+ * starts. They live outside the GLB manifest because the static contract above
+ * intentionally scans model ownership only.
+ */
+const SCENE_TEXTURE_PREFETCH: Partial<
+  Readonly<Record<BackgroundType, readonly string[]>>
+> = {
+  [BackgroundType.AUTUMN]: [
+    "/textures/autumn-floor/ground-detail-modulation.ktx2",
+    "/textures/water/Water_1_M_Normal.jpg",
+    "/textures/water/Water_2_M_Normal.jpg",
+    AUTUMN_MOON_TEXTURE_URL,
+  ],
+};
+
+/**
  * The compressed-texture and geometry decoders every GLB path shares. They are
  * small, cached once, and needed before the first byte of a model can be
  * decoded, so they are worth warming regardless of which scene is selected.
@@ -75,6 +92,7 @@ export const DECODER_RUNTIME_URLS: readonly string[] = [
 
 export function sceneAssetUrls(background: BackgroundType): readonly string[] {
   const listed = SCENE_ASSET_MANIFEST[background] ?? [];
-  if (background !== BackgroundType.OCEAN) return listed;
-  return [...listed, oceanFloraSceneUrl()];
+  const textures = SCENE_TEXTURE_PREFETCH[background] ?? [];
+  if (background !== BackgroundType.OCEAN) return [...listed, ...textures];
+  return [...listed, ...textures, oceanFloraSceneUrl()];
 }

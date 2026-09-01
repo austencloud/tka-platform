@@ -14,14 +14,14 @@
 	import BeyondVtgPanel from "./BeyondVtgPanel.svelte";
 
 	// ─── Prop types from user settings ───
-	const bluePropType = $derived.by(() => {
+	const leftPropType = $derived.by(() => {
 		const settings = getSettings();
-		return (settings.bluePropType ?? settings.propType ?? PropType.STAFF) as PropType;
+		return (settings.leftPropType ?? settings.propType ?? PropType.STAFF) as PropType;
 	});
 
-	const redPropType = $derived.by(() => {
+	const rightPropType = $derived.by(() => {
 		const settings = getSettings();
-		return (settings.redPropType ?? settings.propType ?? PropType.STAFF) as PropType;
+		return (settings.rightPropType ?? settings.propType ?? PropType.STAFF) as PropType;
 	});
 
 	const examples = $derived.by(() => {
@@ -30,11 +30,11 @@
 		const qs = getModeChains("QS");
 
 		return {
-			a: expandChain(ss[0]!, bluePropType, redPropType)[0],
-			b: expandChain(ss[1]!, bluePropType, redPropType)[0],
-			c: expandChain(ss[2]!, bluePropType, redPropType)[0],
-			g: expandChain(ts[0]!, bluePropType, redPropType)[0],
-			s: expandChain(qs[0]!, bluePropType, redPropType)[0],
+			a: expandChain(ss[0]!, leftPropType, rightPropType)[0],
+			b: expandChain(ss[1]!, leftPropType, rightPropType)[0],
+			c: expandChain(ss[2]!, leftPropType, rightPropType)[0],
+			g: expandChain(ts[0]!, leftPropType, rightPropType)[0],
+			s: expandChain(qs[0]!, leftPropType, rightPropType)[0],
 		};
 	});
 

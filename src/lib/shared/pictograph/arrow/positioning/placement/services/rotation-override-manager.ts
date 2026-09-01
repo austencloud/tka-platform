@@ -203,9 +203,9 @@ export class RotationOverrideManager implements IRotationOverrideManager {
   private getPlacementFrame(
     pictographData: PictographData
   ): "canonical" | "skewed" {
-    if (pictographData.motions.blue && pictographData.motions.red) {
+    if (pictographData.motions.left && pictographData.motions.right) {
       return placementFrameForGridMode(
-        _deriveGridMode(pictographData.motions.blue, pictographData.motions.red)
+        _deriveGridMode(pictographData.motions.left, pictographData.motions.right)
       );
     }
     return PlacementFrame.CANONICAL;

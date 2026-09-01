@@ -21,6 +21,13 @@ export const VIEWER_MODE_DISSOLVE_DURATION = DURATION.normal;
 
 const GATE_ONE_DISSOLVE_MODES = new Set(["split", "animation", "card"]);
 const GATE_THREE_STAGE_MODES = new Set(["animation", "animation-3d"]);
+const GATE_FIVE_STAGE_MODES = new Set([
+  "split",
+  "animation",
+  "animation-3d",
+  "card",
+  "tunnel",
+]);
 
 interface WorkspaceLease {
   count: number;
@@ -45,10 +52,13 @@ export function isViewerModeDissolve(
   const isGateThreePair =
     (GATE_THREE_STAGE_MODES.has(previousMode) && nextMode === "tunnel") ||
     (previousMode === "tunnel" && GATE_THREE_STAGE_MODES.has(nextMode));
+  const isGateFivePair =
+    (GATE_FIVE_STAGE_MODES.has(previousMode) && nextMode === "videos") ||
+    (previousMode === "videos" && GATE_FIVE_STAGE_MODES.has(nextMode));
 
   return (
     previousMode !== nextMode &&
-    (isGateOnePair || isGateTwoPair || isGateThreePair)
+    (isGateOnePair || isGateTwoPair || isGateThreePair || isGateFivePair)
   );
 }
 

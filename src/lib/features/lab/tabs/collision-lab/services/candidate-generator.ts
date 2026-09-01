@@ -97,8 +97,8 @@ export class CandidateGenerator {
     if (priorStance) {
       const simResult = this.optimizer.simulator.evaluate(
         priorStance,
-        input.blue,
-        input.red
+        input.left,
+        input.right
       );
       priorCandidate = {
         index: 0,
@@ -452,9 +452,9 @@ function wrapAngle(angle: number): number {
  */
 function centroidOf(input: OptimizerInput): { x: number; y: number; z: number } {
   return {
-    x: (input.blue.gripWorld.x + input.red.gripWorld.x) / 2,
-    y: (input.blue.gripWorld.y + input.red.gripWorld.y) / 2,
-    z: (input.blue.gripWorld.z + input.red.gripWorld.z) / 2,
+    x: (input.left.gripWorld.x + input.right.gripWorld.x) / 2,
+    y: (input.left.gripWorld.y + input.right.gripWorld.y) / 2,
+    z: (input.left.gripWorld.z + input.right.gripWorld.z) / 2,
   };
 }
 

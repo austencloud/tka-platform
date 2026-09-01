@@ -26,6 +26,10 @@
   const maxCardClockSkew = 34;
   const isMotionTrace = $derived(trace.command.startsWith("3d"));
   const isTunnelTrace = $derived(trace.command.startsWith("tunnel"));
+  const isCardStageTrace = $derived(trace.command.startsWith("card-"));
+  const isPerformanceTrace = $derived(
+    trace.command.startsWith("performances-")
+  );
   const summary = $derived(summarizeTransitionGeometry(trace));
   const maximumSize = $derived(
     Math.max(
@@ -243,34 +247,197 @@
     <div>
       <span>Measured geometry</span>
       <h3 id="geometry-trace-title">
-        {isMotionTrace
-          ? "2D and 3D through the last replay"
-          : isTunnelTrace
-            ? "One canvas becoming Tunnel through the last replay"
-            : "Pane size through the last replay"}
+        {isPerformanceTrace
+          ? "Viewer stage and Performances through the last replay"
+          : isCardStageTrace
+            ? "Card and motion views through the last replay"
+            : isMotionTrace
+              ? "2D and 3D through the last replay"
+              : isTunnelTrace
+                ? "One canvas becoming Tunnel through the last replay"
+                : "Pane size through the last replay"}
       </h3>
     </div>
     <div class="trace-legend" aria-label="Geometry trace legend">
       <span class="animation"
-        >{isMotionTrace
-          ? "2D opacity"
-          : isTunnelTrace
-            ? "2D base"
-            : "Animation"}</span
+        >{isPerformanceTrace
+          ? "Viewer stage opacity"
+          : isCardStageTrace
+            ? "Viewer stage allocation"
+            : isMotionTrace
+              ? "2D opacity"
+              : isTunnelTrace
+                ? "2D base"
+                : "Animation"}</span
       >
       <span class="card"
-        >{isMotionTrace
-          ? "3D opacity"
-          : isTunnelTrace
-            ? "Tunnel layer blend"
-            : "Card visual"}</span
+        >{isPerformanceTrace
+          ? "Performances opacity"
+          : isMotionTrace
+            ? "3D opacity"
+            : isTunnelTrace
+              ? "Tunnel layer blend"
+              : "Card visual"}</span
       >
-      <span class="stage">Stage</span>
+      <span class="stage">Viewer stage</span>
     </div>
   </header>
 
   <div class="trace-summary">
-    {#if isTunnelTrace}
+    {#if isPerformanceTrace}
+      <span data-problem={summary.performanceStageIdentityChanges > 0}
+        >Viewer stage remounts: {summary.performanceStageIdentityChanges}</span
+      >
+      <span data-problem={summary.performanceGalleryIdentityChanges > 0}
+        >Performance stage remounts: {summary.performanceGalleryIdentityChanges}</span
+      >
+      <span data-problem={summary.performanceInspectorIdentityChanges > 0}
+        >Inspector remounts: {summary.performanceInspectorIdentityChanges}</span
+      >
+      <span data-problem={summary.performanceBlankFrames > 0}
+        >Blank workspace frames: {summary.performanceBlankFrames}</span
+      >
+      <span data-problem={summary.performanceDoubleOpaqueFrames > 0}
+        >Double-opaque frames: {summary.performanceDoubleOpaqueFrames}</span
+      >
+      <span data-dissolve={summary.performanceCrossfadeFrames > 0}
+        >Crossfade frames: {summary.performanceCrossfadeFrames}</span
+      >
+      <span data-dissolve={summary.dissolveFrames > 0}
+        >Workspace dissolve frames: {summary.dissolveFrames}</span
+      >
+      <span data-problem={summary.performanceUnreadyFrames > 0}
+        >Unready performance frames: {summary.performanceUnreadyFrames}</span
+      >
+      <span data-problem={summary.performanceLayoutChanges > 0}
+        >Visible inspector layout changes: {summary.performanceLayoutChanges}</span
+      >
+      <span data-problem={summary.performancePlayerCountMaximum > 1}
+        >Maximum performance players: {summary.performancePlayerCountMaximum}</span
+      >
+      <span data-dissolve={summary.performanceOpacityComplementDriftMaximum > 0}
+        >Shared-background dip: {summary.performanceOpacityComplementDriftMaximum.toFixed(
+          3
+        )}</span
+      >
+      <span data-problem={summary.performanceLayerWidthMismatchMaximum > 1}
+        >Layer width mismatch: {Math.round(
+          summary.performanceLayerWidthMismatchMaximum
+        )} px</span
+      >
+      <span
+        data-problem={(summary.performanceStageExit?.backtrack ?? 0) > 1 ||
+          (summary.performanceStageExit?.overshoot ?? 0) > 1}
+        >Viewer stage expands: {formatTravel(
+          summary.performanceStageExit
+        )}</span
+      >
+      <span
+        data-problem={(summary.performanceStageEntry?.backtrack ?? 0) > 1 ||
+          (summary.performanceStageEntry?.overshoot ?? 0) > 1}
+        >Viewer stage contracts: {formatTravel(
+          summary.performanceStageEntry
+        )}</span
+      >
+      <span
+        data-problem={(summary.performanceInspectorExit?.backtrack ?? 0) > 1 ||
+          (summary.performanceInspectorExit?.overshoot ?? 0) > 1}
+        >Inspector departure: {formatTravel(
+          summary.performanceInspectorExit
+        )}</span
+      >
+      <span
+        data-problem={(summary.performanceInspectorEntry?.backtrack ?? 0) > 1 ||
+          (summary.performanceInspectorEntry?.overshoot ?? 0) > 1}
+        >Inspector return: {formatTravel(
+          summary.performanceInspectorEntry
+        )}</span
+      >
+      <span
+        >Surface path: {summary.performanceSurfacePath.join(" → ") ||
+          "n/a"}</span
+      >
+      <span>Mode path: {summary.modePath.join(" → ") || "n/a"}</span>
+      <span data-problem={slowModeCommit}
+        >Mode commit: {modeCommitSummary || "n/a"}</span
+      >
+      <span>Outer axis: {summary.outerDirectionPath.join(" → ") || "n/a"}</span>
+    {:else if isCardStageTrace}
+      <span data-problem={summary.cardStageCardIdentityChanges > 0}
+        >Card remounts: {summary.cardStageCardIdentityChanges}</span
+      >
+      <span data-problem={summary.cardStageAnimatorIdentityChanges > 0}
+        >Animator remounts: {summary.cardStageAnimatorIdentityChanges}</span
+      >
+      <span data-problem={summary.cardStageInspectorIdentityChanges > 0}
+        >Inspector remounts: {summary.cardStageInspectorIdentityChanges}</span
+      >
+      <span data-problem={summary.cardStageSplitFrames > 0}
+        >Side-by-Side intermediate frames: {summary.cardStageSplitFrames}</span
+      >
+      <span data-problem={summary.cardStageBlankFrames > 0}
+        >Blank workspace frames: {summary.cardStageBlankFrames}</span
+      >
+      <span data-problem={summary.squashedCardFrames > 0}
+        >Squashed Card frames: {summary.squashedCardFrames}</span
+      >
+      <span data-problem={summary.transformedCardCellFrames > 0}
+        >Transformed Card cell frames: {summary.transformedCardCellFrames} · max
+        {summary.maximumTransformedCardCells} cells</span
+      >
+      <span data-problem={summary.cardStageSettingsBlankFrames > 0}
+        >Blank inspector frames: {summary.cardStageSettingsBlankFrames}</span
+      >
+      <span data-dissolve={summary.cardStageSettingsCrossfadeFrames > 0}
+        >Settings crossfade frames: {summary.cardStageSettingsCrossfadeFrames}</span
+      >
+      <span
+        data-problem={(summary.cardStageExitTravel?.backtrack ?? 0) > 1 ||
+          (summary.cardStageExitTravel?.overshoot ?? 0) > 1}
+        >Card exit travel: {formatTravel(summary.cardStageExitTravel)}</span
+      >
+      <span
+        data-problem={(summary.cardStageEntryTravel?.backtrack ?? 0) > 1 ||
+          (summary.cardStageEntryTravel?.overshoot ?? 0) > 1}
+        >Card entry travel: {formatTravel(summary.cardStageEntryTravel)}</span
+      >
+      <span
+        data-problem={(summary.cardStageExitAllocation?.backtrack ?? 0) > 1 ||
+          (summary.cardStageExitAllocation?.overshoot ?? 0) > 1}
+        >Viewer stage entrance: {formatTravel(
+          summary.cardStageExitAllocation
+        )}</span
+      >
+      <span
+        data-problem={(summary.cardStageEntryAllocation?.backtrack ?? 0) > 1 ||
+          (summary.cardStageEntryAllocation?.overshoot ?? 0) > 1}
+        >Viewer stage exit: {formatTravel(
+          summary.cardStageEntryAllocation
+        )}</span
+      >
+      <span
+        data-problem={(summary.cardStageInspectorExit?.backtrack ?? 0) > 1 ||
+          (summary.cardStageInspectorExit?.overshoot ?? 0) > 1}
+        >Inspector departure: {formatTravel(
+          summary.cardStageInspectorExit
+        )}</span
+      >
+      <span
+        data-problem={(summary.cardStageInspectorEntry?.backtrack ?? 0) > 1 ||
+          (summary.cardStageInspectorEntry?.overshoot ?? 0) > 1}
+        >Inspector return: {formatTravel(summary.cardStageInspectorEntry)}</span
+      >
+      <span data-dissolve={summary.dissolveFrames > 0}
+        >Workspace dissolve frames: {summary.dissolveFrames}</span
+      >
+      <span>Mode path: {summary.modePath.join(" → ") || "n/a"}</span>
+      <span data-problem={slowModeCommit}
+        >Mode commit: {modeCommitSummary || "n/a"}</span
+      >
+      <span>Panel axis: {summary.panelDirectionPath.join(" → ") || "n/a"}</span>
+      <span>Outer axis: {summary.outerDirectionPath.join(" → ") || "n/a"}</span>
+      <span>Card layout: {summary.cardLayoutPath.join(" → ") || "n/a"}</span>
+    {:else if isTunnelTrace}
       <span data-problem={summary.tunnelUnreadyFrames > 0}
         >Unready Tunnel frames: {summary.tunnelUnreadyFrames}</span
       >
@@ -305,7 +472,9 @@
       >
       <span>Surface path: {summary.tunnelSurfacePath.join(" → ") || "n/a"}</span
       >
-      <span>Stage allocation: {formatRange(summary.tunnelStageSize)}</span>
+      <span
+        >Viewer stage allocation: {formatRange(summary.tunnelStageSize)}</span
+      >
       <span>Tunnel display: {formatRange(summary.tunnelDisplaySize)}</span>
       <span data-dissolve={summary.dissolveFrames > 0}
         >Workspace dissolve frames: {summary.dissolveFrames}</span
@@ -320,15 +489,41 @@
         >Blank motion frames: {summary.motionBlankFrames}</span
       >
       <span data-problem={summary.motionUnready3DFrames > 0}
-        >Unready 3D frames: {summary.motionUnready3DFrames}</span
+        >Unprotected 3D frames: {summary.motionUnready3DFrames}</span
       >
-      <span data-problem={summary.motionCurtainFrames > 0}
-        >Visible loading-curtain frames: {summary.motionCurtainFrames}</span
+      <span
+        data-problem={summary.motionPreparationFrames > 0 &&
+          summary.motionCurtainFrames < summary.motionPreparationFrames}
+        >Protected preparation frames: {summary.motionCurtainFrames} / {summary.motionPreparationFrames}</span
+      >
+      <span data-problem={summary.motionMisidentified3DFrames > 0}
+        >Misidentified 3D frames: {summary.motionMisidentified3DFrames}</span
+      >
+      <span data-problem={summary.motionPreparationProgressRegressions > 0}
+        >Progress regressions: {summary.motionPreparationProgressRegressions}</span
+      >
+      <span
+        >Preparation phases: {summary.motionPreparationLabels.join(" → ") ||
+          "n/a"}</span
       >
       <span data-dissolve={summary.motionCrossfadeFrames > 0}
         >Crossfade frames: {summary.motionCrossfadeFrames}</span
       >
-      <span>Preparing frames: {summary.motionPreparationFrames}</span>
+      <span
+        >Sharp 2D exit frames: {summary.motionPreparationGeometryHeldFrames}</span
+      >
+      <span data-problem={summary.motionMagnifiedPreparationFrames > 0}
+        >Placeholder raster growth: {summary.motionPreparationRasterGrowthMaximum ===
+        null
+          ? "n/a"
+          : `${summary.motionPreparationRasterGrowthMaximum.toFixed(2)}×`} · peak
+        scale {summary.motionPreparationRasterScaleMaximum === null
+          ? "n/a"
+          : `${summary.motionPreparationRasterScaleMaximum.toFixed(2)}×`}</span
+      >
+      <span data-problem={summary.motionMagnifiedPreparationFrames > 0}
+        >Magnified placeholder frames: {summary.motionMagnifiedPreparationFrames}</span
+      >
       <span data-problem={summary.motionLate2DBackingChanges > 0}
         >Late 2D backing changes: {summary.motionLate2DBackingChanges}</span
       >
@@ -339,7 +534,9 @@
       >
       <span>Surface path: {summary.motionSurfacePath.join(" → ") || "n/a"}</span
       >
-      <span>Stage allocation: {formatRange(summary.motionStageSize)}</span>
+      <span
+        >Viewer stage allocation: {formatRange(summary.motionStageSize)}</span
+      >
       <span
         >Inspector allocation: {formatRange(summary.motionInspectorSize)}</span
       >
@@ -489,6 +686,14 @@
         >Return travel: {formatTravel(summary.cardReturnTravel)}</span
       >
       <span
+        data-problem={summary.dissolveFrames === 0 &&
+          ((summary.animationReturnSizeTravel?.backtrack ?? 0) > 1 ||
+            (summary.animationReturnSizeTravel?.overshoot ?? 0) > 1)}
+        >2D return allocation: {formatTravel(
+          summary.animationReturnSizeTravel
+        )}</span
+      >
+      <span
         data-problem={settingsReflow(
           summary.cardSettingsFocusWidth,
           summary.cardSettingsFocusHeight,
@@ -507,6 +712,19 @@
         >Settings leave: width {formatRange(summary.cardSettingsReturnWidth)} · height
         {formatRange(summary.cardSettingsReturnHeight)} · center Y
         {formatRange(summary.cardSettingsReturnCenterY)}</span
+      >
+      <span
+        data-problem={summary.dissolveFrames === 0 &&
+          (summary.cardEffectsSeamGapMaximum > 1 ||
+            (summary.cardEffectsOpacityOnsetSkew ?? 0) > maxCardClockSkew ||
+            summary.cardEffectsBlankFrames > 0)}
+        >Card → Effects seam: max gap {Math.round(
+          summary.cardEffectsSeamGapMaximum
+        )} px · opacity onset skew {summary.cardEffectsOpacityOnsetSkew === null
+          ? "n/a"
+          : `${Math.round(summary.cardEffectsOpacityOnsetSkew)} ms`} · crossfade
+        {summary.cardEffectsCrossfadeFrames} frames · blank {summary.cardEffectsBlankFrames}
+        frames</span
       >
       {#if returnPanelMinimumSample}
         <span data-problem={(summary.cardReturnPanelWidth?.undershoot ?? 0) > 1}
@@ -567,13 +785,17 @@
   <svg
     viewBox={`0 0 ${chartWidth} ${chartHeight}`}
     role="img"
-    aria-label={isMotionTrace
-      ? `2D and 3D opacity during the ${trace.command} replay. ${summary.motionBlankFrames} blank frames were sampled.`
-      : isTunnelTrace
-        ? `The persistent 2D base and Tunnel layer blend during the ${trace.command} replay. ${summary.tunnelAnimatorIdentityChanges} Animator remounts were sampled.`
-        : `Pane sizes during the ${trace.command} replay. The Card pane was visibly smaller than ${READABLE_PANE_SIZE} pixels for ${summary.tinyCardFrames} sampled frames.`}
+    aria-label={isCardStageTrace
+      ? `Card and motion-view geometry during the ${trace.command} replay. ${summary.cardStageBlankFrames} blank workspace frames were sampled.`
+      : isPerformanceTrace
+        ? `Viewer stage and Performances opacity during the ${trace.command} replay. ${summary.performanceBlankFrames} blank frames were sampled.`
+        : isMotionTrace
+          ? `2D and 3D opacity during the ${trace.command} replay. ${summary.motionBlankFrames} blank frames were sampled.`
+          : isTunnelTrace
+            ? `The persistent 2D base and Tunnel layer blend during the ${trace.command} replay. ${summary.tunnelAnimatorIdentityChanges} Animator remounts were sampled.`
+            : `Pane sizes during the ${trace.command} replay. The Card pane was visibly smaller than ${READABLE_PANE_SIZE} pixels for ${summary.tinyCardFrames} sampled frames.`}
   >
-    {#if !isMotionTrace && !isTunnelTrace}
+    {#if !isMotionTrace && !isTunnelTrace && !isPerformanceTrace}
       <line
         class="readable-threshold"
         x1={chartInset}
@@ -589,7 +811,22 @@
       class="stage-line"
       points={points(trace.samples, (sample) => sample.stageSize)}
     />
-    {#if isTunnelTrace}
+    {#if isPerformanceTrace}
+      <polyline
+        class="animation-line"
+        points={points(
+          trace.samples,
+          (sample) => sample.stageLayerOpacity * maximumSize
+        )}
+      />
+      <polyline
+        class="card-line"
+        points={points(
+          trace.samples,
+          (sample) => sample.performanceLayerOpacity * maximumSize
+        )}
+      />
+    {:else if isTunnelTrace}
       <polyline
         class="animation-line"
         points={points(trace.samples, () => maximumSize)}

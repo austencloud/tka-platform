@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Scan Activity renders decoded shortcodes with letters.
+ * Scan Atlas renders decoded shortcodes with letters.
  *
  * A decoded QR payload is letterless by construction — `decodeSequence`
  * stamps `letter: null` on every step because the wire format carries motions,
@@ -11,7 +11,7 @@
  * a bare motion-type key, so the lookup returns (0,0) and every arrow renders
  * on its raw hand point.
  *
- * Scan Activity's card peek was the one decoded-shortcode surface that skipped
+ * Scan Atlas's card peek was the one decoded-shortcode surface that skipped
  * the canonical hydrator (/q, /sequence/[id], the viewer drawer and the
  * scan-cell warmer all run it), which is why the bug showed there and nowhere
  * else.
@@ -81,10 +81,10 @@ describe("scan activity decoded-shortcode hydration", () => {
 
     const availableKeys = proPlacementKeys();
     const step = hydrated.steps.find(
-      (candidate) => candidate.motions?.blue?.motionType === "pro"
+      (candidate) => candidate.motions?.left?.motionType === "pro"
     );
     expect(step).toBeDefined();
-    const blue = step!.motions.blue!;
+    const left = step!.motions.left!;
 
     const lettered = {
       letter: step!.letter,
@@ -97,12 +97,12 @@ describe("scan activity decoded-shortcode hydration", () => {
 
     // Letterless: falls all the way back to the bare motion type, which the
     // placement file does not define — that miss is the (0,0) adjustment.
-    const missKey = generatePlacementKey(blue, letterless, availableKeys);
+    const missKey = generatePlacementKey(left, letterless, availableKeys);
     expect(missKey).toBe("pro");
     expect(availableKeys).not.toContain(missKey);
 
     // Lettered: resolves to a key the file actually holds.
-    const hitKey = generatePlacementKey(blue, lettered, availableKeys);
+    const hitKey = generatePlacementKey(left, lettered, availableKeys);
     expect(availableKeys).toContain(hitKey);
   });
 });

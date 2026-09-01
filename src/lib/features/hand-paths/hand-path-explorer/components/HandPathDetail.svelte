@@ -10,6 +10,7 @@
   import { getExplorerContext } from "../context/explorer-context";
   import PathMiniViz from "./PathMiniViz.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   interface Props {
     group: PathGroup;
@@ -19,9 +20,9 @@
   const { state } = getExplorerContext();
 
   const sideColor = $derived.by(() => {
-    const hasBoth = group.sides.has("blue") && group.sides.has("red");
+    const hasBoth = group.sides.has(HandSide.LEFT) && group.sides.has(HandSide.RIGHT);
     if (hasBoth) return "#a855f7";
-    if (group.sides.has("blue")) return "#3b82f6";
+    if (group.sides.has(HandSide.LEFT)) return "#3b82f6";
     return "#ef4444";
   });
 
@@ -36,10 +37,10 @@
   });
 
   const sidesLabel = $derived.by(() => {
-    const hasBoth = group.sides.has("blue") && group.sides.has("red");
-    if (hasBoth) return "blue + red";
-    if (group.sides.has("blue")) return "blue only";
-    return "red only";
+    const hasBoth = group.sides.has(HandSide.LEFT) && group.sides.has(HandSide.RIGHT);
+    if (hasBoth) return "left + right";
+    if (group.sides.has(HandSide.LEFT)) return "left only";
+    return "right only";
   });
 
   function close() {

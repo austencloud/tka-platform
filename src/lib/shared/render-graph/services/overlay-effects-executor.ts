@@ -180,15 +180,15 @@ export class OverlayEffectsExecutor {
 
       if (drawStaff) {
         this.drawLineSegment(
-          gl, phantom.bluePos, phantom.redPos,
+          gl, phantom.leftPos, phantom.rightPos,
           payload.thickness, payload.color[3] * ageFade,
         );
       }
 
       if (drawTips) {
         const dotThickness = payload.thickness * (drawStaff ? 2 : 1);
-        this.drawDot(gl, phantom.bluePos, dotThickness, payload.color[3] * ageFade);
-        this.drawDot(gl, phantom.redPos, dotThickness, payload.color[3] * ageFade);
+        this.drawDot(gl, phantom.leftPos, dotThickness, payload.color[3] * ageFade);
+        this.drawDot(gl, phantom.rightPos, dotThickness, payload.color[3] * ageFade);
       }
     }
 

@@ -34,7 +34,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * approach between any two performers was measured, not estimated.
  */
 export const figuresFilm: FilmDirectorInput = {
-  version: 4,
+  version: 5,
   id: "figures-r1",
   title: "Figures",
   brief:
@@ -160,8 +160,8 @@ export const figuresFilm: FilmDirectorInput = {
           decay: 7,
           interval: 0.72,
           intensity: 0.6,
-          blueColor: "#9fd8ff",
-          redColor: "#ffb3c7",
+          leftColor: "#9fd8ff",
+          rightColor: "#ffb3c7",
         },
       },
       camera: {

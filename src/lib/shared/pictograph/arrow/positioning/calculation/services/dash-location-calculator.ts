@@ -21,7 +21,7 @@ import { LetterType } from "../../../../../foundation/domain/models/letter-type"
 export interface IDashLocationCalculator {
   calculateDashLocationFromPictographData(
     pictographData: PictographData,
-    isBlueArrow: boolean
+    isLeftArrow: boolean
   ): GridLocation;
   calculateDashLocation(
     motion: MotionData,
@@ -37,60 +37,100 @@ export interface IDashLocationCalculator {
 }
 
 const PHI_DASH_PSI_DASH_LOCATION_MAP: Record<string, GridLocation> = {
-  [`red,${GridLocation.NORTH},${GridLocation.SOUTH}`]: GridLocation.EAST,
-  [`red,${GridLocation.EAST},${GridLocation.WEST}`]: GridLocation.NORTH,
-  [`red,${GridLocation.SOUTH},${GridLocation.NORTH}`]: GridLocation.EAST,
-  [`red,${GridLocation.WEST},${GridLocation.EAST}`]: GridLocation.NORTH,
-  [`blue,${GridLocation.NORTH},${GridLocation.SOUTH}`]: GridLocation.WEST,
-  [`blue,${GridLocation.EAST},${GridLocation.WEST}`]: GridLocation.SOUTH,
-  [`blue,${GridLocation.SOUTH},${GridLocation.NORTH}`]: GridLocation.WEST,
-  [`blue,${GridLocation.WEST},${GridLocation.EAST}`]: GridLocation.SOUTH,
-  [`red,${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST}`]: GridLocation.NORTHEAST,
-  [`red,${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST}`]: GridLocation.SOUTHEAST,
-  [`red,${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST}`]: GridLocation.SOUTHEAST,
-  [`red,${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST}`]: GridLocation.NORTHEAST,
-  [`blue,${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST}`]: GridLocation.SOUTHWEST,
-  [`blue,${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST}`]: GridLocation.NORTHWEST,
-  [`blue,${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST}`]: GridLocation.NORTHWEST,
-  [`blue,${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST}`]: GridLocation.SOUTHWEST,
+  [`right,${GridLocation.NORTH},${GridLocation.SOUTH}`]: GridLocation.EAST,
+  [`right,${GridLocation.EAST},${GridLocation.WEST}`]: GridLocation.NORTH,
+  [`right,${GridLocation.SOUTH},${GridLocation.NORTH}`]: GridLocation.EAST,
+  [`right,${GridLocation.WEST},${GridLocation.EAST}`]: GridLocation.NORTH,
+  [`left,${GridLocation.NORTH},${GridLocation.SOUTH}`]: GridLocation.WEST,
+  [`left,${GridLocation.EAST},${GridLocation.WEST}`]: GridLocation.SOUTH,
+  [`left,${GridLocation.SOUTH},${GridLocation.NORTH}`]: GridLocation.WEST,
+  [`left,${GridLocation.WEST},${GridLocation.EAST}`]: GridLocation.SOUTH,
+  [`right,${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST}`]:
+    GridLocation.NORTHEAST,
+  [`right,${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST}`]:
+    GridLocation.SOUTHEAST,
+  [`right,${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST}`]:
+    GridLocation.SOUTHEAST,
+  [`right,${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST}`]:
+    GridLocation.NORTHEAST,
+  [`left,${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST}`]:
+    GridLocation.SOUTHWEST,
+  [`left,${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST}`]:
+    GridLocation.NORTHWEST,
+  [`left,${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST}`]:
+    GridLocation.NORTHWEST,
+  [`left,${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST}`]:
+    GridLocation.SOUTHWEST,
 };
 
 const LAMBDA_ZERO_TURNS_LOCATION_MAP: Record<string, GridLocation> = {
-  [`${GridLocation.NORTH},${GridLocation.SOUTH},${GridLocation.WEST}`]: GridLocation.EAST,
-  [`${GridLocation.EAST},${GridLocation.WEST},${GridLocation.SOUTH}`]: GridLocation.NORTH,
-  [`${GridLocation.NORTH},${GridLocation.SOUTH},${GridLocation.EAST}`]: GridLocation.WEST,
-  [`${GridLocation.WEST},${GridLocation.EAST},${GridLocation.SOUTH}`]: GridLocation.NORTH,
-  [`${GridLocation.SOUTH},${GridLocation.NORTH},${GridLocation.WEST}`]: GridLocation.EAST,
-  [`${GridLocation.EAST},${GridLocation.WEST},${GridLocation.NORTH}`]: GridLocation.SOUTH,
-  [`${GridLocation.SOUTH},${GridLocation.NORTH},${GridLocation.EAST}`]: GridLocation.WEST,
-  [`${GridLocation.WEST},${GridLocation.EAST},${GridLocation.NORTH}`]: GridLocation.SOUTH,
-  [`${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST},${GridLocation.NORTHWEST}`]: GridLocation.SOUTHEAST,
-  [`${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST},${GridLocation.NORTHEAST}`]: GridLocation.SOUTHWEST,
-  [`${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST},${GridLocation.SOUTHEAST}`]: GridLocation.NORTHWEST,
-  [`${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST},${GridLocation.SOUTHWEST}`]: GridLocation.NORTHEAST,
-  [`${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST},${GridLocation.SOUTHEAST}`]: GridLocation.NORTHWEST,
-  [`${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST},${GridLocation.SOUTHWEST}`]: GridLocation.NORTHEAST,
-  [`${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST},${GridLocation.NORTHWEST}`]: GridLocation.SOUTHEAST,
-  [`${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST},${GridLocation.NORTHEAST}`]: GridLocation.SOUTHWEST,
+  [`${GridLocation.NORTH},${GridLocation.SOUTH},${GridLocation.WEST}`]:
+    GridLocation.EAST,
+  [`${GridLocation.EAST},${GridLocation.WEST},${GridLocation.SOUTH}`]:
+    GridLocation.NORTH,
+  [`${GridLocation.NORTH},${GridLocation.SOUTH},${GridLocation.EAST}`]:
+    GridLocation.WEST,
+  [`${GridLocation.WEST},${GridLocation.EAST},${GridLocation.SOUTH}`]:
+    GridLocation.NORTH,
+  [`${GridLocation.SOUTH},${GridLocation.NORTH},${GridLocation.WEST}`]:
+    GridLocation.EAST,
+  [`${GridLocation.EAST},${GridLocation.WEST},${GridLocation.NORTH}`]:
+    GridLocation.SOUTH,
+  [`${GridLocation.SOUTH},${GridLocation.NORTH},${GridLocation.EAST}`]:
+    GridLocation.WEST,
+  [`${GridLocation.WEST},${GridLocation.EAST},${GridLocation.NORTH}`]:
+    GridLocation.SOUTH,
+  [`${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST},${GridLocation.NORTHWEST}`]:
+    GridLocation.SOUTHEAST,
+  [`${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST},${GridLocation.NORTHEAST}`]:
+    GridLocation.SOUTHWEST,
+  [`${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST},${GridLocation.SOUTHEAST}`]:
+    GridLocation.NORTHWEST,
+  [`${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST},${GridLocation.SOUTHWEST}`]:
+    GridLocation.NORTHEAST,
+  [`${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST},${GridLocation.SOUTHEAST}`]:
+    GridLocation.NORTHWEST,
+  [`${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST},${GridLocation.SOUTHWEST}`]:
+    GridLocation.NORTHEAST,
+  [`${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST},${GridLocation.NORTHWEST}`]:
+    GridLocation.SOUTHEAST,
+  [`${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST},${GridLocation.NORTHEAST}`]:
+    GridLocation.SOUTHWEST,
 };
 
 const LAMBDA_DASH_ZERO_TURNS_LOCATION_MAP: Record<string, GridLocation> = {
-  [`${GridLocation.NORTH},${GridLocation.SOUTH},${GridLocation.WEST}`]: GridLocation.EAST,
-  [`${GridLocation.EAST},${GridLocation.WEST},${GridLocation.SOUTH}`]: GridLocation.NORTH,
-  [`${GridLocation.NORTH},${GridLocation.SOUTH},${GridLocation.EAST}`]: GridLocation.WEST,
-  [`${GridLocation.WEST},${GridLocation.EAST},${GridLocation.SOUTH}`]: GridLocation.NORTH,
-  [`${GridLocation.SOUTH},${GridLocation.NORTH},${GridLocation.WEST}`]: GridLocation.EAST,
-  [`${GridLocation.EAST},${GridLocation.WEST},${GridLocation.NORTH}`]: GridLocation.SOUTH,
-  [`${GridLocation.SOUTH},${GridLocation.NORTH},${GridLocation.EAST}`]: GridLocation.WEST,
-  [`${GridLocation.WEST},${GridLocation.EAST},${GridLocation.NORTH}`]: GridLocation.SOUTH,
-  [`${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST},${GridLocation.NORTHWEST}`]: GridLocation.SOUTHEAST,
-  [`${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST},${GridLocation.NORTHEAST}`]: GridLocation.SOUTHWEST,
-  [`${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST},${GridLocation.SOUTHEAST}`]: GridLocation.NORTHWEST,
-  [`${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST},${GridLocation.SOUTHWEST}`]: GridLocation.NORTHEAST,
-  [`${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST},${GridLocation.SOUTHEAST}`]: GridLocation.NORTHWEST,
-  [`${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST},${GridLocation.SOUTHWEST}`]: GridLocation.NORTHEAST,
-  [`${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST},${GridLocation.NORTHWEST}`]: GridLocation.SOUTHEAST,
-  [`${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST},${GridLocation.NORTHEAST}`]: GridLocation.SOUTHWEST,
+  [`${GridLocation.NORTH},${GridLocation.SOUTH},${GridLocation.WEST}`]:
+    GridLocation.EAST,
+  [`${GridLocation.EAST},${GridLocation.WEST},${GridLocation.SOUTH}`]:
+    GridLocation.NORTH,
+  [`${GridLocation.NORTH},${GridLocation.SOUTH},${GridLocation.EAST}`]:
+    GridLocation.WEST,
+  [`${GridLocation.WEST},${GridLocation.EAST},${GridLocation.SOUTH}`]:
+    GridLocation.NORTH,
+  [`${GridLocation.SOUTH},${GridLocation.NORTH},${GridLocation.WEST}`]:
+    GridLocation.EAST,
+  [`${GridLocation.EAST},${GridLocation.WEST},${GridLocation.NORTH}`]:
+    GridLocation.SOUTH,
+  [`${GridLocation.SOUTH},${GridLocation.NORTH},${GridLocation.EAST}`]:
+    GridLocation.WEST,
+  [`${GridLocation.WEST},${GridLocation.EAST},${GridLocation.NORTH}`]:
+    GridLocation.SOUTH,
+  [`${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST},${GridLocation.NORTHWEST}`]:
+    GridLocation.SOUTHEAST,
+  [`${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST},${GridLocation.NORTHEAST}`]:
+    GridLocation.SOUTHWEST,
+  [`${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST},${GridLocation.SOUTHEAST}`]:
+    GridLocation.NORTHWEST,
+  [`${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST},${GridLocation.SOUTHWEST}`]:
+    GridLocation.NORTHEAST,
+  [`${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST},${GridLocation.SOUTHEAST}`]:
+    GridLocation.NORTHWEST,
+  [`${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST},${GridLocation.SOUTHWEST}`]:
+    GridLocation.NORTHEAST,
+  [`${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST},${GridLocation.NORTHWEST}`]:
+    GridLocation.SOUTHEAST,
+  [`${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST},${GridLocation.NORTHEAST}`]:
+    GridLocation.SOUTHWEST,
 };
 
 const DEFAULT_ZERO_TURNS_DASH_LOCATION_MAP: Record<string, GridLocation> = {
@@ -98,13 +138,20 @@ const DEFAULT_ZERO_TURNS_DASH_LOCATION_MAP: Record<string, GridLocation> = {
   [`${GridLocation.EAST},${GridLocation.WEST}`]: GridLocation.SOUTH,
   [`${GridLocation.SOUTH},${GridLocation.NORTH}`]: GridLocation.WEST,
   [`${GridLocation.WEST},${GridLocation.EAST}`]: GridLocation.NORTH,
-  [`${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST}`]: GridLocation.SOUTHEAST,
-  [`${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST}`]: GridLocation.NORTHEAST,
-  [`${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST}`]: GridLocation.NORTHWEST,
-  [`${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST}`]: GridLocation.SOUTHWEST,
+  [`${GridLocation.NORTHEAST},${GridLocation.SOUTHWEST}`]:
+    GridLocation.SOUTHEAST,
+  [`${GridLocation.NORTHWEST},${GridLocation.SOUTHEAST}`]:
+    GridLocation.NORTHEAST,
+  [`${GridLocation.SOUTHWEST},${GridLocation.NORTHEAST}`]:
+    GridLocation.NORTHWEST,
+  [`${GridLocation.SOUTHEAST},${GridLocation.NORTHWEST}`]:
+    GridLocation.SOUTHWEST,
 };
 
-const NON_ZERO_TURNS_DASH_LOCATION_MAP: Record<string, Record<GridLocation, GridLocation>> = {
+const NON_ZERO_TURNS_DASH_LOCATION_MAP: Record<
+  string,
+  Record<GridLocation, GridLocation>
+> = {
   clockwise: {
     [GridLocation.NORTH]: GridLocation.EAST,
     [GridLocation.EAST]: GridLocation.SOUTH,
@@ -204,7 +251,9 @@ function dashLocationNonZeroTurns(motion: MotionData): GridLocation {
   ) {
     normalizedDirection = "counter_clockwise";
   } else {
-    console.warn(`Unrecognized rotation direction: ${rotationDirection}, defaulting to clockwise`);
+    console.warn(
+      `Unrecognized rotation direction: ${rotationDirection}, defaulting to clockwise`
+    );
     normalizedDirection = "clockwise";
   }
 
@@ -261,7 +310,7 @@ function getPhiDashPsiDashLocation(
   }
 
   if (motion.turns === 0 && otherMotion.turns === 0) {
-    const key = `${motion.color},${motion.startLocation},${motion.endLocation}`;
+    const key = `${motion.hand},${motion.startLocation},${motion.endLocation}`;
     return PHI_DASH_PSI_DASH_LOCATION_MAP[key] || motion.startLocation;
   }
 
@@ -296,7 +345,10 @@ function getLetterInfo(pictographData: PictographData): {
       const letterEnum = letter as Letter;
       letterType = getLetterType(letterEnum);
     } catch (error) {
-      console.warn(`Failed to determine letter type for "${letter}", defaulting to TYPE1:`, error);
+      console.warn(
+        `Failed to determine letter type for "${letter}", defaulting to TYPE1:`,
+        error
+      );
       letterType = LetterType.TYPE1;
     }
   }
@@ -315,24 +367,30 @@ function getGridInfo(pictographData: PictographData): {
   shiftLocation?: GridLocation;
 } {
   const gridMode =
-    pictographData.motions.blue?.gridMode ||
-    pictographData.motions.red?.gridMode ||
+    pictographData.motions.left?.gridMode ||
+    pictographData.motions.right?.gridMode ||
     GridMode.DIAMOND;
 
-  const result: { gridMode: GridMode; shiftLocation?: GridLocation } = { gridMode };
+  const result: { gridMode: GridMode; shiftLocation?: GridLocation } = {
+    gridMode,
+  };
 
-  const blue = pictographData.motions.blue;
-  const red = pictographData.motions.red;
+  const left = pictographData.motions.left;
+  const right = pictographData.motions.right;
 
-  if (blue && red) {
-    const blueIsShift = ["pro", "anti", "float"].includes(blue.motionType.toLowerCase() || "");
-    const redIsShift = ["pro", "anti", "float"].includes(red.motionType.toLowerCase() || "");
+  if (left && right) {
+    const leftIsShift = ["pro", "anti", "float"].includes(
+      left.motionType.toLowerCase() || ""
+    );
+    const rightIsShift = ["pro", "anti", "float"].includes(
+      right.motionType.toLowerCase() || ""
+    );
 
     let shiftMotion: MotionData | undefined;
-    if (blueIsShift && !redIsShift) {
-      shiftMotion = blue;
-    } else if (redIsShift && !blueIsShift) {
-      shiftMotion = red;
+    if (leftIsShift && !rightIsShift) {
+      shiftMotion = left;
+    } else if (rightIsShift && !leftIsShift) {
+      shiftMotion = right;
     }
 
     if (shiftMotion) {
@@ -345,10 +403,14 @@ function getGridInfo(pictographData: PictographData): {
 
 export function calculateDashLocationFromPictographData(
   pictographData: PictographData,
-  isBlueArrow: boolean
+  isLeftArrow: boolean
 ): GridLocation {
-  const motion = isBlueArrow ? pictographData.motions.blue : pictographData.motions.red;
-  const otherMotion = isBlueArrow ? pictographData.motions.red : pictographData.motions.blue;
+  const motion = isLeftArrow
+    ? pictographData.motions.left
+    : pictographData.motions.right;
+  const otherMotion = isLeftArrow
+    ? pictographData.motions.right
+    : pictographData.motions.left;
 
   if (motion?.motionType.toLowerCase() !== "dash") {
     return motion?.startLocation || GridLocation.NORTH;
@@ -394,7 +456,12 @@ export function calculateDashLocation(
   }
 
   if (motion.turns === 0) {
-    return defaultZeroTurnsDashLocation(motion, letterType, gridMode, shiftLocation);
+    return defaultZeroTurnsDashLocation(
+      motion,
+      letterType,
+      gridMode,
+      shiftLocation
+    );
   }
 
   return dashLocationNonZeroTurns(motion);

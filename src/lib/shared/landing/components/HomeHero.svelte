@@ -62,8 +62,8 @@
     note="a sequence in TKA notation"
     onReroll={handleReroll}
     rerolling={heroAct.rerolling}
-    bluePropType={heroAct.propType}
-    redPropType={heroAct.propType}
+    leftPropType={heroAct.propType}
+    rightPropType={heroAct.propType}
     onSequenceBoundary={heroAct.offerSequenceBoundary}
     trailSettingsOverride={HERO_TRAIL_PRESET}
     tipEffectMap={HERO_TIP_EFFECT_MAP}

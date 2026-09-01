@@ -37,7 +37,7 @@
           copy: "Lorq Nichols charted every even-petaled flower pairing in 2012. TKA draws the table live.",
         },
         {
-          href: "/glossary",
+          href: "/atlas",
           title: "Glossary",
           copy: "Positions, motions, letter types, and the rest of the vocabulary.",
         },

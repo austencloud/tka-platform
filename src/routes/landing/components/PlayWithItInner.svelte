@@ -251,8 +251,8 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
         cells={notationCells}
         currentStep={playback?.animationState?.currentStep ?? 0}
         {bpm}
-        bluePropType={currentPropType}
-        redPropType={currentPropType}
+        leftPropType={currentPropType}
+        rightPropType={currentPropType}
       />
     {/if}
   </div>
@@ -268,8 +268,8 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
           {#if animationReady}
             <div class="canvas-wrapper">
               <AnimatorCanvas
-                blueProp={playback?.animationState?.bluePropState ?? null}
-                redProp={playback?.animationState?.redPropState ?? null}
+                leftProp={playback?.animationState?.leftPropState ?? null}
+                rightProp={playback?.animationState?.rightPropState ?? null}
                 gridVisible={true}
                 gridMode={playback?.gridMode ?? null}
                 letter={playback?.currentLetter ?? null}
@@ -278,8 +278,8 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
                 currentStep={playback?.animationState?.currentStep ?? 0}
                 isPlaying={isPlaying}
                 trailSettings={trailSettings}
-                bluePropType={currentPropType}
-                redPropType={currentPropType}
+                leftPropType={currentPropType}
+                rightPropType={currentPropType}
                 word={playback?.animationState?.sequenceData?.intendedWord ?? playback?.animationState?.sequenceData?.word ?? null}
                 previewDarkMode={true}
                 visibilityManagerOverride={visibilityManager}

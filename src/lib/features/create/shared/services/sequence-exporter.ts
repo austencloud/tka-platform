@@ -27,8 +27,8 @@ export interface CondensedStartPosition {
   letter: string;
   gridPosition?: string;
   motions: {
-    blue: CondensedStartMotion;
-    red: CondensedStartMotion;
+    left: CondensedStartMotion;
+    right: CondensedStartMotion;
   };
 }
 
@@ -48,11 +48,11 @@ export interface CondensedStepData {
   stepNumber: number;
   gridPosition?: string;
   duration: number;
-  blueReversal: boolean;
-  redReversal: boolean;
+  leftReversal: boolean;
+  rightReversal: boolean;
   motions: {
-    blue: CondensedMotionData;
-    red: CondensedMotionData;
+    left: CondensedMotionData;
+    right: CondensedMotionData;
   };
 }
 
@@ -110,15 +110,15 @@ export function createCondensedSequence(
 function extractStartPosition(startPos: StepData): CondensedStartPosition {
   const letter = startPos.letter ?? "";
   const gridPosition = startPos.startPosition ?? undefined;
-  const blueMotion = startPos.motions.blue;
-  const redMotion = startPos.motions.red;
+  const leftMotion = startPos.motions.left;
+  const rightMotion = startPos.motions.right;
 
   return {
     letter,
     gridPosition,
     motions: {
-      blue: extractStartMotion(blueMotion),
-      red: extractStartMotion(redMotion),
+      left: extractStartMotion(leftMotion),
+      right: extractStartMotion(rightMotion),
     },
   };
 }
@@ -142,19 +142,19 @@ function extractStartMotion(
 function extractStepData(beat: StepData): CondensedStepData {
   const letter = beat.letter ?? "";
   const gridPosition = beat.startPosition ?? undefined;
-  const blueMotion = beat.motions.blue;
-  const redMotion = beat.motions.red;
+  const leftMotion = beat.motions.left;
+  const rightMotion = beat.motions.right;
 
   return {
     letter,
     stepNumber: beat.stepNumber,
     gridPosition,
     duration: beat.duration,
-    blueReversal: beat.blueReversal,
-    redReversal: beat.redReversal,
+    leftReversal: beat.leftReversal,
+    rightReversal: beat.rightReversal,
     motions: {
-      blue: extractMotionData(blueMotion),
-      red: extractMotionData(redMotion),
+      left: extractMotionData(leftMotion),
+      right: extractMotionData(rightMotion),
     },
   };
 }

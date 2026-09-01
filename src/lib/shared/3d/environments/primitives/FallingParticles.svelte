@@ -57,6 +57,8 @@
     spin?: boolean;
     /** Whether emitter is active */
     enabled?: boolean;
+    /** Whether its owning retained environment is currently visible. */
+    active?: boolean;
     /** Overall particle opacity. */
     opacity?: number;
     /**
@@ -97,6 +99,7 @@
     sizeRange = [0.04, 0.08],
     spin = true,
     enabled = true,
+    active = true,
     opacity = 1,
     shape,
     motionScale,
@@ -594,124 +597,145 @@
   // particles hold their last pose and the buffers still upload once, so a
   // reduced-motion viewer gets a still field rather than an empty one.
   let localTime = 0;
-  useTask((rawDelta) => {
-    if (!geometry || !material || !enabled) return;
+  let uploadedStillFrame = false;
+  const particleTask = useTask(
+    (rawDelta) => {
+      if (!geometry || !material || !enabled) return;
 
-    const delta = rawDelta * activeMotionScale;
-    localTime += delta;
-    const time = localTime;
-    const isFirefly = type === "fireflies";
+      const delta = rawDelta * activeMotionScale;
+      localTime += delta;
+      const time = localTime;
+      const isFirefly = type === "fireflies";
 
-    // Get direct references to geometry arrays (once per frame, not per particle)
-    const posAttr = geometry.attributes.position;
-    const sizeAttr = geometry.attributes.size;
-    const rotAttr = geometry.attributes.rotation;
-    const colorAttr = geometry.attributes.colorIndex;
-    const aspectAttr = geometry.attributes.aspect;
-    if (!posAttr || !sizeAttr || !rotAttr || !colorAttr || !aspectAttr) return;
+      // Get direct references to geometry arrays (once per frame, not per particle)
+      const posAttr = geometry.attributes.position;
+      const sizeAttr = geometry.attributes.size;
+      const rotAttr = geometry.attributes.rotation;
+      const colorAttr = geometry.attributes.colorIndex;
+      const aspectAttr = geometry.attributes.aspect;
+      if (!posAttr || !sizeAttr || !rotAttr || !colorAttr || !aspectAttr)
+        return;
 
-    const posArray = posAttr.array as Float32Array;
-    const sizeArray = sizeAttr.array as Float32Array;
-    const rotArray = rotAttr.array as Float32Array;
-    const colorArray = colorAttr.array as Float32Array;
-    const aspectArray = aspectAttr.array as Float32Array;
+      const posArray = posAttr.array as Float32Array;
+      const sizeArray = sizeAttr.array as Float32Array;
+      const rotArray = rotAttr.array as Float32Array;
+      const colorArray = colorAttr.array as Float32Array;
+      const aspectArray = aspectAttr.array as Float32Array;
 
-    for (let i = 0; i < particles.length; i++) {
-      const p = particles[i];
-      if (!p) continue;
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        if (!p) continue;
 
-      // Apply gravity (fireflies have none)
-      if (config.gravity !== 0) {
-        if (buoyant) {
-          // Convection accelerates a climb. The legacy embers branch inverted
-          // the sign a second time and decelerated instead, so a mote reached
-          // its apex in about a second and hung there — the stalled dots that
-          // read as stuck pixels rather than as anything rising.
-          p.velocity.y += Math.abs(config.gravity) * delta;
-        } else {
-          p.velocity.y -= config.gravity * delta * (type === "embers" ? -1 : 1);
+        // Apply gravity (fireflies have none)
+        if (config.gravity !== 0) {
+          if (buoyant) {
+            // Convection accelerates a climb. The legacy embers branch inverted
+            // the sign a second time and decelerated instead, so a mote reached
+            // its apex in about a second and hung there — the stalled dots that
+            // read as stuck pixels rather than as anything rising.
+            p.velocity.y += Math.abs(config.gravity) * delta;
+          } else {
+            p.velocity.y -=
+              config.gravity * delta * (type === "embers" ? -1 : 1);
+          }
         }
-      }
 
-      // Apply sway - fireflies also sway in Z direction for 3D wandering
-      const sway =
-        Math.sin(time * p.swaySpeed + p.swayPhase) * config.swayAmount * delta;
-      p.position.x += sway;
-      if (isFirefly) {
-        const swayZ =
-          Math.cos(time * p.swaySpeed * 0.7 + p.swayPhase) *
+        // Apply sway - fireflies also sway in Z direction for 3D wandering
+        const sway =
+          Math.sin(time * p.swaySpeed + p.swayPhase) *
           config.swayAmount *
-          delta *
-          0.5;
-        p.position.z += swayZ;
-      }
-
-      // Update position
-      p.position.add(_tempVel.copy(p.velocity).multiplyScalar(delta));
-
-      p.rotation += p.rotationSpeed * delta;
-
-      // Firefly pulsing - realistic blink pattern (mostly dark, occasional flash)
-      if (isFirefly && config.pulses) {
-        const pulseValue = Math.sin(time * p.pulseSpeed + p.pulsePhase);
-        // Only flash when sine wave is above threshold (~30% of cycle)
-        const flashThreshold = 0.5;
-        if (pulseValue > flashThreshold) {
-          // Map threshold-1.0 to 0-1 for intensity
-          const rawIntensity =
-            (pulseValue - flashThreshold) / (1 - flashThreshold);
-          // Apply smoothstep for gentle fade in/out
-          const smoothedIntensity =
-            rawIntensity * rawIntensity * (3 - 2 * rawIntensity);
-          p.size = p.baseSize * smoothedIntensity;
-        } else {
-          // Dark/invisible when not flashing
-          p.size = 0;
+          delta;
+        p.position.x += sway;
+        if (isFirefly) {
+          const swayZ =
+            Math.cos(time * p.swaySpeed * 0.7 + p.swayPhase) *
+            config.swayAmount *
+            delta *
+            0.5;
+          p.position.z += swayZ;
         }
+
+        // Update position
+        p.position.add(_tempVel.copy(p.velocity).multiplyScalar(delta));
+
+        p.rotation += p.rotationSpeed * delta;
+
+        // Firefly pulsing - realistic blink pattern (mostly dark, occasional flash)
+        if (isFirefly && config.pulses) {
+          const pulseValue = Math.sin(time * p.pulseSpeed + p.pulsePhase);
+          // Only flash when sine wave is above threshold (~30% of cycle)
+          const flashThreshold = 0.5;
+          if (pulseValue > flashThreshold) {
+            // Map threshold-1.0 to 0-1 for intensity
+            const rawIntensity =
+              (pulseValue - flashThreshold) / (1 - flashThreshold);
+            // Apply smoothstep for gentle fade in/out
+            const smoothedIntensity =
+              rawIntensity * rawIntensity * (3 - 2 * rawIntensity);
+            p.size = p.baseSize * smoothedIntensity;
+          } else {
+            // Dark/invisible when not flashing
+            p.size = 0;
+          }
+        }
+
+        // Respawn if out of bounds
+        const halfHeight = area.height / 2;
+        const halfWidth = area.width / 2;
+        const halfDepth = area.depth / 2;
+
+        if (
+          p.position.y < -halfHeight ||
+          p.position.y > halfHeight + 0.5 || // 0.5m above area
+          Math.abs(p.position.x) > halfWidth ||
+          Math.abs(p.position.z) > halfDepth
+        ) {
+          const newP = spawnParticle();
+          p.position.copy(newP.position);
+          p.velocity.copy(newP.velocity);
+          p.rotation = newP.rotation;
+          p.rotationSpeed = newP.rotationSpeed;
+          p.size = newP.size;
+          p.baseSize = newP.baseSize;
+          p.colorIndex = newP.colorIndex;
+          p.swayPhase = newP.swayPhase;
+          p.swaySpeed = newP.swaySpeed;
+          p.pulsePhase = newP.pulsePhase;
+          p.pulseSpeed = newP.pulseSpeed;
+          p.aspect = newP.aspect;
+        }
+
+        // Write to geometry attribute arrays
+        posArray[i * 3] = p.position.x;
+        posArray[i * 3 + 1] = p.position.y;
+        posArray[i * 3 + 2] = p.position.z;
+        sizeArray[i] = p.size;
+        rotArray[i] = p.rotation;
+        colorArray[i] = p.colorIndex;
+        aspectArray[i] = p.aspect;
       }
 
-      // Respawn if out of bounds
-      const halfHeight = area.height / 2;
-      const halfWidth = area.width / 2;
-      const halfDepth = area.depth / 2;
+      // Mark attributes as needing update
+      posAttr.needsUpdate = true;
+      sizeAttr.needsUpdate = true;
+      rotAttr.needsUpdate = true;
+      colorAttr.needsUpdate = true;
+      aspectAttr.needsUpdate = true;
+      uploadedStillFrame = true;
+      if (activeMotionScale === 0) particleTask.stop();
+    },
+    { autoStart: false }
+  );
 
-      if (
-        p.position.y < -halfHeight ||
-        p.position.y > halfHeight + 0.5 || // 0.5m above area
-        Math.abs(p.position.x) > halfWidth ||
-        Math.abs(p.position.z) > halfDepth
-      ) {
-        const newP = spawnParticle();
-        p.position.copy(newP.position);
-        p.velocity.copy(newP.velocity);
-        p.rotation = newP.rotation;
-        p.rotationSpeed = newP.rotationSpeed;
-        p.size = newP.size;
-        p.baseSize = newP.baseSize;
-        p.colorIndex = newP.colorIndex;
-        p.swayPhase = newP.swayPhase;
-        p.swaySpeed = newP.swaySpeed;
-        p.pulsePhase = newP.pulsePhase;
-        p.pulseSpeed = newP.pulseSpeed;
-        p.aspect = newP.aspect;
-      }
-
-      // Write to geometry attribute arrays
-      posArray[i * 3] = p.position.x;
-      posArray[i * 3 + 1] = p.position.y;
-      posArray[i * 3 + 2] = p.position.z;
-      sizeArray[i] = p.size;
-      rotArray[i] = p.rotation;
-      colorArray[i] = p.colorIndex;
-      aspectArray[i] = p.aspect;
+  $effect(() => {
+    const shouldRun = active && enabled;
+    const needsStillUpload = activeMotionScale === 0 && !uploadedStillFrame;
+    if (shouldRun && (activeMotionScale > 0 || needsStillUpload)) {
+      particleTask.start();
+    } else {
+      particleTask.stop();
     }
-
-    // Mark attributes as needing update
-    posAttr.needsUpdate = true;
-    sizeAttr.needsUpdate = true;
-    rotAttr.needsUpdate = true;
-    colorAttr.needsUpdate = true;
-    aspectAttr.needsUpdate = true;
+    return () => particleTask.stop();
   });
 </script>
 

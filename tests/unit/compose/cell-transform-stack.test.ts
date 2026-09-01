@@ -10,12 +10,15 @@ import { describe, it, expect, vi } from "vitest";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { AppliedTransform } from "$lib/features/compose/compose/domain/types";
 
-vi.mock("$lib/features/compose/tabs/arrange/services/arrange-layer-transformer", () => ({
-  applyTransform: vi.fn(async (seq: SequenceData, type: string) => ({
-    success: true,
-    transformed: { ...seq, name: `${seq.name}+${type}` } as SequenceData,
-  })),
-}));
+vi.mock(
+  "$lib/features/compose/tabs/arrange/services/arrange-layer-transformer",
+  () => ({
+    applyTransform: vi.fn(async (seq: SequenceData, type: string) => ({
+      success: true,
+      transformed: { ...seq, name: `${seq.name}+${type}` } as SequenceData,
+    })),
+  })
+);
 
 import {
   computeEffective,
@@ -67,14 +70,14 @@ describe("CellTransformStack", () => {
       const transforms: AppliedTransform[] = [
         { type: "rotate90", hand: "both", timestamp: 1 },
         { type: "mirror", hand: "both", timestamp: 2 },
-        { type: "swapColors", hand: "both", timestamp: 3 },
+        { type: "swapHands", hand: "both", timestamp: 3 },
       ];
 
       const result = await computeEffective(original, transforms);
 
       // Each transform appends "+type" to the name, so the final name
       // shows the full chain: ABC -> ABC+rotate90 -> ABC+rotate90+mirror -> ...
-      expect(result.name).toBe("ABC+rotate90+mirror+swapColors");
+      expect(result.name).toBe("ABC+rotate90+mirror+swapHands");
       expect(mockedApplyTransform).toHaveBeenCalledTimes(3);
     });
 
@@ -88,20 +91,23 @@ describe("CellTransformStack", () => {
         .mockResolvedValueOnce({ success: false, error: "failed" } as any)
         .mockResolvedValueOnce({
           success: true,
-          transformed: { ...makeSequence("ABC"), name: "ABC+rotate90+swapColors" },
+          transformed: {
+            ...makeSequence("ABC"),
+            name: "ABC+rotate90+swapHands",
+          },
         });
 
       const original = makeSequence("ABC");
       const transforms: AppliedTransform[] = [
         { type: "rotate90", hand: "both", timestamp: 1 },
         { type: "mirror", hand: "both", timestamp: 2 },
-        { type: "swapColors", hand: "both", timestamp: 3 },
+        { type: "swapHands", hand: "both", timestamp: 3 },
       ];
 
       const result = await computeEffective(original, transforms);
 
-      // Mirror failed, so swapColors was applied to the rotate90 result
-      expect(result.name).toBe("ABC+rotate90+swapColors");
+      // Mirror failed, so swapHands was applied to the rotate90 result
+      expect(result.name).toBe("ABC+rotate90+swapHands");
     });
   });
 

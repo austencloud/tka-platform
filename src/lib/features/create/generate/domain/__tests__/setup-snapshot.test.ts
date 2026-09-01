@@ -33,8 +33,8 @@ const baseStartEnd = (): StartEndOptions =>
     endPosition: null,
     mustContainLetters: ["A", "B"],
     mustNotContainLetters: [],
-    blueStartOrientation: "in",
-    redStartOrientation: "in",
+    leftStartOrientation: "in",
+    rightStartOrientation: "in",
   }) as unknown as StartEndOptions;
 
 function snap(

@@ -29,7 +29,8 @@ export const FILM_DIRECTOR_SCHEMA_VERSION_1 = 1 as const;
 export const FILM_DIRECTOR_SCHEMA_VERSION_2 = 2 as const;
 export const FILM_DIRECTOR_SCHEMA_VERSION_3 = 3 as const;
 export const FILM_DIRECTOR_SCHEMA_VERSION_4 = 4 as const;
-export const FILM_DIRECTOR_SCHEMA_VERSION = FILM_DIRECTOR_SCHEMA_VERSION_4;
+export const FILM_DIRECTOR_SCHEMA_VERSION_5 = 5 as const;
+export const FILM_DIRECTOR_SCHEMA_VERSION = FILM_DIRECTOR_SCHEMA_VERSION_5;
 
 export const FILM_DIRECTOR_DIRECTIVE_AXES = [
   "characterId",
@@ -39,8 +40,8 @@ export const FILM_DIRECTOR_DIRECTIVE_AXES = [
   "staffLengthCm",
   "environmentId",
   "formation",
-  "bluePlane",
-  "redPlane",
+  "leftPlane",
+  "rightPlane",
   "stepPlane",
 ] as const;
 
@@ -50,6 +51,25 @@ const seedSchema = z
     axes: z.record(z.string(), z.number().int()).optional(),
   })
   .strict();
+
+function normalizeLegacyHandPair(value: unknown): unknown {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return value;
+  }
+  const input = value as Record<string, unknown>;
+  const normalized = { ...input };
+  for (const [legacy, canonical] of [
+    ["blue", "left"],
+    ["red", "right"],
+  ] as const) {
+    if (legacy in normalized && canonical in normalized) return value;
+    if (legacy in normalized) {
+      normalized[canonical] = normalized[legacy];
+      delete normalized[legacy];
+    }
+  }
+  return normalized;
+}
 
 export const DIRECTOR_EFFORT_IDS = [
   "linear",
@@ -233,7 +253,11 @@ const visiblePlanesSchema = z
 const stepPlaneEntrySchema = z
   .object({
     step: z.number().int().min(0),
-    hand: z.enum(["blue", "red"]),
+    hand: z.preprocess(
+      (value) =>
+        value === "blue" ? "left" : value === "red" ? "right" : value,
+      z.enum(["left", "right"])
+    ),
     plane: directiveSchema(planeSchema),
   })
   .strict();
@@ -278,7 +302,10 @@ const cameraKeyframeSchema = z
 const positionRefSchema = z.union(
   [
     z.string().min(1),
-    z.object({ blue: z.string().min(1), red: z.string().min(1) }).strict(),
+    z.preprocess(
+      normalizeLegacyHandPair,
+      z.object({ left: z.string().min(1), right: z.string().min(1) }).strict()
+    ),
     z
       .object({
         group: z.enum(DIRECTOR_POSITION_GROUPS),
@@ -300,15 +327,21 @@ const turnLaneSchema = z.union([
 const turnsSchema = z.union(
   [
     turnLaneSchema,
-    z
-      .object({
-        blue: turnLaneSchema.optional(),
-        red: turnLaneSchema.optional(),
-      })
-      .strict()
-      .refine((lanes) => lanes.blue !== undefined || lanes.red !== undefined, {
-        message: "A per-hand turn figure names blue, red, or both.",
-      }),
+    z.preprocess(
+      normalizeLegacyHandPair,
+      z
+        .object({
+          left: turnLaneSchema.optional(),
+          right: turnLaneSchema.optional(),
+        })
+        .strict()
+        .refine(
+          (lanes) => lanes.left !== undefined || lanes.right !== undefined,
+          {
+            message: "A per-hand turn figure names left, right, or both.",
+          }
+        )
+    ),
     z.object({ intensity: finiteNumber }).strict(),
   ],
   {
@@ -320,15 +353,21 @@ const turnsSchema = z.union(
 const orientationSchema = z.enum(DIRECTOR_ORIENTATIONS);
 const startOrientationSchema = z.union([
   orientationSchema,
-  z
-    .object({
-      blue: orientationSchema.optional(),
-      red: orientationSchema.optional(),
-    })
-    .strict()
-    .refine((hands) => hands.blue !== undefined || hands.red !== undefined, {
-      message: "A per-hand start orientation names blue, red, or both.",
-    }),
+  z.preprocess(
+    normalizeLegacyHandPair,
+    z
+      .object({
+        left: orientationSchema.optional(),
+        right: orientationSchema.optional(),
+      })
+      .strict()
+      .refine(
+        (hands) => hands.left !== undefined || hands.right !== undefined,
+        {
+          message: "A per-hand start orientation names left, right, or both.",
+        }
+      )
+  ),
 ]);
 
 const loopSchema = z.union([
@@ -502,8 +541,8 @@ const performerSchema = z
     beatOffset: finiteNumber.optional(),
     blocking: blockingSchema.optional(),
     staffLengthCm: directiveSchema(finiteNumber.min(40).max(300)).optional(),
-    bluePlane: directiveSchema(planeSchema).optional(),
-    redPlane: directiveSchema(planeSchema).optional(),
+    leftPlane: directiveSchema(planeSchema).optional(),
+    rightPlane: directiveSchema(planeSchema).optional(),
     stepPlanes: z.array(stepPlaneEntrySchema).optional(),
   })
   .strict();
@@ -517,8 +556,8 @@ const castDefaultsSchema = z
     effort: directiveSchema(effortIdSchema).optional(),
     blocking: blockingSchema.optional(),
     staffLengthCm: directiveSchema(finiteNumber.min(40).max(300)).optional(),
-    bluePlane: directiveSchema(planeSchema).optional(),
-    redPlane: directiveSchema(planeSchema).optional(),
+    leftPlane: directiveSchema(planeSchema).optional(),
+    rightPlane: directiveSchema(planeSchema).optional(),
     stepPlanes: z.array(stepPlaneEntrySchema).optional(),
   })
   .strict();
@@ -703,6 +742,7 @@ const filmDirectorInputSchema = z
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION_1),
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION_2),
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION_3),
+      z.literal(FILM_DIRECTOR_SCHEMA_VERSION_4),
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION),
     ]),
     id: z.string().min(1),
@@ -746,7 +786,7 @@ export type DirectorEasing = (typeof DIRECTOR_EASINGS)[number];
 
 export interface ResolvedDirectorStepPlane {
   step: number;
-  hand: "blue" | "red";
+  hand: "left" | "right";
   plane: Plane;
 }
 
@@ -766,8 +806,8 @@ export interface ResolvedDirectorPerformer {
   blocking: ResolvedDirectorBlockingKeyframe[];
   beatOffset: number;
   staffLengthCm: number | null;
-  bluePlane: Plane;
-  redPlane: Plane;
+  leftPlane: Plane;
+  rightPlane: Plane;
   stepPlanes: ResolvedDirectorStepPlane[];
 }
 
@@ -830,6 +870,7 @@ export interface ResolvedFilmDirectorSpec {
     | typeof FILM_DIRECTOR_SCHEMA_VERSION_1
     | typeof FILM_DIRECTOR_SCHEMA_VERSION_2
     | typeof FILM_DIRECTOR_SCHEMA_VERSION_3
+    | typeof FILM_DIRECTOR_SCHEMA_VERSION_4
     | typeof FILM_DIRECTOR_SCHEMA_VERSION;
   id: string;
   title: string;

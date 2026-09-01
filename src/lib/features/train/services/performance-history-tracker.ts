@@ -6,7 +6,10 @@
  */
 
 import { db } from "$lib/shared/persistence/database/tka-database";
-import type { StoredPerformance } from "$lib/shared/train/domain/train-database-models";
+import {
+  normalizeStoredBeatResultsJson,
+  type StoredPerformance,
+} from "$lib/shared/train/domain/train-database-models";
 import type { PerformanceScore } from "$lib/shared/train/domain/performance-data";
 
 export interface PersonalBest {
@@ -30,7 +33,9 @@ export interface StatsOverview {
 /**
  * Save a completed performance session to IndexedDB
  */
-export async function savePerformance(performance: StoredPerformance): Promise<void> {
+export async function savePerformance(
+  performance: StoredPerformance
+): Promise<void> {
   try {
     await db.trainPerformances.add(performance);
   } catch (error) {
@@ -45,7 +50,9 @@ export async function savePerformance(performance: StoredPerformance): Promise<v
 /**
  * Get recent training sessions, ordered by date descending
  */
-export async function getRecentSessions(limit: number): Promise<StoredPerformance[]> {
+export async function getRecentSessions(
+  limit: number
+): Promise<StoredPerformance[]> {
   try {
     const sessions = await db.trainPerformances
       .orderBy("performedAt")
@@ -53,7 +60,10 @@ export async function getRecentSessions(limit: number): Promise<StoredPerformanc
       .limit(limit)
       .toArray();
 
-    return sessions;
+    return sessions.map((session) => ({
+      ...session,
+      beatResultsJson: normalizeStoredBeatResultsJson(session.beatResultsJson),
+    }));
   } catch (error) {
     console.error(
       "[performance-history-tracker] Failed to get recent sessions:",
@@ -177,7 +187,9 @@ export async function getStatsOverview(): Promise<StatsOverview> {
 /**
  * Get personal best for a specific sequence
  */
-export async function getPersonalBest(sequenceId: string): Promise<PersonalBest | null> {
+export async function getPersonalBest(
+  sequenceId: string
+): Promise<PersonalBest | null> {
   try {
     // Use the compound index for efficient querying
     const performances = await db.trainPerformances

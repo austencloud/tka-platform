@@ -51,7 +51,7 @@ export class NodeArrowSvgLoader implements IArrowSvgLoader {
     // Use explicit theme mode if provided, default to light
     const themeMode = options?.themeMode ?? "light";
 
-    const transformedCacheKey = `${path}:${motionData.color}:${themeMode}`;
+    const transformedCacheKey = `${path}:${motionData.hand}:${themeMode}`;
 
     // Check transformed cache first
     if (this.transformedSvgCache.has(transformedCacheKey)) {
@@ -66,7 +66,7 @@ export class NodeArrowSvgLoader implements IArrowSvgLoader {
     // Apply color transformation to the SVG
     const coloredSvgText = this.colorTransformer.applyColorToSvg(
       originalSvgText,
-      motionData.color,
+      motionData.hand,
       themeMode
     );
 

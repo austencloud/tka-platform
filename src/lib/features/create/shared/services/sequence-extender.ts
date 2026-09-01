@@ -8,10 +8,16 @@
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { GridMode, type GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  GridMode,
+  type GridPosition,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { LOOPOption } from "./loop-validator";
 import type { OrientationAlignment } from "./orientation-alignment-calculator";
-import { Period, type LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import {
+  Period,
+  type LOOPType,
+} from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
@@ -70,10 +76,7 @@ export interface ExtensionOptions {
 /**
  * Describes the rotation relationship between end position and start position.
  */
-export type RotationRelation =
-  | "exact"
-  | "quarter"
-  | "half";
+export type RotationRelation = "exact" | "quarter" | "half";
 
 /**
  * Option for making a non-loopable sequence circular via bridge letter.
@@ -144,7 +147,10 @@ export interface ExtensionApplyResult {
 }
 import type { LOOPExecutorSelector } from "$lib/features/create/generate/circular/services/loop-executor-selector";
 import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
-import type { ILetterQueryHandler, IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
+import type {
+  ILetterQueryHandler,
+  IMotionQueryHandler,
+} from "$lib/shared/foundation/services/data/data-contracts";
 import type { stepConverter as StepConverterSingleton } from "$lib/features/create/generate/shared/services/step-converter";
 type StepConverter = typeof StepConverterSingleton;
 import type { LOOPValidator } from "./loop-validator";
@@ -237,7 +243,8 @@ export class SequenceExtender {
     const cycleCount = isAlreadyComplete
       ? orientationCycleExtender.getCycleCount(sequence)
       : 1;
-    const orientationRepeat = cycleCount > 1 ? { count: cycleCount as 2 | 4 | 8 } : null;
+    const orientationRepeat =
+      cycleCount > 1 ? { count: cycleCount as 2 | 4 | 8 } : null;
 
     const canExtend = available.length > 0 || orientationRepeat !== null;
 
@@ -290,7 +297,8 @@ export class SequenceExtender {
 
     const { loopType } = options;
     // Use explicitly provided period, otherwise derive from position pair analysis
-    const period = options.period ??
+    const period =
+      options.period ??
       (analysis.extensionType === "quarter_rotation"
         ? Period.QUARTERED
         : Period.HALVED);
@@ -339,7 +347,10 @@ export class SequenceExtender {
     // is WRONG. We need to derive the correct letter from the transformed motions.
     const stepsWithDerivedLetters = await Promise.all(
       extensionSteps.map(async (beat, index) => {
-        const derivedLetter = await this.deriveLetterForStep(beat, sequence.gridMode || GridMode.DIAMOND);
+        const derivedLetter = await this.deriveLetterForStep(
+          beat,
+          sequence.gridMode || GridMode.DIAMOND
+        );
         return {
           ...beat,
           stepNumber: existingStepCount + index + 1,
@@ -363,8 +374,8 @@ export class SequenceExtender {
     };
 
     // Recalculate all orientations through the combined sequence.
-    // The LOOP executor updates orientations on engine-format fields (blueMotion/redMotion),
-    // but the app reads from motions.blue/motions.red. Without this recalculation,
+    // The LOOP executor updates orientations on engine-format fields (leftMotion/rightMotion),
+    // but the app reads from motions.left/motions.right. Without this recalculation,
     // the motions field carries stale orientations from the source step's spread,
     // causing the choreo card to render wrong prop angles.
     extendedSequence = recalculateAllOrientations(extendedSequence);
@@ -382,20 +393,21 @@ export class SequenceExtender {
     step: StepData,
     gridMode: GridMode
   ): Promise<Letter | null> {
-    const blueMotion = step.motions?.blue;
-    const redMotion = step.motions?.red;
+    const leftMotion = step.motions?.left;
+    const rightMotion = step.motions?.right;
 
     // Invisible placeholder = hand not really there (both-required Step shape).
-    if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) {
+    if (!isVisibleMotion(leftMotion) || !isVisibleMotion(rightMotion)) {
       return null;
     }
 
     try {
-      const letter = await this.motionQueryHandler.findLetterByMotionConfiguration(
-        blueMotion,
-        redMotion,
-        gridMode
-      );
+      const letter =
+        await this.motionQueryHandler.findLetterByMotionConfiguration(
+          leftMotion,
+          rightMotion,
+          gridMode
+        );
       return letter as Letter | null;
     } catch (error) {
       console.warn(

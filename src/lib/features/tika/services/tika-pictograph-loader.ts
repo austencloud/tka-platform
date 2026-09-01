@@ -22,8 +22,8 @@ export interface PictographData {
   endPosition: string;
   timing: string;
   direction: string;
-  blueMotion: MotionData;
-  redMotion: MotionData;
+  leftMotion: MotionData;
+  rightMotion: MotionData;
 }
 export interface PictographDataWithMode extends PictographData {
   gridMode: "diamond" | "box";
@@ -40,8 +40,8 @@ export interface LetterTypeInfo {
   characteristics: string[];
   letters: string[];
   motionPattern: {
-    blueMotion: string;
-    redMotion: string;
+    leftMotion: string;
+    rightMotion: string;
     note?: string;
   };
 }
@@ -146,8 +146,10 @@ export class TikaPictographLoader {
       );
       this.boxPictographs = this.loadCsvFile(boxPath, "box");
 
-      this.allPictographs = [...this.diamondPictographs, ...this.boxPictographs];
-
+      this.allPictographs = [
+        ...this.diamondPictographs,
+        ...this.boxPictographs,
+      ];
     } catch (error) {
       console.error("[TikaPictographLoader] Failed to load dataframe:", error);
     }
@@ -183,15 +185,15 @@ export class TikaPictographLoader {
           timing: row["timing"] ?? "",
           direction: row["direction"] ?? "",
           gridMode,
-          blueMotion: {
-            color: "blue",
+          leftMotion: {
+            hand: "left",
             startLocation: row["blueStartLocation"] ?? "",
             endLocation: row["blueEndLocation"] ?? "",
             motionType: row["blueMotionType"] ?? "",
             rotationDirection: row["blueRotationDirection"] ?? "",
           },
-          redMotion: {
-            color: "red",
+          rightMotion: {
+            hand: "right",
             startLocation: row["redStartLocation"] ?? "",
             endLocation: row["redEndLocation"] ?? "",
             motionType: row["redMotionType"] ?? "",
@@ -278,7 +280,6 @@ export class TikaPictographLoader {
         lettersByTransition[transition].push(letter);
       }
       this.bridgeLettersByTransition = lettersByTransition;
-
     } catch (error) {
       console.error(
         "[TikaPictographLoader] Failed to load letter-mappings.json:",

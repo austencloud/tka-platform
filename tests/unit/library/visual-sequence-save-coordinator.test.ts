@@ -58,8 +58,8 @@ describe("VisualSequenceSaveCoordinator", () => {
     const coordinator = new VisualSequenceSaveCoordinator({ saveSequence });
 
     const outcome = await coordinator.save(SEQUENCE, {
-      bluePropType: PropType.POI,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.POI,
+      rightPropType: PropType.FAN,
       catDogModeEnabled: true,
       pathShape: "concave",
     });
@@ -67,8 +67,8 @@ describe("VisualSequenceSaveCoordinator", () => {
     expect(outcome.status).toBe("saved");
     const saved = saveSequence.mock.calls[0]![0] as SequenceData;
     expect(saved.intendedProp).toEqual({
-      bluePropType: PropType.POI,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.POI,
+      rightPropType: PropType.FAN,
       catDogMode: true,
     });
     expect(saved.creatorIntent?.propConfig).toEqual(saved.intendedProp);

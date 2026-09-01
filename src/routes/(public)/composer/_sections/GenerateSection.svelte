@@ -582,8 +582,8 @@
                             chrome: "minimal",
                             fill: true,
                             scrubbable: true,
-                            bluePropType: PropType.STAFF,
-                            redPropType: PropType.STAFF,
+                            leftPropType: PropType.STAFF,
+                            rightPropType: PropType.STAFF,
                             externalBpm: 60,
                             trailSettingsOverride: HERO_TRAIL_PRESET,
                             tipEffectMap: HERO_TIP_EFFECT_MAP,
@@ -618,8 +618,8 @@
                           orientation: "horizontal",
                           loop: true,
                           stepPulse: false,
-                          bluePropType: PropType.STAFF,
-                          redPropType: PropType.STAFF,
+                          leftPropType: PropType.STAFF,
+                          rightPropType: PropType.STAFF,
                         }}
                         error={stripLoadError}
                       />
@@ -644,8 +644,8 @@
                       getStepKey={(step, index) =>
                         step.id ?? `${current?.id ?? "generated"}-${index}`}
                       getDurationDisplay={(stepIndex) => String(stepIndex + 1)}
-                      bluePropTypeOverride={PropType.STAFF}
-                      redPropTypeOverride={PropType.STAFF}
+                      leftPropTypeOverride={PropType.STAFF}
+                      rightPropTypeOverride={PropType.STAFF}
                       sequenceWord={current.word}
                     />
                   {:else}

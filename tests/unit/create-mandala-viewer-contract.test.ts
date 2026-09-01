@@ -75,13 +75,13 @@ describe("Create workspace mandala viewer contract", () => {
       '{ value: "animated", label: "Animated" }'
     );
     expect(mandalaControls).toContain(
-      '{ value: "blue", label: "Blue", tone: "blue" }'
+      '{ value: "left", label: "Left", tone: "blue" }'
     );
     expect(mandalaControls).toContain(
       '{ value: "both", label: "Both", tone: "accent" }'
     );
     expect(mandalaControls).toContain(
-      '{ value: "red", label: "Red", tone: "red" }'
+      '{ value: "right", label: "Right", tone: "red" }'
     );
     expect(mandalaControls).not.toContain('label: "Purple"');
     expect(mandalaPanel).toContain("ctrl.show = variant");

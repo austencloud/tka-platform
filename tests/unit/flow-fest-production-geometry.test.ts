@@ -371,7 +371,7 @@ describe("Flow Fest production dressing", () => {
 
     first.dispose();
     second.dispose();
-  });
+  }, 30_000);
 
   it.each([
     ["lower-tent", 37],

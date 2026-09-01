@@ -4,6 +4,7 @@ import {
   viewerCustomColorPairsEqual,
   type ViewerCustomColorPair,
 } from "../domain/viewer-custom-colors";
+import { normalizeLegacyHandPair } from "@tka/tka-types";
 
 export const VIEWER_CUSTOM_COLORS_STORAGE_KEY = "tka_viewer_custom_colors";
 export const STAGED_VIEWER_CUSTOM_COLORS_STORAGE_KEY =
@@ -11,10 +12,10 @@ export const STAGED_VIEWER_CUSTOM_COLORS_STORAGE_KEY =
 
 const TUNNEL_VIEW_STORAGE_KEY = "tka_tunnel_view_state";
 const MANDALA_VIEW_STORAGE_KEY = "tka_mandala_view_state";
-const PREFERENCE_VERSION = 1;
+const PREFERENCE_VERSION = 2;
 const LEGACY_MANDALA_DEFAULTS: ViewerCustomColorPair = {
-  blue: "#4fc3f7",
-  red: "#ef5350",
+  left: "#4fc3f7",
+  right: "#ef5350",
 };
 
 type ReadStorage = Pick<Storage, "getItem">;
@@ -32,8 +33,14 @@ function parseJson(storage: ReadStorage, key: string): unknown {
 
 function parsedPair(value: unknown): ViewerCustomColorPair | null {
   if (!value || typeof value !== "object") return null;
-  const candidate = value as { blue?: unknown; red?: unknown };
-  if (typeof candidate.blue !== "string" || typeof candidate.red !== "string") {
+  const candidate = normalizeLegacyHandPair(value) as {
+    left?: unknown;
+    right?: unknown;
+  };
+  if (
+    typeof candidate.left !== "string" ||
+    typeof candidate.right !== "string"
+  ) {
     return null;
   }
   return resolveViewerCustomColorPair(candidate);
@@ -43,7 +50,7 @@ function canonicalPair(storage: ReadStorage): ViewerCustomColorPair | null {
   const value = parseJson(storage, VIEWER_CUSTOM_COLORS_STORAGE_KEY);
   if (!value || typeof value !== "object") return null;
   const record = value as { version?: unknown; colors?: unknown };
-  return record.version === PREFERENCE_VERSION
+  return record.version === 1 || record.version === PREFERENCE_VERSION
     ? parsedPair(record.colors)
     : null;
 }
@@ -59,8 +66,16 @@ function legacyTunnelPair(storage: ReadStorage): ViewerCustomColorPair | null {
 function legacyMandalaPair(storage: ReadStorage): ViewerCustomColorPair | null {
   const value = parseJson(storage, MANDALA_VIEW_STORAGE_KEY);
   if (!value || typeof value !== "object") return null;
-  const view = value as { customBlue?: unknown; customRed?: unknown };
-  return parsedPair({ blue: view.customBlue, red: view.customRed });
+  const view = value as {
+    customLeft?: unknown;
+    customRight?: unknown;
+    customBlue?: unknown;
+    customRed?: unknown;
+  };
+  return parsedPair({
+    left: view.customLeft ?? view.customBlue,
+    right: view.customRight ?? view.customRed,
+  });
 }
 
 function chooseLegacyPair(

@@ -13,8 +13,8 @@
   let animationInterval: number | null = null;
 
   const settings = getSettings();
-  const bluePropType = settings.bluePropType || settings.propType;
-  const redPropType = settings.redPropType || settings.propType;
+  const leftPropType = settings.leftPropType || settings.propType;
+  const rightPropType = settings.rightPropType || settings.propType;
 
   const variants: { hint: HoverHint; corner: boolean; title: string; blurb: string }[] = [
     { hint: "none", corner: true, title: "Corner play button", blurb: "Real button, top-right. Reveals on mouse hover (+ keyboard focus). Current pick." },
@@ -102,13 +102,13 @@
           </div>
           <div class="canvas-box">
             <AnimatorCanvas
-              blueProp={null}
-              redProp={null}
+              leftProp={null}
+              rightProp={null}
               {sequenceData}
               {currentStep}
               {isPlaying}
-              {bluePropType}
-              {redPropType}
+              {leftPropType}
+              {rightPropType}
               gridVisible={true}
               backgroundAlpha={1}
               previewDarkMode={true}

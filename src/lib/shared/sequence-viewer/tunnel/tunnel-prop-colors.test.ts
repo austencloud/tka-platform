@@ -11,14 +11,14 @@ import {
 
 describe("tunnelPropColor", () => {
   it("anchors the base pair at blue and red", () => {
-    const blue = tunnelPropColor(0, 7); // base blue
-    const red = tunnelPropColor(1, 7); // base red
+    const left = tunnelPropColor(0, 7); // base blue
+    const right = tunnelPropColor(1, 7); // base red
     // Base blue: blue channel dominates.
-    expect(blue.rgb255.b).toBeGreaterThan(blue.rgb255.r);
-    expect(blue.rgb255.b).toBeGreaterThan(blue.rgb255.g);
+    expect(left.rgb255.b).toBeGreaterThan(left.rgb255.r);
+    expect(left.rgb255.b).toBeGreaterThan(left.rgb255.g);
     // Base red: red channel dominates.
-    expect(red.rgb255.r).toBeGreaterThan(red.rgb255.g);
-    expect(red.rgb255.r).toBeGreaterThan(red.rgb255.b);
+    expect(right.rgb255.r).toBeGreaterThan(right.rgb255.g);
+    expect(right.rgb255.r).toBeGreaterThan(right.rgb255.b);
   });
 
   it("fans the blue family toward green (far end is green-dominant)", () => {
@@ -64,7 +64,7 @@ describe("Tunnel exact color state", () => {
       })
     ).toEqual({
       mode: "custom",
-      custom: { blue: "#123abc", red: "#fedcba" },
+      custom: { left: "#123abc", right: "#fedcba" },
     });
   });
 

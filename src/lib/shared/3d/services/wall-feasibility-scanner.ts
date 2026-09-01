@@ -30,8 +30,8 @@ const SQUARE_STANCE: StancePose = {
 };
 
 export interface StepMotionPair {
-  blue: MotionConfig3D;
-  red: MotionConfig3D;
+  left: MotionConfig3D;
+  right: MotionConfig3D;
 }
 
 export interface StepScanResult {
@@ -47,14 +47,14 @@ export interface SequenceScanResult {
 }
 
 export function scanStepPair(
-  blue: MotionConfig3D,
-  red: MotionConfig3D,
+  left: MotionConfig3D,
+  right: MotionConfig3D,
   heightM = DEFAULT_HEIGHT_M
 ): StepScanResult {
   const sim = new StanceSimulator(restPoseFromHeight(heightM));
-  const blueSweep = buildSweptVolume(blue).samples;
-  const redSweep = buildSweptVolume(red).samples;
-  const result = sim.evaluateSweep(SQUARE_STANCE, blueSweep, redSweep);
+  const leftSweep = buildSweptVolume(left).samples;
+  const rightSweep = buildSweptVolume(right).samples;
+  const result = sim.evaluateSweep(SQUARE_STANCE, leftSweep, rightSweep);
   return {
     clean: result.collisions.length === 0,
     collisions: result.collisions,
@@ -66,7 +66,7 @@ export function scanSequenceSteps(
   steps: StepMotionPair[],
   heightM = DEFAULT_HEIGHT_M
 ): SequenceScanResult {
-  const stepResults = steps.map((s) => scanStepPair(s.blue, s.red, heightM));
+  const stepResults = steps.map((s) => scanStepPair(s.left, s.right, heightM));
   const flaggedSteps = stepResults
     .map((r, i) => (r.clean ? -1 : i))
     .filter((i) => i >= 0);

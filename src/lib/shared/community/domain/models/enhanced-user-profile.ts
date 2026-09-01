@@ -40,8 +40,8 @@ export interface UserProfile {
   activeProp?: PropType | null;
   /** Optional catdog combo favorite */
   favoriteCatdog?: {
-    bluePropType: PropType;
-    redPropType: PropType;
+    leftPropType: PropType;
+    rightPropType: PropType;
   } | null;
 
   // Profile accent color (hex, e.g. "#8b5cf6") for avatar ring and cards

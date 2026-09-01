@@ -12,8 +12,8 @@ type VisibilityObserver = () => void;
 
 /** Cached after theme changes to avoid repeated computed-style reads. */
 export interface MotionColorsCache {
-  blue: string;
-  red: string;
+  left: string;
+  right: string;
   grid: string;
 }
 
@@ -43,8 +43,8 @@ export interface AnimationVisibilitySettings {
   effortPreset: EffortId;
   pathShape: "arc" | "linear" | "concave";
   motionAwarePaths: boolean;
-  bluePathLines: boolean;
-  redPathLines: boolean;
+  leftPathLines: boolean;
+  rightPathLines: boolean;
 
   tipEffortMap: TipEffortMap;
 }
@@ -59,8 +59,8 @@ export class AnimationVisibilityStateManager {
 
   /** Defaults match the light-theme CSS values. */
   private motionColors: MotionColorsCache = {
-    blue: "#3D44B8",
-    red: "#DC2626",
+    left: "#3D44B8",
+    right: "#DC2626",
     grid: "#000000",
   };
 
@@ -116,8 +116,8 @@ export class AnimationVisibilityStateManager {
       effortPreset: "linear",
       pathShape: "arc",
       motionAwarePaths: false,
-      bluePathLines: false,
-      redPathLines: false,
+      leftPathLines: false,
+      rightPathLines: false,
 
       tipEffortMap: {},
     };
@@ -141,8 +141,14 @@ export class AnimationVisibilityStateManager {
         if (!("pathShape" in parsed)) parsed.pathShape = "arc";
         if (!("motionAwarePaths" in parsed)) parsed.motionAwarePaths = false;
         // Migrate the former shared path-line flag.
-        if (!("bluePathLines" in parsed)) parsed.bluePathLines = parsed.pathLines ?? false;
-        if (!("redPathLines" in parsed)) parsed.redPathLines = parsed.pathLines ?? false;
+        if (!("leftPathLines" in parsed)) {
+          parsed.leftPathLines = parsed.bluePathLines ?? parsed.pathLines ?? false;
+        }
+        if (!("rightPathLines" in parsed)) {
+          parsed.rightPathLines = parsed.redPathLines ?? parsed.pathLines ?? false;
+        }
+        delete parsed.bluePathLines;
+        delete parsed.redPathLines;
         delete parsed.pathLines;
 
         // Both retired grid variants map to the current combined grid.
@@ -350,8 +356,8 @@ export class AnimationVisibilityStateManager {
     const style = getComputedStyle(document.documentElement);
 
     this.motionColors = {
-      blue: style.getPropertyValue("--dm-motion-blue").trim() || "#3D44B8",
-      red: style.getPropertyValue("--dm-motion-red").trim() || "#DC2626",
+      left: style.getPropertyValue("--dm-motion-blue").trim() || "#3D44B8",
+      right: style.getPropertyValue("--dm-motion-red").trim() || "#DC2626",
       grid: style.getPropertyValue("--dm-grid-color").trim() || "#000000",
     };
 

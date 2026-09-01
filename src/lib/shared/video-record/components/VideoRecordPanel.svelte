@@ -70,14 +70,14 @@
   );
 
   // Extract prop types from sequence for bilateral toggle
-  const bluePropType = $derived.by(() => {
+  const leftPropType = $derived.by(() => {
     const firstStep = sequence?.steps?.[0];
-    return firstStep?.motions?.blue?.propType ?? null;
+    return firstStep?.motions?.left?.propType ?? null;
   });
 
-  const redPropType = $derived.by(() => {
+  const rightPropType = $derived.by(() => {
     const firstStep = sequence?.steps?.[0];
-    return firstStep?.motions?.red?.propType ?? null;
+    return firstStep?.motions?.right?.propType ?? null;
   });
 
   // Computed: Which reference view to show?
@@ -486,8 +486,8 @@
   {isMobile}
   referenceView={settings.current.referenceView}
   gridSettings={settings.current.gridSettings}
-  {bluePropType}
-  {redPropType}
+  {leftPropType}
+  {rightPropType}
   onClose={() => (settingsOpen = false)}
   onReferenceViewChange={(v) => settings.setReferenceView(v)}
   onGridSettingsChange={(s) => {

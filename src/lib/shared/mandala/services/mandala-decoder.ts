@@ -5,7 +5,7 @@ import type { MandalaIndex, IndexedRef } from "./mandala-index-builder";
 export interface DecodeResult {
 	query: { shapeKey: string; orbitKey: string; colorSig: ColorSignature };
 	exactClass: IndexedRef[];
-	colorVariants: { blueOnly: IndexedRef[]; redOnly: IndexedRef[]; combo: IndexedRef[] };
+	colorVariants: { leftOnly: IndexedRef[]; rightOnly: IndexedRef[]; combo: IndexedRef[] };
 	/** Refs in the same rotation/reflection orbit but a DIFFERENT exact glyph. */
 	rotationTwins: IndexedRef[];
 	count: { exact: number; twins: number };
@@ -20,9 +20,9 @@ export function decode(paths: MandalaPaths, index: MandalaIndex): DecodeResult {
 	const exactClass = index.byShape[sk] ?? [];
 
 	const colorVariants = {
-		blueOnly: exactClass.filter((r) => r.colorSig.blueOnly),
-		redOnly: exactClass.filter((r) => r.colorSig.redOnly),
-		combo: exactClass.filter((r) => !r.colorSig.blueOnly && !r.colorSig.redOnly),
+		leftOnly: exactClass.filter((r) => r.colorSig.leftOnly),
+		rightOnly: exactClass.filter((r) => r.colorSig.rightOnly),
+		combo: exactClass.filter((r) => !r.colorSig.leftOnly && !r.colorSig.rightOnly),
 	};
 
 	// Rotation twins: every shapeKey sharing this orbit, minus the exact glyph itself.

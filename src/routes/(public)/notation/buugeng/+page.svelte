@@ -75,8 +75,8 @@
         <SequenceHeroDemo
           sequence={demoSequence}
           note="the demo sequence, on buugeng"
-          bluePropType="buugeng"
-          redPropType="buugeng"
+          leftPropType="buugeng"
+          rightPropType="buugeng"
         />
       </div>
     </div>

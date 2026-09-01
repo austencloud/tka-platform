@@ -10,7 +10,11 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { propPlacer } from "$lib/shared/pictograph/prop/services/prop-placer";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  HandSide,
+  Orientation,
+  type HandSide as HandSideValue,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   isBuugengFamilyProp,
   isUnilateralProp,
@@ -46,7 +50,7 @@ export function formatRotationLabel(
 
 export async function formatMotionText(
   motion: MotionData | undefined,
-  color: string,
+  color: HandSideValue,
   rotationOverride: { hasOverride: boolean } | null,
   pictographData?: PictographData
 ): Promise<string> {
@@ -65,7 +69,9 @@ export async function formatMotionText(
     try {
       const settings = getSettings();
       const propTypeOverride =
-        color === "blue" ? settings.bluePropType : settings.redPropType;
+        color === HandSide.LEFT
+          ? settings.leftPropType
+          : settings.rightPropType;
       const motionWithOverride = propTypeOverride
         ? { ...motion, propType: propTypeOverride }
         : motion;
@@ -74,10 +80,10 @@ export async function formatMotionText(
         motionWithOverride,
         undefined,
         {
-          bluePropType: settings.bluePropType,
-          redPropType: settings.redPropType,
-          blueBuugengFlipped: settings.blueBuugengFlipped,
-          redBuugengFlipped: settings.redBuugengFlipped,
+          leftPropType: settings.leftPropType,
+          rightPropType: settings.rightPropType,
+          leftBuugengFlipped: settings.leftBuugengFlipped,
+          rightBuugengFlipped: settings.rightBuugengFlipped,
         }
       );
       calculatedPlacement = placement;
@@ -167,13 +173,13 @@ export async function formatMotionText(
 
 export function formatBasicInfo(
   displayData: StepData | null,
-  blueMotion: MotionData | undefined,
-  redMotion: MotionData | undefined
+  leftMotion: MotionData | undefined,
+  rightMotion: MotionData | undefined
 ): string {
   if (!displayData) return "";
 
-  const gridMode = blueMotion?.gridMode ?? redMotion?.gridMode ?? "unknown";
-  const propType = blueMotion?.propType ?? redMotion?.propType ?? "unknown";
+  const gridMode = leftMotion?.gridMode ?? rightMotion?.gridMode ?? "unknown";
+  const propType = leftMotion?.propType ?? rightMotion?.propType ?? "unknown";
 
   return `STEP INFO:
   Beat Number: ${displayData.stepNumber}
@@ -182,47 +188,57 @@ export function formatBasicInfo(
   Prop Type: ${propType}
   Start Position: ${displayData.startPosition ?? "N/A"}
   End Position: ${displayData.endPosition ?? "N/A"}
-  Blue Reversal: ${displayData.blueReversal}
-  Red Reversal: ${displayData.redReversal}
+  Blue Reversal: ${displayData.leftReversal}
+  Red Reversal: ${displayData.rightReversal}
   ID: ${displayData.id}`;
 }
 
 export async function formatAllForAI(
   displayData: StepData | null,
-  blueMotion: MotionData | undefined,
-  redMotion: MotionData | undefined,
-  blueRotationOverride: { hasOverride: boolean } | null,
-  redRotationOverride: { hasOverride: boolean } | null,
+  leftMotion: MotionData | undefined,
+  rightMotion: MotionData | undefined,
+  leftRotationOverride: { hasOverride: boolean } | null,
+  rightRotationOverride: { hasOverride: boolean } | null,
   pictographData?: PictographData
 ): Promise<string> {
   if (!displayData) return "";
 
-  const [blueText, redText] = await Promise.all([
-    formatMotionText(blueMotion, "blue", blueRotationOverride, pictographData),
-    formatMotionText(redMotion, "red", redRotationOverride, pictographData),
+  const [leftText, rightText] = await Promise.all([
+    formatMotionText(
+      leftMotion,
+      HandSide.LEFT,
+      leftRotationOverride,
+      pictographData
+    ),
+    formatMotionText(
+      rightMotion,
+      HandSide.RIGHT,
+      rightRotationOverride,
+      pictographData
+    ),
   ]);
 
-  const betaAnalysis = formatBetaAnalysis(blueMotion, redMotion);
+  const betaAnalysis = formatBetaAnalysis(leftMotion, rightMotion);
 
   return `=== PICTOGRAPH DATA ===
 
-${formatBasicInfo(displayData, blueMotion, redMotion)}
+${formatBasicInfo(displayData, leftMotion, rightMotion)}
 
 ${betaAnalysis}
 
-${blueText}
+${leftText}
 
-${redText}`;
+${rightText}`;
 }
 
 /**
  * Analyze and format beta offset decision factors
  */
 function formatBetaAnalysis(
-  blueMotion: MotionData | undefined,
-  redMotion: MotionData | undefined
+  leftMotion: MotionData | undefined,
+  rightMotion: MotionData | undefined
 ): string {
-  if (!blueMotion || !redMotion) {
+  if (!leftMotion || !rightMotion) {
     return "BETA ANALYSIS: Insufficient motion data";
   }
 
@@ -230,65 +246,67 @@ function formatBetaAnalysis(
   const lines: string[] = ["BETA OFFSET ANALYSIS:"];
 
   // Prop types (stored vs actual)
-  const storedBlueProp = blueMotion.propType;
-  const storedRedProp = redMotion.propType;
-  const actualBlueProp = settings.bluePropType ?? storedBlueProp;
-  const actualRedProp = settings.redPropType ?? storedRedProp;
+  const storedLeftProp = leftMotion.propType;
+  const storedRightProp = rightMotion.propType;
+  const actualLeftProp = settings.leftPropType ?? storedLeftProp;
+  const actualRightProp = settings.rightPropType ?? storedRightProp;
 
   lines.push(
-    `  Stored Prop Types: blue=${storedBlueProp}, red=${storedRedProp}`
+    `  Stored Prop Types: left=${storedLeftProp}, right=${storedRightProp}`
   );
   lines.push(
-    `  Actual Prop Types: blue=${actualBlueProp}, red=${actualRedProp}`
+    `  Actual Prop Types: left=${actualLeftProp}, right=${actualRightProp}`
   );
 
   // Buugeng family check
-  const blueIsBuugeng = isBuugengFamilyProp(actualBlueProp);
-  const redIsBuugeng = isBuugengFamilyProp(actualRedProp);
-  const bothBuugeng = blueIsBuugeng && redIsBuugeng;
-  lines.push(`  Blue is Buugeng Family: ${blueIsBuugeng}`);
-  lines.push(`  Red is Buugeng Family: ${redIsBuugeng}`);
+  const leftIsBuugeng = isBuugengFamilyProp(actualLeftProp);
+  const rightIsBuugeng = isBuugengFamilyProp(actualRightProp);
+  const bothBuugeng = leftIsBuugeng && rightIsBuugeng;
+  lines.push(`  Left is Buugeng Family: ${leftIsBuugeng}`);
+  lines.push(`  Right is Buugeng Family: ${rightIsBuugeng}`);
   lines.push(`  Both are Buugeng Family: ${bothBuugeng}`);
 
   // Chirality: which mirror-image form of the asymmetric Buugeng is used
   // (separate concept from orientation - orientation affects rotation angle,
   // chirality affects the shape itself)
-  const blueChirality = settings.blueBuugengFlipped ?? false;
-  const redChirality = settings.redBuugengFlipped ?? false;
-  const oppositeChirality = blueChirality !== redChirality;
-  lines.push(`  Blue Buugeng Chirality: ${blueChirality ? "B" : "A"}`);
-  lines.push(`  Red Buugeng Chirality: ${redChirality ? "B" : "A"}`);
+  const leftChirality = settings.leftBuugengFlipped ?? false;
+  const rightChirality = settings.rightBuugengFlipped ?? false;
+  const oppositeChirality = leftChirality !== rightChirality;
+  lines.push(`  Left Buugeng Chirality: ${leftChirality ? "B" : "A"}`);
+  lines.push(`  Right Buugeng Chirality: ${rightChirality ? "B" : "A"}`);
   lines.push(`  Opposite Chirality: ${oppositeChirality}`);
 
   // End locations
-  const sameEndLocation = blueMotion.endLocation === redMotion.endLocation;
+  const sameEndLocation = leftMotion.endLocation === rightMotion.endLocation;
   lines.push(
-    `  Same End Location: ${sameEndLocation} (blue=${blueMotion.endLocation}, red=${redMotion.endLocation})`
+    `  Same End Location: ${sameEndLocation} (left=${leftMotion.endLocation}, right=${rightMotion.endLocation})`
   );
 
   // Orientation analysis
-  const blueEndOri = blueMotion.endOrientation;
-  const redEndOri = redMotion.endOrientation;
+  const leftEndOri = leftMotion.endOrientation;
+  const rightEndOri = rightMotion.endOrientation;
   const radialOrientations: Orientation[] = [Orientation.IN, Orientation.OUT];
   const nonRadialOrientations: Orientation[] = [
     Orientation.CLOCK,
     Orientation.COUNTER,
   ];
 
-  const blueIsRadial = radialOrientations.includes(blueEndOri);
-  const redIsRadial = radialOrientations.includes(redEndOri);
-  const blueIsNonRadial = nonRadialOrientations.includes(blueEndOri);
-  const redIsNonRadial = nonRadialOrientations.includes(redEndOri);
+  const leftIsRadial = radialOrientations.includes(leftEndOri);
+  const rightIsRadial = radialOrientations.includes(rightEndOri);
+  const leftIsNonRadial = nonRadialOrientations.includes(leftEndOri);
+  const rightIsNonRadial = nonRadialOrientations.includes(rightEndOri);
 
-  const bothRadial = blueIsRadial && redIsRadial;
-  const bothNonRadial = blueIsNonRadial && redIsNonRadial;
+  const bothRadial = leftIsRadial && rightIsRadial;
+  const bothNonRadial = leftIsNonRadial && rightIsNonRadial;
   const hybridOrientation =
-    (blueIsRadial && redIsNonRadial) || (blueIsNonRadial && redIsRadial);
+    (leftIsRadial && rightIsNonRadial) || (leftIsNonRadial && rightIsRadial);
   const sameTypeButDifferent =
-    (bothRadial || bothNonRadial) && blueEndOri !== redEndOri;
+    (bothRadial || bothNonRadial) && leftEndOri !== rightEndOri;
 
-  lines.push(`  Blue End Orientation: ${blueEndOri} (radial=${blueIsRadial})`);
-  lines.push(`  Red End Orientation: ${redEndOri} (radial=${redIsRadial})`);
+  lines.push(`  Left End Orientation: ${leftEndOri} (radial=${leftIsRadial})`);
+  lines.push(
+    `  Right End Orientation: ${rightEndOri} (radial=${rightIsRadial})`
+  );
   lines.push(`  Both Radial (IN/OUT): ${bothRadial}`);
   lines.push(`  Both Non-Radial (CLOCK/COUNTER): ${bothNonRadial}`);
   lines.push(`  Hybrid (one radial, one not): ${hybridOrientation}`);
@@ -298,8 +316,8 @@ function formatBetaAnalysis(
   // so this readout matches what actually renders. Previously this only checked
   // the buugeng-nesting gate, so it printed "NO" even when the real function
   // skipped (e.g. two clubs ending radial-but-different — the unilateral gate).
-  const blueUnilateral = isUnilateralProp(actualBlueProp);
-  const redUnilateral = isUnilateralProp(actualRedProp);
+  const leftUnilateral = isUnilateralProp(actualLeftProp);
+  const rightUnilateral = isUnilateralProp(actualRightProp);
 
   // Gate 3: one prop radial, the other non-radial.
   const hybridSkip = hybridOrientation;
@@ -308,12 +326,12 @@ function formatBetaAnalysis(
   // Gate 5: target prop is unilateral (one-ended) + same-type/different-orientation.
   // The render decides per-target; for the same-prop case both sides agree.
   const unilateralSkip =
-    sameTypeButDifferent && (blueUnilateral || redUnilateral);
+    sameTypeButDifferent && (leftUnilateral || rightUnilateral);
   // Gate 6: trigeng + same-type/different-orientation.
   const trigengSkip =
     sameTypeButDifferent &&
-    (actualBlueProp?.toLowerCase() === "trigeng" ||
-      actualRedProp?.toLowerCase() === "trigeng");
+    (actualLeftProp?.toLowerCase() === "trigeng" ||
+      actualRightProp?.toLowerCase() === "trigeng");
 
   lines.push(``, `  SKIP CONDITIONS (any one skips the offset):`);
   lines.push(
@@ -323,7 +341,7 @@ function formatBetaAnalysis(
     `    Buugeng nesting (both buugeng + opposite chirality): ${buugengNestSkip ? "✓" : "✗"}`
   );
   lines.push(
-    `    Unilateral one-ended + same-type/different-orientation: ${unilateralSkip ? "✓" : "✗"} (blue=${blueUnilateral}, red=${redUnilateral})`
+    `    Unilateral one-ended + same-type/different-orientation: ${unilateralSkip ? "✓" : "✗"} (left=${leftUnilateral}, right=${rightUnilateral})`
   );
   lines.push(
     `    Trigeng + same-type/different-orientation: ${trigengSkip ? "✓" : "✗"}`
@@ -338,9 +356,11 @@ function formatBetaAnalysis(
   // Orientation analysis (for reference, not part of nesting decision)
   lines.push(``, `  ORIENTATION ANALYSIS (for reference):`);
   lines.push(
-    `    Blue End Orientation: ${blueEndOri} (radial=${blueIsRadial})`
+    `    Left End Orientation: ${leftEndOri} (radial=${leftIsRadial})`
   );
-  lines.push(`    Red End Orientation: ${redEndOri} (radial=${redIsRadial})`);
+  lines.push(
+    `    Right End Orientation: ${rightEndOri} (radial=${rightIsRadial})`
+  );
   lines.push(`    Same Type But Different: ${sameTypeButDifferent}`);
 
   return lines.join("\n");

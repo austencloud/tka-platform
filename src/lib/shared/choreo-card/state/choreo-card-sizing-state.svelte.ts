@@ -19,7 +19,7 @@ export interface ChoreoCardSizingDeps {
   readonly forceContain: boolean;
   readonly needsScroll: boolean;
   readonly fitWidth: boolean;
-  readonly containSizeMotion: "focus" | "return" | null;
+  readonly containSizeMotion: "focus" | "return" | "restore" | null;
   readonly containModel: ContainModel;
 }
 
@@ -43,7 +43,7 @@ export function createChoreoCardSizingState(
   let containerWasZero = false;
   let flipTimer: ReturnType<typeof setTimeout> | null = null;
   let splitContainedSize: Size | null = null;
-  let previousContainSizeMotion: "focus" | "return" | null = null;
+  let previousContainSizeMotion: "focus" | "return" | "restore" | null = null;
 
   /**
    * `measured` carries the size a ResizeObserver already computed for us.
@@ -133,7 +133,11 @@ export function createChoreoCardSizingState(
     let nextHeight: number | null;
     const containerRatio = availableWidth / availableHeight;
 
-    if (deps.containSizeMotion === "return" && splitContainedSize) {
+    if (
+      (deps.containSizeMotion === "return" ||
+        deps.containSizeMotion === "restore") &&
+      splitContainedSize
+    ) {
       nextWidth = splitContainedSize.width;
       nextHeight = splitContainedSize.height;
     } else if (deps.forceContain && deps.fitWidth) {

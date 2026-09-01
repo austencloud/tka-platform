@@ -7,9 +7,20 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { ensureDataLoaded, saveAndOpenImage } from "../shared/server-context.js";
-import { buildSequenceFromLetters, parseWordToLetters, mcpStepsToEngineSteps, engineStepsToMcpSteps } from "../core/sequence-builder-adapter.js";
-import { renderSequenceToImage, LOOPComponent } from "../core/sequence-renderer.js";
+import {
+  ensureDataLoaded,
+  saveAndOpenImage,
+} from "../shared/server-context.js";
+import {
+  buildSequenceFromLetters,
+  parseWordToLetters,
+  mcpStepsToEngineSteps,
+  engineStepsToMcpSteps,
+} from "../core/sequence-builder-adapter.js";
+import {
+  renderSequenceToImage,
+  LOOPComponent,
+} from "../core/sequence-renderer.js";
 import { simplifyRepeatedWord } from "../core/word-simplifier.js";
 import { allocateTurns } from "@tka/sequence-engine/generation";
 import { recalculateOrientationsWithOverrides } from "../core/orientation-propagation.js";
@@ -26,7 +37,16 @@ import {
   isSequenceCircular,
 } from "@tka/sequence-engine/loop";
 
-const orientationEnum = z.enum(["in", "out", "clock", "counter", "clockIn", "clockOut", "counterIn", "counterOut"]);
+const orientationEnum = z.enum([
+  "in",
+  "out",
+  "clock",
+  "counter",
+  "clockIn",
+  "clockOut",
+  "counterIn",
+  "counterOut",
+]);
 
 /**
  * Auto-bridge helper: If the sequence ends at an incompatible position for the
@@ -41,7 +61,11 @@ function autoBridgeForLoop(
   endPosition: string,
   loopType: LOOPType,
   period: Period,
-  allPictographs: Array<{ letter: string; startPosition: string; endPosition: string }>
+  allPictographs: Array<{
+    letter: string;
+    startPosition: string;
+    endPosition: string;
+  }>
 ): { word: string; letters: string[]; bridgeAdded: string | null } {
   // Check if already compatible
   const positionPair = `${startPosition},${endPosition}`;
@@ -77,13 +101,31 @@ export function registerLoopTools(server: McpServer): void {
     "validate_loop_options",
     "Given a sequence's start/end positions, return which LOOP types are valid. LOOPs are circular sequence patterns that transform the first half/quarter of a sequence to create a complete circular motion.",
     {
-      startPosition: z.string().describe("Start position of the sequence (e.g., alpha1, beta3, gamma5)"),
-      endPosition: z.string().describe("End position of the sequence (e.g., alpha5, beta7, gamma13)"),
-      period: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size: "halved" for 180° rotation (default), "quartered" for 90° rotation'),
+      startPosition: z
+        .string()
+        .describe(
+          "Start position of the sequence (e.g., alpha1, beta3, gamma5)"
+        ),
+      endPosition: z
+        .string()
+        .describe(
+          "End position of the sequence (e.g., alpha5, beta7, gamma13)"
+        ),
+      period: z
+        .enum(["halved", "quartered"])
+        .optional()
+        .default("halved")
+        .describe(
+          'Slice size: "halved" for 180° rotation (default), "quartered" for 90° rotation'
+        ),
     },
     async ({ startPosition, endPosition, period = "halved" }) => {
       const slice = period === "quartered" ? Period.QUARTERED : Period.HALVED;
-      const result = getLOOPOptionsForPositionPair(startPosition, endPosition, slice);
+      const result = getLOOPOptionsForPositionPair(
+        startPosition,
+        endPosition,
+        slice
+      );
 
       const output = {
         startPosition,
@@ -121,9 +163,19 @@ export function registerLoopTools(server: McpServer): void {
     "detect_loop_pattern",
     "Analyze a sequence to detect if it's circular and identify LOOP transformation patterns (rotated, mirrored, swapped, inverted). Useful for understanding what kind of LOOP a word produces.",
     {
-      word: z.string().describe('The sequence word to analyze, e.g., "DJII" or "AABB"'),
-      gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
-      maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts"),
+      word: z
+        .string()
+        .describe('The sequence word to analyze, e.g., "DJII" or "AABB"'),
+      gridMode: z
+        .enum(["diamond", "box", "skewed"])
+        .optional()
+        .default("diamond")
+        .describe("Grid mode: diamond (default), box, or skewed"),
+      maxAttempts: z
+        .number()
+        .optional()
+        .default(500)
+        .describe("Maximum generation attempts"),
     },
     async ({ word, gridMode = "diamond", maxAttempts = 500 }) => {
       const allPictographs = ensureDataLoaded(gridMode);
@@ -132,25 +184,39 @@ export function registerLoopTools(server: McpServer): void {
       if (letters.length === 0) {
         return {
           content: [
-            { type: "text" as const, text: `No valid letters in "${word}". Use list_available_letters to see valid letters.` },
+            {
+              type: "text" as const,
+              text: `No valid letters in "${word}". Use list_available_letters to see valid letters.`,
+            },
           ],
           isError: true,
         };
       }
 
-      const result = buildSequenceFromLetters(letters, allPictographs as any, maxAttempts);
+      const result = buildSequenceFromLetters(
+        letters,
+        allPictographs as any,
+        maxAttempts
+      );
 
       if (!result.isValid) {
         return {
           content: [
-            { type: "text" as const, text: `Failed to generate sequence for "${word}": ${result.error}` },
+            {
+              type: "text" as const,
+              text: `Failed to generate sequence for "${word}": ${result.error}`,
+            },
           ],
           isError: true,
         };
       }
 
-      const detection = detectLOOPFromSteps(mcpStepsToEngineSteps(result.steps) as any);
-      const circular = isSequenceCircular(mcpStepsToEngineSteps(result.steps) as any);
+      const detection = detectLOOPFromSteps(
+        mcpStepsToEngineSteps(result.steps) as any
+      );
+      const circular = isSequenceCircular(
+        mcpStepsToEngineSteps(result.steps) as any
+      );
 
       const output = {
         word: result.word,
@@ -184,14 +250,50 @@ export function registerLoopTools(server: McpServer): void {
     "[DEPRECATED: Use generate_sequence with loopType parameter instead.] Generate a complete LOOP sequence from a word + LOOP type. Returns the circular sequence with all transformed steps. Currently supports REWOUND and ROTATED.",
     {
       word: z.string().describe('The sequence word, e.g., "CAKE"'),
-      loopType: z.enum(["rewound", "rotated"]).describe('LOOP type to apply: "rewound" (reverses and appends) or "rotated" (180°/90° rotation)'),
-      period: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size: "halved" for 180° rotation (default), "quartered" for 90° rotation'),
-      gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
-      maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
-      blueStartOrientation: orientationEnum.optional().describe('Override starting orientation for blue prop (default: "in")'),
-      redStartOrientation: orientationEnum.optional().describe('Override starting orientation for red prop (default: "in")'),
+      loopType: z
+        .enum(["rewound", "rotated"])
+        .describe(
+          'LOOP type to apply: "rewound" (reverses and appends) or "rotated" (180°/90° rotation)'
+        ),
+      period: z
+        .enum(["halved", "quartered"])
+        .optional()
+        .default("halved")
+        .describe(
+          'Slice size: "halved" for 180° rotation (default), "quartered" for 90° rotation'
+        ),
+      gridMode: z
+        .enum(["diamond", "box", "skewed"])
+        .optional()
+        .default("diamond")
+        .describe("Grid mode: diamond (default), box, or skewed"),
+      maxAttempts: z
+        .number()
+        .optional()
+        .default(500)
+        .describe(
+          "Maximum generation attempts (default 500 handles complex words)"
+        ),
+      leftStartOrientation: orientationEnum
+        .optional()
+        .describe(
+          'Override starting orientation for the left prop (default: "in")'
+        ),
+      rightStartOrientation: orientationEnum
+        .optional()
+        .describe(
+          'Override starting orientation for the right prop (default: "in")'
+        ),
     },
-    async ({ word, loopType, period = "halved", gridMode = "diamond", maxAttempts = 500, blueStartOrientation, redStartOrientation }) => {
+    async ({
+      word,
+      loopType,
+      period = "halved",
+      gridMode = "diamond",
+      maxAttempts = 500,
+      leftStartOrientation,
+      rightStartOrientation,
+    }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -200,26 +302,37 @@ export function registerLoopTools(server: McpServer): void {
       if (letters.length === 0) {
         return {
           content: [
-            { type: "text" as const, text: `Cannot generate sequence: no valid letters in "${word}"` },
+            {
+              type: "text" as const,
+              text: `Cannot generate sequence: no valid letters in "${word}"`,
+            },
           ],
           isError: true,
         };
       }
 
       // Build the base sequence first
-      let baseResult = buildSequenceFromLetters(letters, allPictographs as any, maxAttempts);
+      let baseResult = buildSequenceFromLetters(
+        letters,
+        allPictographs as any,
+        maxAttempts
+      );
 
       if (!baseResult.isValid) {
         return {
           content: [
-            { type: "text" as const, text: `Failed to generate base sequence for "${word}": ${baseResult.error}` },
+            {
+              type: "text" as const,
+              text: `Failed to generate base sequence for "${word}": ${baseResult.error}`,
+            },
           ],
           isError: true,
         };
       }
 
       // Determine LOOP type enum
-      const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
+      const loopTypeEnum =
+        loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
       const slice = period === "quartered" ? Period.QUARTERED : Period.HALVED;
 
       // Retry loop: keep generating until we get a LOOP-compatible sequence
@@ -230,7 +343,11 @@ export function registerLoopTools(server: McpServer): void {
       for (let loopAttempt = 0; loopAttempt < maxAttempts; loopAttempt++) {
         // Regenerate base sequence each attempt (randomness may produce different end positions)
         if (loopAttempt > 0) {
-          baseResult = buildSequenceFromLetters(letters, allPictographs as any, 1);
+          baseResult = buildSequenceFromLetters(
+            letters,
+            allPictographs as any,
+            1
+          );
           if (!baseResult.isValid) continue;
         }
 
@@ -251,7 +368,11 @@ export function registerLoopTools(server: McpServer): void {
         if (bridgeResult.bridgeAdded) {
           // Need to add a bridge letter
           finalLetters = bridgeResult.letters;
-          finalResult = buildSequenceFromLetters(finalLetters, allPictographs as any, 1);
+          finalResult = buildSequenceFromLetters(
+            finalLetters,
+            allPictographs as any,
+            1
+          );
 
           if (!finalResult.isValid) continue;
 
@@ -272,7 +393,13 @@ export function registerLoopTools(server: McpServer): void {
         }
 
         // Try to execute the LOOP
-        loopResult = executeLOOP(mcpStepsToEngineSteps(finalResult.steps) as any, finalResult.word, loopTypeEnum, slice, allPictographs as any);
+        loopResult = executeLOOP(
+          mcpStepsToEngineSteps(finalResult.steps) as any,
+          finalResult.word,
+          loopTypeEnum,
+          slice,
+          allPictographs as any
+        );
 
         if (loopResult.success) {
           baseResult = finalResult;
@@ -283,7 +410,10 @@ export function registerLoopTools(server: McpServer): void {
       if (!loopResult || !loopResult.success) {
         return {
           content: [
-            { type: "text" as const, text: `Failed to generate LOOP sequence: Could not find compatible position after ${maxAttempts} attempts` },
+            {
+              type: "text" as const,
+              text: `Failed to generate LOOP sequence: Could not find compatible position after ${maxAttempts} attempts`,
+            },
           ],
           isError: true,
         };
@@ -293,9 +423,14 @@ export function registerLoopTools(server: McpServer): void {
       const mcpLoopSteps = engineStepsToMcpSteps(loopResult.steps as any);
 
       // Apply orientation overrides if specified
-      const finalMcpSteps = (blueStartOrientation || redStartOrientation)
-        ? recalculateOrientationsWithOverrides(mcpLoopSteps, blueStartOrientation, redStartOrientation)
-        : mcpLoopSteps;
+      const finalMcpSteps =
+        leftStartOrientation || rightStartOrientation
+          ? recalculateOrientationsWithOverrides(
+              mcpLoopSteps,
+              leftStartOrientation,
+              rightStartOrientation
+            )
+          : mcpLoopSteps;
 
       // Format output
       const output = {
@@ -316,17 +451,17 @@ export function registerLoopTools(server: McpServer): void {
           isDerived: loopResult!.derivedStepIndices.includes(i),
           startPosition: step.startPosition,
           endPosition: step.endPosition,
-          blueMotion: {
-            startLocation: step.blueMotion.startLocation,
-            endLocation: step.blueMotion.endLocation,
-            motionType: step.blueMotion.motionType,
-            rotationDirection: step.blueMotion.rotationDirection,
+          leftMotion: {
+            startLocation: step.leftMotion.startLocation,
+            endLocation: step.leftMotion.endLocation,
+            motionType: step.leftMotion.motionType,
+            rotationDirection: step.leftMotion.rotationDirection,
           },
-          redMotion: {
-            startLocation: step.redMotion.startLocation,
-            endLocation: step.redMotion.endLocation,
-            motionType: step.redMotion.motionType,
-            rotationDirection: step.redMotion.rotationDirection,
+          rightMotion: {
+            startLocation: step.rightMotion.startLocation,
+            endLocation: step.rightMotion.endLocation,
+            motionType: step.rightMotion.motionType,
+            rotationDirection: step.rightMotion.rotationDirection,
           },
         })),
       };
@@ -348,25 +483,116 @@ export function registerLoopTools(server: McpServer): void {
     "[DEPRECATED: Use generate_sequence with loopType parameter instead.] Generate a choreo card image for a LOOP sequence. Displays the complete circular sequence as a composite image.",
     {
       word: z.string().describe('The sequence word, e.g., "CAKE"'),
-      loopType: z.enum(["rewound", "rotated"]).describe('LOOP type to apply'),
-      period: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size'),
-      gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode"),
-      layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
-      cellSize: z.number().optional().default(900).describe("Size of each pictograph cell in pixels"),
-      showStepNumbers: z.boolean().optional().default(true).describe("Show step numbers"),
-      showWord: z.boolean().optional().default(true).describe("Show word header"),
-      darkMode: z.boolean().optional().default(true).describe("Use dark background"),
-      maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
-      loopComponents: z.array(z.enum(["rotated", "mirrored", "flipped", "swapped", "inverted", "rewound"])).optional().describe("LOOP components for the pie chart glyph"),
-      level: z.number().min(1).max(3).optional().default(1).describe("Difficulty level: 1=beginner (0 turns only), 2=intermediate (0-3 whole turns), 3=advanced (0-3 plus halves and float)"),
-      turnIntensity: z.number().min(0).max(3).optional().describe("Maximum turn intensity (0-3). Each motion gets a random turn value from 0 up to this max. Defaults to 0 for level 1, 3 for level 2-3."),
+      loopType: z.enum(["rewound", "rotated"]).describe("LOOP type to apply"),
+      period: z
+        .enum(["halved", "quartered"])
+        .optional()
+        .default("halved")
+        .describe("Slice size"),
+      gridMode: z
+        .enum(["diamond", "box", "skewed"])
+        .optional()
+        .default("diamond")
+        .describe("Grid mode"),
+      layout: z
+        .enum(["grid", "strip"])
+        .optional()
+        .default("grid")
+        .describe("Layout: grid (square) or strip (single row)"),
+      cellSize: z
+        .number()
+        .optional()
+        .default(900)
+        .describe("Size of each pictograph cell in pixels"),
+      showStepNumbers: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("Show step numbers"),
+      showWord: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("Show word header"),
+      darkMode: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("Use dark background"),
+      maxAttempts: z
+        .number()
+        .optional()
+        .default(500)
+        .describe(
+          "Maximum generation attempts (default 500 handles complex words)"
+        ),
+      loopComponents: z
+        .array(
+          z.enum([
+            "rotated",
+            "mirrored",
+            "flipped",
+            "swapped",
+            "inverted",
+            "rewound",
+          ])
+        )
+        .optional()
+        .describe("LOOP components for the pie chart glyph"),
+      level: z
+        .number()
+        .min(1)
+        .max(3)
+        .optional()
+        .default(1)
+        .describe(
+          "Difficulty level: 1=beginner (0 turns only), 2=intermediate (0-3 whole turns), 3=advanced (0-3 plus halves and float)"
+        ),
+      turnIntensity: z
+        .number()
+        .min(0)
+        .max(3)
+        .optional()
+        .describe(
+          "Maximum turn intensity (0-3). Each motion gets a random turn value from 0 up to this max. Defaults to 0 for level 1, 3 for level 2-3."
+        ),
       userName: z.string().optional().describe("Username for footer"),
       notes: z.string().optional().describe("Notes for footer"),
-      birthday: z.string().optional().describe("Birthday/creation date in ISO format"),
-      blueStartOrientation: orientationEnum.optional().describe('Override starting orientation for blue prop (default: "in")'),
-      redStartOrientation: orientationEnum.optional().describe('Override starting orientation for red prop (default: "in")'),
+      birthday: z
+        .string()
+        .optional()
+        .describe("Birthday/creation date in ISO format"),
+      leftStartOrientation: orientationEnum
+        .optional()
+        .describe(
+          'Override starting orientation for the left prop (default: "in")'
+        ),
+      rightStartOrientation: orientationEnum
+        .optional()
+        .describe(
+          'Override starting orientation for the right prop (default: "in")'
+        ),
     },
-    async ({ word, loopType, period = "halved", gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 500, loopComponents, level = 1, turnIntensity, userName, notes, birthday, blueStartOrientation, redStartOrientation }) => {
+    async ({
+      word,
+      loopType,
+      period = "halved",
+      gridMode = "diamond",
+      layout = "grid",
+      cellSize = 900,
+      showStepNumbers = true,
+      showWord = true,
+      darkMode = true,
+      maxAttempts = 500,
+      loopComponents,
+      level = 1,
+      turnIntensity,
+      userName,
+      notes,
+      birthday,
+      leftStartOrientation,
+      rightStartOrientation,
+    }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -375,26 +601,37 @@ export function registerLoopTools(server: McpServer): void {
       if (letters.length === 0) {
         return {
           content: [
-            { type: "text" as const, text: `Cannot generate sequence: no valid letters in "${word}"` },
+            {
+              type: "text" as const,
+              text: `Cannot generate sequence: no valid letters in "${word}"`,
+            },
           ],
           isError: true,
         };
       }
 
       // Build the base sequence
-      let baseResult = buildSequenceFromLetters(letters, allPictographs as any, maxAttempts);
+      let baseResult = buildSequenceFromLetters(
+        letters,
+        allPictographs as any,
+        maxAttempts
+      );
 
       if (!baseResult.isValid) {
         return {
           content: [
-            { type: "text" as const, text: `Failed to generate base sequence for "${word}": ${baseResult.error}` },
+            {
+              type: "text" as const,
+              text: `Failed to generate base sequence for "${word}": ${baseResult.error}`,
+            },
           ],
           isError: true,
         };
       }
 
       // Execute the LOOP transformation (pass pictograph data for letter derivation)
-      const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
+      const loopTypeEnum =
+        loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
       const slice = period === "quartered" ? Period.QUARTERED : Period.HALVED;
 
       // Retry loop: keep generating until we get a LOOP-compatible sequence
@@ -405,7 +642,11 @@ export function registerLoopTools(server: McpServer): void {
       for (let loopAttempt = 0; loopAttempt < maxAttempts; loopAttempt++) {
         // Regenerate base sequence each attempt (randomness may produce different end positions)
         if (loopAttempt > 0) {
-          baseResult = buildSequenceFromLetters(letters, allPictographs as any, 1);
+          baseResult = buildSequenceFromLetters(
+            letters,
+            allPictographs as any,
+            1
+          );
           if (!baseResult.isValid) continue;
         }
 
@@ -426,7 +667,11 @@ export function registerLoopTools(server: McpServer): void {
         if (bridgeResult.bridgeAdded) {
           // Need to add a bridge letter
           finalLetters = bridgeResult.letters;
-          finalResult = buildSequenceFromLetters(finalLetters, allPictographs as any, 1);
+          finalResult = buildSequenceFromLetters(
+            finalLetters,
+            allPictographs as any,
+            1
+          );
 
           if (!finalResult.isValid) continue;
 
@@ -447,7 +692,13 @@ export function registerLoopTools(server: McpServer): void {
         }
 
         // Try to execute the LOOP
-        loopResult = executeLOOP(mcpStepsToEngineSteps(finalResult.steps) as any, finalResult.word, loopTypeEnum, slice, allPictographs as any);
+        loopResult = executeLOOP(
+          mcpStepsToEngineSteps(finalResult.steps) as any,
+          finalResult.word,
+          loopTypeEnum,
+          slice,
+          allPictographs as any
+        );
 
         if (loopResult.success) {
           baseResult = finalResult;
@@ -458,7 +709,10 @@ export function registerLoopTools(server: McpServer): void {
       if (!loopResult || !loopResult.success) {
         return {
           content: [
-            { type: "text" as const, text: `Failed to generate LOOP sequence: Could not find compatible position after ${maxAttempts} attempts` },
+            {
+              type: "text" as const,
+              text: `Failed to generate LOOP sequence: Could not find compatible position after ${maxAttempts} attempts`,
+            },
           ],
           isError: true,
         };
@@ -468,16 +722,23 @@ export function registerLoopTools(server: McpServer): void {
       const mcpLoopSteps2 = engineStepsToMcpSteps(loopResult.steps as any);
 
       // Apply orientation overrides if specified
-      const finalMcpSteps2 = (blueStartOrientation || redStartOrientation)
-        ? recalculateOrientationsWithOverrides(mcpLoopSteps2, blueStartOrientation, redStartOrientation)
-        : mcpLoopSteps2;
+      const finalMcpSteps2 =
+        leftStartOrientation || rightStartOrientation
+          ? recalculateOrientationsWithOverrides(
+              mcpLoopSteps2,
+              leftStartOrientation,
+              rightStartOrientation
+            )
+          : mcpLoopSteps2;
 
       try {
         // Parse birthday string to Date if provided
         const birthdayDate = birthday ? new Date(birthday) : undefined;
 
         // Auto-populate loopComponents from loopType if not explicitly provided
-        const effectiveLoopComponents = loopComponents ?? (loopType === "rewound" ? ["rewound"] : ["rotated"]);
+        const effectiveLoopComponents =
+          loopComponents ??
+          (loopType === "rewound" ? ["rewound"] : ["rotated"]);
 
         // Parse LOOP components for pie chart glyph
         const parsedLoopComponents = effectiveLoopComponents.map((c) => {
@@ -507,24 +768,28 @@ export function registerLoopTools(server: McpServer): void {
         // Pass derivedStepIndices so the renderer can dim the transformed steps
         // Simplify word label if it's a repetition (e.g., "ABCABC" → "ABC")
         const displayWord = simplifyRepeatedWord(loopResult.loopWord);
-        const pngBuffer = await renderSequenceToImage(finalMcpSteps2, displayWord, {
-          layout,
-          cellSize,
-          showStepNumbers,
-          showWord,
-          darkMode,
-          padding: 8,
-          showDifficulty: true,
-          userName,
-          notes,
-          birthday: birthdayDate,
-          level,
-          turnAllocation,
-          loopComponents: parsedLoopComponents,
-          period: period === "quartered" ? 4 : 2,
-          derivedStepIndices: loopResult.derivedStepIndices,
-          seedWord: loopResult.seedWord,
-        });
+        const pngBuffer = await renderSequenceToImage(
+          finalMcpSteps2,
+          displayWord,
+          {
+            layout,
+            cellSize,
+            showStepNumbers,
+            showWord,
+            darkMode,
+            padding: 8,
+            showDifficulty: true,
+            userName,
+            notes,
+            birthday: birthdayDate,
+            level,
+            turnAllocation,
+            loopComponents: parsedLoopComponents,
+            period: period === "quartered" ? 4 : 2,
+            derivedStepIndices: loopResult.derivedStepIndices,
+            seedWord: loopResult.seedWord,
+          }
+        );
 
         // AUTO-OPEN: Save to temp and open immediately
         saveAndOpenImage(pngBuffer, `loop-${word}`);
@@ -546,10 +811,14 @@ export function registerLoopTools(server: McpServer): void {
           ],
         };
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         return {
           content: [
-            { type: "text" as const, text: `Failed to render LOOP image: ${errorMessage}` },
+            {
+              type: "text" as const,
+              text: `Failed to render LOOP image: ${errorMessage}`,
+            },
           ],
           isError: true,
         };
@@ -564,25 +833,120 @@ export function registerLoopTools(server: McpServer): void {
     "Generate a LOOP sequence choreo card and open it in the system image viewer. Returns only confirmation text - NO image data returned. Use this when the USER needs to see the LOOP sequence but Claude doesn't need to analyze it. Saves ~30-100k tokens compared to generate_loop_image.",
     {
       word: z.string().describe('The sequence word, e.g., "CAKE"'),
-      loopType: z.enum(["rewound", "rotated"]).describe('LOOP type to apply: "rewound" (reverses and appends) or "rotated" (180°/90° rotation)'),
-      period: z.enum(["halved", "quartered"]).optional().default("halved").describe("Slice size"),
-      gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode"),
-      layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
-      cellSize: z.number().optional().default(900).describe("Size of each pictograph cell in pixels"),
-      showStepNumbers: z.boolean().optional().default(true).describe("Show step numbers"),
-      showWord: z.boolean().optional().default(true).describe("Show word header"),
-      darkMode: z.boolean().optional().default(true).describe("Use dark background"),
-      maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
-      loopComponents: z.array(z.enum(["rotated", "mirrored", "flipped", "swapped", "inverted", "rewound"])).optional().describe("LOOP components for the pie chart glyph"),
-      level: z.number().min(1).max(3).optional().default(1).describe("Difficulty level: 1=beginner (0 turns only), 2=intermediate (0-3 whole turns), 3=advanced (0-3 plus halves and float)"),
-      turnIntensity: z.number().min(0).max(3).optional().describe("Maximum turn intensity (0-3). Each motion gets a random turn value from 0 up to this max. Defaults to 0 for level 1, 3 for level 2-3."),
+      loopType: z
+        .enum(["rewound", "rotated"])
+        .describe(
+          'LOOP type to apply: "rewound" (reverses and appends) or "rotated" (180°/90° rotation)'
+        ),
+      period: z
+        .enum(["halved", "quartered"])
+        .optional()
+        .default("halved")
+        .describe("Slice size"),
+      gridMode: z
+        .enum(["diamond", "box", "skewed"])
+        .optional()
+        .default("diamond")
+        .describe("Grid mode"),
+      layout: z
+        .enum(["grid", "strip"])
+        .optional()
+        .default("grid")
+        .describe("Layout: grid (square) or strip (single row)"),
+      cellSize: z
+        .number()
+        .optional()
+        .default(900)
+        .describe("Size of each pictograph cell in pixels"),
+      showStepNumbers: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("Show step numbers"),
+      showWord: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("Show word header"),
+      darkMode: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("Use dark background"),
+      maxAttempts: z
+        .number()
+        .optional()
+        .default(500)
+        .describe(
+          "Maximum generation attempts (default 500 handles complex words)"
+        ),
+      loopComponents: z
+        .array(
+          z.enum([
+            "rotated",
+            "mirrored",
+            "flipped",
+            "swapped",
+            "inverted",
+            "rewound",
+          ])
+        )
+        .optional()
+        .describe("LOOP components for the pie chart glyph"),
+      level: z
+        .number()
+        .min(1)
+        .max(3)
+        .optional()
+        .default(1)
+        .describe(
+          "Difficulty level: 1=beginner (0 turns only), 2=intermediate (0-3 whole turns), 3=advanced (0-3 plus halves and float)"
+        ),
+      turnIntensity: z
+        .number()
+        .min(0)
+        .max(3)
+        .optional()
+        .describe(
+          "Maximum turn intensity (0-3). Each motion gets a random turn value from 0 up to this max. Defaults to 0 for level 1, 3 for level 2-3."
+        ),
       userName: z.string().optional().describe("Username for footer"),
       notes: z.string().optional().describe("Notes for footer"),
-      birthday: z.string().optional().describe("Birthday/creation date in ISO format"),
-      blueStartOrientation: orientationEnum.optional().describe('Override starting orientation for blue prop (default: "in")'),
-      redStartOrientation: orientationEnum.optional().describe('Override starting orientation for red prop (default: "in")'),
+      birthday: z
+        .string()
+        .optional()
+        .describe("Birthday/creation date in ISO format"),
+      leftStartOrientation: orientationEnum
+        .optional()
+        .describe(
+          'Override starting orientation for the left prop (default: "in")'
+        ),
+      rightStartOrientation: orientationEnum
+        .optional()
+        .describe(
+          'Override starting orientation for the right prop (default: "in")'
+        ),
     },
-    async ({ word, loopType, period = "halved", gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 500, loopComponents, level = 1, turnIntensity, userName, notes, birthday, blueStartOrientation, redStartOrientation }) => {
+    async ({
+      word,
+      loopType,
+      period = "halved",
+      gridMode = "diamond",
+      layout = "grid",
+      cellSize = 900,
+      showStepNumbers = true,
+      showWord = true,
+      darkMode = true,
+      maxAttempts = 500,
+      loopComponents,
+      level = 1,
+      turnIntensity,
+      userName,
+      notes,
+      birthday,
+      leftStartOrientation,
+      rightStartOrientation,
+    }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -591,26 +955,37 @@ export function registerLoopTools(server: McpServer): void {
       if (letters.length === 0) {
         return {
           content: [
-            { type: "text" as const, text: `Cannot generate sequence: no valid letters in "${word}"` },
+            {
+              type: "text" as const,
+              text: `Cannot generate sequence: no valid letters in "${word}"`,
+            },
           ],
           isError: true,
         };
       }
 
       // Build the base sequence
-      let baseResult = buildSequenceFromLetters(letters, allPictographs as any, maxAttempts);
+      let baseResult = buildSequenceFromLetters(
+        letters,
+        allPictographs as any,
+        maxAttempts
+      );
 
       if (!baseResult.isValid) {
         return {
           content: [
-            { type: "text" as const, text: `Failed to generate base sequence for "${word}": ${baseResult.error}` },
+            {
+              type: "text" as const,
+              text: `Failed to generate base sequence for "${word}": ${baseResult.error}`,
+            },
           ],
           isError: true,
         };
       }
 
       // Execute the LOOP transformation
-      const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
+      const loopTypeEnum =
+        loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
       const slice = period === "quartered" ? Period.QUARTERED : Period.HALVED;
 
       // Retry loop: keep generating until we get a LOOP-compatible sequence
@@ -621,7 +996,11 @@ export function registerLoopTools(server: McpServer): void {
       for (let loopAttempt = 0; loopAttempt < maxAttempts; loopAttempt++) {
         // Regenerate base sequence each attempt (randomness may produce different end positions)
         if (loopAttempt > 0) {
-          baseResult = buildSequenceFromLetters(letters, allPictographs as any, 1);
+          baseResult = buildSequenceFromLetters(
+            letters,
+            allPictographs as any,
+            1
+          );
           if (!baseResult.isValid) continue;
         }
 
@@ -642,7 +1021,11 @@ export function registerLoopTools(server: McpServer): void {
         if (bridgeResult.bridgeAdded) {
           // Need to add a bridge letter
           finalLetters = bridgeResult.letters;
-          finalResult = buildSequenceFromLetters(finalLetters, allPictographs as any, 1);
+          finalResult = buildSequenceFromLetters(
+            finalLetters,
+            allPictographs as any,
+            1
+          );
 
           if (!finalResult.isValid) continue;
 
@@ -663,7 +1046,13 @@ export function registerLoopTools(server: McpServer): void {
         }
 
         // Try to execute the LOOP
-        loopResult = executeLOOP(mcpStepsToEngineSteps(finalResult.steps) as any, finalResult.word, loopTypeEnum, slice, allPictographs as any);
+        loopResult = executeLOOP(
+          mcpStepsToEngineSteps(finalResult.steps) as any,
+          finalResult.word,
+          loopTypeEnum,
+          slice,
+          allPictographs as any
+        );
 
         if (loopResult.success) {
           baseResult = finalResult;
@@ -674,7 +1063,10 @@ export function registerLoopTools(server: McpServer): void {
       if (!loopResult || !loopResult.success) {
         return {
           content: [
-            { type: "text" as const, text: `Failed to generate LOOP sequence: Could not find compatible position after ${maxAttempts} attempts` },
+            {
+              type: "text" as const,
+              text: `Failed to generate LOOP sequence: Could not find compatible position after ${maxAttempts} attempts`,
+            },
           ],
           isError: true,
         };
@@ -684,16 +1076,23 @@ export function registerLoopTools(server: McpServer): void {
       const mcpLoopSteps3 = engineStepsToMcpSteps(loopResult.steps as any);
 
       // Apply orientation overrides if specified
-      const finalMcpSteps3 = (blueStartOrientation || redStartOrientation)
-        ? recalculateOrientationsWithOverrides(mcpLoopSteps3, blueStartOrientation, redStartOrientation)
-        : mcpLoopSteps3;
+      const finalMcpSteps3 =
+        leftStartOrientation || rightStartOrientation
+          ? recalculateOrientationsWithOverrides(
+              mcpLoopSteps3,
+              leftStartOrientation,
+              rightStartOrientation
+            )
+          : mcpLoopSteps3;
 
       try {
         // Parse birthday string to Date if provided
         const birthdayDate = birthday ? new Date(birthday) : undefined;
 
         // Auto-populate loopComponents from loopType if not explicitly provided
-        const effectiveLoopComponents = loopComponents ?? (loopType === "rewound" ? ["rewound"] : ["rotated"]);
+        const effectiveLoopComponents =
+          loopComponents ??
+          (loopType === "rewound" ? ["rewound"] : ["rotated"]);
 
         // Parse LOOP components for pie chart glyph
         const parsedLoopComponents = effectiveLoopComponents.map((c) => {
@@ -722,30 +1121,36 @@ export function registerLoopTools(server: McpServer): void {
         // Render composite image with derivedStepIndices for proper dimming
         // Simplify word label if it's a repetition (e.g., "ABCABC" → "ABC")
         const displayWord = simplifyRepeatedWord(loopResult.loopWord);
-        const pngBuffer = await renderSequenceToImage(finalMcpSteps3, displayWord, {
-          layout,
-          cellSize,
-          showStepNumbers,
-          showWord,
-          darkMode,
-          padding: 8,
-          showDifficulty: true,
-          userName,
-          notes,
-          birthday: birthdayDate,
-          level,
-          turnAllocation,
-          loopComponents: parsedLoopComponents,
-          period: period === "quartered" ? 4 : 2,
-          derivedStepIndices: loopResult.derivedStepIndices,
-          seedWord: loopResult.seedWord,
-        });
+        const pngBuffer = await renderSequenceToImage(
+          finalMcpSteps3,
+          displayWord,
+          {
+            layout,
+            cellSize,
+            showStepNumbers,
+            showWord,
+            darkMode,
+            padding: 8,
+            showDifficulty: true,
+            userName,
+            notes,
+            birthday: birthdayDate,
+            level,
+            turnAllocation,
+            loopComponents: parsedLoopComponents,
+            period: period === "quartered" ? 4 : 2,
+            derivedStepIndices: loopResult.derivedStepIndices,
+            seedWord: loopResult.seedWord,
+          }
+        );
 
         // Save to temp and open in system viewer
         saveAndOpenImage(pngBuffer, `loop-${word}`);
 
         // Return only confirmation text - NO image data
-        const bridgeNote = bridgeAdded ? `\nBridge added: ${bridgeAdded} (for LOOP compatibility)` : "";
+        const bridgeNote = bridgeAdded
+          ? `\nBridge added: ${bridgeAdded} (for LOOP compatibility)`
+          : "";
         return {
           content: [
             {
@@ -755,10 +1160,14 @@ export function registerLoopTools(server: McpServer): void {
           ],
         };
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         return {
           content: [
-            { type: "text" as const, text: `Failed to render LOOP image: ${errorMessage}` },
+            {
+              type: "text" as const,
+              text: `Failed to render LOOP image: ${errorMessage}`,
+            },
           ],
           isError: true,
         };

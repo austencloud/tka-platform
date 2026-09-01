@@ -1,7 +1,7 @@
 export interface StepLike {
 	motions?: {
-		blue?: MotionLike | null;
-		red?: MotionLike | null;
+		left?: MotionLike | null;
+		right?: MotionLike | null;
 	} | null;
 }
 
@@ -47,8 +47,8 @@ export interface MandalaTipOffset {
 
 /** Per-hand tip points used when blue and red props have different geometry. */
 export interface MandalaTipOverrides {
-	blue: readonly MandalaTipOffset[];
-	red: readonly MandalaTipOffset[];
+	left: readonly MandalaTipOffset[];
+	right: readonly MandalaTipOffset[];
 }
 
 
@@ -56,7 +56,7 @@ export interface PreparedMandalaPath {
 	path2d: Path2D;
 	totalLength: number;
 	color: string;
-	hand: "blue" | "red";
+	hand: "left" | "right";
 }
 
 export interface PreparedMandalaPaths {

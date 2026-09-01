@@ -6,16 +6,16 @@
  *
  *   - Azimuth stays behind and slightly left of the hero camera, which is the
  *     gap the Blender tree belt deliberately leaves open for the moon.
- *   - Elevation is about 25 degrees, raised from the original 18.7. Two forces
- *     pull against each other here. Lower keeps the moon inside the frame of a
- *     downward-pitched performance camera, which is the only place it is ever
- *     seen; higher shortens shadows. 34 degrees was tried and rejected: it
- *     bought little shadow quality that `shadow.intensity` does not buy more
- *     cheaply, and it pushed the moon well above the top of frame. At 25
- *     degrees a 12m tree throws a ~26m shadow, which the +/-20 shadow camera
- *     still covers.
+ *   - Elevation is about 25 degrees, raised from the original 18.7. Lower
+ *     keeps the moon inside a downward-pitched performance camera; higher
+ *     shortens the small prop and performer shadows. 34 degrees was tried and
+ *     rejected because it pushed the disk above most review framings without
+ *     materially improving those local contacts.
  */
 export const AUTUMN_MOON_DIRECTION: [number, number, number] = [-6, 26, -56];
+
+/** Four times the projected 4K hero-shot diameter, without a 15 MB RGBA decode. */
+export const AUTUMN_MOON_TEXTURE_URL = "/textures/autumn/moon-512.png";
 
 /**
  * Art-directed disk placement for performance cameras.

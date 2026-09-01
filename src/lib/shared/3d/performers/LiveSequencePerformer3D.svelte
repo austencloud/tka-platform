@@ -10,6 +10,11 @@
     PlaneMode,
     userProportionsState,
   } from "@austencloud/scene-3d";
+  import type {
+    AvatarGripDiagnostics,
+    AvatarPoseDiagnostics,
+    CollisionEvent,
+  } from "@austencloud/scene-3d";
   import type { CharacterId } from "$lib/shared/3d/domain/character-model";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -33,7 +38,16 @@
     phaseOffsetSteps?: number;
     playbackSpeed?: number;
     active?: boolean;
+    weldGrip?: boolean;
+    showEffects?: boolean;
+    enableLocomotion?: boolean;
+    enableFootPlanting?: boolean;
     onReady?: () => void;
+    onCollisionEvents?: (
+      events: CollisionEvent[],
+      diagnostics: AvatarPoseDiagnostics,
+      gripDiagnostics: AvatarGripDiagnostics
+    ) => void;
   }
 
   const props: Props = $props();
@@ -94,13 +108,17 @@
   visiblePlanes={new Set([Plane.WALL])}
   bluePropType={toScenePropType(props.propType)}
   redPropType={toScenePropType(props.propType)}
+  bluePropState={performerState.leftPropState}
+  redPropState={performerState.rightPropState}
   groundOffset={rigGroundOffset}
-  enableLocomotion={true}
-  enableFootPlanting={true}
+  enableLocomotion={props.enableLocomotion ?? true}
+  enableFootPlanting={props.enableFootPlanting ?? true}
+  weldGrip={props.weldGrip ?? false}
   headDodge={true}
-  showEffects={true}
+  showEffects={props.showEffects ?? true}
   {tipEffectMap}
   isPlaying={performerState.isPlaying}
+  onCollisionEvents={props.onCollisionEvents}
   onAvatarSwapped={() => {
     if (readyReported) return;
     readyReported = true;
@@ -116,21 +134,23 @@
     staffHalfLength,
     effectsParentRef,
   })}
-    <EffectOrchestrator3D
-      {bluePropState}
-      {redPropState}
-      bluePropType={toScenePropType(props.propType)}
-      redPropType={toScenePropType(props.propType)}
-      {isPlaying}
-      {staffHalfLength}
-      {tipEffectMap}
-      {blueHandPos}
-      {redHandPos}
-      {effectsParentRef}
-      currentStep={performerState.currentStepIndex + performerState.progress}
-      totalSteps={performerState.totalSteps}
-      seamlesslyLoopable={performerState.isCircular}
-      qualityTierOverride={props.effectQualityTier}
-    />
+    {#if props.showEffects !== false}
+      <EffectOrchestrator3D
+        leftPropState={bluePropState}
+        rightPropState={redPropState}
+        leftPropType={toScenePropType(props.propType)}
+        rightPropType={toScenePropType(props.propType)}
+        {isPlaying}
+        {staffHalfLength}
+        {tipEffectMap}
+        leftHandPos={blueHandPos}
+        rightHandPos={redHandPos}
+        {effectsParentRef}
+        currentStep={performerState.currentStepIndex + performerState.progress}
+        totalSteps={performerState.totalSteps}
+        seamlesslyLoopable={performerState.isCircular}
+        qualityTierOverride={props.effectQualityTier}
+      />
+    {/if}
   {/snippet}
 </PerformerRig>

@@ -9,9 +9,6 @@
     propFinishState,
     propHasFanAppearanceOptions,
     propHasFinishVariants,
-    type FanBuild,
-    type FanCover,
-    type FanFrameColor,
     type PropBuild,
     type PropFinish,
   } from "@austencloud/scene-3d";
@@ -20,14 +17,13 @@
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
+  import FanAppearancePicker from "$lib/shared/pictograph/prop/components/FanAppearancePicker.svelte";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
   import { createGlobalChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
   import { createLayoutMotion } from "$lib/shared/transitions/layout-flip";
-  import { growFade, motionDuration } from "$lib/shared/transitions/motion";
+  import { motionDuration } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import {
-    fanBuildPreviewOptions,
-    fanCoverPreviewOptions,
-    fanFramePreviewOptions,
     finishPreviewOptions,
     SCENE_PROP_TYPES,
   } from "../../domain/scene-prop-catalog";
@@ -68,15 +64,12 @@
   const showFanAppearance = $derived(
     scenePropType !== null && propHasFanAppearanceOptions(scenePropType)
   );
-  const showFanFrameColors = $derived(
-    showFanAppearance && build.fanBuild === "day"
-  );
-  const showFanCover = $derived(
-    showFanAppearance &&
-      build.fanBuild !== "pictograph" &&
-      build.fanBuild !== "lotus"
-  );
   const showBuildControls = $derived(showFinishes || showFanAppearance);
+  const fanAppearance = $derived<FanAppearance>({
+    build: build.fanBuild,
+    frameColor: build.fanFrameColor,
+    cover: build.fanCover,
+  });
 
   const buildPanelKey = $derived(currentProp ?? "mixed");
   const buildLayoutSignature = $derived(
@@ -84,30 +77,13 @@
       buildPanelKey,
       build.fanBuild,
       showFinishes,
-      showFanFrameColors,
-      showFanCover,
+      build.fanFrameColor,
+      build.fanCover,
     ].join(":")
   );
 
-  const fanBuildContext = $derived(
-    build.fanBuild === "day"
-      ? "Day fan"
-      : build.fanBuild === "lotus"
-        ? "Lotus fan"
-        : "Fire fan"
-  );
   const finishOptions = $derived(
     finishPreviewOptions(currentProp ?? PropType.TRIAD)
-  );
-  const fanBuildOptions = $derived(
-    fanBuildPreviewOptions(build.fanFrameColor, build.fanCover)
-  );
-  const fanFrameOptions = $derived(fanFramePreviewOptions(build.fanCover));
-  const fanCoverOptions = $derived(
-    fanCoverPreviewOptions(
-      build.fanBuild === "day" ? "day" : "fire",
-      build.fanFrameColor
-    )
   );
 
   function chooseFinish(finish: PropFinish): void {
@@ -115,19 +91,17 @@
     propFinishState.set(finish);
   }
 
-  function chooseFanBuild(fanBuild: FanBuild): void {
-    if (onBuildChange) return onBuildChange({ ...build, fanBuild });
-    propFinishState.setFanBuild(fanBuild);
-  }
-
-  function chooseFanFrameColor(color: FanFrameColor): void {
-    if (onBuildChange) return onBuildChange({ ...build, fanFrameColor: color });
-    propFinishState.setFanFrameColor(color);
-  }
-
-  function chooseFanCover(cover: FanCover): void {
-    if (onBuildChange) return onBuildChange({ ...build, fanCover: cover });
-    propFinishState.setFanCover(cover);
+  function chooseFanAppearance(appearance: FanAppearance): void {
+    const next = {
+      ...build,
+      fanBuild: appearance.build,
+      fanFrameColor: appearance.frameColor,
+      fanCover: appearance.cover,
+    };
+    if (onBuildChange) return onBuildChange(next);
+    propFinishState.setFanBuild(appearance.build);
+    propFinishState.setFanFrameColor(appearance.frameColor);
+    propFinishState.setFanCover(appearance.cover);
   }
 
   let buildStageElement: HTMLDivElement | null = $state(null);
@@ -179,69 +153,11 @@
   >
     <Crossfade key={buildPanelKey} duration={DURATION.normal} animateHeight>
       {#if showFanAppearance}
-        <div
-          class="fan-build-layout"
-          class:has-customization={showFanFrameColors || showFanCover}
-        >
-          <div class="fan-build-primary" data-build-layout-key="fan-build">
-            <PropBuildPicker
-              label="Build"
-              value={build.fanBuild}
-              options={fanBuildOptions}
-              onchange={chooseFanBuild}
-            />
-          </div>
-
-          {#if showFanFrameColors || showFanCover}
-            <section
-              class="fan-customization"
-              aria-label={`${fanBuildContext} options`}
-              transition:growFade={{ duration: DURATION.normal, axis: "y" }}
-            >
-              <header class="customization-heading">
-                <span>Optional add-ons</span>
-                <Crossfade key={fanBuildContext} duration={DURATION.fast}>
-                  <strong>{fanBuildContext}</strong>
-                </Crossfade>
-              </header>
-              <div
-                class="fan-modifier-grid"
-                class:has-frame-color={showFanFrameColors}
-              >
-                {#if showFanFrameColors}
-                  <div
-                    class="fan-modifier frame-color-modifier"
-                    transition:growFade={{
-                      duration: DURATION.normal,
-                      axis: "y",
-                    }}
-                  >
-                    <PropBuildPicker
-                      label="Frame color"
-                      value={build.fanFrameColor}
-                      options={fanFrameOptions}
-                      onchange={chooseFanFrameColor}
-                      density="secondary"
-                    />
-                  </div>
-                {/if}
-                {#if showFanCover}
-                  <div
-                    class="fan-modifier cover-modifier"
-                    data-build-layout-key="fan-cover"
-                  >
-                    <PropBuildPicker
-                      label="Wick cover"
-                      value={build.fanCover}
-                      options={fanCoverOptions}
-                      onchange={chooseFanCover}
-                      density="secondary"
-                    />
-                  </div>
-                {/if}
-              </div>
-            </section>
-          {/if}
+        <div data-build-layout-key="fan-build">
+          <FanAppearancePicker
+            value={fanAppearance}
+            onchange={chooseFanAppearance}
+          />
         </div>
       {:else if showFinishes}
         <div class="finish-picker">

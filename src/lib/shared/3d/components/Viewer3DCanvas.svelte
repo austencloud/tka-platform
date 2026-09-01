@@ -32,6 +32,8 @@
   import Viewer3DCamera from "./Viewer3DCamera.svelte";
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
   import PerfMonitor from "./PerfMonitor.svelte";
+  import type { RendererPerformanceSample } from "./renderer-performance-window";
+  import InteractiveCanvasFrameBridge from "./InteractiveCanvasFrameBridge.svelte";
   import GaitProbe from "../diagnostics/gait/GaitProbe.svelte";
   import GaitOverlay from "../diagnostics/gait/GaitOverlay.svelte";
   import { gaitProbeState } from "../diagnostics/gait/gait-probe-state.svelte";
@@ -49,6 +51,7 @@
     releaseBackground,
   } from "$lib/shared/background/shared/state/background-hold.svelte";
   import SceneShaderWarmup from "./SceneShaderWarmup.svelte";
+  import InteractivePropAssetWarmup from "./InteractivePropAssetWarmup.svelte";
   import { createCharacterPlaybackAdapter } from "$lib/shared/timeline/adapters/character-playback-adapter.svelte";
   import type { PlaybackMode } from "$lib/shared/timeline/unified-playback-context";
   import { sceneLoadingPlaybackTransition } from "../domain/scene-loading-playback";
@@ -75,8 +78,8 @@
     isPlaying: boolean;
     bpm?: number;
     onBpmChange?: (bpm: number) => void;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     hideOverlays?: boolean;
     /** Hide in-world review markers while keeping the character and effects. */
     hideSceneMarkers?: boolean;
@@ -139,6 +142,13 @@
     onSettingChange?: ViewerControlSink;
     /** Mount the environment and camera before choreography adds a performer. */
     renderEmptyScene?: boolean;
+    /** Production-graph instrumentation hook used by focused benchmark hosts. */
+    onPerformanceSample?: (sample: RendererPerformanceSample) => void;
+    performanceWarmupMs?: number;
+    /** Review-only escape hatch for reproducing world-scale camera poses. */
+    cameraMaxOrbitDistance?: number;
+    /** Review-only field-of-view override; ordinary viewers retain 50 degrees. */
+    cameraFov?: number;
   }
 
   let {
@@ -147,8 +157,8 @@
     isPlaying,
     bpm = 60,
     onBpmChange = () => {},
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     hideOverlays = false,
     hideSceneMarkers = false,
     hidePerformerBadges = false,
@@ -181,6 +191,10 @@
     sceneLoadTimeoutMs = 15_000,
     onSettingChange,
     renderEmptyScene = false,
+    onPerformanceSample,
+    performanceWarmupMs = 0,
+    cameraMaxOrbitDistance,
+    cameraFov,
   }: Props = $props();
 
   type ScenePostProcessingModule =
@@ -376,6 +390,8 @@
   // ready. Never flips back if the user toggles a feature on later (matches the
   // curtain's own latch), so the rail/playback gate only fires on first load.
   let rendererReady = $state(false);
+  let interactivePropsReady = $state(false);
+  let effectsRuntimeReady = $state(!enableEffects);
   let sceneReady = $state(false);
   let readyPerformerCount = $state(0);
   let totalPerformerCount = $state(0);
@@ -512,11 +528,15 @@
           dpr={adaptiveQuality.pixelRatio}
           shadows={adaptiveQuality.config.enableShadows}
           createRenderer={(canvas) =>
-            new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
+            new WebGLRenderer({ canvas, preserveDrawingBuffer: false })}
         >
+          <InteractiveCanvasFrameBridge />
           <PerfMonitor
             visible={viewer3DState.showPerf}
             adaptive={sceneReady && isPlaying && !viewer3DState.isExporting}
+            active={Boolean(onPerformanceSample) && sceneReady}
+            warmupMs={performanceWarmupMs}
+            onSample={onPerformanceSample}
           />
           <Viewer3DCanvasRef {onRendererReady} />
           <!-- Reads the legs every host in the app puts on screen. Renders
@@ -526,25 +546,32 @@
             <GaitProbe />
           {/if}
           {#if adaptiveQuality.initialized}
+            <InteractivePropAssetWarmup
+              onReadyChange={(ready) => (interactivePropsReady = ready)}
+            />
             <SceneShaderWarmup
               onReadyChange={handleRendererReadyChange}
               waitForAllFeatures={initialRevealMode === "streaming"}
               cacheKey={shaderWarmupCacheKey}
-              additionalReady={performersReady}
+              additionalReady={performersReady &&
+                interactivePropsReady &&
+                effectsRuntimeReady}
             />
             {#snippet sceneContent()}
               <Viewer3DCamera
                 cameraPlayerAvatar={cameraPlayer.avatarState}
                 cameraPlayerPhysics={cameraPlayer.physicsProvider}
                 {onSettingChange}
+                maxOrbitDistance={cameraMaxOrbitDistance}
+                fov={cameraFov}
               />
               <Viewer3DScene
                 {sequenceData}
                 {currentStep}
                 {isPlaying}
                 {characterState}
-                bluePropTypeOverride={bluePropType}
-                redPropTypeOverride={redPropType}
+                leftPropTypeOverride={leftPropType}
+                rightPropTypeOverride={rightPropType}
                 {hideSceneMarkers}
                 {hidePerformerBadges}
                 {hideOrientationHelpers}
@@ -561,6 +588,8 @@
                 {environmentTransitionVisualMode}
                 onPerformerReadinessChange={handlePerformerReadinessChange}
                 onEnvironmentTransitionChange={handleEnvironmentTransitionChange}
+                onEffectsRuntimeReadyChange={(ready) =>
+                  (effectsRuntimeReady = ready)}
               />
             {/snippet}
             {@render sceneContent()}

@@ -25,7 +25,7 @@ describe("ps slice", () => {
   });
 
   it("diffs propType against the LIVE session default, not a fixed constant", () => {
-    // A sender whose settingsService.bluePropType is already FAN (their own
+    // A sender whose settingsService.leftPropType is already FAN (their own
     // preference, never touched inside Post Studio) must not be captured as
     // an override -- the default passed in is what THIS session would have
     // resolved to on its own.

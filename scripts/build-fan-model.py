@@ -1,10 +1,11 @@
 """Build the production fan family and optional two-faced cover.
 
-The asset carries four independently switchable groups:
+The asset carries five independently switchable groups:
 
 * ``Fan_Fire``: oil-darkened steel frame with five rolled kevlar wicks.
 * ``Fan_Lotus``: measured five-petal Russian-grip fire fan.
 * ``Fan_Day``: the same reach as a thick HDPE practice frame.
+* ``Fan_Moon``: a measured two-zone LED frame beneath diffusion fabric.
 * ``Fan_Cover``: a slip-on crescent with a solid front and striped back.
 
 The scene-3d runtime chooses which groups are visible and recolors the day
@@ -45,6 +46,7 @@ LOTUS_FIRE_REFERENCE = ROOT / "scripts" / "assets" / "lotus-fire-reference.json"
 LOTUS_FIRE_VECTOR_REFERENCE = (
     ROOT / "scripts" / "assets" / "lotus-fire-reference.svg"
 )
+MOON_FAN_REFERENCE = ROOT / "scripts" / "assets" / "moon-fan-reference.json"
 
 FIRE_WIDTH_M = 0.4826
 FIRE_HEIGHT_M = 0.3302
@@ -61,6 +63,8 @@ LOTUS_BEZIER_SAMPLES_PER_SPAN = 12
 DAY_WIDTH_M = 0.51
 DAY_HEIGHT_M = 0.35
 DAY_DEPTH_M = 0.0095
+MOON_WIDTH_M = 0.60
+MOON_HEIGHT_M = 0.38
 
 
 def parse_args() -> argparse.Namespace:
@@ -948,6 +952,195 @@ def build_day_frame(
     return [plate]
 
 
+def build_moon_fan(
+    parent: bpy.types.Object,
+    fabric: bpy.types.Material,
+    frame: bpy.types.Material,
+    led_a: bpy.types.Material,
+    led_b: bpy.types.Material,
+) -> list[bpy.types.Object]:
+    """Build the measured two-zone frame beneath the Moon fan's white skin."""
+    reference = json.loads(MOON_FAN_REFERENCE.read_text(encoding="utf-8"))
+    observed = reference["observed_2026_09_01"]
+    geometry = reference["geometry_m"]
+    dimensions = observed["dimensions_m"]
+    if not math.isclose(dimensions["width"], MOON_WIDTH_M, abs_tol=1e-6):
+        raise ValueError("Moon fan reference no longer matches its 600mm width")
+    if not math.isclose(dimensions["height"], MOON_HEIGHT_M, abs_tol=1e-6):
+        raise ValueError("Moon fan reference no longer matches its 380mm height")
+    if observed["led_count"] != 78 or observed["segment_count"] != 2:
+        raise ValueError("Moon fan must retain its documented 2 x 39 LED layout")
+
+    centre_y = geometry["outer_arc_center_y"]
+    radius_x = geometry["outer_arc_radius_x"]
+    radius_y = geometry["outer_arc_radius_y"]
+    notch_radius = geometry["fabric_notch_radius"]
+    depth = geometry["fabric_depth"]
+    frame_radius = geometry["frame_radius"]
+    grip_tube = geometry["grip_tube_radius"]
+    grip_inner = geometry["grip_inner_radius"]
+
+    notch = [
+        (
+            notch_radius * math.cos(angle),
+            notch_radius * math.sin(angle),
+        )
+        for angle in (
+            math.radians(145 - 110 * index / 16) for index in range(17)
+        )
+    ]
+    outer_arc = ellipse_arc(
+        radius_x,
+        radius_y,
+        centre_y,
+        segments=48,
+        start_angle=0,
+        end_angle=math.pi,
+    )
+    outline = [
+        (-radius_x, centre_y),
+        *notch,
+        (radius_x, centre_y),
+        *((x, y) for x, y, _ in outer_arc[1:]),
+    ]
+    skin = add_cut_sheet(
+        "Fan_Moon_DiffusionSkin",
+        outline,
+        [],
+        depth,
+        fabric,
+        parent,
+    )
+    skin["tka_build"] = "Lighttoys Moon LED fan"
+    skin["tka_construction"] = "two-zone perimeter LEDs beneath diffusion fabric"
+    skin["tka_reference"] = reference["product_url"]
+    skin["tka_dimensions_m"] = [MOON_WIDTH_M, MOON_HEIGHT_M, depth]
+    skin["tka_led_count"] = observed["led_count"]
+    skin["tka_segment_count"] = observed["segment_count"]
+
+    frame_z = -depth / 2 - frame_radius * 0.2
+    outer_rod = add_round_rod(
+        "Fan_Moon_OuterFrame",
+        ellipse_arc(
+            radius_x - frame_radius,
+            radius_y - frame_radius,
+            centre_y,
+            segments=48,
+            z=frame_z,
+        ),
+        frame_radius,
+        frame,
+        parent,
+    )
+    lower_left = add_round_rod(
+        "Fan_Moon_LowerFrame_A",
+        [(-radius_x, centre_y, frame_z), (notch[0][0], notch[0][1], frame_z)],
+        frame_radius,
+        frame,
+        parent,
+    )
+    lower_right = add_round_rod(
+        "Fan_Moon_LowerFrame_B",
+        [(notch[-1][0], notch[-1][1], frame_z), (radius_x, centre_y, frame_z)],
+        frame_radius,
+        frame,
+        parent,
+    )
+    centre_support = add_round_rod(
+        "Fan_Moon_CentreSupport",
+        [(0.0, notch_radius, frame_z), (0.0, centre_y + radius_y, frame_z)],
+        frame_radius * 0.82,
+        frame,
+        parent,
+    )
+    diagonal_left = add_round_rod(
+        "Fan_Moon_DiagonalSupport_A",
+        [(0.0, notch_radius * 0.78, frame_z), (-radius_x * 0.72, centre_y + radius_y * 0.7, frame_z)],
+        frame_radius * 0.62,
+        frame,
+        parent,
+    )
+    diagonal_right = add_round_rod(
+        "Fan_Moon_DiagonalSupport_B",
+        [(0.0, notch_radius * 0.78, frame_z), (radius_x * 0.72, centre_y + radius_y * 0.7, frame_z)],
+        frame_radius * 0.62,
+        frame,
+        parent,
+    )
+
+    # The product's two controllable zones each carry 39 emitters. A narrow
+    # continuous strip keeps the GLB light while the live effect renderer draws
+    # the individual pattern and fabric falloff every frame.
+    led_inset = frame_radius * 2.1
+    led_left = add_round_rod(
+        "Fan_Moon_LED_Segment_A",
+        ellipse_arc(
+            radius_x - led_inset,
+            radius_y - led_inset,
+            centre_y,
+            segments=20,
+            z=depth / 2 + 0.0007,
+            start_angle=math.pi / 2,
+            end_angle=math.pi,
+        ),
+        0.0022,
+        led_a,
+        parent,
+    )
+    led_right = add_round_rod(
+        "Fan_Moon_LED_Segment_B",
+        ellipse_arc(
+            radius_x - led_inset,
+            radius_y - led_inset,
+            centre_y,
+            segments=20,
+            z=depth / 2 + 0.0007,
+            start_angle=0,
+            end_angle=math.pi / 2,
+        ),
+        0.0022,
+        led_b,
+        parent,
+    )
+
+    grip_main = add_torus(
+        "Fan_Moon_GripRing",
+        (0.0, 0.0, 0.0),
+        grip_inner,
+        grip_tube,
+        grip_tube * 2,
+        frame,
+        parent,
+    )
+    grip_guard = add_torus(
+        "Fan_Moon_GripGuard",
+        (0.0, -0.002, -0.002),
+        grip_inner + grip_tube * 2.5,
+        grip_tube * 0.72,
+        grip_tube * 1.45,
+        frame,
+        parent,
+    )
+
+    parent["tka_led_count"] = observed["led_count"]
+    parent["tka_led_segments"] = observed["segment_count"]
+    parent["tka_ring_hole_diameter_m"] = dimensions["ring_hole_diameter"]
+    parent["tka_reference_images"] = reference["reference_images"]
+    return [
+        skin,
+        outer_rod,
+        lower_left,
+        lower_right,
+        centre_support,
+        diagonal_left,
+        diagonal_right,
+        led_left,
+        led_right,
+        grip_main,
+        grip_guard,
+    ]
+
+
 def build_fire_frame(
     parent: bpy.types.Object,
     steel: bpy.types.Material,
@@ -1619,6 +1812,7 @@ def build_asset() -> tuple[
     root["tka_day_ring_diameter_m"] = 0.044
     root["tka_fire_dimensions_m"] = [FIRE_WIDTH_M, FIRE_HEIGHT_M]
     root["tka_lotus_dimensions_m"] = [LOTUS_WIDTH_M, LOTUS_HEIGHT_M]
+    root["tka_moon_dimensions_m"] = [MOON_WIDTH_M, MOON_HEIGHT_M]
     fire_reference = json.loads(DOODLEGRIP_FIRE_REFERENCE.read_text())
     fire_geometry = fire_reference["geometry_m"]
     outer_x, outer_y = fire_geometry["outer_wick_center"]
@@ -1640,6 +1834,7 @@ def build_asset() -> tuple[
         "fire": add_empty("Fan_Fire", root),
         "lotus": add_empty("Fan_Lotus", root),
         "day": add_empty("Fan_Day", root),
+        "moon": add_empty("Fan_Moon", root),
         "cover": add_empty("Fan_Cover", root),
     }
     materials = {
@@ -1663,6 +1858,25 @@ def build_asset() -> tuple[
         "day": make_material(
             "TKA_Fan_Day_Frame", (0.025, 0.028, 0.034, 1), roughness=0.72, coat=0.08
         ),
+        "moon_fabric": make_material(
+            "TKA_Fan_Moon_Fabric",
+            (0.92, 0.94, 0.98, 0.94),
+            roughness=0.88,
+            coat=0.04,
+        ),
+        "moon_frame": make_material(
+            "TKA_Fan_Moon_Frame",
+            (0.25, 0.08, 0.46, 1.0),
+            roughness=0.34,
+            metallic=0.58,
+            coat=0.18,
+        ),
+        "moon_led_a": make_material(
+            "TKA_Fan_Moon_LED_A", (0.16, 0.22, 0.34, 1.0), roughness=0.24
+        ),
+        "moon_led_b": make_material(
+            "TKA_Fan_Moon_LED_B", (0.28, 0.12, 0.28, 1.0), roughness=0.24
+        ),
         "cover_solid": make_material(
             "TKA_Fan_Cover_Solid_Recolor", (0.73, 0.08, 0.18, 1), roughness=0.82
         ),
@@ -1679,6 +1893,15 @@ def build_asset() -> tuple[
 
     objects: list[bpy.types.Object] = []
     objects.extend(build_day_frame(groups["day"], materials["day"]))
+    objects.extend(
+        build_moon_fan(
+            groups["moon"],
+            materials["moon_fabric"],
+            materials["moon_frame"],
+            materials["moon_led_a"],
+            materials["moon_led_b"],
+        )
+    )
     objects.extend(
         build_fire_frame(
             groups["fire"], materials["fire"], materials["wick"], materials["wick_band"]
@@ -1811,6 +2034,7 @@ def render_proofs(
         show_group(groups["fire"], fire)
         show_group(groups["lotus"], lotus)
         show_group(groups["day"], day)
+        show_group(groups["moon"], False)
         show_group(groups["cover"], cover)
         set_material_color(
             materials["day"],
@@ -1821,10 +2045,25 @@ def render_proofs(
         scene.render.filepath = str(render_dir / f"fan-{label}.png")
         bpy.ops.render.render(write_still=True)
 
+    show_group(groups["fire"], False)
+    show_group(groups["lotus"], False)
+    show_group(groups["day"], False)
+    show_group(groups["cover"], False)
+    show_group(groups["moon"], True)
+    # Moon is wider than the existing fire/day families. Pull its proof camera
+    # back so the full 600mm diffuser and both outer corners stay in frame.
+    camera.location.z = 1.08
+    point_at(camera, Vector((0.0, 0.11, 0.0)))
+    scene.render.film_transparent = True
+    scene.render.filepath = str(render_dir / "fan-moon-unlit.png")
+    bpy.ops.render.render(write_still=True)
+    scene.render.film_transparent = False
+
     # The handle is too small to judge honestly in the full-fan proof. Keep a
     # straight-on inspection frame that makes a flat spot, changing radius, or
     # left/right mismatch immediately visible.
     show_group(groups["fire"], True)
+    show_group(groups["moon"], False)
     show_group(groups["lotus"], False)
     show_group(groups["day"], False)
     show_group(groups["cover"], False)
@@ -1862,6 +2101,7 @@ def print_summary(output_path: Path, objects: list[bpy.types.Object]) -> None:
     print(f"FAN_DAY_SIZE_M={DAY_WIDTH_M},{DAY_HEIGHT_M},{DAY_DEPTH_M}")
     print(f"FAN_FIRE_SIZE_M={FIRE_WIDTH_M},{FIRE_HEIGHT_M}")
     print(f"FAN_LOTUS_SIZE_M={LOTUS_WIDTH_M},{LOTUS_HEIGHT_M}")
+    print(f"FAN_MOON_SIZE_M={MOON_WIDTH_M},{MOON_HEIGHT_M}")
     print("FAN_HAND_PIVOT=0,0,0")
 
 

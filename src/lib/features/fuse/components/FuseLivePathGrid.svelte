@@ -5,6 +5,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
+  import { FUSE_LIVE_GRID_GAP } from "../services/fuse-workspace-split";
 
   let {
     sequence,
@@ -15,8 +16,8 @@
     showMandala = false,
     highlightedStepIndex = null,
     onStepClick,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
   }: {
     sequence: SequenceData;
     side: FuseSide;
@@ -26,8 +27,8 @@
     showMandala?: boolean;
     highlightedStepIndex?: number | null;
     onStepClick?: (stepIndex: number) => void;
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
   } = $props();
 
   const safeColumns = $derived(Math.max(1, columns));
@@ -41,7 +42,8 @@
   // Match the canonical Choreo Card's mandala-to-cell ratio. A full-cell
   // mandala pushes its outer glow into the cell edge and reads as cropped,
   // especially in the large Fuse cards.
-  const mandalaSize = $derived(Math.round(Math.max(72, cellSize) * 0.78));
+  const safeCellSize = $derived(Math.max(1, cellSize));
+  const mandalaSize = $derived(Math.max(1, Math.round(safeCellSize * 0.78)));
   const startPosition = $derived(
     sequence.startPosition ??
       sequence.startingPosition ??
@@ -74,8 +76,8 @@
     showHandPoints={true}
     visibleHand={side}
     darkMode={true}
-    bluePropTypeOverride={bluePropType}
-    redPropTypeOverride={redPropType}
+    leftPropTypeOverride={leftPropType}
+    rightPropTypeOverride={rightPropType}
     stepNumberOverride={true}
     cellIndex={index}
     transitionKey={`fuse-${side}-step-${index}`}
@@ -86,8 +88,9 @@
   class="live-path-grid"
   style:--live-grid-columns={gridColumns}
   style:--live-grid-rows={gridRows}
-  style:--live-cell-size={`${Math.max(72, cellSize)}px`}
-  aria-label="{side === 'blue' ? 'Blue' : 'Red'} one-hand LOOP notation"
+  style:--live-cell-size={`${safeCellSize}px`}
+  style:--live-grid-gap={`${FUSE_LIVE_GRID_GAP}px`}
+  aria-label="{side === 'left' ? 'Left' : 'Right'} one-hand LOOP notation"
 >
   {#if includeStart && startPosition}
     <div class="live-cell start-cell" style="grid-column:1;grid-row:1;">
@@ -105,8 +108,8 @@
         showHandPoints={true}
         visibleHand={side}
         darkMode={true}
-        bluePropTypeOverride={bluePropType}
-        redPropTypeOverride={redPropType}
+        leftPropTypeOverride={leftPropType}
+        rightPropTypeOverride={rightPropType}
         stepNumberOverride={false}
         transitionKey={`fuse-${side}-start`}
       />
@@ -119,17 +122,17 @@
       class="live-cell mandala-cell"
       style="grid-column:1;grid-row:{gridRows};"
       role="img"
-      aria-label="{side === 'blue' ? 'Blue' : 'Red'} path mandala"
+      aria-label="{side === 'left' ? 'Left' : 'Right'} path mandala"
     >
       <SequenceMandala
         {sequence}
         mode="card-back"
         style={"stroke"}
-        show={side}
+        show={side === "left" ? "blue" : "red"}
         size={mandalaSize}
         darkMode={true}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         morphChanges={true}
       />
     </div>
@@ -172,7 +175,7 @@
     );
     grid-template-rows: repeat(var(--live-grid-rows), var(--live-cell-size));
     place-content: center;
-    gap: 1px;
+    gap: var(--live-grid-gap);
     width: 100%;
     min-width: 100%;
     min-height: 100%;

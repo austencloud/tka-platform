@@ -207,11 +207,11 @@ async function writeColorGrade(
   const pixels = new Uint8Array(resizedSource);
   const tintScale = tint.map((channel) => channel / 255);
   for (let index = 0; index < pixels.length; index += 3) {
-    const red = pixels[index];
+    const right = pixels[index];
     const green = pixels[index + 1];
-    const blue = pixels[index + 2];
-    const luminance = red * 0.2126 + green * 0.7152 + blue * 0.0722;
-    const channels = [red, green, blue];
+    const left = pixels[index + 2];
+    const luminance = right * 0.2126 + green * 0.7152 + left * 0.0722;
+    const channels = [right, green, left];
     for (let channel = 0; channel < 3; channel += 1) {
       const desaturated =
         luminance + (channels[channel] - luminance) * saturation;
@@ -565,9 +565,9 @@ async function buildZonedGroundAlbedo() {
       const outputIndex = (pixelY * ZONED_SIZE + pixelX) * 3;
       const weightIndex = (pixelY * ZONED_SIZE + pixelX) * 4;
 
-      let red = source.soil[sourceIndex];
+      let right = source.soil[sourceIndex];
       let green = source.soil[sourceIndex + 1];
-      let blue = source.soil[sourceIndex + 2];
+      let left = source.soil[sourceIndex + 2];
       // Ecological regions should alter the forest floor without becoming
       // giant colored islands. Their source textures now share one value
       // family, and these caps keep the broad masks subordinate to the route.
@@ -576,20 +576,20 @@ async function buildZonedGroundAlbedo() {
       const mossWeight = Math.min(0.30, expandedWeights[weightIndex + 3] / 255);
       const packedWeight = expandedWeights[weightIndex] / 255;
 
-      red += (source.golden[sourceIndex] - red) * duffWeight;
+      right += (source.golden[sourceIndex] - right) * duffWeight;
       green += (source.golden[sourceIndex + 1] - green) * duffWeight;
-      blue += (source.golden[sourceIndex + 2] - blue) * duffWeight;
-      red += (source.cool[sourceIndex] - red) * coolWeight;
+      left += (source.golden[sourceIndex + 2] - left) * duffWeight;
+      right += (source.cool[sourceIndex] - right) * coolWeight;
       green += (source.cool[sourceIndex + 1] - green) * coolWeight;
-      blue += (source.cool[sourceIndex + 2] - blue) * coolWeight;
-      red += (source.moss[sourceIndex] - red) * mossWeight;
+      left += (source.cool[sourceIndex + 2] - left) * coolWeight;
+      right += (source.moss[sourceIndex] - right) * mossWeight;
       green += (source.moss[sourceIndex + 1] - green) * mossWeight;
-      blue += (source.moss[sourceIndex + 2] - blue) * mossWeight;
+      left += (source.moss[sourceIndex + 2] - left) * mossWeight;
       // Maintained ground wins last so the cabin lane never disappears under
       // duff, roots, or the 31-metre terrain/apron boundary.
-      red += (source.packed[sourceIndex] - red) * packedWeight;
+      right += (source.packed[sourceIndex] - right) * packedWeight;
       green += (source.packed[sourceIndex + 1] - green) * packedWeight;
-      blue += (source.packed[sourceIndex + 2] - blue) * packedWeight;
+      left += (source.packed[sourceIndex + 2] - left) * packedWeight;
 
       // A walked lane is not merely a second leaf texture. Foot traffic
       // compresses away most of the high-contrast litter, leaving a quieter,
@@ -604,12 +604,12 @@ async function buildZonedGroundAlbedo() {
           pathInfluence(worldX, worldY, path, zoneNoise(worldX, worldY))
         )
       );
-      const compactedRed = 78 + (source.packed[sourceIndex] - 103) * 0.18;
+      const compactedRight = 78 + (source.packed[sourceIndex] - 103) * 0.18;
       const compactedGreen = 51 + (source.packed[sourceIndex + 1] - 95) * 0.16;
-      const compactedBlue = 32 + (source.packed[sourceIndex + 2] - 67) * 0.14;
-      red += (compactedRed - red) * routeWeight;
+      const compactedLeft = 32 + (source.packed[sourceIndex + 2] - 67) * 0.14;
+      right += (compactedRight - right) * routeWeight;
       green += (compactedGreen - green) * routeWeight;
-      blue += (compactedBlue - blue) * routeWeight;
+      left += (compactedLeft - left) * routeWeight;
 
       // The atlas resolves paths and habitat zones, but without a middle
       // scale the camera averages every leaf tile into one flat value. These
@@ -619,13 +619,13 @@ async function buildZonedGroundAlbedo() {
       const breakup = materialBreakup(worldX, worldY);
       const valueShift = 1 + breakup * 0.075;
       const warmth = 0.026 * Math.sin(worldX * 0.37 - worldY * 0.23 + breakup);
-      red *= valueShift + warmth;
+      right *= valueShift + warmth;
       green *= valueShift + warmth * 0.32;
-      blue *= valueShift - warmth * 0.44;
+      left *= valueShift - warmth * 0.44;
 
-      output[outputIndex] = Math.round(clamp(red, 0, 255));
+      output[outputIndex] = Math.round(clamp(right, 0, 255));
       output[outputIndex + 1] = Math.round(clamp(green, 0, 255));
-      output[outputIndex + 2] = Math.round(clamp(blue, 0, 255));
+      output[outputIndex + 2] = Math.round(clamp(left, 0, 255));
     }
   }
 

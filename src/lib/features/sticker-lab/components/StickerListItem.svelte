@@ -16,8 +16,8 @@
     label: string;
     tone?: "blue" | "red";
   }[] = [
-    { value: "blue", label: "Blue", tone: "blue" },
-    { value: "red", label: "Red", tone: "red" },
+    { value: "left", label: "Left", tone: "blue" },
+    { value: "right", label: "Right", tone: "red" },
     { value: "full", label: "Full" },
   ];
 

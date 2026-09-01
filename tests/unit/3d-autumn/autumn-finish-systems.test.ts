@@ -7,6 +7,7 @@ import {
 } from "$lib/shared/3d/environments/primitives/rooted-wind-material";
 import { sampleAutumnLanternFlicker } from "$lib/shared/3d/environments/scenes/autumn/runtime/lighting/autumn-lantern-flicker";
 import { patchAutumnGroundDetailMaterial } from "$lib/shared/3d/environments/scenes/autumn/runtime/ground/autumn-ground-detail";
+import { createAutumnPondSurfaceMaterial } from "$lib/shared/3d/environments/scenes/autumn/runtime/water/autumn-pond-surface-material";
 import {
   calculateAutumnDepthFogFactor,
   getAutumnDepthCohesionProfile,
@@ -14,6 +15,24 @@ import {
 } from "$lib/shared/3d/environments/scenes/autumn/runtime/atmosphere/autumn-depth-cohesion";
 
 describe("Autumn finish systems", () => {
+  it("renders the pond without triggering Three's full-scene transmission pass", () => {
+    const bodyNormal = new Texture();
+    const coatNormal = new Texture();
+    const material = createAutumnPondSurfaceMaterial(bodyNormal, coatNormal);
+
+    expect(material.transmission).toBe(0);
+    expect(material.transparent).toBe(true);
+    expect(material.opacity).toBeGreaterThanOrEqual(0.6);
+    expect(material.normalMap).toBe(bodyNormal);
+    expect(material.clearcoatNormalMap).toBe(coatNormal);
+    expect(material.clearcoat).toBeGreaterThan(0);
+    expect(material.depthWrite).toBe(false);
+
+    material.dispose();
+    bodyNormal.dispose();
+    coatNormal.dispose();
+  });
+
   it("keeps the lantern flicker restrained and deterministic", () => {
     const samples = Array.from({ length: 240 }, (_, index) =>
       sampleAutumnLanternFlicker(index / 30)
@@ -82,7 +101,8 @@ describe("Autumn finish systems", () => {
     const shader = {
       uniforms: {},
       vertexShader: "#include <common>\n#include <uv_vertex>",
-      fragmentShader: "#include <common>\n#include <map_fragment>",
+      fragmentShader:
+        "#include <common>\n#include <map_fragment>\n#include <opaque_fragment>",
     };
 
     material.onBeforeCompile(shader as never, {} as never);
@@ -91,9 +111,11 @@ describe("Autumn finish systems", () => {
     expect(shader.uniforms.uAutumnGroundDetailStrength.value).toBe(0.72);
     expect(shader.vertexShader).toContain("vAutumnGroundDetailUv = uv");
     expect(shader.fragmentShader).toContain("autumnGroundModulation");
-    expect(shader.fragmentShader).toContain("vec3(1.10, 0.80, 0.62)");
+    expect(shader.fragmentShader).toContain("vec3(1.15, 0.67, 0.42)");
+    expect(shader.fragmentShader).toContain("vec3(1.18, 0.62, 0.38)");
+    expect(shader.fragmentShader).toContain("autumnGroundCopper");
     expect(material.customProgramCacheKey()).toContain(
-      "autumn-ground-detail-v3"
+      "autumn-ground-detail-v5"
     );
     expect(shader.fragmentShader).toContain("autumnCabinLane");
     expect(shader.fragmentShader).toContain("autumnGroundRouteMask");

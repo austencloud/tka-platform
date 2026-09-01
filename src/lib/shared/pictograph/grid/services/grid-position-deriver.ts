@@ -88,10 +88,10 @@ const LOCATION_PAIRS_MAP: Record<GridPosition, [GridLocation, GridLocation]> =
   {} as Record<GridPosition, [GridLocation, GridLocation]>;
 
 POSITIONS_MAP.forEach((position, locationKey) => {
-  const [blueLocationStr, redLocationStr] = locationKey.split(",");
+  const [leftLocationStr, rightLocationStr] = locationKey.split(",");
   LOCATION_PAIRS_MAP[position] = [
-    blueLocationStr as GridLocation,
-    redLocationStr as GridLocation,
+    leftLocationStr as GridLocation,
+    rightLocationStr as GridLocation,
   ];
 });
 
@@ -112,14 +112,14 @@ export function getGridLocationsFromPosition(
  * Get the position for a given hand location pair
  */
 export function getGridPositionFromLocations(
-  blueLocation: GridLocation,
-  redLocation: GridLocation
+  leftLocation: GridLocation,
+  rightLocation: GridLocation
 ): GridPosition {
-  const key = `${blueLocation},${redLocation}`;
+  const key = `${leftLocation},${rightLocation}`;
   const position = POSITIONS_MAP.get(key);
   if (!position) {
     throw new Error(
-      `No position found for locations: ${blueLocation}, ${redLocation}`
+      `No position found for locations: ${leftLocation}, ${rightLocation}`
     );
   }
   return position;

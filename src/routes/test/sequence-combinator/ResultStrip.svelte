@@ -60,7 +60,7 @@
     const parts: string[] = [];
     if (variant.rotation !== 0) parts.push(`r${variant.rotation}`);
     if (variant.mirrored) parts.push("mirror");
-    if (variant.colorSwapped) parts.push("swap");
+    if (variant.handsSwapped) parts.push("swap");
     if (variant.rotationFaithful) parts.push("twin");
     return parts.length > 0 ? parts.join("+") : "identity";
   }

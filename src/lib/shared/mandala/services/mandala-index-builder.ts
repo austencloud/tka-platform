@@ -24,7 +24,7 @@ export interface MandalaIndex {
 }
 
 function isEmpty(p: MandalaPaths): boolean {
-	return p.blue.length === 0 && p.red.length === 0 && p.purple.length === 0;
+	return p.left.length === 0 && p.right.length === 0 && p.purple.length === 0;
 }
 
 /** Pure: catalog entries → fingerprint index. No I/O. */

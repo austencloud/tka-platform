@@ -22,12 +22,13 @@ import { arrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/position
 import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-location-calculator";
 import { setGlobalReadDisabled } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
 import { getSpecialOverrideRepository } from "$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-singleton";
+import type { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export interface MigrationRow {
   key: string;
   propType: string;
   letter: string;
-  arrowColor: "blue" | "red";
+  arrowHand: HandSide;
   value: { x: number; y: number }; // the Global value being migrated
   original: { x: number; y: number }; // static-JSON baseline, for the trace's struck-through "original"
   parity: "pass" | "fail";
@@ -45,7 +46,7 @@ export interface MigrationReport {
 interface StagedSource {
   pictographData: PictographData;
   motion: MotionData;
-  arrowColor: "blue" | "red";
+  arrowHand: HandSide;
   letter: string;
 }
 
@@ -87,8 +88,8 @@ export async function runOverrideMigration(opts: {
   const sources = new Map<string, StagedSource>();
 
   // --- Stage pass: probe every variation arrow through the real pipeline ---
-  for (const { pictographData, arrowColor } of arrows) {
-    const motion = pictographData.motions[arrowColor];
+  for (const { pictographData, arrowHand } of arrows) {
+    const motion = pictographData.motions[arrowHand];
     if (!motion) continue;
     const letter = pictographData.letter;
     if (!letter) continue;
@@ -102,7 +103,7 @@ export async function runOverrideMigration(opts: {
       motion,
       letter,
       location,
-      arrowColor
+      arrowHand
     );
 
     // Only Global-sourced arrows migrate. Special-json / prop-geometry / default
@@ -110,7 +111,7 @@ export async function runOverrideMigration(opts: {
     if (diag.activeTier !== "global" || !diag.global) continue;
 
     const value = { x: diag.global.value.x, y: diag.global.value.y };
-    const key = computeSpecialOverrideKey(pictographData, motion, arrowColor);
+    const key = computeSpecialOverrideKey(pictographData, motion, arrowHand);
     const original = diag.specialJson?.value
       ? { x: diag.specialJson.value.x, y: diag.specialJson.value.y }
       : { x: 0, y: 0 };
@@ -133,12 +134,12 @@ export async function runOverrideMigration(opts: {
       key,
       propType: motion.propType?.toLowerCase() || "staff",
       letter,
-      arrowColor,
+      arrowHand,
       value,
       original,
       parity: "pass",
     });
-    sources.set(key, { pictographData, motion, arrowColor, letter });
+    sources.set(key, { pictographData, motion, arrowHand, letter });
   }
 
   for (const row of staged.values()) {
@@ -166,7 +167,7 @@ export async function runOverrideMigration(opts: {
         src.pictographData,
         src.motion,
         src.letter,
-        src.arrowColor
+        src.arrowHand
       );
       const rx = Math.round(resolved.x);
       const ry = Math.round(resolved.y);

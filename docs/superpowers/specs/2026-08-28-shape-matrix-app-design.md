@@ -146,6 +146,9 @@ Search terms: `Shape Matrix`, `realization pane`, `detail pane`, `ControlDock`,
 - Level 2 exposes whole turns from 0 through 3.
 - Level 3 adds half turns and Float.
 - Level 4 exposes every quarter step from 0 through 3 and retains Float.
+- Choosing a level lands the edited axis on the first rotating turn that level
+  introduces: Level 1 at 0, Level 2 at 1, Level 3 at 0.5, and Level 4 at 0.25.
+  Earlier values remain selectable because the level vocabulary is cumulative.
 - Each axis owns its own turn band. The turn strip edits Blue rows, Red columns,
   or Both, with Both as the default. A numeric axis has four descriptors:
   pro/anti × in/out. Matching numeric bands therefore produce a 4×4 matrix;
@@ -225,6 +228,9 @@ canonical notation.
   when it fits, three columns on narrow-tall hosts, and two columns in a
   short-wide rail. A prop-first secondary hand-path choice may add one row only
   when several hand paths genuinely produce the selected prop relationship.
+- Both relationship pickers spell out the timing-and-direction family when the
+  drill is wide enough for all six names. Tighter hosts use the shared VTG codes
+  so changing between Hands and Props never changes the row's text density.
 - On phone-width hosts, both pickers use the same compact two-row treatment and
   the pictograph rail yields its space to the live realization. The rail returns
   at wider tiers, where it no longer reduces the animation to a thumbnail.

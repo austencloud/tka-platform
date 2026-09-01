@@ -175,14 +175,14 @@ export class TunnelViewController {
     this.colorMode = value ? "spectrum" : "hands";
   }
 
-  exactPropColors = $derived.by(() =>
-    activeTunnelPropColorPair({
+  get exactPropColors(): TunnelPropColorPair | null {
+    return activeTunnelPropColorPair({
       mode: this.colorMode,
       custom: this.customPropColors,
-    })
-  );
+    });
+  }
 
-  setCustomPropColor(hand: "blue" | "red", value: string): void {
+  setCustomPropColor(hand: "left" | "right", value: string): void {
     this.customColorState.setColor(hand, value);
   }
 
@@ -548,15 +548,15 @@ export class TunnelViewController {
       arm: i,
       label: this.#layers[i]?.performerLabel ?? (i === 0 ? "You" : `Copy ${i}`),
       rate: effectiveSpeed(cfg, i),
-      blueHex: exactColors
-        ? exactColors.blue
+      leftHex: exactColors
+        ? exactColors.left
         : i === 0 || !this.spectrum
-          ? handColors.blue
+          ? handColors.left
           : tunnelPropColor(i * 2, layerCount).hex,
-      redHex: exactColors
-        ? exactColors.red
+      rightHex: exactColors
+        ? exactColors.right
         : i === 0 || !this.spectrum
-          ? handColors.red
+          ? handColors.right
           : tunnelPropColor(i * 2 + 1, layerCount).hex,
     }));
   });
@@ -584,13 +584,13 @@ export class TunnelViewController {
 
   /** Base (un-transformed) sequence prop states at the playhead — the center
    *  pair of the kaleidoscope. currentStep is 1-indexed fractional (start < 1). */
-  basePropsAt(currentStep: number): { blue: PropState; red: PropState } {
+  basePropsAt(currentStep: number): { left: PropState; right: PropState } {
     const layer = this.#layers[0];
     const seq = layer?.sequence ?? this.#sources.getSequence();
     if (!seq)
       return {
-        blue: { ...DEFAULT_PROP_STATE },
-        red: { ...DEFAULT_PROP_STATE },
+        left: { ...DEFAULT_PROP_STATE },
+        right: { ...DEFAULT_PROP_STATE },
       };
     const baseSpeed = (layer?.speed ?? 1) * (this.speedOverrides[0] ?? 1);
     return sampleTunnelProps(
@@ -623,8 +623,8 @@ export class TunnelViewController {
       // fields stay optional/unused: the shared additional-layers plumbing keeps
       // them for other callers, but the tunnel never sets them.
       return {
-        blueProp: p.blue,
-        redProp: p.red,
+        leftProp: p.left,
+        rightProp: p.right,
       } satisfies AdditionalLayerProps;
     });
   }

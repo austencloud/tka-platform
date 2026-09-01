@@ -149,8 +149,8 @@
     ctx.globalCompositeOperation = "lighter";
 
     const paths: [Point[], string][] = [
-      [path(false), intent.blueColor],
-      [path(true), intent.redColor],
+      [path(false), intent.leftColor],
+      [path(true), intent.rightColor],
     ];
 
     for (const [pts, color] of paths) {

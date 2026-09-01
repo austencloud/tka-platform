@@ -1,0 +1,18 @@
+{
+  "artifact": "fan-moon-complete.webp",
+  "created_utc": "2026-09-01",
+  "source_product": "https://www.lighttoys.cz/product/moon-fans-ft/",
+  "source_reference": "scripts/assets/moon-fan-reference.json",
+  "source_reference_sha256": "a61cc9ff5836f5028203608f1b1c8c754fe4ad7c35a00239b46bd4b0e5b3bc13",
+  "model": "static/models/props/fan.glb#Fan_Moon",
+  "model_sha256": "c366811930a43c28f30e6a1b1bd2054a817272d6f5c62b574f10e357046f19c1",
+  "generator": "scripts/build-fan-model.py",
+  "proof_frame": "scratchpad/moon-fan-proof/fan-moon-unlit.png",
+  "render": {
+    "engine": "Blender EEVEE",
+    "source_size": [1000, 760],
+    "output_size": [640, 240],
+    "background": "#080912"
+  },
+  "artifact_sha256": "0436cc55716c844519379fb8f42389c7c31339bde1669a8a7517bbfd5214e7f3"
+}

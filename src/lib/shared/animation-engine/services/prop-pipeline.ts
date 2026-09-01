@@ -34,7 +34,7 @@ export class PropPipeline {
     darkMode: boolean
   ): void {
     const hasOverrides =
-      props.bluePropType != null || props.redPropType != null;
+      props.leftPropType != null || props.rightPropType != null;
 
     if (hasOverrides) {
       this.propTypeManager.handleOverrides(

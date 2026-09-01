@@ -65,17 +65,18 @@
     HERO_TIP_EFFECT_MAP,
   } from "$lib/shared/landing/data/hero-trail-preset";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import { DURATION, STAGGER } from "$lib/shared/transitions/transitions";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import { getShapeMatrixTransitionRecorder } from "../debug/shape-matrix-transition-recorder";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
   import type { ShapeMatrixRelationshipDriver } from "../app/state/shape-matrix-app-state.svelte";
   import { QualityTier } from "$lib/shared/animation-engine/domain/types/quality-types";
   import { resolveRealizationEntryStep } from "../services/realization-phase-handoff";
+  import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   interface Props {
     /** Nullable: the drill renders its own "Pick a cell" state before any click. */
-    pair: { blue: Flower; red: Flower } | null;
+    pair: { left: Flower; right: Flower } | null;
     data: ShapeMatrixData;
     /** Optional composing surface action. The public archive remains a viewer;
      *  pickers can receive the exact realization this drill already built. */
@@ -117,6 +118,11 @@
   const SHAPE_MATRIX_TRAIL_PRESET = {
     ...HERO_TRAIL_PRESET,
     trackingMode: TrackingMode.RIGHT_END,
+    // The matrix stage is viewed much closer than the landing-page hero. Keep
+    // its glow and stroke one tuning step quieter without changing that shared
+    // attract-mode preset.
+    glowBlur: HERO_TRAIL_PRESET.glowBlur - 1,
+    lineWidth: HERO_TRAIL_PRESET.lineWidth - 1,
     // The generic player precomputes a full path cache whenever a sequence
     // changes. That is useful for long-lived editors but creates a 150–230 ms
     // main-thread task during rapid matrix exploration. Live capture is the
@@ -166,7 +172,6 @@
   let stageScheduled = false;
   let railUpdateFrame: number | null = null;
   let railSequenceUpdateFrame: number | null = null;
-  let fadeSettlementTimer: ReturnType<typeof setTimeout> | null = null;
   let readinessTimer: ReturnType<typeof setTimeout> | null = null;
   // These live at the drill level rather than inside a keyed player snippet.
   // A canvas may report initialization after its retiring snippet is gone; a
@@ -202,16 +207,16 @@
   };
 
   const pairKey = $derived(
-    pair ? `${propType}|${flowerKey(pair.blue)}|${flowerKey(pair.red)}` : null
+    pair ? `${propType}|${flowerKey(pair.left)}|${flowerKey(pair.right)}` : null
   );
 
-  // The cell's mandala: blue hand's flower merged with red hand's flower — the
+  // The cell's mandala: left hand's flower merged with right hand's flower — the
   // exact merge renderCell uses for the grid tiles, so the hero IS the cell.
   const heroPaths = $derived.by<MandalaPaths | null>(() => {
     if (!pair) return null;
     return {
-      blue: data.blue.get(flowerKey(pair.blue))?.blue ?? [],
-      red: data.red.get(flowerKey(pair.red))?.red ?? [],
+      left: data.left.get(flowerKey(pair.left))?.left ?? [],
+      right: data.right.get(flowerKey(pair.right))?.right ?? [],
       purple: [],
     };
   });
@@ -220,6 +225,19 @@
   // frame at a time. Prop-first phase searches are cheap, but yielding between
   // hand paths keeps rapid selection from competing with the moving canvas.
   const realizationCache = new Map<string, ModeRealization[]>();
+  let realizationChoicesKey: string | null = null;
+  let pendingRealizationChoices: {
+    cacheKey: string;
+    layerKey: string;
+    values: ModeRealization[];
+  } | null = null;
+
+  interface PlayerLoadFailure {
+    key: string;
+    source: PlayerSource;
+    retry: () => void;
+  }
+  let playerLoadFailure = $state<PlayerLoadFailure | null>(null);
 
   function realizationKey(
     realization: ModeRealization,
@@ -298,7 +316,6 @@
     if (cached) {
       activeBuildTransitionId = transitionId;
       transitionRecorder.buildReady(transitionId);
-      realizations = cached;
       const selectedRealization = realizationForSelection(
         cached,
         requestedMode,
@@ -309,7 +326,24 @@
       if (selectedRealization)
         syncSelection(selectedRealization, requestedMode, requestedPropMode);
       if (!selectedRealization) transitionRecorder.superseded(transitionId);
-      building = false;
+      if (realizationChoicesKey === cacheKey) {
+        realizations = cached;
+        pendingRealizationChoices = null;
+        building = false;
+      } else if (selectedRealization) {
+        // The full picker payload does not affect the selected frame. Keep it
+        // out of the canvas sequence-swap window and publish it only after the
+        // canonical crossfade reports that the new source has settled.
+        pendingRealizationChoices = {
+          cacheKey,
+          layerKey,
+          values: cached,
+        };
+        building = true;
+      } else {
+        pendingRealizationChoices = null;
+        building = false;
+      }
       buildError = false;
       return;
     }
@@ -317,8 +351,8 @@
     buildError = false;
     activeBuiltRealization = null;
     const overlay = {
-      blue: data.blue.get(flowerKey(p.blue))?.blue ?? [],
-      red: data.red.get(flowerKey(p.red))?.red ?? [],
+      left: data.left.get(flowerKey(p.left))?.left ?? [],
+      right: data.right.get(flowerKey(p.right))?.right ?? [],
       tipPoint: data.tipPoint,
       clubTipDx: data.clubTipDx,
     };
@@ -376,6 +410,8 @@
         if (!cancelled) {
           realizationCache.set(cacheKey, built);
           realizations = built;
+          realizationChoicesKey = cacheKey;
+          pendingRealizationChoices = null;
           const selectedRealization = realizationForSelection(
             built,
             requestedMode,
@@ -412,6 +448,15 @@
   });
 
   const activeReal = $derived(activeBuiltRealization);
+  function propElementalTypeOf(
+    realization: ModeRealization | null
+  ): ElementalType | null {
+    return realization?.propRelationship.kind === "full"
+      ? (realization.propRelationship.element.element as ElementalType)
+      : null;
+  }
+
+  const railPropElementalType = $derived(propElementalTypeOf(railRealization));
   const availableHandModes = $derived(
     MODE_ORDER.filter((mode) =>
       realizations.some((realization) => realization.mode === mode)
@@ -446,8 +491,8 @@
   }
   const pictographRailReady = $derived(
     pair !== null &&
-      pictographArrowsApproved(pair.blue) &&
-      pictographArrowsApproved(pair.red)
+      pictographArrowsApproved(pair.left) &&
+      pictographArrowsApproved(pair.right)
   );
 
   function getLayer(source: PlayerSource | null): PlayerLayer | null {
@@ -471,6 +516,7 @@
 
   function setLayer(source: PlayerSource, layer: PlayerLayer | null): void {
     clearReadinessTimer();
+    if (playerLoadFailure?.source === source) playerLoadFailure = null;
     playerReadiness[source] = {
       key: layer?.key ?? null,
       canvasReady: playerCanvasInitialized[source],
@@ -503,6 +549,7 @@
         setLayer(waitingSource, null);
         waitingSource = null;
       }
+      commitPendingRealizationChoices(layer.key);
       return;
     }
 
@@ -534,6 +581,7 @@
         return;
       }
       transitionRecorder.superseded(layer.transitionId);
+      commitPendingRealizationChoices(expectedKey);
       setLayer(incoming, null);
       waitingSource = null;
       const queued = queuedLayer;
@@ -550,14 +598,13 @@
 
     const settledLayer = getLayer(active);
     transitionRecorder.settled(activeTransitionId);
-    if (fadeSettlementTimer !== null) clearTimeout(fadeSettlementTimer);
-    fadeSettlementTimer = null;
     activeTransitionId = null;
     crossfadeOutgoing = null;
     if (railUpdateFrame !== null) cancelAnimationFrame(railUpdateFrame);
     if (railSequenceUpdateFrame !== null)
       cancelAnimationFrame(railSequenceUpdateFrame);
     if (settledLayer) {
+      commitPendingRealizationChoices(settledLayer.key);
       const settledKey = settledLayer.key;
       railUpdateFrame = requestAnimationFrame(() => {
         railUpdateFrame = null;
@@ -613,11 +660,59 @@
     activeTransitionId = layer.transitionId;
     visibleSource = source;
     transitionRecorder.fadeStarted(layer.transitionId);
-    if (fadeSettlementTimer !== null) clearTimeout(fadeSettlementTimer);
-    fadeSettlementTimer = setTimeout(
-      () => finishCrossfade(source),
-      DURATION.emphasis + STAGGER.micro + DURATION.instant
-    );
+  }
+
+  function commitPendingRealizationChoices(layerKey: string): void {
+    const pending = pendingRealizationChoices;
+    if (!pending || pending.layerKey !== layerKey) return;
+    realizations = pending.values;
+    realizationChoicesKey = pending.cacheKey;
+    pendingRealizationChoices = null;
+    building = false;
+  }
+
+  function registerPlayerRetry(
+    _node: HTMLElement,
+    initial: PlayerLoadFailure
+  ): { update: (failure: PlayerLoadFailure) => void; destroy: () => void } {
+    let current = initial;
+    const register = (failure: PlayerLoadFailure) => {
+      current = failure;
+      playerLoadFailure = failure;
+      commitPendingRealizationChoices(failure.key);
+      if (waitingSource === failure.source) clearReadinessTimer();
+    };
+    register(initial);
+    return {
+      update: register,
+      destroy: () => {
+        if (playerLoadFailure?.retry === current.retry) {
+          playerLoadFailure = null;
+        }
+      },
+    };
+  }
+
+  function retryPlayerLoad(failure: PlayerLoadFailure): void {
+    playerLoadFailure = null;
+    const layer = getLayer(failure.source);
+    if (layer?.key === failure.key && waitingSource === failure.source) {
+      armReadinessTimer(() => {
+        if (
+          waitingSource !== failure.source ||
+          getLayer(failure.source)?.key !== failure.key
+        )
+          return;
+        transitionRecorder.superseded(layer.transitionId);
+        commitPendingRealizationChoices(failure.key);
+        setLayer(failure.source, null);
+        waitingSource = null;
+        const queued = queuedLayer;
+        queuedLayer = null;
+        if (queued) stageLayer(queued);
+      });
+    }
+    failure.retry();
   }
 
   function handlePlayerCanvasInitialized(
@@ -721,11 +816,11 @@
     waitingSource = null;
     visibleRealization = null;
     railRealization = null;
+    realizationChoicesKey = null;
+    pendingRealizationChoices = null;
     queuedLayer = null;
     crossfadeOutgoing = null;
     activeTransitionId = null;
-    if (fadeSettlementTimer !== null) clearTimeout(fadeSettlementTimer);
-    fadeSettlementTimer = null;
     clearReadinessTimer();
     playerReadiness.first = {
       key: null,
@@ -838,6 +933,51 @@
   }
 </script>
 
+{#snippet playerPlaceholder()}
+  <div class="lazy-region-state player-placeholder" role="status">
+    <span>Loading animation…</span>
+  </div>
+{/snippet}
+
+{#snippet playerLoadError(
+  _loadError: unknown,
+  retry: () => void,
+  source: PlayerSource,
+  key: string
+)}
+  <div
+    class="lazy-region-state player-load-error"
+    use:registerPlayerRetry={{ source, key, retry }}
+  >
+    <p>Animation didn’t load.</p>
+  </div>
+{/snippet}
+
+{#snippet firstPlayerLoadError(loadError: unknown, retry: () => void)}
+  {#if firstLayer}
+    {@render playerLoadError(loadError, retry, "first", firstLayer.key)}
+  {/if}
+{/snippet}
+
+{#snippet secondPlayerLoadError(loadError: unknown, retry: () => void)}
+  {#if secondLayer}
+    {@render playerLoadError(loadError, retry, "second", secondLayer.key)}
+  {/if}
+{/snippet}
+
+{#snippet railPlaceholder()}
+  <div class="lazy-region-state rail-placeholder" role="status">
+    <span>Loading pictographs…</span>
+  </div>
+{/snippet}
+
+{#snippet railLoadError(_loadError: unknown, retry: () => void)}
+  <div class="lazy-region-state rail-load-error" role="alert">
+    <p>Pictographs didn’t load.</p>
+    <PanelButton onclick={retry}>Try again</PanelButton>
+  </div>
+{/snippet}
+
 {#snippet player(layer: PlayerLayer | null, source: PlayerSource)}
   {#if layer}
     <div class="realization-layer">
@@ -850,16 +990,22 @@
         <LazyMount
           loader={loadAnimationPlayer}
           active={true}
+          debugName="shape matrix animation player"
+          placeholder={playerPlaceholder}
+          error={source === "first"
+            ? firstPlayerLoadError
+            : secondPlayerLoadError}
           props={{
             sequence: layer.realization.seq,
             autoPlay: true,
             autoPlayDelay: 0,
             chrome: "minimal",
             fill: true,
+            disassemblyLayout: "sidecar",
             showWordHeader: true,
             beatIndicators: false,
-            bluePropType: layer.propType,
-            redPropType: layer.propType,
+            leftPropType: layer.propType,
+            rightPropType: layer.propType,
             trailSettingsOverride: SHAPE_MATRIX_TRAIL_PRESET,
             tipEffectMap: HERO_TIP_EFFECT_MAP,
             backgroundAlpha: 0,
@@ -872,6 +1018,8 @@
               source === "first" ? firstPlaybackAllowed : secondPlaybackAllowed,
             resumeWhenPlaybackAllowed: true,
             initialStep: layer.initialStep,
+            propElementalType: propElementalTypeOf(layer.realization),
+            glyphFrame: "stage",
             onReady: playerCallbacks[source].onReady,
             onCanvasInitialized: playerCallbacks[source].onCanvasInitialized,
             onStepChange: playerCallbacks[source].onStepChange,
@@ -916,9 +1064,9 @@
         {selectedPropMode}
         activePropMode={activeReal?.propMode ?? null}
         equalRotatingTurns={pair !== null &&
-          pair.blue.turns !== "fl" &&
-          pair.red.turns !== "fl" &&
-          pair.blue.turns === pair.red.turns}
+          pair.left.turns !== "fl" &&
+          pair.right.turns !== "fl" &&
+          pair.left.turns === pair.right.turns}
         disabled={!pair}
         {building}
         ontarget={selectPropMode}
@@ -929,7 +1077,7 @@
 
   <div class="media-stage">
     <div class="hero-stage">
-      <div class="hero-square">
+      <div class="hero-frame">
         {#if pair && heroPaths}
           <!-- The still mandala is a cold-load floor only. Once the canonical
                animation canvas has painted, its own trail is the sole path
@@ -948,6 +1096,14 @@
             second={secondPlayer}
             onsettled={finishCrossfade}
           />
+          {#if playerLoadFailure}
+            <div class="player-load-notice" role="alert">
+              <p>Animation didn’t load.</p>
+              <PanelButton onclick={() => retryPlayerLoad(playerLoadFailure)}
+                >Try again</PanelButton
+              >
+            </div>
+          {/if}
         {:else}
           <div class="hero-hint">
             <p class="hint-lead">Pick a cell</p>
@@ -966,6 +1122,8 @@
           active={true}
           keepAlive={false}
           debugName="shape matrix pictograph carousel"
+          placeholder={railPlaceholder}
+          error={railLoadError}
           props={{
             sequence: railRealization.seq,
             includeStartPosition: false,
@@ -976,8 +1134,9 @@
             anchor: "center",
             orientation: "horizontal",
             loop: true,
-            bluePropType: propType,
-            redPropType: propType,
+            leftPropType: propType,
+            rightPropType: propType,
+            propElementalType: railPropElementalType,
             stepPulse: false,
             staggerCellUpdates: true,
           }}
@@ -1006,23 +1165,23 @@
           >
         {:else if captionRealization}
           <span class="relationship-badge hand-relationship">
+            <span class="relationship-label">Hands</span>
             <img src={captionRealization.element.iconPath} alt="" />
             <span class="badge-copy">
-              <span class="relationship-label">Hands</span>
               <strong>{elementName(captionRealization.element.element)}</strong>
               <small>{captionRealization.element.name}</small>
             </span>
           </span>
-          <i class="fas fa-arrow-right derivation-arrow" aria-label="produces"
-          ></i>
+          <i class="fas fa-arrow-right derivation-arrow" aria-hidden="true"></i>
+          <span class="sr-only">produces</span>
           <span class="relationship-badge prop-relationship">
+            <span class="relationship-label">Props</span>
             {#if captionRealization.propRelationship.kind === "full"}
               <img
                 src={captionRealization.propRelationship.element.iconPath}
                 alt=""
               />
               <span class="badge-copy">
-                <span class="relationship-label">Props</span>
                 <strong
                   >{elementName(
                     captionRealization.propRelationship.element.element
@@ -1034,7 +1193,6 @@
             {:else if captionRealization.propRelationship.kind === "direction-only"}
               <span class="relationship-dot" aria-hidden="true"></span>
               <span class="badge-copy">
-                <span class="relationship-label">Props</span>
                 <strong
                   >{captionRealization.propRelationship.direction === "same"
                     ? "Same"
@@ -1046,7 +1204,6 @@
               <span class="relationship-dot float-dot" aria-hidden="true"
               ></span>
               <span class="badge-copy">
-                <span class="relationship-label">Props</span>
                 <strong>Float</strong>
                 <small>No prop rotation</small>
               </span>
@@ -1054,8 +1211,8 @@
           </span>
         {:else if pair}
           <span>
-            Blue <span class="cap-blue">{flowerLabel(pair.blue)}</span> over red
-            <span class="cap-red">{flowerLabel(pair.red)}</span>
+            Blue <span class="cap-blue">{flowerLabel(pair.left)}</span> over red
+            <span class="cap-red">{flowerLabel(pair.right)}</span>
           </span>
         {/if}
       </p>
@@ -1151,7 +1308,11 @@
     min-height: 0;
     overflow: hidden;
     border-top: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
-    background: color-mix(in srgb, var(--theme-panel-bg, #101721) 74%, #05080c);
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #101721) 74%,
+      var(--theme-card-bg, #0a0f14)
+    );
   }
   .quarter-status {
     display: grid;
@@ -1159,23 +1320,81 @@
     height: 100%;
     margin: 0;
     padding: 0.75rem;
-    color: oklch(0.68 0.02 270);
-    font-size: 0.78rem;
+    color: var(--theme-text-dim, oklch(0.68 0.02 270));
+    font-size: var(--font-size-min, 0.875rem);
     line-height: 1.4;
     text-align: center;
   }
 
-  /* The cold-load floor and live player fill the same square, so their
-     coordinate frames coincide during the readiness handoff. */
-  .hero-square {
+  /* The stage frame owns all available geometry. MandalaHeroLayer and the
+     animation renderer independently keep their motion planes square while
+     the word and four corner annotations can use the rectangular edges. */
+  .hero-frame {
     position: relative;
-    aspect-ratio: 1 / 1;
-    height: min(100cqh, 100cqw, 72rem);
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
   }
 
   .player-layer {
     position: absolute;
     inset: 0;
+  }
+
+  .lazy-region-state {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 0.55rem;
+    padding: 0.75rem;
+    text-align: center;
+    color: var(--theme-text-dim, oklch(0.68 0.02 270));
+    font-size: var(--font-size-min, 0.875rem);
+    line-height: 1.4;
+  }
+
+  .lazy-region-state p,
+  .player-load-notice p {
+    margin: 0;
+  }
+
+  .player-placeholder {
+    background: color-mix(
+      in srgb,
+      var(--theme-card-bg, #0a0f14) 88%,
+      transparent
+    );
+  }
+
+  .player-load-error,
+  .rail-load-error {
+    color: var(--semantic-error, #fb8a8a);
+  }
+
+  .player-load-notice {
+    position: absolute;
+    z-index: 3;
+    left: 50%;
+    bottom: 1rem;
+    translate: -50% 0;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    max-width: calc(100% - 2rem);
+    padding: 0.55rem 0.7rem 0.55rem 0.9rem;
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #fb8a8a) 45%, transparent);
+    border-radius: 999px;
+    background: var(--theme-panel-bg, #101721);
+    color: var(--semantic-error, #fb8a8a);
+    box-shadow: 0 0.5rem 1.5rem var(--theme-shadow, rgb(0 0 0 / 0.4));
+    font-size: var(--font-size-min, 0.875rem);
+    line-height: 1.4;
   }
 
   .realization-layer {
@@ -1215,13 +1434,13 @@
     margin: 0;
     font-size: clamp(1.05rem, 1rem + 0.2vw, 1.3rem);
     font-weight: 700;
-    color: oklch(0.92 0.02 270);
+    color: var(--theme-text, oklch(0.92 0.02 270));
   }
   .hint-sub {
     margin: 0;
-    font-size: clamp(0.85rem, 0.8rem + 0.12vw, 0.95rem);
+    font-size: clamp(var(--font-size-min, 0.875rem), 0.82rem + 0.12vw, 0.95rem);
     line-height: 1.55;
-    color: oklch(0.68 0.02 270);
+    color: var(--theme-text-dim, oklch(0.68 0.02 270));
   }
 
   .caption-stage {
@@ -1237,13 +1456,14 @@
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 0.45rem;
-    font-size: clamp(0.85rem, 0.8rem + 0.1vw, 0.98rem);
+    font-size: clamp(var(--font-size-min, 0.875rem), 0.82rem + 0.1vw, 0.98rem);
     line-height: 1.5;
     text-align: center;
-    color: oklch(0.85 0.02 270);
+    color: var(--theme-text, oklch(0.85 0.02 270));
   }
   .relationship-badge {
-    display: inline-flex;
+    display: grid;
+    grid-template-columns: auto auto minmax(0, auto);
     align-items: center;
     gap: 0.45rem;
     min-width: 0;
@@ -1265,42 +1485,47 @@
     text-align: left;
   }
   .badge-copy small {
-    color: oklch(0.68 0.015 270);
+    color: var(--theme-text-dim, oklch(0.68 0.015 270));
     font-size: var(--font-size-compact, 0.75rem);
     white-space: nowrap;
   }
   .relationship-label {
-    color: oklch(0.62 0.015 270);
+    color: var(--theme-text-dim, oklch(0.62 0.015 270));
     font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 600;
-    letter-spacing: 0.015em;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
   .hand-relationship strong {
-    color: var(--hand-el, oklch(0.85 0.02 270));
+    color: var(--hand-el, var(--theme-text, oklch(0.85 0.02 270)));
   }
   .hand-relationship {
-    color: var(--hand-el, oklch(0.85 0.02 270));
+    color: var(--hand-el, var(--theme-text, oklch(0.85 0.02 270)));
   }
   .prop-relationship strong {
-    color: var(--prop-el, oklch(0.85 0.02 270));
+    color: var(--prop-el, var(--theme-text, oklch(0.85 0.02 270)));
   }
   .prop-relationship {
-    color: var(--prop-el, oklch(0.85 0.02 270));
+    color: var(--prop-el, var(--theme-text, oklch(0.85 0.02 270)));
   }
   .relationship-dot {
     width: 1rem;
     height: 1rem;
     flex: 0 0 auto;
     border-radius: 999px;
-    background: var(--prop-el, #f4b54c);
+    background: var(--prop-el, var(--theme-accent, #f4b54c));
     box-shadow: 0 0 10px
-      color-mix(in srgb, var(--prop-el, #f4b54c) 45%, transparent);
+      color-mix(
+        in srgb,
+        var(--prop-el, var(--theme-accent, #f4b54c)) 45%,
+        transparent
+      );
   }
   .float-dot {
-    background: #b7c0cc;
+    background: var(--theme-text-dim, #b7c0cc);
   }
   .derivation-arrow {
-    color: oklch(0.64 0.03 80);
+    color: var(--theme-accent, oklch(0.64 0.03 80));
     font-size: 0.75rem;
   }
   .select-action {
@@ -1315,7 +1540,8 @@
     width: 100%;
   }
   .cap-err {
-    color: #fb8a8a;
+    color: var(--semantic-error, #fb8a8a);
+    font-size: var(--font-size-min, 0.875rem);
   }
   .cap-blue {
     color: var(--prop-blue, oklch(0.68 0.14 255));

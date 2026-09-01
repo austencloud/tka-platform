@@ -12,7 +12,7 @@ export async function loadSoloLibrarySequences(
   if (viewMode.granularity !== "solo") return [];
 
   const result = await getBrowseDataSource().query(viewMode);
-  const authoredHand = viewMode.color === "blue" ? "left" : "right";
+  const authoredHand = viewMode.hand;
   return viewMode.subject === "props"
     ? result.soloProps.map((soloProp) =>
         soloPropToSequence(soloProp, authoredHand, {

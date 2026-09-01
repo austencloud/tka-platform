@@ -125,7 +125,7 @@
       : null;
 
   let selectedPropType = $state<PropType>(
-    psSeed?.propType ?? settingsService.settings.bluePropType ?? PropType.STAFF
+    psSeed?.propType ?? settingsService.settings.leftPropType ?? PropType.STAFF
   );
   const synchronizedCardRenderOptions = $derived(
     withPostStudioPropType(cardRenderOptions, selectedPropType)
@@ -444,8 +444,8 @@
   // ArtPane in the sequence viewer.
   const artControllers = new PostStudioArtControllers({
     getSequence: () => displaySequence,
-    getBluePropType: () => synchronizedCardRenderOptions?.bluePropTypeOverride,
-    getRedPropType: () => synchronizedCardRenderOptions?.redPropTypeOverride,
+    getLeftPropType: () => synchronizedCardRenderOptions?.leftPropTypeOverride,
+    getRightPropType: () => synchronizedCardRenderOptions?.rightPropTypeOverride,
     pathPolicy: animationVisibility,
   });
   setPostStudioArtContext(artControllers);
@@ -545,7 +545,7 @@
   const capturePs = () =>
     capturePsSlice({
       propType: selectedPropType,
-      defaultPropType: settingsService.settings.bluePropType ?? PropType.STAFF,
+      defaultPropType: settingsService.settings.leftPropType ?? PropType.STAFF,
       audioMode,
       audioModeTouched,
       notationMirrored,

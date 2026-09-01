@@ -86,8 +86,8 @@ export const HYBRID_PAGE_CONFIG: Type1PageConfig = {
     points: [
       "One hand does <strong>prospin</strong>, the other does <strong>antispin</strong>",
       "Creates more complex, asymmetrical patterns",
-      "Most hybrids: blue antispin + red prospin",
-      "<strong>V</strong> is special: blue prospin + red antispin (reverse hybrid)",
+      "Most hybrids: left antispin + right prospin",
+      "<strong>V</strong> is special: left prospin + right antispin (reverse hybrid)",
     ],
   },
   letters: HYBRID_LETTERS,

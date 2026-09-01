@@ -16,8 +16,8 @@ Receives pre-calculated data, just renders it.
     pictograph: PreparedPictographData;
     size: number;
     disabled?: boolean;
-    blueReversal?: boolean;
-    redReversal?: boolean;
+    leftReversal?: boolean;
+    rightReversal?: boolean;
     isContinuation?: boolean;
     onSelect: (pictograph: PreparedPictographData) => void;
   }
@@ -26,8 +26,8 @@ Receives pre-calculated data, just renders it.
     pictograph,
     size,
     disabled = false,
-    blueReversal = false,
-    redReversal = false,
+    leftReversal = false,
+    rightReversal = false,
     isContinuation = false,
     onSelect,
   }: Props = $props();
@@ -82,7 +82,7 @@ Receives pre-calculated data, just renders it.
   title="Tap to add. Hold to preview."
   {@attach holdToAudition}
 >
-  <OptionCardContent {pictograph} {blueReversal} {redReversal} />
+  <OptionCardContent {pictograph} {leftReversal} {rightReversal} />
 </button>
 
 <PictographContextMenuHost bind:this={contextMenuHost} />
@@ -117,6 +117,7 @@ Receives pre-calculated data, just renders it.
 
   @media (hover: hover) {
     .option-card:hover {
+      z-index: 1;
       transform: scale(1.05);
       filter: brightness(1.05);
       box-shadow: var(--option-card-shadow-hover);

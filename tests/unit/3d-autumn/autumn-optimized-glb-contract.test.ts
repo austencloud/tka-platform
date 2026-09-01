@@ -6,12 +6,16 @@ import { AUTUMN_DEPTH_MATERIAL_GRADES } from "../../../scripts/autumn-depth-mate
 import { AUTUMN_HERO_MATERIAL_GRADES } from "../../../scripts/autumn-hero-material-grades.mjs";
 import { getAutumnDepthCohesionProfile } from "$lib/shared/3d/environments/scenes/autumn/runtime/atmosphere/autumn-depth-cohesion";
 import { resolveAutumnShadowRole } from "$lib/shared/3d/environments/scenes/autumn/runtime/lighting/autumn-shadow-roles";
+import { AUTUMN_FRONT_SIDE_MATERIAL_PREFIXES } from "../../../scripts/autumn-material-sidedness.mjs";
 
 interface OptimizedAutumnGltf {
   materials?: Array<{
     name?: string;
     alphaMode?: string;
     alphaCutoff?: number;
+    doubleSided?: boolean;
+    normalTexture?: unknown;
+    metallicRoughnessTexture?: unknown;
   }>;
   accessors?: Array<{ count?: number }>;
   meshes?: Array<{
@@ -21,6 +25,7 @@ interface OptimizedAutumnGltf {
   nodes?: Array<{
     name?: string;
     mesh?: number;
+    extras?: Record<string, unknown>;
     extensions?: {
       EXT_mesh_gpu_instancing?: {
         attributes?: Record<string, number>;
@@ -49,6 +54,24 @@ describe("optimized Autumn GLB contracts", () => {
     .filter((node) => Number.isInteger(node.mesh))
     .map((node) => node.name ?? "");
 
+  it("authors the extended terrain apron with upward-facing winding", () => {
+    const buildSource = readFileSync(
+      resolve(process.cwd(), "scripts/build-autumn-environment.py"),
+      "utf8"
+    );
+
+    expect(buildSource).toContain(
+      "faces.append((base + i, nxt + i, nxt + j, base + j))"
+    );
+    expect(buildSource).not.toContain(
+      "faces.append((base + i, base + j, nxt + j, nxt + i))"
+    );
+    expect(buildSource).toContain("APRON_HORIZON_RING_HALF_SIZES");
+    expect(buildSource).toContain("fog_horizon_height(x, y)");
+    expect(buildSource).toContain('"Autumn_Terrain_Apron", horizon_mesh');
+    expect(buildSource).not.toContain("FOG_PLANE_HEIGHT");
+  });
+
   function nodeMaterialNames(node: NonNullable<typeof gltf.nodes>[number]) {
     if (!Number.isInteger(node.mesh)) return [];
     const mesh = gltf.meshes?.[node.mesh!];
@@ -63,6 +86,19 @@ describe("optimized Autumn GLB contracts", () => {
         sum + (gltf.accessors?.[primitive.indices ?? -1]?.count ?? 0) / 3,
       0
     );
+  }
+
+  function authoredTriangleCount(): number {
+    return (gltf.nodes ?? []).reduce((sum, node) => {
+      if (!Number.isInteger(node.mesh)) return sum;
+      const triangles = meshTriangleCount(node.mesh!);
+      const translationAccessor =
+        node.extensions?.EXT_mesh_gpu_instancing?.attributes?.TRANSLATION;
+      if (translationAccessor === undefined) return sum + triangles;
+
+      const fullCount = gltf.accessors?.[translationAccessor]?.count ?? 0;
+      return sum + triangles * fullCount;
+    }, 0);
   }
 
   it("keeps optimizer and runtime depth-family prefixes joined to the GLB", () => {
@@ -99,15 +135,12 @@ describe("optimized Autumn GLB contracts", () => {
         resolveAutumnShadowRole(node.name ?? "", nodeMaterialNames(node)).cast
     );
     const expectedCasterCounts = new Map([
-      ["HeroTreeA_", 4],
       ["FallenLog", 3],
       ["Shore_Boulder", 2],
       ["Autumn_Owl", 2],
     ]);
 
-    // Hero B is the twelfth caster node. The optimizer batches its three hero
-    // placements and four saplings into one unnamed node, identified by material.
-    expect(casterNodes).toHaveLength(12);
+    expect(casterNodes).toHaveLength(7);
     for (const [prefix, count] of expectedCasterCounts) {
       expect(
         casterNodes.filter((node) => node.name?.startsWith(prefix))
@@ -115,7 +148,7 @@ describe("optimized Autumn GLB contracts", () => {
     }
   });
 
-  it("casts all eleven foreground trees from their optimized GLB geometry", () => {
+  it("keeps both hero-tree families receive-only", () => {
     const heroANodes = (gltf.nodes ?? []).filter((node) =>
       node.name?.startsWith("HeroTreeA_")
     );
@@ -125,7 +158,7 @@ describe("optimized Autumn GLB contracts", () => {
         (node) =>
           resolveAutumnShadowRole(node.name ?? "", nodeMaterialNames(node)).cast
       )
-    ).toBe(true);
+    ).toBe(false);
 
     const heroBNodes = (gltf.nodes ?? []).filter((node) =>
       nodeMaterialNames(node).some((name) =>
@@ -139,7 +172,7 @@ describe("optimized Autumn GLB contracts", () => {
         heroBNode.name ?? "",
         nodeMaterialNames(heroBNode)
       ).cast
-    ).toBe(true);
+    ).toBe(false);
 
     const translationAccessor =
       heroBNode.extensions?.EXT_mesh_gpu_instancing?.attributes?.TRANSLATION;
@@ -153,8 +186,42 @@ describe("optimized Autumn GLB contracts", () => {
     );
     const heroBTriangles =
       meshTriangleCount(heroBNode.mesh!) * heroBInstanceCount;
-    expect(heroATriangles + heroBTriangles).toBeGreaterThan(390_000);
-    expect(heroATriangles + heroBTriangles).toBeLessThan(405_000);
+    expect(heroATriangles).toBeGreaterThan(170_000);
+    expect(heroATriangles).toBeLessThan(175_000);
+    expect(heroBTriangles).toBeGreaterThan(220_000);
+  });
+
+  it("retains the full authored ecology for spatial runtime culling", () => {
+    const triangles = authoredTriangleCount();
+
+    expect(triangles).toBeGreaterThan(1_900_000);
+    expect(triangles).toBeLessThan(2_050_000);
+  });
+
+  it("carries the fogged ground beyond every supported review sightline", () => {
+    const apron = (gltf.nodes ?? []).find(
+      (node) => node.name === "Autumn_Terrain_Apron"
+    );
+
+    expect(
+      apron,
+      "Autumn terrain apron disappeared from the GLB"
+    ).toBeDefined();
+    expect(
+      Number(apron?.extras?.tka_ground_visible_extent)
+    ).toBeGreaterThanOrEqual(1_024);
+    expect(apron?.extras?.tka_ground_treatment).toBe(
+      "fog-dissolved-rolling-horizon"
+    );
+    expect(meshTriangleCount(apron!.mesh!)).toBeGreaterThan(3_500);
+    expect(meshTriangleCount(apron!.mesh!)).toBeLessThan(7_500);
+
+    const fogMaterial = (gltf.materials ?? []).find(
+      (material) => material.name === "Autumn Fog Apron"
+    );
+    expect(fogMaterial, "Autumn fog apron material disappeared").toBeDefined();
+    expect(fogMaterial?.normalTexture).toBeUndefined();
+    expect(fogMaterial?.metallicRoughnessTexture).toBeUndefined();
   });
 
   it("contains no authored shadow impostors", () => {
@@ -166,13 +233,45 @@ describe("optimized Autumn GLB contracts", () => {
     );
   });
 
-  it("keeps optimizer-surviving grass outside both shadow roles", () => {
+  it("front-sides proven closed solids while retaining thin-sheet families", () => {
+    for (const prefix of AUTUMN_FRONT_SIDE_MATERIAL_PREFIXES) {
+      const material = (gltf.materials ?? []).find((candidate) =>
+        candidate.name?.startsWith(prefix)
+      );
+      expect(material, `${prefix} disappeared from the GLB`).toBeDefined();
+      expect(material?.doubleSided, `${prefix} regressed to double-sided`).toBe(
+        false
+      );
+    }
+
+    for (const prefix of [
+      "Autumn Hero A PBR",
+      "Autumn Hero B PBR",
+      "Autumn Birch PBR",
+      "Autumn Larch PBR",
+      "Autumn Snag PBR",
+      "Autumn Willow PBR",
+      "Autumn Fern PBR",
+      "PaletteMaterial001",
+    ]) {
+      const material = (gltf.materials ?? []).find((candidate) =>
+        candidate.name?.startsWith(prefix)
+      );
+      expect(material?.doubleSided, `${prefix} lost thin-sheet backfaces`).toBe(
+        true
+      );
+    }
+  });
+
+  it("keeps the off-camera apron and grass outside both shadow roles", () => {
     const excludedNames = meshNodeNames.filter((name) => {
       const role = resolveAutumnShadowRole(name);
       return !role.cast && !role.receive;
     });
 
     expect(excludedNames).toEqual([
+      "Autumn_Terrain_Apron_Transition",
+      "Autumn_Terrain_Apron",
       "Autumn_Grass_Base",
       "Autumn_Grass_Medium",
       "Autumn_Grass_High",

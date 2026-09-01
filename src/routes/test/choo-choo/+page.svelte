@@ -7,8 +7,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
 
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
@@ -152,8 +152,8 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
         <label class="config-item">
           <span>Static Prop</span>
           <select bind:value={config.staticProp}>
-            <option value="blue">Blue</option>
-            <option value="red">Red</option>
+            <option value="blue">Left</option>
+            <option value="red">Right</option>
           </select>
         </label>
 
@@ -210,8 +210,8 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
       {:else if selectedSequence}
         <div class="animation-container">
           <AnimatorCanvas
-            blueProp={animationState.bluePropState}
-            redProp={animationState.redPropState}
+            leftProp={animationState.leftPropState}
+            rightProp={animationState.rightPropState}
             gridVisible={true}
             gridMode={animationState.sequenceData?.gridMode ?? null}
             letter={currentLetter}

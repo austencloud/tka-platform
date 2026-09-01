@@ -77,13 +77,13 @@ function checkSequence(doc, source) {
   const word = data.word || data.name || "";
 
   // Check blue solo prop
-  if (data.blueSoloProp) {
-    checkSoloProp(data.blueSoloProp, "blue", seqId, word, source);
+  if (data.leftSoloProp) {
+    checkSoloProp(data.leftSoloProp, "blue", seqId, word, source);
   }
 
   // Check red solo prop
-  if (data.redSoloProp) {
-    checkSoloProp(data.redSoloProp, "red", seqId, word, source);
+  if (data.rightSoloProp) {
+    checkSoloProp(data.rightSoloProp, "red", seqId, word, source);
   }
 }
 

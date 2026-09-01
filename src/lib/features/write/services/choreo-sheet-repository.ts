@@ -30,6 +30,10 @@ import {
   type ChoreoSheet,
 } from "../domain/types/choreo-sheet";
 import { migrateCues, migrateNotes } from "../domain/annotation-migration";
+import {
+  trackChoreoSheetDeleted,
+  trackChoreoSheetSaved,
+} from "../analytics/choreo-events";
 
 // Per-user subcollection — the same shape LibraryRepository uses for its own
 // user-owned data (`users/{uid}/sequences`, `/acts`, `/tags`). Scopes a sheet to
@@ -244,6 +248,12 @@ export class ChoreoSheetRepository {
       } as Record<string, unknown>,
       { trackOffline: true, repoName: "choreo-sheets" },
     );
+    trackChoreoSheetSaved({
+      sheetId: sheet.id,
+      sequenceCount: sheet.sequenceIds.length,
+      orientation: sheet.layout.orientation,
+      columns: sheet.layout.columns,
+    });
     return { ...sheet, ownerId: uid, updatedAt: new Date() };
   }
 
@@ -253,6 +263,7 @@ export class ChoreoSheetRepository {
       trackOffline: true,
       repoName: "choreo-sheets",
     });
+    trackChoreoSheetDeleted(id);
   }
 }
 

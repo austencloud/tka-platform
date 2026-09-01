@@ -5,14 +5,14 @@
 import type { RhythmDef } from "./rhythm-catalog";
 
 export interface HandMask {
-  readonly blue: boolean;
-  readonly red: boolean;
+  readonly left: boolean;
+  readonly right: boolean;
 }
 
 /** Decode the i-th beat of a tiled per-hand symbol unit. */
 export function maskAt(sym: string, i: number): HandMask {
   const s = sym[i % sym.length];
-  return { blue: s === "P" || s === "B", red: s === "P" || s === "R" };
+  return { left: s === "P" || s === "B", right: s === "P" || s === "R" };
 }
 
 /** Single-lane: is beat i active (any non-dash symbol)? */
@@ -31,7 +31,7 @@ export function activeAt(sym: string, i: number): boolean {
 export function laneMaskFor(sym: string, laneIndex: number, period: number): boolean[] {
   return Array.from({ length: period }, (_, i) => {
     const m = maskAt(sym, i);
-    return laneIndex === 0 ? m.blue : m.red;
+    return laneIndex === 0 ? m.left : m.right;
   });
 }
 
@@ -71,17 +71,17 @@ export function resizePeriod<T>(arr: readonly T[], newPeriod: number, fill: T): 
 /** Does the per-hand strip exactly match the rhythm (and have ≥1 active beat)? */
 export function perHandRhythmMatches<T>(
   sym: string,
-  blue: readonly T[],
-  red: readonly T[],
+  left: readonly T[],
+  right: readonly T[],
   base: T,
 ): boolean {
-  const period = blue.length;
+  const period = left.length;
   let any = false;
   for (let i = 0; i < period; i++) {
     const m = maskAt(sym, i);
-    if ((blue[i] !== base) !== m.blue) return false;
-    if ((red[i] !== base) !== m.red) return false;
-    if (m.blue || m.red) any = true;
+    if ((left[i] !== base) !== m.left) return false;
+    if ((right[i] !== base) !== m.right) return false;
+    if (m.left || m.right) any = true;
   }
   return any;
 }
@@ -106,18 +106,18 @@ export function singleLaneRhythmMatches<T>(
 export function stampPerHand<T>(
   rhythm: RhythmDef,
   period: number,
-  blueAmount: T,
-  redAmount: T,
+  leftAmount: T,
+  rightAmount: T,
   base: T,
-): { blue: T[]; red: T[] } {
-  const blue: T[] = [];
-  const red: T[] = [];
+): { left: T[]; right: T[] } {
+  const left: T[] = [];
+  const right: T[] = [];
   for (let i = 0; i < period; i++) {
     const m = maskAt(rhythm.sym, i);
-    blue.push(m.blue ? blueAmount : base);
-    red.push(m.red ? redAmount : base);
+    left.push(m.left ? leftAmount : base);
+    right.push(m.right ? rightAmount : base);
   }
-  return { blue, red };
+  return { left, right };
 }
 
 /** Stamp a single-lane rhythm into a fresh array using one amount. */

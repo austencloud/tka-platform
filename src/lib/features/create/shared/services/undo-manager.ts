@@ -10,6 +10,7 @@
 import { browser } from "$app/environment";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ActiveCreateModule } from "$lib/shared/foundation/ui/ui-types";
+import { normalizeLegacySequence } from "@tka/tka-types";
 
 /**
  * Types of undoable operations in the Create module
@@ -30,7 +31,7 @@ export enum UndoOperationType {
   MIRROR_SEQUENCE = "MIRROR_SEQUENCE",
   FLIP_SEQUENCE = "FLIP_SEQUENCE",
   ROTATE_SEQUENCE = "ROTATE_SEQUENCE",
-  SWAP_COLORS = "SWAP_COLORS",
+  SWAP_HANDS = "SWAP_HANDS",
   INVERT_SEQUENCE = "INVERT_SEQUENCE",
   REWIND_SEQUENCE = "REWIND_SEQUENCE",
   SHIFT_START = "SHIFT_START",
@@ -100,6 +101,29 @@ const UNDO_HISTORY_STORAGE_KEY = "tka_build_undo_history";
  */
 const REDO_HISTORY_STORAGE_KEY = "tka_build_redo_history";
 
+export function normalizeUndoHistoryEntries(
+  value: unknown
+): UndoHistoryEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((entry) => ({
+    ...entry,
+    beforeState: {
+      ...entry.beforeState,
+      sequence: entry.beforeState?.sequence
+        ? normalizeLegacySequence(entry.beforeState.sequence)
+        : null,
+    },
+    ...(entry.afterState && {
+      afterState: {
+        ...entry.afterState,
+        sequence: entry.afterState.sequence
+          ? normalizeLegacySequence(entry.afterState.sequence)
+          : null,
+      },
+    }),
+  })) as UndoHistoryEntry[];
+}
+
 /**
  * Human-readable descriptions for operation types
  */
@@ -114,7 +138,7 @@ const OPERATION_DESCRIPTIONS: Record<UndoOperationType, string> = {
   MIRROR_SEQUENCE: "Mirror",
   FLIP_SEQUENCE: "Flip",
   ROTATE_SEQUENCE: "Rotate",
-  SWAP_COLORS: "Swap Colors",
+  SWAP_HANDS: "Swap Hands",
   INVERT_SEQUENCE: "Invert",
   REWIND_SEQUENCE: "Rewind",
   SHIFT_START: "Shift Start",
@@ -140,7 +164,6 @@ export class UndoManager {
     void this.loadHistory();
   }
 
-
   /**
    * Subscribe to changes in undo/redo state
    */
@@ -156,7 +179,6 @@ export class UndoManager {
   private notifyChange(): void {
     this._changeCallbacks.forEach((callback) => callback());
   }
-
 
   get maxHistorySize(): number {
     return this._maxHistorySize;
@@ -177,7 +199,6 @@ export class UndoManager {
   get redoHistory(): ReadonlyArray<UndoHistoryEntry> {
     return this._redoHistory;
   }
-
 
   /**
    * Push a new action to the undo history
@@ -484,12 +505,12 @@ export class UndoManager {
     try {
       const undoData = localStorage.getItem(UNDO_HISTORY_STORAGE_KEY);
       if (undoData) {
-        this._undoHistory = JSON.parse(undoData);
+        this._undoHistory = normalizeUndoHistoryEntries(JSON.parse(undoData));
       }
 
       const redoData = localStorage.getItem(REDO_HISTORY_STORAGE_KEY);
       if (redoData) {
-        this._redoHistory = JSON.parse(redoData);
+        this._redoHistory = normalizeUndoHistoryEntries(JSON.parse(redoData));
       }
 
       // Notify subscribers after loading
@@ -555,7 +576,6 @@ export class UndoManager {
     const entry = this.getLastRedoEntry(activeSection);
     return entry ? entry.afterState || null : null;
   }
-
 
   /**
    * Generate a unique action ID

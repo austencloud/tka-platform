@@ -7,15 +7,15 @@
  * `prefloatMotionType`, and the original rotation direction as
  * `prefloatRotationDirection`.
  *
- * Without this data, the TKA glyph renderer's TurnColorInterpreter has no
+ * Without this data, the TKA glyph renderer's TurnHandInterpreter has no
  * way to place the "fl" marker in the correct PAD slot (pro-top / anti-bottom)
- * for TYPE1_HYBRID letters, so both turn positions collapse to the same color.
+ * for TYPE1_HYBRID letters, so both turn positions collapse to the same hand.
  *
  * Regression covered:
  *   Step 7 of a generated sequence showed letter R with the "fl" turn marker
- *   rendered in red even though the float was on the blue (pro) hand.
+ *   rendered in right even though the float was on the left (pro) hand.
  *   Root cause: engine dropped prefloatMotionType, so TYPE1_HYBRID pro/anti
- *   slot selection fell through to red for both slots.
+ *   slot selection fell through to right for both slots.
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
@@ -28,7 +28,7 @@ import type { PositionGroup, LetterPositionInfo } from "../../src/core/types/seq
 
 function makeMotion(overrides: Partial<MotionData> = {}): MotionData {
   return {
-    color: "blue",
+    hand: "left",
     startLocation: "n",
     endLocation: "s",
     motionType: "pro",
@@ -45,8 +45,8 @@ function makePictograph(overrides: Partial<PictographData> & { letter: string })
     endPosition: "alpha1",
     timing: "together",
     direction: "together",
-    blueMotion: makeMotion({ color: "blue" }),
-    redMotion: makeMotion({ color: "red" }),
+    leftMotion: makeMotion({ hand: "left" }),
+    rightMotion: makeMotion({ hand: "right" }),
     ...overrides,
   };
 }
@@ -59,15 +59,15 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "α",
     startPosition: "alpha1",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "s", endLocation: "s" }),
-    redMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "n", endLocation: "n" }),
+    leftMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "s", endLocation: "s" }),
+    rightMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "n", endLocation: "n" }),
   }),
   makePictograph({
     letter: "α",
     startPosition: "beta3",
     endPosition: "beta3",
-    blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "e", endLocation: "e" }),
-    redMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "n", endLocation: "n" }),
+    leftMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "e", endLocation: "e" }),
+    rightMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "n", endLocation: "n" }),
   }),
 
   // A: pro+pro shift, alpha1→beta3, both directions
@@ -75,15 +75,15 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "A",
     startPosition: "alpha1",
     endPosition: "beta3",
-    blueMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "s", endLocation: "e" }),
-    redMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "n", endLocation: "e" }),
+    leftMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "s", endLocation: "e" }),
+    rightMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "n", endLocation: "e" }),
   }),
   makePictograph({
     letter: "A",
     startPosition: "alpha1",
     endPosition: "beta3",
-    blueMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "s", endLocation: "e" }),
-    redMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "n", endLocation: "e" }),
+    leftMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "s", endLocation: "e" }),
+    rightMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "n", endLocation: "e" }),
   }),
 
   // B: pro+pro shift, beta3→alpha1, both directions
@@ -91,15 +91,15 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "B",
     startPosition: "beta3",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "e", endLocation: "s" }),
-    redMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "e", endLocation: "n" }),
+    leftMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "e", endLocation: "s" }),
+    rightMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "e", endLocation: "n" }),
   }),
   makePictograph({
     letter: "B",
     startPosition: "beta3",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "e", endLocation: "s" }),
-    redMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "e", endLocation: "n" }),
+    leftMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "e", endLocation: "s" }),
+    rightMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "e", endLocation: "n" }),
   }),
 
   // G: anti+anti shift (pair with A so we also exercise anti→float)
@@ -107,15 +107,15 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "G",
     startPosition: "alpha1",
     endPosition: "beta3",
-    blueMotion: makeMotion({ motionType: "anti", rotationDirection: "ccw", startLocation: "s", endLocation: "e" }),
-    redMotion: makeMotion({ motionType: "anti", rotationDirection: "cw", startLocation: "n", endLocation: "e" }),
+    leftMotion: makeMotion({ motionType: "anti", rotationDirection: "ccw", startLocation: "s", endLocation: "e" }),
+    rightMotion: makeMotion({ motionType: "anti", rotationDirection: "cw", startLocation: "n", endLocation: "e" }),
   }),
   makePictograph({
     letter: "G",
     startPosition: "alpha1",
     endPosition: "beta3",
-    blueMotion: makeMotion({ motionType: "anti", rotationDirection: "cw", startLocation: "s", endLocation: "e" }),
-    redMotion: makeMotion({ motionType: "anti", rotationDirection: "ccw", startLocation: "n", endLocation: "e" }),
+    leftMotion: makeMotion({ motionType: "anti", rotationDirection: "cw", startLocation: "s", endLocation: "e" }),
+    rightMotion: makeMotion({ motionType: "anti", rotationDirection: "ccw", startLocation: "n", endLocation: "e" }),
   }),
 
   // H: anti+anti shift, beta3→alpha1
@@ -123,15 +123,15 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "H",
     startPosition: "beta3",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ motionType: "anti", rotationDirection: "ccw", startLocation: "e", endLocation: "s" }),
-    redMotion: makeMotion({ motionType: "anti", rotationDirection: "cw", startLocation: "e", endLocation: "n" }),
+    leftMotion: makeMotion({ motionType: "anti", rotationDirection: "ccw", startLocation: "e", endLocation: "s" }),
+    rightMotion: makeMotion({ motionType: "anti", rotationDirection: "cw", startLocation: "e", endLocation: "n" }),
   }),
   makePictograph({
     letter: "H",
     startPosition: "beta3",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ motionType: "anti", rotationDirection: "cw", startLocation: "e", endLocation: "s" }),
-    redMotion: makeMotion({ motionType: "anti", rotationDirection: "ccw", startLocation: "e", endLocation: "n" }),
+    leftMotion: makeMotion({ motionType: "anti", rotationDirection: "cw", startLocation: "e", endLocation: "s" }),
+    rightMotion: makeMotion({ motionType: "anti", rotationDirection: "ccw", startLocation: "e", endLocation: "n" }),
   }),
 ];
 
@@ -187,28 +187,28 @@ describe("Float motions preserve prefloat type info", () => {
 
       for (let i = 0; i < result.sequence.length; i++) {
         const step = result.sequence[i]!;
-        for (const color of ["blue", "red"] as const) {
-          const motion = color === "blue" ? step.motions.blue : step.motions.red;
+        for (const hand of ["left", "right"] as const) {
+          const motion = hand === "left" ? step.motions.left : step.motions.right;
           if (motion.motionType !== "float") continue;
 
           floatsSeen++;
 
           if (!motion.prefloatMotionType) {
             violations.push(
-              `run ${run} step ${i} ${color}: float missing prefloatMotionType`,
+              `run ${run} step ${i} ${hand}: float missing prefloatMotionType`,
             );
             continue;
           }
 
           if (motion.prefloatMotionType !== "pro" && motion.prefloatMotionType !== "anti") {
             violations.push(
-              `run ${run} step ${i} ${color}: prefloatMotionType=${motion.prefloatMotionType}, expected pro or anti`,
+              `run ${run} step ${i} ${hand}: prefloatMotionType=${motion.prefloatMotionType}, expected pro or anti`,
             );
           }
 
           if (!motion.prefloatRotationDirection) {
             violations.push(
-              `run ${run} step ${i} ${color}: float missing prefloatRotationDirection`,
+              `run ${run} step ${i} ${hand}: float missing prefloatRotationDirection`,
             );
             continue;
           }
@@ -218,7 +218,7 @@ describe("Float motions preserve prefloat type info", () => {
             motion.prefloatRotationDirection !== "ccw"
           ) {
             violations.push(
-              `run ${run} step ${i} ${color}: prefloatRotationDirection=${motion.prefloatRotationDirection}, expected cw or ccw`,
+              `run ${run} step ${i} ${hand}: prefloatRotationDirection=${motion.prefloatRotationDirection}, expected cw or ccw`,
             );
           }
         }
@@ -244,18 +244,18 @@ describe("Float motions preserve prefloat type info", () => {
 
       for (let i = 0; i < result.sequence.length; i++) {
         const step = result.sequence[i]!;
-        for (const color of ["blue", "red"] as const) {
-          const motion = color === "blue" ? step.motions.blue : step.motions.red;
+        for (const hand of ["left", "right"] as const) {
+          const motion = hand === "left" ? step.motions.left : step.motions.right;
           if (motion.motionType === "float") continue;
 
           if (motion.prefloatMotionType !== undefined) {
             violations.push(
-              `run ${run} step ${i} ${color}: non-float (${motion.motionType}) has prefloatMotionType=${motion.prefloatMotionType}`,
+              `run ${run} step ${i} ${hand}: non-float (${motion.motionType}) has prefloatMotionType=${motion.prefloatMotionType}`,
             );
           }
           if (motion.prefloatRotationDirection !== undefined) {
             violations.push(
-              `run ${run} step ${i} ${color}: non-float (${motion.motionType}) has prefloatRotationDirection=${motion.prefloatRotationDirection}`,
+              `run ${run} step ${i} ${hand}: non-float (${motion.motionType}) has prefloatRotationDirection=${motion.prefloatRotationDirection}`,
             );
           }
         }

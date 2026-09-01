@@ -9,7 +9,6 @@
     Vector3,
     WebGLRenderTarget,
     ACESFilmicToneMapping,
-    NoToneMapping,
   } from "three";
   import {
     EffectComposer,
@@ -21,7 +20,7 @@
     VignetteEffect,
   } from "postprocessing";
   import { BackgroundType } from "@austencloud/backgrounds";
-  import { getViewer3DContext } from "../../context/viewer-3d-context";
+  import { tryGetViewer3DContext } from "../../context/viewer-3d-context";
   import { getSceneEnvironmentRendererKey } from "../../environments/domain/scene-environment";
   import { WaterAbsorptionEffect } from "./ocean/water-absorption-effect";
   import { UnderwaterDistortionEffect } from "./ocean/underwater-distortion-effect";
@@ -37,6 +36,7 @@
     consumeSceneColorSnapshotDemand3D,
     publishSceneColorSnapshot3D,
   } from "./scene-color-snapshot-3d";
+  import { registerInteractiveCanvasFrameProvider } from "../../rendering/interactive-canvas-frame";
 
   interface Props {
     children?: Snippet;
@@ -44,6 +44,8 @@
     bloomLevels?: number;
     enableBloom?: boolean;
     enableChromaticAberration?: boolean;
+    backgroundType?: BackgroundType;
+    forceBloom?: boolean;
   }
 
   let {
@@ -52,25 +54,29 @@
     bloomLevels = 8,
     enableBloom = true,
     enableChromaticAberration = true,
+    backgroundType,
+    forceBloom,
   }: Props = $props();
 
   const _ctx = useThrelte() as any;
   const renderer: import("three").WebGLRenderer = _ctx.renderer;
+  const canvas: HTMLCanvasElement = _ctx.canvas;
   const camera: { current: import("three").Camera } = _ctx.camera;
   const scene: import("three").Scene = _ctx.scene;
   const autoRender: { current: boolean; set: (v: boolean) => void } =
     _ctx.autoRender;
   const renderStage = _ctx.renderStage;
   const autoRenderTask = _ctx.autoRenderTask;
-  const viewer3DState = getViewer3DContext();
+  const viewer3DState = tryGetViewer3DContext();
   const adaptiveQuality = tryGetAdaptiveQualityContext();
   const qualityTierDetector = getQualityTierDetector();
   const transitionVisual = tryGetEnvironmentTransitionVisualContext();
   const transitionCompositor = new EnvironmentTransitionCompositor();
 
   const isOcean = $derived(
-    getSceneEnvironmentRendererKey(viewer3DState.environmentId) ===
-      BackgroundType.OCEAN
+    (viewer3DState
+      ? getSceneEnvironmentRendererKey(viewer3DState.environmentId)
+      : backgroundType) === BackgroundType.OCEAN
   );
 
   // Hardware-gated glow: on HIGH/MEDIUM the detected visual tier enables bloom, so
@@ -80,7 +86,7 @@
   const tierConfig = $derived(
     adaptiveQuality?.config ?? qualityTierDetector.currentConfig
   );
-  const tierBloom = $derived(tierConfig.enableBloom);
+  const tierBloom = $derived(forceBloom ?? tierConfig.enableBloom);
   // A device detected LOW at startup keeps the original composer-free budget.
   // Frame pressure may lower DPR, but it never removes authored post-processing
   // or rebuilds the composer around a cheaper visual tier mid-session.
@@ -91,13 +97,18 @@
         : qualityTierDetector.currentTier !== QualityTier.LOW)
   );
   const shouldCompose = $derived(
-    (allowOceanComposer || tierBloom) && !viewer3DState.isExporting
+    (allowOceanComposer || tierBloom) && !(viewer3DState?.isExporting ?? false)
   );
 
   let composer: EffectComposer | null = null;
   let sceneDepthSourcePass: RenderPass | null = null;
   let lastW = 0;
   let lastH = 0;
+  let oceanRendererState: {
+    shadowMapEnabled: boolean;
+    toneMapping: import("three").ToneMapping;
+    toneMappingExposure: number;
+  } | null = null;
   const _sizeVec = new Vector2();
   const sceneColorTarget = new WebGLRenderTarget(1, 1, {
     type: HalfFloatType,
@@ -147,6 +158,11 @@
     composer.addPass(sceneDepthSourcePass);
 
     if (isOcean) {
+      oceanRendererState = {
+        shadowMapEnabled: renderer.shadowMap.enabled,
+        toneMapping: renderer.toneMapping,
+        toneMappingExposure: renderer.toneMappingExposure,
+      };
       renderer.shadowMap.enabled = tierConfig.enableShadows;
       // ACES, not AgX. AgX is a low-contrast, deliberately desaturating curve
       // intended to be finished with a look LUT; without one it rendered the
@@ -192,11 +208,14 @@
           luminanceSmoothing: 0.3,
           mipmapBlur: true,
           radius: 0.5,
-          levels: Math.min(bloomLevels, tierConfig.bloomLevels),
-          resolutionScale: Math.min(
-            bloomResolutionScale,
-            tierConfig.bloomResolutionScale
-          ),
+          levels:
+            forceBloom === undefined
+              ? Math.min(bloomLevels, tierConfig.bloomLevels)
+              : bloomLevels,
+          resolutionScale:
+            forceBloom === undefined
+              ? Math.min(bloomResolutionScale, tierConfig.bloomResolutionScale)
+              : bloomResolutionScale,
         })
       );
     }
@@ -251,9 +270,12 @@
       sceneDepthSourcePass = null;
       waterAbsorption = null;
       renderer.autoClear = true;
-      renderer.shadowMap.enabled = false;
-      renderer.toneMapping = NoToneMapping;
-      renderer.toneMappingExposure = 1.0;
+    }
+    if (oceanRendererState) {
+      renderer.shadowMap.enabled = oceanRendererState.shadowMapEnabled;
+      renderer.toneMapping = oceanRendererState.toneMapping;
+      renderer.toneMappingExposure = oceanRendererState.toneMappingExposure;
+      oceanRendererState = null;
     }
     clearSceneColorSnapshot3D(renderer);
   }
@@ -299,61 +321,72 @@
     };
   });
 
-  useTask(
-    (delta) => {
-      const cam = camera.current;
-      const scn = (scene as any).current ?? scene;
-      if (!cam || !scn) return;
+  function renderCurrentFrame(delta: number, forceBaseRender = false): void {
+    const cam = camera.current;
+    const scn = (scene as any).current ?? scene;
+    if (!cam || !scn) return;
 
-      if (shouldCompose && composer) {
-        composer.setMainCamera(cam);
+    if (shouldCompose && composer) {
+      composer.setMainCamera(cam);
 
-        renderer.getSize(_sizeVec);
-        const w = Math.round(_sizeVec.x);
-        const h = Math.round(_sizeVec.y);
-        if (w < 1 || h < 1) return;
-        if (w !== lastW || h !== lastH) {
-          composer.setSize(w, h);
-          resizeSceneColorTarget(w, h);
-          lastW = w;
-          lastH = h;
-        }
-
-        composer.render(delta);
-        if (consumeSceneColorSnapshotDemand3D(renderer)) {
-          const previousRenderTarget = renderer.getRenderTarget();
-          try {
-            sceneColorCopyPass.render(
-              renderer,
-              composer.inputBuffer,
-              null,
-              delta,
-              false
-            );
-          } finally {
-            renderer.setRenderTarget(previousRenderTarget);
-          }
-          publishSceneColorSnapshot3D(renderer, {
-            texture: sceneColorTarget.texture,
-            depthTexture: sceneDepthSourcePass?.getDepthTexture() ?? null,
-            colorSpace: composer.inputBuffer.texture.colorSpace,
-          });
-        } else {
-          clearSceneColorSnapshot3D(renderer);
-        }
+      renderer.getSize(_sizeVec);
+      const w = Math.round(_sizeVec.x);
+      const h = Math.round(_sizeVec.y);
+      if (w < 1 || h < 1) return;
+      if (w !== lastW || h !== lastH) {
+        composer.setSize(w, h);
+        resizeSceneColorTarget(w, h);
+        lastW = w;
+        lastH = h;
       }
 
-      transitionCompositor.render(
-        renderer,
-        scn,
-        cam,
-        transitionVisual?.opacity ?? 0
-      );
-    },
-    { stage: renderStage, after: autoRenderTask, autoInvalidate: false }
+      composer.render(delta);
+      if (consumeSceneColorSnapshotDemand3D(renderer)) {
+        const previousRenderTarget = renderer.getRenderTarget();
+        try {
+          sceneColorCopyPass.render(
+            renderer,
+            composer.inputBuffer,
+            null,
+            delta,
+            false
+          );
+        } finally {
+          renderer.setRenderTarget(previousRenderTarget);
+        }
+        publishSceneColorSnapshot3D(renderer, {
+          texture: sceneColorTarget.texture,
+          depthTexture: sceneDepthSourcePass?.getDepthTexture() ?? null,
+          colorSpace: composer.inputBuffer.texture.colorSpace,
+        });
+      } else {
+        clearSceneColorSnapshot3D(renderer);
+      }
+    } else if (forceBaseRender) {
+      renderer.render(scn, cam);
+    }
+
+    transitionCompositor.render(
+      renderer,
+      scn,
+      cam,
+      transitionVisual?.opacity ?? 0
+    );
+  }
+
+  const unregisterCanvasFrameProvider = registerInteractiveCanvasFrameProvider(
+    canvas,
+    () => renderCurrentFrame(0, true)
   );
 
+  useTask((delta) => renderCurrentFrame(delta), {
+    stage: renderStage,
+    after: autoRenderTask,
+    autoInvalidate: false,
+  });
+
   onDestroy(() => {
+    unregisterCanvasFrameProvider();
     disposeComposer();
     sceneColorCopyPass.dispose();
     sceneColorTarget.dispose();

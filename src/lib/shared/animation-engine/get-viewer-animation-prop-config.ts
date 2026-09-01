@@ -9,7 +9,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 export function getViewerAnimationPropConfig(): AnimationPropConfig {
   const settings = getSettings();
   return {
-    bluePropType: settings.bluePropType || settings.propType || PropType.STAFF,
-    redPropType: settings.redPropType || settings.propType || PropType.STAFF,
+    leftPropType: settings.leftPropType || settings.propType || PropType.STAFF,
+    rightPropType: settings.rightPropType || settings.propType || PropType.STAFF,
   };
 }

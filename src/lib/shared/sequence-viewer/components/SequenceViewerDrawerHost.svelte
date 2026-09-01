@@ -284,8 +284,8 @@
         record
       );
       await updateSettings({
-        bluePropType: propConfig.bluePropType,
-        redPropType: propConfig.redPropType,
+        leftPropType: propConfig.leftPropType,
+        rightPropType: propConfig.rightPropType,
         catDogMode: propConfig.catDogMode,
       });
       markNativeScanTransitionStage(code, "settings-applied");
@@ -295,6 +295,7 @@
       playbackReleased = !isNativeScanViewerTransitionPending(code);
 
       openSequenceOverlay(hydrated, {
+        analyticsSource: "qr",
         fromUrl: true,
         shortCode: code,
         skipHistoryPush: true,
@@ -404,6 +405,7 @@
             <SequenceViewerShell
               {ctx}
               sequence={overlay.sequence!}
+              analyticsSource={overlay.analyticsSource}
               isMobile={isMobileWidth}
               onClose={handleDismiss}
               shareOnOpen={overlay.shareOnOpen}

@@ -25,6 +25,8 @@ import type { LOOPSpecWire } from "@tka/sequence-engine/loop";
 import type { SoloPropData } from "./solo-prop-data";
 import type { StepPairingData } from "./step-pairing-data";
 import type { WallFeasibilityMetadata } from "$lib/shared/3d/domain/models/wall-feasibility";
+import { normalizeLegacySequence } from "@tka/tka-types";
+import type { CardPresentation } from "$lib/shared/share/domain/models/card-presentation";
 
 export interface SequenceData {
   readonly id: string;
@@ -45,7 +47,7 @@ export interface SequenceData {
    * Example: "CABΔKE" (CAKE with bridge letters Δ inserted)
    */
   readonly word: string;
-  /** Derived at load time from compositional fields (blueSoloProp + redSoloProp + stepPairings).
+  /** Derived at load time from compositional fields (leftSoloProp + rightSoloProp + stepPairings).
    * Never persisted to Firestore - the hydrator re-derives it on every load.
    * Consumers read this for iteration, counting, and display. */
   readonly steps: readonly StepData[];
@@ -168,14 +170,16 @@ export interface SequenceData {
   readonly animatedSequencePath?: string;
   /** User-provided tagline or notes for this sequence */
   readonly notes?: string;
+  /** Public-facing card content. Deliberately separate from private `notes`. */
+  readonly cardPresentation?: CardPresentation;
   /** Effort timeline: phrase-level effort easing curves spanning multiple beats */
   readonly effortTimeline?: EffortTimeline | null;
   /** Prop configuration the creator intended this sequence to be viewed with.
    * Captured silently at save time from the viewer's current prop settings.
    * null = legacy sequence with no intent recorded. */
   readonly intendedProp?: {
-    readonly bluePropType: PropType;
-    readonly redPropType: PropType;
+    readonly leftPropType: PropType;
+    readonly rightPropType: PropType;
     readonly catDogMode: boolean;
   } | null;
   /** Creator's full presentation intent: prop config + effort + future fields.
@@ -189,20 +193,20 @@ export interface SequenceData {
   // may not have them yet. The SequenceHydrator guarantees they're populated
   // at all load/save boundaries - after hydration they're always present.
   /** Solo prop path for the blue performer - persisted to Firestore */
-  readonly blueSoloProp?: SoloPropData;
+  readonly leftSoloProp?: SoloPropData;
   /** Solo prop path for the red performer - persisted to Firestore */
-  readonly redSoloProp?: SoloPropData;
+  readonly rightSoloProp?: SoloPropData;
   /** Per-beat pairings linking each blue motion to its corresponding red motion */
   readonly stepPairings?: readonly StepPairingData[];
 
   /** Hash of the blue performer's combined dual-prop path (for equivalence detection) */
-  readonly bluePathHash?: string;
+  readonly leftPathHash?: string;
   /** Hash of the red performer's combined dual-prop path (for equivalence detection) */
-  readonly redPathHash?: string;
+  readonly rightPathHash?: string;
   /** Hash of the blue performer's solo prop path only */
-  readonly blueSoloHash?: string;
+  readonly leftSoloHash?: string;
   /** Hash of the red performer's solo prop path only */
-  readonly redSoloHash?: string;
+  readonly rightSoloHash?: string;
 
   // === Local-only cloud sync bookkeeping (Dexie record, never Firestore) ===
   /**
@@ -242,6 +246,7 @@ export interface SequenceData {
 export function createSequenceData(
   data: Partial<SequenceData> & { beats?: readonly StepData[] } = {}
 ): SequenceData {
+  data = normalizeLegacySequence(data);
   // Backwards compatibility: support old 'beats' property name
   const steps = data.steps ?? data.beats ?? [];
   const result: SequenceData = {
@@ -335,6 +340,9 @@ export function createSequenceData(
       animatedSequencePath: data.animatedSequencePath,
     }),
     ...(data.notes !== undefined && { notes: data.notes }),
+    ...(data.cardPresentation !== undefined && {
+      cardPresentation: data.cardPresentation,
+    }),
     ...(data.effortTimeline !== undefined && {
       effortTimeline: data.effortTimeline,
     }),
@@ -343,14 +351,20 @@ export function createSequenceData(
       creatorIntent: data.creatorIntent,
     }),
     // Compositional structure passthrough
-    ...(data.blueSoloProp !== undefined && { blueSoloProp: data.blueSoloProp }),
-    ...(data.redSoloProp !== undefined && { redSoloProp: data.redSoloProp }),
+    ...(data.leftSoloProp !== undefined && { leftSoloProp: data.leftSoloProp }),
+    ...(data.rightSoloProp !== undefined && {
+      rightSoloProp: data.rightSoloProp,
+    }),
     ...(data.stepPairings !== undefined && { stepPairings: data.stepPairings }),
     // Content hash passthrough
-    ...(data.bluePathHash !== undefined && { bluePathHash: data.bluePathHash }),
-    ...(data.redPathHash !== undefined && { redPathHash: data.redPathHash }),
-    ...(data.blueSoloHash !== undefined && { blueSoloHash: data.blueSoloHash }),
-    ...(data.redSoloHash !== undefined && { redSoloHash: data.redSoloHash }),
+    ...(data.leftPathHash !== undefined && { leftPathHash: data.leftPathHash }),
+    ...(data.rightPathHash !== undefined && {
+      rightPathHash: data.rightPathHash,
+    }),
+    ...(data.leftSoloHash !== undefined && { leftSoloHash: data.leftSoloHash }),
+    ...(data.rightSoloHash !== undefined && {
+      rightSoloHash: data.rightSoloHash,
+    }),
   };
   return result;
 }
@@ -388,7 +402,6 @@ export function removeStepFromSequence(
   });
 }
 
-
 /**
  * Prop dimensions for rendering
  */
@@ -406,9 +419,9 @@ export interface SequenceMetadata {
   author: string;
   totalSteps: number;
   // Optional animation-related properties (viewer preferences, not stored with sequence)
-  bluePropType?: PropType; // Per-color prop type for blue motions
-  redPropType?: PropType; // Per-color prop type for red motions
+  leftPropType?: PropType; // Per-color prop type for blue motions
+  rightPropType?: PropType; // Per-color prop type for red motions
   gridMode?: GridMode;
-  bluePropDimensions?: PropDimensions;
-  redPropDimensions?: PropDimensions;
+  leftPropDimensions?: PropDimensions;
+  rightPropDimensions?: PropDimensions;
 }

@@ -110,8 +110,16 @@ describe("followedCollectionsState", () => {
 	it("blocks follow writes while previewing another user", async () => {
 		mocks.previewReadOnly = true;
 
-		await followedCollectionsState.follow("owner", "collection");
-		await followedCollectionsState.unfollow("owner", "collection");
+		await followedCollectionsState.follow(
+			"owner",
+			"collection",
+			"community_collection",
+		);
+		await followedCollectionsState.unfollow(
+			"owner",
+			"collection",
+			"followed_collection",
+		);
 
 		expect(mocks.followCollection).not.toHaveBeenCalled();
 		expect(mocks.unfollowCollection).not.toHaveBeenCalled();

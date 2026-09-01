@@ -2,8 +2,8 @@
 ElementalGlyph.svelte - Fused Elemental + VTG Glyph Component
 
 Renders fused elemental/VTG symbols (water/SS, fire/SO, earth/TS, air/TO, sun/QS, moon/QO)
-in the bottom-right corner of pictographs. Each icon contains the VTG mode text
-embedded within the elemental shape. Known non-Type1 letters are rejected.
+in a reserved right-side corner of pictographs. Each icon contains the VTG mode
+text embedded within the elemental shape. Known non-Type1 letters are rejected.
 -->
 <script lang="ts">
   import {
@@ -18,6 +18,7 @@ embedded within the elemental shape. Known non-Type1 letters are rejected.
   import {
     ELEMENTAL_GLYPH_VIEWBOX_SIZE,
     getElementalGlyphBox,
+    type ElementalGlyphCorner,
   } from "../domain/constants/elemental-glyph-layout";
 
   let {
@@ -29,6 +30,8 @@ embedded within the elemental shape. Known non-Type1 letters are rejected.
     animateVisibility = false,
     onToggle = undefined,
     xOffset = 0,
+    corner = "bottom-right",
+    ariaLabel = undefined,
   } = $props<{
     /** The elemental type to display (water, fire, earth, air, sun, moon) */
     elementalType?: ElementalType | null;
@@ -46,6 +49,10 @@ embedded within the elemental shape. Known non-Type1 letters are rejected.
     onToggle?: () => void;
     /** X offset for expanded timeline cells (shifts glyph right) */
     xOffset?: number;
+    /** Which right-side corner owns this glyph. */
+    corner?: ElementalGlyphCorner;
+    /** Accessible relationship label when the host needs to distinguish two glyphs. */
+    ariaLabel?: string;
   }>();
 
   // A known non-Type1 letter cannot carry an elemental relationship. Some
@@ -79,7 +86,7 @@ embedded within the elemental shape. Known non-Type1 letters are rejected.
   // one pure module prevents a landing or video treatment from shrinking away
   // from the pictograph users already recognize.
   const glyphBox = $derived(
-    getElementalGlyphBox(ELEMENTAL_GLYPH_VIEWBOX_SIZE, xOffset)
+    getElementalGlyphBox(ELEMENTAL_GLYPH_VIEWBOX_SIZE, xOffset, corner)
   );
 
   // Center point for scale animation
@@ -123,10 +130,12 @@ embedded within the elemental shape. Known non-Type1 letters are rejected.
       ? {
           role: "button",
           tabindex: 0,
-          "aria-label": "Toggle Elemental symbol visibility",
+          "aria-label": ariaLabel
+            ? `Toggle ${ariaLabel} visibility`
+            : "Toggle Elemental symbol visibility",
         }
       : {
-          "aria-label": `Elemental symbol: ${elementalType}`,
+          "aria-label": ariaLabel ?? `Elemental symbol: ${elementalType}`,
         }}
   >
     <image

@@ -149,8 +149,8 @@ export enum GenerationMode {
  * Used during continuous prop generation to determine rotation behavior
  */
 export interface RotationDirections {
-  blueRotationDirection: string;
-  redRotationDirection: string;
+  leftRotationDirection: string;
+  rightRotationDirection: string;
 }
 
 // Re-exporting TurnAllocation for backwards compatibility

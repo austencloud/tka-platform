@@ -10,6 +10,10 @@
 import { firestoreGet, firestoreList, firestoreSet, firestoreDelete } from "$lib/shared/firestore";
 import { UserFestivalTrackerSchema } from "../domain/models/festival-tracker-schemas";
 import type { UserFestivalTracker } from "../domain/models/festival-tracker";
+import {
+  trackFestivalTrackerChanged,
+  trackFestivalTrackerRemoved,
+} from "../analytics/festival-events";
 
 function trackedPath(userId: string): string {
   return `userFestivalTracking/${userId}/tracked`;
@@ -38,8 +42,14 @@ export async function set(
     userId,
     festivalId,
   } as Record<string, unknown>, { merge: true });
+  trackFestivalTrackerChanged({
+    festivalId,
+    status: data.status,
+    changedFields: Object.keys(data).sort(),
+  });
 }
 
 export async function deleteTracker(userId: string, festivalId: string): Promise<void> {
   await firestoreDelete(trackedPath(userId), festivalId);
+  trackFestivalTrackerRemoved(festivalId);
 }

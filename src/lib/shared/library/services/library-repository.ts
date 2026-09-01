@@ -88,6 +88,7 @@ import {
   captureEvent,
   captureException,
 } from "$lib/shared/analytics/services/posthog";
+import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
 import {
   isSequenceDeletionIntended,
   markSequenceLocalDeletionComplete,
@@ -382,7 +383,6 @@ export class LibraryRepository {
     } as LibrarySequence;
   }
 
-
   async saveSequence(
     sequence: SequenceData,
     overrides?: { visibility?: SequenceVisibility; notes?: string }
@@ -560,7 +560,7 @@ export class LibraryRepository {
       }
     }
 
-    // Recompute compositional fields (blueSoloProp, redSoloProp, stepPairings,
+    // Recompute compositional fields (leftSoloProp, rightSoloProp, stepPairings,
     // content hashes) from the current steps so Firestore always has fresh
     // compositional data - even if the sequence was modified via the old
     // steps-based mutation API.
@@ -751,6 +751,16 @@ export class LibraryRepository {
       );
       throw error;
     }
+
+    void logSequenceAction(
+      isNewSequence ? "create" : "save",
+      finalSequence.id,
+      {
+        sequenceLength: finalSequence.steps.length,
+        isPublic: finalSequence.visibility === "public",
+        save_kind: isNewSequence ? "created" : "updated",
+      }
+    );
 
     return finalSequence;
   }

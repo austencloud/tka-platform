@@ -17,7 +17,7 @@
  */
 
 import {
-  MotionColor,
+  HandSide,
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
@@ -93,33 +93,33 @@ export class StrictSwappedLOOPExecutor {
     previousStep: StepData,
     stepNumber: number
   ): StepData {
-    const sourceBlue = sourceStep.motions[MotionColor.BLUE];
-    const sourceRed = sourceStep.motions[MotionColor.RED];
+    const sourceLeft = sourceStep.motions[HandSide.LEFT];
+    const sourceRight = sourceStep.motions[HandSide.RIGHT];
 
-    if (!sourceBlue || !sourceRed) {
+    if (!sourceLeft || !sourceRight) {
       throw new Error("Source step is missing required motion data");
     }
 
-    const blueMotion = this._createSwappedMotion(
-      MotionColor.BLUE,
+    const leftMotion = this._createSwappedMotion(
+      HandSide.LEFT,
       previousStep,
-      sourceRed
+      sourceRight
     );
-    const redMotion = this._createSwappedMotion(
-      MotionColor.RED,
+    const rightMotion = this._createSwappedMotion(
+      HandSide.RIGHT,
       previousStep,
-      sourceBlue
+      sourceLeft
     );
 
     const actualStartPosition =
       getGridPositionFromLocations(
-        blueMotion.startLocation,
-        redMotion.startLocation
+        leftMotion.startLocation,
+        rightMotion.startLocation
       );
     const actualEndPosition =
       getGridPositionFromLocations(
-        blueMotion.endLocation,
-        redMotion.endLocation
+        leftMotion.endLocation,
+        rightMotion.endLocation
       );
 
     const newStep: StepData = {
@@ -129,8 +129,8 @@ export class StrictSwappedLOOPExecutor {
       startPosition: actualStartPosition,
       endPosition: actualEndPosition,
       motions: {
-        [MotionColor.BLUE]: blueMotion,
-        [MotionColor.RED]: redMotion,
+        [HandSide.LEFT]: leftMotion,
+        [HandSide.RIGHT]: rightMotion,
       },
     };
 
@@ -146,9 +146,9 @@ export class StrictSwappedLOOPExecutor {
     previousStep: StepData,
     stepNumber: number
   ): StepData {
-    const sourceBlue = sourceStep.motions[MotionColor.BLUE];
-    const sourceRed = sourceStep.motions[MotionColor.RED];
-    if (!sourceBlue || !sourceRed) {
+    const sourceLeft = sourceStep.motions[HandSide.LEFT];
+    const sourceRight = sourceStep.motions[HandSide.RIGHT];
+    if (!sourceLeft || !sourceRight) {
       throw new Error(
         `Source step ${sourceStep.stepNumber} is missing motion data`
       );
@@ -161,17 +161,17 @@ export class StrictSwappedLOOPExecutor {
       startPosition: previousStep.endPosition ?? null,
       endPosition: sourceStep.endPosition,
       motions: {
-        [MotionColor.BLUE]: {
-          ...sourceBlue,
+        [HandSide.LEFT]: {
+          ...sourceLeft,
           startLocation:
-            previousStep.motions[MotionColor.BLUE]?.endLocation ??
-            sourceBlue.startLocation,
+            previousStep.motions[HandSide.LEFT]?.endLocation ??
+            sourceLeft.startLocation,
         },
-        [MotionColor.RED]: {
-          ...sourceRed,
+        [HandSide.RIGHT]: {
+          ...sourceRight,
           startLocation:
-            previousStep.motions[MotionColor.RED]?.endLocation ??
-            sourceRed.startLocation,
+            previousStep.motions[HandSide.RIGHT]?.endLocation ??
+            sourceRight.startLocation,
         },
       },
     };
@@ -184,14 +184,14 @@ export class StrictSwappedLOOPExecutor {
   }
 
   private _createSwappedMotion(
-    color: MotionColor,
+    hand: HandSide,
     previousStep: StepData,
     matchingMotion: MotionData
   ): MotionData {
-    const previousMotion = previousStep.motions[color];
+    const previousMotion = previousStep.motions[hand];
 
     if (!previousMotion) {
-      throw new Error(`Missing motion data for ${color}`);
+      throw new Error(`Missing motion data for ${hand}`);
     }
 
     const startLocation = previousMotion.endLocation;
@@ -202,7 +202,7 @@ export class StrictSwappedLOOPExecutor {
 
     return {
       ...matchingMotion,
-      color,
+      hand,
       startLocation,
       endLocation,
     };

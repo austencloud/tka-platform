@@ -44,8 +44,8 @@ export function mapDifficultyToLevel(difficulty: DifficultyLevel): number {
 export function createGenerationMetadata(options: {
   stepsGenerated: number;
   propContinuity: string;
-  blueRotationDirection: string;
-  redRotationDirection: string;
+  leftRotationDirection: string;
+  rightRotationDirection: string;
   turnIntensity: number;
   level: number;
 }): Record<string, unknown> {
@@ -55,8 +55,8 @@ export function createGenerationMetadata(options: {
     algorithm: "freeform",
     stepsGenerated: options.stepsGenerated,
     propContinuity: options.propContinuity,
-    blueRotationDirection: options.blueRotationDirection,
-    redRotationDirection: options.redRotationDirection,
+    leftRotationDirection: options.leftRotationDirection,
+    rightRotationDirection: options.rightRotationDirection,
     turnIntensity: options.turnIntensity,
     level: options.level,
   };

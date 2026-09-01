@@ -74,6 +74,7 @@
     stableColumnCount = null,
     narrowMaxColumns = null,
     preferWidthSizingOnNarrow = false,
+    allowFewStepOverflowOnNarrow = true,
     fitAllSteps = false,
     selectedStepNumbers = new Set<number>(),
     isMultiSelectMode = false,
@@ -81,10 +82,10 @@
     onDurationChange,
     onMandalaClick,
     timeSignature = undefined,
-    bluePropTypeOverride = undefined,
-    redPropTypeOverride = undefined,
-    blueColorOverride = undefined,
-    redColorOverride = undefined,
+    leftPropTypeOverride = undefined,
+    rightPropTypeOverride = undefined,
+    leftColorOverride = undefined,
+    rightColorOverride = undefined,
     sequenceWord = "",
     arrivalSequence = null,
     optionAudition = null,
@@ -118,6 +119,7 @@
     stableColumnCount?: number | null;
     narrowMaxColumns?: number | null;
     preferWidthSizingOnNarrow?: boolean;
+    allowFewStepOverflowOnNarrow?: boolean;
     /** Fit the whole sequence in the container instead of scrolling it. */
     fitAllSteps?: boolean;
     selectedStepNumbers?: Set<number>;
@@ -129,14 +131,14 @@
       pathShape: MandalaPathShape
     ) => void;
     timeSignature?: TimeSignatureKey;
-    /** Override prop type for blue hand. Used by demos/previews to bypass global settings. */
-    bluePropTypeOverride?: PropType;
-    /** Override prop type for red hand. Used by demos/previews to bypass global settings. */
-    redPropTypeOverride?: PropType;
+    /** Override prop type for left hand. Used by demos/previews to bypass global settings. */
+    leftPropTypeOverride?: PropType;
+    /** Override prop type for right hand. Used by demos/previews to bypass global settings. */
+    rightPropTypeOverride?: PropType;
     /** Display-only color for the blue-hand prop and arrow. */
-    blueColorOverride?: string;
+    leftColorOverride?: string;
     /** Display-only color for the red-hand prop and arrow. */
-    redColorOverride?: string;
+    rightColorOverride?: string;
     sequenceWord?: string;
     arrivalSequence?: SequenceData | null;
     optionAudition?: ConstructOptionAudition | null;
@@ -242,6 +244,7 @@
         narrowMaxColumns: responsiveNarrowMaxColumns,
         preferWidthSizingOnNarrow:
           isNarrowAssemble || preferWidthSizingOnNarrow,
+        allowFewStepOverflowOnNarrow,
         fitAllSteps,
       }
     );
@@ -770,10 +773,10 @@
       {onMandalaClick}
       {getStepKey}
       {getDurationDisplay}
-      {bluePropTypeOverride}
-      {redPropTypeOverride}
-      {blueColorOverride}
-      {redColorOverride}
+      {leftPropTypeOverride}
+      {rightPropTypeOverride}
+      {leftColorOverride}
+      {rightColorOverride}
       {sequenceWord}
       arrivalRequest={activeArrivalRequest}
       bind:scrollContainerRef
@@ -790,10 +793,10 @@
           onComplete={handleStageComplete}
           onReady={onAuditionReady}
           onMotionComplete={onAuditionCompleted}
-          {bluePropTypeOverride}
-          {redPropTypeOverride}
-          {blueColorOverride}
-          {redColorOverride}
+          {leftPropTypeOverride}
+          {rightPropTypeOverride}
+          {leftColorOverride}
+          {rightColorOverride}
         />
       {/key}
     {/if}

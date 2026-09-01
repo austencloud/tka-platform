@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { PropGeometryAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/services/prop-geometry-adjustment-repository";
-import type { PropGeometryAdjustmentInput, PropGeometryKey } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/prop-geometry-adjustment";
+import type {
+  PropGeometryAdjustmentInput,
+  PropGeometryKey,
+} from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/prop-geometry-adjustment";
+import type { PropGeometryAdjustment } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/prop-geometry-adjustment";
 
 // Force admin so the guard passes.
 vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
@@ -25,7 +29,7 @@ const input: PropGeometryAdjustmentInput = {
   otherEndOrientation: "in",
   motionType: "static",
   turns: "0",
-  arrowColor: "blue",
+  arrowColor: "left",
   adjustmentX: 12,
   adjustmentY: -8,
 };
@@ -39,7 +43,7 @@ const key: PropGeometryKey = {
   otherEndOrientation: "in",
   motionType: "static",
   turns: "0",
-  arrowColor: "blue",
+  arrowColor: "left",
 };
 
 describe("PropGeometryAdjustmentRepository edit parity", () => {
@@ -69,5 +73,33 @@ describe("PropGeometryAdjustmentRepository edit parity", () => {
   it("deleteAdjustment persists the delete", async () => {
     await repo.deleteAdjustment(key);
     expect(persister.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it("normalizes legacy persisted colors before they enter state", async () => {
+    const legacy = {
+      ...input,
+      arrowColor: "blue",
+      updatedAt: {} as PropGeometryAdjustment["updatedAt"],
+      updatedBy: "legacy",
+    } satisfies PropGeometryAdjustment;
+    const legacyPersister = makePersister();
+    legacyPersister.loadAll.mockResolvedValue([legacy]);
+
+    const legacyRepo = new PropGeometryAdjustmentRepository(
+      legacyPersister as never
+    );
+    await legacyRepo.initialize();
+
+    expect(legacyRepo.getAdjustment(key)).toEqual({ x: 12, y: -8 });
+    expect(legacyRepo.getAll()[0]?.arrowColor).toBe("left");
+  });
+
+  it("normalizes legacy caller input before new writes", async () => {
+    await repo.saveAdjustment({ ...input, arrowColor: "red" });
+
+    expect(persister.save).toHaveBeenCalledWith(
+      expect.objectContaining({ arrowColor: "right" }),
+      "austencloud@gmail.com"
+    );
   });
 });

@@ -42,15 +42,15 @@ function twoStepSeq(): SequenceData {
     steps: [
       {
         id: "s1",
-        stepNumber: 1, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
+        stepNumber: 1, duration: 1, leftReversal: false, rightReversal: false, isBlank: false,
         letter: null, startPosition: null, endPosition: null,
-        motions: { blue: motion(), red: motion() },
+        motions: { left: motion(), right: motion() },
       },
       {
         id: "s2",
-        stepNumber: 2, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
+        stepNumber: 2, duration: 1, leftReversal: false, rightReversal: false, isBlank: false,
         letter: null, startPosition: null, endPosition: null,
-        motions: { blue: motion(), red: motion() },
+        motions: { left: motion(), right: motion() },
       },
     ],
   });
@@ -89,22 +89,22 @@ describe("applyVariationDescriptor", () => {
     const seq = twoStepSeq();
     const { sequence } = applyVariationDescriptor(seq, { turnPattern: "1|1" }, []);
     expect(sequence).not.toBe(seq); // new object
-    expect(sequence.steps[0]!.motions!.blue!.turns).toBe(1);
-    expect(sequence.steps[0]!.motions!.red!.turns).toBe(1);
+    expect(sequence.steps[0]!.motions!.left!.turns).toBe(1);
+    expect(sequence.steps[0]!.motions!.right!.turns).toBe(1);
   });
 
   it("turn-only: tiles a single uniform unit across all beats", () => {
     const { sequence } = applyVariationDescriptor(twoStepSeq(), { turnPattern: "1|2" }, []);
-    expect(sequence.steps[0]!.motions!.blue!.turns).toBe(1);
-    expect(sequence.steps[0]!.motions!.red!.turns).toBe(2);
-    expect(sequence.steps[1]!.motions!.blue!.turns).toBe(1);
-    expect(sequence.steps[1]!.motions!.red!.turns).toBe(2);
+    expect(sequence.steps[0]!.motions!.left!.turns).toBe(1);
+    expect(sequence.steps[0]!.motions!.right!.turns).toBe(2);
+    expect(sequence.steps[1]!.motions!.left!.turns).toBe(1);
+    expect(sequence.steps[1]!.motions!.right!.turns).toBe(2);
   });
 
   it("no-op descriptor returns the base sequence content unchanged", () => {
     const seq = twoStepSeq();
     const { sequence } = applyVariationDescriptor(seq, {}, []);
-    expect(sequence.steps[0]!.motions!.blue!.turns).toBe(0);
+    expect(sequence.steps[0]!.motions!.left!.turns).toBe(0);
   });
 });
 
@@ -147,9 +147,9 @@ describe("resolveDeckSequences (positional seam)", () => {
     ];
     const out = resolveDeckSequences(cards, map, []);
     expect(out).toHaveLength(3); // NOT collapsed to 1
-    expect(out[0]!.sequence.steps[0]!.motions!.blue!.turns).toBe(0);
-    expect(out[1]!.sequence.steps[0]!.motions!.blue!.turns).toBe(1);
-    expect(out[2]!.sequence.steps[0]!.motions!.blue!.turns).toBe(2);
+    expect(out[0]!.sequence.steps[0]!.motions!.left!.turns).toBe(0);
+    expect(out[1]!.sequence.steps[0]!.motions!.left!.turns).toBe(1);
+    expect(out[2]!.sequence.steps[0]!.motions!.left!.turns).toBe(2);
   });
 
   it("returns base untouched when a card has no variation", () => {
@@ -166,13 +166,13 @@ import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictogra
 
 describe("resolveStartOrientation (family-aware)", () => {
   it("maps register + family to its per-hand orientation pair", () => {
-    expect(resolveStartOrientation("radial", "alpha")).toEqual({ blue: Orientation.IN, red: Orientation.IN });
+    expect(resolveStartOrientation("radial", "alpha")).toEqual({ left: Orientation.IN, right: Orientation.IN });
     // nonradial: alpha/gamma = clock|counter; beta = counter|clock
-    expect(resolveStartOrientation("nonradial", "alpha")).toEqual({ blue: Orientation.CLOCK, red: Orientation.COUNTER });
-    expect(resolveStartOrientation("nonradial", "beta")).toEqual({ blue: Orientation.COUNTER, red: Orientation.CLOCK });
+    expect(resolveStartOrientation("nonradial", "alpha")).toEqual({ left: Orientation.CLOCK, right: Orientation.COUNTER });
+    expect(resolveStartOrientation("nonradial", "beta")).toEqual({ left: Orientation.COUNTER, right: Orientation.CLOCK });
     // mixed/split: blue radial; red = clock for beta, counter otherwise
-    expect(resolveStartOrientation("split", "alpha")).toEqual({ blue: Orientation.IN, red: Orientation.COUNTER });
-    expect(resolveStartOrientation("split", "beta")).toEqual({ blue: Orientation.IN, red: Orientation.CLOCK });
+    expect(resolveStartOrientation("split", "alpha")).toEqual({ left: Orientation.IN, right: Orientation.COUNTER });
+    expect(resolveStartOrientation("split", "beta")).toEqual({ left: Orientation.IN, right: Orientation.CLOCK });
   });
 });
 
@@ -198,7 +198,7 @@ function seqWithStart() {
       endPos: "alpha",
       letter: null,
       gridMode: "diamond",
-      motions: { blue: startMotion(), red: startMotion() },
+      motions: { left: startMotion(), right: startMotion() },
     } as unknown as NonNullable<SequenceData["startPosition"]>,
   } as SequenceData;
 }
@@ -208,22 +208,22 @@ describe("applyVariationDescriptor — startOriMode", () => {
     // Fixture hands both start at N → beta family → nonradial beta = counter|clock.
     const seq = seqWithStart();
     const { sequence } = applyVariationDescriptor(seq, { startOriMode: "nonradial" }, []);
-    expect(sequence.startPosition!.motions.blue!.endOrientation).toBe(Orientation.COUNTER);
-    expect(sequence.startPosition!.motions.red!.endOrientation).toBe(Orientation.CLOCK);
-    expect(sequence.steps[0]!.motions!.blue!.startOrientation).toBe(Orientation.COUNTER);
+    expect(sequence.startPosition!.motions.left!.endOrientation).toBe(Orientation.COUNTER);
+    expect(sequence.startPosition!.motions.right!.endOrientation).toBe(Orientation.CLOCK);
+    expect(sequence.steps[0]!.motions!.left!.startOrientation).toBe(Orientation.COUNTER);
   });
 
   it("does NOT mutate the input base sequence (shared across cards)", () => {
     const seq = seqWithStart();
     applyVariationDescriptor(seq, { startOriMode: "nonradial" }, []);
-    expect(seq.startPosition!.motions.blue!.endOrientation).toBe(Orientation.IN);
-    expect(seq.steps[0]!.motions!.blue!.startOrientation).toBe(Orientation.IN);
+    expect(seq.startPosition!.motions.left!.endOrientation).toBe(Orientation.IN);
+    expect(seq.steps[0]!.motions!.left!.startOrientation).toBe(Orientation.IN);
   });
 
   it("radial / absent register is a no-op passthrough", () => {
     const seq = seqWithStart();
     const a = applyVariationDescriptor(seq, { startOriMode: "radial" }, []);
-    expect(a.sequence.steps[0]!.motions!.blue!.startOrientation).toBe(Orientation.IN);
+    expect(a.sequence.steps[0]!.motions!.left!.startOrientation).toBe(Orientation.IN);
     const b = applyVariationDescriptor(seq, {}, []);
     expect(b.sequence).toBe(seq);
   });
@@ -231,8 +231,8 @@ describe("applyVariationDescriptor — startOriMode", () => {
   it("split re-seeds blue radial, red nonradial (beta fixture → red clock)", () => {
     // Fixture hands both start at N → beta family → mixed beta = in|clock.
     const { sequence } = applyVariationDescriptor(seqWithStart(), { startOriMode: "split" }, []);
-    expect(sequence.startPosition!.motions.blue!.endOrientation).toBe(Orientation.IN);
-    expect(sequence.startPosition!.motions.red!.endOrientation).toBe(Orientation.CLOCK);
+    expect(sequence.startPosition!.motions.left!.endOrientation).toBe(Orientation.IN);
+    expect(sequence.startPosition!.motions.right!.endOrientation).toBe(Orientation.CLOCK);
   });
 });
 
@@ -240,12 +240,12 @@ describe("applyVariationDescriptor — box mode", () => {
   it("rotates a beta seed CCW (−45°) into box; gridMode flips, no-op when diamond", () => {
     // Fixture hands both start at N → beta family → CCW: N → NW.
     const { sequence } = applyVariationDescriptor(seqWithStart(), { gridMode: "box" }, []);
-    expect(sequence.startPosition!.motions.blue!.startLocation).toBe("nw");
-    expect(sequence.startPosition!.motions.red!.startLocation).toBe("nw");
+    expect(sequence.startPosition!.motions.left!.startLocation).toBe("nw");
+    expect(sequence.startPosition!.motions.right!.startLocation).toBe("nw");
     expect(sequence.startPosition!.gridMode).toBe("box");
 
     // diamond / absent is a passthrough.
     const same = applyVariationDescriptor(seqWithStart(), { gridMode: "diamond" }, []);
-    expect(same.sequence.startPosition!.motions.blue!.startLocation).toBe("n");
+    expect(same.sequence.startPosition!.motions.left!.startLocation).toBe("n");
   });
 });

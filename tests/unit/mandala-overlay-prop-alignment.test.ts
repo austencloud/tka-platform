@@ -46,8 +46,8 @@ function staticEastStep(): StepLike {
   };
   return {
     motions: {
-      blue: { ...motion },
-      red: { ...motion },
+      left: { ...motion },
+      right: { ...motion },
     },
   };
 }
@@ -55,7 +55,7 @@ function staticEastStep(): StepLike {
 function zeroTurnAntiStep(): StepLike {
   return {
     motions: {
-      blue: {
+      left: {
         motionType: "anti",
         rotationDirection: "ccw",
         startLocation: "w",
@@ -150,8 +150,8 @@ describe("animation mandala trail-point alignment", () => {
       undefined,
       undefined,
       {
-        blue: [resolvedClubTip!],
-        red: [],
+        left: [resolvedClubTip!],
+        right: [],
       }
     );
     const oldFullRadiusPaths = calculate(
@@ -160,13 +160,13 @@ describe("animation mandala trail-point alignment", () => {
       undefined,
       undefined,
       {
-        blue: [{ dx: ENGINE_GRID_RADIUS, dy: 0 }],
-        red: [],
+        left: [{ dx: ENGINE_GRID_RADIUS, dy: 0 }],
+        right: [],
       }
     );
     const scale = computeEngineAlignedMandalaScale(950);
-    const resizedStart = firstPoint(resizedPaths.blue[0]!.d);
-    const oldStart = firstPoint(oldFullRadiusPaths.blue[0]!.d);
+    const resizedStart = firstPoint(resizedPaths.left[0]!.d);
+    const oldStart = firstPoint(oldFullRadiusPaths.left[0]!.d);
 
     expect(Math.hypot(resizedStart.x, resizedStart.y) * scale).toBeCloseTo(
       ENGINE_GRID_RADIUS - CLUB_TIP_REACH,
@@ -227,7 +227,7 @@ describe("animation mandala trail-point alignment", () => {
       "fan",
       "fan",
       undefined,
-      { blue: fanTips, red: fanTips }
+      { left: fanTips, right: fanTips }
     );
 
     expect(fanTips).toEqual([{ dx: 130, dy: 0 }]);
@@ -235,8 +235,8 @@ describe("animation mandala trail-point alignment", () => {
       { dx: -STAFF_TIP_REACH, dy: 0 },
       { dx: STAFF_TIP_REACH, dy: 0 },
     ]);
-    expect(paths.blue).toHaveLength(1);
-    expect(paths.red).toHaveLength(1);
+    expect(paths.left).toHaveLength(1);
+    expect(paths.right).toHaveLength(1);
     expect(sequenceMandalaSource).toContain("resolveMandalaTipOffsets");
     expect(sequenceMandalaSource).toMatch(
       /TrackingMode\.BOTH_ENDS,\s*"baseline"/
@@ -260,8 +260,8 @@ describe("animation mandala trail-point alignment", () => {
 
   it("maps each hand's independent prop length onto the live engine pixels", () => {
     const overrides: MandalaTipOverrides = {
-      blue: [{ dx: CLUB_TIP_REACH, dy: 0 }],
-      red: [{ dx: 300, dy: 0 }],
+      left: [{ dx: CLUB_TIP_REACH, dy: 0 }],
+      right: [{ dx: 300, dy: 0 }],
     };
     const paths = calculate(
       [staticEastStep()],
@@ -271,14 +271,14 @@ describe("animation mandala trail-point alignment", () => {
       overrides
     );
     const scale = computeEngineAlignedMandalaScale(950);
-    const blue = firstPoint(paths.blue[0]!.d);
-    const red = firstPoint(paths.red[0]!.d);
+    const left = firstPoint(paths.left[0]!.d);
+    const right = firstPoint(paths.right[0]!.d);
 
     expect(scale).toBeCloseTo(150 / 80, 12);
-    expect(Math.hypot(blue.x, blue.y) * scale).toBeCloseTo(
+    expect(Math.hypot(left.x, left.y) * scale).toBeCloseTo(
       ENGINE_GRID_RADIUS + CLUB_TIP_REACH,
       1
     );
-    expect(Math.hypot(red.x, red.y) * scale).toBeCloseTo(150 + 300, 1);
+    expect(Math.hypot(right.x, right.y) * scale).toBeCloseTo(150 + 300, 1);
   });
 });

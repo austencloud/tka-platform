@@ -31,8 +31,8 @@ interface PictographData {
   id: string;
   letter: string;
   motions: {
-    blue: MotionData;
-    red: MotionData;
+    left: MotionData;
+    right: MotionData;
   };
 }
 
@@ -73,7 +73,7 @@ async function loadPictographData(letter: string): Promise<PictographData> {
     id: `pictograph-${letter}`,
     letter: letter,
     motions: {
-      blue: {
+      left: {
         motionType: row[headers.indexOf('blueMotionType')],
         rotationDirection: row[headers.indexOf('blueRotationDirection')],
         startLocation: row[headers.indexOf('blueStartLocation')],
@@ -84,7 +84,7 @@ async function loadPictographData(letter: string): Promise<PictographData> {
         propType: 'staff',
         propPlacementData: { propType: 'staff' }
       },
-      red: {
+      right: {
         motionType: row[headers.indexOf('redMotionType')],
         rotationDirection: row[headers.indexOf('redRotationDirection')],
         startLocation: row[headers.indexOf('redStartLocation')],

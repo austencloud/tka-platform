@@ -46,8 +46,8 @@
     sequence,
     element = null,
     note,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     onReroll,
     rerolling = false,
     errorMessage = null,
@@ -74,8 +74,8 @@
     note: string;
     /** Optional prop-type override so per-prop pages can render the same
         sequence with fans/clubs/buugeng instead of the default staves. */
-    bluePropType?: string;
-    redPropType?: string;
+    leftPropType?: string;
+    rightPropType?: string;
     /** When provided, a dice button appears that asks the host to swap in a
         freshly generated sequence in place (no page reload). Notation pages
         omit it, so their static demo is unchanged. */
@@ -323,8 +323,8 @@
               chrome: "minimal",
               fill: true,
               cornerToggle,
-              bluePropType,
-              redPropType,
+              leftPropType,
+              rightPropType,
               onLoopComplete,
               onSequenceBoundary,
               trailSettingsOverride,
@@ -384,8 +384,8 @@
               orientation: notationOrientation,
               loop: false,
               stepPulse: false,
-              bluePropType: bluePropType ?? null,
-              redPropType: redPropType ?? null,
+              leftPropType: leftPropType ?? null,
+              rightPropType: rightPropType ?? null,
             }}
           >
             {#snippet error(_error: unknown, retry: () => void)}

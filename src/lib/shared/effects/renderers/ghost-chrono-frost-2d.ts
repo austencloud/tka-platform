@@ -40,10 +40,10 @@ export function resolveGhost2DAgeVisual(
 /** Blue/red separation belongs to Ghost intent, not to the live prop sprite. */
 export function resolveGhostPropColor(
   propId: number,
-  blueColor: string,
-  redColor: string
+  leftColor: string,
+  rightColor: string
 ): string {
-  return propId % 2 === 0 ? blueColor : redColor;
+  return propId % 2 === 0 ? leftColor : rightColor;
 }
 
 function parseHexColor(color: string): [number, number, number] | null {

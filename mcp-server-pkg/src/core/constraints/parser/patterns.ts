@@ -14,7 +14,10 @@ import {
 } from "../implementations/motion-type-constraint.js";
 import { RotationDirectionConstraint } from "../implementations/rotation-direction-constraint.js";
 import { ReversalConstraint } from "../implementations/reversal-constraint.js";
-import { DashPreferenceConstraint, DashAvoidanceConstraint } from "../implementations/dash-preference-constraint.js";
+import {
+  DashPreferenceConstraint,
+  DashAvoidanceConstraint,
+} from "../implementations/dash-preference-constraint.js";
 import {
   PerHandDashConstraint,
   type HandTarget as PerHandTarget,
@@ -40,7 +43,6 @@ export interface ConstraintPattern {
   description: string;
 }
 
-
 const maximizeContinuityPattern: ConstraintPattern = {
   id: "maximize-continuity",
   type: ConstraintType.CONTINUITY,
@@ -48,10 +50,15 @@ const maximizeContinuityPattern: ConstraintPattern = {
   matches(text: string): boolean {
     // "maximize continuity", "smooth flow", "continuous", "no breaks"
     if (containsConcept(text, "continuity")) {
-      return containsConcept(text, "maximize") || !containsConcept(text, "minimize");
+      return (
+        containsConcept(text, "maximize") || !containsConcept(text, "minimize")
+      );
     }
     // "maximize flow"
-    if (containsConcept(text, "maximize") && containsConcept(text, "continuity")) {
+    if (
+      containsConcept(text, "maximize") &&
+      containsConcept(text, "continuity")
+    ) {
       return true;
     }
     // "smooth", "flowing" alone implies maximize
@@ -77,7 +84,10 @@ const enforceContinuityPattern: ConstraintPattern = {
     if (containsConcept(text, "reversal") && containsConcept(text, "exclude")) {
       return true;
     }
-    if (containsConcept(text, "require") && containsConcept(text, "continuity")) {
+    if (
+      containsConcept(text, "require") &&
+      containsConcept(text, "continuity")
+    ) {
       return true;
     }
     return false;
@@ -86,7 +96,6 @@ const enforceContinuityPattern: ConstraintPattern = {
     return new ContinuityConstraint("enforce");
   },
 };
-
 
 const maximizeDashesPattern: ConstraintPattern = {
   id: "maximize-dashes",
@@ -103,7 +112,10 @@ const maximizeDashesPattern: ConstraintPattern = {
       return true;
     }
     // "as many X as possible" pattern
-    if (text.toLowerCase().includes("as many") && text.toLowerCase().includes("as possible")) {
+    if (
+      text.toLowerCase().includes("as many") &&
+      text.toLowerCase().includes("as possible")
+    ) {
       return true;
     }
     // "use dashes", "favor dashes" (but not "no dashes")
@@ -119,10 +131,16 @@ const maximizeDashesPattern: ConstraintPattern = {
   },
   build(text: string): IConstraint {
     // Determine mode based on strength of language
-    if (text.toLowerCase().includes("only") || text.toLowerCase().includes("require")) {
+    if (
+      text.toLowerCase().includes("only") ||
+      text.toLowerCase().includes("require")
+    ) {
       return new DashPreferenceConstraint("require");
     }
-    if (text.toLowerCase().includes("prefer") && !text.toLowerCase().includes("maximize")) {
+    if (
+      text.toLowerCase().includes("prefer") &&
+      !text.toLowerCase().includes("maximize")
+    ) {
       return new DashPreferenceConstraint("prefer");
     }
     // Default to maximize for strongest dash selection
@@ -138,7 +156,9 @@ const requireDashesPattern: ConstraintPattern = {
     if (!containsConcept(text, "dash")) {
       return false;
     }
-    return containsConcept(text, "require") || text.toLowerCase().includes("must");
+    return (
+      containsConcept(text, "require") || text.toLowerCase().includes("must")
+    );
   },
   build(_text: string): IConstraint {
     return new DashPreferenceConstraint("require");
@@ -159,11 +179,17 @@ const minimizeDashesPattern: ConstraintPattern = {
       return true;
     }
     // "as few X as possible" pattern
-    if (text.toLowerCase().includes("as few") && text.toLowerCase().includes("as possible")) {
+    if (
+      text.toLowerCase().includes("as few") &&
+      text.toLowerCase().includes("as possible")
+    ) {
       return true;
     }
     // "avoid dashes", "fewer dashes", "less dashes" (but not "no dashes" which uses exclude)
-    if (!containsConcept(text, "maximize") && !containsConcept(text, "require")) {
+    if (
+      !containsConcept(text, "maximize") &&
+      !containsConcept(text, "require")
+    ) {
       const avoidTerms = ["avoid", "fewer", "less", "reduce", "limit"];
       for (const term of avoidTerms) {
         if (text.toLowerCase().includes(term)) {
@@ -175,7 +201,10 @@ const minimizeDashesPattern: ConstraintPattern = {
   },
   build(text: string): IConstraint {
     // Determine mode based on strength of language
-    if (text.toLowerCase().includes("never") || text.toLowerCase().includes("forbid")) {
+    if (
+      text.toLowerCase().includes("never") ||
+      text.toLowerCase().includes("forbid")
+    ) {
       return new DashAvoidanceConstraint("forbid");
     }
     if (text.toLowerCase().includes("avoid")) {
@@ -186,23 +215,24 @@ const minimizeDashesPattern: ConstraintPattern = {
   },
 };
 
-
 /**
  * Examples:
- * - "blue hand lots of dashes" / "left hand maximize dashes"
- * - "red hand minimize dashes" / "right hand few dashes"
- * - "blue hand should dash, red hand should shift"
+ * - "left hand lots of dashes" / "left hand maximize dashes"
+ * - "right hand minimize dashes" / "right hand few dashes"
+ * - "left hand should dash, right hand should shift"
  */
 
-function detectPerHandDash(text: string): { hand: PerHandTarget; mode: "maximize" | "minimize" } | null {
+function detectPerHandDash(
+  text: string
+): { hand: PerHandTarget; mode: "maximize" | "minimize" } | null {
   const lower = text.toLowerCase();
 
   // Detect which hand
   let hand: PerHandTarget | null = null;
-  if (containsConcept(text, "blue") && !containsConcept(text, "red")) {
-    hand = "blue";
-  } else if (containsConcept(text, "red") && !containsConcept(text, "blue")) {
-    hand = "red";
+  if (containsConcept(text, "left") && !containsConcept(text, "right")) {
+    hand = "left";
+  } else if (containsConcept(text, "right") && !containsConcept(text, "left")) {
+    hand = "right";
   }
 
   if (!hand) {
@@ -215,8 +245,25 @@ function detectPerHandDash(text: string): { hand: PerHandTarget; mode: "maximize
   }
 
   // Detect mode
-  const maximizeTerms = ["lots", "many", "more", "maximize", "max", "favor", "should dash"];
-  const minimizeTerms = ["few", "less", "fewer", "minimize", "min", "avoid", "should shift", "no dash"];
+  const maximizeTerms = [
+    "lots",
+    "many",
+    "more",
+    "maximize",
+    "max",
+    "favor",
+    "should dash",
+  ];
+  const minimizeTerms = [
+    "few",
+    "less",
+    "fewer",
+    "minimize",
+    "min",
+    "avoid",
+    "should shift",
+    "no dash",
+  ];
 
   let isMaximize = false;
   let isMinimize = false;
@@ -255,8 +302,8 @@ const perHandDashMaximizePattern: ConstraintPattern = {
   },
   build(text: string): IConstraint {
     const result = detectPerHandDash(text);
-    // Default to blue if detection fails (shouldn't happen since matches passed)
-    return new PerHandDashConstraint(result?.hand ?? "blue", "maximize");
+    // Default to left if detection fails (shouldn't happen since matches passed)
+    return new PerHandDashConstraint(result?.hand ?? "left", "maximize");
   },
 };
 
@@ -270,16 +317,16 @@ const perHandDashMinimizePattern: ConstraintPattern = {
   },
   build(text: string): IConstraint {
     const result = detectPerHandDash(text);
-    return new PerHandDashConstraint(result?.hand ?? "red", "minimize");
+    return new PerHandDashConstraint(result?.hand ?? "right", "minimize");
   },
 };
-
 
 function createMotionTypePattern(
   motionType: string,
   mode: "require" | "prefer" | "exclude"
 ): ConstraintPattern {
-  const modeVerb = mode === "require" ? "only" : mode === "prefer" ? "prefer" : "no";
+  const modeVerb =
+    mode === "require" ? "only" : mode === "prefer" ? "prefer" : "no";
   return {
     id: `${mode}-${motionType}`,
     type: ConstraintType.MOTION_TYPE,
@@ -317,7 +364,6 @@ function createMotionTypePattern(
   };
 }
 
-
 function createRotationPattern(direction: string): ConstraintPattern {
   return {
     id: `rotation-${direction}`,
@@ -328,9 +374,10 @@ function createRotationPattern(direction: string): ConstraintPattern {
     },
     build(text: string): IConstraint {
       const hand = detectHand(text);
-      const require = containsConcept(text, "require") ||
-                      text.toLowerCase().includes("only") ||
-                      text.toLowerCase().includes("all");
+      const require =
+        containsConcept(text, "require") ||
+        text.toLowerCase().includes("only") ||
+        text.toLowerCase().includes("all");
       return new RotationDirectionConstraint({
         direction: canonicalize(direction) as "cw" | "ccw",
         hand,
@@ -339,7 +386,6 @@ function createRotationPattern(direction: string): ConstraintPattern {
     },
   };
 }
-
 
 /**
  * Detects hand path constraints from natural language.
@@ -363,7 +409,10 @@ const maximizeHandPathContinuityPattern: ConstraintPattern = {
       return false;
     }
     // "maximize hand continuity", "smooth hand paths", "continuous hand movement"
-    if (containsConcept(text, "maximize") || containsConcept(text, "continuity")) {
+    if (
+      containsConcept(text, "maximize") ||
+      containsConcept(text, "continuity")
+    ) {
       return true;
     }
     // "minimize handpath reversals" implies maximize continuity
@@ -389,7 +438,10 @@ const enforceHandPathContinuityPattern: ConstraintPattern = {
     if (containsConcept(text, "exclude")) {
       return true;
     }
-    if (containsConcept(text, "require") && containsConcept(text, "continuity")) {
+    if (
+      containsConcept(text, "require") &&
+      containsConcept(text, "continuity")
+    ) {
       return true;
     }
     return false;
@@ -418,7 +470,6 @@ const handPathReversalEveryBeatPattern: ConstraintPattern = {
   },
 };
 
-
 /**
  * These patterns explicitly target PROP reversals (spin direction changes)
  * as distinct from hand path reversals.
@@ -431,13 +482,16 @@ const handPathReversalEveryBeatPattern: ConstraintPattern = {
 const noPropReversalsPattern: ConstraintPattern = {
   id: "no-prop-reversals",
   type: ConstraintType.CONTINUITY,
-  description: "No prop/spin reversals (prop spin direction must stay consistent)",
+  description:
+    "No prop/spin reversals (prop spin direction must stay consistent)",
   matches(text: string): boolean {
     // Must explicitly mention "prop reversal" or "spin reversal"
     if (!containsConcept(text, "propreversal")) {
       return false;
     }
-    return containsConcept(text, "exclude") || containsConcept(text, "minimize");
+    return (
+      containsConcept(text, "exclude") || containsConcept(text, "minimize")
+    );
   },
   build(_text: string): IConstraint {
     // This uses the existing ContinuityConstraint which tracks prop rotation
@@ -453,13 +507,14 @@ const maximizePropContinuityPattern: ConstraintPattern = {
     if (!containsConcept(text, "propreversal")) {
       return false;
     }
-    return containsConcept(text, "maximize") || containsConcept(text, "minimize");
+    return (
+      containsConcept(text, "maximize") || containsConcept(text, "minimize")
+    );
   },
   build(_text: string): IConstraint {
     return new ContinuityConstraint("maximize");
   },
 };
-
 
 const reversalEveryBeatPattern: ConstraintPattern = {
   id: "reversal-every-beat",
@@ -471,8 +526,7 @@ const reversalEveryBeatPattern: ConstraintPattern = {
     }
     // "reversal every beat", "maximize reversals", "break every beat"
     return (
-      text.toLowerCase().includes("every") ||
-      containsConcept(text, "maximize")
+      text.toLowerCase().includes("every") || containsConcept(text, "maximize")
     );
   },
   build(_text: string): IConstraint {
@@ -488,7 +542,9 @@ const noReversalsPattern: ConstraintPattern = {
     if (!containsConcept(text, "reversal")) {
       return false;
     }
-    return containsConcept(text, "exclude") || containsConcept(text, "minimize");
+    return (
+      containsConcept(text, "exclude") || containsConcept(text, "minimize")
+    );
   },
   build(_text: string): IConstraint {
     // "No reversals" is equivalent to enforcing continuity
@@ -496,17 +552,15 @@ const noReversalsPattern: ConstraintPattern = {
   },
 };
 
-
 function detectHand(text: string): HandTarget {
-  if (containsConcept(text, "blue") && !containsConcept(text, "red")) {
-    return "blue";
+  if (containsConcept(text, "left") && !containsConcept(text, "right")) {
+    return "left";
   }
-  if (containsConcept(text, "red") && !containsConcept(text, "blue")) {
-    return "red";
+  if (containsConcept(text, "right") && !containsConcept(text, "left")) {
+    return "right";
   }
   return "both";
 }
-
 
 /**
  * All registered constraint patterns, in priority order.
@@ -531,7 +585,7 @@ export const CONSTRAINT_PATTERNS: ConstraintPattern[] = [
   noReversalsPattern,
 
   // Per-hand dash preferences (HIGHEST PRIORITY for dash patterns)
-  // These handle "blue hand lots of dashes, red hand few dashes"
+  // These handle "left hand lots of dashes, right hand few dashes"
   perHandDashMaximizePattern,
   perHandDashMinimizePattern,
 

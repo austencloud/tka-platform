@@ -109,7 +109,7 @@ export function flowerKey(
  * VTG spin ratio for a turn count: (2·turns + 1):1. The numerator is the same
  * for prospin and antispin at a given turn — the style sets the petal count
  * (prospin = P−Q, antispin = P+Q) — so the ratio labels the axis and the
- * blue/red style is read from the axis itself. E.g. 0.5t → "2:1" (antispin =
+ * left/right style is read from the axis itself. E.g. 0.5t → "2:1" (antispin =
  * 3-petal triquetra). Level 4 quarter turns reduce to an odd-over-two ratio.
  */
 export function ratioLabel(turns: number): string {
@@ -122,10 +122,13 @@ export function ratioLabel(turns: number): string {
  * each prop:hand ratio, but not the community-looking `3::1` contraction.
  * Keeping both ratios explicit makes the axes and the convention unambiguous.
  */
-export function hybridRatioLabel(blueTurns: number, redTurns: number): string {
-  return blueTurns === redTurns
-    ? ratioLabel(blueTurns)
-    : `Blue ${ratioLabel(blueTurns)} × Red ${ratioLabel(redTurns)}`;
+export function hybridRatioLabel(
+  leftTurns: number,
+  rightTurns: number
+): string {
+  return leftTurns === rightTurns
+    ? ratioLabel(leftTurns)
+    : `Left ${ratioLabel(leftTurns)} × Right ${ratioLabel(rightTurns)}`;
 }
 
 export function flowerLabel(f: Flower): string {
