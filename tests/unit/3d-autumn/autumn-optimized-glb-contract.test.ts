@@ -52,6 +52,20 @@ describe("optimized Autumn GLB contracts", () => {
     .filter((node) => Number.isInteger(node.mesh))
     .map((node) => node.name ?? "");
 
+  it("authors the extended terrain apron with upward-facing winding", () => {
+    const buildSource = readFileSync(
+      resolve(process.cwd(), "scripts/build-autumn-environment.py"),
+      "utf8"
+    );
+
+    expect(buildSource).toContain(
+      "faces.append((base + i, nxt + i, nxt + j, base + j))"
+    );
+    expect(buildSource).not.toContain(
+      "faces.append((base + i, base + j, nxt + j, nxt + i))"
+    );
+  });
+
   function nodeMaterialNames(node: NonNullable<typeof gltf.nodes>[number]) {
     if (!Number.isInteger(node.mesh)) return [];
     const mesh = gltf.meshes?.[node.mesh!];
