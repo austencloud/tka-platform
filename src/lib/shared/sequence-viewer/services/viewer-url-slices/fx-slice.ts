@@ -42,7 +42,9 @@ function canonicalTipMap(active: string): TipEffectMap {
 
 const DEFAULT_EFFECTIVE_ACTIVE = effectiveActive(DEFAULT_EFFECTS_CONFIG);
 
-export function captureFxSlice(state: EffectsConfigState): FxSlicePayload | null {
+export function captureFxSlice(
+  state: Pick<EffectsConfigState, "snapshot">
+): FxSlicePayload | null {
   const snap = state.snapshot();
   const active = effectiveActive(snap);
   const tuning: Record<string, unknown> = {};
@@ -76,6 +78,14 @@ export function seedFromFxSlice(payload: FxSlicePayload): EffectsConfig {
   const active = payload.active ?? DEFAULT_EFFECTIVE_ACTIVE;
   (seed as { activeEffect: unknown }).activeEffect = active;
   seed.tipEffectMap = canonicalTipMap(active);
-  if (payload.tuning) Object.assign(seed, payload.tuning);
+  // Only known config keys are merged. The blob is user-editable JSON, and
+  // `Object.assign` with an own `__proto__` key would re-parent the seed.
+  if (payload.tuning) {
+    for (const key of Object.keys(DEFAULT_EFFECTS_CONFIG)) {
+      if (key in payload.tuning) {
+        (seed as Record<string, unknown>)[key] = payload.tuning[key];
+      }
+    }
+  }
   return seed;
 }

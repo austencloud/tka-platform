@@ -117,4 +117,16 @@ describe("sequence viewer orchestrator decomposition", () => {
       orchestrator.indexOf('urlSession.registerSlice("fx"')
     );
   });
+
+  it("compares the fx own-link disk side from a plain snapshot, not a throwaway store", () => {
+    // `createEffectsConfigState(persisted, { persist: false })` registers the
+    // global "effects" undo domain and runs `migrateFromVmStorageOnce`, which a
+    // persist:true instance skips for a stored config. A legacy VM-storage
+    // entry would then make the two sides differ and turn the visitor's own
+    // reloaded link view-only, silently stopping persistence of their tweaks.
+    expect(orchestrator).toContain(
+      "captureFxSlice({ snapshot: () => persistedEffectsConfig })"
+    );
+    expect(orchestrator).not.toMatch(/createEffectsConfigState\(persistedEffectsConfig/);
+  });
 });
