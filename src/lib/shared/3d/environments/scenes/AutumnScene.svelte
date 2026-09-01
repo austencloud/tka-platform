@@ -8,15 +8,20 @@
    * loading curtain.
    */
 
-  import { T, useThrelte } from "@threlte/core";
-  import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
+  import { T, useLoader, useThrelte } from "@threlte/core";
+  import { useKtx2, useMeshopt } from "@threlte/extras";
   import { FogExp2, Color } from "three";
+  import { untrack } from "svelte";
+  import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { getAutumnQualityConfig } from "./autumn/quality/autumn-quality";
   import { autumnQualityOverride } from "./autumn/quality/autumn-quality-override.svelte";
   import AutumnRuntimeSystems from "./autumn/runtime/AutumnRuntimeSystems.svelte";
   import { AUTUMN_POND_LAYOUT } from "./autumn/runtime/water/autumn-pond-layout";
-  import { AUTUMN_MOON_VISUAL_DIRECTION } from "./autumn/runtime/lighting/autumn-moon";
+  import {
+    AUTUMN_MOON_TEXTURE_URL,
+    AUTUMN_MOON_VISUAL_DIRECTION,
+  } from "./autumn/runtime/lighting/autumn-moon";
   import { configureAutumnShadowMesh } from "./autumn/runtime/lighting/autumn-shadow-roles";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import Starfield from "../primitives/Starfield.svelte";
@@ -90,9 +95,13 @@
 
   const groundY = $derived(userProportionsState.groundY);
 
-  const autumnEnvironmentLoader = useGltf({
-    meshoptDecoder: useMeshopt(),
-    ktx2Loader: useKtx2("/basis/"),
+  const autumnMeshoptDecoder = useMeshopt();
+  const autumnKtx2Loader = useKtx2("/basis/");
+  const autumnEnvironmentLoader = useLoader(GLTFLoader, {
+    extend(loader) {
+      loader.setMeshoptDecoder(autumnMeshoptDecoder);
+      loader.setKTX2Loader(autumnKtx2Loader);
+    },
   });
   type AutumnEnvironmentGltf = Awaited<
     ReturnType<typeof autumnEnvironmentLoader.load>
@@ -119,7 +128,14 @@
 
     return startAutumnEnvironmentRequest({
       retryRequest: retry,
-      load: (url) => autumnEnvironmentLoader.load(url),
+      load: (url, onProgress) =>
+        autumnEnvironmentLoader.load(url, {
+          onProgress: (event) =>
+            onProgress({
+              loaded: event.loaded,
+              total: event.total > 0 ? event.total : undefined,
+            }),
+        }),
       onReady: (loaded) => {
         autumnEnvironmentGlb = loaded;
         bootState = setAutumnBootAsset(bootState, "environment", "ready");
@@ -162,19 +178,27 @@
     });
   });
 
-  // Instance budgets alter only the submitted count of Blender-authored GPU
-  // batches. Pond resources, material patches, and particle systems stay put
-  // when adaptive quality moves between tiers.
+  // Broad instance batches become exact spatial cells once per loaded GLB.
+  // Every authored placement remains present, and adaptive tier changes never
+  // rebuild the scene or delete ecology.
   $effect(() => {
     const loaded = environmentScene;
-    const activeTier = tier;
     if (!loaded) return;
-    const report = applyAutumnGeometryTier(loaded, activeTier);
+    const report = applyAutumnGeometryTier(loaded, untrack(() => tier));
     loaded.userData.autumnGeometryTierReport = report;
     return () => {
       delete loaded.userData.autumnGeometryTierReport;
       restoreAutumnGeometryTier(loaded);
     };
+  });
+
+  $effect(() => {
+    const loaded = environmentScene;
+    const activeTier = tier;
+    const report = loaded?.userData.autumnGeometryTierReport as ReturnType<
+      typeof applyAutumnGeometryTier
+    > | null;
+    if (report) report.tier = activeTier;
   });
 
   // ── Readiness: gate on the complete authored environment ──────────────
@@ -200,7 +224,7 @@
 
   const moonConfig: MoonConfig = {
     enabled: true,
-    texture: "/textures/moon.png",
+    texture: AUTUMN_MOON_TEXTURE_URL,
     direction: AUTUMN_MOON_VISUAL_DIRECTION,
     angularDiameterDegrees: 2.8,
     opacity: 0.96,

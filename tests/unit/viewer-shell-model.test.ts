@@ -6,16 +6,31 @@ import {
   buildVideoExportAnalyticsConfig,
   buildViewerShareActions,
   resolveExportSidebarMinWidth,
+  viewerInspectorConstraints,
 } from "$lib/shared/sequence-viewer/services/viewer-shell-model";
 
 describe("viewer shell model", () => {
   it("uses only valid persisted rail widths in the export threshold", () => {
-    expect(resolveExportSidebarMinWidth(null)).toBe(1340);
-    expect(resolveExportSidebarMinWidth("72")).toBe(1232);
-    expect(resolveExportSidebarMinWidth("300")).toBe(1460);
-    expect(resolveExportSidebarMinWidth("71")).toBe(1340);
-    expect(resolveExportSidebarMinWidth("301")).toBe(1340);
-    expect(resolveExportSidebarMinWidth("wide")).toBe(1340);
+    expect(resolveExportSidebarMinWidth(null)).toBe(1348);
+    expect(resolveExportSidebarMinWidth("72")).toBe(1240);
+    expect(resolveExportSidebarMinWidth("300")).toBe(1468);
+    expect(resolveExportSidebarMinWidth("71")).toBe(1348);
+    expect(resolveExportSidebarMinWidth("301")).toBe(1348);
+    expect(resolveExportSidebarMinWidth("wide")).toBe(1348);
+  });
+
+  it("keeps Card compact without shrinking the stage or effects inspector", () => {
+    expect(resolveExportSidebarMinWidth(null, "card")).toBe(1268);
+    expect(resolveExportSidebarMinWidth(null, "art")).toBe(1268);
+    expect(resolveExportSidebarMinWidth(null, "motion")).toBe(1348);
+    expect(viewerInspectorConstraints("card")).toEqual({
+      minWidth: 420,
+      maxWidth: 840,
+    });
+    expect(viewerInspectorConstraints("motion")).toEqual({
+      minWidth: 520,
+      maxWidth: 1200,
+    });
   });
 
   it("keeps copied-link feedback in the open share menu", () => {

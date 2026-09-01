@@ -106,6 +106,9 @@ export interface AnimationEngineProps {
   virtualTime?: number;
   /** When false, hides nonradial (layer2/intercardinal) grid points. Default true. */
   showNonRadialPoints?: boolean;
+  /** Per-canvas override for the engine-aligned mandala guide. Split views use
+   *  this to keep their isolated guide visible without changing user settings. */
+  mandalaVisibleOverride?: boolean;
   /** Tunnel per-prop rainbow spectrum. When true (default) each overlaid layer
    *  takes its own spectrum color; when false layers inherit the base/preset
    *  colors. Only meaningful when additionalLayers is non-empty. */

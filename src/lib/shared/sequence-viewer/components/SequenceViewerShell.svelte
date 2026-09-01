@@ -702,6 +702,7 @@
           class="viewer-and-export"
           class:export-active={layout.isWorkspaceInspectorActive}
           class:record-scene-active={layout.isRecordSceneActive}
+          class:card-inspector={layout.inspectorProfile === "card"}
           class:desktop={!layout.effectiveMobile}
           class:stacked-rail={layout.stackedExportWithRail}
           class:sidebar-collapsed={layout.exportSidebarCollapsed &&
@@ -731,6 +732,7 @@
             inspectorActive={layout.isWorkspaceInspectorActive}
             inspectorCollapsed={layout.exportSidebarCollapsed &&
               !layout.isImageExportActive}
+            inspectorProfile={layout.inspectorProfile}
           >
             {#snippet stage()}
               <div class="viewer-stage-container">
@@ -1314,6 +1316,8 @@
 
   .viewer-and-export {
     --export-sidebar-width: 560px;
+    --card-sidebar-width: clamp(480px, 28vw, 640px);
+    --active-inspector-width: var(--export-sidebar-width);
     position: relative;
     display: flex;
     flex-direction: row;
@@ -1321,6 +1325,10 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .viewer-and-export.card-inspector {
+    --active-inspector-width: var(--card-sidebar-width);
   }
 
   .viewer-stage-container {
@@ -1455,13 +1463,22 @@
     flex: 0 0 var(--export-sidebar-width);
   }
 
+  :global(.panel-wrapper[data-manually-sized="true"])
+    .motion-settings-layer
+    > :global(.export-panel.sidebar) {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
+  }
+
   :global(:root[data-motion-preference="reduce"]) .inspector-content-layer {
     transition-duration: 0ms, 0s;
   }
 
   /* PanelGroup owns the dock's structural motion. Keep Card settings composed
-     at their destination width inside that moving viewport, so chip wrapping
-     and vertical centering do not invent a second, accidental transition. */
+     at their default destination width while the dock opens, so chip wrapping
+     and vertical centering do not invent a second, accidental transition. Once
+     the person grabs the seam, the panel follows that direct manipulation. */
   .viewer-and-export.desktop .export-panel-container.card-settings {
     display: flex;
     justify-content: flex-end;
@@ -1471,9 +1488,17 @@
   .viewer-and-export.desktop
     .export-panel-container.card-settings
     :global(.export-panel:not(.inline)) {
-    width: var(--export-sidebar-width);
-    min-width: var(--export-sidebar-width);
-    flex: 0 0 var(--export-sidebar-width);
+    width: var(--active-inspector-width);
+    min-width: var(--active-inspector-width);
+    flex: 0 0 var(--active-inspector-width);
+  }
+
+  :global(.panel-wrapper[data-manually-sized="true"])
+    .export-panel-container.card-settings
+    :global(.export-panel:not(.inline)) {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
   }
 
   /* Stacked export layout — phones AND desktop widths too narrow for the 560px

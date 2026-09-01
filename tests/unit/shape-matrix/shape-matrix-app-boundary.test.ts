@@ -85,6 +85,24 @@ describe("Shape Matrix app boundary", () => {
       ),
       "utf8"
     );
+    const frameSystemSource = readFileSync(
+      resolve(
+        "src/lib/shared/animation-engine/services/managers/frame-system.ts"
+      ),
+      "utf8"
+    );
+    const playbackSyncSource = readFileSync(
+      resolve(
+        "src/lib/shared/animation-engine/services/managers/playback-sync.ts"
+      ),
+      "utf8"
+    );
+    const renderLoopSource = readFileSync(
+      resolve(
+        "src/lib/shared/animation-engine/services/animation-render-loop.ts"
+      ),
+      "utf8"
+    );
 
     expect(inlinePlayerSource).toContain("{disassemblyLayout}");
     expect(animatorSource).toContain(
@@ -94,6 +112,22 @@ describe("Shape Matrix app boundary", () => {
     expect(animatorSource).toContain("{backgroundAlpha}");
     expect(splitSource.match(/\{backgroundAlpha\}/g)).toHaveLength(2);
     expect(splitSource).not.toContain("backgroundAlpha={1}");
+    expect(splitSource.match(/mandalaVisibleOverride=\{true\}/g)).toHaveLength(
+      2
+    );
+    expect(frameSystemSource).toContain(
+      "props.mandalaVisibleOverride ?? this.state.visibilityState.mandala"
+    );
+    expect(playbackSyncSource).toContain(
+      "props.mandalaVisibleOverride ?? this.state.visibilityState.mandala"
+    );
+    expect(playbackSyncSource).toContain(
+      "this._lastPropsRef?.mandalaVisibleOverride ?? state.mandala"
+    );
+    expect(renderLoopSource).toContain("const show: MandalaHandVisibility");
+    expect(renderLoopSource).toContain(
+      'showLeft && showRight ? "both" : showLeft ? "left" : "right"'
+    );
   });
 
   it("does not reserve an empty hand-path row for ordinary prop relationships", () => {

@@ -119,6 +119,42 @@ describe("Sequence Viewer geometry trace", () => {
     ).toBe(1);
   });
 
+  it("flags a 2D return that expands before settling smaller", () => {
+    const summary = summarizeTransitionGeometry(
+      trace([
+        sample(0, 880, 1),
+        sample(80, 1040, 1),
+        sample(180, 760, 1),
+        sample(280, 720, 1),
+      ])
+    );
+
+    expect(summary.animationReturnSizeTravel).toMatchObject({
+      start: 880,
+      end: 720,
+      backtrack: 160,
+      overshoot: 0,
+    });
+  });
+
+  it("accepts a monotonic 2D return into its split allocation", () => {
+    const summary = summarizeTransitionGeometry(
+      trace([
+        sample(0, 880, 1),
+        sample(80, 840, 1),
+        sample(180, 770, 1),
+        sample(280, 720, 1),
+      ])
+    );
+
+    expect(summary.animationReturnSizeTravel).toMatchObject({
+      start: 880,
+      end: 720,
+      backtrack: 0,
+      overshoot: 0,
+    });
+  });
+
   it("measures the Card and Effects handoff as one continuous seam", () => {
     const start = {
       ...sample(0, 450, 1),

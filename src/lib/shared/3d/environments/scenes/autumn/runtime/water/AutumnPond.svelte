@@ -21,14 +21,13 @@
   import {
     AdditiveBlending,
     Color,
-    MeshPhysicalMaterial,
     NoColorSpace,
     PlaneGeometry,
     RepeatWrapping,
     ShaderMaterial,
     ShapeGeometry,
     TextureLoader,
-    Vector2,
+    type MeshPhysicalMaterial,
     type Texture,
   } from "three";
   import type { AutumnQualityConfig } from "../../quality/autumn-quality";
@@ -40,6 +39,7 @@
     resolveMotionScale,
   } from "../../../../primitives/motion-preference";
   import type { AutumnBootStatus } from "../autumn-boot-state";
+  import { createAutumnPondSurfaceMaterial } from "./autumn-pond-surface-material";
 
   interface Props {
     quality: AutumnQualityConfig;
@@ -67,7 +67,6 @@
     waterLevelOffset = AUTUMN_POND_LAYOUT.waterLevelOffset,
   }: Props = $props();
 
-  const WATER_BODY_COLOR = "#324553";
   const NORMAL_MAP_PATH = "/textures/water/Water_1_M_Normal.jpg";
   const COAT_NORMAL_MAP_PATH = "/textures/water/Water_2_M_Normal.jpg";
 
@@ -135,33 +134,7 @@
     normal1.center.set(0.5, 0.5);
     normal1.rotation = 0.42;
 
-    // Higher transmission and lower opacity than before, so the Blender-authored
-    // basin below actually shows through and the pond reads as water with a bed
-    // rather than an opaque cut-out in the ground.
-    const material = new MeshPhysicalMaterial({
-      color: new Color(WATER_BODY_COLOR),
-      emissive: new Color("#12333a"),
-      emissiveIntensity: 0.22,
-      roughness: 0.36,
-      metalness: 0.04,
-      transparent: true,
-      opacity: 0.6,
-      ior: 1.333,
-      transmission: 0.34,
-      thickness: 0.3,
-      attenuationColor: new Color("#4a4052"),
-      attenuationDistance: 3.2,
-      clearcoat: 0.14,
-      clearcoatRoughness: 0.4,
-      specularIntensity: 0.38,
-      specularColor: new Color("#91a5c4"),
-      normalMap: normal0,
-      normalScale: new Vector2(0.16, 0.16),
-      clearcoatNormalMap: normal1,
-      clearcoatNormalScale: new Vector2(0.08, 0.08),
-      envMapIntensity: 0.25,
-      depthWrite: false,
-    });
+    const material = createAutumnPondSurfaceMaterial(normal0, normal1);
 
     untrack(() => {
       surfaceGeometry?.dispose();

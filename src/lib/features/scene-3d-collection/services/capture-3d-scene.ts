@@ -86,8 +86,7 @@ export function captureScene3DSnapshot(
   };
 }
 
-/** Grab a ~200px WebP poster off the live WebGL canvas (preserveDrawingBuffer is
- *  already enabled on the renderer, so the buffer is readable). "" if unavailable. */
+/** Grab a ~200px WebP poster after the final-frame owner renders on demand. */
 export function captureScene3DPoster(viewer3DState: Viewer3DState): string {
   const canvas = viewer3DState.webglCanvas;
   if (!canvas) return "";

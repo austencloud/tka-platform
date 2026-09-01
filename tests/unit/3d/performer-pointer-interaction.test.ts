@@ -1,10 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  BoxGeometry,
-  Mesh,
-  MeshBasicMaterial,
-  PerspectiveCamera,
-} from "three";
+import { BoxGeometry, Mesh, MeshBasicMaterial, PerspectiveCamera } from "three";
 import {
   clampPerformerPosition,
   createPerformerPointerInteraction,
@@ -12,8 +7,18 @@ import {
   intersectGroundPlane,
   isWithinMinimumTouchTarget,
   resolveCameraRelativeNudge,
+  resolvePerformerDragPosition,
   resolveTouchIntent,
+  snapStagePositionToEightDirections,
 } from "$lib/shared/3d/components/performer-interaction/performer-pointer-interaction.svelte";
+
+function expectPositionCloseTo(
+  actual: { x: number; z: number },
+  expected: { x: number; z: number }
+): void {
+  expect(actual.x).toBeCloseTo(expected.x);
+  expect(actual.z).toBeCloseTo(expected.z);
+}
 
 describe("performer pointer interaction", () => {
   it("keeps movement inside the click threshold until travel exceeds 8px", () => {
@@ -77,6 +82,59 @@ describe("performer pointer interaction", () => {
         0.5
       )
     ).toEqual({ x: 4.5, z: -2.5 });
+  });
+
+  it("projects Shift-drag movement onto the nearest of eight ground directions", () => {
+    const cases = [
+      { target: { x: 3, z: 0.5 }, angle: 0 },
+      { target: { x: 3, z: 2 }, angle: Math.PI / 4 },
+      { target: { x: 0.5, z: 3 }, angle: Math.PI / 2 },
+      { target: { x: -2, z: 3 }, angle: (3 * Math.PI) / 4 },
+      { target: { x: -3, z: 0.5 }, angle: Math.PI },
+      { target: { x: -3, z: -2 }, angle: (-3 * Math.PI) / 4 },
+      { target: { x: -0.5, z: -3 }, angle: -Math.PI / 2 },
+      { target: { x: 2, z: -3 }, angle: -Math.PI / 4 },
+    ];
+
+    for (const { target, angle } of cases) {
+      const snapped = snapStagePositionToEightDirections(
+        { x: 0, z: 0 },
+        target
+      );
+      expect(Math.atan2(snapped.z, snapped.x)).toBeCloseTo(angle);
+    }
+
+    expectPositionCloseTo(
+      snapStagePositionToEightDirections({ x: 0, z: 0 }, { x: 3, z: 2 }),
+      { x: 2.5, z: 2.5 }
+    );
+    expectPositionCloseTo(
+      snapStagePositionToEightDirections({ x: 1, z: 2 }, { x: 4, z: 2.4 }),
+      { x: 4, z: 2 }
+    );
+  });
+
+  it("stops constrained diagonal movement at the first stage edge", () => {
+    expectPositionCloseTo(
+      resolvePerformerDragPosition(
+        { x: 4, z: 0 },
+        { x: 9, z: 5 },
+        { width: 10, depth: 10 },
+        true
+      ),
+      { x: 4.5, z: 0.5 }
+    );
+  });
+
+  it("leaves free dragging unconstrained when Shift is not held", () => {
+    expect(
+      resolvePerformerDragPosition(
+        { x: 0, z: 0 },
+        { x: 3, z: 2 },
+        { width: 10, depth: 10 },
+        false
+      )
+    ).toEqual({ x: 3, z: 2 });
   });
 
   it("snaps camera-relative arrow movement to the nearest stage axis", () => {

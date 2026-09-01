@@ -149,7 +149,7 @@
   {/if}
 {/each}
 
-{#if showOrientationHelpers}
+{#if showOrientationHelpers && visiblePlaneList.length > 0}
   <!-- Center point indicator - 4cm sphere -->
   <T.Mesh
     geometry={centerPointGeometry}

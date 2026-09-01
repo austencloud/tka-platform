@@ -117,6 +117,11 @@
   const SHAPE_MATRIX_TRAIL_PRESET = {
     ...HERO_TRAIL_PRESET,
     trackingMode: TrackingMode.RIGHT_END,
+    // The matrix stage is viewed much closer than the landing-page hero. Keep
+    // its glow and stroke one tuning step quieter without changing that shared
+    // attract-mode preset.
+    glowBlur: HERO_TRAIL_PRESET.glowBlur - 1,
+    lineWidth: HERO_TRAIL_PRESET.lineWidth - 1,
     // The generic player precomputes a full path cache whenever a sequence
     // changes. That is useful for long-lived editors but creates a 150–230 ms
     // main-thread task during rapid matrix exploration. Live capture is the

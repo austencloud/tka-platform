@@ -5,7 +5,10 @@ import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-a
 import type { ContentType } from "./viewer-state.svelte";
 import type { SelectableViewerMode } from "../services/viewer-modes";
 import type { OrchestratorContext } from "../domain/viewer-orchestrator-context";
-import { resolveExportSidebarMinWidth } from "../services/viewer-shell-model";
+import {
+  resolveExportSidebarMinWidth,
+  type ViewerInspectorProfile,
+} from "../services/viewer-shell-model";
 import { withViewerModeDissolve } from "$lib/shared/transitions/viewer-mode-dissolve";
 import { motionDuration } from "$lib/shared/transitions/motion";
 import { DURATION, STAGGER } from "$lib/shared/transitions/transitions";
@@ -46,8 +49,6 @@ export function createViewerShellLayoutState(
   let cardContainSizeMotionTimer: ReturnType<typeof setTimeout> | undefined;
   let cardLayoutSequenceKey = "";
   let progressivePromotionScheduled = false;
-  let splitModePromotionTimer: ReturnType<typeof setTimeout> | undefined;
-  let splitModePromotionVersion = 0;
 
   const isMobile = $derived(inputs.getIsMobile());
   const isLandscape = $derived(responsiveSettings?.isLandscapeMobile ?? false);
@@ -90,28 +91,38 @@ export function createViewerShellLayoutState(
       !isSidebarExportActive
   );
 
-  const exportSidebarMinWidth = $derived.by(() => {
-    let persistedRailWidth: string | null = null;
+  const persistedRailWidth = $derived.by(() => {
+    let storedRailWidth: string | null = null;
     try {
-      persistedRailWidth = localStorage.getItem("tka-viewer-rail-width");
+      storedRailWidth = localStorage.getItem("tka-viewer-rail-width");
     } catch {
       // Private browsing and locked-down embeds can deny storage. The default
       // rail width keeps the preview usable without persistence.
     }
-    return resolveExportSidebarMinWidth(persistedRailWidth);
+    return storedRailWidth;
   });
 
   const cardExportNarrow = $derived(
-    isImageExportActive && !isMobile && bodyWidth < exportSidebarMinWidth
+    isImageExportActive &&
+      !isMobile &&
+      bodyWidth < resolveExportSidebarMinWidth(persistedRailWidth, "card")
   );
   const videoExportNarrow = $derived(
     isVideoExportActive &&
       !isRecordSceneActive &&
       !isMobile &&
-      bodyWidth < exportSidebarMinWidth
+      bodyWidth < resolveExportSidebarMinWidth(persistedRailWidth, "motion")
+  );
+  const artInspectorNarrow = $derived(
+    isArtInspectorActive &&
+      !isMobile &&
+      bodyWidth < resolveExportSidebarMinWidth(persistedRailWidth, "art")
   );
   const effectiveMobile = $derived(
-    isMobile || cardExportNarrow || videoExportNarrow
+    isMobile || cardExportNarrow || videoExportNarrow || artInspectorNarrow
+  );
+  const inspectorProfile = $derived<ViewerInspectorProfile>(
+    isImageExportActive ? "card" : isVideoExportActive ? "motion" : "art"
   );
   const isWorkspaceInspectorActive = $derived(
     isSidebarExportActive || (isArtInspectorActive && !effectiveMobile)
@@ -156,26 +167,13 @@ export function createViewerShellLayoutState(
     }
   }
 
-  function cancelSplitModePromotion(): void {
-    splitModePromotionVersion += 1;
-    if (splitModePromotionTimer !== undefined) {
-      clearTimeout(splitModePromotionTimer);
-      splitModePromotionTimer = undefined;
-    }
-  }
-
-  function startCardContainSizeMotion(
-    phase: "focus" | "return",
-    leadDuration = 0
-  ): void {
+  function startCardContainSizeMotion(phase: "focus" | "return"): void {
     if (cardContainSizeMotionTimer !== undefined) {
       clearTimeout(cardContainSizeMotionTimer);
       cardContainSizeMotionTimer = undefined;
     }
 
-    const spatialDuration = motionDuration(
-      DURATION.emphasis + DURATION.normal + leadDuration
-    );
+    const spatialDuration = motionDuration(DURATION.emphasis + DURATION.normal);
     // Reduced motion replaces the resize with a snapshot dissolve, but the
     // Card's internal cells still need to stay pinned until that dissolve and
     // its final ResizeObserver paints are complete.
@@ -215,8 +213,7 @@ export function createViewerShellLayoutState(
   }
 
   function releaseCardAutoLayoutAfterWorkspaceMotion(
-    transition: ViewTransition | null,
-    leadDuration = 0
+    transition: ViewTransition | null
   ): void {
     cancelCardAutoLayoutRelease();
     const releaseVersion = cardAutoLayoutReleaseVersion;
@@ -243,14 +240,14 @@ export function createViewerShellLayoutState(
     cardAutoLayoutReleaseTimer = setTimeout(() => {
       cardAutoLayoutReleaseTimer = undefined;
       releaseAfterSettledPaints();
-    }, DURATION.emphasis + leadDuration);
+    }, DURATION.emphasis);
   }
 
   function enterSplitMode(
     ctx: OrchestratorContext,
     previousMode: string,
     track: boolean
-  ): number {
+  ): void {
     const closeInspector = () => {
       // A person leaving Card should get the playback state they arrived with.
       // Startup promotion is different: it has no prior viewing session to
@@ -258,35 +255,20 @@ export function createViewerShellLayoutState(
       if (track && ctx.editingPane === "image") ctx.exitEditMode();
       else ctx.viewerState.exitExport();
     };
-    const revealSplit = () => {
-      if (previousMode === "card") {
-        startCardContainSizeMotion("return");
-      }
-      ctx.viewerState.setSplitConfig({
-        leftPane: "animation",
-        rightPane: "card",
-      });
-      ctx.viewerState.setViewerMode("split");
-    };
-
-    const leadDuration =
-      previousMode === "card" || previousMode === "animation"
-        ? motionDuration(STAGGER.normal)
-        : 0;
-    closeInspector();
-    if (leadDuration === 0) {
-      revealSplit();
-      return 0;
+    if (previousMode === "card") {
+      startCardContainSizeMotion("return");
     }
 
-    cancelSplitModePromotion();
-    const promotionVersion = splitModePromotionVersion;
-    splitModePromotionTimer = setTimeout(() => {
-      splitModePromotionTimer = undefined;
-      if (promotionVersion !== splitModePromotionVersion) return;
-      revealSplit();
-    }, leadDuration);
-    return leadDuration;
+    // The inspector and Card pane exchange the same workspace. Publishing both
+    // allocations in one mutation keeps the 2D canvas on a single trajectory;
+    // closing the inspector first briefly made the canvas fill the workspace
+    // before the returning Card took half of it back.
+    closeInspector();
+    ctx.viewerState.setSplitConfig({
+      leftPane: "animation",
+      rightPane: "card",
+    });
+    ctx.viewerState.setViewerMode("split");
   }
 
   $effect(() => {
@@ -356,7 +338,6 @@ export function createViewerShellLayoutState(
 
     return () => {
       cancelCardAutoLayoutRelease();
-      cancelSplitModePromotion();
       if (cardContainSizeMotionTimer !== undefined) {
         clearTimeout(cardContainSizeMotionTimer);
       }
@@ -377,7 +358,6 @@ export function createViewerShellLayoutState(
   }
 
   function selectSplitMode(track = true): void {
-    cancelSplitModePromotion();
     const ctx = inputs.getContext();
     ctx.ensureInteractiveServices();
     const previousMode = ctx.viewerState.viewerMode;
@@ -387,17 +367,16 @@ export function createViewerShellLayoutState(
     ) {
       leaseCardAutoLayout();
     }
-    let leadDuration = 0;
     const transition = withViewerModeDissolve(
       inputs.getWorkspaceElement(),
       previousMode,
       "split",
       () => {
-        leadDuration = enterSplitMode(ctx, previousMode, track);
+        enterSplitMode(ctx, previousMode, track);
       }
     );
     if (previousMode === "card" || previousMode === "animation") {
-      releaseCardAutoLayoutAfterWorkspaceMotion(transition, leadDuration);
+      releaseCardAutoLayoutAfterWorkspaceMotion(transition);
     }
     if (track) {
       dependencies.captureScanViewChanged(
@@ -412,7 +391,6 @@ export function createViewerShellLayoutState(
     mode: SelectableViewerMode,
     countIntent = true
   ): void {
-    cancelSplitModePromotion();
     const ctx = inputs.getContext();
     const previousMode = ctx.viewerState.viewerMode;
     if (previousMode === mode) return;
@@ -544,6 +522,9 @@ export function createViewerShellLayoutState(
     },
     get effectiveMobile() {
       return effectiveMobile;
+    },
+    get inspectorProfile() {
+      return inspectorProfile;
     },
     get showRail() {
       return showRail;
