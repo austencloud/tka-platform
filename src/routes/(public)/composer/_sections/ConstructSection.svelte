@@ -1211,6 +1211,11 @@
     .workspace {
       flex: 1;
     }
+
+    .action-slot {
+      margin-top: auto;
+    }
+
     .picker-pane {
       /* flex-basis 0: the pane fills whatever the row gives it but its
          CONTENT never drives the row height — the start picker's intrinsic
