@@ -7,11 +7,30 @@ import type { TempoPracticeConfig } from "./tempo-practice-orchestrator";
 const DEFAULT_RAIL_WIDTH = 180;
 const MIN_RAIL_WIDTH = 72;
 const MAX_RAIL_WIDTH = 300;
-const EXPORT_SIDEBAR_WIDTH = 560;
-const EXPORT_HERO_MIN_WIDTH = 600;
+export const VIEWER_INSPECTOR_HANDLE_SIZE = 8;
+export const VIEWER_STAGE_MIN_WIDTH = 600;
+
+export type ViewerInspectorProfile = "card" | "motion" | "art";
+
+const INSPECTOR_LAYOUTS: Record<
+  ViewerInspectorProfile,
+  { defaultWidth: number; minWidth: number; maxWidth: number }
+> = {
+  card: { defaultWidth: 480, minWidth: 420, maxWidth: 840 },
+  motion: { defaultWidth: 560, minWidth: 520, maxWidth: 1200 },
+  art: { defaultWidth: 480, minWidth: 440, maxWidth: 1000 },
+};
+
+export function viewerInspectorConstraints(
+  profile: ViewerInspectorProfile
+): { minWidth: number; maxWidth: number } {
+  const { minWidth, maxWidth } = INSPECTOR_LAYOUTS[profile];
+  return { minWidth, maxWidth };
+}
 
 export function resolveExportSidebarMinWidth(
-  persistedRailWidth: string | null
+  persistedRailWidth: string | null,
+  profile: ViewerInspectorProfile = "motion"
 ): number {
   let railWidth = DEFAULT_RAIL_WIDTH;
   if (persistedRailWidth) {
@@ -21,7 +40,12 @@ export function resolveExportSidebarMinWidth(
     }
   }
 
-  return railWidth + EXPORT_SIDEBAR_WIDTH + EXPORT_HERO_MIN_WIDTH;
+  return (
+    railWidth +
+    INSPECTOR_LAYOUTS[profile].defaultWidth +
+    VIEWER_INSPECTOR_HANDLE_SIZE +
+    VIEWER_STAGE_MIN_WIDTH
+  );
 }
 
 export function buildViewerShareActions(

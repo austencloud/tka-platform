@@ -37,13 +37,15 @@
     preferredSize?: string;
     /** Whether the handle after this panel is available (default: true). */
     resizable?: boolean;
+    /** Accessible name for the handle after this panel. */
+    resizeLabel?: string;
     /** Panel ID for tracking */
     id?: string;
   }
 </script>
 
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { flexPresence, growFade } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import ResizeHandle from "./ResizeHandle.svelte";
@@ -79,6 +81,7 @@
   let dragStartSizes = $state<number[]>([]);
   let activeDragIndex = $state<number | null>(null);
   let manuallySizedPanels = $state<Set<string | number>>(new Set());
+  let handleValues = $state<number[]>([]);
 
   // Initialize sizes from panel defaults - only when panel count changes
   // Use untrack to prevent reactive cascade when sizes is bindable
@@ -89,6 +92,51 @@
         sizes = panels.map((p) => p.defaultSize ?? 1);
       }
     });
+  });
+
+  onMount(() => {
+    if (!containerRef) return;
+
+    let scheduledFrame = 0;
+    const scheduleRefresh = () => {
+      if (scheduledFrame) return;
+      scheduledFrame = requestAnimationFrame(() => {
+        scheduledFrame = 0;
+        refreshHandleValues();
+      });
+    };
+    const resizeObserver = new ResizeObserver(scheduleRefresh);
+    const observePanels = () => {
+      if (!containerRef) return;
+      resizeObserver.disconnect();
+      resizeObserver.observe(containerRef);
+      for (const panel of containerRef.querySelectorAll(":scope > .panel-wrapper")) {
+        resizeObserver.observe(panel);
+      }
+      scheduleRefresh();
+    };
+    const panelObserver = new MutationObserver(observePanels);
+    panelObserver.observe(containerRef, { childList: true });
+    observePanels();
+
+    return () => {
+      if (scheduledFrame) cancelAnimationFrame(scheduledFrame);
+      panelObserver.disconnect();
+      resizeObserver.disconnect();
+    };
+  });
+
+  $effect(() => {
+    void panels;
+    void direction;
+    void gap;
+
+    const firstFrame = requestAnimationFrame(refreshHandleValues);
+    const settledTimer = setTimeout(refreshHandleValues, DURATION.emphasis);
+    return () => {
+      cancelAnimationFrame(firstFrame);
+      clearTimeout(settledTimer);
+    };
   });
 
   // Handle resize start
@@ -116,6 +164,7 @@
     }
     manuallySizedPanels = nextManuallySizedPanels;
     activeDragIndex = index;
+    refreshHandleValues();
   }
 
   // Handle resize drag
@@ -190,6 +239,8 @@
     newSizes[index + 1] = Math.max(0.1, newSize2);
 
     sizes = newSizes;
+    const total = newSize1 + newSize2;
+    handleValues[index] = total > 0 ? (newSize1 / total) * 100 : 50;
     onSizesChange?.(newSizes);
   }
 
@@ -197,6 +248,7 @@
   function handleDragEnd() {
     dragStartSizes = [];
     activeDragIndex = null;
+    requestAnimationFrame(refreshHandleValues);
   }
 
   function handleKeydown(index: number, event: KeyboardEvent): void {
@@ -206,16 +258,37 @@
 
     event.preventDefault();
     event.stopPropagation();
-    dragStartSizes = [...sizes];
+    handleDragStart(index);
     const step = event.shiftKey ? 48 : 16;
     handleDrag(index, event.key === decreaseKey ? -step : step);
     handleDragEnd();
   }
 
-  function handleValue(index: number): number {
-    const leading = sizes[index] ?? 1;
-    const trailing = sizes[index + 1] ?? 1;
+  function measureHandleValue(index: number): number {
+    const renderedPanels = containerRef
+      ? Array.from(
+          containerRef.querySelectorAll<HTMLElement>(":scope > .panel-wrapper")
+        )
+      : [];
+    const leadingPanel = renderedPanels[index];
+    const trailingPanel = renderedPanels[index + 1];
+    const leading = leadingPanel
+      ? direction === "horizontal"
+        ? leadingPanel.clientWidth
+        : leadingPanel.clientHeight
+      : (sizes[index] ?? 1);
+    const trailing = trailingPanel
+      ? direction === "horizontal"
+        ? trailingPanel.clientWidth
+        : trailingPanel.clientHeight
+      : (sizes[index + 1] ?? 1);
     return (leading / (leading + trailing)) * 100;
+  }
+
+  function refreshHandleValues(): void {
+    handleValues = panels.slice(0, -1).map((_, index) =>
+      measureHandleValue(index)
+    );
   }
 
   // Get flex style for a panel
@@ -255,6 +328,7 @@
       data-panel-id={panel.id}
       data-min-size={panel.minSize}
       data-max-size={panel.maxSize}
+      data-manually-sized={manuallySizedPanels.has(panel.id ?? i) || undefined}
       transition:flexPresence={{
         duration: DURATION.emphasis,
         axis: direction === "horizontal" ? "x" : "y",
@@ -281,8 +355,9 @@
           onDrag={(delta) => handleDrag(i, delta)}
           onDragEnd={handleDragEnd}
           onKeydown={(event) => handleKeydown(i, event)}
-          ariaLabel={`Resize ${panel.id ?? `panel ${i + 1}`} and ${panels[i + 1]?.id ?? `panel ${i + 2}`}`}
-          ariaValueNow={handleValue(i)}
+          ariaLabel={panel.resizeLabel ??
+            `Resize ${panel.id ?? `panel ${i + 1}`} and ${panels[i + 1]?.id ?? `panel ${i + 2}`}`}
+          ariaValueNow={handleValues[i] ?? measureHandleValue(i)}
         />
       </div>
     {/if}
