@@ -53,6 +53,8 @@ function sample(
     inspectorSize: 0,
     inspectorFlexGrow: 0,
     inspectorIdentity: 0,
+    effectsInspectorOpacity: 0,
+    cardEffectsSeamGap: 0,
     desktopInspectorExpected: true,
     cardSettingsWidth: 0,
     cardSettingsHeight: 0,
@@ -115,6 +117,43 @@ describe("Sequence Viewer geometry trace", () => {
     expect(
       summarizeTransitionGeometry(trace([first, middle, last])).dissolveFrames
     ).toBe(1);
+  });
+
+  it("measures the Card and Effects handoff as one continuous seam", () => {
+    const start = {
+      ...sample(0, 450, 1),
+      phase: "focus-2d" as const,
+      cardOpacity: 1,
+      effectsInspectorOpacity: 0,
+    };
+    const overlap = {
+      ...start,
+      time: 80,
+      cardOpacity: 0.55,
+      effectsInspectorOpacity: 0.45,
+      inspectorSize: 240,
+      cardEffectsSeamGap: 0.4,
+    };
+    const settled = {
+      ...start,
+      time: 280,
+      cardOpacity: 0,
+      effectsInspectorOpacity: 1,
+      inspectorSize: 560,
+      cardEffectsSeamGap: 0,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "2d",
+      duration: 280,
+      samples: [start, overlap, settled],
+      modeCommits: [],
+    });
+
+    expect(summary.cardEffectsSeamGapMaximum).toBe(0.4);
+    expect(summary.cardEffectsOpacityOnsetSkew).toBe(0);
+    expect(summary.cardEffectsCrossfadeFrames).toBe(1);
+    expect(summary.cardEffectsBlankFrames).toBe(0);
   });
 
   it("flags a returning mandala raster that is enlarged from a collapsed backing store", () => {
