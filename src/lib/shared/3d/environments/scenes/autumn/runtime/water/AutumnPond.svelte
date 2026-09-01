@@ -178,7 +178,7 @@
         uniforms: {
           uTime: { value: 0 },
           uColor: { value: new Color("#cddcff") },
-          uStrength: { value: 0.075 },
+          uStrength: { value: 0.055 },
         },
         transparent: true,
         depthWrite: false,
