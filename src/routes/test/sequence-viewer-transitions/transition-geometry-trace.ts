@@ -134,6 +134,7 @@ export interface TransitionGeometrySample {
   stageLayerActive: boolean;
   performanceLayerActive: boolean;
   performanceGalleryReady: boolean;
+  performanceLayoutColumns: number;
   stageLayerWidth: number;
   performanceLayerWidth: number;
 }
@@ -239,6 +240,7 @@ export interface TransitionGeometrySummary {
   performanceDoubleOpaqueFrames: number;
   performanceCrossfadeFrames: number;
   performanceUnreadyFrames: number;
+  performanceLayoutChanges: number;
   performanceOpacityComplementDriftMaximum: number;
   performanceLayerWidthMismatchMaximum: number;
   performanceSurfacePath: string[];
@@ -1196,6 +1198,17 @@ export function summarizeTransitionGeometry(
             sample.performanceLayerOpacity >= 0.05 &&
             !sample.performanceGalleryReady
         ).length
+      : 0,
+    performanceLayoutChanges: isPerformanceTrace
+      ? Math.max(
+          0,
+          uniqueValuePath(
+            trace.samples
+              .filter((sample) => sample.performanceLayerOpacity >= 0.05)
+              .map((sample) => sample.performanceLayoutColumns)
+              .filter((columns) => columns > 0)
+          ).length - 1
+        )
       : 0,
     performanceOpacityComplementDriftMaximum: isPerformanceTrace
       ? Math.max(
