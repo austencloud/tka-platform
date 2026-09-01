@@ -21,13 +21,14 @@
 
   let endpointDisplays = $derived.by((): EndpointDisplay[] => {
     const endpoints = trailsState.currentEndpoints;
-    const frameCorrectionList = trailsState.corrections[trailsState.currentFrame] ?? [];
+    const frameCorrectionList =
+      trailsState.corrections[trailsState.currentFrame] ?? [];
 
     return endpoints.map((ep) => {
       const correction = frameCorrectionList.find(
-        (c) => c.propIndex === ep.propIndex && c.tipIndex === ep.tipIndex,
+        (c) => c.propIndex === ep.propIndex && c.tipIndex === ep.tipIndex
       );
-      const propLabel = ep.propIndex === 0 ? "Blue" : "Red";
+      const propLabel = ep.propIndex === 0 ? "Left" : "Right";
       return {
         endpoint: ep,
         correction,
@@ -41,8 +42,8 @@
   let detectedCount = $derived(trailsState.currentEndpoints.length);
   let correctedCount = $derived(
     (trailsState.corrections[trailsState.currentFrame] ?? []).filter(
-      (c) => c.status === "corrected" || c.status === "accepted",
-    ).length,
+      (c) => c.status === "corrected" || c.status === "accepted"
+    ).length
   );
 
   // Progress: percentage of frames with detections that have at least one correction
@@ -54,7 +55,10 @@
     let reviewed = 0;
     for (const key of detectedFrameKeys) {
       const frame = Number(key);
-      if (trailsState.corrections[frame] && trailsState.corrections[frame].length > 0) {
+      if (
+        trailsState.corrections[frame] &&
+        trailsState.corrections[frame].length > 0
+      ) {
         reviewed++;
       }
     }
@@ -132,7 +136,10 @@
       let startFrame = -1;
       for (let f = frame - 1; f >= 0; f--) {
         const corr = trailsState.corrections[f]?.find(
-          (c) => c.propIndex === ep.propIndex && c.tipIndex === ep.tipIndex && c.corrected,
+          (c) =>
+            c.propIndex === ep.propIndex &&
+            c.tipIndex === ep.tipIndex &&
+            c.corrected
         );
         if (corr) {
           startFrame = f;
@@ -144,7 +151,10 @@
       let endFrame = -1;
       for (let f = frame + 1; f < trailsState.totalFrames; f++) {
         const corr = trailsState.corrections[f]?.find(
-          (c) => c.propIndex === ep.propIndex && c.tipIndex === ep.tipIndex && c.corrected,
+          (c) =>
+            c.propIndex === ep.propIndex &&
+            c.tipIndex === ep.tipIndex &&
+            c.corrected
         );
         if (corr) {
           endFrame = f;
@@ -153,13 +163,22 @@
       }
 
       if (startFrame >= 0 && endFrame >= 0) {
-        trailsState.interpolateGap(startFrame + 1, endFrame - 1, ep.propIndex, ep.tipIndex);
+        trailsState.interpolateGap(
+          startFrame + 1,
+          endFrame - 1,
+          ep.propIndex,
+          ep.tipIndex
+        );
       }
     }
   }
 
   function handleMarkOccluded(ep: DetectedEndpoint): void {
-    trailsState.markOccluded(trailsState.currentFrame, ep.propIndex, ep.tipIndex);
+    trailsState.markOccluded(
+      trailsState.currentFrame,
+      ep.propIndex,
+      ep.tipIndex
+    );
   }
 </script>
 
@@ -201,7 +220,8 @@
           <span class="ep-dot" style="background: {display.color}"></span>
           <span class="ep-label">{display.label}</span>
           <span class="ep-status {getStatusClass(display.status)}">
-            <i class="fas {getStatusIcon(display.status)}" aria-hidden="true"></i>
+            <i class="fas {getStatusIcon(display.status)}" aria-hidden="true"
+            ></i>
           </span>
           <button
             class="ep-occlude-btn"
@@ -276,7 +296,9 @@
     </div>
     <div class="stat-row">
       <span class="stat-label">Low confidence</span>
-      <span class="stat-value warn">{trailsState.lowConfidenceFrames.length}</span>
+      <span class="stat-value warn"
+        >{trailsState.lowConfidenceFrames.length}</span
+      >
     </div>
   </div>
 </div>
@@ -289,7 +311,8 @@
     height: 100%;
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2))
+      transparent;
   }
 
   /* Frame info */
@@ -382,7 +405,9 @@
     color: var(--theme-text, #ffffff);
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;
-    transition: background 0.1s, border-color 0.1s;
+    transition:
+      background 0.1s,
+      border-color 0.1s;
     text-align: left;
   }
 
@@ -392,7 +417,11 @@
 
   .endpoint-row.selected {
     border-color: var(--theme-accent, #f43f5e);
-    background: color-mix(in srgb, var(--theme-accent, #f43f5e) 10%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f43f5e) 10%,
+      transparent
+    );
   }
 
   .ep-dot {
@@ -444,12 +473,18 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
     font-size: 11px;
     cursor: pointer;
-    transition: color 0.1s, background 0.1s;
+    transition:
+      color 0.1s,
+      background 0.1s;
     flex-shrink: 0;
   }
 
   .ep-occlude-btn:hover {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 15%,
+      transparent
+    );
     color: var(--semantic-error, #ef4444);
   }
 
@@ -476,7 +511,9 @@
     color: var(--theme-text, #ffffff);
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;
-    transition: background 0.1s, border-color 0.1s;
+    transition:
+      background 0.1s,
+      border-color 0.1s;
     text-align: left;
   }
 

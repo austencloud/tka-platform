@@ -6,8 +6,8 @@ vi.mock("$lib/shared/navigation/services/sequence-hydrator", () => ({
 
 vi.mock("$lib/shared/qr/services/scan-prop-resolver", () => ({
   resolveScanPropConfig: vi.fn(() => ({
-    bluePropType: "poi",
-    redPropType: "fan",
+    leftPropType: "poi",
+    rightPropType: "fan",
     catDogMode: true,
   })),
 }));
@@ -68,7 +68,7 @@ describe("shortcode scan-cell backfill", () => {
       listCodes: async () => ["A001", "A002"],
       resolveCode: async () => ({
         sequence,
-        record: { bluePropType: "poi" } as never,
+        record: { leftPropType: "poi" } as never,
       }),
       warmCells,
       concurrency: 1,
@@ -86,8 +86,8 @@ describe("shortcode scan-cell backfill", () => {
       sequence,
       expect.objectContaining({
         isDark: true,
-        bluePropType: "poi",
-        redPropType: "fan",
+        leftPropType: "poi",
+        rightPropType: "fan",
         catDogMode: true,
         requireComplete: true,
       })

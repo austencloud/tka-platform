@@ -6,24 +6,24 @@ const input = {
   letter: "Q",
   startPosition: "gamma11",
   endPosition: "gamma5",
-  blueMotion: {
+  leftMotion: {
     motionType: "anti",
     rotationDirection: "cw",
     startLocation: "s",
     endLocation: "e",
     startOrientation: Orientation.IN,
     endOrientation: Orientation.IN,
-    color: "blue",
+    hand: "left",
     turns: 1,
   },
-  redMotion: {
+  rightMotion: {
     motionType: "anti",
     rotationDirection: "ccw",
     startLocation: "e",
     endLocation: "s",
     startOrientation: Orientation.IN,
     endOrientation: Orientation.IN,
-    color: "red",
+    hand: "right",
     turns: 1,
   },
 };
@@ -38,8 +38,8 @@ async function main() {
     showTND: true,
     showPositions: true,
     showGrid: true,
-    showBlueMotion: true,
-    showRedMotion: true,
+    showLeftMotion: true,
+    showRightMotion: true,
     size: 500,
   });
   console.log("Got base64, length:", base64.length);

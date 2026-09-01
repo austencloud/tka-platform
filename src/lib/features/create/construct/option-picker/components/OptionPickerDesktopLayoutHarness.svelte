@@ -42,16 +42,16 @@
     })}
     onSelect={() => {}}
     isSideBySideLayout={() => sideBySide}
-    blueTurns={0}
-    redTurns={0}
+    leftTurns={0}
+    rightTurns={0}
     {level}
     onLevelChange={() => {}}
-    blueRotation={RotationDirection.CLOCKWISE}
-    redRotation={RotationDirection.CLOCKWISE}
-    onBlueTurnsChange={() => {}}
-    onRedTurnsChange={() => {}}
-    onBlueRotationChange={() => {}}
-    onRedRotationChange={() => {}}
+    leftRotation={RotationDirection.CLOCKWISE}
+    rightRotation={RotationDirection.CLOCKWISE}
+    onLeftTurnsChange={() => {}}
+    onRightTurnsChange={() => {}}
+    onLeftRotationChange={() => {}}
+    onRightRotationChange={() => {}}
   />
 </div>
 

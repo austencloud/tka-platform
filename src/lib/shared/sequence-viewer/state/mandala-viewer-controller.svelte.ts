@@ -56,8 +56,8 @@ export type MandalaExportFps = 30 | 60;
 
 export interface MandalaControllerSources {
   getSequence: () => SequenceData;
-  getBluePropType: () => string | undefined;
-  getRedPropType: () => string | undefined;
+  getLeftPropType: () => string | undefined;
+  getRightPropType: () => string | undefined;
   pathPolicy: AnimationVisibilityStateManager;
   customColorState?: ViewerCustomColorState;
 }
@@ -78,8 +78,8 @@ export interface MandalaViewState {
   depth: number;
   colorMode: MandalaColorMode;
   preset: MandalaPresetId;
-  customBlue: string;
-  customRed: string;
+  customLeft: string;
+  customRight: string;
   lineWeight: number;
 }
 
@@ -151,20 +151,20 @@ export class MandalaViewerController {
   preset = $state<MandalaPresetId>("aurora");
   readonly customColorState: ViewerCustomColorState;
 
-  get customBlue(): string {
-    return this.customColorState.colors.blue;
+  get customLeft(): string {
+    return this.customColorState.colors.left;
   }
 
-  set customBlue(value: string) {
-    this.customColorState.setColor("blue", value);
+  set customLeft(value: string) {
+    this.customColorState.setColor("left", value);
   }
 
-  get customRed(): string {
-    return this.customColorState.colors.red;
+  get customRight(): string {
+    return this.customColorState.colors.right;
   }
 
-  set customRed(value: string) {
-    this.customColorState.setColor("red", value);
+  set customRight(value: string) {
+    this.customColorState.setColor("right", value);
   }
   lineWeight = $state(2.5);
   exporting = $state(false);
@@ -243,14 +243,14 @@ export class MandalaViewerController {
       );
     }
     if (
-      typeof options.viewOverrides?.customBlue === "string" ||
-      typeof options.viewOverrides?.customRed === "string"
+      typeof options.viewOverrides?.customLeft === "string" ||
+      typeof options.viewOverrides?.customRight === "string"
     ) {
       this.customColorState.hydrate(
         resolveViewerCustomColorPair(
           {
-            blue: options.viewOverrides.customBlue,
-            red: options.viewOverrides.customRed,
+            left: options.viewOverrides.customLeft,
+            right: options.viewOverrides.customRight,
           },
           this.customColorState.colors
         )
@@ -281,8 +281,8 @@ export class MandalaViewerController {
         depth: this.depth,
         colorMode: this.colorMode,
         preset: this.preset,
-        customBlue: this.customBlue,
-        customRed: this.customRed,
+        customLeft: this.customLeft,
+        customRight: this.customRight,
         lineWeight: this.lineWeight,
       };
       if (typeof localStorage === "undefined") return;
@@ -357,11 +357,11 @@ export class MandalaViewerController {
   get sequence(): SequenceData {
     return this.#sources.getSequence();
   }
-  get bluePropType(): string | undefined {
-    return this.#sources.getBluePropType();
+  get leftPropType(): string | undefined {
+    return this.#sources.getLeftPropType();
   }
-  get redPropType(): string | undefined {
-    return this.#sources.getRedPropType();
+  get rightPropType(): string | undefined {
+    return this.#sources.getRightPropType();
   }
 
   get pathShape(): MandalaPathShape {
@@ -376,14 +376,14 @@ export class MandalaViewerController {
   }
 
   #getPresetPair(): [string, string] {
-    if (this.preset === "custom") return [this.customBlue, this.customRed];
+    if (this.preset === "custom") return [this.customLeft, this.customRight];
     return PRESET_COLORS[this.preset].pair;
   }
 
   #getPresetMorph(): string[] {
     if (this.preset === "custom") {
-      const mix = mixColors(this.customBlue, this.customRed);
-      return [this.customBlue, mix, this.customRed, mix, this.customBlue];
+      const mix = mixColors(this.customLeft, this.customRight);
+      return [this.customLeft, mix, this.customRight, mix, this.customLeft];
     }
     return PRESET_COLORS[this.preset].morph;
   }
@@ -400,10 +400,10 @@ export class MandalaViewerController {
       const [c1, c2] = this.#getPresetPair();
       const mix = mixColors(c1, c2);
       return {
-        blueStroke: c1,
-        blueFill: withAlpha(c1, fillAlpha),
-        redStroke: c2,
-        redFill: withAlpha(c2, fillAlpha),
+        leftStroke: c1,
+        leftFill: withAlpha(c1, fillAlpha),
+        rightStroke: c2,
+        rightFill: withAlpha(c2, fillAlpha),
         purpleStroke: mix,
         purpleFill: withAlpha(mix, fillAlpha + 0.05),
       };
@@ -413,10 +413,10 @@ export class MandalaViewerController {
     const c2 = sampleGradient(morphColors, (this.#colorPhase + 0.4) % 1);
     const mix = mixColors(c1, c2);
     return {
-      blueStroke: c1,
-      blueFill: withAlpha(c1, fillAlpha),
-      redStroke: c2,
-      redFill: withAlpha(c2, fillAlpha),
+      leftStroke: c1,
+      leftFill: withAlpha(c1, fillAlpha),
+      rightStroke: c2,
+      rightFill: withAlpha(c2, fillAlpha),
       purpleStroke: mix,
       purpleFill: withAlpha(mix, fillAlpha + 0.05),
     };
@@ -432,8 +432,8 @@ export class MandalaViewerController {
    */
   previewGradient(id: MandalaPresetId): string {
     if (id === "custom") {
-      const mix = mixColors(this.customBlue, this.customRed);
-      return `linear-gradient(120deg, ${this.customBlue}, ${mix}, ${this.customRed})`;
+      const mix = mixColors(this.customLeft, this.customRight);
+      return `linear-gradient(120deg, ${this.customLeft}, ${mix}, ${this.customRight})`;
     }
     return `linear-gradient(120deg, ${PRESET_COLORS[id].morph.join(", ")})`;
   }
@@ -446,8 +446,8 @@ export class MandalaViewerController {
     const c3 = sampleGradient(morphColors, (this.#colorPhase + 0.7) % 1);
     const mix = mixColors(c1, c2);
     return {
-      blue: [c1, c3] as [string, string],
-      red: [c2, c1] as [string, string],
+      left: [c1, c3] as [string, string],
+      right: [c2, c1] as [string, string],
       purple: [mix, c3] as [string, string],
     };
   });
@@ -503,8 +503,8 @@ export class MandalaViewerController {
     const plainSteps = JSON.parse(JSON.stringify(sequence.steps));
     const spec: MandalaFrameSpec = {
       steps: plainSteps,
-      bluePropType: this.#sources.getBluePropType(),
-      redPropType: this.#sources.getRedPropType(),
+      leftPropType: this.#sources.getLeftPropType(),
+      rightPropType: this.#sources.getRightPropType(),
       show: this.show,
       pathShape: this.pathShape,
       lineWeight: this.lineWeight,

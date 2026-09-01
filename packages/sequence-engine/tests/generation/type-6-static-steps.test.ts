@@ -47,8 +47,8 @@ function loadVariations(csvPath: string): PictographData[] {
       endPosition: c[2]!,
       timing: c[3]!,
       direction: c[4]!,
-      blueMotion: {
-        color: "blue",
+      leftMotion: {
+        hand: "left",
         motionType: c[5]!,
         rotationDirection: c[6]!,
         startLocation: c[7]!,
@@ -56,8 +56,8 @@ function loadVariations(csvPath: string): PictographData[] {
         startOrientation: "in",
         endOrientation: "in",
       },
-      redMotion: {
-        color: "red",
+      rightMotion: {
+        hand: "right",
         motionType: c[9]!,
         rotationDirection: c[10]!,
         startLocation: c[11]!,
@@ -109,8 +109,8 @@ type BuiltStep = {
   startPosition: string | null;
   endPosition: string | null;
   motions: {
-    blue: { turns: number | "fl" | undefined };
-    red: { turns: number | "fl" | undefined };
+    left: { turns: number | "fl" | undefined };
+    right: { turns: number | "fl" | undefined };
   };
 };
 
@@ -155,7 +155,7 @@ const WITH_PATTERN = {
   length: 16,
   gridMode: "diamond",
   level: 3,
-  turnPattern: { blue: [1], red: [1] },
+  turnPattern: { left: [1], right: [1] },
 };
 
 describe("SequenceBuilder — static (Type 6) steps", () => {
@@ -165,17 +165,17 @@ describe("SequenceBuilder — static (Type 6) steps", () => {
   });
 
   it("never builds a static step without turns on at least one hand", () => {
-    // Blue turns only on the even indices and red never, so the generator has
+    // Left turns only on the even indices and right never, so the generator has
     // to tell one step from the next rather than being handed turns
     // everywhere. A static landing on an odd index would be standing still.
     const { statics } = staticStepsAcrossBuilds({
       ...WITH_PATTERN,
-      turnPattern: { blue: [1, 0], red: [0] },
+      turnPattern: { left: [1, 0], right: [0] },
     });
 
     for (const step of statics) {
       const total =
-        turnCount(step.motions.blue.turns) + turnCount(step.motions.red.turns);
+        turnCount(step.motions.left.turns) + turnCount(step.motions.right.turns);
       expect(
         total,
         `static step ${step.letter} carried no turns`

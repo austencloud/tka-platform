@@ -83,8 +83,8 @@ export interface OrchestratorContext {
   mirrorEnabled: boolean;
   handleToggleMirror: () => void;
 
-  bluePropType: PropType | undefined;
-  redPropType: PropType | undefined;
+  leftPropType: PropType | undefined;
+  rightPropType: PropType | undefined;
   catDogModeEnabled: boolean | undefined;
   handlePropTypeChange: (propType: PropType) => void;
   fanAppearance: FanAppearance;

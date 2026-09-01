@@ -1,36 +1,36 @@
 import { describe, it, expect } from "vitest";
 import { analyzeDifficulty, calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 import {
-  MotionColor,
+  HandSide,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 // Minimal StepData factory - only the fields the calculator reads.
 function makeStep(
-  blueTurns: number | "fl" | null,
-  redTurns: number | "fl" | null,
-  blueStartOri: Orientation = Orientation.IN,
-  blueEndOri: Orientation = Orientation.IN,
-  redStartOri: Orientation = Orientation.IN,
-  redEndOri: Orientation = Orientation.IN,
+  leftTurns: number | "fl" | null,
+  rightTurns: number | "fl" | null,
+  leftStartOri: Orientation = Orientation.IN,
+  leftEndOri: Orientation = Orientation.IN,
+  rightStartOri: Orientation = Orientation.IN,
+  rightEndOri: Orientation = Orientation.IN,
 ): StepData {
   return {
     stepNumber: 1,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     motions: {
-      [MotionColor.BLUE]: {
-        turns: blueTurns,
-        startOrientation: blueStartOri,
-        endOrientation: blueEndOri,
+      [HandSide.LEFT]: {
+        turns: leftTurns,
+        startOrientation: leftStartOri,
+        endOrientation: leftEndOri,
       },
-      [MotionColor.RED]: {
-        turns: redTurns,
-        startOrientation: redStartOri,
-        endOrientation: redEndOri,
+      [HandSide.RIGHT]: {
+        turns: rightTurns,
+        startOrientation: rightStartOri,
+        endOrientation: rightEndOri,
       },
     },
   } as unknown as StepData;

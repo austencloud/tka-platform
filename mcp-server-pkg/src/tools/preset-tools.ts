@@ -7,7 +7,10 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { ensureDataLoaded, saveAndOpenImage } from "../shared/server-context.js";
+import {
+  ensureDataLoaded,
+  saveAndOpenImage,
+} from "../shared/server-context.js";
 import type { GridMode } from "../types/pictograph.js";
 import {
   buildSequenceFromLetters,
@@ -70,7 +73,9 @@ export function registerPresetTools(server: McpServer): void {
         };
       }
 
-      const summaries = presets.map((p, i) => `${i + 1}. ${formatPresetSummary(p)}`);
+      const summaries = presets.map(
+        (p, i) => `${i + 1}. ${formatPresetSummary(p)}`
+      );
 
       return {
         content: [
@@ -94,16 +99,48 @@ export function registerPresetTools(server: McpServer): void {
       loopType: loopTypeSchema.optional(),
       period: periodSchema.optional().describe("LOOP period"),
       loopComponents: loopComponentsSchema,
-      wordLength: z.number().min(1).max(20).optional().describe("Default word length"),
-      level: z.number().min(1).max(3).optional().describe("Difficulty level (1-3)"),
-      turnIntensity: z.number().min(0).max(3).optional().describe("Turn intensity (0-3)"),
-      constraintPreset: z.string().optional().describe("Constraint preset name (smooth, reversal, etc.)"),
-      constraints: z.string().optional().describe("Natural language constraints"),
-      gridMode: z.enum(["diamond", "box", "skewed"]).optional().describe("Grid mode"),
+      wordLength: z
+        .number()
+        .min(1)
+        .max(20)
+        .optional()
+        .describe("Default word length"),
+      level: z
+        .number()
+        .min(1)
+        .max(3)
+        .optional()
+        .describe("Difficulty level (1-3)"),
+      turnIntensity: z
+        .number()
+        .min(0)
+        .max(3)
+        .optional()
+        .describe("Turn intensity (0-3)"),
+      constraintPreset: z
+        .string()
+        .optional()
+        .describe("Constraint preset name (smooth, reversal, etc.)"),
+      constraints: z
+        .string()
+        .optional()
+        .describe("Natural language constraints"),
+      gridMode: z
+        .enum(["diamond", "box", "skewed"])
+        .optional()
+        .describe("Grid mode"),
       darkMode: z.boolean().optional().describe("Use dark background"),
-      cellSize: z.number().min(50).max(500).optional().describe("Image cell size in pixels"),
+      cellSize: z
+        .number()
+        .min(50)
+        .max(500)
+        .optional()
+        .describe("Image cell size in pixels"),
       layout: z.enum(["grid", "strip"]).optional().describe("Image layout"),
-      update: z.boolean().optional().describe("If true, update existing preset with same name"),
+      update: z
+        .boolean()
+        .optional()
+        .describe("If true, update existing preset with same name"),
     },
     async (input) => {
       try {
@@ -113,7 +150,10 @@ export function registerPresetTools(server: McpServer): void {
             (p) => p.name.toLowerCase() === input.name.toLowerCase()
           );
           if (existing) {
-            const updated = updatePreset(existing.id, input as CreatePresetInput);
+            const updated = updatePreset(
+              existing.id,
+              input as CreatePresetInput
+            );
             return {
               content: [
                 {
@@ -141,8 +181,8 @@ export function registerPresetTools(server: McpServer): void {
           error instanceof PresetValidationError
             ? error.message
             : error instanceof Error
-            ? error.message
-            : String(error);
+              ? error.message
+              : String(error);
 
         return {
           content: [{ type: "text" as const, text: `Error: ${message}` }],
@@ -177,8 +217,8 @@ export function registerPresetTools(server: McpServer): void {
           error instanceof PresetNotFoundError
             ? `Preset not found: ${preset}`
             : error instanceof Error
-            ? error.message
-            : String(error);
+              ? error.message
+              : String(error);
 
         return {
           content: [{ type: "text" as const, text: `Error: ${message}` }],
@@ -222,8 +262,8 @@ export function registerPresetTools(server: McpServer): void {
           error instanceof PresetNotFoundError
             ? `Preset not found: ${preset}`
             : error instanceof Error
-            ? error.message
-            : String(error);
+              ? error.message
+              : String(error);
 
         return {
           content: [{ type: "text" as const, text: `Error: ${message}` }],
@@ -239,12 +279,34 @@ export function registerPresetTools(server: McpServer): void {
     "Generate a sequence using a saved preset. Word is optional - if omitted, generates a random word of appropriate length.",
     {
       preset: z.string().describe("Preset name or ID"),
-      word: z.string().optional().describe("Word to generate (optional - random if omitted)"),
-      level: z.number().min(1).max(3).optional().describe("Override: difficulty level"),
-      turnIntensity: z.number().min(0).max(3).optional().describe("Override: turn intensity"),
-      gridMode: z.enum(["diamond", "box", "skewed"]).optional().describe("Override: grid mode"),
+      word: z
+        .string()
+        .optional()
+        .describe("Word to generate (optional - random if omitted)"),
+      level: z
+        .number()
+        .min(1)
+        .max(3)
+        .optional()
+        .describe("Override: difficulty level"),
+      turnIntensity: z
+        .number()
+        .min(0)
+        .max(3)
+        .optional()
+        .describe("Override: turn intensity"),
+      gridMode: z
+        .enum(["diamond", "box", "skewed"])
+        .optional()
+        .describe("Override: grid mode"),
       darkMode: z.boolean().optional().describe("Override: dark mode"),
-      includeImage: z.boolean().optional().default(false).describe("Include base64 image in response (default: false, image opens in system viewer instead). Set true only if Claude needs to analyze the image."),
+      includeImage: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe(
+          "Include base64 image in response (default: false, image opens in system viewer instead). Set true only if Claude needs to analyze the image."
+        ),
     },
     async (input) => {
       try {
@@ -266,7 +328,12 @@ export function registerPresetTools(server: McpServer): void {
 
         if (letters.length === 0) {
           return {
-            content: [{ type: "text" as const, text: `No valid letters in word: ${word}` }],
+            content: [
+              {
+                type: "text" as const,
+                text: `No valid letters in word: ${word}`,
+              },
+            ],
             isError: true,
           };
         }
@@ -274,7 +341,9 @@ export function registerPresetTools(server: McpServer): void {
         // Merge config with overrides
         const level = input.level ?? config.level ?? 1;
         const turnIntensity = input.turnIntensity ?? config.turnIntensity ?? 0;
-        const gridMode = (input.gridMode ?? config.gridMode ?? "diamond") as GridMode;
+        const gridMode = (input.gridMode ??
+          config.gridMode ??
+          "diamond") as GridMode;
         const darkMode = input.darkMode ?? config.darkMode ?? true;
         const cellSize = config.cellSize ?? 900;
         const layout = config.layout ?? "grid";
@@ -306,13 +375,23 @@ export function registerPresetTools(server: McpServer): void {
               word = letters.join("");
             }
 
-            baseResult = buildSequenceFromLetters(letters, allPictographs, attempt === 0 ? 100 : 1);
+            baseResult = buildSequenceFromLetters(
+              letters,
+              allPictographs,
+              attempt === 0 ? 100 : 1
+            );
             if (!baseResult.isValid) continue;
 
             const pp = `${baseResult.startPosition},${baseResult.endPosition}`;
             if (!isLOOPValidForPositionPair(loopTypeValue, pp, slice)) continue;
 
-            loopResult = executeLOOP(baseResult.steps, baseResult.word, loopTypeValue, slice, allPictographs);
+            loopResult = executeLOOP(
+              baseResult.steps,
+              baseResult.word,
+              loopTypeValue,
+              slice,
+              allPictographs
+            );
             if (loopResult.success) break;
           }
 
@@ -326,24 +405,43 @@ export function registerPresetTools(server: McpServer): void {
                 word = letters.join("");
               }
 
-              baseResult = buildSequenceFromLetters(letters, allPictographs, attempt === 0 ? 100 : 1);
+              baseResult = buildSequenceFromLetters(
+                letters,
+                allPictographs,
+                attempt === 0 ? 100 : 1
+              );
               if (!baseResult.isValid) continue;
 
               const bridgeResult = autoBridgeForLoop(
-                baseResult.word, letters,
-                baseResult.startPosition, baseResult.endPosition,
-                loopTypeValue, slice, allPictographs
+                baseResult.word,
+                letters,
+                baseResult.startPosition,
+                baseResult.endPosition,
+                loopTypeValue,
+                slice,
+                allPictographs
               );
 
               if (!bridgeResult.bridgeAdded) continue;
 
-              const finalResult = buildSequenceFromLetters(bridgeResult.letters, allPictographs, 1);
+              const finalResult = buildSequenceFromLetters(
+                bridgeResult.letters,
+                allPictographs,
+                1
+              );
               if (!finalResult.isValid) continue;
 
               const pp = `${finalResult.startPosition},${finalResult.endPosition}`;
-              if (!isLOOPValidForPositionPair(loopTypeValue, pp, slice)) continue;
+              if (!isLOOPValidForPositionPair(loopTypeValue, pp, slice))
+                continue;
 
-              loopResult = executeLOOP(finalResult.steps, finalResult.word, loopTypeValue, slice, allPictographs);
+              loopResult = executeLOOP(
+                finalResult.steps,
+                finalResult.word,
+                loopTypeValue,
+                slice,
+                allPictographs
+              );
               if (loopResult.success) {
                 baseResult = finalResult;
                 break;
@@ -353,7 +451,12 @@ export function registerPresetTools(server: McpServer): void {
 
           if (!loopResult || !loopResult.success) {
             return {
-              content: [{ type: "text" as const, text: `Failed to generate ${config.loopType} LOOP after ${maxAttempts} attempts` }],
+              content: [
+                {
+                  type: "text" as const,
+                  text: `Failed to generate ${config.loopType} LOOP after ${maxAttempts} attempts`,
+                },
+              ],
               isError: true,
             };
           }
@@ -371,22 +474,33 @@ export function registerPresetTools(server: McpServer): void {
           const stepCount = loopResult.steps.length - 1;
           const turnAllocation = allocateTurns(stepCount, level as 1 | 2 | 3);
 
-          const pngBuffer = await renderSequenceToImage(loopResult.steps, loopResult.loopWord, {
-            layout, cellSize,
-            showStepNumbers: true, showWord: true, darkMode,
-            turnAllocation,
-            loopComponents: effectiveComponents,
-            derivedBeatIndices: loopResult.derivedBeatIndices,
-            seedWord: loopResult.seedWord,
-            showDifficulty: true,
-            level: level as 1 | 2 | 3,
-          });
+          const pngBuffer = await renderSequenceToImage(
+            loopResult.steps,
+            loopResult.loopWord,
+            {
+              layout,
+              cellSize,
+              showStepNumbers: true,
+              showWord: true,
+              darkMode,
+              turnAllocation,
+              loopComponents: effectiveComponents,
+              derivedBeatIndices: loopResult.derivedBeatIndices,
+              seedWord: loopResult.seedWord,
+              showDifficulty: true,
+              level: level as 1 | 2 | 3,
+            }
+          );
 
           saveAndOpenImage(pngBuffer, loopResult.loopWord);
 
           return {
             content: [
-              { type: "image" as const, data: pngBuffer.toString("base64"), mimeType: "image/png" },
+              {
+                type: "image" as const,
+                data: pngBuffer.toString("base64"),
+                mimeType: "image/png",
+              },
               {
                 type: "text" as const,
                 text: `${config.loopType} LOOP from preset "${p.name}" — ${loopResult.loopWord}, ${stepCount} beats`,
@@ -397,7 +511,9 @@ export function registerPresetTools(server: McpServer): void {
           // Constraint-based building (no LOOP)
           let constraintSet = emptyConstraintSet();
           if (config.constraintPreset) {
-            const preset = getPresetConstraintSet(config.constraintPreset as PresetName);
+            const preset = getPresetConstraintSet(
+              config.constraintPreset as PresetName
+            );
             if (preset) {
               constraintSet = preset;
             }
@@ -416,7 +532,12 @@ export function registerPresetTools(server: McpServer): void {
 
           if (!constrained.success) {
             return {
-              content: [{ type: "text" as const, text: `Failed to generate sequence: ${constrained.error}` }],
+              content: [
+                {
+                  type: "text" as const,
+                  text: `Failed to generate sequence: ${constrained.error}`,
+                },
+              ],
               isError: true,
             };
           }
@@ -427,8 +548,8 @@ export function registerPresetTools(server: McpServer): void {
             variation: constrained.variationIndices[index] || 0,
             startPosition: picto.startPosition,
             endPosition: picto.endPosition,
-            blueMotion: picto.blueMotion,
-            redMotion: picto.redMotion,
+            leftMotion: picto.leftMotion,
+            rightMotion: picto.rightMotion,
             stepNumber: index,
           }));
           sequenceWord = constrained.word;
@@ -437,7 +558,12 @@ export function registerPresetTools(server: McpServer): void {
           const result = buildSequenceFromLetters(letters, allPictographs, 100);
           if (!result.isValid) {
             return {
-              content: [{ type: "text" as const, text: `Failed to generate sequence: ${result.error}` }],
+              content: [
+                {
+                  type: "text" as const,
+                  text: `Failed to generate sequence: ${result.error}`,
+                },
+              ],
               isError: true,
             };
           }
@@ -480,8 +606,8 @@ export function registerPresetTools(server: McpServer): void {
           error instanceof PresetNotFoundError
             ? `Preset not found: ${input.preset}`
             : error instanceof Error
-            ? error.message
-            : String(error);
+              ? error.message
+              : String(error);
 
         return {
           content: [{ type: "text" as const, text: `Error: ${message}` }],

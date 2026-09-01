@@ -119,10 +119,10 @@ export async function hydrateSequence(
   let gridMode: GridMode | undefined;
   for (const step of placementHydrated.steps) {
     if (
-      isVisibleMotion(step.motions?.blue) &&
-      isVisibleMotion(step.motions?.red)
+      isVisibleMotion(step.motions?.left) &&
+      isVisibleMotion(step.motions?.right)
     ) {
-      gridMode = deriveGridMode(step.motions.blue, step.motions.red);
+      gridMode = deriveGridMode(step.motions.left, step.motions.right);
       break;
     }
   }

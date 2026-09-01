@@ -4,14 +4,14 @@ import { createSequenceData } from "$lib/shared/foundation/domain/models/sequenc
 import type { Flower } from "../../domain/flower-signature";
 import { identifyShapeMatrixRealization } from "../shape-matrix-realization-source";
 
-const blue: Flower = {
+const left: Flower = {
   style: "pro",
   turns: 1,
   ori: "in",
   grid: "diamond",
   petals: 2,
 };
-const red: Flower = {
+const right: Flower = {
   style: "anti",
   turns: 2,
   ori: "out",
@@ -36,7 +36,7 @@ describe("identifyShapeMatrixRealization", () => {
     const source = identifyShapeMatrixRealization(
       base,
       realized,
-      { blue, red },
+      { left, right },
       "TO"
     );
 
@@ -51,8 +51,8 @@ describe("identifyShapeMatrixRealization", () => {
       version: 1,
       baseSequenceId: base.id,
       mode: "TO",
-      blueFlower: blue,
-      redFlower: red,
+      leftFlower: left,
+      rightFlower: right,
     });
   });
 
@@ -64,8 +64,8 @@ describe("identifyShapeMatrixRealization", () => {
       steps: [],
     });
 
-    const ss = identifyShapeMatrixRealization(base, base, { blue, red }, "SS");
-    const so = identifyShapeMatrixRealization(base, base, { blue, red }, "SO");
+    const ss = identifyShapeMatrixRealization(base, base, { left, right }, "SS");
+    const so = identifyShapeMatrixRealization(base, base, { left, right }, "SO");
 
     expect(ss.sequence.id).not.toBe(so.sequence.id);
     expect(ss.sourceSequenceId).toBe("catalog-base");

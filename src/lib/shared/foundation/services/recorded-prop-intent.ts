@@ -5,23 +5,23 @@ import { parsePropTypeFromURLValue } from "$lib/shared/navigation/services/seque
 /** A raw, untrusted prop-config shape. Values come from Firestore wire data,
  * URL params, or scan telemetry, so nothing is assumed valid until parsed. */
 export interface PropConfigCandidate {
-  bluePropType?: unknown;
-  redPropType?: unknown;
+  leftPropType?: unknown;
+  rightPropType?: unknown;
   catDogMode?: unknown;
 }
 
 export interface ResolvedPropConfig {
-  bluePropType: PropType;
-  redPropType: PropType;
+  leftPropType: PropType;
+  rightPropType: PropType;
   catDogMode: boolean;
 }
 
 export function propFromCandidates(
-  color: "bluePropType" | "redPropType",
+  hand: "leftPropType" | "rightPropType",
   candidates: readonly (PropConfigCandidate | null | undefined)[]
 ): PropType | undefined {
   for (const candidate of candidates) {
-    const raw = candidate?.[color];
+    const raw = candidate?.[hand];
     if (typeof raw !== "string") continue;
     const propType = parsePropTypeFromURLValue(raw);
     if (propType) return propType;
@@ -52,8 +52,8 @@ export function sequenceIntentCandidates(
 
 /** The slice of AppSettings that describes the creator's active prop pair. */
 export interface ActivePropSettings {
-  bluePropType?: PropType;
-  redPropType?: PropType;
+  leftPropType?: PropType;
+  rightPropType?: PropType;
   /** Legacy single-prop field, still the only value on old profiles. */
   propType?: PropType;
   catDogMode?: boolean;
@@ -68,15 +68,15 @@ export interface ActivePropSettings {
 export function captureActivePropConfig(
   settings: ActivePropSettings
 ): ResolvedPropConfig {
-  const bluePropType =
-    settings.bluePropType ?? settings.propType ?? PropType.STAFF;
-  const redPropType =
-    settings.redPropType ?? settings.propType ?? PropType.STAFF;
+  const leftPropType =
+    settings.leftPropType ?? settings.propType ?? PropType.STAFF;
+  const rightPropType =
+    settings.rightPropType ?? settings.propType ?? PropType.STAFF;
   return {
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     catDogMode:
-      bluePropType !== redPropType ? true : (settings.catDogMode ?? false),
+      leftPropType !== rightPropType ? true : (settings.catDogMode ?? false),
   };
 }
 
@@ -90,17 +90,17 @@ export function resolveRecordedPropConfig(
   sequence: SequenceData | null | undefined
 ): ResolvedPropConfig | null {
   const candidates = sequenceIntentCandidates(sequence);
-  const bluePropType = propFromCandidates("bluePropType", candidates);
-  const redPropType = propFromCandidates("redPropType", candidates);
-  if (!bluePropType || !redPropType) return null;
+  const leftPropType = propFromCandidates("leftPropType", candidates);
+  const rightPropType = propFromCandidates("rightPropType", candidates);
+  if (!leftPropType || !rightPropType) return null;
 
   const recordedCatDog = catDogFromCandidates(candidates);
   return {
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     // A mixed pair is cat-dog by construction, even when an older record's
     // sequence-level flag says false — same inference the scan resolver uses.
     catDogMode:
-      bluePropType !== redPropType ? true : (recordedCatDog ?? false),
+      leftPropType !== rightPropType ? true : (recordedCatDog ?? false),
   };
 }

@@ -22,19 +22,17 @@
     MotionType,
     RotationDirection,
     Orientation,
-    MotionColor,
+    HandSide,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
-
   let selectedGroup = $state<"all" | "alpha" | "beta" | "gamma">("all");
   let gravityMode = $state(false);
-  let blueOrientation = $state<Orientation>(Orientation.CLOCK_IN);
-  let redOrientation = $state<Orientation>(Orientation.CLOCK_IN);
-
+  let leftOrientation = $state<Orientation>(Orientation.CLOCK_IN);
+  let rightOrientation = $state<Orientation>(Orientation.CLOCK_IN);
 
   const RADIAL_ORIENTATIONS = [
     { value: Orientation.IN, label: "In", icon: "fa-compress-arrows-alt" },
@@ -44,14 +42,36 @@
   ] as const;
 
   const INTERRADIAL_ORIENTATIONS = [
-    { value: Orientation.CLOCK_IN, label: "CW-In", icon: "fa-arrow-up", rotation: 45 },
-    { value: Orientation.CLOCK_OUT, label: "CW-Out", icon: "fa-arrow-down", rotation: -45 },
-    { value: Orientation.COUNTER_IN, label: "CCW-In", icon: "fa-arrow-up", rotation: -45 },
-    { value: Orientation.COUNTER_OUT, label: "CCW-Out", icon: "fa-arrow-down", rotation: 45 },
+    {
+      value: Orientation.CLOCK_IN,
+      label: "CW-In",
+      icon: "fa-arrow-up",
+      rotation: 45,
+    },
+    {
+      value: Orientation.CLOCK_OUT,
+      label: "CW-Out",
+      icon: "fa-arrow-down",
+      rotation: -45,
+    },
+    {
+      value: Orientation.COUNTER_IN,
+      label: "CCW-In",
+      icon: "fa-arrow-up",
+      rotation: -45,
+    },
+    {
+      value: Orientation.COUNTER_OUT,
+      label: "CCW-Out",
+      icon: "fa-arrow-down",
+      rotation: 45,
+    },
   ] as const;
 
-  const ALL_ORIENTATIONS = [...RADIAL_ORIENTATIONS, ...INTERRADIAL_ORIENTATIONS];
-
+  const ALL_ORIENTATIONS = [
+    ...RADIAL_ORIENTATIONS,
+    ...INTERRADIAL_ORIENTATIONS,
+  ];
 
   /** Physically correct resting orientation per grid location (poi gravity) */
   const GRAVITY_MAP: Partial<Record<GridLocation, Orientation>> = {
@@ -68,7 +88,7 @@
   // POSITION DATA (Box mode = intercardinal locations)
 
   /**
-   * Box mode positions with intercardinal locations: [blueLocation, redLocation]
+   * Box mode positions with intercardinal locations: [leftLocation, rightLocation]
    * Sourced from GridPositionDeriver.POSITIONS_MAP (canonical)
    */
   const BOX_POSITIONS: Record<string, [GridLocation, GridLocation]> = {
@@ -93,24 +113,42 @@
     [GridPosition.GAMMA16]: [GridLocation.NORTHEAST, GridLocation.NORTHWEST],
   };
 
-  const ALPHA_POSITIONS = [GridPosition.ALPHA2, GridPosition.ALPHA4, GridPosition.ALPHA6, GridPosition.ALPHA8];
-  const BETA_POSITIONS = [GridPosition.BETA2, GridPosition.BETA4, GridPosition.BETA6, GridPosition.BETA8];
+  const ALPHA_POSITIONS = [
+    GridPosition.ALPHA2,
+    GridPosition.ALPHA4,
+    GridPosition.ALPHA6,
+    GridPosition.ALPHA8,
+  ];
+  const BETA_POSITIONS = [
+    GridPosition.BETA2,
+    GridPosition.BETA4,
+    GridPosition.BETA6,
+    GridPosition.BETA8,
+  ];
   const GAMMA_POSITIONS = [
-    GridPosition.GAMMA2, GridPosition.GAMMA4, GridPosition.GAMMA6, GridPosition.GAMMA8,
-    GridPosition.GAMMA10, GridPosition.GAMMA12, GridPosition.GAMMA14, GridPosition.GAMMA16,
+    GridPosition.GAMMA2,
+    GridPosition.GAMMA4,
+    GridPosition.GAMMA6,
+    GridPosition.GAMMA8,
+    GridPosition.GAMMA10,
+    GridPosition.GAMMA12,
+    GridPosition.GAMMA14,
+    GridPosition.GAMMA16,
   ];
 
-
-  const bluePropType = $derived.by(() => {
+  const leftPropType = $derived.by(() => {
     const settings = getSettings();
-    return (settings.bluePropType ?? settings.propType ?? PropType.STAFF) as PropType;
+    return (settings.leftPropType ??
+      settings.propType ??
+      PropType.STAFF) as PropType;
   });
 
-  const redPropType = $derived.by(() => {
+  const rightPropType = $derived.by(() => {
     const settings = getSettings();
-    return (settings.redPropType ?? settings.propType ?? PropType.STAFF) as PropType;
+    return (settings.rightPropType ??
+      settings.propType ??
+      PropType.STAFF) as PropType;
   });
-
 
   interface PositionSection {
     label: string;
@@ -131,8 +169,10 @@
     return sections;
   });
 
-
-  function getOrientation(location: GridLocation, manualOri: Orientation): Orientation {
+  function getOrientation(
+    location: GridLocation,
+    manualOri: Orientation
+  ): Orientation {
     if (gravityMode) {
       return GRAVITY_MAP[location] ?? manualOri;
     }
@@ -144,38 +184,38 @@
     if (!locations) {
       throw new Error(`No location mapping for position: ${position}`);
     }
-    const [blueLocation, redLocation] = locations;
+    const [leftLocation, rightLocation] = locations;
 
-    const blueOri = getOrientation(blueLocation, blueOrientation);
-    const redOri = getOrientation(redLocation, redOrientation);
+    const leftOri = getOrientation(leftLocation, leftOrientation);
+    const rightOri = getOrientation(rightLocation, rightOrientation);
 
-    const blueMotion = createMotionData({
+    const leftMotion = createMotionData({
       motionType: MotionType.STATIC,
-      startLocation: blueLocation,
-      endLocation: blueLocation,
-      startOrientation: blueOri,
-      endOrientation: blueOri,
+      startLocation: leftLocation,
+      endLocation: leftLocation,
+      startOrientation: leftOri,
+      endOrientation: leftOri,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: MotionColor.BLUE,
+      hand: HandSide.LEFT,
       isVisible: true,
-      propType: bluePropType,
-      arrowLocation: blueLocation,
+      propType: leftPropType,
+      arrowLocation: leftLocation,
       gridMode: GridMode.BOX,
     });
 
-    const redMotion = createMotionData({
+    const rightMotion = createMotionData({
       motionType: MotionType.STATIC,
-      startLocation: redLocation,
-      endLocation: redLocation,
-      startOrientation: redOri,
-      endOrientation: redOri,
+      startLocation: rightLocation,
+      endLocation: rightLocation,
+      startOrientation: rightOri,
+      endOrientation: rightOri,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: MotionColor.RED,
+      hand: HandSide.RIGHT,
       isVisible: true,
-      propType: redPropType,
-      arrowLocation: redLocation,
+      propType: rightPropType,
+      arrowLocation: rightLocation,
       gridMode: GridMode.BOX,
     });
 
@@ -184,8 +224,8 @@
       startPosition: position,
       endPosition: position,
       motions: {
-        [MotionColor.BLUE]: blueMotion,
-        [MotionColor.RED]: redMotion,
+        [HandSide.LEFT]: leftMotion,
+        [HandSide.RIGHT]: rightMotion,
       },
     };
   }
@@ -203,10 +243,16 @@
     return loc.toUpperCase();
   }
 
-  const totalCount = $derived(ALPHA_POSITIONS.length + BETA_POSITIONS.length + GAMMA_POSITIONS.length);
+  const totalCount = $derived(
+    ALPHA_POSITIONS.length + BETA_POSITIONS.length + GAMMA_POSITIONS.length
+  );
 
   const groupOptions = $derived<
-    { value: "all" | "alpha" | "beta" | "gamma"; label: string; count: number }[]
+    {
+      value: "all" | "alpha" | "beta" | "gamma";
+      label: string;
+      count: number;
+    }[]
   >([
     { value: "all", label: "All", count: totalCount },
     { value: "alpha", label: "Alpha", count: ALPHA_POSITIONS.length },
@@ -222,7 +268,8 @@
       <span class="badge">Admin</span>
     </div>
     <p class="description">
-      Interradial orientations (clockIn, clockOut, counterIn, counterOut) at intercardinal positions in box mode.
+      Interradial orientations (clockIn, clockOut, counterIn, counterOut) at
+      intercardinal positions in box mode.
     </p>
   </header>
 
@@ -239,23 +286,26 @@
   <div class="controls-row">
     <div class="orientation-controls">
       <div class="orientation-group blue">
-        <span class="group-label">Blue</span>
+        <span class="group-label">Left</span>
         <div class="orientation-chips">
           {#each ALL_ORIENTATIONS as ori}
             <button
               class="ori-chip"
-              class:active={!gravityMode && blueOrientation === ori.value}
-              class:interradial={ori.value.includes("clock") || ori.value.includes("counter")}
-              aria-pressed={!gravityMode && blueOrientation === ori.value}
+              class:active={!gravityMode && leftOrientation === ori.value}
+              class:interradial={ori.value.includes("clock") ||
+                ori.value.includes("counter")}
+              aria-pressed={!gravityMode && leftOrientation === ori.value}
               aria-label={ori.label}
               disabled={gravityMode}
-              onclick={() => (blueOrientation = ori.value)}
+              onclick={() => (leftOrientation = ori.value)}
               title={ori.label}
             >
               <i
                 class="fas {ori.icon}"
                 aria-hidden="true"
-                style={('rotation' in ori && ori.rotation) ? `transform: rotate(${ori.rotation}deg)` : ''}
+                style={"rotation" in ori && ori.rotation
+                  ? `transform: rotate(${ori.rotation}deg)`
+                  : ""}
               ></i>
               <span>{ori.label}</span>
             </button>
@@ -263,23 +313,26 @@
         </div>
       </div>
       <div class="orientation-group red">
-        <span class="group-label">Red</span>
+        <span class="group-label">Right</span>
         <div class="orientation-chips">
           {#each ALL_ORIENTATIONS as ori}
             <button
               class="ori-chip"
-              class:active={!gravityMode && redOrientation === ori.value}
-              class:interradial={ori.value.includes("clock") || ori.value.includes("counter")}
-              aria-pressed={!gravityMode && redOrientation === ori.value}
+              class:active={!gravityMode && rightOrientation === ori.value}
+              class:interradial={ori.value.includes("clock") ||
+                ori.value.includes("counter")}
+              aria-pressed={!gravityMode && rightOrientation === ori.value}
               aria-label={ori.label}
               disabled={gravityMode}
-              onclick={() => (redOrientation = ori.value)}
+              onclick={() => (rightOrientation = ori.value)}
               title={ori.label}
             >
               <i
                 class="fas {ori.icon}"
                 aria-hidden="true"
-                style={('rotation' in ori && ori.rotation) ? `transform: rotate(${ori.rotation}deg)` : ''}
+                style={"rotation" in ori && ori.rotation
+                  ? `transform: rotate(${ori.rotation}deg)`
+                  : ""}
               ></i>
               <span>{ori.label}</span>
             </button>
@@ -310,10 +363,10 @@
         <div class="grid">
           {#each section.positions as position (position)}
             {@const locations = BOX_POSITIONS[position]}
-            {@const blueLoc = locations?.[0] ?? GridLocation.NORTHEAST}
-            {@const redLoc = locations?.[1] ?? GridLocation.SOUTHWEST}
-            {@const blueOri = getOrientation(blueLoc, blueOrientation)}
-            {@const redOri = getOrientation(redLoc, redOrientation)}
+            {@const leftLoc = locations?.[0] ?? GridLocation.NORTHEAST}
+            {@const rightLoc = locations?.[1] ?? GridLocation.SOUTHWEST}
+            {@const leftOri = getOrientation(leftLoc, leftOrientation)}
+            {@const rightOri = getOrientation(rightLoc, rightOrientation)}
             {@const pictograph = createStaticPictograph(position)}
             <article class="card">
               <div class="pictograph-area">
@@ -325,8 +378,12 @@
               <footer class="card-footer">
                 <span class="position-name">{formatPosition(position)}</span>
                 <div class="ori-labels">
-                  <span class="ori-label blue" title="Blue orientation">{formatLocation(blueLoc)}: {blueOri}</span>
-                  <span class="ori-label red" title="Red orientation">{formatLocation(redLoc)}: {redOri}</span>
+                  <span class="ori-label blue" title="Left orientation"
+                    >{formatLocation(leftLoc)}: {leftOri}</span
+                  >
+                  <span class="ori-label red" title="Right orientation"
+                    >{formatLocation(rightLoc)}: {rightOri}</span
+                  >
                 </div>
               </footer>
             </article>
@@ -423,8 +480,12 @@
     min-width: 2.5rem;
   }
 
-  .orientation-group.blue .group-label { color: #60a5fa; }
-  .orientation-group.red .group-label { color: #f87171; }
+  .orientation-group.blue .group-label {
+    color: #60a5fa;
+  }
+  .orientation-group.red .group-label {
+    color: #f87171;
+  }
 
   .orientation-chips {
     display: flex;

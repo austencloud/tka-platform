@@ -9,7 +9,7 @@ import {
   type GridPosition as GridPositionValue,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -36,16 +36,16 @@ interface CanonicalStepInput {
   startPosition: GridPositionValue;
   endPosition: GridPositionValue;
   variation: number;
-  blue: CanonicalMotionInput;
-  red: CanonicalMotionInput;
+  left: CanonicalMotionInput;
+  right: CanonicalMotionInput;
 }
 
 function motion(
-  color: (typeof MotionColor)[keyof typeof MotionColor],
+  color: (typeof HandSide)[keyof typeof HandSide],
   input: CanonicalMotionInput
 ): MotionData {
   return createMotionData({
-    color,
+    hand: color,
     ...input,
     arrowLocation: input.startLocation,
     gridMode: GridMode.DIAMOND,
@@ -77,7 +77,7 @@ const CANONICAL_STEPS: readonly CanonicalStepInput[] = [
     startPosition: GridPosition.ALPHA7,
     endPosition: GridPosition.ALPHA1,
     variation: 2,
-    blue: {
+    left: {
       startLocation: GridLocation.EAST,
       endLocation: GridLocation.SOUTH,
       motionType: MotionType.PRO,
@@ -85,7 +85,7 @@ const CANONICAL_STEPS: readonly CanonicalStepInput[] = [
       startOrientation: Orientation.IN,
       endOrientation: Orientation.IN,
     },
-    red: {
+    right: {
       startLocation: GridLocation.WEST,
       endLocation: GridLocation.NORTH,
       motionType: MotionType.PRO,
@@ -99,7 +99,7 @@ const CANONICAL_STEPS: readonly CanonicalStepInput[] = [
     startPosition: GridPosition.ALPHA1,
     endPosition: GridPosition.ALPHA7,
     variation: 1,
-    blue: {
+    left: {
       startLocation: GridLocation.SOUTH,
       endLocation: GridLocation.EAST,
       motionType: MotionType.ANTI,
@@ -107,7 +107,7 @@ const CANONICAL_STEPS: readonly CanonicalStepInput[] = [
       startOrientation: Orientation.IN,
       endOrientation: Orientation.OUT,
     },
-    red: {
+    right: {
       startLocation: GridLocation.NORTH,
       endLocation: GridLocation.WEST,
       motionType: MotionType.ANTI,
@@ -121,7 +121,7 @@ const CANONICAL_STEPS: readonly CanonicalStepInput[] = [
     startPosition: GridPosition.ALPHA7,
     endPosition: GridPosition.ALPHA5,
     variation: 3,
-    blue: {
+    left: {
       startLocation: GridLocation.EAST,
       endLocation: GridLocation.NORTH,
       motionType: MotionType.PRO,
@@ -129,7 +129,7 @@ const CANONICAL_STEPS: readonly CanonicalStepInput[] = [
       startOrientation: Orientation.OUT,
       endOrientation: Orientation.OUT,
     },
-    red: {
+    right: {
       startLocation: GridLocation.WEST,
       endLocation: GridLocation.SOUTH,
       motionType: MotionType.ANTI,
@@ -143,7 +143,7 @@ const CANONICAL_STEPS: readonly CanonicalStepInput[] = [
     startPosition: GridPosition.ALPHA5,
     endPosition: GridPosition.BETA7,
     variation: 0,
-    blue: {
+    left: {
       startLocation: GridLocation.NORTH,
       endLocation: GridLocation.WEST,
       motionType: MotionType.PRO,
@@ -151,7 +151,7 @@ const CANONICAL_STEPS: readonly CanonicalStepInput[] = [
       startOrientation: Orientation.OUT,
       endOrientation: Orientation.OUT,
     },
-    red: {
+    right: {
       startLocation: GridLocation.SOUTH,
       endLocation: GridLocation.WEST,
       motionType: MotionType.PRO,
@@ -165,7 +165,7 @@ const CANONICAL_STEPS: readonly CanonicalStepInput[] = [
     startPosition: GridPosition.BETA7,
     endPosition: GridPosition.ALPHA1,
     variation: 0,
-    blue: {
+    left: {
       startLocation: GridLocation.WEST,
       endLocation: GridLocation.SOUTH,
       motionType: MotionType.PRO,
@@ -173,7 +173,7 @@ const CANONICAL_STEPS: readonly CanonicalStepInput[] = [
       startOrientation: Orientation.OUT,
       endOrientation: Orientation.OUT,
     },
-    red: {
+    right: {
       startLocation: GridLocation.WEST,
       endLocation: GridLocation.NORTH,
       motionType: MotionType.PRO,
@@ -187,7 +187,7 @@ const CANONICAL_STEPS: readonly CanonicalStepInput[] = [
     startPosition: GridPosition.ALPHA1,
     endPosition: GridPosition.BETA3,
     variation: 0,
-    blue: {
+    left: {
       startLocation: GridLocation.SOUTH,
       endLocation: GridLocation.EAST,
       motionType: MotionType.PRO,
@@ -195,7 +195,7 @@ const CANONICAL_STEPS: readonly CanonicalStepInput[] = [
       startOrientation: Orientation.OUT,
       endOrientation: Orientation.OUT,
     },
-    red: {
+    right: {
       startLocation: GridLocation.NORTH,
       endLocation: GridLocation.EAST,
       motionType: MotionType.PRO,
@@ -209,7 +209,7 @@ const CANONICAL_STEPS: readonly CanonicalStepInput[] = [
     startPosition: GridPosition.BETA3,
     endPosition: GridPosition.ALPHA5,
     variation: 0,
-    blue: {
+    left: {
       startLocation: GridLocation.EAST,
       endLocation: GridLocation.NORTH,
       motionType: MotionType.ANTI,
@@ -217,7 +217,7 @@ const CANONICAL_STEPS: readonly CanonicalStepInput[] = [
       startOrientation: Orientation.OUT,
       endOrientation: Orientation.IN,
     },
-    red: {
+    right: {
       startLocation: GridLocation.EAST,
       endLocation: GridLocation.SOUTH,
       motionType: MotionType.ANTI,
@@ -231,7 +231,7 @@ const CANONICAL_STEPS: readonly CanonicalStepInput[] = [
     startPosition: GridPosition.ALPHA5,
     endPosition: GridPosition.BETA3,
     variation: 1,
-    blue: {
+    left: {
       startLocation: GridLocation.NORTH,
       endLocation: GridLocation.EAST,
       motionType: MotionType.PRO,
@@ -239,7 +239,7 @@ const CANONICAL_STEPS: readonly CanonicalStepInput[] = [
       startOrientation: Orientation.IN,
       endOrientation: Orientation.IN,
     },
-    red: {
+    right: {
       startLocation: GridLocation.SOUTH,
       endLocation: GridLocation.EAST,
       motionType: MotionType.PRO,
@@ -257,8 +257,8 @@ const startPosition = createStartPositionData({
   startPosition: GridPosition.ALPHA7,
   endPosition: GridPosition.ALPHA7,
   motions: {
-    blue: motion(MotionColor.BLUE, STATIC_EAST),
-    red: motion(MotionColor.RED, STATIC_WEST),
+    left: motion(HandSide.LEFT, STATIC_EAST),
+    right: motion(HandSide.RIGHT, STATIC_WEST),
   },
 });
 
@@ -281,8 +281,8 @@ export const TRANSITION_REVIEW_SEQUENCE = createSequenceData({
       gridMode: GridMode.DIAMOND,
       duration: 1,
       motions: {
-        blue: motion(MotionColor.BLUE, step.blue),
-        red: motion(MotionColor.RED, step.red),
+        left: motion(HandSide.LEFT, step.left),
+        right: motion(HandSide.RIGHT, step.right),
       },
     })
   ),

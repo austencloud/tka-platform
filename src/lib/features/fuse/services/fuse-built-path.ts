@@ -11,7 +11,7 @@ import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-l
 import { createSoloProp } from "$lib/shared/foundation/services/solo-prop-factory";
 import { soloPropToSequence } from "$lib/shared/foundation/services/solo-prop-sequence-adapter";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
 
 export type BuiltFusePathFailure =
@@ -53,7 +53,7 @@ export function fuseBuilderTurnCounts(
 }
 
 function toSoloStep(step: BuilderStep, gridMode: GridMode): SoloPropStepData {
-  const motion = stepToMotion(step, MotionColor.BLUE, gridMode);
+  const motion = stepToMotion(step, HandSide.LEFT, gridMode);
   return {
     startLocation: motion.startLocation,
     endLocation: motion.endLocation,
@@ -129,14 +129,14 @@ export function buildFusePathSource({
   }
 
   const soloSteps = steps.map((step) => toSoloStep(step, gridMode));
-  const label = `${side === "blue" ? "Blue" : "Red"} built LOOP`;
+  const label = `${side === "left" ? "Left" : "Right"} built LOOP`;
   const solo = createSoloProp(
     soloSteps,
     first.startPosition,
     first.startOrientation,
     { name: label, notes: "Built in Fuse" }
   );
-  const sequence = soloPropToSequence(solo, side === "blue" ? "left" : "right");
+  const sequence = soloPropToSequence(solo, side);
 
   if (!isSeamlesslyLoopable(sequence)) {
     return {

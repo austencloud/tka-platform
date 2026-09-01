@@ -52,8 +52,8 @@
     onRemix?: () => void;
     onPracticeToggle?: () => void;
     canToggleMotionVisibility?: boolean;
-    onMotionToggleBlue?: () => void;
-    onMotionToggleRed?: () => void;
+    onMotionToggleLeft?: () => void;
+    onMotionToggleRight?: () => void;
     onVideoUpload?: () => void;
     isPublished: boolean;
     onPublish?: () => void;
@@ -88,8 +88,8 @@
     onRemix,
     onPracticeToggle,
     canToggleMotionVisibility = false,
-    onMotionToggleBlue,
-    onMotionToggleRed,
+    onMotionToggleLeft,
+    onMotionToggleRight,
     onVideoUpload,
     isPublished,
     onPublish,
@@ -276,8 +276,8 @@
         <div class="context-actions">
           {#if canToggleMotionVisibility}
             <MotionVisibilityToggle
-              onToggleBlue={onMotionToggleBlue}
-              onToggleRed={onMotionToggleRed}
+              onToggleLeft={onMotionToggleLeft}
+              onToggleRight={onMotionToggleRight}
             />
           {/if}
 
@@ -356,10 +356,10 @@
           guideActionLabel={guideAction?.label}
           motionVisibility={canToggleMotionVisibility
             ? {
-                showBlue: ctx.viewerVisibility.blueMotion,
-                showRed: ctx.viewerVisibility.redMotion,
-                onToggleBlue: onMotionToggleBlue ?? (() => {}),
-                onToggleRed: onMotionToggleRed ?? (() => {}),
+                showLeft: ctx.viewerVisibility.leftMotion,
+                showRight: ctx.viewerVisibility.rightMotion,
+                onToggleLeft: onMotionToggleLeft ?? (() => {}),
+                onToggleRight: onMotionToggleRight ?? (() => {}),
               }
             : undefined}
           onOpenChange={onOverflowOpenChange}

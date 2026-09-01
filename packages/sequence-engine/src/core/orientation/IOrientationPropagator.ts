@@ -40,16 +40,16 @@ export interface IOrientationCalculator {
  */
 export interface IOrientationPropagator {
   /**
-   * Propagate orientations for a single color through all steps.
+   * Propagate orientations for a single hand through all steps.
    * Each step's start orientation = previous step's end orientation.
    * @param steps - The sequence steps (including start position at index 0)
-   * @param color - Which motion color to propagate ("blue" or "red")
+   * @param hand - Which motion hand to propagate ("left" or "right")
    * @param initialOrientation - The starting orientation (from step 0's end orientation)
    * @returns Updated steps with correct orientations
    */
   propagateForColor(
     steps: SequenceStep[],
-    color: "blue" | "red",
+    hand: "left" | "right",
     initialOrientation: Orientation
   ): SequenceStep[];
 

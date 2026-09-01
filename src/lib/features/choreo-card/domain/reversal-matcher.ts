@@ -1,14 +1,14 @@
 /**
  * Reversal Pattern Matcher
  *
- * Given a sequence's per-beat `blueReversal`/`redReversal` flags, compute
+ * Given a sequence's per-beat `leftReversal`/`rightReversal` flags, compute
  * a signature string using P/R/B/- symbols, then match it against the
  * known reversal patterns in `reversal-patterns.ts`.
  *
  * Signature symbols (per beat):
  *   P - both hands reversed
- *   R - red reversed, blue continuous
- *   B - blue reversed, red continuous
+ *   R - right hand reversed (canonical red display), left continuous
+ *   B - left hand reversed (canonical blue display), right continuous
  *   - - neither reversed
  *
  * A sequence matches a pattern when the pattern's base sequence, repeated
@@ -23,16 +23,18 @@ import {
 
 export type ReversalSymbol = "P" | "R" | "B" | "-";
 
-export function stepToReversalSymbol(step: Pick<StepData, "blueReversal" | "redReversal">): ReversalSymbol {
-  const b = step.blueReversal === true;
-  const r = step.redReversal === true;
-  if (b && r) return "P";
+type ReversalFields = Pick<StepData, "leftReversal" | "rightReversal">;
+
+export function stepToReversalSymbol(step: ReversalFields): ReversalSymbol {
+  const l = step.leftReversal === true;
+  const r = step.rightReversal === true;
+  if (l && r) return "P";
   if (r) return "R";
-  if (b) return "B";
+  if (l) return "B";
   return "-";
 }
 
-export function computeReversalSignature(steps: readonly Pick<StepData, "blueReversal" | "redReversal">[]): string {
+export function computeReversalSignature(steps: readonly ReversalFields[]): string {
   return steps.map(stepToReversalSymbol).join("");
 }
 
@@ -49,7 +51,7 @@ function signatureMatchesPattern(signature: string, pattern: ReversalPatternDef)
 }
 
 export function findMatchingReversalPattern(
-  steps: readonly Pick<StepData, "blueReversal" | "redReversal">[],
+  steps: readonly ReversalFields[],
 ): ReversalPatternDef | null {
   const signature = computeReversalSignature(steps);
   if (signature.length === 0) return null;
@@ -63,7 +65,7 @@ export function findMatchingReversalPattern(
 }
 
 export function matchReversalPatternId(
-  steps: readonly Pick<StepData, "blueReversal" | "redReversal">[],
+  steps: readonly ReversalFields[],
 ): string | null {
   return findMatchingReversalPattern(steps)?.id ?? null;
 }

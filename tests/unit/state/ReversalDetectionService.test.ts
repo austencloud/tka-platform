@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from "vitest";
 import { processReversals, detectReversal } from "../../../src/lib/shared/create/services/reversal-detector";
-import { MotionColor } from "../../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "../../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StepData } from "../../../src/lib/shared/foundation/domain/models/step-data";
 import type { SequenceData } from "../../../src/lib/shared/foundation/domain/models/sequence-data";
 
@@ -15,25 +15,25 @@ describe("ReversalDetector", () => {
 
   const createBeat = (
     num: number,
-    blueDir: string | null = null,
-    redDir: string | null = null,
+    leftDir: string | null = null,
+    rightDir: string | null = null,
     blank: boolean = false
   ): StepData => ({
     id: `beat-${num}`,
     stepNumber: num,
     duration: 1.0,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: blank,
     letter: null,
     startPosition: null,
     endPosition: null,
     motions: {
-      [MotionColor.BLUE]: blueDir
-        ? ({ rotationDirection: blueDir } as any)
+      [HandSide.LEFT]: leftDir
+        ? ({ rotationDirection: leftDir } as any)
         : undefined,
-      [MotionColor.RED]: redDir
-        ? ({ rotationDirection: redDir } as any)
+      [HandSide.RIGHT]: rightDir
+        ? ({ rotationDirection: rightDir } as any)
         : undefined,
     },
   });
@@ -62,16 +62,16 @@ describe("ReversalDetector", () => {
       const beat = createBeat(1, "cw", "ccw");
       const result = processReversals(createSeq([beat]));
 
-      expect(result.steps[0]!.blueReversal).toBe(false);
-      expect(result.steps[0]!.redReversal).toBe(false);
+      expect(result.steps[0]!.leftReversal).toBe(false);
+      expect(result.steps[0]!.rightReversal).toBe(false);
     });
 
     it("should detect NO reversal when same direction", () => {
       const beats = [createBeat(1, "cw", "cw"), createBeat(2, "cw", "cw")];
       const result = processReversals(createSeq(beats));
 
-      expect(result.steps[1]!.blueReversal).toBe(false);
-      expect(result.steps[1]!.redReversal).toBe(false);
+      expect(result.steps[1]!.leftReversal).toBe(false);
+      expect(result.steps[1]!.rightReversal).toBe(false);
     });
 
     it("should detect reversal when direction changes", () => {
@@ -81,8 +81,8 @@ describe("ReversalDetector", () => {
       ];
       const result = processReversals(createSeq(beats));
 
-      expect(result.steps[1]!.blueReversal).toBe(true); // cw → ccw
-      expect(result.steps[1]!.redReversal).toBe(true); // ccw → cw
+      expect(result.steps[1]!.leftReversal).toBe(true); // cw → ccw
+      expect(result.steps[1]!.rightReversal).toBe(true); // ccw → cw
     });
 
     it("should skip blank beats when detecting reversals", () => {
@@ -94,8 +94,8 @@ describe("ReversalDetector", () => {
       const result = processReversals(createSeq(beats));
 
       // Beat 3 should reverse based on beat 1 (blank ignored)
-      expect(result.steps[2]!.blueReversal).toBe(true);
-      expect(result.steps[2]!.redReversal).toBe(true);
+      expect(result.steps[2]!.leftReversal).toBe(true);
+      expect(result.steps[2]!.rightReversal).toBe(true);
     });
 
     it("should handle mixed reversals (only one color)", () => {
@@ -105,8 +105,8 @@ describe("ReversalDetector", () => {
       ];
       const result = processReversals(createSeq(beats));
 
-      expect(result.steps[1]!.blueReversal).toBe(false); // Blue stays cw
-      expect(result.steps[1]!.redReversal).toBe(true); // Red reverses
+      expect(result.steps[1]!.leftReversal).toBe(false); // Blue stays cw
+      expect(result.steps[1]!.rightReversal).toBe(true); // Red reverses
     });
 
     it("should handle multiple reversals in sequence", () => {
@@ -117,8 +117,8 @@ describe("ReversalDetector", () => {
       ];
       const result = processReversals(createSeq(beats));
 
-      expect(result.steps[1]!.blueReversal).toBe(true);
-      expect(result.steps[2]!.blueReversal).toBe(true);
+      expect(result.steps[1]!.leftReversal).toBe(true);
+      expect(result.steps[2]!.leftReversal).toBe(true);
     });
 
     it("should ignore noRotation direction", () => {
@@ -128,8 +128,8 @@ describe("ReversalDetector", () => {
       ];
       const result = processReversals(createSeq(beats));
 
-      expect(result.steps[1]!.blueReversal).toBe(false);
-      expect(result.steps[1]!.redReversal).toBe(false);
+      expect(result.steps[1]!.leftReversal).toBe(false);
+      expect(result.steps[1]!.rightReversal).toBe(false);
     });
   });
 
@@ -138,8 +138,8 @@ describe("ReversalDetector", () => {
       const blank = createBeat(1, null, null, true);
       const result = detectReversal([], blank);
 
-      expect(result.blueReversal).toBe(false);
-      expect(result.redReversal).toBe(false);
+      expect(result.leftReversal).toBe(false);
+      expect(result.rightReversal).toBe(false);
     });
 
     it("should detect reversal correctly", () => {
@@ -147,8 +147,8 @@ describe("ReversalDetector", () => {
       const curr = createBeat(2, "ccw", "cw");
       const result = detectReversal([prev], curr);
 
-      expect(result.blueReversal).toBe(true);
-      expect(result.redReversal).toBe(true);
+      expect(result.leftReversal).toBe(true);
+      expect(result.rightReversal).toBe(true);
     });
 
     it("should look back past multiple blanks", () => {
@@ -160,8 +160,8 @@ describe("ReversalDetector", () => {
       const curr = createBeat(4, "ccw", "ccw");
       const result = detectReversal(prevSteps, curr);
 
-      expect(result.blueReversal).toBe(true);
-      expect(result.redReversal).toBe(true);
+      expect(result.leftReversal).toBe(true);
+      expect(result.rightReversal).toBe(true);
     });
   });
 
@@ -170,8 +170,8 @@ describe("ReversalDetector", () => {
       const beat = { ...createBeat(1), motions: {} };
       const result = detectReversal([], beat);
 
-      expect(result.blueReversal).toBe(false);
-      expect(result.redReversal).toBe(false);
+      expect(result.leftReversal).toBe(false);
+      expect(result.rightReversal).toBe(false);
     });
 
     it("should process long sequences efficiently", () => {

@@ -21,7 +21,7 @@
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -160,14 +160,14 @@
           startOrientation: Orientation.IN,
           endOrientation: halfwayOri,
           turns: t.turns,
-          color: MotionColor.RED,
+          hand: HandSide.RIGHT,
           segment: { t0: 0, t1: 0.5 },
         });
 
         const picto = {
           letter: null,
           gridMode: motion.gridMode,
-          motions: { red: motion, blue: undefined },
+          motions: { right: motion, left: undefined },
         } as unknown as PictographData;
 
         const [x, y, rotation] = await calculateArrowPoint(picto, motion);
@@ -193,13 +193,15 @@
 <div class="page">
   <h1>Half-Arrow Positioning — Phase 2a Visual Proof</h1>
   <p class="subtitle">
-    Each cell places one guide half-motion's <code>_half</code> arrow glyph at its
-    real pipeline-computed position + rotation
-    (<code>calculateArrowPoint</code> → <code>getArrowSvgPath</code>), over the
-    same diamond hand-point dots <code>LiftedTurnFrame</code> draws. The
-    numbers are already proven exact against the guide's physical staff angle
-    by <code>half-arrow-pipeline.test.ts</code> — this page is the human eyeball
-    check ahead of Phase 2b's authored pixel nudges.
+    Each cell places one guide half-motion's <code>_half</code> arrow glyph at
+    its real pipeline-computed position + rotation (<code
+      >calculateArrowPoint</code
+    >
+    → <code>getArrowSvgPath</code>), over the same diamond hand-point dots
+    <code>LiftedTurnFrame</code>
+    draws. The numbers are already proven exact against the guide's physical
+    staff angle by <code>half-arrow-pipeline.test.ts</code> — this page is the human
+    eyeball check ahead of Phase 2b's authored pixel nudges.
   </p>
 
   {#if buildError}

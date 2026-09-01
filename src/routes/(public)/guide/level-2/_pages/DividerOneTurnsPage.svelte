@@ -14,8 +14,8 @@
 
   const m = (mt: string, rd: string, sl: string, el: string, so: string, eo: string) =>
     ({ motionType: mt, rotationDirection: rd, startLocation: sl, endLocation: el, startOrientation: so, endOrientation: eo });
-  const step = (blue: unknown, red: unknown) => ({ motions: { blue, red } });
-  const seq = (steps: unknown[]) => ({ bluePropType: "staff", redPropType: "staff", steps });
+  const step = (left, right) => ({ motions: { left, right } });
+  const seq = (steps: unknown[]) => ({ leftPropType: "staff", rightPropType: "staff", steps });
 
   // Four forms, echoing the cover family: isolation, antispin, dash, hybrid.
   const ISO = seq([
@@ -53,7 +53,7 @@
   <!-- Top pictograph row -->
   {#each FORMS as f, i (i)}
     <div class="cell" style="left:{cellX(i) * S}px; top:{64 * S}px; width:{CELL * S}px; height:{CELL * S}px">
-      <SequenceMandala sequence={f} size={CELL * S} darkMode={false} bluePropType="staff" redPropType="staff" pathShape="arc" strokeWidth={3} />
+      <SequenceMandala sequence={f} size={CELL * S} darkMode={false} leftPropType="staff" rightPropType="staff" pathShape="arc" strokeWidth={3} />
     </div>
   {/each}
 
@@ -65,7 +65,7 @@
   <!-- Bottom pictograph row (reversed order, like the original's variety) -->
   {#each FORMS as f, i (i)}
     <div class="cell" style="left:{cellX(3 - i) * S}px; top:{632 * S}px; width:{CELL * S}px; height:{CELL * S}px">
-      <SequenceMandala sequence={f} size={CELL * S} darkMode={false} bluePropType="staff" redPropType="staff" pathShape="arc" strokeWidth={3} />
+      <SequenceMandala sequence={f} size={CELL * S} darkMode={false} leftPropType="staff" rightPropType="staff" pathShape="arc" strokeWidth={3} />
     </div>
   {/each}
 </div>

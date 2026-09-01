@@ -15,7 +15,7 @@ import type { MotionData } from "../../shared/domain/models/motion-data";
 import type { PropPlacementData } from "../domain/models/prop-placement-data";
 import type { PropRenderData } from "../domain/models/prop-render-data";
 import type { PropSvgLoadOptions } from "./types";
-import { MotionColor } from "../../shared/domain/enums/pictograph-enums";
+import { HandSide } from "../../shared/domain/enums/pictograph-enums";
 import {
   applyMotionColorToSvg,
   SELECTIVE_COLOR_PROP_TYPES,
@@ -90,7 +90,7 @@ export class PropSvgLoader {
     try {
       // Get prop type and color
       const propType = motionData.propType || "staff";
-      const color = motionData.color || MotionColor.BLUE;
+      const color = motionData.hand || HandSide.LEFT;
 
       // Use explicit theme mode if provided, otherwise fall back to global state
       const themeMode = options?.themeMode ?? this.getCurrentThemeMode();
@@ -269,7 +269,7 @@ export class PropSvgLoader {
    */
   private applyColorToSvg(
     svgText: string,
-    color: MotionColor,
+    color: HandSide,
     themeMode: ThemeMode,
     propType?: string
   ): string {

@@ -16,7 +16,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -30,8 +30,8 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
   const NOROT = RotationDirection.NO_ROTATION;
-  const B = MotionColor.BLUE;
-  const R = MotionColor.RED;
+  const B = HandSide.LEFT;
+  const R = HandSide.RIGHT;
 
   const STAFF_D =
     "M251.4 67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1 3.9-9.1 8.7v19.2H10.3c-4.9 0-8.9 3.8-8.9 8.5V41c0 4.6 4 8.5 8.9 8.5h222.9v18.2c0 4.8 4.1 8.7 9.1 8.7s9.1-3.9 9.1-8.7z";
@@ -39,7 +39,7 @@
   const BLUE_FILL = "#2E3192";
 
   const mo = (
-    color: MotionColor,
+    color: HandSide,
     type: MotionType,
     from: GridLocation,
     to: GridLocation,
@@ -60,13 +60,13 @@
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     });
-  const pic = (id: string, blue: ReturnType<typeof mo>, red: ReturnType<typeof mo>) => ({
+  const pic = (id: string, left, right) => ({
     id: `l2oo23-${id}`,
     letter: null,
     gridMode: GridMode.DIAMOND,
-    motions: { blue, red },
+    motions: { left, right },
   });
-  const statPic = (color: MotionColor, loc: GridLocation, ori: Orientation, rot: RotationDirection = NOROT, turns = 0) =>
+  const statPic = (color: HandSide, loc: GridLocation, ori: Orientation, rot: RotationDirection = NOROT, turns = 0) =>
     mo(color, MotionType.STATIC, loc, loc, rot, ori, turns % 2 === 1 ? OUT : IN, turns);
 
   type Hand = { type: MotionType; from: GridLocation; to: GridLocation; rot: RotationDirection; turns: number };
@@ -81,15 +81,15 @@
     start: ReturnType<typeof pic>;
     end: ReturnType<typeof pic>;
     combined: ReturnType<typeof pic>;
-    halfway: { motion: HalfwayMotion; color: MotionColor }[];
+    halfway: { motion: HalfwayMotion; color: HandSide }[];
   };
 
   const half = (h: Hand): number => (h.type === MotionType.ANTI || h.type === MotionType.DASH ? 1 : 0) + h.turns;
   const endOf = (h: Hand): Orientation => (half(h) % 2 === 0 ? IN : OUT);
-  const handStart = (c: MotionColor, h: Hand) => statPic(c, h.from, IN);
-  const handEnd = (c: MotionColor, h: Hand, eo: Orientation) =>
+  const handStart = (c: HandSide, h: Hand) => statPic(c, h.from, IN);
+  const handEnd = (c: HandSide, h: Hand, eo: Orientation) =>
     h.type === MotionType.STATIC ? statPic(c, h.to, eo) : statPic(c, h.to, eo);
-  const handFull = (c: MotionColor, h: Hand, eo: Orientation) =>
+  const handFull = (c: HandSide, h: Hand, eo: Orientation) =>
     h.type === MotionType.STATIC ? statPic(c, h.to, eo, h.rot, h.turns) : mo(c, h.type, h.from, h.to, h.rot, IN, eo, h.turns);
 
   function makeStrip(opts: {
@@ -100,11 +100,11 @@
     dot: "same" | "opp";
     captions: boolean;
     endThumb: string;
-    blue: Hand;
-    red: Hand;
+    left: Hand;
+    right: Hand;
   }): Strip {
-    const bEnd = endOf(opts.blue);
-    const rEnd = endOf(opts.red);
+    const bEnd = endOf(opts.left);
+    const rEnd = endOf(opts.right);
     const hm = (h: Hand, eo: Orientation): HalfwayMotion => ({
       type: h.type,
       from: h.from,
@@ -122,12 +122,12 @@
       dot: opts.dot,
       captions: opts.captions,
       endThumb: opts.endThumb,
-      start: pic("start", handStart(B, opts.blue), handStart(R, opts.red)),
-      end: pic("end", handEnd(B, opts.blue, bEnd), handEnd(R, opts.red, rEnd)),
-      combined: pic("full", handFull(B, opts.blue, bEnd), handFull(R, opts.red, rEnd)),
+      start: pic("start", handStart(B, opts.left), handStart(R, opts.right)),
+      end: pic("end", handEnd(B, opts.left, bEnd), handEnd(R, opts.right, rEnd)),
+      combined: pic("full", handFull(B, opts.left, bEnd), handFull(R, opts.right, rEnd)),
       halfway: [
-        { motion: hm(opts.blue, bEnd), color: B },
-        { motion: hm(opts.red, rEnd), color: R },
+        { motion: hm(opts.left, bEnd), color: B },
+        { motion: hm(opts.right, rEnd), color: R },
       ],
     };
   }
@@ -141,19 +141,19 @@
   const STRIPS: Strip[] = [
     // Type 2 - X (shift+static). X[3]: blue w→w static, red n→e anti ccw.
     makeStrip({ y: 64, letter: "X", labelLines: ["“X-Same", "One-One”"], labelY: 94, dot: "same", captions: true, endThumb: "mixed",
-      blue: ST(W, CCW), red: D(ANTI, N, E, CCW) }),
+      left: ST(W, CCW), right: D(ANTI, N, E, CCW) }),
     makeStrip({ y: 169, letter: "X", labelLines: ["“X-Opp", "One-One”"], labelY: 199, dot: "opp", captions: false, endThumb: "mixed",
-      blue: ST(W, CW), red: D(ANTI, N, E, CCW) }),
+      left: ST(W, CW), right: D(ANTI, N, E, CCW) }),
     // Type 3 - Θ- (dash+shift). Θ-[3]: blue s→n dash, red n→e pro cw.
     makeStrip({ y: 346, letter: "Θ-", labelLines: ["“Theta-Dash", "Same", "One-One”"], labelY: 368, dot: "same", captions: true, endThumb: "mixed",
-      blue: D(DASH, SO_, N, CW), red: D(PRO, N, E, CW) }),
+      left: D(DASH, SO_, N, CW), right: D(PRO, N, E, CW) }),
     makeStrip({ y: 455, letter: "Θ-", labelLines: ["“Theta-Dash", "Opp", "One-One”"], labelY: 477, dot: "opp", captions: false, endThumb: "out",
-      blue: D(DASH, SO_, N, CCW), red: D(PRO, N, E, CW) }),
+      left: D(DASH, SO_, N, CCW), right: D(PRO, N, E, CW) }),
     // Type 3 - Δ- (dash+anti). Δ-[3]: blue n→s dash, red n→e anti ccw.
     makeStrip({ y: 574, letter: "Δ-", labelLines: ["“Delta-Dash", "Same", "One-One”"], labelY: 596, dot: "same", captions: false, endThumb: "mixed",
-      blue: D(DASH, N, SO_, CCW), red: D(ANTI, N, E, CCW) }),
+      left: D(DASH, N, SO_, CCW), right: D(ANTI, N, E, CCW) }),
     makeStrip({ y: 683, letter: "Δ-", labelLines: ["“Delta-Dash", "Opp", "One-One”"], labelY: 705, dot: "opp", captions: false, endThumb: "out",
-      blue: D(DASH, N, SO_, CW), red: D(ANTI, N, E, CCW) }),
+      left: D(DASH, N, SO_, CW), right: D(ANTI, N, E, CCW) }),
   ];
 
   const START_X = 191;
@@ -182,7 +182,7 @@
   const ARROW_W = 14.5;
 
   const poses = (strip: Strip) =>
-    strip.halfway.map((h) => ({ ...halfwayPose(h.motion, h.color), fill: h.color === MotionColor.BLUE ? BLUE_FILL : RED_FILL }));
+    strip.halfway.map((h) => ({ ...halfwayPose(h.motion, h.color), fill: h.color === HandSide.LEFT ? BLUE_FILL : RED_FILL }));
 </script>
 
 <div class="oo23-page">
@@ -228,7 +228,7 @@
 
     <!-- start -->
     <div class="mini" style="left:{START_X * S}px; top:{strip.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={strip.start} gridMode={GridMode.DIAMOND} bluePropTypeOverride={PropType.STAFF} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+      <PictographContainer pictographData={strip.start} gridMode={GridMode.DIAMOND} leftPropTypeOverride={PropType.STAFF} rightPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
     </div>
     <!-- halfway -->
     <div class="mini" style="left:{HALF_X * S}px; top:{strip.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
@@ -242,11 +242,11 @@
     </div>
     <!-- end -->
     <div class="mini" style="left:{END_X * S}px; top:{strip.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={strip.end} gridMode={GridMode.DIAMOND} bluePropTypeOverride={PropType.STAFF} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+      <PictographContainer pictographData={strip.end} gridMode={GridMode.DIAMOND} leftPropTypeOverride={PropType.STAFF} rightPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
     </div>
     <!-- combined -->
     <div class="mini" style="left:{COMB_X * S}px; top:{strip.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={strip.combined} gridMode={GridMode.DIAMOND} bluePropTypeOverride={PropType.STAFF} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+      <PictographContainer pictographData={strip.combined} gridMode={GridMode.DIAMOND} leftPropTypeOverride={PropType.STAFF} rightPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
     </div>
     <div class="comb-label" style="left:{COMB_X * S}px; top:{(strip.y + SIZE - 12) * S}px; width:{SIZE * S}px">
       <span class="tka">{strip.letter}</span><span class="oo"><span class="sup">1</span><span class="sub">1</span></span>

@@ -118,8 +118,8 @@ export interface LetterPositionInfo {
 export interface LetterMappingData {
   startPosition: string;
   endPosition: string;
-  blueMotion: string;
-  redMotion: string;
+  leftMotion: string;
+  rightMotion: string;
 }
 
 /**

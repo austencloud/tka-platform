@@ -8,7 +8,7 @@
 
 import { GridMode } from "../../grid/domain/enums/grid-enums";
 import { deriveGridMode as _deriveGridMode } from "../../grid/services/grid-mode-deriver";
-import { MotionColor } from "../../shared/domain/enums/pictograph-enums";
+import { HandSide } from "../../shared/domain/enums/pictograph-enums";
 import {
   isVisibleMotion,
   type MotionData,
@@ -18,10 +18,10 @@ import { pictographRequiresStrictHandpoints } from "../domain/enums/prop-classif
 
 // Settings interface for Node.js contexts where getSettings() isn't available
 interface PropPlacerSettings {
-  bluePropType?: string;
-  redPropType?: string;
-  blueBuugengFlipped?: boolean;
-  redBuugengFlipped?: boolean;
+  leftPropType?: string;
+  rightPropType?: string;
+  leftBuugengFlipped?: boolean;
+  rightBuugengFlipped?: boolean;
 }
 
 import { createPropPlacementFromPosition } from "../domain/factories/create-prop-placement-data";
@@ -57,10 +57,10 @@ export class PropPlacer {
     // (e.g. orientation explainer, start position), use the pictograph's explicit gridMode
     // before falling back to DIAMOND.
     const gridMode =
-      pictographData.motions.blue && pictographData.motions.red
+      pictographData.motions.left && pictographData.motions.right
         ? _deriveGridMode(
-            pictographData.motions.blue,
-            pictographData.motions.red
+            pictographData.motions.left,
+            pictographData.motions.right
           )
         : pictographData.gridMode ?? GridMode.DIAMOND;
 
@@ -95,20 +95,20 @@ export class PropPlacer {
     // Determine if strict handpoints are needed (large props like bighoop)
     // Legacy: pictograph_checker.has_strict_placed_props() - true when BOTH props are strict types
     const resolvedSettings = propSettings ?? this.settings ?? {
-      bluePropType: pictographData.motions.blue?.propType ?? "staff",
-      redPropType: pictographData.motions.red?.propType ?? "staff",
+      leftPropType: pictographData.motions.left?.propType ?? "staff",
+      rightPropType: pictographData.motions.right?.propType ?? "staff",
     };
-    const bluePropType =
-      resolvedSettings.bluePropType ??
-      pictographData.motions.blue?.propType ??
+    const leftPropType =
+      resolvedSettings.leftPropType ??
+      pictographData.motions.left?.propType ??
       "staff";
-    const redPropType =
-      resolvedSettings.redPropType ??
-      pictographData.motions.red?.propType ??
+    const rightPropType =
+      resolvedSettings.rightPropType ??
+      pictographData.motions.right?.propType ??
       "staff";
     const useStrict = pictographRequiresStrictHandpoints(
-      bluePropType,
-      redPropType
+      leftPropType,
+      rightPropType
     );
 
     // Calculate base position from motion data (not from existing propPlacementData)
@@ -143,10 +143,10 @@ export class PropPlacer {
     // If this prop's partner is hidden, there is no collision - skip offset.
     // Beta offset exists purely to separate two overlapping props; with one
     // hidden the remaining prop should snap back to the default hand point.
-    const thisIsBlue = motionData.color === MotionColor.BLUE;
+    const thisIsBlue = motionData.hand === HandSide.LEFT;
     const partnerHidden = thisIsBlue
-      ? visibility?.showRed === false
-      : visibility?.showBlue === false;
+      ? visibility?.showRight === false
+      : visibility?.showLeft === false;
     if (partnerHidden) {
       return { x: 0, y: 0 };
     }
@@ -158,11 +158,11 @@ export class PropPlacer {
       return { x: 0, y: 0 };
     }
 
-    const redMotion = pictographData.motions.red;
-    const blueMotion = pictographData.motions.blue;
+    const rightMotion = pictographData.motions.right;
+    const leftMotion = pictographData.motions.left;
 
     // invisible placeholder = hand not really there (both-required Step shape)
-    if (!isVisibleMotion(redMotion) || !isVisibleMotion(blueMotion)) {
+    if (!isVisibleMotion(rightMotion) || !isVisibleMotion(leftMotion)) {
       return { x: 0, y: 0 };
     }
 
@@ -172,45 +172,45 @@ export class PropPlacer {
     // without this the beta calc falls back to the stored "staff" type and the
     // unilateral-skip in render-core never fires for club/fan/etc.
     const settings = propSettings ?? this.settings ?? {
-      bluePropType: blueMotion.propType ?? "staff",
-      redPropType: redMotion.propType ?? "staff",
+      leftPropType: leftMotion.propType ?? "staff",
+      rightPropType: rightMotion.propType ?? "staff",
     };
 
     // Build the render-core input objects
-    const blueMotionInput: BetaMotionInput = {
-      startLocation: blueMotion.startLocation,
-      endLocation: blueMotion.endLocation,
-      endOrientation: blueMotion.endOrientation,
-      motionType: blueMotion.motionType,
-      color: "blue",
-      propType: blueMotion.propType,
+    const leftMotionInput: BetaMotionInput = {
+      startLocation: leftMotion.startLocation,
+      endLocation: leftMotion.endLocation,
+      endOrientation: leftMotion.endOrientation,
+      motionType: leftMotion.motionType,
+      hand: HandSide.LEFT,
+      propType: leftMotion.propType,
     };
 
-    const redMotionInput: BetaMotionInput = {
-      startLocation: redMotion.startLocation,
-      endLocation: redMotion.endLocation,
-      endOrientation: redMotion.endOrientation,
-      motionType: redMotion.motionType,
-      color: "red",
-      propType: redMotion.propType,
+    const rightMotionInput: BetaMotionInput = {
+      startLocation: rightMotion.startLocation,
+      endLocation: rightMotion.endLocation,
+      endOrientation: rightMotion.endOrientation,
+      motionType: rightMotion.motionType,
+      hand: HandSide.RIGHT,
+      propType: rightMotion.propType,
     };
 
     const targetMotionInput: BetaMotionInput =
-      motionData.color === MotionColor.BLUE ? blueMotionInput : redMotionInput;
+      motionData.hand === HandSide.LEFT ? leftMotionInput : rightMotionInput;
 
     // Determine gridMode string for render-core ("diamond" | "box" | "skewed")
     // GridMode enum values are the same strings, so a direct cast works.
     const gridModeStr = gridMode as unknown as "diamond" | "box" | "skewed";
 
     const input: BetaOffsetInput = {
-      blueMotion: blueMotionInput,
-      redMotion: redMotionInput,
+      leftMotion: leftMotionInput,
+      rightMotion: rightMotionInput,
       letter: pictographData.letter || "",
       gridMode: gridModeStr,
-      bluePropType: settings.bluePropType,
-      redPropType: settings.redPropType,
-      blueBuugengFlipped: settings.blueBuugengFlipped,
-      redBuugengFlipped: settings.redBuugengFlipped,
+      leftPropType: settings.leftPropType,
+      rightPropType: settings.rightPropType,
+      leftBuugengFlipped: settings.leftBuugengFlipped,
+      rightBuugengFlipped: settings.rightBuugengFlipped,
     };
 
     const offset = calculateBetaOffset(input, targetMotionInput);

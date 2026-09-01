@@ -3,18 +3,18 @@ import type { StepLike } from "$lib/shared/foundation/domain/models/step-like";
 import { defaultInterval, extractPairRelations } from "../relation-extractor";
 
 function step(
-  blueStart: string,
-  blueEnd: string,
-  redStart: string,
-  redEnd: string
+  leftStart: string,
+  leftEnd: string,
+  rightStart: string,
+  rightEnd: string
 ): StepLike {
   return {
     letter: "A",
     startPosition: null,
     endPosition: null,
     motions: {
-      blue: { motionType: "pro", startLocation: blueStart, endLocation: blueEnd },
-      red: { motionType: "pro", startLocation: redStart, endLocation: redEnd },
+      left: { motionType: "pro", startLocation: leftStart, endLocation: leftEnd },
+      right: { motionType: "pro", startLocation: rightStart, endLocation: rightEnd },
     },
   } as unknown as StepLike;
 }

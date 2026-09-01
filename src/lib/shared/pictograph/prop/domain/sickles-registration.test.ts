@@ -59,8 +59,8 @@ describe("Sickles prop registration", () => {
       "Tip End",
       "Hilt End",
     ]);
-    expect(getCompositionRecipe(PropType.SICKLES).blue).not.toEqual(
-      getCompositionRecipe(PropType.SICKLES).red
+    expect(getCompositionRecipe(PropType.SICKLES).left).not.toEqual(
+      getCompositionRecipe(PropType.SICKLES).right
     );
   });
 

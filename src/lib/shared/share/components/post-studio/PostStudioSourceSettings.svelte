@@ -83,7 +83,7 @@
         ? undefined
         : composition.setTempoBpm}
       onPlaybackToggle={composition.togglePlayback}
-      bluePropType={selectedPropType}
+      leftPropType={selectedPropType}
       {onPropChange}
     />
   </div>

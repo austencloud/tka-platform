@@ -21,8 +21,8 @@ import {
 export interface LibraryActionHandlerDeps {
   getSequence: () => SequenceData | null;
   getIsOwned: () => boolean;
-  getBluePropType: () => PropType | undefined;
-  getRedPropType: () => PropType | undefined;
+  getLeftPropType: () => PropType | undefined;
+  getRightPropType: () => PropType | undefined;
   getCatDogModeEnabled: () => boolean | undefined;
   getHapticService: () => HapticFeedback | null;
   onDeleteSuccess: () => void;
@@ -161,8 +161,8 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
     try {
       const coordinator = await getVisualSequenceSaveCoordinator();
       const outcome = await coordinator.save(sequence, {
-        bluePropType: deps.getBluePropType(),
-        redPropType: deps.getRedPropType(),
+        leftPropType: deps.getLeftPropType(),
+        rightPropType: deps.getRightPropType(),
         catDogModeEnabled: deps.getCatDogModeEnabled(),
         pathShape: getAnimationVisibilityManager().getPathShape(),
       });

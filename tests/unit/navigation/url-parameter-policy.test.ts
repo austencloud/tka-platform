@@ -60,13 +60,13 @@ describe("route-scoped URL parameters", () => {
 
   it("keeps letter state only on its Atlas and Gallery destinations", () => {
     const atlasUrl = new URL(
-      "https://tkaflowarts.com/atlas?letter=B&grid=box&variation=6&blueTurns=0.5"
+      "https://tkaflowarts.com/atlas?letter=B&grid=box&variation=6&leftTurns=0.5"
     );
     const galleryUrl = new URL(
       "https://tkaflowarts.com/browse/explore/sequences?letter=B"
     );
     const legacyAtlasUrl = new URL(
-      "https://tkaflowarts.com/glossary?letter=B&grid=diamond&variation=2"
+      "https://tkaflowarts.com/glossary?letter=B&grid=diamond&variation=2&blueTurns=0.5"
     );
     const unrelatedUrl = new URL(
       "https://tkaflowarts.com/create/construct?letter=B&grid=box&variation=6"
@@ -78,10 +78,12 @@ describe("route-scoped URL parameters", () => {
     pruneRouteScopedParams(unrelatedUrl, unrelatedUrl.pathname);
 
     expect(atlasUrl.search).toBe(
-      "?letter=B&grid=box&variation=6&blueTurns=0.5"
+      "?letter=B&grid=box&variation=6&leftTurns=0.5"
     );
     expect(galleryUrl.search).toBe("?letter=B");
-    expect(legacyAtlasUrl.search).toBe("?letter=B&grid=diamond&variation=2");
+    expect(legacyAtlasUrl.search).toBe(
+      "?letter=B&grid=diamond&variation=2&blueTurns=0.5"
+    );
     expect(unrelatedUrl.search).toBe("");
   });
 });

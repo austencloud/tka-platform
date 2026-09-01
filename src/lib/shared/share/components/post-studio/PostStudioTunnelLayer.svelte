@@ -8,11 +8,11 @@
     sequence: SequenceData;
     playing: boolean;
     bpm: number;
-    bluePropType?: string;
-    redPropType?: string;
+    leftPropType?: string;
+    rightPropType?: string;
   }
 
-  let { sequence, playing, bpm, bluePropType, redPropType }: Props = $props();
+  let { sequence, playing, bpm, leftPropType, rightPropType }: Props = $props();
 
   // TunnelArtView reads exactly one thing off the viewer's playback state — the
   // sequence the transport is showing. Post Studio has no viewer transport, so
@@ -35,8 +35,8 @@
     {playback}
     {controller}
     {bpm}
-    {bluePropType}
-    {redPropType}
+    {leftPropType}
+    {rightPropType}
     {playing}
     onPlayingChange={() => undefined}
     stageFit="cover"

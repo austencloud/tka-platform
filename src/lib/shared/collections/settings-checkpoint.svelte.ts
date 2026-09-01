@@ -54,11 +54,11 @@ export interface SettingsCheckpoint {
     effortPreset: EffortId;
     pathShape: "arc" | "linear" | "concave";
     motionAwarePaths: boolean;
-    bluePathLines: boolean;
-    redPathLines: boolean;
+    leftPathLines: boolean;
+    rightPathLines: boolean;
     trail: TrailSettings;
-    bluePropType: PropType;
-    redPropType: PropType;
+    leftPropType: PropType;
+    rightPropType: PropType;
     backgroundType: BackgroundType;
   };
   raw: {
@@ -129,11 +129,11 @@ export function captureSettingsCheckpoint(label: string): void {
       effortPreset: vm.getEffortPreset(),
       pathShape: vm.getPathShape(),
       motionAwarePaths: vm.getMotionAwarePaths(),
-      bluePathLines: vm.getVisibility("bluePathLines"),
-      redPathLines: vm.getVisibility("redPathLines"),
+      leftPathLines: vm.getVisibility("leftPathLines"),
+      rightPathLines: vm.getVisibility("rightPathLines"),
       trail: $state.snapshot(animationSettings.trail) as TrailSettings,
-      bluePropType: settings.bluePropType ?? PropType.STAFF,
-      redPropType: settings.redPropType ?? PropType.STAFF,
+      leftPropType: settings.leftPropType ?? PropType.STAFF,
+      rightPropType: settings.rightPropType ?? PropType.STAFF,
       backgroundType: settings.backgroundType ?? BackgroundType.COSMIC,
     },
     raw: {
@@ -176,12 +176,12 @@ export function revertSettingsCheckpoint(): string | null {
   vm.setEffortPreset(checkpoint.semantic.effortPreset);
   vm.setPathShape(checkpoint.semantic.pathShape);
   vm.setMotionAwarePaths(checkpoint.semantic.motionAwarePaths);
-  vm.setVisibility("bluePathLines", checkpoint.semantic.bluePathLines);
-  vm.setVisibility("redPathLines", checkpoint.semantic.redPathLines);
+  vm.setVisibility("leftPathLines", checkpoint.semantic.leftPathLines);
+  vm.setVisibility("rightPathLines", checkpoint.semantic.rightPathLines);
   animationSettings.updateSettings({ trail: checkpoint.semantic.trail });
   void settingsService.updateSettings({
-    bluePropType: checkpoint.semantic.bluePropType,
-    redPropType: checkpoint.semantic.redPropType,
+    leftPropType: checkpoint.semantic.leftPropType,
+    rightPropType: checkpoint.semantic.rightPropType,
     backgroundType: checkpoint.semantic.backgroundType,
   });
 

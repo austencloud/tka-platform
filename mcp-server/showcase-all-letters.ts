@@ -56,15 +56,15 @@ interface PictographData {
   letter: string;
   startPosition: string;
   endPosition: string;
-  blueMotion: {
-    color: "blue";
+  leftMotion: {
+    hand: "left";
     startLocation: string;
     endLocation: string;
     motionType: string;
     rotationDirection: string;
   };
-  redMotion: {
-    color: "red";
+  rightMotion: {
+    hand: "right";
     startLocation: string;
     endLocation: string;
     motionType: string;
@@ -101,15 +101,15 @@ function loadAllPictographs(): PictographData[] {
         letter: values[getIndex("letter")],
         startPosition: values[getIndex("startPosition")],
         endPosition: values[getIndex("endPosition")],
-        blueMotion: {
-          color: "blue",
+        leftMotion: {
+          hand: "left",
           motionType: values[getIndex("blueMotionType")],
           rotationDirection: values[getIndex("blueRotationDirection")],
           startLocation: values[getIndex("blueStartLocation")],
           endLocation: values[getIndex("blueEndLocation")],
         },
-        redMotion: {
-          color: "red",
+        rightMotion: {
+          hand: "right",
           motionType: values[getIndex("redMotionType")],
           rotationDirection: values[getIndex("redRotationDirection")],
           startLocation: values[getIndex("redStartLocation")],
@@ -160,21 +160,21 @@ async function renderLetter(
     letter: data.letter,
     startPosition: data.startPosition,
     endPosition: data.endPosition,
-    blueMotion: {
-      color: "blue" as const,
-      motionType: data.blueMotion.motionType,
-      rotationDirection: data.blueMotion.rotationDirection || "cw",
-      startLocation: data.blueMotion.startLocation,
-      endLocation: data.blueMotion.endLocation,
+    leftMotion: {
+      hand: "left" as const,
+      motionType: data.leftMotion.motionType,
+      rotationDirection: data.leftMotion.rotationDirection || "cw",
+      startLocation: data.leftMotion.startLocation,
+      endLocation: data.leftMotion.endLocation,
       turns: 0,
       startOrientation: "in",
     },
-    redMotion: {
-      color: "red" as const,
-      motionType: data.redMotion.motionType,
-      rotationDirection: data.redMotion.rotationDirection || "cw",
-      startLocation: data.redMotion.startLocation,
-      endLocation: data.redMotion.endLocation,
+    rightMotion: {
+      hand: "right" as const,
+      motionType: data.rightMotion.motionType,
+      rotationDirection: data.rightMotion.rotationDirection || "cw",
+      startLocation: data.rightMotion.startLocation,
+      endLocation: data.rightMotion.endLocation,
       turns: 0,
       startOrientation: "in",
     },
@@ -187,8 +187,8 @@ async function renderLetter(
     showElemental: true,
     showPositions: true,
     showGrid: true,
-    showBlueMotion: true,
-    showRedMotion: true,
+    showLeftMotion: true,
+    showRightMotion: true,
   });
 }
 

@@ -45,8 +45,8 @@ describe("viewer shell model", () => {
         includeEndHold: false,
         renderMode: "3d",
         playbackMode: "continuous",
-        bluePropType: PropType.STAFF,
-        redPropType: PropType.FAN,
+        leftPropType: PropType.STAFF,
+        rightPropType: PropType.FAN,
       })
     ).toEqual({
       fps: 60,
@@ -56,8 +56,8 @@ describe("viewer shell model", () => {
       include_end_hold: false,
       render_mode: "3d",
       playback_mode: "continuous",
-      blue_prop: "staff",
-      red_prop: "fan",
+      left_prop: "staff",
+      right_prop: "fan",
       mixed_props: true,
     });
 
@@ -67,16 +67,16 @@ describe("viewer shell model", () => {
         darkMode: true,
         includeStartPosition: false,
         handPath: true,
-        bluePropType: PropType.STAFF,
-        redPropType: PropType.STAFF,
+        leftPropType: PropType.STAFF,
+        rightPropType: PropType.STAFF,
       })
     ).toEqual({
       step_count: 16,
       dark_mode: true,
       include_start_position: false,
       hand_path: true,
-      blue_prop: "staff",
-      red_prop: "staff",
+      left_prop: "staff",
+      right_prop: "staff",
       mixed_props: false,
     });
   });

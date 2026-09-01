@@ -57,8 +57,8 @@ describe("PropPreferencePersister", () => {
         propsISpinWith: [PropType.STAFF],
         favoriteProp: null,
         favoriteCatdog: {
-          bluePropType: PropType.FAN, // not in list
-          redPropType: PropType.STAFF,
+          leftPropType: PropType.FAN, // not in list
+          rightPropType: PropType.STAFF,
         },
       };
 
@@ -72,8 +72,8 @@ describe("PropPreferencePersister", () => {
         propsISpinWith: [PropType.FAN],
         favoriteProp: null,
         favoriteCatdog: {
-          bluePropType: PropType.FAN,
-          redPropType: PropType.STAFF, // not in list
+          leftPropType: PropType.FAN,
+          rightPropType: PropType.STAFF, // not in list
         },
       };
 
@@ -97,8 +97,8 @@ describe("PropPreferencePersister", () => {
         propsISpinWith: [PropType.STAFF, PropType.FAN],
         favoriteProp: null,
         favoriteCatdog: {
-          bluePropType: PropType.STAFF,
-          redPropType: PropType.FAN,
+          leftPropType: PropType.STAFF,
+          rightPropType: PropType.FAN,
         },
       };
 
@@ -137,8 +137,8 @@ describe("PropPreferencePersister", () => {
         propsISpinWith: [PropType.STAFF, PropType.FAN, PropType.CLUB],
         favoriteProp: PropType.CLUB,
         favoriteCatdog: {
-          bluePropType: PropType.STAFF,
-          redPropType: PropType.FAN,
+          leftPropType: PropType.STAFF,
+          rightPropType: PropType.FAN,
         },
       });
 
@@ -156,8 +156,8 @@ describe("PropPreferencePersister", () => {
         propsISpinWith: [PropType.STAFF, PropType.FAN],
         favoriteProp: null,
         favoriteCatdog: {
-          bluePropType: PropType.STAFF,
-          redPropType: PropType.FAN,
+          leftPropType: PropType.STAFF,
+          rightPropType: PropType.FAN,
         },
       });
 

@@ -31,7 +31,7 @@ import {
   resolveCell,
   type TranscriptionEntry,
 } from "$lib/features/spiroanim-bridge/services/resolve-cell";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 
 // Repo-root-relative, matching spiroanim-72-validate.test.ts. An
@@ -116,7 +116,7 @@ describe("spiroanim bridge resolver", () => {
           );
         }
 
-        for (const color of [MotionColor.BLUE, MotionColor.RED]) {
+        for (const color of [HandSide.LEFT, HandSide.RIGHT]) {
           for (const [index, step] of sequence.steps.entries()) {
             const motion = step.motions?.[color];
             if (!motion) {

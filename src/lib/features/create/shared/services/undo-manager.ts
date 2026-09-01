@@ -30,7 +30,7 @@ export enum UndoOperationType {
   MIRROR_SEQUENCE = "MIRROR_SEQUENCE",
   FLIP_SEQUENCE = "FLIP_SEQUENCE",
   ROTATE_SEQUENCE = "ROTATE_SEQUENCE",
-  SWAP_COLORS = "SWAP_COLORS",
+  SWAP_HANDS = "SWAP_HANDS",
   INVERT_SEQUENCE = "INVERT_SEQUENCE",
   REWIND_SEQUENCE = "REWIND_SEQUENCE",
   SHIFT_START = "SHIFT_START",
@@ -114,7 +114,7 @@ const OPERATION_DESCRIPTIONS: Record<UndoOperationType, string> = {
   MIRROR_SEQUENCE: "Mirror",
   FLIP_SEQUENCE: "Flip",
   ROTATE_SEQUENCE: "Rotate",
-  SWAP_COLORS: "Swap Colors",
+  SWAP_HANDS: "Swap Hands",
   INVERT_SEQUENCE: "Invert",
   REWIND_SEQUENCE: "Rewind",
   SHIFT_START: "Shift Start",
@@ -140,7 +140,6 @@ export class UndoManager {
     void this.loadHistory();
   }
 
-
   /**
    * Subscribe to changes in undo/redo state
    */
@@ -156,7 +155,6 @@ export class UndoManager {
   private notifyChange(): void {
     this._changeCallbacks.forEach((callback) => callback());
   }
-
 
   get maxHistorySize(): number {
     return this._maxHistorySize;
@@ -177,7 +175,6 @@ export class UndoManager {
   get redoHistory(): ReadonlyArray<UndoHistoryEntry> {
     return this._redoHistory;
   }
-
 
   /**
    * Push a new action to the undo history
@@ -555,7 +552,6 @@ export class UndoManager {
     const entry = this.getLastRedoEntry(activeSection);
     return entry ? entry.afterState || null : null;
   }
-
 
   /**
    * Generate a unique action ID

@@ -17,8 +17,8 @@ import { type Flower } from "../domain/flower-signature";
 
 /** The cell overlay loci a realization must reproduce (single-tip club geometry). */
 export interface CellOverlay {
-  blue: SVGPathData[];
-  red: SVGPathData[];
+  left: SVGPathData[];
+  right: SVGPathData[];
   tipPoint?: TipPoint;
   clubTipDx: number;
 }
@@ -74,7 +74,7 @@ export interface ModeCard {
  * silently substituted.
  */
 export async function buildModeCards(
-  pair: { blue: Flower; red: Flower },
+  pair: { left: Flower; right: Flower },
   overlay: CellOverlay
 ): Promise<ModeCard[]> {
   const [idx, edges] = await Promise.all([loadBaseIndex(), loadDiamondEdges()]);
@@ -84,8 +84,8 @@ export async function buildModeCards(
       const base = resolveBase(
         idx,
         mode,
-        pair.blue.style === "float" ? "pro" : pair.blue.style,
-        pair.red.style === "float" ? "pro" : pair.red.style
+        pair.left.style === "float" ? "pro" : pair.left.style,
+        pair.right.style === "float" ? "pro" : pair.right.style
       );
       if (!base) return null;
       const familyId = FAMILY_BY_MODE[mode];
@@ -93,8 +93,8 @@ export async function buildModeCards(
         const parity = verifyAndCorrect(
           base,
           pair,
-          overlay.blue,
-          overlay.red,
+          overlay.left,
+          overlay.right,
           edges,
           overlay.tipPoint ?? overlay.clubTipDx
         );
@@ -116,7 +116,7 @@ export async function buildModeCards(
           frontUrl,
           backUrl,
           matched: parity.matched,
-          maxDist: Math.max(parity.blueDist, parity.redDist),
+          maxDist: Math.max(parity.leftDist, parity.rightDist),
         };
       } catch {
         return null;

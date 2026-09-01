@@ -16,8 +16,8 @@
   import { openPropCelebration } from "$lib/shared/gamification/state/prop-celebration-state.svelte";
 
   const settings = $derived(getSettings());
-  const bluePropType = $derived(settings.bluePropType ?? PropType.STAFF);
-  const displayInfo = $derived(getPropTypeDisplayInfo(bluePropType));
+  const leftPropType = $derived(settings.leftPropType ?? PropType.STAFF);
+  const displayInfo = $derived(getPropTypeDisplayInfo(leftPropType));
   // Only badge when there is actually a claimable prop left — covers the
   // locking-disabled flag and the pool-exhausted case (stale pendingPicks).
   const hasPendingPick = $derived(
@@ -28,7 +28,7 @@
     // Shift-click draws from the whole enum, so paid cosmetics drop out unless
     // the user may actually use them.
     const allProps = filterPremiumCosmeticProps(getAllPropTypes());
-    const otherProps = allProps.filter((p) => p !== bluePropType);
+    const otherProps = allProps.filter((p) => p !== leftPropType);
     const randomProp = otherProps[Math.floor(Math.random() * otherProps.length)]!;
 
     try {
@@ -38,7 +38,7 @@
       // Haptic not available
     }
 
-    updateSettings({ bluePropType: randomProp, redPropType: randomProp });
+    updateSettings({ leftPropType: randomProp, rightPropType: randomProp });
   }
 
   function handleClick(event: MouseEvent) {
@@ -75,7 +75,7 @@
   data-ghost-kind="prop-picker"
   data-ghost-label="props"
 >
-  <PropCompositionPreview propType={bluePropType} size={40} />
+  <PropCompositionPreview propType={leftPropType} size={40} />
   {#if hasPendingPick}
     <span class="redeem-dot" aria-label="Claim your new prop"></span>
   {/if}

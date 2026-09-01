@@ -6,7 +6,7 @@ import type { StepLike } from "$lib/shared/mandala/services/types";
 const STRAIGHT_LINE_SEQUENCE: StepLike[] = [
   {
     motions: {
-      blue: {
+      left: {
         motionType: "dash",
         rotationDirection: "noRotation",
         startLocation: "s",
@@ -15,7 +15,7 @@ const STRAIGHT_LINE_SEQUENCE: StepLike[] = [
         startOrientation: "in",
         endOrientation: "out",
       },
-      red: {
+      right: {
         motionType: "static",
         rotationDirection: "noRotation",
         startLocation: "s",
@@ -28,7 +28,7 @@ const STRAIGHT_LINE_SEQUENCE: StepLike[] = [
   },
   {
     motions: {
-      blue: {
+      left: {
         motionType: "static",
         rotationDirection: "noRotation",
         startLocation: "n",
@@ -37,7 +37,7 @@ const STRAIGHT_LINE_SEQUENCE: StepLike[] = [
         startOrientation: "out",
         endOrientation: "out",
       },
-      red: {
+      right: {
         motionType: "dash",
         rotationDirection: "noRotation",
         startLocation: "s",
@@ -50,7 +50,7 @@ const STRAIGHT_LINE_SEQUENCE: StepLike[] = [
   },
   {
     motions: {
-      blue: {
+      left: {
         motionType: "dash",
         rotationDirection: "noRotation",
         startLocation: "n",
@@ -59,7 +59,7 @@ const STRAIGHT_LINE_SEQUENCE: StepLike[] = [
         startOrientation: "out",
         endOrientation: "in",
       },
-      red: {
+      right: {
         motionType: "static",
         rotationDirection: "noRotation",
         startLocation: "n",
@@ -72,7 +72,7 @@ const STRAIGHT_LINE_SEQUENCE: StepLike[] = [
   },
   {
     motions: {
-      blue: {
+      left: {
         motionType: "static",
         rotationDirection: "noRotation",
         startLocation: "s",
@@ -81,7 +81,7 @@ const STRAIGHT_LINE_SEQUENCE: StepLike[] = [
         startOrientation: "in",
         endOrientation: "in",
       },
-      red: {
+      right: {
         motionType: "dash",
         rotationDirection: "noRotation",
         startLocation: "n",
@@ -106,7 +106,7 @@ function coordinates(path: string): Array<{ x: number; y: number }> {
 describe("straight-line mandala SVG rendering", () => {
   it("uses user-space effects so an axis-aligned mandala remains visible", () => {
     const paths = calculate(STRAIGHT_LINE_SEQUENCE, "staff", "staff");
-    const allPoints = [...paths.blue, ...paths.red].flatMap(({ d }) =>
+    const allPoints = [...paths.left, ...paths.right].flatMap(({ d }) =>
       coordinates(d)
     );
 

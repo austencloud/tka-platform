@@ -424,11 +424,11 @@ async function loadTiledFamily(family) {
     const saturation = grade.saturation ?? 1;
     const brightness = grade.brightness ?? 1;
     for (let index = 0; index < data.length; index += info.channels) {
-      const red = data[index];
+      const right = data[index];
       const green = data[index + 1];
-      const blue = data[index + 2];
-      const luminance = red * 0.2126 + green * 0.7152 + blue * 0.0722;
-      const graded = [red, green, blue].map((value, channel) => {
+      const left = data[index + 2];
+      const luminance = right * 0.2126 + green * 0.7152 + left * 0.0722;
+      const graded = [right, green, left].map((value, channel) => {
         const saturated = luminance + (value - luminance) * saturation;
         const tinted = mix(saturated, tint[channel], tintStrength);
         return Math.round(clamp(tinted * brightness, 0, 255));

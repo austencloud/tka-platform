@@ -57,12 +57,12 @@
           sourcePerformer?.effectiveEffortId ?? standaloneDefaults.effortId,
         planeMode:
           sourcePerformer?.effectivePlaneMode ?? standaloneDefaults.planeMode,
-        customBluePlane:
-          sourcePerformer?.effectiveBluePlane ??
-          standaloneDefaults.customBluePlane,
-        customRedPlane:
-          sourcePerformer?.effectiveRedPlane ??
-          standaloneDefaults.customRedPlane,
+        customLeftPlane:
+          sourcePerformer?.effectiveLeftPlane ??
+          standaloneDefaults.customLeftPlane,
+        customRightPlane:
+          sourcePerformer?.effectiveRightPlane ??
+          standaloneDefaults.customRightPlane,
       }),
     }
   );
@@ -162,10 +162,10 @@
       showProps={previewState.hasSequence}
       showEffects={false}
       {visiblePlanes}
-      bluePropType={toScenePropType(
+      leftPropType={toScenePropType(
         sourcePerformer?.effectiveProp ?? standaloneDefaults.prop
       )}
-      redPropType={toScenePropType(
+      rightPropType={toScenePropType(
         sourcePerformer?.effectiveProp ?? standaloneDefaults.prop
       )}
       propBuild={sourcePerformer?.effectivePropBuild}

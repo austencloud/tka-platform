@@ -18,22 +18,22 @@
 
   interface Props {
     sequence: SequenceData;
-    bluePropType: PropType;
-    redPropType: PropType;
+    leftPropType: PropType;
+    rightPropType: PropType;
     includeStartPosition?: boolean;
     onSelect: (step: StepData) => void;
   }
 
   let {
     sequence,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     includeStartPosition = true,
     onSelect,
   }: Props = $props();
 
   function emit(step: StepData): void {
-    onSelect(withEffectivePropTypes(step, bluePropType, redPropType));
+    onSelect(withEffectivePropTypes(step, leftPropType, rightPropType));
   }
 
   // StepGrid uses 1-based step numbers (0 = start position).
@@ -65,8 +65,8 @@
     startPosition={includeStartPosition ? sequence.startPosition ?? null : null}
     onStepClick={handleStepClick}
     onStartClick={handleStartClick}
-    bluePropTypeOverride={bluePropType}
-    redPropTypeOverride={redPropType}
+    leftPropTypeOverride={leftPropType}
+    rightPropTypeOverride={rightPropType}
   />
 </div>
 

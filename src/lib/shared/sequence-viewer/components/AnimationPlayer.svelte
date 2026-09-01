@@ -64,8 +64,8 @@
     onStepChange,
     previewDarkMode = null,
     layout = "vertical" as "vertical" | "horizontal",
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     onTogglePlaybackRef,
     onControllerReady,
     hideProgressBar = false,
@@ -87,8 +87,8 @@
     onStepChange?: (stepIndex: number | null, isPlaying: boolean) => void;
     previewDarkMode?: boolean | null;
     layout?: "vertical" | "horizontal";
-    bluePropType?: PropType | null;
-    redPropType?: PropType | null;
+    leftPropType?: PropType | null;
+    rightPropType?: PropType | null;
     /** Callback to receive reference to toggle playback function (for external keyboard control) */
     onTogglePlaybackRef?: (toggleFn: () => void) => void;
     /** Called when the internal playback controller is initialized, exposing it for external sync */
@@ -143,15 +143,15 @@
   const currentStep = $derived(
     useContext ? (ctx?.state?.currentStep ?? 0) : (animState?.currentStep ?? 0)
   );
-  const bluePropState = $derived(
+  const leftPropState = $derived(
     useContext
-      ? (ctx?.state?.bluePropState ?? null)
-      : (animState?.bluePropState ?? null)
+      ? (ctx?.state?.leftPropState ?? null)
+      : (animState?.leftPropState ?? null)
   );
-  const redPropState = $derived(
+  const rightPropState = $derived(
     useContext
-      ? (ctx?.state?.redPropState ?? null)
-      : (animState?.redPropState ?? null)
+      ? (ctx?.state?.rightPropState ?? null)
+      : (animState?.rightPropState ?? null)
   );
   const sequenceData = $derived(
     useContext
@@ -239,8 +239,8 @@
 
     if (settings.trackingMode === TrackingMode.BOTH_ENDS) {
       const hasBilateral =
-        (bluePropType != null && isBilateralProp(String(bluePropType))) ||
-        (redPropType != null && isBilateralProp(String(redPropType)));
+        (leftPropType != null && isBilateralProp(String(leftPropType))) ||
+        (rightPropType != null && isBilateralProp(String(rightPropType)));
       if (!hasBilateral) {
         settings.trackingMode = TrackingMode.RIGHT_END;
       }
@@ -406,8 +406,8 @@
     <div class="horizontal-row">
       <div class="canvas-wrap">
         <AnimatorCanvas
-          blueProp={bluePropState}
-          redProp={redPropState}
+          leftProp={leftPropState}
+          rightProp={rightPropState}
           gridVisible={true}
           {gridMode}
           {letter}
@@ -423,8 +423,8 @@
           {trailSettings}
           onCanvasReady={handleCanvasReady}
           {previewDarkMode}
-          {bluePropType}
-          {redPropType}
+          {leftPropType}
+          {rightPropType}
           {tipEffectMap}
           progressBarVariant="minimal"
           {hideProgressBar}
@@ -479,8 +479,8 @@
     <!-- Vertical mode: original layout -->
     <div class="canvas-wrap">
       <AnimatorCanvas
-        blueProp={bluePropState}
-        redProp={redPropState}
+        leftProp={leftPropState}
+        rightProp={rightPropState}
         gridVisible={true}
         {gridMode}
         {letter}
@@ -495,8 +495,8 @@
         {trailSettings}
         onCanvasReady={handleCanvasReady}
         {previewDarkMode}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         {tipEffectMap}
         progressBarVariant="minimal"
         {hideProgressBar}

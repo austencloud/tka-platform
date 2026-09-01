@@ -373,23 +373,23 @@ function checkSwapped(a: readonly StepData[], b: readonly StepData[]): boolean {
   for (let i = 0; i < len; i++) {
     const stepA = a[i]!;
     const stepB = b[i]!;
-    const aBlue = stepA.motions?.blue;
-    const aRed = stepA.motions?.red;
-    const bBlue = stepB.motions?.blue;
-    const bRed = stepB.motions?.red;
+    const aLeft = stepA.motions?.left;
+    const aRight = stepA.motions?.right;
+    const bLeft = stepB.motions?.left;
+    const bRight = stepB.motions?.right;
 
     // Invisible placeholder = hand not really there (both-required Step shape).
     if (
-      isVisibleMotion(aBlue) &&
-      isVisibleMotion(aRed) &&
-      isVisibleMotion(bBlue) &&
-      isVisibleMotion(bRed)
+      isVisibleMotion(aLeft) &&
+      isVisibleMotion(aRight) &&
+      isVisibleMotion(bLeft) &&
+      isVisibleMotion(bRight)
     ) {
-      if (aBlue.motionType === aRed.motionType) continue;
+      if (aLeft.motionType === aRight.motionType) continue;
       checkCount++;
       if (
-        bBlue.motionType === aRed.motionType &&
-        bRed.motionType === aBlue.motionType
+        bLeft.motionType === aRight.motionType &&
+        bRight.motionType === aLeft.motionType
       ) {
         matchCount++;
       }
@@ -419,18 +419,18 @@ function checkInverted(a: readonly StepData[], b: readonly StepData[]): boolean 
       if (expected && stepB.letter !== expected) return false;
     }
 
-    const aBlue = stepA.motions?.blue;
-    const bBlue = stepB.motions?.blue;
-    if (isVisibleMotion(aBlue) && isVisibleMotion(bBlue)) {
+    const aLeft = stepA.motions?.left;
+    const bLeft = stepB.motions?.left;
+    if (isVisibleMotion(aLeft) && isVisibleMotion(bLeft)) {
       validComparisons++;
-      if (!isMotionTypeInverted(aBlue.motionType, bBlue.motionType)) return false;
+      if (!isMotionTypeInverted(aLeft.motionType, bLeft.motionType)) return false;
     }
 
-    const aRed = stepA.motions?.red;
-    const bRed = stepB.motions?.red;
-    if (isVisibleMotion(aRed) && isVisibleMotion(bRed)) {
+    const aRight = stepA.motions?.right;
+    const bRight = stepB.motions?.right;
+    if (isVisibleMotion(aRight) && isVisibleMotion(bRight)) {
       validComparisons++;
-      if (!isMotionTypeInverted(aRed.motionType, bRed.motionType)) return false;
+      if (!isMotionTypeInverted(aRight.motionType, bRight.motionType)) return false;
     }
   }
 

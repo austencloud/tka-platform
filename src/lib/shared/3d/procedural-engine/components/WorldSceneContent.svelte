@@ -1050,8 +1050,8 @@
 {#if isInitialized && isReadyToRender && showAvatar}
   <Avatar3D
     id="realm-player"
-    bluePropState={performerState?.bluePropState ?? null}
-    redPropState={performerState?.redPropState ?? null}
+    leftPropState={performerState?.leftPropState ?? null}
+    rightPropState={performerState?.rightPropState ?? null}
     visible={true}
     position={playerPosition}
     facingAngle={playerYaw}
@@ -1066,29 +1066,29 @@
     rotation.y={playerYaw}
   >
     <T.Group position.z={-0.5}>
-      {#if performerState?.bluePropState}
+      {#if performerState?.leftPropState}
         <T.Group
-          position.x={performerState.bluePropState.worldPosition.x}
-          position.y={performerState.bluePropState.worldPosition.y}
-          position.z={performerState.bluePropState.worldPosition.z}
+          position.x={performerState.leftPropState.worldPosition.x}
+          position.y={performerState.leftPropState.worldPosition.y}
+          position.z={performerState.leftPropState.worldPosition.z}
         >
           <Prop3D
             propType={toScenePropType(PropType.STAFF)}
-            propState={performerState.bluePropState}
+            propState={performerState.leftPropState}
             color="blue"
             isActivePlayer={true}
           />
         </T.Group>
       {/if}
-      {#if performerState?.redPropState}
+      {#if performerState?.rightPropState}
         <T.Group
-          position.x={performerState.redPropState.worldPosition.x}
-          position.y={performerState.redPropState.worldPosition.y}
-          position.z={performerState.redPropState.worldPosition.z}
+          position.x={performerState.rightPropState.worldPosition.x}
+          position.y={performerState.rightPropState.worldPosition.y}
+          position.z={performerState.rightPropState.worldPosition.z}
         >
           <Prop3D
             propType={toScenePropType(PropType.STAFF)}
-            propState={performerState.redPropState}
+            propState={performerState.rightPropState}
             color="red"
             isActivePlayer={true}
           />

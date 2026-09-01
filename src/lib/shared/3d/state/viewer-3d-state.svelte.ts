@@ -176,8 +176,8 @@ export interface StoredPerformerSnapshot {
   characterId?: CharacterId;
   position: { x: number; z: number };
   facingAngle: number;
-  customBluePlane: Plane;
-  customRedPlane: Plane;
+  customLeftPlane: Plane;
+  customRightPlane: Plane;
   /** User-assigned display name; absent/null = inherit the character model's name. */
   name?: string | null;
   /** Cascade overrides; absent = no overrides (pre-v2 snapshots). */
@@ -362,14 +362,14 @@ function migrateLegacyPlanesIfNeeded(): void {
     if (!hasOld) return;
 
     const planes = JSON.parse(hasOld) as Plane[];
-    const blue = planes[0] ?? Plane.WALL;
-    const red = planes[1] ?? blue;
+    const left = planes[0] ?? Plane.WALL;
+    const right = planes[1] ?? left;
     const snapshots: StoredPerformerSnapshot[] = [
       {
         position: { x: 0, z: 0 },
         facingAngle: 0,
-        customBluePlane: blue,
-        customRedPlane: red,
+        customLeftPlane: left,
+        customRightPlane: right,
       },
     ];
     localStorage.setItem(STORAGE_KEY_PERFORMERS, JSON.stringify(snapshots));
@@ -484,7 +484,7 @@ export interface Viewer3DStateOptions {
   /** Used only when this user has never chosen a 3D environment. */
   firstUseEnvironment?: SceneEnvironmentId;
   /**
-   * The app's current prop (settings.bluePropType). A PLAIN open re-seeds prop
+   * The app's current prop (settings.leftPropType). A PLAIN open re-seeds prop
    * identity from this instead of the persisted viewer prop, so users stop
    * being ambushed by a stale saved prop. A preset-sourced open ignores it.
    */
@@ -620,8 +620,8 @@ function buildViewer3DState(
       }) as PropType),
     effortId: "linear" as EffortId,
     planeMode: PlaneMode.WALL,
-    customBluePlane: Plane.WALL,
-    customRedPlane: Plane.WALL,
+    customLeftPlane: Plane.WALL,
+    customRightPlane: Plane.WALL,
   });
 
   // Performer manager - single source of truth for multi-performer state.
@@ -843,16 +843,16 @@ function buildViewer3DState(
     sceneUndo.commitState();
   }
 
-  function setDefaultHandPlane(hand: "blue" | "red", plane: Plane): void {
+  function setDefaultHandPlane(hand: "left" | "right", plane: Plane): void {
     sceneUndo.captureState(
       "change-default-planes",
       `Default ${hand}: ${plane}`
     );
-    if (hand === "blue") _defaultSettings.customBluePlane = plane;
-    else _defaultSettings.customRedPlane = plane;
+    if (hand === "left") _defaultSettings.customLeftPlane = plane;
+    else _defaultSettings.customRightPlane = plane;
     _defaultSettings.planeMode = derivePlaneModeFromHands(
-      _defaultSettings.customBluePlane,
-      _defaultSettings.customRedPlane
+      _defaultSettings.customLeftPlane,
+      _defaultSettings.customRightPlane
     );
     sceneUndo.commitState();
   }
@@ -901,7 +901,7 @@ function buildViewer3DState(
    * Fan-out: assign a hand plane on every performer in the current scope.
    * Used by the Planes tab when "All" is selected or a single performer is picked.
    */
-  function setHandPlaneScoped(hand: "blue" | "red", plane: Plane): void {
+  function setHandPlaneScoped(hand: "left" | "right", plane: Plane): void {
     const targets = scopedPerformers();
     if (targets.length <= 1) {
       for (const p of targets) p.setHandPlane(hand, plane);
@@ -976,8 +976,8 @@ function buildViewer3DState(
         id: p.id,
         position: { x: p.position.x, z: p.position.z },
         facingAngle: p.facingAngle,
-        customBluePlane: p.customBluePlane,
-        customRedPlane: p.customRedPlane,
+        customLeftPlane: p.customLeftPlane,
+        customRightPlane: p.customRightPlane,
       }));
 
     return structuredClone({
@@ -1010,8 +1010,8 @@ function buildViewer3DState(
       p.position.x = ps.position.x;
       p.position.z = ps.position.z;
       p.setFacingAngle(ps.facingAngle);
-      p.setHandPlane("blue", ps.customBluePlane);
-      p.setHandPlane("red", ps.customRedPlane);
+      p.setHandPlane("left", ps.customLeftPlane);
+      p.setHandPlane("right", ps.customRightPlane);
       if (_currentSequenceData && !p.totalSteps) {
         p.loadSequence(_currentSequenceData);
       }
@@ -1041,8 +1041,8 @@ function buildViewer3DState(
     const newPerf = performerManager.performers[newIndex];
     sceneUndo.withoutUndo(() => {
       if (newPerf && source && source !== newPerf) {
-        newPerf.setHandPlane("blue", source.customBluePlane);
-        newPerf.setHandPlane("red", source.customRedPlane);
+        newPerf.setHandPlane("left", source.customLeftPlane);
+        newPerf.setHandPlane("right", source.customRightPlane);
       }
       if (newPerf && _currentSequenceData) {
         newPerf.loadSequence(_currentSequenceData);
@@ -1135,8 +1135,8 @@ function buildViewer3DState(
             ? { x: slot.position.x, z: slot.position.z }
             : { x: p.position.x, z: p.position.z },
           facingAngle: facing,
-          customBluePlane: p.customBluePlane,
-          customRedPlane: p.customRedPlane,
+          customLeftPlane: p.customLeftPlane,
+          customRightPlane: p.customRightPlane,
         };
       });
     const afterSnap: ViewerDomainSnapshot = {
@@ -1204,8 +1204,8 @@ function buildViewer3DState(
       prop: _defaultSettings.prop,
       effortId: _defaultSettings.effortId,
       planeMode: _defaultSettings.planeMode,
-      customBluePlane: _defaultSettings.customBluePlane,
-      customRedPlane: _defaultSettings.customRedPlane,
+      customLeftPlane: _defaultSettings.customLeftPlane,
+      customRightPlane: _defaultSettings.customRightPlane,
     };
   }
 
@@ -1213,8 +1213,8 @@ function buildViewer3DState(
     _defaultSettings.prop = snap.prop;
     _defaultSettings.effortId = snap.effortId;
     _defaultSettings.planeMode = snap.planeMode;
-    _defaultSettings.customBluePlane = snap.customBluePlane;
-    _defaultSettings.customRedPlane = snap.customRedPlane;
+    _defaultSettings.customLeftPlane = snap.customLeftPlane;
+    _defaultSettings.customRightPlane = snap.customRightPlane;
   }
 
   sceneUndo.registerDomain("defaults", {
@@ -1356,8 +1356,8 @@ function buildViewer3DState(
         characterId: p.characterId,
         position: { x: p.position.x, z: p.position.z },
         facingAngle: p.facingAngle,
-        customBluePlane: p.customBluePlane,
-        customRedPlane: p.customRedPlane,
+        customLeftPlane: p.customLeftPlane,
+        customRightPlane: p.customRightPlane,
         name: p.displayName,
         settings: {
           prop: p.settings.prop,
@@ -1414,8 +1414,8 @@ function buildViewer3DState(
           p.position.x = snap.position.x;
           p.position.z = snap.position.z;
           p.setFacingAngle(snap.facingAngle);
-          p.setHandPlane("blue", snap.customBluePlane);
-          p.setHandPlane("red", snap.customRedPlane);
+          p.setHandPlane("left", snap.customLeftPlane);
+          p.setHandPlane("right", snap.customRightPlane);
           if (snap.characterId) p.setCharacter(snap.characterId);
           p.setDisplayName(snap.name ?? null);
           // On a plain open the per-performer prop AND staffLengthCm overrides
@@ -1516,8 +1516,8 @@ function buildViewer3DState(
         characterId: p.characterId,
         position: { x: p.position.x, z: p.position.z },
         facingAngle: p.facingAngle,
-        customBluePlane: p.customBluePlane,
-        customRedPlane: p.customRedPlane,
+        customLeftPlane: p.customLeftPlane,
+        customRightPlane: p.customRightPlane,
         name: p.displayName ?? null,
         settings: {
           prop: p.settings.prop,
@@ -1581,8 +1581,8 @@ function buildViewer3DState(
           p.position.x = snap.position.x;
           p.position.z = snap.position.z;
           p.setFacingAngle(snap.facingAngle);
-          p.setHandPlane("blue", snap.customBluePlane);
-          p.setHandPlane("red", snap.customRedPlane);
+          p.setHandPlane("left", snap.customLeftPlane);
+          p.setHandPlane("right", snap.customRightPlane);
           if (snap.characterId) p.setCharacter(snap.characterId);
           p.setDisplayName(snap.name ?? null);
           // Clear all four cascade overrides first. A preset that stores null

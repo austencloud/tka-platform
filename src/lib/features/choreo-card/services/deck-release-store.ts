@@ -30,8 +30,8 @@ export async function getNextDeckNumber(): Promise<number> {
 export interface ReleaseMeta {
   name: string;
   description: string;
-  bluePropType: string;
-  redPropType: string;
+  leftPropType: string;
+  rightPropType: string;
 }
 
 export async function releaseDeck(
@@ -61,8 +61,8 @@ export async function releaseDeck(
       name: meta.name,
       description: meta.description,
       theme,
-      bluePropType: meta.bluePropType,
-      redPropType: meta.redPropType,
+      leftPropType: meta.leftPropType,
+      rightPropType: meta.rightPropType,
       cardCount: cards.length,
       notes,
       sequences: cards,

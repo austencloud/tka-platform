@@ -13,8 +13,8 @@ const TUNNEL_VIEW_STORAGE_KEY = "tka_tunnel_view_state";
 const MANDALA_VIEW_STORAGE_KEY = "tka_mandala_view_state";
 const PREFERENCE_VERSION = 1;
 const LEGACY_MANDALA_DEFAULTS: ViewerCustomColorPair = {
-  blue: "#4fc3f7",
-  red: "#ef5350",
+  left: "#4fc3f7",
+  right: "#ef5350",
 };
 
 type ReadStorage = Pick<Storage, "getItem">;
@@ -32,8 +32,8 @@ function parseJson(storage: ReadStorage, key: string): unknown {
 
 function parsedPair(value: unknown): ViewerCustomColorPair | null {
   if (!value || typeof value !== "object") return null;
-  const candidate = value as { blue?: unknown; red?: unknown };
-  if (typeof candidate.blue !== "string" || typeof candidate.red !== "string") {
+  const candidate = value as { left?: unknown; right?: unknown };
+  if (typeof candidate.left !== "string" || typeof candidate.right !== "string") {
     return null;
   }
   return resolveViewerCustomColorPair(candidate);
@@ -59,8 +59,8 @@ function legacyTunnelPair(storage: ReadStorage): ViewerCustomColorPair | null {
 function legacyMandalaPair(storage: ReadStorage): ViewerCustomColorPair | null {
   const value = parseJson(storage, MANDALA_VIEW_STORAGE_KEY);
   if (!value || typeof value !== "object") return null;
-  const view = value as { customBlue?: unknown; customRed?: unknown };
-  return parsedPair({ blue: view.customBlue, red: view.customRed });
+  const view = value as { customLeft?: unknown; customRight?: unknown };
+  return parsedPair({ left: view.customLeft, right: view.customRight });
 }
 
 function chooseLegacyPair(

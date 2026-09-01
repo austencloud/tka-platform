@@ -190,7 +190,7 @@ export function buildLoopSpec(
       prop[comp] = { period: 2 };
     }
   }
-  return { blue: prop, red: prop };
+  return { left: prop, right: prop };
 }
 
 export interface ResolvedLoopConfig {
@@ -277,7 +277,7 @@ export function expanderMultiplier(wire: LOOPSpecWire): number {
  * constraint, so it does not trigger the guard.
  */
 export function specHasExpandInversion(wire: LOOPSpecWire): boolean {
-  const prop = wire.blue ?? wire.red;
+  const prop = wire.left ?? wire.right;
   if (!prop) return false;
   const inverted = prop.inverted;
   return !!inverted && inverted.mode !== "overlay";

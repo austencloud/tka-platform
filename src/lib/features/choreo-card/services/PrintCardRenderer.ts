@@ -159,8 +159,8 @@ export class PrintCardRenderer {
       style: "modern",
       margin: 1,
       darkMode: false,
-      bluePropType: options.bluePropType,
-      redPropType: options.redPropType,
+      leftPropType: options.leftPropType,
+      rightPropType: options.rightPropType,
       deckName: options.deckName,
     } as const;
     return options.qrUrl
@@ -187,8 +187,8 @@ export class PrintCardRenderer {
         height: canvasHeight * scale,
         bleedPx: bleedPx * scale,
         theme,
-        bluePropType: options.bluePropType,
-        redPropType: options.redPropType,
+        leftPropType: options.leftPropType,
+        rightPropType: options.rightPropType,
       });
       const off = paintBackJob(job);
       // Convert OffscreenCanvas → HTMLCanvasElement for the CardPair seam.

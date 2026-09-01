@@ -60,8 +60,8 @@ function derivePositionsForBeat(
   // Skip if positions are already set or if motions are missing
   if (
     (beat.startPosition !== null && beat.endPosition !== null) ||
-    !beat.motions.blue ||
-    !beat.motions.red
+    !beat.motions.left ||
+    !beat.motions.right
   ) {
     return beat;
   }
@@ -69,14 +69,14 @@ function derivePositionsForBeat(
   try {
     // Calculate start position from starting hand locations
     const startPosition: GridPosition = getGridPositionFromLocations(
-      beat.motions.blue.startLocation,
-      beat.motions.red.startLocation
+      beat.motions.left.startLocation,
+      beat.motions.right.startLocation
     );
 
     // Calculate end position from ending hand locations
     const endPosition: GridPosition = getGridPositionFromLocations(
-      beat.motions.blue.endLocation,
-      beat.motions.red.endLocation
+      beat.motions.left.endLocation,
+      beat.motions.right.endLocation
     );
 
     return {

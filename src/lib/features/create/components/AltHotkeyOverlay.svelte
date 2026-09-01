@@ -31,30 +31,104 @@
   );
 
   // Desktop-only check
-  const isMobile = typeof window !== "undefined" && (
-    "ontouchstart" in window || window.innerWidth < 768
-  );
+  const isMobile =
+    typeof window !== "undefined" &&
+    ("ontouchstart" in window || window.innerWidth < 768);
 
   // Transform definitions matching TransformSection visual language
   const transforms = [
-    { type: "mirror", label: "Mirror", icon: "fa-left-right", color: "#60a5fa", bgTint: "rgba(59,130,246,0.12)", keyBg: "rgba(59,130,246,0.2)", keyBorder: "rgba(59,130,246,0.3)", keyColor: "#7ba3ff", key: "M" },
-    { type: "flip", label: "Flip", icon: "fa-up-down", color: "#a78bfa", bgTint: "rgba(168,85,247,0.12)", keyBg: "rgba(168,85,247,0.2)", keyBorder: "rgba(168,85,247,0.3)", keyColor: "#b99aff", key: "V" },
-    { type: "swapColors", label: "Swap", icon: "fa-right-left", color: "#fb7185", bgTint: "rgba(244,63,94,0.12)", keyBg: "rgba(244,63,94,0.2)", keyBorder: "rgba(244,63,94,0.3)", keyColor: "#ff8fa0", key: "X" },
-    { type: "invert", label: "Invert", icon: "fa-circle-half-stroke", color: "#fbbf24", bgTint: "rgba(234,179,8,0.12)", keyBg: "rgba(234,179,8,0.2)", keyBorder: "rgba(234,179,8,0.3)", keyColor: "#fcd34d", key: "I" },
-    { type: "shiftStart", label: "Shift", icon: "fa-step-backward", color: "#818cf8", bgTint: "rgba(99,102,241,0.12)", keyBg: "rgba(99,102,241,0.2)", keyBorder: "rgba(99,102,241,0.3)", keyColor: "#a5b4fc", key: "F" },
-    { type: "rewind", label: "Rewind", icon: "fa-backward", color: "#34d399", bgTint: "rgba(16,185,129,0.12)", keyBg: "rgba(16,185,129,0.2)", keyBorder: "rgba(16,185,129,0.3)", keyColor: "#6ee7b7", key: "W" },
+    {
+      type: "mirror",
+      label: "Mirror",
+      icon: "fa-left-right",
+      color: "#60a5fa",
+      bgTint: "rgba(59,130,246,0.12)",
+      keyBg: "rgba(59,130,246,0.2)",
+      keyBorder: "rgba(59,130,246,0.3)",
+      keyColor: "#7ba3ff",
+      key: "M",
+    },
+    {
+      type: "flip",
+      label: "Flip",
+      icon: "fa-up-down",
+      color: "#a78bfa",
+      bgTint: "rgba(168,85,247,0.12)",
+      keyBg: "rgba(168,85,247,0.2)",
+      keyBorder: "rgba(168,85,247,0.3)",
+      keyColor: "#b99aff",
+      key: "V",
+    },
+    {
+      type: "swapHands",
+      label: "Swap",
+      icon: "fa-right-left",
+      color: "#fb7185",
+      bgTint: "rgba(244,63,94,0.12)",
+      keyBg: "rgba(244,63,94,0.2)",
+      keyBorder: "rgba(244,63,94,0.3)",
+      keyColor: "#ff8fa0",
+      key: "X",
+    },
+    {
+      type: "invert",
+      label: "Invert",
+      icon: "fa-circle-half-stroke",
+      color: "#fbbf24",
+      bgTint: "rgba(234,179,8,0.12)",
+      keyBg: "rgba(234,179,8,0.2)",
+      keyBorder: "rgba(234,179,8,0.3)",
+      keyColor: "#fcd34d",
+      key: "I",
+    },
+    {
+      type: "shiftStart",
+      label: "Shift",
+      icon: "fa-step-backward",
+      color: "#818cf8",
+      bgTint: "rgba(99,102,241,0.12)",
+      keyBg: "rgba(99,102,241,0.2)",
+      keyBorder: "rgba(99,102,241,0.3)",
+      keyColor: "#a5b4fc",
+      key: "F",
+    },
+    {
+      type: "rewind",
+      label: "Rewind",
+      icon: "fa-backward",
+      color: "#34d399",
+      bgTint: "rgba(16,185,129,0.12)",
+      keyBg: "rgba(16,185,129,0.2)",
+      keyBorder: "rgba(16,185,129,0.3)",
+      keyColor: "#6ee7b7",
+      key: "W",
+    },
   ] as const;
 
   const rotateButtons = [
-    { direction: "counterclockwise" as const, label: "CCW", icon: "fa-rotate-left", key: "[" },
-    { direction: "clockwise" as const, label: "CW", icon: "fa-rotate-right", key: "]" },
+    {
+      direction: "counterclockwise" as const,
+      label: "CCW",
+      icon: "fa-rotate-left",
+      key: "[",
+    },
+    {
+      direction: "clockwise" as const,
+      label: "CW",
+      icon: "fa-rotate-right",
+      key: "]",
+    },
   ];
 
   function isInputFocused(): boolean {
     const el = document.activeElement;
     if (!el) return false;
     const tag = el.tagName;
-    return tag === "INPUT" || tag === "TEXTAREA" || (el as HTMLElement).isContentEditable;
+    return (
+      tag === "INPUT" ||
+      tag === "TEXTAREA" ||
+      (el as HTMLElement).isContentEditable
+    );
   }
 
   function getSequenceState() {
@@ -66,11 +140,21 @@
     if (!seqState?.hasSequence()) return;
 
     switch (type) {
-      case "mirror": await seqState.mirrorSequence(); break;
-      case "flip": await seqState.flipSequence(); break;
-      case "swapColors": await seqState.swapColors(); break;
-      case "invert": await seqState.invertSequence(); break;
-      case "rewind": await seqState.rewindSequence(); break;
+      case "mirror":
+        await seqState.mirrorSequence();
+        break;
+      case "flip":
+        await seqState.flipSequence();
+        break;
+      case "swapHands":
+        await seqState.swapHands();
+        break;
+      case "invert":
+        await seqState.invertSequence();
+        break;
+      case "rewind":
+        await seqState.rewindSequence();
+        break;
       case "shiftStart": {
         const seq = seqState.currentSequence;
         if (seq && seq.steps.length > 1) {
@@ -94,11 +178,11 @@
     if (!preset) return;
     settingsState.updateSettings({
       selectedPresetIndex: index,
-      bluePropType: preset.bluePropType,
-      redPropType: preset.redPropType,
+      leftPropType: preset.leftPropType,
+      rightPropType: preset.rightPropType,
       catDogMode: preset.catDogMode,
-      blueBuugengFlipped: preset.blueBuugengFlipped ?? false,
-      redBuugengFlipped: preset.redBuugengFlipped ?? false,
+      leftBuugengFlipped: preset.leftBuugengFlipped ?? false,
+      rightBuugengFlipped: preset.rightBuugengFlipped ?? false,
     });
   }
 
@@ -114,10 +198,34 @@
 
   // Sequence action launchers - set the sub-drawer, then open the actions panel
   const actionButtons = [
-    { label: "Duration", icon: "fa-clock", color: "#f472b6", bgTint: "rgba(244,114,182,0.12)", drawer: "duration" as const },
-    { label: "Extend", icon: "fa-expand", color: "#38bdf8", bgTint: "rgba(56,189,248,0.12)", drawer: "extend" as const },
-    { label: "Turns", icon: "fa-arrows-spin", color: "#fb923c", bgTint: "rgba(251,146,60,0.12)", drawer: "turnPattern" as const },
-    { label: "Rotation", icon: "fa-compass", color: "#4ade80", bgTint: "rgba(74,222,128,0.12)", drawer: "rotationDirection" as const },
+    {
+      label: "Duration",
+      icon: "fa-clock",
+      color: "#f472b6",
+      bgTint: "rgba(244,114,182,0.12)",
+      drawer: "duration" as const,
+    },
+    {
+      label: "Extend",
+      icon: "fa-expand",
+      color: "#38bdf8",
+      bgTint: "rgba(56,189,248,0.12)",
+      drawer: "extend" as const,
+    },
+    {
+      label: "Turns",
+      icon: "fa-arrows-spin",
+      color: "#fb923c",
+      bgTint: "rgba(251,146,60,0.12)",
+      drawer: "turnPattern" as const,
+    },
+    {
+      label: "Rotation",
+      icon: "fa-compass",
+      color: "#4ade80",
+      bgTint: "rgba(74,222,128,0.12)",
+      drawer: "rotationDirection" as const,
+    },
   ] as const;
 
   function openSequenceAction(drawer: string) {
@@ -239,15 +347,22 @@
             onclick={() => executeTransform(t.type)}
             title="{t.label} (Alt+{t.key})"
           >
-            <span class="icon-badge" style="background: {t.bgTint}; color: {t.color};">
-              {#if t.type === "swapColors"}
+            <span
+              class="icon-badge"
+              style="background: {t.bgTint}; color: {t.color};"
+            >
+              {#if t.type === "swapHands"}
                 <SwapIcon size="14px" />
               {:else}
                 <i class="fas {t.icon}" aria-hidden="true"></i>
               {/if}
             </span>
             <span class="item-label">{t.label}</span>
-            <span class="key-badge" style="background: {t.keyBg}; border-color: {t.keyBorder}; color: {t.keyColor};">{t.key}</span>
+            <span
+              class="key-badge"
+              style="background: {t.keyBg}; border-color: {t.keyBorder}; color: {t.keyColor};"
+              >{t.key}</span
+            >
           </button>
         {/each}
       </div>
@@ -266,7 +381,10 @@
             onclick={() => openSequenceAction(action.drawer)}
             title={action.label}
           >
-            <span class="icon-badge" style="background: {action.bgTint}; color: {action.color};">
+            <span
+              class="icon-badge"
+              style="background: {action.bgTint}; color: {action.color};"
+            >
               <i class="fas {action.icon}" aria-hidden="true"></i>
             </span>
             <span class="item-label">{action.label}</span>
@@ -281,7 +399,11 @@
     <div class="section">
       <div class="section-header">
         <span class="section-label">Props</span>
-        <button class="edit-btn" onclick={handleEditPresets} title="Edit prop presets">
+        <button
+          class="edit-btn"
+          onclick={handleEditPresets}
+          title="Edit prop presets"
+        >
           <i class="fas fa-pen" aria-hidden="true"></i>
           Edit
         </button>
@@ -295,24 +417,29 @@
             class:selected={isSelected}
             class:cat-dog={preset?.catDogMode}
             onclick={() => applyPreset(i)}
-            title={preset ? `${getPropTypeDisplayInfo(preset.bluePropType).label} (Alt+${displayKey})` : `Empty slot (Alt+${displayKey})`}
+            title={preset
+              ? `${getPropTypeDisplayInfo(preset.leftPropType).label} (Alt+${displayKey})`
+              : `Empty slot (Alt+${displayKey})`}
           >
             {#if preset}
-              <div class="preset-icon" class:no-rotate={!needsRotation(preset.bluePropType)}>
+              <div
+                class="preset-icon"
+                class:no-rotate={!needsRotation(preset.leftPropType)}
+              >
                 {#if preset.catDogMode}
                   <img
-                    src={getPropTypeDisplayInfo(preset.bluePropType).image}
+                    src={getPropTypeDisplayInfo(preset.leftPropType).image}
                     alt=""
                     class="prop-svg blue-prop"
                   />
                   <img
-                    src={getPropTypeDisplayInfo(preset.redPropType).image}
+                    src={getPropTypeDisplayInfo(preset.rightPropType).image}
                     alt=""
                     class="prop-svg red-prop"
                   />
                 {:else}
                   <img
-                    src={getPropTypeDisplayInfo(preset.bluePropType).image}
+                    src={getPropTypeDisplayInfo(preset.leftPropType).image}
                     alt=""
                     class="prop-svg"
                   />
@@ -323,7 +450,9 @@
                 <i class="fas fa-plus" aria-hidden="true"></i>
               </div>
             {/if}
-            <span class="key-badge preset-key" class:selected-key={isSelected}>{displayKey}</span>
+            <span class="key-badge preset-key" class:selected-key={isSelected}
+              >{displayKey}</span
+            >
           </button>
         {/each}
       </div>
@@ -332,7 +461,12 @@
     <div class="divider"></div>
 
     <!-- Close button - inline as last flex item -->
-    <button class="close-btn" onclick={dismiss} title="Close (Alt)" aria-label="Close shortcut overlay">
+    <button
+      class="close-btn"
+      onclick={dismiss}
+      title="Close (Alt)"
+      aria-label="Close shortcut overlay"
+    >
       <i class="fas fa-xmark" aria-hidden="true"></i>
     </button>
   </div>
@@ -366,13 +500,25 @@
   }
 
   @keyframes slideDown {
-    from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
-    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
   }
 
   @keyframes fadeUp {
-    from { opacity: 1; transform: translateX(-50%) translateY(0); }
-    to { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+    from {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-8px);
+    }
   }
 
   .alt-badge-section {
@@ -432,7 +578,9 @@
     margin-bottom: 6px;
   }
 
-  .section-header .section-label { margin-bottom: 0; }
+  .section-header .section-label {
+    margin-bottom: 0;
+  }
 
   .rotate-btn,
   .transform-item,
@@ -443,7 +591,10 @@
     border-radius: 8px;
     cursor: pointer;
     color: inherit;
-    transition: background 150ms ease, border-color 150ms ease, transform 100ms ease;
+    transition:
+      background 150ms ease,
+      border-color 150ms ease,
+      transform 100ms ease;
   }
 
   .rotate-btn:hover:not(:disabled),
@@ -457,11 +608,16 @@
   .rotate-btn:active:not(:disabled),
   .transform-item:active:not(:disabled),
   .action-item:active:not(:disabled),
-  .preset-item:active { transform: scale(0.96); }
+  .preset-item:active {
+    transform: scale(0.96);
+  }
 
   .rotate-btn:disabled,
   .transform-item:disabled,
-  .action-item:disabled { opacity: 0.3; cursor: default; }
+  .action-item:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
 
   .rotate-col {
     display: flex;
@@ -479,8 +635,16 @@
     flex: 1;
   }
 
-  .rotate-icon { background: rgba(59, 130, 246, 0.12); color: #60a5fa; font-size: 14px; }
-  .rotate-key { background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.3); color: #7ba3ff; }
+  .rotate-icon {
+    background: rgba(59, 130, 246, 0.12);
+    color: #60a5fa;
+    font-size: 14px;
+  }
+  .rotate-key {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #7ba3ff;
+  }
 
   /* ===== Transforms - 3x2 grid ===== */
   .transform-grid {
@@ -564,8 +728,12 @@
     min-width: 44px;
   }
 
-  .preset-item.selected { border-color: var(--theme-accent, #a855f7); }
-  .preset-item.cat-dog { border-color: rgba(255, 180, 50, 0.2); }
+  .preset-item.selected {
+    border-color: var(--theme-accent, #a855f7);
+  }
+  .preset-item.cat-dog {
+    border-color: rgba(255, 180, 50, 0.2);
+  }
 
   .preset-icon {
     width: 28px;
@@ -575,15 +743,39 @@
     justify-content: center;
   }
 
-  .preset-icon:not(.no-rotate) .prop-svg { transform: rotate(-90deg); }
-  .preset-icon.empty { color: rgba(255, 255, 255, 0.2); font-size: var(--font-size-compact, 12px); }
+  .preset-icon:not(.no-rotate) .prop-svg {
+    transform: rotate(-90deg);
+  }
+  .preset-icon.empty {
+    color: rgba(255, 255, 255, 0.2);
+    font-size: var(--font-size-compact, 12px);
+  }
 
-  .prop-svg { width: 24px; height: 24px; object-fit: contain; }
-  .prop-svg.red-prop { filter: hue-rotate(125deg) saturate(1.2); width: 18px; height: 18px; }
-  .prop-svg.blue-prop { width: 18px; height: 18px; }
+  .prop-svg {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+  }
+  .prop-svg.red-prop {
+    filter: hue-rotate(125deg) saturate(1.2);
+    width: 18px;
+    height: 18px;
+  }
+  .prop-svg.blue-prop {
+    width: 18px;
+    height: 18px;
+  }
 
-  .preset-key { background: rgba(255, 180, 50, 0.2); border-color: rgba(255, 180, 50, 0.3); color: #f5c842; }
-  .preset-key.selected-key { background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.3); color: #a855f7; }
+  .preset-key {
+    background: rgba(255, 180, 50, 0.2);
+    border-color: rgba(255, 180, 50, 0.3);
+    color: #f5c842;
+  }
+  .preset-key.selected-key {
+    background: rgba(168, 85, 247, 0.2);
+    border-color: rgba(168, 85, 247, 0.3);
+    color: #a855f7;
+  }
 
   .edit-btn {
     display: flex;
@@ -607,7 +799,9 @@
     border-color: var(--theme-stroke, rgba(255, 255, 255, 0.18));
   }
 
-  .edit-btn i { font-size: 9px; }
+  .edit-btn i {
+    font-size: 9px;
+  }
 
   .close-btn {
     display: flex;
@@ -633,8 +827,20 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .alt-overlay { animation: none; }
-    .alt-overlay.fade-out { animation: none; opacity: 0; }
-    .rotate-btn, .transform-item, .action-item, .preset-item, .edit-btn, .close-btn { transition: none; }
+    .alt-overlay {
+      animation: none;
+    }
+    .alt-overlay.fade-out {
+      animation: none;
+      opacity: 0;
+    }
+    .rotate-btn,
+    .transform-item,
+    .action-item,
+    .preset-item,
+    .edit-btn,
+    .close-btn {
+      transition: none;
+    }
   }
 </style>

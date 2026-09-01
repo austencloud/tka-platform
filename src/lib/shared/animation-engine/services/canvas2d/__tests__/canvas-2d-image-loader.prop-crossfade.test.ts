@@ -57,8 +57,8 @@ vi.mock("$lib/shared/animation-engine/services/svg-generator", () => {
   };
 
   return {
-    generateBluePropSvg: propSvg,
-    generateRedPropSvg: propSvg,
+    generateLeftPropSvg: propSvg,
+    generateRightPropSvg: propSvg,
     generatePropSvg: propSvg,
     generateGridSvg: async () => "<svg></svg>",
   };
@@ -115,33 +115,33 @@ describe("Canvas2DImageLoader prop crossfade snapshots", () => {
     ]);
 
     expect(ImmediatelyLoadedImage.sourceAssignments).toBe(1);
-    expect(secondImages.blue).toBe(firstImages.blue);
-    expect(secondImages.red).toBe(firstImages.red);
+    expect(secondImages.left).toBe(firstImages.left);
+    expect(secondImages.right).toBe(firstImages.right);
   });
 
   it("retains the outgoing image, bounds, and type before loading the target", async () => {
     const loader = new Canvas2DImageLoader();
     const staff = await loader.loadPerColorPropImages("staff", "staff");
 
-    expect(loader.getPreviousBlueProp()).toBeNull();
-    expect(loader.getPreviousRedProp()).toBeNull();
+    expect(loader.getPreviousLeftProp()).toBeNull();
+    expect(loader.getPreviousRightProp()).toBeNull();
 
     await loader.loadPerColorPropImages("fan", "fan");
 
-    expect(loader.getPreviousBlueProp()).toEqual({
-      image: staff.blue,
+    expect(loader.getPreviousLeftProp()).toEqual({
+      image: staff.left,
       dimensions: PROP_GEOMETRY.staff,
       propType: "staff",
     });
-    expect(loader.getPreviousRedProp()).toEqual({
-      image: staff.red,
+    expect(loader.getPreviousRightProp()).toEqual({
+      image: staff.right,
       dimensions: PROP_GEOMETRY.staff,
       propType: "staff",
     });
-    expect(loader.getBluePropType()).toBe("fan");
-    expect(loader.getRedPropType()).toBe("fan");
-    expect(loader.getBluePropDimensions()).toEqual(PROP_GEOMETRY.fan);
-    expect(loader.getRedPropDimensions()).toEqual(PROP_GEOMETRY.fan);
+    expect(loader.getLeftPropType()).toBe("fan");
+    expect(loader.getRightPropType()).toBe("fan");
+    expect(loader.getLeftPropDimensions()).toEqual(PROP_GEOMETRY.fan);
+    expect(loader.getRightPropDimensions()).toEqual(PROP_GEOMETRY.fan);
   });
 
   it("keeps per-color outgoing geometry independent and clears it atomically", async () => {
@@ -149,17 +149,17 @@ describe("Canvas2DImageLoader prop crossfade snapshots", () => {
     await loader.loadPerColorPropImages("staff", "club");
     await loader.loadPerColorPropImages("fan", "buugeng");
 
-    expect(loader.getPreviousBlueProp()?.dimensions).toEqual(
+    expect(loader.getPreviousLeftProp()?.dimensions).toEqual(
       PROP_GEOMETRY.staff
     );
-    expect(loader.getPreviousBlueProp()?.propType).toBe("staff");
-    expect(loader.getPreviousRedProp()?.dimensions).toEqual(PROP_GEOMETRY.club);
-    expect(loader.getPreviousRedProp()?.propType).toBe("club");
+    expect(loader.getPreviousLeftProp()?.propType).toBe("staff");
+    expect(loader.getPreviousRightProp()?.dimensions).toEqual(PROP_GEOMETRY.club);
+    expect(loader.getPreviousRightProp()?.propType).toBe("club");
 
-    loader.clearPreviousBlueProp();
-    loader.clearPreviousRedProp();
+    loader.clearPreviousLeftProp();
+    loader.clearPreviousRightProp();
 
-    expect(loader.getPreviousBlueProp()).toBeNull();
-    expect(loader.getPreviousRedProp()).toBeNull();
+    expect(loader.getPreviousLeftProp()).toBeNull();
+    expect(loader.getPreviousRightProp()).toBeNull();
   });
 });

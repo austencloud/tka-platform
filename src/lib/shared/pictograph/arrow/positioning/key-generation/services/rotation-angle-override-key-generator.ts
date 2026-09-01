@@ -27,17 +27,17 @@ function getStartOriLayer(motionData: MotionData): string {
 
 function startsFromMixedOrientation(pictographData: PictographData): boolean {
   try {
-    const blueMotion = pictographData.motions.blue;
-    const redMotion = pictographData.motions.red;
-    if (!blueMotion || !redMotion) return false;
+    const leftMotion = pictographData.motions.left;
+    const rightMotion = pictographData.motions.right;
+    if (!leftMotion || !rightMotion) return false;
 
-    const blueStart = blueMotion.startOrientation || "";
-    const redStart = redMotion.startOrientation || "";
+    const leftStart = leftMotion.startOrientation || "";
+    const rightStart = rightMotion.startOrientation || "";
 
-    const blueLayer1 = blueStart === Orientation.IN || blueStart === Orientation.OUT;
-    const redLayer1 = redStart === Orientation.IN || redStart === Orientation.OUT;
+    const leftLayer1 = leftStart === Orientation.IN || leftStart === Orientation.OUT;
+    const rightLayer1 = rightStart === Orientation.IN || rightStart === Orientation.OUT;
 
-    return blueLayer1 !== redLayer1;
+    return leftLayer1 !== rightLayer1;
   } catch {
     return false;
   }
@@ -45,17 +45,17 @@ function startsFromMixedOrientation(pictographData: PictographData): boolean {
 
 function endsInMixedOrientation(pictographData: PictographData): boolean {
   try {
-    const blueMotion = pictographData.motions.blue;
-    const redMotion = pictographData.motions.red;
-    if (!blueMotion || !redMotion) return false;
+    const leftMotion = pictographData.motions.left;
+    const rightMotion = pictographData.motions.right;
+    if (!leftMotion || !rightMotion) return false;
 
-    const blueEnd = blueMotion.endOrientation || "";
-    const redEnd = redMotion.endOrientation || "";
+    const leftEnd = leftMotion.endOrientation || "";
+    const rightEnd = rightMotion.endOrientation || "";
 
-    const blueLayer1 = blueEnd === Orientation.IN || blueEnd === Orientation.OUT;
-    const redLayer1 = redEnd === Orientation.IN || redEnd === Orientation.OUT;
+    const leftLayer1 = leftEnd === Orientation.IN || leftEnd === Orientation.OUT;
+    const rightLayer1 = rightEnd === Orientation.IN || rightEnd === Orientation.OUT;
 
-    return blueLayer1 !== redLayer1;
+    return leftLayer1 !== rightLayer1;
   } catch {
     return false;
   }
@@ -67,7 +67,7 @@ export function generateRotationAngleOverrideKey(
 ): string {
   const motionType = motionData.motionType.toLowerCase() || "";
   const letter = pictographData.letter || "";
-  const color = motionData.color || "";
+  const color = motionData.hand || "";
 
   if (startsFromMixedOrientation(pictographData)) {
     const startOriLayer = getStartOriLayer(motionData);

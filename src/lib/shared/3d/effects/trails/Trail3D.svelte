@@ -18,7 +18,7 @@
   interface Props {
     tipPosition: Vector3 | null;
     color: string;
-    propId: "blue" | "red";
+    propId: "left" | "right";
     width?: number;
     opacity?: number;
     maxPoints?: number;

@@ -7,8 +7,8 @@
     detail,
     art,
     selected = false,
-    selectedBlue = false,
-    selectedRed = false,
+    selectedLeft = false,
+    selectedRight = false,
     active = false,
     color = "blue",
     badge,
@@ -22,8 +22,8 @@
     detail?: string;
     art: Snippet;
     selected?: boolean;
-    selectedBlue?: boolean;
-    selectedRed?: boolean;
+    selectedLeft?: boolean;
+    selectedRight?: boolean;
     active?: boolean;
     color?: "blue" | "red" | (string & {});
     badge?: number;
@@ -72,7 +72,7 @@
     <span class="variant-badge" aria-label={`${badge} variants`}>{badge}</span>
   {/if}
 
-  {#if selected || selectedBlue || selectedRed}
+  {#if selected || selectedLeft || selectedRight}
     <span class="checkmark-container" aria-hidden="true">
       {#if selected}
         <span
@@ -84,13 +84,13 @@
           <i class="fas fa-check"></i>
         </span>
       {:else}
-        {#if selectedBlue}
+        {#if selectedLeft}
           <span class="ios-checkmark blue">
             <i class="fas fa-check"></i>
           </span>
         {/if}
-        {#if selectedRed}
-          <span class="ios-checkmark red" class:offset={selectedBlue}>
+        {#if selectedRight}
+          <span class="ios-checkmark red" class:offset={selectedLeft}>
             <i class="fas fa-check"></i>
           </span>
         {/if}

@@ -43,8 +43,8 @@ vi.mock("../../src/lib/shared/settings/state/settings-state.svelte", () => ({
   settingsService: {
     settings: {
       propType: "staff",
-      bluePropType: "staff",
-      redPropType: "staff",
+      leftPropType: "staff",
+      rightPropType: "staff",
     },
   },
 }));

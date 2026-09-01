@@ -115,8 +115,8 @@
      * viewing a released deck so cached card renders stay valid across setting
      * changes. Omit to follow the user's current settings.
      */
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
     /**
      * Scope the sheet preview to one printed side. 'fronts' renders only the
      * fronts phase, 'backs' only the backs phase, null (default) renders both.
@@ -151,19 +151,19 @@
     deckNumber,
     includeInsertCard = true,
     deckSummary,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     sideFilter = null,
   }: Props = $props();
 
   // Resolve render-visual inputs: explicit overrides pin a released deck's
   // render; otherwise follow live settings. The cache key and render options
   // both read these so a pinned deck's content hash matches what was cached.
-  const resolvedBlueProp = $derived(
-    bluePropType ?? settingsService.settings.bluePropType ?? PropType.STAFF
+  const resolvedLeftProp = $derived(
+    leftPropType ?? settingsService.settings.leftPropType ?? PropType.STAFF
   );
-  const resolvedRedProp = $derived(
-    redPropType ?? settingsService.settings.redPropType ?? PropType.STAFF
+  const resolvedRightProp = $derived(
+    rightPropType ?? settingsService.settings.rightPropType ?? PropType.STAFF
   );
   const resolvedBackground = $derived(
     theme ?? settingsService.settings.backgroundType ?? ""
@@ -429,8 +429,8 @@
       showMandala: true,
       theme,
       tndElement: element,
-      bluePropType: resolvedBlueProp,
-      redPropType: resolvedRedProp,
+      leftPropType: resolvedLeftProp,
+      rightPropType: resolvedRightProp,
       leftLabel: footer?.left,
       rightLabel: footer?.right,
       notes: footer?.center,
@@ -456,8 +456,8 @@
       cardSize,
       theme,
       tndElements?.[index]?.familyId ?? tndElement?.familyId ?? "none",
-      resolvedBlueProp,
-      resolvedRedProp,
+      resolvedLeftProp,
+      resolvedRightProp,
       resolvedBackground,
       stepCount,
       footer?.left ?? "",
@@ -516,8 +516,8 @@
     const _includeStartPosition = includeStartPosition;
     const _rerenderKey = rerenderKey;
     const _bgType = resolvedBackground;
-    const _blueProp = resolvedBlueProp;
-    const _redProp = resolvedRedProp;
+    const _leftProp = resolvedLeftProp;
+    const _rightProp = resolvedRightProp;
     const _qrUrls = qrUrls;
 
     // Void unused captures to satisfy linter
@@ -526,8 +526,8 @@
     void _includeStartPosition;
     void _rerenderKey;
     void _bgType;
-    void _blueProp;
-    void _redProp;
+    void _leftProp;
+    void _rightProp;
     void _qrUrls;
 
     const generation = ++renderGeneration;
@@ -612,8 +612,8 @@
     renderedCards = [];
     prewarmCardPool({
       sequences: seqs,
-      bluePropType: resolvedBlueProp,
-      redPropType: resolvedRedProp,
+      leftPropType: resolvedLeftProp,
+      rightPropType: resolvedRightProp,
       theme: resolvedBackground,
       iconPaths: (footers ?? [])
         .map((footer) => footer.iconPath)
@@ -652,8 +652,8 @@
       await getShortCodeManager().resolveCodesForDeck(
         sequencesNeedingCodes,
         {
-          bluePropType: resolvedBlueProp,
-          redPropType: resolvedRedProp,
+          leftPropType: resolvedLeftProp,
+          rightPropType: resolvedRightProp,
           deckId,
           deckName,
         },

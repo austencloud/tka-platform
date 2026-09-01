@@ -170,8 +170,8 @@ export function uiConfigToGenerationOptions(
 
     // Start orientation overrides (engine seeds step 0 + propagates). Orientation
     // values are already engine strings ("in"/"clock"/"out"/"counter").
-    blueStartOrientation: startEndOptions?.blueStartOrientation ?? undefined,
-    redStartOrientation: startEndOptions?.redStartOrientation ?? undefined,
+    leftStartOrientation: startEndOptions?.leftStartOrientation ?? undefined,
+    rightStartOrientation: startEndOptions?.rightStartOrientation ?? undefined,
   };
   return options;
 }

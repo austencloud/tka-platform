@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     applyEditorTorchPalette,
@@ -19,8 +19,8 @@
   };
 
   type HandPreviews = {
-    blue: string;
-    red: string;
+    left: string;
+    right: string;
   };
 
   type RenderedPreview = {
@@ -63,8 +63,8 @@
   ];
 
   const handColors = [
-    { id: "blue" as const, label: "Blue prop", color: MotionColor.BLUE },
-    { id: "red" as const, label: "Red prop", color: MotionColor.RED },
+    { id: "blue" as const, label: "Left prop (blue)", color: HandSide.LEFT },
+    { id: "red" as const, label: "Right prop (red)", color: HandSide.RIGHT },
   ];
 
   let rendered = $state<Record<string, RenderedPreview>>({});
@@ -73,7 +73,7 @@
   function renderEditorProp(
     rawSvg: string,
     definition: PreviewDefinition,
-    color: MotionColor,
+    color: HandSide,
     darkMode: boolean
   ): string {
     const selective = (
@@ -138,22 +138,17 @@
           const rawSvg = await response.text();
           const preview: RenderedPreview = {
             dark: {
-              blue: renderEditorProp(
-                rawSvg,
-                definition,
-                MotionColor.BLUE,
-                true
-              ),
-              red: renderEditorProp(rawSvg, definition, MotionColor.RED, true),
+              left: renderEditorProp(rawSvg, definition, HandSide.LEFT, true),
+              right: renderEditorProp(rawSvg, definition, HandSide.RIGHT, true),
             },
             light: {
-              blue: renderEditorProp(
+              left: renderEditorProp(rawSvg, definition, HandSide.LEFT, false),
+              right: renderEditorProp(
                 rawSvg,
                 definition,
-                MotionColor.BLUE,
+                HandSide.RIGHT,
                 false
               ),
-              red: renderEditorProp(rawSvg, definition, MotionColor.RED, false),
             },
           };
 
@@ -230,10 +225,10 @@
                 <div class="tile-size-row" aria-label="Small editor tile check">
                   <span>Small tile</span>
                   <div class="tile-artwork">
-                    {@html surfacePreview.blue}
+                    {@html surfacePreview.left}
                   </div>
                   <div class="tile-artwork">
-                    {@html surfacePreview.red}
+                    {@html surfacePreview.right}
                   </div>
                 </div>
               </figure>

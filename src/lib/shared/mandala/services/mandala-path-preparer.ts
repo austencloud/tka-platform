@@ -14,7 +14,10 @@ import {
 	ENGINE_GRID_RADIUS,
 } from "../domain/mandala-constants";
 import { VIEWBOX_SIZE } from "$lib/shared/render/core/constants/viewbox";
-import type { SVGPathData } from "../domain/mandala-types";
+import type {
+	MandalaHandVisibility,
+	SVGPathData,
+} from "../domain/mandala-types";
 import type {
 	MandalaPathOptions,
 	MandalaTipOffset,
@@ -137,7 +140,7 @@ export function resolveMandalaTipOffsets(
 function preparePaths(
 	svgPaths: SVGPathData[],
 	color: string,
-	hand: "blue" | "red"
+	hand: "left" | "right"
 ): PreparedMandalaPath[] {
 	const result: PreparedMandalaPath[] = [];
 
@@ -169,36 +172,36 @@ export class MandalaPathPreparer {
 		steps: readonly StepLike[],
 		canvasSize: number,
 		options: {
-			show: "blue" | "red" | "both";
-			bluePropType: string | null | undefined;
-			redPropType: string | null | undefined;
+			show: MandalaHandVisibility;
+			leftPropType: string | null | undefined;
+			rightPropType: string | null | undefined;
 			trackingMode: TrackingMode;
 			pathOptions?: MandalaPathOptions;
-			blueColor: string;
-			redColor: string;
+			leftColor: string;
+			rightColor: string;
 			sequenceKey?: string;
 		}
 	): PreparedMandalaPaths | null {
-		const blueTips = resolveMandalaTipOffsets(
-			options.bluePropType,
+		const leftTips = resolveMandalaTipOffsets(
+			options.leftPropType,
 			options.trackingMode
 		);
-		const redTips = resolveMandalaTipOffsets(
-			options.redPropType,
+		const rightTips = resolveMandalaTipOffsets(
+			options.rightPropType,
 			options.trackingMode
 		);
 		const cacheKey = [
 			options.sequenceKey ?? "",
 			options.show,
-			options.bluePropType?.toLowerCase() ?? "",
-			options.redPropType?.toLowerCase() ?? "",
+			options.leftPropType?.toLowerCase() ?? "",
+			options.rightPropType?.toLowerCase() ?? "",
 			options.trackingMode,
 			options.pathOptions?.pathShape ?? "arc",
 			options.pathOptions?.motionAware ? "motion-aware" : "fixed",
-			options.blueColor,
-			options.redColor,
-			blueTips.map((p) => `${p.dx},${p.dy}`).join(";"),
-			redTips.map((p) => `${p.dx},${p.dy}`).join(";"),
+			options.leftColor,
+			options.rightColor,
+			leftTips.map((p) => `${p.dx},${p.dy}`).join(";"),
+			rightTips.map((p) => `${p.dx},${p.dy}`).join(";"),
 		].join("|");
 
 		// Return cached result if inputs haven't changed
@@ -215,7 +218,7 @@ export class MandalaPathPreparer {
 		// motion data — invisible placeholders don't count). This matches the
 		// filtering MandalaGeometryCalculator does internally.
 		const stepsWithMotions = steps.filter(
-			(s) => isVisibleMotion(s.motions?.blue) || isVisibleMotion(s.motions?.red)
+			(s) => isVisibleMotion(s.motions?.left) || isVisibleMotion(s.motions?.right)
 		);
 
 		if (stepsWithMotions.length === 0) {
@@ -226,23 +229,23 @@ export class MandalaPathPreparer {
 		// Compute SVG path geometry from the sequence steps
 		const mandalaPaths = calculateMandalaGeometry(
 			steps,
-			options.bluePropType ?? undefined,
-			options.redPropType ?? undefined,
+			options.leftPropType ?? undefined,
+			options.rightPropType ?? undefined,
 			options.pathOptions,
-			{ blue: blueTips, red: redTips }
+			{ left: leftTips, right: rightTips }
 		);
 
 		// Convert SVG paths to canvas Path2D objects with measured lengths
 		const allPaths: PreparedMandalaPath[] = [];
 
-		if (options.show === "blue" || options.show === "both") {
+		if (options.show === "left" || options.show === "both") {
 			allPaths.push(
-				...preparePaths(mandalaPaths.blue, options.blueColor, "blue")
+				...preparePaths(mandalaPaths.left, options.leftColor, "left")
 			);
 		}
 
-		if (options.show === "red" || options.show === "both") {
-			allPaths.push(...preparePaths(mandalaPaths.red, options.redColor, "red"));
+		if (options.show === "right" || options.show === "both") {
+			allPaths.push(...preparePaths(mandalaPaths.right, options.rightColor, "right"));
 		}
 
 		if (allPaths.length === 0) {

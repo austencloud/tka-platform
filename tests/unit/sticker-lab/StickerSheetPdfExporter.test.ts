@@ -32,7 +32,7 @@ const testRef: MandalaPrimitiveRef = {
 };
 
 const emptyLookup: StickerMandalaLookup = {
-  getPaths: () => ({ blue: [], red: [], purple: [] }),
+  getPaths: () => ({ left: [], right: [], purple: [] }),
 };
 
 describe("StickerSheetPdfExporter", () => {
@@ -97,7 +97,7 @@ describe("StickerSheetPdfExporter", () => {
   it("lookup receives the primitiveRef.shapeHash, not any legacy sequenceId", async () => {
     const unit = createDefaultStickerUnit({ primitiveRef: testRef });
     const sheet = { ...createDefaultStickerSheet(), stickers: [unit] };
-    const getPathsSpy = vi.fn(() => ({ blue: [], red: [], purple: [] }));
+    const getPathsSpy = vi.fn(() => ({ left: [], right: [], purple: [] }));
     await exporter.export(sheet, { getPaths: getPathsSpy });
     expect(getPathsSpy).toHaveBeenCalledWith("shape-1");
   });

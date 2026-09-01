@@ -4,19 +4,19 @@ import type { Sparkles2DParams } from "../translators/canvas2d-types";
 import type { EmitterTip } from "./emitter-tip";
 
 type PosBag = {
-  bluePosA?: { x: number; y: number } | null;
-  bluePosB?: { x: number; y: number } | null;
-  redPosA?: { x: number; y: number } | null;
-  redPosB?: { x: number; y: number } | null;
+  leftPosA?: { x: number; y: number } | null;
+  leftPosB?: { x: number; y: number } | null;
+  rightPosA?: { x: number; y: number } | null;
+  rightPosB?: { x: number; y: number } | null;
 };
 
 /** Convert the legacy 4-slot bag to the flat emitter contract (base props). */
 function toEmitters(s: PosBag): EmitterTip[] {
   const out: EmitterTip[] = [];
-  if (s.bluePosA) out.push({ ...s.bluePosA, propIndex: 0, tipIndex: 0, end: "A", color: "#3a7fd9" });
-  if (s.bluePosB) out.push({ ...s.bluePosB, propIndex: 0, tipIndex: 1, end: "B", color: "#3a7fd9" });
-  if (s.redPosA) out.push({ ...s.redPosA, propIndex: 1, tipIndex: 0, end: "A", color: "#d94f4f" });
-  if (s.redPosB) out.push({ ...s.redPosB, propIndex: 1, tipIndex: 1, end: "B", color: "#d94f4f" });
+  if (s.leftPosA) out.push({ ...s.leftPosA, propIndex: 0, tipIndex: 0, end: "A", color: "#3a7fd9" });
+  if (s.leftPosB) out.push({ ...s.leftPosB, propIndex: 0, tipIndex: 1, end: "B", color: "#3a7fd9" });
+  if (s.rightPosA) out.push({ ...s.rightPosA, propIndex: 1, tipIndex: 0, end: "A", color: "#d94f4f" });
+  if (s.rightPosB) out.push({ ...s.rightPosB, propIndex: 1, tipIndex: 1, end: "B", color: "#d94f4f" });
   return out;
 }
 
@@ -115,10 +115,10 @@ function makeParams(overrides: Partial<Sparkles2DParams> = {}): Sparkles2DParams
 }
 
 const BASE_TIPS = toEmitters({
-  bluePosA: { x: 100, y: 100 },
-  bluePosB: { x: 120, y: 100 },
-  redPosA: { x: 200, y: 100 },
-  redPosB: { x: 220, y: 100 },
+  leftPosA: { x: 100, y: 100 },
+  leftPosB: { x: 120, y: 100 },
+  rightPosA: { x: 200, y: 100 },
+  rightPosB: { x: 220, y: 100 },
 });
 
 /**
@@ -160,10 +160,10 @@ describe("Sparkles2DRenderer simulation", () => {
       const x = 200 + 150 * Math.cos(i / 6);
       const y = 200 + 150 * Math.sin(i / 6);
       const tips = toEmitters({
-        bluePosA: { x, y },
-        bluePosB: { x: x + 10, y },
-        redPosA: { x: 400 - x, y },
-        redPosB: { x: 410 - x, y },
+        leftPosA: { x, y },
+        leftPosB: { x: x + 10, y },
+        rightPosA: { x: 400 - x, y },
+        rightPosB: { x: 410 - x, y },
       });
       r.render(ctx, params, tips, 1 / 60);
     }
@@ -203,8 +203,8 @@ describe("Sparkles2DRenderer simulation", () => {
     const r = new Sparkles2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({ rate: 1.0, lifetime: 5.0, mode: "stream", gravity: 0 });
-    r.render(ctx, params, toEmitters({ bluePosA: { x: 0, y: 0 } }), 1 / 60);
-    r.render(ctx, params, toEmitters({ bluePosA: { x: 5000, y: 0 } }), 1 / 60);
+    r.render(ctx, params, toEmitters({ leftPosA: { x: 0, y: 0 } }), 1 / 60);
+    r.render(ctx, params, toEmitters({ leftPosA: { x: 5000, y: 0 } }), 1 / 60);
     const fastest = Math.max(
       ...(r as any).particles.map((p: any) => Math.hypot(p.vx, p.vy)),
     );
@@ -226,7 +226,7 @@ describe("Sparkles2DRenderer simulation", () => {
     const r = new Sparkles2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({ rate: 1.0, lifetime: 0.1, mode: "stream" });
-    const tips = toEmitters({ bluePosA: { x: 0, y: 0 } });
+    const tips = toEmitters({ leftPosA: { x: 0, y: 0 } });
     r.render(ctx, params, tips, 1 / 60);
     expect((r as any).particles.length).toBeGreaterThan(0);
     for (let i = 0; i < 20; i++) r.render(ctx, params, tips, 1 / 60);
@@ -245,7 +245,7 @@ describe("Sparkles2DRenderer simulation", () => {
       rate: 1.0,
       mode: "stream",
     });
-    const tips = toEmitters({ bluePosA: { x: 0, y: 0 } });
+    const tips = toEmitters({ leftPosA: { x: 0, y: 0 } });
     for (let i = 0; i < 30; i++) r.render(ctx, params, tips, 1 / 60);
     const colors = new Set((r as any).particles.map((p: any) => p.color));
     const overlap = ["#aaaaaa", "#bbbbbb", "#cccccc"].filter((c) => colors.has(c));
@@ -256,7 +256,7 @@ describe("Sparkles2DRenderer simulation", () => {
     const r = new Sparkles2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({ rate: 1.0, mode: "burst", lifetime: 5.0 });
-    const tips = toEmitters({ bluePosA: { x: 50, y: 50 } });
+    const tips = toEmitters({ leftPosA: { x: 50, y: 50 } });
     for (let i = 0; i < 10; i++) r.render(ctx, params, tips, 1 / 60);
     expect((r as any).particles.length).toBe(0);
   });
@@ -265,7 +265,7 @@ describe("Sparkles2DRenderer simulation", () => {
     const r = new Sparkles2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({ rate: 1.0, mode: "stream", lifetime: 5.0 });
-    const tips = toEmitters({ bluePosA: { x: 0, y: 0 } });
+    const tips = toEmitters({ leftPosA: { x: 0, y: 0 } });
     r.render(ctx, params, tips, 1 / 60);
     expect((r as any).particles.length).toBeGreaterThan(0);
     r.dispose();
@@ -281,7 +281,7 @@ describe("Sparkles2DRenderer color", () => {
     // it to every particle, so "rainbow" rendered as a drifting monochrome.
     const r = new Sparkles2DRenderer();
     const params = makeParams({ colorMode: "rainbow", rate: 1.0, mode: "stream", lifetime: 5 });
-    r.render(makeCtx(), params, toEmitters({ bluePosA: { x: 0, y: 0 } }), 1 / 60);
+    r.render(makeCtx(), params, toEmitters({ leftPosA: { x: 0, y: 0 } }), 1 / 60);
     const colors = (r as any).particles.map((p: any) => p.color);
     expect(colors.length).toBeGreaterThan(2);
     expect(new Set(colors).size).toBeGreaterThan(1);
@@ -290,7 +290,7 @@ describe("Sparkles2DRenderer color", () => {
   it("solid mode jitters hue/lightness instead of emitting one flat color", () => {
     const r = new Sparkles2DRenderer();
     const params = makeParams({ colorMode: "solid", color: "#fbbf24", rate: 1.0, mode: "stream", lifetime: 5 });
-    r.render(makeCtx(), params, toEmitters({ bluePosA: { x: 0, y: 0 } }), 1 / 60);
+    r.render(makeCtx(), params, toEmitters({ leftPosA: { x: 0, y: 0 } }), 1 / 60);
     const colors = (r as any).particles.map((p: any) => p.color);
     expect(new Set(colors).size).toBeGreaterThan(1);
     for (const c of colors) expect(c).toMatch(/^hsl\(/);
@@ -306,11 +306,11 @@ describe("Sparkles2DRenderer color", () => {
       vi.setSystemTime(new Date("2020-01-01T00:00:00Z"));
       const a = new Sparkles2DRenderer();
       const params = makeParams({ colorMode: "rainbow", rate: 1.0, mode: "stream", lifetime: 5 });
-      for (let i = 0; i < 5; i++) a.render(makeCtx(), params, toEmitters({ bluePosA: { x: 0, y: 0 } }), 1 / 60);
+      for (let i = 0; i < 5; i++) a.render(makeCtx(), params, toEmitters({ leftPosA: { x: 0, y: 0 } }), 1 / 60);
 
       vi.setSystemTime(new Date("2021-06-15T12:34:56Z"));
       const b = new Sparkles2DRenderer();
-      for (let i = 0; i < 5; i++) b.render(makeCtx(), params, toEmitters({ bluePosA: { x: 0, y: 0 } }), 1 / 60);
+      for (let i = 0; i < 5; i++) b.render(makeCtx(), params, toEmitters({ leftPosA: { x: 0, y: 0 } }), 1 / 60);
 
       const ca = (a as any).particles.map((p: any) => p.color);
       const cb = (b as any).particles.map((p: any) => p.color);
@@ -327,7 +327,7 @@ describe("Sparkles2DRenderer draw", () => {
     enableSprites();
     const r = new Sparkles2DRenderer();
     const params = makeParams({ rate: 1.0, mode: "stream", lifetime: 5.0 });
-    const tips = toEmitters({ bluePosA: { x: 10, y: 10 } });
+    const tips = toEmitters({ leftPosA: { x: 10, y: 10 } });
     r.render(makeCtx(), params, tips, 1 / 60);
 
     const ctx = makeCtx();
@@ -360,7 +360,7 @@ describe("Sparkles2DRenderer draw", () => {
     // star itself is stroked live and has to keep drawing.
     const r = new Sparkles2DRenderer();
     const params = makeParams({ rate: 1.0, mode: "stream", lifetime: 5.0 });
-    const tips = toEmitters({ bluePosA: { x: 10, y: 10 } });
+    const tips = toEmitters({ leftPosA: { x: 10, y: 10 } });
     const ctx = makeCtx();
     expect(() => {
       for (let i = 0; i < 5; i++) r.render(ctx, params, tips, 1 / 60);
@@ -395,7 +395,7 @@ describe("Sparkles2DRenderer ejection", () => {
     // Tip sweeping +x fast enough to close the cone toward its tight limit.
     let x = 0;
     for (let i = 0; i < 12; i++) {
-      r.render(ctx, params, toEmitters({ bluePosA: { x, y: 100 } }), 1 / 60);
+      r.render(ctx, params, toEmitters({ leftPosA: { x, y: 100 } }), 1 / 60);
       x += 900 / 60;
     }
     const h = meanHeading(r);
@@ -424,8 +424,8 @@ describe("Sparkles2DRenderer scale", () => {
     const ctx = makeCtx();
     const params = makeParams();
     expect(() => r.render(ctx, params, toEmitters({}), 1 / 60, 0.25)).not.toThrow();
-    expect(() => r.render(ctx, params, toEmitters({ bluePosA: { x: 0, y: 0 } }), 1 / 60, 1)).not.toThrow();
-    expect(() => r.render(ctx, params, toEmitters({ bluePosA: { x: 0, y: 0 } }), 1 / 60, 4)).not.toThrow();
+    expect(() => r.render(ctx, params, toEmitters({ leftPosA: { x: 0, y: 0 } }), 1 / 60, 1)).not.toThrow();
+    expect(() => r.render(ctx, params, toEmitters({ leftPosA: { x: 0, y: 0 } }), 1 / 60, 4)).not.toThrow();
   });
 
   it("scales gravity with the canvas so fall speed is resolution-invariant", () => {
@@ -435,7 +435,7 @@ describe("Sparkles2DRenderer scale", () => {
       const r1 = new Sparkles2DRenderer();
       const r2 = new Sparkles2DRenderer();
       const params = makeParams({ gravity: 1, spread: 0, mode: "stream" });
-      const tip = toEmitters({ bluePosA: { x: 0, y: 0 } });
+      const tip = toEmitters({ leftPosA: { x: 0, y: 0 } });
       r1.render(makeCtx(), params, tip, 0, 1);
       r2.render(makeCtx(), params, tip, 0, 0.5);
       r1.render(makeCtx(), params, tip, 0.5, 1);

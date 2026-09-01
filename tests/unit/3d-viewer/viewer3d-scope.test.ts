@@ -147,11 +147,11 @@ describe("viewer-3d-state: selection scope", () => {
     state.performerManager.addPerformer();
     state.performerManager.addPerformer();
 
-    state.setHandPlaneScoped("blue", Plane.FLOOR);
+    state.setHandPlaneScoped("left", Plane.FLOOR);
 
     expect(
       state.performerManager.performers.map(
-        (performer) => performer.rawBluePlane
+        (performer) => performer.rawLeftPlane
       )
     ).toEqual([Plane.FLOOR, Plane.FLOOR, Plane.FLOOR]);
   });
@@ -163,11 +163,11 @@ describe("viewer-3d-state: selection scope", () => {
     state.performerManager.addPerformer();
     state.selectPerformerScope(1);
 
-    state.setHandPlaneScoped("red", Plane.WHEEL);
+    state.setHandPlaneScoped("right", Plane.WHEEL);
 
     expect(
       state.performerManager.performers.map(
-        (performer) => performer.rawRedPlane
+        (performer) => performer.rawRightPlane
       )
     ).toEqual([null, Plane.WHEEL, null]);
   });
@@ -178,7 +178,7 @@ describe("viewer-3d-state: selection scope", () => {
     state.performerManager.initialize();
     state.selectPerformerScope(0);
 
-    state.setHandPlaneScoped("blue", Plane.WHEEL);
+    state.setHandPlaneScoped("left", Plane.WHEEL);
     await tick();
 
     expect([...state.visiblePlanes]).toEqual([]);

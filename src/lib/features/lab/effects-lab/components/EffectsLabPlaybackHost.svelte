@@ -283,7 +283,7 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     if (!sequenceService) return null;
     const hasMotion = (s: SequenceData) =>
       Array.isArray(s.steps) && s.steps.length > 0 &&
-      s.steps.some((b) => b?.motions?.blue && b?.motions?.red);
+      s.steps.some((b) => b?.motions?.left && b?.motions?.right);
     if (hasMotion(seq)) return seq;
     const id = seq.word || seq.name || seq.id;
     if (id) {
@@ -454,8 +454,8 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
       {:else}
         <div class="canvas-wrapper">
           <AnimatorCanvas
-            blueProp={animationState?.bluePropState ?? null}
-            redProp={animationState?.redPropState ?? null}
+            leftProp={animationState?.leftPropState ?? null}
+            rightProp={animationState?.rightPropState ?? null}
             gridVisible={true}
             {gridMode}
             letter={currentLetter}

@@ -316,11 +316,11 @@ function countFamilies(data: Uint8Array): {
 } {
   const counts = [0, 0, 0, 0];
   for (let offset = 0; offset < data.length; offset += 4) {
-    const red = data[offset]!;
+    const right = data[offset]!;
     const green = data[offset + 1]!;
-    const blue = data[offset + 2]!;
-    const fourth = Math.max(0, 255 - red - green - blue);
-    const weights = [red, green, blue, fourth];
+    const left = data[offset + 2]!;
+    const fourth = Math.max(0, 255 - right - green - left);
+    const weights = [right, green, left, fourth];
     let winner = 0;
     for (let index = 1; index < weights.length; index += 1) {
       if (weights[index]! > weights[winner]!) winner = index;

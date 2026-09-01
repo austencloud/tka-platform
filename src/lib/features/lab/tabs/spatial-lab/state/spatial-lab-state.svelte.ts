@@ -61,18 +61,18 @@ export class SpatialLabState {
   playbackBpm = $state(60);
   private _playElapsed = 0;
 
-  draggingSide = $state<"blue" | "red" | null>(null);
+  draggingSide = $state<"left" | "right" | null>(null);
 
   private _targetRotation = 0;
 
-  bluePropState: PropState3D = $derived(makePropState(this.leftLocation, this.activePlane));
-  redPropState: PropState3D = $derived(makePropState(this.rightLocation, this.activePlane));
+  leftPropState: PropState3D = $derived(makePropState(this.leftLocation, this.activePlane));
+  rightPropState: PropState3D = $derived(makePropState(this.rightLocation, this.activePlane));
 
   cameraPreset = $derived(VIEW_TO_CAMERA[this.viewProjection] ?? "front");
   visiblePlanes = $derived(new Set([VIEW_TO_PLANE[this.viewProjection] ?? Plane.WALL]));
 
-  private leftPos3D = $derived(this.bluePropState.worldPosition);
-  private rightPos3D = $derived(this.redPropState.worldPosition);
+  private leftPos3D = $derived(this.leftPropState.worldPosition);
+  private rightPos3D = $derived(this.rightPropState.worldPosition);
 
   private leftProp2D: Point2D = $derived({
     x: BODY_CENTER.x + this.leftPos3D.x * GRID_SCALE,
@@ -146,8 +146,8 @@ export class SpatialLabState {
     this.activePlane = VIEW_TO_PLANE[view] ?? Plane.WALL;
   }
 
-  setLocation(side: "blue" | "red", location: GridLocation): void {
-    if (side === "blue") this.leftLocation = location;
+  setLocation(side: "left" | "right", location: GridLocation): void {
+    if (side === "left") this.leftLocation = location;
     else this.rightLocation = location;
   }
 

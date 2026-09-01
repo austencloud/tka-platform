@@ -499,7 +499,7 @@ export class AnimationPlaybackController {
     }
   }
 
-  getCurrentPropStates(): { blue: PropState; red: PropState } {
+  getCurrentPropStates(): { left: PropState; right: PropState } {
     return this.animationEngine.getCurrentPropStates();
   }
 
@@ -508,7 +508,7 @@ export class AnimationPlaybackController {
    * offscreen export renderer to over-sample trail sub-steps without mutating
    * playback state. Passthrough to the orchestrator's shared interpolation chain.
    */
-  samplePropStateAt(step: number): { blue: PropState; red: PropState } {
+  samplePropStateAt(step: number): { left: PropState; right: PropState } {
     return this.animationEngine.samplePropStateAt(step);
   }
 
@@ -784,7 +784,7 @@ export class AnimationPlaybackController {
 
     const states = this.animationEngine.getCurrentPropStates();
 
-    this.state.setPropStates(states.blue, states.red);
+    this.state.setPropStates(states.left, states.right);
   }
 
   /**
@@ -817,7 +817,7 @@ export class AnimationPlaybackController {
    * orchestrator's internal calc state only; the export's teardown jumpToStep(snapshot)
    * restores it, and live playback is paused for the duration, so nothing observes it.
    */
-  computePropStatesForStep(step: number): { blue: PropState; red: PropState } {
+  computePropStatesForStep(step: number): { left: PropState; right: PropState } {
     this.animationEngine.calculateState(step);
     return this.animationEngine.getCurrentPropStates();
   }

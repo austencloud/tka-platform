@@ -6,6 +6,7 @@ import {
   FILM_DIRECTOR_DIRECTIVE_AXES,
   FILM_DIRECTOR_SCHEMA_VERSION_3,
   FILM_DIRECTOR_SCHEMA_VERSION_4,
+  FILM_DIRECTOR_SCHEMA_VERSION_5,
   FilmDirectorInputSchema,
 } from "../../../src/routes/test/film-director/_lib/film-director-schema";
 
@@ -155,6 +156,73 @@ describe("film director scene language", () => {
     expect(parsed.scenes[0]?.performance?.performers?.[0]).toMatchObject({
       characterId: "ch01",
     });
+  });
+
+  it("normalizes version-4 hand fields without changing seeded plane picks", () => {
+    const legacy = FilmDirectorInputSchema.parse({
+      version: FILM_DIRECTOR_SCHEMA_VERSION_4,
+      id: "hand-migration",
+      title: "Hand migration",
+      seed: { axes: { bluePlane: 7, redPlane: 11 } },
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: {
+            cast: {
+              count: 3,
+              defaults: {
+                bluePlane: { pick: "distinct" },
+                redPlane: { pick: "distinct" },
+              },
+              performers: [
+                {
+                  id: "performer-1",
+                  stepPlanes: [
+                    { step: 2, hand: "blue", plane: { pick: "any" } },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      ],
+    });
+    const canonical = FilmDirectorInputSchema.parse({
+      version: FILM_DIRECTOR_SCHEMA_VERSION_5,
+      id: "hand-migration",
+      title: "Hand migration",
+      seed: { axes: { leftPlane: 7, rightPlane: 11 } },
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: {
+            cast: {
+              count: 3,
+              defaults: {
+                leftPlane: { pick: "distinct" },
+                rightPlane: { pick: "distinct" },
+              },
+              performers: [
+                {
+                  id: "performer-1",
+                  stepPlanes: [
+                    { step: 2, hand: "left", plane: { pick: "any" } },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      ],
+    });
+
+    const legacyResolved = resolveFilmDirectorSpec(legacy);
+    const canonicalResolved = resolveFilmDirectorSpec(canonical);
+    expect(legacyResolved.scenes[0]!.performance.performers).toEqual(
+      canonicalResolved.scenes[0]!.performance.performers
+    );
   });
 
   it("migrates avatarId only for legacy film versions", () => {
@@ -394,9 +462,7 @@ describe("beats as a time unit", () => {
         beatsFilm({
           camera: {
             shotSize: "medium",
-            moves: [
-              { move: "push-in", durationSeconds: 4, durationBeats: 8 },
-            ],
+            moves: [{ move: "push-in", durationSeconds: 4, durationBeats: 8 }],
           },
         })
       )
@@ -419,9 +485,7 @@ describe("beats as a time unit", () => {
       FilmDirectorInputSchema.parse(
         beatsFilm({
           camera: {
-            keyframes: [
-              { atSeconds: 1, atBeats: 8, position: [0, 1, -4] },
-            ],
+            keyframes: [{ atSeconds: 1, atBeats: 8, position: [0, 1, -4] }],
           },
         })
       )

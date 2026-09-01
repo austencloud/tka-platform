@@ -23,8 +23,8 @@ export interface PoiLegalFile {
 const CYCLE: (PoiVerdict | null)[] = [null, "legal", "illegal", "unsure"];
 const BACKUP_KEY = "poi-legal-matrix-unsaved";
 
-export function pairKey(blue: Flower, red: Flower): string {
-	return `${flowerKey(blue)}|${flowerKey(red)}`;
+export function pairKey(left: Flower, right: Flower): string {
+	return `${flowerKey(left)}|${flowerKey(right)}`;
 }
 
 function assertFileShape(data: unknown): asserts data is PoiLegalFile {
@@ -71,12 +71,12 @@ export function createPoiLegalVerdicts() {
 		get dirtyCount() {
 			return dirty.size;
 		},
-		verdictFor(blue: Flower, red: Flower): PoiVerdict | null {
-			return verdicts[pairKey(blue, red)] ?? null;
+		verdictFor(left: Flower, right: Flower): PoiVerdict | null {
+			return verdicts[pairKey(left, right)] ?? null;
 		},
 		/** Click cycle: unjudged → legal → illegal → unsure → unjudged. */
-		cycle(blue: Flower, red: Flower): void {
-			const key = pairKey(blue, red);
+		cycle(left: Flower, right: Flower): void {
+			const key = pairKey(left, right);
 			const current = verdicts[key] ?? null;
 			const next = CYCLE[(CYCLE.indexOf(current) + 1) % CYCLE.length]!;
 			if (next === null) delete verdicts[key];

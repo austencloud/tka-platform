@@ -22,7 +22,7 @@
     defaultChipId: string;
     customChipId: string;
     customDisabled: boolean;
-    customColors: { blue: string; red: string } | null;
+    customColors: { left: string; right: string } | null;
     summary: string;
     propType?: string | null;
     overrides?: EffectControlOverrides;

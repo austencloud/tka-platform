@@ -25,6 +25,7 @@ import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/fil
 import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
 import {
   DEFAULT_BROWSE_VIEW_MODE,
+  normalizeBrowseViewMode,
   type BrowseViewMode,
 } from "$lib/shared/browse/domain/browse-view-mode";
 import type {
@@ -222,7 +223,9 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
   // View mode (compositional browsing)
   let _viewMode = $state<BrowseViewMode>(
-    persisted?.viewMode ?? { ...DEFAULT_BROWSE_VIEW_MODE }
+    persisted?.viewMode
+      ? normalizeBrowseViewMode(persisted.viewMode)
+      : { ...DEFAULT_BROWSE_VIEW_MODE }
   );
 
   // Search state
@@ -1050,7 +1053,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
         !!config.loadSoloLibrarySequences &&
         (_viewMode.granularity !== mode.granularity ||
           _viewMode.subject !== mode.subject ||
-          (_viewMode.granularity === "solo" && _viewMode.color !== mode.color));
+          (_viewMode.granularity === "solo" && _viewMode.hand !== mode.hand));
       _viewMode = mode;
       if (needsReload) {
         void loadLibrarySequences();

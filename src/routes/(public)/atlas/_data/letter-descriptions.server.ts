@@ -46,7 +46,7 @@ type RawMotion = { motionType?: string };
 type RawPictograph = {
   startPosition?: string;
   endPosition?: string;
-  motions?: { blue?: RawMotion; red?: RawMotion };
+  motions?: { left?: RawMotion; right?: RawMotion };
 };
 
 const PICTOGRAPHS = (lettersData as unknown as { pictographs: Record<string, RawPictograph> })
@@ -93,7 +93,7 @@ function type1Rotation(letter: string): string {
  *  hand carries a pro/anti character, and which colour holds it varies between
  *  variations, so the sentence names the motion and not the hand. */
 function shiftRotation(p: RawPictograph): string {
-  const types = [p.motions?.blue?.motionType, p.motions?.red?.motionType];
+  const types = [p.motions?.left?.motionType, p.motions?.right?.motionType];
   if (types.includes("pro")) return "The shifting prop prospins, rotating with the hand's travel.";
   if (types.includes("anti")) return "The shifting prop antispins, rotating against the hand's travel.";
   return "";

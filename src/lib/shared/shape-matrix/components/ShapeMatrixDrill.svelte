@@ -75,7 +75,7 @@
 
   interface Props {
     /** Nullable: the drill renders its own "Pick a cell" state before any click. */
-    pair: { blue: Flower; red: Flower } | null;
+    pair: { left: Flower; right: Flower } | null;
     data: ShapeMatrixData;
     /** Optional composing surface action. The public archive remains a viewer;
      *  pickers can receive the exact realization this drill already built. */
@@ -201,16 +201,16 @@
   };
 
   const pairKey = $derived(
-    pair ? `${propType}|${flowerKey(pair.blue)}|${flowerKey(pair.red)}` : null
+    pair ? `${propType}|${flowerKey(pair.left)}|${flowerKey(pair.right)}` : null
   );
 
-  // The cell's mandala: blue hand's flower merged with red hand's flower — the
+  // The cell's mandala: left hand's flower merged with right hand's flower — the
   // exact merge renderCell uses for the grid tiles, so the hero IS the cell.
   const heroPaths = $derived.by<MandalaPaths | null>(() => {
     if (!pair) return null;
     return {
-      blue: data.blue.get(flowerKey(pair.blue))?.blue ?? [],
-      red: data.red.get(flowerKey(pair.red))?.red ?? [],
+      left: data.left.get(flowerKey(pair.left))?.left ?? [],
+      right: data.right.get(flowerKey(pair.right))?.right ?? [],
       purple: [],
     };
   });
@@ -345,8 +345,8 @@
     buildError = false;
     activeBuiltRealization = null;
     const overlay = {
-      blue: data.blue.get(flowerKey(p.blue))?.blue ?? [],
-      red: data.red.get(flowerKey(p.red))?.red ?? [],
+      left: data.left.get(flowerKey(p.left))?.left ?? [],
+      right: data.right.get(flowerKey(p.right))?.right ?? [],
       tipPoint: data.tipPoint,
       clubTipDx: data.clubTipDx,
     };
@@ -476,8 +476,8 @@
   }
   const pictographRailReady = $derived(
     pair !== null &&
-      pictographArrowsApproved(pair.blue) &&
-      pictographArrowsApproved(pair.red)
+      pictographArrowsApproved(pair.left) &&
+      pictographArrowsApproved(pair.right)
   );
 
   function getLayer(source: PlayerSource | null): PlayerLayer | null {
@@ -988,8 +988,8 @@
             fill: true,
             showWordHeader: true,
             beatIndicators: false,
-            bluePropType: layer.propType,
-            redPropType: layer.propType,
+            leftPropType: layer.propType,
+            rightPropType: layer.propType,
             trailSettingsOverride: SHAPE_MATRIX_TRAIL_PRESET,
             tipEffectMap: HERO_TIP_EFFECT_MAP,
             backgroundAlpha: 0,
@@ -1046,9 +1046,9 @@
         {selectedPropMode}
         activePropMode={activeReal?.propMode ?? null}
         equalRotatingTurns={pair !== null &&
-          pair.blue.turns !== "fl" &&
-          pair.red.turns !== "fl" &&
-          pair.blue.turns === pair.red.turns}
+          pair.left.turns !== "fl" &&
+          pair.right.turns !== "fl" &&
+          pair.left.turns === pair.right.turns}
         disabled={!pair}
         {building}
         ontarget={selectPropMode}
@@ -1116,8 +1116,8 @@
             anchor: "center",
             orientation: "horizontal",
             loop: true,
-            bluePropType: propType,
-            redPropType: propType,
+            leftPropType: propType,
+            rightPropType: propType,
             stepPulse: false,
             staggerCellUpdates: true,
           }}
@@ -1194,8 +1194,8 @@
           </span>
         {:else if pair}
           <span>
-            Blue <span class="cap-blue">{flowerLabel(pair.blue)}</span> over red
-            <span class="cap-red">{flowerLabel(pair.red)}</span>
+            Blue <span class="cap-blue">{flowerLabel(pair.left)}</span> over red
+            <span class="cap-red">{flowerLabel(pair.right)}</span>
           </span>
         {/if}
       </p>

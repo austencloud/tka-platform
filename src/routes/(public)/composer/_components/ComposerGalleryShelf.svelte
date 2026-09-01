@@ -71,8 +71,8 @@
         {#key sequence.id}
           <ChoreoCardThumbnail
             {sequence}
-            bluePropType={PropType.STAFF}
-            redPropType={PropType.STAFF}
+            leftPropType={PropType.STAFF}
+            rightPropType={PropType.STAFF}
             eager
             allowQR={false}
           />
@@ -91,8 +91,8 @@
         <div class="shelf-cell">
           <ChoreoCardThumbnail
             sequence={entry}
-            bluePropType={PropType.STAFF}
-            redPropType={PropType.STAFF}
+            leftPropType={PropType.STAFF}
+            rightPropType={PropType.STAFF}
             allowQR={false}
           />
         </div>

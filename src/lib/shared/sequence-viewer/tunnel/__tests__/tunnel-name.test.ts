@@ -28,7 +28,7 @@ function snapshot(overrides: Partial<TunnelSnapshot> = {}): TunnelSnapshot {
       gridVisible: false,
       colors: {
         mode: "hands",
-        custom: { blue: "#2e8bf0", red: "#ed1c24" },
+        custom: { left: "#2e8bf0", right: "#ed1c24" },
       },
       section: "tunnel",
     },
@@ -37,11 +37,11 @@ function snapshot(overrides: Partial<TunnelSnapshot> = {}): TunnelSnapshot {
     paths: {
       pathShape: "arc",
       motionAwarePaths: false,
-      bluePathLines: false,
-      redPathLines: false,
+      leftPathLines: false,
+      rightPathLines: false,
     },
     playback: { bpm: 120, playbackMode: "continuous" },
-    props: { bluePropType: "staff", redPropType: "staff" },
+    props: { leftPropType: "staff", rightPropType: "staff" },
     trailRender: {},
     ...overrides,
   } as TunnelSnapshot;
@@ -97,7 +97,7 @@ describe("deriveTunnelName", () => {
           gridVisible: false,
           colors: {
             mode: "hands",
-            custom: { blue: "#2e8bf0", red: "#ed1c24" },
+            custom: { left: "#2e8bf0", right: "#ed1c24" },
           },
           section: "tunnel",
         },
@@ -110,7 +110,7 @@ describe("deriveTunnelName", () => {
     const withFans = deriveTunnelName({
       baseWord: "BBBA",
       snapshot: snapshot({
-        props: { bluePropType: "fan", redPropType: "fan" },
+        props: { leftPropType: "fan", rightPropType: "fan" },
       }),
     });
     expect(withFans).toBe("BBBA Duo on fans");
@@ -148,7 +148,7 @@ describe("deriveTunnelName", () => {
           gridVisible: false,
           colors: {
             mode: "hands",
-            custom: { blue: "#2e8bf0", red: "#ed1c24" },
+            custom: { left: "#2e8bf0", right: "#ed1c24" },
           },
           section: "tunnel",
         },
@@ -166,11 +166,11 @@ describe("deriveTunnelName", () => {
           gridVisible: false,
           colors: {
             mode: "hands",
-            custom: { blue: "#2e8bf0", red: "#ed1c24" },
+            custom: { left: "#2e8bf0", right: "#ed1c24" },
           },
           section: "tunnel",
         },
-        props: { bluePropType: "fan", redPropType: "fan" },
+        props: { leftPropType: "fan", rightPropType: "fan" },
         effects: { tipEffectMap: { "*": { effect: "fire" } } },
       } as never),
     });
@@ -211,7 +211,7 @@ describe("describeTunnel", () => {
     const description = describeTunnel({
       composition: { performers: [performer("BBBA"), performer("ΩORZ")] },
       snapshot: snapshot({
-        props: { bluePropType: "fan", redPropType: "club" },
+        props: { leftPropType: "fan", rightPropType: "club" },
       }),
     });
     expect(description.words).toEqual(["BBBA", "ΩORZ"]);

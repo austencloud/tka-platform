@@ -8,21 +8,21 @@ import {
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 function step(
-  blueDir: RotationDirection,
-  redDir = RotationDirection.NO_ROTATION
+  leftDir: RotationDirection,
+  rightDir = RotationDirection.NO_ROTATION
 ): PictographData {
   return {
     letter: "X",
     motions: {
-      blue: createMotionData({
+      left: createMotionData({
         motionType: MotionType.DASH,
-        rotationDirection: blueDir,
-        turns: blueDir === RotationDirection.NO_ROTATION ? 0 : 2,
+        rotationDirection: leftDir,
+        turns: leftDir === RotationDirection.NO_ROTATION ? 0 : 2,
       }),
-      red: createMotionData({
+      right: createMotionData({
         motionType: MotionType.DASH,
-        rotationDirection: redDir,
-        turns: redDir === RotationDirection.NO_ROTATION ? 0 : 2,
+        rotationDirection: rightDir,
+        turns: rightDir === RotationDirection.NO_ROTATION ? 0 : 2,
       }),
     },
   } as unknown as PictographData;
@@ -40,8 +40,8 @@ function floatStep(prefloatDirection: RotationDirection): PictographData {
   return {
     letter: "M",
     motions: {
-      blue: motion,
-      red: createMotionData({
+      left: motion,
+      right: createMotionData({
         motionType: MotionType.STATIC,
         rotationDirection: RotationDirection.NO_ROTATION,
         turns: 0,

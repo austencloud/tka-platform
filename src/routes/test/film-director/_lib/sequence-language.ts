@@ -98,7 +98,7 @@ const DIFFICULTY_BY_LEVEL: Record<DirectorSequenceLevel, DifficultyLevel> = {
 
 export type DirectorPositionRef =
   | string
-  | { blue: string; red: string }
+  | { left: string; right: string }
   | { group: DirectorPositionGroup; location: string };
 
 export type DirectorTurnValue = number | "fl";
@@ -107,12 +107,12 @@ export type DirectorTurnLane = DirectorTurnValue | DirectorTurnValue[];
 
 export type DirectorTurns =
   | DirectorTurnLane
-  | { blue?: DirectorTurnLane; red?: DirectorTurnLane }
+  | { left?: DirectorTurnLane; right?: DirectorTurnLane }
   | { intensity: number };
 
 export type DirectorStartOrientation =
   | DirectorOrientation
-  | { blue?: DirectorOrientation; red?: DirectorOrientation };
+  | { left?: DirectorOrientation; right?: DirectorOrientation };
 
 /**
  * A film is authored as JSON as often as it is authored in TypeScript, so the
@@ -219,8 +219,8 @@ const POSITION_CATALOG = DIRECTOR_POSITION_GROUPS.map((group) => {
 }).join(", ");
 
 function describePosition(position: GridPosition): string {
-  const [blue, red] = getGridLocationsFromPosition(position);
-  return `${position} (blue ${blue}, red ${red})`;
+  const [left, right] = getGridLocationsFromPosition(position);
+  return `${position} (left ${left}, right ${right})`;
 }
 
 /**
@@ -246,22 +246,22 @@ export function resolvePositionRef(
     return name as GridPosition;
   }
 
-  if ("blue" in ref) {
-    const blue = requireLocation(ref.blue, where);
-    const red = requireLocation(ref.red, where);
+  if ("left" in ref) {
+    const left = requireLocation(ref.left, where);
+    const right = requireLocation(ref.right, where);
     try {
-      return getGridPositionFromLocations(blue, red);
+      return getGridPositionFromLocations(left, right);
     } catch {
       throw new Error(
-        `${where}: no TKA position puts blue at ${blue} and red at ${red}.`
+        `${where}: no TKA position puts the left hand at ${left} and right hand at ${right}.`
       );
     }
   }
 
   const location = requireLocation(ref.location, where);
   const candidates = POSITIONS_BY_GROUP.get(ref.group)!.filter((position) => {
-    const [blue, red] = getGridLocationsFromPosition(position);
-    return blue === location || red === location;
+    const [left, right] = getGridLocationsFromPosition(position);
+    return left === location || right === location;
   });
 
   if (candidates.length === 1) return candidates[0]!;
@@ -273,7 +273,7 @@ export function resolvePositionRef(
   throw new Error(
     `${where}: "${ref.group} at ${location}" could be ${candidates
       .map(describePosition)
-      .join(" or ")}. Name one, or give a {blue, red} pair.`
+      .join(" or ")}. Name one, or give a {left, right} pair.`
   );
 }
 
@@ -287,11 +287,11 @@ function isIntensity(turns: DirectorTurns): turns is { intensity: number } {
 
 function isLanePair(
   turns: DirectorTurns
-): turns is { blue?: DirectorTurnLane; red?: DirectorTurnLane } {
+): turns is { left?: DirectorTurnLane; right?: DirectorTurnLane } {
   return (
     typeof turns === "object" &&
     !Array.isArray(turns) &&
-    ("blue" in turns || "red" in turns)
+    ("left" in turns || "right" in turns)
   );
 }
 
@@ -347,11 +347,11 @@ function compileTurns(
   }
 
   const lanes: TurnLanes = isLanePair(turns)
-    ? { blue: toLane(turns.blue), red: toLane(turns.red) }
-    : { blue: toLane(turns), red: toLane(turns) };
+    ? { left: toLane(turns.left), right: toLane(turns.right) }
+    : { left: toLane(turns), right: toLane(turns) };
 
-  lanes.blue.forEach((value) => assertTurnAllowed(value, level, "blue", where));
-  lanes.red.forEach((value) => assertTurnAllowed(value, level, "red", where));
+  lanes.left.forEach((value) => assertTurnAllowed(value, level, "left", where));
+  lanes.right.forEach((value) => assertTurnAllowed(value, level, "right", where));
   return { turnPattern: lanes };
 }
 
@@ -361,17 +361,17 @@ function compileTurns(
 
 function compileOrientations(
   orientation: DirectorStartOrientation | undefined
-): { blueStartOrientation?: string; redStartOrientation?: string } {
+): { leftStartOrientation?: string; rightStartOrientation?: string } {
   if (orientation === undefined) return {};
   if (typeof orientation === "string") {
     return {
-      blueStartOrientation: orientation,
-      redStartOrientation: orientation,
+      leftStartOrientation: orientation,
+      rightStartOrientation: orientation,
     };
   }
   return {
-    ...(orientation.blue ? { blueStartOrientation: orientation.blue } : {}),
-    ...(orientation.red ? { redStartOrientation: orientation.red } : {}),
+    ...(orientation.left ? { leftStartOrientation: orientation.left } : {}),
+    ...(orientation.right ? { rightStartOrientation: orientation.right } : {}),
   };
 }
 

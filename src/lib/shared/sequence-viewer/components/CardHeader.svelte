@@ -24,7 +24,7 @@
     sequence: { word?: string };
     showHeader: boolean;
     isBrowseSoloMode: boolean;
-    soloColor: "blue" | "red" | undefined;
+    soloHand: "left" | "right" | undefined;
     browseViewMode?: import("$lib/shared/browse/domain/browse-view-mode").BrowseViewMode;
     showDifficultyLevel: boolean;
     difficultyLevel: number;
@@ -48,7 +48,7 @@
     sequence,
     showHeader,
     isBrowseSoloMode,
-    soloColor,
+    soloHand,
     browseViewMode,
     showDifficultyLevel,
     difficultyLevel,
@@ -97,11 +97,11 @@
     {#if isBrowseSoloMode}
       <span
         class="word-title"
-        style="font-size: {wordTitleFontSize}px; color: {soloColor === 'blue'
+        style="font-size: {wordTitleFontSize}px; color: {soloHand === 'left'
           ? 'var(--prop-blue, #2196f3)'
           : 'var(--prop-red, #f44336)'};"
       >
-        {soloColor === "blue" ? "Blue" : "Red"}
+        {soloHand === "left" ? "Left" : "Right"}
         {browseViewMode?.subject === "hands" ? "Hand Path" : "Prop Path"}
       </span>
     {:else}

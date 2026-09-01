@@ -28,18 +28,18 @@ export function applyPropTypeToPictographData(
   return {
     ...pictographData,
     motions: {
-      red: pictographData.motions.red
+      right: pictographData.motions.right
         ? {
-            ...pictographData.motions.red,
+            ...pictographData.motions.right,
             propType: userPropType as PropType,
           }
-        : pictographData.motions.red,
-      blue: pictographData.motions.blue
+        : pictographData.motions.right,
+      left: pictographData.motions.left
         ? {
-            ...pictographData.motions.blue,
+            ...pictographData.motions.left,
             propType: userPropType as PropType,
           }
-        : pictographData.motions.blue,
+        : pictographData.motions.left,
     },
   };
 }

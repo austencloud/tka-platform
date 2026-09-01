@@ -66,13 +66,13 @@ Delegates all rendering to child components.
      *  settings) — same convention as StepCell/PictographContainer. Also feeds
      *  the poi-legality gate, so a surface pinned to a non-poi prop is never
      *  emptied by a user's poi setting. */
-    bluePropTypeOverride?: PropType;
-    redPropTypeOverride?: PropType;
+    leftPropTypeOverride?: PropType;
+    rightPropTypeOverride?: PropType;
     /** Explicit pending turns (bypasses the sticky localStorage turns). Same
      *  bypass convention as the prop overrides: an embedded/demo surface pins
      *  its own turns so a user's sticky Create-tab turns never leak in. */
-    blueTurnsOverride?: number | "fl";
-    redTurnsOverride?: number | "fl";
+    leftTurnsOverride?: number | "fl";
+    rightTurnsOverride?: number | "fl";
     /** Suppress first-use interaction teaching in embedded documentation. */
     showInteractionHint?: boolean;
   }
@@ -86,10 +86,10 @@ Delegates all rendering to child components.
     isSideBySideLayout = () => false,
     filterPredicate,
     hideFilters = false,
-    bluePropTypeOverride = undefined,
-    redPropTypeOverride = undefined,
-    blueTurnsOverride = undefined,
-    redTurnsOverride = undefined,
+    leftPropTypeOverride = undefined,
+    rightPropTypeOverride = undefined,
+    leftTurnsOverride = undefined,
+    rightTurnsOverride = undefined,
     showInteractionHint = true,
   }: Props = $props();
 
@@ -124,27 +124,27 @@ Delegates all rendering to child components.
   // Sticky pending turns applied to every option (persist across selections AND
   // across reloads — survives HMR / full refresh via localStorage).
   interface PendingTurnsState {
-    blueTurns: TurnValue;
-    redTurns: TurnValue;
-    blueRotation: RotationDirection;
-    redRotation: RotationDirection;
+    leftTurns: TurnValue;
+    rightTurns: TurnValue;
+    leftRotation: RotationDirection;
+    rightRotation: RotationDirection;
     /** Working level — decides which turn buttons the header offers. */
     level?: TurnLevel;
   }
   const pendingTurnsPersistence = createPersistenceHelper<PendingTurnsState>({
     key: "tka-option-picker-pending-turns",
     defaultValue: {
-      blueTurns: 0,
-      redTurns: 0,
-      blueRotation: RotationDirection.CLOCKWISE,
-      redRotation: RotationDirection.CLOCKWISE,
+      leftTurns: 0,
+      rightTurns: 0,
+      leftRotation: RotationDirection.CLOCKWISE,
+      rightRotation: RotationDirection.CLOCKWISE,
       level: 2,
     },
   });
   const loadedTurns = pendingTurnsPersistence.load();
 
-  let blueTurns = $state<TurnValue>(loadedTurns.blueTurns);
-  let redTurns = $state<TurnValue>(loadedTurns.redTurns);
+  let leftTurns = $state<TurnValue>(loadedTurns.leftTurns);
+  let rightTurns = $state<TurnValue>(loadedTurns.rightTurns);
   // Turns persisted before the level selector existed carry no level — infer the
   // lowest level that still permits them, so nobody's sticky turns get clamped
   // away on first load. Floor at 2 so the turn buttons are reachable by default.
@@ -152,54 +152,54 @@ Delegates all rendering to child components.
     loadedTurns.level ??
       (Math.max(
         2,
-        levelForTurns(loadedTurns.blueTurns, loadedTurns.redTurns)
+        levelForTurns(loadedTurns.leftTurns, loadedTurns.rightTurns)
       ) as TurnLevel)
   );
   // Chosen spin direction for dash/static hands with turns (one bit per hand,
   // set via the turns-bar toggle — no per-tile fan-out). Shifts ignore these.
-  let blueRotation = $state<RotationDirection>(loadedTurns.blueRotation);
-  let redRotation = $state<RotationDirection>(loadedTurns.redRotation);
+  let leftRotation = $state<RotationDirection>(loadedTurns.leftRotation);
+  let rightRotation = $state<RotationDirection>(loadedTurns.rightRotation);
 
   // An override pins the hand's turns; otherwise the sticky internal state runs.
-  const effectiveBlueTurns = $derived(blueTurnsOverride ?? blueTurns);
-  const effectiveRedTurns = $derived(redTurnsOverride ?? redTurns);
+  const effectiveLeftTurns = $derived(leftTurnsOverride ?? leftTurns);
+  const effectiveRightTurns = $derived(rightTurnsOverride ?? rightTurns);
   const turnControlsEditable = $derived(
-    blueTurnsOverride === undefined && redTurnsOverride === undefined
+    leftTurnsOverride === undefined && rightTurnsOverride === undefined
   );
 
   // Persist every change so the picker reopens with the same sticky turns.
   // Overridden surfaces never write — their pinned turns aren't the user's.
   $effect(() => {
-    if (blueTurnsOverride !== undefined || redTurnsOverride !== undefined)
+    if (leftTurnsOverride !== undefined || rightTurnsOverride !== undefined)
       return;
     pendingTurnsPersistence.setupAutoSave({
-      blueTurns,
-      redTurns,
-      blueRotation,
-      redRotation,
+      leftTurns,
+      rightTurns,
+      leftRotation,
+      rightRotation,
       level,
     });
   });
 
-  function handleBlueTurnsChange(value: TurnValue) {
-    blueTurns = value;
+  function handleLeftTurnsChange(value: TurnValue) {
+    leftTurns = value;
   }
-  function handleRedTurnsChange(value: TurnValue) {
-    redTurns = value;
+  function handleRightTurnsChange(value: TurnValue) {
+    rightTurns = value;
   }
   // Dropping a level snaps both hands into that level's palette (a float or a
   // half turn can't survive a move to Level 2) — the same clamp the Generate
   // panel applies when a level change invalidates the current value.
   function handleLevelChange(next: TurnLevel) {
     level = next;
-    blueTurns = clampTurnToLevel(blueTurns, next);
-    redTurns = clampTurnToLevel(redTurns, next);
+    leftTurns = clampTurnToLevel(leftTurns, next);
+    rightTurns = clampTurnToLevel(rightTurns, next);
   }
-  function handleBlueRotationChange(dir: RotationDirection) {
-    blueRotation = dir;
+  function handleLeftRotationChange(dir: RotationDirection) {
+    leftRotation = dir;
   }
-  function handleRedRotationChange(dir: RotationDirection) {
-    redRotation = dir;
+  function handleRightRotationChange(dir: RotationDirection) {
+    rightRotation = dir;
   }
 
   // Apply sticky turns to each option, then prepare for rendering.
@@ -208,16 +208,16 @@ Delegates all rendering to child components.
   ): Promise<PreparedPictographData[]> {
     // One tile per option: apply the chosen per-hand spin direction to dash/static
     // hands rather than fanning out CW/CCW tiles (keeps the grid scannable).
-    const noTurns = effectiveBlueTurns === 0 && effectiveRedTurns === 0;
+    const noTurns = effectiveLeftTurns === 0 && effectiveRightTurns === 0;
     let turned = noTurns
       ? filtered
       : filtered.map((o) =>
           applyPendingTurnsToOption(
             o,
-            effectiveBlueTurns,
-            effectiveRedTurns,
-            blueRotation,
-            redRotation
+            effectiveLeftTurns,
+            effectiveRightTurns,
+            leftRotation,
+            rightRotation
           )
         );
 
@@ -233,8 +233,8 @@ Delegates all rendering to child components.
 
     const s = getSettings();
     return preparer!.prepareBatch(turned, {
-      bluePropType: bluePropTypeOverride ?? s.bluePropType,
-      redPropType: redPropTypeOverride ?? s.redPropType,
+      leftPropType: leftPropTypeOverride ?? s.leftPropType,
+      rightPropType: rightPropTypeOverride ?? s.rightPropType,
     });
   }
 
@@ -341,8 +341,8 @@ Delegates all rendering to child components.
     const _darkMode = darkMode;
     // Include prop type settings as dependencies - re-prepare when prop type changes (P button)
     const settings = getSettings();
-    const _bluePropType = settings.bluePropType;
-    const _redPropType = settings.redPropType;
+    const _leftPropType = settings.leftPropType;
+    const _rightPropType = settings.rightPropType;
 
     // Skip until a load has actually resolved. "loading" is mid-flight;
     // "idle" is before the first load was even dispatched — in both cases an
@@ -361,14 +361,14 @@ Delegates all rendering to child components.
     }
 
     // Track effective turns + spin directions so a change re-renders the options
-    const _blueTurns = effectiveBlueTurns;
-    const _redTurns = effectiveRedTurns;
-    const _blueRotation = blueRotation;
-    const _redRotation = redRotation;
-    void _blueTurns;
-    void _redTurns;
-    void _blueRotation;
-    void _redRotation;
+    const _leftTurns = effectiveLeftTurns;
+    const _rightTurns = effectiveRightTurns;
+    const _leftRotation = leftRotation;
+    const _rightRotation = rightRotation;
+    void _leftTurns;
+    void _rightTurns;
+    void _leftRotation;
+    void _rightRotation;
 
     prepareWithTurns(filtered).then((prepared) => {
       preparedOptions = prepared;
@@ -457,8 +457,8 @@ Delegates all rendering to child components.
         optionSorter: sorter,
         poiFilter: (opts, previous) =>
           applyPoiLegalComposerFilter(opts, previous, {
-            bluePropType: bluePropTypeOverride,
-            redPropType: redPropTypeOverride,
+            leftPropType: leftPropTypeOverride,
+            rightPropType: rightPropTypeOverride,
           }),
       });
 
@@ -525,16 +525,16 @@ Delegates all rendering to child components.
     {currentSequence}
     onSlotClicked={handleSlotClicked}
     lastClickedSlot={pickerState?.lastClickedSlot ?? null}
-    blueTurns={effectiveBlueTurns}
-    redTurns={effectiveRedTurns}
+    leftTurns={effectiveLeftTurns}
+    rightTurns={effectiveRightTurns}
     {level}
     onLevelChange={handleLevelChange}
-    {blueRotation}
-    {redRotation}
-    onBlueTurnsChange={handleBlueTurnsChange}
-    onRedTurnsChange={handleRedTurnsChange}
-    onBlueRotationChange={handleBlueRotationChange}
-    onRedRotationChange={handleRedRotationChange}
+    {leftRotation}
+    {rightRotation}
+    onLeftTurnsChange={handleLeftTurnsChange}
+    onRightTurnsChange={handleRightTurnsChange}
+    onLeftRotationChange={handleLeftRotationChange}
+    onRightRotationChange={handleRightRotationChange}
     {showInteractionHint}
   />
 {/if}

@@ -126,8 +126,8 @@ function previewColors(
   add(patch.color);
   add(patch.leftColor);
   add(patch.rightColor);
-  add(patch.blueColor);
-  add(patch.redColor);
+  add(patch.leftColor);
+  add(patch.rightColor);
 
   if (Array.isArray(patch.palette)) patch.palette.forEach(add);
   return found.length > 0 ? found.slice(0, 5) : ["#94a3b8", "#e2e8f0"];

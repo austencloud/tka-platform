@@ -20,7 +20,7 @@ import { UndoOperationType } from "./undo-manager";
 export interface SequenceActionsSequenceState {
   currentSequence: SequenceData | null;
   mirrorSequence(targetHand: TargetHand): Promise<void>;
-  swapColors(): Promise<void>;
+  swapHands(): Promise<void>;
   rewindSequence(targetHand: TargetHand): Promise<void>;
   flipSequence(targetHand: TargetHand): Promise<void>;
   invertSequence(targetHand: TargetHand): Promise<void>;
@@ -272,8 +272,8 @@ export function createSequenceActionsOrchestrator(
         state.mirrorSequence(deps.getTargetHand())
       ),
     swap: () =>
-      executeTransform(UndoOperationType.SWAP_COLORS, (state) =>
-        state.swapColors()
+      executeTransform(UndoOperationType.SWAP_HANDS, (state) =>
+        state.swapHands()
       ),
     rewind: () =>
       executeTransform(UndoOperationType.REWIND_SEQUENCE, (state) =>

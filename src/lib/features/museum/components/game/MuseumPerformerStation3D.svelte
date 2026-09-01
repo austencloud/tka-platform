@@ -212,20 +212,20 @@
 
   // Prop type: prefer the sequence's intended prop, fall back to global settings.
   // This way Shift+P cycles the museum performers too.
-  const bluePropType = $derived.by((): PropType => {
-    if (resolvedSequence?.intendedProp?.bluePropType)
-      return resolvedSequence.intendedProp.bluePropType;
+  const leftPropType = $derived.by((): PropType => {
+    if (resolvedSequence?.intendedProp?.leftPropType)
+      return resolvedSequence.intendedProp.leftPropType;
     try {
-      return settingsService.settings.bluePropType ?? PropType.STAFF;
+      return settingsService.settings.leftPropType ?? PropType.STAFF;
     } catch {
       return PropType.STAFF;
     }
   });
-  const redPropType = $derived.by((): PropType => {
-    if (resolvedSequence?.intendedProp?.redPropType)
-      return resolvedSequence.intendedProp.redPropType;
+  const rightPropType = $derived.by((): PropType => {
+    if (resolvedSequence?.intendedProp?.rightPropType)
+      return resolvedSequence.intendedProp.rightPropType;
     try {
-      return settingsService.settings.redPropType ?? PropType.STAFF;
+      return settingsService.settings.rightPropType ?? PropType.STAFF;
     } catch {
       return PropType.STAFF;
     }
@@ -258,8 +258,8 @@
       {showGrid}
       visiblePlanes={new Set([Plane.WALL])}
       gridMode={(resolvedSequence?.gridMode ?? "diamond") as GridMode}
-      bluePropType={toScenePropType(bluePropType)}
-      redPropType={toScenePropType(redPropType)}
+      leftPropType={toScenePropType(leftPropType)}
+      rightPropType={toScenePropType(rightPropType)}
       groundOffset={museumGroundOffset}
       enableLocomotion={true}
       enableFootPlanting={true}
@@ -268,25 +268,25 @@
       isPlaying={performerState.isPlaying}
     >
       {#snippet effectsSlot({
-        bluePropState,
-        redPropState,
-        blueHandPos,
-        redHandPos,
+        leftPropState,
+        rightPropState,
+        leftHandPos,
+        rightHandPos,
         isPlaying: rigPlaying,
         staffHalfLength,
         effectsParentRef,
       })}
         {#if tipEffectMap}
           <EffectOrchestrator3D
-            {bluePropState}
-            {redPropState}
-            bluePropType={toScenePropType(bluePropType)}
-            redPropType={toScenePropType(redPropType)}
+            {leftPropState}
+            {rightPropState}
+            leftPropType={toScenePropType(leftPropType)}
+            rightPropType={toScenePropType(rightPropType)}
             isPlaying={rigPlaying}
             {staffHalfLength}
             {tipEffectMap}
-            {blueHandPos}
-            {redHandPos}
+            {leftHandPos}
+            {rightHandPos}
             {effectsParentRef}
             currentStep={performerState.currentStepIndex +
               performerState.progress}

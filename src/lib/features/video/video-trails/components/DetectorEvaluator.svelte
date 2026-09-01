@@ -34,7 +34,7 @@
     if (frameResults.length === 0) return null;
 
     let totalCorrections = 0;
-    let accurateHits = 0;       
+    let accurateHits = 0;
     let totalError = 0;
     let errorCount = 0;
     let totalMisses = 0;
@@ -56,29 +56,28 @@
     }
 
     const detectionAccuracy =
-      totalCorrections > 0
-        ? (accurateHits / totalCorrections) * 100
-        : 0;
+      totalCorrections > 0 ? (accurateHits / totalCorrections) * 100 : 0;
 
     const avgError = errorCount > 0 ? totalError / errorCount : 0;
 
     const missRate =
-      totalCorrections > 0
-        ? (totalMisses / totalCorrections) * 100
-        : 0;
+      totalCorrections > 0 ? (totalMisses / totalCorrections) * 100 : 0;
 
     const falsePositiveRate =
-      totalDetections > 0
-        ? (totalFalsePositives / totalDetections) * 100
-        : 0;
+      totalDetections > 0 ? (totalFalsePositives / totalDetections) * 100 : 0;
 
     return { detectionAccuracy, avgError, missRate, falsePositiveRate };
   });
 
-  const correctedFrameCount = $derived(Object.keys(trailsState.corrections).length);
+  const correctedFrameCount = $derived(
+    Object.keys(trailsState.corrections).length
+  );
 
   const canRun = $derived(
-    !!videoElement && !!trailsState.source && correctedFrameCount > 0 && !evaluating
+    !!videoElement &&
+      !!trailsState.source &&
+      correctedFrameCount > 0 &&
+      !evaluating
   );
 
   async function runEvaluation() {
@@ -94,7 +93,10 @@
     offscreen.width = trailsState.source.resolution.width;
     offscreen.height = trailsState.source.resolution.height;
     const ctx = offscreen.getContext("2d", { willReadFrequently: true });
-    if (!ctx) { evaluating = false; return; }
+    if (!ctx) {
+      evaluating = false;
+      return;
+    }
 
     const registration = DETECTOR_REGISTRY.find(
       (r) => r.id === trailsState.activeDetectorId
@@ -106,7 +108,9 @@
     };
     const detector = (detectorMap[containerKey] ?? getLedThresholdDetector)();
 
-    const correctedFrameNumbers = Object.keys(trailsState.corrections).map(Number).sort((a, b) => a - b);
+    const correctedFrameNumbers = Object.keys(trailsState.corrections)
+      .map(Number)
+      .sort((a, b) => a - b);
     const results: FrameResult[] = [];
 
     for (let i = 0; i < correctedFrameNumbers.length; i++) {
@@ -123,23 +127,30 @@
       });
 
       ctx.drawImage(videoElement, 0, 0);
-      const imageData = ctx.getImageData(0, 0, offscreen.width, offscreen.height);
+      const imageData = ctx.getImageData(
+        0,
+        0,
+        offscreen.width,
+        offscreen.height
+      );
       const detected = detector.detect(imageData, trailsState.detectionConfig);
 
       const corrections = trailsState.corrections[frame] ?? [];
 
-      const matchDistances: (number | null)[] = corrections.map((correction) => {
-        if (!correction.corrected) return null;
+      const matchDistances: (number | null)[] = corrections.map(
+        (correction) => {
+          if (!correction.corrected) return null;
 
-        let minDist: number | null = null;
-        for (const det of detected) {
-          const dx = det.x - correction.corrected.x;
-          const dy = det.y - correction.corrected.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (minDist === null || dist < minDist) minDist = dist;
+          let minDist: number | null = null;
+          for (const det of detected) {
+            const dx = det.x - correction.corrected.x;
+            const dy = det.y - correction.corrected.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (minDist === null || dist < minDist) minDist = dist;
+          }
+          return minDist;
         }
-        return minDist;
-      });
+      );
 
       const missCount = corrections.filter((c, idx) => {
         if (!c.corrected) return false;
@@ -156,7 +167,14 @@
         });
       }).length;
 
-      results.push({ frame, detected, corrections, matchDistances, missCount, falsePositiveCount });
+      results.push({
+        frame,
+        detected,
+        corrections,
+        matchDistances,
+        missCount,
+        falsePositiveCount,
+      });
     }
 
     frameResults = results;
@@ -179,7 +197,11 @@
     return v.toFixed(1) + " px";
   }
 
-  function metricClass(value: number, goodBelow: number, badAbove: number): string {
+  function metricClass(
+    value: number,
+    goodBelow: number,
+    badAbove: number
+  ): string {
     if (value <= goodBelow) return "good";
     if (value >= badAbove) return "bad";
     return "neutral";
@@ -205,8 +227,9 @@
     </p>
   {:else}
     <p class="hint">
-      {correctedFrameCount} corrected {correctedFrameCount === 1 ? "frame" : "frames"} available.
-      Evaluation seeks to each frame and re-runs the detector.
+      {correctedFrameCount} corrected {correctedFrameCount === 1
+        ? "frame"
+        : "frames"} available. Evaluation seeks to each frame and re-runs the detector.
     </p>
   {/if}
 
@@ -226,7 +249,13 @@
   </button>
 
   {#if evaluating}
-    <div class="progress-bar-wrap" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
+    <div
+      class="progress-bar-wrap"
+      role="progressbar"
+      aria-valuenow={Math.round(progress * 100)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
       <div class="progress-bar-fill" style="width: {progress * 100}%"></div>
     </div>
     <p class="progress-label">
@@ -275,7 +304,10 @@
         <ul class="frame-list">
           {#each frameResults as result (result.frame)}
             {@const expanded = expandedFrames.has(result.frame)}
-            {@const worstDist = result.matchDistances.reduce<number>((m, d) => (d !== null && d > m ? d : m), 0)}
+            {@const worstDist = result.matchDistances.reduce<number>(
+              (m, d) => (d !== null && d > m ? d : m),
+              0
+            )}
             <li class="frame-item">
               <button
                 class="frame-row"
@@ -288,7 +320,9 @@
                     <span class="badge bad">{result.missCount} missed</span>
                   {/if}
                   {#if result.falsePositiveCount > 0}
-                    <span class="badge warn">{result.falsePositiveCount} FP</span>
+                    <span class="badge warn"
+                      >{result.falsePositiveCount} FP</span
+                    >
                   {/if}
                   {#if result.missCount === 0 && result.falsePositiveCount === 0}
                     <span class="badge good">OK</span>
@@ -318,12 +352,20 @@
                     <tbody>
                       {#each result.corrections as correction, idx}
                         {@const dist = result.matchDistances[idx] ?? null}
-                        <tr class={dist !== null && dist <= ACCURACY_THRESHOLD_PX ? "row-ok" : "row-miss"}>
-                          <td>{correction.propIndex === 0 ? "Blue" : "Red"}</td>
+                        <tr
+                          class={dist !== null && dist <= ACCURACY_THRESHOLD_PX
+                            ? "row-ok"
+                            : "row-miss"}
+                        >
+                          <td
+                            >{correction.propIndex === 0 ? "Left" : "Right"}</td
+                          >
                           <td>{correction.tipIndex}</td>
                           <td>
                             {#if correction.corrected}
-                              ({Math.round(correction.corrected.x)}, {Math.round(correction.corrected.y)})
+                              ({Math.round(correction.corrected.x)}, {Math.round(
+                                correction.corrected.y
+                              )})
                             {:else}
                               occluded
                             {/if}
@@ -335,7 +377,13 @@
                               none
                             {/if}
                           </td>
-                          <td class={dist === null ? "cell-miss" : dist <= ACCURACY_THRESHOLD_PX ? "cell-ok" : "cell-bad"}>
+                          <td
+                            class={dist === null
+                              ? "cell-miss"
+                              : dist <= ACCURACY_THRESHOLD_PX
+                                ? "cell-ok"
+                                : "cell-bad"}
+                          >
                             {#if dist === null}
                               miss
                             {:else if dist <= ACCURACY_THRESHOLD_PX}
@@ -358,7 +406,9 @@
   {/if}
 
   {#if hasRun && !evaluating && frameResults.length === 0}
-    <p class="empty-hint">No results - corrections may have been cleared since evaluation started.</p>
+    <p class="empty-hint">
+      No results - corrections may have been cleared since evaluation started.
+    </p>
   {/if}
 </div>
 
@@ -402,7 +452,11 @@
     padding: 8px 12px;
     border-radius: 6px;
     border: 1px solid var(--theme-accent, #f43f5e);
-    background: color-mix(in srgb, var(--theme-accent, #f43f5e) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f43f5e) 15%,
+      transparent
+    );
     color: var(--theme-accent, #f43f5e);
     font-size: var(--font-size-min, 14px);
     cursor: pointer;
@@ -410,7 +464,11 @@
   }
 
   .run-btn:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--theme-accent, #f43f5e) 25%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f43f5e) 25%,
+      transparent
+    );
   }
 
   .run-btn:disabled {
@@ -520,7 +578,8 @@
     max-height: 260px;
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2))
+      transparent;
   }
 
   .frame-item {
@@ -571,17 +630,29 @@
   }
 
   .badge.bad {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 20%,
+      transparent
+    );
     color: var(--semantic-error, #ef4444);
   }
 
   .badge.warn {
-    background: color-mix(in srgb, var(--semantic-warning, #eab308) 20%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-warning, #eab308) 20%,
+      transparent
+    );
     color: var(--semantic-warning, #eab308);
   }
 
   .badge.good {
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 20%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 20%,
+      transparent
+    );
     color: var(--semantic-success, #22c55e);
   }
 

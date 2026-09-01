@@ -5,18 +5,18 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 
 export function applyTurnsToVariations(
   variations: readonly PictographData[],
-  blueTurns: TurnValue,
-  redTurns: TurnValue,
-  blueRotation: RotationDirection,
-  redRotation: RotationDirection
+  leftTurns: TurnValue,
+  rightTurns: TurnValue,
+  leftRotation: RotationDirection,
+  rightRotation: RotationDirection
 ): PictographData[] {
   return variations.map((variation) =>
     applyPendingTurnsToOption(
       variation,
-      blueTurns,
-      redTurns,
-      blueRotation,
-      redRotation
+      leftTurns,
+      rightTurns,
+      leftRotation,
+      rightRotation
     )
   );
 }

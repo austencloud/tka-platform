@@ -6,7 +6,7 @@ import {
   MotionType,
   RotationDirection,
   Orientation,
-  MotionColor,
+  HandSide,
   HandPath,
 } from "../../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "../../../src/lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -28,7 +28,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -49,7 +49,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 0.5,
         startOrientation: Orientation.OUT,
         endOrientation: Orientation.CLOCK,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -70,7 +70,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.IN,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -91,7 +91,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 0,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.IN,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -111,7 +111,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 0,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.IN,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -133,7 +133,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -154,7 +154,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -168,7 +168,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -188,7 +188,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -201,7 +201,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -221,7 +221,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -234,7 +234,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -256,7 +256,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -277,7 +277,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -290,7 +290,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 2,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -316,7 +316,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -329,7 +329,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 0,
         startOrientation: Orientation.OUT,
         endOrientation: Orientation.CLOCK,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -354,7 +354,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -375,7 +375,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -388,7 +388,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -408,7 +408,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });
@@ -421,7 +421,7 @@ describe("MotionSignatureGenerator", () => {
         turns: 1,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
       });

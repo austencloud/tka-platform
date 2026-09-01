@@ -141,13 +141,13 @@ export class FrameSystem {
 
   enforceUnilateralConstraint(
     settings: TrailSettings,
-    currentBluePropType: string,
-    currentRedPropType: string
+    currentLeftPropType: string,
+    currentRightPropType: string
   ): TrailSettings {
     return this.frameParameterBuilder.enforceUnilateralConstraint(
       settings,
-      currentBluePropType,
-      currentRedPropType
+      currentLeftPropType,
+      currentRightPropType
     );
   }
 

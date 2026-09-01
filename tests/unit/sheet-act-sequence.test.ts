@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildActSequence } from "$lib/features/write/services/sheet-act-sequence";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 type FakeStep = { letter: string; start: string; end: string };
@@ -19,8 +19,8 @@ function seq(
       startPosition: s.start,
       endPosition: s.end,
       motions: {
-        [MotionColor.BLUE]: { startOrientation: "in", endOrientation: "in" },
-        [MotionColor.RED]: { startOrientation: "in", endOrientation: "in" },
+        [HandSide.LEFT]: { startOrientation: "in", endOrientation: "in" },
+        [HandSide.RIGHT]: { startOrientation: "in", endOrientation: "in" },
       },
     })),
   } as unknown as SequenceData;
@@ -46,11 +46,13 @@ describe("buildActSequence", () => {
 
   it("uses row 0's start position", () => {
     const sp = { gridPosition: "alpha1", isStartPosition: true };
-    const a = seq("a", [{ letter: "A", start: "alpha1", end: "beta3" }], { startPosition: sp });
+    const a = seq("a", [{ letter: "A", start: "alpha1", end: "beta3" }], {
+      startPosition: sp,
+    });
     const b = seq("b", [{ letter: "C", start: "beta3", end: "alpha1" }], {
       startPosition: { gridPosition: "beta3", isStartPosition: true },
     });
-    expect(buildActSequence([a, b], "Act")!.startPosition).toBe(sp);
+    expect(buildActSequence([a, b], "Act")!.startPosition).toStrictEqual(sp);
   });
 
   it("isCircular true when the act's last end returns to the first start", () => {

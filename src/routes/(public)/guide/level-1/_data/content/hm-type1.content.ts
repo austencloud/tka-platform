@@ -1,7 +1,13 @@
 import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  MotionType,
+  HandSide,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  GridMode,
+  GridLocation,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -23,17 +29,17 @@ const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 // from the locations) and the arrow pipeline renders the system float arrow
 // along the path - the same route the app itself takes for hand pictographs.
 // A hand that stays is STATIC (no arrow).
-const motion = (color: MotionColor, from: GridLocation, to: GridLocation) =>
+const motion = (color: HandSide, from: GridLocation, to: GridLocation) =>
   createMotionData({
     motionType: from === to ? MotionType.STATIC : MotionType.PRO,
     startLocation: from,
     endLocation: to,
-    color,
+    hand: color,
     propType: PropType.HAND,
     gridMode: GridMode.DIAMOND,
   });
 
-// [blueFrom, blueTo, redFrom, redTo]; start boxes hold (from === to).
+// [leftFrom, leftTo, rightFrom, rightTo]; start boxes hold (from === to).
 // MCP-confirmed: A = α→α, G = β→β, D = β→α, J = α→β (all Type 1 dual-pro).
 type Move = [GridLocation, GridLocation, GridLocation, GridLocation];
 const box = (m: Move, stepNumber: number, letter: Letter | null): StepData =>
@@ -44,13 +50,13 @@ const box = (m: Move, stepNumber: number, letter: Letter | null): StepData =>
     startPosition: getGridPositionFromLocations(m[0], m[2]),
     endPosition: getGridPositionFromLocations(m[1], m[3]),
     motions: {
-      blue: motion(MotionColor.BLUE, m[0], m[1]),
-      red: motion(MotionColor.RED, m[2], m[3]),
+      left: motion(HandSide.LEFT, m[0], m[1]),
+      right: motion(HandSide.RIGHT, m[2], m[3]),
     },
     stepNumber,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
   }) as unknown as StepData;
 
@@ -106,20 +112,27 @@ const STRIPS: Strip[] = [
 // Strip → Start + 4 real pictographs. Type1AlphaBetaPage's PICTO_FLAGS keep
 // showReversals off, so the strip is used directly - no bakeReversals needed.
 const stripSteps = (strip: Strip): PictographData[] =>
-  strip.moves.map((m, i) => box(m, i, strip.letters[i] ?? null)) as unknown as PictographData[];
+  strip.moves.map((m, i) =>
+    box(m, i, strip.letters[i] ?? null)
+  ) as unknown as PictographData[];
 
 /** HAND props - matching Type1AlphaBetaPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.HAND } as const;
 
-const SEQ_WORDS = ["α→α Split-Same", "β→β Tog-Same", "α↔β Split-Opp", "α↔β Tog-Opp"];
+const SEQ_WORDS = [
+  "α→α Split-Same",
+  "β→β Tog-Same",
+  "α↔β Split-Opp",
+  "α↔β Tog-Opp",
+];
 
 export const hmType1Content: GuideBlock[] = [
   { kind: "heading", level: 1, text: "Type 1 Dual-Shifts: Alpha and Beta" },
   {
     kind: "prose",
     html:
-      "When both hands move to adjacent locations, it’s called a <span class=\"cy\">Dual</span><span class=\"pu\">-Shift</span>.<br>" +
-      "Our first <span class=\"cy\">Dual</span><span class=\"pu\">-Shifts</span> correspond to the four modes of timing/direction: SS, TS, SO, TO.<br>" +
+      'When both hands move to adjacent locations, it’s called a <span class="cy">Dual</span><span class="pu">-Shift</span>.<br>' +
+      'Our first <span class="cy">Dual</span><span class="pu">-Shifts</span> correspond to the four modes of timing/direction: SS, TS, SO, TO.<br>' +
       "You can determine the start position by looking at the non-pointed end of the arrow.",
   },
   { kind: "heading", level: 2, text: "Split-Same" },
@@ -149,7 +162,7 @@ export const hmType1Content: GuideBlock[] = [
     html:
       "The Kinetic Alphabet puts focus on simultaneous motions between<br>" +
       "two positions, relative to the center point.<br>" +
-      "Let’s try another type of <span class=\"cy\">Dual</span><span class=\"pu\">-Shift</span>.<br>" +
+      'Let’s try another type of <span class="cy">Dual</span><span class="pu">-Shift</span>.<br>' +
       "What happens when we move between α and β?",
   },
   { kind: "heading", level: 2, text: "Split-Opp" },
@@ -180,7 +193,6 @@ export const hmType1Content: GuideBlock[] = [
   },
   {
     kind: "prose",
-    html:
-      "<strong>Practice using <span class=\"cy\">Dual</span><span class=\"pu\">-Shifts</span> to travel between Alpha and Beta in each mode.</strong>",
+    html: '<strong>Practice using <span class="cy">Dual</span><span class="pu">-Shifts</span> to travel between Alpha and Beta in each mode.</strong>',
   },
 ];

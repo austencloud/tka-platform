@@ -88,16 +88,16 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
 
   // Get user's prop settings for prop-aware thumbnails
   const propSettings = $derived({
-    bluePropType: settingsService.settings.bluePropType,
-    redPropType: settingsService.settings.redPropType,
+    leftPropType: settingsService.settings.leftPropType,
+    rightPropType: settingsService.settings.rightPropType,
     catDogMode: settingsService.settings.catDogMode,
   });
 
   // Determine if we're in cat-dog mode (different props per hand)
   const isCatDog = $derived(
     isCatDogMode(
-      propSettings.bluePropType,
-      propSettings.redPropType,
+      propSettings.leftPropType,
+      propSettings.rightPropType,
       propSettings.catDogMode
     )
   );
@@ -253,8 +253,8 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
                 onPrimaryAction={(seq) =>
                   handleSequenceAction("view-detail", seq, seqVariations)}
                 onHover={handleSequenceHover}
-                bluePropType={propSettings.bluePropType}
-                redPropType={propSettings.redPropType}
+                leftPropType={propSettings.leftPropType}
+                rightPropType={propSettings.rightPropType}
                 catDogModeEnabled={isCatDog}
                 {lightMode}
                 {eager}
@@ -290,8 +290,8 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
         onPrimaryAction={(seq) =>
           handleSequenceAction("view-detail", seq, seqVariations)}
         onHover={handleSequenceHover}
-        bluePropType={propSettings.bluePropType}
-        redPropType={propSettings.redPropType}
+        leftPropType={propSettings.leftPropType}
+        rightPropType={propSettings.rightPropType}
         catDogModeEnabled={isCatDog}
         {lightMode}
         {eager}

@@ -167,11 +167,11 @@ export function buildCustomizeSummary(
     }
 
     // ─── Start orientation ───
-    const blueOri = options.blueStartOrientation ?? Orientation.IN;
-    const redOri = options.redStartOrientation ?? Orientation.IN;
-    if (blueOri !== Orientation.IN || redOri !== Orientation.IN) {
+    const leftOri = options.leftStartOrientation ?? Orientation.IN;
+    const rightOri = options.rightStartOrientation ?? Orientation.IN;
+    if (leftOri !== Orientation.IN || rightOri !== Orientation.IN) {
       push(
-        `Ori: ${ORIENTATION_SHORT[blueOri] ?? blueOri}/${ORIENTATION_SHORT[redOri] ?? redOri}`
+        `Ori: ${ORIENTATION_SHORT[leftOri] ?? leftOri}/${ORIENTATION_SHORT[rightOri] ?? rightOri}`
       );
     }
 

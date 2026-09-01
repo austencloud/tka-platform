@@ -114,8 +114,8 @@
   });
 
   // Per-cell motion visibility overrides (undefined defaults to visible)
-  const blueVisible = $derived(cell.blueMotionVisible ?? true);
-  const redVisible = $derived(cell.redMotionVisible ?? true);
+  const leftVisible = $derived(cell.leftMotionVisible ?? true);
+  const rightVisible = $derived(cell.rightMotionVisible ?? true);
   // TODO: Pass blueVisible/redVisible to AnimatorCanvas once the animation
   // engine supports per-cell visibility overrides. Currently the global
   // AnimationVisibilityStateManager controls visibility for the entire app.
@@ -174,8 +174,8 @@
     return extraLayers.map((_layer, i) => {
       const animState = additionalAnimationStates[i];
       return {
-        blueProp: animState?.bluePropState ?? null,
-        redProp: animState?.redPropState ?? null,
+        leftProp: animState?.leftPropState ?? null,
+        rightProp: animState?.rightPropState ?? null,
       };
     });
   });
@@ -284,7 +284,7 @@
     if (isReady && primaryOrchestrator?.isInitialized() && primaryLayer) {
       primaryOrchestrator.calculateState(step);
       const states = primaryOrchestrator.getCurrentPropStates();
-      primaryAnimationState.setPropStates(states.blue, states.red);
+      primaryAnimationState.setPropStates(states.left, states.right);
     }
   });
 
@@ -303,7 +303,7 @@
       if (orch?.isInitialized() && animState) {
         orch.calculateState(step);
         const states = orch.getCurrentPropStates();
-        animState.setPropStates(states.blue, states.red);
+        animState.setPropStates(states.left, states.right);
       }
     }
   });
@@ -345,8 +345,8 @@
   {#if isAnimationType}
     {#if hasLayers}
       <AnimatorCanvas
-        blueProp={primaryAnimationState.bluePropState}
-        redProp={primaryAnimationState.redPropState}
+        leftProp={primaryAnimationState.leftPropState}
+        rightProp={primaryAnimationState.rightPropState}
         additionalLayers={additionalLayerProps}
         gridVisible={true}
         gridMode={primaryLayer?.sequence.gridMode ?? null}

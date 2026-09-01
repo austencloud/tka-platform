@@ -50,26 +50,26 @@ function handCode(h: HandState): string {
 
 export function enumerateDiamondInOut(): PoseDefinition[] {
   const poses: PoseDefinition[] = [];
-  for (const bluePlane of PLANES) {
-    for (const bluePos of POSITIONS) {
-      for (const blueOri of ORIENTATIONS) {
-        for (const redPlane of PLANES) {
-          for (const redPos of POSITIONS) {
-            for (const redOri of ORIENTATIONS) {
-              const blueHand: HandState = {
-                plane: bluePlane,
-                position: bluePos,
-                orientation: blueOri,
+  for (const leftPlane of PLANES) {
+    for (const leftPos of POSITIONS) {
+      for (const leftOri of ORIENTATIONS) {
+        for (const rightPlane of PLANES) {
+          for (const rightPos of POSITIONS) {
+            for (const rightOri of ORIENTATIONS) {
+              const leftHand: HandState = {
+                plane: leftPlane,
+                position: leftPos,
+                orientation: leftOri,
               };
-              const redHand: HandState = {
-                plane: redPlane,
-                position: redPos,
-                orientation: redOri,
+              const rightHand: HandState = {
+                plane: rightPlane,
+                position: rightPos,
+                orientation: rightOri,
               };
               poses.push({
-                id: `${handCode(blueHand)}-${handCode(redHand)}`,
-                blueHand,
-                redHand,
+                id: `${handCode(leftHand)}-${handCode(rightHand)}`,
+                leftHand,
+                rightHand,
               });
             }
           }

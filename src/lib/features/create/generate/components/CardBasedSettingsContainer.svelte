@@ -155,10 +155,10 @@ Delegates ALL logic to services (SRP compliant)
   // persistence. Keep the Level vocabulary invariant true on those paths too.
   $effect(() => {
     const level = config.level;
-    const blueStartOrientation = startEndState?.options.blueStartOrientation;
-    const redStartOrientation = startEndState?.options.redStartOrientation;
-    void blueStartOrientation;
-    void redStartOrientation;
+    constleftStartOrientationn = startEndState?.optionsleftStartOrientationn;
+    constrightStartOrientationn = startEndState?.optionsrightStartOrientationn;
+    voidleftStartOrientationn;
+    voidrightStartOrientationn;
     startEndState?.normalizeOrientationsForLevel(level);
   });
 

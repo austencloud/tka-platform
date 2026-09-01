@@ -59,11 +59,11 @@
   const rightHandWorld = new Vector3();
 
   const targets = POSE_TARGETS[pose];
-  const blueProp = createPropState(targets.left);
-  const redProp = createPropState(targets.right);
+  const leftProp = createPropState(targets.left);
+  const rightProp = createPropState(targets.right);
   const propOrientations = {
-    blue: blueProp.worldRotation,
-    red: redProp.worldRotation,
+    left: leftProp.worldRotation,
+    right: rightProp.worldRotation,
   };
 
   function createPropState(position: [number, number, number]): PropState3D {
@@ -184,8 +184,8 @@
       // Chrome throttles this task-owned background tab.
       for (let frame = 0; frame < 120; frame += 1) {
         services.animator.setPropsAndBlend(
-          blueProp,
-          redProp,
+          leftProp,
+          rightProp,
           undefined,
           propOrientations
         );
@@ -201,8 +201,8 @@
         leftHand.getWorldPosition(leftHandWorld);
         rightHand.getWorldPosition(rightHandWorld);
         report({
-          leftHandErrorMeters: leftHandWorld.distanceTo(blueProp.worldPosition),
-          rightHandErrorMeters: rightHandWorld.distanceTo(redProp.worldPosition),
+          leftHandErrorMeters: leftHandWorld.distanceTo(leftProp.worldPosition),
+          rightHandErrorMeters: rightHandWorld.distanceTo(rightProp.worldPosition),
         });
       }
       settledPose = true;

@@ -73,37 +73,37 @@ const TIMING_OFFSET = { T: 0, Q: 2, S: 4 } as const;
 
 /** Apply a VTG relationship to two already-selected QfT hands. */
 export function relateTrajectories(
-  blue: QftTrajectory,
-  red: QftTrajectory,
+  left: QftTrajectory,
+  right: QftTrajectory,
   mode: VtgMode
-): { blue: QftTrajectory; red: QftTrajectory } {
+): { left: QftTrajectory; right: QftTrajectory } {
   const timing = mode[0] as keyof typeof TIMING_OFFSET;
   const opposed = mode[1] === "O";
-  const relatedRed = withTrajectoryPhase(red, TIMING_OFFSET[timing]);
-  const redDirection: 1 | -1 = opposed
-    ? blue.handDirection === 1
+  const relatedRight = withTrajectoryPhase(right, TIMING_OFFSET[timing]);
+  const rightDirection: 1 | -1 = opposed
+    ? left.handDirection === 1
       ? -1
       : 1
-    : blue.handDirection;
+    : left.handDirection;
 
   return {
-    blue,
-    red: {
-      ...relatedRed,
-      handDirection: redDirection,
+    left,
+    right: {
+      ...relatedRight,
+      handDirection: rightDirection,
     },
   };
 }
 
 export function realizationToTrajectories(
-  blue: Flower,
-  red: Flower,
+  left: Flower,
+  right: Flower,
   mode: VtgMode,
-  radii: { blue?: number; red?: number } = {}
-): { blue: QftTrajectory; red: QftTrajectory } {
+  radii: { left?: number; right?: number } = {}
+): { left: QftTrajectory; right: QftTrajectory } {
   return relateTrajectories(
-    flowerToTrajectory(blue, radii.blue),
-    flowerToTrajectory(red, radii.red),
+    flowerToTrajectory(left, radii.left),
+    flowerToTrajectory(right, radii.right),
     mode
   );
 }
@@ -117,27 +117,27 @@ export function realizationToTrajectories(
  * this needs no knobs beyond the two the model already grew.
  *
  * Timing is the hand offset: together = same point, quarter = a right angle,
- * split = opposite points. Direction is the sign on the red hand's travel.
+ * split = opposite points. Direction is the sign on the right hand's travel.
  * Blue is left where it is and red carries the whole relationship, so the blue
  * reading of a cell is the same in all six modes — which is what makes the six
  * comparable at a glance.
  */
 export function realizationToHands(
-  blue: Flower,
-  red: Flower,
+  left: Flower,
+  right: Flower,
   mode: VtgMode
-): { blue: QftKnobs; red: QftKnobs } {
+): { left: QftKnobs; right: QftKnobs } {
   const timing = mode[0] as keyof typeof TIMING_OFFSET;
   const opposed = mode[1] === "O";
 
-  const blueKnobs = flowerToKnobs(blue);
-  const redKnobs = flowerToKnobs(red);
+  const leftKnobs = flowerToKnobs(left);
+  const rightKnobs = flowerToKnobs(right);
 
   return {
-    blue: blueKnobs,
-    red: {
-      ...redKnobs,
-      handPhase: (redKnobs.handPhase ?? 0) + TIMING_OFFSET[timing],
+    left: leftKnobs,
+    right: {
+      ...rightKnobs,
+      handPhase: (rightKnobs.handPhase ?? 0) + TIMING_OFFSET[timing],
       handDirection: opposed ? -1 : 1,
     },
   };

@@ -20,8 +20,8 @@ import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigatio
 import { postSaveActivation } from "$lib/shared/onboarding/state/post-save-activation-state.svelte";
 import type { SoloPropSaveOrchestrator } from "$lib/features/library/services/solo-prop-save-orchestrator";
 import {
-  extractBlueSoloProp,
-  extractRedSoloProp,
+  extractLeftSoloProp,
+  extractRightSoloProp,
 } from "$lib/shared/foundation/services/sequence-decomposer";
 import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
@@ -120,8 +120,8 @@ export function createSavePanelState(deps: SavePanelDeps) {
   );
   const isSolo = $derived(motionProfile.kind === "solo");
   const isMixed = $derived(motionProfile.kind === "mixed");
-  const soloColor = $derived(
-    motionProfile.kind === "solo" ? motionProfile.color : null
+  const soloHand = $derived(
+    motionProfile.kind === "solo" ? motionProfile.hand : null
   );
   const authoredHand = $derived(
     motionProfile.kind === "solo" ? motionProfile.authoredHand : null
@@ -302,7 +302,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
     }
 
     if (isSolo) {
-      if (!soloPropSaveOrchestrator || !authoredHand || !soloColor) {
+      if (!soloPropSaveOrchestrator || !authoredHand || !soloHand) {
         logger.error("SoloPropSaveOrchestrator not available");
         showToast({
           message: "Solo choreography could not be saved. Try again.",
@@ -316,9 +316,9 @@ export function createSavePanelState(deps: SavePanelDeps) {
       saveStep = 1;
       try {
         const extracted =
-          soloColor === "blue"
-            ? extractBlueSoloProp(sequence)
-            : extractRedSoloProp(sequence);
+          soloHand === "left"
+            ? extractLeftSoloProp(sequence)
+            : extractRightSoloProp(sequence);
         const result = await soloPropSaveOrchestrator.save(extracted, {
           name: saveName,
           notes: notes.trim(),
@@ -705,8 +705,8 @@ export function createSavePanelState(deps: SavePanelDeps) {
     get isMixed() {
       return isMixed;
     },
-    get soloColor() {
-      return soloColor;
+    get soloHand() {
+      return soloHand;
     },
     get authoredHand() {
       return authoredHand;

@@ -19,7 +19,10 @@ import {
   resolveHeaderDisplay,
   resolveRenderedTurns,
 } from "../src/core/sequence-renderer.js";
-import { getStandaloneRenderer } from "../src/core/standalone-renderer.js";
+import {
+  getStandaloneRenderer,
+  type PictographInput,
+} from "../src/core/standalone-renderer.js";
 import { renderWordHeader } from "../src/core/text-renderer.js";
 import { loadTkaGlyphImages } from "../src/core/tka-glyph-image-loader.js";
 
@@ -251,34 +254,34 @@ describe("MCP rendering boundaries", () => {
   it("uses canonical step turns instead of overwriting them at render time", () => {
     const step = {
       stepNumber: 5,
-      blueMotion: { turns: 0 },
-      redMotion: { turns: 1 },
+      leftMotion: { turns: 0 },
+      rightMotion: { turns: 1 },
     } as Parameters<typeof resolveRenderedTurns>[0];
     const unrelatedFallback = {
-      blue: [0, 0, 0, 0, 1],
-      red: [0, 0, 0, 0, 0],
+      left: [0, 0, 0, 0, 1],
+      right: [0, 0, 0, 0, 0],
     };
 
     assert.deepEqual(resolveRenderedTurns(step, unrelatedFallback), {
-      blue: 0,
-      red: 1,
+      left: 0,
+      right: 1,
     });
   });
 
   it("keeps the legacy allocation only when a step has no turn data", () => {
     const step = {
       stepNumber: 2,
-      blueMotion: {},
-      redMotion: {},
+      leftMotion: {},
+      rightMotion: {},
     } as Parameters<typeof resolveRenderedTurns>[0];
     const fallback = {
-      blue: [0, 1],
-      red: [1, 0],
+      left: [0, 1],
+      right: [1, 0],
     };
 
     assert.deepEqual(resolveRenderedTurns(step, fallback), {
-      blue: 1,
-      red: 0,
+      left: 1,
+      right: 0,
     });
   });
 
@@ -312,7 +315,7 @@ describe("MCP rendering boundaries", () => {
     assert.equal(resolveHeaderDisplay(steps, "ΣWΣΣ", "ΣΣ", [4]).word, "ΣΣ");
   });
 
-  it("preserves explicit motion colors when converting engine output", () => {
+  it("preserves explicit performer hands when converting engine output", () => {
     const motion = {
       motionType: "shift",
       rotationDirection: "cw",
@@ -328,8 +331,8 @@ describe("MCP rendering boundaries", () => {
           startPosition: "alpha1",
           endPosition: "alpha3",
           motions: {
-            blue: { ...motion },
-            red: { ...motion },
+            left: { ...motion },
+            right: { ...motion },
           },
           stepNumber: 0,
         },
@@ -342,8 +345,8 @@ describe("MCP rendering boundaries", () => {
       level: 2,
     });
 
-    assert.equal(result.steps[0]?.blueMotion.color, "blue");
-    assert.equal(result.steps[0]?.redMotion.color, "red");
+    assert.equal(result.steps[0]?.leftMotion.hand, "left");
+    assert.equal(result.steps[0]?.rightMotion.hand, "right");
   });
 
   it("scopes blue and red fan styles inside one pictograph", async () => {
@@ -354,22 +357,22 @@ describe("MCP rendering boundaries", () => {
         startPosition: "alpha1",
         endPosition: "alpha3",
         gridMode: "diamond",
-        blueMotion: {
+        leftMotion: {
           motionType: "pro",
           rotationDirection: "cw",
           startLocation: "n",
           endLocation: "e",
           startOrientation: "in",
-          color: "blue",
+          hand: "left",
           turns: 0,
         },
-        redMotion: {
+        rightMotion: {
           motionType: "anti",
           rotationDirection: "ccw",
           startLocation: "s",
           endLocation: "w",
           startOrientation: "in",
-          color: "red",
+          hand: "right",
           turns: 0,
         },
       },
@@ -377,8 +380,8 @@ describe("MCP rendering boundaries", () => {
         darkMode: true,
         showGrid: false,
         showTKA: false,
-        bluePropType: "fan",
-        redPropType: "fan",
+        leftPropType: "fan",
+        rightPropType: "fan",
       }
     );
 
@@ -391,27 +394,27 @@ describe("MCP rendering boundaries", () => {
 
   it("renders a nonzero static arrow while keeping zero-turn static motion arrowless", async () => {
     const renderer = getStandaloneRenderer();
-    const input = {
+    const input: PictographInput = {
       letter: "Σ",
       startPosition: "alpha3",
       endPosition: "gamma1",
       gridMode: "diamond",
-      blueMotion: {
+      leftMotion: {
         motionType: "static",
         rotationDirection: "cw",
         startLocation: "w",
         endLocation: "w",
         startOrientation: "out",
-        color: "blue",
+        hand: "left",
         turns: 1,
       },
-      redMotion: {
+      rightMotion: {
         motionType: "pro",
         rotationDirection: "ccw",
         startLocation: "e",
         endLocation: "n",
         startOrientation: "out",
-        color: "red",
+        hand: "right",
         turns: 0,
       },
     };
@@ -419,16 +422,16 @@ describe("MCP rendering boundaries", () => {
       darkMode: true,
       showGrid: false,
       showTKA: false,
-      showBlueMotion: true,
-      showRedMotion: false,
-      bluePropType: "fan",
+      showLeftMotion: true,
+      showRightMotion: false,
+      leftPropType: "fan",
     };
 
     const oneTurnSvg = await renderer.renderToSvg(input, visibility);
     const zeroTurnSvg = await renderer.renderToSvg(
       {
         ...input,
-        blueMotion: { ...input.blueMotion, turns: 0 },
+        leftMotion: { ...input.leftMotion, turns: 0 },
       },
       visibility
     );
@@ -445,24 +448,24 @@ describe("MCP rendering boundaries", () => {
         startPosition: "beta3",
         endPosition: "beta5",
         gridMode: "diamond",
-        blueMotion: {
+        leftMotion: {
           motionType: "pro",
           rotationDirection: "cw",
           startLocation: "n",
           endLocation: "e",
           startOrientation: "clockIn",
           endOrientation: "in",
-          color: "blue",
+          hand: "left",
           turns: 0.25,
         },
-        redMotion: {
+        rightMotion: {
           motionType: "anti",
           rotationDirection: "ccw",
           startLocation: "s",
           endLocation: "w",
           startOrientation: "counterIn",
           endOrientation: "out",
-          color: "red",
+          hand: "right",
           turns: 0.25,
         },
       },

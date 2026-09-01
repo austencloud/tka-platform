@@ -17,7 +17,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { RetroPictographData, RetroHandData } from "../domain/pictograph-types";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { getSvgImageCache, type DrawableImage } from "$lib/shared/render/services/svg-image-cache";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -63,8 +63,8 @@ export abstract class EraRendererBase {
 	 * PictographPreparer understands.
 	 */
 	protected convertToModernData(data: RetroPictographData): PictographData {
-		const blueMotion = this.handToMotionData(data.blueHand, MotionColor.BLUE, data.gridMode);
-		const redMotion = this.handToMotionData(data.redHand, MotionColor.RED, data.gridMode);
+		const leftMotion = this.handToMotionData(data.leftHand, HandSide.LEFT, data.gridMode);
+		const rightMotion = this.handToMotionData(data.rightHand, HandSide.RIGHT, data.gridMode);
 
 		const letter = asLetter(data.letter);
 		if (letter === null) {
@@ -79,8 +79,8 @@ export abstract class EraRendererBase {
 			// value (preparer treats unknown letters as glyph-less, callers get a placeholder)
 			letter: letter ?? (data.letter as Letter),
 			motions: {
-				[MotionColor.BLUE]: blueMotion,
-				[MotionColor.RED]: redMotion,
+				[HandSide.LEFT]: leftMotion,
+				[HandSide.RIGHT]: rightMotion,
 			},
 			gridMode: data.gridMode,
 		};
@@ -91,7 +91,7 @@ export abstract class EraRendererBase {
 	 */
 	private handToMotionData(
 		hand: RetroHandData,
-		color: MotionColor,
+		color: HandSide,
 		gridMode: GridMode
 	): MotionData {
 		return createMotionData({
@@ -105,7 +105,7 @@ export abstract class EraRendererBase {
 			endOrientation: hand.orientation,
 			isVisible: true,
 			propType: PropType.STAFF,
-			color,
+			hand: color,
 			gridMode,
 		});
 	}
@@ -124,8 +124,8 @@ export abstract class EraRendererBase {
 			const modern = this.convertToModernData(data);
 			const prepared = await this.preparer.prepareSingle(modern, {
 				themeMode: "dark",
-				bluePropType: PropType.STAFF,
-				redPropType: PropType.STAFF,
+				leftPropType: PropType.STAFF,
+				rightPropType: PropType.STAFF,
 			});
 			return prepared._prepared ?? null;
 		} catch (error) {

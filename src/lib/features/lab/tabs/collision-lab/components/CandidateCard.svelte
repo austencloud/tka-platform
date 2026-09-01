@@ -44,8 +44,8 @@
     if (!candidate.feasible) {
       // Report the largest shortfall - either reach or a hard-gate collision.
       const shortfall = Math.max(
-        candidate.simResult.reachShortfall.blue,
-        candidate.simResult.reachShortfall.red
+        candidate.simResult.reachShortfall.left,
+        candidate.simResult.reachShortfall.right
       );
       if (shortfall > 0.03) {
         return `${Math.round(shortfall * 100)} cm short`;
@@ -83,12 +83,12 @@
   <div class="thumbnail-frame">
     <CandidateThumbnailViewport
       stance={candidate.stance}
-      bluePlane={pose.blueHand.plane}
-      bluePosition={pose.blueHand.position}
-      blueOrientation={pose.blueHand.orientation}
-      redPlane={pose.redHand.plane}
-      redPosition={pose.redHand.position}
-      redOrientation={pose.redHand.orientation}
+      leftPlane={pose.leftHand.plane}
+      leftPosition={pose.leftHand.position}
+      leftOrientation={pose.leftHand.orientation}
+      rightPlane={pose.rightHand.plane}
+      rightPosition={pose.rightHand.position}
+      rightOrientation={pose.rightHand.orientation}
     />
   </div>
 

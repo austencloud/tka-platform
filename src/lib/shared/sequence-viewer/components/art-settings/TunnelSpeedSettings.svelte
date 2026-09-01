@@ -120,8 +120,8 @@
               )}
           >
             <span class="perf-swatch">
-              <span style="background:{perf.blueHex}"></span>
-              <span style="background:{perf.redHex}"></span>
+              <span style="background:{perf.leftHex}"></span>
+              <span style="background:{perf.rightHex}"></span>
             </span>
             <span class="perf-lbl">{perf.label}</span>
           </button>

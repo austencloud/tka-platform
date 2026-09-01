@@ -1,35 +1,37 @@
 <script lang="ts">
+  import type { HandSide } from "@tka/tka-types";
+
   interface Props {
-    blue: string;
-    red: string;
-    blueLabel?: string;
-    redLabel?: string;
+    left: string;
+    right: string;
+    leftLabel?: string;
+    rightLabel?: string;
     groupLabel?: string;
-    onchange: (hand: "blue" | "red", value: string) => void;
+    onchange: (hand: HandSide, value: string) => void;
   }
 
   let {
-    blue,
-    red,
-    blueLabel = "Left prop",
-    redLabel = "Right prop",
+    left,
+    right,
+    leftLabel = "Left prop",
+    rightLabel = "Right prop",
     groupLabel = "Prop colors",
     onchange,
   }: Props = $props();
 
-  let blueInput: HTMLInputElement | undefined = $state();
-  let redInput: HTMLInputElement | undefined = $state();
+  let leftInput = $state();
+  let rightInput = $state();
 
   const entries = $derived([
-    { hand: "blue" as const, label: blueLabel, value: blue, input: blueInput },
-    { hand: "red" as const, label: redLabel, value: red, input: redInput },
+    { hand: "left" as const, label: leftLabel, value: left, input: leftInput },
+    { hand: "right" as const, label: rightLabel, value: right, input: rightInput },
   ]);
 </script>
 
 <div class="color-pair" role="group" aria-label={groupLabel}>
   <span
     class="pair-preview"
-    style:background={`linear-gradient(90deg, ${blue}, ${red})`}
+    style:background={`linear-gradient(90deg, ${left}, ${right})`}
     aria-hidden="true"
   ></span>
   <div class="pair-controls">
@@ -51,24 +53,24 @@
       </button>
     {/each}
     <input
-      bind:this={blueInput}
+      bind:this={leftInput}
       class="native-color"
       type="color"
-      value={blue}
+      value={left}
       tabindex="-1"
       aria-hidden="true"
       oninput={(event) =>
-        onchange("blue", (event.currentTarget as HTMLInputElement).value)}
+        onchange("left", (event.currentTarget as HTMLInputElement).value)}
     />
     <input
-      bind:this={redInput}
+      bind:this={rightInput}
       class="native-color"
       type="color"
-      value={red}
+      value={right}
       tabindex="-1"
       aria-hidden="true"
       oninput={(event) =>
-        onchange("red", (event.currentTarget as HTMLInputElement).value)}
+        onchange("right", (event.currentTarget as HTMLInputElement).value)}
     />
   </div>
 </div>

@@ -11,11 +11,16 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/mot
 import type { PropGeometryKey } from "./prop-geometry-adjustment";
 import { createCanonicalPlacementContext } from "../../calculation/services/canonical-placement-frame";
 import { placementFrameForGridMode } from "../../placement/domain/placement-frame";
+import {
+  HandSide,
+  normalizeLegacyHandSide,
+  type HandSide as HandSideValue,
+} from "@tka/tka-types";
 
 export function derivePropGeometryKey(
   pictographData: PictographData,
   motionData: MotionData,
-  arrowColor?: string
+  arrowHand?: HandSideValue | "blue" | "red"
 ): PropGeometryKey | null {
   const canonicalContext = createCanonicalPlacementContext(
     pictographData,
@@ -23,22 +28,23 @@ export function derivePropGeometryKey(
   );
   pictographData = canonicalContext.pictographData;
   motionData = canonicalContext.motionData;
-  const blueMotion = pictographData.motions.blue;
-  const redMotion = pictographData.motions.red;
-  if (!blueMotion || !redMotion) return null;
+  const leftMotion = pictographData.motions.left;
+  const rightMotion = pictographData.motions.right;
+  if (!leftMotion || !rightMotion) return null;
 
   const placementFrame = placementFrameForGridMode(
-    _deriveGridMode(blueMotion, redMotion)
+    _deriveGridMode(leftMotion, rightMotion)
   );
 
   const endPosition = pictographData.endPosition;
   if (!endPosition) return null;
   const positionType = endPosition.replace(/\d+$/, "");
 
-  const color = arrowColor || motionData.color || "blue";
-  const isBlue = color === "blue";
-  const thisMotion = isBlue ? blueMotion : redMotion;
-  const otherMotion = isBlue ? redMotion : blueMotion;
+  const hand =
+    normalizeLegacyHandSide(arrowHand ?? motionData.hand) ?? HandSide.LEFT;
+  const isLeft = hand === HandSide.LEFT;
+  const thisMotion = isLeft ? leftMotion : rightMotion;
+  const otherMotion = isLeft ? rightMotion : leftMotion;
 
   return {
     placementFrame,
@@ -49,6 +55,6 @@ export function derivePropGeometryKey(
     otherEndOrientation: otherMotion.endOrientation?.toLowerCase() || "in",
     motionType: motionData.motionType?.toLowerCase() || "static",
     turns: String(motionData.turns ?? 0),
-    arrowColor: color,
+    arrowColor: hand,
   };
 }

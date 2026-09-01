@@ -193,8 +193,8 @@
 		{isMoving}
 		{moveSpeed}
 		{tipEffectMap}
-		bluePropType={toScenePropType(propType)}
-		redPropType={toScenePropType(propType)}
+		leftPropType={toScenePropType(propType)}
+		rightPropType={toScenePropType(propType)}
 	/>
 
 	<!-- Elder knowledge glow: soft emissive sphere -->

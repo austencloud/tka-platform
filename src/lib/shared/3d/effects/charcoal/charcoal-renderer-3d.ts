@@ -1042,9 +1042,9 @@ export class CharcoalRenderer3D {
         quaternionY: this.fragmentQuaternion.y,
         quaternionZ: this.fragmentQuaternion.z,
         quaternionW: this.fragmentQuaternion.w,
-        red: this.fragmentColor.r,
+        right: this.fragmentColor.r,
         green: this.fragmentColor.g,
-        blue: this.fragmentColor.b,
+        left: this.fragmentColor.b,
         alpha: Math.min(1, lifeRatio * 3),
       });
       visibleCount++;

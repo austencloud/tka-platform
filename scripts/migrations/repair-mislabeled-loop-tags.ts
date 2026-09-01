@@ -63,9 +63,9 @@ interface RawStep {
   endPosition?: string;
   beat?: number;
   stepNumber?: number;
-  motions?: { blue?: RawMotion; red?: RawMotion };
-  blueMotion?: RawMotion;
-  redMotion?: RawMotion;
+  motions?: { left?: RawMotion; right?: RawMotion };
+  leftMotion?: RawMotion;
+  rightMotion?: RawMotion;
 }
 
 interface SeqDoc {
@@ -92,32 +92,32 @@ function toEngineMotion(m: RawMotion | undefined) {
 }
 
 /** Derive a grid position (e.g. "alpha3") from the two hands' locations. */
-function derivePosition(blueLoc: string, redLoc: string): string | undefined {
+function derivePosition(leftLoc: string, rightLoc: string): string | undefined {
   try {
-    return gridPositionDeriver.getGridPositionFromLocations(blueLoc, redLoc) ?? undefined;
+    return gridPositionDeriver.getGridPositionFromLocations(leftLoc, rightLoc) ?? undefined;
   } catch {
     return undefined;
   }
 }
 
 function toEngineStep(step: RawStep, index: number) {
-  const blue = toEngineMotion(step.motions?.blue ?? step.blueMotion);
-  const red = toEngineMotion(step.motions?.red ?? step.redMotion);
+  const left = toEngineMotion(step.motions?.left ?? step.leftMotion);
+  const right = toEngineMotion(step.motions?.right ?? step.rightMotion);
   // User-library beats carry no top-level grid positions — derive them from
   // the hands' motion locations (the same mapping the engine uses).
   const startPosition =
-    step.startPosition ?? derivePosition(blue.startLocation, red.startLocation);
+    step.startPosition ?? derivePosition(left.startLocation, right.startLocation);
   const endPosition =
-    step.endPosition ?? derivePosition(blue.endLocation, red.endLocation);
+    step.endPosition ?? derivePosition(left.endLocation, right.endLocation);
   return {
     letter: step.letter,
     startPosition,
     endPosition,
     // Provide both shapes: the class detector reads `motions.blue/red`,
     // helper paths read `blueMotion/redMotion`.
-    motions: { blue, red },
-    blueMotion: blue,
-    redMotion: red,
+    motions: { left, right },
+    leftMotion: left,
+    rightMotion: right,
     beatIndex: index,
     stepNumber: index,
   };
@@ -149,30 +149,30 @@ function buildEngineSteps(data: SeqDoc) {
     typeof data.startPosition === "object" ? data.startPosition
     : typeof data.startingPosition === "object" ? data.startingPosition
     : undefined;
-  const startZeroBlueLoc = (startPos?.motions?.blue ?? startPos?.blueMotion)?.endLocation;
-  const startZeroRedLoc = (startPos?.motions?.red ?? startPos?.redMotion)?.endLocation;
+  const startZeroLeftLoc = (startPos?.motions?.left ?? startPos?.leftMotion)?.endLocation;
+  const startZeroRightLoc = (startPos?.motions?.right ?? startPos?.rightMotion)?.endLocation;
   const startGrid =
     (typeof data.startPosition === "string" ? data.startPosition : undefined) ??
     (typeof data.startingPosition === "string" ? data.startingPosition : undefined) ??
     startPos?.startPosition ??
     // Library start-position objects carry an id like "derived-start-alpha3"
     (/-(alpha\d+|beta\d+|gamma\d+)$/.exec((startPos as { id?: string } | undefined)?.id ?? "")?.[1]) ??
-    (startZeroBlueLoc && startZeroRedLoc
-      ? derivePosition(startZeroBlueLoc, startZeroRedLoc)
+    (startZeroLeftLoc && startZeroRightLoc
+      ? derivePosition(startZeroLeftLoc, startZeroRightLoc)
       : undefined) ??
     rawSteps[0]?.startPosition;
 
   if (!startGrid) return null;
 
-  const zeroBlue = toEngineMotion(startPos?.motions?.blue ?? startPos?.blueMotion);
-  const zeroRed = toEngineMotion(startPos?.motions?.red ?? startPos?.redMotion);
+  const zeroLeft = toEngineMotion(startPos?.motions?.left ?? startPos?.leftMotion);
+  const zeroRight = toEngineMotion(startPos?.motions?.right ?? startPos?.rightMotion);
   const stepZero = {
     letter: startPos?.letter ?? "β",
     startPosition: startGrid,
     endPosition: startPos?.endPosition ?? startGrid,
-    motions: { blue: zeroBlue, red: zeroRed },
-    blueMotion: zeroBlue,
-    redMotion: zeroRed,
+    motions: { left: zeroLeft, right: zeroRight },
+    leftMotion: zeroLeft,
+    rightMotion: zeroRight,
     beatIndex: 0,
     stepNumber: 0,
   };

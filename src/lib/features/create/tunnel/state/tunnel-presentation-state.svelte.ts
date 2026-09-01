@@ -30,10 +30,10 @@ interface TunnelPresentationInputs {
   effects: EffectsConfigState;
   visibility: AnimationVisibilityStateManager;
   animationSettings: AnimationSettingsState;
-  initialBluePropType: string;
-  initialRedPropType: string;
-  initialBlueBuugengFlipped: boolean;
-  initialRedBuugengFlipped: boolean;
+  initialLeftPropType: string;
+  initialRightPropType: string;
+  initialLeftBuugengFlipped: boolean;
+  initialRightBuugengFlipped: boolean;
 }
 
 const clone = <T>(value: T): T => {
@@ -61,18 +61,18 @@ export function createTunnelPresentationState(
     initialSnapshot?.playback.playbackMode ?? "continuous"
   );
   let playing = $state(true);
-  let bluePropType = $state(
-    initialSnapshot?.props.bluePropType ?? inputs.initialBluePropType
+  let leftPropType = $state(
+    initialSnapshot?.props.leftPropType ?? inputs.initialLeftPropType
   );
-  let redPropType = $state(
-    initialSnapshot?.props.redPropType ?? inputs.initialRedPropType
+  let rightPropType = $state(
+    initialSnapshot?.props.rightPropType ?? inputs.initialRightPropType
   );
-  let blueBuugengFlipped = $state(
-    initialSnapshot?.props.blueBuugengFlipped ??
-      inputs.initialBlueBuugengFlipped
+  let leftBuugengFlipped = $state(
+    initialSnapshot?.props.leftBuugengFlipped ??
+      inputs.initialLeftBuugengFlipped
   );
-  let redBuugengFlipped = $state(
-    initialSnapshot?.props.redBuugengFlipped ?? inputs.initialRedBuugengFlipped
+  let rightBuugengFlipped = $state(
+    initialSnapshot?.props.rightBuugengFlipped ?? inputs.initialRightBuugengFlipped
   );
   let unattachedTunnel = $state({
     config: clone(
@@ -94,26 +94,26 @@ export function createTunnelPresentationState(
   });
 
   const propSettings: SnapshotDeps["settings"] = {
-    get bluePropType() {
-      return bluePropType;
+    get leftPropType() {
+      return leftPropType;
     },
-    get redPropType() {
-      return redPropType;
+    get rightPropType() {
+      return rightPropType;
     },
-    get blueBuugengFlipped() {
-      return blueBuugengFlipped;
+    get leftBuugengFlipped() {
+      return leftBuugengFlipped;
     },
-    get redBuugengFlipped() {
-      return redBuugengFlipped;
+    get rightBuugengFlipped() {
+      return rightBuugengFlipped;
     },
     updateSettings(patch) {
-      if (patch.bluePropType !== undefined) bluePropType = patch.bluePropType;
-      if (patch.redPropType !== undefined) redPropType = patch.redPropType;
-      if (patch.blueBuugengFlipped !== undefined) {
-        blueBuugengFlipped = patch.blueBuugengFlipped;
+      if (patch.leftPropType !== undefined) leftPropType = patch.leftPropType;
+      if (patch.rightPropType !== undefined) rightPropType = patch.rightPropType;
+      if (patch.leftBuugengFlipped !== undefined) {
+        leftBuugengFlipped = patch.leftBuugengFlipped;
       }
-      if (patch.redBuugengFlipped !== undefined) {
-        redBuugengFlipped = patch.redBuugengFlipped;
+      if (patch.rightBuugengFlipped !== undefined) {
+        rightBuugengFlipped = patch.rightBuugengFlipped;
       }
     },
   };
@@ -154,12 +154,12 @@ export function createTunnelPresentationState(
       motionAwarePaths: initialSnapshot.paths.motionAwarePaths,
     });
     inputs.visibility.setVisibility(
-      "bluePathLines",
-      initialSnapshot.paths.bluePathLines
+      "leftPathLines",
+      initialSnapshot.paths.leftPathLines
     );
     inputs.visibility.setVisibility(
-      "redPathLines",
-      initialSnapshot.paths.redPathLines
+      "rightPathLines",
+      initialSnapshot.paths.rightPathLines
     );
     inputs.animationSettings.updateSettings({
       trail: clone(initialSnapshot.trailRender),
@@ -200,15 +200,15 @@ export function createTunnelPresentationState(
       paths: {
         pathShape: inputs.visibility.getPathShape(),
         motionAwarePaths: inputs.visibility.getMotionAwarePaths(),
-        bluePathLines: inputs.visibility.getVisibility("bluePathLines"),
-        redPathLines: inputs.visibility.getVisibility("redPathLines"),
+        leftPathLines: inputs.visibility.getVisibility("leftPathLines"),
+        rightPathLines: inputs.visibility.getVisibility("rightPathLines"),
       },
       playback: { bpm, playbackMode },
       props: {
-        bluePropType,
-        redPropType,
-        blueBuugengFlipped,
-        redBuugengFlipped,
+        leftPropType,
+        rightPropType,
+        leftBuugengFlipped,
+        rightBuugengFlipped,
       },
       trailRender: clone(inputs.animationSettings.trail),
     };
@@ -224,30 +224,30 @@ export function createTunnelPresentationState(
     get playing() {
       return playing;
     },
-    get bluePropType() {
-      return bluePropType;
+    get leftPropType() {
+      return leftPropType;
     },
-    get redPropType() {
-      return redPropType;
+    get rightPropType() {
+      return rightPropType;
     },
-    get blueBuugengFlipped() {
-      return blueBuugengFlipped;
+    get leftBuugengFlipped() {
+      return leftBuugengFlipped;
     },
-    get redBuugengFlipped() {
-      return redBuugengFlipped;
+    get rightBuugengFlipped() {
+      return rightBuugengFlipped;
     },
     get chirality(): PropChiralitySeam {
       const handState = (hand: ChiralityHand) => ({
         hand,
         get flipped() {
-          return hand === "blue" ? blueBuugengFlipped : redBuugengFlipped;
+          return hand === "left" ? leftBuugengFlipped : rightBuugengFlipped;
         },
       });
       return {
-        hands: [handState("blue"), handState("red")],
+        hands: [handState("left"), handState("right")],
         onChange(hand, flipped) {
-          if (hand === "blue") blueBuugengFlipped = flipped;
-          else redBuugengFlipped = flipped;
+          if (hand === "left") leftBuugengFlipped = flipped;
+          else rightBuugengFlipped = flipped;
         },
       };
     },
@@ -278,8 +278,8 @@ export function createTunnelPresentationState(
       playing = !playing;
     },
     setPropType(propType: string) {
-      bluePropType = propType;
-      redPropType = propType;
+      leftPropType = propType;
+      rightPropType = propType;
       inputs.animationSettings.setCurrentPropType(propType);
     },
   };

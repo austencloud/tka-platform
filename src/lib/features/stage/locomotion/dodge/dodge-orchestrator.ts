@@ -16,17 +16,17 @@ import { DEFAULT_DODGE_KNOB, type DodgeKnob, type DodgePlan } from "./dodge-type
  * they are no longer on the dodge runtime path.
  */
 export function planDodge(
-  blueConfig: MotionConfig3D,
-  redConfig: MotionConfig3D,
+  leftConfig: MotionConfig3D,
+  rightConfig: MotionConfig3D,
   heightMeters = 1.8,
   sampleCount = 24,
   restPoseOverride?: RestPoseGeometry,
   knob: DodgeKnob = DEFAULT_DODGE_KNOB,
 ): DodgePlan {
-  const blueTube = new SweptTube(buildSweptVolume(blueConfig, sampleCount).samples);
-  const redTube = new SweptTube(buildSweptVolume(redConfig, sampleCount).samples);
+  const leftTube = new SweptTube(buildSweptVolume(leftConfig, sampleCount).samples);
+  const rightTube = new SweptTube(buildSweptVolume(rightConfig, sampleCount).samples);
   const body = restPoseOverride ?? restPoseFromHeight(heightMeters);
-  const res = planVacate(blueTube, redTube, body, knob);
+  const res = planVacate(leftTube, rightTube, body, knob);
   return {
     placement: () => res.placement,
     knob,

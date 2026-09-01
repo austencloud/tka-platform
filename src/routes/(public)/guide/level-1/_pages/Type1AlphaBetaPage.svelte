@@ -31,14 +31,24 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    GridLocation,
+    GridPosition,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
+  import {
+    guideEdit,
+    ptDrag,
+    pt,
+    editText,
+    registerEditSource,
+  } from "../_data/guide-edit.svelte";
   import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
@@ -59,7 +69,7 @@
   // arrow along the path - the same route the app itself takes for hand
   // pictographs. A hand that stays is STATIC (no arrow). Positions derive from
   // the location pairs, the elemental from the motions, numbers from stepNumber.
-  const motion = (color: MotionColor, from: GridLocation, to: GridLocation) =>
+  const motion = (color: HandSide, from: GridLocation, to: GridLocation) =>
     createMotionData({
       motionType: from === to ? MotionType.STATIC : MotionType.PRO,
       startLocation: from,
@@ -69,7 +79,7 @@
       gridMode: GridMode.DIAMOND,
     });
 
-  // [blueFrom, blueTo, redFrom, redTo]; start boxes hold (from === to).
+  // [leftFrom, leftTo, rightFrom, rightTo]; start boxes hold (from === to).
   // The letter keys the special-placement tier - G's per-color "(fl, fl)"
   // adjustments are what separate the Tog rows' same-path float arrows.
   // MCP-confirmed: A = α→α, G = β→β, D = β→α, J = α→β (all Type 1 dual-pro).
@@ -82,19 +92,24 @@
       startPosition: getGridPositionFromLocations(m[0], m[2]),
       endPosition: getGridPositionFromLocations(m[1], m[3]),
       motions: {
-        blue: motion(MotionColor.BLUE, m[0], m[1]),
-        red: motion(MotionColor.RED, m[2], m[3]),
+        left: motion(HandSide.LEFT, m[0], m[1]),
+        right: motion(HandSide.RIGHT, m[2], m[3]),
       },
       stepNumber,
       duration: 1,
-      blueReversal: false,
-      redReversal: false,
+      leftReversal: false,
+      rightReversal: false,
       isBlank: false,
     }) as unknown as StepData;
 
   // ── Strip geometry from the proof's image placements (pt) ──────────────────
   const BOX = 100;
-  type Strip = { x: number; y: number; moves: Move[]; letters: (Letter | null)[] };
+  type Strip = {
+    x: number;
+    y: number;
+    moves: Move[];
+    letters: (Letter | null)[];
+  };
 
   // Each row = Start + a four-count loop, read straight off the proof page.
   const STRIPS: Strip[] = [
@@ -165,8 +180,8 @@
       fs: 14,
       lh: 16.8,
       html:
-        "When both hands move to adjacent locations, it’s called a <span class=\"cy\">Dual</span><span class=\"pu\">-Shift</span>.<br>" +
-        "Our first <span class=\"cy\">Dual</span><span class=\"pu\">-Shifts</span> correspond to the four modes of timing/direction: SS, TS, SO, TO.<br>" +
+        'When both hands move to adjacent locations, it’s called a <span class="cy">Dual</span><span class="pu">-Shift</span>.<br>' +
+        'Our first <span class="cy">Dual</span><span class="pu">-Shifts</span> correspond to the four modes of timing/direction: SS, TS, SO, TO.<br>' +
         "You can determine the start position by looking at the non-pointed end of the arrow.",
     },
     {
@@ -177,7 +192,7 @@
       html:
         "The Kinetic Alphabet puts focus on simultaneous motions between<br>" +
         "two positions, relative to the center point.<br>" +
-        "Let’s try another type of <span class=\"cy\">Dual</span><span class=\"pu\">-Shift</span>.<br>" +
+        'Let’s try another type of <span class="cy">Dual</span><span class="pu">-Shift</span>.<br>' +
         "What happens when we move between α and β?",
     },
     {
@@ -185,16 +200,14 @@
       y: 712.9,
       fs: 14,
       lh: 16.8,
-      html:
-        "Notice that it can be either <em>Split-Opp</em> or <em>Tog-Opp</em> depending on start position.",
+      html: "Notice that it can be either <em>Split-Opp</em> or <em>Tog-Opp</em> depending on start position.",
     },
     {
       x: 0,
       y: 746.5,
       fs: 14,
       lh: 16.8,
-      html:
-        "<strong>Practice using <span class=\"cy\">Dual</span><span class=\"pu\">-Shifts</span> to travel between Alpha and Beta in each mode.</strong>",
+      html: '<strong>Practice using <span class="cy">Dual</span><span class="pu">-Shifts</span> to travel between Alpha and Beta in each mode.</strong>',
     },
   ]);
 
@@ -211,9 +224,23 @@
     pos?: { start: GridPosition; end: GridPosition };
   };
   let LABELS: Label[] = $state([
-    { x: 12.7, y: 168.5, w: 70.6, fs: 18, t: "α→α", pos: { start: GridPosition.ALPHA1, end: GridPosition.ALPHA1 } },
+    {
+      x: 12.7,
+      y: 168.5,
+      w: 70.6,
+      fs: 18,
+      t: "α→α",
+      pos: { start: GridPosition.ALPHA1, end: GridPosition.ALPHA1 },
+    },
     { x: 12.7, y: 190.2, w: 70.6, fs: 16, i: true, t: "Split-Same" },
-    { x: 15.3, y: 286.5, w: 65.4, fs: 18, t: "β→β", pos: { start: GridPosition.BETA1, end: GridPosition.BETA1 } },
+    {
+      x: 15.3,
+      y: 286.5,
+      w: 65.4,
+      fs: 18,
+      t: "β→β",
+      pos: { start: GridPosition.BETA1, end: GridPosition.BETA1 },
+    },
     { x: 15.3, y: 308.2, w: 65.4, fs: 16, i: true, t: "Tog-Same" },
     { x: 19.4, y: 511.6, w: 61.7, fs: 16, i: true, t: "Split-Opp" },
     { x: 21.4, y: 627.9, w: 56.5, fs: 16, i: true, t: "Tog-Opp" },
@@ -222,7 +249,12 @@
   // Reader companion handoff: present ONLY inside GuideReader (null on /print,
   // /book), so the printable pages stay pristine and gain no click affordance.
   const emitSequence = getGuideSequenceClick();
-  const SEQ_WORDS = ["α→α Split-Same", "β→β Tog-Same", "α↔β Split-Opp", "α↔β Tog-Opp"];
+  const SEQ_WORDS = [
+    "α→α Split-Same",
+    "β→β Tog-Same",
+    "α↔β Split-Opp",
+    "α↔β Tog-Opp",
+  ];
   const authoredStripSteps = (strip: Strip): StepData[] =>
     strip.moves.map((m, i) => box(m, i, strip.letters[i] ?? null));
 
@@ -237,7 +269,12 @@
     return [start!, ...bakeReversals(steps)];
   };
   const RESOLVED: Record<string, StepData[]> = $derived(
-    Object.fromEntries(STRIPS.map((strip, si) => [`t1-${si}`, resolvedStripSteps(strip, `t1-${si}`)]))
+    Object.fromEntries(
+      STRIPS.map((strip, si) => [
+        `t1-${si}`,
+        resolvedStripSteps(strip, `t1-${si}`),
+      ])
+    )
   );
   const stripSteps = (strip: Strip, key: string): StepData[] => RESOLVED[key]!;
 
@@ -245,8 +282,12 @@
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
     registerEditSource("Type 1 α/β (p4)", () => {
-      const P = PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n");
-      const L = LABELS.map((l) => `  ${JSON.stringify(l.t)}: x: ${r1(l.x)}, y: ${r1(l.y)}`).join("\n");
+      const P = PARAS.map(
+        (p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`
+      ).join("\n");
+      const L = LABELS.map(
+        (l) => `  ${JSON.stringify(l.t)}: x: ${r1(l.x)}, y: ${r1(l.y)}`
+      ).join("\n");
       return `PARAS\n${P}\n\nLABELS\n${L}`;
     })
   );
@@ -260,15 +301,21 @@
       class="strip tka-seq-cell"
       class:is-hovered={selection?.isHovered(`t1-${si}`)}
       class:is-selected={selection?.isSelected(`t1-${si}`)}
-      style="left:{strip.x * S}px; top:{strip.y * S}px; width:{BOX * 5 * S}px; height:{BOX * S}px"
+      style="left:{strip.x * S}px; top:{strip.y * S}px; width:{BOX *
+        5 *
+        S}px; height:{BOX * S}px"
     >
       {#each strip.moves as m, bi (bi)}
-        <div class="cell" class:guide-step-active={activeStep?.key === `t1-${si}` && activeStep.ringStep === bi}>
+        <div
+          class="cell"
+          class:guide-step-active={activeStep?.key === `t1-${si}` &&
+            activeStep.ringStep === bi}
+        >
           <PictographContainer
             pictographData={RESOLVED[`t1-${si}`]![bi]}
             gridMode={GridMode.DIAMOND}
-            bluePropTypeOverride={PropType.HAND}
-            redPropTypeOverride={PropType.HAND}
+            leftPropTypeOverride={PropType.HAND}
+            rightPropTypeOverride={PropType.HAND}
             showGrid={true}
             showTKA={false}
             showPositions={bi > 0}
@@ -288,7 +335,12 @@
         groupId={`t1-${si}`}
         isGroupStart
         label={`Animate the ${SEQ_WORDS[si]} sequence`}
-        onselect={() => emitSequence?.({ strip: stripSteps(strip, `t1-${si}`), word: SEQ_WORDS[si], key: `t1-${si}` })}
+        onselect={() =>
+          emitSequence?.({
+            strip: stripSteps(strip, `t1-${si}`),
+            word: SEQ_WORDS[si],
+            key: `t1-${si}`,
+          })}
       />
     </div>
   {/each}
@@ -299,9 +351,15 @@
       class="para"
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `t1-para-${i}`}
-      style="transform: translateX({p.x * S}px); top:{p.y * S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px"
+      style="transform: translateX({p.x * S}px); top:{p.y *
+        S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px"
       use:ptDrag={pt(`t1-para-${i}`, "paragraph", p)}
-      use:editText={{ id: `t1-para-${i}`, label: "paragraph", get: () => p.html, set: (h) => (p.html = h) }}
+      use:editText={{
+        id: `t1-para-${i}`,
+        label: "paragraph",
+        get: () => p.html,
+        set: (h) => (p.html = h),
+      }}
     >
       {@html p.html}
     </p>
@@ -316,11 +374,18 @@
       class:glyph={l.pos}
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `t1-label-${i}`}
-      style="left:{l.x * S}px; top:{l.y * S}px; width:{l.w * S}px; font-size:{l.fs * S}px"
+      style="left:{l.x * S}px; top:{l.y * S}px; width:{l.w *
+        S}px; font-size:{l.fs * S}px"
       use:ptDrag={pt(`t1-label-${i}`, l.t, l)}
     >
       {#if l.pos}
-        <svg class="pos-glyph" viewBox="360 50 230 75" role="img" aria-label={l.t} style="height:{l.fs * S}px">
+        <svg
+          class="pos-glyph"
+          viewBox="360 50 230 75"
+          role="img"
+          aria-label={l.t}
+          style="height:{l.fs * S}px"
+        >
           <PositionGlyph startPosition={l.pos.start} endPosition={l.pos.end} />
         </svg>
       {:else}{l.t}{/if}

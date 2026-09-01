@@ -19,7 +19,7 @@
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
     Orientation,
-    MotionColor,
+    HandSide,
     MotionType,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -31,12 +31,10 @@
 
   let { isOpen = $bindable(false) }: { isOpen: boolean } = $props();
 
-
   let gridMode = $state<GridMode>(GridMode.DIAMOND);
   let showCenter = $state(false);
   let selectedLocation = $state<GridLocation>(GridLocation.SOUTH);
   let selectedOrientation = $state<Orientation>(Orientation.IN);
-
 
   type HandPoint = { key: GridLocation; x: number; y: number; label: string };
 
@@ -89,13 +87,12 @@
 
   const isCenter = $derived(selectedLocation === GridLocation.CENTER);
 
-
   // Build a minimal PictographData with one blue static motion at the selected
   // location/orientation. PictographContainer handles all rendering: grid SVG,
   // prop SVG loading, positioning, rotation, colors.
   const demoPictograph = $derived.by<PictographData>(() => {
     const motion = createMotionData({
-      color: MotionColor.BLUE,
+      hand: HandSide.LEFT,
       startLocation: selectedLocation,
       endLocation: selectedLocation,
       motionType: MotionType.STATIC,
@@ -110,7 +107,7 @@
 
     return {
       id: `explainer-${gridMode}`,
-      motions: { [MotionColor.BLUE]: motion },
+      motions: { [HandSide.LEFT]: motion },
       gridMode: gridMode,
     };
   });
@@ -173,7 +170,7 @@
           showReversals={false}
           disableTransitions={true}
           disableContentTransitions={true}
-          visibleHand="blue"
+          visibleHand="left"
         />
       </div>
 
@@ -268,7 +265,6 @@
     max-width: 300px;
     line-height: 1.5;
   }
-
 
   .grid-area {
     width: 100%;

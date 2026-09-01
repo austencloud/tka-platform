@@ -29,7 +29,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -61,7 +61,7 @@
   type HandStep = { anti?: boolean; still?: boolean; from: GridLocation; to: GridLocation; so: Orientation };
   const h = (anti: boolean, from: GridLocation, to: GridLocation, so: Orientation = IN): HandStep => ({ anti, from, to, so });
   const sh = (loc: GridLocation, so: Orientation = IN): HandStep => ({ still: true, from: loc, to: loc, so });
-  const handMotion = (color: MotionColor, x: HandStep) => {
+  const handMotion = (color: HandSide, x: HandStep) => {
     if (x.still) {
       return createMotionData({
         motionType: MotionType.STATIC,
@@ -89,8 +89,8 @@
     });
   };
 
-  type Step = { letter: Letter; blue: HandStep; red: HandStep };
-  const st = (letter: Letter, blue: HandStep, red: HandStep): Step => ({ letter, blue, red });
+  type Step = { letter: Letter; left: HandStep; right: HandStep };
+  const st = (letter: Letter, left, right): Step => ({ letter, left, right });
   const { B, K, M, Q, T, W: WL, X, Y } = Letter;
   const EL = Letter.E;
   const SIG = Letter.SIGMA;
@@ -101,8 +101,8 @@
     key: string;
     word: string;
     startLetter: Letter;
-    startBlue: GridLocation;
-    startRed: GridLocation;
+    startLeft: GridLocation;
+    startRight: GridLocation;
     rowYs: [number, number];
     steps: Step[];
   };
@@ -112,8 +112,8 @@
       key: "prl-esqy",
       word: "EΣQY Rotated",
       startLetter: Letter.BETA,
-      startBlue: SO_,
-      startRed: SO_,
+      startLeft: SO_,
+      startRight: SO_,
       rowYs: [118.2, 210],
       steps: [
         st(EL, h(true, SO_, W), h(true, SO_, E)),
@@ -131,8 +131,8 @@
       key: "prl-twkt",
       word: "TWKΘ Rotated",
       startLetter: Letter.GAMMA,
-      startBlue: SO_,
-      startRed: E,
+      startLeft: SO_,
+      startRight: E,
       rowYs: [316.5, 408.3],
       steps: [
         st(T, h(true, SO_, W), h(true, E, SO_)),
@@ -151,8 +151,8 @@
       key: "prl-bdmx",
       word: "BΔMX Rotated",
       startLetter: Letter.ALPHA,
-      startBlue: SO_,
-      startRed: N,
+      startLeft: SO_,
+      startRight: N,
       rowYs: [511.2, 603],
       steps: [
         st(B, h(true, SO_, W), h(true, N, E)),
@@ -173,12 +173,12 @@
       id: `${l.key}-${i + 1}`,
       letter: s.letter,
       gridMode: GridMode.DIAMOND,
-      startPosition: getGridPositionFromLocations(s.blue.from, s.red.from),
-      endPosition: getGridPositionFromLocations(s.blue.to, s.red.to),
+      startPosition: getGridPositionFromLocations(s.left.from, s.right.from),
+      endPosition: getGridPositionFromLocations(s.left.to, s.right.to),
       stepNumber: i + 1,
       motions: {
-        blue: handMotion(MotionColor.BLUE, s.blue),
-        red: handMotion(MotionColor.RED, s.red),
+        left: handMotion(HandSide.LEFT, s.left),
+        right: handMotion(HandSide.RIGHT, s.right),
       },
     } as unknown as StepData;
   };
@@ -188,11 +188,11 @@
       letter: l.startLetter,
       gridMode: GridMode.DIAMOND,
       stepNumber: 0,
-      startPosition: getGridPositionFromLocations(l.startBlue, l.startRed),
-      endPosition: getGridPositionFromLocations(l.startBlue, l.startRed),
+      startPosition: getGridPositionFromLocations(l.startLeft, l.startRight),
+      endPosition: getGridPositionFromLocations(l.startLeft, l.startRight),
       motions: {
-        blue: handMotion(MotionColor.BLUE, sh(l.startBlue)),
-        red: handMotion(MotionColor.RED, sh(l.startRed)),
+        left: handMotion(HandSide.LEFT, sh(l.startLeft)),
+        right: handMotion(HandSide.RIGHT, sh(l.startRight)),
       },
     }) as unknown as StepData;
 
@@ -291,8 +291,8 @@
         <PictographContainer
           pictographData={RESOLVED[l.key]![0]}
           gridMode={GridMode.DIAMOND}
-          bluePropTypeOverride={PropType.STAFF}
-          redPropTypeOverride={PropType.STAFF}
+          leftPropTypeOverride={PropType.STAFF}
+          rightPropTypeOverride={PropType.STAFF}
           stepNumberOverride={true}
           {...PICTO_FLAGS}
         />
@@ -306,8 +306,8 @@
           <PictographContainer
             pictographData={sd}
             gridMode={GridMode.DIAMOND}
-            bluePropTypeOverride={PropType.STAFF}
-            redPropTypeOverride={PropType.STAFF}
+            leftPropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
             stepNumberOverride={true}
             {...PICTO_FLAGS}
           />

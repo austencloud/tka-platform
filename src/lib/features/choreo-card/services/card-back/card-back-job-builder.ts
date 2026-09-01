@@ -134,19 +134,19 @@ const LOOP_DISPLAY_ORDER: LOOPComponent[] = [
 ];
 
 const DARK_MANDALA_PALETTE: MandalaPalette = {
-  blueStroke: DARK_MOTION_BLUE_STROKE,
-  blueFill: DARK_MOTION_BLUE_FILL,
-  redStroke: DARK_MOTION_RED_STROKE,
-  redFill: DARK_MOTION_RED_FILL,
+  leftStroke: DARK_MOTION_BLUE_STROKE,
+  leftFill: DARK_MOTION_BLUE_FILL,
+  rightStroke: DARK_MOTION_RED_STROKE,
+  rightFill: DARK_MOTION_RED_FILL,
   purpleStroke: DARK_MOTION_PURPLE_STROKE,
   purpleFill: DARK_MOTION_PURPLE_FILL,
 };
 
 const LIGHT_MANDALA_PALETTE: MandalaPalette = {
-  blueStroke: LIGHT_MOTION_BLUE_STROKE,
-  blueFill: LIGHT_MOTION_BLUE_FILL,
-  redStroke: LIGHT_MOTION_RED_STROKE,
-  redFill: LIGHT_MOTION_RED_FILL,
+  leftStroke: LIGHT_MOTION_BLUE_STROKE,
+  leftFill: LIGHT_MOTION_BLUE_FILL,
+  rightStroke: LIGHT_MOTION_RED_STROKE,
+  rightFill: LIGHT_MOTION_RED_FILL,
   purpleStroke: LIGHT_MOTION_PURPLE_STROKE,
   purpleFill: LIGHT_MOTION_PURPLE_FILL,
 };
@@ -158,8 +158,8 @@ export interface BuildBackJobOptions {
   theme: string;
   /** Deck prop types, so the back's mini start-position pictograph draws the
    *  real prop (fan/club/triad) instead of the renderer's staff default. */
-  bluePropType?: PropType;
-  redPropType?: PropType;
+  leftPropType?: PropType;
+  rightPropType?: PropType;
 }
 
 /**
@@ -182,8 +182,8 @@ export interface BuildBackJobDeps {
   /** Produce mandala geometry. Mirrors SequenceMandala's calculator.calculate call. */
   calculatePaths: (
     steps: SequenceData["steps"],
-    bluePropType: string | undefined,
-    redPropType: string | undefined,
+    leftPropType: string | undefined,
+    rightPropType: string | undefined,
     pathOptions: MandalaPathOptions | undefined,
     tipOverride: { dx: number; dy: number },
   ) => MandalaPaths;
@@ -211,11 +211,11 @@ const realDeps: BuildBackJobDeps = {
   rasterizeStepCount,
   rasterizeStartPosPictograph,
   rasterizeDecorations,
-  calculatePaths: (steps, blue, red, pathOptions, tipOverride) =>
+  calculatePaths: (steps, left, right, pathOptions, tipOverride) =>
     calculateMandalaGeometry(
       (steps ?? []) as never,
-      blue,
-      red,
+      left,
+      right,
       pathOptions,
       tipOverride,
     ),
@@ -313,13 +313,13 @@ export async function buildBackJob(
   //    Prop-aware: a single-ended prop (club) traces ONE tip, not the staff's
   //    two. Without this every back drew the double-staff locus regardless of
   //    the prop the card is rendered with.
-  const tipEnds = pairTipEnds(opts.bluePropType, opts.redPropType);
+  const tipEnds = pairTipEnds(opts.leftPropType, opts.rightPropType);
   const pathOptions: MandalaPathOptions | undefined =
     tipEnds === 1 ? { tipEnds: 1 } : undefined;
   const mandalaPaths = d.calculatePaths(
     sequence.steps,
-    opts.bluePropType,
-    opts.redPropType,
+    opts.leftPropType,
+    opts.rightPropType,
     pathOptions,
     { dx: MANDALA_STANDARD_TIP_DX, dy: 0 },
   );
@@ -421,8 +421,8 @@ export async function buildBackJob(
           sequence.startPosition,
           darkMode,
           perCardCtx,
-          opts.bluePropType,
-          opts.redPropType,
+          opts.leftPropType,
+          opts.rightPropType,
         )
       : Promise.resolve(null),
     loopCols.length > 0

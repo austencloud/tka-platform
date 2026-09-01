@@ -80,13 +80,13 @@ function metadataOnly(sequence: SequenceData): SequenceData {
   return { ...sequence, steps: [] };
 }
 
-function blueOnly(sequence: SequenceData): SequenceData {
-  const { redSoloProp: _redSoloProp, ...rest } = sequence;
+function leftOnly(sequence: SequenceData): SequenceData {
+  const { rightSoloProp: _rightSoloProp, ...rest } = sequence;
   return rest;
 }
 
-function redOnly(sequence: SequenceData): SequenceData {
-  const { blueSoloProp: _blueSoloProp, ...rest } = sequence;
+function rightOnly(sequence: SequenceData): SequenceData {
+  const { leftSoloProp: _leftSoloProp, ...rest } = sequence;
   return rest;
 }
 
@@ -135,7 +135,7 @@ function createSoloGenerator() {
     generation += 1;
     const sequence = makeSequence(`generated-${generation}`, length);
     return {
-      solo: sequence.blueSoloProp!,
+      solo: sequence.leftSoloProp!,
       loopSpec: { rewound: { period: 2 } },
     };
   });
@@ -168,7 +168,7 @@ function makeUnstructuredBuiltPath() {
     steps,
     expectedLength: 8,
     gridMode: GridMode.DIAMOND,
-    side: "blue",
+    side: "left",
   });
 }
 
@@ -193,16 +193,16 @@ describe("Fuse state", () => {
     expect(generator).toHaveBeenNthCalledWith(1, 8, DEFAULT_SOLO_LOOP_RECIPE);
     expect(loader.loadSequenceMetadata).not.toHaveBeenCalled();
     expect(loader.loadFullSequenceData).not.toHaveBeenCalled();
-    expect(state.blue.sequence?.blueSoloProp).toBeDefined();
-    expect(state.red.sequence?.redSoloProp).toBeDefined();
+    expect(state.left.sequence?.leftSoloProp).toBeDefined();
+    expect(state.right.sequence?.rightSoloProp).toBeDefined();
     expect(state.canFuse).toBe(true);
 
-    const redHash = state.red.sequence?.redSoloProp?.contentHash;
-    await state.shuffle("blue");
+    const redHash = state.right.sequence?.rightSoloProp?.contentHash;
+    await state.shuffle("left");
 
     expect(generator).toHaveBeenCalledTimes(3);
-    expect(state.red.sequence?.redSoloProp?.contentHash).toBe(redHash);
-    expect(state.blue.canGoBack).toBe(true);
+    expect(state.right.sequence?.rightSoloProp?.contentHash).toBe(redHash);
+    expect(state.left.canGoBack).toBe(true);
   });
 
   it("classifies fused letters on the live preview", async () => {
@@ -237,7 +237,7 @@ describe("Fuse state", () => {
     state.setTraversalDirection("counterclockwise");
     expect(generator).toHaveBeenCalledTimes(2);
 
-    await state.shuffle("red");
+    await state.shuffle("right");
 
     expect(generator).toHaveBeenLastCalledWith(8, {
       gridMode: GridMode.BOX,
@@ -293,15 +293,17 @@ describe("Fuse state", () => {
     });
     await state.initialize();
 
-    const originalBlueStart = state.blue.sequence?.blueSoloProp?.startLocation;
-    const originalRedHash = state.red.sequence?.redSoloProp?.contentHash;
-    await state.adjustSource("blue", { kind: "first-step", step: 2 });
+    const originalBlueStart = state.left.sequence?.leftSoloProp?.startLocation;
+    const originalRedHash = state.right.sequence?.rightSoloProp?.contentHash;
+    await state.adjustSource("left", { kind: "first-step", step: 2 });
 
     expect(state.error).toBeNull();
-    expect(state.blue.sequence?.blueSoloProp?.startLocation).not.toBe(
+    expect(state.left.sequence?.leftSoloProp?.startLocation).not.toBe(
       originalBlueStart
     );
-    expect(state.red.sequence?.redSoloProp?.contentHash).toBe(originalRedHash);
+    expect(state.right.sequence?.rightSoloProp?.contentHash).toBe(
+      originalRedHash
+    );
     expect(state.canFuse).toBe(true);
   });
 
@@ -316,22 +318,22 @@ describe("Fuse state", () => {
     if (!built.ok) return;
     expect(isStructuredSoloLoop(built.solo)).toBe(false);
 
-    await state.setSource("blue", built.sequence, {
+    await state.setSource("left", built.sequence, {
       kind: "custom",
       label: "Built path",
     });
 
     expect(state.error).toBeNull();
-    expect(state.blue.sequence?.blueSoloProp?.contentHash).toBe(
+    expect(state.left.sequence?.leftSoloProp?.contentHash).toBe(
       built.solo.contentHash
     );
-    expect(state.blue.sequence?.redSoloProp).toBeUndefined();
-    expect(state.blue.sequence?.stepPairings).toBeUndefined();
+    expect(state.left.sequence?.rightSoloProp).toBeUndefined();
+    expect(state.left.sequence?.stepPairings).toBeUndefined();
     expect(
-      state.blue.sequence?.steps.every(
+      state.left.sequence?.steps.every(
         (step) =>
-          isVisibleMotion(step.motions.blue) &&
-          !isVisibleMotion(step.motions.red)
+          isVisibleMotion(step.motions.left) &&
+          !isVisibleMotion(step.motions.right)
       )
     ).toBe(true);
     expect(state.canFuse).toBe(true);
@@ -343,29 +345,31 @@ describe("Fuse state", () => {
     });
     await state.initialize();
 
-    const originalRedHash = state.red.sequence?.redSoloProp?.contentHash;
-    await state.adjustSource("blue", { kind: "rotate", rotationSteps: 1 });
+    const originalRedHash = state.right.sequence?.rightSoloProp?.contentHash;
+    await state.adjustSource("left", { kind: "rotate", rotationSteps: 1 });
 
     expect(state.error).toBeNull();
-    expect(state.blue.sequence?.blueSoloProp?.startLocation).toBe(
+    expect(state.left.sequence?.leftSoloProp?.startLocation).toBe(
       GridLocation.NORTHEAST
     );
-    expect(state.red.sequence?.redSoloProp?.contentHash).toBe(originalRedHash);
+    expect(state.right.sequence?.rightSoloProp?.contentHash).toBe(
+      originalRedHash
+    );
     expect(state.previewSequence?.gridMode).toBe(GridMode.SKEWED);
     expect(
       state.previewSequence?.steps.every(
-        (step) => step.motions.blue?.gridMode === GridMode.BOX
+        (step) => step.motions.left?.gridMode === GridMode.BOX
       )
     ).toBe(true);
     expect(
       state.previewSequence?.steps.every(
-        (step) => step.motions.red?.gridMode === GridMode.DIAMOND
+        (step) => step.motions.right?.gridMode === GridMode.DIAMOND
       )
     ).toBe(true);
 
-    await state.adjustSource("blue", { kind: "rotate", rotationSteps: 1 });
+    await state.adjustSource("left", { kind: "rotate", rotationSteps: 1 });
 
-    expect(state.blue.sequence?.blueSoloProp?.startLocation).toBe(
+    expect(state.left.sequence?.leftSoloProp?.startLocation).toBe(
       GridLocation.EAST
     );
     expect(state.previewSequence?.gridMode).toBe(GridMode.DIAMOND);
@@ -387,7 +391,7 @@ describe("Fuse state", () => {
     ] as const;
 
     for (const adjustment of adjustments) {
-      await state.adjustSource("blue", adjustment);
+      await state.adjustSource("left", adjustment);
       expect(state.error, adjustment.kind).toBeNull();
       expect(state.canFuse, adjustment.kind).toBe(true);
     }
@@ -400,16 +404,16 @@ describe("Fuse state", () => {
     await state.initialize();
 
     expect(state.mode).toBe("shuffle");
-    expect(state.driverSide).toBe("blue");
+    expect(state.driverSide).toBe("left");
     expect(state.rule).toEqual(createFuseRule({ reflect: "mirror" }));
 
-    state.setRelationship("red", createFuseRule({ rotationSteps: 2 }));
+    state.setRelationship("right", createFuseRule({ rotationSteps: 2 }));
 
     expect(state.mode).toBe("symmetry");
-    expect(state.driverSide).toBe("red");
+    expect(state.driverSide).toBe("right");
     expect(state.rule).toEqual(createFuseRule({ rotationSteps: 2 }));
     await vi.waitFor(() => {
-      expect(state.statusMessage).toBe("Blue follows Red (Rotate 90°).");
+      expect(state.statusMessage).toBe("Left follows Right (Rotate 90°).");
     });
     expect(state.canFuse).toBe(true);
   });
@@ -420,20 +424,20 @@ describe("Fuse state", () => {
     });
     await state.initialize();
 
-    state.setRelationship("blue", createFuseRule({ reflect: "mirror" }));
+    state.setRelationship("left", createFuseRule({ reflect: "mirror" }));
     await vi.waitFor(() => {
-      expect(state.statusMessage).toBe("Red follows Blue (Mirror).");
+      expect(state.statusMessage).toBe("Right follows Left (Mirror).");
     });
     const mirroredMotions = state.symmetryPreview?.steps.map(
-      (step) => step.motions.red
+      (step) => step.motions.right
     );
 
     state.setRule(createFuseRule({ rotationSteps: 2 }));
     await vi.waitFor(() => {
-      expect(state.statusMessage).toBe("Red follows Blue (Rotate 90°).");
+      expect(state.statusMessage).toBe("Right follows Left (Rotate 90°).");
     });
     const rotatedMotions = state.symmetryPreview?.steps.map(
-      (step) => step.motions.red
+      (step) => step.motions.right
     );
 
     expect(mirroredMotions).toBeDefined();
@@ -449,27 +453,27 @@ describe("Fuse state", () => {
 
     const independentPreview = state.previewSequence;
     await state.previewRelationship(
-      "red",
+      "right",
       createFuseRule({ rotationSteps: 2 })
     );
 
     expect(state.mode).toBe("shuffle");
-    expect(state.driverSide).toBe("blue");
+    expect(state.driverSide).toBe("left");
     expect(state.rule).toEqual(createFuseRule({ reflect: "mirror" }));
     expect(state.previewSequence).not.toEqual(independentPreview);
 
     state.cancelRelationshipPreview();
     expect(state.mode).toBe("shuffle");
-    expect(state.driverSide).toBe("blue");
+    expect(state.driverSide).toBe("left");
     expect(state.rule).toEqual(createFuseRule({ reflect: "mirror" }));
     expect(state.previewSequence).toEqual(independentPreview);
 
-    state.setRelationship("red", createFuseRule({ rotationSteps: 2 }));
+    state.setRelationship("right", createFuseRule({ rotationSteps: 2 }));
     await vi.waitFor(() => {
-      expect(state.statusMessage).toBe("Blue follows Red (Rotate 90°).");
+      expect(state.statusMessage).toBe("Left follows Right (Rotate 90°).");
     });
     expect(state.mode).toBe("symmetry");
-    expect(state.driverSide).toBe("red");
+    expect(state.driverSide).toBe("right");
     expect(state.rule).toEqual(createFuseRule({ rotationSteps: 2 }));
   });
 
@@ -486,8 +490,8 @@ describe("Fuse state", () => {
     expect(state.error?.kind).toBe("catalog");
     expect(state.statusMessage).toBe("Couldn't load paths. Try again.");
     expect(state.canRetry).toBe(true);
-    expect(state.blue.sequence).toBeNull();
-    expect(state.red.sequence).toBeNull();
+    expect(state.left.sequence).toBeNull();
+    expect(state.right.sequence).toBeNull();
     expect(showUserError).toHaveBeenCalledOnce();
   });
 
@@ -498,14 +502,14 @@ describe("Fuse state", () => {
 
     await state.initialize();
     expect(state.appliedLength).toBe(8);
-    expect(state.blue.sequence?.id).toBe("eight");
+    expect(state.left.sequence?.id).toBe("eight");
 
     await state.setLength(12);
 
     expect(state.requestedLength).toBe(12);
     expect(state.appliedLength).toBeNull();
-    expect(state.blue.sequence).toBeNull();
-    expect(state.red.sequence).toBeNull();
+    expect(state.left.sequence).toBeNull();
+    expect(state.right.sequence).toBeNull();
     expect(state.previewSequence).toBeNull();
     expect(state.error?.kind).toBe("empty");
     expect(state.statusMessage).toBe(
@@ -514,47 +518,47 @@ describe("Fuse state", () => {
   });
 
   it("commits both sources and the preview atomically after a length load", async () => {
-    const blue = blueOnly(makeSequence("blue-four", 4));
-    const red = redOnly(makeSequence("red-four", 4));
-    const blueRequest = deferred<SequenceData | null>();
-    const redRequest = deferred<SequenceData | null>();
-    const metadata = [metadataOnly(blue), metadataOnly(red)];
+    const left = leftOnly(makeSequence("blue-four", 4));
+    const right = rightOnly(makeSequence("red-four", 4));
+    const leftRequest = deferred<SequenceData | null>();
+    const rightRequest = deferred<SequenceData | null>();
+    const metadata = [metadataOnly(left), metadataOnly(right)];
     const loader = createLoader(metadata, async (_name, id) => {
-      return id === blue.id ? blueRequest.promise : redRequest.promise;
+      return id === left.id ? leftRequest.promise : rightRequest.promise;
     });
     const state = createState(loader, { initialLength: 4 });
 
     const loading = state.initialize();
     await vi.waitFor(() => {
       expect(loader.loadFullSequenceData).toHaveBeenCalledWith(
-        blue.word,
-        blue.id
+        left.word,
+        left.id
       );
     });
 
-    blueRequest.resolve(blue);
+    leftRequest.resolve(left);
     await vi.waitFor(() => {
       expect(loader.loadFullSequenceData).toHaveBeenCalledWith(
-        red.word,
-        red.id
+        right.word,
+        right.id
       );
     });
 
-    expect(state.blue.sequence).toBeNull();
-    expect(state.red.sequence).toBeNull();
+    expect(state.left.sequence).toBeNull();
+    expect(state.right.sequence).toBeNull();
     expect(state.previewSequence).toBeNull();
 
-    redRequest.resolve(red);
+    rightRequest.resolve(right);
     await loading;
 
-    expect(state.blue.sequence?.id).toBe(blue.id);
-    expect(state.red.sequence?.id).toBe(red.id);
+    expect(state.left.sequence?.id).toBe(left.id);
+    expect(state.right.sequence?.id).toBe(right.id);
     expect(state.previewSequence?.sequenceLength).toBe(4);
     expect(state.appliedLength).toBe(4);
     expect(state.canFuse).toBe(true);
   });
 
-  it("deduplicates hydration shared by the Blue and Red decks", async () => {
+  it("deduplicates hydration shared by the Left and Right decks", async () => {
     const fullSequence = makeSequence("shared", 8);
     const loader = createLoader(
       [metadataOnly(fullSequence)],
@@ -565,8 +569,8 @@ describe("Fuse state", () => {
     await state.initialize();
 
     expect(loader.loadFullSequenceData).toHaveBeenCalledOnce();
-    expect(state.blue.sequence?.id).toBe(fullSequence.id);
-    expect(state.red.sequence?.id).toBe(fullSequence.id);
+    expect(state.left.sequence?.id).toBe(fullSequence.id);
+    expect(state.right.sequence?.id).toBe(fullSequence.id);
     expect(state.canFuse).toBe(true);
   });
 
@@ -587,8 +591,8 @@ describe("Fuse state", () => {
 
     expect(loader.loadFullSequenceData).toHaveBeenCalledTimes(2);
     expect(state.canFuse).toBe(true);
-    expect(state.blue.sequence?.id).toBe(fullSequence.id);
-    expect(state.red.sequence?.id).toBe(fullSequence.id);
+    expect(state.left.sequence?.id).toBe(fullSequence.id);
+    expect(state.right.sequence?.id).toBe(fullSequence.id);
   });
 
   it("ignores an older length request that resolves after a newer one", async () => {
@@ -626,8 +630,8 @@ describe("Fuse state", () => {
     await olderLoad;
 
     expect(state.appliedLength).toBe(8);
-    expect(state.blue.sequence?.id).toBe(eight.id);
-    expect(state.red.sequence?.id).toBe(eight.id);
+    expect(state.left.sequence?.id).toBe(eight.id);
+    expect(state.right.sequence?.id).toBe(eight.id);
     expect(state.previewSequence?.sequenceLength).toBe(8);
   });
 
@@ -644,7 +648,7 @@ describe("Fuse state", () => {
     const state = createState(loader);
 
     await state.initialize();
-    const olderShuffle = state.shuffle("blue");
+    const olderShuffle = state.shuffle("left");
     await vi.waitFor(() => {
       expect(loader.loadFullSequenceData).toHaveBeenCalledWith(
         secondEight.word,
@@ -659,23 +663,23 @@ describe("Fuse state", () => {
     await olderShuffle;
 
     expect(state.appliedLength).toBe(4);
-    expect(state.blue.sequence?.id).toBe(four.id);
-    expect(state.red.sequence?.id).toBe(four.id);
+    expect(state.left.sequence?.id).toBe(four.id);
+    expect(state.right.sequence?.id).toBe(four.id);
     expect(state.previewSequence?.sequenceLength).toBe(4);
   });
 
   it("skips candidates that do not carry the required side data", async () => {
-    const redCandidate = redOnly(makeSequence("red-candidate", 8));
-    const blueCandidate = blueOnly(makeSequence("blue-candidate", 8));
-    const loader = createLoader([redCandidate, blueCandidate]);
+    const rightCandidate = rightOnly(makeSequence("red-candidate", 8));
+    const leftCandidate = leftOnly(makeSequence("blue-candidate", 8));
+    const loader = createLoader([rightCandidate, leftCandidate]);
     const state = createState(loader);
 
     await state.initialize();
 
-    expect(state.blue.sequence?.id).toBe(blueCandidate.id);
-    expect(state.red.sequence?.id).toBe(redCandidate.id);
-    expect(state.blue.poolPosition).toBe(2);
-    expect(state.red.poolPosition).toBe(1);
+    expect(state.left.sequence?.id).toBe(leftCandidate.id);
+    expect(state.right.sequence?.id).toBe(rightCandidate.id);
+    expect(state.left.poolPosition).toBe(2);
+    expect(state.right.poolPosition).toBe(1);
   });
 
   it("returns to a hydrated previous source without loading it again", async () => {
@@ -686,13 +690,13 @@ describe("Fuse state", () => {
     const state = createState(loader);
 
     await state.initialize();
-    await state.shuffle("blue");
-    expect(state.blue.sequence?.id).toBe(second.id);
-    expect(state.blue.canGoBack).toBe(true);
+    await state.shuffle("left");
+    expect(state.left.sequence?.id).toBe(second.id);
+    expect(state.left.canGoBack).toBe(true);
 
-    state.previous("blue");
+    state.previous("left");
 
-    expect(state.blue.sequence?.id).toBe(first.id);
+    expect(state.left.sequence?.id).toBe(first.id);
     expect(loader.loadFullSequenceData).not.toHaveBeenCalled();
   });
 
@@ -732,7 +736,7 @@ describe("Fuse state", () => {
       const phaseBeforeShuffle = state.currentStep;
       expect(phaseBeforeShuffle).toBeCloseTo(1.5);
 
-      const shuffle = state.shuffle("blue");
+      const shuffle = state.shuffle("left");
       await vi.waitFor(() => {
         expect(loader.loadFullSequenceData).toHaveBeenCalledWith(
           second.word,
@@ -750,7 +754,7 @@ describe("Fuse state", () => {
       const phaseAfterShuffle = state.currentStep;
       expect(phaseAfterShuffle).toBeCloseTo(2.5);
 
-      state.previous("blue");
+      state.previous("left");
       expect(state.currentStep).toBeCloseTo(phaseAfterShuffle);
       expect(state.clockRunning).toBe(true);
     } finally {
@@ -770,18 +774,18 @@ describe("Fuse state", () => {
     const state = createState(loader);
 
     await state.initialize();
-    const shuffle = state.shuffle("blue");
+    const shuffle = state.shuffle("left");
 
-    expect(state.pendingSide).toBe("blue");
+    expect(state.pendingSide).toBe("left");
     expect(state.canFuse).toBe(false);
-    expect(state.blue.sequence?.id).toBe(first.id);
-    expect(state.statusMessage).toBe("Loading another Blue path...");
+    expect(state.left.sequence?.id).toBe(first.id);
+    expect(state.statusMessage).toBe("Loading another Left path...");
 
     secondRequest.resolve(makeSequence("second", 8));
     await shuffle;
     expect(state.canFuse).toBe(true);
-    expect(state.blue.sequence?.id).toBe("second");
-    expect(state.statusMessage).toContain("Blue path second is ready");
+    expect(state.left.sequence?.id).toBe("second");
+    expect(state.statusMessage).toContain("Left path second is ready");
   });
 
   it("blocks an incomplete derived result and keeps the selected pair", async () => {
@@ -800,15 +804,15 @@ describe("Fuse state", () => {
     });
 
     await state.initialize();
-    const blueId = state.blue.sequence?.id;
-    const redId = state.red.sequence?.id;
+    const leftId = state.left.sequence?.id;
+    const rightId = state.right.sequence?.id;
 
     const result = await state.buildFusedSequence();
 
     expect(result).toBeNull();
     expect(state.error?.kind).toBe("derivation");
-    expect(state.blue.sequence?.id).toBe(blueId);
-    expect(state.red.sequence?.id).toBe(redId);
+    expect(state.left.sequence?.id).toBe(leftId);
+    expect(state.right.sequence?.id).toBe(rightId);
     expect(state.isFusing).toBe(false);
     expect(showUserError).toHaveBeenCalledOnce();
   });
@@ -854,8 +858,8 @@ describe("Fuse state", () => {
     request.resolve(source);
     await loading;
 
-    expect(state.blue.sequence).toBeNull();
-    expect(state.red.sequence).toBeNull();
+    expect(state.left.sequence).toBeNull();
+    expect(state.right.sequence).toBeNull();
     expect(state.previewSequence).toBeNull();
   });
 

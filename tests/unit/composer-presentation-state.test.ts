@@ -24,7 +24,7 @@ import {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -44,9 +44,9 @@ function pictograph(
   start: GridLocation,
   end: GridLocation
 ): PictographData {
-  const createMotion = (color: MotionColor) =>
+  const createMotion = (color: HandSide) =>
     createMotionData({
-      color,
+      hand: color,
       motionType: MotionType.PRO,
       rotationDirection: RotationDirection.CLOCKWISE,
       startLocation: start,
@@ -64,8 +64,8 @@ function pictograph(
     startPosition: POSITION_BY_LOCATION[start],
     endPosition: POSITION_BY_LOCATION[end],
     motions: {
-      blue: createMotion(MotionColor.BLUE),
-      red: createMotion(MotionColor.RED),
+      left: createMotion(HandSide.LEFT),
+      right: createMotion(HandSide.RIGHT),
     },
   };
 }
@@ -123,8 +123,8 @@ describe("Composer presentation state", () => {
       )
     );
     expect(COMPOSER_3D_DEMO_SEED.performers?.[0]).toMatchObject({
-      customBluePlane: Plane.WALL,
-      customRedPlane: Plane.WALL,
+      customLeftPlane: Plane.WALL,
+      customRightPlane: Plane.WALL,
       settings: { prop: PropType.STAFF },
     });
   });

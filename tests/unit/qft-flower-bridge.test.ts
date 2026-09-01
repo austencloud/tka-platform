@@ -90,11 +90,11 @@ describe("the 144-cell matrix", () => {
 
   it("maps every cell in every mode without leaving the compass", () => {
     let cells = 0;
-    for (const blue of TWELVE) {
-      for (const red of TWELVE) {
+    for (const left of TWELVE) {
+      for (const right of TWELVE) {
         for (const mode of MODE_ORDER) {
-          const hands = realizationToHands(blue, red, mode);
-          for (const knobs of [hands.blue, hands.red]) {
+          const hands = realizationToHands(left, right, mode);
+          for (const knobs of [hands.left, hands.right]) {
             expect(Number.isInteger(knobs.handPhase ?? 0)).toBe(true);
             expect(Number.isInteger(knobs.phase ?? 0)).toBe(true);
             /* Eight rows out, every value a real compass position. */
@@ -114,24 +114,24 @@ describe("the 144-cell matrix", () => {
 });
 
 describe("realizationToHands", () => {
-  const blue = AXIS.find(
+  const left = AXIS.find(
     (f) => f.style === "pro" && f.turns === 1 && f.ori === "in"
   )!;
-  const red = AXIS.find(
+  const right = AXIS.find(
     (f) => f.style === "anti" && f.turns === 1 && f.ori === "in"
   )!;
 
   it("leaves the blue hand alone in all six modes", () => {
-    const solo = flowerToKnobs(blue);
+    const solo = flowerToKnobs(left);
     for (const mode of MODE_ORDER) {
-      expect(realizationToHands(blue, red, mode).blue).toEqual(solo);
+      expect(realizationToHands(left, right, mode).left).toEqual(solo);
     }
   });
 
   it("reads timing as the offset between the two hands", () => {
     const offset = (mode: (typeof MODE_ORDER)[number]) => {
-      const h = realizationToHands(blue, red, mode);
-      return norm(handIndexAt(h.red, 0) - handIndexAt(h.blue, 0) + 8);
+      const h = realizationToHands(left, right, mode);
+      return norm(handIndexAt(h.right, 0) - handIndexAt(h.left, 0) + 8);
     };
     /* Together: same point. Quarter: a right angle. Split: opposite points. */
     expect(offset("TS")).toBe(8);
@@ -141,52 +141,52 @@ describe("realizationToHands", () => {
 
   it("reads direction as the sign on the red hand's travel", () => {
     for (const mode of ["SS", "TS", "QS"] as const) {
-      expect(realizationToHands(blue, red, mode).red.handDirection).toBe(1);
+      expect(realizationToHands(left, right, mode).right.handDirection).toBe(1);
     }
     for (const mode of ["SO", "TO", "QO"] as const) {
-      expect(realizationToHands(blue, red, mode).red.handDirection).toBe(-1);
+      expect(realizationToHands(left, right, mode).right.handDirection).toBe(-1);
     }
   });
 
   it("keeps a reversed hand's flower the same shape", () => {
     /* Reversing the hand must not silently convert inspin to antispin — the
 		   petal count is the thing that would change if the sign were wrong. */
-    const forward = realizationToHands(blue, red, "SS").red;
-    const reversed = realizationToHands(blue, red, "SO").red;
+    const forward = realizationToHands(left, right, "SS").right;
+    const reversed = realizationToHands(left, right, "SO").right;
     expect(petalCount(reversed)).toBe(petalCount(forward));
-    expect(petalCount(reversed)).toBe(flowerPetals(red));
+    expect(petalCount(reversed)).toBe(flowerPetals(right));
   });
 });
 
 describe("the trajectory bridge", () => {
-  const blue = AXIS.find(
+  const left = AXIS.find(
     (f) => f.style === "pro" && f.turns === 1 && f.ori === "in"
   )!;
-  const red = AXIS.find(
+  const right = AXIS.find(
     (f) => f.style === "anti" && f.turns === 1 && f.ori === "out"
   )!;
 
   it("keeps a flower's notation identical after lifting it into a trajectory", () => {
-    expect(buildTrajectoryIncrements(flowerToTrajectory(blue))).toEqual(
-      buildIncrements(flowerToKnobs(blue), "drex")
+    expect(buildTrajectoryIncrements(flowerToTrajectory(left))).toEqual(
+      buildIncrements(flowerToKnobs(left), "drex")
     );
   });
 
   it("keeps the six timing and direction relationships identical", () => {
     for (const mode of MODE_ORDER) {
-      const knobs = realizationToHands(blue, red, mode);
-      const trajectories = realizationToTrajectories(blue, red, mode);
+      const knobs = realizationToHands(left, right, mode);
+      const trajectories = realizationToTrajectories(left, right, mode);
 
-      expect(buildTrajectoryIncrements(trajectories.blue)).toEqual(
-        buildIncrements(knobs.blue, "drex")
+      expect(buildTrajectoryIncrements(trajectories.left)).toEqual(
+        buildIncrements(knobs.left, "drex")
       );
-      expect(buildTrajectoryIncrements(trajectories.red)).toEqual(
-        buildIncrements(knobs.red, "drex")
+      expect(buildTrajectoryIncrements(trajectories.right)).toEqual(
+        buildIncrements(knobs.right, "drex")
       );
       expect(
         norm(
-          trajectoryHandIndexAt(trajectories.red, 0) -
-            trajectoryHandIndexAt(trajectories.blue, 0)
+          trajectoryHandIndexAt(trajectories.right, 0) -
+            trajectoryHandIndexAt(trajectories.left, 0)
         )
       ).toBe(mode[0] === "T" ? 8 : mode[0] === "Q" ? 2 : 4);
     }

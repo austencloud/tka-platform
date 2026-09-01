@@ -25,8 +25,8 @@
     isPerforming?: boolean;
     currentFrame?: DetectionFrame | null;
     expectedPositions?: {
-      blue: GridLocation | null;
-      red: GridLocation | null;
+      left: GridLocation | null;
+      right: GridLocation | null;
     } | null;
     mode?: TrainMode;
     countdownValue?: number | null;
@@ -152,10 +152,10 @@
   <CameraPreview {onCameraReady} {onCameraError} {onFrame} mirrored={true}>
     <!-- Grid overlay with detection feedback (hide circles when showing props) -->
     <GridOverlay
-      bluePosition={currentFrame?.blue ?? null}
-      redPosition={currentFrame?.red ?? null}
-      expectedBlue={expectedPositions?.blue ?? null}
-      expectedRed={expectedPositions?.red ?? null}
+      leftPosition={currentFrame?.left ?? null}
+      rightPosition={currentFrame?.right ?? null}
+      expectedLeft={expectedPositions?.left ?? null}
+      expectedRight={expectedPositions?.right ?? null}
       showExpected={mode === TrainMode.PERFORMING && !propType}
       {bpm}
       {isPerforming}
@@ -167,8 +167,8 @@
     {#if sequence && propType && propsVisible}
       <div class="animator-overlay" style="transform: scale({gridScale})">
         <AnimatorCanvas
-          blueProp={null}
-          redProp={null}
+          leftProp={null}
+          rightProp={null}
           sequenceData={sequence}
           currentStep={fractionalBeat}
           gridVisible={false}

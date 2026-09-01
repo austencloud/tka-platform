@@ -17,6 +17,11 @@ const ROUTE_SCOPED_PARAMETERS: readonly RouteScopedParameter[] = [
   },
   { name: "grid", isValidForPath: isAtlasPath },
   { name: "variation", isValidForPath: isAtlasPath },
+  { name: "leftTurns", isValidForPath: isAtlasPath },
+  { name: "rightTurns", isValidForPath: isAtlasPath },
+  { name: "leftRotation", isValidForPath: isAtlasPath },
+  { name: "rightRotation", isValidForPath: isAtlasPath },
+  // Preserve published legacy links until the route parser normalizes them.
   { name: "blueTurns", isValidForPath: isAtlasPath },
   { name: "redTurns", isValidForPath: isAtlasPath },
   { name: "blueRotation", isValidForPath: isAtlasPath },

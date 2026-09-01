@@ -46,8 +46,8 @@
   let charcoalRenderer: CharcoalSparkRenderer | null = null;
   const trailRenderer = new Canvas2DTrailRenderer();
 
-  let blueTrailPoints: TrailPoint[] = [];
-  let redTrailPoints: TrailPoint[] = [];
+  let leftTrailPoints: TrailPoint[] = [];
+  let rightTrailPoints: TrailPoint[] = [];
 
   const VIDEO_PERSIST_KEY = "video-trails-last-video";
 
@@ -251,11 +251,11 @@
 
       for (const pt of trailPoints) {
         if (pt.propIndex === 0) {
-          blueTrailPoints.push(pt);
-          if (blueTrailPoints.length > maxPoints) blueTrailPoints = blueTrailPoints.slice(-maxPoints);
+          leftTrailPoints.push(pt);
+          if (leftTrailPoints.length > maxPoints) leftTrailPoints = leftTrailPoints.slice(-maxPoints);
         } else {
-          redTrailPoints.push(pt);
-          if (redTrailPoints.length > maxPoints) redTrailPoints = redTrailPoints.slice(-maxPoints);
+          rightTrailPoints.push(pt);
+          if (rightTrailPoints.length > maxPoints) rightTrailPoints = rightTrailPoints.slice(-maxPoints);
         }
       }
 
@@ -265,8 +265,8 @@
         if (ctx) {
           ctx.clearRect(0, 0, canvasWidth, canvasHeight);
           trailRenderer.renderTrails(
-            ctx, blueTrailPoints, redTrailPoints, trailSettings,
-            currentTime, blueTrailPoints.length > 0, redTrailPoints.length > 0,
+            ctx, leftTrailPoints, rightTrailPoints, trailSettings,
+            currentTime, leftTrailPoints.length > 0, rightTrailPoints.length > 0,
             Math.max(canvasWidth, canvasHeight),
           );
         }

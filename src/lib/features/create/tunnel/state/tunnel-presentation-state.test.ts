@@ -25,7 +25,7 @@ function savedSnapshot(): TunnelSnapshot {
       gridVisible: true,
       colors: {
         mode: "custom",
-        custom: { blue: "#123456", red: "#abcdef" },
+        custom: { left: "#123456", right: "#abcdef" },
       },
       section: "props",
       presetRecipe: null,
@@ -35,15 +35,15 @@ function savedSnapshot(): TunnelSnapshot {
     paths: {
       pathShape: "concave",
       motionAwarePaths: true,
-      bluePathLines: true,
-      redPathLines: false,
+      leftPathLines: true,
+      rightPathLines: false,
     },
     playback: { bpm: 132, playbackMode: "step" },
     props: {
-      bluePropType: "buugeng",
-      redPropType: "buugeng",
-      blueBuugengFlipped: true,
-      redBuugengFlipped: false,
+      leftPropType: "buugeng",
+      rightPropType: "buugeng",
+      leftBuugengFlipped: true,
+      rightBuugengFlipped: false,
     },
     trailRender: {
       ...structuredClone(DEFAULT_TRAIL_SETTINGS),
@@ -59,7 +59,7 @@ function controllerFor(): TunnelViewController {
     gridVisible: false,
     colors: {
       mode: "hands" as const,
-      custom: { blue: "#111111", red: "#eeeeee" },
+      custom: { left: "#111111", right: "#eeeeee" },
     },
     section: "tunnel" as TunnelSnapshot["tunnel"]["section"],
     presetRecipe: null as TunnelSnapshot["tunnel"]["presetRecipe"],
@@ -110,10 +110,10 @@ describe("tunnel presentation state", () => {
       effects,
       visibility,
       animationSettings,
-      initialBluePropType: "staff",
-      initialRedPropType: "staff",
-      initialBlueBuugengFlipped: false,
-      initialRedBuugengFlipped: true,
+      initialLeftPropType: "staff",
+      initialRightPropType: "staff",
+      initialLeftBuugengFlipped: false,
+      initialRightBuugengFlipped: true,
     });
     const controller = controllerFor();
 
@@ -135,10 +135,10 @@ describe("tunnel presentation state", () => {
       effects,
       visibility,
       animationSettings,
-      initialBluePropType: "staff",
-      initialRedPropType: "staff",
-      initialBlueBuugengFlipped: false,
-      initialRedBuugengFlipped: false,
+      initialLeftPropType: "staff",
+      initialRightPropType: "staff",
+      initialLeftBuugengFlipped: false,
+      initialRightBuugengFlipped: false,
     });
     const controller = controllerFor();
     state.attachController(controller);
@@ -164,10 +164,10 @@ describe("tunnel presentation state", () => {
       paths: { pathShape: "linear", motionAwarePaths: true },
       playback: { bpm: 144, playbackMode: "step" },
       props: {
-        bluePropType: "fan",
-        redPropType: "fan",
-        blueBuugengFlipped: false,
-        redBuugengFlipped: true,
+        leftPropType: "fan",
+        rightPropType: "fan",
+        leftBuugengFlipped: false,
+        rightBuugengFlipped: true,
       },
     });
   });
@@ -179,10 +179,10 @@ describe("tunnel presentation state", () => {
         effects: createEffectsConfigState(undefined, { persist: false }),
         visibility: new AnimationVisibilityStateManager({ ephemeral: true }),
         animationSettings: createAnimationSettingsState({ ephemeral: true }),
-        initialBluePropType: "staff",
-        initialRedPropType: "staff",
-        initialBlueBuugengFlipped: false,
-        initialRedBuugengFlipped: false,
+        initialLeftPropType: "staff",
+        initialRightPropType: "staff",
+        initialLeftBuugengFlipped: false,
+        initialRightBuugengFlipped: false,
       });
       const controller = controllerFor();
       state.attachController(controller);
@@ -192,7 +192,7 @@ describe("tunnel presentation state", () => {
     expect(create().mode).toBe("hands");
     expect(create(savedSnapshot())).toEqual({
       mode: "custom",
-      custom: { blue: "#123456", red: "#abcdef" },
+      custom: { left: "#123456", right: "#abcdef" },
     });
   });
 });

@@ -8,9 +8,10 @@
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
   import { buildPictographContextMenuItems } from "./pictograph-context-menu-builder";
   import { getVisibilityStateManager } from "../../state/visibility-state.svelte";
+  import type { HandSide } from "../../domain/enums/pictograph-enums";
 
   interface Props {
-    onAdjustArrow?: (color: "blue" | "red") => void;
+    onAdjustArrow?: (hand: HandSide) => void;
     showArrowAdjustment?: boolean;
   }
 

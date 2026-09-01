@@ -93,20 +93,20 @@ export interface RenderVisibilitySettings {
   gridVisible: boolean;
   propsVisible: boolean;
   trailsVisible: boolean;
-  blueMotionVisible: boolean;
-  redMotionVisible: boolean;
+  leftMotionVisible: boolean;
+  rightMotionVisible: boolean;
 }
 
 /**
  * Props state for rendering
  */
 export interface RenderPropsState {
-  blueProp: PropState | null;
-  redProp: PropState | null;
+  leftProp: PropState | null;
+  rightProp: PropState | null;
   /** Additional tunnel layers (index 0 = layer 1, up to 3) */
   additionalLayers: AdditionalLayerProps[];
-  bluePropDimensions: PropDimensions;
-  redPropDimensions: PropDimensions;
+  leftPropDimensions: PropDimensions;
+  rightPropDimensions: PropDimensions;
   /** Tunnel rainbow spectrum. When false, overlaid layers inherit the base
    *  blue/red colors instead of a per-layer spectrum hue. Default true. */
   tunnelSpectrum: boolean;
@@ -131,11 +131,11 @@ export interface RenderFrameParams {
   /** Whether animation playback is active (controls render loop continuation) */
   isPlaying: boolean;
   /** Prop flip settings (for asymmetric props like Buugeng) */
-  bluePropFlipped?: boolean;
-  redPropFlipped?: boolean;
+  leftPropFlipped?: boolean;
+  rightPropFlipped?: boolean;
   /** Prop types - used for prop-specific rendering rules (e.g., hands never rotate) */
-  bluePropType?: string;
-  redPropType?: string;
+  leftPropType?: string;
+  rightPropType?: string;
   /** Fire overlay configuration (null or undefined = disabled) */
   fireConfig?: FireOverlayConfig | null;
   /** Whether dark mode is active (used by fire renderer for intensity boost) */

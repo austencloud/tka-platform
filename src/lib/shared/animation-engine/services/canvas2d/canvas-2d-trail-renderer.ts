@@ -150,12 +150,12 @@ export class Canvas2DTrailRenderer {
 
   renderTrails(
     ctx: CanvasRenderingContext2D,
-    blueTrailPoints: TrailPoint[],
-    redTrailPoints: TrailPoint[],
+    leftTrailPoints: TrailPoint[],
+    rightTrailPoints: TrailPoint[],
     trailSettings: TrailSettings,
     currentTime: number,
-    hasBlue: boolean,
-    hasRed: boolean,
+    hasLeft: boolean,
+    hasRight: boolean,
     canvasSize: number,
     qualityHints?: QualityHints,
     additionalLayers?: AdditionalLayerRenderData[]
@@ -167,11 +167,11 @@ export class Canvas2DTrailRenderer {
     }
 
     // Render primary blue trail
-    if (hasBlue && blueTrailPoints.length >= 2) {
+    if (hasLeft && leftTrailPoints.length >= 2) {
       this.renderTrailSegments(
         ctx,
-        blueTrailPoints,
-        trailSettings.blueColor,
+        leftTrailPoints,
+        trailSettings.leftColor,
         trailSettings,
         currentTime,
         sizeScale,
@@ -180,11 +180,11 @@ export class Canvas2DTrailRenderer {
     }
 
     // Render primary red trail
-    if (hasRed && redTrailPoints.length >= 2) {
+    if (hasRight && rightTrailPoints.length >= 2) {
       this.renderTrailSegments(
         ctx,
-        redTrailPoints,
-        trailSettings.redColor,
+        rightTrailPoints,
+        trailSettings.rightColor,
         trailSettings,
         currentTime,
         sizeScale,
@@ -197,22 +197,22 @@ export class Canvas2DTrailRenderer {
       for (const layer of additionalLayers) {
         ctx.save();
         ctx.globalAlpha *= layer.opacity;
-        if (layer.hasBlue && layer.blueTrailPoints.length >= 2) {
+        if (layer.hasLeft && layer.leftTrailPoints.length >= 2) {
           this.renderTrailSegments(
             ctx,
-            layer.blueTrailPoints,
-            layer.blueColor,
+            layer.leftTrailPoints,
+            layer.leftColor,
             trailSettings,
             currentTime,
             sizeScale,
             qualityHints
           );
         }
-        if (layer.hasRed && layer.redTrailPoints.length >= 2) {
+        if (layer.hasRight && layer.rightTrailPoints.length >= 2) {
           this.renderTrailSegments(
             ctx,
-            layer.redTrailPoints,
-            layer.redColor,
+            layer.rightTrailPoints,
+            layer.rightColor,
             trailSettings,
             currentTime,
             sizeScale,

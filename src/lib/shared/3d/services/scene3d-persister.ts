@@ -30,7 +30,7 @@ export interface Scene3DPersistedState {
   cameraPreset: "front" | "top" | "side" | "perspective";
   cameraPosition: [number, number, number] | null;
   cameraTarget: [number, number, number] | null;
-  activeTab: "blue" | "red";
+  activeTab: "left" | "right";
   panelOpen: boolean;
   speed: number;
   characterId: string;
@@ -39,10 +39,10 @@ export interface Scene3DPersistedState {
   showFigure: boolean;
   characterProportions: CharacterProportions;
   loop: boolean;
-  showBlue: boolean;
-  showRed: boolean;
-  blueConfig: MotionConfig3D;
-  redConfig: MotionConfig3D;
+  showLeft: boolean;
+  showRight: boolean;
+  leftConfig: MotionConfig3D;
+  rightConfig: MotionConfig3D;
   loadedSequence: SequenceData | null;
   currentStepIndex: number;
 }
@@ -87,6 +87,8 @@ export function loadScene3DState(): Partial<Scene3DPersistedState> {
       state.characterProportions = state.avatarProportions;
       delete state.avatarProportions;
     }
+    if (state.activeTab === "blue") state.activeTab = "left";
+    if (state.activeTab === "red") state.activeTab = "right";
 
     // Migration: Clear legacy camera positions (pre-meter scale).
     if (state.cameraPosition) {

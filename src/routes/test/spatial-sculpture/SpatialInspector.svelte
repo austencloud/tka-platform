@@ -73,10 +73,10 @@
   }: Props = $props();
 
   const activeLocation = $derived(
-    activeHand === "blue" ? beat.blueLocation : beat.redLocation
+    activeHand === "left" ? beat.leftLocation : beat.rightLocation
   );
   const activeOrientation = $derived(
-    activeHand === "blue" ? beat.blueOrientation : beat.redOrientation
+    activeHand === "left" ? beat.leftOrientation : beat.rightOrientation
   );
   const copyCount = $derived(
     PRESET_OPTIONS.find((option) => option.value === preset)?.count ?? 1
@@ -104,15 +104,15 @@
   <section class="inspector-section">
     <div class="section-heading">
       <span>Editing</span>
-      <span class="section-value {activeHand}">
-        {activeHand === "blue" ? "Blue" : "Red"}
+      <span class="section-value {activeHand === 'left' ? 'blue' : 'red'}">
+        {activeHand === "left" ? "Left" : "Right"}
       </span>
     </div>
     <SegmentedControl
       options={HAND_OPTIONS}
       value={activeHand}
       onchange={onhandchange}
-      color={activeHand}
+      color={activeHand === "left" ? "blue" : "red"}
       size="sm"
     />
     <div class="location-card">
@@ -145,7 +145,7 @@
         options={ORIENTATION_OPTIONS}
         value={activeOrientation}
         onchange={onorientationchange}
-        color={activeHand}
+        color={activeHand === "left" ? "blue" : "red"}
         size="sm"
       />
     </div>

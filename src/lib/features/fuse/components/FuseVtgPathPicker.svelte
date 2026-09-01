@@ -48,10 +48,10 @@
   } = $props();
 
   const TILE_PX = 88;
-  const label = $derived(side === "blue" ? "Blue" : "Red");
+  const label = $derived(side === "left" ? "Left" : "Right");
   const settings = getSettings();
   const propType = $derived(
-    side === "blue" ? settings.bluePropType : settings.redPropType
+    side === "left" ? settings.leftPropType : settings.rightPropType
   );
   const tipCount = $derived(propTipEnds(propType));
   const propLabel = $derived(
@@ -89,19 +89,22 @@
         if (cancelled) return;
         const geometry = calculateMandalaGeometry(
           sequence.steps,
-          side === "blue" ? propType : undefined,
-          side === "red" ? propType : undefined,
+          side === "left" ? propType : undefined,
+          side === "right" ? propType : undefined,
           { tipEnds: tipCount, pathShape: "arc" },
           {
-            blue: side === "blue" ? tipPoints : [],
-            red: side === "red" ? tipPoints : [],
+            left: side === "left" ? tipPoints : [],
+            right: side === "right" ? tipPoints : [],
           }
         );
         const reach = Math.max(
           data.clubTipDx,
           ...tipPoints.map((point) => Math.hypot(point.dx, point.dy))
         );
-        built.set(key, renderHeader(geometry, side, TILE_PX, reach));
+        built.set(
+          key,
+          renderHeader(geometry, side, TILE_PX, reach)
+        );
       }
       if (cancelled) return;
       tileCache.set(keyForRun, built);

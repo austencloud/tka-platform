@@ -22,12 +22,12 @@ function axisFilterForTurn(turn: TurnValue): AxisFilter {
 
 /** Independent axis bands keep every page finite: four rows by four columns. */
 export function matrixFiltersForTurns(
-  blueTurn: TurnValue,
-  redTurn: TurnValue
+  leftTurn: TurnValue,
+  rightTurn: TurnValue
 ): MatrixFilters {
   return {
-    blue: axisFilterForTurn(blueTurn),
-    red: axisFilterForTurn(redTurn),
+    left: axisFilterForTurn(leftTurn),
+    right: axisFilterForTurn(rightTurn),
     collapse: false,
   };
 }

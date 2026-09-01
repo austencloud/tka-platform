@@ -84,8 +84,8 @@
     effort: vm.getEffortPreset(),
     pathShape: vm.getPathShape(),
     motionAware: vm.getMotionAwarePaths(),
-    blueLines: vm.getVisibility("bluePathLines"),
-    redLines: vm.getVisibility("redPathLines"),
+    leftLines: vm.getVisibility("leftPathLines"),
+    rightLines: vm.getVisibility("rightPathLines"),
     trail: animationSettings.trail,
   };
 
@@ -93,8 +93,8 @@
     vm.setEffortPreset(snap.effort);
     vm.setPathShape(snap.paths.pathShape);
     vm.setMotionAwarePaths(snap.paths.motionAwarePaths);
-    vm.setVisibility("bluePathLines", snap.paths.bluePathLines);
-    vm.setVisibility("redPathLines", snap.paths.redPathLines);
+    vm.setVisibility("leftPathLines", snap.paths.leftPathLines);
+    vm.setVisibility("rightPathLines", snap.paths.rightPathLines);
     animationSettings.updateSettings({ trail: snap.trailRender });
   });
 
@@ -102,8 +102,8 @@
     vm.setEffortPreset(prev.effort);
     vm.setPathShape(prev.pathShape);
     vm.setMotionAwarePaths(prev.motionAware);
-    vm.setVisibility("bluePathLines", prev.blueLines);
-    vm.setVisibility("redPathLines", prev.redLines);
+    vm.setVisibility("leftPathLines", prev.leftLines);
+    vm.setVisibility("rightPathLines", prev.rightLines);
     animationSettings.updateSettings({ trail: prev.trail });
     // Undo the controller's persisted view-state writes.
     saveTunnelViewState(prevTunnelViewState);
@@ -117,8 +117,8 @@
       {playback}
       {controller}
       bpm={snap.playback.bpm}
-      bluePropType={snap.props.bluePropType}
-      redPropType={snap.props.redPropType}
+      leftPropType={snap.props.leftPropType}
+      rightPropType={snap.props.rightPropType}
       bind:playing
       stageFit="contain"
     />

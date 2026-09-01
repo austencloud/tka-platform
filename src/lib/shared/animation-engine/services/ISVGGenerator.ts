@@ -35,7 +35,7 @@ export interface ISVGGenerator {
    * @param darkMode - When provided, uses this instead of global dark mode state
    * @returns PropSvgData with SVG string and viewBox dimensions
    */
-  generateBluePropSvg(propType?: string, darkMode?: boolean): Promise<PropSvgData>;
+  generateLeftPropSvg(propType?: string, darkMode?: boolean): Promise<PropSvgData>;
 
   /**
    * Generate red prop SVG with dynamic prop type
@@ -43,17 +43,17 @@ export interface ISVGGenerator {
    * @param darkMode - When provided, uses this instead of global dark mode state
    * @returns PropSvgData with SVG string and viewBox dimensions
    */
-  generateRedPropSvg(propType?: string, darkMode?: boolean): Promise<PropSvgData>;
+  generateRightPropSvg(propType?: string, darkMode?: boolean): Promise<PropSvgData>;
 
   /**
    * Generate blue staff SVG
    * @deprecated Use generateBluePropSvg instead
    */
-  generateBlueStaffSvg(): string;
+  generateLeftStaffSvg(): string;
 
   /**
    * Generate red staff SVG
    * @deprecated Use generateRedPropSvg instead
    */
-  generateRedStaffSvg(): string;
+  generateRightStaffSvg(): string;
 }

@@ -67,12 +67,12 @@ const FIGURE_Z = 0;
  * Any other combination falls back to CUSTOM (per-hand independent).
  */
 export function derivePlaneModeFromHands(
-  bluePlane: Plane,
-  redPlane: Plane
+  leftPlane: Plane,
+  rightPlane: Plane
 ): PlaneMode {
-  if (bluePlane === Plane.WALL && redPlane === Plane.WALL)
+  if (leftPlane === Plane.WALL && rightPlane === Plane.WALL)
     return PlaneMode.WALL;
-  if (bluePlane === Plane.WHEEL && redPlane === Plane.WHEEL)
+  if (leftPlane === Plane.WHEEL && rightPlane === Plane.WHEEL)
     return PlaneMode.DUAL_WHEEL;
   return PlaneMode.CUSTOM;
 }
@@ -100,24 +100,24 @@ function isSeamlesslyLoopable(sequence: SequenceData): boolean {
 
   // Check blue prop orientations
   // invisible placeholder = hand not really there (both-required Step shape)
-  const blueFirst = firstStep.motions?.blue;
-  const blueLast = lastStep.motions?.blue;
-  if (isVisibleMotion(blueFirst) && isVisibleMotion(blueLast)) {
-    if (blueFirst.startOrientation !== blueLast.endOrientation) {
+  const leftFirst = firstStep.motions?.left;
+  const leftLast = lastStep.motions?.left;
+  if (isVisibleMotion(leftFirst) && isVisibleMotion(leftLast)) {
+    if (leftFirst.startOrientation !== leftLast.endOrientation) {
       return false;
     }
-  } else if (isVisibleMotion(blueFirst) || isVisibleMotion(blueLast)) {
+  } else if (isVisibleMotion(leftFirst) || isVisibleMotion(leftLast)) {
     return false;
   }
 
   // Check red prop orientations
-  const redFirst = firstStep.motions?.red;
-  const redLast = lastStep.motions?.red;
-  if (isVisibleMotion(redFirst) && isVisibleMotion(redLast)) {
-    if (redFirst.startOrientation !== redLast.endOrientation) {
+  const rightFirst = firstStep.motions?.right;
+  const rightLast = lastStep.motions?.right;
+  if (isVisibleMotion(rightFirst) && isVisibleMotion(rightLast)) {
+    if (rightFirst.startOrientation !== rightLast.endOrientation) {
       return false;
     }
-  } else if (isVisibleMotion(redFirst) || isVisibleMotion(redLast)) {
+  } else if (isVisibleMotion(rightFirst) || isVisibleMotion(rightLast)) {
     return false;
   }
 
@@ -253,8 +253,8 @@ export function createCharacterInstanceState(
   const ROTATION_SPEED = 12;
 
   // Visibility - start hidden until a sequence is loaded
-  let showBlue = $state(false);
-  let showRed = $state(false);
+  let showLeft = $state(false);
+  let showRight = $state(false);
 
   // Sequence mode state
   let loadedSequence = $state<SequenceData | null>(null);
@@ -289,16 +289,16 @@ export function createCharacterInstanceState(
   }
 
   let planeMode = $state<PlaneMode | null>(loadPersistedPlaneMode());
-  let customBluePlane = $state<Plane | null>(null);
-  let customRedPlane = $state<Plane | null>(null);
+  let customLeftPlane = $state<Plane | null>(null);
+  let customRightPlane = $state<Plane | null>(null);
 
   // Effective plane getters (cascade resolution: null → inherit from defaults)
   const effectivePlaneMode = $derived(planeMode ?? getDefaults().planeMode);
-  const effectiveBluePlane = $derived(
-    customBluePlane ?? getDefaults().customBluePlane
+  const effectiveLeftPlane = $derived(
+    customLeftPlane ?? getDefaults().customLeftPlane
   );
-  const effectiveRedPlane = $derived(
-    customRedPlane ?? getDefaults().customRedPlane
+  const effectiveRightPlane = $derived(
+    customRightPlane ?? getDefaults().customRightPlane
   );
 
   // Override detection (all categories)
@@ -320,7 +320,7 @@ export function createCharacterInstanceState(
 
   // Per-beat plane overrides. Key = beat index, value = { blue?, red? }
   // Beats without an entry use Plane.WALL (the default).
-  let beatPlaneOverrides = $state<Map<number, { blue?: Plane; red?: Plane }>>(
+  let beatPlaneOverrides = $state<Map<number, { left?: Plane; right?: Plane }>>(
     new Map()
   );
 
@@ -342,8 +342,8 @@ export function createCharacterInstanceState(
    */
   function updateVisibilityFromStep(beat: StepMotionConfigs | undefined) {
     if (beat) {
-      showBlue = beat.blue !== null;
-      showRed = beat.red !== null;
+      showLeft = beat.left !== null;
+      showRight = beat.right !== null;
     }
   }
 
@@ -384,11 +384,11 @@ export function createCharacterInstanceState(
   const totalSteps = $derived(stepConfigs.length);
 
   // Active configs from current beat
-  const activeBlueConfig = $derived<MotionConfig3D | null>(
-    currentStep?.blue ?? null
+  const activeLeftConfig = $derived<MotionConfig3D | null>(
+    currentStep?.left ?? null
   );
-  const activeRedConfig = $derived<MotionConfig3D | null>(
-    currentStep?.red ?? null
+  const activeRightConfig = $derived<MotionConfig3D | null>(
+    currentStep?.right ?? null
   );
 
   // Effort easing: the 2D animator lets the user pick named easing profiles
@@ -414,8 +414,8 @@ export function createCharacterInstanceState(
 
     if (!timeline?.phrases?.length) {
       return {
-        blue: activeBlueConfig,
-        red: activeRedConfig,
+        left: activeLeftConfig,
+        right: activeRightConfig,
         progress: applyEffort(effectiveEffortId, rawProgress),
       };
     }
@@ -427,8 +427,8 @@ export function createCharacterInstanceState(
     if (!phrase) {
       // Gaps between phrases play linearly.
       return {
-        blue: activeBlueConfig,
-        red: activeRedConfig,
+        left: activeLeftConfig,
+        right: activeRightConfig,
         progress: rawProgress,
       };
     }
@@ -442,21 +442,21 @@ export function createCharacterInstanceState(
 
     const targetStep = stepConfigs[stepIndex + 1] ?? stepConfigs[stepIndex];
     return {
-      blue: targetStep?.blue ?? null,
-      red: targetStep?.red ?? null,
+      left: targetStep?.left ?? null,
+      right: targetStep?.right ?? null,
       progress: localProgress,
     };
   });
 
   // Computed prop states
-  const bluePropState = $derived(
-    easedFrame.blue
-      ? calculatePropState(easedFrame.blue, easedFrame.progress)
+  const leftPropState = $derived(
+    easedFrame.left
+      ? calculatePropState(easedFrame.left, easedFrame.progress)
       : null
   );
-  const redPropState = $derived(
-    easedFrame.red
-      ? calculatePropState(easedFrame.red, easedFrame.progress)
+  const rightPropState = $derived(
+    easedFrame.right
+      ? calculatePropState(easedFrame.right, easedFrame.progress)
       : null
   );
 
@@ -486,8 +486,8 @@ export function createCharacterInstanceState(
     // DIAG: Dump raw start position and configs
     if (sequence.startPosition) {
       const sp = sequence.startPosition;
-      const _bm = sp.motions?.blue;
-      const _rm = sp.motions?.red;
+      const _bm = sp.motions?.left;
+      const _rm = sp.motions?.right;
     }
     if (stepConfigs[0]) {
       const _s = stepConfigs[0];
@@ -510,8 +510,8 @@ export function createCharacterInstanceState(
     loadedSequence = null;
     stepConfigs = [];
     currentStepIndex = 0;
-    showBlue = false;
-    showRed = false;
+    showLeft = false;
+    showRight = false;
     playback.reset();
   }
 
@@ -526,8 +526,8 @@ export function createCharacterInstanceState(
     if (mode === PlaneMode.CUSTOM) {
       return {
         facingAngle: 0,
-        bluePlane: effectiveBluePlane,
-        redPlane: effectiveRedPlane,
+        bluePlane: effectiveLeftPlane,
+        redPlane: effectiveRightPlane,
         // No rotationPlane - each hand rotates on its own position plane
         blueLateralOffset: 0,
         redLateralOffset: 0,
@@ -554,8 +554,8 @@ export function createCharacterInstanceState(
     // Sync custom plane trackers to the preset's planes when switching away from CUSTOM
     if (mode !== PlaneMode.CUSTOM) {
       const config = PLANE_MODE_CONFIGS[mode];
-      customBluePlane = config.bluePlane;
-      customRedPlane = config.redPlane;
+      customLeftPlane = config.bluePlane;
+      customRightPlane = config.redPlane;
     }
 
     const modeConfig = getEffectiveModeConfig(mode);
@@ -574,14 +574,14 @@ export function createCharacterInstanceState(
    * for lateral rendering), both on Wall becomes WALL, anything else becomes
    * CUSTOM. Re-converts the sequence with the effective config.
    */
-  function setHandPlane(hand: "blue" | "red", plane: Plane) {
+  function setHandPlane(hand: "left" | "right", plane: Plane) {
     const beforeSnapshot = capturePerformerSnapshot();
-    if (hand === "blue") customBluePlane = plane;
-    else customRedPlane = plane;
+    if (hand === "left") customLeftPlane = plane;
+    else customRightPlane = plane;
 
     planeMode = derivePlaneModeFromHands(
-      customBluePlane ?? getDefaults().customBluePlane,
-      customRedPlane ?? getDefaults().customRedPlane
+      customLeftPlane ?? getDefaults().customLeftPlane,
+      customRightPlane ?? getDefaults().customRightPlane
     );
     if (persistToStorage) {
       try {
@@ -613,7 +613,7 @@ export function createCharacterInstanceState(
    */
   function setStepHandPlane(
     stepNumber: number,
-    hand: "blue" | "red",
+    hand: "left" | "right",
     plane: Plane
   ) {
     const beforeSnapshot = capturePerformerSnapshot();
@@ -621,8 +621,8 @@ export function createCharacterInstanceState(
     const updated = { ...current, [hand]: plane };
 
     if (
-      (!updated.blue || updated.blue === Plane.WALL) &&
-      (!updated.red || updated.red === Plane.WALL)
+      (!updated.left || updated.left === Plane.WALL) &&
+      (!updated.right || updated.right === Plane.WALL)
     ) {
       beatPlaneOverrides.delete(stepNumber);
     } else {
@@ -652,11 +652,11 @@ export function createCharacterInstanceState(
    * Returns the override if one exists, otherwise the effective
    * whole-sequence hand plane (which defaults to WALL).
    */
-  function getStepPlanes(stepNumber: number): { blue: Plane; red: Plane } {
+  function getStepPlanes(stepNumber: number): { left: Plane; right: Plane } {
     const override = beatPlaneOverrides.get(stepNumber);
     return {
-      blue: override?.blue ?? effectiveBluePlane,
-      red: override?.red ?? effectiveRedPlane,
+      left: override?.left ?? effectiveLeftPlane,
+      right: override?.right ?? effectiveRightPlane,
     };
   }
 
@@ -690,11 +690,11 @@ export function createCharacterInstanceState(
       const config = allConfigs[beatIdx];
       if (!config) continue;
 
-      if (override.blue && config.blue) {
-        config.blue = { ...config.blue, plane: override.blue };
+      if (override.left && config.left) {
+        config.left = { ...config.left, plane: override.left };
       }
-      if (override.red && config.red) {
-        config.red = { ...config.red, plane: override.red };
+      if (override.right && config.right) {
+        config.right = { ...config.right, plane: override.right };
       }
     }
 
@@ -924,8 +924,8 @@ export function createCharacterInstanceState(
         propBuild: $state.snapshot(_settings.propBuild),
       },
       planes: {
-        customBluePlane,
-        customRedPlane,
+        customLeftPlane,
+        customRightPlane,
         planeMode,
         beatPlaneOverrides: new Map(beatPlaneOverrides),
       },
@@ -940,8 +940,8 @@ export function createCharacterInstanceState(
       staffLengthCm: snap.settings.staffLengthCm,
       propBuild: snap.settings.propBuild,
     };
-    customBluePlane = snap.planes.customBluePlane;
-    customRedPlane = snap.planes.customRedPlane;
+    customLeftPlane = snap.planes.customLeftPlane;
+    customRightPlane = snap.planes.customRightPlane;
     planeMode = snap.planes.planeMode;
     beatPlaneOverrides = new Map(snap.planes.beatPlaneOverrides);
     reconvertWithConfig(getEffectiveModeConfig(effectivePlaneMode));
@@ -1158,8 +1158,8 @@ export function createCharacterInstanceState(
   function resetPlanes(): void {
     const beforeSnap = capturePerformerSnapshot();
     planeMode = null;
-    customBluePlane = null;
-    customRedPlane = null;
+    customLeftPlane = null;
+    customRightPlane = null;
     reconvertWithConfig(getEffectiveModeConfig(effectivePlaneMode));
     const afterSnap = capturePerformerSnapshot();
     sceneUndo.pushSelfRestoringEntry(
@@ -1182,8 +1182,8 @@ export function createCharacterInstanceState(
       staffLengthCm: _settings.staffLengthCm,
     };
     planeMode = null;
-    customBluePlane = null;
-    customRedPlane = null;
+    customLeftPlane = null;
+    customRightPlane = null;
     reconvertWithConfig(getEffectiveModeConfig(effectivePlaneMode));
     const afterSnap = capturePerformerSnapshot();
     sceneUndo.pushSelfRestoringEntry("change-prop", "Reset all overrides", {
@@ -1304,23 +1304,23 @@ export function createCharacterInstanceState(
     clearBeatPlaneOverrides,
     clearStepPlaneOverrides,
     getStepPlanes,
-    get customBluePlane() {
-      return effectiveBluePlane;
+    get customLeftPlane() {
+      return effectiveLeftPlane;
     },
-    get customRedPlane() {
-      return effectiveRedPlane;
+    get customRightPlane() {
+      return effectiveRightPlane;
     },
-    get rawBluePlane() {
-      return customBluePlane;
+    get rawLeftPlane() {
+      return customLeftPlane;
     },
-    get rawRedPlane() {
-      return customRedPlane;
+    get rawRightPlane() {
+      return customRightPlane;
     },
-    get currentStepBluePlane() {
-      return currentStepPlanes.blue;
+    get currentStepLeftPlane() {
+      return currentStepPlanes.left;
     },
-    get currentStepRedPlane() {
-      return currentStepPlanes.red;
+    get currentStepRightPlane() {
+      return currentStepPlanes.right;
     },
     get beatPlaneOverrides() {
       return beatPlaneOverrides;
@@ -1349,27 +1349,27 @@ export function createCharacterInstanceState(
     },
 
     // Visibility
-    get showBlue() {
-      return showBlue;
+    get showLeft() {
+      return showLeft;
     },
-    get showRed() {
-      return showRed;
+    get showRight() {
+      return showRight;
     },
 
     // Active configs
-    get activeBlueConfig() {
-      return activeBlueConfig;
+    get activeLeftConfig() {
+      return activeLeftConfig;
     },
-    get activeRedConfig() {
-      return activeRedConfig;
+    get activeRightConfig() {
+      return activeRightConfig;
     },
 
     // Prop states
-    get bluePropState() {
-      return bluePropState;
+    get leftPropState() {
+      return leftPropState;
     },
-    get redPropState() {
-      return redPropState;
+    get rightPropState() {
+      return rightPropState;
     },
 
     // Playback delegation
@@ -1445,11 +1445,11 @@ export function createCharacterInstanceState(
     get effectivePlaneMode() {
       return effectivePlaneMode;
     },
-    get effectiveBluePlane() {
-      return effectiveBluePlane;
+    get effectiveLeftPlane() {
+      return effectiveLeftPlane;
     },
-    get effectiveRedPlane() {
-      return effectiveRedPlane;
+    get effectiveRightPlane() {
+      return effectiveRightPlane;
     },
 
     // Override detection

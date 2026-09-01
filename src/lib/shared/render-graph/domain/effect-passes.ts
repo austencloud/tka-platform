@@ -9,8 +9,8 @@
 
 export interface GhostPhantom {
   /** Positions of staff endpoints at capture time, in NDC. */
-  bluePos: [number, number];
-  redPos: [number, number];
+  leftPos: [number, number];
+  rightPos: [number, number];
   /** Age in beats since capture. Drives fade. */
   age: number;
 }

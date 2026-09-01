@@ -136,20 +136,20 @@
     return () => cancelAnimationFrame(raf);
   });
 
-  type LayerProps = { blue: PropState; red: PropState; step: StepData | null; stepOneBased: number };
+  type LayerProps = { left: PropState; right: PropState; step: StepData | null; stepOneBased: number };
   function propsFor(seq: SequenceData | null): LayerProps {
     if (!seq || seq.steps.length === 0) {
-      return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE }, step: null, stepOneBased: 1 };
+      return { left: { ...DEFAULT_PROP_STATE }, right: { ...DEFAULT_PROP_STATE }, step: null, stepOneBased: 1 };
     }
     const n = seq.steps.length;
     const idx = Math.min(n - 1, Math.max(0, Math.floor(playheadBeat)));
     const progress = Math.max(0, Math.min(0.9999, playheadBeat - Math.floor(playheadBeat)));
     const step = seq.steps[idx] ?? null;
-    if (!step) return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE }, step: null, stepOneBased: idx + 1 };
+    if (!step) return { left: { ...DEFAULT_PROP_STATE }, right: { ...DEFAULT_PROP_STATE }, step: null, stepOneBased: idx + 1 };
     const r = interpolatePropAngles(step, progress);
     return {
-      blue: r.isValid ? (r.blueAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
-      red: r.isValid ? (r.redAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
+      left: r.isValid ? (r.leftAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
+      right: r.isValid ? (r.rightAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
       step,
       stepOneBased: idx + 1,
     };
@@ -158,7 +158,7 @@
   const additionalLayers = $derived<AdditionalLayerProps[]>(
     rotated.map((seq) => {
       const p = propsFor(seq);
-      return { blueProp: p.blue, redProp: p.red };
+      return { leftProp: p.left, rightProp: p.right };
     }),
   );
   // Canvas needs the enum STRING; heading/toast need the human LABEL.
@@ -245,11 +245,11 @@
                   in:scale={{ duration: morphMs(), start: 0.9, opacity: 0, easing: cubicOut }}
                 >
                   <AnimatorCanvas
-                  blueProp={baseLayer.blue}
-                  redProp={baseLayer.red}
+                  leftProp={baseLayer.left}
+                  rightProp={baseLayer.right}
                   {additionalLayers}
-                  bluePropType={chosenPropStr}
-                  redPropType={chosenPropStr}
+                  leftPropType={chosenPropStr}
+                  rightPropType={chosenPropStr}
                   sequenceData={base}
                   stepData={baseLayer.step}
                   currentStep={baseLayer.stepOneBased}

@@ -142,7 +142,7 @@ function buildLoopSpecWire(components, period) {
       prop[comp] = { period: 2 };
     }
   }
-  return { blue: prop, red: prop };
+  return { left: prop, right: prop };
 }
 
 function assembleBuildOptions({ appLoopType, components, period, length, level, allPictographs }) {
@@ -203,7 +203,7 @@ function detectPrimary(rawSteps) {
   try {
     const result = loopDetectorClass.detectLOOPType(rawSteps);
     const components = result.spec
-      ? [...(result.spec.blue?.components?.keys?.() ?? [])]
+      ? [...(result.spec.left?.components?.keys?.() ?? [])]
       : [];
     return { components: components.sort(), loopType: result.loopType, period: result.period, raw: result };
   } catch (e) {
@@ -321,8 +321,8 @@ for (const combo of COMBOS) {
               startPosition: s.startPosition,
               endPosition: s.endPosition,
               stepNumber: s.stepNumber,
-              blueMotion: s.motions.blue,
-              redMotion: s.motions.red,
+              leftMotion: s.motions.left,
+              rightMotion: s.motions.right,
             })),
           });
         }

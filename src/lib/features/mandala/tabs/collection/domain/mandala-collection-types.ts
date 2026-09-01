@@ -1,15 +1,18 @@
 import { z } from "zod";
 import { StepDataSchema } from "$lib/shared/foundation/domain/schemas";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import type { MandalaPathShape } from "$lib/shared/mandala/domain/mandala-types";
+import type {
+	MandalaHandVisibility,
+	MandalaPathShape,
+} from "$lib/shared/mandala/domain/mandala-types";
 
 export interface CollectedMandala {
 	id: string;
 	name: string;
 	steps: StepData[];
-	variant: "blue" | "red" | "both";
-	bluePropType: string;
-	redPropType: string;
+	variant: MandalaHandVisibility;
+	leftPropType: string;
+	rightPropType: string;
 	pathShape?: MandalaPathShape;
 	createdAt: number;
 	source?: "studio" | "sequence" | "default";
@@ -31,9 +34,12 @@ export const CollectedMandalaSchema = z.object({
 	id: z.string().min(1),
 	name: z.string(),
 	steps: z.array(StepDataSchema),
-	variant: z.enum(["blue", "red", "both"]),
-	bluePropType: z.string(),
-	redPropType: z.string(),
+	variant: z.preprocess(
+		(value) => value === "blue" ? "left" : value === "red" ? "right" : value,
+		z.enum(["left", "right", "both"]),
+	),
+	leftPropType: z.string(),
+	rightPropType: z.string(),
 	pathShape: z.enum(["arc", "linear", "concave", "hybrid"]).optional(),
 	createdAt: z.any(),
 	updatedAt: z.any().optional(),

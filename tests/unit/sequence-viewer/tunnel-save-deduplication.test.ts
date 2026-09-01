@@ -27,11 +27,11 @@ const snapshot = {
   paths: {
     pathShape: "arc",
     motionAwarePaths: true,
-    bluePathLines: false,
-    redPathLines: false,
+    leftPathLines: false,
+    rightPathLines: false,
   },
   playback: { bpm: 60, playbackMode: "continuous" },
-  props: { bluePropType: "staff", redPropType: "staff" },
+  props: { leftPropType: "staff", rightPropType: "staff" },
   trailRender: { enabled: true },
 } as unknown as TunnelSnapshot;
 

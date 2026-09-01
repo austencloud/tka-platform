@@ -86,7 +86,7 @@
   // camera, scene, presets — reach real rigs instead of doing nothing.
   const viewer = createViewer3DState(undefined, {
     firstUseEnvironment: stageState.choreography.environmentId,
-    appDefaultProp: settings.bluePropType ?? null,
+    appDefaultProp: settings.leftPropType ?? null,
   });
   setViewer3DContext(viewer);
   viewer.setEnvironmentId(stageState.choreography.environmentId);
@@ -789,8 +789,8 @@
           width: choreography.stageWidth,
           depth: choreography.stageDepth,
         }}
-        bluePropType={settings.bluePropType ?? settings.propType ?? "staff"}
-        redPropType={settings.redPropType ?? settings.propType ?? "staff"}
+        leftPropType={settings.leftPropType ?? settings.propType ?? "staff"}
+        rightPropType={settings.rightPropType ?? settings.propType ?? "staff"}
         onChangeSequence={() => (pickerOpen = true)}
         onExport={sharedSequence ? () => (exportOpen = true) : undefined}
         exportBusy={exporter.state.isExporting}

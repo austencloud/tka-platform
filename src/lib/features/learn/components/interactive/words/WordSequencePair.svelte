@@ -18,8 +18,8 @@
       showPositionGlyph
       scrubbable
       beatIndicators={false}
-      bluePropType="staff"
-      redPropType="staff"
+      leftPropType="staff"
+      rightPropType="staff"
       disableContextMenu
       hoverHint="badge"
     />
@@ -37,8 +37,8 @@
       showQRCode={false}
       darkMode
       forceContain
-      bluePropType={PropType.STAFF}
-      redPropType={PropType.STAFF}
+      leftPropType={PropType.STAFF}
+      rightPropType={PropType.STAFF}
     />
   </div>
 </div>

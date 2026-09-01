@@ -39,7 +39,7 @@ import type {
  *      library, and the only field that describes the sequence as a whole.
  *   2. The first step's own `gridMode` — present on steps built by the step
  *      editor, absent on plenty of older data.
- *   3. The first step's blue motion `gridMode` — required on every MotionData,
+ *   3. The first step's left motion `gridMode` — required on every MotionData,
  *      so this is the last field that can actually carry the answer.
  *   4. DIAMOND — the app's default grid. Reached only when a caller hands us a
  *      sequence assembled by hand with no grid information anywhere in it.
@@ -49,11 +49,14 @@ import type {
  * cardinality, and guessing the stage the player draws on is worse than
  * defaulting to the one they see everywhere else.
  */
-function resolveGridMode(sequence: SequenceData, firstStep: StepData): GridMode {
+function resolveGridMode(
+  sequence: SequenceData,
+  firstStep: StepData
+): GridMode {
   return (
     sequence.gridMode ??
     firstStep.gridMode ??
-    firstStep.motions.blue.gridMode ??
+    firstStep.motions.left.gridMode ??
     GridMode.DIAMOND
   );
 }
@@ -77,7 +80,9 @@ function resolveStartLocation(
   const startPositionMotions =
     sequence.startPosition?.motions ?? sequence.startingPosition?.motions;
 
-  return startPositionMotions?.[hand]?.startLocation ?? firstMotion.startLocation;
+  return (
+    startPositionMotions?.[hand]?.startLocation ?? firstMotion.startLocation
+  );
 }
 
 /** A hand is in the round if it is really there — visible, not a placeholder — on any step. */
@@ -111,7 +116,8 @@ export function sequenceToTraceRound(
       ok: false,
       error: {
         code: "empty-round",
-        message: "Neither hand is present in this sequence, so there's nothing to trace.",
+        message:
+          "Neither hand is present in this sequence, so there's nothing to trace.",
       },
     };
   }

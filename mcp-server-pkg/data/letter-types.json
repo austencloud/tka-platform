@@ -35,8 +35,8 @@
       "V"
     ],
     "motionPattern": {
-      "blueMotion": "shift",
-      "redMotion": "shift"
+      "leftMotion": "shift",
+      "rightMotion": "shift"
     }
   },
   "2": {
@@ -58,8 +58,8 @@
       "Ω"
     ],
     "motionPattern": {
-      "blueMotion": "static OR shift",
-      "redMotion": "shift OR static",
+      "leftMotion": "static OR shift",
+      "rightMotion": "shift OR static",
       "note": "Exactly one hand shifts, one is static"
     }
   },
@@ -82,8 +82,8 @@
       "Ω-"
     ],
     "motionPattern": {
-      "blueMotion": "shift OR dash",
-      "redMotion": "dash OR shift",
+      "leftMotion": "shift OR dash",
+      "rightMotion": "dash OR shift",
       "note": "One hand shifts, one dashes"
     }
   },
@@ -104,8 +104,8 @@
       "Λ"
     ],
     "motionPattern": {
-      "blueMotion": "static OR dash",
-      "redMotion": "dash OR static",
+      "leftMotion": "static OR dash",
+      "rightMotion": "dash OR static",
       "note": "Exactly one hand dashes, one is static"
     }
   },
@@ -125,8 +125,8 @@
       "Λ-"
     ],
     "motionPattern": {
-      "blueMotion": "dash",
-      "redMotion": "dash"
+      "leftMotion": "dash",
+      "rightMotion": "dash"
     }
   },
   "6": {
@@ -144,8 +144,8 @@
       "γ"
     ],
     "motionPattern": {
-      "blueMotion": "static",
-      "redMotion": "static"
+      "leftMotion": "static",
+      "rightMotion": "static"
     }
   }
 }

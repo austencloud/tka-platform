@@ -119,11 +119,11 @@
     const snap = selected.snapshot;
     const performers = imageCount(snap.tunnel.config);
     const effect = snap.effects?.activeEffect ?? "none";
-    const { bluePropType, redPropType } = snap.props;
+    const { leftPropType, rightPropType } = snap.props;
     const prop =
-      bluePropType === redPropType
-        ? bluePropType
-        : `${bluePropType} · ${redPropType}`;
+      leftPropType === rightPropType
+        ? leftPropType
+        : `${leftPropType} · ${rightPropType}`;
     const chips: { icon: string; label: string }[] = [
       {
         icon: "fa-users",

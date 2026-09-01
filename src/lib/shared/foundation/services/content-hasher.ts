@@ -104,9 +104,9 @@ interface HashableNode {
   startPosition?: unknown;
   endPosition?: unknown;
   gridPosition?: unknown;
-  blueReversal?: boolean;
-  redReversal?: boolean;
-  motions?: { blue?: MotionData; red?: MotionData };
+  leftReversal?: boolean;
+  rightReversal?: boolean;
+  motions?: { left?: MotionData; right?: MotionData };
 }
 
 function serializeMotion(m?: MotionData): string {
@@ -122,10 +122,10 @@ function serializeChoreoNode(node: HashableNode): string {
     node.letter ?? "",
     node.startPosition ?? node.gridPosition ?? "",
     node.endPosition ?? "",
-    serializeMotion(node.motions?.blue),
-    serializeMotion(node.motions?.red),
-    node.blueReversal ? "B" : "",
-    node.redReversal ? "R" : "",
+    serializeMotion(node.motions?.left),
+    serializeMotion(node.motions?.right),
+    node.leftReversal ? "B" : "",
+    node.rightReversal ? "R" : "",
   ].join(":");
 }
 
@@ -169,8 +169,8 @@ function serializeSkeletonNode(node: HashableNode): string {
     node.letter ?? "",
     node.startPosition ?? node.gridPosition ?? "",
     node.endPosition ?? "",
-    serializeMotionSkeleton(node.motions?.blue),
-    serializeMotionSkeleton(node.motions?.red),
+    serializeMotionSkeleton(node.motions?.left),
+    serializeMotionSkeleton(node.motions?.right),
   ].join(":");
 }
 

@@ -155,7 +155,7 @@ export function createDeckPrintState(
       selectedLength: deck.selectedLength,
       turnIntensity: deck.turnIntensity,
       gridMode: [...deck.selectedGridModes][0] ?? "diamond",
-      propType: String(deck.bluePropType),
+      propType: String(deck.leftPropType),
       includeHowToRead,
     });
   }
@@ -196,8 +196,8 @@ export function createDeckPrintState(
       "2026-08-11-v2",
       deck.name.trim(),
       deck.theme,
-      deck.bluePropType,
-      deck.redPropType,
+      deck.leftPropType,
+      deck.rightPropType,
       cardSize,
       includeHowToRead,
       rerenderKey,

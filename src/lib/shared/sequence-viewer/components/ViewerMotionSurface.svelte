@@ -67,8 +67,8 @@
   const effectsConfig = getEffectsConfigContext();
   const requiresContactViewer = $derived(
     sceneNeedsContactViewer(
-      propRendering.bluePropType,
-      propRendering.redPropType
+      propRendering.leftPropType,
+      propRendering.rightPropType
     )
   );
 
@@ -453,13 +453,13 @@
             isPlaying: playback.isPlaying,
             bpm,
             onBpmChange,
-            bluePropType:
-              propRendering.bluePropType != null
-                ? String(propRendering.bluePropType)
+            leftPropType:
+              propRendering.leftPropType != null
+                ? String(propRendering.leftPropType)
                 : null,
-            redPropType:
-              propRendering.redPropType != null
-                ? String(propRendering.redPropType)
+            rightPropType:
+              propRendering.rightPropType != null
+                ? String(propRendering.rightPropType)
                 : null,
             hideOverlays: false,
             fullScreen: side === "left" && layout.focusedPane === "animation",
@@ -547,8 +547,8 @@
           currentStep={playback.currentStep}
           isPlaying={playback.isPlaying}
           virtualTime={playback.animationState.virtualTime}
-          blueProp={playback.animationState.bluePropState}
-          redProp={playback.animationState.redPropState}
+          leftProp={playback.animationState.leftPropState}
+          rightProp={playback.animationState.rightPropState}
           additionalLayers={tunnelLayers}
           tunnelSpectrum={tunnelController.spectrum}
           tunnelPropColors={tunnelController.exactPropColors}
@@ -560,8 +560,8 @@
           letter={playback.currentLetter}
           stepData={playback.currentStepData}
           word={sequence?.word}
-          bluePropType={propRendering.bluePropType}
-          redPropType={propRendering.redPropType}
+          leftPropType={propRendering.leftPropType}
+          rightPropType={propRendering.rightPropType}
           fanAppearance={propRendering.fanAppearance}
           backgroundAlpha={side === "left" &&
           practiceActive &&

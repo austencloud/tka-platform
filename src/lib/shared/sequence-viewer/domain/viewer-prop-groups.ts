@@ -37,8 +37,8 @@ export interface ImageCompositionProps {
 }
 
 export interface PropRenderingProps {
-  bluePropType?: PropType;
-  redPropType?: PropType;
+  leftPropType?: PropType;
+  rightPropType?: PropType;
   catDogModeEnabled?: boolean;
   fanAppearance?: FanAppearance;
 }

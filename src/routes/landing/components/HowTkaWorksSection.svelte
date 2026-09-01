@@ -51,8 +51,8 @@
       startPosition: firstStep.startPosition,
       endPosition: firstStep.endPosition,
       motions: {
-        blue: forceProps(firstStep.motions?.blue),
-        red: forceProps(firstStep.motions?.red),
+        left: forceProps(firstStep.motions?.left),
+        right: forceProps(firstStep.motions?.right),
       },
     } as PictographData;
   }
@@ -89,16 +89,16 @@
         tags: [...data.tags],
         metadata: {},
         ownerId: data.ownerId,
-        blueSoloProp: data.blueSoloProp,
-        redSoloProp: data.redSoloProp,
+        leftSoloProp: data.leftSoloProp,
+        rightSoloProp: data.rightSoloProp,
         stepPairings: data.stepPairings,
-        bluePathHash: data.bluePathHash,
-        redPathHash: data.redPathHash,
-        blueSoloHash: data.blueSoloHash,
-        redSoloHash: data.redSoloHash,
+        leftPathHash: data.leftPathHash,
+        rightPathHash: data.rightPathHash,
+        leftSoloHash: data.leftSoloHash,
+        rightSoloHash: data.rightSoloHash,
       };
 
-      if (data.blueSoloProp && data.redSoloProp && data.stepPairings) {
+      if (data.leftSoloProp && data.rightSoloProp && data.stepPairings) {
         const hydrated = hydrate(seq);
         if (hydrated.steps && hydrated.steps.length > 0) {
           setupFromSequence({
@@ -138,15 +138,15 @@
           <PictographContainer
             pictographData={motionData}
             gridMode={GridMode.DIAMOND}
-            bluePropTypeOverride={propType}
-            redPropTypeOverride={propType}
+            leftPropTypeOverride={propType}
+            rightPropTypeOverride={propType}
             showGrid={true}
             showTKA={true}
             showReversals={false}
             showPositions={true}
             showHandPoints={true}
-            showBlueMotion={true}
-            showRedMotion={true}
+            showLeftMotion={true}
+            showRightMotion={true}
             darkMode={true}
             disableTransitions={true}
           />
@@ -160,8 +160,8 @@
             {sequence}
             darkMode={true}
             columnCount={2}
-            bluePropType={propType}
-            redPropType={propType}
+            leftPropType={propType}
+            rightPropType={propType}
             startPositionLayoutOverride="column"
             showMandala={true}
             showNotes={false}

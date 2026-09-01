@@ -16,7 +16,7 @@ import {
   GridPosition,
 } from "../../../src/lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -25,7 +25,7 @@ import { createSequenceData } from "../../../src/lib/shared/foundation/domain/mo
 import { OrientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
 
 const dashMotion = (
-  color: MotionColor,
+  color: HandSide,
   from: GridLocation,
   to: GridLocation,
   turns = 0
@@ -58,11 +58,11 @@ const step = (
   startPosition: start,
   endPosition: end,
   motions: {
-    [MotionColor.BLUE]: dashMotion(MotionColor.BLUE, blueFrom, blueTo, turns),
-    [MotionColor.RED]: dashMotion(MotionColor.RED, blueTo, blueFrom, turns),
+    [HandSide.LEFT]: dashMotion(HandSide.LEFT, blueFrom, blueTo, turns),
+    [HandSide.RIGHT]: dashMotion(HandSide.RIGHT, blueTo, blueFrom, turns),
   },
-  blueReversal: false,
-  redReversal: false,
+  leftReversal: false,
+  rightReversal: false,
   isBlank: false,
 });
 

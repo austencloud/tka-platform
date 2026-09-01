@@ -106,7 +106,7 @@
     pictographPreparer
       .prepareSingle(data, {
         themeMode: forceTheme === "dark" ? "dark" : "light",
-        ...(propType ? { bluePropType: propType, redPropType: propType } : {}),
+        ...(propType ? { leftPropType: propType, rightPropType: propType } : {}),
       })
       .then((result) => {
         if (cancelled) return;
@@ -117,11 +117,11 @@
             : { arrowPositions: {}, arrowAssets: {}, arrowMirroring: {} };
 
           const tweakedPropAssets = { ...prep.propAssets };
-          if (propType === PropType.HAND && tweakedPropAssets.red) {
-            const [w] = tweakedPropAssets.red.viewBox.split(" ").map(Number);
-            tweakedPropAssets.red = {
-              ...tweakedPropAssets.red,
-              imageSrc: `<g transform="translate(${w},0) scale(-1,1)">${tweakedPropAssets.red.imageSrc}</g>`,
+          if (propType === PropType.HAND && tweakedPropAssets.right) {
+            const [w] = tweakedPropAssets.right.viewBox.split(" ").map(Number);
+            tweakedPropAssets.right = {
+              ...tweakedPropAssets.right,
+              imageSrc: `<g transform="translate(${w},0) scale(-1,1)">${tweakedPropAssets.right.imageSrc}</g>`,
             };
           }
 
@@ -159,8 +159,8 @@
         {showElemental}
         {showPositions}
         {showNonRadialPoints}
-        blueMotionVisible={true}
-        redMotionVisible={true}
+        leftMotionVisible={true}
+        rightMotionVisible={true}
       />
     {:else if pngFallback}
       <img class="fallback-img" src={pngFallback} alt={label ?? "pictograph"} loading="lazy" />

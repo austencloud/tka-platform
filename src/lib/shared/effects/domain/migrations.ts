@@ -463,8 +463,8 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // Seed the established prop hues so existing saved looks do not change.
   if (version < 32 && input.ghost) {
     const ghost = input.ghost as LegacyRecord;
-    ghost.blueColor ??= DEFAULT_EFFECTS_CONFIG.ghost.blueColor;
-    ghost.redColor ??= DEFAULT_EFFECTS_CONFIG.ghost.redColor;
+    ghost.leftColor ??= DEFAULT_EFFECTS_CONFIG.ghost.leftColor;
+    ghost.rightColor ??= DEFAULT_EFFECTS_CONFIG.ghost.rightColor;
   }
 
   // v32 → v33: Fire can preserve the original broad liquid presentation as a

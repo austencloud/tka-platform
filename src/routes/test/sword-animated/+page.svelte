@@ -82,8 +82,8 @@
               {sequence}
               autoPlay={true}
               showControls={false}
-              bluePropType={s.id}
-              redPropType={s.id}
+              leftPropType={s.id}
+              rightPropType={s.id}
             />
           </div>
           <figcaption>{s.label}</figcaption>

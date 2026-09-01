@@ -128,8 +128,8 @@
             <div class="release-notes">{displayName(release)}</div>
             <div class="release-meta">
               <span class="card-count">{release.cardCount} cards</span>
-              {#if release.bluePropType}
-                <span class="prop">{prettyProp(release.bluePropType)}</span>
+              {#if release.leftPropType}
+                <span class="prop">{prettyProp(release.leftPropType)}</span>
               {/if}
               <span class="distribution"
                 >{distributionSummary(release.stepCountDistribution)}</span

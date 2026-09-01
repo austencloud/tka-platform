@@ -15,7 +15,7 @@ import {
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   GridLocation,
   GridMode,
@@ -36,8 +36,8 @@ function sequence(id: string, steps: number): SequenceData {
           duration: 1,
           motions: {},
           isBlank: false,
-          blueReversal: false,
-          redReversal: false,
+          leftReversal: false,
+          rightReversal: false,
         }) as StepData
     ),
   });
@@ -54,15 +54,15 @@ function geometricSequence(id: string): SequenceData {
         id: `${id}-1`,
         stepNumber: 1,
         motions: {
-          [MotionColor.BLUE]: createMotionData({
-            color: MotionColor.BLUE,
+          [HandSide.LEFT]: createMotionData({
+            hand: HandSide.LEFT,
             startLocation: GridLocation.NORTH,
             endLocation: GridLocation.EAST,
             arrowLocation: GridLocation.NORTH,
             gridMode: GridMode.DIAMOND,
           }),
-          [MotionColor.RED]: createMotionData({
-            color: MotionColor.RED,
+          [HandSide.RIGHT]: createMotionData({
+            hand: HandSide.RIGHT,
             startLocation: GridLocation.SOUTH,
             endLocation: GridLocation.WEST,
             arrowLocation: GridLocation.SOUTH,
@@ -151,8 +151,8 @@ describe("tunnel composition", () => {
     );
     const partner = layers.find((layer) => layer.authoredPerformerIndex === 1)!;
     const pairedBlue =
-      partner.performerSequence.steps[0]!.motions[MotionColor.BLUE]!;
-    const placedBlue = partner.sequence.steps[0]!.motions[MotionColor.BLUE]!;
+      partner.performerSequence.steps[0]!.motions[HandSide.LEFT]!;
+    const placedBlue = partner.sequence.steps[0]!.motions[HandSide.LEFT]!;
 
     expect(partner.performerSequence.gridMode).toBe(GridMode.BOX);
     expect(partner.performerSequence.steps[0]!.gridMode).toBe(GridMode.BOX);

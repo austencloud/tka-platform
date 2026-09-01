@@ -100,16 +100,16 @@ function enhanceMotionForInvert(motion: MotionData): MotionData {
  * to have a visible rotation direction. Recalculates arrow placement after.
  */
 async function enhancePictographForInvert(pictograph: PictographData): Promise<PictographData> {
-  const blue = pictograph.motions?.blue;
-  const red = pictograph.motions?.red;
+  const left = pictograph.motions?.left;
+  const right = pictograph.motions?.right;
 
   // Only dash motions at 0 turns need enhancement
   const isDashAt0 = (m: MotionData | undefined) =>
     m?.motionType === MotionType.DASH && (typeof m.turns !== 'number' || m.turns === 0);
-  const blueNeedsEnhancement = isDashAt0(blue);
-  const redNeedsEnhancement = isDashAt0(red);
+  const leftNeedsEnhancement = isDashAt0(left);
+  const rightNeedsEnhancement = isDashAt0(right);
 
-  if (!blueNeedsEnhancement && !redNeedsEnhancement) {
+  if (!leftNeedsEnhancement && !rightNeedsEnhancement) {
     return pictograph; // No enhancement needed
   }
 
@@ -117,8 +117,8 @@ async function enhancePictographForInvert(pictograph: PictographData): Promise<P
   const enhancedPictograph: PictographData = {
     ...pictograph,
     motions: {
-      blue: blue ? enhanceMotionForInvert(blue) : undefined,
-      red: red ? enhanceMotionForInvert(red) : undefined,
+      left: left ? enhanceMotionForInvert(left) : undefined,
+      right: right ? enhanceMotionForInvert(right) : undefined,
     },
   };
 
@@ -137,26 +137,26 @@ async function enhancePictographForInvert(pictograph: PictographData): Promise<P
  * Returns the pictograph with the updated letter, or unchanged if no match is found.
  */
 export async function reclassifyLetter(pictograph: PictographData): Promise<PictographData> {
-  const blue = pictograph.motions?.blue;
-  const red = pictograph.motions?.red;
+  const left = pictograph.motions?.left;
+  const right = pictograph.motions?.right;
   // Invisible placeholder = hand not really there (both-required Step shape).
-  if (!isVisibleMotion(blue) || !isVisibleMotion(red)) return pictograph;
+  if (!isVisibleMotion(left) || !isVisibleMotion(right)) return pictograph;
 
   const allPictographs = await loadAllPictographs();
 
   // Find a dataframe entry that matches the transformed motion properties
   const match = allPictographs.find(p => {
-    const pBlue = p.motions?.blue;
-    const pRed = p.motions?.red;
-    if (!pBlue || !pRed) return false;
+    const pLeft = p.motions?.left;
+    const pRight = p.motions?.right;
+    if (!pLeft || !pRight) return false;
 
     return (
-      pBlue.motionType === blue.motionType &&
-      pBlue.startLocation === blue.startLocation &&
-      pBlue.endLocation === blue.endLocation &&
-      pRed.motionType === red.motionType &&
-      pRed.startLocation === red.startLocation &&
-      pRed.endLocation === red.endLocation
+      pLeft.motionType === left.motionType &&
+      pLeft.startLocation === left.startLocation &&
+      pLeft.endLocation === left.endLocation &&
+      pRight.motionType === right.motionType &&
+      pRight.startLocation === right.startLocation &&
+      pRight.endLocation === right.endLocation
     );
   });
 
@@ -172,26 +172,26 @@ export async function reclassifyLetter(pictograph: PictographData): Promise<Pict
  */
 function filterForTransform(pictographs: PictographData[], transformId: TransformId): PictographData[] {
   return pictographs.filter(p => {
-    const blue = p.motions?.blue;
-    const red = p.motions?.red;
-    if (!isVisibleMotion(blue) || !isVisibleMotion(red)) return false;
+    const left = p.motions?.left;
+    const right = p.motions?.right;
+    if (!isVisibleMotion(left) || !isVisibleMotion(right)) return false;
 
     switch (transformId) {
       case "mirror":
         // Need E/W components so mirror produces visible change
-        return hasEastWestComponent(blue) || hasEastWestComponent(red);
+        return hasEastWestComponent(left) || hasEastWestComponent(right);
 
       case "flip":
         // Need N/S components so flip produces visible change
-        return hasNorthSouthComponent(blue) || hasNorthSouthComponent(red);
+        return hasNorthSouthComponent(left) || hasNorthSouthComponent(right);
 
       case "invert":
         // Need rotation so invert produces visible change
-        return hasRotation(blue) || hasRotation(red);
+        return hasRotation(left) || hasRotation(right);
 
       case "rewind":
         // Need movement so rewind produces visible change
-        return hasMovement(blue) || hasMovement(red);
+        return hasMovement(left) || hasMovement(right);
 
       case "rotate":
         // Rotate always produces visible change
@@ -200,9 +200,9 @@ function filterForTransform(pictographs: PictographData[], transformId: Transfor
       case "swap":
         // Swap always produces visible change (colors switch)
         // But filter out symmetric patterns where blue and red are identical
-        return blue.startLocation !== red.startLocation ||
-               blue.endLocation !== red.endLocation ||
-               blue.rotationDirection !== red.rotationDirection;
+        return left.startLocation !== right.startLocation ||
+               left.endLocation !== right.endLocation ||
+               left.rotationDirection !== right.rotationDirection;
 
       default:
         return true;
@@ -225,7 +225,7 @@ export async function loadAllPictographs(): Promise<PictographData[]> {
       // Filter out any invalid pictographs (need both hands really there)
       cachedPictographs = pictographs.filter(
         (p: PictographData) =>
-          isVisibleMotion(p.motions?.blue) && isVisibleMotion(p.motions?.red)
+          isVisibleMotion(p.motions?.left) && isVisibleMotion(p.motions?.right)
       );
       return cachedPictographs;
     } catch (error) {
@@ -277,7 +277,7 @@ export async function getRandomPictographForTransform(
  */
 export interface SingleMotionExample {
   pictograph: PictographData;
-  visibleHand: "blue" | "red";
+  visibleHand: "left" | "right";
 }
 
 /**
@@ -325,17 +325,17 @@ export async function getRandomSingleMotionForTransform(
   const candidates: SingleMotionExample[] = [];
 
   for (const p of allPictographs) {
-    const blue = p.motions?.blue;
-    const red = p.motions?.red;
+    const left = p.motions?.left;
+    const right = p.motions?.right;
 
-    // Check blue motion
-    if (blue && isMotionSuitableForTransform(blue, transformId)) {
-      candidates.push({ pictograph: p, visibleHand: "blue" });
+    // Check left-hand motion.
+    if (left && isMotionSuitableForTransform(left, transformId)) {
+      candidates.push({ pictograph: p, visibleHand: "left" });
     }
 
-    // Check red motion (even if blue was added, both could be valid)
-    if (red && isMotionSuitableForTransform(red, transformId)) {
-      candidates.push({ pictograph: p, visibleHand: "red" });
+    // Check right-hand motion (both can be valid).
+    if (right && isMotionSuitableForTransform(right, transformId)) {
+      candidates.push({ pictograph: p, visibleHand: "right" });
     }
   }
 
@@ -345,7 +345,7 @@ export async function getRandomSingleMotionForTransform(
     const randomIndex = Math.floor(Math.random() * allPictographs.length);
     const fallback = allPictographs[randomIndex];
     if (!fallback) return null;
-    return { pictograph: fallback, visibleHand: "blue" };
+    return { pictograph: fallback, visibleHand: "left" };
   }
 
   const randomIndex = Math.floor(Math.random() * candidates.length);

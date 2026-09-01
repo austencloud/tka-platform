@@ -140,8 +140,8 @@
 	const showLoopGlyph = $derived(showVisibilitySettings ? localShowLoopGlyph : (globalImageExport?.showLoopGlyph ?? true));
 
 	// Prop type settings for PropAwareThumbnail
-	const bluePropType = $derived(settingsService.settings.bluePropType);
-	const redPropType = $derived(settingsService.settings.redPropType);
+	const leftPropType = $derived(settingsService.settings.leftPropType);
+	const rightPropType = $derived(settingsService.settings.rightPropType);
 	const catDogMode = $derived(settingsService.settings.catDogMode);
 
 	// Image settings toggle handlers
@@ -334,16 +334,16 @@
 							{showLoopGlyph}
 							{handPathMode}
 							{darkMode}
-							{bluePropType}
-							redPropType={catDogMode ? redPropType : bluePropType}
+							{leftPropType}
+							rightPropType={catDogMode ? rightPropType : leftPropType}
 							catDogModeEnabled={catDogMode}
 						/>
 					{:else}
 						<!-- Browse mode or no step data: Use cached composite images -->
 						<PropAwareThumbnail
 							{sequence}
-							{bluePropType}
-							redPropType={catDogMode ? redPropType : bluePropType}
+							{leftPropType}
+							rightPropType={catDogMode ? rightPropType : leftPropType}
 							catDogModeEnabled={catDogMode}
 							lightMode={!darkMode}
 							{addWord}

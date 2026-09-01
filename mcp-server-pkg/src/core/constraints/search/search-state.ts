@@ -74,7 +74,8 @@ export function extendState(
   const totalScores = newStepScores.slice(1); // Exclude start position
   const cumulativeScore =
     totalScores.length > 0
-      ? totalScores.reduce((sum, s) => sum + s.totalScore, 0) / totalScores.length
+      ? totalScores.reduce((sum, s) => sum + s.totalScore, 0) /
+        totalScores.length
       : 1.0;
 
   // Copy and extend bridge indices if this is a bridge
@@ -145,13 +146,23 @@ export function countReversals(state: SearchState): number {
     const curr = state.steps[i];
     if (!prev || !curr) continue;
 
-    // Check blue hand
-    if (isDirectionChange(prev.blueMotion.rotationDirection, curr.blueMotion.rotationDirection)) {
+    // Check left hand
+    if (
+      isDirectionChange(
+        prev.leftMotion.rotationDirection,
+        curr.leftMotion.rotationDirection
+      )
+    ) {
       reversals++;
     }
 
-    // Check red hand
-    if (isDirectionChange(prev.redMotion.rotationDirection, curr.redMotion.rotationDirection)) {
+    // Check right hand
+    if (
+      isDirectionChange(
+        prev.rightMotion.rotationDirection,
+        curr.rightMotion.rotationDirection
+      )
+    ) {
       reversals++;
     }
   }
@@ -160,13 +171,15 @@ export function countReversals(state: SearchState): number {
 }
 
 function isDirectionChange(prev: string, curr: string): boolean {
-  if (prev === "no_rot" || prev === "noRotation" || curr === "no_rot" || curr === "noRotation") {
+  if (
+    prev === "no_rot" ||
+    prev === "noRotation" ||
+    curr === "no_rot" ||
+    curr === "noRotation"
+  ) {
     return false;
   }
-  return (
-    (prev === "cw" && curr === "ccw") ||
-    (prev === "ccw" && curr === "cw")
-  );
+  return (prev === "cw" && curr === "ccw") || (prev === "ccw" && curr === "cw");
 }
 
 export function calculateContinuityPercentage(state: SearchState): number {
@@ -182,24 +195,34 @@ export function calculateContinuityPercentage(state: SearchState): number {
     const curr = state.steps[i];
     if (!prev || !curr) continue;
 
-    // Check blue hand
-    const blueStatic =
-      prev.blueMotion.motionType === "static" ||
-      curr.blueMotion.motionType === "static";
-    if (!blueStatic) {
+    // Check left hand
+    const leftStatic =
+      prev.leftMotion.motionType === "static" ||
+      curr.leftMotion.motionType === "static";
+    if (!leftStatic) {
       totalTransitions++;
-      if (!isDirectionChange(prev.blueMotion.rotationDirection, curr.blueMotion.rotationDirection)) {
+      if (
+        !isDirectionChange(
+          prev.leftMotion.rotationDirection,
+          curr.leftMotion.rotationDirection
+        )
+      ) {
         continuousTransitions++;
       }
     }
 
-    // Check red hand
-    const redStatic =
-      prev.redMotion.motionType === "static" ||
-      curr.redMotion.motionType === "static";
-    if (!redStatic) {
+    // Check right hand
+    const rightStatic =
+      prev.rightMotion.motionType === "static" ||
+      curr.rightMotion.motionType === "static";
+    if (!rightStatic) {
       totalTransitions++;
-      if (!isDirectionChange(prev.redMotion.rotationDirection, curr.redMotion.rotationDirection)) {
+      if (
+        !isDirectionChange(
+          prev.rightMotion.rotationDirection,
+          curr.rightMotion.rotationDirection
+        )
+      ) {
         continuousTransitions++;
       }
     }

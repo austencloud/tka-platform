@@ -13,7 +13,13 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { InlineQuiz, QuizOption, TextQuizOption, PictographQuizOption, MotionPatternQuizOption } from "../types";
+  import type {
+    InlineQuiz,
+    QuizOption,
+    TextQuizOption,
+    PictographQuizOption,
+    MotionPatternQuizOption,
+  } from "../types";
   import InlinePictograph from "./InlinePictograph.svelte";
 
   // Props
@@ -37,7 +43,7 @@
   const currentQuiz: InlineQuiz = $derived(
     currentQuestionIndex === 0
       ? quiz
-      : quiz.followUpQuizzes?.[currentQuestionIndex - 1] ?? quiz
+      : (quiz.followUpQuizzes?.[currentQuestionIndex - 1] ?? quiz)
   );
   const isCompact = $derived(
     currentQuiz.displayMode === "text" && currentQuiz.options.length === 3
@@ -55,7 +61,8 @@
   let advanceTimer: number | null = null;
 
   const _timer = window.setTimeout.bind(window);
-  const scheduleTimeout = (fn: () => void, ms: number): number => _timer(fn, ms);
+  const scheduleTimeout = (fn: () => void, ms: number): number =>
+    _timer(fn, ms);
 
   onMount(() => {
     return () => {
@@ -69,7 +76,9 @@
 
   $effect(() => {
     if (typeof window !== "undefined") {
-      prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
     }
   });
 
@@ -82,7 +91,9 @@
     return opt.type === "pictograph";
   }
 
-  function isMotionPatternOption(opt: QuizOption): opt is MotionPatternQuizOption {
+  function isMotionPatternOption(
+    opt: QuizOption
+  ): opt is MotionPatternQuizOption {
     return opt.type === "motion-pattern";
   }
 
@@ -109,7 +120,11 @@
         quizState = "incorrect";
       }
 
-      onQuizComplete?.(currentQuiz.id, currentQuiz.topic || currentQuiz.id, isCorrect);
+      onQuizComplete?.(
+        currentQuiz.id,
+        currentQuiz.topic || currentQuiz.id,
+        isCorrect
+      );
 
       // Auto-advance after 1.5s if in a multi-question session
       if (hasSession) {
@@ -162,11 +177,19 @@
       : 0
   );
   const scoreColorClass = $derived(
-    scorePercent >= 0.8 ? "score-good" : scorePercent >= 0.6 ? "score-ok" : "score-poor"
+    scorePercent >= 0.8
+      ? "score-good"
+      : scorePercent >= 0.6
+        ? "score-ok"
+        : "score-poor"
   );
 </script>
 
-<figure class="inline-quiz" role="group" aria-labelledby="quiz-question-{currentQuiz.id}">
+<figure
+  class="inline-quiz"
+  role="group"
+  aria-labelledby="quiz-question-{currentQuiz.id}"
+>
   {#if sessionComplete}
     <!-- Session Summary -->
     <div class="session-summary" role="status" aria-live="polite">
@@ -174,11 +197,23 @@
         {sessionResults.filter(Boolean).length}/{sessionResults.length}
       </div>
       <p class="summary-label">
-        {scorePercent >= 0.8 ? "Nice work!" : scorePercent >= 0.6 ? "Getting there." : "Keep practicing."}
+        {scorePercent >= 0.8
+          ? "Nice work!"
+          : scorePercent >= 0.6
+            ? "Getting there."
+            : "Keep practicing."}
       </p>
-      <div class="summary-dots" aria-label="Results: {sessionResults.map((r, i) => `Question ${i + 1}: ${r ? 'correct' : 'incorrect'}`).join(', ')}">
+      <div
+        class="summary-dots"
+        aria-label="Results: {sessionResults
+          .map((r, i) => `Question ${i + 1}: ${r ? 'correct' : 'incorrect'}`)
+          .join(', ')}"
+      >
         {#each sessionResults as result, i}
-          <span class="summary-dot {result ? 'correct' : 'incorrect'}" aria-hidden="true"></span>
+          <span
+            class="summary-dot {result ? 'correct' : 'incorrect'}"
+            aria-hidden="true"
+          ></span>
         {/each}
       </div>
       <button class="restart-button" onclick={restartSession}>
@@ -188,12 +223,18 @@
   {:else}
     <!-- Progress indicator for multi-question sessions -->
     {#if hasSession}
-      <div class="session-progress" aria-label="Question {currentQuestionIndex + 1} of {totalQuestions}">
-        <span class="progress-label">Question {currentQuestionIndex + 1} of {totalQuestions}</span>
+      <div
+        class="session-progress"
+        aria-label="Question {currentQuestionIndex + 1} of {totalQuestions}"
+      >
+        <span class="progress-label"
+          >Question {currentQuestionIndex + 1} of {totalQuestions}</span
+        >
         <div class="progress-track">
           <div
             class="progress-fill"
-            style="width: {((currentQuestionIndex + 1) / totalQuestions) * 100}%"
+            style="width: {((currentQuestionIndex + 1) / totalQuestions) *
+              100}%"
           ></div>
         </div>
       </div>
@@ -240,7 +281,8 @@
       >
         {#each currentQuiz.options as option (option.id)}
           {#if isPictographOption(option)}
-            <button aria-label="Letter {option.letter}"
+            <button
+              aria-label="Letter {option.letter}"
               class="quiz-pictograph-option {getOptionClass(option)}"
               onclick={() => selectOption(option)}
               onkeydown={(e) => handleKeydown(e, option)}
@@ -272,7 +314,6 @@
           {/if}
         {/each}
       </div>
-
     {:else if currentQuiz.displayMode === "motion-chips"}
       <!-- Motion Pattern Chips Display -->
       <div
@@ -282,7 +323,8 @@
       >
         {#each currentQuiz.options as option (option.id)}
           {#if isMotionPatternOption(option)}
-            <button aria-label="Blue {option.blueMotion}, Red {option.redMotion}"
+            <button
+              aria-label="Left {option.leftMotion}, Right {option.rightMotion}"
               class="quiz-motion-chip {getOptionClass(option)}"
               onclick={() => selectOption(option)}
               onkeydown={(e) => handleKeydown(e, option)}
@@ -292,12 +334,12 @@
             >
               <span class="motion-blue">
                 <span class="motion-dot blue"></span>
-                {option.blueMotion}
+                {option.leftMotion}
               </span>
               <span class="motion-separator">+</span>
               <span class="motion-red">
                 <span class="motion-dot red"></span>
-                {option.redMotion}
+                {option.rightMotion}
               </span>
               {#if quizState !== "unanswered"}
                 <span class="chip-indicator" aria-hidden="true">
@@ -312,7 +354,6 @@
           {/if}
         {/each}
       </div>
-
     {:else}
       <!-- Text Options Display (default) -->
       <div
@@ -322,7 +363,8 @@
       >
         {#each currentQuiz.options as option, index (option.id)}
           {#if isTextOption(option)}
-            <button aria-label={option.text}
+            <button
+              aria-label={option.text}
               class="quiz-option {getOptionClass(option)}"
               onclick={() => selectOption(option)}
               onkeydown={(e) => handleKeydown(e, option)}
@@ -354,11 +396,7 @@
 
     <!-- Feedback -->
     {#if quizState === "correct" || quizState === "incorrect"}
-      <div
-        class="quiz-feedback {quizState}"
-        role="status"
-        aria-live="polite"
-      >
+      <div class="quiz-feedback {quizState}" role="status" aria-live="polite">
         <div class="feedback-header">
           {#if quizState === "correct"}
             <span class="feedback-icon correct" aria-hidden="true">
@@ -373,7 +411,9 @@
           {/if}
         </div>
         <p class="feedback-message">
-          {quizState === "correct" ? currentQuiz.correctFeedback : currentQuiz.incorrectFeedback}
+          {quizState === "correct"
+            ? currentQuiz.correctFeedback
+            : currentQuiz.incorrectFeedback}
         </p>
         {#if currentQuiz.explanation && quizState === "incorrect"}
           <p class="feedback-explanation">{currentQuiz.explanation}</p>
@@ -385,7 +425,10 @@
     {#if showConfetti}
       <div class="confetti-container" aria-hidden="true">
         {#each Array(8) as _, i}
-          <span class="confetti" style="--delay: {i * 0.1}s; --x: {(i - 4) * 15}px;"></span>
+          <span
+            class="confetti"
+            style="--delay: {i * 0.1}s; --x: {(i - 4) * 15}px;"
+          ></span>
         {/each}
       </div>
     {/if}
@@ -560,7 +603,11 @@
 
   .quiz-pictograph-option:hover:not(:disabled) {
     border-color: var(--theme-accent, #6366f1);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 10%,
+      transparent
+    );
   }
 
   .quiz-pictograph-option:focus-visible {
@@ -610,13 +657,21 @@
 
   .quiz-pictograph-option.correct {
     border-color: var(--semantic-success, #22c55e);
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 15%,
+      transparent
+    );
     animation: pulse-correct 0.3s ease;
   }
 
   .quiz-pictograph-option.incorrect {
     border-color: var(--semantic-error, #ef4444);
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 15%,
+      transparent
+    );
     animation: shake 0.3s ease;
   }
 
@@ -665,7 +720,8 @@
     cursor: default;
   }
 
-  .motion-blue, .motion-red {
+  .motion-blue,
+  .motion-red {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -697,7 +753,11 @@
 
   .quiz-motion-chip.correct {
     border-color: var(--semantic-success, #22c55e);
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 15%,
+      transparent
+    );
     animation: pulse-correct 0.3s ease;
   }
 
@@ -707,7 +767,11 @@
 
   .quiz-motion-chip.incorrect {
     border-color: var(--semantic-error, #ef4444);
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 15%,
+      transparent
+    );
     animation: shake 0.3s ease;
   }
 
@@ -806,12 +870,20 @@
 
   .quiz-option.selected {
     border-color: var(--theme-accent, #6366f1);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 10%,
+      transparent
+    );
   }
 
   .quiz-option.correct {
     border-color: var(--semantic-success, #22c55e);
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 15%,
+      transparent
+    );
     animation: pulse-correct 0.3s ease;
   }
 
@@ -826,7 +898,11 @@
 
   .quiz-option.incorrect {
     border-color: var(--semantic-error, #ef4444);
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 15%,
+      transparent
+    );
     animation: shake 0.3s ease;
   }
 
@@ -854,13 +930,23 @@
   }
 
   .quiz-feedback.correct {
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 10%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 10%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
   }
 
   .quiz-feedback.incorrect {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 10%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
   }
 
   .feedback-header {
@@ -924,33 +1010,68 @@
     animation-delay: var(--delay);
   }
 
-  .confetti:nth-child(1) { background: var(--semantic-success, #22c55e); }
-  .confetti:nth-child(2) { background: var(--theme-accent, #6366f1); }
-  .confetti:nth-child(3) { background: var(--semantic-warning, #f59e0b); }
-  .confetti:nth-child(4) { background: var(--semantic-error, #ec4899); }
-  .confetti:nth-child(5) { background: var(--semantic-success, #22c55e); }
-  .confetti:nth-child(6) { background: var(--theme-accent, #6366f1); }
-  .confetti:nth-child(7) { background: var(--semantic-warning, #f59e0b); }
-  .confetti:nth-child(8) { background: var(--semantic-error, #ec4899); }
+  .confetti:nth-child(1) {
+    background: var(--semantic-success, #22c55e);
+  }
+  .confetti:nth-child(2) {
+    background: var(--theme-accent, #6366f1);
+  }
+  .confetti:nth-child(3) {
+    background: var(--semantic-warning, #f59e0b);
+  }
+  .confetti:nth-child(4) {
+    background: var(--semantic-error, #ec4899);
+  }
+  .confetti:nth-child(5) {
+    background: var(--semantic-success, #22c55e);
+  }
+  .confetti:nth-child(6) {
+    background: var(--theme-accent, #6366f1);
+  }
+  .confetti:nth-child(7) {
+    background: var(--semantic-warning, #f59e0b);
+  }
+  .confetti:nth-child(8) {
+    background: var(--semantic-error, #ec4899);
+  }
 
   /* ═══════════════════════════════════════════════════════════════════════════
      Animations
      ═══════════════════════════════════════════════════════════════════════════ */
   @keyframes pulse-correct {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.02);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
 
   @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-3px); }
-    75% { transform: translateX(3px); }
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-3px);
+    }
+    75% {
+      transform: translateX(3px);
+    }
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   @keyframes confetti-fall {

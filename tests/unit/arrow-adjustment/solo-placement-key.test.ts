@@ -3,7 +3,7 @@ import { generatePlacementKey } from "$lib/shared/pictograph/arrow/positioning/k
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -16,7 +16,7 @@ const AVAILABLE_KEYS = [
   "static",
 ];
 
-function staticMotion(color: MotionColor) {
+function staticMotion(color: HandSide) {
   return createMotionData({
     motionType: MotionType.STATIC,
     rotationDirection: RotationDirection.NO_ROTATION,
@@ -25,27 +25,27 @@ function staticMotion(color: MotionColor) {
     startOrientation: Orientation.IN,
     endOrientation: Orientation.IN,
     turns: 0,
-    color,
+    hand: color,
   });
 }
 
 describe("solo arrow placement keys", () => {
-  const blue = staticMotion(MotionColor.BLUE);
-  const red = staticMotion(MotionColor.RED);
+  const left = staticMotion(HandSide.LEFT);
+  const right = staticMotion(HandSide.RIGHT);
 
   it("resolves an invisible placeholder exactly like an absent partner", () => {
     const absentPartner: PictographData = {
       id: "solo-absent",
-      motions: { blue },
+      motions: { left },
     };
     const placeholderPartner: PictographData = {
       id: "solo-placeholder",
-      motions: { blue, red: { ...red, isVisible: false } },
+      motions: { left, right: { ...right, isVisible: false } },
     };
 
-    const absentKey = generatePlacementKey(blue, absentPartner, AVAILABLE_KEYS);
+    const absentKey = generatePlacementKey(left, absentPartner, AVAILABLE_KEYS);
     const placeholderKey = generatePlacementKey(
-      blue,
+      left,
       placeholderPartner,
       AVAILABLE_KEYS
     );
@@ -58,10 +58,10 @@ describe("solo arrow placement keys", () => {
     const paired: PictographData = {
       id: "paired-beta",
       letter: "G" as PictographData["letter"],
-      motions: { blue, red },
+      motions: { left, right },
     };
 
-    expect(generatePlacementKey(blue, paired, AVAILABLE_KEYS)).toBe(
+    expect(generatePlacementKey(left, paired, AVAILABLE_KEYS)).toBe(
       "static_to_layer1_beta"
     );
   });
