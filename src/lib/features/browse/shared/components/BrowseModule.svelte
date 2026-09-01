@@ -553,6 +553,7 @@
           );
           if (sequence) {
             openSequenceViewer(sequence, {
+              source: "browse_gallery",
               returnPath: "/browse/explore/sequences",
               returnLabel: "Browse",
             });

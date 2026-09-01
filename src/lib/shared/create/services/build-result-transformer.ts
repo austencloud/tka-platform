@@ -34,7 +34,7 @@ import {
   MotionType,
   RotationDirection,
   Orientation,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   GridLocation,
@@ -77,8 +77,8 @@ export class BuildResultTransformer {
       stepsGenerated: steps.length,
       propContinuity:
         options.propContinuity ?? PropContinuity.CONTINUOUS,
-      blueRotationDirection: "",
-      redRotationDirection: "",
+      leftRotationDirection: "",
+      rightRotationDirection: "",
       turnIntensity: options.turnIntensity ?? 1,
       level,
     });
@@ -138,8 +138,8 @@ export class BuildResultTransformer {
     stepNumber: number,
     options: GenerationOptions
   ): StepData {
-    const blueMotion = this.mapMotion(step.motions.blue, MotionColor.BLUE, options);
-    const redMotion = this.mapMotion(step.motions.red, MotionColor.RED, options);
+    const leftMotion = this.mapMotion(step.motions.left, HandSide.LEFT, options);
+    const rightMotion = this.mapMotion(step.motions.right, HandSide.RIGHT, options);
 
     return {
       id: `step-${stepNumber}-${Date.now()}`,
@@ -147,14 +147,14 @@ export class BuildResultTransformer {
       startPosition: (step.startPosition || null) as GridPosition | null,
       endPosition: (step.endPosition || null) as GridPosition | null,
       motions: {
-        [MotionColor.BLUE]: blueMotion,
-        [MotionColor.RED]: redMotion,
+        [HandSide.LEFT]: leftMotion,
+        [HandSide.RIGHT]: rightMotion,
       },
       gridMode: options.gridMode,
       stepNumber,
       duration: 1,
-      blueReversal: false, // Set by ReversalDetector later
-      redReversal: false,
+      leftReversal: false, // Set by ReversalDetector later
+      rightReversal: false,
       isBlank: false,
     };
   }
@@ -170,26 +170,26 @@ export class BuildResultTransformer {
     const gridPosition = (step.endPosition || step.startPosition || null) as GridPosition | null;
 
     // For start positions, motions should be static (props are held in place)
-    const blueMotion = createMotionData({
-      motionType: this.toMotionType(step.motions.blue.motionType),
-      rotationDirection: this.toRotationDirection(step.motions.blue.rotationDirection),
-      startLocation: this.toGridLocation(step.motions.blue.startLocation),
-      endLocation: this.toGridLocation(step.motions.blue.endLocation),
-      startOrientation: this.toOrientation(step.motions.blue.startOrientation),
-      endOrientation: this.toOrientation(step.motions.blue.endOrientation),
-      turns: step.motions.blue.turns ?? 0,
-      color: MotionColor.BLUE,
+    const leftMotion = createMotionData({
+      motionType: this.toMotionType(step.motions.left.motionType),
+      rotationDirection: this.toRotationDirection(step.motions.left.rotationDirection),
+      startLocation: this.toGridLocation(step.motions.left.startLocation),
+      endLocation: this.toGridLocation(step.motions.left.endLocation),
+      startOrientation: this.toOrientation(step.motions.left.startOrientation),
+      endOrientation: this.toOrientation(step.motions.left.endOrientation),
+      turns: step.motions.left.turns ?? 0,
+      hand: HandSide.LEFT,
     });
 
-    const redMotion = createMotionData({
-      motionType: this.toMotionType(step.motions.red.motionType),
-      rotationDirection: this.toRotationDirection(step.motions.red.rotationDirection),
-      startLocation: this.toGridLocation(step.motions.red.startLocation),
-      endLocation: this.toGridLocation(step.motions.red.endLocation),
-      startOrientation: this.toOrientation(step.motions.red.startOrientation),
-      endOrientation: this.toOrientation(step.motions.red.endOrientation),
-      turns: step.motions.red.turns ?? 0,
-      color: MotionColor.RED,
+    const rightMotion = createMotionData({
+      motionType: this.toMotionType(step.motions.right.motionType),
+      rotationDirection: this.toRotationDirection(step.motions.right.rotationDirection),
+      startLocation: this.toGridLocation(step.motions.right.startLocation),
+      endLocation: this.toGridLocation(step.motions.right.endLocation),
+      startOrientation: this.toOrientation(step.motions.right.startOrientation),
+      endOrientation: this.toOrientation(step.motions.right.endOrientation),
+      turns: step.motions.right.turns ?? 0,
+      hand: HandSide.RIGHT,
     });
 
     return {
@@ -200,8 +200,8 @@ export class BuildResultTransformer {
       startPosition: gridPosition,
       endPosition: gridPosition,
       motions: {
-        [MotionColor.BLUE]: blueMotion,
-        [MotionColor.RED]: redMotion,
+        [HandSide.LEFT]: leftMotion,
+        [HandSide.RIGHT]: rightMotion,
       },
     };
   }
@@ -212,7 +212,7 @@ export class BuildResultTransformer {
    */
   private mapMotion(
     engineMotion: EngineMotionData,
-    color: MotionColor,
+    color: HandSide,
     options: GenerationOptions
   ): AppMotionData {
     return createMotionData({
@@ -223,7 +223,7 @@ export class BuildResultTransformer {
       startOrientation: this.toOrientation(engineMotion.startOrientation),
       endOrientation: this.toOrientation(engineMotion.endOrientation),
       turns: engineMotion.turns ?? 0,
-      color,
+      hand: color,
       gridMode: options.gridMode,
       ...(engineMotion.prefloatMotionType && {
         prefloatMotionType: this.toMotionType(engineMotion.prefloatMotionType),

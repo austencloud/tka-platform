@@ -13,10 +13,10 @@ type Turns = number | "fl";
 
 function sequence(...turnPairs: Array<readonly [Turns, Turns]>) {
   return {
-    steps: turnPairs.map(([blueTurns, redTurns]) => ({
+    steps: turnPairs.map(([leftTurns, rightTurns]) => ({
       motions: {
-        blue: { turns: blueTurns },
-        red: { turns: redTurns },
+        left: { turns: leftTurns },
+        right: { turns: rightTurns },
       },
     })),
   } as unknown as Pick<SequenceData, "steps">;
@@ -44,8 +44,8 @@ describe("scan playback tempo", () => {
       steps: [
         {
           motions: {
-            blue: { turns: 6, isVisible: false },
-            red: { turns: 2, isVisible: true },
+            left: { turns: 6, isVisible: false },
+            right: { turns: 2, isVisible: true },
           },
         },
       ],

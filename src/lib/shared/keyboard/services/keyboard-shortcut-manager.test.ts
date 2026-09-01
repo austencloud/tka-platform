@@ -3,6 +3,16 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { KeyboardShortcutManager } from "./keyboard-shortcut-manager";
 import { ShortcutRegistry } from "./shortcut-registry";
 
+const analytics = vi.hoisted(() => ({
+  executed: vi.fn(),
+  failed: vi.fn(),
+}));
+
+vi.mock("$lib/shared/keyboard/keyboard-shortcut-analytics", () => ({
+  logKeyboardShortcutExecuted: analytics.executed,
+  logKeyboardShortcutFailed: analytics.failed,
+}));
+
 /**
  * Minimal registry stub. handleKeydown's suppressor check runs before any
  * registry call, so a suppressed event must never reach findMatches — that is
@@ -25,6 +35,8 @@ describe("KeyboardShortcutManager.addInputSuppressor", () => {
   afterEach(() => {
     dispose?.();
     dispose = null;
+    analytics.executed.mockReset();
+    analytics.failed.mockReset();
   });
 
   it("skips shortcut matching for suppressed events", () => {
@@ -95,6 +107,7 @@ describe("KeyboardShortcutManager.addInputSuppressor", () => {
       new KeyboardEvent("keydown", { key: "?", shiftKey: true })
     );
     expect(action).toHaveBeenCalledOnce();
+    analytics.executed.mockClear();
 
     const input = document.createElement("input");
     document.body.append(input);
@@ -106,6 +119,7 @@ describe("KeyboardShortcutManager.addInputSuppressor", () => {
       })
     );
     expect(action).toHaveBeenCalledOnce();
+    expect(analytics.executed).not.toHaveBeenCalled();
     input.remove();
   });
 
@@ -130,5 +144,70 @@ describe("KeyboardShortcutManager.addInputSuppressor", () => {
     );
 
     expect(action).toHaveBeenCalledTimes(2);
+  });
+
+  it("tracks only a registered shortcut that actually executes", () => {
+    const action = vi.fn();
+    const manager = new KeyboardShortcutManager(new ShortcutRegistry());
+    dispose = () => manager.dispose();
+    manager.register({
+      id: "create.transform-mirror",
+      label: "Mirror",
+      key: "m",
+      modifiers: ["alt"],
+      context: "create",
+      scope: "sequence-management",
+      action,
+    });
+    manager.setContext("create");
+    manager.initialize();
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "q" }));
+    expect(analytics.executed).not.toHaveBeenCalled();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "m", altKey: true })
+    );
+
+    expect(action).toHaveBeenCalledOnce();
+    expect(analytics.executed).toHaveBeenCalledWith({
+      shortcutId: "create.transform-mirror",
+      context: "create",
+      scope: "sequence-management",
+      key: "m",
+      modifiers: ["alt"],
+      isSingleKey: false,
+    });
+  });
+
+  it("tracks a shortcut action that rejects", async () => {
+    const failure = new TypeError("transform failed");
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const manager = new KeyboardShortcutManager(new ShortcutRegistry());
+    dispose = () => manager.dispose();
+    manager.register({
+      id: "create.transform-flip",
+      label: "Flip",
+      key: "v",
+      modifiers: ["alt"],
+      context: "create",
+      scope: "sequence-management",
+      action: () => Promise.reject(failure),
+    });
+    manager.setContext("create");
+    manager.initialize();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "v", altKey: true })
+    );
+    await vi.waitFor(() => {
+      expect(analytics.failed).toHaveBeenCalledWith(
+        expect.objectContaining({ shortcutId: "create.transform-flip" }),
+        failure
+      );
+    });
+    consoleError.mockRestore();
   });
 });

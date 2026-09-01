@@ -19,18 +19,22 @@
    */
 
   import { useThrelte, useTask } from "@threlte/core";
-  import { onDestroy, untrack } from "svelte";
+  import { onDestroy } from "svelte";
   import { tryGetViewer3DContext } from "../context/viewer-3d-context";
   import { Vector3, Object3D, Matrix3, type Camera } from "three";
   import Trail3D from "./trails/Trail3D.svelte";
   import EffectsLayer from "./EffectsLayer.svelte";
   import { LedRenderer3D, type LedTipInput } from "./led/led-renderer-3d";
   import {
+    MOON_FAN_LED_COUNT,
+    MoonFanDiffuserRenderer3D,
+    moonFanZoneSampleIndices,
+  } from "./led/moon-fan-diffuser-renderer-3d";
+  import {
     CharcoalRenderer3D,
     type CharcoalTipInput,
   } from "./charcoal/charcoal-renderer-3d";
   import { FireRenderer3D, type FireTipInput } from "./fire/fire-renderer-3d";
-  import { DynamicLightManager } from "./lighting/dynamic-light-manager";
   import {
     resolveRigLocalPropCenter3D,
     resolveTrailSources3D,
@@ -49,12 +53,7 @@
     type TipEffectMap,
     type EffectType,
   } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
-  import {
-    TIER_CONFIGS,
-    type QualityTier,
-    type QualityTierConfig,
-    type TipPositionData3D,
-  } from "./types";
+  import { type QualityTier, type TipPositionData3D } from "./types";
   import {
     PROP_COLORS,
     PropType,
@@ -109,10 +108,10 @@
   }
 
   interface Props {
-    bluePropState: PropState3D | null;
-    redPropState: PropState3D | null;
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropState: PropState3D | null;
+    rightPropState: PropState3D | null;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
     isPlaying: boolean;
     staffHalfLength?: number;
     propBuild?: PropBuild;
@@ -129,9 +128,9 @@
     tipEffectMap?: TipEffectMap;
     globalTipEffectMap?: TipEffectMap;
     /** Rig-local hand position for blue prop (from PerformerRig HandAnchor). y is always 0. */
-    blueHandPos?: { x: number; z: number };
+    leftHandPos?: { x: number; z: number };
     /** Rig-local hand position for red prop (from PerformerRig HandAnchor). y is always 0. */
-    redHandPos?: { x: number; z: number };
+    rightHandPos?: { x: number; z: number };
     /** Parent Object3D to add imperative meshes to (rig group). Falls back to scene root. */
     effectsParentRef?: Object3D;
     /** Explicit manager for viewers that lazy-load the effects runtime. */
@@ -153,10 +152,10 @@
   }
 
   let {
-    bluePropState,
-    redPropState,
-    bluePropType = PropType.STAFF,
-    redPropType = PropType.STAFF,
+    leftPropState,
+    rightPropState,
+    leftPropType = PropType.STAFF,
+    rightPropType = PropType.STAFF,
     isPlaying,
     staffHalfLength = 0.5,
     propBuild: propBuildOverride,
@@ -165,8 +164,8 @@
     seamlesslyLoopable = false,
     tipEffectMap,
     globalTipEffectMap = {},
-    blueHandPos = { x: 0, z: 0 },
-    redHandPos = { x: 0, z: 0 },
+    leftHandPos = { x: 0, z: 0 },
+    rightHandPos = { x: 0, z: 0 },
     effectsParentRef,
     sceneEffectsManagerOverride = null,
     qualityTierOverride,
@@ -190,13 +189,13 @@
    * club. Iterating a hardcoded four would light effects for ends that do not
    * exist on the prop in hand.
    */
-  const blueTipSlots = $derived(
-    resolvePropTipAnchors3D(bluePropType, staffHalfLength, propBuild).map(
+  const leftTipSlots = $derived(
+    resolvePropTipAnchors3D(leftPropType, staffHalfLength, propBuild).map(
       (anchor) => anchor.effectTipIndex
     )
   );
-  const redTipSlots = $derived(
-    resolvePropTipAnchors3D(redPropType, staffHalfLength, propBuild).map(
+  const rightTipSlots = $derived(
+    resolvePropTipAnchors3D(rightPropType, staffHalfLength, propBuild).map(
       (anchor) => anchor.effectTipIndex
     )
   );
@@ -211,10 +210,10 @@
    */
   const layerActiveEffects = $derived([
     ...new Set([
-      ...blueTipSlots.map((tipIndex) =>
+      ...leftTipSlots.map((tipIndex) =>
         resolveEffect(0, tipIndex, tipEffectMap, globalTipEffectMap ?? {})
       ),
-      ...redTipSlots.map((tipIndex) =>
+      ...rightTipSlots.map((tipIndex) =>
         resolveEffect(1, tipIndex, tipEffectMap, globalTipEffectMap ?? {})
       ),
     ]),
@@ -246,6 +245,8 @@
   const resolvedAnimal = $derived(resolveAnimal3D(effectsState.animal));
   const resolvedPulse = $derived(resolvePulse3D(effectsState.pulse));
   const resolvedBloom = $derived(resolveBloom3D(effectsState.bloom));
+  const resolvedFire = $derived(resolveFire3D(effectsState.fire));
+  const resolvedCharcoal = $derived(resolveCharcoal3D(effectsState.charcoal));
 
   const pooledFrame: SceneEffectRigFrame3D = { playing: false, sources: [] };
   const pooledSources: Array<SceneEffectTipSource3D | null> = [
@@ -259,8 +260,8 @@
   const pooledPosition = new Vector3();
   const pooledVelocity = new Vector3();
   const pooledLinearTransform = new Matrix3();
-  let blueEffectTips = $state.raw<readonly TipPositionData3D[]>([]);
-  let redEffectTips = $state.raw<readonly TipPositionData3D[]>([]);
+  let leftEffectTips = $state.raw<readonly TipPositionData3D[]>([]);
+  let rightEffectTips = $state.raw<readonly TipPositionData3D[]>([]);
 
   function publishPooledTip(
     propIndex: 0 | 1,
@@ -279,7 +280,9 @@
       effect !== "silk" &&
       effect !== "animal" &&
       effect !== "pulse" &&
-      effect !== "bloom"
+      effect !== "bloom" &&
+      effect !== "fire" &&
+      effect !== "charcoal"
     )
       return;
 
@@ -294,6 +297,8 @@
         velocity: { x: 0, y: 0, z: 0 },
         speed: 0,
         currentStep,
+        totalSteps,
+        seamlesslyLoopable,
         propColor:
           propIndex === 0 ? PROP_COLORS.blue.main : PROP_COLORS.red.main,
       };
@@ -343,6 +348,26 @@
             qualityTier,
           };
           break;
+        case "fire":
+          source = {
+            ...base,
+            effect,
+            params: resolvedFire,
+            qualityTier,
+            jerk: 0,
+          };
+          break;
+        case "charcoal":
+          source = {
+            ...base,
+            effect,
+            params: resolvedCharcoal,
+            qualityTier,
+            jerk: 0,
+            totalSteps,
+            collisionFloorY: userProportionsState.groundY,
+          };
+          break;
       }
       pooledSources[slot] = source;
     }
@@ -381,6 +406,20 @@
         source.params = resolvedBloom;
         source.qualityTier = qualityTier;
         break;
+      case "fire":
+        source.params = resolvedFire;
+        source.qualityTier = qualityTier;
+        source.jerk = Math.hypot(tip.jerk.x, tip.jerk.y, tip.jerk.z);
+        break;
+      case "charcoal":
+        source.params = resolvedCharcoal;
+        source.qualityTier = qualityTier;
+        source.jerk = Math.hypot(tip.jerk.x, tip.jerk.y, tip.jerk.z);
+        source.totalSteps = totalSteps;
+        pooledPosition.set(0, userProportionsState.groundY, 0);
+        if (effectsParentRef) effectsParentRef.localToWorld(pooledPosition);
+        source.collisionFloorY = pooledPosition.y;
+        break;
     }
 
     pooledPosition.set(tip.position.x, tip.position.y, tip.position.z);
@@ -397,14 +436,22 @@
     source.velocity.z = pooledVelocity.z;
     source.speed = pooledVelocity.length();
     source.currentStep = currentStep;
+    source.totalSteps = totalSteps;
+    source.seamlesslyLoopable = seamlesslyLoopable;
     source.propColor =
-      propIndex === 0 ? PROP_COLORS.blue.main : PROP_COLORS.red.main;
+      propIndex === 0
+        ? PROP_COLORS.blue.main
+        : source.effect === "fire"
+          ? "#ff2410"
+          : PROP_COLORS.red.main;
     pooledFrame.sources.push(source);
   }
 
   // LED renderers managed directly (bypasses Svelte prop propagation timing)
-  let blueLedRenderer: LedRenderer3D | null = null;
-  let redLedRenderer: LedRenderer3D | null = null;
+  let leftLedRenderer: LedRenderer3D | null = null;
+  let rightLedRenderer: LedRenderer3D | null = null;
+  let leftMoonDiffuser: MoonFanDiffuserRenderer3D | null = null;
+  let rightMoonDiffuser: MoonFanDiffuserRenderer3D | null = null;
 
   // Charcoal renderer (single instance - all tips share one particle pool)
   let charcoalRenderer: CharcoalRenderer3D | null = null;
@@ -413,24 +460,24 @@
   let fireRenderer: FireRenderer3D | null = null;
 
   // POV strip renderers - the pixel-staff device's renderer
-  let bluePovRenderer: PovStripRenderer3D | null = null;
-  let redPovRenderer: PovStripRenderer3D | null = null;
+  let leftPovRenderer: PovStripRenderer3D | null = null;
+  let rightPovRenderer: PovStripRenderer3D | null = null;
   let rendererQualityTier = qualityTier;
 
   function syncRendererQuality(parent: Object3D): void {
     const nextTier = qualityTier;
     if (nextTier === rendererQualityTier) return;
 
-    blueLedRenderer?.setQualityTier(nextTier);
-    redLedRenderer?.setQualityTier(nextTier);
+    leftLedRenderer?.setQualityTier(nextTier);
+    rightLedRenderer?.setQualityTier(nextTier);
 
-    if (bluePovRenderer) {
-      bluePovRenderer.setQualityTier(nextTier);
-      bluePovRenderer.initialize(parent);
+    if (leftPovRenderer) {
+      leftPovRenderer.setQualityTier(nextTier);
+      leftPovRenderer.initialize(parent);
     }
-    if (redPovRenderer) {
-      redPovRenderer.setQualityTier(nextTier);
-      redPovRenderer.initialize(parent);
+    if (rightPovRenderer) {
+      rightPovRenderer.setQualityTier(nextTier);
+      rightPovRenderer.initialize(parent);
     }
 
     if (charcoalRenderer) {
@@ -456,16 +503,20 @@
   function syncLedDevice(kind: string, ledCount: number): void {
     const key = `${kind}:${ledCount}`;
     if (key === _ledDeviceKey) return;
+    const previousKey = _ledDeviceKey;
     _ledDeviceKey = key;
 
-    blueLedRenderer?.dispose();
-    blueLedRenderer = null;
-    redLedRenderer?.dispose();
-    redLedRenderer = null;
-    bluePovRenderer?.dispose();
-    bluePovRenderer = null;
-    redPovRenderer?.dispose();
-    redPovRenderer = null;
+    // Capsule renderers and their ribbon buffers stay warm across device
+    // switches. POV buffers depend on the authored LED count, so only that
+    // family is rebuilt when its capacity actually changes.
+    leftLedRenderer?.reset();
+    rightLedRenderer?.reset();
+    if (previousKey && previousKey !== key) {
+      leftPovRenderer?.dispose();
+      leftPovRenderer = null;
+      rightPovRenderer?.dispose();
+      rightPovRenderer = null;
+    }
     _ledPrevPositions.clear();
   }
 
@@ -554,32 +605,10 @@
     low: 1,
   };
 
-  // Reactive so it responds to runtime tier changes (e.g. user override or
-  // auto-downgrade after frame budget miss).
-  const tierConfig: QualityTierConfig = $derived(TIER_CONFIGS[qualityTier]);
-
-  // A light pool is only useful to Trail3D. Constructing one for every rig
-  // preallocated hundreds of invisible PointLights on the all-effects grid.
-  let lightManager = $state.raw<DynamicLightManager | null>(null);
-
-  $effect(() => {
-    const needsDynamicLights = layerActiveEffects.includes("trails");
-    const parent = effectsParentRef ?? scene;
-    const cfg = tierConfig;
-
-    // `untrack` keeps the manager assignment from becoming its own dependency.
-    untrack(() => {
-      lightManager?.dispose();
-      lightManager = needsDynamicLights
-        ? new DynamicLightManager(parent, cfg)
-        : null;
-    });
-  });
-
   // Trail sources are selected from the canonical tracking mode each frame.
   // Stable source IDs prevent a mode switch from connecting two unrelated paths.
-  let blueTrailData = $state<TrailDatum[]>([]);
-  let redTrailData = $state<TrailDatum[]>([]);
+  let leftTrailData = $state<TrailDatum[]>([]);
+  let rightTrailData = $state<TrailDatum[]>([]);
 
   function getTrailData(
     propIndex: number,
@@ -608,10 +637,37 @@
 
   // Mutable arrays for effect tips - updated directly in useTask, read by
   // renderers in the SAME frame tick (bypasses Svelte's batched prop updates).
-  const blueLedTips: LedTipInput[] = [];
-  const redLedTips: LedTipInput[] = [];
+  const leftLedTips: LedTipInput[] = [];
+  const rightLedTips: LedTipInput[] = [];
   const charcoalTips: CharcoalTipInput[] = [];
   const fireTips: FireTipInput[] = [];
+  let interactiveRenderersPrepared = false;
+
+  function prepareInteractiveRenderers(
+    parent: Object3D,
+    ledDeviceKind: string,
+    ledCount: number
+  ): void {
+    if (!interactiveRenderersPrepared) {
+      leftLedRenderer = new LedRenderer3D(qualityTier);
+      rightLedRenderer = new LedRenderer3D(qualityTier);
+      leftLedRenderer.initialize(parent);
+      rightLedRenderer.initialize(parent);
+      leftLedRenderer.primeTipCapacity(2);
+      rightLedRenderer.primeTipCapacity(2);
+      leftMoonDiffuser = new MoonFanDiffuserRenderer3D();
+      rightMoonDiffuser = new MoonFanDiffuserRenderer3D();
+      leftMoonDiffuser.initialize(parent);
+      rightMoonDiffuser.initialize(parent);
+      interactiveRenderersPrepared = true;
+    }
+    if (ledDeviceKind === "pixel-staff" && !leftPovRenderer) {
+      leftPovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
+      rightPovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
+      leftPovRenderer.initialize(parent);
+      rightPovRenderer.initialize(parent);
+    }
+  }
 
   // Viewer3D context for offline export gating - null when rendered outside
   // the sequence viewer (museum, realm).
@@ -626,12 +682,12 @@
     pooledFrame.sources.length = 0;
     if (!isPlaying) {
       tipBridge.reset();
-      blueEffectTips = [];
-      redEffectTips = [];
-      blueLedRenderer?.reset();
-      redLedRenderer?.reset();
-      bluePovRenderer?.reset();
-      redPovRenderer?.reset();
+      leftEffectTips = [];
+      rightEffectTips = [];
+      leftLedRenderer?.reset();
+      rightLedRenderer?.reset();
+      leftPovRenderer?.reset();
+      rightPovRenderer?.reset();
       charcoalRenderer?.reset();
       fireRenderer?.reset();
       // Drop the LED prev-position cache so resume/scrub doesn't draw an
@@ -650,8 +706,8 @@
     // toward pink and reads muddy. Use a saturated fire-red for the red tint —
     // still clearly the red staff's color, just pure enough to stay vivid as an
     // emissive flame.
-    const firePropBlue = hexToRgb(PROP_COLORS.blue.main);
-    const firePropRed = hexToRgb("#ff2410");
+    const firePropLeft = hexToRgb(PROP_COLORS.blue.main);
+    const firePropRight = hexToRgb("#ff2410");
 
     // The 2D sampler is handed the rAF timestamp, so reading the same clock
     // here (not a mount-relative one) puts both backends on the same frame of
@@ -681,6 +737,22 @@
       const c = getPixel(ledStrip, ledFrame, ledIndex % ledStrip.ledCount);
       return { r: c.r / 255, g: c.g / 255, b: c.b / 255 };
     };
+    const moonStrip = _ledPattern.resolve(
+      resolvedLed.pattern,
+      MOON_FAN_LED_COUNT
+    );
+    const moonFrame = moonStrip
+      ? patternFrameIndex(
+          ledElapsedMs,
+          resolvedLed.cycleDuration,
+          moonStrip.frameCount
+        )
+      : 0;
+    const moonColorAt = (ledIndex: number) => {
+      if (!moonStrip) return { r: 0, g: 0, b: 0 };
+      const c = getPixel(moonStrip, moonFrame, ledIndex % moonStrip.ledCount);
+      return { r: c.r / 255, g: c.g / 255, b: c.b / 255 };
+    };
     const ledSupersampleCount = LED_SUPERSAMPLE_BY_TIER[qualityTier] ?? 4;
 
     /**
@@ -699,10 +771,11 @@
       speed: number,
       r: number,
       g: number,
-      b: number
+      b: number,
+      sampleCount = ledSupersampleCount
     ): void {
       const prev = _ledPrevPositions.get(key);
-      const N = ledSupersampleCount;
+      const N = sampleCount;
       if (!prev || N <= 1) {
         out.push({
           position: new Vector3(current.x, current.y, current.z),
@@ -754,45 +827,52 @@
       effectsParentRef.updateWorldMatrix(true, false);
       pooledLinearTransform.setFromMatrix4(effectsParentRef.matrixWorld);
     }
-    blueLedTips.length = 0;
-    redLedTips.length = 0;
+    leftLedTips.length = 0;
+    rightLedTips.length = 0;
     charcoalTips.length = 0;
     fireTips.length = 0;
 
     // Whether the LED effect is assigned to either end of each prop. A pixel
     // staff needs the assignment but not the per-tip samples: the POV renderer
     // computes its own LED positions along the shaft.
-    let blueLedAssigned = false;
-    let redLedAssigned = false;
+    let leftLedAssigned = false;
+    let rightLedAssigned = false;
+    const leftIsMoonFan =
+      propBuild.fanBuild === "moon" &&
+      (leftPropType === PropType.FAN || leftPropType === PropType.BIGFAN);
+    const rightIsMoonFan =
+      propBuild.fanBuild === "moon" &&
+      (rightPropType === PropType.FAN || rightPropType === PropType.BIGFAN);
+    const leftUsesPov = usePixelStaff && !leftIsMoonFan;
+    const rightUsesPov = usePixelStaff && !rightIsMoonFan;
 
-    // PerformerRig renders the blue-colored prop using bluePropState at
-    // blueHandPos, and the red-colored prop using redPropState at redHandPos.
-    // Effects must follow that same mapping or the blue trail ends up on the
-    // red prop and vice versa.
-    const visualBlueProp = bluePropState;
-    const visualRedProp = redPropState;
+    // PerformerRig's external compatibility API renders the left prop through
+    // bluePropState/blueHandPos and the right through redPropState/redHandPos.
+    // Effects must preserve that mapping until the scene package migrates too.
+    const visualLeftProp = leftPropState;
+    const visualRightProp = rightPropState;
 
     // Compute rig-local center for each visual prop.
-    const blueRigCenter = visualBlueProp
-      ? resolveRigLocalPropCenter3D(visualBlueProp.worldPosition, blueHandPos)
+    const leftRigCenter = visualLeftProp
+      ? resolveRigLocalPropCenter3D(visualLeftProp.worldPosition, leftHandPos)
       : null;
 
-    const redRigCenter = visualRedProp
-      ? resolveRigLocalPropCenter3D(visualRedProp.worldPosition, redHandPos)
+    const rightRigCenter = visualRightProp
+      ? resolveRigLocalPropCenter3D(visualRightProp.worldPosition, rightHandPos)
       : null;
 
-    if (visualBlueProp && blueRigCenter) {
+    if (visualLeftProp && leftRigCenter) {
       const result = tipBridge.update(
         0,
-        visualBlueProp,
-        blueRigCenter,
+        visualLeftProp,
+        leftRigCenter,
         staffHalfLength,
         dt,
-        bluePropType,
+        leftPropType,
         propBuild
       );
-      blueEffectTips = result.tips;
-      result.tips.forEach((tip) => {
+      leftEffectTips = result.tips;
+      result.tips.forEach((tip, emitterIndex) => {
         // The tip owns its effect slot. A single-ended prop publishes one tip
         // on slot 1, so the array index is not the slot.
         const tipIndex = tip.tipIndex;
@@ -810,21 +890,29 @@
         if (effect === "led") {
           // Both props run the same pattern on the same clock, exactly as
           // the 2D sampler does, so a two-prop rig reads as one instrument.
-          blueLedAssigned = true;
-          if (!usePixelStaff) {
-            const color = ledColorAt(tipIndex);
+          leftLedAssigned = true;
+          if (!leftUsesPov) {
+            const color = leftIsMoonFan
+              ? moonColorAt(
+                  Math.round(
+                    (emitterIndex / Math.max(1, result.tips.length - 1)) *
+                      (MOON_FAN_LED_COUNT - 1)
+                  )
+                )
+              : ledColorAt(tipIndex);
             pushSupersampledLed(
-              blueLedTips,
-              `0-${tipIndex}`,
+              leftLedTips,
+              leftIsMoonFan ? `0-moon-${emitterIndex}` : `0-${tipIndex}`,
               tip.position,
               tip.velocity,
               tip.speed,
               color.r,
               color.g,
-              color.b
+              color.b,
+              leftIsMoonFan ? 1 : ledSupersampleCount
             );
           }
-        } else if (effect === "charcoal") {
+        } else if (effect === "charcoal" && sceneEffectsManager === null) {
           charcoalTips.push({
             sourceId: tipIndex,
             position: new Vector3(
@@ -848,7 +936,7 @@
                   )
                 : 0,
           });
-        } else if (effect === "fire") {
+        } else if (effect === "fire" && sceneEffectsManager === null) {
           fireTips.push({
             position: new Vector3(
               tip.position.x,
@@ -864,28 +952,28 @@
                 tip.jerk.y * tip.jerk.y +
                 tip.jerk.z * tip.jerk.z
             ),
-            propColor: firePropBlue,
+            propColor: firePropLeft,
           });
         }
       });
-      blueTrailData = getTrailData(0, result.tips, blueRigCenter);
+      leftTrailData = getTrailData(0, result.tips, leftRigCenter);
     } else {
-      blueTrailData = [];
-      blueEffectTips = [];
+      leftTrailData = [];
+      leftEffectTips = [];
     }
 
-    if (visualRedProp && redRigCenter) {
+    if (visualRightProp && rightRigCenter) {
       const result = tipBridge.update(
         1,
-        visualRedProp,
-        redRigCenter,
+        visualRightProp,
+        rightRigCenter,
         staffHalfLength,
         dt,
-        redPropType,
+        rightPropType,
         propBuild
       );
-      redEffectTips = result.tips;
-      result.tips.forEach((tip) => {
+      rightEffectTips = result.tips;
+      result.tips.forEach((tip, emitterIndex) => {
         // The tip owns its effect slot. A single-ended prop publishes one tip
         // on slot 1, so the array index is not the slot.
         const tipIndex = tip.tipIndex;
@@ -901,21 +989,29 @@
         publishPooledTip(1, tipIndex, tip, effect);
 
         if (effect === "led") {
-          redLedAssigned = true;
-          if (!usePixelStaff) {
-            const color = ledColorAt(tipIndex);
+          rightLedAssigned = true;
+          if (!rightUsesPov) {
+            const color = rightIsMoonFan
+              ? moonColorAt(
+                  Math.round(
+                    (emitterIndex / Math.max(1, result.tips.length - 1)) *
+                      (MOON_FAN_LED_COUNT - 1)
+                  )
+                )
+              : ledColorAt(tipIndex);
             pushSupersampledLed(
-              redLedTips,
-              `1-${tipIndex}`,
+              rightLedTips,
+              rightIsMoonFan ? `1-moon-${emitterIndex}` : `1-${tipIndex}`,
               tip.position,
               tip.velocity,
               tip.speed,
               color.r,
               color.g,
-              color.b
+              color.b,
+              rightIsMoonFan ? 1 : ledSupersampleCount
             );
           }
-        } else if (effect === "charcoal") {
+        } else if (effect === "charcoal" && sceneEffectsManager === null) {
           charcoalTips.push({
             sourceId: 2 + tipIndex,
             position: new Vector3(
@@ -939,7 +1035,7 @@
                   )
                 : 0,
           });
-        } else if (effect === "fire") {
+        } else if (effect === "fire" && sceneEffectsManager === null) {
           fireTips.push({
             position: new Vector3(
               tip.position.x,
@@ -955,24 +1051,18 @@
                 tip.jerk.y * tip.jerk.y +
                 tip.jerk.z * tip.jerk.z
             ),
-            propColor: firePropRed,
+            propColor: firePropRight,
           });
         }
       });
-      redTrailData = getTrailData(1, result.tips, redRigCenter);
+      rightTrailData = getTrailData(1, result.tips, rightRigCenter);
     } else {
-      redTrailData = [];
-      redEffectTips = [];
+      rightTrailData = [];
+      rightEffectTips = [];
     }
 
-    // Bloom remains a live optical response while paused. The tip bridge was
-    // reset above, so it publishes the current pose with zero motion without
-    // inventing a trail across a pause or scrub. Every emitter below freezes.
-    if (!isPlaying) return;
-
-    // LED rendering - direct imperative update in the same frame tick.
-    // Determine the parent for imperative meshes: effectsParentRef (rig group)
-    // or fall back to scene root via camera parent chain.
+    // Determine the parent before the pause gate: LED geometry and ribbon
+    // histories must be prepared even when a scene opens on a still frame.
     const cam = camera.current;
     let imperativeParent: Object3D | null = effectsParentRef ?? null;
 
@@ -984,7 +1074,60 @@
     }
 
     if (imperativeParent) {
+      prepareInteractiveRenderers(
+        imperativeParent,
+        resolvedLed.device.kind,
+        ledCount
+      );
       syncRendererQuality(imperativeParent);
+    }
+
+    const [moonZoneAIndex, moonZoneBIndex] = moonFanZoneSampleIndices();
+    if (
+      moonStrip &&
+      leftIsMoonFan &&
+      leftLedAssigned &&
+      leftRigCenter &&
+      visualLeftProp
+    ) {
+      leftMoonDiffuser?.update({
+        propState: visualLeftProp,
+        rigLocalCenter: leftRigCenter,
+        zoneA: moonColorAt(moonZoneAIndex),
+        zoneB: moonColorAt(moonZoneBIndex),
+        brightness: ledBrightness,
+        scale: leftPropType === PropType.BIGFAN ? 1.4 : 1,
+        elapsedSeconds: ledElapsedMs / 1000,
+      });
+    } else {
+      leftMoonDiffuser?.reset();
+    }
+    if (
+      moonStrip &&
+      rightIsMoonFan &&
+      rightLedAssigned &&
+      rightRigCenter &&
+      visualRightProp
+    ) {
+      rightMoonDiffuser?.update({
+        propState: visualRightProp,
+        rigLocalCenter: rightRigCenter,
+        zoneA: moonColorAt(moonZoneAIndex),
+        zoneB: moonColorAt(moonZoneBIndex),
+        brightness: ledBrightness,
+        scale: rightPropType === PropType.BIGFAN ? 1.4 : 1,
+        elapsedSeconds: ledElapsedMs / 1000,
+      });
+    } else {
+      rightMoonDiffuser?.reset();
+    }
+
+    // Bloom remains a live optical response while paused. The tip bridge was
+    // reset above, so it publishes the current pose with zero motion without
+    // inventing a trail across a pause or scrub. Every emitter below freezes.
+    if (!isPlaying) return;
+
+    if (imperativeParent) {
       const now = performance.now() / 1000;
 
       if (usePixelStaff) {
@@ -998,16 +1141,16 @@
           resolvedLed.look.shutter
         );
 
-        if (ledStrip && blueLedAssigned && blueRigCenter) {
-          if (!bluePovRenderer) {
-            bluePovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
-            bluePovRenderer.initialize(imperativeParent);
+        if (ledStrip && leftLedAssigned && leftRigCenter && leftUsesPov) {
+          if (!leftPovRenderer) {
+            leftPovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
+            leftPovRenderer.initialize(imperativeParent);
           }
-          bluePovRenderer.setPersistenceDuration(povPersistence);
+          leftPovRenderer.setPersistenceDuration(povPersistence);
           updatePixelStaff(
-            bluePovRenderer,
-            blueEffectTips,
-            blueRigCenter,
+            leftPovRenderer,
+            leftEffectTips,
+            leftRigCenter,
             ledStrip,
             ledFrame,
             cam!,
@@ -1015,19 +1158,19 @@
             ledBrightness
           );
         } else {
-          bluePovRenderer?.reset();
+          leftPovRenderer?.reset();
         }
 
-        if (ledStrip && redLedAssigned && redRigCenter) {
-          if (!redPovRenderer) {
-            redPovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
-            redPovRenderer.initialize(imperativeParent);
+        if (ledStrip && rightLedAssigned && rightRigCenter && rightUsesPov) {
+          if (!rightPovRenderer) {
+            rightPovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
+            rightPovRenderer.initialize(imperativeParent);
           }
-          redPovRenderer.setPersistenceDuration(povPersistence);
+          rightPovRenderer.setPersistenceDuration(povPersistence);
           updatePixelStaff(
-            redPovRenderer,
-            redEffectTips,
-            redRigCenter,
+            rightPovRenderer,
+            rightEffectTips,
+            rightRigCenter,
             ledStrip,
             ledFrame,
             cam!,
@@ -1035,27 +1178,38 @@
             ledBrightness
           );
         } else {
-          redPovRenderer?.reset();
+          rightPovRenderer?.reset();
+        }
+
+        if (leftIsMoonFan && leftLedTips.length > 0) {
+          leftLedRenderer?.update(leftLedTips, cam!, now);
+        } else {
+          leftLedRenderer?.reset();
+        }
+        if (rightIsMoonFan && rightLedTips.length > 0) {
+          rightLedRenderer?.update(rightLedTips, cam!, now);
+        } else {
+          rightLedRenderer?.reset();
         }
       } else {
-        if (blueLedTips.length > 0) {
-          if (!blueLedRenderer) {
-            blueLedRenderer = new LedRenderer3D(qualityTier);
-            blueLedRenderer.initialize(imperativeParent);
+        if (leftLedTips.length > 0) {
+          if (!leftLedRenderer) {
+            leftLedRenderer = new LedRenderer3D(qualityTier);
+            leftLedRenderer.initialize(imperativeParent);
           }
-          blueLedRenderer.update(blueLedTips, cam!, now);
+          leftLedRenderer.update(leftLedTips, cam!, now);
         } else {
-          blueLedRenderer?.reset();
+          leftLedRenderer?.reset();
         }
 
-        if (redLedTips.length > 0) {
-          if (!redLedRenderer) {
-            redLedRenderer = new LedRenderer3D(qualityTier);
-            redLedRenderer.initialize(imperativeParent);
+        if (rightLedTips.length > 0) {
+          if (!rightLedRenderer) {
+            rightLedRenderer = new LedRenderer3D(qualityTier);
+            rightLedRenderer.initialize(imperativeParent);
           }
-          redLedRenderer.update(redLedTips, cam!, now);
+          rightLedRenderer.update(rightLedTips, cam!, now);
         } else {
-          redLedRenderer?.reset();
+          rightLedRenderer?.reset();
         }
       }
 
@@ -1116,58 +1270,59 @@
     updateEffectsFrame(delta);
   });
 
-  // Filter to only selected sources that have the "trails" effect assigned.
-  const blueTrailTips = $derived(
-    blueTrailData.filter((source) => source.effect === "trails")
-  );
-  const redTrailTips = $derived(
-    redTrailData.filter((source) => source.effect === "trails")
-  );
+  // Keep the bounded trail renderers mounted for every real prop end. The
+  // selected effect only changes their visibility, so choosing Trails never
+  // constructs geometry, buffers, materials, or light infrastructure.
+  const leftTrailTips = $derived(leftTrailData);
+  const rightTrailTips = $derived(rightTrailData);
 
   onDestroy(() => {
     pooledRegistration?.dispose();
-    lightManager?.dispose();
     tipBridge.reset();
-    blueLedRenderer?.dispose();
-    redLedRenderer?.dispose();
-    bluePovRenderer?.dispose();
-    redPovRenderer?.dispose();
+    leftLedRenderer?.dispose();
+    rightLedRenderer?.dispose();
+    leftMoonDiffuser?.dispose();
+    rightMoonDiffuser?.dispose();
+    leftPovRenderer?.dispose();
+    rightPovRenderer?.dispose();
     charcoalRenderer?.dispose();
     fireRenderer?.dispose();
   });
 </script>
 
-{#each blueTrailTips as tip (tip.sourceId)}
+{#each leftTrailTips as tip (tip.sourceId)}
   {@const resolvedTrails = resolveTrails3D(effectsState.trails)}
   <Trail3D
     tipPosition={tip.position}
-    color={resolvedTrails.rainbow ? "rainbow" : resolvedTrails.blueColor}
-    propId="blue"
+    color={resolvedTrails.rainbow ? "rainbow" : resolvedTrails.leftColor}
+    propId="left"
     width={resolvedTrails.tubeRadius}
     opacity={resolvedTrails.brightness}
     maxPoints={resolvedTrails.maxPoints}
     rainbow={resolvedTrails.rainbow}
-    enabled={isPlaying}
+    enabled={tip.effect === "trails" && isPlaying}
     {qualityTier}
     emissiveStrength={resolvedTrails.emissive * trailTierBoost}
-    {lightManager}
+    {sceneEffectsManager}
+    lightSpaceRoot={effectsParentRef}
   />
 {/each}
 
-{#each redTrailTips as tip (tip.sourceId)}
+{#each rightTrailTips as tip (tip.sourceId)}
   {@const resolvedTrails = resolveTrails3D(effectsState.trails)}
   <Trail3D
     tipPosition={tip.position}
-    color={resolvedTrails.rainbow ? "rainbow" : resolvedTrails.redColor}
-    propId="red"
+    color={resolvedTrails.rainbow ? "rainbow" : resolvedTrails.rightColor}
+    propId="right"
     width={resolvedTrails.tubeRadius}
     opacity={resolvedTrails.brightness}
     maxPoints={resolvedTrails.maxPoints}
     rainbow={resolvedTrails.rainbow}
-    enabled={isPlaying}
+    enabled={tip.effect === "trails" && isPlaying}
     {qualityTier}
     emissiveStrength={resolvedTrails.emissive * trailTierBoost}
-    {lightManager}
+    {sceneEffectsManager}
+    lightSpaceRoot={effectsParentRef}
   />
 {/each}
 
@@ -1186,18 +1341,20 @@
      that context is the 2D/global choice, and reading it put the 2D effect on
      the 3D props (Goo in 2D + LED in 3D rendered gooey LEDs). -->
 <EffectsLayer
-  {bluePropState}
-  {redPropState}
-  {bluePropType}
-  {redPropType}
+  {leftPropState}
+  {rightPropState}
+  {leftPropType}
+  {rightPropType}
   {isPlaying}
   staffLength={staffHalfLength * 2}
   activeEffects={layerActiveEffects}
-  {blueHandPos}
-  {redHandPos}
-  blueTipData={blueEffectTips}
-  redTipData={redEffectTips}
+  {leftHandPos}
+  {rightHandPos}
+  leftTipData={leftEffectTips}
+  rightTipData={rightEffectTips}
   pooledEffectsManaged={sceneEffectsManager !== null}
+  {sceneEffectsManager}
+  effectSpaceRoot={effectsParentRef}
   {currentStep}
   {totalSteps}
   {seamlesslyLoopable}

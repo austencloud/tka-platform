@@ -29,19 +29,19 @@ function motion(overrides: Partial<MotionConfig3D>): MotionConfig3D {
 describe("solveStepConcavity", () => {
   it("returns null k for an already-clean step", () => {
     // far-apart static pair, same as the scanner test's clean fixture.
-    const blue = motion({
+    const left = motion({
       motionType: MotionType.STATIC,
       startLocation: "e" as GridLocation,
       endLocation: "e" as GridLocation,
       rotationDirection: RotationDirection.NO_ROTATION,
     });
-    const red = motion({
+    const right = motion({
       motionType: MotionType.STATIC,
       startLocation: "w" as GridLocation,
       endLocation: "w" as GridLocation,
       rotationDirection: RotationDirection.NO_ROTATION,
     });
-    const result = solveStepConcavity(blue, red);
+    const result = solveStepConcavity(left, right);
     expect(result.cleared).toBe(true);
     expect(result.k).toBeNull();
     expect(result.hands).toEqual([]);
@@ -51,13 +51,13 @@ describe("solveStepConcavity", () => {
     // crossing DASH/DASH pair — neither hand is concave-eligible (not ANTI,
     // no explicit pathShape "concave"), so the solver must bail without
     // attempting a binary search.
-    const blue = motion({
+    const left = motion({
       motionType: MotionType.DASH,
       startLocation: "w" as GridLocation,
       endLocation: "e" as GridLocation,
       rotationDirection: RotationDirection.NO_ROTATION,
     });
-    const red = motion({
+    const right = motion({
       motionType: MotionType.DASH,
       startLocation: "e" as GridLocation,
       endLocation: "w" as GridLocation,
@@ -65,9 +65,9 @@ describe("solveStepConcavity", () => {
     });
     // Sanity: this pair does collide (per the scanner test), so the bail is
     // due to ineligibility, not because the pair happened to already be clean.
-    expect(scanStepPair(blue, red).clean).toBe(false);
+    expect(scanStepPair(left, right).clean).toBe(false);
 
-    const result = solveStepConcavity(blue, red);
+    const result = solveStepConcavity(left, right);
     expect(result.cleared).toBe(false);
     expect(result.k).toBeNull();
     expect(result.hands).toEqual([]);

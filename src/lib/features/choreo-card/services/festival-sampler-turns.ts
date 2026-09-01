@@ -236,8 +236,8 @@ function hasCleanFestivalTurnResult(
   turnIntensity: number
 ): boolean {
   const turns = sequence.steps.flatMap((step) => [
-    step.motions?.blue?.turns,
-    step.motions?.red?.turns,
+    step.motions?.left?.turns,
+    step.motions?.right?.turns,
   ]);
   return (
     turns.some((turn) => turn === turnIntensity) &&
@@ -328,7 +328,7 @@ export function applyFestivalSamplerTurnAssignment(
   }
   const unit = parseTurnUnit(card.turnPattern);
   const expectedUnitLength = festivalTurnUnitLength(card, base);
-  const unitTurns = unit.flatMap((entry) => [entry.blue, entry.red]);
+  const unitTurns = unit.flatMap((entry) => [entry.left, entry.right]);
   const frozenPreset = card.turnPatternId
     ? FESTIVAL_TURN_PATTERN_PRESETS.find(
         (preset) => preset.id === card.turnPatternId

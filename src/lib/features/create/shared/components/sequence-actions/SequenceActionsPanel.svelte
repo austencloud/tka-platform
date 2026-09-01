@@ -48,7 +48,6 @@
   import MobileHandSelector from "./MobileHandSelector.svelte";
   import MobileActionToolbar from "./MobileActionToolbar.svelte";
   import { getSequenceActionsPanelHeight } from "./sequence-actions-panel-height";
-  import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
   import { getReturnContext } from "$lib/shared/coordinators/sequence-handoff.svelte";
 
@@ -148,9 +147,17 @@
     getTargetHand: () => panelState.targetHand,
     hapticService,
     pushUndoSnapshot: (type) => CreateModuleState.pushUndoSnapshot(type),
+    executeTransformAction: (action, options) => {
+      const dispatcher = ctx.getSequenceTransformActions();
+      return dispatcher
+        ? dispatcher.execute(action, options)
+        : Promise.resolve({
+            status: "unavailable" as const,
+            message: "Sequence actions are still loading",
+          });
+    },
     busyState: viewState,
     extensionFlowCoordinator,
-    setGridRotationDirection,
     finishShiftStart: () => {
       panelState.exitShiftStartMode();
       viewState.finishShiftStart();
@@ -300,9 +307,9 @@
         }
       } else if (restoreEffect === "start-extend-flow") {
         // Extend is transient and never auto-persisted (see auto-save effect),
-        // so a stored "extend" only comes from an explicit launch
-        // (AltHotkeyOverlay's Extend button). Recompute the analysis against the
-        // CURRENT sequence instead of restoring a stale empty view. handleExtend
+        // so a stored "extend" only comes from a direct persisted launch.
+        // Recompute the analysis against the CURRENT sequence instead of
+        // restoring a stale empty view. handleExtend
         // sets subView="extend" on success, or leaves the actions grid showing
         // (subView stays null) when the sequence isn't extendable.
         void handleExtend();
@@ -323,7 +330,11 @@
     hapticService?.trigger("selection");
     handleClose();
     const { returnPath, returnLabel } = getReturnContext();
-    openSequenceViewer(sequence, { returnPath, returnLabel });
+    openSequenceViewer(sequence, {
+      source: "create_workspace",
+      returnPath,
+      returnLabel,
+    });
   }
 
   function handleTurnPattern() {

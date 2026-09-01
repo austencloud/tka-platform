@@ -2,6 +2,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { PropPreferences, CatdogCombo } from "./types";
+import { normalizeLegacyPropConfig } from "@tka/tka-types";
 
 const DEFAULT_PREFS: PropPreferences = {
   propsISpinWith: [],
@@ -19,14 +20,14 @@ function validatePrefs(prefs: PropPreferences): void {
     );
   }
   if (prefs.favoriteCatdog) {
-    if (!prefs.propsISpinWith.includes(prefs.favoriteCatdog.bluePropType)) {
+    if (!prefs.propsISpinWith.includes(prefs.favoriteCatdog.leftPropType)) {
       throw new Error(
-        `catdog blue "${prefs.favoriteCatdog.bluePropType}" must be in propsISpinWith`
+        `catdog blue "${prefs.favoriteCatdog.leftPropType}" must be in propsISpinWith`
       );
     }
-    if (!prefs.propsISpinWith.includes(prefs.favoriteCatdog.redPropType)) {
+    if (!prefs.propsISpinWith.includes(prefs.favoriteCatdog.rightPropType)) {
       throw new Error(
-        `catdog red "${prefs.favoriteCatdog.redPropType}" must be in propsISpinWith`
+        `catdog red "${prefs.favoriteCatdog.rightPropType}" must be in propsISpinWith`
       );
     }
   }
@@ -42,7 +43,9 @@ export async function loadPropPreferences(
   return {
     propsISpinWith: (data.propsISpinWith as PropType[]) ?? [],
     favoriteProp: (data.favoriteProp as PropType) ?? null,
-    favoriteCatdog: (data.favoriteCatdog as CatdogCombo) ?? null,
+    favoriteCatdog: data.favoriteCatdog
+      ? (normalizeLegacyPropConfig(data.favoriteCatdog) as CatdogCombo)
+      : null,
   };
 }
 
@@ -78,8 +81,8 @@ export async function removePropPreference(
   if (prefs.favoriteProp === prop) prefs.favoriteProp = null;
   if (
     prefs.favoriteCatdog &&
-    (prefs.favoriteCatdog.bluePropType === prop ||
-      prefs.favoriteCatdog.redPropType === prop)
+    (prefs.favoriteCatdog.leftPropType === prop ||
+      prefs.favoriteCatdog.rightPropType === prop)
   ) {
     prefs.favoriteCatdog = null;
   }
@@ -103,10 +106,10 @@ export async function setCatdogFavorite(
 ): Promise<void> {
   const prefs = await loadPropPreferences(userId);
   if (combo) {
-    if (!prefs.propsISpinWith.includes(combo.bluePropType))
-      prefs.propsISpinWith.push(combo.bluePropType);
-    if (!prefs.propsISpinWith.includes(combo.redPropType))
-      prefs.propsISpinWith.push(combo.redPropType);
+    if (!prefs.propsISpinWith.includes(combo.leftPropType))
+      prefs.propsISpinWith.push(combo.leftPropType);
+    if (!prefs.propsISpinWith.includes(combo.rightPropType))
+      prefs.propsISpinWith.push(combo.rightPropType);
   }
   prefs.favoriteCatdog = combo;
   await savePropPreferences(userId, prefs);

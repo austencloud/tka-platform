@@ -58,7 +58,7 @@ function paletteToRgb(palette: string, customColor: string): [number, number, nu
 }
 
 export interface GhostTranslationContext {
-  phantoms: Array<{ bluePos: [number, number]; redPos: [number, number]; age: number }>;
+  phantoms: Array<{ leftPos: [number, number]; rightPos: [number, number]; age: number }>;
 }
 
 export function toGhostPayload(
@@ -66,8 +66,8 @@ export function toGhostPayload(
   ctx: GhostTranslationContext,
 ): GhostPassPayload {
   const phantoms: GhostPhantom[] = ctx.phantoms.map((p) => ({
-    bluePos: p.bluePos,
-    redPos: p.redPos,
+    leftPos: p.leftPos,
+    rightPos: p.rightPos,
     age: p.age,
   }));
   // Ghost is now a prop-matched whole-staff onion-skin; per-prop color is applied

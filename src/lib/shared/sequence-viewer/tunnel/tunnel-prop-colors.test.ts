@@ -2,20 +2,23 @@ import { describe, it, expect } from "vitest";
 import {
   SPOTLIGHT_DIM,
   dimHex,
+  normalizeTunnelHexColor,
+  resolveTunnelPropColorState,
+  tunnelColorFromHex,
   spotlightFactor,
   tunnelPropColor,
 } from "./tunnel-prop-colors";
 
 describe("tunnelPropColor", () => {
   it("anchors the base pair at blue and red", () => {
-    const blue = tunnelPropColor(0, 7); // base blue
-    const red = tunnelPropColor(1, 7); // base red
+    const left = tunnelPropColor(0, 7); // base blue
+    const right = tunnelPropColor(1, 7); // base red
     // Base blue: blue channel dominates.
-    expect(blue.rgb255.b).toBeGreaterThan(blue.rgb255.r);
-    expect(blue.rgb255.b).toBeGreaterThan(blue.rgb255.g);
+    expect(left.rgb255.b).toBeGreaterThan(left.rgb255.r);
+    expect(left.rgb255.b).toBeGreaterThan(left.rgb255.g);
     // Base red: red channel dominates.
-    expect(red.rgb255.r).toBeGreaterThan(red.rgb255.g);
-    expect(red.rgb255.r).toBeGreaterThan(red.rgb255.b);
+    expect(right.rgb255.r).toBeGreaterThan(right.rgb255.g);
+    expect(right.rgb255.r).toBeGreaterThan(right.rgb255.b);
   });
 
   it("fans the blue family toward green (far end is green-dominant)", () => {
@@ -41,6 +44,36 @@ describe("tunnelPropColor", () => {
 
   it("produces valid hex", () => {
     expect(tunnelPropColor(4, 7).hex).toMatch(/^#[0-9a-f]{6}$/);
+  });
+});
+
+describe("Tunnel exact color state", () => {
+  it("normalizes six- and three-digit hex colors", () => {
+    expect(normalizeTunnelHexColor(" #A1B2C3 ", "#000000")).toBe("#a1b2c3");
+    expect(normalizeTunnelHexColor("#0f8", "#000000")).toBe("#00ff88");
+    expect(normalizeTunnelHexColor("transparent", "#123456")).toBe("#123456");
+  });
+
+  it("migrates the legacy spectrum boolean without losing a custom pair", () => {
+    expect(resolveTunnelPropColorState(undefined, false).mode).toBe("hands");
+    expect(resolveTunnelPropColorState(undefined, true).mode).toBe("spectrum");
+    expect(
+      resolveTunnelPropColorState({
+        mode: "custom",
+        custom: { blue: "#123ABC", red: "#fedcba" },
+      })
+    ).toEqual({
+      mode: "custom",
+      custom: { left: "#123abc", right: "#fedcba" },
+    });
+  });
+
+  it("converts exact hex values to renderer color channels", () => {
+    expect(tunnelColorFromHex("#804020")).toEqual({
+      hex: "#804020",
+      rgb255: { r: 128, g: 64, b: 32 },
+      rgb01: { r: 128 / 255, g: 64 / 255, b: 32 / 255 },
+    });
   });
 });
 

@@ -75,16 +75,16 @@
   });
 
   // Build transform strings for each prop
-  const blueTransform = $derived(
-    `translate(${recipe.blue.x}, ${recipe.blue.y}) ` +
-      `rotate(${recipe.blue.rotation}) ` +
-      `scale(${recipe.blue.scale * recipe.pairScale})`
+  const leftTransform = $derived(
+    `translate(${recipe.left.x}, ${recipe.left.y}) ` +
+      `rotate(${recipe.left.rotation}) ` +
+      `scale(${recipe.left.scale * recipe.pairScale})`
   );
 
-  const redTransform = $derived(
-    `translate(${recipe.red.x}, ${recipe.red.y}) ` +
-      `rotate(${recipe.red.rotation}) ` +
-      `scale(${recipe.red.scale * recipe.pairScale})`
+  const rightTransform = $derived(
+    `translate(${recipe.right.x}, ${recipe.right.y}) ` +
+      `rotate(${recipe.right.rotation}) ` +
+      `scale(${recipe.right.scale * recipe.pairScale})`
   );
 
   // Image dimensions in viewBox units - props are placed relative to their center
@@ -103,7 +103,7 @@
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
   >
-    <g transform={blueTransform}>
+    <g transform={leftTransform}>
       <image
         href={displayInfo.image}
         x={imgOffset}
@@ -123,7 +123,7 @@
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
   >
-    <g transform={blueTransform}>
+    <g transform={leftTransform}>
       <image
         href={displayInfo.image}
         x={imgOffset}
@@ -133,7 +133,7 @@
       />
     </g>
 
-    <g transform={redTransform}>
+    <g transform={rightTransform}>
       <image
         class="red-prop"
         href={displayInfo.image}

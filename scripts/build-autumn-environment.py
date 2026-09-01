@@ -27,6 +27,10 @@ with open(GROUND_LAYOUT_PATH, "rb") as ground_layout_file:
     GROUND_LAYOUT_BYTES = ground_layout_file.read()
 GROUND_LAYOUT = json.loads(GROUND_LAYOUT_BYTES)
 GROUND_LAYOUT_SHA256 = hashlib.sha256(GROUND_LAYOUT_BYTES).hexdigest()
+
+MUSHROOM_LAYOUT_PATH = os.path.join(SCRIPT_DIR, "autumn-mushroom-layout.json")
+with open(MUSHROOM_LAYOUT_PATH, "r", encoding="utf-8") as mushroom_layout_file:
+    MUSHROOM_LAYOUT = json.load(mushroom_layout_file)
 MODEL_DIR = os.path.join(PROJECT_ROOT, "static", "models", "autumn")
 AUTUMN_FLOOR_TEXTURE_DIR = os.path.join(PROJECT_ROOT, "static", "textures", "autumn-floor")
 FOREST_FLOOR_TEXTURE_DIR = os.path.join(PROJECT_ROOT, "static", "textures", "forest-floor")
@@ -222,6 +226,29 @@ FAR_DEPTH_TREE_PLACEMENTS = (
     ("FarDepthGold_S_02", "FarGold", 53.0, -49.0, 6.6, -1.74, 0.95, False),
     ("FarDepthLarch_SW_01", "FarLarch", -67.0, -70.0, 8.0, 2.46, 0.98, False),
     ("FarDepthRed_SE_01", "FarRed", 68.0, -72.0, 7.5, -2.62, 0.97, True),
+    # The first complete orbit exposed an empty reverse/side backlot between
+    # the hero grove and the outer silhouette belt. These inexpensive inner
+    # silhouettes close that gap without spending imported-tree geometry.
+    ("FarDepthGold_SW_Inner", "FarGold", -42.0, -34.0, 6.5, -0.62, 0.94, False),
+    ("FarDepthRed_SW_Inner", "FarRed", -30.0, -46.0, 7.0, 1.18, 0.96, True),
+    ("FarDepthLarch_S_Inner", "FarLarch", -10.0, -48.0, 7.6, -1.86, 0.98, False),
+    ("FarDepthGold_S_Inner", "FarGold", 10.0, -50.0, 6.7, 2.38, 0.93, True),
+    ("FarDepthRed_SE_Inner", "FarRed", 30.0, -45.0, 7.1, -0.94, 0.95, False),
+    ("FarDepthLarch_SE_Inner", "FarLarch", 43.0, -34.0, 7.8, 1.72, 0.97, True),
+    ("FarDepthSnag_W_Inner", "FarSnag", -49.0, -8.0, 7.0, -2.24, 0.96, False),
+    ("FarDepthGold_W_Inner", "FarGold", -51.0, 18.0, 6.6, 0.82, 0.94, True),
+    ("FarDepthRed_E_Inner", "FarRed", 50.0, -8.0, 6.9, -1.42, 0.95, True),
+    ("FarDepthLarch_E_Inner", "FarLarch", 52.0, 18.0, 7.7, 2.16, 0.98, False),
+    ("FarDepthSnag_S_Inner", "FarSnag", 0.0, -56.0, 7.2, 0.34, 0.97, True),
+    ("FarDepthGold_S_Closer", "FarGold", -13.0, -35.0, 7.1, -1.08, 0.97, True),
+    ("FarDepthRed_S_Closer", "FarRed", 0.0, -38.0, 7.4, 0.46, 0.98, False),
+    ("FarDepthLarch_S_Closer", "FarLarch", 14.0, -34.0, 7.8, 1.94, 0.97, True),
+    ("FarDepthRed_S_Grove_01", "FarRed", -25.0, -43.0, 7.5, 0.82, 0.96, False),
+    ("FarDepthLarch_S_Grove_01", "FarLarch", -19.0, -37.0, 8.4, -1.64, 0.98, True),
+    ("FarDepthGold_S_Grove_01", "FarGold", -7.0, -44.0, 7.0, 2.28, 0.95, False),
+    ("FarDepthGold_S_Grove_02", "FarGold", 7.0, -42.0, 7.2, -0.72, 0.96, True),
+    ("FarDepthLarch_S_Grove_02", "FarLarch", 19.0, -38.0, 8.2, 1.42, 0.97, False),
+    ("FarDepthRed_S_Grove_02", "FarRed", 26.0, -44.0, 7.4, -2.08, 0.96, True),
 )
 
 # The settlement now has a route with an actual destination. The broad lane
@@ -298,17 +325,34 @@ FERN_CLUSTERS = (
 # arc of small buff champignons in the open grass. Purple amethyst deceivers
 # appear as loose individuals in leaf litter near mature roots, while denser
 # honey-fungus colonies are reserved for fallen wood.
-FAIRY_CHAMPIGNON_ARC = ("FairyChampignonArc", 4.0, 12.0, 2.15, 24, 0.34)
+_FAIRY_CHAMPIGNON_ARC = MUSHROOM_LAYOUT["fairyChampignonArc"]
+FAIRY_CHAMPIGNON_ARC = (
+    _FAIRY_CHAMPIGNON_ARC["name"],
+    *_FAIRY_CHAMPIGNON_ARC["center"],
+    _FAIRY_CHAMPIGNON_ARC["radius"],
+    _FAIRY_CHAMPIGNON_ARC["count"],
+    _FAIRY_CHAMPIGNON_ARC["phase"],
+)
+FAIRY_CHAMPIGNON_GAPS = set(_FAIRY_CHAMPIGNON_ARC["gaps"])
 
-AMETHYST_DECEIVER_DRIFTS = (
-    ("AmethystWestRoot", -9.55, 5.45, 5, 0.62, 0.42),
-    ("AmethystEastRoot", 13.25, -5.75, 5, 0.58, 0.38),
-    ("AmethystFrontRoot", -15.35, -10.05, 5, 0.60, 0.40),
+AMETHYST_DECEIVER_DRIFTS = tuple(
+    (
+        drift["name"],
+        *drift["center"],
+        drift["count"],
+        *drift["spread"],
+    )
+    for drift in MUSHROOM_LAYOUT["amethystDeceiverDrifts"]
 )
 
-HONEY_FUNGUS_COLONIES = (
-    ("HoneyFungusLogOne", 10.35, 6.75, 8, 0.48, 0.34),
-    ("HoneyFungusLogTwo", -12.20, 12.85, 7, 0.44, 0.30),
+HONEY_FUNGUS_COLONIES = tuple(
+    (
+        colony["name"],
+        *colony["center"],
+        colony["count"],
+        *colony["spread"],
+    )
+    for colony in MUSHROOM_LAYOUT["honeyFungusColonies"]
 )
 
 GRASS_COLONIES = (
@@ -535,6 +579,17 @@ EARTH = forest_floor_material(
     diffuse_uv_name="Autumn Ground Macro UV",
     detail_uv_name="Autumn Ground Detail UV",
 )
+FOG_APRON_EARTH = forest_floor_material(
+    "Autumn Fog Apron",
+    (1.0, 1.0, 1.0),
+    0.0,
+    1.0,
+    AUTUMN_FLOOR_TEXTURE_DIR,
+    "autumn-ground-zoned.jpg",
+    "no-normal-map",
+    "no-roughness-map",
+    diffuse_uv_name="Autumn Ground Macro UV",
+)
 DAMP_EARTH = forest_floor_material(
     "Damp Pond Bank",
     (1.0, 1.0, 1.0),
@@ -575,6 +630,13 @@ HABITATION_LANTERN = principled_material(
     emission=(1.0, 0.20, 0.025),
     emission_strength=1.35,
 )
+HABITATION_CABIN_GLOW = principled_material(
+    "Low Amber Cabin Window",
+    (0.32, 0.11, 0.018),
+    roughness=0.46,
+    emission=(1.0, 0.16, 0.018),
+    emission_strength=1.8,
+)
 FAR_TRUNK = principled_material("Far Autumn Trunk", (0.075, 0.043, 0.052), roughness=0.98)
 FAR_CANOPY_RED = principled_material(
     "Far Autumn Canopy Red", (0.20, 0.048, 0.035), roughness=0.96
@@ -595,17 +657,25 @@ MUSHROOM_STEM_LILAC = principled_material(
     "Autumn Mushroom Lilac Stem", (0.24, 0.11, 0.24), roughness=0.88
 )
 MUSHROOM_CHAMPIGNON_CAP = principled_material(
-    "Autumn Fairy Champignon Cap", (0.38, 0.25, 0.13), roughness=0.90
+    "Autumn Fairy Champignon Cap",
+    (0.38, 0.25, 0.13),
+    roughness=0.90,
+    emission=(0.20, 0.08, 0.018),
+    emission_strength=0.12,
 )
 MUSHROOM_AMETHYST_CAP = principled_material(
     "Autumn Amethyst Deceiver Cap",
     (0.24, 0.055, 0.28),
     roughness=0.82,
     emission=(0.15, 0.025, 0.18),
-    emission_strength=0.035,
+    emission_strength=0.18,
 )
 MUSHROOM_HONEY_CAP = principled_material(
-    "Autumn Honey Fungus Cap", (0.47, 0.21, 0.055), roughness=0.87
+    "Autumn Honey Fungus Cap",
+    (0.47, 0.21, 0.055),
+    roughness=0.87,
+    emission=(0.28, 0.075, 0.012),
+    emission_strength=0.15,
 )
 for grass_material in (GRASS_BASE, GRASS_MEDIUM, GRASS_HIGH):
     grass_material.diffuse_color = (*grass_material.diffuse_color[:3], 1.0)
@@ -616,10 +686,10 @@ for grass_material in (GRASS_BASE, GRASS_MEDIUM, GRASS_HIGH):
 # visible is what makes water look like water.
 POND_GLOW = principled_material(
     "Pond Underlight",
-    (0.055, 0.072, 0.068),
+    (0.070, 0.095, 0.090),
     roughness=0.78,
-    emission=(0.006, 0.026, 0.030),
-    emission_strength=0.06,
+    emission=(0.008, 0.040, 0.044),
+    emission_strength=0.12,
 )
 QA_WATER = preview_water_material()
 
@@ -663,7 +733,26 @@ def terrain_height(x, y):
 
 TERRAIN_HALF_SIZE = 31.0
 TERRAIN_SEGMENTS = 96
-APRON_OUTER_HALF_SIZE = float(GROUND_LAYOUT["worldExtent"])
+GROUND_ATLAS_HALF_SIZE = float(GROUND_LAYOUT["worldExtent"])
+# The authored ecology and its macro atlas end at 165m. The visible ground must
+# continue much farther: high review cameras can look through the tree belt and
+# intersect the floor hundreds of metres away. At 1,024m the shipped fog has
+# effectively zero remaining transmittance, so the geometric edge cannot read.
+APRON_OUTER_HALF_SIZE = 1_024.0
+APRON_FLAT_HALF_SIZE = 256.0
+FAR_GROUND_HEIGHT = -8.5
+APRON_HORIZON_RING_HALF_SIZES = (
+    APRON_FLAT_HALF_SIZE,
+    304.0,
+    360.0,
+    424.0,
+    496.0,
+    576.0,
+    672.0,
+    784.0,
+    912.0,
+    APRON_OUTER_HALF_SIZE,
+)
 
 
 def chaikin_path(points, iterations=2):
@@ -752,11 +841,67 @@ def world_surface_height(x, y):
     blend = min(
         1.0,
         (half_size - TERRAIN_HALF_SIZE)
-        / (APRON_OUTER_HALF_SIZE - TERRAIN_HALF_SIZE),
+        / (GROUND_ATLAS_HALF_SIZE - TERRAIN_HALF_SIZE),
     )
-    far = -1.0 - 7.5 * blend**1.15
-    far += (1.4 * math.sin(x * 0.041) + 1.1 * math.cos(y * 0.035)) * blend
-    return terrain_height(x, y) * (1.0 - blend) + far * blend
+    rolling_far = -1.0 - 7.5 * blend**1.15
+    rolling_far += (
+        1.4 * math.sin(x * 0.041) + 1.1 * math.cos(y * 0.035)
+    ) * blend
+    authored_surface = terrain_height(x, y) * (1.0 - blend) + rolling_far * blend
+    if half_size <= GROUND_ATLAS_HALF_SIZE:
+        return authored_surface
+
+    # Past the baked ecology atlas, ease the ground onto one fog-hidden plane.
+    # Carrying the near-field normal response over sparse 100m+ quads created
+    # bright diagonal stitching even though the mesh itself was continuous.
+    flatten = min(
+        1.0,
+        (half_size - GROUND_ATLAS_HALF_SIZE)
+        / (APRON_FLAT_HALF_SIZE - GROUND_ATLAS_HALF_SIZE),
+    )
+    flatten = flatten * flatten * (3.0 - 2.0 * flatten)
+    return authored_surface * (1.0 - flatten) + FAR_GROUND_HEIGHT * flatten
+
+
+def fog_horizon_height(x, y):
+    """Turn the fog apron into a distant landscape instead of a flat slab.
+
+    The inner edge exactly matches ``world_surface_height`` at 256m. Beyond it,
+    broad deterministic ridges rise through the fog, then the outer two rings
+    descend below every supported sightline. The changing silhouette prevents
+    high and reverse cameras from exposing a ruler-straight ground/sky boundary
+    while the dense fog keeps this cheap mesh from reading as a new mountain
+    range behind the authored forest.
+    """
+    half_size = max(abs(x), abs(y))
+    if half_size <= APRON_FLAT_HALF_SIZE:
+        return world_surface_height(x, y)
+
+    amount = min(
+        1.0,
+        (half_size - APRON_FLAT_HALF_SIZE)
+        / (APRON_OUTER_HALF_SIZE - APRON_FLAT_HALF_SIZE),
+    )
+    angle = math.atan2(y, x)
+    ridge_envelope = smoothstep(0.0, 0.18, amount) * (
+        1.0 - smoothstep(0.62, 0.88, amount)
+    )
+    ridge_profile = (
+        34.0
+        + 15.0 * math.sin(angle * 3.0 + 0.45)
+        + 10.0 * math.cos(angle * 5.0 - 1.1)
+        + 7.0 * math.sin(angle * 7.0 + 0.6)
+        + 5.0 * math.sin(x * 0.010 + y * 0.014)
+        + 3.0 * math.cos(x * 0.017 - y * 0.008)
+    )
+    base_descent = 2.0 * smoothstep(0.45, 1.0, amount)
+    outer_drop = 36.0 * smoothstep(0.78, 1.0, amount)
+    return (
+        FAR_GROUND_HEIGHT
+        - base_descent
+        + ridge_profile * ridge_envelope
+        - outer_drop
+    )
 
 
 def autumn_ground_uv(x, y):
@@ -769,10 +914,10 @@ def autumn_ground_uv(x, y):
 
 def autumn_ground_macro_uv(x, y):
     """Map every ground mesh into the same baked world-space ecology."""
-    world_extent = float(GROUND_LAYOUT["worldExtent"])
+    world_extent = GROUND_ATLAS_HALF_SIZE
     return (
-        (x + world_extent) / (world_extent * 2.0),
-        (y + world_extent) / (world_extent * 2.0),
+        min(1.0, max(0.0, (x + world_extent) / (world_extent * 2.0))),
+        min(1.0, max(0.0, (y + world_extent) / (world_extent * 2.0))),
     )
 
 
@@ -851,12 +996,14 @@ def create_terrain_apron():
     out and the performance camera sits ~34m back, so the edge is at roughly the
     same depth as the trees framing it - any fog thick enough to hide the rim
     also erases the scene. The fix is geometric: keep going. This apron carries
-    the ground out to 165m, which at the scene's fog density is around 99%
-    extinction, so it fades into the sky rather than ending.
+    the ground out to 1,024m. The first 165m retain the authored macro atlas;
+    beyond that the texture edge is extended under accumulating fog. At the
+    scene's density, the outer edge has effectively zero transmittance.
 
-    It is deliberately cheap: 5 quad rings on the same perimeter
-    parametrisation as the terrain boundary, ~3.8k triangles total, one
-    material, no textures of its own.
+    It is deliberately cheap: detailed transition rings stop at 256m, then ten
+    broad rings form a rolling horizon before descending below the fog-opaque
+    edge. This costs fewer than 7,000 triangles while avoiding the geometric
+    horizon line created by one viewport-sized quad.
     """
     ring_half_sizes = (
         TERRAIN_HALF_SIZE,
@@ -864,7 +1011,8 @@ def create_terrain_apron():
         52.0,
         76.0,
         112.0,
-        APRON_OUTER_HALF_SIZE,
+        GROUND_ATLAS_HALF_SIZE,
+        256.0,
     )
     segments = TERRAIN_SEGMENTS
 
@@ -880,26 +1028,72 @@ def create_terrain_apron():
         nxt = (ring_index + 1) * perimeter
         for i in range(perimeter):
             j = (i + 1) % perimeter
-            faces.append((base + i, base + j, nxt + j, nxt + i))
+            # The perimeter walks counter-clockwise. Stitch inner-to-outer in
+            # the same orientation so the apron faces upward after the
+            # optimized asset makes the shared ground material front-sided.
+            faces.append((base + i, nxt + i, nxt + j, base + j))
 
-    mesh = bpy.data.meshes.new("Autumn Terrain Apron Mesh")
+    mesh = bpy.data.meshes.new("Autumn Terrain Transition Mesh")
     mesh.from_pydata(vertices, [], faces)
     mesh.update()
     mesh.materials.append(EARTH)
+    mesh.materials.append(FOG_APRON_EARTH)
     detail_uv = mesh.uv_layers.new(name="Autumn Ground Detail UV")
     macro_uv = mesh.uv_layers.new(name="Autumn Ground Macro UV")
     for polygon in mesh.polygons:
+        ring_index = polygon.index // perimeter
+        if ring_half_sizes[ring_index] >= GROUND_ATLAS_HALF_SIZE:
+            polygon.material_index = 1
         polygon.use_smooth = True
         for loop_index in polygon.loop_indices:
             vertex = mesh.vertices[mesh.loops[loop_index].vertex_index]
             detail_uv.data[loop_index].uv = autumn_ground_uv(vertex.co.x, vertex.co.y)
             macro_uv.data[loop_index].uv = autumn_ground_macro_uv(vertex.co.x, vertex.co.y)
-    apron = bpy.data.objects.new("Autumn_Terrain_Apron", mesh)
+    transition = bpy.data.objects.new("Autumn_Terrain_Apron_Transition", mesh)
+    bpy.context.scene.collection.objects.link(transition)
+    transition["tka_ground_treatment"] = "baked-living-floor-transition"
+    transition["tka_ground_layout_version"] = int(GROUND_LAYOUT["version"])
+    transition["tka_ground_layout_sha256"] = GROUND_LAYOUT_SHA256
+
+    horizon_vertices = []
+    for half_size in APRON_HORIZON_RING_HALF_SIZES:
+        for x, y in square_perimeter_points(half_size, segments):
+            horizon_vertices.append((x, y, fog_horizon_height(x, y)))
+
+    horizon_faces = []
+    for ring_index in range(len(APRON_HORIZON_RING_HALF_SIZES) - 1):
+        base = ring_index * perimeter
+        nxt = (ring_index + 1) * perimeter
+        for i in range(perimeter):
+            j = (i + 1) % perimeter
+            horizon_faces.append((base + i, nxt + i, nxt + j, base + j))
+
+    horizon_mesh = bpy.data.meshes.new("Autumn Fog Horizon Mesh")
+    horizon_mesh.from_pydata(horizon_vertices, [], horizon_faces)
+    horizon_mesh.update()
+    horizon_mesh.materials.append(FOG_APRON_EARTH)
+    horizon_detail_uv = horizon_mesh.uv_layers.new(name="Autumn Ground Detail UV")
+    horizon_macro_uv = horizon_mesh.uv_layers.new(name="Autumn Ground Macro UV")
+    for polygon in horizon_mesh.polygons:
+        polygon.use_smooth = True
+        for loop_index in polygon.loop_indices:
+            vertex = horizon_mesh.vertices[
+                horizon_mesh.loops[loop_index].vertex_index
+            ]
+            horizon_detail_uv.data[loop_index].uv = autumn_ground_uv(
+                vertex.co.x, vertex.co.y
+            )
+            horizon_macro_uv.data[loop_index].uv = autumn_ground_macro_uv(
+                vertex.co.x, vertex.co.y
+            )
+
+    apron = bpy.data.objects.new("Autumn_Terrain_Apron", horizon_mesh)
     bpy.context.scene.collection.objects.link(apron)
-    apron["tka_ground_treatment"] = "baked-living-floor"
+    apron["tka_ground_treatment"] = "fog-dissolved-rolling-horizon"
     apron["tka_ground_layout_version"] = int(GROUND_LAYOUT["version"])
     apron["tka_ground_layout_sha256"] = GROUND_LAYOUT_SHA256
-    return len(faces)
+    apron["tka_ground_visible_extent"] = APRON_OUTER_HALF_SIZE
+    return len(faces) + len(horizon_faces)
 
 
 def create_path_contract(name, path_points, role, destination):
@@ -1012,6 +1206,33 @@ def add_habitation_cylinder(
 def create_habitation_props():
     """Add a few practical objects that explain who keeps using this route."""
     props = []
+
+    # A single warm pane makes the distant destination readable through the
+    # trunks. It is emissive only: no extra light or shadow pass at runtime.
+    cabin_window_x, cabin_window_y = -11.05, 53.92
+    cabin_window_ground = world_surface_height(cabin_window_x, cabin_window_y)
+    props.append(
+        add_habitation_box(
+            "Autumn_Cabin_Window_Glow",
+            (cabin_window_x, cabin_window_y, cabin_window_ground + 1.92),
+            (0.54, 0.045, 0.62),
+            HABITATION_CABIN_GLOW,
+            DISTANT_CABIN_PLACEMENT[4],
+        )
+    )
+    for name, dimensions in (
+        ("Autumn_Cabin_Window_Mullion_V", (0.045, 0.052, 0.64)),
+        ("Autumn_Cabin_Window_Mullion_H", (0.56, 0.052, 0.045)),
+    ):
+        props.append(
+            add_habitation_box(
+                name,
+                (cabin_window_x, cabin_window_y - 0.012, cabin_window_ground + 1.92),
+                dimensions,
+                HABITATION_WOOD,
+                DISTANT_CABIN_PLACEMENT[4],
+            )
+        )
 
     # Three irregular stones finish the lane at the south-facing shack door.
     for index, (x, y, scale_x, scale_y, rotation) in enumerate(
@@ -2210,9 +2431,8 @@ def create_mushroom_ecology(rock_placements):
     mushroom_rng = random.Random(14731)
 
     ring_name, center_x, center_y, radius, count, phase = FAIRY_CHAMPIGNON_ARC
-    ring_gaps = {4, 5, 6, 17}
     for index in range(count):
-        if index in ring_gaps:
+        if index in FAIRY_CHAMPIGNON_GAPS:
             continue
         angle = phase + index * math.tau / count
         local_radius = radius * mushroom_rng.uniform(0.93, 1.08)
@@ -2228,7 +2448,7 @@ def create_mushroom_ecology(rock_placements):
                 "broken-fairy-ring",
                 x,
                 y,
-                mushroom_rng.uniform(0.105, 0.17),
+                mushroom_rng.uniform(0.18, 0.30),
                 angle + mushroom_rng.uniform(-0.35, 0.35),
                 mushroom_rng.uniform(0.82, 1.18),
             )
@@ -2253,7 +2473,7 @@ def create_mushroom_ecology(rock_placements):
                     "root-zone-leaf-litter",
                     x,
                     y,
-                    mushroom_rng.uniform(0.11, 0.19),
+                    mushroom_rng.uniform(0.18, 0.29),
                     mushroom_rng.uniform(-math.pi, math.pi),
                     mushroom_rng.uniform(0.78, 1.12),
                 )
@@ -2278,7 +2498,7 @@ def create_mushroom_ecology(rock_placements):
                     "fallen-deadwood",
                     x,
                     y,
-                    mushroom_rng.uniform(0.14, 0.25),
+                    mushroom_rng.uniform(0.22, 0.36),
                     angle + mushroom_rng.uniform(-0.4, 0.4),
                     mushroom_rng.uniform(0.82, 1.15),
                 )
@@ -3021,7 +3241,7 @@ def verify_ecology(
     far_family_counts = {}
     for _name, family, *_rest in FAR_DEPTH_TREE_PLACEMENTS:
         far_family_counts[family] = far_family_counts.get(family, 0) + 1
-    expected_far_families = {"FarRed": 10, "FarGold": 9, "FarLarch": 9, "FarSnag": 5}
+    expected_far_families = {"FarRed": 16, "FarGold": 15, "FarLarch": 15, "FarSnag": 7}
     far_family_error = (
         far_family_counts
         if far_family_counts != expected_far_families
@@ -3117,6 +3337,7 @@ def verify_ecology(
             "Autumn_Chopping_Block",
             "Autumn_Water_Pail",
             "Autumn_Wayfinding_Lantern_Glow",
+            "Autumn_Cabin_Window_Glow",
             "Autumn_Door_Step_01",
         )
         if bpy.data.objects.get(name) is None
@@ -3442,7 +3663,7 @@ for label, path in QA_PATHS.items():
 print(f"Mesh objects:    {sum(1 for obj in bpy.data.objects if obj.type == 'MESH' and obj.visible_get())}")
 print(f"Unique meshes:   {len(bpy.data.meshes)}")
 print(f"Materials:       {len(bpy.data.materials)}")
-print(f"Terrain apron:   {apron_face_count} quads out to 165m")
+print(f"Terrain apron:   {apron_face_count} quads out to {APRON_OUTER_HALF_SIZE:.0f}m")
 print(
     f"Settlement paths: {path_lengths['cabin_lane']:.1f}m to shack + "
     f"{path_lengths['forest_trail']:.1f}m to golden larch sentinel"

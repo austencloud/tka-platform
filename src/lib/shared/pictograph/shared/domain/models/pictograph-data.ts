@@ -6,7 +6,7 @@
  */
 import type { Letter } from "../../../../foundation/domain/models/letter";
 import type { GridPosition } from "../../../grid/domain/enums/grid-enums";
-import type { MotionColor } from "../enums/pictograph-enums";
+import type { HandSide } from "../enums/pictograph-enums";
 import type { MotionData } from "./motion-data";
 import type { GridMode } from '../../../grid/domain/enums/grid-enums';
 
@@ -19,7 +19,7 @@ export interface PictographData {
   readonly endPosition?: GridPosition | null;
 
   // Movement data - explicitly allow undefined values
-  readonly motions: Partial<Record<MotionColor, MotionData | undefined>>;
+  readonly motions: Partial<Record<HandSide, MotionData | undefined>>;
 
   // Grid mode (diamond, box, skewed) - can be pre-set from sequence data
   readonly gridMode?: GridMode;

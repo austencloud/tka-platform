@@ -95,9 +95,9 @@ describe("Forest ground detail", () => {
     // Forest delegates to the shared masked-ground-detail primitive
     // (6a5556bc96), so the uniforms carry the generic `uMaskedGround*` names
     // and the Forest family→channel mapping is what this guards.
-    expect(shader.uniforms.uMaskedGroundRedMap.value).toBe(detailMap);
+    expect(shader.uniforms.uMaskedGroundRightMap.value).toBe(detailMap);
     expect(shader.uniforms.uMaskedGroundGreenMap.value).toBe(detailMaps.meadow);
-    expect(shader.uniforms.uMaskedGroundBlueMap.value).toBe(detailMaps.litter);
+    expect(shader.uniforms.uMaskedGroundLeftMap.value).toBe(detailMaps.litter);
     expect(shader.uniforms.uMaskedGroundFourthMap.value).toBe(detailMaps.damp);
     expect(shader.uniforms.uMaskedGroundFamilyMask.value).toBe(familyMask);
     expect(shader.uniforms.uMaskedGroundDetailStrength.value).toBe(0.9);

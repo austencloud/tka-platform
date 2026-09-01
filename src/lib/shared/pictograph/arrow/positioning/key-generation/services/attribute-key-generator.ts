@@ -6,15 +6,16 @@
 
 import type { ArrowPlacementData } from "../../placement/domain/arrow-placement-data";
 import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
+import { HandSide, normalizeLegacyHandSide } from "@tka/tka-types";
 
 function hasHybridMotions(pictographData: PictographData): boolean {
   try {
-    const blueMotion = pictographData.motions.blue;
-    const redMotion = pictographData.motions.red;
-    if (!blueMotion || !redMotion) return false;
-    const blueType = blueMotion.motionType || "";
-    const redType = redMotion.motionType || "";
-    return blueType !== redType;
+    const leftMotion = pictographData.motions.left;
+    const rightMotion = pictographData.motions.right;
+    if (!leftMotion || !rightMotion) return false;
+    const leftType = leftMotion.motionType || "";
+    const rightType = rightMotion.motionType || "";
+    return leftType !== rightType;
   } catch {
     return false;
   }
@@ -24,21 +25,36 @@ function startsFromMixedOrientation(pictographData: PictographData): boolean {
   try {
     const IN = "in";
     const OUT = "out";
-    const blueMotion = pictographData.motions.blue;
-    const redMotion = pictographData.motions.red;
-    if (!blueMotion || !redMotion) return false;
-    const blueStart = blueMotion.startOrientation || "";
-    const redStart = redMotion.startOrientation || "";
-    const blueLayer1 = [IN, OUT].includes(blueStart);
-    const redLayer1 = [IN, OUT].includes(redStart);
-    return blueLayer1 !== redLayer1;
+    const leftMotion = pictographData.motions.left;
+    const rightMotion = pictographData.motions.right;
+    if (!leftMotion || !rightMotion) return false;
+    const leftStart = leftMotion.startOrientation || "";
+    const rightStart = rightMotion.startOrientation || "";
+    const leftLayer1 = [IN, OUT].includes(leftStart);
+    const rightLayer1 = [IN, OUT].includes(rightStart);
+    return leftLayer1 !== rightLayer1;
   } catch {
     return false;
   }
 }
 
 function isNonHybridLetter(letter: string): boolean {
-  const nonHybridLetters = ["A","B","D","E","G","H","J","K","M","N","P","Q","S","T"];
+  const nonHybridLetters = [
+    "A",
+    "B",
+    "D",
+    "E",
+    "G",
+    "H",
+    "J",
+    "K",
+    "M",
+    "N",
+    "P",
+    "Q",
+    "S",
+    "T",
+  ];
   return nonHybridLetters.includes(letter);
 }
 
@@ -86,14 +102,16 @@ export function generateAttributeKey(
 export function getKeyFromArrow(
   _arrowData: ArrowPlacementData,
   pictographData: PictographData,
-  color: string
+  handValue: string
 ): string {
   try {
-    const motionData = pictographData.motions[color as keyof typeof pictographData.motions];
+    const hand = normalizeLegacyHandSide(handValue) ?? HandSide.LEFT;
+    const legacyColor = hand === HandSide.LEFT ? "blue" : "red";
+    const motionData = pictographData.motions[hand];
 
     if (!motionData) {
-      console.debug(`No motion data for ${color}, using color as key`);
-      return color;
+      console.debug(`No motion data for ${hand}, using legacy color key`);
+      return legacyColor;
     }
 
     const motionType = motionData.motionType || "";
@@ -105,9 +123,20 @@ export function getKeyFromArrow(
     const mixed = startsFromMixedOrientation(pictographData);
     const standard = !mixed;
 
-    return generateAttributeKey(motionType, letter, startOrientation, color, leadState, hybrid, mixed, standard);
+    return generateAttributeKey(
+      motionType,
+      letter,
+      startOrientation,
+      legacyColor,
+      leadState,
+      hybrid,
+      mixed,
+      standard
+    );
   } catch (error) {
-    console.error(`Error generating attribute key for ${color}:`, error);
-    return color;
+    const legacyColor =
+      normalizeLegacyHandSide(handValue) === HandSide.RIGHT ? "red" : "blue";
+    console.error(`Error generating attribute key for ${handValue}:`, error);
+    return legacyColor;
   }
 }

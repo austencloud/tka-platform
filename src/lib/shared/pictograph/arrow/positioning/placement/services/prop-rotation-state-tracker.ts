@@ -26,7 +26,7 @@ function makeKey(
   return `${loc1}|${loc2}|${rotDir}`;
 }
 
-const blueRotationMap: PropRotationMap = new Map([
+const leftRotationMap: PropRotationMap = new Map([
   // EAST patterns
   [makeKey(GridLocation.EAST, GridLocation.NORTH, RotationDirection.CLOCKWISE), OPENING],
   [makeKey(GridLocation.EAST, GridLocation.NORTH, RotationDirection.COUNTER_CLOCKWISE), CLOSING],
@@ -69,7 +69,7 @@ const blueRotationMap: PropRotationMap = new Map([
   [makeKey(GridLocation.NORTHWEST, GridLocation.NORTHEAST, RotationDirection.COUNTER_CLOCKWISE), OPENING],
 ]);
 
-const redRotationMap: PropRotationMap = new Map([
+const rightRotationMap: PropRotationMap = new Map([
   // EAST patterns (inverse of blue)
   [makeKey(GridLocation.EAST, GridLocation.NORTH, RotationDirection.CLOCKWISE), CLOSING],
   [makeKey(GridLocation.EAST, GridLocation.NORTH, RotationDirection.COUNTER_CLOCKWISE), OPENING],
@@ -113,32 +113,32 @@ const redRotationMap: PropRotationMap = new Map([
 ]);
 
 // Dash map is the same as blue map (dash is typically the "first" motion)
-const dashRotationMap: PropRotationMap = blueRotationMap;
+const dashRotationMap: PropRotationMap = leftRotationMap;
 // Static map is the same as red map (static is typically the "second" motion)
-const staticRotationMap: PropRotationMap = redRotationMap;
+const staticRotationMap: PropRotationMap = rightRotationMap;
 
 /**
  * Determine prop rotation state (opening/closing) for blue motion.
  * Used for Gamma (γ) and Lambda-Dash (Λ-).
  */
-export function getBlueState(
-  blueEndLoc: GridLocation,
-  redEndLoc: GridLocation,
+export function getLeftState(
+  leftEndLoc: GridLocation,
+  rightEndLoc: GridLocation,
   propRotDir: RotationDirection
 ): string {
-  return blueRotationMap.get(makeKey(blueEndLoc, redEndLoc, propRotDir)) || "";
+  return leftRotationMap.get(makeKey(leftEndLoc, rightEndLoc, propRotDir)) || "";
 }
 
 /**
  * Determine prop rotation state (opening/closing) for red motion.
  * Used for Gamma (γ) and Lambda-Dash (Λ-).
  */
-export function getRedState(
-  blueEndLoc: GridLocation,
-  redEndLoc: GridLocation,
+export function getRightState(
+  leftEndLoc: GridLocation,
+  rightEndLoc: GridLocation,
   propRotDir: RotationDirection
 ): string {
-  return redRotationMap.get(makeKey(blueEndLoc, redEndLoc, propRotDir)) || "";
+  return rightRotationMap.get(makeKey(leftEndLoc, rightEndLoc, propRotDir)) || "";
 }
 
 /**

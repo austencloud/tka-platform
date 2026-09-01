@@ -28,11 +28,11 @@ for (const [sk, refs] of shapes) {
 }
 
 // Color make-up across the catalog.
-let blueOnly = 0, redOnly = 0, combo = 0;
+let leftOnly = 0, rightOnly = 0, combo = 0;
 for (const [, refs] of shapes) {
   for (const r of refs) {
-    if (r.colorSig.blueOnly) blueOnly++;
-    else if (r.colorSig.redOnly) redOnly++;
+    if (r.colorSig.leftOnly) leftOnly++;
+    else if (r.colorSig.rightOnly) rightOnly++;
     else combo++;
   }
 }
@@ -55,7 +55,7 @@ console.log(`Collapse ratio        ${(totalSeqs / glyphCount).toFixed(1)}x  (avg
 console.log(`Rotation/mirror orbits ${orbitCount}  (${orbitsWithTwins} contain >1 glyph; biggest folds ${biggestOrbit} glyphs)`);
 console.log("");
 console.log("Color make-up of pathways:");
-console.log(`  blue-only ${blueOnly} (${pct(blueOnly, totalSeqs)}%) · red-only ${redOnly} (${pct(redOnly, totalSeqs)}%) · combo ${combo} (${pct(combo, totalSeqs)}%)`);
+console.log(`  blue-only ${leftOnly} (${pct(leftOnly, totalSeqs)}%) · red-only ${rightOnly} (${pct(rightOnly, totalSeqs)}%) · combo ${combo} (${pct(combo, totalSeqs)}%)`);
 console.log("");
 
 console.log("Class-size histogram (pathways → #glyphs with that many):");

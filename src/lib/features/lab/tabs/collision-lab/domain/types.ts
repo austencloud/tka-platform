@@ -6,7 +6,7 @@
  */
 
 import type { Plane } from "@austencloud/scene-3d";
-import type { SimResult } from '../services/types';
+import type { SimResult } from "../services/types";
 
 export type DiamondPosition = "N" | "E" | "S" | "W";
 export type HandOrientation = "in" | "out"; // radial | antiradial
@@ -20,13 +20,13 @@ export interface HandState {
 export interface PoseDefinition {
   /**
    * Stable id encoding both hands' (plane, position, orientation).
-   * Format: `{bluePlaneLetter}{bluePos}{blueOri}-{redPlaneLetter}{redPos}{redOri}`
+   * Format: `{leftPlaneLetter}{leftPos}{leftOri}-{rightPlaneLetter}{rightPos}{rightOri}`
    * where plane letter is w=wall, h=wheel, f=floor.
-   * Example: `wNi-hEo` = blue on wall at N (in), red on wheel at E (out).
+   * Example: `wNi-hEo` = left on wall at N (in), right on wheel at E (out).
    */
   id: string;
-  blueHand: HandState;
-  redHand: HandState;
+  leftHand: HandState;
+  rightHand: HandState;
 }
 
 export type LabelStatus =
@@ -51,6 +51,8 @@ export type CollisionZoneType =
   | "prop-through-head"
   | "prop-through-arm"
   | "prop-through-prop"
+  | "arm-through-neck"
+  | "arm-through-torso"
   | "arms-through-each-other";
 
 export type SnapshotSeverity = "clear" | "graze" | "clip" | "penetrate";

@@ -51,11 +51,12 @@
     <RelationshipChoiceChip
       accent={c.el.accentColor}
       icon={c.el.iconPath}
-      code={c.mode}
+      code={c.el.name}
+      compactCode={c.mode}
       label={elementName(c.el.element)}
       active={selected === c.mode}
       disabled={disabled || (availabilityReady && !available.includes(c.mode))}
-      ariaLabel={`${elementName(c.el.element)} (${c.label})${
+      ariaLabel={`${c.mode} ${elementName(c.el.element)} (${c.label})${
         availabilityReady && !available.includes(c.mode)
           ? ", unavailable for these flowers"
           : ""

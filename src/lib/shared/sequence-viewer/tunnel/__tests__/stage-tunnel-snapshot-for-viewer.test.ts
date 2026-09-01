@@ -8,11 +8,14 @@ import {
 import { EFFECTS_CONFIG_STORAGE_KEY } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 const snapshot = {
-  version: 2,
+  version: 3,
   tunnel: {
     config: { ...DEFAULT_CONFIG, fold: 6 },
     gridVisible: true,
-    spectrum: false,
+    colors: {
+      mode: "custom",
+      custom: { left: "#123456", right: "#abcdef" },
+    },
     section: "props",
     presetRecipe: null,
   },
@@ -21,15 +24,15 @@ const snapshot = {
   paths: {
     pathShape: "concave",
     motionAwarePaths: true,
-    bluePathLines: true,
-    redPathLines: false,
+    leftPathLines: true,
+    rightPathLines: false,
   },
   playback: { bpm: 128, playbackMode: "step" },
   props: {
-    bluePropType: "buugeng",
-    redPropType: "buugeng",
-    blueBuugengFlipped: true,
-    redBuugengFlipped: false,
+    leftPropType: "buugeng",
+    rightPropType: "buugeng",
+    leftBuugengFlipped: true,
+    rightBuugengFlipped: false,
   },
   trailRender: { mode: "trail", marker: "exact" },
 } as unknown as TunnelSnapshot;
@@ -46,6 +49,8 @@ describe("stageTunnelSnapshotForViewer", () => {
       settings: { updateSettings: vi.fn() },
       saveViewState: vi.fn(),
       storage: { setItem: vi.fn() },
+      ensureCustomColorPreference: vi.fn(),
+      stageCustomColors: vi.fn(),
     } as unknown as TunnelViewerStagingDependencies;
 
     stageTunnelSnapshotForViewer(snapshot, dependencies);
@@ -59,12 +64,12 @@ describe("stageTunnelSnapshotForViewer", () => {
     });
     expect(dependencies.visibility.setVisibility).toHaveBeenNthCalledWith(
       1,
-      "bluePathLines",
+      "leftPathLines",
       true
     );
     expect(dependencies.visibility.setVisibility).toHaveBeenNthCalledWith(
       2,
-      "redPathLines",
+      "rightPathLines",
       false
     );
     expect(dependencies.animationSettings.updateSettings).toHaveBeenCalledWith({
@@ -74,6 +79,10 @@ describe("stageTunnelSnapshotForViewer", () => {
       snapshot.props
     );
     expect(dependencies.saveViewState).toHaveBeenCalledWith(snapshot.tunnel);
+    expect(dependencies.ensureCustomColorPreference).toHaveBeenCalledOnce();
+    expect(dependencies.stageCustomColors).toHaveBeenCalledWith(
+      snapshot.tunnel.colors.custom
+    );
     expect(dependencies.storage?.setItem).toHaveBeenCalledWith(
       EFFECTS_CONFIG_STORAGE_KEY,
       JSON.stringify(snapshot.effects)

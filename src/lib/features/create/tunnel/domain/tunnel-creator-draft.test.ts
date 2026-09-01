@@ -20,27 +20,31 @@ const sequence = {
 } as unknown as SequenceData;
 
 const presentation = {
-  version: 1,
+  version: 3,
   tunnel: {
     config: DEFAULT_CONFIG,
     gridVisible: true,
-    spectrum: false,
+    colors: {
+      mode: "hands",
+      custom: { left: "#2e8bf0", right: "#ed1c24" },
+    },
     section: "props",
+    presetRecipe: null,
   },
   effects: { activeEffect: "none" },
   effort: "linear",
   paths: {
     pathShape: "arc",
     motionAwarePaths: false,
-    bluePathLines: false,
-    redPathLines: false,
+    leftPathLines: false,
+    rightPathLines: false,
   },
   playback: { bpm: 96, playbackMode: "step" },
   props: {
-    bluePropType: "buugeng",
-    redPropType: "buugeng",
-    blueBuugengFlipped: true,
-    redBuugengFlipped: false,
+    leftPropType: "buugeng",
+    rightPropType: "buugeng",
+    leftBuugengFlipped: true,
+    rightBuugengFlipped: false,
   },
   trailRender: { mode: "trail" },
 } as unknown as TunnelSnapshot;
@@ -80,14 +84,14 @@ describe("tunnel creator draft", () => {
       version: 1 as const,
       baseSequenceId: "base-sequence",
       mode: "QO" as const,
-      blueFlower: {
+      leftFlower: {
         style: "pro" as const,
         turns: 1,
         ori: "in" as const,
         grid: "diamond" as const,
         petals: 2,
       },
-      redFlower: {
+      rightFlower: {
         style: "anti" as const,
         turns: 1,
         ori: "out" as const,

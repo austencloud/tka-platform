@@ -331,7 +331,7 @@
         Render + upload the canonical per-pictograph cells (<code
           >pictograph-cells/</code
         >) for every durable QR shortcode, so /q scanners download images
-        instead of rasterizing. Resolves each card's exact blue/red props and
+        instead of rasterizing. Resolves each card's exact left/right props and
         verifies both light and dark assets.
       </p>
     </header>

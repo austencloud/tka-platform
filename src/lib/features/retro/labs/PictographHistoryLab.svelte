@@ -17,7 +17,7 @@
   import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
-    MotionColor,
+    HandSide,
     MotionType,
     Orientation,
     RotationDirection,
@@ -72,8 +72,8 @@
   interface RetroPayload {
     letter: string;
     gridMode: string;
-    blueHand: RetroHandPayload;
-    redHand: RetroHandPayload;
+    leftHand: RetroHandPayload;
+    rightHand: RetroHandPayload;
   }
 
 
@@ -136,8 +136,8 @@
 
 
   function pictographId(p: PictographData): string {
-    const b = p.motions?.[MotionColor.BLUE];
-    const r = p.motions?.[MotionColor.RED];
+    const b = p.motions?.[HandSide.LEFT];
+    const r = p.motions?.[HandSide.RIGHT];
     return `${p.gridMode ?? "diamond"}:${p.letter ?? "?"}:${b?.startLocation ?? "?"}>${b?.endLocation ?? "?"}:${r?.startLocation ?? "?"}>${r?.endLocation ?? "?"}`;
   }
 
@@ -161,28 +161,28 @@
   }
 
   function toPayload(p: PictographData): RetroPayload {
-    const blue = p.motions?.[MotionColor.BLUE];
-    const red = p.motions?.[MotionColor.RED];
+    const left = p.motions?.[HandSide.LEFT];
+    const right = p.motions?.[HandSide.RIGHT];
     return {
       letter: String(p.letter ?? ""),
       gridMode: String(p.gridMode ?? "diamond"),
-      blueHand: {
+      leftHand: {
         color: "blue",
-        location: String(blue?.startLocation ?? GridLocation.NORTH),
-        endLocation: String(blue?.endLocation ?? GridLocation.NORTH),
-        motionType: String(blue?.motionType ?? MotionType.STATIC),
-        rotationDirection: String(blue?.rotationDirection ?? RotationDirection.NO_ROTATION),
-        orientation: String(blue?.endOrientation ?? Orientation.IN),
-        turns: typeof blue?.turns === "number" ? blue.turns : 0,
+        location: String(left?.startLocation ?? GridLocation.NORTH),
+        endLocation: String(left?.endLocation ?? GridLocation.NORTH),
+        motionType: String(left?.motionType ?? MotionType.STATIC),
+        rotationDirection: String(left?.rotationDirection ?? RotationDirection.NO_ROTATION),
+        orientation: String(left?.endOrientation ?? Orientation.IN),
+        turns: typeof left?.turns === "number" ? left.turns : 0,
       },
-      redHand: {
+      rightHand: {
         color: "red",
-        location: String(red?.startLocation ?? GridLocation.SOUTH),
-        endLocation: String(red?.endLocation ?? GridLocation.SOUTH),
-        motionType: String(red?.motionType ?? MotionType.STATIC),
-        rotationDirection: String(red?.rotationDirection ?? RotationDirection.NO_ROTATION),
-        orientation: String(red?.endOrientation ?? Orientation.IN),
-        turns: typeof red?.turns === "number" ? red.turns : 0,
+        location: String(right?.startLocation ?? GridLocation.SOUTH),
+        endLocation: String(right?.endLocation ?? GridLocation.SOUTH),
+        motionType: String(right?.motionType ?? MotionType.STATIC),
+        rotationDirection: String(right?.rotationDirection ?? RotationDirection.NO_ROTATION),
+        orientation: String(right?.endOrientation ?? Orientation.IN),
+        turns: typeof right?.turns === "number" ? right.turns : 0,
       },
     };
   }

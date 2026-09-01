@@ -3,7 +3,7 @@
   Bottom drawer for selecting props.
   Uses BentoPropGrid to show all variations organized by family.
 
-  Optional cat/dog mode: pass showTabs=true to render blue/red tab bar.
+  Optional cat/dog mode: pass showTabs=true to render left/right tab bar.
   Optional cat/dog toggle: pass showCatDogToggle=true to let users enable it.
   Parent controls which prop is selected and handles the selection callback.
 -->
@@ -26,7 +26,7 @@
     title = "Select Prop",
     onSelect,
     showTabs = false,
-    activeTab = $bindable<"blue" | "red">("blue"),
+    activeTab = $bindable<"left" | "right">("left"),
     onOpenChange,
     showCatDogToggle = false,
     catDogEnabled = false,
@@ -38,10 +38,10 @@
     color?: "blue" | "red";
     title?: string;
     onSelect: (propType: PropType) => void;
-    /** Show blue/red tab bar for cat/dog mode */
+    /** Show left/right tab bar for cat/dog mode */
     showTabs?: boolean;
     /** Active tab when showTabs is true */
-    activeTab?: "blue" | "red";
+    activeTab?: "left" | "right";
     /** Reports drawer dismissal when the owner does not use two-way binding. */
     onOpenChange?: (open: boolean) => void;
     /** Show a cat/dog mode toggle in the drawer header */
@@ -94,7 +94,7 @@
     onSelect(propType);
   }
 
-  function handleTabChange(tab: "blue" | "red") {
+  function handleTabChange(tab: "left" | "right") {
     const hapticService = getHapticFeedback();
     hapticService?.trigger("selection");
     activeTab = tab;
@@ -147,23 +147,23 @@
               type="button"
               role="tab"
               class="segment-btn"
-              class:active={activeTab === "blue"}
-              aria-selected={activeTab === "blue"}
-              onclick={() => handleTabChange("blue")}
+              class:active={activeTab === "left"}
+              aria-selected={activeTab === "left"}
+              onclick={() => handleTabChange("left")}
             >
               <span class="color-dot blue" aria-hidden="true"></span>
-              Blue
+              Left
             </button>
             <button
               type="button"
               role="tab"
               class="segment-btn"
-              class:active={activeTab === "red"}
-              aria-selected={activeTab === "red"}
-              onclick={() => handleTabChange("red")}
+              class:active={activeTab === "right"}
+              aria-selected={activeTab === "right"}
+              onclick={() => handleTabChange("right")}
             >
               <span class="color-dot red" aria-hidden="true"></span>
-              Red
+              Right
             </button>
           </div>
         {/if}

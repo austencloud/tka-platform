@@ -7,7 +7,12 @@ import { updateTheme as updateThemeService } from "../../theme/services/theme-se
 import { applyThemeForBackground } from "../../settings/utils/background-theme-calculator";
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "../../pictograph/prop/domain/enums/prop-type";
-import type { AppSettings, PropPreset } from "../domain/app-settings";
+import {
+  normalizeLegacyAppSettings,
+  type AppSettings,
+  type PropPreset,
+} from "../domain/app-settings";
+import { DEFAULT_FAN_APPEARANCE } from "../../pictograph/prop/domain/fan-appearance";
 // Dynamic import: posthog-activity-logger → posthog → $env/dynamic/public.
 // Static import crashes the composition worker (no globalThis.__sveltekit_dev).
 async function logSettingChange(
@@ -36,47 +41,47 @@ const OFFLINE_QUEUE_KEY = "tka-settings-offline-queue";
 
 const DEFAULT_PROP_PRESETS: PropPreset[] = [
   {
-    bluePropType: PropType.STAFF,
-    redPropType: PropType.STAFF,
+    leftPropType: PropType.STAFF,
+    rightPropType: PropType.STAFF,
     catDogMode: false,
   },
-  { bluePropType: PropType.FAN, redPropType: PropType.FAN, catDogMode: false },
+  { leftPropType: PropType.FAN, rightPropType: PropType.FAN, catDogMode: false },
   {
-    bluePropType: PropType.CLUB,
-    redPropType: PropType.CLUB,
-    catDogMode: false,
-  },
-  {
-    bluePropType: PropType.BUUGENG,
-    redPropType: PropType.BUUGENG,
+    leftPropType: PropType.CLUB,
+    rightPropType: PropType.CLUB,
     catDogMode: false,
   },
   {
-    bluePropType: PropType.MINIHOOP,
-    redPropType: PropType.MINIHOOP,
+    leftPropType: PropType.BUUGENG,
+    rightPropType: PropType.BUUGENG,
     catDogMode: false,
   },
   {
-    bluePropType: PropType.TRIAD,
-    redPropType: PropType.TRIAD,
+    leftPropType: PropType.MINIHOOP,
+    rightPropType: PropType.MINIHOOP,
     catDogMode: false,
   },
   {
-    bluePropType: PropType.DOUBLESTAR,
-    redPropType: PropType.DOUBLESTAR,
+    leftPropType: PropType.TRIAD,
+    rightPropType: PropType.TRIAD,
     catDogMode: false,
   },
   {
-    bluePropType: PropType.BIGDOUBLESTAR,
-    redPropType: PropType.BIGDOUBLESTAR,
+    leftPropType: PropType.DOUBLESTAR,
+    rightPropType: PropType.DOUBLESTAR,
     catDogMode: false,
   },
   {
-    bluePropType: PropType.QUIAD,
-    redPropType: PropType.QUIAD,
+    leftPropType: PropType.BIGDOUBLESTAR,
+    rightPropType: PropType.BIGDOUBLESTAR,
     catDogMode: false,
   },
-  { bluePropType: PropType.STAFF, redPropType: PropType.FAN, catDogMode: true },
+  {
+    leftPropType: PropType.QUIAD,
+    rightPropType: PropType.QUIAD,
+    catDogMode: false,
+  },
+  { leftPropType: PropType.STAFF, rightPropType: PropType.FAN, catDogMode: true },
 ];
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -87,8 +92,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   hapticFeedback: true,
   reducedMotion: false,
   catDogMode: false,
-  bluePropType: PropType.STAFF,
-  redPropType: PropType.STAFF,
+  leftPropType: PropType.STAFF,
+  rightPropType: PropType.STAFF,
+  fanAppearance: DEFAULT_FAN_APPEARANCE,
   blockedStartPositions: [],
   blockedStartPositionsByGridMode: {},
   propPresets: DEFAULT_PROP_PRESETS,
@@ -101,7 +107,7 @@ const initialSettings = (() => {
   try {
     const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (!stored) return DEFAULT_SETTINGS;
-    const parsed = JSON.parse(stored) as AppSettings & {
+    const parsed = normalizeLegacyAppSettings(JSON.parse(stored)) as AppSettings & {
       _localTimestamp?: number;
     };
     parsed.backgroundType =
@@ -128,8 +134,7 @@ class SettingsState {
     (settings: AppSettings | null, userId: string) => void
   >();
   private lastRemoteApplication:
-    | { settings: AppSettings | null; userId: string }
-    | undefined;
+    { settings: AppSettings | null; userId: string } | undefined;
   private syncInitialized = false;
   private isSavingToFirebase = false;
   private pendingFirebaseSave: Promise<void> | null = null;
@@ -341,8 +346,8 @@ class SettingsState {
       "backgroundColor",
       "gradientColors",
       "gradientDirection",
-      "bluePropType",
-      "redPropType",
+      "leftPropType",
+      "rightPropType",
       "catDogMode",
       "selectedPresetIndex",
       "compositionRecipeOverrides",
@@ -561,8 +566,8 @@ class SettingsState {
     debug.info("Saving settings to Firebase", {
       propPresetsCount: settingsToSave.propPresets?.length ?? 0,
       selectedPresetIndex: settingsToSave.selectedPresetIndex,
-      bluePropType: settingsToSave.bluePropType,
-      redPropType: settingsToSave.redPropType,
+      leftPropType: settingsToSave.leftPropType,
+      rightPropType: settingsToSave.rightPropType,
     });
 
     this.pendingFirebaseSave = this.firebasePersistence
@@ -620,7 +625,7 @@ class SettingsState {
 
       if (this.firebasePersistence && auth.currentUser?.uid === userId) {
         const settings = this.sanitizeImageExportForUser(
-          queueEntry.settings as AppSettings,
+          normalizeLegacyAppSettings(queueEntry.settings),
           userId
         );
         await this.firebasePersistence.saveSettings(settings);
@@ -683,7 +688,9 @@ class SettingsState {
         return DEFAULT_SETTINGS;
       }
 
-      const parsed = JSON.parse(stored);
+      const parsed = normalizeLegacyAppSettings(JSON.parse(stored)) as AppSettings & {
+        developerMode?: boolean;
+      };
       const merged = { ...DEFAULT_SETTINGS, ...parsed };
 
       if ("_localTimestamp" in merged) {

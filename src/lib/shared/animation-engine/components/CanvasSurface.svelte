@@ -41,6 +41,7 @@ captureEffectDiagnostics to the context menu.
   import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import type { TrailSettings } from "../domain/types/trail-types";
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
+  import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
   import GlyphRenderer from "./GlyphRenderer.svelte";
   import GlyphOverlay from "./layers/GlyphOverlay.svelte";
   import PathLinesOverlay from "./layers/PathLinesOverlay.svelte";
@@ -67,13 +68,17 @@ captureEffectDiagnostics to the context menu.
   import { getRenderContextRegistry } from "../get-render-context-registry";
   import { installAnimatorDiagnostics } from "../debug/animator-diagnostics";
   import type { QualityTier } from "../domain/types/quality-types";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+  import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { GlyphOverlayFrameMode } from "../domain/glyph-overlay-frame";
 
   let {
     // Engine-driving props
-    blueProp,
-    redProp,
+    leftProp,
+    rightProp,
     additionalLayers = [],
     tunnelSpectrum = true,
+    tunnelPropColors = null,
     tunnelSelectedLayer = null,
     gridVisible = true,
     gridMode = GridMode.DIAMOND,
@@ -84,13 +89,15 @@ captureEffectDiagnostics to the context menu.
     currentStep = 0,
     isPlaying = false,
     trailSettings: externalTrailSettings = $bindable(),
-    bluePropType = null,
-    redPropType = null,
-    blueBuugengFlipped = undefined,
-    redBuugengFlipped = undefined,
+    leftPropType = null,
+    rightPropType = null,
+    fanAppearance = undefined,
+    leftBuugengFlipped = undefined,
+    rightBuugengFlipped = undefined,
     previewDarkMode = null,
     isSeamlesslyLoopable = undefined,
     showNonRadialPoints = true,
+    mandalaVisibleOverride = undefined,
     fireConfig = undefined,
     ledConfig = undefined,
     tipEffectMap: cellTipEffectMap = undefined,
@@ -103,10 +110,12 @@ captureEffectDiagnostics to the context menu.
     darkModeEnabled = false,
     effectiveTkaGlyphVisible = false,
     elementalGlyphVisible = false,
+    propElementalType = null,
+    glyphFrame = "pictograph",
     effectiveBeatNumbersVisible = false,
     positionGlyphVisible = false,
-    bluePathLinesVisible = false,
-    redPathLinesVisible = false,
+    leftPathLinesVisible = false,
+    rightPathLinesVisible = false,
     suppress2DOverlays = false,
     // Engine wiring props
     resizePaused = false,
@@ -126,10 +135,11 @@ captureEffectDiagnostics to the context menu.
     // header/progress stack. Undefined → nothing rendered.
     cornerControl = undefined,
   }: {
-    blueProp: PropState | null;
-    redProp: PropState | null;
+    leftProp: PropState | null;
+    rightProp: PropState | null;
     additionalLayers?: AdditionalLayerProps[];
     tunnelSpectrum?: boolean;
+    tunnelPropColors?: TunnelPropColorPair | null;
     tunnelSelectedLayer?: number | readonly number[] | null;
     gridVisible?: boolean;
     gridMode?: GridMode | null;
@@ -140,13 +150,15 @@ captureEffectDiagnostics to the context menu.
     currentStep?: number;
     isPlaying?: boolean;
     trailSettings?: TrailSettings;
-    bluePropType?: string | null;
-    redPropType?: string | null;
-    blueBuugengFlipped?: boolean;
-    redBuugengFlipped?: boolean;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
+    fanAppearance?: FanAppearance;
+    leftBuugengFlipped?: boolean;
+    rightBuugengFlipped?: boolean;
     previewDarkMode?: boolean | null;
     isSeamlesslyLoopable?: boolean;
     showNonRadialPoints?: boolean;
+    mandalaVisibleOverride?: boolean;
     fireConfig?: Partial<FireOverlayConfig>;
     ledConfig?: Partial<LedOverlayConfig>;
     tipEffectMap?: TipEffectMap;
@@ -160,11 +172,13 @@ captureEffectDiagnostics to the context menu.
     darkModeEnabled?: boolean;
     effectiveTkaGlyphVisible?: boolean;
     elementalGlyphVisible?: boolean;
+    propElementalType?: ElementalType | null;
+    glyphFrame?: GlyphOverlayFrameMode;
     effectiveBeatNumbersVisible?: boolean;
     /** Show the α/β/γ start→end position indicator (guide hand-path exploration). */
     positionGlyphVisible?: boolean;
-    bluePathLinesVisible?: boolean;
-    redPathLinesVisible?: boolean;
+    leftPathLinesVisible?: boolean;
+    rightPathLinesVisible?: boolean;
     suppress2DOverlays?: boolean;
     resizePaused?: boolean;
     visibilityManagerOverride?: AnimationVisibilityStateManager;
@@ -256,8 +270,8 @@ captureEffectDiagnostics to the context menu.
   $effect(() => {
     if (!viewerVisibilityCtx) return;
     engineInstance.setMotionVisibility(
-      viewerVisibilityCtx.blueMotion,
-      viewerVisibilityCtx.redMotion
+      viewerVisibilityCtx.leftMotion,
+      viewerVisibilityCtx.rightMotion
     );
   });
 
@@ -398,10 +412,11 @@ captureEffectDiagnostics to the context menu.
     const currentCellTipEffectMap = cellTipEffectMap;
     const currentCellTipEffortMap = cellTipEffortMap;
     const props = {
-      blueProp,
-      redProp,
+      leftProp,
+      rightProp,
       additionalLayers,
       tunnelSpectrum,
+      tunnelPropColors,
       tunnelSelectedLayer,
       gridVisible,
       gridMode,
@@ -412,14 +427,16 @@ captureEffectDiagnostics to the context menu.
       currentStep,
       isPlaying,
       externalTrailSettings,
-      bluePropType,
-      redPropType,
-      blueBuugengFlipped,
-      redBuugengFlipped,
+      leftPropType,
+      rightPropType,
+      fanAppearance,
+      leftBuugengFlipped,
+      rightBuugengFlipped,
       previewDarkMode,
       isSeamlesslyLoopable,
       virtualTime,
       showNonRadialPoints,
+      mandalaVisibleOverride,
     };
     untrack(() => {
       if (currentFireConfig) {
@@ -494,6 +511,8 @@ captureEffectDiagnostics to the context menu.
       {stepData}
       tkaGlyphVisible={effectiveTkaGlyphVisible}
       {elementalGlyphVisible}
+      {propElementalType}
+      {glyphFrame}
       stepNumbersVisible={effectiveBeatNumbersVisible}
       {positionGlyphVisible}
       darkMode={darkModeEnabled}
@@ -508,15 +527,15 @@ captureEffectDiagnostics to the context menu.
         currentStep >= (sequenceData.steps?.length ?? 0) + 0.99}
     />
 
-    <!-- Always mounted: PathLinesOverlay self-gates on showBlue/showRed and owns
+    <!-- Always mounted: PathLinesOverlay self-gates on showLeft/showRight and owns
          its own fade in/out, so the overlay must stay in the tree for its
          out-transition to play when the Paths toggle flips off. -->
     <PathLinesOverlay
       {sequenceData}
       {currentStep}
       {stepData}
-      showBlue={bluePathLinesVisible}
-      showRed={redPathLinesVisible}
+      showLeft={leftPathLinesVisible}
+      showRight={rightPathLinesVisible}
       vm={visibilityManager}
     />
 

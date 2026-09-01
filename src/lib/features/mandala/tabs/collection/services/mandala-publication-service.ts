@@ -64,8 +64,8 @@ export async function publishMandala(
       posterDataUrl: () =>
         renderMandalaPosterDataUrl(
           publicRevision.payload.steps as unknown as StepLike[],
-          publicRevision.payload.bluePropType,
-          publicRevision.payload.redPropType,
+          publicRevision.payload.leftPropType,
+          publicRevision.payload.rightPropType,
           {
             show: publicRevision.payload.variant,
             pathShape: publicRevision.payload.pathShape ?? "arc",

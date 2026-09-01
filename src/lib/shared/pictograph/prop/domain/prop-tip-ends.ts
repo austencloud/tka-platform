@@ -56,8 +56,8 @@ export function propTipEnds(propType: PropType | string | undefined): 1 | 2 {
  * two clubs or two staves — resolves cleanly to 1 or 2).
  */
 export function pairTipEnds(
-  blue: PropType | string | undefined,
-  red: PropType | string | undefined
+  left: PropType | string | undefined,
+  right: PropType | string | undefined
 ): 1 | 2 {
-  return propTipEnds(blue) === 2 || propTipEnds(red) === 2 ? 2 : 1;
+  return propTipEnds(left) === 2 || propTipEnds(right) === 2 ? 2 : 1;
 }

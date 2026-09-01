@@ -1,15 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { applyFilter, getSequenceMaxTurn } from "$lib/shared/browse/services/browse-filter";
+import {
+  applyFilter,
+  getSequenceMaxTurn,
+} from "$lib/shared/browse/services/browse-filter";
 import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
-// Minimal step shape the filter reads: motions.blue/red.turns + isBlank.
-function step(blueTurns: number | "fl", redTurns: number | "fl", isBlank = false) {
+// Minimal step shape the filter reads: motions.left/right.turns + isBlank.
+function step(
+  leftTurns: number | "fl",
+  rightTurns: number | "fl",
+  isBlank = false
+) {
   return {
     isBlank,
     motions: {
-      blue: { turns: blueTurns },
-      red: { turns: redTurns },
+      left: { turns: leftTurns },
+      right: { turns: rightTurns },
     },
   };
 }
@@ -38,16 +45,22 @@ describe("filterByMaxTurnIntensity (ceiling ≤ N)", () => {
   ];
 
   it("≤1 includes zero/half/one/floaty, excludes two", () => {
-    const ids = applyFilter(pool, BrowseFilterType.MAX_TURN_INTENSITY, 1).map((s) => s.id).sort();
+    const ids = applyFilter(pool, BrowseFilterType.MAX_TURN_INTENSITY, 1)
+      .map((s) => s.id)
+      .sort();
     expect(ids).toEqual(["floaty", "half", "one", "zero"]);
   });
 
   it("≤2 includes everything", () => {
-    expect(applyFilter(pool, BrowseFilterType.MAX_TURN_INTENSITY, 2)).toHaveLength(5);
+    expect(
+      applyFilter(pool, BrowseFilterType.MAX_TURN_INTENSITY, 2)
+    ).toHaveLength(5);
   });
 
   it("≤0.5 excludes one and two", () => {
-    const ids = applyFilter(pool, BrowseFilterType.MAX_TURN_INTENSITY, 0.5).map((s) => s.id).sort();
+    const ids = applyFilter(pool, BrowseFilterType.MAX_TURN_INTENSITY, 0.5)
+      .map((s) => s.id)
+      .sort();
     expect(ids).toEqual(["floaty", "half", "zero"]);
   });
 });

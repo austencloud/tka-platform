@@ -19,7 +19,7 @@
   import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { MotionColor, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { getGuideCodexState } from "../_data/guide-codex-state.svelte";
   import type { GuideCodexVisibility } from "../_data/guide-codex-persistence";
 
@@ -82,25 +82,25 @@
   <div class="group">
     <span class="group-label">Turns</span>
     <PropControlPair compact>
-      {#snippet blueContent()}
+      {#snippet leftContent()}
         <PropTurnsControl
           color="blue"
-          turns={codex.blueTurns}
+          turns={codex.leftTurns}
           rotationDirection={RotationDirection.NO_ROTATION}
           showRotation={false}
           compact={true}
-          onTurnsChange={(delta) => codex.adjustTurns(MotionColor.BLUE, delta)}
+          onTurnsChange={(delta) => codex.adjustTurns(HandSide.LEFT, delta)}
           onRotationChange={() => {}}
         />
       {/snippet}
-      {#snippet redContent()}
+      {#snippet rightContent()}
         <PropTurnsControl
           color="red"
-          turns={codex.redTurns}
+          turns={codex.rightTurns}
           rotationDirection={RotationDirection.NO_ROTATION}
           showRotation={false}
           compact={true}
-          onTurnsChange={(delta) => codex.adjustTurns(MotionColor.RED, delta)}
+          onTurnsChange={(delta) => codex.adjustTurns(HandSide.RIGHT, delta)}
           onRotationChange={() => {}}
         />
       {/snippet}

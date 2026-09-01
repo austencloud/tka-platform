@@ -9,8 +9,8 @@ import type { CollectedMandala } from "./mandala-collection-types";
 export interface SaveMandalaInput {
   steps: readonly StepData[];
   variant: MandalaRenderOptions["show"];
-  bluePropType: string;
-  redPropType: string;
+  leftPropType: string;
+  rightPropType: string;
   pathShape: MandalaPathShape;
   sequenceWord: string;
 }
@@ -26,8 +26,8 @@ export function buildMandalaCollectionEntry(
     name,
     steps: [...input.steps],
     variant: input.variant,
-    bluePropType: input.bluePropType,
-    redPropType: input.redPropType,
+    leftPropType: input.leftPropType,
+    rightPropType: input.rightPropType,
     pathShape: input.pathShape,
     source: "sequence",
     ...(sourceWord ? { sourceWord } : {}),

@@ -111,14 +111,14 @@
   const handPathMode = $derived(engine.viewMode.subject === "hands");
   const isSoloMode = $derived(engine.viewMode.granularity === "solo");
 
-  // Motion visibility: in "combined" mode show both, in "solo" mode show only the selected color
-  const showBlueMotion = $derived(
+  // Motion visibility: combined shows both; solo shows the selected hand.
+  const showLeftMotion = $derived(
     engine.viewMode.granularity === "combined" ||
-      engine.viewMode.color === "blue"
+      engine.viewMode.hand === "left"
   );
-  const showRedMotion = $derived(
+  const showRightMotion = $derived(
     engine.viewMode.granularity === "combined" ||
-      engine.viewMode.color === "red"
+      engine.viewMode.hand === "right"
   );
 
   // Word/difficulty only meaningful with both props visible
@@ -127,15 +127,15 @@
 
   // Prop settings
   const propSettings = $derived({
-    bluePropType: settingsService.settings.bluePropType,
-    redPropType: settingsService.settings.redPropType,
+    leftPropType: settingsService.settings.leftPropType,
+    rightPropType: settingsService.settings.rightPropType,
     catDogMode: settingsService.settings.catDogMode,
   });
 
   const isCatDog = $derived(
     isCatDogMode(
-      propSettings.bluePropType,
-      propSettings.redPropType,
+      propSettings.leftPropType,
+      propSettings.rightPropType,
       propSettings.catDogMode
     )
   );
@@ -178,8 +178,8 @@
     pinchColumnOverride={engine.columnCount}
     {onGridReady}
     {handPathMode}
-    {showBlueMotion}
-    {showRedMotion}
+    {showLeftMotion}
+    {showRightMotion}
     {addWord}
     {addDifficultyLevel}
     {selectedIds}
@@ -197,8 +197,8 @@
     {onAction}
     {eager}
     {handPathMode}
-    {showBlueMotion}
-    {showRedMotion}
+    {showLeftMotion}
+    {showRightMotion}
     {addWord}
     {addDifficultyLevel}
     {selectedIds}
@@ -225,14 +225,14 @@
           ? (seq) => handleSequenceAction("view-detail", seq, seqVariations)
           : undefined}
         onHover={handleSequenceHover}
-        bluePropType={propSettings.bluePropType}
-        redPropType={propSettings.redPropType}
+        leftPropType={propSettings.leftPropType}
+        rightPropType={propSettings.rightPropType}
         catDogModeEnabled={isCatDog}
         {lightMode}
         {eager}
         {handPathMode}
-        {showBlueMotion}
-        {showRedMotion}
+        {showLeftMotion}
+        {showRightMotion}
         {selectedIds}
         {selectionMode}
         {onSelectionStart}

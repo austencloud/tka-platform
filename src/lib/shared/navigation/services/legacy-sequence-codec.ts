@@ -21,7 +21,7 @@ import {
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -226,12 +226,12 @@ function encodeLegacyBeat(
   beat: StepData | StartPositionData,
   format: LegacySequenceFormat
 ): string {
-  return `${encodeLegacyMotion(beat.motions.blue, format)}:${encodeLegacyMotion(beat.motions.red, format)}`;
+  return `${encodeLegacyMotion(beat.motions.left, format)}:${encodeLegacyMotion(beat.motions.right, format)}`;
 }
 
 function decodeLegacyMotion(
   encoded: string,
-  color: MotionColor,
+  hand: HandSide,
   format: LegacySequenceFormat,
   chainStartOrientation?: Orientation
 ): MotionData | undefined {
@@ -327,7 +327,7 @@ function decodeLegacyMotion(
     startOrientation,
     endOrientation,
     propType,
-    color,
+    hand,
     isVisible: true,
     handPath: handPath as MotionData["handPath"],
     gridMode: inferGridMode(startLocation, endLocation),
@@ -360,40 +360,40 @@ function decodeLegacyBeat(
   encoded: string,
   stepNumber: number,
   format: LegacySequenceFormat,
-  chained?: { blue: Orientation; red: Orientation }
+  chained?: { left: Orientation; right: Orientation }
 ): StepData {
   const parts = encoded.split(":");
   if (parts.length !== 2) {
     throw new Error(`Invalid legacy beat encoding: ${encoded}`);
   }
 
-  const blue = decodeLegacyMotion(
+  const left = decodeLegacyMotion(
     parts[0] ?? "",
-    MotionColor.BLUE,
+    HandSide.LEFT,
     format,
-    chained?.blue
+    chained?.left
   );
-  const red = decodeLegacyMotion(
+  const right = decodeLegacyMotion(
     parts[1] ?? "",
-    MotionColor.RED,
+    HandSide.RIGHT,
     format,
-    chained?.red
+    chained?.right
   );
 
   return createStepData({
     stepNumber,
     duration: 1,
-    isBlank: !blue && !red,
+    isBlank: !left && !right,
     motions: {
-      blue:
-        blue ??
-        createPlaceholderMotion(MotionColor.BLUE, {
-          orientation: chained?.blue,
+      left:
+        left ??
+        createPlaceholderMotion(HandSide.LEFT, {
+          orientation: chained?.left,
         }),
-      red:
-        red ??
-        createPlaceholderMotion(MotionColor.RED, {
-          orientation: chained?.red,
+      right:
+        right ??
+        createPlaceholderMotion(HandSide.RIGHT, {
+          orientation: chained?.right,
         }),
     },
   });
@@ -431,8 +431,8 @@ export function decodeLegacySequence(encoded: string): SequenceData {
   if (format === 3) {
     const seed = parts[0] ?? "ii";
     const chained = {
-      blue: ORIENTATION_DECODE[seed[0] ?? ""] ?? Orientation.IN,
-      red: ORIENTATION_DECODE[seed[1] ?? ""] ?? Orientation.IN,
+      left: ORIENTATION_DECODE[seed[0] ?? ""] ?? Orientation.IN,
+      right: ORIENTATION_DECODE[seed[1] ?? ""] ?? Orientation.IN,
     };
     const beats = parts.slice(1);
     if (beats.length === 0) {
@@ -441,11 +441,11 @@ export function decodeLegacySequence(encoded: string): SequenceData {
 
     const decoded = beats.map((beat, index) => {
       const step = decodeLegacyBeat(beat, index, 3, chained);
-      if (step.motions.blue.isVisible) {
-        chained.blue = step.motions.blue.endOrientation;
+      if (step.motions.left.isVisible) {
+        chained.left = step.motions.left.endOrientation;
       }
-      if (step.motions.red.isVisible) {
-        chained.red = step.motions.red.endOrientation;
+      if (step.motions.right.isVisible) {
+        chained.right = step.motions.right.endOrientation;
       }
       return step;
     });
@@ -501,15 +501,15 @@ export function encodeLegacySequence(
   );
 
   if (format === 3) {
-    const blueSeed =
+    const leftSeed =
       ORIENTATION_ENCODE[
-        startPosition.motions.blue?.startOrientation ?? Orientation.IN
+        startPosition.motions.left?.startOrientation ?? Orientation.IN
       ] ?? "i";
-    const redSeed =
+    const rightSeed =
       ORIENTATION_ENCODE[
-        startPosition.motions.red?.startOrientation ?? Orientation.IN
+        startPosition.motions.right?.startOrientation ?? Orientation.IN
       ] ?? "i";
-    return `v3|${blueSeed}${redSeed}|${encodedStart}|${encodedSteps.join("|")}`;
+    return `v3|${leftSeed}${rightSeed}|${encodedStart}|${encodedSteps.join("|")}`;
   }
 
   const prefix = format === 2 ? "v2|" : "";

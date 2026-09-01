@@ -12,12 +12,12 @@ describe("resolveLoopDisplay — wire-form loopSpec", () => {
     const display = resolveLoopDisplay({
       id: "spec-wire-test",
       loopSpec: {
-        blue: {
+        left: {
           rotated: { period: 2 },
           mirrored: { period: 2 },
           inverted: { period: 4, mode: "overlay" },
         },
-        red: {
+        right: {
           rotated: { period: 2 },
           mirrored: { period: 2 },
           inverted: { period: 4, mode: "overlay" },
@@ -37,13 +37,13 @@ describe("resolveLoopDisplay — wire-form loopSpec", () => {
     const display = resolveLoopDisplay({
       id: "diagonal-reflection-wire-test",
       loopSpec: {
-        blue: {
+        left: {
           mirrored: {
             period: 2,
             reflectionAxis: "northeast-southwest",
           },
         },
-        red: {
+        right: {
           mirrored: {
             period: 2,
             reflectionAxis: "northeast-southwest",
@@ -60,8 +60,8 @@ describe("resolveLoopDisplay — wire-form loopSpec", () => {
     const display = resolveLoopDisplay({
       id: "legacy-flipped-wire-test",
       loopSpec: {
-        blue: { flipped: { period: 2 } },
-        red: { flipped: { period: 2 } },
+        left: { flipped: { period: 2 } },
+        right: { flipped: { period: 2 } },
       },
     } as any);
 
@@ -75,11 +75,11 @@ describe("resolveLoopDisplay — overlayComponents", () => {
     const display = resolveLoopDisplay({
       id: "overlay-wire-test",
       loopSpec: {
-        blue: {
+        left: {
           mirrored: { period: 2 },
           inverted: { period: 4, mode: "overlay" },
         },
-        red: {
+        right: {
           mirrored: { period: 2 },
           inverted: { period: 4, mode: "overlay" },
         },
@@ -96,8 +96,8 @@ describe("resolveLoopDisplay — overlayComponents", () => {
     const display = resolveLoopDisplay({
       id: "no-overlay-wire-test",
       loopSpec: {
-        blue: { rotated: { period: 2 }, mirrored: { period: 2 } },
-        red: { rotated: { period: 2 }, mirrored: { period: 2 } },
+        left: { rotated: { period: 2 }, mirrored: { period: 2 } },
+        right: { rotated: { period: 2 }, mirrored: { period: 2 } },
       },
     } as any);
 

@@ -11,29 +11,29 @@ import {
   MotionType,
   RotationDirection,
   Orientation,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 function makeStep(
   stepNumber: number,
-  blue: Partial<Parameters<typeof createMotionData>[0]>,
-  red: Partial<Parameters<typeof createMotionData>[0]>
+  left: Partial<Parameters<typeof createMotionData>[0]>,
+  right: Partial<Parameters<typeof createMotionData>[0]>
 ): StepData {
   return {
     id: `step-${stepNumber}`,
     stepNumber,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     letter: null,
     startPosition: null,
     endPosition: null,
     motions: {
-      blue: createMotionData({ ...blue, color: MotionColor.BLUE }),
-      red: createMotionData({ ...red, color: MotionColor.RED }),
+      left: createMotionData({ ...left, hand: HandSide.LEFT }),
+      right: createMotionData({ ...right, hand: HandSide.RIGHT }),
     },
   };
 }
@@ -107,15 +107,15 @@ describe("ensureComposition — start position persistence", () => {
 
     expect(composed.startPosition).toBeTruthy();
     const motions = composed.startPosition?.motions;
-    expect(motions?.blue).toBeTruthy();
-    expect(motions?.red).toBeTruthy();
+    expect(motions?.left).toBeTruthy();
+    expect(motions?.right).toBeTruthy();
     // Start position = both props STATIC at their first-step start locations.
-    expect(motions?.blue?.motionType).toBe(MotionType.STATIC);
-    expect(motions?.red?.motionType).toBe(MotionType.STATIC);
-    expect(motions?.blue?.startLocation).toBe(GridLocation.NORTH);
-    expect(motions?.blue?.endLocation).toBe(GridLocation.NORTH);
-    expect(motions?.red?.startLocation).toBe(GridLocation.SOUTH);
-    expect(motions?.red?.endLocation).toBe(GridLocation.SOUTH);
+    expect(motions?.left?.motionType).toBe(MotionType.STATIC);
+    expect(motions?.right?.motionType).toBe(MotionType.STATIC);
+    expect(motions?.left?.startLocation).toBe(GridLocation.NORTH);
+    expect(motions?.left?.endLocation).toBe(GridLocation.NORTH);
+    expect(motions?.right?.startLocation).toBe(GridLocation.SOUTH);
+    expect(motions?.right?.endLocation).toBe(GridLocation.SOUTH);
     // The glyph must be the start POSITION (blue@north + red@south = alpha),
     // NOT the first step's letter. Only alpha/beta/gamma are valid here.
     expect(["α", "β", "γ"]).toContain(composed.startPosition?.letter);
@@ -130,17 +130,17 @@ describe("ensureComposition — start position persistence", () => {
       letter: null,
       endPosition: null,
       motions: {
-        blue: createMotionData({
+        left: createMotionData({
           motionType: MotionType.STATIC,
           startLocation: GridLocation.EAST,
           endLocation: GridLocation.EAST,
-          color: MotionColor.BLUE,
+          hand: HandSide.LEFT,
         }),
-        red: createMotionData({
+        right: createMotionData({
           motionType: MotionType.STATIC,
           startLocation: GridLocation.WEST,
           endLocation: GridLocation.WEST,
-          color: MotionColor.RED,
+          hand: HandSide.RIGHT,
         }),
       },
     } as SequenceData["startPosition"];
@@ -148,6 +148,6 @@ describe("ensureComposition — start position persistence", () => {
     const composed = ensureComposition({ ...seq, startPosition: existing });
 
     expect(composed.startPosition?.id).toBe("start-preexisting");
-    expect(composed.startPosition?.motions?.blue?.startLocation).toBe(GridLocation.EAST);
+    expect(composed.startPosition?.motions?.left?.startLocation).toBe(GridLocation.EAST);
   });
 });

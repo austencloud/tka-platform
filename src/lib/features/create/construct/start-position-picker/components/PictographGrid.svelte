@@ -12,15 +12,15 @@
     pictographDataSet,
     selectedPictograph = null,
     onPictographSelect,
-    bluePropTypeOverride = undefined,
-    redPropTypeOverride = undefined,
+    leftPropTypeOverride = undefined,
+    rightPropTypeOverride = undefined,
   }: {
     pictographDataSet: PictographData[];
     selectedPictograph?: PictographData | null;
     onPictographSelect: (pictograph: PictographData) => void;
     /** Explicit prop types for demo/preview rendering (bypasses global settings). */
-    bluePropTypeOverride?: PropType;
-    redPropTypeOverride?: PropType;
+    leftPropTypeOverride?: PropType;
+    rightPropTypeOverride?: PropType;
   } = $props();
 
   // Animation disabled - positions appear instantly for speed
@@ -92,8 +92,8 @@
       <div class="pictograph-wrapper">
         <PictographContainer
           {pictographData}
-          {bluePropTypeOverride}
-          {redPropTypeOverride}
+          {leftPropTypeOverride}
+          {rightPropTypeOverride}
           propRenderContext="editor"
         />
       </div>

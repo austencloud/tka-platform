@@ -155,7 +155,7 @@
       <div><dt>Mapped body bones</dt><dd>{diagnostics.mappedBoneCount}/22</dd></div>
       <div><dt>Arm chains</dt><dd>{yesNo(diagnostics.leftArmChain && diagnostics.rightArmChain)}</dd></div>
       <div><dt>Leg chains</dt><dd>{yesNo(diagnostics.leftLegChain && diagnostics.rightLegChain)}</dd></div>
-      <div><dt>30-bone fingers</dt><dd>{yesNo(diagnostics.fingerChains)}</dd></div>
+      <div><dt>Finger bones mapped</dt><dd>{diagnostics.fingerChains ? "30/30" : "Incomplete"}</dd></div>
       <div><dt>Skinned meshes</dt><dd>{diagnostics.skinnedMeshCount}</dd></div>
       <div><dt>Rig bones</dt><dd>{diagnostics.skeletonBoneCount}</dd></div>
       <div><dt>Source Y height</dt><dd>{meters(diagnostics.sourceHeightMeters)}</dd></div>

@@ -7,10 +7,12 @@ import {
   type WebGLProgramParametersWithUniforms,
 } from "three";
 import { patchMaskedGroundDetailMaterial } from "$lib/shared/3d/environments/primitives/masked-ground-detail-material";
+import volcanicWorldR7 from "$lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r7.json";
 import {
   EMBER_GROUND_DETAIL_MASK,
   EMBER_GROUND_DETAIL_TEXTURES,
   EMBER_GROUND_SURFACE_TEXTURES,
+  emberGroundDetailTier,
   inheritEmberGroundDetailPatch,
   isEmberGroundDetailSurface,
   patchEmberGroundDetailMaterial,
@@ -28,9 +30,11 @@ function createShaderStub(): WebGLProgramParametersWithUniforms {
   } as WebGLProgramParametersWithUniforms;
 }
 
-function compileEmberGroundDetail() {
+function compileEmberGroundDetail(
+  name = "Ember_R9_fresh-rift-synthesis_Blended_Terrain"
+) {
   const material = new MeshStandardMaterial({
-    name: "Ember_R9_fresh-rift-synthesis_Blended_Terrain",
+    name,
     color: "#354149",
   });
   const shader = createShaderStub();
@@ -81,6 +85,94 @@ describe("Ember Fresh Rift ground detail", () => {
     expect(isEmberGroundDetailSurface("volcanic-basin", legacy)).toBe(false);
   });
 
+  it("reaches the upcountry terrain the performer bowl used to leave bare", () => {
+    const r9 = new MeshStandardMaterial({
+      name: "Ember_R9_fresh-rift-synthesis_windborne-ash",
+    });
+
+    // The pale family: two meshes the gate never covered, so they rendered
+    // their baked beige map with no synthesised crust on it at all.
+    expect(isEmberGroundDetailSurface("meshy-distant-caldera", r9)).toBe(true);
+    expect(isEmberGroundDetailSurface("meshy-fumarole-talus", r9)).toBe(true);
+    // Covered before only because GLTFLoader shares material instances; named
+    // now so the reach is deliberate rather than incidental.
+    expect(isEmberGroundDetailSurface("caldera-bank", r9)).toBe(true);
+    expect(isEmberGroundDetailSurface("perimeter-talus-cluster", r9)).toBe(true);
+    expect(isEmberGroundDetailSurface("meshy-lava-bank", r9)).toBe(true);
+    // The hero escarpment keeps its authored columnar normals.
+    expect(isEmberGroundDetailSurface("meshy-hero-geology", r9)).toBe(false);
+  });
+
+  it("splits the palette into a bowl tier and an upcountry tier", () => {
+    expect(
+      emberGroundDetailTier(
+        new MeshStandardMaterial({
+          name: "Ember_R9_fresh-rift-synthesis_roped-pahoehoe",
+        })
+      )
+    ).toBe("stage");
+    expect(
+      emberGroundDetailTier(
+        new MeshStandardMaterial({
+          name: "Ember_R9_fresh-rift-synthesis_iron-contact-crust",
+        })
+      )
+    ).toBe("stage");
+    expect(
+      emberGroundDetailTier(
+        new MeshStandardMaterial({
+          name: "Ember_R9_fresh-rift-synthesis_Blended_Terrain",
+        })
+      )
+    ).toBe("upcountry");
+    expect(
+      emberGroundDetailTier(
+        new MeshStandardMaterial({
+          name: "Ember_R9_fresh-rift-synthesis_windborne-ash",
+        })
+      )
+    ).toBe("upcountry");
+
+    const stage = compileEmberGroundDetail(
+      "Ember_R9_fresh-rift-synthesis_roped-pahoehoe"
+    );
+    const upcountry = compileEmberGroundDetail();
+
+    // preserveColor parks material.color at white, so an atmosphere tint lerp
+    // cannot reach a patched surface. The upcountry profile is what pulls the
+    // pale baked terrain into the volcanic family instead: the synthesised
+    // detail carries most of the albedo, and the macro range runs darker and
+    // warmer than the bowl's.
+    expect(
+      stage.shader.uniforms.uMaskedGroundAbsoluteColorStrength.value
+    ).toBe(0.46);
+    expect(
+      upcountry.shader.uniforms.uMaskedGroundAbsoluteColorStrength.value
+    ).toBeGreaterThan(
+      stage.shader.uniforms.uMaskedGroundAbsoluteColorStrength.value
+    );
+    expect(
+      upcountry.shader.uniforms.uMaskedGroundAbsoluteColorStrength.value
+    ).toBe(0.82);
+    expect(upcountry.shader.uniforms.uMaskedGroundFamilyContrast.value)
+      .toBeGreaterThan(stage.shader.uniforms.uMaskedGroundFamilyContrast.value);
+    expect(upcountry.shader.uniforms.uMaskedGroundMacroDark.value.r)
+      .toBeLessThan(stage.shader.uniforms.uMaskedGroundMacroDark.value.r);
+    expect(upcountry.shader.uniforms.uMaskedGroundMacroLight.value.r)
+      .toBeLessThan(stage.shader.uniforms.uMaskedGroundMacroLight.value.r);
+    // Warm-biased: the upcountry macro light has to fall off toward blue.
+    expect(upcountry.shader.uniforms.uMaskedGroundMacroLight.value.b)
+      .toBeLessThan(upcountry.shader.uniforms.uMaskedGroundMacroLight.value.r);
+
+    // Both tiers share one compiled program; only uniforms differ.
+    expect(stage.material.customProgramCacheKey()).toBe(
+      upcountry.material.customProgramCacheKey()
+    );
+
+    stage.patch.dispose();
+    upcountry.patch.dispose();
+  });
+
   it("composes the shared world-space material owner and restores cleanly", () => {
     const material = new MeshStandardMaterial({
       name: "Ember_R9_fresh-rift-synthesis_Blended_Terrain",
@@ -117,13 +209,13 @@ describe("Ember Fresh Rift ground detail", () => {
     expect(material.color.getHexString()).toBe("ffffff");
     material.onBeforeCompile(shader, {} as never);
 
-    expect(shader.uniforms.uMaskedGroundRedMap.value).toBe(
+    expect(shader.uniforms.uMaskedGroundRightMap.value).toBe(
       detailMaps.youngLava
     );
     expect(shader.uniforms.uMaskedGroundGreenMap.value).toBe(
       detailMaps.ironContact
     );
-    expect(shader.uniforms.uMaskedGroundBlueMap.value).toBe(
+    expect(shader.uniforms.uMaskedGroundLeftMap.value).toBe(
       detailMaps.fracturedBasalt
     );
     expect(shader.uniforms.uMaskedGroundFourthMap.value).toBe(
@@ -139,9 +231,10 @@ describe("Ember Fresh Rift ground detail", () => {
     expect(shader.uniforms.uMaskedGroundWorldAxisSign.value.toArray()).toEqual([
       1, 1,
     ]);
-    expect(shader.uniforms.uMaskedGroundAbsoluteColorStrength.value).toBe(0.46);
+    // Blended_Terrain is the basin, so this compiles the upcountry profile.
+    expect(shader.uniforms.uMaskedGroundAbsoluteColorStrength.value).toBe(0.82);
     expect(shader.uniforms.uMaskedGroundRoughnessFloor.value).toBe(0.68);
-    expect(shader.uniforms.uMaskedGroundFamilyContrast.value).toBe(1.7);
+    expect(shader.uniforms.uMaskedGroundFamilyContrast.value).toBe(2.05);
     expect(shader.uniforms.uMaskedGroundHeightResponse.value).toBe(0.34);
     expect(shader.uniforms.uMaskedGroundMacroScale.value).toBe(42);
     expect(shader.uniforms.uMaskedGroundMacroDetailScale.value).toBe(12);
@@ -160,7 +253,7 @@ describe("Ember Fresh Rift ground detail", () => {
     const clone = material.clone();
     inheritEmberGroundDetailPatch(material, clone);
     expect(clone.customProgramCacheKey()).toContain(
-      "ember-ground-detail-r12-detiled-volcanic-v1"
+      "ember-ground-detail-r13-upcountry-reach-v1"
     );
     expect(clone.userData.emberGroundDetailPatch).toBeDefined();
 
@@ -194,10 +287,17 @@ describe("Ember Fresh Rift ground detail", () => {
     // The volcanic plain is ash, not meadow — the shared blade ripple is off.
     expect(shader.uniforms.uMaskedGroundBladeSignal.value).toBe(0);
 
-    expect(shader.uniforms.uMaskedGroundGradeStart.value).toBe(16);
-    expect(shader.uniforms.uMaskedGroundGradeEnd.value).toBe(90);
-    expect(shader.uniforms.uMaskedGroundFarDetailNormal.value).toBe(0.1);
-    expect(shader.uniforms.uMaskedGroundFarDetailAlbedo.value).toBe(0.55);
+    // The grade has to survive to the far rim: at 210m the 2.4m primary
+    // lattice still covers ten-plus pixels, so fading detail out at 90 was
+    // throwing away grain the textures could resolve, and leaving the upcountry
+    // slopes as smooth clay under every orbit camera.
+    expect(shader.uniforms.uMaskedGroundGradeStart.value).toBe(18);
+    expect(shader.uniforms.uMaskedGroundGradeEnd.value).toBe(210);
+    expect(shader.uniforms.uMaskedGroundGradeEnd.value).toBeGreaterThan(
+      volcanicWorldR7.terrain.middleMaterialEndsAtDistance
+    );
+    expect(shader.uniforms.uMaskedGroundFarDetailNormal.value).toBe(0.3);
+    expect(shader.uniforms.uMaskedGroundFarDetailAlbedo.value).toBe(0.78);
     expect(
       shader.uniforms.uMaskedGroundFarRoughnessFloor.value
     ).toBeGreaterThan(shader.uniforms.uMaskedGroundRoughnessFloor.value);
@@ -232,9 +332,9 @@ describe("Ember Fresh Rift ground detail", () => {
     patchMaskedGroundDetailMaterial(
       material,
       {
-        red: new Texture(),
+        right: new Texture(),
         green: new Texture(),
-        blue: new Texture(),
+        left: new Texture(),
         fourth: new Texture(),
       },
       new Texture(),

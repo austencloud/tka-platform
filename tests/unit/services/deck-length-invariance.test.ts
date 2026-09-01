@@ -20,8 +20,8 @@ function loadCsv(name: string) {
     .filter((c) => c.length >= 13 && c[5])
     .map((c) => ({
       letter: c[0], startPosition: c[1], endPosition: c[2], timing: "together", direction: "together",
-      blueMotion: { color: "blue", motionType: c[5], rotationDirection: c[6], startLocation: c[7], endLocation: c[8], startOrientation: "in", endOrientation: "in", turns: 0 },
-      redMotion: { color: "red", motionType: c[9], rotationDirection: c[10], startLocation: c[11], endLocation: c[12], startOrientation: "in", endOrientation: "in", turns: 0 },
+      leftMotion: { color: "blue", motionType: c[5], rotationDirection: c[6], startLocation: c[7], endLocation: c[8], startOrientation: "in", endOrientation: "in", turns: 0 },
+      rightMotion: { color: "red", motionType: c[9], rotationDirection: c[10], startLocation: c[11], endLocation: c[12], startOrientation: "in", endOrientation: "in", turns: 0 },
     }));
 }
 function makeProvider() {

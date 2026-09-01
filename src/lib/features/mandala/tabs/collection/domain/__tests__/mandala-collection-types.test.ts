@@ -10,14 +10,39 @@ const valid = {
   name: "My Mandala",
   steps: [],
   variant: "both",
-  bluePropType: "staff",
-  redPropType: "staff",
+  leftPropType: "staff",
+  rightPropType: "staff",
   createdAt: 123,
 };
 
 describe("CollectedMandalaSchema", () => {
   it("accepts a well-formed record", () => {
     expect(CollectedMandalaSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it.each([
+    ["blue", "left"],
+    ["red", "right"],
+  ])("normalizes legacy %s variants to %s", (legacy, canonical) => {
+    const result = CollectedMandalaSchema.safeParse({
+      ...valid,
+      variant: legacy,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.variant).toBe(canonical);
+  });
+
+  it("restores literal blue/red prop fields from a saved mandala", () => {
+    const result = CollectedMandalaSchema.parse({
+      ...valid,
+      leftPropType: undefined,
+      rightPropType: undefined,
+      bluePropType: "poi",
+      redPropType: "fan",
+    });
+
+    expect(result.leftPropType).toBe("poi");
+    expect(result.rightPropType).toBe("fan");
   });
 
   it("preserves the saved path shape while accepting older entries without it", () => {

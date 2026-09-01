@@ -30,6 +30,7 @@ import { hydrate } from "$lib/shared/foundation/services/sequence-hydrator";
 import type { ErrorHandler } from "$lib/shared/application/services/error-handler";
 import type { GalleryOfflineCache } from "$lib/shared/offline/services/gallery-offline-cache";
 import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
+import { normalizeLegacySequence } from "@tka/tka-types";
 
 export class PublicSequencesLoader {
   private cachedSequences: SequenceData[] | null = null;
@@ -219,7 +220,9 @@ export class PublicSequencesLoader {
         return null;
       }
 
-      const indexData = publicDoc.data() as PublicSequenceIndex;
+      const indexData = normalizeLegacySequence(
+        publicDoc.data()
+      ) as PublicSequenceIndex;
       if (indexData.sourceRef) {
         sourceRef = indexData.sourceRef;
         this.cacheSourceRef(
@@ -400,7 +403,9 @@ export class PublicSequencesLoader {
     const sequences: SequenceData[] = [];
 
     snapshot.forEach((docSnap) => {
-      const data = docSnap.data() as PublicSequenceIndex;
+      const data = normalizeLegacySequence(
+        docSnap.data()
+      ) as PublicSequenceIndex;
       sequences.push(this.mapPublicIndexToSequenceData(data, docSnap.id));
 
       // Capture raw doc for offline cache persistence after this fetch
@@ -429,6 +434,7 @@ export class PublicSequencesLoader {
     data: PublicSequenceIndex,
     id: string
   ): SequenceData {
+    data = normalizeLegacySequence(data);
     // Firestore docs carry a few display fields that aren't declared on
     // PublicSequenceIndex. Narrow the doc shape once here instead of casting
     // each field at the read site.
@@ -473,13 +479,13 @@ export class PublicSequencesLoader {
       // every public preview into the visitor's prop context.
       ...(data.creatorIntent != null && { creatorIntent: data.creatorIntent }),
       // Compositional fields (if present in the public index)
-      blueSoloProp: data.blueSoloProp,
-      redSoloProp: data.redSoloProp,
+      leftSoloProp: data.leftSoloProp,
+      rightSoloProp: data.rightSoloProp,
       stepPairings: data.stepPairings,
-      bluePathHash: data.bluePathHash,
-      redPathHash: data.redPathHash,
-      blueSoloHash: data.blueSoloHash,
-      redSoloHash: data.redSoloHash,
+      leftPathHash: data.leftPathHash,
+      rightPathHash: data.rightPathHash,
+      leftSoloHash: data.leftSoloHash,
+      rightSoloHash: data.rightSoloHash,
       // Fork info
       ...(data.isForked && {
         source: "forked" as const,
@@ -492,7 +498,7 @@ export class PublicSequencesLoader {
 
     // If compositional fields are present, hydrate steps from them
     // so the sequence is fully renderable without a sourceRef fetch
-    if (data.blueSoloProp && data.redSoloProp && data.stepPairings) {
+    if (data.leftSoloProp && data.rightSoloProp && data.stepPairings) {
       try {
         const hydrated = hydrate(seq);
         // Trust the actual step count over the stored sequenceLength,
@@ -550,6 +556,7 @@ export class PublicSequencesLoader {
     data: Record<string, unknown>,
     id: string
   ): SequenceData {
+    data = normalizeLegacySequence(data);
     const seq: SequenceData = {
       id,
       name: (data.name as string) ?? "",
@@ -586,13 +593,13 @@ export class PublicSequencesLoader {
       ownerDisplayName: data.ownerDisplayName as string | undefined,
       ownerAvatarUrl: data.ownerAvatarUrl as string | undefined,
       // Pass through compositional fields so the hydrator can derive steps
-      blueSoloProp: data.blueSoloProp as SequenceData["blueSoloProp"],
-      redSoloProp: data.redSoloProp as SequenceData["redSoloProp"],
+      leftSoloProp: data.leftSoloProp as SequenceData["leftSoloProp"],
+      rightSoloProp: data.rightSoloProp as SequenceData["rightSoloProp"],
       stepPairings: data.stepPairings as SequenceData["stepPairings"],
-      bluePathHash: data.bluePathHash as string | undefined,
-      redPathHash: data.redPathHash as string | undefined,
-      blueSoloHash: data.blueSoloHash as string | undefined,
-      redSoloHash: data.redSoloHash as string | undefined,
+      leftPathHash: data.leftPathHash as string | undefined,
+      rightPathHash: data.rightPathHash as string | undefined,
+      leftSoloHash: data.leftSoloHash as string | undefined,
+      rightSoloHash: data.rightSoloHash as string | undefined,
     };
 
     // If compositional fields are present, derive steps from them so

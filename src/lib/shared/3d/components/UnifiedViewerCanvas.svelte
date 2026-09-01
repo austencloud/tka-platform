@@ -42,12 +42,12 @@
     isPlaying: boolean;
     bpm?: number;
     onBpmChange?: (bpm: number) => void;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     /** Current blue prop state for 2D mode positioning */
-    bluePropState?: PropState | null;
+    leftPropState?: PropState | null;
     /** Current red prop state for 2D mode positioning */
-    redPropState?: PropState | null;
+    rightPropState?: PropState | null;
     /** Grid mode for 2D mode rendering */
     gridMode?: string | null;
     hideOverlays?: boolean;
@@ -63,10 +63,10 @@
     isPlaying,
     bpm = 60,
     onBpmChange = () => {},
-    bluePropType = null,
-    redPropType = null,
-    bluePropState = null,
-    redPropState = null,
+    leftPropType = null,
+    rightPropType = null,
+    leftPropState = null,
+    rightPropState = null,
     gridMode = null,
     hideOverlays = false,
     fullScreen = false,
@@ -80,7 +80,7 @@
   const environmentTransitionVisual = createEnvironmentTransitionVisualState();
   setEnvironmentTransitionVisualContext(environmentTransitionVisual);
 
-  const avatarState = $derived(
+  const characterState = $derived(
     viewer3DState.performerManager.performers[0] ?? null
   );
   const cameraPlayer = createViewerCameraPlayerState({ spawnY: -1.5 });
@@ -91,12 +91,12 @@
     if (cameraMode === "orthographic-2d") {
       canvasMountReady = true;
     } else {
-      if (avatarState && sequenceData && !canvasMountReady) {
+      if (characterState && sequenceData && !canvasMountReady) {
         requestAnimationFrame(() => {
           canvasMountReady = true;
         });
       }
-      if (!avatarState || !sequenceData) {
+      if (!characterState || !sequenceData) {
         canvasMountReady = false;
       }
     }
@@ -106,7 +106,7 @@
 </script>
 
 <div class="unified-viewer-canvas" data-mode={cameraMode}>
-  {#if is2D || (avatarState && sequenceData)}
+  {#if is2D || (characterState && sequenceData)}
     {#if canvasMountReady}
       <Canvas
         createRenderer={(canvas) => {
@@ -123,10 +123,10 @@
         {#if is2D}
           <Viewer2DCamera />
           <Viewer2DScene
-            {bluePropState}
-            {redPropState}
-            {bluePropType}
-            {redPropType}
+            {leftPropState}
+            {rightPropState}
+            {leftPropType}
+            {rightPropType}
             {gridMode}
             {currentStep}
           />
@@ -141,12 +141,12 @@
             cameraPlayerAvatar={cameraPlayer.avatarState}
             cameraPlayerPhysics={cameraPlayer.physicsProvider}
           />
-          {#if avatarState}
+          {#if characterState}
             <Viewer3DScene
               {sequenceData}
               {currentStep}
               {isPlaying}
-              {avatarState}
+              {characterState}
             />
           {/if}
         {/if}

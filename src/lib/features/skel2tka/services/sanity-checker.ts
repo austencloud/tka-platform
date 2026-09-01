@@ -17,6 +17,10 @@ import type {
   SanityCheckResult,
   SanityCheckSeverity,
 } from "../domain/verification-models";
+import {
+  HandSide,
+  type HandSide as HandSideValue,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 const THRESHOLDS = {
   MIN_HAND_DETECTION_RATE: 0.8,
@@ -29,8 +33,8 @@ const THRESHOLDS = {
 
 export function checkPhase1(result: Phase1Result): SanityCheckReport {
   const checks: SanityCheckResult[] = [
-    checkHandDetectionRate(result, "blue"),
-    checkHandDetectionRate(result, "red"),
+    checkHandDetectionRate(result, HandSide.LEFT),
+    checkHandDetectionRate(result, HandSide.RIGHT),
     checkAverageConfidence(result),
     checkTeleportation(result),
     checkBeatCount(result),
@@ -50,7 +54,7 @@ export function checkPhase1(result: Phase1Result): SanityCheckReport {
 /** Check that a hand was detected in enough frames */
 function checkHandDetectionRate(
   result: Phase1Result,
-  hand: "blue" | "red"
+  hand: HandSideValue
 ): SanityCheckResult {
   const totalFrames = result.timeline.frames.length;
   if (totalFrames === 0) {
@@ -94,8 +98,8 @@ function checkAverageConfidence(result: Phase1Result): SanityCheckResult {
   const confidences: number[] = [];
 
   for (const frame of result.timeline.frames) {
-    if (frame.blue) confidences.push(frame.blue.confidence);
-    if (frame.red) confidences.push(frame.red.confidence);
+    if (frame.left) confidences.push(frame.left.confidence);
+    if (frame.right) confidences.push(frame.right.confidence);
   }
 
   if (confidences.length === 0) {
@@ -143,7 +147,7 @@ function checkTeleportation(result: Phase1Result): SanityCheckResult {
     const currFrame = frames[i];
     if (!prevFrame || !currFrame) continue;
 
-    for (const hand of ["blue", "red"] as const) {
+    for (const hand of [HandSide.LEFT, HandSide.RIGHT] as const) {
       const prevPos = prevFrame[hand]?.rawPosition;
       const currPos = currFrame[hand]?.rawPosition;
 

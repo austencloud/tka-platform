@@ -27,6 +27,7 @@ import { processReversals } from "../../src/lib/shared/create/services/reversal-
 import { deriveReversals } from "@tka/sequence-engine";
 import type { SequenceData } from "../../src/lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "../../src/lib/shared/foundation/domain/models/step-data";
+import { normalizeLegacySequence } from "@tka/tka-types";
 
 const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -35,9 +36,12 @@ const projectRoot = path.resolve(
 
 // Frozen legacy reference (pre-consolidation production processReversals)
 
-function legacyGetPropRotDir(step: StepData, color: "blue" | "red"): string | null {
+function legacyGetPropRotDir(
+  step: StepData,
+  hand: "left" | "right"
+): string | null {
   if (!step || step.isBlank) return null;
-  const motionData = step.motions?.[color] as
+  const motionData = step.motions?.[hand] as
     | { rotationDirection?: string; motionType?: string }
     | undefined;
   if (!motionData) return null;
@@ -48,22 +52,30 @@ function legacyGetPropRotDir(step: StepData, color: "blue" | "red"): string | nu
   return "cw"; // legacy bad-data default (warn elided in the frozen copy)
 }
 
-function legacyLastValid(steps: StepData[], color: "blue" | "red"): string | null {
+function legacyLastValid(
+  steps: StepData[],
+  hand: "left" | "right"
+): string | null {
   for (let i = steps.length - 1; i >= 0; i--) {
-    const dir = legacyGetPropRotDir(steps[i]!, color);
+    const dir = legacyGetPropRotDir(steps[i]!, hand);
     if (dir && dir !== "noRotation") return dir;
   }
   return null;
 }
 
-function legacyIsReversal(last: string | null, current: string | null): boolean {
+function legacyIsReversal(
+  last: string | null,
+  current: string | null
+): boolean {
   if (!last || !current || last === "noRotation" || current === "noRotation") {
     return false;
   }
   return last !== current;
 }
 
-function legacyProcessReversals(sequence: SequenceData): Array<{ blue: boolean; red: boolean }> {
+function legacyProcessReversals(
+  sequence: SequenceData
+): Array<{ left: boolean; right: boolean }> {
   // A sequence crosses its seam when the user says it is circular, not only
   // when it carries a two-hand LOOP label. The original detector wrapped on
   // `loopType` alone, so a circular sequence with no label never compared its
@@ -77,12 +89,12 @@ function legacyProcessReversals(sequence: SequenceData): Array<{ blue: boolean; 
   // this parity check measures the old miss instead of the current contract.
   const isLoop = sequence.isCircular || !!sequence.loopType;
   const steps = sequence.steps;
-  const out: Array<{ blue: boolean; red: boolean }> = [];
+  const out: Array<{ left: boolean; right: boolean }> = [];
 
   for (let i = 0; i < steps.length; i++) {
     const currentStep = steps[i]!;
     if (currentStep.isBlank) {
-      out.push({ blue: false, red: false });
+      out.push({ left: false, right: false });
       continue;
     }
     const previousSteps = isLoop
@@ -90,13 +102,13 @@ function legacyProcessReversals(sequence: SequenceData): Array<{ blue: boolean; 
       : steps.slice(0, i);
 
     out.push({
-      blue: legacyIsReversal(
-        legacyLastValid(previousSteps, "blue"),
-        legacyGetPropRotDir(currentStep, "blue")
+      left: legacyIsReversal(
+        legacyLastValid(previousSteps, "left"),
+        legacyGetPropRotDir(currentStep, "left")
       ),
-      red: legacyIsReversal(
-        legacyLastValid(previousSteps, "red"),
-        legacyGetPropRotDir(currentStep, "red")
+      right: legacyIsReversal(
+        legacyLastValid(previousSteps, "right"),
+        legacyGetPropRotDir(currentStep, "right")
       ),
     });
   }
@@ -109,8 +121,8 @@ interface RawDoc {
   word?: string;
   loopType?: string | null;
   isCircular?: boolean;
-  blueSoloProp?: { steps: unknown[] };
-  redSoloProp?: { steps: unknown[] };
+  leftSoloProp?: { steps: unknown[] };
+  rightSoloProp?: { steps: unknown[] };
   stepPairings?: Array<{ letter: string | null }>;
 }
 
@@ -122,12 +134,14 @@ function loadCorpus(): RawDoc[] {
   const parsed = JSON.parse(readFileSync(file, "utf8")) as {
     documents: RawDoc[];
   };
-  return parsed.documents.filter(
-    (d) =>
-      d.blueSoloProp?.steps?.length &&
-      d.redSoloProp?.steps?.length &&
-      d.stepPairings?.length
-  );
+  return parsed.documents
+    .map(normalizeLegacySequence)
+    .filter(
+      (d) =>
+        d.leftSoloProp?.steps?.length &&
+        d.rightSoloProp?.steps?.length &&
+        d.stepPairings?.length
+    );
 }
 
 describe("reversal dot display — corpus parity with the legacy detector", () => {
@@ -147,8 +161,8 @@ describe("reversal dot display — corpus parity with the legacy detector", () =
       let derived;
       try {
         derived = deriveSteps(
-          doc.blueSoloProp as never,
-          doc.redSoloProp as never,
+          doc.leftSoloProp as never,
+          doc.rightSoloProp as never,
           doc.stepPairings as never
         );
       } catch {
@@ -181,19 +195,19 @@ describe("reversal dot display — corpus parity with the legacy detector", () =
         stepTotal++;
         const legacyStep = legacyFlags[i]!;
         const newStep = processed.steps[i] as {
-          blueReversal?: boolean;
-          redReversal?: boolean;
+          leftReversal?: boolean;
+          rightReversal?: boolean;
         };
 
-        for (const color of ["blue", "red"] as const) {
-          const legacyDot = legacyStep[color];
+        for (const hand of ["left", "right"] as const) {
+          const legacyDot = legacyStep[hand];
           const newDot =
-            color === "blue" ? !!newStep.blueReversal : !!newStep.redReversal;
+            hand === "left" ? !!newStep.leftReversal : !!newStep.rightReversal;
           if (legacyDot) cellsLegacy++;
           if (newDot) cellsNew++;
           if (legacyDot && !newDot) suppressed++;
           if (!legacyDot && newDot) gained++;
-          if (signals[i]?.[color].handReversal) handSignalCells++;
+          if (signals[i]?.[hand].handReversal) handSignalCells++;
         }
       }
     }

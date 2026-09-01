@@ -2,15 +2,15 @@
   /**
    * Animation3DSidePanel - Collapsible sidebar for 3D animation
    *
-   * Contains: sequence loader, beat info, effects, environment, avatar settings.
+   * Contains: sequence loader, beat info, effects, environment, character settings.
    * Sections are collapsible to avoid content overflow.
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import type { AvatarId } from "@austencloud/scene-3d";
+  import type { CharacterId } from "$lib/shared/3d/domain/character-model";
   import EffectsSettingsPanel from "../controls/EffectsSettingsPanel.svelte";
   import EnvironmentSettingsPanel from "../controls/EnvironmentSettingsPanel.svelte";
-  import AvatarSettingsPanel from "../controls/AvatarSettingsPanel.svelte";
+  import CharacterSettingsPanel from "../controls/CharacterSettingsPanel.svelte";
   import ProportionsPanel from "./ProportionsPanel.svelte";
 
   interface Props {
@@ -22,15 +22,15 @@
     currentStepIndex: number;
     /** Total steps */
     totalSteps: number;
-    /** Whether avatar is visible */
+    /** Whether the character is visible */
     showFigure: boolean;
-    /** Selected avatar ID */
-    avatarId: AvatarId;
+    /** Selected character ID */
+    characterId: CharacterId;
 
     // Callbacks
     onLoadSequence: () => void;
     onToggleFigure: () => void;
-    onAvatarChange: (id: AvatarId) => void;
+    onCharacterChange: (id: CharacterId) => void;
   }
 
   let {
@@ -39,14 +39,14 @@
     currentStepIndex,
     totalSteps,
     showFigure,
-    avatarId,
+    characterId,
     onLoadSequence,
     onToggleFigure,
-    onAvatarChange,
+    onCharacterChange,
   }: Props = $props();
 
-  // Section expansion state - Avatar expanded by default, others collapsed
-  let expandedSections = $state<Set<string>>(new Set(["avatar"]));
+  // Section expansion state - Character expanded by default, others collapsed
+  let expandedSections = $state<Set<string>>(new Set(["character"]));
 </script>
 
 <aside class="side-panel" class:collapsed>
@@ -73,33 +73,35 @@
 
   <!-- Scrollable Content with Collapsible Sections -->
   <div class="panel-scroll">
-    <!-- Avatar Section -->
+    <!-- Character Section -->
     <section class="collapsible-section">
       <button
         class="section-header"
         onclick={() => {
           const next = new Set(expandedSections);
-          next.has("avatar") ? next.delete("avatar") : next.add("avatar");
+          next.has("character")
+            ? next.delete("character")
+            : next.add("character");
           expandedSections = next;
         }}
-        aria-expanded={expandedSections.has("avatar")}
-        aria-label={expandedSections.has("avatar") ? "Collapse avatar settings" : "Expand avatar settings"}
+        aria-expanded={expandedSections.has("character")}
+        aria-label={expandedSections.has("character") ? "Collapse character settings" : "Expand character settings"}
       >
         <i class="fas fa-person" aria-hidden="true"></i>
-        <span>{t("avatar_settings")}</span>
+        <span>{t("character_settings")}</span>
         <i
           class="fas fa-chevron-down chevron"
-          class:rotated={!expandedSections.has("avatar")}
+          class:rotated={!expandedSections.has("character")}
           aria-hidden="true"
         ></i>
       </button>
-      {#if expandedSections.has("avatar")}
+      {#if expandedSections.has("character")}
         <div class="section-content">
-          <AvatarSettingsPanel
+          <CharacterSettingsPanel
             {showFigure}
-            {avatarId}
+            {characterId}
             onToggle={onToggleFigure}
-            {onAvatarChange}
+            {onCharacterChange}
           />
         </div>
       {/if}
@@ -120,7 +122,7 @@
         aria-label={expandedSections.has("proportions") ? "Collapse proportions" : "Expand proportions"}
       >
         <i class="fas fa-ruler-vertical" aria-hidden="true"></i>
-        <span>{t("avatar_proportions")}</span>
+        <span>{t("character_proportions")}</span>
         <i
           class="fas fa-chevron-down chevron"
           class:rotated={!expandedSections.has("proportions")}

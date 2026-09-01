@@ -9,12 +9,12 @@
     onPatternChange: (resolved: ResolvedReversalPattern) => void;
     /**
      * Preset-first mode: presets + a compact summary show by default; the 2×4
-     * Blue/Red spin timeline stays folded behind a "Custom" toggle. Keeps the
+     * Left/right spin timeline stays folded behind a "Custom" toggle. Keeps the
      * builder's footprint to a couple of rows for the common preset case.
      */
     collapsible?: boolean;
     /**
-     * Initial open state of the Blue/Red spin timeline in collapsible mode.
+     * Initial open state of the left/right spin timeline in collapsible mode.
      * Defaults to true (legacy: rail had vertical room). Pass false for a
      * preset-first resting view that folds the cryptic spin grid away.
      */
@@ -26,10 +26,10 @@
   const timelineOpen = $derived(!collapsible || showCustom);
 
   const STEPS = 4;
-  let blue = $state<boolean[]>([false, false, false, false]);
-  let red = $state<boolean[]>([false, false, false, false]);
+  let left = $state<boolean[]>([false, false, false, false]);
+  let right = $state<boolean[]>([false, false, false, false]);
 
-  const resolved = $derived(resolvePattern(blue, red));
+  const resolved = $derived(resolvePattern(left, right));
 
   function spinCW(hand: boolean[], step: number): boolean {
     let cw = true;
@@ -37,31 +37,31 @@
     return cw;
   }
 
-  function tile(sequence: string): { blue: boolean[]; red: boolean[] } {
+  function tile(sequence: string): { left: boolean[]; right: boolean[] } {
     const b: boolean[] = [], r: boolean[] = [];
     for (let i = 0; i < STEPS; i++) {
       const sym = sequence[i % sequence.length];
       b.push(sym === "P" || sym === "B");
       r.push(sym === "P" || sym === "R");
     }
-    return { blue: b, red: r };
+    return { left: b, right: r };
   }
 
   function applyPreset(sequence: string) {
     const t = tile(sequence);
-    blue = t.blue;
-    red = t.red;
+    left = t.left;
+    right = t.right;
     emit();
   }
 
-  function toggle(hand: "blue" | "red", step: number) {
-    if (hand === "blue") blue[step] = !blue[step];
-    else red[step] = !red[step];
+  function toggle(hand: "left" | "right", step: number) {
+    if (hand === "left") left[step] = !left[step];
+    else right[step] = !right[step];
     emit();
   }
 
   function emit() {
-    onPatternChange(resolvePattern(blue, red));
+    onPatternChange(resolvePattern(left, right));
   }
 
   // Apply the default (continuous) filter on mount so the family view starts
@@ -85,18 +85,18 @@
 
   {#if timelineOpen}
     <div class="timeline">
-      {#each [{ key: "blue", arr: blue, label: "Blue" }, { key: "red", arr: red, label: "Red" }] as row (row.key)}
+      {#each [{ hand: "left", tone: "blue", arr: left, label: "Left" }, { hand: "right", tone: "red", arr: right, label: "Right" }] as row (row.hand)}
         <div class="row">
-          <span class="row-label {row.key}">{row.label}</span>
+          <span class="row-label {row.tone}">{row.label}</span>
           {#each row.arr as active, step (step)}
             <button
               type="button"
               role="switch"
               aria-checked={active}
               aria-label="{row.label} reversal at step {step + 1}"
-              class="cell {row.key}"
+              class="cell {row.tone}"
               class:active
-              onclick={() => toggle(row.key as "blue" | "red", step)}
+              onclick={() => toggle(row.hand as "left" | "right", step)}
             >
               <span class="arrow" class:ccw={!spinCW(row.arr, step)}>↻</span>
             </button>

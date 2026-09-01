@@ -70,8 +70,8 @@ export function buildFestivalSamplerRenderOptions(
     theme: THEME,
     tndElement: element,
     ...(frontFrameColors && { frontFrameColors }),
-    bluePropType: PropType.STAFF,
-    redPropType: PropType.STAFF,
+    leftPropType: PropType.STAFF,
+    rightPropType: PropType.STAFF,
     leftLabel: element?.element,
     rightLabel: element
       ? card.turnIntensity === 0

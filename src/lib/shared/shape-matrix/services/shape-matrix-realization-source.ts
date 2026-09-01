@@ -21,7 +21,7 @@ export interface ShapeMatrixRealizationSource {
 export function identifyShapeMatrixRealization(
   base: SequenceData,
   realized: SequenceData,
-  pair: { blue: Flower; red: Flower },
+  pair: { left: Flower; right: Flower },
   mode: VtgMode,
   propMode: VtgMode | null = null
 ): ShapeMatrixRealizationSource {
@@ -31,8 +31,8 @@ export function identifyShapeMatrixRealization(
     baseSequenceId: base.id,
     mode,
     ...(propMode ? { propMode } : {}),
-    blueFlower: { ...pair.blue },
-    redFlower: { ...pair.red },
+    leftFlower: { ...pair.left },
+    rightFlower: { ...pair.right },
   };
   const sequence = updateSequenceData(realized, {
     id: [
@@ -40,8 +40,8 @@ export function identifyShapeMatrixRealization(
       encodeURIComponent(base.id),
       mode,
       ...(propMode ? [`props-${propMode}`] : []),
-      flowerKey(pair.blue),
-      flowerKey(pair.red),
+      flowerKey(pair.left),
+      flowerKey(pair.right),
     ].join(":"),
   });
 

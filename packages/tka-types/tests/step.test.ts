@@ -11,7 +11,7 @@ import {
   MotionType,
   Orientation,
   Plane,
-  PropColor,
+  HandSide,
   RotationDirection,
   type Motion,
   type Step,
@@ -27,7 +27,7 @@ function makeBlue(): Motion {
     endOrientation: Orientation.out,
     turns: 0,
     plane: Plane.wall,
-    color: PropColor.blue,
+    hand: HandSide.LEFT,
   });
 }
 
@@ -41,7 +41,7 @@ function makeRed(): Motion {
     endOrientation: Orientation.out,
     turns: 0,
     plane: Plane.wall,
-    color: PropColor.red,
+    hand: HandSide.RIGHT,
   });
 }
 
@@ -51,7 +51,7 @@ function baseStep(): Step {
     letter: Letter.A,
     startPosition: GridPosition.alpha1,
     endPosition: GridPosition.alpha3,
-    motions: { blue: makeBlue(), red: makeRed() },
+    motions: { left: makeBlue(), right: makeRed() },
     stepNumber: 1,
     duration: 1,
     gridMode: GridMode.diamond,
@@ -80,7 +80,7 @@ describe("createStep", () => {
       letter: Letter.A,
       startPosition: GridPosition.alpha1,
       endPosition: GridPosition.alpha3,
-      motions: { blue: makeBlue(), red: makeRed() },
+      motions: { left: makeBlue(), right: makeRed() },
       stepNumber: 1,
       duration: 1,
     });
@@ -94,7 +94,7 @@ describe("createStep", () => {
       letter: Letter.A,
       startPosition: GridPosition.alpha1,
       endPosition: GridPosition.alpha3,
-      motions: { blue: makeBlue(), red: makeRed() },
+      motions: { left: makeBlue(), right: makeRed() },
       stepNumber: 1,
       duration: 1,
     });
@@ -108,7 +108,7 @@ describe("createStep", () => {
       letter: Letter.A,
       startPosition: GridPosition.alpha1,
       endPosition: GridPosition.alpha3,
-      motions: { blue: makeBlue(), red: makeRed() },
+      motions: { left: makeBlue(), right: makeRed() },
       stepNumber: 1,
     });
     expect(s.duration).toBe(1);
@@ -121,7 +121,7 @@ describe("createStep", () => {
         letter: Letter.A,
         startPosition: GridPosition.alpha1,
         endPosition: GridPosition.alpha3,
-        motions: { blue: makeBlue(), red: makeRed() },
+        motions: { left: makeBlue(), right: makeRed() },
         stepNumber: -1,
         duration: 1,
       })
@@ -135,7 +135,7 @@ describe("createStep", () => {
         letter: Letter.A,
         startPosition: GridPosition.alpha1,
         endPosition: GridPosition.alpha3,
-        motions: { blue: makeBlue(), red: makeRed() },
+        motions: { left: makeBlue(), right: makeRed() },
         stepNumber: 1,
         duration: 0,
       })
@@ -152,7 +152,7 @@ describe("createStep", () => {
       endOrientation: Orientation.out,
       turns: 0,
       plane: Plane.wall,
-      color: PropColor.red,
+      hand: HandSide.RIGHT,
     });
     expect(() =>
       createStep({
@@ -160,11 +160,11 @@ describe("createStep", () => {
         letter: Letter.A,
         startPosition: GridPosition.alpha1,
         endPosition: GridPosition.alpha3,
-        motions: { blue: blueLookingRed, red: makeRed() },
+        motions: { left: blueLookingRed, right: makeRed() },
         stepNumber: 1,
         duration: 1,
       })
-    ).toThrow(/motions.blue.color/);
+    ).toThrow(/motions.left.hand/);
   });
 
   it("rejects invalid gridMode", () => {
@@ -174,7 +174,7 @@ describe("createStep", () => {
         letter: Letter.A,
         startPosition: GridPosition.alpha1,
         endPosition: GridPosition.alpha3,
-        motions: { blue: makeBlue(), red: makeRed() },
+        motions: { left: makeBlue(), right: makeRed() },
         stepNumber: 1,
         duration: 1,
         gridMode: "triangle" as unknown as typeof GridMode.diamond,
@@ -189,7 +189,7 @@ describe("createStep", () => {
         letter: Letter.A,
         startPosition: GridPosition.alpha1,
         endPosition: GridPosition.alpha3,
-        motions: { blue: makeBlue(), red: makeRed() },
+        motions: { left: makeBlue(), right: makeRed() },
         stepNumber: 1,
         duration: 1,
         variation: -3,
@@ -209,10 +209,10 @@ describe("createStartStep", () => {
 
   it("colors motions correctly", () => {
     const s = createStartStep(GridPosition.beta3);
-    expect(s.motions.blue.color).toBe("blue");
-    expect(s.motions.red.color).toBe("red");
-    expect(s.motions.blue.motionType).toBe("static");
-    expect(s.motions.red.motionType).toBe("static");
+    expect(s.motions.left.hand).toBe("left");
+    expect(s.motions.right.hand).toBe("right");
+    expect(s.motions.left.motionType).toBe("static");
+    expect(s.motions.right.motionType).toBe("static");
   });
 
   it("freezes the result", () => {

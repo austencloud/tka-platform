@@ -51,21 +51,21 @@ export function isHybridLetter(letter: string): boolean {
  */
 export function startsFromStandardOrientation(pictographData: PictographData): boolean {
   try {
-    const blueMotion = pictographData.motions.blue;
-    const redMotion = pictographData.motions.red;
+    const leftMotion = pictographData.motions.left;
+    const rightMotion = pictographData.motions.right;
 
-    if (!blueMotion || !redMotion) {
+    if (!leftMotion || !rightMotion) {
       return true; // Default to standard
     }
 
-    const blueStart = blueMotion.startOrientation || "";
-    const redStart = redMotion.startOrientation || "";
+    const leftStart = leftMotion.startOrientation || "";
+    const rightStart = rightMotion.startOrientation || "";
 
     // Standard if both are layer1 (IN/OUT) or both are layer2 (CLOCK/COUNTER)
-    const blueLayer1 = [IN, OUT].includes(blueStart);
-    const redLayer1 = [IN, OUT].includes(redStart);
+    const leftLayer1 = [IN, OUT].includes(leftStart);
+    const rightLayer1 = [IN, OUT].includes(rightStart);
 
-    return blueLayer1 === redLayer1; // Same layer = standard orientation
+    return leftLayer1 === rightLayer1; // Same layer = standard orientation
   } catch {
     return true; // Default to standard
   }

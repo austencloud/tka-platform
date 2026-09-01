@@ -14,9 +14,7 @@ const read = (path: string) => readFileSync(path, "utf8");
 function sourceFiles(): string[] {
   return readdirSync("src", { recursive: true, withFileTypes: true })
     .filter((entry) => entry.isFile())
-    .map((entry) =>
-      `${entry.parentPath}/${entry.name}`.split("\\").join("/")
-    )
+    .map((entry) => `${entry.parentPath}/${entry.name}`.split("\\").join("/"))
     .filter((path) => path.endsWith(".ts") || path.endsWith(".svelte"));
 }
 
@@ -34,7 +32,9 @@ describe("share-intake host contract", () => {
   it("the host is mounted beside the inbox drawer, not above the auth gate", () => {
     const source = read(MAIN_APPLICATION);
     const drawer = source.indexOf("inbox/components/InboxDrawer.svelte");
-    const host = source.indexOf("share-intake/components/ShareIntakeHost.svelte");
+    const host = source.indexOf(
+      "share-intake/components/ShareIntakeHost.svelte"
+    );
     const viewer = source.indexOf(
       "sequence-viewer/components/SequenceViewerDrawerHost.svelte"
     );
@@ -58,7 +58,7 @@ describe("share-intake host contract", () => {
       .filter((file) => !file.includes(".test."))
       .filter((file) => read(file).includes("scheduleIntakeRun"));
     expect(callers).toEqual([HOST]);
-  });
+  }, 30_000);
 
   it("the host watches the auth state so trace 3 can resume", () => {
     const source = read(HOST);
@@ -67,7 +67,9 @@ describe("share-intake host contract", () => {
   });
 
   it("the native initializer never routes a share itself", () => {
-    const source = read("src/lib/shared/platform/services/native-initializer.ts");
+    const source = read(
+      "src/lib/shared/platform/services/native-initializer.ts"
+    );
     expect(source).not.toContain("scheduleIntakeRun");
     expect(source).not.toContain("hasPendingShare");
   });

@@ -15,10 +15,10 @@ import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pic
 export interface EndState {
   /** Grid position where props end (e.g., BETA3, ALPHA1) */
   position: GridPosition | null;
-  /** Blue prop's end orientation (in, out, clock, counter) */
-  blueOrientation: Orientation | null;
-  /** Red prop's end orientation */
-  redOrientation: Orientation | null;
+  /** Left prop's end orientation (in, out, clock, counter) */
+  leftOrientation: Orientation | null;
+  /** Right prop's end orientation */
+  rightOrientation: Orientation | null;
 }
 
 /**
@@ -43,4 +43,3 @@ export interface SpinnerStats {
   /** Bridge sequences generated */
   bridgesGenerated: number;
 }
-

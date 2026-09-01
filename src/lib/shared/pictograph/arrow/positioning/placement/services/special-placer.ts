@@ -22,6 +22,7 @@ import { placementAssetRoot } from "../domain/placement-frame";
 import { getStoredRotationOverride } from "./rotation-override-store";
 import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
 import type { MotionData } from "../../../../shared/domain/models/motion-data";
+import type { HandSide } from "../../../../shared/domain/enums/pictograph-enums";
 import {
   generateOrientationKey,
   getMotionOrientationBucket,
@@ -61,7 +62,7 @@ export class SpecialPlacer {
   async getSpecialAdjustment(
     motionData: MotionData,
     pictographData: PictographData,
-    arrowColor?: string,
+    arrowColor?: HandSide,
     attributeKey?: string
   ): Promise<FabricPoint | null> {
     if (!motionData || !pictographData.letter) {
@@ -82,11 +83,11 @@ export class SpecialPlacer {
     const turnsTuple = this.tupleGenerator.generateTurnsTuple(pictographData);
 
     // Determine the arrow key for global adjustment lookup
-    const arrowKey = arrowColor || motionData.color || "blue";
+    const arrowKey = arrowColor || motionData.hand || "left";
 
     // Get prop types for cascading lookup
     const thisPropType = motionData.propType?.toLowerCase() || "staff";
-    const otherColor = arrowKey === "blue" ? "red" : "blue";
+    const otherColor = arrowKey === "left" ? "right" : "left";
     const otherMotion = pictographData.motions?.[otherColor];
     const otherPropType = otherMotion?.propType?.toLowerCase() || "staff";
 
@@ -209,8 +210,8 @@ export class SpecialPlacer {
         [
           rotationOverrideKey,
           `${motionType}_rot_angle_override`,
-          motionData.color
-            ? `${motionData.color.toLowerCase()}_rot_angle_override`
+          motionData.hand
+            ? `${motionData.hand.toLowerCase()}_rot_angle_override`
             : "",
         ].filter(Boolean)
       )
@@ -277,7 +278,7 @@ export class SpecialPlacer {
   async getSpecialJsonAdjustmentOnly(
     motionData: MotionData,
     pictographData: PictographData,
-    arrowColor?: string,
+    arrowColor?: HandSide,
     attributeKey?: string
   ): Promise<{
     adjustment: FabricPoint;
@@ -369,10 +370,10 @@ export class SpecialPlacer {
    * Get grid mode from pictograph data
    */
   private getGridMode(pictographData: PictographData): string {
-    if (pictographData.motions.blue && pictographData.motions.red) {
+    if (pictographData.motions.left && pictographData.motions.right) {
       return _deriveGridMode(
-        pictographData.motions.blue,
-        pictographData.motions.red
+        pictographData.motions.left,
+        pictographData.motions.right
       );
     }
     return GridMode.DIAMOND;

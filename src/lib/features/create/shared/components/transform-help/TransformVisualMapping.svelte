@@ -14,7 +14,10 @@
   let { transformId }: Props = $props();
 
   // All chips for each transform - flat list, no categories
-  const mappings: Record<TransformId, Array<{ from: string; to: string; type?: "blue" | "red" }>> = {
+  const mappings: Record<
+    TransformId,
+    Array<{ from: string; to: string; type?: "blue" | "red" }>
+  > = {
     mirror: [
       { from: "W", to: "E" },
       { from: "NW", to: "NE" },
@@ -37,9 +40,7 @@
       { from: "S", to: "SW" },
       { from: "W", to: "NW" },
     ],
-    swap: [
-      { from: "Blue", to: "Red", type: "blue" },
-    ],
+    swap: [{ from: "Left", to: "Right", type: "blue" }],
     rewind: [
       { from: "Start", to: "End" },
       { from: "CW", to: "CCW" },
@@ -79,7 +80,8 @@
     font-family: var(--font-mono, monospace);
   }
 
-  .from, .to {
+  .from,
+  .to {
     font-weight: 600;
     color: rgba(255, 255, 255, 0.9);
   }

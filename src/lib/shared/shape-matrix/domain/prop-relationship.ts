@@ -48,38 +48,38 @@ function timingFromPhase(delta: number): PropTimingRelationship {
  */
 export function derivePropRelationship(
   sequence: SequenceData,
-  pair: { blue: Flower; red: Flower }
+  pair: { left: Flower; right: Flower }
 ): PropRelationship {
   const step = sequence.steps.find(
-    (candidate) => candidate.motions.blue && candidate.motions.red
+    (candidate) => candidate.motions.left && candidate.motions.right
   );
-  const blue = step?.motions.blue;
-  const red = step?.motions.red;
-  if (!blue || !red || pair.blue.turns === "fl" || pair.red.turns === "fl") {
+  const left = step?.motions.left;
+  const right = step?.motions.right;
+  if (!left || !right || pair.left.turns === "fl" || pair.right.turns === "fl") {
     return { kind: "float", direction: null, timing: null, element: null };
   }
   if (
-    blue.rotationDirection === RotationDirection.NO_ROTATION ||
-    red.rotationDirection === RotationDirection.NO_ROTATION
+    left.rotationDirection === RotationDirection.NO_ROTATION ||
+    right.rotationDirection === RotationDirection.NO_ROTATION
   ) {
     return { kind: "float", direction: null, timing: null, element: null };
   }
 
   const direction: PropDirectionRelationship =
-    blue.rotationDirection === red.rotationDirection ? "same" : "opp";
-  if (pair.blue.turns !== pair.red.turns) {
+    left.rotationDirection === right.rotationDirection ? "same" : "opp";
+  if (pair.left.turns !== pair.right.turns) {
     return { kind: "direction-only", direction, timing: null, element: null };
   }
 
-  const blueAngle = mapOrientationToAngle(
-    blue.startOrientation,
-    mapPositionToAngle(blue.startLocation)
+  const leftAngle = mapOrientationToAngle(
+    left.startOrientation,
+    mapPositionToAngle(left.startLocation)
   );
-  const redAngle = mapOrientationToAngle(
-    red.startOrientation,
-    mapPositionToAngle(red.startLocation)
+  const rightAngle = mapOrientationToAngle(
+    right.startOrientation,
+    mapPositionToAngle(right.startLocation)
   );
-  const timing = timingFromPhase(normalizedPhaseDelta(blueAngle, redAngle));
+  const timing = timingFromPhase(normalizedPhaseDelta(leftAngle, rightAngle));
   const element = TND_BY_FAMILY[`${timing}-${direction}`];
   if (!element) {
     throw new Error(`No element for prop relationship ${timing}-${direction}`);

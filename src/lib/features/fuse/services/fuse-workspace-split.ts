@@ -1,5 +1,7 @@
 const STEP_COLUMN_CANDIDATES = [1, 2, 4, 6, 8] as const;
 
+export const FUSE_LIVE_GRID_GAP = 1;
+
 export interface FuseWorkspaceSplitInput {
   availableWidth: number;
   cardBoxHeight: number;
@@ -32,6 +34,24 @@ function clampSplit(px: number, minLeft: number, maxLeft: number): number {
   return Math.round(Math.min(safeMax, Math.max(minLeft, px)));
 }
 
+export function getFittedFuseCellSize(
+  availableWidth: number,
+  availableHeight: number,
+  columns: number,
+  rows: number,
+  gap = FUSE_LIVE_GRID_GAP
+): number {
+  const safeColumns = Math.max(1, Math.floor(columns));
+  const safeRows = Math.max(1, Math.floor(rows));
+  const safeGap = Math.max(0, gap);
+  const cellWidth =
+    (Math.max(0, availableWidth) - (safeColumns - 1) * safeGap) / safeColumns;
+  const cellHeight =
+    (Math.max(0, availableHeight) - (safeRows - 1) * safeGap) / safeRows;
+
+  return Math.max(0, Math.min(cellWidth, cellHeight));
+}
+
 export function getFuseSourceCellSize(
   leftWidth: number,
   cardBoxHeight: number,
@@ -42,7 +62,7 @@ export function getFuseSourceCellSize(
   const gridColumns = stepColumns + 1;
   const rows = Math.max(Math.ceil(stepCount / stepColumns), 2);
   const boxWidth = Math.max(0, leftWidth - cardHorizontalChrome);
-  return Math.min(boxWidth / gridColumns, cardBoxHeight / rows);
+  return getFittedFuseCellSize(boxWidth, cardBoxHeight, gridColumns, rows);
 }
 
 export function getBestFuseStepColumns(

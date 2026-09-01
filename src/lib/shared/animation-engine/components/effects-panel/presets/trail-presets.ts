@@ -15,7 +15,7 @@ export const TRAIL_PRESETS: EffectPreset<"trails">[] = [
     name: "Neon",
     previewColor: "#00ffcc",
     previewColor2: "#ff00ff",
-    patch: { thickness: 4, brightness: 1.0, blueColor: "#00ffcc", redColor: "#ff00ff" },
+    patch: { thickness: 4, brightness: 1.0, leftColor: "#00ffcc", rightColor: "#ff00ff" },
   },
   {
     id: "trail-ember",
@@ -34,7 +34,7 @@ export const TRAIL_PRESETS: EffectPreset<"trails">[] = [
     // legible. brightness reaches 2D as maxOpacity with minOpacity at 30% of it
     // (foldTrailIntentIntoSettings), so lowering it shortens the visible tail
     // as well as dimming it - which is what makes it read as fading.
-    patch: { thickness: 8, brightness: 0.55, blueColor: "#ff4d1c", redColor: "#ffc046" },
+    patch: { thickness: 8, brightness: 0.55, leftColor: "#ff4d1c", rightColor: "#ffc046" },
   },
 ];
 

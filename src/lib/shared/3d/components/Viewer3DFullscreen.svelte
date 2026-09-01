@@ -41,8 +41,8 @@
     word: string | null;
     /** A stage the host authored, in metres — see Viewer3DScene. */
     stageExtent?: { width: number; depth: number } | null;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     onClose?: () => void;
     onPlaybackToggle: () => void;
     onBpmChange: (bpm: number) => void;
@@ -90,6 +90,9 @@
      * setup so the user meets one decision at a time.
      */
     showSceneChrome?: boolean;
+    /** Compact control sheets can ask a document host to make room around the
+     *  shared viewer without coupling the viewer to that host's layout. */
+    onCompactSceneSheetChange?: (sheet: "performer" | "scene" | null) => void;
   }
 
   let {
@@ -99,8 +102,8 @@
     bpm,
     word,
     stageExtent = null,
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     onClose,
     onPlaybackToggle,
     onBpmChange,
@@ -124,6 +127,7 @@
     sceneControlsLeftOffset,
     allowSaveScene = true,
     showSceneChrome = true,
+    onCompactSceneSheetChange,
   }: Props = $props();
 
   let hostEl = $state<HTMLElement | null>(null);
@@ -255,8 +259,8 @@
       {isPlaying}
       {bpm}
       {onBpmChange}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
       hideOverlays={immersive || hideCanvasOverlays}
       {initialRevealMode}
       {initialRevealDeferredFeatures}
@@ -292,6 +296,7 @@
         bottomOffset={sceneControlsBottomOffset}
         leftOffset={sceneControlsLeftOffset}
         {allowSaveScene}
+        onCompactSheetChange={onCompactSceneSheetChange}
         onLayoutChange={(next) => (sceneControlLayout = next)}
       />
     </div>

@@ -28,7 +28,7 @@ export type PictographRender = {
   showPositions?: boolean;
   /** Bottom-right elemental glyph, derived from the motions. Default false. */
   showElemental?: boolean;
-  /** Prop-reversal dots (blueReversal/redReversal). Default false; the LOOP/reversal pages set it true. */
+  /** Prop-reversal dots (leftReversal/rightReversal). Default false; the LOOP/reversal pages set it true. */
   showReversals?: boolean;
   /** Non-radial grid points. Default false. */
   showNonRadialPoints?: boolean;

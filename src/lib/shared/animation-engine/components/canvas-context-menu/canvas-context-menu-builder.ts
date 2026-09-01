@@ -286,7 +286,7 @@ function buildVisibilityChildren(
   const settings = vm.getSettings();
   // One color-agnostic Paths toggle, matching DisplayPanel's chip: the
   // per-color keys survive underneath, this sets both.
-  const pathLinesOn = settings.bluePathLines || settings.redPathLines;
+  const pathLinesOn = settings.leftPathLines || settings.rightPathLines;
   return [
     {
       id: "vis-props",
@@ -343,8 +343,8 @@ function buildVisibilityChildren(
       checked: pathLinesOn,
       keepOpen: true,
       action: () => {
-        vm.setVisibility("bluePathLines", !pathLinesOn);
-        vm.setVisibility("redPathLines", !pathLinesOn);
+        vm.setVisibility("leftPathLines", !pathLinesOn);
+        vm.setVisibility("rightPathLines", !pathLinesOn);
       },
     },
     {

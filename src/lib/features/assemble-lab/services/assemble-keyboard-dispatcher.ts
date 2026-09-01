@@ -14,7 +14,7 @@
 
 import { browser } from "$app/environment";
 import {
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -123,9 +123,9 @@ export function dispatchAssembleKeyboardAction(
     }
     case "switchHand":
       builderState.switchToHand(
-        builderState.activeHand === MotionColor.BLUE
-          ? MotionColor.RED
-          : MotionColor.BLUE
+        builderState.activeHand === HandSide.LEFT
+          ? HandSide.RIGHT
+          : HandSide.LEFT
       );
       break;
     case "undo":

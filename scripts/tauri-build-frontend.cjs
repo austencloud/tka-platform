@@ -14,7 +14,18 @@ const verifySurface = path.resolve(
 	__dirname,
 	"verify-native-release-surface.mjs"
 );
+const verifySequenceBundle = path.resolve(
+	__dirname,
+	"verify-desktop-sequence-bundle.mjs"
+);
 const buildDir = path.resolve(root, ".svelte-kit/cloudflare");
+
+// Fail before the expensive frontend build when Tauri has no complete offline
+// resource bundle to package. CI creates this bundle in a separate job.
+execFileSync(process.execPath, [verifySequenceBundle], {
+	cwd: root,
+	stdio: "inherit",
+});
 
 // Clean stale output so Tauri never embeds files left by an earlier web build.
 if (fs.existsSync(buildDir)) {

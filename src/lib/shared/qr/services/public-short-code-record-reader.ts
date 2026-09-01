@@ -35,6 +35,8 @@ const RECORD_FIELD_PATHS = [
   "encoded",
   "deckId",
   "deckName",
+  "leftPropType",
+  "rightPropType",
   "bluePropType",
   "redPropType",
   "catDogMode",

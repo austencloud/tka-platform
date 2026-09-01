@@ -19,6 +19,7 @@ import {
   LAB_GROUPS,
   ARENA_TABS,
   CHOREO_CARD_TABS,
+  CHOREO_CARD_SCAN_ATLAS_TAB_ID,
   FESTIVAL_TABS,
   RETRO_TABS,
   LEVELS_TABS,
@@ -89,6 +90,23 @@ export function normalizeModuleId(rawModuleId: string): ModuleId | undefined {
   }
 
   return undefined;
+}
+
+const SECTION_ID_MIGRATIONS: Readonly<
+  Record<string, Readonly<Record<string, string>>>
+> = {
+  choreo_card: {
+    "scan-activity": CHOREO_CARD_SCAN_ATLAS_TAB_ID,
+  },
+};
+
+/** Keep bookmarks and persisted navigation valid when a tab gets a clearer name. */
+export function normalizeSectionId(
+  moduleId: string,
+  rawSectionId: string | null | undefined
+): string | undefined {
+  if (!rawSectionId) return undefined;
+  return SECTION_ID_MIGRATIONS[moduleId]?.[rawSectionId] ?? rawSectionId;
 }
 
 // Module definitions for the new navigation system

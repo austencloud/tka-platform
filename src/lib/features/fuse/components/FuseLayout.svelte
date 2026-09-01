@@ -22,6 +22,7 @@
   import { getFuseContext } from "../context/fuse-context";
   import type { FuseSettingsDestination } from "../domain/fuse-recipe-destination";
   import type { FuseMode } from "../state/fuse-state.svelte";
+  import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
   import FusePreviewStage from "./FusePreviewStage.svelte";
   import FuseRecipeColumn from "./FuseRecipeColumn.svelte";
   import FuseSettingsDrawer from "./FuseSettingsDrawer.svelte";
@@ -38,11 +39,11 @@
   let shortLandscape = $state(false);
   let settingsOpen = $state(false);
   let settingsDestination = $state<FuseSettingsDestination>(null);
-  let actionSide = $state<"blue" | "red" | null>(null);
+  let actionSide = $state<FuseSide | null>(null);
   let firstStepOpen = $state(false);
-  let inlineFirstStepSide = $state<"blue" | "red" | null>(null);
+  let inlineFirstStepSide = $state<FuseSide | null>(null);
   let pathBuilderOpen = $state(false);
-  let pathBuilderSide = $state<"blue" | "red" | null>(null);
+  let pathBuilderSide = $state<FuseSide | null>(null);
   let isSavingResult = $state(false);
   // On the locked desktop layout the source cards sit in a tall column with
   // room to spare, so each pictograph stays large even with a start position
@@ -72,7 +73,7 @@
   const CANVAS_FLOOR = 560; // canvas never narrower than this
   const RECIPE_MIN_W = 400; // recipe column: narrow enough for a laptop...
   const RECIPE_MAX_W = 620; // ...wide enough that its editors don't stack at 4K
-  const CARD_GAP = 14; // vertical gap between the stacked blue/red cards
+  const CARD_GAP = 14; // vertical gap between the stacked left/right cards
   const CARD_HPAD = 44; // card horizontal padding, both sides
   const CARD_CHROME_V = 96; // card vertical chrome: padding + the Back/Shuffle row
   const PREVIEW_CHROME_V = 190; // matches FusePreviewStage's square frame cap
@@ -499,6 +500,7 @@
 
     try {
       openSequenceViewer(sequence, {
+        source: "fuse",
         returnPath: "/app/create",
         returnLabel: "Fuse",
         initialBpm: fuseState.bpm,
@@ -518,8 +520,8 @@
       const intended = createSequenceData({
         ...sequence,
         intendedProp: {
-          bluePropType: settings.bluePropType ?? PropType.STAFF,
-          redPropType: settings.redPropType ?? PropType.STAFF,
+          leftPropType: settings.leftPropType ?? PropType.STAFF,
+          rightPropType: settings.rightPropType ?? PropType.STAFF,
           catDogMode: settings.catDogMode ?? false,
         },
       });
@@ -551,7 +553,7 @@
     }
   }
 
-  function openFirstStep(side: "blue" | "red"): void {
+  function openFirstStep(side: FuseSide): void {
     if (compact) {
       actionSide = side;
       firstStepOpen = true;
@@ -569,7 +571,7 @@
     inlineFirstStepSide = null;
   }
 
-  function openPathBuilder(side: "blue" | "red"): void {
+  function openPathBuilder(side: FuseSide): void {
     pathBuilderSide = side;
     pathBuilderOpen = true;
   }
@@ -643,23 +645,23 @@
     {#if fullCard}
       <div class="fuse-left-col" bind:this={leftColEl}>
         <FuseSourceCard
-          side="blue"
+          side="left"
           full={true}
           {stepCols}
           onChooseFirstStep={openFirstStep}
           onBuildPath={openPathBuilder}
-          firstStepPickerActive={inlineFirstStepSide === "blue"}
+          firstStepPickerActive={inlineFirstStepSide === "left"}
           onFirstStepComplete={closeInlineFirstStep}
           onCancelFirstStep={closeInlineFirstStep}
           onEditPairing={editPairing}
         />
         <FuseSourceCard
-          side="red"
+          side="right"
           full={true}
           {stepCols}
           onChooseFirstStep={openFirstStep}
           onBuildPath={openPathBuilder}
-          firstStepPickerActive={inlineFirstStepSide === "red"}
+          firstStepPickerActive={inlineFirstStepSide === "right"}
           onFirstStepComplete={closeInlineFirstStep}
           onCancelFirstStep={closeInlineFirstStep}
           onEditPairing={editPairing}
@@ -694,21 +696,21 @@
     {:else if landscapeSplit}
       <div class="fuse-left-col">
         <FuseSourceCard
-          side="blue"
+          side="left"
           full={false}
           onChooseFirstStep={openFirstStep}
           onBuildPath={openPathBuilder}
-          firstStepPickerActive={inlineFirstStepSide === "blue"}
+          firstStepPickerActive={inlineFirstStepSide === "left"}
           onFirstStepComplete={closeInlineFirstStep}
           onCancelFirstStep={closeInlineFirstStep}
           onEditPairing={editPairing}
         />
         <FuseSourceCard
-          side="red"
+          side="right"
           full={false}
           onChooseFirstStep={openFirstStep}
           onBuildPath={openPathBuilder}
-          firstStepPickerActive={inlineFirstStepSide === "red"}
+          firstStepPickerActive={inlineFirstStepSide === "right"}
           onFirstStepComplete={closeInlineFirstStep}
           onCancelFirstStep={closeInlineFirstStep}
           onEditPairing={editPairing}
@@ -716,21 +718,21 @@
       </div>
     {:else if !compact}
       <FuseSourceCard
-        side="blue"
+        side="left"
         full={false}
         onChooseFirstStep={openFirstStep}
         onBuildPath={openPathBuilder}
-        firstStepPickerActive={inlineFirstStepSide === "blue"}
+        firstStepPickerActive={inlineFirstStepSide === "left"}
         onFirstStepComplete={closeInlineFirstStep}
         onCancelFirstStep={closeInlineFirstStep}
         onEditPairing={editPairing}
       />
       <FuseSourceCard
-        side="red"
+        side="right"
         full={false}
         onChooseFirstStep={openFirstStep}
         onBuildPath={openPathBuilder}
-        firstStepPickerActive={inlineFirstStepSide === "red"}
+        firstStepPickerActive={inlineFirstStepSide === "right"}
         onFirstStepComplete={closeInlineFirstStep}
         onCancelFirstStep={closeInlineFirstStep}
         onEditPairing={editPairing}
@@ -798,8 +800,8 @@
     grid-template-rows: repeat(4, max-content);
     grid-template-areas:
       "header"
-      "blue"
-      "red"
+      "left"
+      "right"
       "preview";
     align-content: start;
     gap: var(--fuse-col-gap);
@@ -830,7 +832,7 @@
       grid-template-rows: repeat(3, max-content);
       grid-template-areas:
         "header header"
-        "blue red"
+        "left right"
         "preview preview";
       gap: var(--fuse-col-gap);
     }
@@ -926,7 +928,7 @@
     }
   }
 
-  /* Desktop path column: blue over red, with the drag seam pinned to its right
+  /* Desktop path column: left over right, with the drag seam pinned to its right
      edge. Only rendered at the locked desktop size, so grid-area: left never
      applies in the narrower layouts. */
   .fuse-left-col {

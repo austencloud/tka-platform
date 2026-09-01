@@ -19,10 +19,10 @@ for (const line of lines) {
   edges.push({
     letter: p[0], startPos: p[1], endPos: p[2],
     timing: p[3], direction: p[4],
-    blueMotionType: p[5], blueRotDir: p[6],
-    blueStartLoc: p[7], blueEndLoc: p[8],
-    redMotionType: p[9], redRotDir: p[10],
-    redStartLoc: p[11], redEndLoc: p[12].trim(),
+    leftMotionType: p[5], leftRotDir: p[6],
+    leftStartLoc: p[7], leftEndLoc: p[8],
+    rightMotionType: p[9], rightRotDir: p[10],
+    rightStartLoc: p[11], rightEndLoc: p[12].trim(),
   });
 }
 
@@ -82,14 +82,14 @@ function enumerateLoops(startPos) {
     const n2 = adj[b1.endPos] || [];
     for (const b2 of n2) {
       // Continuity: b1 -> b2
-      if (!rotOk(b1.blueRotDir, b2.blueRotDir) || !rotOk(b1.redRotDir, b2.redRotDir)) continue;
+      if (!rotOk(b1.leftRotDir, b2.leftRotDir) || !rotOk(b1.rightRotDir, b2.rightRotDir)) continue;
       // LOOP: end of seed = rotate90(start)
       if (b2.endPos !== rotatePos90[startPos]) continue;
       // Quarter boundary continuity: b2 -> b1(rotated) and wrap-around
-      if (!rotOk(b2.blueRotDir, b1.blueRotDir) || !rotOk(b2.redRotDir, b1.redRotDir)) continue;
+      if (!rotOk(b2.leftRotDir, b1.leftRotDir) || !rotOk(b2.rightRotDir, b1.rightRotDir)) continue;
 
       const pairKey = `${b1.letter}|${b2.letter}`;
-      const variantKey = `${pairKey}|${b1.blueMotionType}/${b1.redMotionType}|${b2.blueMotionType}/${b2.redMotionType}`;
+      const variantKey = `${pairKey}|${b1.leftMotionType}/${b1.rightMotionType}|${b2.leftMotionType}/${b2.rightMotionType}`;
 
       if (!seenPairs[variantKey]) {
         seenPairs[variantKey] = true;
@@ -104,11 +104,11 @@ function enumerateLoops(startPos) {
         if (t2 === 1) vtg2 = getVTG(b2.timing, b2.direction);
 
         // Describe beat 1 motion
-        let b1desc = `${b1.blueMotionType}/${b1.redMotionType}`;
+        let b1desc = `${b1.leftMotionType}/${b1.rightMotionType}`;
         if (vtg1) b1desc = `${vtg1} ${b1desc}`;
 
         // Describe beat 2 motion
-        let b2desc = `${b2.blueMotionType}/${b2.redMotionType}`;
+        let b2desc = `${b2.leftMotionType}/${b2.rightMotionType}`;
         if (vtg2) b2desc = `${vtg2} ${b2desc}`;
 
         results.push({

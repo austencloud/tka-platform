@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -48,14 +49,14 @@ describe("legacy QR payload compatibility", () => {
       const sequence = await decodeSequenceFromQR(payload);
 
       expect(sequence.steps).toHaveLength(stepCount);
-      expect(sequence.startPosition?.motions.blue?.propType).toBe(
+      expect(sequence.startPosition?.motions.left?.propType).toBe(
         PropType.STAFF
       );
-      expect(sequence.startPosition?.motions.red?.propType).toBe(
+      expect(sequence.startPosition?.motions.right?.propType).toBe(
         PropType.STAFF
       );
-      expect(sequence.steps[0]?.motions.blue.motionType).toBe(firstMotionType);
-      expect(sequence.steps[0]?.motions.blue.turns).toBe(firstTurns);
+      expect(sequence.steps[0]?.motions.left.motionType).toBe(firstMotionType);
+      expect(sequence.steps[0]?.motions.left.turns).toBe(firstTurns);
     }
   );
 
@@ -69,10 +70,10 @@ describe("legacy QR payload compatibility", () => {
 
       const decoded = decodeLegacySequence(encoded);
       expect(decoded.steps).toHaveLength(source.steps.length);
-      expect(decoded.startPosition?.motions.blue?.propType).toBe(
+      expect(decoded.startPosition?.motions.left?.propType).toBe(
         PropType.STAFF
       );
-      expect(decoded.startPosition?.motions.red?.propType).toBe(PropType.STAFF);
+      expect(decoded.startPosition?.motions.right?.propType).toBe(PropType.STAFF);
       expect(encodeLegacySequence(decoded, format)).toBe(encoded);
     }
   );
@@ -91,22 +92,22 @@ describe("legacy QR payload compatibility", () => {
   it("preserves an absent hand as an invisible placeholder", async () => {
     const source = await decodeSequenceFromQR(PRODUCTION_FLAT_QR);
     const parts = encodeLegacySequence(source, 1).split("|");
-    const [, red] = parts[1]!.split(":");
-    parts[1] = `:${red}`;
+    const [, right] = parts[1]!.split(":");
+    parts[1] = `:${right}`;
 
     const decoded = decodeLegacySequence(parts.join("|"));
-    expect(decoded.steps[0]?.motions.blue.isVisible).toBe(false);
-    expect(decoded.steps[0]?.motions.red.isVisible).toBe(true);
+    expect(decoded.steps[0]?.motions.left.isVisible).toBe(false);
+    expect(decoded.steps[0]?.motions.right.isVisible).toBe(true);
   });
 
   it("normalizes the numeric float encoding from production shortcode 9XAK", async () => {
     const sequence = await decodeSequenceFromQR(PRODUCTION_NUMERIC_FLOAT_QR);
 
     expect(sequence.steps).toHaveLength(16);
-    expect(sequence.startPosition?.motions.blue?.propType).toBe(PropType.STAFF);
-    expect(sequence.startPosition?.motions.red?.propType).toBe(PropType.STAFF);
+    expect(sequence.startPosition?.motions.left?.propType).toBe(PropType.STAFF);
+    expect(sequence.startPosition?.motions.right?.propType).toBe(PropType.STAFF);
 
-    const numericFloat = sequence.steps[0]?.motions.red;
+    const numericFloat = sequence.steps[0]?.motions.right;
     expect(numericFloat?.motionType).toBe(MotionType.FLOAT);
     expect(numericFloat?.turns).toBe("fl");
     expect(numericFloat?.rotationDirection).toBe(RotationDirection.NO_ROTATION);
@@ -121,7 +122,7 @@ describe("legacy QR payload compatibility", () => {
       expect(() =>
         sequenceEncoderTest.decodeMotion(
           `wenoc${turns}`,
-          "red",
+          HandSide.RIGHT,
           Orientation.IN,
           PropType.STAFF
         )
@@ -144,8 +145,8 @@ describe("legacy float decode: prefloat is data, never fabricated", () => {
   }) {
     const source = await decodeSequenceFromQR(PRODUCTION_FLAT_QR);
     const mutated = JSON.parse(JSON.stringify(source)) as typeof source;
-    const blue = mutated.steps[0]!.motions.blue;
-    Object.assign(blue, {
+    const left = mutated.steps[0]!.motions.left;
+    Object.assign(left, {
       motionType: MotionType.FLOAT,
       turns: "fl",
       rotationDirection: RotationDirection.NO_ROTATION,
@@ -159,10 +160,10 @@ describe("legacy float decode: prefloat is data, never fabricated", () => {
   it("decodes a prefloat-less float with NO prefloat fields (nothing manufactured)", async () => {
     const mutated = await floatSequence({});
     const decoded = decodeLegacySequence(encodeLegacySequence(mutated, 2));
-    const blue = decoded.steps[0]!.motions.blue;
-    expect(blue.motionType).toBe(MotionType.FLOAT);
-    expect(blue.prefloatMotionType).toBeUndefined();
-    expect(blue.prefloatRotationDirection).toBeUndefined();
+    const left = decoded.steps[0]!.motions.left;
+    expect(left.motionType).toBe(MotionType.FLOAT);
+    expect(left.prefloatMotionType).toBeUndefined();
+    expect(left.prefloatRotationDirection).toBeUndefined();
   });
 
   it("round-trips a REAL prefloat rotation through the wire slot", async () => {
@@ -171,9 +172,9 @@ describe("legacy float decode: prefloat is data, never fabricated", () => {
       prefloatRotationDirection: RotationDirection.CLOCKWISE,
     });
     const decoded = decodeLegacySequence(encodeLegacySequence(mutated, 2));
-    const blue = decoded.steps[0]!.motions.blue;
-    expect(blue.motionType).toBe(MotionType.FLOAT);
-    expect(blue.prefloatRotationDirection).toBe(RotationDirection.CLOCKWISE);
-    expect(blue.prefloatMotionType).toBeDefined();
+    const left = decoded.steps[0]!.motions.left;
+    expect(left.motionType).toBe(MotionType.FLOAT);
+    expect(left.prefloatRotationDirection).toBe(RotationDirection.CLOCKWISE);
+    expect(left.prefloatMotionType).toBeDefined();
   });
 });

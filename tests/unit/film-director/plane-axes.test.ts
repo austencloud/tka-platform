@@ -5,7 +5,10 @@ import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/
 
 const PLANE_VALUES = Object.values(Plane) as Plane[];
 
-function film(scene: Record<string, unknown>, extras: Record<string, unknown> = {}) {
+function film(
+  scene: Record<string, unknown>,
+  extras: Record<string, unknown> = {}
+) {
   return {
     version: 2,
     id: "plane-film",
@@ -15,71 +18,73 @@ function film(scene: Record<string, unknown>, extras: Record<string, unknown> = 
   };
 }
 
-describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
+describe("plane axes: leftPlane, rightPlane, stepPlanes, visiblePlanes", () => {
   it("defaults every performer to wall/wall, empty stepPlanes, and scene.visiblePlanes to []", () => {
     const spec = resolveFilmDirectorSpec(
       film({ performance: { cast: { count: 3 } } })
     );
     const scene = spec.scenes[0]!;
     for (const performer of scene.performance.performers) {
-      expect(performer.bluePlane).toBe(Plane.WALL);
-      expect(performer.redPlane).toBe(Plane.WALL);
+      expect(performer.leftPlane).toBe(Plane.WALL);
+      expect(performer.rightPlane).toBe(Plane.WALL);
       expect(performer.stepPlanes).toEqual([]);
     }
     expect(scene.location.visiblePlanes).toEqual([]);
   });
 
-  it("resolves distinct bluePlane across 8 performers deterministically", () => {
+  it("resolves distinct leftPlane across 8 performers deterministically", () => {
     const doc = film({
       performance: {
-        cast: { count: 8, defaults: { bluePlane: { pick: "distinct" } } },
+        cast: { count: 8, defaults: { leftPlane: { pick: "distinct" } } },
       },
     });
     const first = resolveFilmDirectorSpec(doc);
     const second = resolveFilmDirectorSpec(doc);
     const firstPlanes = first.scenes[0]!.performance.performers.map(
-      (performer) => performer.bluePlane
+      (performer) => performer.leftPlane
     );
     expect(firstPlanes).toHaveLength(8);
     expect(new Set(firstPlanes).size).toBe(8);
     expect(
-      second.scenes[0]!.performance.performers.map((performer) => performer.bluePlane)
+      second.scenes[0]!.performance.performers.map(
+        (performer) => performer.leftPlane
+      )
     ).toEqual(firstPlanes);
   });
 
-  it("resolves sameAs on redPlane by copying the same axis from the named performer", () => {
+  it("resolves sameAs on rightPlane by copying the same axis from the named performer", () => {
     const spec = resolveFilmDirectorSpec(
       film({
         performance: {
           cast: {
             count: 2,
             performers: [
-              { id: "performer-1", redPlane: "wheel" },
-              { id: "performer-2", redPlane: { sameAs: "performer-1" } },
+              { id: "performer-1", rightPlane: "wheel" },
+              { id: "performer-2", rightPlane: { sameAs: "performer-1" } },
             ],
           },
         },
       })
     );
     const performers = spec.scenes[0]!.performance.performers;
-    expect(performers[0]!.redPlane).toBe("wheel");
-    expect(performers[1]!.redPlane).toBe("wheel");
-    // sameAs only ever copies the SAME axis — bluePlane stays at its own
+    expect(performers[0]!.rightPlane).toBe("wheel");
+    expect(performers[1]!.rightPlane).toBe("wheel");
+    // sameAs only ever copies the SAME axis — leftPlane stays at its own
     // (unstated, default) resolution and is not pulled from performer-1's
-    // redPlane.
-    expect(performers[1]!.bluePlane).toBe(Plane.WALL);
+    // rightPlane.
+    expect(performers[1]!.leftPlane).toBe(Plane.WALL);
   });
 
-  it("never resolves bluePlane to wall under a not:wall directive", () => {
+  it("never resolves leftPlane to wall under a not:wall directive", () => {
     const spec = resolveFilmDirectorSpec(
       film({
         performance: {
-          cast: { count: 5, defaults: { bluePlane: { not: "wall" } } },
+          cast: { count: 5, defaults: { leftPlane: { not: "wall" } } },
         },
       })
     );
     for (const performer of spec.scenes[0]!.performance.performers) {
-      expect(performer.bluePlane).not.toBe("wall");
+      expect(performer.leftPlane).not.toBe("wall");
     }
   });
 
@@ -89,7 +94,7 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
       resolveFilmDirectorSpec(
         film({
           performance: {
-            cast: { count: 1, performers: [{ bluePlane: "chainsaw" }] },
+            cast: { count: 1, performers: [{ leftPlane: "chainsaw" }] },
           },
         })
       );
@@ -113,7 +118,7 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
             cast: {
               count: 3,
               defaults: {
-                bluePlane: { pick: "distinct", from: ["wall", "wheel"] },
+                leftPlane: { pick: "distinct", from: ["wall", "wheel"] },
               },
             },
           },
@@ -133,7 +138,9 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
             performers: [
               {
                 id: "performer-1",
-                stepPlanes: [{ step: 2, hand: "red", plane: { pick: "any" } }],
+                stepPlanes: [
+                  { step: 2, hand: "right", plane: { pick: "any" } },
+                ],
               },
             ],
           },
@@ -141,25 +148,25 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
       })
     );
     const entry = spec.scenes[0]!.performance.performers[0]!.stepPlanes[0]!;
-    expect(entry).toMatchObject({ step: 2, hand: "red" });
+    expect(entry).toMatchObject({ step: 2, hand: "right" });
     expect(PLANE_VALUES).toContain(entry.plane);
   });
 
-  it("rerolls only stepPlane results when seed.axes.stepPlane bumps, leaving bluePlane/redPlane untouched", () => {
+  it("rerolls only stepPlane results when seed.axes.stepPlane bumps, leaving leftPlane/rightPlane untouched", () => {
     const doc = film({
       performance: {
         cast: {
           count: 3,
           defaults: {
-            bluePlane: { pick: "distinct" },
-            redPlane: { pick: "distinct" },
+            leftPlane: { pick: "distinct" },
+            rightPlane: { pick: "distinct" },
           },
           performers: [
             {
               id: "performer-1",
               stepPlanes: [0, 1, 2, 3, 4, 5].map((step) => ({
                 step,
-                hand: "blue" as const,
+                hand: "left" as const,
                 plane: { pick: "any" as const },
               })),
             },
@@ -179,20 +186,34 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
       seed: { axes: { stepPlane: 9 } },
     });
 
-    const basePlanes = base.scenes[0]!.performance.performers[0]!.stepPlanes.map(
-      (entry) => entry.plane
-    );
-    const rerolledPlanes = rerolled.scenes[0]!.performance.performers[0]!.stepPlanes.map(
-      (entry) => entry.plane
-    );
+    const basePlanes =
+      base.scenes[0]!.performance.performers[0]!.stepPlanes.map(
+        (entry) => entry.plane
+      );
+    const rerolledPlanes =
+      rerolled.scenes[0]!.performance.performers[0]!.stepPlanes.map(
+        (entry) => entry.plane
+      );
     expect(rerolledPlanes).not.toEqual(basePlanes);
 
     expect(
-      rerolled.scenes[0]!.performance.performers.map((performer) => performer.bluePlane)
-    ).toEqual(base.scenes[0]!.performance.performers.map((performer) => performer.bluePlane));
+      rerolled.scenes[0]!.performance.performers.map(
+        (performer) => performer.leftPlane
+      )
+    ).toEqual(
+      base.scenes[0]!.performance.performers.map(
+        (performer) => performer.leftPlane
+      )
+    );
     expect(
-      rerolled.scenes[0]!.performance.performers.map((performer) => performer.redPlane)
-    ).toEqual(base.scenes[0]!.performance.performers.map((performer) => performer.redPlane));
+      rerolled.scenes[0]!.performance.performers.map(
+        (performer) => performer.rightPlane
+      )
+    ).toEqual(
+      base.scenes[0]!.performance.performers.map(
+        (performer) => performer.rightPlane
+      )
+    );
   });
 
   it("rejects duplicate values in scene.visiblePlanes, naming the duplicate", () => {
@@ -208,7 +229,9 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
       caught = error;
     }
     expect(caught).toBeDefined();
-    expect(String(caught)).toContain('scene.visiblePlanes lists \\"wall\\" twice.');
+    expect(String(caught)).toContain(
+      'scene.visiblePlanes lists \\"wall\\" twice.'
+    );
   });
 
   it("rejects distinct at stepPlane scope with the scene-scope rejection message", () => {
@@ -221,7 +244,9 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
               performers: [
                 {
                   id: "performer-1",
-                  stepPlanes: [{ step: 0, hand: "blue", plane: { pick: "distinct" } }],
+                  stepPlanes: [
+                    { step: 0, hand: "left", plane: { pick: "distinct" } },
+                  ],
                 },
               ],
             },
@@ -244,7 +269,7 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
                 {
                   id: "performer-1",
                   stepPlanes: [
-                    { step: 0, hand: "blue", plane: { sameAs: "performer-1" } },
+                    { step: 0, hand: "left", plane: { sameAs: "performer-1" } },
                   ],
                 },
               ],
@@ -264,12 +289,12 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
           cast: {
             count: 2,
             defaults: {
-              stepPlanes: [{ step: 0, hand: "blue", plane: "wheel" }],
+              stepPlanes: [{ step: 0, hand: "left", plane: "wheel" }],
             },
             performers: [
               {
                 id: "performer-1",
-                stepPlanes: [{ step: 5, hand: "red", plane: "floor" }],
+                stepPlanes: [{ step: 5, hand: "right", plane: "floor" }],
               },
             ],
           },
@@ -280,12 +305,12 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
     // performer-1 stated its own list — it REPLACES the cast default list,
     // it does not gain the default's step-0 entry too.
     expect(performers[0]!.stepPlanes).toEqual([
-      { step: 5, hand: "red", plane: "floor" },
+      { step: 5, hand: "right", plane: "floor" },
     ]);
     // performer-2 didn't state anything, so it falls through to the cast
     // default list untouched.
     expect(performers[1]!.stepPlanes).toEqual([
-      { step: 0, hand: "blue", plane: "wheel" },
+      { step: 0, hand: "left", plane: "wheel" },
     ]);
   });
 });

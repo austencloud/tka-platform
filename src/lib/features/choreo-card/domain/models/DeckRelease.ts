@@ -35,7 +35,7 @@ export interface CardVariation {
   /** Explicit per-hand start-orientation override (e.g. VTG-lab exploration).
    *  Overrides the paired `startOriMode` register; a hand left undefined keeps
    *  the register/default. Applied after box-mode, before reversal/turns. */
-  startOriPair?: { blue?: Orientation; red?: Orientation };
+  startOriPair?: { left?: Orientation; right?: Orientation };
 }
 
 export interface DeckReleaseCard {
@@ -99,8 +99,8 @@ export interface DeckRecipe {
   /** New LOOP axis: start-position subset as GridPosition strings ("alpha1", …). Absent/empty ⇒ any. */
   startPositionIds?: string[];
   /** Start orientation per hand ("in"|"out"|"clock"|"counter") for live generation. */
-  startOriBlue?: string;
-  startOriRed?: string;
+  startOriLeft?: string;
+  startOriRight?: string;
   /** Style axes (Smooth/Mixed/Choppy). Props drives prop-reversal density (live);
    *  hands + dashes are stamped intent for the live-generation phase. */
   propStyle?: "smooth" | "mixed" | "choppy";
@@ -130,8 +130,8 @@ export interface DeckRelease {
   description?: string;
   theme: string;
   /** Prop types snapshotted at release time so cached card renders stay valid across setting changes. */
-  bluePropType?: string;
-  redPropType?: string;
+  leftPropType?: string;
+  rightPropType?: string;
   cardCount: number;
   notes: string;
   sequences: DeckReleaseCard[];

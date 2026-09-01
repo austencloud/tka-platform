@@ -6,10 +6,10 @@ settings:
 
 patchedDependencies:
   '@austencloud/backgrounds@0.7.12':
-    hash: 3c64ecc6505ec1fb112c877cb83f3ee4b000d06eae166bf811c5889f5770f217
+    hash: f163e5ba342f1576ff6fd359c5e5795dfec1fd0415dce6617ebe03d3c3d995e7
     path: patches/@austencloud__backgrounds@0.7.12.patch
   '@austencloud/scene-3d@0.1.6':
-    hash: 34554f5d9bd0a2b770c79bca1130893f7cef0370a5d2453cba087ef424c6a14a
+    hash: 4c1c29d9d5c59cee17fe968aed12be187142cdf0293d7098f269e89625fca8c4
     path: patches/@austencloud__scene-3d@0.1.6.patch
   svelte-fast-check@0.4.5:
     hash: 79c185fc32c5583774bc91ec4fa0ebcbac5c790d9b132fc5728f5d13a3d72474
@@ -36,7 +36,7 @@ importers:
         version: 4.0.70(svelte@5.49.2)(zod@4.3.6)
       '@austencloud/backgrounds':
         specifier: ^0.7.12
-        version: 0.7.12(patch_hash=3c64ecc6505ec1fb112c877cb83f3ee4b000d06eae166bf811c5889f5770f217)
+        version: 0.7.12(patch_hash=f163e5ba342f1576ff6fd359c5e5795dfec1fd0415dce6617ebe03d3c3d995e7)
       '@austencloud/camera-3d':
         specifier: workspace:*
         version: link:packages/camera-3d
@@ -57,7 +57,7 @@ importers:
         version: 0.1.0(svelte@5.49.2)
       '@austencloud/scene-3d':
         specifier: ^0.1.6
-        version: 0.1.6(patch_hash=34554f5d9bd0a2b770c79bca1130893f7cef0370a5d2453cba087ef424c6a14a)(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)
+        version: 0.1.6(patch_hash=4c1c29d9d5c59cee17fe968aed12be187142cdf0293d7098f269e89625fca8c4)(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)
       '@austencloud/sidebar':
         specifier: ^1.0.1
         version: 1.0.1(svelte@5.49.2)
@@ -8910,7 +8910,7 @@ snapshots:
 
   '@asamuzakjp/nwsapi@2.3.9': {}
 
-  '@austencloud/backgrounds@0.7.12(patch_hash=3c64ecc6505ec1fb112c877cb83f3ee4b000d06eae166bf811c5889f5770f217)': {}
+  '@austencloud/backgrounds@0.7.12(patch_hash=f163e5ba342f1576ff6fd359c5e5795dfec1fd0415dce6617ebe03d3c3d995e7)': {}
 
   '@austencloud/chip-toggle@0.1.0(svelte@5.49.2)':
     dependencies:
@@ -8937,7 +8937,7 @@ snapshots:
       '@austencloud/media-tagging-types': 0.1.0
       svelte: 5.49.2
 
-  '@austencloud/scene-3d@0.1.6(patch_hash=34554f5d9bd0a2b770c79bca1130893f7cef0370a5d2453cba087ef424c6a14a)(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)':
+  '@austencloud/scene-3d@0.1.6(patch_hash=4c1c29d9d5c59cee17fe968aed12be187142cdf0293d7098f269e89625fca8c4)(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)':
     dependencies:
       '@threlte/core': 8.3.1(svelte@5.49.2)(three@0.182.0)
       '@threlte/extras': 9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0)

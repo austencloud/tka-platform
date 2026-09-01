@@ -12,11 +12,14 @@
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
   import { dockSlide } from "$lib/shared/transitions/dock-slide";
   import { createSheetDismiss } from "./sheet-dismiss";
+  import { shouldDeferEscapeShortcut } from "$lib/shared/keyboard/domain/escape-shortcut-target";
   import SaveSceneModal from "$lib/features/scene-3d-collection/components/SaveSceneModal.svelte";
   import PerformerSpine from "./PerformerSpine.svelte";
   import SceneControlInspector from "./SceneControlInspector.svelte";
   import SceneControlRail from "./SceneControlRail.svelte";
   import type { PerformerEditSink } from "./performer-hub-types";
+  import { onMount } from "svelte";
+  import { flyFade } from "$lib/shared/transitions/motion";
 
   interface Props {
     bpm?: number;
@@ -61,6 +64,9 @@
     onPerformerEdit?: PerformerEditSink;
     /** Fires with the tool being inspected, or null when the inspector closes. */
     onInspectorChange?: (tool: SceneControlTool | null) => void;
+    /** Compact sheets are independent from the desktop rail. Hosts can use
+     *  this signal to animate surrounding chrome out of their way. */
+    onCompactSheetChange?: (sheet: "performer" | "scene" | null) => void;
   }
 
   let {
@@ -80,6 +86,7 @@
     allowSaveScene = true,
     onPerformerEdit,
     onInspectorChange,
+    onCompactSheetChange,
   }: Props = $props();
 
   let workspaceWidth = $state(0);
@@ -87,7 +94,35 @@
   let activeTool = $state<SceneControlTool | null>(null);
   let panelEl = $state<HTMLElement | null>(null);
   let saveSceneOpen = $state(false);
+  let showInteractionHint = $state(false);
+  let interactionAnnouncement = $state("");
+  let compactSheet = $state<"performer" | "scene" | null>(null);
   const viewer = getViewer3DContext();
+
+  onMount(() => {
+    showInteractionHint =
+      localStorage.getItem("tka-performer-direct-manipulation-hint") !==
+      "dismissed";
+    const dismissHint = () => (showInteractionHint = false);
+    const announce = (event: Event) => {
+      interactionAnnouncement = (event as CustomEvent<string>).detail;
+    };
+    window.addEventListener(
+      "tka-performer-interaction-hint-dismissed",
+      dismissHint
+    );
+    window.addEventListener("tka-performer-interaction-announcement", announce);
+    return () => {
+      window.removeEventListener(
+        "tka-performer-interaction-hint-dismissed",
+        dismissHint
+      );
+      window.removeEventListener(
+        "tka-performer-interaction-announcement",
+        announce
+      );
+    };
+  });
 
   function openSaveScene(): void {
     activeTool = null;
@@ -117,6 +152,11 @@
 
   function closeInspector(): void {
     activeTool = null;
+  }
+
+  function handleCompactSheetChange(sheet: "performer" | "scene" | null): void {
+    compactSheet = sheet;
+    onCompactSheetChange?.(sheet);
   }
 
   const dismiss = createSheetDismiss(
@@ -173,7 +213,13 @@
     }
   }}
   onkeydown={(event) => {
-    if (activeTool && !isModalTarget(event.target)) dismiss.onKeydown(event);
+    if (
+      activeTool &&
+      !shouldDeferEscapeShortcut(document) &&
+      !isModalTarget(event.target)
+    ) {
+      dismiss.onKeydown(event);
+    }
   }}
 />
 
@@ -182,6 +228,7 @@
   class:docked={layout.presentation === "docked"}
   class:overlay={layout.presentation === "overlay"}
   class:compact={layout.presentation === "compact"}
+  class:compact-sheet-open={compactSheet !== null}
   bind:clientWidth={workspaceWidth}
   bind:clientHeight={workspaceHeight}
   data-scene-control-workspace
@@ -206,6 +253,7 @@
         {onStepBackward}
         {onSettingChange}
         {onPerformerEdit}
+        onSheetChange={handleCompactSheetChange}
       />
     </div>
   {:else}
@@ -219,6 +267,11 @@
         {onSettingChange}
         onScopeSelect={() => (activeTool = "performer")}
       />
+      {#if showInteractionHint}
+        <p class="interaction-hint" transition:flyFade>
+          Click a performer to select · drag to move
+        </p>
+      {/if}
     </div>
 
     <SceneControlRail
@@ -250,6 +303,8 @@
   {/if}
 </div>
 
+<div class="sr-only" aria-live="polite">{interactionAnnouncement}</div>
+
 {#if allowSaveScene}
   <SaveSceneModal
     bind:open={saveSceneOpen}
@@ -267,6 +322,13 @@
     min-width: 0;
     min-height: 0;
     pointer-events: none;
+  }
+
+  /* Compact sheets own the stage while they are open. A host transport may
+     otherwise sit above this entire stacking context and cover the sheet's
+     tabs even though the sheet itself has a higher local z-index. */
+  .scene-control-workspace.compact-sheet-open {
+    z-index: 40;
   }
 
   .scene-control-workspace :global(button),
@@ -295,6 +357,32 @@
     background: var(--theme-panel-bg, #0c0e16);
     box-shadow: var(--theme-panel-shadow, 0 1.25rem 4rem rgba(0, 0, 0, 0.62));
     pointer-events: auto;
+  }
+
+  .interaction-hint {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    width: max-content;
+    max-width: min(22rem, 80vw);
+    margin: 0;
+    padding: 0.45rem 0.7rem;
+    border-radius: 0.65rem;
+    background: var(--theme-panel-bg, #0c0e16);
+    color: var(--theme-text, #fff);
+    box-shadow: var(--theme-panel-shadow, 0 1rem 3rem rgba(0, 0, 0, 0.5));
+    font-size: var(--font-size-compact, 0.75rem);
+    line-height: 1.35;
+    pointer-events: none;
+  }
+
+  .sr-only {
+    position: fixed;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .performer-bar-anchor > :global(*) {

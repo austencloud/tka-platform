@@ -25,10 +25,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha1",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -41,7 +41,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -61,10 +61,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha7",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -77,7 +77,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -97,10 +97,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -113,7 +113,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -133,10 +133,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha1",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -149,7 +149,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -169,10 +169,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha5",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -185,7 +185,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -205,10 +205,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha3",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -221,7 +221,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -241,10 +241,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha7",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -257,7 +257,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -277,10 +277,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha5",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -293,7 +293,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -315,7 +315,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -328,7 +328,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -370,10 +370,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha1",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -386,7 +386,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -406,10 +406,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha5",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -422,7 +422,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -442,10 +442,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha3",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -458,7 +458,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -478,10 +478,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha7",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -494,7 +494,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -514,10 +514,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha5",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -530,7 +530,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -550,10 +550,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha1",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -566,7 +566,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -586,10 +586,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha7",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -602,7 +602,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -622,10 +622,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -638,7 +638,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -660,7 +660,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -673,7 +673,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -715,10 +715,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "H",
             "startPosition": "beta5",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -731,7 +731,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -751,10 +751,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ-",
             "startPosition": "beta3",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -767,7 +767,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -787,10 +787,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "H",
             "startPosition": "beta7",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -803,7 +803,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -823,10 +823,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ-",
             "startPosition": "beta5",
             "endPosition": "beta1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -839,7 +839,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -859,10 +859,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "H",
             "startPosition": "beta1",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -875,7 +875,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -895,10 +895,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ-",
             "startPosition": "beta7",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -911,7 +911,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -931,10 +931,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "H",
             "startPosition": "beta3",
             "endPosition": "beta1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -947,7 +947,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -967,10 +967,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ-",
             "startPosition": "beta1",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -983,7 +983,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -1005,7 +1005,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "beta5",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -1018,7 +1018,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -1060,10 +1060,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ-",
             "startPosition": "beta5",
             "endPosition": "beta1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -1076,7 +1076,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -1096,10 +1096,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "H",
             "startPosition": "beta1",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -1112,7 +1112,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -1132,10 +1132,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ-",
             "startPosition": "beta7",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -1148,7 +1148,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -1168,10 +1168,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "H",
             "startPosition": "beta3",
             "endPosition": "beta1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -1184,7 +1184,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -1204,10 +1204,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ-",
             "startPosition": "beta1",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -1220,7 +1220,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -1240,10 +1240,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "H",
             "startPosition": "beta5",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -1256,7 +1256,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -1276,10 +1276,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ-",
             "startPosition": "beta3",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -1292,7 +1292,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -1312,10 +1312,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "H",
             "startPosition": "beta7",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -1328,7 +1328,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -1350,7 +1350,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "beta5",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -1363,7 +1363,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -1405,10 +1405,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "T",
             "startPosition": "gamma11",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -1421,7 +1421,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -1441,10 +1441,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ-",
             "startPosition": "gamma9",
             "endPosition": "gamma13",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -1457,7 +1457,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -1477,10 +1477,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "T",
             "startPosition": "gamma13",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -1493,7 +1493,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -1513,10 +1513,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ-",
             "startPosition": "gamma11",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -1529,7 +1529,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -1549,10 +1549,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "T",
             "startPosition": "gamma15",
             "endPosition": "gamma13",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -1565,7 +1565,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -1585,10 +1585,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ-",
             "startPosition": "gamma13",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -1601,7 +1601,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -1621,10 +1621,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "T",
             "startPosition": "gamma9",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -1637,7 +1637,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -1657,10 +1657,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ-",
             "startPosition": "gamma15",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -1673,7 +1673,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -1695,7 +1695,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -1708,7 +1708,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -1750,10 +1750,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ-",
             "startPosition": "gamma11",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -1766,7 +1766,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -1786,10 +1786,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "T",
             "startPosition": "gamma15",
             "endPosition": "gamma13",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -1802,7 +1802,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -1822,10 +1822,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ-",
             "startPosition": "gamma13",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -1838,7 +1838,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -1858,10 +1858,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "T",
             "startPosition": "gamma9",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -1874,7 +1874,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -1894,10 +1894,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ-",
             "startPosition": "gamma15",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -1910,7 +1910,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -1930,10 +1930,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "T",
             "startPosition": "gamma11",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -1946,7 +1946,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -1966,10 +1966,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ-",
             "startPosition": "gamma9",
             "endPosition": "gamma13",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -1982,7 +1982,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -2002,10 +2002,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "T",
             "startPosition": "gamma13",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -2018,7 +2018,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -2040,7 +2040,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -2053,7 +2053,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -2095,10 +2095,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "K",
             "startPosition": "alpha1",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -2111,7 +2111,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -2131,10 +2131,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ",
             "startPosition": "beta3",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -2147,7 +2147,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -2167,10 +2167,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "K",
             "startPosition": "alpha3",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -2183,7 +2183,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -2203,10 +2203,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ",
             "startPosition": "beta5",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -2219,7 +2219,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -2239,10 +2239,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "K",
             "startPosition": "alpha5",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -2255,7 +2255,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -2275,10 +2275,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ",
             "startPosition": "beta7",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -2291,7 +2291,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -2311,10 +2311,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "K",
             "startPosition": "alpha7",
             "endPosition": "beta1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -2327,7 +2327,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -2347,10 +2347,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ",
             "startPosition": "beta1",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -2363,7 +2363,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -2385,7 +2385,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -2398,7 +2398,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -2440,10 +2440,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha1",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -2456,7 +2456,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -2476,10 +2476,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma15",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -2492,7 +2492,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -2512,10 +2512,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha3",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -2528,7 +2528,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -2548,10 +2548,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma9",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -2564,7 +2564,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -2584,10 +2584,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha5",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -2600,7 +2600,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -2620,10 +2620,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma11",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -2636,7 +2636,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -2656,10 +2656,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha7",
             "endPosition": "gamma13",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -2672,7 +2672,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -2692,10 +2692,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma13",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -2708,7 +2708,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -2730,7 +2730,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -2743,7 +2743,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -2798,10 +2798,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ-",
             "startPosition": "beta5",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -2814,7 +2814,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -2834,10 +2834,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma15",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -2850,7 +2850,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -2870,10 +2870,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha5",
             "endPosition": "alpha7",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -2886,7 +2886,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -2906,10 +2906,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "L",
             "startPosition": "alpha7",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -2922,7 +2922,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -2942,10 +2942,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Δ-",
             "startPosition": "beta5",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -2958,7 +2958,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -2978,10 +2978,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W",
             "startPosition": "gamma15",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -2994,7 +2994,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -3014,10 +3014,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha5",
             "endPosition": "alpha7",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -3030,7 +3030,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -3050,10 +3050,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "L",
             "startPosition": "alpha7",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -3066,7 +3066,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -3088,7 +3088,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "beta5",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -3101,7 +3101,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -3143,10 +3143,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma11",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -3159,7 +3159,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -3179,10 +3179,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -3195,7 +3195,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -3215,10 +3215,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha7",
             "endPosition": "gamma1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -3231,7 +3231,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -3251,10 +3251,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "M",
             "startPosition": "gamma1",
             "endPosition": "gamma11",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -3267,7 +3267,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -3287,10 +3287,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma11",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -3303,7 +3303,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -3323,10 +3323,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -3339,7 +3339,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -3359,10 +3359,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω-",
             "startPosition": "alpha7",
             "endPosition": "gamma1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -3375,7 +3375,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -3395,10 +3395,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "N",
             "startPosition": "gamma1",
             "endPosition": "gamma11",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -3411,7 +3411,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -3433,7 +3433,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -3446,7 +3446,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -3488,10 +3488,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W",
             "startPosition": "gamma11",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -3504,7 +3504,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -3524,10 +3524,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ",
             "startPosition": "alpha1",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -3540,7 +3540,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -3560,10 +3560,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "N",
             "startPosition": "gamma7",
             "endPosition": "gamma9",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -3576,7 +3576,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -3596,10 +3596,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "U",
             "startPosition": "gamma9",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -3612,7 +3612,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -3632,10 +3632,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma11",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -3648,7 +3648,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -3668,10 +3668,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Δ",
             "startPosition": "alpha1",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -3684,7 +3684,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -3704,10 +3704,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "M",
             "startPosition": "gamma7",
             "endPosition": "gamma9",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -3720,7 +3720,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -3740,10 +3740,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "V",
             "startPosition": "gamma9",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -3756,7 +3756,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -3778,7 +3778,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -3791,7 +3791,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -3833,10 +3833,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha1",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -3849,7 +3849,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -3869,10 +3869,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha3",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -3885,7 +3885,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -3905,10 +3905,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W",
             "startPosition": "gamma5",
             "endPosition": "alpha5",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -3921,7 +3921,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -3941,10 +3941,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha5",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -3957,7 +3957,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -3977,10 +3977,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha1",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -3993,7 +3993,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -4013,10 +4013,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω-",
             "startPosition": "alpha3",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -4029,7 +4029,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -4049,10 +4049,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma5",
             "endPosition": "alpha5",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -4065,7 +4065,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -4085,10 +4085,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha5",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -4101,7 +4101,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -4123,7 +4123,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -4136,7 +4136,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -4178,10 +4178,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha1",
             "endPosition": "alpha3",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -4194,7 +4194,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -4214,10 +4214,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ",
             "startPosition": "alpha3",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -4230,7 +4230,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -4250,10 +4250,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ-",
             "startPosition": "beta7",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -4266,7 +4266,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -4286,10 +4286,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "D",
             "startPosition": "beta3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -4302,7 +4302,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -4322,10 +4322,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha1",
             "endPosition": "alpha3",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -4338,7 +4338,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -4358,10 +4358,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ",
             "startPosition": "alpha3",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -4374,7 +4374,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -4394,10 +4394,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ-",
             "startPosition": "beta7",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -4410,7 +4410,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -4430,10 +4430,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "E",
             "startPosition": "beta3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -4446,7 +4446,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -4468,7 +4468,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -4481,7 +4481,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -4523,10 +4523,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha1",
             "endPosition": "gamma3",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -4539,7 +4539,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -4559,10 +4559,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "M",
             "startPosition": "gamma3",
             "endPosition": "gamma13",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -4575,7 +4575,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -4595,10 +4595,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma13",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -4611,7 +4611,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -4631,10 +4631,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha5",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -4647,7 +4647,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -4667,10 +4667,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω-",
             "startPosition": "alpha1",
             "endPosition": "gamma3",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -4683,7 +4683,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -4703,10 +4703,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "N",
             "startPosition": "gamma3",
             "endPosition": "gamma13",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -4719,7 +4719,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -4739,10 +4739,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W",
             "startPosition": "gamma13",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -4755,7 +4755,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -4775,10 +4775,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha5",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -4791,7 +4791,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -4813,7 +4813,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -4826,7 +4826,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -4868,10 +4868,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha1",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -4884,7 +4884,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -4904,10 +4904,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha5",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -4920,7 +4920,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -4940,10 +4940,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W",
             "startPosition": "gamma7",
             "endPosition": "alpha7",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -4956,7 +4956,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -4976,10 +4976,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha7",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -4992,7 +4992,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -5012,10 +5012,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha1",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -5028,7 +5028,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -5048,10 +5048,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω-",
             "startPosition": "alpha5",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -5064,7 +5064,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -5084,10 +5084,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma7",
             "endPosition": "alpha7",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -5100,7 +5100,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -5120,10 +5120,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha7",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -5136,7 +5136,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -5158,7 +5158,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -5171,7 +5171,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -5213,10 +5213,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha1",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -5229,7 +5229,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -5249,10 +5249,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ",
             "startPosition": "alpha5",
             "endPosition": "beta1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -5265,7 +5265,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -5285,10 +5285,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "D",
             "startPosition": "beta1",
             "endPosition": "alpha3",
-            "blueReversal": true,
-            "redReversal": true,
+            "leftReversal": true,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -5301,7 +5301,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -5321,10 +5321,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "C",
             "startPosition": "alpha3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -5337,7 +5337,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -5357,10 +5357,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha1",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -5373,7 +5373,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -5393,10 +5393,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ",
             "startPosition": "alpha5",
             "endPosition": "beta1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -5409,7 +5409,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -5429,10 +5429,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "E",
             "startPosition": "beta1",
             "endPosition": "alpha3",
-            "blueReversal": true,
-            "redReversal": true,
+            "leftReversal": true,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -5445,7 +5445,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -5465,10 +5465,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "C",
             "startPosition": "alpha3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -5481,7 +5481,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -5503,7 +5503,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -5516,7 +5516,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -5571,10 +5571,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "F",
             "startPosition": "beta5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -5587,7 +5587,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -5607,10 +5607,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha7",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -5623,7 +5623,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -5643,10 +5643,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha1",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -5659,7 +5659,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -5679,10 +5679,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "L",
             "startPosition": "alpha3",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -5695,7 +5695,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -5715,10 +5715,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "F",
             "startPosition": "beta5",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -5731,7 +5731,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -5751,10 +5751,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha3",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -5767,7 +5767,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -5787,10 +5787,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -5803,7 +5803,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -5823,10 +5823,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "L",
             "startPosition": "alpha7",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -5839,7 +5839,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -5861,7 +5861,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "beta5",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -5874,7 +5874,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -5916,10 +5916,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ",
             "startPosition": "gamma11",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -5932,7 +5932,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -5952,10 +5952,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "O",
             "startPosition": "gamma7",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -5968,7 +5968,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -5988,10 +5988,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "O",
             "startPosition": "gamma9",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -6004,7 +6004,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -6024,10 +6024,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "T",
             "startPosition": "gamma7",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -6040,7 +6040,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -6060,10 +6060,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ",
             "startPosition": "gamma5",
             "endPosition": "gamma13",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -6076,7 +6076,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -6096,10 +6096,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "O",
             "startPosition": "gamma13",
             "endPosition": "gamma3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -6112,7 +6112,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -6132,10 +6132,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "O",
             "startPosition": "gamma3",
             "endPosition": "gamma13",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -6148,7 +6148,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -6168,10 +6168,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "T",
             "startPosition": "gamma13",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -6184,7 +6184,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -6206,7 +6206,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -6219,7 +6219,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -6261,10 +6261,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ-",
             "startPosition": "beta5",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -6277,7 +6277,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -6297,10 +6297,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "O",
             "startPosition": "gamma15",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -6313,7 +6313,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -6333,10 +6333,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W",
             "startPosition": "gamma5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -6349,7 +6349,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -6369,10 +6369,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "L",
             "startPosition": "alpha7",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -6385,7 +6385,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -6405,10 +6405,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ-",
             "startPosition": "beta5",
             "endPosition": "gamma1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -6421,7 +6421,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -6441,10 +6441,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "O",
             "startPosition": "gamma1",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -6457,7 +6457,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -6477,10 +6477,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W",
             "startPosition": "gamma11",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -6493,7 +6493,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -6513,10 +6513,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "L",
             "startPosition": "alpha3",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -6529,7 +6529,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -6551,7 +6551,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "beta5",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -6564,7 +6564,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -6606,10 +6606,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "F",
             "startPosition": "beta5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -6622,7 +6622,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -6642,10 +6642,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ",
             "startPosition": "alpha7",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -6658,7 +6658,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -6678,10 +6678,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma9",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -6694,7 +6694,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -6714,10 +6714,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "L",
             "startPosition": "alpha7",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -6730,7 +6730,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -6750,10 +6750,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "F",
             "startPosition": "beta5",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -6766,7 +6766,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -6786,10 +6786,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ",
             "startPosition": "alpha3",
             "endPosition": "gamma3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -6802,7 +6802,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -6822,10 +6822,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma3",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -6838,7 +6838,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -6858,10 +6858,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "L",
             "startPosition": "alpha3",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -6874,7 +6874,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -6896,7 +6896,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "beta5",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -6909,7 +6909,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -6951,10 +6951,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "R",
             "startPosition": "gamma11",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -6967,7 +6967,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -6987,10 +6987,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ-",
             "startPosition": "gamma5",
             "endPosition": "gamma1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -7003,7 +7003,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -7023,10 +7023,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma1",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -7039,7 +7039,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -7059,10 +7059,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Δ",
             "startPosition": "alpha7",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -7075,7 +7075,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -7095,10 +7095,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "R",
             "startPosition": "gamma5",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -7111,7 +7111,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -7131,10 +7131,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ-",
             "startPosition": "gamma11",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -7147,7 +7147,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -7167,10 +7167,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma15",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -7183,7 +7183,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -7203,10 +7203,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Δ",
             "startPosition": "alpha3",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -7219,7 +7219,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -7241,7 +7241,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -7254,7 +7254,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -7296,10 +7296,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma11",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -7312,7 +7312,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -7332,10 +7332,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha5",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -7348,7 +7348,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -7368,10 +7368,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha1",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -7384,7 +7384,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -7404,10 +7404,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Δ",
             "startPosition": "alpha7",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -7420,7 +7420,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -7440,10 +7440,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma5",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -7456,7 +7456,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -7476,10 +7476,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha1",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -7492,7 +7492,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -7512,10 +7512,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha5",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -7528,7 +7528,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -7548,10 +7548,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Δ",
             "startPosition": "alpha3",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -7564,7 +7564,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -7586,7 +7586,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -7599,7 +7599,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -7641,10 +7641,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ-",
             "startPosition": "gamma11",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -7657,7 +7657,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -7677,10 +7677,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "O",
             "startPosition": "gamma15",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -7693,7 +7693,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -7713,10 +7713,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma5",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -7729,7 +7729,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -7749,10 +7749,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω-",
             "startPosition": "alpha3",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -7765,7 +7765,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -7785,10 +7785,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ-",
             "startPosition": "gamma5",
             "endPosition": "gamma1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -7801,7 +7801,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -7821,10 +7821,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "O",
             "startPosition": "gamma1",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -7837,7 +7837,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -7857,10 +7857,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma11",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -7873,7 +7873,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -7893,10 +7893,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω-",
             "startPosition": "alpha7",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -7909,7 +7909,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -7931,7 +7931,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -7944,7 +7944,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -7986,10 +7986,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha1",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -8002,7 +8002,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -8022,10 +8022,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha3",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -8038,7 +8038,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -8058,10 +8058,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "α",
             "startPosition": "alpha7",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -8074,7 +8074,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -8094,10 +8094,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha7",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -8110,7 +8110,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -8130,10 +8130,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -8146,7 +8146,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -8166,10 +8166,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha7",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -8182,7 +8182,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -8202,10 +8202,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "α",
             "startPosition": "alpha3",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -8218,7 +8218,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -8238,10 +8238,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -8254,7 +8254,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -8276,7 +8276,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -8289,7 +8289,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -8344,10 +8344,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "M",
             "startPosition": "gamma11",
             "endPosition": "gamma1",
-            "blueReversal": true,
-            "redReversal": true,
+            "leftReversal": true,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -8360,7 +8360,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -8380,10 +8380,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "N",
             "startPosition": "gamma1",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -8396,7 +8396,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -8416,10 +8416,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma11",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -8432,7 +8432,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -8452,10 +8452,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω-",
             "startPosition": "alpha5",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -8468,7 +8468,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -8488,10 +8488,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "M",
             "startPosition": "gamma7",
             "endPosition": "gamma9",
-            "blueReversal": true,
-            "redReversal": true,
+            "leftReversal": true,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -8504,7 +8504,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -8524,10 +8524,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "N",
             "startPosition": "gamma9",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -8540,7 +8540,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -8560,10 +8560,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma7",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -8576,7 +8576,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -8596,10 +8596,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω-",
             "startPosition": "alpha5",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -8612,7 +8612,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -8634,7 +8634,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -8647,7 +8647,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -8689,10 +8689,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ",
             "startPosition": "beta5",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -8705,7 +8705,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -8725,10 +8725,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma7",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -8741,7 +8741,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -8761,10 +8761,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha5",
             "endPosition": "alpha7",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -8777,7 +8777,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -8797,10 +8797,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "L",
             "startPosition": "alpha7",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -8813,7 +8813,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -8833,10 +8833,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ",
             "startPosition": "beta5",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -8849,7 +8849,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -8869,10 +8869,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma11",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -8885,7 +8885,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -8905,10 +8905,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha5",
             "endPosition": "alpha3",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -8921,7 +8921,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -8941,10 +8941,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "L",
             "startPosition": "alpha3",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -8957,7 +8957,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -8979,7 +8979,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "beta5",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -8992,7 +8992,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -9034,10 +9034,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "M",
             "startPosition": "gamma11",
             "endPosition": "gamma1",
-            "blueReversal": true,
-            "redReversal": true,
+            "leftReversal": true,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -9050,7 +9050,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -9070,10 +9070,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma1",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -9086,7 +9086,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -9106,10 +9106,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha7",
             "endPosition": "gamma13",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -9122,7 +9122,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -9142,10 +9142,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Q",
             "startPosition": "gamma13",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -9158,7 +9158,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -9178,10 +9178,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "M",
             "startPosition": "gamma7",
             "endPosition": "gamma9",
-            "blueReversal": true,
-            "redReversal": true,
+            "leftReversal": true,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -9194,7 +9194,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -9214,10 +9214,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma9",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -9230,7 +9230,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -9250,10 +9250,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha3",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -9266,7 +9266,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -9286,10 +9286,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Q",
             "startPosition": "gamma5",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -9302,7 +9302,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -9324,7 +9324,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -9337,7 +9337,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -9379,10 +9379,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma11",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -9395,7 +9395,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -9415,10 +9415,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha5",
             "endPosition": "alpha7",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -9431,7 +9431,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -9451,10 +9451,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha7",
             "endPosition": "gamma1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -9467,7 +9467,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -9487,10 +9487,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "T",
             "startPosition": "gamma1",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -9503,7 +9503,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -9523,10 +9523,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma7",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -9539,7 +9539,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -9559,10 +9559,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha5",
             "endPosition": "alpha3",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -9575,7 +9575,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -9595,10 +9595,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha3",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -9611,7 +9611,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -9631,10 +9631,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "T",
             "startPosition": "gamma9",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -9647,7 +9647,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -9669,7 +9669,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -9682,7 +9682,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -9724,10 +9724,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha1",
             "endPosition": "alpha3",
-            "blueReversal": true,
-            "redReversal": true,
+            "leftReversal": true,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -9740,7 +9740,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -9760,10 +9760,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ",
             "startPosition": "alpha3",
             "endPosition": "gamma13",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -9776,7 +9776,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -9796,10 +9796,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma13",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -9812,7 +9812,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -9832,10 +9832,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -9848,7 +9848,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -9868,10 +9868,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha1",
             "endPosition": "alpha7",
-            "blueReversal": true,
-            "redReversal": true,
+            "leftReversal": true,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -9884,7 +9884,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -9904,10 +9904,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ",
             "startPosition": "alpha7",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -9920,7 +9920,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -9940,10 +9940,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -9956,7 +9956,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -9976,10 +9976,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha7",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -9992,7 +9992,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -10014,7 +10014,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -10027,7 +10027,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -10069,10 +10069,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha1",
             "endPosition": "alpha3",
-            "blueReversal": true,
-            "redReversal": true,
+            "leftReversal": true,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -10085,7 +10085,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -10105,10 +10105,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha3",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -10121,7 +10121,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -10141,10 +10141,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ",
             "startPosition": "alpha5",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -10157,7 +10157,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -10177,10 +10177,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma15",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -10193,7 +10193,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -10213,10 +10213,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha1",
             "endPosition": "alpha7",
-            "blueReversal": true,
-            "redReversal": true,
+            "leftReversal": true,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -10229,7 +10229,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -10249,10 +10249,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha7",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -10265,7 +10265,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -10285,10 +10285,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ",
             "startPosition": "alpha5",
             "endPosition": "gamma3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -10301,7 +10301,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -10321,10 +10321,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -10337,7 +10337,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -10359,7 +10359,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -10372,7 +10372,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -10414,10 +10414,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ",
             "startPosition": "alpha1",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -10430,7 +10430,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -10450,10 +10450,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "N",
             "startPosition": "gamma11",
             "endPosition": "gamma1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -10466,7 +10466,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -10486,10 +10486,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ-",
             "startPosition": "gamma1",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -10502,7 +10502,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -10522,10 +10522,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma5",
             "endPosition": "alpha1",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -10538,7 +10538,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -10558,10 +10558,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ",
             "startPosition": "alpha1",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -10574,7 +10574,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -10594,10 +10594,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "N",
             "startPosition": "gamma7",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -10610,7 +10610,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -10630,10 +10630,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ-",
             "startPosition": "gamma9",
             "endPosition": "gamma13",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -10646,7 +10646,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -10666,10 +10666,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma13",
             "endPosition": "alpha1",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -10682,7 +10682,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -10704,7 +10704,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -10717,7 +10717,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -10759,10 +10759,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha1",
             "endPosition": "gamma3",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -10775,7 +10775,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -10795,10 +10795,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ-",
             "startPosition": "gamma3",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -10811,7 +10811,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -10831,10 +10831,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "M",
             "startPosition": "gamma7",
             "endPosition": "gamma9",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -10847,7 +10847,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -10867,10 +10867,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma9",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -10883,7 +10883,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -10903,10 +10903,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha1",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": true,
+            "leftReversal": false,
+            "rightReversal": true,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -10919,7 +10919,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -10939,10 +10939,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ-",
             "startPosition": "gamma15",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -10955,7 +10955,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -10975,10 +10975,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "M",
             "startPosition": "gamma11",
             "endPosition": "gamma1",
-            "blueReversal": true,
-            "redReversal": false,
+            "leftReversal": true,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -10991,7 +10991,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -11011,10 +11011,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma1",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -11027,7 +11027,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -11049,7 +11049,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -11062,7 +11062,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -11117,10 +11117,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha1",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -11133,7 +11133,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -11153,10 +11153,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha3",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -11169,7 +11169,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -11189,10 +11189,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ",
             "startPosition": "alpha5",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -11205,7 +11205,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -11225,10 +11225,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma15",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -11241,7 +11241,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -11261,10 +11261,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha1",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -11277,7 +11277,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -11297,10 +11297,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha7",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -11313,7 +11313,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -11333,10 +11333,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Δ",
             "startPosition": "alpha5",
             "endPosition": "gamma3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -11349,7 +11349,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -11369,10 +11369,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -11385,7 +11385,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -11407,7 +11407,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -11420,7 +11420,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -11462,10 +11462,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ",
             "startPosition": "beta5",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -11478,7 +11478,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -11498,10 +11498,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma7",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -11514,7 +11514,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -11534,10 +11534,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -11550,7 +11550,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -11570,10 +11570,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "L",
             "startPosition": "alpha7",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -11586,7 +11586,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -11606,10 +11606,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω",
             "startPosition": "beta5",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -11622,7 +11622,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -11642,10 +11642,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma11",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -11658,7 +11658,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -11678,10 +11678,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha5",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -11694,7 +11694,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -11714,10 +11714,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "L",
             "startPosition": "alpha3",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -11730,7 +11730,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -11752,7 +11752,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "beta5",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -11765,7 +11765,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -11807,10 +11807,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "M",
             "startPosition": "gamma11",
             "endPosition": "gamma1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -11823,7 +11823,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -11843,10 +11843,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "N",
             "startPosition": "gamma1",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -11859,7 +11859,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -11879,10 +11879,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma11",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -11895,7 +11895,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -11915,10 +11915,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω-",
             "startPosition": "alpha5",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -11931,7 +11931,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -11951,10 +11951,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "N",
             "startPosition": "gamma7",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -11967,7 +11967,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -11987,10 +11987,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "M",
             "startPosition": "gamma9",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -12003,7 +12003,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -12023,10 +12023,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma7",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -12039,7 +12039,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -12059,10 +12059,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha5",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -12075,7 +12075,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -12097,7 +12097,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -12110,7 +12110,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -12152,10 +12152,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "M",
             "startPosition": "gamma11",
             "endPosition": "gamma1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -12168,7 +12168,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -12188,10 +12188,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma1",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -12204,7 +12204,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -12224,10 +12224,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha7",
             "endPosition": "gamma13",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -12240,7 +12240,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -12260,10 +12260,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Q",
             "startPosition": "gamma13",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -12276,7 +12276,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -12296,10 +12296,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "N",
             "startPosition": "gamma7",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -12312,7 +12312,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -12332,10 +12332,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma9",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -12348,7 +12348,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -12368,10 +12368,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω-",
             "startPosition": "alpha3",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -12384,7 +12384,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -12404,10 +12404,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "P",
             "startPosition": "gamma5",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -12420,7 +12420,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -12442,7 +12442,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -12455,7 +12455,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -12497,10 +12497,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma11",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -12513,7 +12513,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -12533,10 +12533,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -12549,7 +12549,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -12569,10 +12569,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha7",
             "endPosition": "gamma1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -12585,7 +12585,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -12605,10 +12605,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "T",
             "startPosition": "gamma1",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -12621,7 +12621,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -12641,10 +12641,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma7",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -12657,7 +12657,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -12677,10 +12677,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha5",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -12693,7 +12693,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -12713,10 +12713,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω-",
             "startPosition": "alpha3",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -12729,7 +12729,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -12749,10 +12749,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "S",
             "startPosition": "gamma9",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -12765,7 +12765,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -12787,7 +12787,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -12800,7 +12800,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -12842,10 +12842,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha1",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -12858,7 +12858,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -12878,10 +12878,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ",
             "startPosition": "alpha3",
             "endPosition": "gamma13",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -12894,7 +12894,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -12914,10 +12914,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma13",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -12930,7 +12930,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -12950,10 +12950,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -12966,7 +12966,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -12986,10 +12986,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha1",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -13002,7 +13002,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -13022,10 +13022,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Δ",
             "startPosition": "alpha7",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -13038,7 +13038,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -13058,10 +13058,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W",
             "startPosition": "gamma5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -13074,7 +13074,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -13094,10 +13094,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha7",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -13110,7 +13110,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -13132,7 +13132,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -13145,7 +13145,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -13187,10 +13187,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha1",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -13203,7 +13203,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -13223,10 +13223,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha3",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -13239,7 +13239,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -13259,10 +13259,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma5",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -13275,7 +13275,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -13295,10 +13295,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha5",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -13311,7 +13311,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -13331,10 +13331,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha1",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -13347,7 +13347,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -13367,10 +13367,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω-",
             "startPosition": "alpha7",
             "endPosition": "gamma13",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -13383,7 +13383,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -13403,10 +13403,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W",
             "startPosition": "gamma13",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -13419,7 +13419,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -13439,10 +13439,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha5",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -13455,7 +13455,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -13477,7 +13477,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -13490,7 +13490,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -13532,10 +13532,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha1",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -13548,7 +13548,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -13568,10 +13568,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha3",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -13584,7 +13584,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -13604,10 +13604,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ",
             "startPosition": "alpha7",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -13620,7 +13620,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -13640,10 +13640,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "F",
             "startPosition": "beta3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -13656,7 +13656,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -13676,10 +13676,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha1",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -13692,7 +13692,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -13712,10 +13712,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha7",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -13728,7 +13728,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -13748,10 +13748,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ",
             "startPosition": "alpha3",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -13764,7 +13764,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -13784,10 +13784,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "F",
             "startPosition": "beta7",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -13800,7 +13800,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -13822,7 +13822,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -13835,7 +13835,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -13890,10 +13890,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "D",
             "startPosition": "beta5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -13906,7 +13906,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -13926,10 +13926,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "C",
             "startPosition": "alpha7",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -13942,7 +13942,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -13962,10 +13962,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "C",
             "startPosition": "alpha1",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -13978,7 +13978,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -13998,10 +13998,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "J",
             "startPosition": "alpha3",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -14014,7 +14014,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -14034,10 +14034,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "D",
             "startPosition": "beta5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -14050,7 +14050,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -14070,10 +14070,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "C",
             "startPosition": "alpha7",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -14086,7 +14086,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -14106,10 +14106,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "C",
             "startPosition": "alpha5",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -14122,7 +14122,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -14142,10 +14142,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "J",
             "startPosition": "alpha3",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -14158,7 +14158,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -14180,7 +14180,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "beta5",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -14193,7 +14193,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -14235,10 +14235,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ-",
             "startPosition": "beta5",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -14251,7 +14251,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -14271,10 +14271,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "N",
             "startPosition": "gamma15",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -14287,7 +14287,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -14307,10 +14307,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W",
             "startPosition": "gamma5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -14323,7 +14323,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -14343,10 +14343,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "K",
             "startPosition": "alpha7",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -14359,7 +14359,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -14379,10 +14379,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ-",
             "startPosition": "beta5",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -14395,7 +14395,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -14415,10 +14415,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "N",
             "startPosition": "gamma9",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -14431,7 +14431,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -14451,10 +14451,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W",
             "startPosition": "gamma7",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -14467,7 +14467,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -14487,10 +14487,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "K",
             "startPosition": "alpha7",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -14503,7 +14503,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -14525,7 +14525,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "beta5",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -14538,7 +14538,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -14580,10 +14580,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ",
             "startPosition": "gamma11",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -14596,7 +14596,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -14616,10 +14616,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "M",
             "startPosition": "gamma7",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -14632,7 +14632,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -14652,10 +14652,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "N",
             "startPosition": "gamma9",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -14668,7 +14668,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -14688,10 +14688,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Q",
             "startPosition": "gamma7",
             "endPosition": "gamma13",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -14704,7 +14704,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -14724,10 +14724,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Λ",
             "startPosition": "gamma13",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -14740,7 +14740,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -14760,10 +14760,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "M",
             "startPosition": "gamma5",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -14776,7 +14776,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -14796,10 +14796,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "N",
             "startPosition": "gamma15",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -14812,7 +14812,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -14832,10 +14832,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Q",
             "startPosition": "gamma5",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -14848,7 +14848,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -14870,7 +14870,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -14883,7 +14883,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -14925,10 +14925,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "D",
             "startPosition": "beta5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -14941,7 +14941,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -14961,10 +14961,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ",
             "startPosition": "alpha7",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -14977,7 +14977,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -14997,10 +14997,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma9",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -15013,7 +15013,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -15033,10 +15033,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "K",
             "startPosition": "alpha7",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -15049,7 +15049,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -15069,10 +15069,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "D",
             "startPosition": "beta5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -15085,7 +15085,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -15105,10 +15105,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ",
             "startPosition": "alpha7",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -15121,7 +15121,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -15141,10 +15141,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma15",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -15157,7 +15157,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -15177,10 +15177,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "K",
             "startPosition": "alpha7",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -15193,7 +15193,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -15215,7 +15215,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "beta5",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -15228,7 +15228,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -15270,10 +15270,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha1",
             "endPosition": "gamma3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -15286,7 +15286,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -15306,10 +15306,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma3",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -15322,7 +15322,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -15342,10 +15342,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha7",
             "endPosition": "gamma1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -15358,7 +15358,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -15378,10 +15378,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma1",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -15394,7 +15394,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -15414,10 +15414,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha5",
             "endPosition": "gamma1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -15430,7 +15430,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -15450,10 +15450,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma1",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -15466,7 +15466,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -15486,10 +15486,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha7",
             "endPosition": "gamma3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -15502,7 +15502,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -15522,10 +15522,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -15538,7 +15538,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -15560,7 +15560,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -15573,7 +15573,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -15615,10 +15615,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "C",
             "startPosition": "alpha1",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -15631,7 +15631,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -15651,10 +15651,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ",
             "startPosition": "alpha3",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -15667,7 +15667,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -15687,10 +15687,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ-",
             "startPosition": "beta7",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -15703,7 +15703,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -15723,10 +15723,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "D",
             "startPosition": "beta3",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -15739,7 +15739,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -15759,10 +15759,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "C",
             "startPosition": "alpha5",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -15775,7 +15775,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -15795,10 +15795,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ",
             "startPosition": "alpha3",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -15811,7 +15811,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -15831,10 +15831,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ-",
             "startPosition": "beta3",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -15847,7 +15847,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -15867,10 +15867,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "D",
             "startPosition": "beta7",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -15883,7 +15883,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -15905,7 +15905,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -15918,7 +15918,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -15960,10 +15960,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "J",
             "startPosition": "alpha1",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -15976,7 +15976,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -15996,10 +15996,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ-",
             "startPosition": "beta3",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -16012,7 +16012,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -16032,10 +16032,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "β",
             "startPosition": "beta7",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -16048,7 +16048,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -16068,10 +16068,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "E",
             "startPosition": "beta7",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -16084,7 +16084,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -16104,10 +16104,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "J",
             "startPosition": "alpha5",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -16120,7 +16120,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -16140,10 +16140,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ-",
             "startPosition": "beta7",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -16156,7 +16156,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -16176,10 +16176,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "β",
             "startPosition": "beta3",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -16192,7 +16192,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -16212,10 +16212,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "E",
             "startPosition": "beta3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -16228,7 +16228,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -16250,7 +16250,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -16263,7 +16263,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -16305,10 +16305,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha1",
             "endPosition": "gamma3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -16321,7 +16321,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -16341,10 +16341,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Y-",
             "startPosition": "gamma3",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -16357,7 +16357,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -16377,10 +16377,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "β",
             "startPosition": "beta7",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -16393,7 +16393,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -16413,10 +16413,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "E",
             "startPosition": "beta7",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -16429,7 +16429,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -16449,10 +16449,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha5",
             "endPosition": "gamma1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -16465,7 +16465,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -16485,10 +16485,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Y-",
             "startPosition": "gamma1",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -16501,7 +16501,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -16521,10 +16521,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "β",
             "startPosition": "beta3",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -16537,7 +16537,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -16557,10 +16557,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "E",
             "startPosition": "beta3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -16573,7 +16573,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -16595,7 +16595,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -16608,7 +16608,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -16663,10 +16663,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ-",
             "startPosition": "beta5",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -16679,7 +16679,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -16699,10 +16699,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma15",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -16715,7 +16715,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -16735,10 +16735,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -16751,7 +16751,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -16771,10 +16771,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "L",
             "startPosition": "alpha7",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -16787,7 +16787,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -16807,10 +16807,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Δ-",
             "startPosition": "beta5",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -16823,7 +16823,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -16843,10 +16843,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W",
             "startPosition": "gamma9",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -16859,7 +16859,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -16879,10 +16879,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha1",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -16895,7 +16895,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -16915,10 +16915,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "L",
             "startPosition": "alpha7",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -16931,7 +16931,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -16953,7 +16953,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "beta5",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -16966,7 +16966,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -17008,10 +17008,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W-",
             "startPosition": "gamma11",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -17024,7 +17024,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -17044,10 +17044,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -17060,7 +17060,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -17080,10 +17080,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha7",
             "endPosition": "gamma1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -17096,7 +17096,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -17116,10 +17116,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "O",
             "startPosition": "gamma1",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -17132,7 +17132,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -17152,10 +17152,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X-",
             "startPosition": "gamma11",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -17168,7 +17168,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -17188,10 +17188,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha7",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -17204,7 +17204,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -17224,10 +17224,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω-",
             "startPosition": "alpha5",
             "endPosition": "gamma1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -17240,7 +17240,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -17260,10 +17260,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "O",
             "startPosition": "gamma1",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -17276,7 +17276,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -17298,7 +17298,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -17311,7 +17311,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -17353,10 +17353,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W",
             "startPosition": "gamma11",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -17369,7 +17369,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -17389,10 +17389,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Σ",
             "startPosition": "alpha1",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -17405,7 +17405,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -17425,10 +17425,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "O",
             "startPosition": "gamma7",
             "endPosition": "gamma9",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -17441,7 +17441,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -17461,10 +17461,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "T",
             "startPosition": "gamma9",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -17477,7 +17477,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -17497,10 +17497,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma11",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -17513,7 +17513,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -17533,10 +17533,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Δ",
             "startPosition": "alpha3",
             "endPosition": "gamma3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -17549,7 +17549,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -17569,10 +17569,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "O",
             "startPosition": "gamma3",
             "endPosition": "gamma13",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -17585,7 +17585,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -17605,10 +17605,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "S",
             "startPosition": "gamma13",
             "endPosition": "gamma11",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "w",
@@ -17621,7 +17621,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -17643,7 +17643,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "gamma11",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -17656,7 +17656,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "e",
@@ -17698,10 +17698,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha1",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -17714,7 +17714,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -17734,10 +17734,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha3",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -17750,7 +17750,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -17770,10 +17770,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma5",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -17786,7 +17786,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -17806,10 +17806,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha5",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -17822,7 +17822,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -17842,10 +17842,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha1",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -17858,7 +17858,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -17878,10 +17878,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω-",
             "startPosition": "alpha7",
             "endPosition": "gamma3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -17894,7 +17894,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -17914,10 +17914,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W",
             "startPosition": "gamma3",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -17930,7 +17930,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -17950,10 +17950,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha5",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -17966,7 +17966,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -17988,7 +17988,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -18001,7 +18001,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -18043,10 +18043,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha1",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -18059,7 +18059,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -18079,10 +18079,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ",
             "startPosition": "alpha3",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -18095,7 +18095,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -18115,10 +18115,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ-",
             "startPosition": "beta7",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -18131,7 +18131,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -18151,10 +18151,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "F",
             "startPosition": "beta3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -18167,7 +18167,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -18187,10 +18187,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha1",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "s",
@@ -18203,7 +18203,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "n",
@@ -18223,10 +18223,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ",
             "startPosition": "alpha7",
             "endPosition": "beta7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "e",
@@ -18239,7 +18239,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -18259,10 +18259,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ-",
             "startPosition": "beta7",
             "endPosition": "beta3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -18275,7 +18275,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -18295,10 +18295,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "F",
             "startPosition": "beta3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -18311,7 +18311,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "ccw",
                 "startLocation": "e",
@@ -18333,7 +18333,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -18346,7 +18346,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -18388,10 +18388,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha1",
             "endPosition": "gamma3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -18404,7 +18404,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -18424,10 +18424,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "O",
             "startPosition": "gamma3",
             "endPosition": "gamma13",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -18440,7 +18440,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -18460,10 +18460,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W",
             "startPosition": "gamma13",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -18476,7 +18476,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -18496,10 +18496,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha5",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -18512,7 +18512,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -18532,10 +18532,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω-",
             "startPosition": "alpha1",
             "endPosition": "gamma5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -18548,7 +18548,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -18568,10 +18568,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "O",
             "startPosition": "gamma5",
             "endPosition": "gamma15",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -18584,7 +18584,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -18604,10 +18604,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma15",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -18620,7 +18620,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -18640,10 +18640,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha5",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -18656,7 +18656,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -18678,7 +18678,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -18691,7 +18691,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -18733,10 +18733,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha1",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -18749,7 +18749,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -18769,10 +18769,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Θ-",
             "startPosition": "alpha5",
             "endPosition": "gamma7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -18785,7 +18785,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -18805,10 +18805,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "X",
             "startPosition": "gamma7",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -18821,7 +18821,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -18841,10 +18841,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha7",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -18857,7 +18857,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -18877,10 +18877,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha1",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -18893,7 +18893,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -18913,10 +18913,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ω-",
             "startPosition": "alpha5",
             "endPosition": "gamma1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -18929,7 +18929,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -18949,10 +18949,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "W",
             "startPosition": "gamma1",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "w",
@@ -18965,7 +18965,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -18985,10 +18985,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -19001,7 +19001,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -19023,7 +19023,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -19036,7 +19036,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",
@@ -19078,10 +19078,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha1",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -19094,7 +19094,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -19114,10 +19114,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ",
             "startPosition": "alpha5",
             "endPosition": "beta1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -19130,7 +19130,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -19150,10 +19150,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "F",
             "startPosition": "beta1",
             "endPosition": "alpha3",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -19166,7 +19166,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "n",
@@ -19186,10 +19186,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "B",
             "startPosition": "alpha3",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -19202,7 +19202,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -19222,10 +19222,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Φ-",
             "startPosition": "alpha1",
             "endPosition": "alpha5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -19238,7 +19238,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -19258,10 +19258,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "Ψ",
             "startPosition": "alpha5",
             "endPosition": "beta5",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "dash",
                 "rotationDirection": "noRotation",
                 "startLocation": "n",
@@ -19274,7 +19274,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "static",
                 "rotationDirection": "noRotation",
                 "startLocation": "s",
@@ -19294,10 +19294,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "F",
             "startPosition": "beta5",
             "endPosition": "alpha7",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "anti",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -19310,7 +19310,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "s",
@@ -19330,10 +19330,10 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
             "letter": "A",
             "startPosition": "alpha7",
             "endPosition": "alpha1",
-            "blueReversal": false,
-            "redReversal": false,
+            "leftReversal": false,
+            "rightReversal": false,
             "motions": {
-              "blue": {
+              "left": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "e",
@@ -19346,7 +19346,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
                 "color": "blue",
                 "gridMode": "diamond"
               },
-              "red": {
+              "right": {
                 "motionType": "pro",
                 "rotationDirection": "cw",
                 "startLocation": "w",
@@ -19368,7 +19368,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
           "gridPosition": "alpha1",
           "gridMode": "diamond",
           "motions": {
-            "blue": {
+            "left": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "s",
@@ -19381,7 +19381,7 @@ export const COVER_CANDIDATES: Record<string, { label: string; sequences: any[];
               "color": "blue",
               "gridMode": "diamond"
             },
-            "red": {
+            "right": {
               "motionType": "static",
               "rotationDirection": "noRotation",
               "startLocation": "n",

@@ -43,11 +43,11 @@ async function main() {
     for (const beat of legacy.beats_raw.slice(0, 3)) {
       console.log(`\n  Beat ${beat.beat}:`);
       console.log(`    letter: ${beat.letter}`);
-      if (beat.blue_attributes) {
-        console.log(`    blue: ${beat.blue_attributes.motion_type} | ${beat.blue_attributes.start_loc}→${beat.blue_attributes.end_loc} | ${beat.blue_attributes.prop_rot_dir} | turns:${beat.blue_attributes.turns}`);
+      if (beat.left_attributes) {
+        console.log(`    blue: ${beat.left_attributes.motion_type} | ${beat.left_attributes.start_loc}→${beat.left_attributes.end_loc} | ${beat.left_attributes.prop_rot_dir} | turns:${beat.left_attributes.turns}`);
       }
-      if (beat.red_attributes) {
-        console.log(`    red:  ${beat.red_attributes.motion_type} | ${beat.red_attributes.start_loc}→${beat.red_attributes.end_loc} | ${beat.red_attributes.prop_rot_dir} | turns:${beat.red_attributes.turns}`);
+      if (beat.right_attributes) {
+        console.log(`    red:  ${beat.right_attributes.motion_type} | ${beat.right_attributes.start_loc}→${beat.right_attributes.end_loc} | ${beat.right_attributes.prop_rot_dir} | turns:${beat.right_attributes.turns}`);
       }
     }
     if (legacy.beats_raw.length > 3) {
@@ -78,13 +78,13 @@ async function main() {
       console.log('\n  Start Position:');
       const sp = data.startPosition;
       console.log(`    letter: ${sp.letter}`);
-      if (sp.motions?.blue) {
-        const blue = sp.motions.blue;
-        console.log(`    blue: ${blue.motionType} | ${blue.startLocation}→${blue.endLocation} | ${blue.rotationDirection} | turns:${blue.turns}`);
+      if (sp.motions?.left) {
+        const left = sp.motions.left;
+        console.log(`    blue: ${left.motionType} | ${left.startLocation}→${left.endLocation} | ${left.rotationDirection} | turns:${left.turns}`);
       }
-      if (sp.motions?.red) {
-        const red = sp.motions.red;
-        console.log(`    red:  ${red.motionType} | ${red.startLocation}→${red.endLocation} | ${red.rotationDirection} | turns:${red.turns}`);
+      if (sp.motions?.right) {
+        const right = sp.motions.right;
+        console.log(`    red:  ${right.motionType} | ${right.startLocation}→${right.endLocation} | ${right.rotationDirection} | turns:${right.turns}`);
       }
     }
 
@@ -93,13 +93,13 @@ async function main() {
     for (const beat of (data.beats || []).slice(0, 3)) {
       console.log(`\n  Beat ${beat.beatNumber}:`);
       console.log(`    letter: ${beat.letter}`);
-      if (beat.motions?.blue) {
-        const blue = beat.motions.blue;
-        console.log(`    blue: ${blue.motionType} | ${blue.startLocation}→${blue.endLocation} | ${blue.rotationDirection} | turns:${blue.turns}`);
+      if (beat.motions?.left) {
+        const left = beat.motions.left;
+        console.log(`    blue: ${left.motionType} | ${left.startLocation}→${left.endLocation} | ${left.rotationDirection} | turns:${left.turns}`);
       }
-      if (beat.motions?.red) {
-        const red = beat.motions.red;
-        console.log(`    red:  ${red.motionType} | ${red.startLocation}→${red.endLocation} | ${red.rotationDirection} | turns:${red.turns}`);
+      if (beat.motions?.right) {
+        const right = beat.motions.right;
+        console.log(`    red:  ${right.motionType} | ${right.startLocation}→${right.endLocation} | ${right.rotationDirection} | turns:${right.turns}`);
       }
     }
     if ((data.beats || []).length > 3) {

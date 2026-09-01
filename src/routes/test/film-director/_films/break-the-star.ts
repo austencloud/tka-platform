@@ -19,13 +19,13 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * at a shared 0.75 m/s.
  *
  * Casting and mirroring are Star of Five's — see that file for why SAILOR and
- * ORBITS are the words and why these five avatar ids read the way they do on
+ * ORBITS are the words and why these five character IDs read the way they do on
  * screen. The lead is directed rather than merely spelled: DJ out of beta at
  * south, one turn on every step, so the featured performer's spin is pinned
  * where the star's tip points instead of wherever the generator started.
  */
 export const breakTheStarFilm: FilmDirectorInput = {
-  version: 3,
+  version: 5,
   id: "break-the-star-r1",
   title: "Break the Star",
   brief:
@@ -47,7 +47,7 @@ export const breakTheStarFilm: FilmDirectorInput = {
           {
             id: "lead",
             name: "Lead",
-            avatarId: "ch01",
+            characterId: "ch01",
             prop: PropType.CAPSULE_BATON,
             effect: "led",
             effort: "linear",
@@ -58,8 +58,8 @@ export const breakTheStarFilm: FilmDirectorInput = {
             },
             position: { x: 0, z: -2.6 },
             facingDegrees: 180,
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
             blocking: [
               { move: "stand", durationSeconds: 7.6 },
               {
@@ -73,15 +73,15 @@ export const breakTheStarFilm: FilmDirectorInput = {
           {
             id: "fan-left",
             name: "Fan left",
-            avatarId: "ch07",
+            characterId: "ch07",
             prop: PropType.FAN,
             effect: "silk",
             effort: "glide",
             sequence: { word: "SAILOR" },
             position: { x: -2.47, z: -0.8 },
             facingDegrees: 180,
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
             blocking: [
               { move: "stand", durationSeconds: 7.95 },
               // Straight out along x with the facing held: a pure strafe, and
@@ -97,15 +97,15 @@ export const breakTheStarFilm: FilmDirectorInput = {
           {
             id: "fan-right",
             name: "Fan right",
-            avatarId: "ch22",
+            characterId: "ch22",
             prop: PropType.FAN,
             effect: "silk",
             effort: "glide",
             sequence: { mirrorOf: "fan-left" },
             position: { x: 2.47, z: -0.8 },
             facingDegrees: 180,
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
             blocking: [
               { move: "stand", durationSeconds: 7.95 },
               {
@@ -119,15 +119,15 @@ export const breakTheStarFilm: FilmDirectorInput = {
           {
             id: "back-left",
             name: "Buugeng left",
-            avatarId: "ch10",
+            characterId: "ch10",
             prop: PropType.BUUGENG,
             effect: "bubbles",
             effort: "linear",
             sequence: { word: "ORBITS" },
             position: { x: -1.53, z: 2.1 },
             facingDegrees: 180,
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
             blocking: [
               { move: "stand", durationSeconds: 6.1 },
               // Nearly three metres, the longest crossing in the scene, so this
@@ -143,15 +143,15 @@ export const breakTheStarFilm: FilmDirectorInput = {
           {
             id: "back-right",
             name: "Buugeng right",
-            avatarId: "ch24",
+            characterId: "ch24",
             prop: PropType.BUUGENG,
             effect: "bubbles",
             effort: "linear",
             sequence: { mirrorOf: "back-left" },
             position: { x: 1.53, z: 2.1 },
             facingDegrees: 180,
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
             blocking: [
               { move: "stand", durationSeconds: 6.1 },
               {

@@ -6,6 +6,7 @@ import {
   FILM_DIRECTOR_DIRECTIVE_AXES,
   FILM_DIRECTOR_SCHEMA_VERSION_3,
   FILM_DIRECTOR_SCHEMA_VERSION_4,
+  FILM_DIRECTOR_SCHEMA_VERSION_5,
   FilmDirectorInputSchema,
 } from "../../../src/routes/test/film-director/_lib/film-director-schema";
 
@@ -47,13 +48,13 @@ describe("film director scene language", () => {
     expect(() =>
       resolveFilmDirectorSpec({
         version: 1,
-        id: "bad-avatar",
-        title: "Bad avatar",
+        id: "bad-character",
+        title: "Bad character",
         scenes: [
           {
             id: "scene",
             title: "Scene",
-            performance: { performers: [{ avatarId: "astronaut" }] },
+            performance: { performers: [{ characterId: "astronaut" }] },
           },
         ],
       })
@@ -137,6 +138,124 @@ describe("film director scene language", () => {
       scenes: [{ id: "s1", title: "S1" }],
     });
     expect(parsed.version).toBe(3);
+  });
+
+  it("uses characterId in schema version 4", () => {
+    const parsed = FilmDirectorInputSchema.parse({
+      version: FILM_DIRECTOR_SCHEMA_VERSION_4,
+      id: "v4-film",
+      title: "V4",
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: { performers: [{ characterId: "ch01" }] },
+        },
+      ],
+    });
+    expect(parsed.scenes[0]?.performance?.performers?.[0]).toMatchObject({
+      characterId: "ch01",
+    });
+  });
+
+  it("normalizes version-4 hand fields without changing seeded plane picks", () => {
+    const legacy = FilmDirectorInputSchema.parse({
+      version: FILM_DIRECTOR_SCHEMA_VERSION_4,
+      id: "hand-migration",
+      title: "Hand migration",
+      seed: { axes: { bluePlane: 7, redPlane: 11 } },
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: {
+            cast: {
+              count: 3,
+              defaults: {
+                bluePlane: { pick: "distinct" },
+                redPlane: { pick: "distinct" },
+              },
+              performers: [
+                {
+                  id: "performer-1",
+                  stepPlanes: [
+                    { step: 2, hand: "blue", plane: { pick: "any" } },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      ],
+    });
+    const canonical = FilmDirectorInputSchema.parse({
+      version: FILM_DIRECTOR_SCHEMA_VERSION_5,
+      id: "hand-migration",
+      title: "Hand migration",
+      seed: { axes: { leftPlane: 7, rightPlane: 11 } },
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: {
+            cast: {
+              count: 3,
+              defaults: {
+                leftPlane: { pick: "distinct" },
+                rightPlane: { pick: "distinct" },
+              },
+              performers: [
+                {
+                  id: "performer-1",
+                  stepPlanes: [
+                    { step: 2, hand: "left", plane: { pick: "any" } },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      ],
+    });
+
+    const legacyResolved = resolveFilmDirectorSpec(legacy);
+    const canonicalResolved = resolveFilmDirectorSpec(canonical);
+    expect(legacyResolved.scenes[0]!.performance.performers).toEqual(
+      canonicalResolved.scenes[0]!.performance.performers
+    );
+  });
+
+  it("migrates avatarId only for legacy film versions", () => {
+    const legacy = FilmDirectorInputSchema.parse({
+      version: FILM_DIRECTOR_SCHEMA_VERSION_3,
+      id: "legacy-character-field",
+      title: "Legacy character field",
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: { performers: [{ avatarId: "ch01" }] },
+        },
+      ],
+    });
+    expect(legacy.scenes[0]?.performance?.performers?.[0]).toMatchObject({
+      characterId: "ch01",
+    });
+
+    expect(() =>
+      FilmDirectorInputSchema.parse({
+        version: FILM_DIRECTOR_SCHEMA_VERSION_4,
+        id: "v4-legacy-field",
+        title: "V4 legacy field",
+        scenes: [
+          {
+            id: "s1",
+            title: "S1",
+            performance: { performers: [{ avatarId: "ch01" }] },
+          },
+        ],
+      })
+    ).toThrow(/avatarId/);
   });
 
   it("upgrades legacy scene units and location fields before validation", () => {
@@ -343,9 +462,7 @@ describe("beats as a time unit", () => {
         beatsFilm({
           camera: {
             shotSize: "medium",
-            moves: [
-              { move: "push-in", durationSeconds: 4, durationBeats: 8 },
-            ],
+            moves: [{ move: "push-in", durationSeconds: 4, durationBeats: 8 }],
           },
         })
       )
@@ -368,9 +485,7 @@ describe("beats as a time unit", () => {
       FilmDirectorInputSchema.parse(
         beatsFilm({
           camera: {
-            keyframes: [
-              { atSeconds: 1, atBeats: 8, position: [0, 1, -4] },
-            ],
+            keyframes: [{ atSeconds: 1, atBeats: 8, position: [0, 1, -4] }],
           },
         })
       )

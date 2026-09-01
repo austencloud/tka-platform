@@ -11,16 +11,16 @@ import { pictographRequiresStrictHandpoints } from "$lib/shared/pictograph/prop/
 import type { PropPosition } from "$lib/shared/pictograph/prop/domain/models/prop-position";
 import { DefaultPropPositioner } from "$lib/shared/pictograph/prop/services/default-prop-positioner";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { HAND_SIDES, type HandSide } from "@tka/tka-types";
 
-type MotionColor = "blue" | "red";
-type PropPositions = Partial<Record<MotionColor, PropPosition>>;
+type PropPositions = Partial<Record<HandSide, PropPosition>>;
 
 interface PictographMotionPositionInput {
   step: StepData;
   progress: number;
   gridMode: GridMode;
-  bluePropType: string;
-  redPropType: string;
+  leftPropType: string;
+  rightPropType: string;
   startPositions: PropPositions;
   endPositions: PropPositions;
 }
@@ -43,13 +43,13 @@ function nearestEquivalentAngle(angle: number, reference: number): number {
 
 function resolveGridRadius(
   gridMode: GridMode,
-  bluePropType: string,
-  redPropType: string
+  leftPropType: string,
+  rightPropType: string
 ): number {
   const north = DefaultPropPositioner.calculatePosition(
     GridLocation.NORTH,
     gridMode,
-    pictographRequiresStrictHandpoints(bluePropType, redPropType)
+    pictographRequiresStrictHandpoints(leftPropType, rightPropType)
   );
   return Math.hypot(north.x - PICTOGRAPH_CENTER, north.y - PICTOGRAPH_CENTER);
 }
@@ -74,8 +74,8 @@ export function calculatePictographMotionPositions({
   step,
   progress,
   gridMode,
-  bluePropType,
-  redPropType,
+  leftPropType,
+  rightPropType,
   startPositions,
   endPositions,
 }: PictographMotionPositionInput): PropPositions {
@@ -83,16 +83,16 @@ export function calculatePictographMotionPositions({
   const interpolation = interpolatePropAngles(step, clampedProgress);
   const startInterpolation = interpolatePropAngles(step, 0);
   const endInterpolation = interpolatePropAngles(step, 1);
-  const gridRadius = resolveGridRadius(gridMode, bluePropType, redPropType);
+  const gridRadius = resolveGridRadius(gridMode, leftPropType, rightPropType);
   const positions: PropPositions = {};
 
-  for (const color of ["blue", "red"] as const) {
-    const motion = step.motions[color];
-    const currentState = interpolation[`${color}Angles`];
-    const startState = startInterpolation[`${color}Angles`];
-    const endState = endInterpolation[`${color}Angles`];
-    const preparedStart = startPositions[color];
-    const preparedEnd = endPositions[color];
+  for (const hand of HAND_SIDES) {
+    const motion = step.motions[hand];
+    const currentState = interpolation[`${hand}Angles`];
+    const startState = startInterpolation[`${hand}Angles`];
+    const endState = endInterpolation[`${hand}Angles`];
+    const preparedStart = startPositions[hand];
+    const preparedEnd = endPositions[hand];
 
     if (
       !isVisibleMotion(motion) ||
@@ -105,12 +105,12 @@ export function calculatePictographMotionPositions({
     }
 
     if (clampedProgress === 0 && preparedStart) {
-      positions[color] = { ...preparedStart };
+      positions[hand] = { ...preparedStart };
       continue;
     }
 
     if (clampedProgress === 1) {
-      positions[color] = { ...preparedEnd };
+      positions[hand] = { ...preparedEnd };
       continue;
     }
 
@@ -141,7 +141,7 @@ export function calculatePictographMotionPositions({
       unwrappedEndRotation
     );
 
-    positions[color] = {
+    positions[hand] = {
       x:
         baseCurrent.x +
         lerp(

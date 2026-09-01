@@ -17,22 +17,22 @@
   import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import { getPropDimensions } from "$lib/shared/animation-engine/services/IPropTextureLoader";
   import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   interface Props {
-    bluePropState: PropState | null;
-    redPropState: PropState | null;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropState: PropState | null;
+    rightPropState: PropState | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     gridMode?: string | null;
     currentStep?: number;
   }
 
   let {
-    bluePropState,
-    redPropState,
-    bluePropType = "staff",
-    redPropType = "staff",
+    leftPropState,
+    rightPropState,
+    leftPropType = "staff",
+    rightPropType = "staff",
     gridMode = "diamond",
     currentStep = 0,
   }: Props = $props();
@@ -58,18 +58,18 @@
     };
   }
 
-  const blueDims = $derived(propDimsToWorld(bluePropType ?? "staff"));
-  const redDims = $derived(propDimsToWorld(redPropType ?? "staff"));
+  const leftDims = $derived(propDimsToWorld(leftPropType ?? "staff"));
+  const rightDims = $derived(propDimsToWorld(rightPropType ?? "staff"));
 
-  const bluePos = $derived(bluePropState ? propStateToPosition(bluePropState) : null);
-  const redPos = $derived(redPropState ? propStateToPosition(redPropState) : null);
-  const isBlueHand = $derived((bluePropType ?? "").toLowerCase() === "hand");
-  const isRedHand = $derived((redPropType ?? "").toLowerCase() === "hand");
-  const blueRot = $derived(isBlueHand ? 0 : (bluePropState?.staffRotationAngle ?? 0));
-  const redRot = $derived(isRedHand ? 0 : (redPropState?.staffRotationAngle ?? 0));
+  const leftPos = $derived(leftPropState ? propStateToPosition(leftPropState) : null);
+  const rightPos = $derived(rightPropState ? propStateToPosition(rightPropState) : null);
+  const isLeftHand = $derived((leftPropType ?? "").toLowerCase() === "hand");
+  const isRightHand = $derived((rightPropType ?? "").toLowerCase() === "hand");
+  const leftRot = $derived(isLeftHand ? 0 : (leftPropState?.staffRotationAngle ?? 0));
+  const rightRot = $derived(isRightHand ? 0 : (rightPropState?.staffRotationAngle ?? 0));
 
-  const blueColor = getMotionColor(MotionColor.BLUE, "dark");
-  const redColor = getMotionColor(MotionColor.RED, "dark");
+  const leftColor = getMotionColor(HandSide.LEFT, "dark");
+  const rightColor = getMotionColor(HandSide.RIGHT, "dark");
 </script>
 
 <T.AmbientLight intensity={1} />
@@ -78,26 +78,26 @@
   gridMode={gridMode === "box" ? "box" : "diamond"}
 />
 
-{#if bluePos}
+{#if leftPos}
   <PropPlane2D
-    position={bluePos}
-    rotation={blueRot}
-    width={blueDims.width}
-    height={blueDims.height}
-    color={blueColor}
-    propType={bluePropType ?? "staff"}
+    position={leftPos}
+    rotation={leftRot}
+    width={leftDims.width}
+    height={leftDims.height}
+    color={leftColor}
+    propType={leftPropType ?? "staff"}
     zIndex={0.01}
   />
 {/if}
 
-{#if redPos}
+{#if rightPos}
   <PropPlane2D
-    position={redPos}
-    rotation={redRot}
-    width={redDims.width}
-    height={redDims.height}
-    color={redColor}
-    propType={redPropType ?? "staff"}
+    position={rightPos}
+    rotation={rightRot}
+    width={rightDims.width}
+    height={rightDims.height}
+    color={rightColor}
+    propType={rightPropType ?? "staff"}
     zIndex={0.02}
   />
 {/if}

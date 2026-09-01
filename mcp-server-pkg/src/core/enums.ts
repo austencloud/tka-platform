@@ -52,7 +52,6 @@ export enum RotationDirection {
 }
 
 // Prop colors
-export type PropColor = "blue" | "red";
 
 // Cardinal and intercardinal location sets for quick lookup
 export const CARDINAL_LOCATIONS = new Set([

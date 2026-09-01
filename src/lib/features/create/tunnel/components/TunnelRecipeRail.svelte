@@ -226,16 +226,19 @@
     </div>
 
     <div class="card-slot colors-card">
-      <ToggleCard
+      <BaseCard
         title="Colors"
-        option1={{ value: "hands", label: "Hand colors" }}
-        option2={{ value: "spectrum", label: "Spectrum" }}
-        activeOption={controller.spectrum ? "spectrum" : "hands"}
-        onToggle={(value) => (controller.spectrum = value === "spectrum")}
+        currentValue={controller.colorMode === "custom"
+          ? "Custom pair"
+          : controller.colorMode === "spectrum"
+            ? "Spectrum"
+            : "Hand colors"}
         color={cardColors.period.color}
         shadowColor={cardColors.period.shadowColor}
         gridColumnSpan={1}
         headerFontSize="var(--rail-card-title-size)"
+        ariaLabel={`Colors: ${controller.colorMode === "custom" ? "Custom pair" : controller.colorMode === "spectrum" ? "Spectrum" : "Hand colors"}. Open Tunnel settings.`}
+        onClick={onOpenSettings}
       />
     </div>
 

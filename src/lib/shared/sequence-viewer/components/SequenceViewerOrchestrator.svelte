@@ -24,8 +24,50 @@
   } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import {
+    createEffectsConfigState,
+    loadPersistedEffectsConfig,
+  } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import {
+    createViewerUrlSession,
+    setViewerUrlSessionContext,
+  } from "../services/viewer-url-session";
+  import {
+    seedFromT3Slice,
+    persistedT3SliceFromStorage,
+    type T3SlicePayload,
+  } from "../services/viewer-url-slices/t3-slice";
+  import {
+    captureFxSlice,
+    seedFromFxSlice,
+    type FxSlicePayload,
+  } from "../services/viewer-url-slices/fx-slice";
+  import {
+    captureAnSlice,
+    seedFromAnSlice,
+    type AnSlicePayload,
+    type AnSliceSeed,
+  } from "../services/viewer-url-slices/an-slice";
+  import {
+    captureExSlice,
+    seedFromExSlice,
+    type ExSlicePayload,
+  } from "../services/viewer-url-slices/ex-slice";
+  import {
+    captureCdSlice,
+    seedFromCdSlice,
+    type CdSlicePayload,
+  } from "../services/viewer-url-slices/cd-slice";
+  import type { ExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
+  import type { ImageCompositionSettings } from "$lib/shared/share/state/image-composition-state.svelte";
+  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
+  import {
+    loadSplitConfig,
+    loadViewerMode,
+    type SplitConfig,
+  } from "../services/viewer-state-persistence";
   import type { EffectType } from "$lib/shared/effects/domain/effects-config";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
@@ -55,6 +97,12 @@
   import { sceneEnvironmentIdForBackground } from "$lib/shared/3d/environments/domain/scene-environment";
   import { viewportFits3D } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
   import { setViewerVisibilityContext } from "../context/viewer-visibility-context";
+  import { propFinishState } from "@austencloud/scene-3d";
+  import {
+    fanAppearanceSignature,
+    normalizeFanAppearance,
+    type FanAppearance,
+  } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
   import { createPlaybackController } from "./playback-controller.svelte";
   import { createExportCoordinator } from "./export-coordinator.svelte";
@@ -114,8 +162,8 @@
     onCardReady?: () => void;
     /** Fires after both the card and animation surface are ready to paint. */
     onReadyForReveal?: () => void;
-    initialBlueVisible?: boolean;
-    initialRedVisible?: boolean;
+    initialLeftVisible?: boolean;
+    initialRightVisible?: boolean;
     /** Effect to activate on mount (e.g. "trails" for the QR scan landing page).
      *  Defaults to the stored/none config when omitted. */
     initialActiveEffect?: EffectType;
@@ -146,12 +194,66 @@
     deferInteractiveStartup = false,
     onCardReady,
     onReadyForReveal,
-    initialBlueVisible,
-    initialRedVisible,
+    initialLeftVisible,
+    initialRightVisible,
     initialActiveEffect,
     onGatedDownload,
     children,
   }: Props = $props();
+
+  // ── URL state session ────────────────────────────────────────────────────
+  // One session per viewer mount. It decodes the inbound link into per-slice
+  // seeds, collects live captures from the stores below, and writes the merged
+  // snapshot back to the address bar (debounced), so a link always describes
+  // what is actually on screen. Slices whose seed differs from the visitor's
+  // own saved state mount view-only (`persist:false`) — looking at someone
+  // else's link never rewrites the visitor's disk.
+  //
+  // The viewer-mode headline param is `pane`, not `vm`: printed QR cards own
+  // `vm` as the BROWSE view-mode code (`short-code-manager.ts` prints
+  // `vm=hsb`; `SequenceViewerPage` decodes it into hand-path mode and per-prop
+  // visibility). The session never reads or writes `vm`, so scanned-card links
+  // pass through untouched by construction.
+  const urlSession = createViewerUrlSession(
+    new URLSearchParams(browser ? window.location.search : ""),
+    {
+      writeParams: (patch) =>
+        mutateCurrentUrl((url) => {
+          for (const name of patch.remove) {
+            url.searchParams.delete(name);
+          }
+          for (const [name, value] of Object.entries(patch.set)) {
+            url.searchParams.set(name, value);
+          }
+        }),
+    }
+  );
+
+  interface VwSlicePayload {
+    mode?: string;
+    split?: { leftPane: string; rightPane: string };
+  }
+
+  /**
+   * The `vw` payload shape, default-elided. Both sides of the own-link
+   * comparison go through this so a seed built from the visitor's own state is
+   * byte-identical to what their capture would produce.
+   */
+  function viewSlice(
+    mode: string,
+    split: { leftPane: string; rightPane: string }
+  ): VwSlicePayload | null {
+    const atDefaultMode = mode === "split";
+    const atDefaultSplit =
+      split.leftPane === "animation" && split.rightPane === "card";
+    if (atDefaultMode && atDefaultSplit) return null;
+    return {
+      ...(atDefaultMode ? {} : { mode }),
+      ...(atDefaultSplit
+        ? {}
+        : { split: { leftPane: split.leftPane, rightPane: split.rightPane } }),
+    };
+  }
 
   const modalAnimationState = createAnimationPanelState();
   modalAnimationState.setPlaybackMode(initialPlaybackMode);
@@ -179,13 +281,81 @@
     playback.bpmLocal = _sceneBpmIntent ?? initialBpm;
   });
 
+  // The `t3` slice is MIXED. Its seed is applied here because the environment
+  // lives on `viewer3DState`, which only this scope constructs; its CAPTURE is
+  // registered inside `Viewer3DCanvas`, the only place that holds both that
+  // state and the pane's scene-feature state (see `setViewerUrlSessionContext`
+  // below). While the 3D pane is closed nothing is registered, so the session's
+  // pass-through keeps whatever `t3` the inbound link carried.
+  const firstUseEnvironment = sceneEnvironmentIdForBackground(
+    getSettings().backgroundType
+  );
+  const t3SeedPayload = urlSession.getSeed("t3") as T3SlicePayload | null;
+  // Own-link rule in slice space, both sides through the same module: the
+  // visitor's disk is read WITHOUT `loadPersistedEnvironment`, whose first-use
+  // migration would write the key before any override decision was made.
+  const t3Seed =
+    t3SeedPayload &&
+    urlSession.isOverride("t3", persistedT3SliceFromStorage(firstUseEnvironment))
+      ? seedFromT3Slice(t3SeedPayload)
+      : null;
+
   const viewer3DState = createViewer3DState(undefined, {
-    firstUseEnvironment: sceneEnvironmentIdForBackground(
-      getSettings().backgroundType
-    ),
-    appDefaultProp: getSettings().bluePropType ?? null,
+    firstUseEnvironment,
+    appDefaultProp: getSettings().leftPropType ?? null,
+    ...(t3Seed
+      ? {
+          viewOnlyEnvironmentId: t3Seed.environmentId,
+          viewOnlySceneFeatures: t3Seed.sceneFeatures,
+        }
+      : {}),
   });
   setViewer3DContext(viewer3DState);
+  // Published for viewer-internal hosts whose store is built per pane rather
+  // than here — today `Viewer3DCanvas`, which registers the `t3` capture.
+  setViewerUrlSessionContext(urlSession);
+
+  // AppSettings owns the shared fan appearance. The scene package keeps a
+  // legacy default-build adapter for performer inheritance, so synchronize the
+  // two without replacing performer-scoped overrides.
+  let lastSettingsFanSignature: string | null = null;
+  let lastSceneFanSignature: string | null = null;
+  $effect(() => {
+    const settingsAppearance = normalizeFanAppearance(
+      getSettings().fanAppearance
+    );
+    const sceneAppearance: FanAppearance = {
+      build: propFinishState.fanBuild,
+      frameColor: propFinishState.fanFrameColor,
+      cover: propFinishState.fanCover,
+    };
+    const settingsSignature = fanAppearanceSignature(settingsAppearance);
+    const sceneSignature = fanAppearanceSignature(sceneAppearance);
+
+    if (
+      lastSettingsFanSignature === null ||
+      settingsSignature !== lastSettingsFanSignature
+    ) {
+      if (sceneSignature !== settingsSignature) {
+        propFinishState.setFanBuild(settingsAppearance.build);
+        propFinishState.setFanFrameColor(settingsAppearance.frameColor);
+        propFinishState.setFanCover(settingsAppearance.cover);
+      }
+      lastSettingsFanSignature = settingsSignature;
+      lastSceneFanSignature = settingsSignature;
+      return;
+    }
+
+    if (sceneSignature !== lastSceneFanSignature) {
+      lastSceneFanSignature = sceneSignature;
+      lastSettingsFanSignature = sceneSignature;
+      void updateSettings({ fanAppearance: sceneAppearance });
+    }
+  });
+
+  function handleFanAppearanceChange(appearance: FanAppearance): void {
+    void updateSettings({ fanAppearance: normalizeFanAppearance(appearance) });
+  }
 
   const accessibilityHelper = createModalAccessibilityHelper();
 
@@ -215,11 +385,34 @@
     playback.setOnUrlParamChange(onUrlParamChange);
   });
 
-  const viewerState = createViewerState();
+  const vwSeed = urlSession.getSeed("vw") as VwSlicePayload | null;
+  // Own-link rule: a link that matches what this visitor's own disk would load
+  // is not an override, so their viewer keeps persisting normally.
+  const vwIsOverride = urlSession.isOverride(
+    "vw",
+    viewSlice(
+      loadViewerMode({ persist: false }),
+      loadSplitConfig({ persist: false })
+    )
+  );
+  const viewerState = createViewerState({
+    initialMode: vwSeed?.mode as ViewerMode | undefined,
+    initialSplit: vwSeed?.split as SplitConfig | undefined,
+    persist: !vwIsOverride,
+  });
+  // Precedence: an explicit open option beats the URL, which beats localStorage.
+  // A programmatic open (`openSequenceOverlay({ initialViewerMode })`, the scan
+  // funnel's card-first boot) is a deliberate app action, so it lands last.
   if (initialViewerMode) {
     viewerState.setViewerMode(initialViewerMode);
     viewerState.setExportContext(null);
   }
+  // The capture reads the EFFECTIVE (viewport-coerced) mode and split, so a
+  // link records the surface the sender was actually looking at — a 3D pane
+  // coerced to 2D on a small screen shares as 2D.
+  urlSession.registerSlice("vw", () =>
+    viewSlice(viewerState.viewerMode, viewerState.splitConfig)
+  );
   // playOnOpen means "open already moving" - it does NOT choose a surface.
   // It used to call enterExport("animation-export", "animation"), which both
   // forced 2D and PERSISTED it, so one open from Create or from a scanned
@@ -362,8 +555,8 @@
       imageComposition: imgComp,
       getSequence: () => sequence,
       getHandPathMode: () => handPathMode,
-      getInitialBlueVisible: () => initialBlueVisible,
-      getInitialRedVisible: () => initialRedVisible,
+      getInitialLeftVisible: () => initialLeftVisible,
+      getInitialRightVisible: () => initialRightVisible,
       getAnimationServicesReady: () => interactive.animationServicesReady,
       getHapticService: () => interactive.hapticService,
       onUrlParamChange,
@@ -372,10 +565,10 @@
       getSettings,
       updateSettings,
       getSequenceMotionVisibility,
-      updateAnimationPropTypes: (bluePropType, redPropType) =>
+      updateAnimationPropTypes: (leftPropType, rightPropType) =>
         getSequenceAnimationOrchestrator().updatePropTypes(
-          bluePropType,
-          redPropType
+          leftPropType,
+          rightPropType
         ),
       setAnimationDarkMode: (darkMode) =>
         getAnimationVisibilityManager().setDarkMode(darkMode),
@@ -385,12 +578,142 @@
   const viewerVisibility = propVisibility.viewerVisibility;
   setViewerVisibilityContext(viewerVisibility);
 
-  const effectsConfigState = createEffectsConfigState();
+  // A link's effects seed a view-only store when it differs from what this
+  // visitor's own saved config would boot with. The comparison happens in slice
+  // space (both sides through `captureFxSlice`) so an own-link round trip is
+  // recognised and keeps persisting. This one instance is the context every
+  // viewer surface reads — ViewerSplitPane, EffectsSettingsPanel and
+  // EffectOrchestrator3D all inherit it, so nothing downstream can construct a
+  // persist:true store while a link override is live.
+  const fxSeedPayload = urlSession.getSeed("fx") as FxSlicePayload | null;
+  const persistedEffectsConfig = loadPersistedEffectsConfig();
+  const persistedFxSlice = persistedEffectsConfig
+    ? captureFxSlice(
+        createEffectsConfigState(persistedEffectsConfig, { persist: false })
+      )
+    : null;
+  const effectsConfigState =
+    fxSeedPayload && urlSession.isOverride("fx", persistedFxSlice)
+      ? createEffectsConfigState(seedFromFxSlice(fxSeedPayload), {
+          persist: false,
+        })
+      : createEffectsConfigState();
   setEffectsConfigContext(effectsConfigState);
+  // Wire the instance to the global visibility manager NOW, not on first 2D
+  // canvas mount (CanvasSurface line ~228 makes this same assignment). A link
+  // that boots straight into the 3D pane never mounts a 2D canvas, and
+  // Viewer3DScene reads `visibilityManager.effectsConfigState` for its tip
+  // effect map — left null, a seeded fx (e.g. sparkles) renders nowhere in 3D
+  // until an unrelated pane switch mounts a canvas. Like CanvasSurface, no
+  // teardown: the next mounting surface re-assigns its own context instance.
+  getAnimationVisibilityManager().effectsConfigState = effectsConfigState;
+  urlSession.registerSlice("fx", () => captureFxSlice(effectsConfigState));
   // Activate a requested effect on mount (QR scan page asks for "trails").
   // setActiveEffect keeps tipEffectMap in sync so the renderer doesn't filter tips.
   if (initialActiveEffect)
     effectsConfigState.setActiveEffect(initialActiveEffect);
+
+  // Card composition is a third app-global singleton (`getImageCompositionManager()`,
+  // borrowed here through `imgComp.imageComposition`), so it takes the same
+  // memento. Two ordering rules make this block sit BEFORE the `an` block even
+  // though its restore runs after an's:
+  //   1. This store observes the animation-visibility manager's dark mode and
+  //      persists on every change — to localStorage AND, for a signed-in
+  //      visitor, their account. An `an` override applies the sender's dark
+  //      mode, so unless this store is already suspended when that happens, the
+  //      sender's preference lands in the recipient's account. That is why the
+  //      suspension covers an `an` override too, not only a `cd` one.
+  //   2. On close the reverse: `an` restores first (firing that observer once
+  //      more) while this store is still suspended, then this store restores its
+  //      own snapshot and resumes.
+  // Its fields are `$state`, so the live-sync effect below tracks them without
+  // the manual observer an's plain-class visibility manager needs.
+  const compositionStore = imgComp.imageComposition;
+  /** Matches the card: `effectiveSequence?.steps?.length ?? 0`. */
+  function cardStepCount(): number {
+    return (modalAnimationState.sequenceData ?? sequence)?.steps?.length ?? 0;
+  }
+  const cdSeedPayload = urlSession.getSeed("cd") as CdSlicePayload | null;
+  // Own-link rule in slice space, both sides through `captureCdSlice`.
+  const cdIsOverride = Boolean(
+    cdSeedPayload &&
+    urlSession.isOverride(
+      "cd",
+      captureCdSlice(compositionStore, cardStepCount())
+    )
+  );
+
+  // The 2D animation stores are app-global singletons read directly by ~7 viewer
+  // files and 2 services, with no injection seam short of the AnimationScope
+  // refactor. So a link BORROWS them (memento) instead of constructing a
+  // view-only instance the way fx does: snapshot -> suspend persistence -> apply
+  // the seed -> every consumer renders it by construction (dark mode included,
+  // because suspension does not disable the store's theme sync the way
+  // `ephemeral` would) -> on close, restore the snapshot while still suspended,
+  // then resume. The recipient's disk is never written, and their tweaks during
+  // the session stay session-local.
+  const anStores = {
+    settings: animationSettings,
+    visibility: getAnimationVisibilityManager(),
+  };
+  const anSeedPayload = urlSession.getSeed("an") as AnSlicePayload | null;
+  // Own-link rule, in slice space: a link matching what this visitor's own
+  // stores already hold is not an override, so nothing is borrowed or restored.
+  let anRestore: AnSliceSeed | null =
+    anSeedPayload && urlSession.isOverride("an", captureAnSlice(anStores))
+      ? { settings: anStores.settings.snapshot(), visibility: anStores.visibility.snapshot() }
+      : null;
+  // Borrow the card store before `an` moves dark mode (see rule 1 above).
+  let cdRestore: ImageCompositionSettings | null =
+    cdIsOverride || anRestore ? compositionStore.getSettings() : null;
+  if (cdRestore) compositionStore.setPersistenceSuspended(true);
+  if (anRestore) {
+    anStores.settings.setPersistenceSuspended(true);
+    anStores.visibility.setPersistenceSuspended(true);
+    const anSeed = seedFromAnSlice(anSeedPayload!);
+    anStores.settings.replaceAll(anSeed.settings);
+    anStores.visibility.replaceAll(anSeed.visibility);
+  }
+  // Seeded after `an`, and against the store's CURRENT state rather than the
+  // restore snapshot, so the excluded dark mode is the link's (already mirrored
+  // from the visibility manager) instead of the visitor's.
+  if (cdIsOverride) {
+    compositionStore.replaceAll(
+      seedFromCdSlice(
+        cdSeedPayload!,
+        cardStepCount(),
+        compositionStore.getSettings()
+      )
+    );
+  }
+  const unregisterCdSlice = urlSession.registerSlice("cd", () =>
+    captureCdSlice(compositionStore, cardStepCount())
+  );
+  urlSession.registerSlice("an", () => captureAnSlice(anStores));
+  // The visibility manager is a plain class, not runes, so the live-sync effect
+  // below cannot see its changes. Its own observer API closes that gap.
+  const anVisibilityObserver = () => urlSession.scheduleUrlWrite();
+  anStores.visibility.registerObserver(anVisibilityObserver);
+
+  // Export options are another app-global singleton (`getExportOptionsState()`,
+  // borrowed here via `exportCoord.exportOptions` — same instance ~8 files call
+  // directly with no injection seam), so a link borrows it the same way as the
+  // 2D animation stores above: snapshot -> suspend -> apply seed -> (on close)
+  // restore -> resume. Its fields are plain `$state`, so the live-sync effect
+  // below tracks it without a manual observer the way an's visibility class needs.
+  const exportOptionsStore = exportCoord.exportOptions;
+  const exSeedPayload = urlSession.getSeed("ex") as ExSlicePayload | null;
+  let exRestore: ExportOptionsState | null =
+    exSeedPayload && urlSession.isOverride("ex", captureExSlice(exportOptionsStore))
+      ? exportOptionsStore.snapshot()
+      : null;
+  if (exRestore) {
+    exportOptionsStore.setPersistenceSuspended(true);
+    exportOptionsStore.replaceAll(seedFromExSlice(exSeedPayload!));
+  }
+  const unregisterExSlice = urlSession.registerSlice("ex", () =>
+    captureExSlice(exportOptionsStore)
+  );
 
   const scene3DRenderState = createScene3DRenderState();
   setScene3DRenderContext(scene3DRenderState);
@@ -412,8 +735,8 @@
   const libraryActions = createLibraryActionHandler({
     getSequence: () => sequence,
     getIsOwned: () => isOwned,
-    getBluePropType: () => getSettings().bluePropType,
-    getRedPropType: () => getSettings().redPropType,
+    getLeftPropType: () => getSettings().leftPropType,
+    getRightPropType: () => getSettings().rightPropType,
     getCatDogModeEnabled: () => getSettings().catDogMode,
     getHapticService: () => interactive.hapticService,
     onDeleteSuccess: () => handleClose(),
@@ -487,7 +810,41 @@
     if (!deferInteractiveStartup) interactive.ensureInteractiveServices();
   });
 
+  // Live sync. `captureNow()` reads every registered slice's reactive state, so
+  // this effect re-runs whenever any of them changes; the session owns the
+  // debounce, and `mutateCurrentUrl` no-ops when nothing actually moved.
+  $effect(() => {
+    void urlSession.captureNow();
+    urlSession.scheduleUrlWrite();
+  });
+
   onDestroy(() => {
+    anStores.visibility.unregisterObserver(anVisibilityObserver);
+    // Restore FIRST, while writes are still suppressed, then resume — so the
+    // borrowed globals go back to the visitor's own state without the link
+    // session ever reaching disk.
+    if (anRestore) {
+      anStores.settings.replaceAll(anRestore.settings);
+      anStores.visibility.replaceAll(anRestore.visibility);
+      anStores.settings.setPersistenceSuspended(false);
+      anStores.visibility.setPersistenceSuspended(false);
+      anRestore = null;
+    }
+    unregisterExSlice();
+    if (exRestore) {
+      exportOptionsStore.replaceAll(exRestore);
+      exportOptionsStore.setPersistenceSuspended(false);
+      exRestore = null;
+    }
+    // After `an` above, so the dark-mode observer's last write is still
+    // suppressed when it fires.
+    unregisterCdSlice();
+    if (cdRestore) {
+      compositionStore.replaceAll(cdRestore);
+      compositionStore.setPersistenceSuspended(false);
+      cdRestore = null;
+    }
+    urlSession.dispose();
     interactive.clearAutoplayTimer();
     playback.stopPracticeIfActive();
     keydownCleanup?.();
@@ -599,6 +956,7 @@
       getBpm: () => playback.bpmLocal,
       getDarkMode: () => imgComp.imgDarkMode,
       getHapticService: () => interactive.hapticService,
+      getStateParams: () => urlSession.captureNowAsParams(),
     },
     {
       getCurrentUrl: () => (browser ? window.location.href : ""),
@@ -666,6 +1024,7 @@
       setResolvedCardAutoLayout,
       onRenderProgress: handleRenderProgress,
       handlePropTypeChange: propVisibility.handlePropTypeChange,
+      handleFanAppearanceChange,
       enterEditMode: editMode.enterEditMode,
       exitEditMode: editMode.exitEditMode,
       handleExport: editMode.handleExport,
@@ -698,9 +1057,10 @@
     getCardReady: () => cardReady,
     getResolvedCardAutoLayout: () => resolvedCardAutoLayout,
     getIsHandPath: () => propVisibility.isHandPath,
-    getBluePropType: () => propVisibility.activeBlueProp,
-    getRedPropType: () => propVisibility.activeRedProp,
+    getLeftPropType: () => propVisibility.activeLeftProp,
+    getRightPropType: () => propVisibility.activeRightProp,
     getCatDogModeEnabled: () => propVisibility.activeCatDog,
+    getFanAppearance: () => normalizeFanAppearance(getSettings().fanAppearance),
     getIsLoggedIn: () => (forceGuest ? false : authState.isAuthenticated),
     getIsOwned: () => isOwned,
     getIsPublished: () => isPublished,

@@ -19,7 +19,7 @@ export type SceneUndoOperationType =
   | "remove-performer"
   | "apply-formation"
   | "spatial-edit"
-  | "change-avatar"
+  | "change-character"
   | "change-prop"
   | "change-staff-length"
   | "change-effort"
@@ -58,15 +58,15 @@ export type SceneUndoOperationType =
 export interface ViewerDomainSnapshot {
   performers: PerformerPositionSnapshot[];
   selectedPerformerIndex: number | null;
-  activeFormation: FormationPreset | "manual";
+  activeFormation: FormationPreset | "manual" | "custom";
 }
 
 export interface PerformerPositionSnapshot {
   id: string;
   position: { x: number; z: number };
   facingAngle: number;
-  customBluePlane: Plane;
-  customRedPlane: Plane;
+  customLeftPlane: Plane;
+  customRightPlane: Plane;
 }
 
 export interface PerformerDomainSnapshot {
@@ -80,10 +80,10 @@ export interface PerformerDomainSnapshot {
     propBuild: Partial<import("@austencloud/scene-3d").PropBuild> | null;
   };
   planes: {
-    customBluePlane: Plane | null;
-    customRedPlane: Plane | null;
+    customLeftPlane: Plane | null;
+    customRightPlane: Plane | null;
     planeMode: PlaneMode | null;
-    beatPlaneOverrides: Map<number, { blue?: Plane; red?: Plane }>;
+    beatPlaneOverrides: Map<number, { left?: Plane; right?: Plane }>;
   };
 }
 
@@ -101,8 +101,8 @@ export interface DefaultsDomainSnapshot {
   prop: PropType;
   effortId: EffortId;
   planeMode: PlaneMode;
-  customBluePlane: Plane;
-  customRedPlane: Plane;
+  customLeftPlane: Plane;
+  customRightPlane: Plane;
 }
 
 export interface SceneLabDomainSnapshot {

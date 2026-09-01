@@ -40,7 +40,10 @@ const snapshot = {
   tunnel: {
     config: DEFAULT_CONFIG,
     gridVisible: false,
-    spectrum: false,
+    colors: {
+      mode: "hands",
+      custom: { left: "#2e8bf0", right: "#ed1c24" },
+    },
     section: "tunnel",
     presetRecipe: null,
   },
@@ -49,15 +52,15 @@ const snapshot = {
   paths: {
     pathShape: "arc",
     motionAwarePaths: false,
-    bluePathLines: true,
-    redPathLines: true,
+    leftPathLines: true,
+    rightPathLines: true,
   },
   playback: { bpm: 60, playbackMode: "continuous" },
   props: {
-    bluePropType: "staff",
-    redPropType: "staff",
-    blueBuugengFlipped: false,
-    redBuugengFlipped: false,
+    leftPropType: "staff",
+    rightPropType: "staff",
+    leftBuugengFlipped: false,
+    rightBuugengFlipped: false,
   },
   trailRender: { mode: "off" },
 } as unknown as TunnelSnapshot;

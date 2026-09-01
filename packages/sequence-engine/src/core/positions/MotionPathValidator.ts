@@ -53,8 +53,8 @@ export function isValidMotionPath(motion: MotionData): boolean {
  * Use this to filter out invalid variations from source data.
  */
 export function hasValidMotionPaths(
-  blueMotion: MotionData,
-  redMotion: MotionData,
+  leftMotion: MotionData,
+  rightMotion: MotionData,
 ): boolean {
-  return isValidMotionPath(blueMotion) && isValidMotionPath(redMotion);
+  return isValidMotionPath(leftMotion) && isValidMotionPath(rightMotion);
 }

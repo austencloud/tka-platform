@@ -16,6 +16,7 @@ import {
 } from "canvas";
 import {
   getStandaloneRenderer,
+  type PictographInput,
   type RenderVisibilityOptions,
 } from "./standalone-renderer.js";
 import {
@@ -41,8 +42,8 @@ import { calculateDifficultyLevel } from "./difficulty-calculator.js";
  * Legacy fallback for callers whose steps do not yet carry turn data.
  */
 export interface TurnAllocation {
-  blue: (number | "fl")[];
-  red: (number | "fl")[];
+  left: (number | "fl")[];
+  right: (number | "fl")[];
 }
 
 export interface HeaderDisplay {
@@ -79,8 +80,8 @@ export interface SequenceRenderOptions {
   // Original seed word for LOOP sequences (displayed prominently in header)
   seedWord?: string;
   // Prop artwork for both hands. Null/undefined keeps the staff default.
-  bluePropType?: string | null;
-  redPropType?: string | null;
+  leftPropType?: string | null;
+  rightPropType?: string | null;
 }
 
 const DEFAULT_OPTIONS: SequenceRenderOptions = {
@@ -113,15 +114,15 @@ function getStartOrientationForLevel(level: number): string {
 export function resolveRenderedTurns(
   step: SequenceStep,
   turnAllocation?: TurnAllocation
-): { blue: number | "fl"; red: number | "fl" } {
+): { left: number | "fl"; right: number | "fl" } {
   if (step.stepNumber === 0) {
-    return { blue: 0, red: 0 };
+    return { left: 0, right: 0 };
   }
 
   const allocationIndex = step.stepNumber - 1;
   return {
-    blue: step.blueMotion.turns ?? turnAllocation?.blue[allocationIndex] ?? 0,
-    red: step.redMotion.turns ?? turnAllocation?.red[allocationIndex] ?? 0,
+    left: step.leftMotion.turns ?? turnAllocation?.left[allocationIndex] ?? 0,
+    right: step.rightMotion.turns ?? turnAllocation?.right[allocationIndex] ?? 0,
   };
 }
 
@@ -227,14 +228,14 @@ export async function renderSequenceToImage(
     size: opts.cellSize,
     showTKA: true,
     showGrid: true,
-    showBlueMotion: true,
-    showRedMotion: true,
+    showLeftMotion: true,
+    showRightMotion: true,
     showTND: false,
     showPositions: false,
     showReversals: opts.showReversals ?? false,
     showNonRadialPoints: false,
-    bluePropType: opts.bluePropType,
-    redPropType: opts.redPropType,
+    leftPropType: opts.leftPropType,
+    rightPropType: opts.rightPropType,
   };
 
   for (let i = 0; i < letterSteps.length; i++) {
@@ -249,36 +250,36 @@ export async function renderSequenceToImage(
     // Convert step to pictograph input format. LOOP-expanded steps already
     // contain the transformed turn tuple; never replace it during rendering.
     const stepNum = step.stepNumber;
-    const { blue: blueTurns, red: redTurns } = resolveRenderedTurns(
+    const { left: leftTurns, right: rightTurns } = resolveRenderedTurns(
       step,
       turnAllocation
     );
 
-    const pictographInput = {
+    const pictographInput: PictographInput = {
       letter: step.letter,
       startPosition: step.startPosition,
       endPosition: step.endPosition,
-      blueMotion: {
-        motionType: step.blueMotion.motionType,
-        rotationDirection: step.blueMotion.rotationDirection || "no_rotation",
-        startLocation: step.blueMotion.startLocation,
-        endLocation: step.blueMotion.endLocation,
-        color: "blue",
-        turns: blueTurns,
-        startOrientation: step.blueMotion.startOrientation || baseOrientation,
+      leftMotion: {
+        motionType: step.leftMotion.motionType,
+        rotationDirection: step.leftMotion.rotationDirection || "no_rotation",
+        startLocation: step.leftMotion.startLocation,
+        endLocation: step.leftMotion.endLocation,
+        hand: "left",
+        turns: leftTurns,
+        startOrientation: step.leftMotion.startOrientation || baseOrientation,
       },
-      redMotion: {
-        motionType: step.redMotion.motionType,
-        rotationDirection: step.redMotion.rotationDirection || "no_rotation",
-        startLocation: step.redMotion.startLocation,
-        endLocation: step.redMotion.endLocation,
-        color: "red",
-        turns: redTurns,
-        startOrientation: step.redMotion.startOrientation || baseOrientation,
+      rightMotion: {
+        motionType: step.rightMotion.motionType,
+        rotationDirection: step.rightMotion.rotationDirection || "no_rotation",
+        startLocation: step.rightMotion.startLocation,
+        endLocation: step.rightMotion.endLocation,
+        hand: "right",
+        turns: rightTurns,
+        startOrientation: step.rightMotion.startOrientation || baseOrientation,
       },
       // Reversal indicators (if detected)
-      blueReversal: step.blueReversal,
-      redReversal: step.redReversal,
+      leftReversal: step.leftReversal,
+      rightReversal: step.rightReversal,
     };
 
     try {

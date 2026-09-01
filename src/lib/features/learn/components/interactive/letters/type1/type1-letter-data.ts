@@ -9,8 +9,8 @@ import type { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pict
 
 export interface Type1LetterData {
   letter: Letter;
-  blueMotion: MotionType;
-  redMotion: MotionType;
+  leftMotion: MotionType;
+  rightMotion: MotionType;
   startPositionGroup: GridPositionGroup;
   endPositionGroup: GridPositionGroup;
   description: string;

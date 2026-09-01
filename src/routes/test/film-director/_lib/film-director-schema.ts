@@ -1,9 +1,6 @@
 import { z } from "zod";
-import {
-  Plane,
-  type AvatarId,
-  type FormationPreset,
-} from "@austencloud/scene-3d";
+import { Plane, type FormationPreset } from "@austencloud/scene-3d";
+import type { CharacterId } from "$lib/shared/3d/domain/character-model";
 
 import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
 import type { EffectType } from "$lib/shared/effects/domain/effects-config";
@@ -28,21 +25,23 @@ import {
   type DirectorPerformerSequence,
 } from "./sequence-language";
 
-export const FILM_DIRECTOR_SCHEMA_VERSION = 1 as const;
+export const FILM_DIRECTOR_SCHEMA_VERSION_1 = 1 as const;
 export const FILM_DIRECTOR_SCHEMA_VERSION_2 = 2 as const;
 export const FILM_DIRECTOR_SCHEMA_VERSION_3 = 3 as const;
 export const FILM_DIRECTOR_SCHEMA_VERSION_4 = 4 as const;
+export const FILM_DIRECTOR_SCHEMA_VERSION_5 = 5 as const;
+export const FILM_DIRECTOR_SCHEMA_VERSION = FILM_DIRECTOR_SCHEMA_VERSION_5;
 
 export const FILM_DIRECTOR_DIRECTIVE_AXES = [
-  "avatarId",
+  "characterId",
   "prop",
   "effect",
   "effort",
   "staffLengthCm",
   "environmentId",
   "formation",
-  "bluePlane",
-  "redPlane",
+  "leftPlane",
+  "rightPlane",
   "stepPlane",
 ] as const;
 
@@ -52,6 +51,25 @@ const seedSchema = z
     axes: z.record(z.string(), z.number().int()).optional(),
   })
   .strict();
+
+function normalizeLegacyHandPair(value: unknown): unknown {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return value;
+  }
+  const input = value as Record<string, unknown>;
+  const normalized = { ...input };
+  for (const [legacy, canonical] of [
+    ["blue", "left"],
+    ["red", "right"],
+  ] as const) {
+    if (legacy in normalized && canonical in normalized) return value;
+    if (legacy in normalized) {
+      normalized[canonical] = normalized[legacy];
+      delete normalized[legacy];
+    }
+  }
+  return normalized;
+}
 
 export const DIRECTOR_EFFORT_IDS = [
   "linear",
@@ -153,7 +171,10 @@ const atMostOneTimeUnit = (
   value: { durationSeconds?: number; durationBeats?: number },
   ctx: z.RefinementCtx
 ) => {
-  if (value.durationSeconds !== undefined && value.durationBeats !== undefined) {
+  if (
+    value.durationSeconds !== undefined &&
+    value.durationBeats !== undefined
+  ) {
     ctx.addIssue({
       code: "custom",
       message: 'State exactly one of "durationSeconds" or "durationBeats".',
@@ -167,7 +188,7 @@ const position2Schema = z.object({ x: finiteNumber, z: finiteNumber }).strict();
 const environmentIdSchema = z.string().refine(isSceneEnvironmentId, {
   error: (issue) => `Unknown 3D environment "${String(issue.input)}"`,
 });
-const avatarIdSchema = z.string().min(1);
+const characterIdSchema = z.string().min(1);
 const PROP_TYPE_VALUES = new Set<string>(Object.values(PropType));
 // string+refine, not z.nativeEnum — see the comment above effortIdSchema for
 // why: it lets the refine's own message surface through directiveSchema()'s
@@ -232,7 +253,11 @@ const visiblePlanesSchema = z
 const stepPlaneEntrySchema = z
   .object({
     step: z.number().int().min(0),
-    hand: z.enum(["blue", "red"]),
+    hand: z.preprocess(
+      (value) =>
+        value === "blue" ? "left" : value === "red" ? "right" : value,
+      z.enum(["left", "right"])
+    ),
     plane: directiveSchema(planeSchema),
   })
   .strict();
@@ -278,7 +303,10 @@ const cameraKeyframeSchema = z
 const positionRefSchema = z.union(
   [
     z.string().min(1),
-    z.object({ blue: z.string().min(1), red: z.string().min(1) }).strict(),
+    z.preprocess(
+      normalizeLegacyHandPair,
+      z.object({ left: z.string().min(1), right: z.string().min(1) }).strict()
+    ),
     z
       .object({
         group: z.enum(DIRECTOR_POSITION_GROUPS),
@@ -300,15 +328,21 @@ const turnLaneSchema = z.union([
 const turnsSchema = z.union(
   [
     turnLaneSchema,
-    z
-      .object({
-        blue: turnLaneSchema.optional(),
-        red: turnLaneSchema.optional(),
-      })
-      .strict()
-      .refine((lanes) => lanes.blue !== undefined || lanes.red !== undefined, {
-        message: "A per-hand turn figure names blue, red, or both.",
-      }),
+    z.preprocess(
+      normalizeLegacyHandPair,
+      z
+        .object({
+          left: turnLaneSchema.optional(),
+          right: turnLaneSchema.optional(),
+        })
+        .strict()
+        .refine(
+          (lanes) => lanes.left !== undefined || lanes.right !== undefined,
+          {
+            message: "A per-hand turn figure names left, right, or both.",
+          }
+        )
+    ),
     z.object({ intensity: finiteNumber }).strict(),
   ],
   {
@@ -320,15 +354,21 @@ const turnsSchema = z.union(
 const orientationSchema = z.enum(DIRECTOR_ORIENTATIONS);
 const startOrientationSchema = z.union([
   orientationSchema,
-  z
-    .object({
-      blue: orientationSchema.optional(),
-      red: orientationSchema.optional(),
-    })
-    .strict()
-    .refine((hands) => hands.blue !== undefined || hands.red !== undefined, {
-      message: "A per-hand start orientation names blue, red, or both.",
-    }),
+  z.preprocess(
+    normalizeLegacyHandPair,
+    z
+      .object({
+        left: orientationSchema.optional(),
+        right: orientationSchema.optional(),
+      })
+      .strict()
+      .refine(
+        (hands) => hands.left !== undefined || hands.right !== undefined,
+        {
+          message: "A per-hand start orientation names left, right, or both.",
+        }
+      )
+  ),
 ]);
 
 const loopSchema = z.union([
@@ -493,7 +533,7 @@ const performerSchema = z
     id: z.string().min(1).optional(),
     name: z.string().min(1).optional(),
     sequence: performerSequenceSchema.optional(),
-    avatarId: directiveSchema(avatarIdSchema).optional(),
+    characterId: directiveSchema(characterIdSchema).optional(),
     prop: directiveSchema(propTypeSchema).optional(),
     effect: directiveSchema(effectIdSchema).optional(),
     effort: directiveSchema(effortIdSchema).optional(),
@@ -502,8 +542,8 @@ const performerSchema = z
     beatOffset: finiteNumber.optional(),
     blocking: blockingSchema.optional(),
     staffLengthCm: directiveSchema(finiteNumber.min(40).max(300)).optional(),
-    bluePlane: directiveSchema(planeSchema).optional(),
-    redPlane: directiveSchema(planeSchema).optional(),
+    leftPlane: directiveSchema(planeSchema).optional(),
+    rightPlane: directiveSchema(planeSchema).optional(),
     stepPlanes: z.array(stepPlaneEntrySchema).optional(),
   })
   .strict();
@@ -511,14 +551,14 @@ const performerSchema = z
 const castDefaultsSchema = z
   .object({
     sequence: performerSequenceSchema.optional(),
-    avatarId: directiveSchema(avatarIdSchema).optional(),
+    characterId: directiveSchema(characterIdSchema).optional(),
     prop: directiveSchema(propTypeSchema).optional(),
     effect: directiveSchema(effectIdSchema).optional(),
     effort: directiveSchema(effortIdSchema).optional(),
     blocking: blockingSchema.optional(),
     staffLengthCm: directiveSchema(finiteNumber.min(40).max(300)).optional(),
-    bluePlane: directiveSchema(planeSchema).optional(),
-    redPlane: directiveSchema(planeSchema).optional(),
+    leftPlane: directiveSchema(planeSchema).optional(),
+    rightPlane: directiveSchema(planeSchema).optional(),
     stepPlanes: z.array(stepPlaneEntrySchema).optional(),
   })
   .strict();
@@ -703,10 +743,11 @@ const filmDirectorInputSchema = z
     // set when a new number ships and let the grammar itself decide what's
     // legal.
     version: z.union([
-      z.literal(FILM_DIRECTOR_SCHEMA_VERSION),
+      z.literal(FILM_DIRECTOR_SCHEMA_VERSION_1),
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION_2),
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION_3),
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION_4),
+      z.literal(FILM_DIRECTOR_SCHEMA_VERSION),
     ]),
     id: z.string().min(1),
     title: z.string().min(1),
@@ -749,14 +790,14 @@ export type DirectorEasing = (typeof DIRECTOR_EASINGS)[number];
 
 export interface ResolvedDirectorStepPlane {
   step: number;
-  hand: "blue" | "red";
+  hand: "left" | "right";
   plane: Plane;
 }
 
 export interface ResolvedDirectorPerformer {
   id: string;
   name: string;
-  avatarId: AvatarId;
+  characterId: CharacterId;
   prop: PropType;
   effect: EffectType;
   effort: EffortId;
@@ -769,8 +810,8 @@ export interface ResolvedDirectorPerformer {
   blocking: ResolvedDirectorBlockingKeyframe[];
   beatOffset: number;
   staffLengthCm: number | null;
-  bluePlane: Plane;
-  redPlane: Plane;
+  leftPlane: Plane;
+  rightPlane: Plane;
   stepPlanes: ResolvedDirectorStepPlane[];
 }
 
@@ -836,10 +877,11 @@ export interface ResolvedDirectorScene {
 
 export interface ResolvedFilmDirectorSpec {
   version:
-    | typeof FILM_DIRECTOR_SCHEMA_VERSION
+    | typeof FILM_DIRECTOR_SCHEMA_VERSION_1
     | typeof FILM_DIRECTOR_SCHEMA_VERSION_2
     | typeof FILM_DIRECTOR_SCHEMA_VERSION_3
-    | typeof FILM_DIRECTOR_SCHEMA_VERSION_4;
+    | typeof FILM_DIRECTOR_SCHEMA_VERSION_4
+    | typeof FILM_DIRECTOR_SCHEMA_VERSION;
   id: string;
   title: string;
   brief: string | null;

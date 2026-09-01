@@ -13,7 +13,7 @@ function option(
 }
 
 export const LOOP_REVIEW_OPTIONS = {
-  swapped: option(LOOPType.SWAPPED, "Swapped", "Swaps blue and red props"),
+  swapped: option(LOOPType.SWAPPED, "Swapped", "Swaps left and right props"),
   inverted: option(LOOPType.INVERTED, "Inverted", "Inverts motion directions"),
   swappedInverted: option(
     LOOPType.SWAPPED_INVERTED,

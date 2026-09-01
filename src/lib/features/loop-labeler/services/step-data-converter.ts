@@ -7,7 +7,7 @@ import {
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -152,8 +152,8 @@ export function convertRawToBeats(
     | null = null;
 
   if (startPosElement) {
-    const blueAttrs = startPosElement.blueAttributes;
-    const redAttrs = startPosElement.redAttributes;
+    const leftAttrs = startPosElement.leftAttributes;
+    const rightAttrs = startPosElement.rightAttributes;
     const gridPosition = parseGridPosition(
       startPosElement.sequenceStartPosition
     );
@@ -168,41 +168,41 @@ export function convertRawToBeats(
       startPosition: gridPosition,
       endPosition: null,
       motions: {
-        [MotionColor.BLUE]: blueAttrs
+        [HandSide.LEFT]: leftAttrs
           ? createMotionData({
-              color: MotionColor.BLUE,
-              motionType: parseMotionType(blueAttrs.motionType),
-              startLocation: parseLocation(blueAttrs.startLoc),
-              endLocation: parseLocation(blueAttrs.endLoc),
-              startOrientation: parseOrientation(blueAttrs.startOri),
-              endOrientation: parseOrientation(blueAttrs.endOri),
+              hand: HandSide.LEFT,
+              motionType: parseMotionType(leftAttrs.motionType),
+              startLocation: parseLocation(leftAttrs.startLoc),
+              endLocation: parseLocation(leftAttrs.endLoc),
+              startOrientation: parseOrientation(leftAttrs.startOri),
+              endOrientation: parseOrientation(leftAttrs.endOri),
               rotationDirection: parseRotationDirection(
-                blueAttrs.propRotDir
+                leftAttrs.propRotDir
               ),
-              turns: parseTurns(blueAttrs.turns),
+              turns: parseTurns(leftAttrs.turns),
               isVisible: true,
               propType: PropType.STAFF,
               arrowLocation:
-                parseLocation(blueAttrs.startLoc) || GridLocation.NORTH,
+                parseLocation(leftAttrs.startLoc) || GridLocation.NORTH,
               gridMode,
             })
           : undefined,
-        [MotionColor.RED]: redAttrs
+        [HandSide.RIGHT]: rightAttrs
           ? createMotionData({
-              color: MotionColor.RED,
-              motionType: parseMotionType(redAttrs.motionType),
-              startLocation: parseLocation(redAttrs.startLoc),
-              endLocation: parseLocation(redAttrs.endLoc),
-              startOrientation: parseOrientation(redAttrs.startOri),
-              endOrientation: parseOrientation(redAttrs.endOri),
+              hand: HandSide.RIGHT,
+              motionType: parseMotionType(rightAttrs.motionType),
+              startLocation: parseLocation(rightAttrs.startLoc),
+              endLocation: parseLocation(rightAttrs.endLoc),
+              startOrientation: parseOrientation(rightAttrs.startOri),
+              endOrientation: parseOrientation(rightAttrs.endOri),
               rotationDirection: parseRotationDirection(
-                redAttrs.propRotDir
+                rightAttrs.propRotDir
               ),
-              turns: parseTurns(redAttrs.turns),
+              turns: parseTurns(rightAttrs.turns),
               isVisible: true,
               propType: PropType.STAFF,
               arrowLocation:
-                parseLocation(redAttrs.startLoc) || GridLocation.SOUTH,
+                parseLocation(rightAttrs.startLoc) || GridLocation.SOUTH,
               gridMode,
             })
           : undefined,
@@ -214,14 +214,14 @@ export function convertRawToBeats(
   // This excludes: metadata elements (no attributes) AND start position (beat === 0)
   const actualSteps = rawSequence.filter(
     (el) =>
-      (el.blueAttributes || el.redAttributes) &&
+      (el.leftAttributes || el.rightAttributes) &&
       el.beat !== undefined &&
       el.beat >= 1
   );
 
   const steps: StepData[] = actualSteps.map((step, index) => {
-    const blueAttrs = step.blueAttributes;
-    const redAttrs = step.redAttributes;
+    const leftAttrs = step.leftAttributes;
+    const rightAttrs = step.rightAttributes;
 
     return {
       id: `step-${sequenceName}-${index + 1}`,
@@ -231,41 +231,41 @@ export function convertRawToBeats(
         parseGridPosition(step.sequenceStartPosition),
       endPosition: parseGridPosition(step.endPos),
       motions: {
-        [MotionColor.BLUE]: blueAttrs
+        [HandSide.LEFT]: leftAttrs
           ? createMotionData({
-              color: MotionColor.BLUE,
-              motionType: parseMotionType(blueAttrs.motionType),
-              startLocation: parseLocation(blueAttrs.startLoc),
-              endLocation: parseLocation(blueAttrs.endLoc),
-              startOrientation: parseOrientation(blueAttrs.startOri),
-              endOrientation: parseOrientation(blueAttrs.endOri),
+              hand: HandSide.LEFT,
+              motionType: parseMotionType(leftAttrs.motionType),
+              startLocation: parseLocation(leftAttrs.startLoc),
+              endLocation: parseLocation(leftAttrs.endLoc),
+              startOrientation: parseOrientation(leftAttrs.startOri),
+              endOrientation: parseOrientation(leftAttrs.endOri),
               rotationDirection: parseRotationDirection(
-                blueAttrs.propRotDir
+                leftAttrs.propRotDir
               ),
-              turns: parseTurns(blueAttrs.turns),
+              turns: parseTurns(leftAttrs.turns),
               isVisible: true,
               propType: PropType.STAFF,
               arrowLocation:
-                parseLocation(blueAttrs.startLoc) || GridLocation.NORTH,
+                parseLocation(leftAttrs.startLoc) || GridLocation.NORTH,
               gridMode,
             })
           : undefined,
-        [MotionColor.RED]: redAttrs
+        [HandSide.RIGHT]: rightAttrs
           ? createMotionData({
-              color: MotionColor.RED,
-              motionType: parseMotionType(redAttrs.motionType),
-              startLocation: parseLocation(redAttrs.startLoc),
-              endLocation: parseLocation(redAttrs.endLoc),
-              startOrientation: parseOrientation(redAttrs.startOri),
-              endOrientation: parseOrientation(redAttrs.endOri),
+              hand: HandSide.RIGHT,
+              motionType: parseMotionType(rightAttrs.motionType),
+              startLocation: parseLocation(rightAttrs.startLoc),
+              endLocation: parseLocation(rightAttrs.endLoc),
+              startOrientation: parseOrientation(rightAttrs.startOri),
+              endOrientation: parseOrientation(rightAttrs.endOri),
               rotationDirection: parseRotationDirection(
-                redAttrs.propRotDir
+                rightAttrs.propRotDir
               ),
-              turns: parseTurns(redAttrs.turns),
+              turns: parseTurns(rightAttrs.turns),
               isVisible: true,
               propType: PropType.STAFF,
               arrowLocation:
-                parseLocation(redAttrs.startLoc) || GridLocation.SOUTH,
+                parseLocation(rightAttrs.startLoc) || GridLocation.SOUTH,
               gridMode,
             })
           : undefined,
@@ -273,8 +273,8 @@ export function convertRawToBeats(
       // Use step.beat directly (it's guaranteed >= 1 from filter)
       stepNumber: step.beat!,
       duration: 1.0,
-      blueReversal: false,
-      redReversal: false,
+      leftReversal: false,
+      rightReversal: false,
       isBlank: false,
     } as StepData;
   });

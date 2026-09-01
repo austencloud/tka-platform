@@ -4,7 +4,7 @@ import type { SceneUndoSnapshot, ViewerDomainSnapshot } from "../scene-undo-type
 
 function makeViewerSnapshot(overrides: Partial<ViewerDomainSnapshot> = {}): ViewerDomainSnapshot {
   return {
-    performers: [{ id: "p0", position: { x: 0, z: 0 }, facingAngle: 0, customBluePlane: "wall" as any, customRedPlane: "wall" as any }],
+    performers: [{ id: "p0", position: { x: 0, z: 0 }, facingAngle: 0, customLeftPlane: "wall" as any, customRightPlane: "wall" as any }],
     selectedPerformerIndex: null,
     activeFormation: "manual",
     ...overrides,
@@ -42,7 +42,7 @@ describe("SceneUndoManager", () => {
     manager.captureState("spawn-performer", "Add performer");
 
     viewerState = makeViewerSnapshot({
-      performers: [...viewerState.performers, { id: "p1", position: { x: 1, z: 0 }, facingAngle: 0, customBluePlane: "wall" as any, customRedPlane: "wall" as any }],
+      performers: [...viewerState.performers, { id: "p1", position: { x: 1, z: 0 }, facingAngle: 0, customLeftPlane: "wall" as any, customRightPlane: "wall" as any }],
     });
 
     manager.commitState();
@@ -58,7 +58,7 @@ describe("SceneUndoManager", () => {
     manager.captureState("spawn-performer", "Add performer");
 
     viewerState = makeViewerSnapshot({
-      performers: [...viewerState.performers, { id: "p1", position: { x: 1, z: 0 }, facingAngle: 0, customBluePlane: "wall" as any, customRedPlane: "wall" as any }],
+      performers: [...viewerState.performers, { id: "p1", position: { x: 1, z: 0 }, facingAngle: 0, customLeftPlane: "wall" as any, customRightPlane: "wall" as any }],
     });
 
     manager.commitState();
@@ -76,7 +76,7 @@ describe("SceneUndoManager", () => {
     manager.captureState("spawn-performer", "Add performer");
 
     viewerState = makeViewerSnapshot({
-      performers: [...viewerState.performers, { id: "p1", position: { x: 1, z: 0 }, facingAngle: 0, customBluePlane: "wall" as any, customRedPlane: "wall" as any }],
+      performers: [...viewerState.performers, { id: "p1", position: { x: 1, z: 0 }, facingAngle: 0, customLeftPlane: "wall" as any, customRightPlane: "wall" as any }],
     });
 
     manager.commitState();

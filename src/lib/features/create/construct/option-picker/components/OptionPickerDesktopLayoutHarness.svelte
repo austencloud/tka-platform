@@ -2,6 +2,7 @@
 <script lang="ts">
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { TurnLevel } from "$lib/shared/create/services/level-turn-values";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import OptionPickerContent from "./OptionPickerContent.svelte";
 
   const {
@@ -10,13 +11,29 @@
     sideBySide = true,
     topOffset = 0,
     level = 2,
+    continuous = false,
+    sequenceLength = 0,
+    leftTurns = 0,
+    rightTurns = 0,
+    shownCount = 0,
+    hiddenCount = 0,
   } = $props<{
     width?: number;
     height?: number;
     sideBySide?: boolean;
     topOffset?: number;
     level?: TurnLevel;
+    continuous?: boolean;
+    sequenceLength?: number;
+    leftTurns?: number;
+    rightTurns?: number;
+    shownCount?: number;
+    hiddenCount?: number;
   }>();
+
+  const currentSequence = $derived(
+    Array.from({ length: sequenceLength }, () => ({}) as PictographData)
+  );
 </script>
 
 <div
@@ -41,17 +58,20 @@
       },
     })}
     onSelect={() => {}}
+    isContinuousOnly={continuous}
+    optionAvailability={{ shownCount, hiddenCount }}
     isSideBySideLayout={() => sideBySide}
-    blueTurns={0}
-    redTurns={0}
+    {currentSequence}
+    {leftTurns}
+    {rightTurns}
     {level}
     onLevelChange={() => {}}
-    blueRotation={RotationDirection.CLOCKWISE}
-    redRotation={RotationDirection.CLOCKWISE}
-    onBlueTurnsChange={() => {}}
-    onRedTurnsChange={() => {}}
-    onBlueRotationChange={() => {}}
-    onRedRotationChange={() => {}}
+    leftRotation={RotationDirection.CLOCKWISE}
+    rightRotation={RotationDirection.CLOCKWISE}
+    onLeftTurnsChange={() => {}}
+    onRightTurnsChange={() => {}}
+    onLeftRotationChange={() => {}}
+    onRightRotationChange={() => {}}
   />
 </div>
 

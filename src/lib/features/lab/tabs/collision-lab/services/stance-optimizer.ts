@@ -68,6 +68,8 @@ const W_ZONE: Record<string, number> = {
   "prop-through-head": 500,
   "prop-through-torso": 400,
   "arm-through-face": 500,
+  "arm-through-neck": 500,
+  "arm-through-torso": 400,
   "prop-through-arm": 60,
   "arms-through-each-other": 40,
   "prop-through-prop": 30,
@@ -162,7 +164,7 @@ export class StanceOptimizer {
 
       const remaining = MAX_TOTAL_EVALS - totalEvals;
       const budget = Math.min(MAX_EVALS_PER_DESCENT, remaining);
-      const evaluate = (s: StancePose) => this.simulator.evaluate(s, input.blue, input.red);
+      const evaluate = (s: StancePose) => this.simulator.evaluate(s, input.left, input.right);
       const result = this.descend(evaluate, seedStance, bounds, budget);
       totalEvals += result.evaluations;
 
@@ -186,7 +188,7 @@ export class StanceOptimizer {
       const remaining = MAX_TOTAL_EVALS - totalEvals;
       const budget = Math.min(MAX_EVALS_PER_DESCENT, remaining);
       const start = this.randomStance(bounds, restarts);
-      const evaluate = (s: StancePose) => this.simulator.evaluate(s, input.blue, input.red);
+      const evaluate = (s: StancePose) => this.simulator.evaluate(s, input.left, input.right);
       const attempt = this.descend(evaluate, start, bounds, budget);
       totalEvals += attempt.evaluations;
       if (attempt.loss < best.loss) best = attempt;
@@ -229,7 +231,7 @@ export class StanceOptimizer {
       reachTolerance?: number;
     }
   ): OptimizerResult {
-    const evaluate = (s: StancePose) => this.simulator.evaluateSweep(s, input.blue, input.red);
+    const evaluate = (s: StancePose) => this.simulator.evaluateSweep(s, input.left, input.right);
     const penalty = opts?.stancePenalty;
     const reachTol = opts?.reachTolerance ?? 0;
     let totalEvals = 0;
@@ -301,7 +303,7 @@ export class StanceOptimizer {
     const seedStance: StancePose = { ...seed };
     seedStance.rootYawRad = this.wrapAngle(seedStance.rootYawRad);
     this.clampInPlace(seedStance, bounds);
-    const evaluate = (s: StancePose) => this.simulator.evaluate(s, input.blue, input.red);
+    const evaluate = (s: StancePose) => this.simulator.evaluate(s, input.left, input.right);
     const result = this.descend(evaluate, seedStance, bounds, budget);
     return {
       stance: result.stance,
@@ -471,8 +473,8 @@ export function computeStanceLoss(sim: SimResult, reachTol = 0): number {
   // Reach shortfall: both hands must touch the props. A shortfall of even 1 cm
   // produces a huge loss that dwarfs any other term.
   const sf =
-    Math.max(0, sim.reachShortfall.blue - reachTol) +
-    Math.max(0, sim.reachShortfall.red - reachTol);
+    Math.max(0, sim.reachShortfall.left - reachTol) +
+    Math.max(0, sim.reachShortfall.right - reachTol);
   loss += W_REACH_SHORTFALL * sf;
 
   // Per-zone collision penalties. Face / head / torso zones are weighted much
@@ -490,7 +492,7 @@ export function computeStanceLoss(sim: SimResult, reachTol = 0): number {
 
   // Comfort: near-max extension is mildly discouraged so slightly-bent arms
   // beat locked-out arms when both are clear. Only the part above 85% of max.
-  const avgStretch = (sim.reachStretch.blue + sim.reachStretch.red) / 2;
+  const avgStretch = (sim.reachStretch.left + sim.reachStretch.right) / 2;
   loss += W_STRETCH * Math.max(0, avgStretch - 0.85);
 
   return loss;

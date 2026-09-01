@@ -94,15 +94,15 @@ export interface QRCodeOptions {
    */
   darkMode?: boolean;
   /**
-   * Blue prop type to include in the URL.
+   * Left-hand prop type to include in the URL.
    * When set, the scanned viewer will use this prop type instead of user's default.
    */
-  bluePropType?: string;
+  leftPropType?: string;
   /**
-   * Red prop type to include in the URL.
+   * Right-hand prop type to include in the URL.
    * When set, the scanned viewer will use this prop type instead of user's default.
    */
-  redPropType?: string;
+  rightPropType?: string;
   /** Encoded BrowseViewMode string (e.g., "hsb" = hands-solo-blue). */
   viewMode?: string;
   /** Deck ID for attribution tracking */
@@ -179,8 +179,8 @@ export interface ShortCodeData {
   encoded?: string;
   deckId?: string;
   deckName?: string;
-  bluePropType?: string;
-  redPropType?: string;
+  leftPropType?: string;
+  rightPropType?: string;
   catDogMode?: boolean;
   thumbnailUrl?: string;
   ownerDisplayName?: string;
@@ -228,13 +228,13 @@ export interface ImportResolution {
  * Options for short code URL generation
  */
 export interface ShortCodeURLOptions {
-  /** Blue prop type to append to URL (encoded as single char) */
-  bluePropType?: string;
-  /** Red prop type to append to URL (encoded as single char) */
-  redPropType?: string;
-  /** Whether blue/red prop overrides are intentionally different. */
+  /** Left-hand prop type to append to URL (encoded as single char) */
+  leftPropType?: string;
+  /** Right-hand prop type to append to URL (encoded as single char) */
+  rightPropType?: string;
+  /** Whether left/right prop overrides are intentionally different. */
   catDogMode?: boolean;
-  /** View mode to encode in URL (e.g., "hsb" = hands-solo-blue) */
+  /** View mode to encode in URL (e.g., "hsb" = legacy wire code for left-hand solo) */
   viewMode?: string;
   /** Force-embed the full sequenceData in the shortcode record even when
    *  ownerId is set. Use this for URL-sync flows where the sequence may

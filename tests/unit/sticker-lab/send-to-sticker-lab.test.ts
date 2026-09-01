@@ -7,8 +7,8 @@ const mocks = vi.hoisted(() => ({
   load: vi.fn(),
   cache: vi.fn(),
   paths: {
-    blue: [{ d: "M 10 0 C 10 0, 20 0, 30 0", tipIndex: 0 }],
-    red: [{ d: "M -10 0 C -10 0, -20 0, -30 0", tipIndex: 0 }],
+    left: [{ d: "M 10 0 C 10 0, 20 0, 30 0", tipIndex: 0 }],
+    right: [{ d: "M -10 0 C -10 0, -20 0, -30 0", tipIndex: 0 }],
     purple: [],
   },
 }));

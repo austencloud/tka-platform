@@ -77,8 +77,8 @@
         <SequenceHeroDemo
           sequence={demoSequence}
           note="the demo sequence, on clubs"
-          bluePropType="club"
-          redPropType="club"
+          leftPropType="club"
+          rightPropType="club"
         />
       </div>
     </div>

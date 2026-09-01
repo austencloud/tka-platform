@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { TunnelSnapshotSchema, SNAPSHOT_VERSION, migrateTunnelSnapshot } from "../tunnel-snapshot";
+import {
+  TunnelSnapshotSchema,
+  SNAPSHOT_VERSION,
+  migrateTunnelSnapshot,
+} from "../tunnel-snapshot";
 import {
   captureTunnelSnapshot,
   applyTunnelSnapshot,
@@ -13,7 +17,10 @@ const validSnapshot = {
   tunnel: {
     config: DEFAULT_CONFIG,
     gridVisible: false,
-    spectrum: true,
+    colors: {
+      mode: "custom",
+      custom: { left: "#123456", right: "#abcdef" },
+    },
     section: "tunnel",
     presetRecipe: null,
   },
@@ -22,11 +29,11 @@ const validSnapshot = {
   paths: {
     pathShape: "arc",
     motionAwarePaths: false,
-    bluePathLines: false,
-    redPathLines: false,
+    leftPathLines: false,
+    rightPathLines: false,
   },
   playback: { bpm: 60, playbackMode: "continuous" },
-  props: { bluePropType: "staff", redPropType: "staff" },
+  props: { leftPropType: "staff", rightPropType: "staff" },
   trailRender: { mode: "trail" },
 };
 
@@ -34,6 +41,63 @@ describe("TunnelSnapshotSchema", () => {
   it("accepts a well-formed snapshot", () => {
     expect(TunnelSnapshotSchema.safeParse(validSnapshot).success).toBe(true);
   });
+
+  it("normalizes saved palette-keyed snapshots before validation", () => {
+    const legacySnapshot = {
+      ...validSnapshot,
+      version: 2,
+      tunnel: {
+        ...validSnapshot.tunnel,
+        colors: {
+          mode: "custom",
+          custom: { blue: "#123456", red: "#abcdef" },
+        },
+      },
+      paths: {
+        pathShape: "arc",
+        motionAwarePaths: false,
+        bluePathLines: true,
+        redPathLines: false,
+      },
+      props: {
+        bluePropType: "poi",
+        redPropType: "fan",
+        blueBuugengFlipped: true,
+        redBuugengFlipped: false,
+      },
+      trailRender: {
+        ...validSnapshot.trailRender,
+        blueColor: "#112233",
+        redColor: "#445566",
+        additionalLayerColors: [{ blue: "#778899", red: "#aabbcc" }],
+      },
+    };
+
+    const parsed = TunnelSnapshotSchema.safeParse(legacySnapshot);
+
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    expect(parsed.data.tunnel.colors.custom).toEqual({
+      left: "#123456",
+      right: "#abcdef",
+    });
+    expect(parsed.data.paths).toMatchObject({
+      leftPathLines: true,
+      rightPathLines: false,
+    });
+    expect(parsed.data.props).toEqual({
+      leftPropType: "poi",
+      rightPropType: "fan",
+      leftBuugengFlipped: true,
+      rightBuugengFlipped: false,
+    });
+    expect(parsed.data.trailRender).toMatchObject({
+      leftColor: "#112233",
+      rightColor: "#445566",
+      additionalLayerColors: [{ left: "#778899", right: "#aabbcc" }],
+    });
+  });
+
   it("rejects a snapshot missing the tunnel block", () => {
     const { tunnel: _drop, ...rest } = validSnapshot;
     expect(TunnelSnapshotSchema.safeParse(rest).success).toBe(false);
@@ -52,7 +116,10 @@ function fakeDeps(): SnapshotDeps {
     controller: {
       config: { ...DEFAULT_CONFIG, fold: 4 },
       gridVisible: true,
-      spectrum: false,
+      colors: {
+        mode: "custom",
+        custom: { left: "#123456", right: "#abcdef" },
+      },
       section: "effects",
       presetRecipe: null,
       applyConfig() {},
@@ -65,17 +132,17 @@ function fakeDeps(): SnapshotDeps {
       getEffortPreset: () => "punch",
       getPathShape: () => "concave",
       getMotionAwarePaths: () => true,
-      getVisibility: (k: string) => k === "bluePathLines",
+      getVisibility: (k: string) => k === "leftPathLines",
       setEffortPreset() {},
       setPathShape() {},
       setMotionAwarePaths() {},
       setVisibility() {},
     } as unknown as SnapshotDeps["visibility"],
     settings: {
-      bluePropType: "fan",
-      redPropType: "club",
-      blueBuugengFlipped: true,
-      redBuugengFlipped: false,
+      leftPropType: "fan",
+      rightPropType: "club",
+      leftBuugengFlipped: true,
+      rightBuugengFlipped: false,
       updateSettings() {},
     } as unknown as SnapshotDeps["settings"],
     animationSettings: {
@@ -112,7 +179,10 @@ describe("captureTunnelSnapshot", () => {
     expect(snap.tunnel).toEqual({
       config: { ...DEFAULT_CONFIG, fold: 4 },
       gridVisible: true,
-      spectrum: false,
+      colors: {
+        mode: "custom",
+        custom: { left: "#123456", right: "#abcdef" },
+      },
       section: "effects",
       presetRecipe: null,
     });
@@ -120,15 +190,15 @@ describe("captureTunnelSnapshot", () => {
     expect(snap.paths).toEqual({
       pathShape: "concave",
       motionAwarePaths: true,
-      bluePathLines: true,
-      redPathLines: false,
+      leftPathLines: true,
+      rightPathLines: false,
     });
     expect(snap.playback).toEqual({ bpm: 144, playbackMode: "step" });
     expect(snap.props).toEqual({
-      bluePropType: "fan",
-      redPropType: "club",
-      blueBuugengFlipped: true,
-      redBuugengFlipped: false,
+      leftPropType: "fan",
+      rightPropType: "club",
+      leftBuugengFlipped: true,
+      rightBuugengFlipped: false,
     });
   });
 
@@ -153,18 +223,21 @@ describe("applyTunnelSnapshot", () => {
     const store = {
       config: { ...DEFAULT_CONFIG },
       gridVisible: false,
-      spectrum: true,
+      colors: {
+        mode: "hands" as const,
+        custom: { left: "#111111", right: "#eeeeee" },
+      },
       section: "tunnel",
       presetRecipe: null,
       effort: "linear",
       pathShape: "arc",
       motionAware: false,
-      blueLines: false,
-      redLines: false,
-      bluePropType: "staff",
-      redPropType: "staff",
-      blueBuugengFlipped: false,
-      redBuugengFlipped: false,
+      leftLines: false,
+      rightLines: false,
+      leftPropType: "staff",
+      rightPropType: "staff",
+      leftBuugengFlipped: false,
+      rightBuugengFlipped: false,
       bpm: 60,
       playbackMode: "continuous",
       effects: { activeEffect: "none" },
@@ -181,11 +254,11 @@ describe("applyTunnelSnapshot", () => {
         set gridVisible(v) {
           store.gridVisible = v;
         },
-        get spectrum() {
-          return store.spectrum;
+        get colors() {
+          return store.colors;
         },
-        set spectrum(v) {
-          store.spectrum = v;
+        set colors(v) {
+          store.colors = v;
         },
         get section() {
           return store.section;
@@ -225,24 +298,24 @@ describe("applyTunnelSnapshot", () => {
           store.motionAware = v;
         }),
         getVisibility: (k: string) =>
-          k === "bluePathLines" ? store.blueLines : store.redLines,
+          k === "leftPathLines" ? store.leftLines : store.rightLines,
         setVisibility: vi.fn((k, v) => {
-          if (k === "bluePathLines") store.blueLines = v;
-          else store.redLines = v;
+          if (k === "leftPathLines") store.leftLines = v;
+          else store.rightLines = v;
         }),
       },
       settings: {
-        get bluePropType() {
-          return store.bluePropType;
+        get leftPropType() {
+          return store.leftPropType;
         },
-        get redPropType() {
-          return store.redPropType;
+        get rightPropType() {
+          return store.rightPropType;
         },
-        get blueBuugengFlipped() {
-          return store.blueBuugengFlipped;
+        get leftBuugengFlipped() {
+          return store.leftBuugengFlipped;
         },
-        get redBuugengFlipped() {
-          return store.redBuugengFlipped;
+        get rightBuugengFlipped() {
+          return store.rightBuugengFlipped;
         },
         updateSettings: vi.fn((p) => Object.assign(store, p)),
       },
@@ -275,7 +348,10 @@ describe("applyTunnelSnapshot", () => {
       tunnel: {
         config: { ...DEFAULT_CONFIG, fold: 8 },
         gridVisible: true,
-        spectrum: false,
+        colors: {
+          mode: "custom",
+          custom: { left: "#2255aa", right: "#dd7733" },
+        },
         section: "effort",
         presetRecipe: null,
       },
@@ -284,15 +360,15 @@ describe("applyTunnelSnapshot", () => {
       paths: {
         pathShape: "concave",
         motionAwarePaths: true,
-        bluePathLines: true,
-        redPathLines: false,
+        leftPathLines: true,
+        rightPathLines: false,
       },
       playback: { bpm: 120, playbackMode: "step" },
       props: {
-        bluePropType: "fan",
-        redPropType: "club",
-        blueBuugengFlipped: true,
-        redBuugengFlipped: false,
+        leftPropType: "fan",
+        rightPropType: "club",
+        leftBuugengFlipped: true,
+        rightBuugengFlipped: false,
       },
       trailRender: { mode: "trail" } as never,
     };
@@ -300,7 +376,10 @@ describe("applyTunnelSnapshot", () => {
     applyTunnelSnapshot(deps, target);
 
     expect(captureTunnelSnapshot(deps)).toEqual(target);
-    expect(deps.controller.applyConfig).toHaveBeenCalledWith(target.tunnel.config, null);
+    expect(deps.controller.applyConfig).toHaveBeenCalledWith(
+      target.tunnel.config,
+      null
+    );
     expect(deps.effects.replace).toHaveBeenCalledWith(target.effects);
     expect(deps.playback.handleBpmChange).toHaveBeenCalledWith(120);
   });
@@ -320,5 +399,23 @@ describe("migrateTunnelSnapshot", () => {
     expect(migrated.version).toBe(SNAPSHOT_VERSION);
     expect(migrated.tunnel.config).toEqual(legacy.tunnel.config);
     expect(migrated.tunnel.presetRecipe).toBeNull();
+  });
+
+  it("maps version-2 spectrum state to the version-3 color contract", () => {
+    const legacy = {
+      ...validSnapshot,
+      version: 2,
+      tunnel: {
+        ...validSnapshot.tunnel,
+        colors: undefined,
+        spectrum: false,
+      },
+    } as unknown as TunnelSnapshot;
+
+    const migrated = migrateTunnelSnapshot(legacy);
+
+    expect(migrated.tunnel.colors.mode).toBe("hands");
+    expect(migrated.tunnel).not.toHaveProperty("spectrum");
+    expect(TunnelSnapshotSchema.safeParse(legacy).success).toBe(true);
   });
 });

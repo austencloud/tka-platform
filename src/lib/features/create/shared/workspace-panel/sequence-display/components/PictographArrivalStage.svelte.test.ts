@@ -5,7 +5,7 @@ import { createStepData } from "$lib/shared/foundation/domain/factories/create-s
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -48,8 +48,8 @@ describe("PictographArrivalStage audition", () => {
       id: "high-turn-step",
       stepNumber: 2,
       motions: {
-        blue: createMotionData({
-          color: MotionColor.BLUE,
+        left: createMotionData({
+          hand: HandSide.LEFT,
           motionType: MotionType.STATIC,
           rotationDirection: RotationDirection.CLOCKWISE,
           turns: 3,

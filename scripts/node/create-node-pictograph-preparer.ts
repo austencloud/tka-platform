@@ -210,8 +210,8 @@ export function createNodePictographPreparer() {
     betaDetector,
     // Default prop types for Node.js (staff for both hands)
     {
-      bluePropType: PropType.STAFF,
-      redPropType: PropType.STAFF,
+      leftPropType: PropType.STAFF,
+      rightPropType: PropType.STAFF,
     }
   );
 

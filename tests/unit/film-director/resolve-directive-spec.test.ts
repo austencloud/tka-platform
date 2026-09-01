@@ -48,20 +48,78 @@ describe("resolveFilmDirectorSpec with directives", () => {
     );
   });
 
-  it("rerolling the prop axis changes props but not avatars", () => {
+  it("rerolling the prop axis changes props but not characters", () => {
     const doc = film({
       cast: {
         count: 6,
-        defaults: { prop: { pick: "distinct" }, avatarId: { pick: "distinct" } },
+        defaults: { prop: { pick: "distinct" }, characterId: { pick: "distinct" } },
       },
     });
     const base = resolveFilmDirectorSpec(doc);
     const rerolled = resolveFilmDirectorSpec({ ...doc, seed: { axes: { prop: 1 } } });
-    expect(rerolled.scenes[0]!.performance.performers.map((p) => p.avatarId)).toEqual(
-      base.scenes[0]!.performance.performers.map((p) => p.avatarId)
+    expect(rerolled.scenes[0]!.performance.performers.map((p) => p.characterId)).toEqual(
+      base.scenes[0]!.performance.performers.map((p) => p.characterId)
     );
     expect(rerolled.scenes[0]!.performance.performers.map((p) => p.prop)).not.toEqual(
       base.scenes[0]!.performance.performers.map((p) => p.prop)
+    );
+  });
+
+  it("preserves seeded character choices across the v3 avatarId migration", () => {
+    const shared = {
+      id: "character-seed-migration",
+      title: "Character seed migration",
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: {
+            cast: { count: 5 },
+          },
+        },
+      ],
+    };
+    const legacy = resolveFilmDirectorSpec({
+      ...shared,
+      version: 3,
+      seed: { base: 20260830, axes: { avatarId: 4 } },
+      scenes: [
+        {
+          ...shared.scenes[0],
+          performance: {
+            cast: {
+              count: 5,
+              defaults: { avatarId: { pick: "distinct" } },
+            },
+          },
+        },
+      ],
+    });
+    const current = resolveFilmDirectorSpec({
+      ...shared,
+      version: 4,
+      seed: { base: 20260830, axes: { characterId: 4 } },
+      scenes: [
+        {
+          ...shared.scenes[0],
+          performance: {
+            cast: {
+              count: 5,
+              defaults: { characterId: { pick: "distinct" } },
+            },
+          },
+        },
+      ],
+    });
+
+    expect(
+      current.scenes[0]!.performance.performers.map(
+        (performer) => performer.characterId
+      )
+    ).toEqual(
+      legacy.scenes[0]!.performance.performers.map(
+        (performer) => performer.characterId
+      )
     );
   });
 

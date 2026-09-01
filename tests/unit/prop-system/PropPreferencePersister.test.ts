@@ -25,6 +25,7 @@ vi.mock("$lib/shared/auth/firebase", () => ({
 }));
 
 import {
+  loadPropPreferences,
   savePropPreferences,
   removePropPreference,
   setFavoriteProp,
@@ -37,6 +38,27 @@ describe("PropPreferencePersister", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(updateDoc).mockResolvedValue(undefined);
+  });
+
+  it("restores a literal blue/red CatDog favorite", async () => {
+    vi.mocked(getDoc).mockResolvedValue({
+      exists: () => true,
+      data: () => ({
+        propsISpinWith: [PropType.POI, PropType.FAN],
+        favoriteProp: null,
+        favoriteCatdog: {
+          bluePropType: PropType.POI,
+          redPropType: PropType.FAN,
+        },
+      }),
+    } as never);
+
+    await expect(loadPropPreferences("legacy-user")).resolves.toMatchObject({
+      favoriteCatdog: {
+        leftPropType: PropType.POI,
+        rightPropType: PropType.FAN,
+      },
+    });
   });
 
   describe("validate (via save)", () => {
@@ -57,8 +79,8 @@ describe("PropPreferencePersister", () => {
         propsISpinWith: [PropType.STAFF],
         favoriteProp: null,
         favoriteCatdog: {
-          bluePropType: PropType.FAN, // not in list
-          redPropType: PropType.STAFF,
+          leftPropType: PropType.FAN, // not in list
+          rightPropType: PropType.STAFF,
         },
       };
 
@@ -72,8 +94,8 @@ describe("PropPreferencePersister", () => {
         propsISpinWith: [PropType.FAN],
         favoriteProp: null,
         favoriteCatdog: {
-          bluePropType: PropType.FAN,
-          redPropType: PropType.STAFF, // not in list
+          leftPropType: PropType.FAN,
+          rightPropType: PropType.STAFF, // not in list
         },
       };
 
@@ -97,8 +119,8 @@ describe("PropPreferencePersister", () => {
         propsISpinWith: [PropType.STAFF, PropType.FAN],
         favoriteProp: null,
         favoriteCatdog: {
-          bluePropType: PropType.STAFF,
-          redPropType: PropType.FAN,
+          leftPropType: PropType.STAFF,
+          rightPropType: PropType.FAN,
         },
       };
 
@@ -137,8 +159,8 @@ describe("PropPreferencePersister", () => {
         propsISpinWith: [PropType.STAFF, PropType.FAN, PropType.CLUB],
         favoriteProp: PropType.CLUB,
         favoriteCatdog: {
-          bluePropType: PropType.STAFF,
-          redPropType: PropType.FAN,
+          leftPropType: PropType.STAFF,
+          rightPropType: PropType.FAN,
         },
       });
 
@@ -156,8 +178,8 @@ describe("PropPreferencePersister", () => {
         propsISpinWith: [PropType.STAFF, PropType.FAN],
         favoriteProp: null,
         favoriteCatdog: {
-          bluePropType: PropType.STAFF,
-          redPropType: PropType.FAN,
+          leftPropType: PropType.STAFF,
+          rightPropType: PropType.FAN,
         },
       });
 

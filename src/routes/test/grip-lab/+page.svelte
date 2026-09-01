@@ -34,9 +34,9 @@
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import {
-    createAvatarInstanceState,
+    createCharacterInstanceState,
     makeStandaloneDeps,
-  } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  } from "$lib/shared/3d/state/character-instance-state.svelte";
   import { computeFramingShot } from "$lib/shared/3d/camera/compute-framing-shot";
   import {
     planeAngleToWorldPosition,
@@ -275,11 +275,11 @@
 
   // Standalone avatar instance with NO sequence loaded: its blue prop state
   // stays null, so only the red (right) hand is active — the single arm.
-  let avatarState = $state<ReturnType<typeof createAvatarInstanceState> | null>(
+  let avatarState = $state<ReturnType<typeof createCharacterInstanceState> | null>(
     null
   );
   try {
-    avatarState = createAvatarInstanceState(
+    avatarState = createCharacterInstanceState(
       { id: "grip-lab-performer", positionX: 0, positionZ: 0 },
       makeStandaloneDeps()
     );
@@ -1350,8 +1350,8 @@
           {redPropState}
           visiblePlanes={new Set([Plane.WALL])}
           gridMode="diamond"
-          bluePropType={toScenePropType(PropType.STAFF)}
-          redPropType={toScenePropType(PropType.STAFF)}
+          leftPropType={toScenePropType(PropType.STAFF)}
+          rightPropType={toScenePropType(PropType.STAFF)}
           {groundOffset}
           enableLocomotion={true}
           enableFootPlanting={true}

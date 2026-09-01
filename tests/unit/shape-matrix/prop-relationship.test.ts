@@ -15,23 +15,23 @@ function flower(turns: number, style: "pro" | "anti" = "pro"): Flower {
 }
 
 function sequence(
-  blueDirection: "cw" | "ccw" | "noRotation",
-  redDirection: "cw" | "ccw" | "noRotation",
+  leftDirection: "cw" | "ccw" | "noRotation",
+  rightDirection: "cw" | "ccw" | "noRotation",
   redOrientation: "in" | "out" = "in"
 ): SequenceData {
   return {
     steps: [
       {
         motions: {
-          blue: {
+          left: {
             startLocation: "s",
             startOrientation: "in",
-            rotationDirection: blueDirection,
+            rotationDirection: leftDirection,
           },
-          red: {
+          right: {
             startLocation: "n",
             startOrientation: redOrientation,
-            rotationDirection: redDirection,
+            rotationDirection: rightDirection,
           },
         },
       },
@@ -43,8 +43,8 @@ describe("prop relationship", () => {
   it("keeps direction but withholds timing when turn amounts differ", () => {
     expect(
       derivePropRelationship(sequence("cw", "cw"), {
-        blue: flower(1),
-        red: flower(1.5),
+        left: flower(1),
+        right: flower(1.5),
       })
     ).toEqual({
       kind: "direction-only",
@@ -56,8 +56,8 @@ describe("prop relationship", () => {
 
   it("classifies equal-rate rotating props with their own element", () => {
     const result = derivePropRelationship(sequence("cw", "cw"), {
-      blue: flower(1),
-      red: flower(1),
+      left: flower(1),
+      right: flower(1),
     });
     expect(result.kind).toBe("full");
     if (result.kind === "full") expect(result.element.element).toBe("water");
@@ -73,8 +73,8 @@ describe("prop relationship", () => {
     };
     expect(
       derivePropRelationship(sequence("noRotation", "noRotation"), {
-        blue: float,
-        red: float,
+        left: float,
+        right: float,
       })
     ).toEqual({ kind: "float", direction: null, timing: null, element: null });
   });

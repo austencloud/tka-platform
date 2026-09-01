@@ -58,11 +58,13 @@
     onSelect,
     variant = "panel",
     flat = false,
+    scrollMode = "internal",
+    includeBareHands = false,
     chirality,
     allowedProps,
     accessMode = "standard",
   } = $props<{
-    selectedPropType: PropType;
+    selectedPropType: PropType | null;
     color?: "blue" | "red" | (string & {});
     title?: string;
     onSelect: (propType: PropType) => void;
@@ -73,6 +75,14 @@
      * visible count beats grouping.
      */
     flat?: boolean;
+    /**
+     * Drawers own a bounded internal scroller. Embedded inspectors already
+     * scroll the whole tab, so their picker contributes its natural height and
+     * lets that host remain the only vertical scroll owner.
+     */
+    scrollMode?: "internal" | "host";
+    /** Adds the scene-only no-prop choice using the same canonical card. */
+    includeBareHands?: boolean;
     /**
      * Buugeng chirality seam. Absent means the picker renders no chirality
      * row, so hosts that should never expose it (the deck releaser renders
@@ -94,7 +104,13 @@
     allowedProps ? new Set<PropType>(allowedProps) : null
   );
 
+  const pickerSections = $derived([
+    ...PROP_PICKER_SECTIONS,
+    ...(includeBareHands ? [{ label: "Scene", props: [PropType.HAND] }] : []),
+  ]);
+
   function canShowProp(prop: PropType): boolean {
+    if (prop === PropType.HAND && includeBareHands) return true;
     if (allowedPropSet && !allowedPropSet.has(prop)) return false;
     if (prop === PropType.POI)
       return accessMode === "educational" || poiPickerEnabled;
@@ -103,9 +119,9 @@
   }
 
   const selectableProps = $derived(
-    PROP_PICKER_SECTIONS.flatMap((section) => section.props).filter((prop) =>
-      canShowProp(prop)
-    )
+    pickerSections
+      .flatMap((section) => section.props)
+      .filter((prop) => canShowProp(prop))
   );
   const selectablePropSet = $derived(new Set(selectableProps));
 
@@ -116,22 +132,28 @@
   // so internal-only Staff builds stay internal.
   const sections = $derived.by(() => {
     const seen = new Set<PropType>();
-    return PROP_PICKER_SECTIONS.map((section) => {
-      const bases: PropType[] = [];
-      for (const prop of section.props) {
-        if (!canShowProp(prop)) continue;
-        const base = isPremiumCosmeticProp(prop) ? prop : getBasePropType(prop);
-        if (prop !== base) continue;
-        if (seen.has(base)) continue;
-        seen.add(base);
-        bases.push(base);
-      }
-      return { label: section.label, bases };
-    }).filter((section) => section.bases.length > 0);
+    return pickerSections
+      .map((section) => {
+        const bases: PropType[] = [];
+        for (const prop of section.props) {
+          if (!canShowProp(prop)) continue;
+          const base = isPremiumCosmeticProp(prop)
+            ? prop
+            : getBasePropType(prop);
+          if (prop !== base) continue;
+          if (seen.has(base)) continue;
+          seen.add(base);
+          bases.push(base);
+        }
+        return { label: section.label, bases };
+      })
+      .filter((section) => section.bases.length > 0);
   });
 
   const allBases = $derived(sections.flatMap((section) => section.bases));
-  const selectedBase = $derived(getBasePropType(selectedPropType));
+  const selectedBase = $derived(
+    selectedPropType === null ? null : getBasePropType(selectedPropType)
+  );
 
   function familyChoices(base: PropType): PropType[] {
     return getAllVariations(base).filter((prop) => selectablePropSet.has(prop));
@@ -143,6 +165,7 @@
   }
 
   function familyDisplayProp(base: PropType): PropType {
+    if (selectedPropType === null) return base;
     return getFamilyTileDisplayProp(base, selectedPropType);
   }
 
@@ -166,6 +189,14 @@
    * - earn-tip: toggles the inline earn tip; never calls onSelect.
    */
   function handleTileClick(prop: PropType) {
+    if (prop === PropType.HAND && includeBareHands) {
+      lockedTipFor = null;
+      premiumNudgeFor = null;
+      openFamily = null;
+      onSelect(prop);
+      return;
+    }
+
     const premium = isPremiumCosmeticProp(prop);
     if (accessMode === "educational" && !premium) {
       lockedTipFor = null;
@@ -203,6 +234,7 @@
   class:panel={variant === "panel"}
   class:inline={variant === "inline"}
   class:flat
+  class:host-scroll={scrollMode === "host"}
 >
   {#if variant === "panel"}
     <header class="grid-header">
@@ -226,7 +258,7 @@
     <div
       class="tile-wrapper"
       class:premium
-      class:locked={!premium && !isPropUnlocked(prop)}
+      class:locked={prop !== PropType.HAND && !premium && !isPropUnlocked(prop)}
     >
       <PropTypeButton
         propType={prop}
@@ -238,7 +270,7 @@
         <span class="crown-glyph">
           <PremiumBadge tooltip="Premium prop" />
         </span>
-      {:else if !isPropUnlocked(prop)}
+      {:else if prop !== PropType.HAND && !isPropUnlocked(prop)}
         <i class="fas fa-lock lock-glyph" aria-hidden="true"></i>
         {#if lockedTipFor === prop}
           <span class="earn-tip">Earn by creating</span>
@@ -294,35 +326,46 @@
             />
           {/snippet}
         </Popover.Trigger>
-        <Popover.Content
-          side="bottom"
-          sideOffset={8}
-          avoidCollisions={true}
-          collisionPadding={12}
-          forceMount
-        >
-          {#snippet child({ open, wrapperProps, props })}
-            <div {...wrapperProps}>
-              {#if open}
-                <section
-                  {...props}
-                  class="variant-popover"
-                  aria-label={`${getPropTypeDisplayInfo(base).label} styles`}
-                  transition:flyFade={{ y: 6 }}
-                >
-                  <span class="variant-popover-label">
-                    {getPropTypeDisplayInfo(base).label} styles
-                  </span>
-                  <div class="variant-popover-buttons">
-                    {#each choices as prop (prop)}
-                      {@render tile(prop)}
-                    {/each}
-                  </div>
-                </section>
-              {/if}
-            </div>
-          {/snippet}
-        </Popover.Content>
+        <Popover.Portal>
+          <Popover.Overlay
+            class="variant-popover-overlay"
+            data-testid="prop-style-overlay"
+          />
+          <Popover.Content
+            side="bottom"
+            sideOffset={8}
+            avoidCollisions={true}
+            collisionPadding={12}
+            forceMount
+          >
+            {#snippet child({ open, wrapperProps, props })}
+              <div
+                {...wrapperProps}
+                class="drawer-interactive-portal"
+                style:z-index="var(--z-dropdown, 300)"
+              >
+                {#if open}
+                  <section
+                    {...props}
+                    class="variant-popover"
+                    aria-label={`${getPropTypeDisplayInfo(base).label} styles`}
+                    data-escape-shortcut-local
+                    transition:flyFade={{ y: 6 }}
+                  >
+                    <span class="variant-popover-label">
+                      {getPropTypeDisplayInfo(base).label} styles
+                    </span>
+                    <div class="variant-popover-buttons">
+                      {#each choices as prop (prop)}
+                        {@render tile(prop)}
+                      {/each}
+                    </div>
+                  </section>
+                {/if}
+              </div>
+            {/snippet}
+          </Popover.Content>
+        </Popover.Portal>
       </Popover.Root>
     {/if}
   {/snippet}
@@ -338,7 +381,10 @@
       <div class="grid-content">
         {#each sections as section, i}
           <div class="section-label" class:first={i === 0}>{section.label}</div>
-          <div class="section-buttons">
+          <div
+            class="section-buttons"
+            class:single={section.bases.length === 1}
+          >
             {#each section.bases as base (base)}
               {@render familyTile(base)}
             {/each}
@@ -348,7 +394,7 @@
     {/if}
   </div>
 
-  {#if chirality && isBuugengFamilyProp(selectedPropType)}
+  {#if chirality && selectedPropType !== null && isBuugengFamilyProp(selectedPropType)}
     <div class="chirality-dock" transition:growFade={{ axis: "y" }}>
       <PropChiralityRow
         propType={selectedPropType}
@@ -392,6 +438,16 @@
     background: transparent;
     border: none;
     border-radius: 0;
+  }
+
+  .prop-grid-root.host-scroll {
+    height: auto;
+    flex: none;
+  }
+
+  .prop-grid-root.host-scroll .grid-scroll {
+    flex: none;
+    overflow: visible;
   }
 
   .grid-header {
@@ -465,24 +521,31 @@
   }
 
   .section-buttons {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 124px));
     gap: 10px;
     justify-content: center;
     padding: 0 2px;
   }
 
+  .section-buttons.single {
+    grid-template-columns: minmax(0, 124px);
+  }
+
   .section-buttons :global(.prop-button) {
-    width: clamp(98px, 28cqw, 124px);
-    flex-shrink: 0;
+    width: 100%;
   }
 
   .variant-popover {
-    z-index: 60;
+    z-index: var(--z-dropdown, 300);
     container-type: inline-size;
     display: flex;
     width: min(420px, calc(100vw - 24px));
-    max-height: min(440px, calc(100vh - 24px));
+    max-height: min(
+      440px,
+      calc(100vh - 24px),
+      var(--bits-popover-content-available-height, calc(100vh - 24px))
+    );
     box-sizing: border-box;
     flex-direction: column;
     gap: 10px;
@@ -499,6 +562,16 @@
       var(--theme-card-bg, transparent)
     );
     box-shadow: 0 16px 52px var(--theme-shadow, rgba(0, 0, 0, 0.62));
+  }
+
+  /* The chooser is visually small, but it temporarily owns the pointer. A
+     transparent portaled shield keeps mobile hit-testing from handing the same
+     tap to whichever prop card happens to sit behind the animated popover. */
+  :global(.variant-popover-overlay) {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-dropdown, 300) - 1);
+    background: transparent;
   }
 
   .variant-popover-label {
@@ -553,15 +626,27 @@
     order: -1;
   }
 
+  @container prop-grid (min-width: 360px) {
+    .section-buttons:not(.single) {
+      grid-template-columns: repeat(3, minmax(0, 124px));
+    }
+  }
+
   @container prop-grid (min-width: 550px) {
-    .section-buttons :global(.prop-button) {
-      width: clamp(104px, 17cqw, 118px);
+    .section-buttons:not(.single) {
+      grid-template-columns: repeat(4, minmax(0, 118px));
     }
   }
 
   @container prop-grid (min-width: 700px) {
-    .section-buttons :global(.prop-button) {
-      width: clamp(102px, 13cqw, 112px);
+    .section-buttons:not(.single) {
+      grid-template-columns: repeat(6, minmax(0, 112px));
+    }
+  }
+
+  @container prop-grid (min-width: 850px) {
+    .section-buttons:not(.single) {
+      grid-template-columns: repeat(8, minmax(0, 112px));
     }
   }
 

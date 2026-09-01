@@ -322,9 +322,9 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
     if (!seq) return null;
     const durations = seq.steps?.map(b => b.duration ?? 1).join(',') || '';
     const sp = seq.startPosition;
-    const spPrint = `${motionPrint(sp?.motions?.blue)}-${motionPrint(sp?.motions?.red)}`;
+    const spPrint = `${motionPrint(sp?.motions?.left)}-${motionPrint(sp?.motions?.right)}`;
     const last = seq.steps?.[seq.steps.length - 1];
-    const lastPrint = `${motionPrint(last?.motions?.blue)}-${motionPrint(last?.motions?.red)}`;
+    const lastPrint = `${motionPrint(last?.motions?.left)}-${motionPrint(last?.motions?.right)}`;
     return `${seq.steps?.length || 0}|${durations}|${spPrint}|${lastPrint}`;
   }
 
@@ -396,7 +396,7 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
     const hasMotionData = (s: SequenceData) =>
       Array.isArray(s.steps) &&
       s.steps.length > 0 &&
-      s.steps.some((step) => step?.motions?.blue && step?.motions?.red);
+      s.steps.some((step) => step?.motions?.left && step?.motions?.right);
 
     if (hasMotionData(sequence)) return ensureWordPopulated(sequence);
 
@@ -736,8 +736,8 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
     isAnimationPlaying={isPlayingLocal}
     animationCurrentBeat={animationPanelState.currentStep}
     animationSpeed={animationPanelState.speed}
-    animationBluePropState={animationPanelState.bluePropState}
-    animationRedPropState={animationPanelState.redPropState}
+    animationLeftPropState={animationPanelState.leftPropState}
+    animationRightPropState={animationPanelState.rightPropState}
     {isCircular}
     {exportLoopCount}
     isAnimationExporting={isExporting && selectedFormat === "animation"}

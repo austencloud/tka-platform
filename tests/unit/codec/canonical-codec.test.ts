@@ -66,13 +66,13 @@ describe("sequence round-trip (single format)", () => {
   it("round-trips a 1-step sequence; derives pro + carries prop via header; no version sentinel", () => {
     const original = {
       id: "x", name: "", word: "", steps: [
-        { stepNumber: 0, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
-          motions: { blue: staticMotion(GridLocation.NORTH), red: staticMotion(GridLocation.SOUTH) },
+        { stepNumber: 0, duration: 1, leftReversal: false, rightReversal: false, isBlank: false,
+          motions: { left: staticMotion(GridLocation.NORTH), right: staticMotion(GridLocation.SOUTH) },
           id: "s0", letter: null, startPosition: null, endPosition: null },
-        { stepNumber: 1, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
+        { stepNumber: 1, duration: 1, leftReversal: false, rightReversal: false, isBlank: false,
           motions: {
-            blue: motion({ startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, rotationDirection: RotationDirection.CLOCKWISE, turns: 0 }),
-            red:  motion({ startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, rotationDirection: RotationDirection.CLOCKWISE, turns: 0 }),
+            left: motion({ startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, rotationDirection: RotationDirection.CLOCKWISE, turns: 0 }),
+            right:  motion({ startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, rotationDirection: RotationDirection.CLOCKWISE, turns: 0 }),
           },
           id: "s1", letter: null, startPosition: null, endPosition: null },
       ],
@@ -83,7 +83,7 @@ describe("sequence round-trip (single format)", () => {
     expect(encoded).not.toMatch(/^v[123]\|/);
     const decoded = decodeSequence(encoded);
     // start beat -> startPosition; the lone step lands at steps[0] (stepNumber 1).
-    expect(decoded.steps[0]!.motions.blue!.motionType).toBe(MotionType.PRO);
-    expect(decoded.steps[0]!.motions.blue!.propType).toBe(PropType.STAFF);
+    expect(decoded.steps[0]!.motions.left!.motionType).toBe(MotionType.PRO);
+    expect(decoded.steps[0]!.motions.left!.propType).toBe(PropType.STAFF);
   });
 });

@@ -10,7 +10,7 @@
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
-export type FuseSide = "blue" | "red";
+export type FuseSide = "left" | "right";
 
 export type FuseBrowseLoader = Pick<
   PublicSequencesLoader,
@@ -40,7 +40,7 @@ function sequenceLength(sequence: SequenceData): number {
 }
 
 function hasRequiredSideData(sequence: SequenceData, side: FuseSide): boolean {
-  return side === "blue" ? !!sequence.blueSoloProp : !!sequence.redSoloProp;
+  return side === "left" ? !!sequence.leftSoloProp : !!sequence.rightSoloProp;
 }
 
 function shuffledCopy(

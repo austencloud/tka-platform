@@ -14,6 +14,7 @@
   import { awaitAuthSettled } from "$lib/shared/auth/state/auth-state.svelte";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { downloadChoreoSheetPDF } from "../../services/sheet-pdf-exporter";
+  import { trackChoreoSheetExported } from "../../analytics/choreo-events";
   import type {
     ChoreoSheet,
     GroupSeparator,
@@ -272,6 +273,11 @@
         },
         builder.breakSequenceIds
       );
+      trackChoreoSheetExported({
+        sheetId: builder.sheet.id,
+        pageCount: builder.pages.length,
+        sequenceCount: builder.sequenceIds.length,
+      });
     } catch (error) {
       // Non-blocking toast rather than an inline strip: the toolbar must never
       // reflow because something failed.

@@ -57,7 +57,7 @@ describe("wing declaration grammar", () => {
 	it("rejects a museum sequence that drifts from the catalog", () => {
 		const wings = cloneWings();
 		const drifted = structuredClone(RAW_MUSEUM_SEQUENCES);
-		drifted["cave-water-seq-a"]!.steps[1]!.blueMotion.rotationDirection = "ccw";
+		drifted["cave-water-seq-a"]!.steps[1]!.leftMotion.rotationDirection = "ccw";
 		const findings = validateWingDeclarations(wings, {
 			...context,
 			rawSequences: drifted,

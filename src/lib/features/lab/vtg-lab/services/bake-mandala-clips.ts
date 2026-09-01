@@ -41,8 +41,8 @@ function configureGlobalVisibility(effort: EffortId): void {
   vm.setVisibility("progressBar", false);
   vm.setVisibility("tkaGlyph", false);
   vm.setVisibility("stepNumbers", false);
-  vm.setVisibility("bluePathLines", true); // dotted hand-path line, blue only
-  vm.setVisibility("redPathLines", false);
+  vm.setVisibility("leftPathLines", true); // dotted hand-path line, blue only
+  vm.setVisibility("rightPathLines", false);
   vm.setEffortPreset(effort);
 }
 
@@ -87,14 +87,14 @@ export async function bakeMandalaClips(
   try {
     let done = 0;
     for (const job of jobs) {
-      const prepared = prepareMandalaClubSequence(job.sequence, { show: "blue", pathShape: job.pathShape });
+      const prepared = prepareMandalaClubSequence(job.sequence, { show: "left", pathShape: job.pathShape });
       panelState.setShouldLoop(true);
       if (!controller.initialize(prepared, panelState)) {
         throw new Error(`Playback init failed for ${job.filename}`);
       }
 
       const frameOverlayDraw = buildMandalaOverlayDraw(prepared, {
-        show: "blue",
+        show: "left",
         pathShape: job.pathShape,
         opacity: mandalaOpacity,
         scale: mandalaScale,
@@ -119,8 +119,8 @@ export async function bakeMandalaClips(
           includeEndHold: false,
           seamlessTrailLoop: true,
           fragmented: true,
-          bluePropType: "club",
-          redPropType: null,
+          leftPropType: "club",
+          rightPropType: null,
           previewDarkMode: true,
           frameOverlayDraw,
         },

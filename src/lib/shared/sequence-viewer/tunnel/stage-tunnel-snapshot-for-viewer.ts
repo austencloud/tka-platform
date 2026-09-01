@@ -8,6 +8,10 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-typ
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import { saveTunnelViewState } from "./tunnel-view-state";
 import type { TunnelSnapshot } from "./tunnel-snapshot";
+import {
+  ensureViewerCustomColorPreference,
+  stageViewerCustomColors,
+} from "../services/viewer-custom-color-preferences";
 
 export interface TunnelViewerStagingDependencies {
   visibility: AnimationVisibilityStateManager;
@@ -15,6 +19,8 @@ export interface TunnelViewerStagingDependencies {
   settings: Pick<typeof settingsService, "updateSettings">;
   saveViewState: typeof saveTunnelViewState;
   storage: Pick<Storage, "setItem"> | null;
+  ensureCustomColorPreference?: typeof ensureViewerCustomColorPreference;
+  stageCustomColors?: typeof stageViewerCustomColors;
 }
 
 function defaultDependencies(): TunnelViewerStagingDependencies {
@@ -24,6 +30,8 @@ function defaultDependencies(): TunnelViewerStagingDependencies {
     settings: settingsService,
     saveViewState: saveTunnelViewState,
     storage: typeof localStorage === "undefined" ? null : localStorage,
+    ensureCustomColorPreference: ensureViewerCustomColorPreference,
+    stageCustomColors: stageViewerCustomColors,
   };
 }
 
@@ -39,29 +47,35 @@ export function stageTunnelSnapshotForViewer(
   const { visibility, animationSettings, settings, saveViewState, storage } =
     dependencies;
 
+  // Preserve the user's preference before the staged artifact replaces the
+  // legacy Tunnel view record. The one-use session handoff reproduces the
+  // artifact in both art views without treating a view as an explicit edit.
+  dependencies.ensureCustomColorPreference?.();
+  dependencies.stageCustomColors?.(snapshot.tunnel.colors.custom);
+
   visibility.setEffortPreset(snapshot.effort);
   visibility.setPathPolicy({
     pathShape: snapshot.paths.pathShape,
     motionAwarePaths: snapshot.paths.motionAwarePaths,
   });
-  visibility.setVisibility("bluePathLines", snapshot.paths.bluePathLines);
-  visibility.setVisibility("redPathLines", snapshot.paths.redPathLines);
+  visibility.setVisibility("leftPathLines", snapshot.paths.leftPathLines);
+  visibility.setVisibility("rightPathLines", snapshot.paths.rightPathLines);
   animationSettings.updateSettings({ trail: snapshot.trailRender });
   void settings.updateSettings({
-    bluePropType: snapshot.props.bluePropType as PropType,
-    redPropType: snapshot.props.redPropType as PropType,
-    ...(snapshot.props.blueBuugengFlipped !== undefined
-      ? { blueBuugengFlipped: snapshot.props.blueBuugengFlipped }
+    leftPropType: snapshot.props.leftPropType as PropType,
+    rightPropType: snapshot.props.rightPropType as PropType,
+    ...(snapshot.props.leftBuugengFlipped !== undefined
+      ? { leftBuugengFlipped: snapshot.props.leftBuugengFlipped }
       : {}),
-    ...(snapshot.props.redBuugengFlipped !== undefined
-      ? { redBuugengFlipped: snapshot.props.redBuugengFlipped }
+    ...(snapshot.props.rightBuugengFlipped !== undefined
+      ? { rightBuugengFlipped: snapshot.props.rightBuugengFlipped }
       : {}),
   });
 
   saveViewState({
     config: snapshot.tunnel.config,
     gridVisible: snapshot.tunnel.gridVisible,
-    spectrum: snapshot.tunnel.spectrum,
+    colors: snapshot.tunnel.colors,
     section: snapshot.tunnel.section,
     presetRecipe: snapshot.tunnel.presetRecipe ?? null,
   });

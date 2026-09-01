@@ -3,7 +3,7 @@
  */
 
 import type { PictographData } from "../../pictograph/shared/domain/models/pictograph-data";
-import type { MotionColor } from "../../pictograph/shared/domain/enums/pictograph-enums";
+import type { HandSide } from "../../pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../pictograph/shared/domain/models/motion-data";
 import type { MotionRenderData, PictographDisplayData } from "./types";
 
@@ -23,7 +23,7 @@ export function getDisplayLetter(data: PictographData | null): string | null {
 }
 
 export function filterVisibleMotions(
-  motions: Partial<Record<MotionColor, MotionData | null>> | undefined,
+  motions: Partial<Record<HandSide, MotionData | null>> | undefined,
 ): MotionRenderData[] {
   if (!motions) return [];
 
@@ -31,16 +31,16 @@ export function filterVisibleMotions(
     .filter(([, motionData]) => motionData !== null && motionData !== undefined)
     .filter(([_, motionData]) => motionData!.isVisible)
     .map(([color, motionData]) => ({
-      color: color as MotionColor,
+      color: color as HandSide,
       motionData: motionData!,
     }));
 }
 
 export function getMotionsToRender(data: PictographData | null): MotionRenderData[] {
   if (!data?.motions) return [];
-  const normalizedMotions: Partial<Record<MotionColor, MotionData | null>> = {};
+  const normalizedMotions: Partial<Record<HandSide, MotionData | null>> = {};
   for (const [key, value] of Object.entries(data.motions)) {
-    normalizedMotions[key as MotionColor] = value === undefined ? null : value;
+    normalizedMotions[key as HandSide] = value === undefined ? null : value;
   }
   return filterVisibleMotions(normalizedMotions);
 }

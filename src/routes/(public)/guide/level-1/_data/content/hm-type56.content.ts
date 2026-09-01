@@ -1,7 +1,13 @@
 import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  MotionType,
+  HandSide,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  GridMode,
+  GridLocation,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -17,15 +23,25 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
  */
 
 const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
-const OPP: Partial<Record<GridLocation, GridLocation>> = { [N]: SO_, [SO_]: N, [E]: W, [W]: E };
+const OPP: Partial<Record<GridLocation, GridLocation>> = {
+  [N]: SO_,
+  [SO_]: N,
+  [E]: W,
+  [W]: E,
+};
 
 // Motion type from the location pair: same → STATIC, opposite cardinals → DASH.
-const motion = (color: MotionColor, from: GridLocation, to: GridLocation) =>
+const motion = (color: HandSide, from: GridLocation, to: GridLocation) =>
   createMotionData({
-    motionType: from === to ? MotionType.STATIC : OPP[from] === to ? MotionType.DASH : MotionType.PRO,
+    motionType:
+      from === to
+        ? MotionType.STATIC
+        : OPP[from] === to
+          ? MotionType.DASH
+          : MotionType.PRO,
     startLocation: from,
     endLocation: to,
-    color,
+    hand: color,
     propType: PropType.HAND,
     gridMode: GridMode.DIAMOND,
   });
@@ -39,9 +55,14 @@ const gp = (a: GridLocation, b: GridLocation) => {
   }
 };
 
-// [blueFrom, blueTo, redFrom, redTo]
+// [leftFrom, leftTo, rightFrom, rightTo]
 type Move = [GridLocation, GridLocation, GridLocation, GridLocation];
-const box = (m: Move, step: number | null, id: string, letter: Letter | null = null): StepData =>
+const box = (
+  m: Move,
+  step: number | null,
+  id: string,
+  letter: Letter | null = null
+): StepData =>
   ({
     id,
     letter,
@@ -49,13 +70,13 @@ const box = (m: Move, step: number | null, id: string, letter: Letter | null = n
     startPosition: gp(m[0], m[2]),
     endPosition: gp(m[1], m[3]),
     motions: {
-      blue: motion(MotionColor.BLUE, m[0], m[1]),
-      red: motion(MotionColor.RED, m[2], m[3]),
+      left: motion(HandSide.LEFT, m[0], m[1]),
+      right: motion(HandSide.RIGHT, m[2], m[3]),
     },
     stepNumber: step,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
   }) as unknown as StepData;
 
@@ -147,7 +168,9 @@ const STRIPS: Strip[] = [
 // Flatten a strip into ordered pictographs. Type456Page's PICTO_FLAGS keep
 // showReversals off, so this is used directly - no bakeReversals needed.
 const stripSteps = (s: Strip): PictographData[] =>
-  s.cells.map((cell, i) => box(cell.m, cell.step, `seq-${i}`, cell.letter ?? null)) as unknown as PictographData[];
+  s.cells.map((cell, i) =>
+    box(cell.m, cell.step, `seq-${i}`, cell.letter ?? null)
+  ) as unknown as PictographData[];
 const stripByKey = (key: string): Strip => STRIPS.find((s) => s.key === key)!;
 
 const T4A = stripByKey("t56-4a");
@@ -182,7 +205,10 @@ export const hmType56Content: GuideBlock[] = [
     render: RENDER,
     caption: T4A.word,
   },
-  { kind: "prose", html: "And with gamma → gamma, it creates a 4-step sequence:" },
+  {
+    kind: "prose",
+    html: "And with gamma → gamma, it creates a 4-step sequence:",
+  },
   {
     kind: "pictographGroup",
     items: stripSteps(T4B),
@@ -197,8 +223,7 @@ export const hmType56Content: GuideBlock[] = [
   { kind: "heading", level: 2, text: "Type 5 - Dual-Dash" },
   {
     kind: "prose",
-    html:
-      'With a <span class="k-dual">Dual</span><span class="k-dash">-Dash</span>, both hands dash simultaneously to their opposite points.',
+    html: 'With a <span class="k-dual">Dual</span><span class="k-dash">-Dash</span>, both hands dash simultaneously to their opposite points.',
   },
   {
     kind: "pictographGroup",
@@ -242,8 +267,29 @@ export const hmType56Content: GuideBlock[] = [
     kind: "prose",
     html: 'Finally, <span class="k-static">Static</span> motions are indicated by no arrow:',
   },
-  { kind: "pictographGroup", items: stripSteps(T6A), flowCols: 2, render: RENDER, caption: T6A.word },
-  { kind: "pictographGroup", items: stripSteps(T6B), flowCols: 2, render: RENDER, caption: T6B.word },
-  { kind: "pictographGroup", items: stripSteps(T6C), flowCols: 2, render: RENDER, caption: T6C.word },
-  { kind: "prose", html: "Later on, static sequences gain complexity when adding prop rotations." },
+  {
+    kind: "pictographGroup",
+    items: stripSteps(T6A),
+    flowCols: 2,
+    render: RENDER,
+    caption: T6A.word,
+  },
+  {
+    kind: "pictographGroup",
+    items: stripSteps(T6B),
+    flowCols: 2,
+    render: RENDER,
+    caption: T6B.word,
+  },
+  {
+    kind: "pictographGroup",
+    items: stripSteps(T6C),
+    flowCols: 2,
+    render: RENDER,
+    caption: T6C.word,
+  },
+  {
+    kind: "prose",
+    html: "Later on, static sequences gain complexity when adding prop rotations.",
+  },
 ];

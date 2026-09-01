@@ -8,7 +8,7 @@
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -70,10 +70,10 @@ export function resolveMotionType(
 }
 
 export interface BuilderHydration {
-  readonly blueSteps: BuilderStep[];
-  readonly redSteps: BuilderStep[];
+  readonly leftSteps: BuilderStep[];
+  readonly rightSteps: BuilderStep[];
   readonly gridMode: GridMode;
-  readonly startPoses: Partial<Record<MotionColor, BuilderStartPose>>;
+  readonly startPoses: Partial<Record<HandSide, BuilderStartPose>>;
 }
 
 /** Recover the builder's editable motion fields without dropping sequence-only metadata. */
@@ -95,55 +95,55 @@ export function motionToBuilderStep(motion: MotionData): BuilderStep {
 export function sequenceToBuilderHydration(
   sequence: SequenceData
 ): BuilderHydration {
-  const blueSteps: BuilderStep[] = [];
-  const redSteps: BuilderStep[] = [];
+  const leftSteps: BuilderStep[] = [];
+  const rightSteps: BuilderStep[] = [];
 
   for (const step of sequence.steps) {
-    const blue = step.motions[MotionColor.BLUE];
-    const red = step.motions[MotionColor.RED];
-    if (isVisibleMotion(blue)) blueSteps.push(motionToBuilderStep(blue));
-    if (isVisibleMotion(red)) redSteps.push(motionToBuilderStep(red));
+    const left = step.motions[HandSide.LEFT];
+    const right = step.motions[HandSide.RIGHT];
+    if (isVisibleMotion(left)) leftSteps.push(motionToBuilderStep(left));
+    if (isVisibleMotion(right)) rightSteps.push(motionToBuilderStep(right));
   }
 
-  const startPoses: Partial<Record<MotionColor, BuilderStartPose>> = {};
+  const startPoses: Partial<Record<HandSide, BuilderStartPose>> = {};
   const start = sequence.startingPosition ?? sequence.startPosition;
-  const startBlue = start?.motions?.[MotionColor.BLUE];
-  const startRed = start?.motions?.[MotionColor.RED];
+  const startLeft = start?.motions?.[HandSide.LEFT];
+  const startRight = start?.motions?.[HandSide.RIGHT];
 
-  if (isVisibleMotion(startBlue)) {
-    startPoses[MotionColor.BLUE] = {
-      location: startBlue.startLocation,
-      orientation: startBlue.startOrientation,
+  if (isVisibleMotion(startLeft)) {
+    startPoses[HandSide.LEFT] = {
+      location: startLeft.startLocation,
+      orientation: startLeft.startOrientation,
     };
-  } else if (blueSteps[0]) {
-    startPoses[MotionColor.BLUE] = {
-      location: blueSteps[0].startPosition,
-      orientation: blueSteps[0].startOrientation,
+  } else if (leftSteps[0]) {
+    startPoses[HandSide.LEFT] = {
+      location: leftSteps[0].startPosition,
+      orientation: leftSteps[0].startOrientation,
     };
   }
 
-  if (isVisibleMotion(startRed)) {
-    startPoses[MotionColor.RED] = {
-      location: startRed.startLocation,
-      orientation: startRed.startOrientation,
+  if (isVisibleMotion(startRight)) {
+    startPoses[HandSide.RIGHT] = {
+      location: startRight.startLocation,
+      orientation: startRight.startOrientation,
     };
-  } else if (redSteps[0]) {
-    startPoses[MotionColor.RED] = {
-      location: redSteps[0].startPosition,
-      orientation: redSteps[0].startOrientation,
+  } else if (rightSteps[0]) {
+    startPoses[HandSide.RIGHT] = {
+      location: rightSteps[0].startPosition,
+      orientation: rightSteps[0].startOrientation,
     };
   }
 
   const firstVisibleMotion = sequence.steps
     .flatMap((step) => [
-      step.motions[MotionColor.BLUE],
-      step.motions[MotionColor.RED],
+      step.motions[HandSide.LEFT],
+      step.motions[HandSide.RIGHT],
     ])
     .find(isVisibleMotion);
 
   return {
-    blueSteps,
-    redSteps,
+    leftSteps,
+    rightSteps,
     gridMode:
       sequence.gridMode ??
       start?.gridMode ??
@@ -155,7 +155,7 @@ export function sequenceToBuilderHydration(
 
 export function stepToMotion(
   step: BuilderStep,
-  color: MotionColor,
+  color: HandSide,
   gridMode: GridMode
 ): MotionData {
   const motionType = resolveMotionType(step, gridMode);
@@ -169,7 +169,7 @@ export function stepToMotion(
   const resolvedTurns = motionType === MotionType.FLOAT ? "fl" : step.turnCount;
 
   const motion = createMotionData({
-    color,
+    hand: color,
     startLocation: step.startPosition,
     endLocation: step.endPosition,
     motionType,
@@ -194,26 +194,26 @@ export function stepToMotion(
 export function withCalculatedArrowLocations<T extends PictographData>(
   pictograph: T
 ): T {
-  const blue = pictograph.motions[MotionColor.BLUE];
-  const red = pictograph.motions[MotionColor.RED];
+  const left = pictograph.motions[HandSide.LEFT];
+  const right = pictograph.motions[HandSide.RIGHT];
 
   return {
     ...pictograph,
     motions: {
-      ...(blue && {
-        [MotionColor.BLUE]: {
-          ...blue,
+      ...(left && {
+        [HandSide.LEFT]: {
+          ...left,
           arrowLocation: arrowLocationCalculator.calculateLocation(
-            blue,
+            left,
             pictograph
           ),
         },
       }),
-      ...(red && {
-        [MotionColor.RED]: {
-          ...red,
+      ...(right && {
+        [HandSide.RIGHT]: {
+          ...right,
           arrowLocation: arrowLocationCalculator.calculateLocation(
-            red,
+            right,
             pictograph
           ),
         },
@@ -225,11 +225,11 @@ export function withCalculatedArrowLocations<T extends PictographData>(
 export function createStaticMotion(
   position: GridLocation,
   orientation: Orientation,
-  color: MotionColor,
+  color: HandSide,
   gridMode: GridMode
 ): MotionData {
   return createMotionData({
-    color,
+    hand: color,
     startLocation: position,
     endLocation: position,
     motionType: MotionType.STATIC,
@@ -244,28 +244,28 @@ export function createStaticMotion(
 }
 
 export function convertToPictographs(
-  blueSteps: BuilderStep[],
-  redSteps: BuilderStep[],
+  leftSteps: BuilderStep[],
+  rightSteps: BuilderStep[],
   gridMode: GridMode
 ): PictographData[] {
-  const totalSteps = Math.max(blueSteps.length, redSteps.length);
+  const totalSteps = Math.max(leftSteps.length, rightSteps.length);
   const result: PictographData[] = [];
 
   for (let i = 0; i < totalSteps; i++) {
-    const blueStep = blueSteps[i];
-    const redStep = redSteps[i];
+    const leftStep = leftSteps[i];
+    const rightStep = rightSteps[i];
 
     const motions: PictographData["motions"] = {};
-    if (blueStep)
-      motions[MotionColor.BLUE] = stepToMotion(
-        blueStep,
-        MotionColor.BLUE,
+    if (leftStep)
+      motions[HandSide.LEFT] = stepToMotion(
+        leftStep,
+        HandSide.LEFT,
         gridMode
       );
-    if (redStep)
-      motions[MotionColor.RED] = stepToMotion(
-        redStep,
-        MotionColor.RED,
+    if (rightStep)
+      motions[HandSide.RIGHT] = stepToMotion(
+        rightStep,
+        HandSide.RIGHT,
         gridMode
       );
 
@@ -282,46 +282,46 @@ export function convertToPictographs(
 }
 
 export function convertToStartPosition(
-  startPoses: Partial<Record<MotionColor, BuilderStartPose>>,
-  blueSteps: BuilderStep[],
-  redSteps: BuilderStep[],
+  startPoses: Partial<Record<HandSide, BuilderStartPose>>,
+  leftSteps: BuilderStep[],
+  rightSteps: BuilderStep[],
   gridMode: GridMode
 ): PictographData | null {
-  const firstBlue = blueSteps[0];
-  const firstRed = redSteps[0];
+  const firstLeft = leftSteps[0];
+  const firstRight = rightSteps[0];
 
-  const bluePose =
-    startPoses[MotionColor.BLUE] ??
-    (firstBlue
+  const leftPose =
+    startPoses[HandSide.LEFT] ??
+    (firstLeft
       ? {
-          location: firstBlue.startPosition,
-          orientation: firstBlue.startOrientation,
+          location: firstLeft.startPosition,
+          orientation: firstLeft.startOrientation,
         }
       : null);
-  const redPose =
-    startPoses[MotionColor.RED] ??
-    (firstRed
+  const rightPose =
+    startPoses[HandSide.RIGHT] ??
+    (firstRight
       ? {
-          location: firstRed.startPosition,
-          orientation: firstRed.startOrientation,
+          location: firstRight.startPosition,
+          orientation: firstRight.startOrientation,
         }
       : null);
 
-  if (!bluePose && !redPose) return null;
+  if (!leftPose && !rightPose) return null;
 
   const motions: PictographData["motions"] = {};
-  if (bluePose)
-    motions[MotionColor.BLUE] = createStaticMotion(
-      bluePose.location,
-      bluePose.orientation,
-      MotionColor.BLUE,
+  if (leftPose)
+    motions[HandSide.LEFT] = createStaticMotion(
+      leftPose.location,
+      leftPose.orientation,
+      HandSide.LEFT,
       gridMode
     );
-  if (redPose)
-    motions[MotionColor.RED] = createStaticMotion(
-      redPose.location,
-      redPose.orientation,
-      MotionColor.RED,
+  if (rightPose)
+    motions[HandSide.RIGHT] = createStaticMotion(
+      rightPose.location,
+      rightPose.orientation,
+      HandSide.RIGHT,
       gridMode
     );
 
@@ -333,13 +333,13 @@ export function convertToStartPosition(
 }
 
 export async function lookupLetter(
-  blueMotion: MotionData,
-  redMotion: MotionData,
+  leftMotion: MotionData,
+  rightMotion: MotionData,
   gridMode: GridMode
 ): Promise<Letter | null> {
   const letter = await motionQueryHandler.findLetterByMotionConfiguration(
-    blueMotion,
-    redMotion,
+    leftMotion,
+    rightMotion,
     gridMode
   );
   return (letter as Letter) ?? null;

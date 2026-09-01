@@ -70,12 +70,12 @@ function cellRasterSizePx(geo: SheetPageGeometry): number {
 // null when the sheet hides numbers, keeping full de-dup in that mode).
 function cellRasterKey(
   step: StepData,
-  blueProp: PropType,
-  redProp: PropType,
+  leftProp: PropType,
+  rightProp: PropType,
   bakedNumber: number | null
 ): string {
   const motions = step.motions ?? {};
-  const fingerprint = (m: (typeof motions)["blue"]): string =>
+  const fingerprint = (m: (typeof motions)["left"]): string =>
     m
       ? [
           m.motionType,
@@ -90,12 +90,12 @@ function cellRasterKey(
   return [
     step.letter ?? "none",
     step.gridMode ?? "",
-    fingerprint(motions.blue),
-    fingerprint(motions.red),
-    step.blueReversal ? "B" : "",
-    step.redReversal ? "R" : "",
-    blueProp,
-    redProp,
+    fingerprint(motions.left),
+    fingerprint(motions.right),
+    step.leftReversal ? "B" : "",
+    step.rightReversal ? "R" : "",
+    leftProp,
+    rightProp,
     bakedNumber ?? "",
   ].join("|");
 }
@@ -176,8 +176,8 @@ export async function buildChoreoSheetPDF(
 
   // Match the live preview's prop types — PictographContainer falls back to the
   // user's settings when no override is given, so the print uses the same.
-  const blueProp = propSettings.settings.bluePropType ?? PropType.STAFF;
-  const redProp = propSettings.settings.redPropType ?? PropType.STAFF;
+  const leftProp = propSettings.settings.leftPropType ?? PropType.STAFF;
+  const rightProp = propSettings.settings.rightPropType ?? PropType.STAFF;
 
   const renderer = new Canvas2DDirectRenderer();
   await renderer.initialize();
@@ -272,21 +272,21 @@ export async function buildChoreoSheetPDF(
         ? step.stepNumber
         : null;
 
-    const key = cellRasterKey(step, blueProp, redProp, bakedNumber);
+    const key = cellRasterKey(step, leftProp, rightProp, bakedNumber);
     let img = imageCache.get(key);
     if (!img) {
       const prepared = await pictographPreparer.prepareSingle(step, {
         themeMode: "light",
-        bluePropType: blueProp,
-        redPropType: redProp,
+        leftPropType: leftProp,
+        rightPropType: rightProp,
       });
       const canvas = await renderer.renderPictograph(prepared, {
         size: rasterPx,
         visibility: {
           ...SHEET_CELL_VISIBILITY,
           darkMode: false,
-          bluePropType: blueProp,
-          redPropType: redProp,
+          leftPropType: leftProp,
+          rightPropType: rightProp,
         },
       });
       if (bakedNumber !== null) {

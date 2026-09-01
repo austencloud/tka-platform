@@ -252,8 +252,8 @@ export {
   type MinimalLoopResult,
 } from "./reduction/minimal-loop-reducer.js";
 
-// Color-neutral, one-prop LOOP ownership. This is the canonical seam for
-// generators and pickers that must not invent a blue/red relationship.
+// Hand-neutral, one-prop LOOP ownership. This is the canonical seam for
+// generators and pickers that must not invent a left/right relationship.
 export {
   buildRewoundSoloLoop,
   buildRotatedSoloLoop,

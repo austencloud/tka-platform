@@ -38,7 +38,7 @@ import {
   clearPathShape,
   type PathShapeValue,
 } from "./step-operations/path-shape-handler";
-import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export class StepOperator {
   constructor(
@@ -151,7 +151,7 @@ export class StepOperator {
 
   setStepPathShape(
     stepNumber: number,
-    color: MotionColor,
+    color: HandSide,
     shape: PathShapeValue,
     createModuleState: ICreateModuleState
   ): void {
@@ -160,7 +160,7 @@ export class StepOperator {
 
   clearStepPathShape(
     stepNumber: number,
-    color: MotionColor,
+    color: HandSide,
     createModuleState: ICreateModuleState
   ): void {
     clearPathShape(stepNumber, color, createModuleState);

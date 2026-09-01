@@ -25,15 +25,21 @@
   import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
-  import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import {
+    createMotionData,
+    createPlaceholderMotion,
+  } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    GridLocation,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { HalfwayMotion } from "../_data/halfway-pose";
@@ -53,9 +59,9 @@
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
 
-  // Real single-staff motion data (red hand only) - drives every frame's
+  // Real single-staff motion data (right hand only) - drives every frame's
   // pictograph render AND the click-to-animate sequence.
-  const redStaff = (
+  const rightStaff = (
     id: string,
     type: MotionType,
     from: GridLocation,
@@ -69,7 +75,7 @@
     letter: null,
     gridMode: GridMode.DIAMOND,
     motions: {
-      red: createMotionData({
+      right: createMotionData({
         motionType: type,
         rotationDirection: rot,
         startLocation: from,
@@ -77,16 +83,18 @@
         startOrientation: startOri,
         endOrientation: endOri,
         turns,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
     },
   });
   const stat = (id: string, loc: GridLocation, ori: Orientation) =>
-    redStaff(id, MotionType.STATIC, loc, loc, ori, ori, NOROT);
+    rightStaff(id, MotionType.STATIC, loc, loc, ori, ori, NOROT);
   /** Motion → the HalfwayMotion shape poseAt/poseArrow (PoseFrame) expect. */
-  const toHM = (m: ReturnType<typeof redStaff>["motions"]["red"]): HalfwayMotion => ({
+  const toHM = (
+    m: ReturnType<typeof rightStaff>["motions"]["right"]
+  ): HalfwayMotion => ({
     type: m.motionType,
     from: m.startLocation,
     to: m.endLocation,
@@ -98,20 +106,20 @@
 
   type RowDef = {
     y: number;
-    start: ReturnType<typeof redStaff>;
-    end: ReturnType<typeof redStaff>;
-    combined: ReturnType<typeof redStaff>;
+    start: ReturnType<typeof rightStaff>;
+    end: ReturnType<typeof rightStaff>;
+    combined: ReturnType<typeof rightStaff>;
     animKey: string;
     word: string;
   };
-  const endOf = (combined: ReturnType<typeof redStaff>) => {
-    const m = combined.motions.red;
+  const endOf = (combined: ReturnType<typeof rightStaff>) => {
+    const m = combined.motions.right;
     return stat(`${combined.id}-end`, m.endLocation, m.endOrientation);
   };
   const rowDef = (opts: {
     y: number;
-    start: ReturnType<typeof redStaff>;
-    combined: ReturnType<typeof redStaff>;
+    start: ReturnType<typeof rightStaff>;
+    combined: ReturnType<typeof rightStaff>;
     animKey: string;
     word: string;
   }): RowDef => ({ ...opts, end: endOf(opts.combined) });
@@ -119,14 +127,23 @@
     rowDef({
       y: 300,
       start: stat("pro-start", E, IN),
-      combined: redStaff("pro-full", MotionType.PRO, E, SO_, IN, OUT, CW, 1),
+      combined: rightStaff("pro-full", MotionType.PRO, E, SO_, IN, OUT, CW, 1),
       animKey: "l2t-pro",
       word: "Prospin with a turn",
     }),
     rowDef({
       y: 560,
       start: stat("anti-start", E, IN),
-      combined: redStaff("anti-full", MotionType.ANTI, E, SO_, IN, IN, CCW, 1),
+      combined: rightStaff(
+        "anti-full",
+        MotionType.ANTI,
+        E,
+        SO_,
+        IN,
+        IN,
+        CCW,
+        1
+      ),
       animKey: "l2t-anti",
       word: "Antispin with a turn",
     }),
@@ -135,24 +152,34 @@
   // Reader click-to-animate (combined pictograph plays Start → motion). Also
   // doubles as the "full step" buildHalvedStep needs (both hands present -
   // blue is an invisible placeholder, per the both-required step contract).
-  const animStep = (data: ReturnType<typeof redStaff>, stepNumber: number): StepData =>
+  const animStep = (
+    data: ReturnType<typeof rightStaff>,
+    stepNumber: number
+  ): StepData =>
     ({
       ...data,
       id: `${data.id}-anim-${stepNumber}`,
       stepNumber,
       motions: {
-        blue: createPlaceholderMotion(MotionColor.BLUE, { location: E, orientation: IN }),
-        red: data.motions.red,
+        left: createPlaceholderMotion(HandSide.LEFT, {
+          location: E,
+          orientation: IN,
+        }),
+        right: data.motions.right,
       },
     }) as unknown as StepData;
   const rowSteps = (row: RowDef): StepData[] => {
-    const [start, ...steps] = [animStep(row.start, 0), animStep(row.combined, 1)];
+    const [start, ...steps] = [
+      animStep(row.start, 0),
+      animStep(row.combined, 1),
+    ];
     return [start!, ...bakeReversals(steps)];
   };
 
   // Halfway frame: a real pictograph at the midpoint. Precomputed once (this
   // page's data is static) rather than in the template.
-  const halvedOf = (row: RowDef) => buildHalvedStep(animStep(row.combined, 1), 0.5);
+  const halvedOf = (row: RowDef) =>
+    buildHalvedStep(animStep(row.combined, 1), 0.5);
 
   const PICTO_FLAGS = {
     // The halved anim step carries a stepNumber; these frames are lesson
@@ -186,27 +213,80 @@
   const HAIRLINE = 494;
 
   // Corner mandala forms (facelift, divider family).
-  const m = (mt: string, rd: string, sl: string, el: string, so: string, eo: string) =>
-    ({ motionType: mt, rotationDirection: rd, startLocation: sl, endLocation: el, startOrientation: so, endOrientation: eo });
-  const mstep = (blue: unknown, red: unknown) => ({ motions: { blue, red } });
-  const mseq = (steps: unknown[]) => ({ bluePropType: "staff", redPropType: "staff", steps });
+  const m = (
+    mt: string,
+    rd: string,
+    sl: string,
+    el: string,
+    so: string,
+    eo: string
+  ) => ({
+    motionType: mt,
+    rotationDirection: rd,
+    startLocation: sl,
+    endLocation: el,
+    startOrientation: so,
+    endOrientation: eo,
+  });
+  const mstep = (left, right) => ({ motions: { left, right } });
+  const mseq = (steps: unknown[]) => ({
+    leftPropType: "staff",
+    rightPropType: "staff",
+    steps,
+  });
   const ISO = mseq([
-    mstep(m("pro", "cw", "n", "e", "in", "in"), m("pro", "cw", "s", "w", "in", "in")),
-    mstep(m("pro", "cw", "e", "s", "in", "in"), m("pro", "cw", "w", "n", "in", "in")),
-    mstep(m("pro", "cw", "s", "w", "in", "in"), m("pro", "cw", "n", "e", "in", "in")),
-    mstep(m("pro", "cw", "w", "n", "in", "in"), m("pro", "cw", "e", "s", "in", "in")),
+    mstep(
+      m("pro", "cw", "n", "e", "in", "in"),
+      m("pro", "cw", "s", "w", "in", "in")
+    ),
+    mstep(
+      m("pro", "cw", "e", "s", "in", "in"),
+      m("pro", "cw", "w", "n", "in", "in")
+    ),
+    mstep(
+      m("pro", "cw", "s", "w", "in", "in"),
+      m("pro", "cw", "n", "e", "in", "in")
+    ),
+    mstep(
+      m("pro", "cw", "w", "n", "in", "in"),
+      m("pro", "cw", "e", "s", "in", "in")
+    ),
   ]);
   const ANTIM = mseq([
-    mstep(m("anti", "ccw", "n", "e", "in", "out"), m("anti", "ccw", "s", "w", "in", "out")),
-    mstep(m("anti", "ccw", "e", "s", "out", "in"), m("anti", "ccw", "w", "n", "out", "in")),
-    mstep(m("anti", "ccw", "s", "w", "in", "out"), m("anti", "ccw", "n", "e", "in", "out")),
-    mstep(m("anti", "ccw", "w", "n", "out", "in"), m("anti", "ccw", "e", "s", "out", "in")),
+    mstep(
+      m("anti", "ccw", "n", "e", "in", "out"),
+      m("anti", "ccw", "s", "w", "in", "out")
+    ),
+    mstep(
+      m("anti", "ccw", "e", "s", "out", "in"),
+      m("anti", "ccw", "w", "n", "out", "in")
+    ),
+    mstep(
+      m("anti", "ccw", "s", "w", "in", "out"),
+      m("anti", "ccw", "n", "e", "in", "out")
+    ),
+    mstep(
+      m("anti", "ccw", "w", "n", "out", "in"),
+      m("anti", "ccw", "e", "s", "out", "in")
+    ),
   ]);
 
   // ── Text (pt coords, proof wording verbatim) ────────────────────────────────
-  type Para = { x?: number; y: number; fs: number; lh: number; left?: boolean; html: string };
+  type Para = {
+    x?: number;
+    y: number;
+    fs: number;
+    lh: number;
+    left?: boolean;
+    html: string;
+  };
   const PARAS: Para[] = [
-    { y: 76, fs: 16, lh: 19, html: "A turn is a 180° rotation that occurs during a motion." },
+    {
+      y: 76,
+      fs: 16,
+      lh: 19,
+      html: "A turn is a 180° rotation that occurs during a motion.",
+    },
     { y: 122, fs: 16, lh: 19, html: "Let’s add a single turn to a shift." },
     {
       y: 168,
@@ -235,7 +315,13 @@
     },
   ];
 
-  type Run = { x: number; y: number; fs: number; style: "mode" | "frame" | "cap" | "vtg"; t: string };
+  type Run = {
+    x: number;
+    y: number;
+    fs: number;
+    style: "mode" | "frame" | "cap" | "vtg";
+    t: string;
+  };
   const RUNS: Run[] = [
     { x: 34, y: 118, fs: 26, style: "mode", t: "Shifts" },
     { x: 520, y: 118, fs: 20, style: "vtg", t: "VTG: 1:3" },
@@ -263,32 +349,95 @@
 
 <div class="turns-page">
   <!-- Header corner art (facelift mandalas) + heavy rule under the header. -->
-  <div class="corner" style="left:{40 * S}px; top:{18 * S}px; width:{62 * S}px; height:{62 * S}px">
-    <SequenceMandala sequence={ISO} size={62 * S} darkMode={false} bluePropType="staff" redPropType="staff" pathShape="arc" strokeWidth={2.5} />
+  <div
+    class="corner"
+    style="left:{40 * S}px; top:{18 * S}px; width:{62 * S}px; height:{62 * S}px"
+  >
+    <SequenceMandala
+      sequence={ISO}
+      size={62 * S}
+      darkMode={false}
+      leftPropType="staff"
+      rightPropType="staff"
+      pathShape="arc"
+      strokeWidth={2.5}
+    />
   </div>
-  <div class="corner" style="left:{510 * S}px; top:{18 * S}px; width:{62 * S}px; height:{62 * S}px">
-    <SequenceMandala sequence={ANTIM} size={62 * S} darkMode={false} bluePropType="staff" redPropType="staff" pathShape="arc" strokeWidth={2.5} />
+  <div
+    class="corner"
+    style="left:{510 * S}px; top:{18 * S}px; width:{62 * S}px; height:{62 *
+      S}px"
+  >
+    <SequenceMandala
+      sequence={ANTIM}
+      size={62 * S}
+      darkMode={false}
+      leftPropType="staff"
+      rightPropType="staff"
+      pathShape="arc"
+      strokeWidth={2.5}
+    />
   </div>
-  <div class="rule heavy" style="left:0; top:{HEAVY_RULE * S}px; width:{612 * S}px"></div>
-  <div class="rule hair" style="left:{20 * S}px; top:{HAIRLINE * S}px; width:{572 * S}px"></div>
+  <div
+    class="rule heavy"
+    style="left:0; top:{HEAVY_RULE * S}px; width:{612 * S}px"
+  ></div>
+  <div
+    class="rule hair"
+    style="left:{20 * S}px; top:{HAIRLINE * S}px; width:{572 * S}px"
+  ></div>
 
   {#each ROWS as row, ri (ri)}
     {@const halfPic = halvedOf(row)}
     <!-- start: real pose, no arrow -->
-    <div class="mini" style="left:{COLS[0]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={row.start} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} showArrow={false} {...PICTO_FLAGS} />
+    <div
+      class="mini"
+      style="left:{COLS[0]! * S}px; top:{row.y * S}px; width:{SIZE *
+        S}px; height:{SIZE * S}px"
+    >
+      <PictographContainer
+        pictographData={row.start}
+        gridMode={GridMode.DIAMOND}
+        rightPropTypeOverride={PropType.STAFF}
+        showArrow={false}
+        {...PICTO_FLAGS}
+      />
     </div>
     <!-- halfway: real pictograph via buildHalvedStep, PoseFrame fallback -->
-    <div class="mini" style="left:{COLS[1]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
+    <div
+      class="mini"
+      style="left:{COLS[1]! * S}px; top:{row.y * S}px; width:{SIZE *
+        S}px; height:{SIZE * S}px"
+    >
       {#if halfPic}
-        <PictographContainer pictographData={halfPic} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} bluePropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+        <PictographContainer
+          pictographData={halfPic}
+          gridMode={GridMode.DIAMOND}
+          rightPropTypeOverride={PropType.STAFF}
+          leftPropTypeOverride={PropType.STAFF}
+          {...PICTO_FLAGS}
+        />
       {:else}
-        <PoseFrame motion={toHM(row.combined.motions.red)} t={0.5} arrow={{ tStart: 0, tEnd: 0.5 }} />
+        <PoseFrame
+          motion={toHM(row.combined.motions.right)}
+          t={0.5}
+          arrow={{ tStart: 0, tEnd: 0.5 }}
+        />
       {/if}
     </div>
     <!-- end: real pose, no arrow -->
-    <div class="mini" style="left:{COLS[2]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={row.end} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} showArrow={false} {...PICTO_FLAGS} />
+    <div
+      class="mini"
+      style="left:{COLS[2]! * S}px; top:{row.y * S}px; width:{SIZE *
+        S}px; height:{SIZE * S}px"
+    >
+      <PictographContainer
+        pictographData={row.end}
+        gridMode={GridMode.DIAMOND}
+        rightPropTypeOverride={PropType.STAFF}
+        showArrow={false}
+        {...PICTO_FLAGS}
+      />
     </div>
     <!-- combined: real full-motion pictograph, click-to-animate -->
     <div
@@ -296,20 +445,30 @@
       class:is-hovered={selection?.isHovered(row.animKey)}
       class:is-selected={selection?.isSelected(row.animKey)}
       class:guide-step-active={activeStep?.key === row.animKey}
-      style="left:{COLS[3]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px"
+      style="left:{COLS[3]! * S}px; top:{row.y * S}px; width:{SIZE *
+        S}px; height:{SIZE * S}px"
     >
       <PictographContainer
-        pictographData={{ ...animStep(row.combined, 1), stepNumber: undefined } as unknown as StepData}
+        pictographData={{
+          ...animStep(row.combined, 1),
+          stepNumber: undefined,
+        } as unknown as StepData}
         gridMode={GridMode.DIAMOND}
-        redPropTypeOverride={PropType.STAFF}
-        bluePropTypeOverride={PropType.STAFF}
+        rightPropTypeOverride={PropType.STAFF}
+        leftPropTypeOverride={PropType.STAFF}
         {...PICTO_FLAGS}
       />
       <SelectionHit
         groupId={row.animKey}
         isGroupStart
         label={`Animate: ${row.word}`}
-        onselect={() => emitSequence?.({ strip: rowSteps(row), word: row.word, key: row.animKey, propType: "staff" })}
+        onselect={() =>
+          emitSequence?.({
+            strip: rowSteps(row),
+            word: row.word,
+            key: row.animKey,
+            propType: "staff",
+          })}
       />
     </div>
   {/each}
@@ -317,12 +476,23 @@
   {#each FLOW_ARROWS as a (a.x + "-" + a.y)}
     <svg
       class="flow-arrow"
-      style="left:{a.x * S}px; top:{(a.y - 5) * S}px; width:{ARROW_W * S}px; height:{10 * S}px"
+      style="left:{a.x * S}px; top:{(a.y - 5) * S}px; width:{ARROW_W *
+        S}px; height:{10 * S}px"
       viewBox="0 0 {ARROW_W} 10"
       aria-hidden="true"
     >
-      <line x1="0" y1="5" x2={ARROW_W - 7} y2="5" stroke="#141414" stroke-width="2" />
-      <polygon points="{ARROW_W - 8},1.3 {ARROW_W},5 {ARROW_W - 8},8.7" fill="#141414" />
+      <line
+        x1="0"
+        y1="5"
+        x2={ARROW_W - 7}
+        y2="5"
+        stroke="#141414"
+        stroke-width="2"
+      />
+      <polygon
+        points="{ARROW_W - 8},1.3 {ARROW_W},5 {ARROW_W - 8},8.7"
+        fill="#141414"
+      />
     </svg>
   {/each}
   {#each EQUALS as eq, i (i)}
@@ -330,10 +500,19 @@
   {/each}
 
   {#each PARAS as p, i (i)}
-    <p class="para" style="top:{p.y * S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px">{@html p.html}</p>
+    <p
+      class="para"
+      style="top:{p.y * S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px"
+    >
+      {@html p.html}
+    </p>
   {/each}
   {#each RUNS as r, i (i)}
-    <span class="run {r.style}" style="left:{r.x * S}px; top:{r.y * S}px; font-size:{r.fs * S}px">{r.t}</span>
+    <span
+      class="run {r.style}"
+      style="left:{r.x * S}px; top:{r.y * S}px; font-size:{r.fs * S}px"
+      >{r.t}</span
+    >
   {/each}
 </div>
 

@@ -30,7 +30,7 @@ even when Svelte recreates the component instance.
   import {
     Orientation,
     RotationDirection,
-    MotionColor,
+    HandSide,
   } from "../../../shared/domain/enums/pictograph-enums";
   import type {
     ArrowAssets,
@@ -69,7 +69,7 @@ even when Svelte recreates the component instance.
     arrowPosition: ArrowPosition;
     shouldMirror?: boolean;
     showArrow?: boolean;
-    color: string;
+    color: HandSide;
     pictographData?: PictographData | null;
     isClickable?: boolean;
     /** Cell index for position caching (enables smooth transitions on regeneration) */
@@ -138,18 +138,20 @@ even when Svelte recreates the component instance.
   });
 
   // Get motion colors from centralized cache
-  const BLUE_COLOR = $derived(cachedColors.blue);
-  const RED_COLOR = $derived(cachedColors.red);
+  const BLUE_COLOR = $derived(cachedColors.left);
+  const RED_COLOR = $derived(cachedColors.right);
 
   // Motion colors map
   const MOTION_COLORS = $derived({
-    [MotionColor.BLUE]: BLUE_COLOR,
-    [MotionColor.RED]: RED_COLOR,
+    [HandSide.LEFT]: BLUE_COLOR,
+    [HandSide.RIGHT]: RED_COLOR,
   });
 
   // Get the glow color based on motion color
   const glowColor = $derived(
-    MOTION_COLORS[motionData.color as "blue" | "red"] ?? MOTION_COLORS["blue"]
+    motionData.hand === HandSide.RIGHT
+      ? MOTION_COLORS[HandSide.RIGHT]
+      : MOTION_COLORS[HandSide.LEFT]
   );
 
   // Background-matching halo that separates the arrow from a same-color prop
@@ -493,7 +495,7 @@ even when Svelte recreates the component instance.
        regular assets keep the classic scale(-1,1). -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <g
-    class="arrow-svg {motionData.color}-arrow-svg"
+    class="arrow-svg {motionData.hand}-arrow-svg"
     class:mirrored={shouldMirror}
     class:clickable={isClickable}
     class:selected={isSelected}

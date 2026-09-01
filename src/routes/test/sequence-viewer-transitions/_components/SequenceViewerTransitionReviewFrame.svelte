@@ -7,6 +7,8 @@
   import { registerLibraryRepository } from "$lib/shared/composition-root/register-library-repository";
   import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
   import { registerLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
+  import { createCollaborativeVideo } from "$lib/shared/video-collaboration/domain/collaborative-video";
+  import { getSequenceVideosStore } from "$lib/shared/video-collaboration/state/sequence-videos-store.svelte";
   import SequenceViewerOrchestrator from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
   import SequenceViewerShell from "$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte";
   import {
@@ -28,8 +30,19 @@
 
   type ReplayCommand = TransitionTraceCommand;
   type ReviewModeLabel =
-    "Side by Side" | "2D Animation" | "3D Animation" | "Card" | "Tunnel";
-  type ReviewMode = "split" | "animation" | "animation-3d" | "card" | "tunnel";
+    | "Side by Side"
+    | "2D Animation"
+    | "3D Animation"
+    | "Card"
+    | "Tunnel"
+    | "Performances";
+  type ReviewMode =
+    | "split"
+    | "animation"
+    | "animation-3d"
+    | "card"
+    | "tunnel"
+    | "videos";
 
   interface ReplayMessage {
     source: "sequence-viewer-transition-review";
@@ -49,6 +62,26 @@
     registerLibraryRepository();
     registerLoopDetector(loopDetector);
     registerLoopDisplayResolver(resolveLoopDisplay);
+    getSequenceVideosStore(TRANSITION_REVIEW_SEQUENCE.id).add(
+      createCollaborativeVideo(
+        {
+          id: "transition-review-performance",
+          videoUrl: "/transition-review-performance.mp4",
+          storagePath: "transition-review/performance.mp4",
+          duration: 48,
+          fileSize: 7_800_000,
+          mimeType: "video/mp4",
+          thumbnailUrl: "/images/austen-fire.webp",
+          sequenceId: TRANSITION_REVIEW_SEQUENCE.id,
+          sequenceName: TRANSITION_REVIEW_SEQUENCE.word,
+          creatorId: "transition-review-performer",
+          visibility: "public",
+          description:
+            "Fire performance footage staged for the workspace handoff review.",
+        },
+        "Austen"
+      )
+    );
   }
 
   let isMobile = $state(browser && window.innerWidth < 768);
@@ -130,9 +163,14 @@
   }
 
   function elementOpacity(selector: string): number {
-    const element = document.querySelector<HTMLElement>(selector);
+    let element = document.querySelector<HTMLElement>(selector);
     if (!element) return 0;
-    return Number.parseFloat(getComputedStyle(element).opacity) || 0;
+    let opacity = 1;
+    while (element) {
+      opacity *= Number.parseFloat(getComputedStyle(element).opacity) || 0;
+      element = element.parentElement;
+    }
+    return opacity;
   }
 
   function elementBounds(selector: string): {
@@ -208,6 +246,7 @@
       "3D Animation": "animation-3d",
       Card: "card",
       Tunnel: "tunnel",
+      Performances: "videos",
     } as const;
     for (const button of document.querySelectorAll<HTMLButtonElement>(
       "button[aria-label]"
@@ -228,6 +267,7 @@
     if (label === "2D Animation") return "animation";
     if (label === "3D Animation") return "animation-3d";
     if (label === "Tunnel") return "tunnel";
+    if (label === "Performances") return "videos";
     return "card";
   }
 
@@ -258,8 +298,42 @@
     ) {
       if (performance.now() - startedAt > 20_000) {
         throw new Error(
-          `${surface.toUpperCase()} did not present a ready frame.`
+          `${surface.toUpperCase()} did not present within the motion gate.`
         );
+      }
+      await wait(16);
+    }
+    return version === replayVersion;
+  }
+
+  async function waitFor3DReady(version: number): Promise<boolean> {
+    const startedAt = performance.now();
+    while (
+      version === replayVersion &&
+      !document.querySelector<HTMLElement>(
+        '[data-motion-surface="3d"][data-scene-ready="true"]'
+      )
+    ) {
+      if (performance.now() - startedAt > 20_000) {
+        throw new Error(
+          "3D did not produce a ready frame within the motion gate."
+        );
+      }
+      await wait(16);
+    }
+    return version === replayVersion;
+  }
+
+  async function waitForPerformanceGallery(version: number): Promise<boolean> {
+    const startedAt = performance.now();
+    while (
+      version === replayVersion &&
+      !document.querySelector<HTMLElement>(
+        '[data-performance-stage][data-performance-ready="true"]'
+      )
+    ) {
+      if (performance.now() - startedAt > DURATION.dramatic * 3) {
+        throw new Error("Performances did not present a ready stage.");
       }
       await wait(16);
     }
@@ -303,14 +377,17 @@
         ? "vertical"
         : "horizontal";
     const outerPanelGroup = document.querySelector<HTMLElement>(
-      ".viewer-and-export > .panel-group"
+      ".viewer-motion-stage-layer .panel-group"
     );
+    const inspectorPanelSelector =
+      '[data-panel-id="export-inspector"], [data-panel-id="export-inspector-stacked"]';
 
     const cardPanel = elementBounds(".preview-column");
+    const inspectorPanel = elementBounds(inspectorPanelSelector);
     const cardRoot = elementBounds(".preview-column .choreo-card-root");
     const cardContent = elementBounds(".preview-column .preview-stack");
     const cardSettings = elementBounds(
-      ".export-panel:not(.inline) .panel-center-inner"
+      '[aria-label="Card settings"] .panel-center-inner'
     );
     const mandalaCanvas = document.querySelector<HTMLCanvasElement>(
       '.animation-column canvas[data-animation-layer="mandala"]'
@@ -325,6 +402,17 @@
       : 0;
     const activeTunnelSurface = tunnelSurface();
     const activeTunnelCanvas = tunnelCanvas();
+    const stageLayer = elementBounds(".viewer-motion-content-layer");
+    const performanceLayer = elementBounds(".performance-stage-layer");
+    const performanceWorkspace = document.querySelector<HTMLElement>(
+      ".performance-inspector-layer .performance-list-items"
+    );
+    const performanceLayoutColumns = performanceWorkspace
+      ? getComputedStyle(performanceWorkspace)
+          .gridTemplateColumns.trim()
+          .split(/\s+/)
+          .filter(Boolean).length
+      : 0;
     const persistentAnimator = document.querySelector<HTMLElement>(
       "[data-persistent-animator]"
     );
@@ -335,12 +423,22 @@
       activeTunnelCanvas.width > 0 &&
       activeTunnelCanvas.height > 0
     );
+    const selectedMode = selectedViewerMode();
+    const motion3DSurface = document.querySelector<HTMLElement>(
+      '[data-motion-surface="3d"]'
+    );
+    const scenePreparation = document.querySelector<HTMLElement>(
+      '[data-motion-surface="3d"][data-presented="true"] [data-scene-preparation]'
+    );
+    const scenePreparationProgress =
+      scenePreparation?.dataset.scenePreparationProgress;
+    const motion3DReady = motion3DSurface?.dataset.sceneReady === "true";
     const sample: TransitionGeometrySample = {
       time: Math.round((performance.now() - traceStartedAt) * 10) / 10,
       phase: tracePhase,
       direction,
       focusedPane: splitView?.dataset.focused || null,
-      selectedMode: selectedViewerMode(),
+      selectedMode,
       outerDirection: outerPanelGroup?.classList.contains("vertical")
         ? "vertical"
         : "horizontal",
@@ -360,6 +458,13 @@
       mandalaDisplaySize,
       mandalaRasterScale:
         mandalaBackingSize > 0 ? mandalaDisplaySize / mandalaBackingSize : 0,
+      mandalaDisplayWidth: mandalaBounds?.width ?? 0,
+      mandalaDisplayHeight: mandalaBounds?.height ?? 0,
+      mandalaMaximumRasterScale:
+        mandalaBackingSize > 0 && mandalaBounds
+          ? Math.max(mandalaBounds.width, mandalaBounds.height) /
+            mandalaBackingSize
+          : 0,
       cardSize: elementSize('[data-panel-id="preview"]', direction),
       cardFlexGrow: elementFlexGrow('[data-panel-id="preview"]'),
       cardHidden: elementDataFlag(".split-column.preview-column", "hidden"),
@@ -398,19 +503,24 @@
         ".preview-column .choreo-card-root",
         "autoLayoutLockRows"
       ),
-      inspectorSize: elementSize(
-        '[data-panel-id="export-inspector"]',
-        direction
-      ),
-      inspectorFlexGrow: elementFlexGrow('[data-panel-id="export-inspector"]'),
-      inspectorIdentity: elementIdentity('[data-panel-id="export-inspector"]'),
+      inspectorSize: elementSize(inspectorPanelSelector, direction),
+      inspectorFlexGrow: elementFlexGrow(inspectorPanelSelector),
+      inspectorIdentity: elementIdentity(inspectorPanelSelector),
+      effectsInspectorOpacity: elementOpacity("[data-effects-inspector]"),
+      cardEffectsSeamGap:
+        cardPanel.width > 0 && inspectorPanel.width > 0
+          ? direction === "horizontal"
+            ? Math.abs(cardPanel.left + cardPanel.width - inspectorPanel.left)
+            : Math.abs(cardPanel.top + cardPanel.height - inspectorPanel.top)
+          : 0,
       desktopInspectorExpected: Boolean(
         document.querySelector(".viewer-and-export.desktop")
       ),
       cardSettingsWidth: cardSettings.width,
       cardSettingsHeight: cardSettings.height,
       cardSettingsCenterY: cardSettings.top + cardSettings.height / 2,
-      cardSettingsOpacity: elementOpacity(".export-panel:not(.inline)"),
+      cardSettingsOpacity: elementOpacity(".card-settings-layer"),
+      cardIdentity: elementIdentity(".preview-column .choreo-card-root"),
       dissolveActive: document.documentElement.classList.contains(
         VIEWER_MODE_DISSOLVE_CLASS
       ),
@@ -426,18 +536,18 @@
         '[data-motion-surface="3d"]',
         "presented"
       ),
-      motion3DReady: elementDataFlag(
-        '[data-motion-surface="3d"]',
-        "sceneReady"
+      motion3DReady,
+      motion3DPreparing: selectedMode === "animation-3d" && !motion3DReady,
+      motion2DPreparationHeld: Boolean(
+        document.querySelector('[data-3d-preparation-held="true"]')
       ),
-      motion3DPreparing: Boolean(
-        document.querySelector(".viewer-3d-handoff-status")
-      ),
-      sceneCurtainVisible: Boolean(
-        document.querySelector(
-          '[data-motion-surface="3d"][data-presented="true"] .curtain'
-        )
-      ),
+      sceneCurtainVisible: Boolean(scenePreparation),
+      scenePreparationProgress:
+        scenePreparationProgress && scenePreparationProgress !== "indeterminate"
+          ? Number(scenePreparationProgress)
+          : null,
+      scenePreparationLabel:
+        scenePreparation?.dataset.scenePreparationLabel ?? null,
       tunnelOpacity: tunnelBlend,
       tunnelPresented: Boolean(activeTunnelSurface) || tunnelBlend > 0,
       tunnelCanvasReady,
@@ -448,6 +558,7 @@
       activeArtSettingsCount: document.querySelectorAll(
         '[data-viewer-art-inspector-target] [data-active="true"][data-art-settings]'
       ).length,
+      artSettingsOpacity: elementOpacity(".art-settings-layer"),
       tunnelBackingWidth: activeTunnelCanvas
         ? activeTunnelCanvas.width / Math.max(1, window.devicePixelRatio || 1)
         : 0,
@@ -456,6 +567,28 @@
         : 0,
       tunnelDisplayWidth: tunnelBounds?.width ?? 0,
       tunnelDisplayHeight: tunnelBounds?.height ?? 0,
+      stageLayerOpacity: elementOpacity(".viewer-motion-content-layer"),
+      performanceLayerOpacity: elementOpacity(".performance-stage-layer"),
+      stageLayerIdentity: elementIdentity("[data-persistent-viewer-stage]"),
+      performanceLayerIdentity: elementIdentity(".performance-stage-layer"),
+      stageLayerActive: elementDataFlag(
+        ".viewer-motion-content-layer",
+        "active"
+      ),
+      performanceLayerActive: elementDataFlag(
+        ".performance-stage-layer",
+        "active"
+      ),
+      performanceGalleryReady:
+        document
+          .querySelector("[data-performance-stage]")
+          ?.getAttribute("data-performance-ready") === "true",
+      performanceLayoutColumns,
+      performancePlayerCount: document.querySelectorAll(
+        ".performance-stage-layer video.performance-player"
+      ).length,
+      stageLayerWidth: stageLayer.width,
+      performanceLayerWidth: performanceLayer.width,
     };
     activeTrace.samples.push(sample);
     traceFrame = requestAnimationFrame(captureGeometrySample);
@@ -542,7 +675,29 @@
     report("running", command);
 
     try {
-      if (command === "2d" || command === "card" || command === "interrupt") {
+      if (command.startsWith("performances-")) {
+        const openingMode =
+          command === "performances-3d" ? "3D Animation" : "2D Animation";
+        if (
+          !(await chooseMode(
+            openingMode,
+            version,
+            command !== "performances-3d"
+          ))
+        )
+          return;
+        if (command === "performances-3d") {
+          if (!(await waitForMotionPresentation("3d", version))) return;
+          if (!(await waitFor3DReady(version))) return;
+          await wait(motionDuration(DURATION.emphasis) + 90);
+        }
+      } else if (command.startsWith("card-")) {
+        if (!(await chooseMode("Card", version))) return;
+      } else if (
+        command === "2d" ||
+        command === "card" ||
+        command === "interrupt"
+      ) {
         if (!(await chooseMode("Side by Side", version))) return;
       } else if (!(await chooseMode("2D Animation", version))) {
         return;
@@ -571,6 +726,7 @@
         beginGeometryTrace(command, "prepare-3d");
         if (!(await chooseMode("3D Animation", version, false))) return;
         if (!(await waitForMotionPresentation("3d", version))) return;
+        if (!(await waitFor3DReady(version))) return;
         setTracePhase("show-3d");
         await wait(DURATION.emphasis + 90);
         setTracePhase("return-2d");
@@ -578,12 +734,14 @@
       } else if (command === "3d-repeat") {
         if (!(await chooseMode("3D Animation", version, false))) return;
         if (!(await waitForMotionPresentation("3d", version))) return;
+        if (!(await waitFor3DReady(version))) return;
         await wait(DURATION.emphasis + 90);
         if (!(await chooseMode("2D Animation", version))) return;
 
         beginGeometryTrace(command, "repeat-3d");
         if (!(await chooseMode("3D Animation", version, false))) return;
         if (!(await waitForMotionPresentation("3d", version))) return;
+        if (!(await waitFor3DReady(version))) return;
         await wait(DURATION.emphasis + 90);
         setTracePhase("return-2d");
         if (!(await chooseMode("2D Animation", version))) return;
@@ -609,6 +767,7 @@
       } else if (command === "tunnel-3d") {
         if (!(await chooseMode("3D Animation", version, false))) return;
         if (!(await waitForMotionPresentation("3d", version))) return;
+        if (!(await waitFor3DReady(version))) return;
         await wait(motionDuration(DURATION.emphasis) + 90);
 
         beginGeometryTrace(command, "prepare-tunnel-from-3d");
@@ -619,7 +778,64 @@
         setTracePhase("return-3d");
         if (!(await chooseMode("3D Animation", version, false))) return;
         if (!(await waitForMotionPresentation("3d", version))) return;
+        if (!(await waitFor3DReady(version))) return;
         await wait(motionDuration(DURATION.emphasis) + 90);
+      } else if (command === "card-2d") {
+        beginGeometryTrace(command, "card-to-stage");
+        if (!(await chooseMode("2D Animation", version))) return;
+        setTracePhase("stage-to-card");
+        if (!(await chooseMode("Card", version))) return;
+      } else if (command === "card-3d") {
+        beginGeometryTrace(command, "card-to-stage");
+        if (!(await chooseMode("3D Animation", version, false))) return;
+        if (!(await waitForMotionPresentation("3d", version))) return;
+        if (!(await waitFor3DReady(version))) return;
+        await wait(motionDuration(DURATION.emphasis) + 90);
+        setTracePhase("stage-to-card");
+        if (!(await chooseMode("Card", version))) return;
+      } else if (command === "card-tunnel") {
+        beginGeometryTrace(command, "card-to-stage");
+        if (!(await chooseMode("Tunnel", version, false))) return;
+        if (!(await waitForTunnelPresentation(version))) return;
+        await wait(motionDuration(DURATION.emphasis) + 90);
+        setTracePhase("stage-to-card");
+        if (!(await chooseMode("Card", version))) return;
+      } else if (command === "card-stage-interrupt") {
+        beginGeometryTrace(command, "card-stage-interrupt");
+        if (!(await chooseMode("2D Animation", version, false))) return;
+        await wait(motionDuration(DURATION.instant));
+        if (!(await chooseMode("Card", version, false))) return;
+        if (!(await chooseMode("Tunnel", version, false))) return;
+        await wait(motionDuration(DURATION.instant));
+        if (!(await chooseMode("Card", version))) return;
+      } else if (command === "performances-2d") {
+        beginGeometryTrace(command, "stage-to-performances");
+        if (!(await chooseMode("Performances", version, false))) return;
+        if (!(await waitForPerformanceGallery(version))) return;
+        await wait(motionDuration(DURATION.emphasis) + 90);
+        setTracePhase("performances-to-stage");
+        if (!(await chooseMode("2D Animation", version))) return;
+      } else if (command === "performances-3d") {
+        beginGeometryTrace(command, "stage-to-performances");
+        if (!(await chooseMode("Performances", version, false))) return;
+        if (!(await waitForPerformanceGallery(version))) return;
+        await wait(motionDuration(DURATION.emphasis) + 90);
+        setTracePhase("performances-to-stage");
+        if (!(await chooseMode("3D Animation", version, false))) return;
+        if (!(await waitForMotionPresentation("3d", version))) return;
+        if (!(await waitFor3DReady(version))) return;
+        await wait(motionDuration(DURATION.emphasis) + 90);
+      } else if (command === "performances-interrupt") {
+        beginGeometryTrace(command, "interrupt-performances");
+        if (!(await chooseMode("Performances", version, false))) return;
+        await wait(motionDuration(DURATION.instant));
+        setTracePhase("interrupt-performance-stage");
+        if (!(await chooseMode("2D Animation", version, false))) return;
+        setTracePhase("interrupt-performances");
+        if (!(await chooseMode("Performances", version, false))) return;
+        await wait(motionDuration(DURATION.instant));
+        setTracePhase("interrupt-performance-stage");
+        if (!(await chooseMode("2D Animation", version))) return;
       } else {
         beginGeometryTrace(command, "interrupt-tunnel");
         if (!(await chooseMode("Tunnel", version, false))) return;
@@ -665,7 +881,14 @@
           message.command === "3d-interrupt" ||
           message.command === "tunnel-first" ||
           message.command === "tunnel-3d" ||
-          message.command === "tunnel-interrupt")) ||
+          message.command === "tunnel-interrupt" ||
+          message.command === "card-2d" ||
+          message.command === "card-3d" ||
+          message.command === "card-tunnel" ||
+          message.command === "card-stage-interrupt" ||
+          message.command === "performances-2d" ||
+          message.command === "performances-3d" ||
+          message.command === "performances-interrupt")) ||
         (message.action === "motion" &&
           (message.preference === "full" || message.preference === "reduce")))
     );
@@ -726,6 +949,7 @@
       <SequenceViewerShell
         {ctx}
         sequence={TRANSITION_REVIEW_SEQUENCE}
+        analyticsSource="external_link"
         {isMobile}
         onClose={() => {}}
         startInSplit

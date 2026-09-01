@@ -6,7 +6,9 @@ import {
 	loadViewerMode,
 	loadSplitConfig,
 	persistViewerMode,
-	persistSplitConfig
+	persistSplitConfig,
+	isValidViewerMode,
+	isValidSplitConfig
 } from '../services/viewer-state-persistence';
 import { coerce3DContent, coerce3DSplit } from '../services/viewer-modes';
 import { viewportFits3D } from '$lib/shared/3d/capabilities/viewport-3d-gate.svelte';
@@ -19,17 +21,39 @@ function deriveInitialExportContext(mode: ViewerMode): ExportContext {
 	return null;
 }
 
-export function createViewerState() {
-	const initialMode = loadViewerMode();
+export interface ViewerStateOptions {
+	/** Seed for the initial mode (a URL's `vm`). Beats localStorage. */
+	initialMode?: ViewerMode;
+	/** Seed for the initial split layout (a URL's `split`). Beats localStorage. */
+	initialSplit?: SplitConfig;
+	/**
+	 * `false` = view-only mount: this state never writes to localStorage. Used
+	 * when the URL carries someone else's view state, so looking at their link
+	 * never overwrites the visitor's own remembered preferences.
+	 */
+	persist?: boolean;
+}
+
+export function createViewerState(options?: ViewerStateOptions) {
+	const persist = options?.persist ?? true;
+
+	// A seeded mode bypasses `loadViewerMode`'s post-studio/mandala filtering ON
+	// PURPOSE: that filter guards against stale localStorage, and a URL is
+	// explicit intent. Garbage (`?vm=lol`) still fails the type guard and falls
+	// back to the stored preference.
+	const seededMode = isValidViewerMode(options?.initialMode) ? options.initialMode : undefined;
+	const initialMode = seededMode ?? loadViewerMode({ persist });
+	const seededSplit = isValidSplitConfig(options?.initialSplit) ? options.initialSplit : undefined;
+
 	let viewerMode = $state<ViewerMode>(initialMode);
 	let exportContext = $state<ExportContext>(deriveInitialExportContext(initialMode));
-	let splitConfig = $state<SplitConfig>(loadSplitConfig());
+	let splitConfig = $state<SplitConfig>(seededSplit ?? loadSplitConfig({ persist }));
 	let videoUploadOpen = $state(false);
 
 	function setViewerMode(mode: ViewerMode) {
 		viewerMode = mode;
 		videoUploadOpen = false;
-		persistViewerMode(mode);
+		if (persist) persistViewerMode(mode);
 	}
 
 	function setExportContext(ctx: ExportContext) {
@@ -42,12 +66,12 @@ export function createViewerState() {
 		} else {
 			splitConfig = { ...splitConfig, rightPane: content };
 		}
-		persistSplitConfig(splitConfig);
+		if (persist) persistSplitConfig(splitConfig);
 	}
 
 	function setSplitConfig(config: SplitConfig) {
 		splitConfig = { ...config };
-		persistSplitConfig(splitConfig);
+		if (persist) persistSplitConfig(splitConfig);
 	}
 
 	function enterExport(type: 'animation-export' | 'image-export', contentType?: 'animation' | 'animation-3d') {
@@ -58,7 +82,7 @@ export function createViewerState() {
 			viewerMode = 'card';
 		}
 		exportContext = type;
-		persistViewerMode(viewerMode);
+		if (persist) persistViewerMode(viewerMode);
 	}
 
 	function exitExport() {
@@ -71,7 +95,7 @@ export function createViewerState() {
 		viewerMode = 'videos';
 		exportContext = null;
 		videoUploadOpen = true;
-		persistViewerMode(viewerMode);
+		if (persist) persistViewerMode(viewerMode);
 	}
 
 	function closeVideoUpload() {

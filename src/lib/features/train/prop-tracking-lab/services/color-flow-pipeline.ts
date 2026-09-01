@@ -52,20 +52,20 @@ export function trackStaffPoses(
 /** Full color-flow notation: track both staves, then run the TKA brain. */
 export function notateColorFlow(
   frames: ImageData[],
-  blueColor: ColorTarget,
-  redColor: ColorTarget,
+  leftColor: ColorTarget,
+  rightColor: ColorTarget,
   cal: ScreenToGrid,
 ): BeatNotation[] {
-  const blue = trackStaffPoses(frames, blueColor, cal);
-  const red = trackStaffPoses(frames, redColor, cal);
+  const left = trackStaffPoses(frames, leftColor, cal);
+  const right = trackStaffPoses(frames, rightColor, cal);
   return framesToNotation(
-    blue.poses,
-    red.poses,
-    blue.confidence,
-    red.confidence,
+    left.poses,
+    right.poses,
+    left.confidence,
+    right.confidence,
     undefined,
     undefined,
-    blue.detail,
-    red.detail,
+    left.detail,
+    right.detail,
   );
 }

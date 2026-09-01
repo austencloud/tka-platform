@@ -100,11 +100,11 @@ describe("sticker-lab state", () => {
     const state = createState(mockRepo());
     state.addPrimitive(refA);
     const id = state.sheet.stickers[0]!.id;
-    state.setVariant(id, "blue");
+    state.setVariant(id, "left");
     state.setBackground(id, "radial-gradient");
     state.setSheetSize("13x19");
     expect(state.sheet.stickers[0]).toMatchObject({
-      variant: "blue",
+      variant: "left",
       background: "radial-gradient",
     });
     expect(state.sheet.sheetSize).toBe("13x19");
@@ -143,7 +143,7 @@ describe("sticker-lab state", () => {
         {
           id: "sticker-old",
           primitiveRef: legacyRef,
-          variant: "red",
+          variant: "right",
           size: "3in-round",
           background: "white",
           copies: 4,
@@ -159,7 +159,7 @@ describe("sticker-lab state", () => {
 
     expect(state.sheet.stickers[0]).toMatchObject({
       primitiveRef: resolved,
-      variant: "red",
+      variant: "right",
       background: "white",
       copies: 4,
     });

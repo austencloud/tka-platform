@@ -28,8 +28,8 @@ export function buildScene3DPersistConfig(
       facingAngle: p.facingAngle,
       // Stored plane strings are the Plane enum's string values; the viewer
       // reads them back through the same untyped JSON path.
-      customBluePlane: p.customBluePlane as never,
-      customRedPlane: p.customRedPlane as never,
+      customLeftPlane: p.customLeftPlane as never,
+      customRightPlane: p.customRightPlane as never,
       name: p.name ?? null,
       ...(p.settings ? { settings: filterPerformerSettings(p.settings, saved) } : {}),
     }));

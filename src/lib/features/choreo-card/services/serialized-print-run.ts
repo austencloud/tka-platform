@@ -205,14 +205,14 @@ export async function prepareSerializedPrintRun(
           `Card "${pair.label}" is missing its print render provenance`
         );
       }
-      const bluePropType = meta.options.bluePropType;
-      const redPropType = meta.options.redPropType;
+      const leftPropType = meta.options.leftPropType;
+      const rightPropType = meta.options.rightPropType;
       const result = await shortCodeManager.createShortCode(meta.sequence, {
-        bluePropType,
-        redPropType,
+        leftPropType,
+        rightPropType,
         catDogMode:
-          bluePropType && redPropType
-            ? bluePropType !== redPropType
+          leftPropType && rightPropType
+            ? leftPropType !== rightPropType
             : undefined,
         deckId: options.deckId,
         deckName: options.deckName,

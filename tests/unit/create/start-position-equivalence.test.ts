@@ -5,17 +5,17 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 function position({
   id,
   startPosition,
-  blueLocation = "n",
-  blueOrientation = "in",
-  redLocation = "s",
-  redOrientation = "in",
+  leftLocation = "n",
+  leftOrientation = "in",
+  rightLocation = "s",
+  rightOrientation = "in",
 }: {
   id: string;
   startPosition?: string;
-  blueLocation?: string;
-  blueOrientation?: string;
-  redLocation?: string;
-  redOrientation?: string;
+  leftLocation?: string;
+  leftOrientation?: string;
+  rightLocation?: string;
+  rightOrientation?: string;
 }): PictographData {
   return {
     id,
@@ -23,15 +23,15 @@ function position({
     startPosition: startPosition as never,
     gridMode: "diamond",
     motions: {
-      blue: {
-        endLocation: blueLocation,
-        endOrientation: blueOrientation,
+      left: {
+        endLocation: leftLocation,
+        endOrientation: leftOrientation,
         gridMode: "diamond",
         isVisible: true,
       } as never,
-      red: {
-        endLocation: redLocation,
-        endOrientation: redOrientation,
+      right: {
+        endLocation: rightLocation,
+        endOrientation: rightOrientation,
         gridMode: "diamond",
         isVisible: true,
       } as never,
@@ -67,7 +67,7 @@ describe("start position equivalence", () => {
     expect(
       areStartPositionsEquivalent(
         current,
-        position({ id: "different-pose", redOrientation: "out" })
+        position({ id: "different-pose", rightOrientation: "out" })
       )
     ).toBe(false);
   });

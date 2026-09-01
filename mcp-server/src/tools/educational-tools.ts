@@ -26,14 +26,19 @@ export function registerEducationalTools(server: McpServer): void {
     "get_alphabet_info",
     "Get comprehensive information about the TKA (The Kinetic Alphabet) system. Use this to understand the domain before working with pictographs.",
     {
-      compact: z.boolean().optional().default(false).describe("Compact output - essential facts only (saves ~1500 tokens)"),
+      compact: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe("Compact output - essential facts only (saves ~1500 tokens)"),
     },
     async ({ compact = false }) => {
       if (compact) {
         return {
-          content: [{
-            type: "text" as const,
-            text: `TKA Quick Reference:
+          content: [
+            {
+              type: "text" as const,
+              text: `TKA Quick Reference:
 - Grid: 8 points (N,E,S,W + NE,SE,SW,NW) + center (Level 4)
 - Positions: Alpha=opposite, Beta=same, Gamma=right-angle, Zeta=obtuse, Eta=acute, Tau=one-center, Terra=both-center
 - Hand paths: Static=stay, Shift=arc to adjacent, Dash=straight to opposite(180°), Hash=straight to/from center (L4, "half-dash")
@@ -45,7 +50,8 @@ export function registerEducationalTools(server: McpServer): void {
 - VTG (Vulcan Tech Gospel): Split-Same, Tog-Same, Split-Opp, Tog-Opp
 - Levels: 1=0 turns, 2=whole turns, 3=half turns+float, 4=centric grid, 5=skewed grid, 6=interradials (2D complete), 7=conjoined grids, 8=atomics (3D), 9=Rubik's cube (3D complete)
 - Compounds: DJ, EK, FL (β↔α cycles), MP, NQ, OR (γ→γ cycles), ΦΨ (dash cycle)`,
-          }],
+            },
+          ],
         };
       }
       const info = `# The Kinetic Alphabet (TKA) - Domain Reference
@@ -53,7 +59,7 @@ export function registerEducationalTools(server: McpServer): void {
 ## Overview
 
 TKA is a notation system for flow arts, built for double staves. Each staff has two visible ends -- a thumb reference and a pinky reference -- that never change with proper technique. This dual-end landmark system is the foundation of TKA's orientation framework. Other static props (fans, clubs, buugeng) work but staves are canonical. Each "pictograph" represents one step of motion showing:
-- Two props (blue and red) at specific grid positions
+- Left and right props at specific grid positions (canonically blue and red)
 - Motion arrows showing how each hand moves
 - Start and end positions
 
@@ -174,7 +180,7 @@ Sequences that return home through transformations:
 - **Reflection**: Reflect across N-S, E-W, NE-SW, or NW-SE
 - **Mirrored**: Familiar name for N-S reflection
 - **Flipped**: Familiar name for E-W reflection
-- **Swapped**: Blue↔Red hand roles swap
+- **Swapped**: Left/right hand roles swap
 - **Inverted**: Pro↔Anti motions swap
 - **Rewound**: Second half plays in reverse
 
@@ -218,8 +224,16 @@ Use \`list_letter_variations\` to see all variations for a specific letter.`;
     "Get a comprehensive explanation of a TKA letter including its type, motion characteristics, and all variations. Perfect for teaching users about specific letters.",
     {
       letter: z.string().describe("The letter to explain (A-Z or Greek)"),
-      variation: z.number().optional().default(0).describe("Specific variation to focus on (0-based, optional)"),
-      compact: z.boolean().optional().default(false).describe("Compact output - key facts only (saves ~600 tokens)"),
+      variation: z
+        .number()
+        .optional()
+        .default(0)
+        .describe("Specific variation to focus on (0-based, optional)"),
+      compact: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe("Compact output - key facts only (saves ~600 tokens)"),
     },
     async ({ letter, variation = 0, compact = false }) => {
       const allPictographs = ensureDataLoaded();
@@ -248,23 +262,26 @@ Use \`list_letter_variations\` to see all variations for a specific letter.`;
       if (compact) {
         const varData = variations[Math.min(variation, variations.length - 1)];
         return {
-          content: [{
-            type: "text" as const,
-            text: `${letter}: Type ${typeNum} (${fullTypeInfo?.name || "?"}) | Blue: ${varData.blueMotion.motionType} | Red: ${varData.redMotion.motionType} | ${variations.length} variations | Var ${variation}: ${varData.startPosition}→${varData.endPosition}`,
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text: `${letter}: Type ${typeNum} (${fullTypeInfo?.name || "?"}) | Left hand: ${varData.leftMotion.motionType} | Right hand: ${varData.rightMotion.motionType} | ${variations.length} variations | Var ${variation}: ${varData.startPosition}→${varData.endPosition}`,
+            },
+          ],
         };
       }
 
       const varData = variations[Math.min(variation, variations.length - 1)];
 
       // Describe rotation type in human-readable form
-      const describeMotion = (motion: typeof varData.blueMotion) => {
+      const describeMotion = (motion: typeof varData.leftMotion) => {
         const mt = motion.motionType;
         const rd = motion.rotationDirection;
         if (mt === "static") return "static (no hand movement)";
         if (mt === "dash") return "dash (moves to opposite point)";
         // shift: motionType is pro/anti, rotationDirection is the absolute CW/CCW
-        const dirLabel = rd === "cw" ? "clockwise" : rd === "ccw" ? "counter-clockwise" : "";
+        const dirLabel =
+          rd === "cw" ? "clockwise" : rd === "ccw" ? "counter-clockwise" : "";
         return dirLabel ? `${mt} (${dirLabel})` : mt;
       };
 
@@ -275,23 +292,33 @@ Use \`list_letter_variations\` to see all variations for a specific letter.`;
 
 ${fullTypeInfo?.description || ""}
 
-${fullTypeInfo?.characteristics ? "**Characteristics:**\n" + fullTypeInfo.characteristics.map(c => `- ${c}`).join("\n") : ""}
+${fullTypeInfo?.characteristics ? "**Characteristics:**\n" + fullTypeInfo.characteristics.map((c) => `- ${c}`).join("\n") : ""}
 
 ## Motion Pattern
-- **Blue hand:** ${describeMotion(varData.blueMotion)}
-- **Red hand:** ${describeMotion(varData.redMotion)}
+- **Left hand:** ${describeMotion(varData.leftMotion)}
+- **Right hand:** ${describeMotion(varData.rightMotion)}
 
 ## Variation ${variation} Details
 - **Start position:** ${varData.startPosition}
 - **End position:** ${varData.endPosition}
-- **Blue motion:** ${varData.blueMotion.startLocation} → ${varData.blueMotion.endLocation}
-- **Red motion:** ${varData.redMotion.startLocation} → ${varData.redMotion.endLocation}
+- **Left-hand motion:** ${varData.leftMotion.startLocation} → ${varData.leftMotion.endLocation}
+- **Right-hand motion:** ${varData.rightMotion.startLocation} → ${varData.rightMotion.endLocation}
 
 ## All Variations (${variations.length} total)
-${variations.slice(0, 5).map((v, i) => `[${i}] ${v.startPosition} → ${v.endPosition}`).join("\n")}${variations.length > 5 ? `\n... and ${variations.length - 5} more` : ""}
+${variations
+  .slice(0, 5)
+  .map((v, i) => `[${i}] ${v.startPosition} → ${v.endPosition}`)
+  .join(
+    "\n"
+  )}${variations.length > 5 ? `\n... and ${variations.length - 5} more` : ""}
 
 ## Related Letters
-Other Type ${typeNum} letters: ${fullTypeInfo?.letters?.filter(l => l !== letter).slice(0, 5).join(", ") || "N/A"}`;
+Other Type ${typeNum} letters: ${
+        fullTypeInfo?.letters
+          ?.filter((l) => l !== letter)
+          .slice(0, 5)
+          .join(", ") || "N/A"
+      }`;
 
       return {
         content: [{ type: "text" as const, text: explanation }],
@@ -304,7 +331,11 @@ Other Type ${typeNum} letters: ${fullTypeInfo?.letters?.filter(l => l !== letter
     "get_term_definition",
     "Get the definition of a TKA domain term like alpha, pro, shift, static, etc. Returns definition, examples, and related terms.",
     {
-      term: z.string().describe("The term to define (e.g., alpha, pro, shift, dash, static, beta, gamma)"),
+      term: z
+        .string()
+        .describe(
+          "The term to define (e.g., alpha, pro, shift, dash, static, beta, gamma)"
+        ),
     },
     async ({ term }) => {
       const glossary = getGlossary();
@@ -319,16 +350,21 @@ Other Type ${typeNum} letters: ${fullTypeInfo?.letters?.filter(l => l !== letter
         // Fuzzy match: check for substring matches and Levenshtein-like proximity
         const allKeys = Object.keys(glossary);
         const possibleMatches = allKeys
-          .filter(key => key.includes(normalizedTerm) || normalizedTerm.includes(key))
+          .filter(
+            (key) =>
+              key.includes(normalizedTerm) || normalizedTerm.includes(key)
+          )
           .slice(0, 5);
 
         // If no substring match, try finding keys that share significant characters
         if (possibleMatches.length === 0) {
           const scored = allKeys
-            .map(key => {
+            .map((key) => {
               let score = 0;
-              const shorter = normalizedTerm.length < key.length ? normalizedTerm : key;
-              const longer = normalizedTerm.length < key.length ? key : normalizedTerm;
+              const shorter =
+                normalizedTerm.length < key.length ? normalizedTerm : key;
+              const longer =
+                normalizedTerm.length < key.length ? key : normalizedTerm;
               for (const char of shorter) {
                 if (longer.includes(char)) score++;
               }
@@ -338,7 +374,7 @@ Other Type ${typeNum} letters: ${fullTypeInfo?.letters?.filter(l => l !== letter
             .sort((a, b) => b.score - a.score)
             .slice(0, 5);
           if (scored.length > 0) {
-            possibleMatches.push(...scored.map(s => s.key));
+            possibleMatches.push(...scored.map((s) => s.key));
           }
         }
 
@@ -349,7 +385,9 @@ Other Type ${typeNum} letters: ${fullTypeInfo?.letters?.filter(l => l !== letter
               text: `Term "${term}" not found in the TKA glossary.${
                 possibleMatches.length > 0
                   ? `\n\nDid you mean: ${possibleMatches.join(", ")}?`
-                  : "\n\nAvailable terms include: " + allKeys.slice(0, 10).join(", ") + "..."
+                  : "\n\nAvailable terms include: " +
+                    allKeys.slice(0, 10).join(", ") +
+                    "..."
               }`,
             },
           ],
@@ -361,7 +399,7 @@ Other Type ${typeNum} letters: ${fullTypeInfo?.letters?.filter(l => l !== letter
 **Definition:** ${entry.definition}
 
 **Examples:**
-${entry.examples.map(e => `- ${e}`).join("\n")}
+${entry.examples.map((e) => `- ${e}`).join("\n")}
 
 **Related terms:** ${entry.relatedTerms.join(", ")}
 
@@ -390,13 +428,17 @@ ${entry.examples.map(e => `- ${e}`).join("\n")}
 
       if (var1.length === 0) {
         return {
-          content: [{ type: "text" as const, text: `Letter "${letter1}" not found.` }],
+          content: [
+            { type: "text" as const, text: `Letter "${letter1}" not found.` },
+          ],
           isError: true,
         };
       }
       if (var2.length === 0) {
         return {
-          content: [{ type: "text" as const, text: `Letter "${letter2}" not found.` }],
+          content: [
+            { type: "text" as const, text: `Letter "${letter2}" not found.` },
+          ],
           isError: true,
         };
       }
@@ -410,51 +452,79 @@ ${entry.examples.map(e => `- ${e}`).join("\n")}
       const rep2 = var2[0];
 
       // Helper to describe rotation type
-      const describeRotation = (motion: typeof rep1.blueMotion) => {
+      const describeRotation = (motion: typeof rep1.leftMotion) => {
         if (motion.motionType === "static") return "static";
         if (motion.motionType === "dash") return "dash";
         const dir = motion.rotationDirection;
-        const dirLabel = dir === "cw" ? "clockwise" : dir === "ccw" ? "counter-clockwise" : "";
-        return dirLabel ? `${motion.motionType} (${dirLabel})` : motion.motionType;
+        const dirLabel =
+          dir === "cw" ? "clockwise" : dir === "ccw" ? "counter-clockwise" : "";
+        return dirLabel
+          ? `${motion.motionType} (${dirLabel})`
+          : motion.motionType;
       };
 
       const similarities: string[] = [];
       const differences: string[] = [];
 
       if (typeNum1 === typeNum2) {
-        similarities.push(`Both are Type ${typeNum1} (${letterTypes[typeNum1]?.name || type1?.name})`);
+        similarities.push(
+          `Both are Type ${typeNum1} (${letterTypes[typeNum1]?.name || type1?.name})`
+        );
       } else {
-        differences.push(`Different types: ${letter1} is Type ${typeNum1} (${letterTypes[typeNum1]?.name}), ${letter2} is Type ${typeNum2} (${letterTypes[typeNum2]?.name})`);
+        differences.push(
+          `Different types: ${letter1} is Type ${typeNum1} (${letterTypes[typeNum1]?.name}), ${letter2} is Type ${typeNum2} (${letterTypes[typeNum2]?.name})`
+        );
       }
 
       // Compare motion types
-      if (rep1.blueMotion.motionType === rep2.blueMotion.motionType) {
-        similarities.push(`Both have ${rep1.blueMotion.motionType} blue motion`);
+      if (rep1.leftMotion.motionType === rep2.leftMotion.motionType) {
+        similarities.push(
+          `Both have ${rep1.leftMotion.motionType} left-hand motion`
+        );
       } else {
-        differences.push(`Blue motion differs: ${letter1} uses ${rep1.blueMotion.motionType}, ${letter2} uses ${rep2.blueMotion.motionType}`);
+        differences.push(
+          `Left-hand motion differs: ${letter1} uses ${rep1.leftMotion.motionType}, ${letter2} uses ${rep2.leftMotion.motionType}`
+        );
       }
 
-      if (rep1.redMotion.motionType === rep2.redMotion.motionType) {
-        similarities.push(`Both have ${rep1.redMotion.motionType} red motion`);
+      if (rep1.rightMotion.motionType === rep2.rightMotion.motionType) {
+        similarities.push(
+          `Both have ${rep1.rightMotion.motionType} right-hand motion`
+        );
       } else {
-        differences.push(`Red motion differs: ${letter1} uses ${rep1.redMotion.motionType}, ${letter2} uses ${rep2.redMotion.motionType}`);
+        differences.push(
+          `Right-hand motion differs: ${letter1} uses ${rep1.rightMotion.motionType}, ${letter2} uses ${rep2.rightMotion.motionType}`
+        );
       }
 
       // Compare rotation directions (the key differentiator for same-type letters)
-      if (rep1.blueMotion.rotationDirection === rep2.blueMotion.rotationDirection) {
-        if (rep1.blueMotion.rotationDirection !== "noRotation") {
-          similarities.push(`Both have ${describeRotation(rep1.blueMotion)} blue rotation`);
+      if (
+        rep1.leftMotion.rotationDirection === rep2.leftMotion.rotationDirection
+      ) {
+        if (rep1.leftMotion.rotationDirection !== "noRotation") {
+          similarities.push(
+            `Both have ${describeRotation(rep1.leftMotion)} left-hand rotation`
+          );
         }
       } else {
-        differences.push(`Blue rotation differs: ${letter1} is ${describeRotation(rep1.blueMotion)}, ${letter2} is ${describeRotation(rep2.blueMotion)}`);
+        differences.push(
+          `Left-hand rotation differs: ${letter1} is ${describeRotation(rep1.leftMotion)}, ${letter2} is ${describeRotation(rep2.leftMotion)}`
+        );
       }
 
-      if (rep1.redMotion.rotationDirection === rep2.redMotion.rotationDirection) {
-        if (rep1.redMotion.rotationDirection !== "noRotation") {
-          similarities.push(`Both have ${describeRotation(rep1.redMotion)} red rotation`);
+      if (
+        rep1.rightMotion.rotationDirection ===
+        rep2.rightMotion.rotationDirection
+      ) {
+        if (rep1.rightMotion.rotationDirection !== "noRotation") {
+          similarities.push(
+            `Both have ${describeRotation(rep1.rightMotion)} right-hand rotation`
+          );
         }
       } else {
-        differences.push(`Red rotation differs: ${letter1} is ${describeRotation(rep1.redMotion)}, ${letter2} is ${describeRotation(rep2.redMotion)}`);
+        differences.push(
+          `Right-hand rotation differs: ${letter1} is ${describeRotation(rep1.rightMotion)}, ${letter2} is ${describeRotation(rep2.rightMotion)}`
+        );
       }
 
       // Compare position patterns
@@ -468,13 +538,19 @@ ${entry.examples.map(e => `- ${e}`).join("\n")}
       if (pattern1 === pattern2) {
         similarities.push(`Same position pattern: ${pattern1}`);
       } else {
-        differences.push(`Position pattern differs: ${letter1} is ${pattern1}, ${letter2} is ${pattern2}`);
+        differences.push(
+          `Position pattern differs: ${letter1} is ${pattern1}, ${letter2} is ${pattern2}`
+        );
       }
 
       if (Math.abs(var1.length - var2.length) <= 2) {
-        similarities.push(`Similar variation count: ${letter1} has ${var1.length}, ${letter2} has ${var2.length}`);
+        similarities.push(
+          `Similar variation count: ${letter1} has ${var1.length}, ${letter2} has ${var2.length}`
+        );
       } else {
-        differences.push(`Different variation counts: ${letter1} has ${var1.length}, ${letter2} has ${var2.length}`);
+        differences.push(
+          `Different variation counts: ${letter1} has ${var1.length}, ${letter2} has ${var2.length}`
+        );
       }
 
       // Detect special relationships
@@ -482,21 +558,27 @@ ${entry.examples.map(e => `- ${e}`).join("\n")}
 
       // Check inversion pair (same motions, opposite rotations)
       if (
-        rep1.blueMotion.motionType === rep2.blueMotion.motionType &&
-        rep1.redMotion.motionType === rep2.redMotion.motionType &&
-        rep1.blueMotion.rotationDirection !== rep2.blueMotion.rotationDirection &&
-        rep1.blueMotion.rotationDirection !== "noRotation" &&
+        rep1.leftMotion.motionType === rep2.leftMotion.motionType &&
+        rep1.rightMotion.motionType === rep2.rightMotion.motionType &&
+        rep1.leftMotion.rotationDirection !==
+          rep2.leftMotion.rotationDirection &&
+        rep1.leftMotion.rotationDirection !== "noRotation" &&
         pattern1 === pattern2
       ) {
-        relationships.push(`**Inversion pair**: ${letter1} and ${letter2} are the same motion with opposite rotations (pro↔anti). Used in the inverted LOOP transformation.`);
+        relationships.push(
+          `**Inversion pair**: ${letter1} and ${letter2} are the same motion with opposite rotations (pro↔anti). Used in the inverted LOOP transformation.`
+        );
       }
 
       // Check compound pair (opposite position transitions)
       if (
-        startPos1 === endPos2 && endPos1 === startPos2 &&
+        startPos1 === endPos2 &&
+        endPos1 === startPos2 &&
         startPos1 !== endPos1
       ) {
-        relationships.push(`**Compound pair**: ${letter1} (${pattern1}) and ${letter2} (${pattern2}) complete a full cycle together.`);
+        relationships.push(
+          `**Compound pair**: ${letter1} (${pattern1}) and ${letter2} (${pattern2}) complete a full cycle together.`
+        );
       }
 
       const output = `# Comparison: ${letter1} vs ${letter2}
@@ -505,17 +587,17 @@ ${entry.examples.map(e => `- ${e}`).join("\n")}
 | Property | ${letter1} | ${letter2} |
 |----------|------------|------------|
 | Type | ${typeNum1} (${letterTypes[typeNum1]?.name || "?"}) | ${typeNum2} (${letterTypes[typeNum2]?.name || "?"}) |
-| Blue motion | ${describeRotation(rep1.blueMotion)} ${rep1.blueMotion.motionType} | ${describeRotation(rep2.blueMotion)} ${rep2.blueMotion.motionType} |
-| Red motion | ${describeRotation(rep1.redMotion)} ${rep1.redMotion.motionType} | ${describeRotation(rep2.redMotion)} ${rep2.redMotion.motionType} |
+| Left-hand motion | ${describeRotation(rep1.leftMotion)} ${rep1.leftMotion.motionType} | ${describeRotation(rep2.leftMotion)} ${rep2.leftMotion.motionType} |
+| Right-hand motion | ${describeRotation(rep1.rightMotion)} ${rep1.rightMotion.motionType} | ${describeRotation(rep2.rightMotion)} ${rep2.rightMotion.motionType} |
 | Position pattern | ${pattern1} | ${pattern2} |
 | Variations | ${var1.length} | ${var2.length} |
 
 ## Similarities
-${similarities.length > 0 ? similarities.map(s => `- ${s}`).join("\n") : "- No major similarities"}
+${similarities.length > 0 ? similarities.map((s) => `- ${s}`).join("\n") : "- No major similarities"}
 
 ## Differences
-${differences.length > 0 ? differences.map(d => `- ${d}`).join("\n") : "- No major differences"}
-${relationships.length > 0 ? `\n## Relationships\n${relationships.map(r => `- ${r}`).join("\n")}` : ""}
+${differences.length > 0 ? differences.map((d) => `- ${d}`).join("\n") : "- No major differences"}
+${relationships.length > 0 ? `\n## Relationships\n${relationships.map((r) => `- ${r}`).join("\n")}` : ""}
 
 ## When to Use Each
 - **${letter1}:** ${letterTypes[typeNum1]?.description || "Type " + typeNum1 + " letter"}
@@ -532,8 +614,18 @@ ${relationships.length > 0 ? `\n## Relationships\n${relationships.map(r => `- ${
     "list_letters_by_type",
     "List all letters of a specific type (1-6) with descriptions and motion patterns.",
     {
-      type: z.number().min(1).max(6).describe("Letter type (1-6): 1=Dual-Shift, 2=Shift, 3=Cross-Shift, 4=Dash, 5=Dual-Dash, 6=Static"),
-      compact: z.boolean().optional().default(false).describe("Compact output - just letters (saves ~400 tokens)"),
+      type: z
+        .number()
+        .min(1)
+        .max(6)
+        .describe(
+          "Letter type (1-6): 1=Dual-Shift, 2=Shift, 3=Cross-Shift, 4=Dash, 5=Dual-Dash, 6=Static"
+        ),
+      compact: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe("Compact output - just letters (saves ~400 tokens)"),
     },
     async ({ type, compact = false }) => {
       const letterTypes = getLetterTypes();
@@ -557,17 +649,19 @@ ${relationships.length > 0 ? `\n## Relationships\n${relationships.map(r => `- ${
           ? ` | Registered extension${typeInfo.extendedLetters.length === 1 ? "" : "s"}: ${typeInfo.extendedLetters.join(", ")} (no dataframe variations)`
           : "";
         return {
-          content: [{
-            type: "text" as const,
-            text: `Type ${type} (${typeInfo.name}) — Level 1/dataframe: ${typeInfo.letters.join(", ")}${extensionText}`,
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text: `Type ${type} (${typeInfo.name}) — Level 1/dataframe: ${typeInfo.letters.join(", ")}${extensionText}`,
+            },
+          ],
         };
       }
 
       const allPictographs = ensureDataLoaded();
 
-      const letterCounts = typeInfo.letters.map(letter => {
-        const count = allPictographs.filter(p => p.letter === letter).length;
+      const letterCounts = typeInfo.letters.map((letter) => {
+        const count = allPictographs.filter((p) => p.letter === letter).length;
         return { letter, count };
       });
 
@@ -576,16 +670,16 @@ ${relationships.length > 0 ? `\n## Relationships\n${relationships.map(r => `- ${
 **Description:** ${typeInfo.description}
 
 **Motion Pattern:**
-- Blue hand: ${typeInfo.motionPattern.blueMotion}
-- Red hand: ${typeInfo.motionPattern.redMotion}
+- Left hand: ${typeInfo.motionPattern.leftMotion}
+- Right hand: ${typeInfo.motionPattern.rightMotion}
 ${typeInfo.motionPattern.note ? `- Note: ${typeInfo.motionPattern.note}` : ""}
 
 **Characteristics:**
-${typeInfo.characteristics.map(c => `- ${c}`).join("\n")}
+${typeInfo.characteristics.map((c) => `- ${c}`).join("\n")}
 
 **Letters (${typeInfo.letters.length} total):**
 ${letterCounts.map(({ letter, count }) => `- **${letter}** (${count} variations)`).join("\n")}
-${typeInfo.extendedLetters?.length ? `\n**Registered higher-level extensions (no dataframe variations):**\n${typeInfo.extendedLetters.map(letter => `- **${letter}**`).join("\n")}` : ""}`;
+${typeInfo.extendedLetters?.length ? `\n**Registered higher-level extensions (no dataframe variations):**\n${typeInfo.extendedLetters.map((letter) => `- **${letter}**`).join("\n")}` : ""}`;
 
       return {
         content: [{ type: "text" as const, text: output }],
@@ -598,12 +692,17 @@ ${typeInfo.extendedLetters?.length ? `\n**Registered higher-level extensions (no
     "get_position_info",
     "Get detailed information about a TKA position (alpha, beta, gamma, zeta, eta, tau, terra) including grid configuration and examples.",
     {
-      position: z.string().describe("Position name (alpha, beta, gamma, zeta, eta, tau, terra)"),
+      position: z
+        .string()
+        .describe("Position name (alpha, beta, gamma, zeta, eta, tau, terra)"),
     },
     async ({ position }) => {
       const normalizedPos = position.toLowerCase().trim();
 
-      const posInfo = POSITION_DEFINITIONS[normalizedPos as keyof typeof POSITION_DEFINITIONS];
+      const posInfo =
+        POSITION_DEFINITIONS[
+          normalizedPos as keyof typeof POSITION_DEFINITIONS
+        ];
 
       if (!posInfo) {
         const availablePositions = Object.keys(POSITION_DEFINITIONS).join(", ");
@@ -618,10 +717,10 @@ ${typeInfo.extendedLetters?.length ? `\n**Registered higher-level extensions (no
       }
 
       const allPictographs = ensureDataLoaded();
-      const startCount = allPictographs.filter(p =>
+      const startCount = allPictographs.filter((p) =>
         p.startPosition.toLowerCase().startsWith(normalizedPos)
       ).length;
-      const endCount = allPictographs.filter(p =>
+      const endCount = allPictographs.filter((p) =>
         p.endPosition.toLowerCase().startsWith(normalizedPos)
       ).length;
 
@@ -634,7 +733,7 @@ ${typeInfo.extendedLetters?.length ? `\n**Registered higher-level extensions (no
 **Grid Configuration:** ${posInfo.gridDescription}
 
 **Examples:**
-${posInfo.examples.map(e => `- ${e}`).join("\n")}
+${posInfo.examples.map((e) => `- ${e}`).join("\n")}
 
 **Introduced:** Level ${posInfo.level}
 
@@ -642,7 +741,9 @@ ${posInfo.examples.map(e => `- ${e}`).join("\n")}
 - Used as starting position: ${startCount} pictographs
 - Used as ending position: ${endCount} pictographs
 
-**Related:** ${Object.keys(POSITION_DEFINITIONS).filter(p => p !== normalizedPos).join(", ")}`;
+**Related:** ${Object.keys(POSITION_DEFINITIONS)
+        .filter((p) => p !== normalizedPos)
+        .join(", ")}`;
 
       return {
         content: [{ type: "text" as const, text: output }],
@@ -655,8 +756,19 @@ ${posInfo.examples.map(e => `- ${e}`).join("\n")}
     "get_domain_topic",
     "Get deep-dive content on a TKA domain topic. Returns extended reference material on topics like base rotation, orientation algebra, combinatorial space, hand path modifiers, the level system, VTG, compound letters, LOOPs vs CAPs, and more. Use 'list: true' to see all available topics.",
     {
-      topic: z.string().optional().describe("Topic key or natural language query (e.g., 'base-rotation', 'how does orientation algebra work', 'caps vs loops')"),
-      list: z.boolean().optional().default(false).describe("If true, returns list of all available topics instead of content"),
+      topic: z
+        .string()
+        .optional()
+        .describe(
+          "Topic key or natural language query (e.g., 'base-rotation', 'how does orientation algebra work', 'caps vs loops')"
+        ),
+      list: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe(
+          "If true, returns list of all available topics instead of content"
+        ),
     },
     async ({ topic, list = false }) => {
       if (list) {
@@ -679,7 +791,7 @@ ${posInfo.examples.map(e => `- ${e}`).join("\n")}
           content: [
             {
               type: "text" as const,
-              text: 'Please provide a topic key or query. Use `list: true` to see available topics.',
+              text: "Please provide a topic key or query. Use `list: true` to see available topics.",
             },
           ],
           isError: true,

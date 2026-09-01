@@ -28,7 +28,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -57,7 +57,7 @@
   const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
   const flip = (o: Orientation) => (o === IN ? OUT : IN);
   type HandStep = { anti: boolean; from: GridLocation; to: GridLocation; so: Orientation };
-  const handMotion = (color: MotionColor, h: HandStep) => {
+  const handMotion = (color: HandSide, h: HandStep) => {
     const dir = HP_CW.has(`${h.from}-${h.to}`) ? CW : CCW;
     return createMotionData({
       motionType: h.anti ? MotionType.ANTI : MotionType.PRO,
@@ -73,9 +73,9 @@
     });
   };
 
-  type Step = { letter: Letter; blue: HandStep; red: HandStep; rev?: boolean };
+  type Step = { letter: Letter; left: HandStep; right: HandStep; rev?: boolean };
   const st = (letter: Letter, bAnti: boolean, bf: GridLocation, bt: GridLocation, rf: GridLocation, rt: GridLocation, so: [Orientation, Orientation], rev = false): Step =>
-    ({ letter, blue: { anti: bAnti, from: bf, to: bt, so: so[0] }, red: { anti: bAnti, from: rf, to: rt, so: so[1] }, rev });
+    ({ letter, left: { anti: bAnti, from: bf, to: bt, so: so[0] }, right: { anti: bAnti, from: rf, to: rt, so: so[1] }, rev });
 
   const A = Letter.A;
   const B = Letter.B;
@@ -136,20 +136,20 @@
       id: `${q.key}-${i + 1}`,
       letter: s.letter,
       gridMode: GridMode.DIAMOND,
-      startPosition: getGridPositionFromLocations(s.blue.from, s.red.from),
-      endPosition: getGridPositionFromLocations(s.blue.to, s.red.to),
+      startPosition: getGridPositionFromLocations(s.left.from, s.right.from),
+      endPosition: getGridPositionFromLocations(s.left.to, s.right.to),
       stepNumber: i + 1,
-      blueReversal: !!s.rev,
-      redReversal: !!s.rev,
+      leftReversal: !!s.rev,
+      rightReversal: !!s.rev,
       motions: {
-        blue: handMotion(MotionColor.BLUE, s.blue),
-        red: handMotion(MotionColor.RED, s.red),
+        left: handMotion(HandSide.LEFT, s.left),
+        right: handMotion(HandSide.RIGHT, s.right),
       },
     } as unknown as StepData;
   };
 
   // Playback-only Start pose (α, blue S / red N, thumbs in).
-  const stat = (color: MotionColor, loc: GridLocation) =>
+  const stat = (color: HandSide, loc: GridLocation) =>
     createMotionData({
       motionType: MotionType.STATIC,
       startLocation: loc,
@@ -166,7 +166,7 @@
       letter: Letter.ALPHA,
       gridMode: GridMode.DIAMOND,
       stepNumber: 0,
-      motions: { blue: stat(MotionColor.BLUE, SO_), red: stat(MotionColor.RED, N) },
+      motions: { left: stat(HandSide.LEFT, SO_), right: stat(HandSide.RIGHT, N) },
     }) as unknown as StepData;
   const seqSteps = (q: SeqDef): StepData[] => [startPose(q), ...q.steps.map((_, i) => stepData(q, i))];
 
@@ -284,8 +284,8 @@
           <PictographContainer
             pictographData={RESOLVED[q.key]!.slice(1)[i]}
             gridMode={GridMode.DIAMOND}
-            bluePropTypeOverride={PropType.STAFF}
-            redPropTypeOverride={PropType.STAFF}
+            leftPropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
             stepNumberOverride={true}
             {...PICTO_FLAGS}
           />

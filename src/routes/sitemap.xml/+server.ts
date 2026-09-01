@@ -38,7 +38,8 @@ const pages: SitemapEntry[] = [
   // /notation/loops is gated in production (404 via its +page.server.ts) while
   // the LOOP algebra page gets rebuilt. Un-gate before re-listing it.
   { url: "notation/caps" },
-  { url: "glossary" },
+  // The Kinetic Atlas is behind a noindex Coming Soon gate while it is rebuilt.
+  // Re-list it when the production gate is removed.
   // The staff choreography article is deliberately absent while it awaits
   // human review (2026-07-27). Its production route carries noindex.
   // /roots redirects (301) to /notation and is intentionally omitted here, same

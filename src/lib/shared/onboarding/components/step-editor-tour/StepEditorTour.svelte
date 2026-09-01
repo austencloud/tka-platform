@@ -44,7 +44,7 @@
       icon: "fa-redo",
       title: "Turns",
       description:
-        "Control how many rotations each prop makes. Blue on the left, red on the right. Set clockwise or counter-clockwise.",
+        "Control how many rotations each prop makes. The left prop is blue and the right prop is red. Set clockwise or counter-clockwise.",
       highlight: "turns",
     },
     {
@@ -58,7 +58,7 @@
   ];
 
   const currentStopInfo: StopInfo = $derived(
-    STOP_INFO[stepEditorTourState.currentStopIndex] ?? STOP_INFO[0]!,
+    STOP_INFO[stepEditorTourState.currentStopIndex] ?? STOP_INFO[0]!
   );
 
   let hapticService: HapticFeedback | null = null;
@@ -115,7 +115,8 @@
     <!-- Floating tour card - offset away from highlighted section -->
     <div
       class="tour-card"
-      class:card-above={currentStopInfo.highlight === "turns" || currentStopInfo.highlight === "duration"}
+      class:card-above={currentStopInfo.highlight === "turns" ||
+        currentStopInfo.highlight === "duration"}
     >
       <div class="tour-icon">
         <i class="fas {currentStopInfo.icon}" aria-hidden="true"></i>
@@ -126,7 +127,9 @@
            convention). display:contents keeps the two children in the
            .tour-card flex flow so the gap spacing is unaffected. -->
       <div class="tour-copy" aria-live="polite">
-        <h3 id="step-editor-tour-title" class="tour-title">{currentStopInfo.title}</h3>
+        <h3 id="step-editor-tour-title" class="tour-title">
+          {currentStopInfo.title}
+        </h3>
         <p class="tour-desc">{currentStopInfo.description}</p>
       </div>
 

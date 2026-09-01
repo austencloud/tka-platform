@@ -29,8 +29,8 @@ describe("choreo card QR state", () => {
       .mockResolvedValueOnce(qrResult("club"));
     const harness = createChoreoCardQrStateHarness({
       sequence,
-      bluePropType: PropType.STAFF,
-      redPropType: PropType.STAFF,
+      leftPropType: PropType.STAFF,
+      rightPropType: PropType.STAFF,
       generateForSequence,
     });
 
@@ -40,8 +40,8 @@ describe("choreo card QR state", () => {
       expect(generateForSequence).toHaveBeenLastCalledWith(
         sequence,
         expect.objectContaining({
-          bluePropType: PropType.STAFF,
-          redPropType: PropType.STAFF,
+          leftPropType: PropType.STAFF,
+          rightPropType: PropType.STAFF,
         })
       );
 
@@ -52,8 +52,8 @@ describe("choreo card QR state", () => {
       expect(generateForSequence).toHaveBeenLastCalledWith(
         sequence,
         expect.objectContaining({
-          bluePropType: PropType.CLUB,
-          redPropType: PropType.CLUB,
+          leftPropType: PropType.CLUB,
+          rightPropType: PropType.CLUB,
         })
       );
 

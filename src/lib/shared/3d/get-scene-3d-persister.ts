@@ -1,4 +1,4 @@
-export type { AvatarProportions, Scene3DPersistedState } from './services/scene3d-persister';
+export type { CharacterProportions, Scene3DPersistedState } from './services/scene3d-persister';
 export {
   saveScene3DState,
   loadScene3DState,

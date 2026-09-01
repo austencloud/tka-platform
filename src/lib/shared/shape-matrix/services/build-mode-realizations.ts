@@ -63,7 +63,7 @@ function relationshipKey(relationship: PropRelationship): string {
 
 function createModeRealization(
   base: SequenceData,
-  pair: { blue: Flower; red: Flower },
+  pair: { left: Flower; right: Flower },
   mode: VtgMode,
   phase: ReturnType<typeof buildExactFlowerPhases>[number]
 ): ModeRealization | null {
@@ -92,7 +92,7 @@ function createModeRealization(
 
 /** All exact flower-preserving prop phases for one hand relationship. */
 export async function buildModeRealizationCandidates(
-  pair: { blue: Flower; red: Flower },
+  pair: { left: Flower; right: Flower },
   overlay: CellOverlay,
   mode: VtgMode
 ): Promise<ModeRealization[]> {
@@ -105,8 +105,8 @@ export async function buildModeRealizationCandidates(
     const base = resolveBase(
       idx,
       mode,
-      pair.blue.style === "float" ? "pro" : pair.blue.style,
-      pair.red.style === "float" ? "pro" : pair.red.style
+      pair.left.style === "float" ? "pro" : pair.left.style,
+      pair.right.style === "float" ? "pro" : pair.right.style
     );
     if (!base) return [];
     const phases = buildExactFlowerPhases(base, pair, edges, overlay);
@@ -131,7 +131,7 @@ export async function buildModeRealizationCandidates(
 }
 
 export async function buildModeRealization(
-  pair: { blue: Flower; red: Flower },
+  pair: { left: Flower; right: Flower },
   overlay: CellOverlay,
   mode: VtgMode,
   targetPropMode: VtgMode | null = null
@@ -152,7 +152,7 @@ export async function buildModeRealization(
  * use the cell's displayed phase. Prop-first builds use the exact phase solver.
  */
 export async function buildModeRealizations(
-  pair: { blue: Flower; red: Flower },
+  pair: { left: Flower; right: Flower },
   overlay: CellOverlay,
   targetPropMode: VtgMode | null = null
 ): Promise<ModeRealization[]> {

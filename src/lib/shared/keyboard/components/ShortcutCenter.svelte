@@ -30,6 +30,7 @@
   let announcement = $state("");
   let searchInput = $state<HTMLInputElement | null>(null);
   let workspaceElement = $state<HTMLDivElement | null>(null);
+  let appliedHelpLaunchVersion = -1;
 
   const allItems = $derived.by(() => {
     registryVersion;
@@ -90,7 +91,15 @@
       query = "";
       selectedShortcutId = null;
       showResetConfirmation = false;
+      return;
     }
+
+    if (appliedHelpLaunchVersion === keyboardShortcutState.helpLaunchVersion)
+      return;
+
+    view = keyboardShortcutState.helpLaunch.view;
+    query = keyboardShortcutState.helpLaunch.query;
+    appliedHelpLaunchVersion = keyboardShortcutState.helpLaunchVersion;
   });
 
   function close(): void {

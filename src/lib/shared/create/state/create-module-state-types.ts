@@ -15,7 +15,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
  * SequenceState interface covering what shared/ consumers access.
  * Includes methods used by clearSequenceWorkflow and register-create-shortcuts.
  */
-export type TargetHand = "blue" | "red" | "both";
+export type TargetHand = "left" | "right" | "both";
 
 export interface SequenceStateMinimal {
   readonly currentSequence: SequenceData | null;
@@ -28,19 +28,23 @@ export interface SequenceStateMinimal {
   clearSequenceCompletely(): Promise<void>;
   hasSequence(): boolean;
   getSelectedStepIndex(): number | null;
-  removeStepAndSubsequentWithAnimation(stepIndex: number, onComplete?: () => void): void;
+  removeStepAndSubsequentWithAnimation(
+    stepIndex: number,
+    onComplete?: () => void
+  ): void;
   selectStep(stepIndex: number): void;
   selectStartPositionForEditing(): void;
   mirrorSequence(targetHand?: TargetHand): Promise<void>;
   flipSequence(targetHand?: TargetHand): Promise<void>;
-  swapColors(): Promise<void>;
-  invertSequence(): Promise<void>;
+  swapHands(): Promise<void>;
+  invertSequence(targetHand?: TargetHand): Promise<void>;
   rewindSequence(targetHand?: TargetHand): Promise<void>;
   rotateSequence(
     direction: "clockwise" | "counterclockwise",
     targetHand?: TargetHand,
     rotationSteps?: number
   ): Promise<void>;
+  shiftStartPosition(stepNumber: number): Promise<void>;
 }
 
 /**
@@ -50,7 +54,10 @@ export interface SequenceStateMinimal {
 export interface CreateModuleState {
   readonly sequenceState: SequenceStateMinimal;
   getActiveTabSequenceState(): SequenceStateMinimal;
-  pushUndoSnapshot(type: UndoOperationType, metadata?: { description?: string }): void;
+  pushUndoSnapshot(
+    type: UndoOperationType,
+    metadata?: { description?: string }
+  ): void;
   undo(): boolean;
   redo(): boolean;
   readonly canUndo: boolean;

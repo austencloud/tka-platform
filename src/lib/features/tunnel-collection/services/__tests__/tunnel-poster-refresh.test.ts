@@ -37,7 +37,10 @@ function tunnel(id: string, revision: string): CollectedTunnel {
       tunnel: {
         config: { ...DEFAULT_CONFIG, speedOverrides: {} },
         gridVisible: false,
-        spectrum: false,
+        colors: {
+          mode: "hands",
+          custom: { left: "#2e8bf0", right: "#ed1c24" },
+        },
         section: "tunnel",
         presetRecipe: null,
       },
@@ -46,11 +49,11 @@ function tunnel(id: string, revision: string): CollectedTunnel {
       paths: {
         pathShape: "arc",
         motionAwarePaths: false,
-        bluePathLines: true,
-        redPathLines: true,
+        leftPathLines: true,
+        rightPathLines: true,
       },
       playback: { bpm: 60, playbackMode: "continuous" },
-      props: { bluePropType: "staff", redPropType: "staff" },
+      props: { leftPropType: "staff", rightPropType: "staff" },
       trailRender: { mode: "off" },
     },
   } as unknown as CollectedTunnel;

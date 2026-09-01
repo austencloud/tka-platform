@@ -3,7 +3,7 @@ import {
   type GridLocation,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -16,13 +16,13 @@ import type {
 
 export interface AssembleDocumentState {
   phase: BuilderPhase;
-  activeHand: MotionColor;
+  activeHand: HandSide;
   gridMode: GridMode;
   showCenter: boolean;
   keyboardMode: boolean;
-  blueSteps: BuilderStep[];
-  redSteps: BuilderStep[];
-  startPoses: Partial<Record<MotionColor, BuilderStartPose>>;
+  leftSteps: BuilderStep[];
+  rightSteps: BuilderStep[];
+  startPoses: Partial<Record<HandSide, BuilderStartPose>>;
   currentPosition: GridLocation | null;
   currentOrientation: Orientation;
   rotationDirection: RotationDirection;
@@ -42,7 +42,7 @@ export interface AssembleDocumentState {
   readonly candidateRotationDirection: RotationDirection;
   readonly candidateTurnCount: number;
 
-  poseForHand(hand: MotionColor): BuilderStartPose | null;
+  poseForHand(hand: HandSide): BuilderStartPose | null;
   syncActiveCursor(): void;
 }
 
@@ -53,29 +53,29 @@ export function cloneBuilderSteps(
 }
 
 export function cloneStartPoses(
-  poses: Partial<Record<MotionColor, BuilderStartPose>>
-): Partial<Record<MotionColor, BuilderStartPose>> {
-  const next: Partial<Record<MotionColor, BuilderStartPose>> = {};
-  const blue = poses[MotionColor.BLUE];
-  const red = poses[MotionColor.RED];
-  if (blue) next[MotionColor.BLUE] = { ...blue };
-  if (red) next[MotionColor.RED] = { ...red };
+  poses: Partial<Record<HandSide, BuilderStartPose>>
+): Partial<Record<HandSide, BuilderStartPose>> {
+  const next: Partial<Record<HandSide, BuilderStartPose>> = {};
+  const left = poses[HandSide.LEFT];
+  const right = poses[HandSide.RIGHT];
+  if (left) next[HandSide.LEFT] = { ...left };
+  if (right) next[HandSide.RIGHT] = { ...right };
   return next;
 }
 
-export function handLabel(hand: MotionColor): string {
-  return hand === MotionColor.BLUE ? "Left" : "Right";
+export function handLabel(hand: HandSide): string {
+  return hand === HandSide.LEFT ? "Left" : "Right";
 }
 
 export function createAssembleDocumentState(): AssembleDocumentState {
   let phase = $state<BuilderPhase>("idle");
-  let activeHand = $state<MotionColor>(MotionColor.BLUE);
+  let activeHand = $state<HandSide>(HandSide.LEFT);
   let gridMode = $state<GridMode>(GridMode.DIAMOND);
   let showCenter = $state(false);
   let keyboardMode = $state(false);
-  let blueSteps = $state<BuilderStep[]>([]);
-  let redSteps = $state<BuilderStep[]>([]);
-  let startPoses = $state<Partial<Record<MotionColor, BuilderStartPose>>>({});
+  let leftSteps = $state<BuilderStep[]>([]);
+  let rightSteps = $state<BuilderStep[]>([]);
+  let startPoses = $state<Partial<Record<HandSide, BuilderStartPose>>>({});
   let currentPosition = $state<GridLocation | null>(null);
   let currentOrientation = $state<Orientation>(Orientation.IN);
   let rotationDirection = $state<RotationDirection>(
@@ -88,20 +88,20 @@ export function createAssembleDocumentState(): AssembleDocumentState {
   let arrowOrientation = $state<Orientation>(Orientation.IN);
 
   const activeSteps = $derived(
-    activeHand === MotionColor.BLUE ? blueSteps : redSteps
+    activeHand === HandSide.LEFT ? leftSteps : rightSteps
   );
-  const stepCount = $derived(blueSteps.length + redSteps.length);
+  const stepCount = $derived(leftSteps.length + rightSteps.length);
   const canFinishHand = $derived(
     (phase === "building" || phase === "animating") &&
-      blueSteps.length > 0 &&
-      redSteps.length > 0 &&
-      blueSteps.length === redSteps.length
+      leftSteps.length > 0 &&
+      rightSteps.length > 0 &&
+      leftSteps.length === rightSteps.length
   );
   const canChangeGridMode = $derived(
-    blueSteps.length === 0 && redSteps.length === 0
+    leftSteps.length === 0 && rightSteps.length === 0
   );
   const canReorderSteps = $derived(
-    blueSteps.length > 1 && blueSteps.length === redSteps.length
+    leftSteps.length > 1 && leftSteps.length === rightSteps.length
   );
   const canReplaceSelectedStep = $derived(
     selectedStepIndex !== null &&
@@ -139,10 +139,10 @@ export function createAssembleDocumentState(): AssembleDocumentState {
     return turnCount;
   });
 
-  function poseForHand(hand: MotionColor): BuilderStartPose | null {
+  function poseForHand(hand: HandSide): BuilderStartPose | null {
     const pose = startPoses[hand];
     if (pose) return pose;
-    const steps = hand === MotionColor.BLUE ? blueSteps : redSteps;
+    const steps = hand === HandSide.LEFT ? leftSteps : rightSteps;
     const first = steps[0];
     return first
       ? {
@@ -153,7 +153,7 @@ export function createAssembleDocumentState(): AssembleDocumentState {
   }
 
   function syncActiveCursor(): void {
-    const steps = activeHand === MotionColor.BLUE ? blueSteps : redSteps;
+    const steps = activeHand === HandSide.LEFT ? leftSteps : rightSteps;
     const last = steps[steps.length - 1];
     if (last) {
       currentPosition = last.endPosition;
@@ -206,17 +206,17 @@ export function createAssembleDocumentState(): AssembleDocumentState {
     set keyboardMode(value) {
       keyboardMode = value;
     },
-    get blueSteps() {
-      return blueSteps;
+    get leftSteps() {
+      return leftSteps;
     },
-    set blueSteps(value) {
-      blueSteps = value;
+    set leftSteps(value) {
+      leftSteps = value;
     },
-    get redSteps() {
-      return redSteps;
+    get rightSteps() {
+      return rightSteps;
     },
-    set redSteps(value) {
-      redSteps = value;
+    set rightSteps(value) {
+      rightSteps = value;
     },
     get startPoses() {
       return startPoses;

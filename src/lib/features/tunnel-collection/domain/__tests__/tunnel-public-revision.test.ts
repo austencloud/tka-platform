@@ -23,7 +23,10 @@ const snapshot = {
   tunnel: {
     config: DEFAULT_CONFIG,
     gridVisible: false,
-    spectrum: true,
+    colors: {
+      mode: "custom",
+      custom: { left: "#123456", right: "#abcdef" },
+    },
     section: "tunnel",
   },
   effects: { activeEffect: "none" },
@@ -31,11 +34,11 @@ const snapshot = {
   paths: {
     pathShape: "arc",
     motionAwarePaths: false,
-    bluePathLines: false,
-    redPathLines: false,
+    leftPathLines: false,
+    rightPathLines: false,
   },
   playback: { bpm: 60, playbackMode: "continuous" },
-  props: { bluePropType: "staff", redPropType: "staff" },
+  props: { leftPropType: "staff", rightPropType: "staff" },
   trailRender: { mode: "none" },
 } as CollectedTunnel["snapshot"];
 
@@ -174,6 +177,14 @@ describe("tunnelPublicPayload", () => {
     expect(payload.snapshot.tunnel.config).toEqual(DEFAULT_CONFIG);
     expect(payload.snapshot.tunnel.presetRecipe).toBeNull();
     expect(JSON.stringify(payload)).not.toContain("personal-recipe-42");
+  });
+
+  it("preserves the normalized exact pair in public copies", () => {
+    const payload = tunnelPublicPayload(tunnelFixture());
+    expect(payload.snapshot.tunnel.colors).toEqual({
+      mode: "custom",
+      custom: { left: "#123456", right: "#abcdef" },
+    });
   });
 });
 

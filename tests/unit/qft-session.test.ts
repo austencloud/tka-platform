@@ -25,8 +25,8 @@ describe("QfT session persistence", () => {
     const session: QftSession = {
       entered: true,
       handCount: "two",
-      blue: { source: { kind: "preset", id: "triquetra" }, radius: 1.2 },
-      red: { source: { kind: "flower", index: 4 }, radius: 0.75 },
+      left: { source: { kind: "preset", id: "triquetra" }, radius: 1.2 },
+      right: { source: { kind: "flower", index: 4 }, radius: 0.75 },
       originPhase: 4,
       vtgMode: "SO",
       cursor: 3.5,
@@ -59,10 +59,32 @@ describe("QfT session persistence", () => {
     const migrated = loadQftSession();
 
     expect(migrated?.handCount).toBe("two");
-    expect(migrated?.blue.source).toEqual({ kind: "flower", index: 2 });
-    expect(migrated?.red.source).toEqual({ kind: "flower", index: 9 });
+    expect(migrated?.left.source).toEqual({ kind: "flower", index: 2 });
+    expect(migrated?.right.source).toEqual({ kind: "flower", index: 9 });
     expect(migrated?.vtgMode).toBe("QO");
     expect(migrated?.cursor).toBe(7.25);
+  });
+
+  it("restores a literal blue/red v3 hand pair", () => {
+    localStorage.setItem(
+      QFT_SESSION_KEY,
+      JSON.stringify({
+        entered: true,
+        handCount: "two",
+        blue: { source: { kind: "flower", index: 2 }, radius: 1.2 },
+        red: { source: { kind: "flower", index: 9 }, radius: 0.8 },
+      })
+    );
+
+    const restored = loadQftSession();
+    expect(restored?.left).toMatchObject({
+      source: { kind: "flower", index: 2 },
+      radius: 1.2,
+    });
+    expect(restored?.right).toMatchObject({
+      source: { kind: "flower", index: 9 },
+      radius: 0.8,
+    });
   });
 
   it("migrates a guide session to its canonical preset", () => {
@@ -71,7 +93,7 @@ describe("QfT session persistence", () => {
       JSON.stringify({ appMode: "guide", moveIndex: 5, radius: 1 })
     );
 
-    expect(loadQftSession()?.blue.source).toEqual({
+    expect(loadQftSession()?.left.source).toEqual({
       kind: "preset",
       id: "triquetra",
     });
@@ -83,7 +105,7 @@ describe("QfT session persistence", () => {
       JSON.stringify({ appMode: "instrument", pendulum: true, radius: 1 })
     );
 
-    const source = loadQftSession()?.blue.source;
+    const source = loadQftSession()?.left.source;
     expect(source?.kind).toBe("custom");
     if (source?.kind !== "custom")
       throw new Error("Expected a custom trajectory");
@@ -99,7 +121,7 @@ describe("QfT session persistence", () => {
       JSON.stringify({
         entered: true,
         handCount: "one",
-        blue: {
+        left: {
           source: { kind: "custom", trajectory: { propRate: [1, 2] } },
           radius: 999,
         },
@@ -107,7 +129,7 @@ describe("QfT session persistence", () => {
     );
 
     const restored = loadQftSession();
-    expect(restored?.blue.source).toEqual({ kind: "flower", index: 6 });
-    expect(restored?.blue.radius).toBe(1);
+    expect(restored?.left.source).toEqual({ kind: "flower", index: 6 });
+    expect(restored?.left.radius).toBe(1);
   });
 });

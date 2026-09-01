@@ -143,9 +143,9 @@
       (slot) => slot.id === creator.generationTargetId
     )?.label ?? "Performer"
   );
-  const bluePropType = $derived(creator.presentation.bluePropType as PropType);
-  const redPropType = $derived(creator.presentation.redPropType as PropType);
-  const propType = $derived(bluePropType ? String(bluePropType) : "staff");
+  const leftPropType = $derived(creator.presentation.leftPropType as PropType);
+  const rightPropType = $derived(creator.presentation.rightPropType as PropType);
+  const propType = $derived(leftPropType ? String(leftPropType) : "staff");
   const generationAnimationTarget: GenerationAnimationTarget = {
     clear() {
       const targetId = creator.generationTargetId;
@@ -326,7 +326,7 @@
         onBpmChange={creator.presentation.setBpm}
         onPlaybackModeChange={creator.presentation.setPlaybackMode}
         onPlaybackToggle={creator.presentation.togglePlaying}
-        bluePropType={propType}
+        leftPropType={propType}
         onPropChange={changeProp}
         propChirality={creator.presentation.chirality}
         animationSettingsState={creator.presentation.animationSettings}
@@ -462,9 +462,10 @@
       <TunnelPerformerRoster
         bind:this={performerRoster}
         displays={performerDisplays}
-        {bluePropType}
-        {redPropType}
-        spectrum={controller.spectrum}
+        {leftPropType}
+        {rightPropType}
+        colorMode={controller.colorMode}
+        customPropColors={controller.customPropColors}
         renderedInstanceCount={controller.performerCount}
         onChoose={(performerId) => creator.openPicker(performerId)}
         onChooseShapeMatrix={(performerId) => (shapeMatrixTarget = performerId)}
@@ -488,9 +489,11 @@
             rendered instances · {controller.propCount} props
           </p>
           <p>
-            {controller.spectrum
-              ? "Spectrum stage colors"
-              : "Pictograph hand colors"}
+            {controller.colorMode === "custom"
+              ? `Custom pair ${controller.customPropColors.left.toUpperCase()} / ${controller.customPropColors.right.toUpperCase()}`
+              : controller.colorMode === "spectrum"
+                ? "Spectrum stage colors"
+                : "Pictograph hand colors"}
           </p>
         </div>
       </header>
@@ -501,10 +504,10 @@
             sequence={creator.leadSequence}
             {controller}
             bpm={creator.presentation.bpm}
-            bluePropType={propType}
-            redPropType={propType}
-            blueBuugengFlipped={creator.presentation.blueBuugengFlipped}
-            redBuugengFlipped={creator.presentation.redBuugengFlipped}
+            leftPropType={propType}
+            rightPropType={propType}
+            leftBuugengFlipped={creator.presentation.leftBuugengFlipped}
+            rightBuugengFlipped={creator.presentation.rightBuugengFlipped}
             playing={creator.presentation.playing}
             onPlayingChange={creator.presentation.setPlaying}
             animationSettingsState={creator.presentation.animationSettings}

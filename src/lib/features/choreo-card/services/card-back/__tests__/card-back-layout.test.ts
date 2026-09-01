@@ -39,7 +39,7 @@ function makeData(loopComponents: Set<LOOPComponent>): CardBackData {
     rotationPeriod: undefined,
     loopLabel: null, loopExplanation: null, sliceName: null, sliceDetail: null, isRotated: false,
     startPosition: null, tndRatio: null,
-    turnGlyphEntries: [{ blue: 0, red: 0 }], turnLabel: "0", startPositionLabel: null,
+    turnGlyphEntries: [{ left: 0, right: 0 }], turnLabel: "0", startPositionLabel: null,
     reversalSequence: "----", reversalPeriod: 1, reversalLabel: "Cont.",
     handPathFamily: null, tkaDesignation: null, tndDesignation: null,
   };

@@ -30,7 +30,10 @@ const presentationSnapshot = {
   tunnel: {
     config: DEFAULT_CONFIG,
     gridVisible: true,
-    spectrum: false,
+    colors: {
+      mode: "hands",
+      custom: { left: "#2e8bf0", right: "#ed1c24" },
+    },
     section: "effects",
   },
   effects: { activeEffect: "none" },
@@ -38,15 +41,15 @@ const presentationSnapshot = {
   paths: {
     pathShape: "arc",
     motionAwarePaths: false,
-    bluePathLines: false,
-    redPathLines: false,
+    leftPathLines: false,
+    rightPathLines: false,
   },
   playback: { bpm: 108, playbackMode: "step" },
   props: {
-    bluePropType: "staff",
-    redPropType: "staff",
-    blueBuugengFlipped: false,
-    redBuugengFlipped: true,
+    leftPropType: "staff",
+    rightPropType: "staff",
+    leftBuugengFlipped: false,
+    rightBuugengFlipped: true,
   },
   trailRender: { mode: "trail" },
 } as unknown as TunnelSnapshot;
@@ -508,14 +511,14 @@ describe("tunnel creator edit state", () => {
       version: 1,
       baseSequenceId: "l1-tnd-AAAA",
       mode: "SS",
-      blueFlower: {
+      leftFlower: {
         style: "pro",
         turns: 1,
         ori: "in",
         grid: "diamond",
         petals: 2,
       },
-      redFlower: {
+      rightFlower: {
         style: "anti",
         turns: 2,
         ori: "out",

@@ -120,7 +120,6 @@ export function createSequenceState(services: SequenceStateServices) {
     onSave: saveSequenceDataOnly,
   });
 
-
   async function initializeWithPersistence(): Promise<void> {
     // Check if there's a pending deep link OR pending edit - if so, skip persistence restoration
     // This prevents overwriting deep link/pending edit sequences with old saved state
@@ -252,7 +251,6 @@ export function createSequenceState(services: SequenceStateServices) {
 
     return true;
   }
-
 
   async function loadSequences(): Promise<void> {
     if (!sequenceService) return;
@@ -388,7 +386,6 @@ export function createSequenceState(services: SequenceStateServices) {
       console.error("Failed to update step:", error);
     }
   }
-
 
   function setCurrentSequence(sequence: SequenceData | null): void {
     // Normalize step numbers for imported sequences (e.g., from Browse gallery).
@@ -806,7 +803,7 @@ export function createSequenceState(services: SequenceStateServices) {
       transformOperations.flipSequence(targetHand),
     invertSequence: (targetHand: TargetHand = "both") =>
       transformOperations.invertSequence(targetHand),
-    swapColors: () => transformOperations.swapColors(),
+    swapHands: () => transformOperations.swapHands(),
     rotateSequence: (
       direction: "clockwise" | "counterclockwise",
       targetHand: TargetHand = "both",

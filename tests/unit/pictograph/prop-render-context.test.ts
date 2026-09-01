@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
   applyEditorTorchPalette,
@@ -99,10 +99,10 @@ describe("editor prop contrast contract", () => {
   });
 
   it.each([
-    [PropType.TORCH, "torch.svg", MotionColor.BLUE, 1],
-    [PropType.TORCH, "torch.svg", MotionColor.RED, 1],
-    [PropType.BIGTORCH, "bigtorch.svg", MotionColor.BLUE, 3],
-    [PropType.BIGTORCH, "bigtorch.svg", MotionColor.RED, 3],
+    [PropType.TORCH, "torch.svg", HandSide.LEFT, 1],
+    [PropType.TORCH, "torch.svg", HandSide.RIGHT, 1],
+    [PropType.BIGTORCH, "bigtorch.svg", HandSide.LEFT, 3],
+    [PropType.BIGTORCH, "bigtorch.svg", HandSide.RIGHT, 3],
   ])(
     "marks and recolors the real %s (%s) geometry for the %s hand",
     (propType, filename, color, shaftPartCount) => {
@@ -185,7 +185,7 @@ describe("editor prop contrast contract", () => {
         ),
         "utf8"
       );
-      const handColored = applyMotionColorToSvg(original, MotionColor.BLUE, {
+      const handColored = applyMotionColorToSvg(original, HandSide.LEFT, {
         makeClassNamesUnique: true,
         selectiveColorMode: true,
         themeMode: "light",
@@ -257,7 +257,7 @@ describe("editor prop contrast contract", () => {
         ),
         "utf8"
       );
-      const handColored = applyMotionColorToSvg(original, MotionColor.BLUE, {
+      const handColored = applyMotionColorToSvg(original, HandSide.LEFT, {
         makeClassNamesUnique: true,
         selectiveColorMode: true,
         themeMode: "dark",

@@ -5,7 +5,7 @@ import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/mo
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -14,24 +14,24 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 function makeStep(
   stepNumber: number,
-  blue: Partial<Parameters<typeof createMotionData>[0]>,
-  red: Partial<Parameters<typeof createMotionData>[0]>
+  left: Partial<Parameters<typeof createMotionData>[0]>,
+  right: Partial<Parameters<typeof createMotionData>[0]>
 ): StepData {
   return {
     id: `step-${stepNumber}`,
     stepNumber,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
-        color: MotionColor.BLUE,
-        ...blue,
+      [HandSide.LEFT]: createMotionData({
+        hand: HandSide.LEFT,
+        ...left,
       }),
-      [MotionColor.RED]: createMotionData({
-        color: MotionColor.RED,
-        ...red,
+      [HandSide.RIGHT]: createMotionData({
+        hand: HandSide.RIGHT,
+        ...right,
       }),
     },
   };
@@ -49,13 +49,13 @@ function assertOrientationsReturnToStart(
   const firstStep = sequence.steps[0];
   const lastStep = sequence.steps[sequence.steps.length - 1];
 
-  const blueStart = firstStep.motions[MotionColor.BLUE]!.startOrientation;
-  const redStart = firstStep.motions[MotionColor.RED]!.startOrientation;
-  const blueEnd = lastStep.motions[MotionColor.BLUE]!.endOrientation;
-  const redEnd = lastStep.motions[MotionColor.RED]!.endOrientation;
+  const leftStart = firstStep.motions[HandSide.LEFT]!.startOrientation;
+  const rightStart = firstStep.motions[HandSide.RIGHT]!.startOrientation;
+  const leftEnd = lastStep.motions[HandSide.LEFT]!.endOrientation;
+  const rightEnd = lastStep.motions[HandSide.RIGHT]!.endOrientation;
 
-  expect(blueEnd, `${label}: blue end orientation`).toBe(blueStart);
-  expect(redEnd, `${label}: red end orientation`).toBe(redStart);
+  expect(leftEnd, `${label}: blue end orientation`).toBe(leftStart);
+  expect(rightEnd, `${label}: red end orientation`).toBe(rightStart);
 }
 
 describe("OrientationCycleExtender for infinite generator chaining", () => {

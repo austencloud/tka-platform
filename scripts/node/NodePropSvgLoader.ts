@@ -12,7 +12,7 @@ import type {
   IPropSvgLoader,
   PropSvgLoadOptions,
 } from "../../src/lib/shared/pictograph/prop/services/contracts/IPropSvgLoader";
-import { MotionColor } from "../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   applyMotionColorToSvg,
   type ThemeMode,
@@ -47,7 +47,7 @@ export class NodePropSvgLoader implements IPropSvgLoader {
     try {
       // Get prop type and color
       const propType = motionData.propType || "staff";
-      const color = motionData.color || MotionColor.BLUE;
+      const color = motionData.hand || HandSide.LEFT;
 
       // Use explicit theme mode if provided, default to light
       const themeMode = options?.themeMode ?? "light";

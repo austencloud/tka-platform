@@ -191,7 +191,7 @@ describe("sequence combinator — walk search", () => {
       maxResults: 5_000,
       allowMirror: false,
       allowRotation: false,
-      allowColorSwap: false,
+      allowHandSwap: false,
       exploreRotationFaithful: false,
     });
 

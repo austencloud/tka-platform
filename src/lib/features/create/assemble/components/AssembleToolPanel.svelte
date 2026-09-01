@@ -78,8 +78,8 @@
     const maxSteps = getMaxSteps(accessTier);
     // Completed steps = min of both hands' step counts (each pair = one step)
     const pairedSteps = Math.min(
-      builderState.blueSteps.length,
-      builderState.redSteps.length
+      builderState.leftSteps.length,
+      builderState.rightSteps.length
     );
     if (pairedSteps >= maxSteps) {
       if (accessTier === "guest") {

@@ -78,8 +78,8 @@ const TND_MODE_TO_FAMILY: Readonly<Record<TnDMode, string>> = {
 };
 
 interface Cell {
-  blue: Flower;
-  red: Flower;
+  left: Flower;
+  right: Flower;
   grid: "diamond" | "box";
 }
 
@@ -115,8 +115,8 @@ async function loadPool(): Promise<PoolData> {
         true,
       );
       const cells: Cell[] = [];
-      for (const blue of diamond) for (const red of diamond) cells.push({ blue, red, grid: "diamond" });
-      for (const blue of box) for (const red of box) cells.push({ blue, red, grid: "box" });
+      for (const left of diamond) for (const right of diamond) cells.push({ left, right, grid: "diamond" });
+      for (const left of box) for (const right of box) cells.push({ left, right, grid: "box" });
 
       return { idx, edges, cells };
     })().catch((e) => {
@@ -140,8 +140,8 @@ function oriToOrientation(o: "in" | "out"): Orientation {
 /** Key identifying a start pose by its two hands' start locations (what rotation
  *  actually moves). Two poses with the same key are the same grid position. */
 function startLocKey(sp: StartPositionData | undefined | null): string | null {
-  const b = sp?.motions?.blue?.startLocation;
-  const r = sp?.motions?.red?.startLocation;
+  const b = sp?.motions?.left?.startLocation;
+  const r = sp?.motions?.right?.startLocation;
   return b && r ? `${b}|${r}` : null;
 }
 
@@ -234,15 +234,15 @@ export async function drawMatrixRealization(opts?: {
     const mode = MODE_ORDER[Math.floor(random() * MODE_ORDER.length)];
     if (!cell || !mode) continue;
 
-    const base = resolveBase(idx, mode, cell.blue.style, cell.red.style);
+    const base = resolveBase(idx, mode, cell.left.style, cell.right.style);
     if (!base) continue;
 
     const descriptor: CardVariation = {
-      turnPattern: `${fmtTurn(cell.blue.turns)}|${fmtTurn(cell.red.turns)}`,
+      turnPattern: `${fmtTurn(cell.left.turns)}|${fmtTurn(cell.right.turns)}`,
       gridMode: cell.grid,
       startOriPair: {
-        blue: oriToOrientation(cell.blue.ori),
-        red: oriToOrientation(cell.red.ori),
+        left: oriToOrientation(cell.left.ori),
+        right: oriToOrientation(cell.right.ori),
       },
     };
 

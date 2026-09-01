@@ -29,8 +29,7 @@ function isReversal(prev: string, current: string): boolean {
     return false;
   }
   return (
-    (prev === "cw" && current === "ccw") ||
-    (prev === "ccw" && current === "cw")
+    (prev === "cw" && current === "ccw") || (prev === "ccw" && current === "cw")
   );
 }
 
@@ -48,7 +47,8 @@ export class ReversalConstraint implements IVariationConstraint {
 
     switch (reversalMode) {
       case "every":
-        this.description = "Maximize prop reversals (as many as the word allows)";
+        this.description =
+          "Maximize prop reversals (as many as the word allows)";
         break;
       case "minimize":
         this.description = "Minimize prop reversals";
@@ -69,7 +69,8 @@ export class ReversalConstraint implements IVariationConstraint {
       };
     }
 
-    const previousStep = context.previousSteps[context.previousSteps.length - 1];
+    const previousStep =
+      context.previousSteps[context.previousSteps.length - 1];
     if (!previousStep) {
       return {
         score: 0.5,
@@ -79,26 +80,26 @@ export class ReversalConstraint implements IVariationConstraint {
     }
 
     // Check for reversals in this transition
-    const blueReversal = isReversal(
-      previousStep.blueMotion.rotationDirection,
-      context.candidate.blueMotion.rotationDirection
+    const leftReversal = isReversal(
+      previousStep.leftMotion.rotationDirection,
+      context.candidate.leftMotion.rotationDirection
     );
-    const redReversal = isReversal(
-      previousStep.redMotion.rotationDirection,
-      context.candidate.redMotion.rotationDirection
+    const rightReversal = isReversal(
+      previousStep.rightMotion.rotationDirection,
+      context.candidate.rightMotion.rotationDirection
     );
 
     // Check if motions are static (can't reverse)
-    const blueStatic =
-      previousStep.blueMotion.motionType === "static" ||
-      context.candidate.blueMotion.motionType === "static";
-    const redStatic =
-      previousStep.redMotion.motionType === "static" ||
-      context.candidate.redMotion.motionType === "static";
+    const leftStatic =
+      previousStep.leftMotion.motionType === "static" ||
+      context.candidate.leftMotion.motionType === "static";
+    const rightStatic =
+      previousStep.rightMotion.motionType === "static" ||
+      context.candidate.rightMotion.motionType === "static";
 
-    const hasReversal = blueReversal || redReversal;
-    const bothReversed = blueReversal && redReversal;
-    const bothStatic = blueStatic && redStatic;
+    const hasReversal = leftReversal || rightReversal;
+    const bothReversed = leftReversal && rightReversal;
+    const bothStatic = leftStatic && rightStatic;
 
     let score: number;
     let reason: string;
@@ -114,7 +115,7 @@ export class ReversalConstraint implements IVariationConstraint {
           reason = "Both hands reversed";
         } else if (hasReversal) {
           score = 0.75;
-          reason = blueReversal ? "Blue hand reversed" : "Red hand reversed";
+          reason = leftReversal ? "Left hand reversed" : "Right hand reversed";
         } else {
           score = 0;
           reason = "No reversal (want reversal every beat)";

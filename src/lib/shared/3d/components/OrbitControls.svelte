@@ -25,8 +25,16 @@
   import { onMount, onDestroy } from "svelte";
   import { useThrelte, useTask } from "@threlte/core";
   import {
-    Vector2, Vector3, Vector4, Quaternion, Matrix4,
-    Spherical, Box3, Sphere, Raycaster, MathUtils,
+    Vector2,
+    Vector3,
+    Vector4,
+    Quaternion,
+    Matrix4,
+    Spherical,
+    Box3,
+    Sphere,
+    Raycaster,
+    MathUtils,
   } from "three";
   import type { PerspectiveCamera, WebGLRenderer } from "three";
   import CameraControls from "camera-controls";
@@ -35,10 +43,22 @@
   // library has the three.js subset it needs regardless of which
   // consumer mounts first.
   CameraControls.install({
-    THREE: { Vector2, Vector3, Vector4, Quaternion, Matrix4, Spherical, Box3, Sphere, Raycaster, MathUtils },
+    THREE: {
+      Vector2,
+      Vector3,
+      Vector4,
+      Quaternion,
+      Matrix4,
+      Spherical,
+      Box3,
+      Sphere,
+      Raycaster,
+      MathUtils,
+    },
   });
 
   type Vec3Tuple = [number, number, number];
+  type RightDragAction = "pan" | "rotate" | "none";
 
   interface Props {
     /** Live CameraControls instance - null until the component mounts. */
@@ -70,6 +90,12 @@
     /** Mapped to `dollySpeed`. */
     zoomSpeed?: number;
     enablePan?: boolean;
+    /**
+     * Overrides the right mouse button without changing touch or middle-button
+     * behavior. Omit to preserve the standard contract: pan when enabled,
+     * otherwise no action.
+     */
+    rightDragAction?: RightDragAction;
     autoRotate?: boolean;
     /** Matches three.js OrbitControls units (~6deg/s per unit at 60fps). */
     autoRotateSpeed?: number;
@@ -115,6 +141,7 @@
     panSpeed,
     zoomSpeed,
     enablePan = true,
+    rightDragAction,
     autoRotate = false,
     autoRotateSpeed = 2.0,
     paused = false,
@@ -186,10 +213,12 @@
     if (controls && maxDistance != null) controls.maxDistance = maxDistance;
   });
   $effect(() => {
-    if (controls && minPolarAngle != null) controls.minPolarAngle = minPolarAngle;
+    if (controls && minPolarAngle != null)
+      controls.minPolarAngle = minPolarAngle;
   });
   $effect(() => {
-    if (controls && maxPolarAngle != null) controls.maxPolarAngle = maxPolarAngle;
+    if (controls && maxPolarAngle != null)
+      controls.maxPolarAngle = maxPolarAngle;
   });
   $effect(() => {
     if (controls && minAzimuthAngle != null)
@@ -216,12 +245,21 @@
   });
   $effect(() => {
     if (!controls) return;
+    const rightAction =
+      rightDragAction === "rotate"
+        ? CameraControls.ACTION.ROTATE
+        : rightDragAction === "pan"
+          ? CameraControls.ACTION.TRUCK
+          : rightDragAction === "none"
+            ? CameraControls.ACTION.NONE
+            : enablePan
+              ? CameraControls.ACTION.TRUCK
+              : CameraControls.ACTION.NONE;
+    controls.mouseButtons.right = rightAction;
     if (!enablePan) {
-      controls.mouseButtons.right = CameraControls.ACTION.NONE;
       controls.mouseButtons.middle = CameraControls.ACTION.DOLLY;
       controls.touches.two = CameraControls.ACTION.TOUCH_DOLLY_ROTATE;
     } else {
-      controls.mouseButtons.right = CameraControls.ACTION.TRUCK;
       controls.mouseButtons.middle = CameraControls.ACTION.DOLLY;
       controls.touches.two = CameraControls.ACTION.TOUCH_DOLLY_TRUCK;
     }
@@ -243,7 +281,8 @@
     if (!controls || paused) return;
     const clampedDelta = Math.min(delta, 0.1);
     if (autoRotate) {
-      controls.azimuthAngle += clampedDelta * AUTO_ROTATE_RAD_PER_SEC * autoRotateSpeed;
+      controls.azimuthAngle +=
+        clampedDelta * AUTO_ROTATE_RAD_PER_SEC * autoRotateSpeed;
     }
     controls.update(clampedDelta);
   });

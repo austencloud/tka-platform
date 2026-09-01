@@ -19,7 +19,7 @@
  */
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
-import { Orientation, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { Orientation, HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 
 export type StartOriMode = "radial" | "nonradial" | "split";
@@ -36,12 +36,12 @@ export function positionFamilyOf(sp: StartPositionData): PositionFamily | null {
     (sp.gridPosition ?? sp.startPosition ?? sp.endPosition ?? null) as string | null;
 
   if (!pos) {
-    const blue = sp.motions?.[MotionColor.BLUE];
-    const red = sp.motions?.[MotionColor.RED];
+    const left = sp.motions?.[HandSide.LEFT];
+    const right = sp.motions?.[HandSide.RIGHT];
     // Invisible placeholder = hand not really there (both-required Step shape).
-    if (isVisibleMotion(blue) && isVisibleMotion(red)) {
+    if (isVisibleMotion(left) && isVisibleMotion(right)) {
       try {
-        pos = getGridPositionFromLocations(blue.startLocation, red.startLocation);
+        pos = getGridPositionFromLocations(left.startLocation, right.startLocation);
       } catch {
         pos = null;
       }
@@ -59,20 +59,20 @@ export function positionFamilyOf(sp: StartPositionData): PositionFamily | null {
 export function resolveStartOrientation(
   mode: StartOriMode,
   family: PositionFamily,
-): { blue: Orientation; red: Orientation } {
+): { left: Orientation; right: Orientation } {
   if (mode === "radial") {
-    return { blue: Orientation.IN, red: Orientation.IN };
+    return { left: Orientation.IN, right: Orientation.IN };
   }
   if (mode === "split") {
     // Mixed: blue stays radial (IN); red goes nonradial — CLOCK for beta,
     // COUNTER for alpha / gamma.
     return {
-      blue: Orientation.IN,
-      red: family === "beta" ? Orientation.CLOCK : Orientation.COUNTER,
+      left: Orientation.IN,
+      right: family === "beta" ? Orientation.CLOCK : Orientation.COUNTER,
     };
   }
   // nonradial: beta is counter|clock; alpha & gamma are clock|counter.
   return family === "beta"
-    ? { blue: Orientation.COUNTER, red: Orientation.CLOCK }
-    : { blue: Orientation.CLOCK, red: Orientation.COUNTER };
+    ? { left: Orientation.COUNTER, right: Orientation.CLOCK }
+    : { left: Orientation.CLOCK, right: Orientation.COUNTER };
 }

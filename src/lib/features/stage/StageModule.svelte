@@ -86,7 +86,7 @@
   // camera, scene, presets — reach real rigs instead of doing nothing.
   const viewer = createViewer3DState(undefined, {
     firstUseEnvironment: stageState.choreography.environmentId,
-    appDefaultProp: settings.bluePropType ?? null,
+    appDefaultProp: settings.leftPropType ?? null,
   });
   setViewer3DContext(viewer);
   viewer.setEnvironmentId(stageState.choreography.environmentId);
@@ -118,6 +118,7 @@
   let starterEnvironmentPreview = $state(false);
   let starterTransitionId = 0;
   let timelineExpanded = $state(false);
+  let timelineBeforeCompactSheet: boolean | null = null;
   let timelineLens = $state<"hands" | "floor" | "motion">("hands");
   let workspaceSizes = $state<number[]>([]);
   let pickerOpen = $state(false);
@@ -285,7 +286,7 @@
     };
   });
 
-  // Cast size and per-lane sequences are document facts; look edits — avatar,
+  // Cast size and per-lane sequences are document facts; look edits — character,
   // prop, effort, effects, planes — stay with the performer manager and are
   // never rewritten from here, so the rail's Performer tool keeps working.
   //
@@ -402,6 +403,24 @@
 
   function collapseChoreography(): void {
     timelineExpanded = false;
+  }
+
+  function handleCompactSceneSheetChange(
+    sheet: "performer" | "scene" | null
+  ): void {
+    if (sheet) {
+      if (timelineBeforeCompactSheet === null) {
+        timelineBeforeCompactSheet = timelineExpanded;
+      }
+      timelineExpanded = false;
+      return;
+    }
+
+    const shouldRestore = timelineBeforeCompactSheet;
+    timelineBeforeCompactSheet = null;
+    // If the user expanded the timeline while the sheet was open, that newer
+    // intent wins. Otherwise restore the layout they had before editing.
+    if (!timelineExpanded && shouldRestore) timelineExpanded = true;
   }
 
   function chooseSequence(next: SequenceData): void {
@@ -770,8 +789,8 @@
           width: choreography.stageWidth,
           depth: choreography.stageDepth,
         }}
-        bluePropType={settings.bluePropType ?? settings.propType ?? "staff"}
-        redPropType={settings.redPropType ?? settings.propType ?? "staff"}
+        leftPropType={settings.leftPropType ?? settings.propType ?? "staff"}
+        rightPropType={settings.rightPropType ?? settings.propType ?? "staff"}
         onChangeSequence={() => (pickerOpen = true)}
         onExport={sharedSequence ? () => (exportOpen = true) : undefined}
         exportBusy={exporter.state.isExporting}
@@ -790,6 +809,7 @@
         renderEmptyScene
         visiblePerformerCount={starterSceneBlank ? 0 : undefined}
         showSceneChrome={!starterSceneBlank}
+        onCompactSceneSheetChange={handleCompactSceneSheetChange}
         contained
       />
     {:else}

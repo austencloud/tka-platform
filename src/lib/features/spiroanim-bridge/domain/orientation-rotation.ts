@@ -75,18 +75,18 @@ function rotateLocation(location: GridLocation, steps: number): GridLocation | n
  */
 export function rotatePositionName(position: string, steps: number): string | null {
   if (steps === 0) return position;
-  let blue: GridLocation;
-  let red: GridLocation;
+  let left: GridLocation;
+  let right: GridLocation;
   try {
-    [blue, red] = getGridLocationsFromPosition(position as GridPosition);
+    [left, right] = getGridLocationsFromPosition(position as GridPosition);
   } catch {
     return null;
   }
-  const rotatedBlue = rotateLocation(blue, steps);
-  const rotatedRed = rotateLocation(red, steps);
-  if (!rotatedBlue || !rotatedRed) return null;
+  const rotatedLeft = rotateLocation(left, steps);
+  const rotatedRight = rotateLocation(right, steps);
+  if (!rotatedLeft || !rotatedRight) return null;
   try {
-    return getGridPositionFromLocations(rotatedBlue, rotatedRed);
+    return getGridPositionFromLocations(rotatedLeft, rotatedRight);
   } catch {
     return null;
   }

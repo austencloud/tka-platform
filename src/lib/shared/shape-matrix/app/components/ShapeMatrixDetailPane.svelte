@@ -1,19 +1,23 @@
 <script lang="ts">
   import ShapeMatrixDrill from "$lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import type { ShapeMatrixRelationshipDriver } from "../state/shape-matrix-app-state.svelte";
-  import { Popover } from "bits-ui";
 
   const state = getShapeMatrixAppContext();
   const DRIVER_OPTIONS = [
-    { value: "hands" as const, label: "Hand path", shortLabel: "Hands" },
+    { value: "hands" as const, label: "Hands" },
     {
       value: "props" as const,
-      label: "Prop motion",
-      shortLabel: "Props",
+      label: "Props",
     },
   ];
+  const driverHint = $derived(
+    state.relationshipDriver === "hands"
+      ? "Pick by where your hands travel."
+      : "Pick by what the prop does."
+  );
 </script>
 
 {#snippet driverOption(driver: ShapeMatrixRelationshipDriver)}
@@ -21,48 +25,20 @@
     class={driver === "hands" ? "fas fa-hands" : "fas fa-wand-magic-sparkles"}
     aria-hidden="true"
   ></i>
-  <span class="driver-full">{driver === "hands" ? "Hand path" : "Prop motion"}</span>
-  <span class="driver-short">{driver === "hands" ? "Hands" : "Props"}</span>
+  <span>{driver === "hands" ? "Hands" : "Props"}</span>
 {/snippet}
 
-<aside class="detail-pane" aria-label="Shape realization">
+<aside class="detail-pane" aria-label="Shape detail">
   <header class="pane-heading">
     <div class="heading-title">
-      <span class="eyebrow">Realization</span>
-      <Popover.Root>
-        <Popover.Trigger>
-          {#snippet child({ props })}
-            <button
-              {...props}
-              type="button"
-              class="info-action"
-              aria-label="How hand and prop relationships are connected"
-            >
-              <i class="fas fa-circle-info" aria-hidden="true"></i>
-            </button>
-          {/snippet}
-        </Popover.Trigger>
-        <Popover.Portal>
-          <Popover.Content
-            class="relationship-info-popover"
-            side="bottom"
-            align="start"
-            sideOffset={8}
-            collisionPadding={16}
-          >
-            <strong>Hands and props</strong>
-            <p>
-              Choose a hand path to see the prop relationship it produces, or
-              choose a prop relationship to find a matching hand path. The
-              paired result stays below the animation. Both controls describe
-              the same realization from a different starting point.
-            </p>
-          </Popover.Content>
-        </Popover.Portal>
-      </Popover.Root>
+      <span class="eyebrow">Shape detail</span>
+      <div class="driver-hint-slot">
+        <Crossfade key={state.relationshipDriver}>
+          <span class="driver-hint">{driverHint}</span>
+        </Crossfade>
+      </div>
     </div>
     <div class="driver-control">
-      <span class="driver-label">Choose from</span>
       <SegmentedControl
         options={DRIVER_OPTIONS}
         value={state.relationshipDriver}
@@ -105,7 +81,7 @@
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
     border-radius: 16px;
-    background: rgb(16 23 33 / 0.82);
+    background: var(--theme-panel-bg, rgb(16 23 33 / 0.82));
   }
 
   .pane-heading {
@@ -124,104 +100,49 @@
 
   .heading-title {
     display: flex;
-    align-items: center;
-    gap: 0.35rem;
+    align-items: baseline;
+    gap: 0.6rem;
     min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
+  .driver-hint-slot {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .driver-hint {
+    display: block;
+    overflow: hidden;
+    color: var(--theme-text-dim, rgb(255 255 255 / 0.55));
+    font-size: var(--font-size-min, 0.875rem);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .driver-control {
-    width: min(18rem, 58%);
+    width: min(14rem, 58%);
     margin-left: auto;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: 0.5rem;
-    --theme-accent: #d9901a;
+    flex: 0 0 auto;
   }
 
-  .driver-label {
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 600;
-    letter-spacing: 0.015em;
-    white-space: nowrap;
-  }
-
-  .driver-full,
-  .driver-short {
-    white-space: nowrap;
-  }
-
-  .driver-short {
-    display: none;
-  }
-
-  @container shape-matrix-detail-heading (max-width: 34rem) {
-    .driver-full {
+  /* The hint is a nicety, not chrome: once the divider squeezes the pane it
+     yields its space to the title and the control. The About modal carries
+     the full explanation for anyone who wants it. */
+  @container shape-matrix-detail-heading (max-width: 40rem) {
+    .driver-hint-slot {
       display: none;
-    }
-
-    .driver-short {
-      display: inline;
     }
   }
 
   .eyebrow {
-    color: #f4b54c;
+    flex: 0 0 auto;
+    color: var(--theme-accent, #f4b54c);
     font-size: var(--font-size-min, 0.875rem);
     font-weight: 650;
     letter-spacing: 0.015em;
-  }
-
-  .info-action {
-    display: grid;
-    place-items: center;
-    width: var(--min-touch-target, 44px);
-    height: var(--min-touch-target, 44px);
-    flex: 0 0 auto;
-    padding: 0;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
-    font: inherit;
-    cursor: pointer;
-  }
-
-  .info-action:hover {
-    color: #f4b54c;
-    background: rgb(245 158 11 / 0.08);
-  }
-
-  .info-action:focus-visible {
-    outline: 2px solid #f59e0b;
-    outline-offset: 2px;
-  }
-
-  :global(.relationship-info-popover) {
-    z-index: var(--z-dropdown, 1000);
-    width: min(22rem, calc(100vw - 32px));
-    padding: 1rem;
-    border: 1px solid var(--theme-stroke-strong, rgb(255 255 255 / 0.18));
-    border-radius: 14px;
-    /* The root theme's panel token may be translucent. A portaled disclosure
-       needs an opaque reading surface because it sits over animated content. */
-    background: #101721;
-    box-shadow: 0 18px 48px rgb(0 0 0 / 0.42);
-    color: var(--theme-text, #fff);
-  }
-
-  :global(.relationship-info-popover strong) {
-    display: block;
-    margin-bottom: 0.35rem;
-    font-size: 0.9rem;
-  }
-
-  :global(.relationship-info-popover p) {
-    margin: 0;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.68));
-    font-size: var(--font-size-sm, 0.875rem);
-    line-height: 1.5;
+    white-space: nowrap;
   }
 
   .drill-stage {
@@ -229,7 +150,7 @@
     min-height: 0;
     padding: 0.9rem;
     overflow: hidden;
-    background: #0a0f14;
+    background: var(--theme-panel-bg, #0a0f14);
     container: shape-matrix-drill / size;
   }
 
@@ -239,6 +160,7 @@
     width: 100%;
     height: 100%;
     text-align: center;
+    font-size: var(--font-size-min, 0.875rem);
   }
 
   @container shape-matrix-app (max-width: 74.99rem) or (max-height: 41.99rem) {
@@ -270,10 +192,6 @@
     .driver-control {
       width: min(11.5rem, 54%);
       flex: 0 0 auto;
-    }
-
-    .driver-label {
-      display: none;
     }
   }
 </style>

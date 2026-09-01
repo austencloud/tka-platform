@@ -93,10 +93,10 @@
     onMandalaClick,
     getStepKey,
     getDurationDisplay,
-    bluePropTypeOverride = undefined,
-    redPropTypeOverride = undefined,
-    blueColorOverride = undefined,
-    redColorOverride = undefined,
+    leftPropTypeOverride = undefined,
+    rightPropTypeOverride = undefined,
+    leftColorOverride = undefined,
+    rightColorOverride = undefined,
     sequenceWord = "",
     arrivalRequest = null,
     scrollContainerRef = $bindable(),
@@ -134,10 +134,10 @@
     ) => void;
     getStepKey: (beat: StepData, index: number) => string;
     getDurationDisplay: (stepIndex: number) => string;
-    bluePropTypeOverride?: PropType;
-    redPropTypeOverride?: PropType;
-    blueColorOverride?: string;
-    redColorOverride?: string;
+    leftPropTypeOverride?: PropType;
+    rightPropTypeOverride?: PropType;
+    leftColorOverride?: string;
+    rightColorOverride?: string;
     sequenceWord?: string;
     arrivalRequest?: PictographArrivalRequest | null;
     scrollContainerRef?: HTMLElement;
@@ -349,11 +349,11 @@
   // (single- vs dual-ended) from this, so passing the raw (often undefined)
   // override drew the dual-staff figure even for a club. Mirrors the
   // collection-save resolution below.
-  const effectiveBluePropType = $derived(
-    bluePropTypeOverride ?? settingsService.settings.bluePropType ?? "staff"
+  const effectiveLeftPropType = $derived(
+    leftPropTypeOverride ?? settingsService.settings.leftPropType ?? "staff"
   );
-  const effectiveRedPropType = $derived(
-    redPropTypeOverride ?? settingsService.settings.redPropType ?? "staff"
+  const effectiveRightPropType = $derived(
+    rightPropTypeOverride ?? settingsService.settings.rightPropType ?? "staff"
   );
 
   // --- Duration resize (timeline only) ---
@@ -431,8 +431,8 @@
       rows: gridLayout.rows,
       includeStartPosition: hasStartPosition,
       showQRCode: false,
-      blueVisible: true,
-      redVisible: true,
+      leftVisible: true,
+      rightVisible: true,
       mandalaEnabled: true,
       startPositionLayout: "column",
     });
@@ -655,8 +655,8 @@
       rows: rowCount,
       includeStartPosition: hasStartPosition,
       showQRCode: false,
-      blueVisible: true,
-      redVisible: true,
+      leftVisible: true,
+      rightVisible: true,
       mandalaEnabled: true,
       startPositionLayout: "column",
     });
@@ -708,12 +708,12 @@
 
   const mandalaSize = $derived(Math.round(cellSize * MANDALA_CELL_SCALE));
   const mandalaPaletteOverride = $derived.by((): MandalaPalette | undefined => {
-    if (!blueColorOverride || !redColorOverride) return undefined;
+    if (!leftColorOverride || !rightColorOverride) return undefined;
     return {
-      blueStroke: blueColorOverride,
-      blueFill: blueColorOverride,
-      redStroke: redColorOverride,
-      redFill: redColorOverride,
+      leftStroke: leftColorOverride,
+      leftFill: leftColorOverride,
+      rightStroke: rightColorOverride,
+      rightFill: rightColorOverride,
       purpleStroke: "#a78bfa",
       purpleFill: "#a78bfa",
     };
@@ -762,8 +762,8 @@
         const name = await saveMandalaToCollection({
           steps: [...steps],
           variant: mandalaMenuVariant,
-          bluePropType: effectiveBluePropType,
-          redPropType: effectiveRedPropType,
+          leftPropType: effectiveLeftPropType,
+          rightPropType: effectiveRightPropType,
           pathShape: mandalaPathShape,
           sequenceWord,
         });
@@ -797,8 +797,8 @@
     style="stroke"
     {show}
     size={mandalaSize}
-    bluePropType={effectiveBluePropType}
-    redPropType={effectiveRedPropType}
+    leftPropType={effectiveLeftPropType}
+    rightPropType={effectiveRightPropType}
     palette={mandalaPaletteOverride}
     pathShape={mandalaPathShape}
     morphChanges
@@ -854,10 +854,10 @@
                 onDelete={onStepDelete}
                 animationEpoch={displayState.animationEpoch}
                 isTimelineMode={true}
-                {bluePropTypeOverride}
-                {redPropTypeOverride}
-                {blueColorOverride}
-                {redColorOverride}
+                {leftPropTypeOverride}
+                {rightPropTypeOverride}
+                {leftColorOverride}
+                {rightColorOverride}
                 onContentReady={() =>
                   noteContentReady(START_TILE_REVEAL_KEY, 0)}
               />
@@ -977,10 +977,10 @@
                     isTimelineMode={true}
                     widthMultiplier={effectiveDuration}
                     animationEpoch={displayState.animationEpoch}
-                    {bluePropTypeOverride}
-                    {redPropTypeOverride}
-                    {blueColorOverride}
-                    {redColorOverride}
+                    {leftPropTypeOverride}
+                    {rightPropTypeOverride}
+                    {leftColorOverride}
+                    {rightColorOverride}
                     onContentReady={() => noteContentReady(stepIndex, waveBand)}
                   />
                 </div>
@@ -1025,10 +1025,10 @@
               onLongPress={onStepLongPress}
               onDelete={onStepDelete}
               animationEpoch={displayState.animationEpoch}
-              {bluePropTypeOverride}
-              {redPropTypeOverride}
-              {blueColorOverride}
-              {redColorOverride}
+              {leftPropTypeOverride}
+              {rightPropTypeOverride}
+              {leftColorOverride}
+              {rightColorOverride}
               onContentReady={() => noteContentReady(START_TILE_REVEAL_KEY, 0)}
             />
           </div>
@@ -1079,10 +1079,10 @@
               highlightStyle={highlightedSteps?.get(step.stepNumber) ?? null}
               {musicalPosition}
               animationEpoch={displayState.animationEpoch}
-              {bluePropTypeOverride}
-              {redPropTypeOverride}
-              {blueColorOverride}
-              {redColorOverride}
+              {leftPropTypeOverride}
+              {rightPropTypeOverride}
+              {leftColorOverride}
+              {rightColorOverride}
               onContentReady={() => noteContentReady(index, waveBand)}
             />
           </div>

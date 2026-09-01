@@ -12,7 +12,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 /** The executor interface both encoder and decoder need */
@@ -87,31 +87,31 @@ export function enrichStepsWithGridPositions(steps: StepData[]): void {
     // invisible placeholders for empty segments; deriving GridPositions from
     // placeholder locations would hand LOOP executors fabricated positions
     // for blank beats (Wave 0 straggler fix, presence register site C).
-    const blueRaw = step.motions?.[MotionColor.BLUE];
-    const redRaw = step.motions?.[MotionColor.RED];
-    const blue = isVisibleMotion(blueRaw) ? blueRaw : undefined;
-    const red = isVisibleMotion(redRaw) ? redRaw : undefined;
+    const leftRaw = step.motions?.[HandSide.LEFT];
+    const rightRaw = step.motions?.[HandSide.RIGHT];
+    const left = isVisibleMotion(leftRaw) ? leftRaw : undefined;
+    const right = isVisibleMotion(rightRaw) ? rightRaw : undefined;
 
     // StepData fields are readonly, but we need to set them here because
     // the flat encoder strips GridPosition and the executor needs it.
     const mutable = step as { startPosition: unknown; endPosition: unknown };
 
-    if (blue?.startLocation && red?.startLocation) {
+    if (left?.startLocation && right?.startLocation) {
       try {
         mutable.startPosition = getGridPositionFromLocations(
-          blue.startLocation as GridLocation,
-          red.startLocation as GridLocation
+          left.startLocation as GridLocation,
+          right.startLocation as GridLocation
         );
       } catch {
         // Unknown location combo - leave null
       }
     }
 
-    if (blue?.endLocation && red?.endLocation) {
+    if (left?.endLocation && right?.endLocation) {
       try {
         mutable.endPosition = getGridPositionFromLocations(
-          blue.endLocation as GridLocation,
-          red.endLocation as GridLocation
+          left.endLocation as GridLocation,
+          right.endLocation as GridLocation
         );
       } catch {
         // Unknown location combo - leave null

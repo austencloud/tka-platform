@@ -66,7 +66,10 @@ function tunnel(
       tunnel: {
         config: { ...DEFAULT_CONFIG, fold: 4 },
         gridVisible: false,
-        spectrum: false,
+        colors: {
+          mode: "hands",
+          custom: { left: "#2e8bf0", right: "#ed1c24" },
+        },
         section: "tunnel",
         presetRecipe: null,
       },
@@ -75,11 +78,11 @@ function tunnel(
       paths: {
         pathShape: "arc",
         motionAwarePaths: false,
-        bluePathLines: true,
-        redPathLines: true,
+        leftPathLines: true,
+        rightPathLines: true,
       },
       playback: { bpm: 60, playbackMode: "continuous" },
-      props: { bluePropType: "staff", redPropType: "staff" },
+      props: { leftPropType: "staff", rightPropType: "staff" },
       trailRender: { mode: "off" },
     },
   } as unknown as CollectedTunnel;
@@ -162,8 +165,8 @@ describe("TunnelLibraryPicker", () => {
     const staff = tunnel("staff", "Zulu", 100);
     const fans = tunnel("fans", "Alpha", 200);
     fans.snapshot.props = {
-      bluePropType: "fan",
-      redPropType: "fan",
+      leftPropType: "fan",
+      rightPropType: "fan",
     } as typeof fans.snapshot.props;
     fans.snapshot.tunnel.config = {
       ...DEFAULT_CONFIG,
@@ -230,8 +233,8 @@ describe("TunnelLibraryPicker", () => {
   it("discovers public tunnels and opens them through the public handoff", async () => {
     const published = tunnel("public-1", "Community spiral", 300, 2);
     published.snapshot.props = {
-      bluePropType: "fan",
-      redPropType: "club",
+      leftPropType: "fan",
+      rightPropType: "club",
     } as typeof published.snapshot.props;
     const envelope: PublicArtifactEnvelope = {
       artifactId: "public-1",

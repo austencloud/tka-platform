@@ -34,7 +34,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * approach between any two performers was measured, not estimated.
  */
 export const figuresFilm: FilmDirectorInput = {
-  version: 3,
+  version: 5,
   id: "figures-r1",
   title: "Figures",
   brief:
@@ -58,7 +58,7 @@ export const figuresFilm: FilmDirectorInput = {
             name: "Soloist",
             // Anyone but the three grey mannequins. The opening frame is a
             // silhouette, and a rig-coloured body reads as a placeholder.
-            avatarId: { not: ["x-bot", "y-bot", "remy"] },
+            characterId: { not: ["x-bot", "y-bot", "remy"] },
             prop: PropType.STAFF,
             effect: "led",
             effort: "glide",
@@ -125,7 +125,7 @@ export const figuresFilm: FilmDirectorInput = {
           {
             id: "near",
             name: "Near",
-            avatarId: "ch44",
+            characterId: "ch44",
             prop: PropType.BUUGENG,
             effect: "ghost",
             effort: "press",
@@ -142,7 +142,7 @@ export const figuresFilm: FilmDirectorInput = {
           {
             id: "far",
             name: "Far",
-            avatarId: "ch12",
+            characterId: "ch12",
             prop: PropType.BUUGENG,
             effect: "ghost",
             effort: "press",
@@ -160,8 +160,8 @@ export const figuresFilm: FilmDirectorInput = {
           decay: 7,
           interval: 0.72,
           intensity: 0.6,
-          blueColor: "#9fd8ff",
-          redColor: "#ffb3c7",
+          leftColor: "#9fd8ff",
+          rightColor: "#ffb3c7",
         },
       },
       camera: {
@@ -200,7 +200,7 @@ export const figuresFilm: FilmDirectorInput = {
           {
             id: "wheel-in-a",
             name: "Inner A",
-            avatarId: { pick: "distinct", from: ["ch07", "ch12", "ch18"] },
+            characterId: { pick: "distinct", from: ["ch07", "ch12", "ch18"] },
             prop: PropType.FAN,
             effect: "silk",
             effort: "glide",
@@ -222,7 +222,7 @@ export const figuresFilm: FilmDirectorInput = {
           {
             id: "wheel-in-b",
             name: "Inner B",
-            avatarId: { pick: "distinct", from: ["ch07", "ch12", "ch18"] },
+            characterId: { pick: "distinct", from: ["ch07", "ch12", "ch18"] },
             prop: PropType.FAN,
             effect: "silk",
             effort: "glide",
@@ -244,7 +244,7 @@ export const figuresFilm: FilmDirectorInput = {
           {
             id: "wheel-in-c",
             name: "Inner C",
-            avatarId: { pick: "distinct", from: ["ch07", "ch12", "ch18"] },
+            characterId: { pick: "distinct", from: ["ch07", "ch12", "ch18"] },
             prop: PropType.FAN,
             effect: "silk",
             effort: "glide",
@@ -266,7 +266,7 @@ export const figuresFilm: FilmDirectorInput = {
           {
             id: "wheel-out-a",
             name: "Outer A",
-            avatarId: { pick: "distinct", from: ["ch21", "ch41", "ch42"] },
+            characterId: { pick: "distinct", from: ["ch21", "ch41", "ch42"] },
             prop: PropType.STAFF,
             effect: "trails",
             effort: "linear",
@@ -288,7 +288,7 @@ export const figuresFilm: FilmDirectorInput = {
           {
             id: "wheel-out-b",
             name: "Outer B",
-            avatarId: { pick: "distinct", from: ["ch21", "ch41", "ch42"] },
+            characterId: { pick: "distinct", from: ["ch21", "ch41", "ch42"] },
             prop: PropType.STAFF,
             effect: "trails",
             effort: "linear",
@@ -310,7 +310,7 @@ export const figuresFilm: FilmDirectorInput = {
           {
             id: "wheel-out-c",
             name: "Outer C",
-            avatarId: { pick: "distinct", from: ["ch21", "ch41", "ch42"] },
+            characterId: { pick: "distinct", from: ["ch21", "ch41", "ch42"] },
             prop: PropType.STAFF,
             effect: "trails",
             effort: "linear",
@@ -389,7 +389,7 @@ export const figuresFilm: FilmDirectorInput = {
           {
             id: "hey-1",
             name: "Hey 1",
-            avatarId: { pick: "distinct", from: ["ch01", "ch22", "ch24", "ch44"] },
+            characterId: { pick: "distinct", from: ["ch01", "ch22", "ch24", "ch44"] },
             prop: PropType.STAFF,
             effect: "led",
             effort: "linear",
@@ -416,7 +416,7 @@ export const figuresFilm: FilmDirectorInput = {
           {
             id: "hey-2",
             name: "Hey 2",
-            avatarId: { pick: "distinct", from: ["ch01", "ch22", "ch24", "ch44"] },
+            characterId: { pick: "distinct", from: ["ch01", "ch22", "ch24", "ch44"] },
             prop: PropType.STAFF,
             effect: "led",
             effort: "linear",
@@ -443,7 +443,7 @@ export const figuresFilm: FilmDirectorInput = {
           {
             id: "hey-3",
             name: "Hey 3",
-            avatarId: { pick: "distinct", from: ["ch01", "ch22", "ch24", "ch44"] },
+            characterId: { pick: "distinct", from: ["ch01", "ch22", "ch24", "ch44"] },
             prop: { sameAs: "hey-1" },
             effect: { sameAs: "hey-1" },
             effort: "linear",
@@ -470,7 +470,7 @@ export const figuresFilm: FilmDirectorInput = {
           {
             id: "hey-4",
             name: "Hey 4",
-            avatarId: { pick: "distinct", from: ["ch01", "ch22", "ch24", "ch44"] },
+            characterId: { pick: "distinct", from: ["ch01", "ch22", "ch24", "ch44"] },
             prop: { sameAs: "hey-2" },
             effect: { sameAs: "hey-2" },
             effort: "linear",
@@ -546,7 +546,7 @@ export const figuresFilm: FilmDirectorInput = {
           count: 8,
           defaults: {
             effort: "glide",
-            avatarId: {
+            characterId: {
               pick: "distinct",
               from: ["ch01", "ch07", "ch10", "ch18", "ch22", "ch24", "ch34", "ch41"],
             },

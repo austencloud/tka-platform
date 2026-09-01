@@ -13,6 +13,7 @@ import {
   collectionGroup,
   deleteDoc,
   doc,
+  documentId,
   getDoc,
   getDocs,
   query,
@@ -1181,6 +1182,55 @@ describe("collections: person-specific viewer and editor grants", () => {
   });
 });
 
+describe("public collection member queries", () => {
+  const OWNER = "public-collection-owner";
+  const sequencePath = `users/${OWNER}/sequences`;
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore(SDK_SETTINGS);
+      await setDoc(doc(db, `${sequencePath}/public-sequence`), {
+        visibility: "public",
+        word: "AB",
+      });
+      await setDoc(doc(db, `${sequencePath}/private-sequence`), {
+        visibility: "private",
+        word: "CD",
+      });
+      await setDoc(doc(db, "publicSequences/public-sequence"), {
+        ownerId: OWNER,
+        word: "AB",
+      });
+    });
+  });
+
+  it("uses the public mirror when an owner batch mixes visibility", async () => {
+    const db = testEnv.unauthenticatedContext().firestore(SDK_SETTINGS);
+
+    await assertFails(
+      getDocs(
+        query(
+          collection(db, sequencePath),
+          where(documentId(), "in", ["public-sequence", "private-sequence"])
+        )
+      )
+    );
+
+    const visible = await assertSucceeds(
+      getDocs(
+        query(
+          collection(db, "publicSequences"),
+          where("ownerId", "==", OWNER),
+          where(documentId(), "in", ["public-sequence", "private-sequence"])
+        )
+      )
+    );
+    if (visible.size !== 1) {
+      throw new Error(`Expected one public member, received ${visible.size}`);
+    }
+  });
+});
+
 describe("collections: publishing requires a full account (2026-07-18 hardening)", () => {
   it("an anonymous guest CANNOT create a collection with isPublic == true", async () => {
     const db = anonCtx().firestore(SDK_SETTINGS);
@@ -1982,5 +2032,44 @@ describe("media composition presets: private reusable layouts", () => {
       setDoc(doc(outsider, presetPath(FULL_UID)), { name: "Changed" })
     );
     await assertFails(getDoc(doc(signedOut, presetPath(FULL_UID))));
+  });
+});
+
+describe("software history submissions", () => {
+  const submission = {
+    name: "SpiroAnim",
+    url: "https://example.com/spiroanim",
+    notes: "Early flow arts software",
+    source: "roots-software",
+  };
+
+  it("denies direct browser writes for every visitor role", async () => {
+    const databases = [
+      testEnv.unauthenticatedContext().firestore(SDK_SETTINGS),
+      anonCtx().firestore(SDK_SETTINGS),
+      fullCtx().firestore(SDK_SETTINGS),
+      adminCtx().firestore(SDK_SETTINGS),
+    ];
+
+    for (const db of databases) {
+      await assertFails(
+        addDoc(collection(db, "software_submissions"), submission)
+      );
+    }
+  });
+
+  it("keeps server-created submissions private to admins", async () => {
+    const path = "software_submissions/submission-1";
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), path), submission);
+    });
+
+    await assertSucceeds(getDoc(doc(adminCtx().firestore(SDK_SETTINGS), path)));
+    await assertFails(
+      getDoc(
+        doc(testEnv.unauthenticatedContext().firestore(SDK_SETTINGS), path)
+      )
+    );
+    await assertFails(getDoc(doc(fullCtx().firestore(SDK_SETTINGS), path)));
   });
 });

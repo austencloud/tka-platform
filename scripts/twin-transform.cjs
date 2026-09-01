@@ -1,9 +1,9 @@
 /**
  * Twin Transform — pure geometry for the mirror-swap "twin" of a sequence.
  *
- * A card's twin = color-swap ∘ vertical-mirror, applied to the FULL
+ * A card's twin = hand-swap ∘ vertical-mirror, applied to the FULL
  * loop-executed steps (start position + beats). Both operations are involutions
- * on independent axes (color vs geometry) so the pair map is an involution:
+ * on independent axes (hand vs geometry) so the pair map is an involution:
  * twin(twin(x)) === x.
  *
  * This module is intentionally dependency-free. The caller (enumerate-deck.cjs)
@@ -11,25 +11,25 @@
  * and a location->position table built from the CSV. Letter re-derivation and
  * orientation propagation are the caller's job (they need the CSV + the engine
  * orientation calculator), so they are NOT done here — this module only moves
- * hands and colors and derives positions from the resulting location pairs.
+ * hands and derives positions from the resulting location pairs.
  *
  * Mirrors the scripts/apply-reversal-pattern.cjs helper pattern: plain
  * CommonJS, no top-level side effects, module.exports at the bottom.
  */
 
 /**
- * Build a `${blueLoc}|${redLoc}` -> position lookup from the CSV edges. A
- * position IS the encoding of an ordered (blue, red) hand-location pair, so each
+ * Build a `${leftLoc}|${rightLoc}` -> position lookup from the CSV edges. A
+ * position IS the encoding of an ordered (left, right) hand-location pair, so each
  * edge contributes two facts: its start pair -> startPos and end pair -> endPos.
  *
- * @param {Array<{blueStartLoc:string,redStartLoc:string,startPos:string,blueEndLoc:string,redEndLoc:string,endPos:string}>} edges
+ * @param {Array<{leftStartLoc:string,rightStartLoc:string,startPos:string,leftEndLoc:string,rightEndLoc:string,endPos:string}>} edges
  * @returns {Record<string,string>}
  */
 function buildLocationToPositionMap(edges) {
   const map = {};
   for (const e of edges) {
-    map[`${e.blueStartLoc}|${e.redStartLoc}`] = e.startPos;
-    map[`${e.blueEndLoc}|${e.redEndLoc}`] = e.endPos;
+    map[`${e.leftStartLoc}|${e.rightStartLoc}`] = e.startPos;
+    map[`${e.leftEndLoc}|${e.rightEndLoc}`] = e.endPos;
   }
   return map;
 }
@@ -38,42 +38,43 @@ function buildLocationToPositionMap(edges) {
 function mirrorMotion(motion, mirrorLocationMap, mirrorRotation) {
   return {
     ...motion,
-    startLocation: mirrorLocationMap[motion.startLocation] ?? motion.startLocation,
+    startLocation:
+      mirrorLocationMap[motion.startLocation] ?? motion.startLocation,
     endLocation: mirrorLocationMap[motion.endLocation] ?? motion.endLocation,
     rotationDirection: mirrorRotation(motion.rotationDirection),
   };
 }
 
 /**
- * Produce the twin of one step: swap colors, mirror both hands, derive the
+ * Produce the twin of one step: swap hands, mirror both hands, derive the
  * step's start/end positions from the transformed location pairs. Letter and
  * orientations are carried through unchanged for the caller to recompute.
  * Position is null when the transformed pair is absent from locToPos.
  */
 function twinStep(step, { mirrorLocationMap, mirrorRotation, locToPos }) {
-  // Color swap: blue takes old red's motion, red takes old blue's motion.
-  const swappedBlueSrc = step.motions.red;
-  const swappedRedSrc = step.motions.blue;
+  // Hand swap: left takes the old right motion, and right takes the old left.
+  const swappedLeftSrc = step.motions.right;
+  const swappedRightSrc = step.motions.left;
 
-  const blue = {
-    ...mirrorMotion(swappedBlueSrc, mirrorLocationMap, mirrorRotation),
-    color: "blue",
+  const left = {
+    ...mirrorMotion(swappedLeftSrc, mirrorLocationMap, mirrorRotation),
+    hand: "left",
   };
-  const red = {
-    ...mirrorMotion(swappedRedSrc, mirrorLocationMap, mirrorRotation),
-    color: "red",
+  const right = {
+    ...mirrorMotion(swappedRightSrc, mirrorLocationMap, mirrorRotation),
+    hand: "right",
   };
 
   const startPosition =
-    locToPos[`${blue.startLocation}|${red.startLocation}`] ?? null;
+    locToPos[`${left.startLocation}|${right.startLocation}`] ?? null;
   const endPosition =
-    locToPos[`${blue.endLocation}|${red.endLocation}`] ?? null;
+    locToPos[`${left.endLocation}|${right.endLocation}`] ?? null;
 
   return {
     ...step,
     startPosition,
     endPosition,
-    motions: { blue, red },
+    motions: { left, right },
   };
 }
 
@@ -94,9 +95,9 @@ function isSelfTwin(orig, twin) {
     const b = twin[i];
     if (a.startPosition !== b.startPosition) return false;
     if (a.endPosition !== b.endPosition) return false;
-    for (const color of ["blue", "red"]) {
-      const am = a.motions[color];
-      const bm = b.motions[color];
+    for (const hand of ["left", "right"]) {
+      const am = a.motions[hand];
+      const bm = b.motions[hand];
       if (am.startLocation !== bm.startLocation) return false;
       if (am.endLocation !== bm.endLocation) return false;
       if (am.motionType !== bm.motionType) return false;

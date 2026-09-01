@@ -20,7 +20,7 @@ afterEach(() => {
 });
 
 describe("viewer mode reduced-motion dissolve", () => {
-  it("covers the first three viewer transition gates", () => {
+  it("covers every approved structural gate plus Stage and Performances", () => {
     expect(isViewerModeDissolve("split", "animation")).toBe(true);
     expect(isViewerModeDissolve("animation", "split")).toBe(true);
     expect(isViewerModeDissolve("split", "card")).toBe(true);
@@ -36,7 +36,15 @@ describe("viewer mode reduced-motion dissolve", () => {
     expect(isViewerModeDissolve("animation-3d", "tunnel")).toBe(true);
     expect(isViewerModeDissolve("tunnel", "animation-3d")).toBe(true);
     expect(isViewerModeDissolve("card", "animation-3d")).toBe(false);
-    expect(isViewerModeDissolve("split", "videos")).toBe(false);
+    expect(isViewerModeDissolve("split", "videos")).toBe(true);
+    expect(isViewerModeDissolve("videos", "split")).toBe(true);
+    expect(isViewerModeDissolve("animation", "videos")).toBe(true);
+    expect(isViewerModeDissolve("videos", "animation")).toBe(true);
+    expect(isViewerModeDissolve("animation-3d", "videos")).toBe(true);
+    expect(isViewerModeDissolve("videos", "animation-3d")).toBe(true);
+    expect(isViewerModeDissolve("tunnel", "videos")).toBe(true);
+    expect(isViewerModeDissolve("videos", "tunnel")).toBe(true);
+    expect(isViewerModeDissolve("videos", "post-studio")).toBe(false);
   });
 
   it("keeps the mode mutation synchronous when no live workspace exists", () => {

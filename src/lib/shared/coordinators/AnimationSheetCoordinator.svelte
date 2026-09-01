@@ -307,7 +307,7 @@
       sequenceWord: sequence?.word,
       stepCount: sequence?.steps?.length,
       hasMotionData: sequence?.steps?.some(
-        (b) => b?.motions?.blue && b?.motions?.red
+        (b) => b?.motions?.left && b?.motions?.right
       ),
       hasPlaybackController: !!playbackController,
       hasBrowseLoader: !!browseLoader,
@@ -405,7 +405,7 @@
     const hasMotionData = (s: SequenceData) =>
       Array.isArray(s.steps) &&
       s.steps.length > 0 &&
-      s.steps.some((step) => step?.motions?.blue && step?.motions?.red);
+      s.steps.some((step) => step?.motions?.left && step?.motions?.right);
 
     // If sequence already has motion data, use it directly
     if (hasMotionData(sequence)) {
@@ -637,12 +637,12 @@
           format,
           // App mode: thread the user's chosen prop so the offscreen export engine
           // loads the matching textures instead of falling back to default "staff".
-          bluePropType:
-            settingsService.settings.bluePropType ??
+          leftPropType:
+            settingsService.settings.leftPropType ??
             settingsService.settings.propType ??
             "staff",
-          redPropType:
-            settingsService.settings.redPropType ??
+          rightPropType:
+            settingsService.settings.rightPropType ??
             settingsService.settings.propType ??
             "staff",
         }
@@ -693,8 +693,8 @@
   playbackMode={animationPanelState.playbackMode}
   stepPlaybackPauseMs={animationPanelState.stepPlaybackPauseMs}
   stepPlaybackStepSize={animationPanelState.stepPlaybackStepSize}
-  blueProp={animationPanelState.bluePropState}
-  redProp={animationPanelState.redPropState}
+  leftProp={animationPanelState.leftPropState}
+  rightProp={animationPanelState.rightPropState}
   gridVisible={true}
   gridMode={resolvedGridMode}
   letter={currentLetter}

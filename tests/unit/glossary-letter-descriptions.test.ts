@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BASE_ALPHABET_LETTERS } from "@tka/domain";
-import { LETTER_DESCRIPTIONS } from "../../src/routes/(public)/glossary/_data/letter-descriptions.server";
+import { LETTER_DESCRIPTIONS } from "../../src/routes/(public)/atlas/_data/letter-descriptions.server";
 
 describe("letter codex descriptions", () => {
   it("describes every letter the Level 1 codex draws", () => {

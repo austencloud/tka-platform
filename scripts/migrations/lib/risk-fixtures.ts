@@ -30,9 +30,13 @@ function deepClone<T>(v: T): T {
 }
 
 /** Inject handPath/skew/float/prefloat into a soloProp's step list (in place). */
-function injectSoloPropRiskFields(soloProp: AnyRec, hand: "blue" | "red"): void {
+function injectSoloPropRiskFields(
+  soloProp: AnyRec,
+  hand: "left" | "right"
+): void {
   const steps = soloProp["steps"] as AnyRec[];
-  if (!steps || steps.length < 3) throw new Error("risk fixture needs >=3 solo steps");
+  if (!steps || steps.length < 3)
+    throw new Error("risk fixture needs >=3 solo steps");
   // step 0: skewed cw shift
   steps[0]!["handPath"] = "cw";
   steps[0]!["skewSteps"] = 1;
@@ -45,37 +49,37 @@ function injectSoloPropRiskFields(soloProp: AnyRec, hand: "blue" | "red"): void 
   steps[2]!["motionType"] = "float";
   steps[2]!["turns"] = "fl";
   steps[2]!["rotationDirection"] = "noRotation";
-  steps[2]!["prefloatMotionType"] = hand === "blue" ? "pro" : "anti";
-  steps[2]!["handPath"] = hand === "blue" ? "cw" : "ccw";
+  steps[2]!["prefloatMotionType"] = hand === "left" ? "pro" : "anti";
+  steps[2]!["handPath"] = hand === "left" ? "cw" : "ccw";
 }
 
 /** Inject pathShape (+ the rest) into hydrated inline steps (in place). */
 function injectInlineRiskFields(steps: StepData[]): void {
   if (steps.length < 3) throw new Error("risk fixture needs >=3 inline steps");
-  const motion = (s: StepData, color: "blue" | "red"): AnyRec | undefined =>
-    (s.motions as Record<string, AnyRec | undefined>)[color];
+  const motion = (s: StepData, hand: "left" | "right"): AnyRec | undefined =>
+    (s.motions as Record<string, AnyRec | undefined>)[hand];
   // step 0: pathShape only — isolates the downstream-blind field
-  const b0 = motion(steps[0]!, "blue");
-  const r0 = motion(steps[0]!, "red");
-  if (b0) b0["pathShape"] = "linear";
-  if (r0) r0["pathShape"] = "concave";
+  const left0 = motion(steps[0]!, "left");
+  const right0 = motion(steps[0]!, "right");
+  if (left0) left0["pathShape"] = "linear";
+  if (right0) right0["pathShape"] = "concave";
   // step 1: pathShape + handPath + skew together
-  for (const color of ["blue", "red"] as const) {
-    const m = motion(steps[1]!, color);
+  for (const hand of ["left", "right"] as const) {
+    const m = motion(steps[1]!, hand);
     if (!m) continue;
     m["pathShape"] = "arc";
-    m["handPath"] = color === "blue" ? "cw" : "ccw";
+    m["handPath"] = hand === "left" ? "cw" : "ccw";
     m["skewSteps"] = 1;
-    m["skewDir"] = color === "blue" ? "+" : "-";
+    m["skewDir"] = hand === "left" ? "+" : "-";
   }
   // step 2: float with prefloat metadata
-  for (const color of ["blue", "red"] as const) {
-    const m = motion(steps[2]!, color);
+  for (const hand of ["left", "right"] as const) {
+    const m = motion(steps[2]!, hand);
     if (!m) continue;
     m["motionType"] = "float";
     m["turns"] = "fl";
     m["rotationDirection"] = "noRotation";
-    m["prefloatMotionType"] = color === "blue" ? "pro" : "anti";
+    m["prefloatMotionType"] = hand === "left" ? "pro" : "anti";
     m["handPath"] = "cw";
   }
 }
@@ -86,25 +90,34 @@ function injectInlineRiskFields(steps: StepData[]): void {
  * exists (a fixture the corpus can't support is a fixture that silently
  * doesn't guard — fail loudly instead).
  */
-export function buildRiskFixtureRecords(reals: readonly SequenceData[]): SequenceData[] {
+export function buildRiskFixtureRecords(
+  reals: readonly SequenceData[]
+): SequenceData[] {
   const compositionalBase = reals.find((r) => {
     const a = r as unknown as AnyRec;
-    const blue = a["blueSoloProp"] as AnyRec | undefined;
+    const left = a["leftSoloProp"] as AnyRec | undefined;
     const pairings = a["stepPairings"] as unknown[] | undefined;
-    return !!blue && Array.isArray(blue["steps"]) && (blue["steps"] as unknown[]).length >= 3 && !!pairings;
+    return (
+      !!left &&
+      Array.isArray(left["steps"]) &&
+      (left["steps"] as unknown[]).length >= 3 &&
+      !!pairings
+    );
   });
-  if (!compositionalBase) throw new Error("no compositional base record with >=3 steps");
+  if (!compositionalBase)
+    throw new Error("no compositional base record with >=3 steps");
 
   // ── fixture 1: compositional shape ──
   const comp = deepClone(compositionalBase) as unknown as AnyRec;
   comp["id"] = `${comp["id"]}__RISKFX_COMP`;
   comp["word"] = `${comp["word"] ?? "?"}__RISKFX_COMP`;
-  injectSoloPropRiskFields(comp["blueSoloProp"] as AnyRec, "blue");
-  injectSoloPropRiskFields(comp["redSoloProp"] as AnyRec, "red");
+  injectSoloPropRiskFields(comp["leftSoloProp"] as AnyRec, "left");
+  injectSoloPropRiskFields(comp["rightSoloProp"] as AnyRec, "right");
 
   // ── fixture 2: inline-steps shape (the only shape where pathShape exists) ──
   const hydrated = hydrate(deepClone(compositionalBase)) as SequenceData;
-  if (!hydrated.steps || hydrated.steps.length < 3) throw new Error("base record failed to hydrate >=3 steps");
+  if (!hydrated.steps || hydrated.steps.length < 3)
+    throw new Error("base record failed to hydrate >=3 steps");
   const inlineSteps = deepClone(hydrated.steps) as StepData[];
   injectInlineRiskFields(inlineSteps);
   const inline = deepClone(compositionalBase) as unknown as AnyRec;
@@ -112,8 +125,8 @@ export function buildRiskFixtureRecords(reals: readonly SequenceData[]): Sequenc
   inline["word"] = `${inline["word"] ?? "?"}__RISKFX_INLINE`;
   inline["steps"] = inlineSteps;
   // strip compositional fields so hydrate() takes the inline-steps path
-  delete inline["blueSoloProp"];
-  delete inline["redSoloProp"];
+  delete inline["leftSoloProp"];
+  delete inline["rightSoloProp"];
   delete inline["stepPairings"];
 
   return [comp, inline] as unknown as SequenceData[];

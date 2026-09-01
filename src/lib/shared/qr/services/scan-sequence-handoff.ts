@@ -2,8 +2,8 @@ import { encodePropForURL } from "$lib/shared/navigation/services/sequence-encod
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 export interface ScanSequencePropFallback {
-  bluePropType: PropType;
-  redPropType: PropType;
+  leftPropType: PropType;
+  rightPropType: PropType;
 }
 
 /**
@@ -23,11 +23,11 @@ export function buildScanSequenceDestination(
   viewerParams.set("from", "scan");
   viewerParams.set("code", shortCode);
 
-  if (!viewerParams.has("bp") && propFallback?.bluePropType) {
-    viewerParams.set("bp", encodePropForURL(propFallback.bluePropType));
+  if (!viewerParams.has("bp") && propFallback?.leftPropType) {
+    viewerParams.set("bp", encodePropForURL(propFallback.leftPropType));
   }
-  if (!viewerParams.has("rp") && propFallback?.redPropType) {
-    viewerParams.set("rp", encodePropForURL(propFallback.redPropType));
+  if (!viewerParams.has("rp") && propFallback?.rightPropType) {
+    viewerParams.set("rp", encodePropForURL(propFallback.rightPropType));
   }
 
   const query = viewerParams.toString();

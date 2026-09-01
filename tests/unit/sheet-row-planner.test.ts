@@ -6,7 +6,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 // minimal StepData stub — the planner only reads identity/length, not pictograph fields
 function step(n: number): StepData {
-  return { stepNumber: n, duration: 1, blueReversal: false, redReversal: false, isBlank: false } as StepData;
+  return { stepNumber: n, duration: 1, leftReversal: false, rightReversal: false, isBlank: false } as StepData;
 }
 function seq(id: string, count: number): SequenceData {
   return { id, steps: Array.from({ length: count }, (_, i) => step(i + 1)) } as unknown as SequenceData;

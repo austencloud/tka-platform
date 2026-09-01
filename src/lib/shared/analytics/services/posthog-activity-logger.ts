@@ -6,7 +6,7 @@
  */
 
 import { browser } from "$app/environment";
-import { captureEvent } from "./posthog";
+import { captureWhenReady } from "./posthog";
 import { consumeSwUpdateReloadMarker } from "$lib/shared/offline/services/sw-update-manager";
 import type { ActivityQueryOptions } from "./types";
 import type {
@@ -63,7 +63,7 @@ export async function logActivity(
     }
   }
 
-  captureEvent(eventType, properties);
+  captureWhenReady(eventType, properties);
 }
 
 /** Log a session start event */

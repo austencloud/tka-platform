@@ -15,9 +15,9 @@ function startPosSummary(sp: AnyRec | undefined): string {
   if (!sp) return "NONE";
   const m = sp["motions"] as AnyRec | undefined;
   const keys = m ? Object.keys(m) : [];
-  const blue = m?.["blue"] as AnyRec | undefined;
-  const red = m?.["red"] as AnyRec | undefined;
-  return `motions=[${keys.join(",")}] blue@${blue?.["startLocation"]}/${blue?.["motionType"]} red@${red?.["startLocation"]}/${red?.["motionType"]} letter=${JSON.stringify(sp["letter"])}`;
+  const left = m?.["blue"] as AnyRec | undefined;
+  const right = m?.["red"] as AnyRec | undefined;
+  return `motions=[${keys.join(",")}] blue@${left?.["startLocation"]}/${left?.["motionType"]} red@${right?.["startLocation"]}/${right?.["motionType"]} letter=${JSON.stringify(sp["letter"])}`;
 }
 
 async function main(): Promise<void> {

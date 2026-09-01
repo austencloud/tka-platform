@@ -1,7 +1,7 @@
 import type { GridMode } from "../../grid/domain/enums/grid-enums";
 import { GridPosition } from "../../grid/domain/enums/grid-enums";
 import type { Letter } from "../../../foundation/domain/models/letter";
-import { MotionColor, HandPath, SkewDirection } from "../domain/enums/pictograph-enums";
+import { HandSide, HandPath, SkewDirection } from "../domain/enums/pictograph-enums";
 import { createMotionData } from "../domain/models/motion-data";
 import type { PictographData } from "../domain/models/pictograph-data";
 import { createPictographData } from "../domain/factories/create-pictograph-data";
@@ -19,20 +19,20 @@ export interface CSVRow {
   endPosition: string;
   timing: string;
   direction: string;
-  blueMotionType: string;
-  blueRotationDirection: string;
-  blueStartLocation: string;
-  blueEndLocation: string;
-  redMotionType: string;
-  redRotationDirection: string;
-  redStartLocation: string;
-  redEndLocation: string;
-  blueSkewDir?: string;
-  blueHandPath?: string;
-  blueSkewSteps?: string;
-  redSkewDir?: string;
-  redHandPath?: string;
-  redSkewSteps?: string;
+  leftMotionType: string;
+  leftRotationDirection: string;
+  leftStartLocation: string;
+  leftEndLocation: string;
+  rightMotionType: string;
+  rightRotationDirection: string;
+  rightStartLocation: string;
+  rightEndLocation: string;
+  leftSkewDir?: string;
+  leftHandPath?: string;
+  leftSkewSteps?: string;
+  rightSkewDir?: string;
+  rightHandPath?: string;
+  rightSkewSteps?: string;
   category?: string;
 }
 
@@ -76,82 +76,82 @@ export class CSVPictographParser {
   parseCSVRowToPictograph(row: CSVRow, gridMode: GridMode): PictographData {
     const letter = row.letter as Letter;
 
-    const tempBlueMotion = createMotionData({
-      motionType: this.enumMapper.mapMotionType(row.blueMotionType),
+    const tempLeftMotion = createMotionData({
+      motionType: this.enumMapper.mapMotionType(row.leftMotionType),
       rotationDirection: this.enumMapper.mapRotationDirection(
-        row.blueRotationDirection
+        row.leftRotationDirection
       ),
-      startLocation: this.enumMapper.mapLocation(row.blueStartLocation),
-      endLocation: this.enumMapper.mapLocation(row.blueEndLocation),
+      startLocation: this.enumMapper.mapLocation(row.leftStartLocation),
+      endLocation: this.enumMapper.mapLocation(row.leftEndLocation),
       startOrientation: Orientation.IN, 
       turns: 0, 
-      color: MotionColor.BLUE,
+      hand: HandSide.LEFT,
       gridMode: gridMode, 
     });
 
-    const blueEndOrientation = calculateEndOrientation(
-      tempBlueMotion,
-      MotionColor.BLUE
+    const leftEndOrientation = calculateEndOrientation(
+      tempLeftMotion,
+      HandSide.LEFT
     );
 
-    const blueHandPath = mapHandPath(row.blueHandPath);
-    const blueSkewSteps = row.blueSkewSteps ? parseInt(row.blueSkewSteps, 10) : null;
-    const blueSkewDir = mapSkewDir(row.blueSkewDir);
+    const leftHandPath = mapHandPath(row.leftHandPath);
+    const leftSkewSteps = row.leftSkewSteps ? parseInt(row.leftSkewSteps, 10) : null;
+    const leftSkewDir = mapSkewDir(row.leftSkewDir);
 
-    const blueMotion = createMotionData({
-      motionType: this.enumMapper.mapMotionType(row.blueMotionType),
+    const leftMotion = createMotionData({
+      motionType: this.enumMapper.mapMotionType(row.leftMotionType),
       rotationDirection: this.enumMapper.mapRotationDirection(
-        row.blueRotationDirection
+        row.leftRotationDirection
       ),
-      startLocation: this.enumMapper.mapLocation(row.blueStartLocation),
-      endLocation: this.enumMapper.mapLocation(row.blueEndLocation),
+      startLocation: this.enumMapper.mapLocation(row.leftStartLocation),
+      endLocation: this.enumMapper.mapLocation(row.leftEndLocation),
       startOrientation: Orientation.IN,
-      endOrientation: blueEndOrientation, 
+      endOrientation: leftEndOrientation, 
       turns: 0,
-      color: MotionColor.BLUE,
+      hand: HandSide.LEFT,
       gridMode: gridMode, 
-      ...(blueHandPath !== null && { handPath: blueHandPath }),
-      ...(blueSkewSteps !== null && { skewSteps: blueSkewSteps }),
-      ...(blueSkewDir !== null && { skewDir: blueSkewDir }),
+      ...(leftHandPath !== null && { handPath: leftHandPath }),
+      ...(leftSkewSteps !== null && { skewSteps: leftSkewSteps }),
+      ...(leftSkewDir !== null && { skewDir: leftSkewDir }),
     });
 
-    const tempRedMotion = createMotionData({
-      motionType: this.enumMapper.mapMotionType(row.redMotionType),
+    const tempRightMotion = createMotionData({
+      motionType: this.enumMapper.mapMotionType(row.rightMotionType),
       rotationDirection: this.enumMapper.mapRotationDirection(
-        row.redRotationDirection
+        row.rightRotationDirection
       ),
-      startLocation: this.enumMapper.mapLocation(row.redStartLocation),
-      endLocation: this.enumMapper.mapLocation(row.redEndLocation),
+      startLocation: this.enumMapper.mapLocation(row.rightStartLocation),
+      endLocation: this.enumMapper.mapLocation(row.rightEndLocation),
       startOrientation: Orientation.IN, 
       turns: 0, 
-      color: MotionColor.RED,
+      hand: HandSide.RIGHT,
       gridMode: gridMode, 
     });
 
-    const redEndOrientation = calculateEndOrientation(
-      tempRedMotion,
-      MotionColor.RED
+    const rightEndOrientation = calculateEndOrientation(
+      tempRightMotion,
+      HandSide.RIGHT
     );
 
-    const redHandPath = mapHandPath(row.redHandPath);
-    const redSkewSteps = row.redSkewSteps ? parseInt(row.redSkewSteps, 10) : null;
-    const redSkewDir = mapSkewDir(row.redSkewDir);
+    const rightHandPath = mapHandPath(row.rightHandPath);
+    const rightSkewSteps = row.rightSkewSteps ? parseInt(row.rightSkewSteps, 10) : null;
+    const rightSkewDir = mapSkewDir(row.rightSkewDir);
 
-    const redMotion = createMotionData({
-      motionType: this.enumMapper.mapMotionType(row.redMotionType),
+    const rightMotion = createMotionData({
+      motionType: this.enumMapper.mapMotionType(row.rightMotionType),
       rotationDirection: this.enumMapper.mapRotationDirection(
-        row.redRotationDirection
+        row.rightRotationDirection
       ),
-      startLocation: this.enumMapper.mapLocation(row.redStartLocation),
-      endLocation: this.enumMapper.mapLocation(row.redEndLocation),
+      startLocation: this.enumMapper.mapLocation(row.rightStartLocation),
+      endLocation: this.enumMapper.mapLocation(row.rightEndLocation),
       startOrientation: Orientation.IN,
-      endOrientation: redEndOrientation, 
+      endOrientation: rightEndOrientation, 
       turns: 0,
-      color: MotionColor.RED,
+      hand: HandSide.RIGHT,
       gridMode: gridMode, 
-      ...(redHandPath !== null && { handPath: redHandPath }),
-      ...(redSkewSteps !== null && { skewSteps: redSkewSteps }),
-      ...(redSkewDir !== null && { skewDir: redSkewDir }),
+      ...(rightHandPath !== null && { handPath: rightHandPath }),
+      ...(rightSkewSteps !== null && { skewSteps: rightSkewSteps }),
+      ...(rightSkewDir !== null && { skewDir: rightSkewDir }),
     });
 
     const category = row.category ? parseInt(row.category, 10) : null;
@@ -161,8 +161,8 @@ export class CSVPictographParser {
       startPosition: this.mapStringToGridPosition(row.startPosition),
       endPosition: this.mapStringToGridPosition(row.endPosition),
       motions: {
-        [MotionColor.BLUE]: blueMotion,
-        [MotionColor.RED]: redMotion,
+        [HandSide.LEFT]: leftMotion,
+        [HandSide.RIGHT]: rightMotion,
       },
       ...(category !== null && { category }),
     });

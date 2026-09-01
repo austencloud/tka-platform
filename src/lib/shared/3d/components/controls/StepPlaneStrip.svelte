@@ -13,15 +13,15 @@
   interface Props {
     totalSteps: number;
     currentStepIndex: number;
-    beatPlaneOverrides: Map<number, { blue?: Plane; red?: Plane }>;
+    beatPlaneOverrides: Map<number, { left?: Plane; right?: Plane }>;
     onStepClick: (index: number) => void;
   }
 
   let { totalSteps, currentStepIndex, beatPlaneOverrides, onStepClick }: Props = $props();
 
-  function getColor(stepNumber: number, hand: "blue" | "red"): string {
+  function getColor(stepNumber: number, hand: "left" | "right"): string {
     const override = beatPlaneOverrides.get(stepNumber);
-    const plane = hand === "blue" ? override?.blue : override?.red;
+    const plane = hand === "left" ? override?.left : override?.right;
     // Default (WALL or no override) shows as a subtle base color
     if (!plane || plane === Plane.WALL) return PLANE_COLORS[Plane.WALL];
     return PLANE_COLORS[plane] ?? PLANE_COLORS[Plane.WALL];
@@ -47,8 +47,8 @@
         aria-label="Step {i + 1}"
         aria-current={i === currentStepIndex ? "step" : undefined}
       >
-        <div class="hand-half blue-half" style="background: {getColor(i, 'blue')};"></div>
-        <div class="hand-half red-half" style="background: {getColor(i, 'red')};"></div>
+        <div class="hand-half blue-half" style="background: {getColor(i, 'left')};"></div>
+        <div class="hand-half red-half" style="background: {getColor(i, 'right')};"></div>
       </button>
     {/each}
   </div>

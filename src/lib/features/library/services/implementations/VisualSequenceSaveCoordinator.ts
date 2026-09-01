@@ -91,13 +91,13 @@ export class VisualSequenceSaveCoordinator implements IVisualSequenceSaveCoordin
   ): SequenceData {
     const savedPropConfig =
       sequence.creatorIntent?.propConfig ?? sequence.intendedProp ?? undefined;
-    const bluePropType = resolvePropType(
-      intent.bluePropType,
-      savedPropConfig?.bluePropType
+    const leftPropType = resolvePropType(
+      intent.leftPropType,
+      savedPropConfig?.leftPropType
     );
-    const redPropType = resolvePropType(
-      intent.redPropType,
-      savedPropConfig?.redPropType
+    const rightPropType = resolvePropType(
+      intent.rightPropType,
+      savedPropConfig?.rightPropType
     );
     const catDogMode =
       intent.catDogModeEnabled ?? savedPropConfig?.catDogMode ?? false;
@@ -115,14 +115,14 @@ export class VisualSequenceSaveCoordinator implements IVisualSequenceSaveCoordin
           ? sequence.metadata
           : { ...sequence.metadata, pathShape },
       creatorIntent: {
-        propConfig: { bluePropType, redPropType, catDogMode },
+        propConfig: { leftPropType, rightPropType, catDogMode },
         ...(sequence.creatorIntent?.effortTimeline !== undefined
           ? { effortTimeline: sequence.creatorIntent.effortTimeline }
           : sequence.effortTimeline !== undefined
             ? { effortTimeline: sequence.effortTimeline }
             : {}),
       },
-      intendedProp: { bluePropType, redPropType, catDogMode },
+      intendedProp: { leftPropType, rightPropType, catDogMode },
     });
   }
 

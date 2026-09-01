@@ -6,9 +6,9 @@
   import { OrbitControls } from "@threlte/extras";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
-    createAvatarInstanceState,
+    createCharacterInstanceState,
     makeStandaloneDeps,
-  } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  } from "$lib/shared/3d/state/character-instance-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { computeFramingShot } from "$lib/shared/3d/camera/compute-framing-shot";
   import type { BackgroundType } from "@austencloud/backgrounds";
@@ -38,7 +38,7 @@
     2 * shot.target.z - shot.eye.z,
   ]);
 
-  let performerState = $state<ReturnType<typeof createAvatarInstanceState> | null>(null);
+  let performerState = $state<ReturnType<typeof createCharacterInstanceState> | null>(null);
 
   const displayedStepNumber = $derived(
     performerState ? performerState.currentStepIndex : null
@@ -48,7 +48,7 @@
   );
 
   try {
-    performerState = createAvatarInstanceState(
+    performerState = createCharacterInstanceState(
       { id: "quiz-performer", positionX: 0, positionZ: 0 },
       makeStandaloneDeps()
     );
@@ -110,8 +110,8 @@
         showGrid={false}
         visiblePlanes={new Set([Plane.WALL])}
         gridMode={((sequence?.gridMode ?? "diamond") as GridMode)}
-        bluePropType={toScenePropType(PropType.STAFF)}
-        redPropType={toScenePropType(PropType.STAFF)}
+        leftPropType={toScenePropType(PropType.STAFF)}
+        rightPropType={toScenePropType(PropType.STAFF)}
         {groundOffset}
         enableLocomotion={true}
         enableFootPlanting={true}

@@ -131,13 +131,13 @@ describe("buildLoopSpec", () => {
   it("defaults reproduce today's behavior: rotation at the chosen interval, all other components at interval 2, expand mode", () => {
     const wire = buildLoopSpec(new Set([C.ROTATED, C.MIRRORED, C.INVERTED]), { rotationInterval: 4 });
     expect(wire).not.toBeNull();
-    expect(wire!.blue!.rotated).toEqual({ period: 4 });
-    expect(wire!.blue!.mirrored).toEqual({
+    expect(wire!.left!.rotated).toEqual({ period: 4 });
+    expect(wire!.left!.mirrored).toEqual({
       period: 2,
       reflectionAxis: "north-south",
     });
-    expect(wire!.blue!.inverted).toEqual({ period: 2 });
-    expect(wire!.red).toEqual(wire!.blue);
+    expect(wire!.left!.inverted).toEqual({ period: 2 });
+    expect(wire!.right).toEqual(wire!.left);
   });
 
   it("carries inversion rhythm + overlay mode", () => {
@@ -145,20 +145,20 @@ describe("buildLoopSpec", () => {
       inversionInterval: 4,
       inversionMode: "overlay",
     });
-    expect(wire!.blue!.inverted).toEqual({ period: 4, mode: "overlay" });
+    expect(wire!.left!.inverted).toEqual({ period: 4, mode: "overlay" });
   });
 
   it("carries any reflection axis independently of the component alias", () => {
     const diagonal = buildLoopSpec(new Set([C.MIRRORED]), {
       reflectionAxis: "northwest-southeast",
     });
-    expect(diagonal!.blue!.mirrored).toEqual({
+    expect(diagonal!.left!.mirrored).toEqual({
       period: 2,
       reflectionAxis: "northwest-southeast",
     });
 
     const legacyFlipped = buildLoopSpec(new Set([C.FLIPPED]), {});
-    expect(legacyFlipped!.blue!.flipped).toEqual({
+    expect(legacyFlipped!.left!.flipped).toEqual({
       period: 2,
       reflectionAxis: "east-west",
     });
@@ -209,7 +209,7 @@ describe("resolveLoopConfig", () => {
     expect(diagonal.loopRhythm.reflectionAxis).toBe(
       "northeast-southwest"
     );
-    expect(diagonal.loopSpecWire!.blue!.mirrored.reflectionAxis).toBe(
+    expect(diagonal.loopSpecWire!.left!.mirrored.reflectionAxis).toBe(
       "northeast-southwest"
     );
 

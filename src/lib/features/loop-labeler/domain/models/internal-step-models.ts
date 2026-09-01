@@ -9,13 +9,13 @@ export interface ExtractedStep {
   letter: string;
   startPos: string;
   endPos: string;
-  blue: {
+  left: {
     startLoc: string;
     endLoc: string;
     motionType: string;
     propRotDir: string;
   };
-  red: {
+  right: {
     startLoc: string;
     endLoc: string;
     motionType: string;

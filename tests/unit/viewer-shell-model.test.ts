@@ -6,16 +6,31 @@ import {
   buildVideoExportAnalyticsConfig,
   buildViewerShareActions,
   resolveExportSidebarMinWidth,
+  viewerInspectorConstraints,
 } from "$lib/shared/sequence-viewer/services/viewer-shell-model";
 
 describe("viewer shell model", () => {
   it("uses only valid persisted rail widths in the export threshold", () => {
-    expect(resolveExportSidebarMinWidth(null)).toBe(1340);
-    expect(resolveExportSidebarMinWidth("72")).toBe(1232);
-    expect(resolveExportSidebarMinWidth("300")).toBe(1460);
-    expect(resolveExportSidebarMinWidth("71")).toBe(1340);
-    expect(resolveExportSidebarMinWidth("301")).toBe(1340);
-    expect(resolveExportSidebarMinWidth("wide")).toBe(1340);
+    expect(resolveExportSidebarMinWidth(null)).toBe(1348);
+    expect(resolveExportSidebarMinWidth("72")).toBe(1240);
+    expect(resolveExportSidebarMinWidth("300")).toBe(1468);
+    expect(resolveExportSidebarMinWidth("71")).toBe(1348);
+    expect(resolveExportSidebarMinWidth("301")).toBe(1348);
+    expect(resolveExportSidebarMinWidth("wide")).toBe(1348);
+  });
+
+  it("keeps Card compact without shrinking the stage or effects inspector", () => {
+    expect(resolveExportSidebarMinWidth(null, "card")).toBe(1268);
+    expect(resolveExportSidebarMinWidth(null, "art")).toBe(1268);
+    expect(resolveExportSidebarMinWidth(null, "motion")).toBe(1348);
+    expect(viewerInspectorConstraints("card")).toEqual({
+      minWidth: 420,
+      maxWidth: 840,
+    });
+    expect(viewerInspectorConstraints("motion")).toEqual({
+      minWidth: 520,
+      maxWidth: 1200,
+    });
   });
 
   it("keeps copied-link feedback in the open share menu", () => {
@@ -45,8 +60,8 @@ describe("viewer shell model", () => {
         includeEndHold: false,
         renderMode: "3d",
         playbackMode: "continuous",
-        bluePropType: PropType.STAFF,
-        redPropType: PropType.FAN,
+        leftPropType: PropType.STAFF,
+        rightPropType: PropType.FAN,
       })
     ).toEqual({
       fps: 60,
@@ -56,8 +71,8 @@ describe("viewer shell model", () => {
       include_end_hold: false,
       render_mode: "3d",
       playback_mode: "continuous",
-      blue_prop: "staff",
-      red_prop: "fan",
+      left_prop: "staff",
+      right_prop: "fan",
       mixed_props: true,
     });
 
@@ -67,16 +82,16 @@ describe("viewer shell model", () => {
         darkMode: true,
         includeStartPosition: false,
         handPath: true,
-        bluePropType: PropType.STAFF,
-        redPropType: PropType.STAFF,
+        leftPropType: PropType.STAFF,
+        rightPropType: PropType.STAFF,
       })
     ).toEqual({
       step_count: 16,
       dark_mode: true,
       include_start_position: false,
       hand_path: true,
-      blue_prop: "staff",
-      red_prop: "staff",
+      left_prop: "staff",
+      right_prop: "staff",
       mixed_props: false,
     });
   });

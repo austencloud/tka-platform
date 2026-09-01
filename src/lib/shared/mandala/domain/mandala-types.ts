@@ -8,6 +8,9 @@ export interface SVGPathData {
 /** Mandala color mode: fixed two-color pair, or animated flow morph. */
 export type MandalaColorMode = "solid" | "flow";
 
+/** Performer-relative pathway visibility. Colors are supplied separately. */
+export type MandalaHandVisibility = "left" | "right" | "both";
+
 /** Named color presets for the mandala viewer (+ "custom" two-color picker). */
 export type MandalaPresetId =
 	| "aurora"
@@ -22,8 +25,8 @@ export type MandalaPresetId =
 	| "custom";
 
 export interface MandalaPaths {
-	blue: SVGPathData[];
-	red: SVGPathData[];
+	left: SVGPathData[];
+	right: SVGPathData[];
 	purple: SVGPathData[];
 }
 
@@ -34,10 +37,10 @@ export interface MandalaPaths {
  * the light-mode prop palette so the mandala matches the rest of the card.
  */
 export interface MandalaPalette {
-	blueStroke: string;
-	blueFill: string;
-	redStroke: string;
-	redFill: string;
+	leftStroke: string;
+	leftFill: string;
+	rightStroke: string;
+	rightFill: string;
 	purpleStroke: string;
 	purpleFill: string;
 }
@@ -64,7 +67,7 @@ export interface MandalaRenderOptions {
 	/** Stroke or filled petal rendering */
 	style: "stroke" | "filled";
 	/** Which hands to render */
-	show: "blue" | "red" | "both";
+	show: MandalaHandVisibility;
 	/** SVG stroke width */
 	strokeWidth?: number;
 	/** Override the default dark-mode prop colors (e.g. for light-mode backgrounds) */
@@ -74,7 +77,7 @@ export interface MandalaRenderOptions {
 	/** Current tip dx for dynamic viewBox scaling during animation */
 	tipDx?: number;
 	/** Per-path gradient colors: each path's stroke shifts from one color to the next */
-	gradient?: { blue: [string, string]; red: [string, string]; purple: [string, string] };
+	gradient?: { left: [string, string]; right: [string, string]; purple: [string, string] };
 	/**
 	 * Canvas-only soft glow (px, DEVICE space — unaffected by ctx transform).
 	 * When set, `renderMandalaToCanvas` strokes each path with a matching-color

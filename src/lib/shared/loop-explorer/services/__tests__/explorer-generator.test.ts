@@ -21,8 +21,8 @@ function fakeSequence(length: number): SequenceData {
     startPosition: "alpha1",
     endPosition: "alpha3",
     motions: {
-      blue: { motionType: "pro", startLocation: "n", endLocation: "e" },
-      red: { motionType: "pro", startLocation: "s", endLocation: "w" },
+      left: { motionType: "pro", startLocation: "n", endLocation: "e" },
+      right: { motionType: "pro", startLocation: "s", endLocation: "w" },
     },
   }));
   return {

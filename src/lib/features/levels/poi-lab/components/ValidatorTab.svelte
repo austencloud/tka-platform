@@ -13,7 +13,7 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { PoiValidationResult } from "../domain/poi-models";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
   // Services

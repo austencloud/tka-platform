@@ -79,8 +79,8 @@
             deckMode={true}
             displayMode="grid"
             showBacks={true}
-            bluePropType={PropType.STAFF}
-            redPropType={PropType.STAFF}
+            leftPropType={PropType.STAFF}
+            rightPropType={PropType.STAFF}
             includeInsertCard={false}
           />
         </div>

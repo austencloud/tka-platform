@@ -1,4 +1,5 @@
 import type { GridLocation, GridMode, VectorDirection } from "../types.js";
+import { HandSide } from "@tka/tka-types";
 import { isCardinal } from "../types.js";
 import {
   DIAMOND_RADIAL_MAP,
@@ -22,19 +23,19 @@ export interface BetaMotionInput {
   endLocation: string;
   endOrientation?: string;
   motionType: string;
-  color: "blue" | "red";
+  hand: HandSide;
   propType?: string;
 }
 
 export interface BetaOffsetInput {
-  blueMotion: BetaMotionInput;
-  redMotion: BetaMotionInput;
+  leftMotion: BetaMotionInput;
+  rightMotion: BetaMotionInput;
   letter: string;
   gridMode: GridMode;
-  bluePropType?: string;
-  redPropType?: string;
-  blueBuugengFlipped?: boolean;
-  redBuugengFlipped?: boolean;
+  leftPropType?: string;
+  rightPropType?: string;
+  leftBuugengFlipped?: boolean;
+  rightBuugengFlipped?: boolean;
 }
 
 const RADIAL_ORIENTATIONS = ["in", "out"];
@@ -51,17 +52,17 @@ function isNonRadialOrientation(ori: string | undefined): boolean {
 }
 
 function isRadialForMapSelection(
-  blueEndOri: string | undefined,
-  redEndOri: string | undefined
+  leftEndOri: string | undefined,
+  rightEndOri: string | undefined
 ): boolean {
-  const redNorm = redEndOri?.toLowerCase();
-  const blueNorm = blueEndOri?.toLowerCase();
+  const rightNorm = rightEndOri?.toLowerCase();
+  const leftNorm = leftEndOri?.toLowerCase();
 
-  const redIsInOrOut = redNorm === "in" || redNorm === "out";
-  const blueIsIn = blueNorm === "in";
-  const blueIsOut = blueNorm === "out";
+  const rightIsInOrOut = rightNorm === "in" || rightNorm === "out";
+  const leftIsIn = leftNorm === "in";
+  const leftIsOut = leftNorm === "out";
 
-  return (redIsInOrOut && blueIsIn) || blueIsOut;
+  return (rightIsInOrOut && leftIsIn) || leftIsOut;
 }
 
 function isShiftMotion(motionType: string): boolean {
@@ -101,13 +102,13 @@ function getOppositeDirection(direction: VectorDirection): VectorDirection {
 
 function getStaticDashDirection(
   endLocation: string,
-  color: "blue" | "red",
+  hand: HandSide,
   isRadial: boolean
 ): VectorDirection | null {
   const loc = endLocation.toLowerCase() as GridLocation;
   const isDiamond = isCardinal(loc);
 
-  let map: Record<GridLocation, Record<"blue" | "red", VectorDirection>>;
+  let map: Record<GridLocation, Record<HandSide, VectorDirection>>;
   if (isDiamond) {
     map = isRadial ? DIAMOND_RADIAL_MAP : DIAMOND_NON_RADIAL_MAP;
   } else {
@@ -116,13 +117,13 @@ function getStaticDashDirection(
 
   const locationMap = map[loc];
   if (!locationMap) return null;
-  return locationMap[color] ?? null;
+  return locationMap[hand] ?? null;
 }
 
 function getShiftDirection(
   startLocation: string,
   endLocation: string,
-  color: "blue" | "red",
+  hand: HandSide,
   isRadial: boolean
 ): VectorDirection | null {
   const startLoc = startLocation.toLowerCase() as GridLocation;
@@ -131,12 +132,12 @@ function getShiftDirection(
   const map = isRadial ? SHIFT_RADIAL_MAP : SHIFT_NON_RADIAL_MAP;
   const startMap = map[startLoc];
   if (!startMap) {
-    return getStaticDashDirection(endLoc, color, isRadial);
+    return getStaticDashDirection(endLoc, hand, isRadial);
   }
 
   const direction = startMap[endLoc];
   if (!direction) {
-    return getStaticDashDirection(endLoc, color, isRadial);
+    return getStaticDashDirection(endLoc, hand, isRadial);
   }
 
   return direction;
@@ -144,26 +145,26 @@ function getShiftDirection(
 
 function getLetterIDirection(
   endLocation: string,
-  color: "blue" | "red",
+  hand: HandSide,
   isRadial: boolean
 ): VectorDirection | null {
   const loc = endLocation.toLowerCase() as GridLocation;
   const map = isRadial ? LETTER_I_RADIAL_MAP : LETTER_I_NON_RADIAL_MAP;
   const locationMap = map[loc];
   if (!locationMap) return null;
-  return locationMap[color] ?? null;
+  return locationMap[hand] ?? null;
 }
 
 function getLetterGHDirection(
   endLocation: string,
-  color: "blue" | "red",
+  hand: HandSide,
   isRadial: boolean
 ): VectorDirection | null {
   const loc = endLocation.toLowerCase();
 
   const isBox = !isCardinal(loc);
 
-  let map: Record<GridLocation, Record<"blue" | "red", VectorDirection>>;
+  let map: Record<GridLocation, Record<HandSide, VectorDirection>>;
   if (isBox) {
     map = isRadial ? BOX_RADIAL_MAP : BOX_NON_RADIAL_MAP;
   } else {
@@ -173,31 +174,33 @@ function getLetterGHDirection(
   const locationMap = map[loc as GridLocation];
   if (!locationMap) return null;
 
-  const baseDirection = locationMap["red"];
+  const baseDirection = locationMap[HandSide.RIGHT];
   if (!baseDirection) return null;
 
-  return color === "red" ? baseDirection : getOppositeDirection(baseDirection);
+  return hand === HandSide.RIGHT
+    ? baseDirection
+    : getOppositeDirection(baseDirection);
 }
 
 function getLetterYZDirection(
-  blueMotion: BetaMotionInput,
-  redMotion: BetaMotionInput,
+  leftMotion: BetaMotionInput,
+  rightMotion: BetaMotionInput,
   targetMotion: BetaMotionInput,
   isRadial: boolean
 ): VectorDirection | null {
-  const redIsShift = isShiftMotion(redMotion.motionType);
-  const blueIsShift = isShiftMotion(blueMotion.motionType);
+  const rightIsShift = isShiftMotion(rightMotion.motionType);
+  const leftIsShift = isShiftMotion(leftMotion.motionType);
 
-  const shiftMotion = redIsShift ? redMotion : blueIsShift ? blueMotion : null;
+  const shiftMotion = rightIsShift ? rightMotion : leftIsShift ? leftMotion : null;
   if (!shiftMotion) return null;
 
   const findNonShift = (): BetaMotionInput | null => {
-    const redType = redMotion.motionType.toLowerCase();
-    const blueType = blueMotion.motionType.toLowerCase();
-    if (redType === "static") return redMotion;
-    if (blueType === "static") return blueMotion;
-    if (redType === "dash") return redMotion;
-    if (blueType === "dash") return blueMotion;
+    const rightType = rightMotion.motionType.toLowerCase();
+    const leftType = leftMotion.motionType.toLowerCase();
+    if (rightType === "static") return rightMotion;
+    if (leftType === "static") return leftMotion;
+    if (rightType === "dash") return rightMotion;
+    if (leftType === "dash") return leftMotion;
     return null;
   };
 
@@ -207,12 +210,12 @@ function getLetterYZDirection(
   const shiftDirection = getShiftDirection(
     shiftMotion.startLocation,
     shiftMotion.endLocation,
-    shiftMotion.color,
+    shiftMotion.hand,
     isRadial
   );
   if (!shiftDirection) return null;
 
-  const isTargetShift = targetMotion.color === shiftMotion.color;
+  const isTargetShift = targetMotion.hand === shiftMotion.hand;
   return isTargetShift ? shiftDirection : getOppositeDirection(shiftDirection);
 }
 
@@ -221,66 +224,67 @@ function calculateDirection(
   targetMotion: BetaMotionInput,
   isRadial: boolean
 ): VectorDirection | null {
-  const { blueMotion, redMotion, letter } = input;
+  const { leftMotion, rightMotion, letter } = input;
 
   if (letter === "Y" || letter === "Z" || letter === "Y-" || letter === "Z-") {
-    return getLetterYZDirection(blueMotion, redMotion, targetMotion, isRadial);
+    return getLetterYZDirection(leftMotion, rightMotion, targetMotion, isRadial);
   }
 
   if (isShiftMotion(targetMotion.motionType)) {
     if (letter === "G" || letter === "H") {
-      return getLetterGHDirection(targetMotion.endLocation, targetMotion.color, isRadial);
+      return getLetterGHDirection(targetMotion.endLocation, targetMotion.hand, isRadial);
     }
     if (letter === "I") {
-      return getLetterIDirection(targetMotion.endLocation, targetMotion.color, isRadial);
+      return getLetterIDirection(targetMotion.endLocation, targetMotion.hand, isRadial);
     }
-    const otherMotion = targetMotion.color === "blue" ? redMotion : blueMotion;
+    const otherMotion =
+      targetMotion.hand === HandSide.LEFT ? rightMotion : leftMotion;
     if (isShiftMotion(otherMotion.motionType)) {
-      const blueDirection = getShiftDirection(
-        blueMotion.startLocation,
-        blueMotion.endLocation,
-        "blue",
+      const leftDirection = getShiftDirection(
+        leftMotion.startLocation,
+        leftMotion.endLocation,
+        HandSide.LEFT,
         isRadial
       );
-      if (!blueDirection) return null;
-      return targetMotion.color === "blue"
-        ? blueDirection
-        : getOppositeDirection(blueDirection);
+      if (!leftDirection) return null;
+      return targetMotion.hand === HandSide.LEFT
+        ? leftDirection
+        : getOppositeDirection(leftDirection);
     }
     return getShiftDirection(
       targetMotion.startLocation,
       targetMotion.endLocation,
-      targetMotion.color,
+      targetMotion.hand,
       isRadial
     );
   }
 
-  return getStaticDashDirection(targetMotion.endLocation, targetMotion.color, isRadial);
+  return getStaticDashDirection(targetMotion.endLocation, targetMotion.hand, isRadial);
 }
 
 export function calculateBetaOffset(
   input: BetaOffsetInput,
   targetMotion: BetaMotionInput
 ): { x: number; y: number } {
-  const { blueMotion, redMotion, gridMode } = input;
+  const { leftMotion, rightMotion, gridMode } = input;
 
-  const blueEndLoc = blueMotion.endLocation.toLowerCase();
-  const redEndLoc = redMotion.endLocation.toLowerCase();
+  const leftEndLoc = leftMotion.endLocation.toLowerCase();
+  const rightEndLoc = rightMotion.endLocation.toLowerCase();
 
-  if (blueEndLoc !== redEndLoc) {
+  if (leftEndLoc !== rightEndLoc) {
     return { x: 0, y: 0 };
   }
 
-  const blueIsHand = blueMotion.propType === "hand";
-  const redIsHand = redMotion.propType === "hand";
-  const actualBluePropType = blueIsHand
+  const leftIsHand = leftMotion.propType === "hand";
+  const rightIsHand = rightMotion.propType === "hand";
+  const actualLeftPropType = leftIsHand
     ? "hand"
-    : (input.bluePropType ?? blueMotion.propType ?? "staff");
-  const actualRedPropType = redIsHand
+    : (input.leftPropType ?? leftMotion.propType ?? "staff");
+  const actualRightPropType = rightIsHand
     ? "hand"
-    : (input.redPropType ?? redMotion.propType ?? "staff");
+    : (input.rightPropType ?? rightMotion.propType ?? "staff");
 
-  const bothAreHands = actualBluePropType === "hand" && actualRedPropType === "hand";
+  const bothAreHands = actualLeftPropType === "hand" && actualRightPropType === "hand";
 
   if (bothAreHands) {
     const distance = getBetaOffsetSize("hand", gridMode);
@@ -288,58 +292,58 @@ export function calculateBetaOffset(
     const eastPositions = ["e", "ne", "se"];
     const westPositions = ["w", "nw", "sw"];
 
-    const blueStartLoc = blueMotion.startLocation.toLowerCase();
-    const redStartLoc = redMotion.startLocation.toLowerCase();
+    const leftStartLoc = leftMotion.startLocation.toLowerCase();
+    const rightStartLoc = rightMotion.startLocation.toLowerCase();
 
-    const blueFromEast = eastPositions.includes(blueStartLoc);
-    const blueFromWest = westPositions.includes(blueStartLoc);
-    const redFromEast = eastPositions.includes(redStartLoc);
-    const redFromWest = westPositions.includes(redStartLoc);
+    const leftFromEast = eastPositions.includes(leftStartLoc);
+    const leftFromWest = westPositions.includes(leftStartLoc);
+    const rightFromEast = eastPositions.includes(rightStartLoc);
+    const rightFromWest = westPositions.includes(rightStartLoc);
 
-    if (blueFromEast && redFromWest) {
-      return targetMotion.color === "blue"
+    if (leftFromEast && rightFromWest) {
+      return targetMotion.hand === HandSide.LEFT
         ? { x: distance, y: 0 }
         : { x: -distance, y: 0 };
-    } else if (blueFromWest && redFromEast) {
-      return targetMotion.color === "blue"
+    } else if (leftFromWest && rightFromEast) {
+      return targetMotion.hand === HandSide.LEFT
         ? { x: -distance, y: 0 }
         : { x: distance, y: 0 };
     } else {
-      return targetMotion.color === "blue"
+      return targetMotion.hand === HandSide.LEFT
         ? { x: -distance, y: 0 }
         : { x: distance, y: 0 };
     }
   }
 
-  const blueEndOri = blueMotion.endOrientation;
-  const redEndOri = redMotion.endOrientation;
+  const leftEndOri = leftMotion.endOrientation;
+  const rightEndOri = rightMotion.endOrientation;
 
-  const blueIsRadial = isRadialOrientation(blueEndOri);
-  const redIsRadial = isRadialOrientation(redEndOri);
-  const blueIsNonRadial = isNonRadialOrientation(blueEndOri);
-  const redIsNonRadial = isNonRadialOrientation(redEndOri);
+  const leftIsRadial = isRadialOrientation(leftEndOri);
+  const rightIsRadial = isRadialOrientation(rightEndOri);
+  const leftIsNonRadial = isNonRadialOrientation(leftEndOri);
+  const rightIsNonRadial = isNonRadialOrientation(rightEndOri);
 
   const hybridOrientation =
-    (redIsRadial && blueIsNonRadial) || (redIsNonRadial && blueIsRadial);
+    (rightIsRadial && leftIsNonRadial) || (rightIsNonRadial && leftIsRadial);
 
   if (hybridOrientation) {
     return { x: 0, y: 0 };
   }
 
-  const bothRadial = redIsRadial && blueIsRadial;
-  const bothNonRadial = redIsNonRadial && blueIsNonRadial;
+  const bothRadial = rightIsRadial && leftIsRadial;
+  const bothNonRadial = rightIsNonRadial && leftIsNonRadial;
   const sameTypeButDifferentOrientation =
-    (bothRadial && redEndOri?.toLowerCase() !== blueEndOri?.toLowerCase()) ||
-    (bothNonRadial && redEndOri?.toLowerCase() !== blueEndOri?.toLowerCase());
+    (bothRadial && rightEndOri?.toLowerCase() !== leftEndOri?.toLowerCase()) ||
+    (bothNonRadial && rightEndOri?.toLowerCase() !== leftEndOri?.toLowerCase());
 
   const bothAreBuugengFamily =
-    isBuugengFamilyProp(actualBluePropType) &&
-    isBuugengFamilyProp(actualRedPropType);
+    isBuugengFamilyProp(actualLeftPropType) &&
+    isBuugengFamilyProp(actualRightPropType);
 
   if (bothAreBuugengFamily) {
-    const blueChirality = input.blueBuugengFlipped ?? false;
-    const redChirality = input.redBuugengFlipped ?? false;
-    const oppositeChirality = blueChirality !== redChirality; 
+    const leftChirality = input.leftBuugengFlipped ?? false;
+    const rightChirality = input.rightBuugengFlipped ?? false;
+    const oppositeChirality = leftChirality !== rightChirality; 
 
     if (oppositeChirality) {
       return { x: 0, y: 0 };
@@ -347,7 +351,9 @@ export function calculateBetaOffset(
   }
 
   const actualPropType =
-    targetMotion.color === "blue" ? actualBluePropType : actualRedPropType;
+    targetMotion.hand === HandSide.LEFT
+      ? actualLeftPropType
+      : actualRightPropType;
 
   if (sameTypeButDifferentOrientation && isUnilateralProp(actualPropType)) {
     return { x: 0, y: 0 };
@@ -357,7 +363,7 @@ export function calculateBetaOffset(
     return { x: 0, y: 0 };
   }
 
-  const isRadial = isRadialForMapSelection(blueEndOri, redEndOri);
+  const isRadial = isRadialForMapSelection(leftEndOri, rightEndOri);
   const direction = calculateDirection(input, targetMotion, isRadial);
 
   if (!direction) {

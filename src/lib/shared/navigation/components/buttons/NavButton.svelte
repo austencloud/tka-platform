@@ -64,6 +64,7 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
   aria-label="{ariaLabel || label}{badgeCount > 0
     ? `, ${badgeCount} unread`
     : ''}"
+  aria-current={active && type === "section" ? "page" : undefined}
   style="--section-color: {color}; --section-gradient: {gradient};"
 >
   <span class="nav-icon">{@html icon}</span>
@@ -85,10 +86,15 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
     justify-content: center;
     gap: 2px;
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
     color: hsl(0 0% 100% / 0.6);
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
+    transition:
+      background-color var(--transition-normal),
+      border-color var(--transition-normal),
+      box-shadow var(--transition-normal),
+      color var(--transition-normal),
+      transform var(--transition-fast);
     position: relative;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
@@ -121,10 +127,9 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
     flex: 0 0 auto;
   }
 
-  /* Special buttons don't get the top border indicator when active */
+  /* Special buttons keep their owning surface treatment when active. */
   .nav-button.special.active {
-    border-top: none;
-    padding-top: 0;
+    border-color: var(--theme-stroke-strong, var(--theme-stroke));
   }
 
   .nav-button:hover:not(.disabled) {
@@ -144,10 +149,18 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
 
   .nav-button.active {
     color: hsl(0 0% 100%);
-    background: hsl(0 0% 100% / 0.1);
-    /* Colored top border indicator */
-    border-top: 3px solid var(--section-color, hsl(0 0% 100% / 0.5));
-    padding-top: calc(var(--spacing-xs, 8px) - 3px);
+    background: color-mix(
+      in srgb,
+      var(--section-color, white) 16%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--section-color, white) 50%,
+      var(--theme-stroke, transparent)
+    );
+    box-shadow: 0 0 0 1px
+      color-mix(in srgb, var(--section-color, white) 18%, transparent);
   }
 
   .nav-button.disabled {
@@ -273,7 +286,7 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
 
     .nav-button.active {
       background: hsl(0 0% 100% / 0.2);
-      border-top-width: 4px;
+      border: 2px solid currentColor;
     }
   }
 

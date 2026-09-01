@@ -118,7 +118,7 @@ export class SequenceAnimationOrchestrator {
           ...step,
           stepNumber:
             typeof step.stepNumber === "number" ? step.stepNumber : index + 1,
-          motions: step.motions ?? { blue: undefined, red: undefined },
+          motions: step.motions ?? { left: undefined, right: undefined },
         }));
 
       if (steps.length === 0) {
@@ -139,8 +139,8 @@ export class SequenceAnimationOrchestrator {
       // Invisible placeholders = hand not really there (both-required Step shape).
       this.hasMotionData = steps.some(
         (step) =>
-          isVisibleMotion(step?.motions?.blue) ||
-          isVisibleMotion(step?.motions?.red)
+          isVisibleMotion(step?.motions?.left) ||
+          isVisibleMotion(step?.motions?.right)
       );
 
       // Extract metadata from domain data
@@ -153,8 +153,8 @@ export class SequenceAnimationOrchestrator {
           (sequenceData.metadata?.["author"] as string) ||
           "",
         totalSteps: steps.length,
-        bluePropType: propConfig.bluePropType,
-        redPropType: propConfig.redPropType,
+        leftPropType: propConfig.leftPropType,
+        rightPropType: propConfig.rightPropType,
         gridMode: sequenceData.gridMode,
       };
 
@@ -207,21 +207,21 @@ export class SequenceAnimationOrchestrator {
 
       const firstStep = this.steps[0];
       if (
-        isVisibleMotion(firstStep?.motions?.blue) ||
-        isVisibleMotion(firstStep?.motions?.red)
+        isVisibleMotion(firstStep?.motions?.left) ||
+        isVisibleMotion(firstStep?.motions?.right)
       ) {
         const initialAngles = calculateInitialAngles(firstStep);
         if (initialAngles.isValid) {
-          if (initialAngles.blueAngles) {
-            this.animationStateService.updateBluePropState({
-              centerPathAngle: initialAngles.blueAngles.centerPathAngle,
-              staffRotationAngle: initialAngles.blueAngles.staffRotationAngle,
+          if (initialAngles.leftAngles) {
+            this.animationStateService.updateLeftPropState({
+              centerPathAngle: initialAngles.leftAngles.centerPathAngle,
+              staffRotationAngle: initialAngles.leftAngles.staffRotationAngle,
             });
           }
-          if (initialAngles.redAngles) {
-            this.animationStateService.updateRedPropState({
-              centerPathAngle: initialAngles.redAngles.centerPathAngle,
-              staffRotationAngle: initialAngles.redAngles.staffRotationAngle,
+          if (initialAngles.rightAngles) {
+            this.animationStateService.updateRightPropState({
+              centerPathAngle: initialAngles.rightAngles.centerPathAngle,
+              staffRotationAngle: initialAngles.rightAngles.staffRotationAngle,
             });
           }
         }
@@ -253,7 +253,7 @@ export class SequenceAnimationOrchestrator {
     // Skip steps without ANY motion data (neither hand really there) and log once
     const beatMotions = stepState.currentStepData?.motions;
     const hasStepMotions =
-      isVisibleMotion(beatMotions?.blue) || isVisibleMotion(beatMotions?.red);
+      isVisibleMotion(beatMotions?.left) || isVisibleMotion(beatMotions?.right);
     if (!hasStepMotions) {
       const key =
         stepState.currentStepData?.stepNumber ?? stepState.currentStepIndex;
@@ -360,10 +360,10 @@ export class SequenceAnimationOrchestrator {
    * here — a sampler at those positions returns the zero default. Callers that
    * need start-position angles use calculateInitialAngles directly.
    */
-  samplePropStateAt(step: number): { blue: PropState; red: PropState } {
-    const fallback = (): { blue: PropState; red: PropState } => ({
-      blue: { centerPathAngle: 0, staffRotationAngle: 0 },
-      red: { centerPathAngle: 0, staffRotationAngle: 0 },
+  samplePropStateAt(step: number): { left: PropState; right: PropState } {
+    const fallback = (): { left: PropState; right: PropState } => ({
+      left: { centerPathAngle: 0, staffRotationAngle: 0 },
+      right: { centerPathAngle: 0, staffRotationAngle: 0 },
     });
 
     if (this.steps.length === 0 || this.totalSteps === 0 || step < 1) {
@@ -383,7 +383,7 @@ export class SequenceAnimationOrchestrator {
     }
 
     const beatMotions = stepState.currentStepData?.motions;
-    if (!(beatMotions?.blue || beatMotions?.red)) {
+    if (!(beatMotions?.left || beatMotions?.right)) {
       return fallback();
     }
 
@@ -393,8 +393,8 @@ export class SequenceAnimationOrchestrator {
     }
 
     return {
-      blue: result.blueAngles ?? { centerPathAngle: 0, staffRotationAngle: 0 },
-      red: result.redAngles ?? { centerPathAngle: 0, staffRotationAngle: 0 },
+      left: result.leftAngles ?? { centerPathAngle: 0, staffRotationAngle: 0 },
+      right: result.rightAngles ?? { centerPathAngle: 0, staffRotationAngle: 0 },
     };
   }
 
@@ -408,15 +408,15 @@ export class SequenceAnimationOrchestrator {
   /**
    * Get blue prop state
    */
-  getBluePropState(): PropState {
-    return this.animationStateService.getBluePropState();
+  getLeftPropState(): PropState {
+    return this.animationStateService.getLeftPropState();
   }
 
   /**
    * Get red prop state
    */
-  getRedPropState(): PropState {
-    return this.animationStateService.getRedPropState();
+  getRightPropState(): PropState {
+    return this.animationStateService.getRightPropState();
   }
 
   /**
@@ -437,8 +437,8 @@ export class SequenceAnimationOrchestrator {
     return (
       this.steps.find(
         (step) =>
-          isVisibleMotion(step?.motions?.blue) ||
-          isVisibleMotion(step?.motions?.red)
+          isVisibleMotion(step?.motions?.left) ||
+          isVisibleMotion(step?.motions?.right)
       ) ?? null
     );
   }
@@ -470,16 +470,16 @@ export class SequenceAnimationOrchestrator {
     const initialAngles = calculateInitialAngles(firstStepWithMotion);
 
     if (initialAngles.isValid) {
-      if (initialAngles.blueAngles) {
-        this.animationStateService.updateBluePropState({
-          centerPathAngle: initialAngles.blueAngles.centerPathAngle,
-          staffRotationAngle: initialAngles.blueAngles.staffRotationAngle,
+      if (initialAngles.leftAngles) {
+        this.animationStateService.updateLeftPropState({
+          centerPathAngle: initialAngles.leftAngles.centerPathAngle,
+          staffRotationAngle: initialAngles.leftAngles.staffRotationAngle,
         });
       }
-      if (initialAngles.redAngles) {
-        this.animationStateService.updateRedPropState({
-          centerPathAngle: initialAngles.redAngles.centerPathAngle,
-          staffRotationAngle: initialAngles.redAngles.staffRotationAngle,
+      if (initialAngles.rightAngles) {
+        this.animationStateService.updateRightPropState({
+          centerPathAngle: initialAngles.rightAngles.centerPathAngle,
+          staffRotationAngle: initialAngles.rightAngles.staffRotationAngle,
         });
       }
     } else {
@@ -612,7 +612,7 @@ export class SequenceAnimationOrchestrator {
 
     // Skip steps without ANY motion data (neither hand present)
     const beatMotions = stepState.currentStepData?.motions;
-    const hasStepMotions = beatMotions?.blue || beatMotions?.red;
+    const hasStepMotions = beatMotions?.left || beatMotions?.right;
     if (!hasStepMotions) {
       const key =
         stepState.currentStepData?.stepNumber ?? stepState.currentStepIndex;
@@ -691,21 +691,21 @@ export class SequenceAnimationOrchestrator {
 
     const firstStep = this.steps[0];
     if (
-      isVisibleMotion(firstStep?.motions?.blue) ||
-      isVisibleMotion(firstStep?.motions?.red)
+      isVisibleMotion(firstStep?.motions?.left) ||
+      isVisibleMotion(firstStep?.motions?.right)
     ) {
       const initialAngles = calculateInitialAngles(firstStep);
       if (initialAngles.isValid) {
-        if (initialAngles.blueAngles) {
-          this.animationStateService.updateBluePropState({
-            centerPathAngle: initialAngles.blueAngles.centerPathAngle,
-            staffRotationAngle: initialAngles.blueAngles.staffRotationAngle,
+        if (initialAngles.leftAngles) {
+          this.animationStateService.updateLeftPropState({
+            centerPathAngle: initialAngles.leftAngles.centerPathAngle,
+            staffRotationAngle: initialAngles.leftAngles.staffRotationAngle,
           });
         }
-        if (initialAngles.redAngles) {
-          this.animationStateService.updateRedPropState({
-            centerPathAngle: initialAngles.redAngles.centerPathAngle,
-            staffRotationAngle: initialAngles.redAngles.staffRotationAngle,
+        if (initialAngles.rightAngles) {
+          this.animationStateService.updateRightPropState({
+            centerPathAngle: initialAngles.rightAngles.centerPathAngle,
+            staffRotationAngle: initialAngles.rightAngles.staffRotationAngle,
           });
         }
       }
@@ -784,12 +784,12 @@ export class SequenceAnimationOrchestrator {
    * Update the prop types used for rendering without full re-initialization.
    * Called when the user toggles between creator-intent and viewer props.
    */
-  updatePropTypes(bluePropType: PropType, redPropType: PropType): void {
+  updatePropTypes(leftPropType: PropType, rightPropType: PropType): void {
     if (!this.initialized) return;
     this.metadata = {
       ...this.metadata,
-      bluePropType,
-      redPropType,
+      leftPropType,
+      rightPropType,
     };
     // Re-initialize prop states so the canvas renders with the new prop visuals
     this.initializePropStates();

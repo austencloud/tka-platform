@@ -77,13 +77,13 @@ describe("Fuse reversal contract", () => {
     );
 
     expect(rebuilt.isCircular).toBe(true);
-    expect(rebuilt.steps.map((step) => step.blueReversal)).toEqual([
+    expect(rebuilt.steps.map((step) => step.leftReversal)).toEqual([
       false,
       false,
       false,
       false,
     ]);
-    expect(rebuilt.steps.map((step) => step.redReversal)).toEqual([
+    expect(rebuilt.steps.map((step) => step.rightReversal)).toEqual([
       false,
       true,
       false,
@@ -97,11 +97,11 @@ describe("Fuse reversal contract", () => {
     const linear = processReversals({ ...raw, isCircular: false });
     const circular = processReversals({ ...raw, isCircular: true });
 
-    expect(linear.steps.map((step) => step.blueReversal)).toEqual([
+    expect(linear.steps.map((step) => step.leftReversal)).toEqual([
       false,
       true,
     ]);
-    expect(circular.steps.map((step) => step.blueReversal)).toEqual([
+    expect(circular.steps.map((step) => step.leftReversal)).toEqual([
       true,
       true,
     ]);
@@ -114,23 +114,23 @@ describe("Fuse reversal contract", () => {
     );
 
     expect(fused.isCircular).toBe(true);
-    expect(fused.steps.map((step) => step.blueReversal)).toEqual([
+    expect(fused.steps.map((step) => step.leftReversal)).toEqual([
       false,
       true,
       false,
       true,
     ]);
-    expect(fused.steps.map((step) => step.redReversal)).toEqual([
+    expect(fused.steps.map((step) => step.rightReversal)).toEqual([
       true,
       false,
       false,
       true,
     ]);
-    expect(fused.stepPairings?.map((pairing) => pairing.blueReversal)).toEqual(
-      fused.steps.map((step) => step.blueReversal)
+    expect(fused.stepPairings?.map((pairing) => pairing.leftReversal)).toEqual(
+      fused.steps.map((step) => step.leftReversal)
     );
-    expect(fused.stepPairings?.map((pairing) => pairing.redReversal)).toEqual(
-      fused.steps.map((step) => step.redReversal)
+    expect(fused.stepPairings?.map((pairing) => pairing.rightReversal)).toEqual(
+      fused.steps.map((step) => step.rightReversal)
     );
   });
 });

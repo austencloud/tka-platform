@@ -27,24 +27,24 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
  * roll, each proven by an invariant the old moves couldn't produce.
  */
 export const provingGroundsFilm: FilmDirectorInput = {
-  version: 4,
+  version: 5,
   id: "proving-grounds-r1",
   title: "Proving Grounds",
   brief:
-    "One scene per closed gap. Three performers draw distinct blue and red planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll.",
+    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll.",
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
   // The grammar only guarantees distinctness PER axis; three blues and three
   // reds may still overlap each other. This red-stream seed lands a draw with
   // zero cross-axis repeats, so the proving frame shows six visibly different
   // planes — film-library.test.ts asserts the union size to keep it honest.
-  seed: { axes: { redPlane: 5 } },
+  seed: { axes: { rightPlane: 5 } },
   scenes: [
     {
       id: "combined-draw",
       title: "Combined Draw",
       intent:
-        "Gap 9: three performers draw DISTINCT blue planes and DISTINCT red planes, and none of the six is ever the wall plane.",
+        "Gap 9: three performers draw DISTINCT left planes and DISTINCT right planes, and none of the six is ever the wall plane.",
       durationSeconds: 12,
       location: {
         environmentId: "forest",
@@ -69,8 +69,8 @@ export const provingGroundsFilm: FilmDirectorInput = {
           defaults: {
             // The wave-1 spelling. Each half of it was already sayable; saying
             // both on one axis is what this scene exists to show.
-            bluePlane: { pick: "distinct", not: "wall" },
-            redPlane: { pick: "distinct", not: "wall" },
+            leftPlane: { pick: "distinct", not: "wall" },
+            rightPlane: { pick: "distinct", not: "wall" },
             effect: "none",
           },
         },

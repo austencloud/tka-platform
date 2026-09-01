@@ -5,13 +5,14 @@ import {
   type SequenceData,
 } from "$lib/shared/foundation/domain/models/sequence-data";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
-import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   createMotionData,
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
+import { normalizeLegacySequence } from "@tka/tka-types";
 
 function letterFromGridPosition(gridPosition: unknown): Letter | null {
   if (!gridPosition) return null;
@@ -24,10 +25,10 @@ function letterFromGridPosition(gridPosition: unknown): Letter | null {
 
 function hydrateMotions(
   motions: PictographData["motions"] | undefined
-): Partial<Record<MotionColor, MotionData>> {
-  const hydrated: Partial<Record<MotionColor, MotionData>> = {};
+): Partial<Record<HandSide, MotionData>> {
+  const hydrated: Partial<Record<HandSide, MotionData>> = {};
   for (const [color, motion] of Object.entries(motions ?? {})) {
-    if (motion) hydrated[color as MotionColor] = createMotionData(motion);
+    if (motion) hydrated[color as HandSide] = createMotionData(motion);
   }
   return hydrated;
 }
@@ -44,8 +45,8 @@ function hydrateSteps(
       stepNumber:
         step.stepNumber ?? (beat !== undefined ? beat + 1 : index + 1),
       duration: step.duration ?? 1,
-      blueReversal: step.blueReversal ?? false,
-      redReversal: step.redReversal ?? false,
+      leftReversal: step.leftReversal ?? false,
+      rightReversal: step.rightReversal ?? false,
       isBlank: step.isBlank ?? false,
       motions: hydrateMotions(step.motions),
     });
@@ -58,7 +59,11 @@ function hydrateSteps(
  * them; rendering the raw object silently drops every arrow and prop.
  */
 export function hydrateSequence(raw: Record<string, unknown>): SequenceData {
-  const sequence = createSequenceData(raw);
+  // Normalize before the factory narrows the object. Historical public-index,
+  // QR, and printed-card payloads still carry blue/red field names; once the
+  // factory has selected canonical fields those aliases can no longer be
+  // recovered.
+  const sequence = createSequenceData(normalizeLegacySequence(raw));
   const startPosition = sequence.startPosition
     ? {
         ...sequence.startPosition,
@@ -76,7 +81,7 @@ export function hydrateSequence(raw: Record<string, unknown>): SequenceData {
   };
 
   const hasStoredReversals = hydrated.steps.some(
-    (step) => step.blueReversal !== undefined || step.redReversal !== undefined
+    (step) => step.leftReversal !== undefined || step.rightReversal !== undefined
   );
   return hasStoredReversals
     ? hydrated

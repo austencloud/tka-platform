@@ -62,8 +62,8 @@ export function describeTunnelForDiscovery(
   tunnel: CollectedTunnel
 ): TunnelDiscoverySummary {
   const config = tunnel.snapshot.tunnel.config;
-  const leftProp = propLabel(tunnel.snapshot.props.bluePropType);
-  const rightProp = propLabel(tunnel.snapshot.props.redPropType);
+  const leftProp = propLabel(tunnel.snapshot.props.leftPropType);
+  const rightProp = propLabel(tunnel.snapshot.props.rightPropType);
   const propsLabel =
     leftProp === rightProp
       ? `${leftProp} · both hands`

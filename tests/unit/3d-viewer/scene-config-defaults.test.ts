@@ -37,8 +37,10 @@ const factories = {
 };
 
 const expectedHashes: Record<keyof typeof factories, string> = {
+  // Re-baselined 2026-09-01 by 9ba0e1c614 (fix(autumn): preserve distant
+  // ground through haze) after the approved fog and horizon-colour retune.
   createDefaultAutumnConfig:
-    "b88ab85d316bced0090b141fc2510505fa2e3e4bf1c177cf49b4c49c2b7fd955",
+    "2707056bcbed71fb20af8acb0eecb3888b4238ddb64edc8ff153a56340f9b3ef",
   // Re-baselined 2026-08-23 by 7f67e5c785 (feat(blossom): preserve the
   // site-system review build) — the approved sky/fog/petal/moonlight retune.
   createDefaultBlossomConfig:
@@ -49,10 +51,10 @@ const expectedHashes: Record<keyof typeof factories, string> = {
     "0bd38acd71a42d1944bcdf0d61b9998b5bbed1800bc4f5cc0fe7e30a6d5763b4",
   createDefaultCosmicNightConfig:
     "36a5c5c124f80ad24e50ac7e5926ac5ca37df95f18c16dd30ae0278aed72f50c",
-  // Re-baselined 2026-08-28 by the approved Gate 4 cinematic-atmosphere
-  // audition. Geometry stays fixed; this hash owns the selected runtime look.
+  // Re-baselined 2026-08-30 by the four-lane field-audit fix queue (river
+  // drape/source/terminus, plume rebuild, upcountry detail reach, sky depth).
   createDefaultEmberConfig:
-    "fa4236c4cb8fc0452a0671229d70974edb7b41793d777b87bdded71f73f426bb",
+    "500b780cada771ca043948f7772a0b8684fc3df7d6f6c48bad5d9cfe2fd89ac3",
   createDefaultForestAutumnConfig:
     "5429d3c565a020b03582d6fe83b48e2a430f160e7f533363d4d6ebe689f70a8e",
   createDefaultForestFireflyConfig:

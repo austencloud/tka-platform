@@ -12,7 +12,7 @@ import {
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   HandMotionType,
   MotionType,
   Orientation,
@@ -66,8 +66,8 @@ describe("Assemble state invariants", () => {
     state.handlePointClick(GridLocation.EAST);
     expect(state.phase).toBe("animating");
 
-    state.switchToHand(MotionColor.RED);
-    expect(state.activeHand).toBe(MotionColor.BLUE);
+    state.switchToHand(HandSide.RIGHT);
+    expect(state.activeHand).toBe(HandSide.LEFT);
 
     finishAnimation();
     await vi.waitFor(() => expect(state.phase).toBe("building"));
@@ -81,11 +81,11 @@ describe("Assemble state invariants", () => {
     state.setTurnCount(1.5);
     state.handlePointClick(GridLocation.EAST);
 
-    await vi.waitFor(() => expect(state.blueSteps).toHaveLength(1));
-    expect(state.blueSteps[0]?.rotationDirection).toBe(
+    await vi.waitFor(() => expect(state.leftSteps).toHaveLength(1));
+    expect(state.leftSteps[0]?.rotationDirection).toBe(
       RotationDirection.COUNTER_CLOCKWISE
     );
-    expect(state.blueSteps[0]?.turnCount).toBe(1.5);
+    expect(state.leftSteps[0]?.turnCount).toBe(1.5);
   });
 
   it("derives anti, float, and hash motion types from the canonical builder converter", () => {
@@ -170,18 +170,18 @@ describe("Assemble state invariants", () => {
     const state = createAssembleState();
 
     state.hydrateFromSequence({
-      blueSteps: [],
-      redSteps: [],
+      leftSteps: [],
+      rightSteps: [],
       gridMode: GridMode.DIAMOND,
       startPoses: {
-        [MotionColor.RED]: {
+        [HandSide.RIGHT]: {
           location: GridLocation.WEST,
           orientation: Orientation.OUT,
         },
       },
     });
 
-    expect(state.activeHand).toBe(MotionColor.RED);
+    expect(state.activeHand).toBe(HandSide.RIGHT);
     expect(state.phase).toBe("placing");
     expect(state.currentPosition).toBe(GridLocation.WEST);
     expect(state.currentOrientation).toBe(Orientation.OUT);
@@ -191,15 +191,15 @@ describe("Assemble state invariants", () => {
     const state = createAssembleState();
 
     state.handlePointClick(GridLocation.NORTH);
-    state.switchToHand(MotionColor.RED);
+    state.switchToHand(HandSide.RIGHT);
     state.handlePointClick(GridLocation.WEST);
-    state.switchToHand(MotionColor.BLUE);
+    state.switchToHand(HandSide.LEFT);
 
     expect(state.currentPosition).toBe(GridLocation.NORTH);
-    expect(state.startPoses[MotionColor.BLUE]?.location).toBe(
+    expect(state.startPoses[HandSide.LEFT]?.location).toBe(
       GridLocation.NORTH
     );
-    expect(state.startPoses[MotionColor.RED]?.location).toBe(GridLocation.WEST);
+    expect(state.startPoses[HandSide.RIGHT]?.location).toBe(GridLocation.WEST);
   });
 
   it("builds one hand before the other hand has a starting pose", async () => {
@@ -208,17 +208,17 @@ describe("Assemble state invariants", () => {
     state.handlePointClick(GridLocation.NORTH);
     await addMotion(state, GridLocation.EAST);
 
-    expect(state.blueSteps).toHaveLength(1);
-    expect(state.startPoses[MotionColor.RED]).toBeUndefined();
+    expect(state.leftSteps).toHaveLength(1);
+    expect(state.startPoses[HandSide.RIGHT]).toBeUndefined();
 
-    state.switchToHand(MotionColor.RED);
+    state.switchToHand(HandSide.RIGHT);
     expect(state.phase).toBe("idle");
     expect(state.currentPosition).toBeNull();
 
     state.handlePointClick(GridLocation.WEST);
     expect(state.phase).toBe("placing");
-    expect(state.startPoses[MotionColor.RED]?.location).toBe(GridLocation.WEST);
-    expect(state.blueSteps).toHaveLength(1);
+    expect(state.startPoses[HandSide.RIGHT]?.location).toBe(GridLocation.WEST);
+    expect(state.leftSteps).toHaveLength(1);
   });
 
   it("sets both starting poses as one reversible document action", () => {
@@ -226,28 +226,28 @@ describe("Assemble state invariants", () => {
     const state = createAssembleState({ onDocumentChange });
 
     state.setStartPoses({
-      [MotionColor.BLUE]: {
+      [HandSide.LEFT]: {
         location: GridLocation.NORTH,
         orientation: Orientation.OUT,
       },
-      [MotionColor.RED]: {
+      [HandSide.RIGHT]: {
         location: GridLocation.WEST,
         orientation: Orientation.CLOCK,
       },
     });
 
     expect(state.startPoses).toEqual({
-      [MotionColor.BLUE]: {
+      [HandSide.LEFT]: {
         location: GridLocation.NORTH,
         orientation: Orientation.OUT,
       },
-      [MotionColor.RED]: {
+      [HandSide.RIGHT]: {
         location: GridLocation.WEST,
         orientation: Orientation.CLOCK,
       },
     });
     expect(state.phase).toBe("placing");
-    expect(state.activeHand).toBe(MotionColor.BLUE);
+    expect(state.activeHand).toBe(HandSide.LEFT);
     expect(state.currentPosition).toBe(GridLocation.NORTH);
     expect(state.undoLabel).toBe("Set start position");
     expect(onDocumentChange).toHaveBeenCalledTimes(1);
@@ -262,7 +262,7 @@ describe("Assemble state invariants", () => {
     expect(state.historyTransitionEpoch).toBe(1);
 
     expect(state.redoStep()).toBe(true);
-    expect(state.startPoses[MotionColor.RED]?.location).toBe(GridLocation.WEST);
+    expect(state.startPoses[HandSide.RIGHT]?.location).toBe(GridLocation.WEST);
     expect(state.historyTransition?.direction).toBe("redo");
     expect(state.historyTransitionEpoch).toBe(2);
   });
@@ -272,14 +272,14 @@ describe("Assemble state invariants", () => {
     state.handlePointClick(GridLocation.NORTH);
 
     state.setGridMode(GridMode.BOX);
-    expect(state.startPoses[MotionColor.BLUE]).toBeUndefined();
+    expect(state.startPoses[HandSide.LEFT]).toBeUndefined();
     expect(state.gridMode).toBe(GridMode.BOX);
     expect(state.undoLabel).toBe("Change grid");
 
     state.undoStep();
     expect(state.gridMode).toBe(GridMode.DIAMOND);
     expect(state.historyTransition?.affectsGrid).toBe(true);
-    expect(state.startPoses[MotionColor.BLUE]?.location).toBe(
+    expect(state.startPoses[HandSide.LEFT]?.location).toBe(
       GridLocation.NORTH
     );
   });
@@ -288,19 +288,19 @@ describe("Assemble state invariants", () => {
     const state = createAssembleState();
     state.handlePointClick(GridLocation.NORTH);
     await addMotion(state, GridLocation.EAST);
-    state.switchToHand(MotionColor.RED);
+    state.switchToHand(HandSide.RIGHT);
     state.handlePointClick(GridLocation.WEST);
     await addMotion(state, GridLocation.SOUTH);
 
-    expect(state.redSteps).toHaveLength(1);
+    expect(state.rightSteps).toHaveLength(1);
     expect(state.undoLabel).toBe("Add Right step 1");
     expect(state.undoStep()).toBe(true);
-    expect(state.redSteps).toHaveLength(0);
+    expect(state.rightSteps).toHaveLength(0);
     expect(state.currentPosition).toBe(GridLocation.WEST);
     expect(state.canRedo).toBe(true);
 
     expect(state.redoStep()).toBe(true);
-    expect(state.redSteps).toHaveLength(1);
+    expect(state.rightSteps).toHaveLength(1);
     expect(state.currentPosition).toBe(GridLocation.SOUTH);
   });
 
@@ -309,23 +309,23 @@ describe("Assemble state invariants", () => {
     state.handlePointClick(GridLocation.NORTH);
     await addMotion(state, GridLocation.EAST);
     await addMotion(state, GridLocation.SOUTH);
-    state.switchToHand(MotionColor.RED);
+    state.switchToHand(HandSide.RIGHT);
     state.handlePointClick(GridLocation.WEST);
     await addMotion(state, GridLocation.SOUTH);
     await addMotion(state, GridLocation.EAST);
 
     state.deleteStepAt(0);
 
-    expect(state.blueSteps).toHaveLength(1);
-    expect(state.redSteps).toHaveLength(1);
-    expect(state.blueSteps[0]?.startPosition).toBe(GridLocation.NORTH);
-    expect(state.blueSteps[0]?.endPosition).toBe(GridLocation.SOUTH);
-    expect(state.redSteps[0]?.startPosition).toBe(GridLocation.WEST);
-    expect(state.redSteps[0]?.endPosition).toBe(GridLocation.EAST);
+    expect(state.leftSteps).toHaveLength(1);
+    expect(state.rightSteps).toHaveLength(1);
+    expect(state.leftSteps[0]?.startPosition).toBe(GridLocation.NORTH);
+    expect(state.leftSteps[0]?.endPosition).toBe(GridLocation.SOUTH);
+    expect(state.rightSteps[0]?.startPosition).toBe(GridLocation.WEST);
+    expect(state.rightSteps[0]?.endPosition).toBe(GridLocation.EAST);
 
     state.undoStep();
-    expect(state.blueSteps).toHaveLength(2);
-    expect(state.redSteps).toHaveLength(2);
+    expect(state.leftSteps).toHaveLength(2);
+    expect(state.rightSteps).toHaveLength(2);
   });
 
   it("replaces one hand's destination and reflows its downstream motion", async () => {
@@ -338,10 +338,10 @@ describe("Assemble state invariants", () => {
 
     state.handlePointClick(GridLocation.WEST);
 
-    expect(state.blueSteps[0]?.endPosition).toBe(GridLocation.WEST);
-    expect(state.blueSteps[1]?.startPosition).toBe(GridLocation.WEST);
-    expect(state.blueSteps[1]?.startOrientation).toBe(
-      state.blueSteps[0]?.endOrientation
+    expect(state.leftSteps[0]?.endPosition).toBe(GridLocation.WEST);
+    expect(state.leftSteps[1]?.startPosition).toBe(GridLocation.WEST);
+    expect(state.leftSteps[1]?.startOrientation).toBe(
+      state.leftSteps[0]?.endOrientation
     );
     expect(state.stepEditMode).toBeNull();
   });
@@ -351,31 +351,31 @@ describe("Assemble state invariants", () => {
     state.handlePointClick(GridLocation.NORTH);
     await addMotion(state, GridLocation.EAST);
     await addMotion(state, GridLocation.SOUTH);
-    state.switchToHand(MotionColor.RED);
+    state.switchToHand(HandSide.RIGHT);
     state.handlePointClick(GridLocation.WEST);
     await addMotion(state, GridLocation.SOUTH);
     await addMotion(state, GridLocation.EAST);
 
     state.moveStep(1, 0);
 
-    expect(state.blueSteps.map((step) => step.endPosition)).toEqual([
+    expect(state.leftSteps.map((step) => step.endPosition)).toEqual([
       GridLocation.SOUTH,
       GridLocation.EAST,
     ]);
-    expect(state.redSteps.map((step) => step.endPosition)).toEqual([
+    expect(state.rightSteps.map((step) => step.endPosition)).toEqual([
       GridLocation.EAST,
       GridLocation.SOUTH,
     ]);
-    expect(state.blueSteps[1]?.startPosition).toBe(
-      state.blueSteps[0]?.endPosition
+    expect(state.leftSteps[1]?.startPosition).toBe(
+      state.leftSteps[0]?.endPosition
     );
-    expect(state.redSteps[1]?.startOrientation).toBe(
-      state.redSteps[0]?.endOrientation
+    expect(state.rightSteps[1]?.startOrientation).toBe(
+      state.rightSteps[0]?.endOrientation
     );
     expect(state.selectedStepIndex).toBe(0);
 
     state.undoStep();
-    expect(state.blueSteps.map((step) => step.endPosition)).toEqual([
+    expect(state.leftSteps.map((step) => step.endPosition)).toEqual([
       GridLocation.EAST,
       GridLocation.SOUTH,
     ]);

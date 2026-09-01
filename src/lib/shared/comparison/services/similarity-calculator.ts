@@ -19,7 +19,7 @@ import type {
 } from "./types";
 import type { StepSignatureGenerator } from "./step-signature-generator";
 import type { SequenceAligner } from "./sequence-aligner";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 const DEFAULT_OPTIONS: Required<SimilarityOptions> = {
@@ -414,17 +414,17 @@ export class SimilarityCalculator {
       if (!stepA || !stepB) continue;
 
       // Motion type comparison
-      const blueA = stepA.motions[MotionColor.BLUE];
-      const redA = stepA.motions[MotionColor.RED];
-      const blueB = stepB.motions[MotionColor.BLUE];
-      const redB = stepB.motions[MotionColor.RED];
+      const leftA = stepA.motions[HandSide.LEFT];
+      const rightA = stepA.motions[HandSide.RIGHT];
+      const leftB = stepB.motions[HandSide.LEFT];
+      const rightB = stepB.motions[HandSide.RIGHT];
 
       // Invisible placeholder = hand not really there (both-required Step
       // shape): counts as a mismatch, like the old absent hand.
       if (
-        isVisibleMotion(blueA) &&
-        isVisibleMotion(blueB) &&
-        blueA.motionType === blueB.motionType
+        isVisibleMotion(leftA) &&
+        isVisibleMotion(leftB) &&
+        leftA.motionType === leftB.motionType
       ) {
         motionTypeMatches++;
       } else {
@@ -432,9 +432,9 @@ export class SimilarityCalculator {
       }
 
       if (
-        isVisibleMotion(redA) &&
-        isVisibleMotion(redB) &&
-        redA.motionType === redB.motionType
+        isVisibleMotion(rightA) &&
+        isVisibleMotion(rightB) &&
+        rightA.motionType === rightB.motionType
       ) {
         motionTypeMatches++;
       } else {
@@ -513,22 +513,22 @@ export class SimilarityCalculator {
       const stepB = stepsB[i];
       if (!stepA || !stepB) continue;
 
-      const blueA = stepA.motions[MotionColor.BLUE];
-      const redA = stepA.motions[MotionColor.RED];
-      const blueB = stepB.motions[MotionColor.BLUE];
-      const redB = stepB.motions[MotionColor.RED];
+      const leftA = stepA.motions[HandSide.LEFT];
+      const rightA = stepA.motions[HandSide.RIGHT];
+      const leftB = stepB.motions[HandSide.LEFT];
+      const rightB = stepB.motions[HandSide.RIGHT];
 
       if (
-        isVisibleMotion(blueA) &&
-        isVisibleMotion(blueB) &&
-        blueA.motionType === blueB.motionType
+        isVisibleMotion(leftA) &&
+        isVisibleMotion(leftB) &&
+        leftA.motionType === leftB.motionType
       ) {
         matches++;
       }
       if (
-        isVisibleMotion(redA) &&
-        isVisibleMotion(redB) &&
-        redA.motionType === redB.motionType
+        isVisibleMotion(rightA) &&
+        isVisibleMotion(rightB) &&
+        rightA.motionType === rightB.motionType
       ) {
         matches++;
       }

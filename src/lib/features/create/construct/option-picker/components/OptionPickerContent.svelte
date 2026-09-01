@@ -49,9 +49,11 @@ Uses organizer and sizer services for section grouping and sizing.
   } from "../services/option-interaction-hint-marker";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import { selectOptionInteractionHintPresentation } from "../services/option-interaction-hint-presentation";
+  import { selectOptionControlsPresentation } from "../services/option-controls-presentation";
 
   interface Props {
     options: PreparedPictographData[];
+    optionAvailability?: { shownCount: number; hiddenCount: number };
     organizerService:
       | ((
           pictographs: PictographData[],
@@ -76,22 +78,23 @@ Uses organizer and sizer services for section grouping and sizing.
     onSlotClicked?: (typeSection: string, slotIndex: number) => void;
     lastClickedSlot?: { typeSection: string; slotIndex: number } | null;
     // Pending turns bar
-    blueTurns: TurnValue;
-    redTurns: TurnValue;
+    leftTurns: TurnValue;
+    rightTurns: TurnValue;
     /** Working level — gates the header's turn palette. */
     level: TurnLevel;
     onLevelChange: (level: TurnLevel) => void;
-    blueRotation: RotationDirection;
-    redRotation: RotationDirection;
-    onBlueTurnsChange: (value: TurnValue) => void;
-    onRedTurnsChange: (value: TurnValue) => void;
-    onBlueRotationChange: (dir: RotationDirection) => void;
-    onRedRotationChange: (dir: RotationDirection) => void;
+    leftRotation: RotationDirection;
+    rightRotation: RotationDirection;
+    onLeftTurnsChange: (value: TurnValue) => void;
+    onRightTurnsChange: (value: TurnValue) => void;
+    onLeftRotationChange: (dir: RotationDirection) => void;
+    onRightRotationChange: (dir: RotationDirection) => void;
     showInteractionHint?: boolean;
   }
 
   const {
     options,
+    optionAvailability = undefined,
     organizerService,
     sizerService,
     onSelect,
@@ -103,16 +106,16 @@ Uses organizer and sizer services for section grouping and sizing.
     currentSequence = [],
     onSlotClicked,
     lastClickedSlot = null,
-    blueTurns,
-    redTurns,
+    leftTurns,
+    rightTurns,
     level,
     onLevelChange,
-    blueRotation,
-    redRotation,
-    onBlueTurnsChange,
-    onRedTurnsChange,
-    onBlueRotationChange,
-    onRedRotationChange,
+    leftRotation,
+    rightRotation,
+    onLeftTurnsChange,
+    onRightTurnsChange,
+    onLeftRotationChange,
+    onRightRotationChange,
     showInteractionHint = true,
   }: Props = $props();
   const createContext = tryGetCreateModuleContext();
@@ -163,6 +166,10 @@ Uses organizer and sizer services for section grouping and sizing.
   // Wide layout (>= 750px): 8-column grouped vertical layout
   // Narrow layout (< 750px): Horizontal swipe layout between type sections
   const WIDE_LAYOUT_THRESHOLD = 750;
+  // Above this width both hand palettes fit on one row, so the header remains
+  // economical even in a short pane. Narrower panes need enough height to
+  // stack those same surfaces before controls stay inline.
+  const FULL_INLINE_CONTROLS_WIDTH = 1000;
   const shouldUseWideLayout = $derived(containerWidth >= WIDE_LAYOUT_THRESHOLD);
   const interactionHintPresentation = $derived(
     selectOptionInteractionHintPresentation({
@@ -184,7 +191,11 @@ Uses organizer and sizer services for section grouping and sizing.
   // Only show filter toggle when we have at least 2 steps (start position + 1 actual beat)
   // Without a previous beat, there's no rotation context to filter against
   const shouldShowFilterToggle = $derived(() => {
-    return options.length > 0 && currentSequence.length >= 2;
+    const availableBeforeDirectionFiltering =
+      optionAvailability === undefined
+        ? options.length
+        : optionAvailability.shownCount + optionAvailability.hiddenCount;
+    return availableBeforeDirectionFiltering > 0 && currentSequence.length >= 2;
   });
 
   // Organize options into sections
@@ -292,28 +303,37 @@ Uses organizer and sizer services for section grouping and sizing.
     return shouldSwipe && !shouldUseCompact4x4();
   });
 
-  // The unified header (filter + turns) replaces the standalone filter pill on the
-  // wide desktop layout. It's pinned to the top of the picker; the grid scrolls
-  // beneath it. Matches the wide-layout branch condition.
-  const useUnifiedHeader = $derived(
-    !shouldUseCompact4x4() &&
-      !shouldUseSwipeLayout() &&
-      shouldUseWideLayout &&
-      !isMobileStackedLayout()
-  );
-
   const shouldShowFilterControl = $derived(() => {
     return shouldShowFilterToggle() && !hideFilters;
   });
 
-  // Every narrow layout gets the same controls as the wide header. The filter
-  // can be unavailable on the first beat, but Level and turns still need a way
-  // in. Embedded surfaces with pinned turns keep only the filter control.
-  const showCompactControls = $derived(() => {
-    return (
-      !useUnifiedHeader && (shouldShowFilterControl() || turnControlsEditable)
-    );
-  });
+  // Height decides whether controls need disclosure. Width only changes how
+  // the one inline header recomposes; it must not swap the user into a second
+  // visual system just because the option grid crossed its own breakpoint.
+  const controlsAvailable = $derived(
+    shouldShowFilterControl() || turnControlsEditable
+  );
+  const fullInlineControlsEligible = $derived(
+    !shouldUseCompact4x4() &&
+      !shouldUseSwipeLayout() &&
+      containerWidth >= FULL_INLINE_CONTROLS_WIDTH &&
+      !isMobileStackedLayout()
+  );
+  const controlsPresentation = $derived(
+    selectOptionControlsPresentation({
+      hasControls: controlsAvailable,
+      fullInlineEligible: fullInlineControlsEligible,
+      containerHeight,
+      // Reserve the largest header this picker can reveal. Otherwise Level 1
+      // could fit inline, then selecting Level 2 would replace the controls
+      // with a disclosure button at the exact moment they are needed.
+      canShowTurnRows: turnControlsEditable,
+    })
+  );
+  const useInlineControls = $derived(controlsPresentation === "inline");
+  const useDisclosedCompactControls = $derived(
+    controlsPresentation === "disclosed"
+  );
 
   // For swipe layout: combine Types 4-6 into a single grouped panel
   const swipeSections = $derived(() => {
@@ -382,7 +402,9 @@ Uses organizer and sizer services for section grouping and sizing.
   // Height to subtract when calculating available space for content.
   // The compact type header owns a fixed row above the carousel without
   // changing the workspace dimensions as panels change.
-  const TYPE_NAVIGATION_HEIGHT = 40;
+  // The navigation shell reserves a 44px touch target plus 4px of shell
+  // chrome. Keep the carousel's height budget aligned with that real row.
+  const TYPE_NAVIGATION_HEIGHT = 48;
 
   // Calculate effective height for swipe layout accounting for UI chrome
   const effectiveSwipeHeight = $derived(() => {
@@ -478,6 +500,45 @@ Uses organizer and sizer services for section grouping and sizing.
   };
 </script>
 
+{#snippet compactControls()}
+  <OptionPickerHeader
+    layout="compact"
+    showFilter={shouldShowFilterControl()}
+    showTurnControls={turnControlsEditable}
+    {isContinuousOnly}
+    {onToggleContinuous}
+    {leftTurns}
+    {rightTurns}
+    {level}
+    {onLevelChange}
+    {leftRotation}
+    {rightRotation}
+    onLeftChange={onLeftTurnsChange}
+    onRightChange={onRightTurnsChange}
+    {onLeftRotationChange}
+    {onRightRotationChange}
+  />
+{/snippet}
+
+{#snippet inlineControls()}
+  <OptionPickerHeader
+    showFilter={shouldShowFilterControl()}
+    showTurnControls={turnControlsEditable}
+    {isContinuousOnly}
+    {onToggleContinuous}
+    {leftTurns}
+    {rightTurns}
+    {level}
+    {onLevelChange}
+    {leftRotation}
+    {rightRotation}
+    onLeftChange={onLeftTurnsChange}
+    onRightChange={onRightTurnsChange}
+    {onLeftRotationChange}
+    {onRightRotationChange}
+  />
+{/snippet}
+
 <div
   class="option-picker-content"
   data-testid="option-picker"
@@ -487,49 +548,35 @@ Uses organizer and sizer services for section grouping and sizing.
   {#if sizingStable}
     <!-- Content stays mounted so pictographs transition in place instead of remounting -->
     <div class="animated-content">
-      <!-- Unified header: pinned to the top of the picker (outside the scrolling
-           grid) so its position is consistent. Desktop wide layout only. -->
-      {#if useUnifiedHeader && (shouldShowFilterControl() || turnControlsEditable)}
+      <!-- One pinned header serves every inline width. Container queries inside
+           the owner recompose it without swapping visual systems or remounting
+           the controls when the option grid crosses its own breakpoint. -->
+      {#if useInlineControls && controlsAvailable}
         <div class="picker-header-slot">
-          <OptionPickerHeader
-            showFilter={shouldShowFilterControl()}
-            showTurnControls={turnControlsEditable}
-            {isContinuousOnly}
-            {onToggleContinuous}
-            {blueTurns}
-            {redTurns}
-            {level}
-            {onLevelChange}
-            {blueRotation}
-            {redRotation}
-            onBlueChange={onBlueTurnsChange}
-            onRedChange={onRedTurnsChange}
-            {onBlueRotationChange}
-            {onRedRotationChange}
-          />
+          {@render inlineControls()}
         </div>
       {/if}
 
       <!-- Continuous mode has no letter-type header, so its settings trigger
            keeps the established corner position. Swipe mode places the same
            trigger inside its three-part header below. -->
-      {#if showCompactControls() && !shouldUseSwipeLayout()}
+      {#if useDisclosedCompactControls && !shouldUseSwipeLayout()}
         <div class="controls-corner">
           <OptionPickerControlsPopover
             showFilter={shouldShowFilterControl()}
             showTurnControls={turnControlsEditable}
             {isContinuousOnly}
             {onToggleContinuous}
-            {blueTurns}
-            {redTurns}
+            {leftTurns}
+            {rightTurns}
             {level}
             {onLevelChange}
-            {blueRotation}
-            {redRotation}
-            onBlueChange={onBlueTurnsChange}
-            onRedChange={onRedTurnsChange}
-            {onBlueRotationChange}
-            {onRedRotationChange}
+            {leftRotation}
+            {rightRotation}
+            onLeftChange={onLeftTurnsChange}
+            onRightChange={onRightTurnsChange}
+            {onLeftRotationChange}
+            {onRightRotationChange}
           />
         </div>
       {/if}
@@ -574,28 +621,12 @@ Uses organizer and sizer services for section grouping and sizing.
             {onSlotClicked}
             {getContinuationIndex}
             onLetterTypeGroupSelected={notifyLetterTypeGroupSelected}
-            settingsEnabled={showCompactControls()}
+            settingsEnabled={useDisclosedCompactControls}
             settingsHasTurnRows={turnControlsEditable && level > 1}
             openIntoWorkspace={isMobileStackedLayout()}
           >
             {#snippet settingsContent()}
-              <OptionPickerHeader
-                layout="compact"
-                showFilter={shouldShowFilterControl()}
-                showTurnControls={turnControlsEditable}
-                {isContinuousOnly}
-                {onToggleContinuous}
-                {blueTurns}
-                {redTurns}
-                {level}
-                {onLevelChange}
-                {blueRotation}
-                {redRotation}
-                onBlueChange={onBlueTurnsChange}
-                onRedChange={onRedTurnsChange}
-                {onBlueRotationChange}
-                {onRedRotationChange}
-              />
+              {@render compactControls()}
             {/snippet}
           </OptionViewerSwipeLayout>
         </div>

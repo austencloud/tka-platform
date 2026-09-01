@@ -54,8 +54,8 @@ export interface DeckProductionStateDependencies {
   generateSequence(options: GenerationOptions): Promise<SequenceData>;
   getStartPositionVariations(
     gridMode: GridMode,
-    blueOrientation: Orientation,
-    redOrientation: Orientation
+    leftOrientation: Orientation,
+    rightOrientation: Orientation
   ): PictographData[];
   loadArchivedDeck(refNumber: number): Promise<ArchivedDeckPayload | null>;
   getReleasedSequenceIds(): Set<string>;
@@ -299,8 +299,8 @@ export function createDeckProductionState(
         ? deps
             .getStartPositionVariations(
               gridMode,
-              deck.startOriBlue as Orientation,
-              deck.startOriRed as Orientation
+              deck.startOriLeft as Orientation,
+              deck.startOriRight as Orientation
             )
             .filter((position) =>
               deck.selectedStartPositionIds.has(String(position.startPosition))
@@ -311,7 +311,7 @@ export function createDeckProductionState(
       mode: GenerationMode.CIRCULAR,
       length,
       gridMode,
-      propType: deck.bluePropType,
+      propType: deck.leftPropType,
       difficulty: levelToDifficulty([...deck.selectedLevels][0] ?? 1),
       loopType,
       period: resolvedLoop.period as GenerationOptions["period"],
@@ -321,8 +321,8 @@ export function createDeckProductionState(
       handPathMode: deck.handStyle,
       motionTypeFilter,
       turnIntensity: deck.turnIntensity,
-      blueStartOrientation: deck.startOriBlue,
-      redStartOrientation: deck.startOriRed,
+      leftStartOrientation: deck.startOriLeft,
+      rightStartOrientation: deck.startOriRight,
     };
 
     const target = deck.totalCards || 52;

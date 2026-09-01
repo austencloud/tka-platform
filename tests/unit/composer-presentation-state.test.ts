@@ -4,10 +4,11 @@ import {
   COMPOSER_3D_DEMO_SEED,
   normalizeComposer3DDemoState,
 } from "../../src/routes/(public)/composer/_components/composer-3d-demo-state";
+import { classifyComposerGenerationFailure } from "../../src/routes/(public)/composer/_components/composer-generation-failure";
 import {
-  classifyComposerGenerationFailure,
-  shouldSyncComposerSequence,
-} from "../../src/routes/(public)/composer/_components/composer-generation-failure";
+  isVisitorOwnedConstructSequence,
+  shouldAdoptCarriedSequence,
+} from "../../src/routes/(public)/composer/_components/composer-sequence-ownership";
 import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import {
@@ -24,7 +25,7 @@ import {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -44,9 +45,9 @@ function pictograph(
   start: GridLocation,
   end: GridLocation
 ): PictographData {
-  const createMotion = (color: MotionColor) =>
+  const createMotion = (color: HandSide) =>
     createMotionData({
-      color,
+      hand: color,
       motionType: MotionType.PRO,
       rotationDirection: RotationDirection.CLOCKWISE,
       startLocation: start,
@@ -64,8 +65,8 @@ function pictograph(
     startPosition: POSITION_BY_LOCATION[start],
     endPosition: POSITION_BY_LOCATION[end],
     motions: {
-      blue: createMotion(MotionColor.BLUE),
-      red: createMotion(MotionColor.RED),
+      left: createMotion(HandSide.LEFT),
+      right: createMotion(HandSide.RIGHT),
     },
   };
 }
@@ -123,8 +124,8 @@ describe("Composer presentation state", () => {
       )
     );
     expect(COMPOSER_3D_DEMO_SEED.performers?.[0]).toMatchObject({
-      customBluePlane: Plane.WALL,
-      customRedPlane: Plane.WALL,
+      customLeftPlane: Plane.WALL,
+      customRightPlane: Plane.WALL,
       settings: { prop: PropType.STAFF },
     });
   });
@@ -175,15 +176,24 @@ describe("Composer presentation state", () => {
     expect(classifyComposerGenerationFailure("unknown failure")).toBe("error");
   });
 
-  it("accepts a constructed sequence carried in from the page", () => {
+  it("accepts carried sequences until the visitor generates one locally", () => {
     const current = sequenceFixture();
     const incoming = createSequenceData({
       ...current,
       id: `${current.id}-guided-build-1`,
     });
 
-    expect(shouldSyncComposerSequence(current, incoming)).toBe(true);
-    expect(shouldSyncComposerSequence(incoming, incoming)).toBe(false);
-    expect(shouldSyncComposerSequence(current, null)).toBe(false);
+    expect(shouldAdoptCarriedSequence(current, incoming, false)).toBe(true);
+    expect(shouldAdoptCarriedSequence(incoming, incoming, false)).toBe(false);
+    expect(shouldAdoptCarriedSequence(current, null, false)).toBe(false);
+    expect(shouldAdoptCarriedSequence(current, incoming, true)).toBe(false);
+  });
+
+  it("keeps autonomous construct changes inside the construct panel", () => {
+    const candidate = sequenceFixture();
+
+    expect(isVisitorOwnedConstructSequence(false, candidate)).toBe(false);
+    expect(isVisitorOwnedConstructSequence(true, candidate)).toBe(true);
+    expect(isVisitorOwnedConstructSequence(true, null)).toBe(false);
   });
 });

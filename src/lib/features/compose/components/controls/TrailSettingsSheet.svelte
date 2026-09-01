@@ -12,13 +12,13 @@
   let {
     isOpen = $bindable(false),
     currentPropType = null,
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
   }: {
     isOpen: boolean;
     currentPropType?: PropType | string | null;
-    bluePropType?: PropType | string | null;
-    redPropType?: PropType | string | null;
+    leftPropType?: PropType | string | null;
+    rightPropType?: PropType | string | null;
   } = $props();
 </script>
 
@@ -47,8 +47,8 @@
     <div class="sheet-body">
       <SimpleTrailControls
         propType={currentPropType}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
       />
 
       <p class="hint-text">

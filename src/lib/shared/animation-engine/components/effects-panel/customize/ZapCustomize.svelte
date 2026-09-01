@@ -45,9 +45,14 @@
           max="1"
           step="0.05"
           value={state.zap.intensity}
-          oninput={(e) => state.updateEffect("zap", { intensity: +(e.currentTarget as HTMLInputElement).value })}
+          oninput={(e) =>
+            state.updateEffect("zap", {
+              intensity: +(e.currentTarget as HTMLInputElement).value,
+            })}
         />
-        <span class="slider-value">{Math.round(state.zap.intensity * 100)}%</span>
+        <span class="slider-value"
+          >{Math.round(state.zap.intensity * 100)}%</span
+        >
       </div>
 
       <!-- Frequency -->
@@ -60,7 +65,10 @@
           max="30"
           step="1"
           value={state.zap.frequency}
-          oninput={(e) => state.updateEffect("zap", { frequency: +(e.currentTarget as HTMLInputElement).value })}
+          oninput={(e) =>
+            state.updateEffect("zap", {
+              frequency: +(e.currentTarget as HTMLInputElement).value,
+            })}
         />
         <span class="slider-value">{state.zap.frequency}/s</span>
       </div>
@@ -73,17 +81,23 @@
             <input
               type="color"
               value={state.zap.leftColor}
-              oninput={(e) => state.updateEffect("zap", { leftColor: (e.currentTarget as HTMLInputElement).value })}
+              oninput={(e) =>
+                state.updateEffect("zap", {
+                  leftColor: (e.currentTarget as HTMLInputElement).value,
+                })}
             />
-            <span class="color-hand blue">Blue</span>
+            <span class="color-hand blue">Left</span>
           </label>
           <label class="color-picker">
             <input
               type="color"
               value={state.zap.rightColor}
-              oninput={(e) => state.updateEffect("zap", { rightColor: (e.currentTarget as HTMLInputElement).value })}
+              oninput={(e) =>
+                state.updateEffect("zap", {
+                  rightColor: (e.currentTarget as HTMLInputElement).value,
+                })}
             />
-            <span class="color-hand red">Red</span>
+            <span class="color-hand red">Right</span>
           </label>
         </div>
       </div>
@@ -100,9 +114,14 @@
               max="1"
               step="0.05"
               value={state.zap.branching}
-              oninput={(e) => state.updateEffect("zap", { branching: +(e.currentTarget as HTMLInputElement).value })}
+              oninput={(e) =>
+                state.updateEffect("zap", {
+                  branching: +(e.currentTarget as HTMLInputElement).value,
+                })}
             />
-            <span class="slider-value">{Math.round(state.zap.branching * 100)}%</span>
+            <span class="slider-value"
+              >{Math.round(state.zap.branching * 100)}%</span
+            >
           </div>
         {/if}
 
@@ -117,9 +136,14 @@
               max="1"
               step="0.05"
               value={state.zap.wobbleRate}
-              oninput={(e) => state.updateEffect("zap", { wobbleRate: +(e.currentTarget as HTMLInputElement).value })}
+              oninput={(e) =>
+                state.updateEffect("zap", {
+                  wobbleRate: +(e.currentTarget as HTMLInputElement).value,
+                })}
             />
-            <span class="slider-value">{Math.round(state.zap.wobbleRate * 100)}%</span>
+            <span class="slider-value"
+              >{Math.round(state.zap.wobbleRate * 100)}%</span
+            >
           </div>
           <div class="slider-row">
             <label for="zap-wobble-amount">Wobble Amount</label>
@@ -130,9 +154,14 @@
               max="1"
               step="0.05"
               value={state.zap.wobbleAmount}
-              oninput={(e) => state.updateEffect("zap", { wobbleAmount: +(e.currentTarget as HTMLInputElement).value })}
+              oninput={(e) =>
+                state.updateEffect("zap", {
+                  wobbleAmount: +(e.currentTarget as HTMLInputElement).value,
+                })}
             />
-            <span class="slider-value">{Math.round(state.zap.wobbleAmount * 100)}%</span>
+            <span class="slider-value"
+              >{Math.round(state.zap.wobbleAmount * 100)}%</span
+            >
           </div>
         {/if}
 
@@ -146,7 +175,10 @@
             max="1"
             step="0.05"
             value={state.zap.glow}
-            oninput={(e) => state.updateEffect("zap", { glow: +(e.currentTarget as HTMLInputElement).value })}
+            oninput={(e) =>
+              state.updateEffect("zap", {
+                glow: +(e.currentTarget as HTMLInputElement).value,
+              })}
           />
           <span class="slider-value">{Math.round(state.zap.glow * 100)}%</span>
         </div>
@@ -161,9 +193,13 @@
             max="1"
             step="0.05"
             value={state.zap.jitter}
-            oninput={(e) => state.updateEffect("zap", { jitter: +(e.currentTarget as HTMLInputElement).value })}
+            oninput={(e) =>
+              state.updateEffect("zap", {
+                jitter: +(e.currentTarget as HTMLInputElement).value,
+              })}
           />
-          <span class="slider-value">{Math.round(state.zap.jitter * 100)}%</span>
+          <span class="slider-value">{Math.round(state.zap.jitter * 100)}%</span
+          >
         </div>
       </AdvancedControls>
     </div>

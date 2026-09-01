@@ -25,10 +25,18 @@ type Hand = {
   startOrientation: string;
   endOrientation: string;
 };
-type Step = { letter: string; startPos: string; endPos: string; blue: Hand; red: Hand };
+type Step = {
+  letter: string;
+  startPos: string;
+  endPos: string;
+  blue: Hand;
+  red: Hand;
+};
 type Cell = { reference: string; word: string; steps: Step[] };
 
-const cells: Cell[] = JSON.parse(readFileSync(DATA("eightstep-72-base.json"), "utf8"));
+const cells: Cell[] = JSON.parse(
+  readFileSync(DATA("eightstep-72-base.json"), "utf8")
+);
 
 describe("SpiroAnim Eight Step base cells", () => {
   it("agrees with TKA's orientation engine on every motion", () => {
@@ -57,7 +65,9 @@ describe("SpiroAnim Eight Step base cells", () => {
         }
       }
     }
-    console.log(`orientation checks: ${checked}, mismatches: ${mismatches.length}`);
+    console.log(
+      `orientation checks: ${checked}, mismatches: ${mismatches.length}`
+    );
     if (mismatches.length) console.log(mismatches.slice(0, 20).join("\n"));
     expect(mismatches).toEqual([]);
   });
@@ -70,9 +80,13 @@ describe("SpiroAnim Eight Step base cells", () => {
           const prev = cell.steps[i - 1]![color];
           const cur = cell.steps[i]![color];
           if (prev.endOrientation !== cur.startOrientation)
-            open.push(`${cell.reference} ${color} step${i}->${i + 1} orientation break`);
+            open.push(
+              `${cell.reference} ${color} step${i}->${i + 1} orientation break`
+            );
           if (prev.endLoc !== cur.startLoc)
-            open.push(`${cell.reference} ${color} step${i}->${i + 1} location break`);
+            open.push(
+              `${cell.reference} ${color} step${i}->${i + 1} location break`
+            );
         }
         const first = cell.steps[0]![color];
         const last = cell.steps.at(-1)![color];
@@ -93,14 +107,15 @@ describe("SpiroAnim Eight Step base cells", () => {
       metadata: {
         source: "spiroanim-eight-step",
         cell: cell.reference,
-        attribution: "8-Step Concepts by Gage DeMello; generated geometry by Ryan Girard (spiroanim)",
+        attribution:
+          "8-Step Concepts by Gage DeMello; generated geometry by Ryan Girard (spiroanim)",
       },
       startPosition: {
         letter: null,
         gridPosition: cell.steps[0]!.startPos,
         motions: {
-          blue: motionBlob(cell.steps[0]!.blue, "blue", true),
-          red: motionBlob(cell.steps[0]!.red, "red", true),
+          left: motionBlob(cell.steps[0]!.blue, "left", true),
+          right: motionBlob(cell.steps[0]!.red, "right", true),
         },
       },
       steps: cell.steps.map((s, i) => ({
@@ -109,18 +124,26 @@ describe("SpiroAnim Eight Step base cells", () => {
         startPosition: s.startPos,
         endPosition: s.endPos,
         duration: 1,
-        motions: { blue: motionBlob(s.blue, "blue"), red: motionBlob(s.red, "red") },
+        motions: {
+          left: motionBlob(s.blue, "left"),
+          right: motionBlob(s.red, "right"),
+        },
       })),
     }));
-    writeFileSync(DATA("eightstep-72-sequences.json"), JSON.stringify(blobs, null, 1));
-    console.log(`wrote ${blobs.length} sequence blobs; sample word ${blobs[0]!.word}`);
+    writeFileSync(
+      DATA("eightstep-72-sequences.json"),
+      JSON.stringify(blobs, null, 1)
+    );
+    console.log(
+      `wrote ${blobs.length} sequence blobs; sample word ${blobs[0]!.word}`
+    );
     expect(blobs).toHaveLength(72);
   });
 });
 
-function motionBlob(m: Hand, color: "blue" | "red", asStart = false) {
+function motionBlob(m: Hand, hand: "left" | "right", asStart = false) {
   return {
-    color,
+    hand,
     motionType: asStart ? "static" : m.motionType,
     rotationDirection: asStart ? "no_rot" : m.rotationDirection,
     startLocation: m.startLoc,

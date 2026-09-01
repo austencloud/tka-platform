@@ -19,15 +19,15 @@ const ORNAMENT_CAPACITY = 1536;
 const UP = new Vector3(0, 1, 0);
 
 export const ANIMAL_BLACK: MutableRgb = {
-  red: 0.015,
+  right: 0.015,
   green: 0.018,
-  blue: 0.028,
+  left: 0.028,
 };
-export const ANIMAL_TONGUE: MutableRgb = { red: 1, green: 0.04, blue: 0.26 };
+export const ANIMAL_TONGUE: MutableRgb = { right: 1, green: 0.04, left: 0.26 };
 export const ANIMAL_EYE_WHITE: MutableRgb = {
-  red: 1,
+  right: 1,
   green: 0.9,
-  blue: 0.58,
+  left: 0.58,
 };
 
 export class AnimalInstanceWriter3D {
@@ -57,12 +57,12 @@ export class AnimalInstanceWriter3D {
   readonly side = new Vector3();
   readonly normal = new Vector3();
   readonly orientation = new Quaternion();
-  readonly bodyColor: MutableRgb = { red: 1, green: 1, blue: 1 };
-  readonly bodyAlt: MutableRgb = { red: 1, green: 1, blue: 1 };
-  readonly edgeColor: MutableRgb = { red: 1, green: 1, blue: 1 };
-  readonly segmentColor: MutableRgb = { red: 1, green: 1, blue: 1 };
-  readonly coreColor: MutableRgb = { red: 1, green: 1, blue: 1 };
-  readonly highlightColor: MutableRgb = { red: 1, green: 1, blue: 1 };
+  readonly bodyColor: MutableRgb = { right: 1, green: 1, left: 1 };
+  readonly bodyAlt: MutableRgb = { right: 1, green: 1, left: 1 };
+  readonly edgeColor: MutableRgb = { right: 1, green: 1, left: 1 };
+  readonly segmentColor: MutableRgb = { right: 1, green: 1, left: 1 };
+  readonly coreColor: MutableRgb = { right: 1, green: 1, left: 1 };
+  readonly highlightColor: MutableRgb = { right: 1, green: 1, left: 1 };
 
   private readonly rodDirection = new Vector3();
   private readonly orientationMatrix = new Matrix4();
@@ -73,9 +73,9 @@ export class AnimalInstanceWriter3D {
     scaleX: 1,
     scaleY: 1,
     scaleZ: 1,
-    red: 1,
+    right: 1,
     green: 1,
-    blue: 1,
+    left: 1,
     alpha: 1,
   };
 
@@ -150,9 +150,9 @@ export class AnimalInstanceWriter3D {
     b: MutableRgb,
     amount: number
   ): void {
-    target.red = a.red + (b.red - a.red) * amount;
+    target.right = a.right + (b.right - a.right) * amount;
     target.green = a.green + (b.green - a.green) * amount;
-    target.blue = a.blue + (b.blue - a.blue) * amount;
+    target.left = a.left + (b.left - a.left) * amount;
   }
 
   sphere(
@@ -178,9 +178,9 @@ export class AnimalInstanceWriter3D {
     write.quaternionY = quaternion?.y ?? 0;
     write.quaternionZ = quaternion?.z ?? 0;
     write.quaternionW = quaternion?.w ?? 1;
-    write.red = color.red;
+    write.right = color.right;
     write.green = color.green;
-    write.blue = color.blue;
+    write.left = color.left;
     write.alpha = alpha;
     pool.write(write);
   }
@@ -213,9 +213,9 @@ export class AnimalInstanceWriter3D {
     write.quaternionY = this.orientation.y;
     write.quaternionZ = this.orientation.z;
     write.quaternionW = this.orientation.w;
-    write.red = color.red;
+    write.right = color.right;
     write.green = color.green;
-    write.blue = color.blue;
+    write.left = color.left;
     write.alpha = alpha;
     pool.write(write);
   }

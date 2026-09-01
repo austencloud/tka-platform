@@ -3,7 +3,11 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getBaseMotionColors } from "$lib/shared/animation-engine/services/svg-generator";
-  import { tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
+  import {
+    tunnelPropColor,
+    type TunnelPropColorMode,
+    type TunnelPropColorPair,
+  } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
   import { getTunnelCreatorContext } from "../context/tunnel-creator-context";
   import TunnelPerformerCard from "./TunnelPerformerCard.svelte";
 
@@ -21,9 +25,10 @@
 
   let {
     displays,
-    bluePropType,
-    redPropType,
-    spectrum,
+    leftPropType,
+    rightPropType,
+    colorMode,
+    customPropColors,
     renderedInstanceCount,
     onChoose,
     onChooseShapeMatrix,
@@ -33,9 +38,10 @@
     onSelectPerformer,
   }: {
     displays: Record<string, TunnelPerformerDisplay>;
-    bluePropType: PropType;
-    redPropType: PropType;
-    spectrum: boolean;
+    leftPropType: PropType;
+    rightPropType: PropType;
+    colorMode: TunnelPropColorMode;
+    customPropColors: TunnelPropColorPair;
     renderedInstanceCount: number;
     onChoose: (performerId: string) => void;
     onChooseShapeMatrix: (performerId: string) => void;
@@ -93,13 +99,17 @@
     return arms.map((arm) => ({
       arm,
       left:
-        !spectrum || arm === 0
-          ? baseMotionColors.blue
-          : tunnelPropColor(arm * 2, layerCount).hex,
+        colorMode === "custom"
+          ? customPropColors.left
+          : colorMode !== "spectrum" || arm === 0
+            ? baseMotionColors.left
+            : tunnelPropColor(arm * 2, layerCount).hex,
       right:
-        !spectrum || arm === 0
-          ? baseMotionColors.red
-          : tunnelPropColor(arm * 2 + 1, layerCount).hex,
+        colorMode === "custom"
+          ? customPropColors.right
+          : colorMode !== "spectrum" || arm === 0
+            ? baseMotionColors.right
+            : tunnelPropColor(arm * 2 + 1, layerCount).hex,
     }));
   }
 
@@ -151,8 +161,8 @@
           creator.selectedPerformerId === slot.id}
         sourceOrigin={slot.origin}
         previousCount={slot.previousCount}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         stageColors={stageColorPairs(slot.id)}
         canMoveUp={creator.canMovePerformer(slot.id, -1)}
         canMoveDown={creator.canMovePerformer(slot.id, 1)}

@@ -1,23 +1,20 @@
 <script lang="ts">
   import { useThrelte, useTask } from "@threlte/core";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import type { WebGLRenderer } from "three";
   import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-context";
-
-  interface RendererPerformanceSample {
-    fps: number;
-    peakFrameMs: number;
-    drawCalls: number;
-    triangles: number;
-    geometries: number;
-    textures: number;
-    programs: number;
-  }
+  import {
+    createRendererInfoFrameSampler,
+    createRendererPerformanceWindow,
+    type RendererPerformanceSample,
+  } from "./renderer-performance-window";
+  import { createWebGlGpuTimer } from "./webgl-gpu-timer";
 
   interface Props {
     visible?: boolean;
     adaptive?: boolean;
     active?: boolean;
+    warmupMs?: number;
     onSample?: (sample: RendererPerformanceSample) => void;
   }
 
@@ -25,6 +22,7 @@
     visible = false,
     adaptive = false,
     active = false,
+    warmupMs = 0,
     onSample,
   }: Props = $props();
 
@@ -44,6 +42,13 @@
 
   let fps = $state(0);
   let peakFrameMs = $state(0);
+  let frameP95Ms = $state(0);
+  let frameP99Ms = $state(0);
+  let longFrameRate = $state(0);
+  let thermalDrift = $state(0);
+  let gpuP50Ms = $state(0);
+  let gpuP95Ms = $state(0);
+  let gpuP99Ms = $state(0);
   let drawCalls = $state(0);
   let triangles = $state(0);
   let geometries = $state(0);
@@ -54,20 +59,45 @@
   let lastTime = performance.now();
   let lastFrameTime = lastTime;
   let observedPeakFrameMs = 0;
-  let wasVisible = false;
+  let wasMonitoring = false;
+  const frameWindow = createRendererPerformanceWindow();
+  const gpuWindow = createRendererPerformanceWindow();
+  const gpuTimer = createWebGlGpuTimer(renderer.getContext());
+  const rendererInfoSampler = createRendererInfoFrameSampler(renderer.info);
+  let frameSerial = 0;
+  let monitoringStartedAt = lastTime;
+  let warmupComplete = warmupMs === 0;
+
+  onDestroy(() => {
+    gpuTimer.dispose();
+    rendererInfoSampler.dispose();
+  });
 
   $effect(() => {
-    if (visible && !wasVisible) {
+    const monitoring = visible || active;
+    if (monitoring && !wasMonitoring) {
       peakFrameMs = 0;
+      frameP95Ms = 0;
+      frameP99Ms = 0;
+      longFrameRate = 0;
+      thermalDrift = 0;
+      gpuP50Ms = 0;
+      gpuP95Ms = 0;
+      gpuP99Ms = 0;
       observedPeakFrameMs = 0;
+      frameWindow.reset();
+      gpuWindow.reset();
       frameCount = 0;
       lastTime = performance.now();
       lastFrameTime = lastTime;
+      monitoringStartedAt = lastTime;
+      warmupComplete = warmupMs === 0;
     }
-    wasVisible = visible;
+    wasMonitoring = monitoring;
   });
 
   useTask((delta) => {
+    const completeFrame = rendererInfoSampler.sampleAndReset();
     adaptiveQuality?.observeFrame(
       delta,
       adaptive &&
@@ -78,7 +108,39 @@
     if (!visible && !active) return;
 
     const now = performance.now();
+    if (
+      typeof document !== "undefined" &&
+      document.visibilityState !== "visible"
+    ) {
+      lastFrameTime = now;
+      return;
+    }
+    if (!warmupComplete) {
+      if (now - monitoringStartedAt < warmupMs) {
+        lastFrameTime = now;
+        return;
+      }
+      warmupComplete = true;
+      frameWindow.reset();
+      gpuWindow.reset();
+      frameCount = 0;
+      observedPeakFrameMs = 0;
+      lastTime = now;
+      lastFrameTime = now;
+      return;
+    }
     const frameGapMs = now - lastFrameTime;
+    frameWindow.record(frameGapMs);
+    for (const elapsedGpuMs of gpuTimer.collect()) {
+      gpuWindow.record(elapsedGpuMs);
+    }
+    frameSerial += 1;
+    if (frameSerial % 4 === 0 && gpuTimer.begin()) {
+      // Threlte's scheduler completes every render-stage task in this call
+      // stack. Ending in a microtask therefore encloses the default render or
+      // the post-processing composer without blocking on the result.
+      queueMicrotask(() => gpuTimer.end());
+    }
     if (frameGapMs > observedPeakFrameMs) {
       observedPeakFrameMs = frameGapMs;
       if (visible && frameGapMs > 50) {
@@ -92,23 +154,37 @@
     if (elapsed >= 500) {
       fps = Math.round((frameCount * 1000) / elapsed);
       peakFrameMs = observedPeakFrameMs;
+      const windowSnapshot = frameWindow.snapshot();
+      frameP95Ms = windowSnapshot.frameP95Ms;
+      frameP99Ms = windowSnapshot.frameP99Ms;
+      longFrameRate = windowSnapshot.longFrameRate;
+      thermalDrift = windowSnapshot.thermalDrift;
+      const gpuSnapshot = gpuWindow.snapshot();
+      gpuP50Ms = gpuSnapshot.frameP50Ms;
+      gpuP95Ms = gpuSnapshot.frameP95Ms;
+      gpuP99Ms = gpuSnapshot.frameP99Ms;
       frameCount = 0;
       lastTime = now;
 
-      const info = renderer.info;
-      drawCalls = info.render.calls;
-      triangles = info.render.triangles;
-      geometries = info.memory.geometries;
-      textures = info.memory.textures;
-      programs = info.programs?.length ?? 0;
+      drawCalls = completeFrame.drawCalls;
+      triangles = completeFrame.triangles;
+      geometries = completeFrame.geometries;
+      textures = completeFrame.textures;
+      programs = completeFrame.programs;
       onSample?.({
         fps,
         peakFrameMs,
+        ...windowSnapshot,
         drawCalls,
         triangles,
         geometries,
         textures,
         programs,
+        gpuTimingSupported: gpuTimer.supported,
+        gpuSampleCount: gpuSnapshot.sampleCount,
+        gpuP50Ms,
+        gpuP95Ms,
+        gpuP99Ms,
       });
     }
   });
@@ -125,9 +201,33 @@
       >
     </div>
     <div class="perf-row">
-      <span class="perf-label">Peak</span>
-      <span class="perf-value" class:perf-warn={peakFrameMs > 32}
-        >{peakFrameMs.toFixed(1)} ms</span
+      <span class="perf-label">P95</span>
+      <span class="perf-value" class:perf-warn={frameP95Ms > 16.7}
+        >{frameP95Ms.toFixed(1)} ms</span
+      >
+    </div>
+    <div class="perf-row">
+      <span class="perf-label">P99</span>
+      <span class="perf-value" class:perf-warn={frameP99Ms > 16.7}
+        >{frameP99Ms.toFixed(1)} ms</span
+      >
+    </div>
+    <div class="perf-row">
+      <span class="perf-label">GPU95</span>
+      <span class="perf-value" class:perf-warn={gpuP95Ms > 11.5}
+        >{gpuTimer.supported ? `${gpuP95Ms.toFixed(1)} ms` : "n/a"}</span
+      >
+    </div>
+    <div class="perf-row">
+      <span class="perf-label">Long</span>
+      <span class="perf-value" class:perf-warn={longFrameRate > 0.001}
+        >{(longFrameRate * 100).toFixed(2)}%</span
+      >
+    </div>
+    <div class="perf-row">
+      <span class="perf-label">Drift</span>
+      <span class="perf-value" class:perf-warn={thermalDrift > 0.1}
+        >{(thermalDrift * 100).toFixed(1)}%</span
       >
     </div>
     <div class="perf-row">

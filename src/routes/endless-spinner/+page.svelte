@@ -334,8 +334,8 @@
         <div class="canvas-container">
           {#if animationReady}
             <AnimatorCanvas
-              blueProp={playback?.animationState?.bluePropState ?? null}
-              redProp={playback?.animationState?.redPropState ?? null}
+              leftProp={playback?.animationState?.leftPropState ?? null}
+              rightProp={playback?.animationState?.rightPropState ?? null}
               gridVisible={true}
               gridMode={playback?.gridMode ?? null}
               letter={playback?.currentLetter ?? null}
@@ -346,8 +346,8 @@
               trailSettings={scope.settings.trail}
               visibilityManagerOverride={visibilityManager}
               {effectsConfigState}
-              bluePropType={PropType.STAFF}
-              redPropType={PropType.STAFF}
+              leftPropType={PropType.STAFF}
+              rightPropType={PropType.STAFF}
               word={displayWord}
               progressBarVariant="minimal"
               hideProgressBar={true}

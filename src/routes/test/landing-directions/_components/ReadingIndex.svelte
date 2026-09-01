@@ -46,7 +46,7 @@
           copy: "Lorq Nichols charted it in 2012. TKA draws every cell live.",
         },
         {
-          href: "/glossary",
+          href: "/atlas",
           section: "Reference",
           title: "Glossary",
           copy: "The vocabulary behind the notation and the app.",

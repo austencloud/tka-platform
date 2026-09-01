@@ -13,12 +13,12 @@ import { closeSequenceOrientationCycle } from "$lib/shared/create/services/seque
 /**
  * archetype (two-hand pure-pro or pure-anti seed) + flower → a single-hand
  * club SequenceData, south-anchored, at the flower's turns + start orientation.
- * `hand` is which axis this flower lives on (blue = rows, red = columns).
+ * `hand` is which performer-relative axis this flower lives on.
  */
 export function buildFlowerSequence(
   archetype: SequenceData,
   flower: Flower,
-  hand: "blue" | "red",
+  hand: "left" | "right",
   edges: CsvEdge[],
   propType: PropType = PropType.CLUB
 ): SequenceData {
@@ -32,9 +32,9 @@ export function buildFlowerSequence(
       turnLabel: flowerTurnPattern(flower),
       gridMode: flower.grid,
       startOriPair:
-        hand === "blue"
-          ? { blue: flowerStartOrientation(flower) }
-          : { red: flowerStartOrientation(flower) },
+        hand === "left"
+          ? { left: flowerStartOrientation(flower) }
+          : { right: flowerStartOrientation(flower) },
     },
     edges
   );

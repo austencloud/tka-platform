@@ -136,8 +136,8 @@ describe("card-back-bitmaps-percard rasterizers (canvas-native)", () => {
   describe("rasterizeTurnGlyph", () => {
     it("draws a blue + red bar fill per entry", async () => {
       await rasterizeTurnGlyph([
-        { blue: 1, red: 0 },
-        { blue: 2, red: 0.5 },
+        { left: 1, right: 0 },
+        { left: 2, right: 0.5 },
       ]);
       // 2 entries × 2 solid bars = 4 fills, with blue + red colors present.
       expect(currentRec.fills.length).toBe(4);
@@ -147,7 +147,7 @@ describe("card-back-bitmaps-percard rasterizers (canvas-native)", () => {
     });
 
     it("float bars are stroked (hatched) at 0.7 alpha, not solid-filled", async () => {
-      await rasterizeTurnGlyph([{ blue: 1, red: 0, blueFloat: true }]);
+      await rasterizeTurnGlyph([{ left: 1, right: 0, leftFloat: true }]);
       // blue is float → no solid fill for it; red (0-turn) → one solid fill.
       expect(currentRec.fills.length).toBe(1);
       expect(currentRec.fills[0]!.style).toBe("#e74c3c");
@@ -158,7 +158,7 @@ describe("card-back-bitmaps-percard rasterizers (canvas-native)", () => {
     });
 
     it("returns an ImageBitmap", async () => {
-      const bmp = await rasterizeTurnGlyph([{ blue: 0, red: 0 }]);
+      const bmp = await rasterizeTurnGlyph([{ left: 0, right: 0 }]);
       expect(bmp).toBeTruthy();
     });
   });

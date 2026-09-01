@@ -49,15 +49,15 @@ const SOLO_PROP = {
 const STEP_PAIRINGS = [
   {
     letter: "A",
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     startPosition: "alpha1",
     endPosition: "alpha3",
   },
   {
     letter: "B",
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     startPosition: "alpha3",
     endPosition: "beta5",
   },
@@ -96,18 +96,18 @@ function schemaTwoDoc(overrides: Record<string, unknown> = {}) {
     contentHash: "hash-1",
     contentHashVersion: 2,
     encoderHash: "enc-1",
-    bluePathHash: "bp",
-    redPathHash: "rp",
-    blueSoloHash: "bs",
-    redSoloHash: "rs",
-    blueSoloProp: SOLO_PROP,
-    redSoloProp: { ...SOLO_PROP, id: "solo-red" },
+    leftPathHash: "bp",
+    rightPathHash: "rp",
+    leftSoloHash: "bs",
+    rightSoloHash: "rs",
+    leftSoloProp: SOLO_PROP,
+    rightSoloProp: { ...SOLO_PROP, id: "solo-red" },
     stepPairings: STEP_PAIRINGS,
     startPosition: { isStartPosition: true, id: "start-1" },
     creatorIntent: {
       propConfig: {
-        bluePropType: "staff",
-        redPropType: "staff",
+        leftPropType: "staff",
+        rightPropType: "staff",
         catDogMode: false,
       },
     },
@@ -139,8 +139,8 @@ function legacyDoc(overrides: Record<string, unknown> = {}) {
     viewCount: 0,
     starCount: 0,
     isForked: false,
-    blueSoloProp: SOLO_PROP,
-    redSoloProp: { ...SOLO_PROP, id: "solo-red" },
+    leftSoloProp: SOLO_PROP,
+    rightSoloProp: { ...SOLO_PROP, id: "solo-red" },
     stepPairings: STEP_PAIRINGS,
     publishedAt: new FakeTimestamp(1_710_000_000),
     updatedAt: new FakeTimestamp(1_710_000_000),
@@ -397,8 +397,8 @@ describe("timestamp conversion", () => {
 describe("self-containment", () => {
   it("fails when the compositional fields are absent", () => {
     const doc = schemaTwoDoc();
-    delete (doc as Record<string, unknown>).blueSoloProp;
-    delete (doc as Record<string, unknown>).redSoloProp;
+    delete (doc as Record<string, unknown>).leftSoloProp;
+    delete (doc as Record<string, unknown>).rightSoloProp;
     delete (doc as Record<string, unknown>).stepPairings;
 
     const classification = classifyPublicSequenceDocument(doc, "seq_abc");
@@ -406,30 +406,30 @@ describe("self-containment", () => {
     expect(classification.disposition).toBe("invariant-violation");
     expect(classification.selfContainment.selfContained).toBe(false);
     expect(classification.selfContainment.blocking).toEqual([
-      "MISSING_BLUE_SOLO_PROP",
-      "MISSING_RED_SOLO_PROP",
+      "MISSING_LEFT_SOLO_PROP",
+      "MISSING_RIGHT_SOLO_PROP",
       "MISSING_STEP_PAIRINGS",
     ]);
   });
 
   it("fails when one compositional field is absent", () => {
     const doc = schemaTwoDoc();
-    delete (doc as Record<string, unknown>).redSoloProp;
+    delete (doc as Record<string, unknown>).rightSoloProp;
 
     const report = checkPublicProjectionSelfContainment(
       classifyPublicSequenceDocument(doc, "seq_abc").projection!
     );
 
     expect(report.selfContained).toBe(false);
-    expect(report.blocking).toEqual(["MISSING_RED_SOLO_PROP"]);
+    expect(report.blocking).toEqual(["MISSING_RIGHT_SOLO_PROP"]);
   });
 
   it("fails on an empty stepPairings array the loader's && guard would pass", () => {
     const report = checkPublicProjectionSelfContainment({
       word: "AB",
       sequenceLength: 2,
-      blueSoloProp: SOLO_PROP,
-      redSoloProp: SOLO_PROP,
+      leftSoloProp: SOLO_PROP,
+      rightSoloProp: SOLO_PROP,
       stepPairings: [],
       publishedAt: new Date(),
     });
@@ -442,8 +442,8 @@ describe("self-containment", () => {
     const report = checkPublicProjectionSelfContainment({
       word: "   ",
       sequenceLength: 2,
-      blueSoloProp: SOLO_PROP,
-      redSoloProp: SOLO_PROP,
+      leftSoloProp: SOLO_PROP,
+      rightSoloProp: SOLO_PROP,
       stepPairings: STEP_PAIRINGS,
       publishedAt: new Date(),
     });
@@ -458,8 +458,8 @@ describe("self-containment", () => {
     const report = checkPublicProjectionSelfContainment({
       word: "AB",
       sequenceLength: 0,
-      blueSoloProp: SOLO_PROP,
-      redSoloProp: SOLO_PROP,
+      leftSoloProp: SOLO_PROP,
+      rightSoloProp: SOLO_PROP,
       stepPairings: STEP_PAIRINGS,
       publishedAt: new Date(),
     });
@@ -473,8 +473,8 @@ describe("self-containment", () => {
     const report = checkPublicProjectionSelfContainment({
       word: "AB",
       sequenceLength: 12,
-      blueSoloProp: SOLO_PROP,
-      redSoloProp: SOLO_PROP,
+      leftSoloProp: SOLO_PROP,
+      rightSoloProp: SOLO_PROP,
       stepPairings: STEP_PAIRINGS,
       publishedAt: new Date(),
     });
@@ -487,8 +487,8 @@ describe("self-containment", () => {
     const report = checkPublicProjectionSelfContainment({
       word: "AB",
       sequenceLength: 2,
-      blueSoloProp: SOLO_PROP,
-      redSoloProp: SOLO_PROP,
+      leftSoloProp: SOLO_PROP,
+      rightSoloProp: SOLO_PROP,
       stepPairings: STEP_PAIRINGS,
     });
 
@@ -501,8 +501,8 @@ describe("self-containment", () => {
       isSelfContainedPublicProjection({
         word: "AB",
         sequenceLength: 2,
-        blueSoloProp: SOLO_PROP,
-        redSoloProp: SOLO_PROP,
+        leftSoloProp: SOLO_PROP,
+        rightSoloProp: SOLO_PROP,
         stepPairings: STEP_PAIRINGS,
         publishedAt: new Date(),
       })
@@ -538,8 +538,8 @@ describe("legacy detection", () => {
 
   it("allows the sourceRef fallback only for an incomplete legacy document", () => {
     const incomplete = legacyDoc();
-    delete (incomplete as Record<string, unknown>).blueSoloProp;
-    delete (incomplete as Record<string, unknown>).redSoloProp;
+    delete (incomplete as Record<string, unknown>).leftSoloProp;
+    delete (incomplete as Record<string, unknown>).rightSoloProp;
     delete (incomplete as Record<string, unknown>).stepPairings;
 
     const classification = classifyPublicSequenceDocument(

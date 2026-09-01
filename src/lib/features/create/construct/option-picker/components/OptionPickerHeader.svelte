@@ -1,9 +1,9 @@
 <!--
   OptionPickerHeader.svelte
 
-  Shared controls for the construct option picker. The wide layout renders this
-  as its pinned header; narrow layouts render the compact variant inside either
-  the shared utility tray or the continuous-grid popover. Every surface exposes:
+  Shared controls for the construct option picker. Every inline width renders
+  the same header and lets container queries recompose its geometry. The compact
+  variant is reserved for a genuine disclosure surface. Every surface exposes:
     • the All / Continuous filter (left),
     • the working Level (centered, wearing the canonical level colours),
   over a turns row that appears when the level HAS turns.
@@ -44,14 +44,14 @@
     level: TurnLevel;
     onLevelChange: (level: TurnLevel) => void;
     // Turns
-    blueTurns: TurnValue;
-    redTurns: TurnValue;
-    blueRotation: RotationDirection;
-    redRotation: RotationDirection;
-    onBlueChange: (value: TurnValue) => void;
-    onRedChange: (value: TurnValue) => void;
-    onBlueRotationChange: (dir: RotationDirection) => void;
-    onRedRotationChange: (dir: RotationDirection) => void;
+    leftTurns: TurnValue;
+    rightTurns: TurnValue;
+    leftRotation: RotationDirection;
+    rightRotation: RotationDirection;
+    onLeftChange: (value: TurnValue) => void;
+    onRightChange: (value: TurnValue) => void;
+    onLeftRotationChange: (dir: RotationDirection) => void;
+    onRightRotationChange: (dir: RotationDirection) => void;
   }
 
   const {
@@ -62,18 +62,18 @@
     onToggleContinuous,
     level,
     onLevelChange,
-    blueTurns,
-    redTurns,
-    blueRotation,
-    redRotation,
-    onBlueChange,
-    onRedChange,
-    onBlueRotationChange,
-    onRedRotationChange,
+    leftTurns,
+    rightTurns,
+    leftRotation,
+    rightRotation,
+    onLeftChange,
+    onRightChange,
+    onLeftRotationChange,
+    onRightRotationChange,
   }: Props = $props();
 
-  const hasBlueTurns = $derived(blueTurns === "fl" || blueTurns > 0);
-  const hasRedTurns = $derived(redTurns === "fl" || redTurns > 0);
+  const hasLeftTurns = $derived(leftTurns === "fl" || leftTurns > 0);
+  const hasRightTurns = $derived(rightTurns === "fl" || rightTurns > 0);
 
   // Level 1 is base motions — there is nothing to dial, so the row isn't there.
   const turnsAvailable = $derived(level > 1);
@@ -169,12 +169,10 @@
     {/if}
   </div>
 
-  <!-- Row 2: blue (left half) / red (right half), present whenever the level has
-       turns. The buttons fill each half; the CW/CCW spin button is pinned to the
-       half's outer (colored) edge — absolutely positioned into a gutter that is
-       reserved only while that hand has turns (the .has-spin state). The gutter
-       padding animates, so the button and its room appear/collapse together
-       rather than snapping. -->
+  <!-- Row 2: blue then red, present whenever the level has turns. Each hand uses
+       the same reading order: turn amount first, spin direction at the trailing
+       edge. The matching columns make the two settings easy to compare when the
+       hand panels stack. -->
   {#if showTurnControls && turnsAvailable}
     <!-- growFade (not svelte's slide) so the row's own height drives the reflow
          AND reduced motion collapses it — svelte's JS transitions ignore the
@@ -185,9 +183,9 @@
     >
       <div
         class="hand-half blue"
-        class:has-spin={hasBlueTurns}
+        class:has-spin={hasLeftTurns}
         role="group"
-        aria-label="Blue turns"
+        aria-label="Left turns"
         in:flyFade={{ y: 6 }}
       >
         <div class="hand-meta">
@@ -199,18 +197,18 @@
                dash/static options survive the direction-reversal filter. So the
                toggle shows whenever this hand has turns, not only in All mode. -->
           <span class="spin-slot">
-            {#if hasBlueTurns}
+            {#if hasLeftTurns}
               <button
                 class="spin-inline edge"
                 transition:popIn
                 title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
-                aria-label="Toggle blue dash/static spin (currently {dirLabel(
-                  blueRotation
+                aria-label="Toggle left dash/static spin (currently {dirLabel(
+                  leftRotation
                 )})"
-                onclick={() => onBlueRotationChange(opposite(blueRotation))}
+                onclick={() => onLeftRotationChange(opposite(leftRotation))}
               >
-                <i class="fas {dirIcon(blueRotation)}" aria-hidden="true"></i>
-                <span class="dir">{dirLabel(blueRotation)}</span>
+                <i class="fas {dirIcon(leftRotation)}" aria-hidden="true"></i>
+                <span class="dir">{dirLabel(leftRotation)}</span>
               </button>
             {/if}
           </span>
@@ -218,11 +216,11 @@
         <div class="turn-seg">
           <SegmentedControl
             options={turnOptions}
-            value={turnValueToKey(blueTurns)}
+            value={turnValueToKey(leftTurns)}
             size="sm"
             color="blue"
             ghostKind="turn"
-            onchange={(v) => onBlueChange(keyToTurnValue(v))}
+            onchange={(v) => onLeftChange(keyToTurnValue(v))}
           />
         </div>
       </div>
@@ -230,25 +228,25 @@
            rather than a single slab dropping in. -->
       <div
         class="hand-half red"
-        class:has-spin={hasRedTurns}
+        class:has-spin={hasRightTurns}
         role="group"
-        aria-label="Red turns"
+        aria-label="Right turns"
         in:flyFade={{ y: 6, delay: STAGGER.micro }}
       >
         <div class="hand-meta">
           <span class="spin-slot">
-            {#if hasRedTurns}
+            {#if hasRightTurns}
               <button
                 class="spin-inline edge"
                 transition:popIn
                 title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
-                aria-label="Toggle red dash/static spin (currently {dirLabel(
-                  redRotation
+                aria-label="Toggle right dash/static spin (currently {dirLabel(
+                  rightRotation
                 )})"
-                onclick={() => onRedRotationChange(opposite(redRotation))}
+                onclick={() => onRightRotationChange(opposite(rightRotation))}
               >
-                <i class="fas {dirIcon(redRotation)}" aria-hidden="true"></i>
-                <span class="dir">{dirLabel(redRotation)}</span>
+                <i class="fas {dirIcon(rightRotation)}" aria-hidden="true"></i>
+                <span class="dir">{dirLabel(rightRotation)}</span>
               </button>
             {/if}
           </span>
@@ -256,11 +254,11 @@
         <div class="turn-seg">
           <SegmentedControl
             options={turnOptions}
-            value={turnValueToKey(redTurns)}
+            value={turnValueToKey(rightTurns)}
             size="sm"
             color="red"
             ghostKind="turn"
-            onchange={(v) => onRedChange(keyToTurnValue(v))}
+            onchange={(v) => onRightChange(keyToTurnValue(v))}
           />
         </div>
       </div>
@@ -323,15 +321,72 @@
     display: none;
   }
 
-  /* Icon-sized. Two 44px targets plus the control's own padding — the ~130px
-     this gives back goes to the level buttons and the turn rows. */
+  /* Two genuine 44px targets plus the control's padding, gap, and border. This
+     must derive from the touch-target token rather than rem: the app
+     intentionally scales its root type size, which made rem-based filter
+     buttons narrower than 44px. */
   .filter-seg {
-    width: 7rem;
+    width: calc(var(--min-touch-target, 44px) * 2 + 10px);
   }
 
-  /* Row 2: two equal halves — blue (left), red (right) — revealed by sliding
-     down. Each half centers [label][stepper]; the spin button is pinned to the
-     half's colored edge, out of flow. */
+  /* The full level rail fits between equal counterweights at this width. Keep
+     compressing the same controls below it; the option grid's breakpoint must
+     never switch the header into a different visual system. */
+  @container (width < 900px) {
+    .oph:not(.compact) .oph-bar:not(.filter-only) {
+      grid-template-columns:
+        minmax(calc(var(--min-touch-target, 44px) * 2 + 10px), 1fr) auto
+        minmax(calc(var(--min-touch-target, 44px) * 2 + 10px), 1fr);
+    }
+
+    .oph:not(.compact) :global(.level-selector) {
+      gap: 0.5rem;
+    }
+
+    .oph:not(.compact) :global(.level-selector .lvl) {
+      width: clamp(10rem, calc((100cqw - 16.5rem) / 3), 12.25rem);
+      gap: 0.45rem;
+      padding-inline: 0.5rem;
+    }
+  }
+
+  /* Counterweight centering is useful only while there is room to spend on an
+     empty third column. Below that point the level rail borrows the space and
+     every control keeps the same icon, colour, surface, and interaction model. */
+  @container (width < 1000px) {
+    .oph:not(.compact) .oph-bar:not(.filter-only) {
+      grid-template-columns:
+        calc(var(--min-touch-target, 44px) * 2 + 10px)
+        minmax(0, 1fr);
+      gap: 10px;
+    }
+
+    .oph:not(.compact) .oph-side.end {
+      display: none;
+    }
+
+    .oph:not(.compact) .oph-bar.turns-only {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .oph:not(.compact) .oph-bar.turns-only .oph-side.start {
+      display: none;
+    }
+
+    .oph:not(.compact) .level-control,
+    .oph:not(.compact) :global(.level-selector) {
+      width: 100%;
+    }
+
+    .oph:not(.compact) :global(.level-selector .lvl) {
+      flex: 1 1 0;
+      width: auto;
+      min-width: 0;
+    }
+  }
+
+  /* Row 2: two equal halves — blue then red — revealed by sliding down. Each
+     half keeps its spin direction at the trailing edge, out of flow. */
   .oph-turns-row {
     display: flex;
     gap: 10px;
@@ -345,7 +400,7 @@
     align-items: center;
     gap: 10px;
     /* The turn buttons fill the half; the spin button is pinned out of flow on
-       the colored edge. Its gutter is reserved only while this hand has turns
+       the trailing edge. Its gutter is reserved only while this hand has turns
        (.has-spin) — the padding animates so the turn buttons slide as the gutter
        and its CW/CCW button appear or collapse together, never a snap. The
        gutter is a touch wider than the button so it clears the panel edge (outer
@@ -358,10 +413,7 @@
     transition: padding var(--duration-normal, 200ms) ease;
   }
 
-  .hand-half.blue.has-spin {
-    padding-left: var(--spin-gutter);
-  }
-
+  .hand-half.blue.has-spin,
   .hand-half.red.has-spin {
     padding-right: var(--spin-gutter);
   }
@@ -412,7 +464,8 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    height: 34px;
+    min-width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
     padding: 0 10px;
     border-radius: 7px;
     border: 1px solid rgba(var(--prop-color-rgb), 0.5);
@@ -422,7 +475,10 @@
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     cursor: pointer;
-    transition: all var(--duration-fast, 0.15s) ease;
+    transition:
+      background-color var(--duration-fast, 0.15s) ease,
+      border-color var(--duration-fast, 0.15s) ease,
+      transform var(--duration-fast, 0.15s) ease;
   }
 
   .spin-inline:hover {
@@ -434,7 +490,7 @@
     transform: scale(0.96);
   }
 
-  /* Pin the spin button to the half's outer (colored) edge, vertically centered.
+  /* Pin the spin button to the half's trailing edge, vertically centered.
      Out of flow, so it has its own room and never shifts the centered stepper. */
   .spin-inline.edge {
     position: absolute;
@@ -442,10 +498,7 @@
     transform: translateY(-50%);
   }
 
-  .hand-half.blue .spin-inline.edge {
-    left: 14px;
-  }
-
+  .hand-half.blue .spin-inline.edge,
   .hand-half.red .spin-inline.edge {
     right: 14px;
   }
@@ -459,6 +512,75 @@
     display: inline-block;
     min-width: 2.4ch;
     text-align: left;
+  }
+
+  /* Two full hand palettes need width, not a second visual treatment. Stack
+     their existing surfaces in narrow panes and spend the ample vertical room
+     the picker already has. Resize-driven recomposition intentionally has no
+     transition so it follows the divider directly. */
+  @container (width < 1000px) {
+    .oph:not(.compact) .oph-turns-row {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .oph:not(.compact) .hand-half {
+      flex: 0 0 auto;
+      width: 100%;
+      min-width: 0;
+    }
+  }
+
+  /* At phone-width inline surfaces, names yield before targets do. The level
+     colours and numerals remain identical to desktop, while the spin direction
+     keeps its full accessible name in aria-label and a genuine 44px target. */
+  @container (width < 560px) {
+    .oph:not(.compact) {
+      padding: 8px 8px 10px;
+    }
+
+    .oph:not(.compact) .oph-bar:not(.filter-only) {
+      gap: 8px;
+    }
+
+    .oph:not(.compact) :global(.level-selector) {
+      gap: 6px;
+    }
+
+    .oph:not(.compact) :global(.level-selector .lvl) {
+      height: var(--min-touch-target, 44px);
+      padding-inline: 0.25rem;
+    }
+
+    .oph:not(.compact) :global(.level-selector .name) {
+      display: none;
+    }
+
+    .oph:not(.compact) .hand-half {
+      --spin-gutter: 58px;
+      padding: 6px 8px;
+      border-radius: 10px;
+    }
+
+    .oph:not(.compact) .hand-half.blue .spin-inline.edge,
+    .oph:not(.compact) .hand-half.red .spin-inline.edge {
+      right: 8px;
+    }
+
+    .oph:not(.compact) .spin-inline.edge {
+      justify-content: center;
+      width: var(--min-touch-target, 44px);
+      height: var(--min-touch-target, 44px);
+      padding: 0;
+    }
+
+    .oph:not(.compact) .spin-inline .dir {
+      display: none;
+    }
+
+    .oph:not(.compact) .turn-seg :global(.segment) {
+      padding-inline: 0.2rem;
+    }
   }
 
   /* Popover layout: Options and Level share the first row; each hand gets one
@@ -540,9 +662,9 @@
   .oph.compact .hand-half {
     flex: 0 0 auto;
     display: grid;
-    /* [spin 44px][turn palette]. The Blue/Red word column is gone — colour
-       carries hand identity — so the palette gets that 30px back. */
-    grid-template-columns: var(--min-touch-target, 44px) minmax(0, 1fr);
+    /* [turn palette][spin 44px]. Both hands use the same trailing action column
+       here and in the inline header. */
+    grid-template-columns: minmax(0, 1fr) var(--min-touch-target, 44px);
     align-items: center;
     gap: 6px;
     width: 100%;
@@ -559,8 +681,6 @@
       var(--hand-color) 26%,
       var(--theme-stroke, rgba(255, 255, 255, 0.12))
     );
-    box-shadow: inset 3px 0 0
-      color-mix(in srgb, var(--hand-color) 62%, transparent);
   }
 
   .oph.compact .hand-half.blue,
@@ -578,11 +698,10 @@
     );
   }
 
-  /* hand-meta falls back to the base display:contents, so its only remaining
-     child — the spin slot — is the hand-half grid's first (44px) column. */
-
   .oph.compact .spin-slot {
     display: flex;
+    grid-column: 2;
+    grid-row: 1;
     align-items: center;
     justify-content: center;
     width: var(--min-touch-target, 44px);
@@ -590,6 +709,8 @@
   }
 
   .oph.compact .turn-seg {
+    grid-column: 1;
+    grid-row: 1;
     width: 100%;
   }
 

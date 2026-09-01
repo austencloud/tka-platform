@@ -1,6 +1,6 @@
 <!-- Assemble's compact desktop instruction and control header. -->
 <script lang="ts">
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { AssembleState } from "../state/assemble-state.svelte";
   import { getBuilderPhaseInstruction } from "../services/builder-phase-presentation";
@@ -10,14 +10,14 @@
 
   let { builderState }: { builderState: AssembleState } = $props();
 
-  const isBlueHand = $derived(builderState.activeHand === MotionColor.BLUE);
+  const isBlueHand = $derived(builderState.activeHand === HandSide.LEFT);
   const activeHandLabel = $derived(isBlueHand ? "Left hand" : "Right hand");
   const otherHandLabel = $derived(isBlueHand ? "Right" : "Left");
   const otherHandSteps = $derived(
-    isBlueHand ? builderState.redSteps.length : builderState.blueSteps.length
+    isBlueHand ? builderState.rightSteps.length : builderState.leftSteps.length
   );
   const activeStepCount = $derived(
-    isBlueHand ? builderState.blueSteps.length : builderState.redSteps.length
+    isBlueHand ? builderState.leftSteps.length : builderState.rightSteps.length
   );
   const currentStepNumber = $derived(
     activeStepCount + (builderState.phase === "complete" ? 0 : 1)

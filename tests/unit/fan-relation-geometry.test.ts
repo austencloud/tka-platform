@@ -62,8 +62,8 @@ describe("fan relation geometry", () => {
 
   it("uses a fan-sized hand grid instead of the staff hand radius", () => {
     const layout = getFanSceneLayout({
-      blueLocation: GridLocation.EAST,
-      redLocation: GridLocation.WEST,
+      leftLocation: GridLocation.EAST,
+      rightLocation: GridLocation.WEST,
       propType: PropType.FAN,
       basePropLength: 0.864,
     });
@@ -83,8 +83,8 @@ describe("fan relation geometry", () => {
 
   it("grows the outer field for Big Fan without moving the hand ring", () => {
     const shared = {
-      blueLocation: GridLocation.EAST,
-      redLocation: GridLocation.WEST,
+      leftLocation: GridLocation.EAST,
+      rightLocation: GridLocation.WEST,
       basePropLength: 0.864,
     };
     const standard = getFanSceneLayout({
@@ -103,14 +103,14 @@ describe("fan relation geometry", () => {
 
   it("moves the working plane forward only when a hand crosses the body", () => {
     const natural = getFanSceneLayout({
-      blueLocation: GridLocation.EAST,
-      redLocation: GridLocation.WEST,
+      leftLocation: GridLocation.EAST,
+      rightLocation: GridLocation.WEST,
       propType: PropType.BIGFAN,
       basePropLength: 0.864,
     });
     const crossed = getFanSceneLayout({
-      blueLocation: GridLocation.WEST,
-      redLocation: GridLocation.EAST,
+      leftLocation: GridLocation.WEST,
+      rightLocation: GridLocation.EAST,
       propType: PropType.BIGFAN,
       basePropLength: 0.864,
     });

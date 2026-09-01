@@ -17,6 +17,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { sequenceModalExporter, type Video3DExportDependencies } from "$lib/shared/sequence-viewer/services/sequence-modal-exporter.svelte";
 import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
+import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
 import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
 import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
@@ -203,6 +204,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
     // Per-prop rainbow spectrum, mirrored from the live tunnel controller so the
     // offscreen engine colors the kaleidoscope to match the on-screen view.
     tunnelSpectrum: boolean,
+    tunnelPropColors: TunnelPropColorPair | null,
   ): Promise<boolean> {
     if (sequenceModalExporter.state.isExporting) return false;
 
@@ -248,14 +250,15 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         sourceSizeOverride: squareSize,
         additionalLayersForBeat,
         tunnelSpectrum,
+        tunnelPropColors,
         overlayOverrides: {
           tkaGlyph: false,
           elementalGlyph: false,
           stepNumbers: false,
           wordHeader: false,
           progressBar: false,
-          bluePathLines: false,
-          redPathLines: false,
+          leftPathLines: false,
+          rightPathLines: false,
           grid: false,
         },
       },

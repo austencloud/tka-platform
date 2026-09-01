@@ -7,7 +7,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * per-step scrambles, and dictated grid visibility.
  */
 export const ninePlanesFilm: FilmDirectorInput = {
-  version: 3,
+  version: 5,
   id: "nine-planes-r1",
   title: "Nine Planes",
   brief:
@@ -33,12 +33,12 @@ export const ninePlanesFilm: FilmDirectorInput = {
         cast: {
           count: 8,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: PropType.STAFF,
             effect: "trails",
             effort: "glide",
-            bluePlane: "wheel",
-            redPlane: "wheel",
+            leftPlane: "wheel",
+            rightPlane: "wheel",
           },
         },
       },
@@ -62,7 +62,7 @@ export const ninePlanesFilm: FilmDirectorInput = {
       id: "no-two-alike",
       title: "No two alike",
       intent:
-        "A line of eight where every performer's blue hand draws a different plane from the nine-plane catalog, and every red hand draws its own as well.",
+        "A line of eight where every performer's left hand draws a different plane from the nine-plane catalog, and every right hand draws its own as well.",
       durationSeconds: 9,
       transition: { kind: "environment-dissolve", durationSeconds: 0.9 },
       location: { environmentId: "celestial", showStage: true },
@@ -72,12 +72,12 @@ export const ninePlanesFilm: FilmDirectorInput = {
         cast: {
           count: 8,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: PropType.CLUB,
             effect: "led",
             effort: "press",
-            bluePlane: { pick: "distinct" },
-            redPlane: { pick: "distinct" },
+            leftPlane: { pick: "distinct" },
+            rightPlane: { pick: "distinct" },
           },
         },
       },
@@ -112,17 +112,17 @@ export const ninePlanesFilm: FilmDirectorInput = {
         cast: {
           count: 8,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: PropType.STAFF,
             effect: "zap",
             effort: "punch",
-            bluePlane: "wall",
-            redPlane: "wall",
+            leftPlane: "wall",
+            rightPlane: "wall",
             stepPlanes: [
-              { step: 2, hand: "blue", plane: { pick: "any" } },
-              { step: 3, hand: "red", plane: { pick: "any" } },
-              { step: 5, hand: "blue", plane: { pick: "any" } },
-              { step: 6, hand: "red", plane: { pick: "any" } },
+              { step: 2, hand: "left", plane: { pick: "any" } },
+              { step: 3, hand: "right", plane: { pick: "any" } },
+              { step: 5, hand: "left", plane: { pick: "any" } },
+              { step: 6, hand: "right", plane: { pick: "any" } },
             ],
           },
         },
@@ -158,7 +158,7 @@ export const ninePlanesFilm: FilmDirectorInput = {
         cast: {
           count: 8,
           defaults: {
-            avatarId: { pick: "any" },
+            characterId: { pick: "any" },
             prop: PropType.CLUB,
             effect: "sparkles",
             effort: "press",
@@ -166,14 +166,14 @@ export const ninePlanesFilm: FilmDirectorInput = {
           // Id-less overrides fill cast slots positionally: the left half of
           // the row works the left shield, the right half the right shield.
           performers: [
-            { bluePlane: "left-shield", redPlane: "left-shield" },
-            { bluePlane: "left-shield", redPlane: "left-shield" },
-            { bluePlane: "left-shield", redPlane: "left-shield" },
-            { bluePlane: "left-shield", redPlane: "left-shield" },
-            { bluePlane: "right-shield", redPlane: "right-shield" },
-            { bluePlane: "right-shield", redPlane: "right-shield" },
-            { bluePlane: "right-shield", redPlane: "right-shield" },
-            { bluePlane: "right-shield", redPlane: "right-shield" },
+            { leftPlane: "left-shield", rightPlane: "left-shield" },
+            { leftPlane: "left-shield", rightPlane: "left-shield" },
+            { leftPlane: "left-shield", rightPlane: "left-shield" },
+            { leftPlane: "left-shield", rightPlane: "left-shield" },
+            { leftPlane: "right-shield", rightPlane: "right-shield" },
+            { leftPlane: "right-shield", rightPlane: "right-shield" },
+            { leftPlane: "right-shield", rightPlane: "right-shield" },
+            { leftPlane: "right-shield", rightPlane: "right-shield" },
           ],
         },
       },

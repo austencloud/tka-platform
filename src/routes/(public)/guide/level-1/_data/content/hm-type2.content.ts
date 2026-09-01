@@ -1,7 +1,13 @@
 import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  MotionType,
+  HandSide,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  GridMode,
+  GridLocation,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -20,17 +26,17 @@ const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 // that stays → STATIC (no arrow). Positions/numbers derive downstream. A Type
 // 2 motion ("Shift") always has exactly one moving hand, so no same-edge
 // collision - no letter is ever needed for placement.
-const motion = (color: MotionColor, from: GridLocation, to: GridLocation) =>
+const motion = (color: HandSide, from: GridLocation, to: GridLocation) =>
   createMotionData({
     motionType: from === to ? MotionType.STATIC : MotionType.PRO,
     startLocation: from,
     endLocation: to,
-    color,
+    hand: color,
     propType: PropType.HAND,
     gridMode: GridMode.DIAMOND,
   });
 
-// [blueFrom, blueTo, redFrom, redTo]; Start boxes hold (from === to on both).
+// [leftFrom, leftTo, rightFrom, rightTo]; Start boxes hold (from === to on both).
 type Move = [GridLocation, GridLocation, GridLocation, GridLocation];
 const box = (m: Move, step: number): StepData =>
   ({
@@ -40,13 +46,13 @@ const box = (m: Move, step: number): StepData =>
     startPosition: getGridPositionFromLocations(m[0], m[2]),
     endPosition: getGridPositionFromLocations(m[1], m[3]),
     motions: {
-      blue: motion(MotionColor.BLUE, m[0], m[1]),
-      red: motion(MotionColor.RED, m[2], m[3]),
+      left: motion(HandSide.LEFT, m[0], m[1]),
+      right: motion(HandSide.RIGHT, m[2], m[3]),
     },
     stepNumber: step,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
   }) as unknown as StepData;
 
@@ -126,7 +132,7 @@ export const hmType2Content: GuideBlock[] = [
     kind: "prose",
     html:
       "To move between γ and α/β, you can shift one hand and keep the other hand static.<br>" +
-      "This combination is called a <strong class=\"pu\">Shift</strong> (with a capital “S”). Here’s a simple example:",
+      'This combination is called a <strong class="pu">Shift</strong> (with a capital “S”). Here’s a simple example:',
   },
   {
     kind: "pictographGroup",
@@ -145,12 +151,28 @@ export const hmType2Content: GuideBlock[] = [
       "They alternate the shifting hand.<br>" +
       "Here, they are shifting in the same direction:",
   },
-  { kind: "pictographGroup", items: stripSteps(STRIPS[1]!), flowCols: 5, card: true, render: RENDER, caption: SEQ_WORDS[1] },
-  { kind: "prose", html: "And here, they are shifting in opposite directions." },
-  { kind: "pictographGroup", items: stripSteps(STRIPS[2]!), flowCols: 5, card: true, render: RENDER, caption: SEQ_WORDS[2] },
+  {
+    kind: "pictographGroup",
+    items: stripSteps(STRIPS[1]!),
+    flowCols: 5,
+    card: true,
+    render: RENDER,
+    caption: SEQ_WORDS[1],
+  },
   {
     kind: "prose",
-    html:
-      "<span class=\"pu\">Shifts</span> seems mundane here, but they’re very useful later for constructing dynamic sequences.",
+    html: "And here, they are shifting in opposite directions.",
+  },
+  {
+    kind: "pictographGroup",
+    items: stripSteps(STRIPS[2]!),
+    flowCols: 5,
+    card: true,
+    render: RENDER,
+    caption: SEQ_WORDS[2],
+  },
+  {
+    kind: "prose",
+    html: '<span class="pu">Shifts</span> seems mundane here, but they’re very useful later for constructing dynamic sequences.',
   },
 ];

@@ -8,7 +8,7 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/mot
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -33,12 +33,12 @@ const INTERCARDINAL = new Set<GridLocation>([
 ]);
 
 function deriveStepGridMode(
-  blueStart: GridLocation,
-  blueEnd: GridLocation,
-  redStart: GridLocation,
-  redEnd: GridLocation
+  leftStart: GridLocation,
+  leftEnd: GridLocation,
+  rightStart: GridLocation,
+  rightEnd: GridLocation
 ): GridMode {
-  const locations = [blueStart, blueEnd, redStart, redEnd];
+  const locations = [leftStart, leftEnd, rightStart, rightEnd];
 
   if (locations.includes(GridLocation.CENTER)) {
     return GridMode.CENTRIC;
@@ -75,7 +75,7 @@ function derivePrefloatRotation(
 
 function rehydrateMotion(
   step: SoloPropStepData,
-  color: MotionColor,
+  color: HandSide,
   gridMode: GridMode,
   propType: PropType
 ): MotionData {
@@ -96,7 +96,7 @@ function rehydrateMotion(
     handPath: step.handPath ?? null,
     skewSteps: step.skewSteps ?? null,
     skewDir: step.skewDir ?? null,
-    color,
+    hand: color,
     propType,
     isVisible: true,
     gridMode,
@@ -109,50 +109,50 @@ function rehydrateMotion(
 }
 
 export function deriveSteps(
-  blueSoloProp: SoloPropData,
-  redSoloProp: SoloPropData,
+  leftSoloProp: SoloPropData,
+  rightSoloProp: SoloPropData,
   stepPairings: readonly StepPairingData[],
   viewerPrefs?: ViewerPreferences
 ): StepData[] {
-  const bluePropType = viewerPrefs?.bluePropType ?? PropType.STAFF;
-  const redPropType =
-    viewerPrefs?.catDogMode ? (viewerPrefs.redPropType ?? PropType.STAFF) : bluePropType;
+  const leftPropType = viewerPrefs?.leftPropType ?? PropType.STAFF;
+  const rightPropType =
+    viewerPrefs?.catDogMode ? (viewerPrefs.rightPropType ?? PropType.STAFF) : leftPropType;
   const count = stepPairings.length;
 
-  if (blueSoloProp.steps.length !== count || redSoloProp.steps.length !== count) {
+  if (leftSoloProp.steps.length !== count || rightSoloProp.steps.length !== count) {
     throw new Error(
       `deriveSteps: step array length mismatch - ` +
-        `blue=${blueSoloProp.steps.length}, ` +
-        `red=${redSoloProp.steps.length}, ` +
+        `blue=${leftSoloProp.steps.length}, ` +
+        `red=${rightSoloProp.steps.length}, ` +
         `pairings=${count}`
     );
   }
 
   return stepPairings.map((pairing, i) => {
-    const blueStep = blueSoloProp.steps[i] as SoloPropStepData;
-    const redStep = redSoloProp.steps[i] as SoloPropStepData;
+    const leftStep = leftSoloProp.steps[i] as SoloPropStepData;
+    const rightStep = rightSoloProp.steps[i] as SoloPropStepData;
 
     const gridMode = deriveStepGridMode(
-      blueStep.startLocation,
-      blueStep.endLocation,
-      redStep.startLocation,
-      redStep.endLocation
+      leftStep.startLocation,
+      leftStep.endLocation,
+      rightStep.startLocation,
+      rightStep.endLocation
     );
 
-    const blueMotion = rehydrateMotion(blueStep, MotionColor.BLUE, gridMode, bluePropType);
-    const redMotion = rehydrateMotion(redStep, MotionColor.RED, gridMode, redPropType);
+    const leftMotion = rehydrateMotion(leftStep, HandSide.LEFT, gridMode, leftPropType);
+    const rightMotion = rehydrateMotion(rightStep, HandSide.RIGHT, gridMode, rightPropType);
 
     const stepData: StepData = {
       id: crypto.randomUUID(),
       letter: pairing.letter,
       startPosition: pairing.startPosition,
       endPosition: pairing.endPosition,
-      motions: { blue: blueMotion, red: redMotion },
+      motions: { left: leftMotion, right: rightMotion },
       gridMode,
       stepNumber: i + 1,
-      duration: blueStep.duration,
-      blueReversal: pairing.blueReversal,
-      redReversal: pairing.redReversal,
+      duration: leftStep.duration,
+      leftReversal: pairing.leftReversal,
+      rightReversal: pairing.rightReversal,
       isBlank: false,
     };
 
@@ -161,50 +161,50 @@ export function deriveSteps(
 }
 
 export function deriveStartPosition(
-  blueSoloProp: SoloPropData,
-  redSoloProp: SoloPropData
+  leftSoloProp: SoloPropData,
+  rightSoloProp: SoloPropData
 ): StartPositionData {
   const gridMode = deriveStepGridMode(
-    blueSoloProp.startLocation,
-    blueSoloProp.startLocation,
-    redSoloProp.startLocation,
-    redSoloProp.startLocation
+    leftSoloProp.startLocation,
+    leftSoloProp.startLocation,
+    rightSoloProp.startLocation,
+    rightSoloProp.startLocation
   );
 
-  const blueMotion = createMotionData({
-    startLocation: blueSoloProp.startLocation,
-    endLocation: blueSoloProp.startLocation,
-    startOrientation: blueSoloProp.startOrientation,
-    endOrientation: blueSoloProp.startOrientation,
+  const leftMotion = createMotionData({
+    startLocation: leftSoloProp.startLocation,
+    endLocation: leftSoloProp.startLocation,
+    startOrientation: leftSoloProp.startOrientation,
+    endOrientation: leftSoloProp.startOrientation,
     motionType: MotionType.STATIC,
     rotationDirection: RotationDirection.NO_ROTATION,
     turns: 0,
-    color: MotionColor.BLUE,
+    hand: HandSide.LEFT,
     propType: PropType.STAFF,
     isVisible: true,
     gridMode,
-    arrowLocation: blueSoloProp.startLocation,
+    arrowLocation: leftSoloProp.startLocation,
   });
 
-  const redMotion = createMotionData({
-    startLocation: redSoloProp.startLocation,
-    endLocation: redSoloProp.startLocation,
-    startOrientation: redSoloProp.startOrientation,
-    endOrientation: redSoloProp.startOrientation,
+  const rightMotion = createMotionData({
+    startLocation: rightSoloProp.startLocation,
+    endLocation: rightSoloProp.startLocation,
+    startOrientation: rightSoloProp.startOrientation,
+    endOrientation: rightSoloProp.startOrientation,
     motionType: MotionType.STATIC,
     rotationDirection: RotationDirection.NO_ROTATION,
     turns: 0,
-    color: MotionColor.RED,
+    hand: HandSide.RIGHT,
     propType: PropType.STAFF,
     isVisible: true,
     gridMode,
-    arrowLocation: redSoloProp.startLocation,
+    arrowLocation: rightSoloProp.startLocation,
   });
 
   return {
     id: crypto.randomUUID(),
     isStartPosition: true,
-    motions: { blue: blueMotion, red: redMotion },
+    motions: { left: leftMotion, right: rightMotion },
     gridMode,
     gridPosition: null,
   };

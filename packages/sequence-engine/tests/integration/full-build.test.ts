@@ -18,7 +18,7 @@ import type { PositionGroup, LetterPositionInfo } from "../../src/core/types/seq
 
 function makeMotion(overrides: Partial<MotionData> = {}): MotionData {
   return {
-    color: "blue",
+    hand: "left",
     startLocation: "n",
     endLocation: "s",
     motionType: "pro",
@@ -35,8 +35,8 @@ function makePictograph(overrides: Partial<PictographData> & { letter: string })
     endPosition: "alpha1",
     timing: "together",
     direction: "together",
-    blueMotion: makeMotion({ color: "blue" }),
-    redMotion: makeMotion({ color: "red" }),
+    leftMotion: makeMotion({ hand: "left" }),
+    rightMotion: makeMotion({ hand: "right" }),
     ...overrides,
   };
 }
@@ -56,8 +56,8 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "α",
     startPosition: "alpha1",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
-    redMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
+    leftMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
+    rightMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
   }),
 
   // Start position: α at beta3
@@ -65,8 +65,8 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "α",
     startPosition: "beta3",
     endPosition: "beta3",
-    blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
-    redMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
+    leftMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
+    rightMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
   }),
 
   // A: alpha1 → beta3
@@ -74,8 +74,8 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "A",
     startPosition: "alpha1",
     endPosition: "beta3",
-    blueMotion: makeMotion({ startLocation: "n", endLocation: "e" }),
-    redMotion: makeMotion({ startLocation: "s", endLocation: "w" }),
+    leftMotion: makeMotion({ startLocation: "n", endLocation: "e" }),
+    rightMotion: makeMotion({ startLocation: "s", endLocation: "w" }),
   }),
 
   // B: beta3 → alpha1
@@ -83,8 +83,8 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "B",
     startPosition: "beta3",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ startLocation: "e", endLocation: "n" }),
-    redMotion: makeMotion({ startLocation: "w", endLocation: "s" }),
+    leftMotion: makeMotion({ startLocation: "e", endLocation: "n" }),
+    rightMotion: makeMotion({ startLocation: "w", endLocation: "s" }),
   }),
 
   // C: alpha1 → alpha1 (stays in alpha)
@@ -92,8 +92,8 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "C",
     startPosition: "alpha1",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ startLocation: "n", endLocation: "n" }),
-    redMotion: makeMotion({ startLocation: "s", endLocation: "s" }),
+    leftMotion: makeMotion({ startLocation: "n", endLocation: "n" }),
+    rightMotion: makeMotion({ startLocation: "s", endLocation: "s" }),
   }),
 
   // D: beta3 → beta3 (stays in beta)
@@ -101,8 +101,8 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "D",
     startPosition: "beta3",
     endPosition: "beta3",
-    blueMotion: makeMotion({ startLocation: "e", endLocation: "e" }),
-    redMotion: makeMotion({ startLocation: "w", endLocation: "w" }),
+    leftMotion: makeMotion({ startLocation: "e", endLocation: "e" }),
+    rightMotion: makeMotion({ startLocation: "w", endLocation: "w" }),
   }),
 ];
 
@@ -314,8 +314,8 @@ describe("SequenceBuilder integration", () => {
     });
 
     // Turn allocation is for the 2 letters (not including start position)
-    expect(result.turnAllocation.blue).toHaveLength(2);
-    expect(result.turnAllocation.red).toHaveLength(2);
+    expect(result.turnAllocation.left).toHaveLength(2);
+    expect(result.turnAllocation.right).toHaveLength(2);
   });
 
   it("applies constraint preset without errors", () => {

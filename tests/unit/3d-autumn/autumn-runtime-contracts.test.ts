@@ -34,18 +34,18 @@ describe("Autumn shadow budget", () => {
     }
   });
 
-  it("casts from the actual named Hero A mesh", () => {
+  it("keeps the actual named Hero A mesh receive-only", () => {
     const material = new MeshStandardMaterial();
     const heroTree = new Mesh(undefined, material);
     heroTree.name = "HeroTreeA_01_0";
 
     expect(resolveAutumnShadowRole(heroTree.name)).toEqual({
-      cast: true,
+      cast: false,
       receive: true,
     });
 
     configureAutumnShadowMesh(heroTree, true);
-    expect(heroTree.castShadow).toBe(true);
+    expect(heroTree.castShadow).toBe(false);
     expect(heroTree.receiveShadow).toBe(true);
     expect(heroTree.material).toBe(material);
     expect(material.colorWrite).toBe(true);
@@ -55,17 +55,17 @@ describe("Autumn shadow budget", () => {
     expect(heroTree.castShadow).toBe(false);
   });
 
-  it("recognizes the optimizer's unnamed Hero B and sapling batch by material", () => {
+  it("keeps the optimizer's mixed Hero B and sapling batch receive-only", () => {
     const material = new MeshStandardMaterial();
     material.name = "Autumn Hero B PBR";
     const heroTreeBatch = new Mesh(undefined, material);
 
     expect(resolveAutumnShadowRole("", [material.name])).toEqual({
-      cast: true,
+      cast: false,
       receive: true,
     });
     configureAutumnShadowMesh(heroTreeBatch, true);
-    expect(heroTreeBatch.castShadow).toBe(true);
+    expect(heroTreeBatch.castShadow).toBe(false);
     expect(heroTreeBatch.receiveShadow).toBe(true);
   });
 
@@ -96,6 +96,7 @@ describe("Autumn shadow budget", () => {
     // Every depth tier sits outside the +/-20 shadow camera, so casting from it
     // would pay a depth pass that can never darken a performance-space pixel.
     for (const name of [
+      "Autumn_Terrain_Apron",
       "DistantBirch_02",
       "DistantLarch_01",
       "DistantSnag_05",

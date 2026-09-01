@@ -3,8 +3,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import { handPathToName } from '$lib/shared/foundation/services/hand-path-namer';
 import { ensureComposition } from "$lib/shared/foundation/services/sequence-hydrator";
 import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
-
-export type HandSide = "blue" | "red";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export interface PathGroup {
   /** Content hash that uniquely identifies this hand path shape. */
@@ -51,7 +50,7 @@ export function createExplorerState(
       const rawSequences = await sequenceRepository.getAllSequences();
 
       // Legacy sequences carry `steps` but no compositional fields
-      // (blueSoloProp/redSoloProp) — they predate the field or were saved by a
+      // (leftSoloProp/rightSoloProp) — they predate the field or were saved by a
       // path that skips ensureComposition(). handPath lives on those fields, so
       // the Explorer is empty for the whole legacy corpus without this. Derive
       // them read-time (no persistence — the same one-way decomposition
@@ -59,7 +58,7 @@ export function createExplorerState(
       // how hydrate() derives the opposite direction). This keeps the read-only
       // Explorer self-sufficient instead of depending on a data backfill.
       const sequences = rawSequences.map((seq) => {
-        if (seq.blueSoloProp || seq.steps.length === 0) return seq;
+        if (seq.leftSoloProp || seq.steps.length === 0) return seq;
         try {
           return ensureComposition(seq);
         } catch {
@@ -74,11 +73,11 @@ export function createExplorerState(
       for (const seq of sequences) {
         const sides: Array<{ handPath: HandPathData; side: HandSide }> = [];
 
-        if (seq.blueSoloProp?.handPath) {
-          sides.push({ handPath: seq.blueSoloProp.handPath, side: "blue" });
+        if (seq.leftSoloProp?.handPath) {
+          sides.push({ handPath: seq.leftSoloProp.handPath, side: HandSide.LEFT });
         }
-        if (seq.redSoloProp?.handPath) {
-          sides.push({ handPath: seq.redSoloProp.handPath, side: "red" });
+        if (seq.rightSoloProp?.handPath) {
+          sides.push({ handPath: seq.rightSoloProp.handPath, side: HandSide.RIGHT });
         }
 
         for (const { handPath, side } of sides) {

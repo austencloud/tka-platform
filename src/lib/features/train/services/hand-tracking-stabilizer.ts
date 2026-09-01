@@ -29,13 +29,13 @@ const DEFAULT_CONFIG: StabilizerConfig = {
 };
 
 export class HandTrackingStabilizer {
-  private _blueHistory: HandHistory = {
+  private _leftHistory: HandHistory = {
     positions: [],
     assignedHand: "left",
     confidenceFrames: 0,
   };
 
-  private _redHistory: HandHistory = {
+  private _rightHistory: HandHistory = {
     positions: [],
     assignedHand: "right",
     confidenceFrames: 0,
@@ -50,15 +50,15 @@ export class HandTrackingStabilizer {
   /**
    * Get the history object for a hand
    */
-  private _getHistory(handId: "blue" | "red"): HandHistory {
-    return handId === "blue" ? this._blueHistory : this._redHistory;
+  private _getHistory(handId: "left" | "right"): HandHistory {
+    return handId === "left" ? this._leftHistory : this._rightHistory;
   }
 
   /**
    * Add a position to tracking history and get smoothed result
    */
   addPosition(
-    handId: "blue" | "red",
+    handId: "left" | "right",
     x: number,
     y: number,
     timestamp: number
@@ -98,7 +98,7 @@ export class HandTrackingStabilizer {
   /**
    * Get the last known position for a hand
    */
-  getLastPosition(handId: "blue" | "red"): { x: number; y: number } | null {
+  getLastPosition(handId: "left" | "right"): { x: number; y: number } | null {
     const history = this._getHistory(handId);
     if (history.positions.length === 0) return null;
 
@@ -109,7 +109,7 @@ export class HandTrackingStabilizer {
   /**
    * Clear tracking history for a specific hand
    */
-  clearHistory(handId: "blue" | "red"): void {
+  clearHistory(handId: "left" | "right"): void {
     const history = this._getHistory(handId);
     history.positions = [];
     history.confidenceFrames = 0;
@@ -119,37 +119,37 @@ export class HandTrackingStabilizer {
    * Clear all tracking history
    */
   resetAll(): void {
-    this._blueHistory = {
+    this._leftHistory = {
       positions: [],
       assignedHand: "left",
       confidenceFrames: 0,
     };
-    this._redHistory = {
+    this._rightHistory = {
       positions: [],
       assignedHand: "right",
       confidenceFrames: 0,
     };
   }
 
-  getAssignedHand(handId: "blue" | "red"): "left" | "right" {
+  getAssignedHand(handId: "left" | "right"): "left" | "right" {
     return this._getHistory(handId).assignedHand;
   }
 
   /**
    * Update the hand assignment
    */
-  setAssignedHand(handId: "blue" | "red", hand: "left" | "right"): void {
+  setAssignedHand(handId: "left" | "right", hand: "left" | "right"): void {
     this._getHistory(handId).assignedHand = hand;
   }
 
   /**
    * Check if there's any position history for a hand
    */
-  hasHistory(handId: "blue" | "red"): boolean {
+  hasHistory(handId: "left" | "right"): boolean {
     return this._getHistory(handId).positions.length > 0;
   }
 
-  getHistoryLength(handId: "blue" | "red"): number {
+  getHistoryLength(handId: "left" | "right"): number {
     return this._getHistory(handId).positions.length;
   }
 

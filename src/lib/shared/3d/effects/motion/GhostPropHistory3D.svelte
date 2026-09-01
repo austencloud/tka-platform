@@ -23,7 +23,7 @@
   interface Props {
     propState: PropState3D | null;
     propType: PropType;
-    propColor: "blue" | "red";
+    propHand: "left" | "right";
     params: Ghost3DParams;
     enabled: boolean;
     propLength: number;
@@ -37,7 +37,7 @@
   let {
     propState,
     propType,
-    propColor,
+    propHand,
     params,
     enabled,
     propLength,
@@ -78,7 +78,19 @@
   });
 
   useTask((delta) => {
-    if (!enabled || !propState) return;
+    if (!propState) return;
+
+    // Seed the fixed phantom pool while the scene is still behind its loading
+    // curtain. Selecting Ghost then changes samples and visibility only; it
+    // never mounts up to 160 Prop3D instances for an eight-person cast.
+    if (!fallbackState) {
+      fallbackState = captureGhostPropPose3D(
+        resolveRigLocalPropCenter3D(propState.worldPosition, handAnchor),
+        propState
+      ).propState;
+    }
+
+    if (!enabled) return;
 
     if (
       shouldResetGhostHistoryAtStepBoundary({
@@ -92,13 +104,6 @@
     }
     lastObservedStep = currentStep;
     history.advance(delta);
-
-    if (!fallbackState) {
-      fallbackState = captureGhostPropPose3D(
-        resolveRigLocalPropCenter3D(propState.worldPosition, handAnchor),
-        propState
-      ).propState;
-    }
 
     const center = resolveRigLocalPropCenter3D(
       propState.worldPosition,
@@ -130,8 +135,8 @@
       sample={visibleSamples[slotIndex] ?? null}
       {fallbackState}
       {propType}
-      {propColor}
-      color={propColor === "blue" ? params.blueColor : params.redColor}
+      {propHand}
+      color={propHand === "left" ? params.leftColor : params.rightColor}
       intensity={params.intensity}
       lifetimeSeconds={params.lifetimeSeconds}
       rimPower={params.rimPower}

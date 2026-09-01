@@ -34,10 +34,10 @@
 
   const chipColors: Record<string, { bg: string; text: string; glow: string }> = {
     cyan: { bg: "rgba(34, 211, 238, 0.15)", text: "#22d3ee", glow: "rgba(34, 211, 238, 0.2)" },
-    blue: { bg: "rgba(96, 165, 250, 0.15)", text: "#93c5fd", glow: "rgba(96, 165, 250, 0.2)" },
+    left: { bg: "rgba(96, 165, 250, 0.15)", text: "#93c5fd", glow: "rgba(96, 165, 250, 0.2)" },
     green: { bg: "rgba(52, 211, 153, 0.15)", text: "#6ee7b7", glow: "rgba(52, 211, 153, 0.2)" },
     orange: { bg: "rgba(251, 146, 60, 0.15)", text: "#fdba74", glow: "rgba(251, 146, 60, 0.2)" },
-    red: { bg: "rgba(239, 68, 68, 0.15)", text: "#fca5a5", glow: "rgba(239, 68, 68, 0.2)" },
+    right: { bg: "rgba(239, 68, 68, 0.15)", text: "#fca5a5", glow: "rgba(239, 68, 68, 0.2)" },
     purple: { bg: "rgba(168, 85, 247, 0.15)", text: "#c4b5fd", glow: "rgba(168, 85, 247, 0.2)" },
     gray: { bg: "rgba(107, 114, 128, 0.15)", text: "#9ca3af", glow: "rgba(107, 114, 128, 0.1)" },
   };

@@ -1,5 +1,3 @@
-import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-
 export type ComposerGenerationResult =
   | "idle"
   | "success"
@@ -20,13 +18,4 @@ export function classifyComposerGenerationFailure(
     message.includes("unable to generate a valid")
     ? "no-result"
     : "error";
-}
-
-/** Keep this preview on the page's carried sequence without retriggering when
- * its own Generate action has already installed that same result. */
-export function shouldSyncComposerSequence(
-  current: SequenceData | null,
-  incoming: SequenceData | null
-): incoming is SequenceData {
-  return incoming !== null && incoming.id !== current?.id;
 }
