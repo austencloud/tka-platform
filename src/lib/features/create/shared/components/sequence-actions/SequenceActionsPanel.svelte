@@ -323,7 +323,11 @@
     hapticService?.trigger("selection");
     handleClose();
     const { returnPath, returnLabel } = getReturnContext();
-    openSequenceViewer(sequence, { returnPath, returnLabel });
+    openSequenceViewer(sequence, {
+      source: "create_workspace",
+      returnPath,
+      returnLabel,
+    });
   }
 
   function handleTurnPattern() {

@@ -96,12 +96,24 @@
     type CardPresentation,
   } from "$lib/shared/share/domain/models/card-presentation";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import {
+    trackSequenceRemixStarted,
+    trackSequenceViewed,
+    trackViewerAction,
+    trackViewerExport,
+    trackViewerPlaybackChanged,
+    trackViewerPracticeChanged,
+    trackViewerSettingChanged,
+    trackViewerViewChanged,
+    type SequenceViewerSource,
+  } from "$lib/shared/sequence-viewer/analytics/viewer-events";
 
   /** Host-owned export pipeline (such as the scan-origin account gate).
       Absent → the orchestrator's own ctx.handleExport pipeline (the app). */
   interface Props {
     ctx: OrchestratorContext;
     sequence: SequenceData;
+    analyticsSource: SequenceViewerSource;
     isMobile: boolean;
     onClose: () => void;
     /** Override the header/menu Remix action when a host needs custom routing. */
@@ -168,6 +180,7 @@
   let {
     ctx,
     sequence,
+    analyticsSource,
     isMobile,
     onClose,
     onRemix,
@@ -228,6 +241,79 @@
     }
   }
 
+  function analyticsContext() {
+    return { sequenceId: sequence.id, source: analyticsSource } as const;
+  }
+
+  const captureViewerAndScanAction: typeof captureScanAction = (
+    action,
+    properties = {},
+    options = {}
+  ) => {
+    if (!embedded) {
+      trackViewerAction(analyticsContext(), action, properties);
+      if (action === "remix") trackSequenceRemixStarted(analyticsContext());
+    }
+    captureScanAction(action, properties, options);
+  };
+
+  const captureViewerAndScanExport: typeof captureScanExport = (
+    exportKind,
+    stage,
+    properties = {}
+  ) => {
+    if (!embedded) {
+      trackViewerExport(analyticsContext(), exportKind, stage, properties);
+    }
+    captureScanExport(exportKind, stage, properties);
+  };
+
+  const captureViewerAndScanPlayback: typeof captureScanPlaybackChanged = (
+    properties
+  ) => {
+    if (!embedded) {
+      trackViewerPlaybackChanged(analyticsContext(), properties);
+    }
+    captureScanPlaybackChanged(properties);
+  };
+
+  const captureViewerAndScanPractice: typeof captureScanPracticeChanged = (
+    action,
+    properties = {},
+    coalesce = false
+  ) => {
+    if (!embedded) {
+      trackViewerPracticeChanged(
+        analyticsContext(),
+        action,
+        properties,
+        coalesce
+      );
+    }
+    captureScanPracticeChanged(action, properties, coalesce);
+  };
+
+  const captureViewerAndScanSetting: typeof captureScanSettingChanged = (
+    properties
+  ) => {
+    if (!embedded) {
+      trackViewerSettingChanged(analyticsContext(), properties);
+    }
+    captureScanSettingChanged(properties);
+  };
+
+  const captureViewerAndScanView: typeof captureScanViewChanged = (
+    fromMode,
+    toMode,
+    source,
+    options = {}
+  ) => {
+    if (!embedded) {
+      trackViewerViewChanged(analyticsContext(), fromMode, toMode, source);
+    }
+    captureScanViewChanged(fromMode, toMode, source, options);
+  };
+
   const scanInstrumentationEnabled = isScanVisit();
   const layout = createViewerShellLayoutState(
     {
@@ -240,10 +326,10 @@
     },
     {
       getDeviceDetector,
-      captureScanSettingChanged,
-      captureScanViewChanged,
+      captureScanSettingChanged: captureViewerAndScanSetting,
+      captureScanViewChanged: captureViewerAndScanView,
       captureScanViewerOpened,
-      captureScanPlaybackChanged,
+      captureScanPlaybackChanged: captureViewerAndScanPlayback,
     }
   );
   const share = createViewerShellShareState(
@@ -257,7 +343,7 @@
       buildSequenceSharePayload,
       buildThumbnailUrl,
       sendToStickerLab,
-      captureScanAction,
+      captureScanAction: captureViewerAndScanAction,
     }
   );
   // One playhead for the performance video and the notation beside it. The
@@ -284,12 +370,12 @@
     {
       navigate: goto,
       openExternalHref: (href) => window.location.assign(href),
-      captureScanAction,
-      captureScanExport,
-      captureScanPlaybackChanged,
-      captureScanPracticeChanged,
-      captureScanSettingChanged,
-      captureScanViewChanged,
+      captureScanAction: captureViewerAndScanAction,
+      captureScanExport: captureViewerAndScanExport,
+      captureScanPlaybackChanged: captureViewerAndScanPlayback,
+      captureScanPracticeChanged: captureViewerAndScanPractice,
+      captureScanSettingChanged: captureViewerAndScanSetting,
+      captureScanViewChanged: captureViewerAndScanView,
       endScanViewerSession,
       registerScanSessionCleanup,
     }
@@ -413,6 +499,7 @@
   });
 
   onMount(() => {
+    if (!embedded) trackSequenceViewed(analyticsContext());
     const cleanupLayout = layout.mount();
     const cleanupInteractions = interactions.mount();
     return () => {

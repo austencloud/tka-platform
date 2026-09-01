@@ -38,6 +38,7 @@ export async function openFiledCard(input: {
   // entry of its own, so the overlay needs to push one or Android's back
   // button exits the app straight out of the viewer.
   openSequenceOverlay(hydrated, {
+    analyticsSource: "share_intake",
     shortCode: input.code,
     returnLabel: "Shared card",
   });

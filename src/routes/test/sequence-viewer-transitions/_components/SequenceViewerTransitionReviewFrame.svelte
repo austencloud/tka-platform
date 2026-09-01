@@ -771,6 +771,7 @@
       <SequenceViewerShell
         {ctx}
         sequence={TRANSITION_REVIEW_SEQUENCE}
+        analyticsSource="external_link"
         {isMobile}
         onClose={() => {}}
         startInSplit

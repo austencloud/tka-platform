@@ -297,7 +297,11 @@
     hapticService?.trigger("selection");
     onClose?.();
     // The profile owns its URL, so this return path survives refresh and Back.
-    void openCreatorProfile(creatorInfo.ownerId, creatorInfo.displayName);
+    void openCreatorProfile(
+      creatorInfo.ownerId,
+      creatorInfo.displayName,
+      "sequence_viewer"
+    );
   }
 
   function handleAction(action: string) {

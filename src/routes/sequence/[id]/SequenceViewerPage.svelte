@@ -626,6 +626,7 @@
         <SequenceViewerShell
           {ctx}
           {sequence}
+          analyticsSource={scanOriginCode ? "qr" : "external_link"}
           {isMobile}
           startInCardThenSplit={!!scanOriginCode}
           embedded={isDemo}

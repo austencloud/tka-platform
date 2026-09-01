@@ -198,6 +198,7 @@ rule here; TKA's founding decks use the surrounding library hierarchy instead.
 
 	function openViewer(sequence: SequenceData, variations?: SequenceData[]) {
 		openSequenceViewer(sequence, {
+			source: "browse_collection",
 			returnPath: "/browse/library",
 			returnLabel: collection?.name ?? "Library",
 			scrollY: browseScrollState.lastScrollY,

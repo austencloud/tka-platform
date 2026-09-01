@@ -46,7 +46,7 @@ export async function openLineageSource(entry: LineageSource): Promise<void> {
     try {
       const librarySequence = await getLibraryRepository().getSequence(entry.sourceSequenceId);
       if (librarySequence) {
-        openSequenceOverlay(librarySequence);
+        openSequenceOverlay(librarySequence, { analyticsSource: "lineage" });
         return;
       }
     } catch (error) {
@@ -66,5 +66,5 @@ export async function openLineageSource(entry: LineageSource): Promise<void> {
     steps: [...steps],
     gridMode: steps.find((s) => s.gridMode)?.gridMode,
   });
-  openSequenceOverlay(sequence);
+  openSequenceOverlay(sequence, { analyticsSource: "lineage" });
 }

@@ -25,6 +25,10 @@ import {
 } from "$lib/shared/navigation/services/creator-routes";
 import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
 import { creatorsViewState } from "./creators-view-state.svelte";
+import {
+  trackCreatorProfileOpened,
+  type CreatorProfileSource,
+} from "$lib/shared/analytics/social-events";
 
 // The history-state payload the navigation coordinator's popstate handler reads
 // to keep the module/section in sync as the user goes back/forward.
@@ -87,7 +91,8 @@ function replaceCreatorsListURL(): void {
  */
 export async function openCreatorProfile(
   userId: string,
-  _displayName?: string
+  _displayName: string | undefined,
+  source: CreatorProfileSource
 ): Promise<void> {
   const onCreators = navigationState.currentModule === "creators";
   if (!onCreators) {
@@ -97,6 +102,7 @@ export async function openCreatorProfile(
   }
   creatorsViewState.viewUserProfile(userId);
   pushCreatorProfileURL(userId);
+  trackCreatorProfileOpened(source, userId);
 }
 
 /**
@@ -119,6 +125,7 @@ export function restoreCreatorProfileFromURL(): void {
   const id = getCreatorIdFromURL();
   if (id) {
     creatorsViewState.viewUserProfile(id);
+    trackCreatorProfileOpened("direct_link", id);
   } else {
     creatorsViewState.reset();
   }
@@ -133,6 +140,7 @@ export function syncCreatorsViewFromURL(): void {
   if (id) {
     if (creatorsViewState.viewingUserId !== id) {
       creatorsViewState.viewUserProfile(id);
+      trackCreatorProfileOpened("history", id);
     }
   } else if (onCreatorsPath()) {
     if (creatorsViewState.currentView !== "list") {
