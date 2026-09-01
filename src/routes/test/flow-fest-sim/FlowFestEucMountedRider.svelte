@@ -15,7 +15,7 @@
   import { T, useStage, useTask, useThrelte, type Stage } from "@threlte/core";
   import { Avatar3D } from "@austencloud/scene-3d";
   import { onDestroy } from "svelte";
-  import type { Object3D } from "three";
+  import type { Object3D, SkinnedMesh } from "three";
   import {
     FLOW_FEST_EUC_CONFIG,
     type FlowFestElectricUnicycleDynamics,
@@ -93,7 +93,15 @@
         props.onDiagnostic?.(rig.diagnostic());
         return;
       }
-      if (!rig.isAttachedTo(performerRoot)) rig.attach(performerRoot);
+      if (!rig.isAttachedTo(performerRoot)) {
+        rig.attach(performerRoot);
+        // The pose rig moves the pelvis and legs well outside each skinned
+        // mesh's bind-pose bounding sphere, and three.js culls per mesh against
+        // that stale sphere — the hips vanish at grazing camera angles.
+        performerRoot.traverse((node) => {
+          if ((node as SkinnedMesh).isSkinnedMesh) node.frustumCulled = false;
+        });
+      }
 
       rig.update({
         deltaSeconds: delta,
