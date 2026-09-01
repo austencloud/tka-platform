@@ -101,7 +101,11 @@ describe("Sequence Viewer transition orchestration contract", () => {
       'import PanelGroup, {\n    type PanelDefinition,\n  } from "$lib/shared/panels/PanelGroup.svelte"'
     );
     expect(workspacePanels).toContain('id: "export-inspector"');
-    expect(workspacePanels).toContain("fixedSize: inspectorCollapsed");
+    expect(workspacePanels).toContain('id: "export-inspector-stacked"');
+    expect(workspacePanels).toContain("!inspectorActive || inspectorCollapsed");
+    expect(workspacePanels).toContain('if (direction === "horizontal")');
+    expect(workspacePanels).toContain("else if (inspectorActive)");
+    expect(workspacePanels).toContain("fixedSize:");
     expect(workspacePanels).toContain(
       "if (inspectorActive) workspaceDirection = direction;"
     );
@@ -110,6 +114,9 @@ describe("Sequence Viewer transition orchestration contract", () => {
     );
     expect(panelGroup).toContain("style={getFlexStyle(panel, i)}");
     expect(panelGroup).toContain("const fixedSize = panel.fixedSize;");
+    expect(shell).toContain("data-effects-inspector");
+    expect(shell).toContain("> :global(.export-panel.sidebar)");
+    expect(geometryTrace).toContain("Card → Effects seam");
   });
 
   it("reviews the real production shell through production mode buttons", () => {
