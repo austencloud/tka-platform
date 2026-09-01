@@ -85,10 +85,10 @@ describe("ScanCardPeek", () => {
     const preview = page.getByTestId("prop-aware-preview");
     await expect
       .element(preview)
-      .toHaveAttribute("data-blue-prop", PropType.POI);
+      .toHaveAttribute("data-left-prop", PropType.POI);
     await expect
       .element(preview)
-      .toHaveAttribute("data-red-prop", PropType.FAN);
+      .toHaveAttribute("data-right-prop", PropType.FAN);
     await expect.element(preview).toHaveAttribute("data-cat-dog", "true");
     await expect
       .element(page.getByText("Card preview unavailable"))
