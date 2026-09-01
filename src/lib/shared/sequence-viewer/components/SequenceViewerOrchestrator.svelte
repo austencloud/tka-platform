@@ -586,11 +586,15 @@
   // EffectOrchestrator3D all inherit it, so nothing downstream can construct a
   // persist:true store while a link override is live.
   const fxSeedPayload = urlSession.getSeed("fx") as FxSlicePayload | null;
+  // The disk side is read as a plain snapshot, NOT through a throwaway
+  // `createEffectsConfigState(persisted, { persist: false })`: that constructor
+  // registers the global "effects" undo domain and runs
+  // `migrateFromVmStorageOnce`, which a persist:true instance skips for a
+  // stored config — a legacy VM-storage entry would make the two sides differ
+  // and turn the visitor's own reloaded link view-only.
   const persistedEffectsConfig = loadPersistedEffectsConfig();
   const persistedFxSlice = persistedEffectsConfig
-    ? captureFxSlice(
-        createEffectsConfigState(persistedEffectsConfig, { persist: false })
-      )
+    ? captureFxSlice({ snapshot: () => persistedEffectsConfig })
     : null;
   const effectsConfigState =
     fxSeedPayload && urlSession.isOverride("fx", persistedFxSlice)

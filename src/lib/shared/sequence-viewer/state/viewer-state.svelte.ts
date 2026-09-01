@@ -22,7 +22,7 @@ function deriveInitialExportContext(mode: ViewerMode): ExportContext {
 }
 
 export interface ViewerStateOptions {
-	/** Seed for the initial mode (a URL's `vm`). Beats localStorage. */
+	/** Seed for the initial mode (a URL's `pane`). Beats localStorage. */
 	initialMode?: ViewerMode;
 	/** Seed for the initial split layout (a URL's `split`). Beats localStorage. */
 	initialSplit?: SplitConfig;
@@ -39,7 +39,7 @@ export function createViewerState(options?: ViewerStateOptions) {
 
 	// A seeded mode bypasses `loadViewerMode`'s post-studio/mandala filtering ON
 	// PURPOSE: that filter guards against stale localStorage, and a URL is
-	// explicit intent. Garbage (`?vm=lol`) still fails the type guard and falls
+	// explicit intent. Garbage (`?pane=lol`) still fails the type guard and falls
 	// back to the stored preference.
 	const seededMode = isValidViewerMode(options?.initialMode) ? options.initialMode : undefined;
 	const initialMode = seededMode ?? loadViewerMode({ persist });
