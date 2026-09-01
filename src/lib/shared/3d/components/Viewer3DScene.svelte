@@ -778,14 +778,14 @@
             avatarId={performer.characterId}
             visiblePlanes={explicitPlanes}
             gridMode={performerGridMode}
-            leftPropType={toScenePropType(resolvedLeftProp)}
-            rightPropType={toScenePropType(resolvedRightProp)}
-            leftPropFlipped={isBuugengFamilyProp(resolvedLeftProp) &&
+            bluePropType={toScenePropType(resolvedLeftProp)}
+            redPropType={toScenePropType(resolvedRightProp)}
+            bluePropFlipped={isBuugengFamilyProp(resolvedLeftProp) &&
               leftBuugengFlipped}
-            rightPropFlipped={isBuugengFamilyProp(resolvedRightProp) &&
+            redPropFlipped={isBuugengFamilyProp(resolvedRightProp) &&
               rightBuugengFlipped}
-            leftPropState={performer.leftPropState}
-            rightPropState={performer.rightPropState}
+            bluePropState={performer.leftPropState}
+            redPropState={performer.rightPropState}
             tipEffectMap={perfTipMap}
             {propLength}
             {propBuild}

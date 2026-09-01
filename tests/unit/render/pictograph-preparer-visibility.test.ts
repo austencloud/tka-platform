@@ -80,7 +80,7 @@ describe("PictographPreparer presentation visibility", () => {
     expect(arrowInput?.motions.right).toBeUndefined();
     expect(arrowSoloMode).toBe(true);
     expect(Object.keys(prepared._prepared?.propPositions ?? {})).toEqual([
-      "blue",
+      "left",
     ]);
   });
 });

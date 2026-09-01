@@ -62,11 +62,11 @@ function pathShapeFor(type: MotionType): "arc" | "linear" {
 export function calculateOrientationAt(
   m: OrientationAtInput,
   t: number,
-  color: HandSide = HandSide.RIGHT
+  hand: HandSide = HandSide.RIGHT
 ): Orientation | null {
   if (isCenterOrientation(m.startOrientation)) return null; // center-family deferred
 
-  const angles = sampleAnglesAt(m, t, color);
+  const angles = sampleAnglesAt(m, t, hand);
   if (!angles) return null;
 
   return staffAngleToOrientation(angles.staffRotationAngle, angles.centerPathAngle);
@@ -87,17 +87,17 @@ export function calculateOrientationAt(
 export function calculateStaffAngleAt(
   m: OrientationAtInput,
   t: number,
-  color: HandSide = HandSide.RIGHT
+  hand: HandSide = HandSide.RIGHT
 ): number | null {
   if (isCenterOrientation(m.startOrientation)) return null; // center-family deferred
-  return sampleAnglesAt(m, t, color)?.staffRotationAngle ?? null;
+  return sampleAnglesAt(m, t, hand)?.staffRotationAngle ?? null;
 }
 
 /** Shared engine sampling for the two calculators above. */
 function sampleAnglesAt(
   m: OrientationAtInput,
   t: number,
-  color: HandSide
+  hand: HandSide
 ): { staffRotationAngle: number; centerPathAngle: number } | null {
   const motion = createMotionData({
     motionType: m.motionType,
@@ -107,7 +107,7 @@ function sampleAnglesAt(
     startOrientation: m.startOrientation,
     endOrientation: m.endOrientation,
     turns: m.turns ?? 0,
-    hand: color,
+    hand,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
     pathShape: pathShapeFor(m.motionType),
@@ -116,9 +116,9 @@ function sampleAnglesAt(
     id: "orientation-at",
     letter: null,
     gridMode: GridMode.DIAMOND,
-    motions: { [color === HandSide.LEFT ? "blue" : "red"]: motion },
+    motions: { [hand]: motion },
   } as unknown as StepData;
 
   const result = interpolatePropAngles(step, t);
-  return (color === HandSide.LEFT ? result.leftAngles : result.rightAngles) ?? null;
+  return (hand === HandSide.LEFT ? result.leftAngles : result.rightAngles) ?? null;
 }

@@ -154,7 +154,19 @@ interface RawDoc {
   startPosition?: unknown;
   leftSoloProp?: { steps: unknown[] };
   rightSoloProp?: { steps: unknown[] };
+  blueSoloProp?: { steps: unknown[] };
+  redSoloProp?: { steps: unknown[] };
   stepPairings?: Array<{ letter: string | null; leftReversal?: boolean; rightReversal?: boolean }>;
+}
+
+function getSoloProps(doc: RawDoc): {
+  left: { steps: unknown[] } | undefined;
+  right: { steps: unknown[] } | undefined;
+} {
+  return {
+    left: doc.leftSoloProp ?? doc.blueSoloProp,
+    right: doc.rightSoloProp ?? doc.redSoloProp,
+  };
 }
 
 function loadCorpus(): RawDoc[] {
@@ -163,9 +175,14 @@ function loadCorpus(): RawDoc[] {
     "static/data/snapshots/public-sequences.json"
   );
   const parsed = JSON.parse(readFileSync(file, "utf8")) as { documents: RawDoc[] };
-  return parsed.documents.filter(
-    (d) => d.leftSoloProp?.steps?.length && d.rightSoloProp?.steps?.length && d.stepPairings?.length
-  );
+  return parsed.documents.filter((doc) => {
+    const soloProps = getSoloProps(doc);
+    return (
+      soloProps.left?.steps?.length &&
+      soloProps.right?.steps?.length &&
+      doc.stepPairings?.length
+    );
+  });
 }
 
 // Physical-identity fingerprint built straight from the source compositional
@@ -173,8 +190,9 @@ function loadCorpus(): RawDoc[] {
 // flags and gridMode (the derived fields V2 drops). Two docs with the same
 // fingerprint are the SAME physical sequence — merging them is correct dedup.
 function motionFingerprint(doc: RawDoc): string {
-  const bp = (doc.leftSoloProp?.steps ?? []) as Record<string, unknown>[];
-  const rp = (doc.rightSoloProp?.steps ?? []) as Record<string, unknown>[];
+  const soloProps = getSoloProps(doc);
+  const leftSteps = (soloProps.left?.steps ?? []) as Record<string, unknown>[];
+  const rightSteps = (soloProps.right?.steps ?? []) as Record<string, unknown>[];
   const sp = doc.stepPairings ?? [];
   const m = (s: Record<string, unknown> | undefined) =>
     s
@@ -183,7 +201,7 @@ function motionFingerprint(doc: RawDoc): string {
   const parts: string[] = [];
   for (let i = 0; i < sp.length; i++) {
     parts.push(
-      `${sp[i].letter ?? ""}|${(sp[i] as { startPosition?: unknown }).startPosition ?? ""}|${(sp[i] as { endPosition?: unknown }).endPosition ?? ""}|B${m(bp[i])}|R${m(rp[i])}`
+      `${sp[i].letter ?? ""}|${(sp[i] as { startPosition?: unknown }).startPosition ?? ""}|${(sp[i] as { endPosition?: unknown }).endPosition ?? ""}|L${m(leftSteps[i])}|R${m(rightSteps[i])}`
     );
   }
   return parts.join("~");
@@ -191,9 +209,10 @@ function motionFingerprint(doc: RawDoc): string {
 
 function toSequence(doc: RawDoc): SequenceData | null {
   try {
+    const soloProps = getSoloProps(doc);
     const steps = deriveSteps(
-      doc.leftSoloProp as never,
-      doc.rightSoloProp as never,
+      soloProps.left as never,
+      soloProps.right as never,
       doc.stepPairings as never
     );
     return {

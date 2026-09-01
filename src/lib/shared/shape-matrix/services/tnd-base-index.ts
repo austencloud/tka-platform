@@ -1,6 +1,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { colorSwapSequence } from "$lib/shared/create/services/sequence-transforms";
 import type { VtgMode } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
+import { normalizeLegacySequence } from "@tka/tka-types";
 
 /**
  * Pure base-word index for shape-matrix realizations (firebase-free).
@@ -72,7 +73,8 @@ export function buildBaseIndex(
     pair: { left: string; right: string };
     seq: SequenceData;
   }[] = [];
-  for (const s of seqs) {
+  for (const raw of seqs) {
+    const s = normalizeLegacySequence(raw);
     const mode = WORD_MODE[(s.word ?? "").toUpperCase()];
     if (!mode) continue;
     const pair = stylePairOf(s);

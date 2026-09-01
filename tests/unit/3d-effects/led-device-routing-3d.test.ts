@@ -109,10 +109,10 @@ describe("LED 3D disposes on a device change", () => {
     expect(start).toBeGreaterThan(0);
     const body = source.slice(start, source.indexOf("\n  }", start));
     for (const renderer of [
-      "blueLedRenderer",
-      "redLedRenderer",
-      "bluePovRenderer",
-      "redPovRenderer",
+      "leftLedRenderer",
+      "rightLedRenderer",
+      "leftPovRenderer",
+      "rightPovRenderer",
     ]) {
       expect(body).toContain(`${renderer}?.dispose();`);
       expect(body).toContain(`${renderer} = null;`);
@@ -122,10 +122,10 @@ describe("LED 3D disposes on a device change", () => {
   it("still disposes every renderer when the component unmounts", () => {
     const destroy = source.slice(source.indexOf("onDestroy(() => {"));
     for (const renderer of [
-      "blueLedRenderer",
-      "redLedRenderer",
-      "bluePovRenderer",
-      "redPovRenderer",
+      "leftLedRenderer",
+      "rightLedRenderer",
+      "leftPovRenderer",
+      "rightPovRenderer",
     ]) {
       expect(destroy).toContain(`${renderer}?.dispose();`);
     }

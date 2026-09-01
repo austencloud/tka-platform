@@ -12,6 +12,7 @@ import {
   classifyRotationStyle,
   type RotationStyle,
 } from "../domain/rotation-style";
+import { normalizeLegacySequence } from "@tka/tka-types";
 
 export type RotationGridMode = "diamond" | "box";
 export type StartOrientationPair = {
@@ -50,7 +51,8 @@ export function classifyRotationStyleMembers(
   bases: SequenceData[],
   grid: RotationGridMode
 ): Map<RotationStyle, ClassifiedRotationStyleMember[]> {
-  const seedClasses = buildTnDSeedClasses(bases);
+  const normalizedBases = bases.map(normalizeLegacySequence);
+  const seedClasses = buildTnDSeedClasses(normalizedBases);
   const familyBySeed = new Map<string, string>();
   for (const family of getTnDFamilyOptions(seedClasses, [grid])) {
     for (const entry of family.entries) {
@@ -58,7 +60,7 @@ export function classifyRotationStyleMembers(
     }
   }
 
-  const baseById = new Map(bases.map((base) => [base.id, base]));
+  const baseById = new Map(normalizedBases.map((base) => [base.id, base]));
   const byStyle = new Map<RotationStyle, ClassifiedRotationStyleMember[]>();
   for (const [seedId, familyId] of familyBySeed) {
     const sequence = baseById.get(seedId);

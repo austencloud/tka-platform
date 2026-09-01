@@ -143,13 +143,13 @@ describe("scan cell prepare from lean (shortcode-resolved) motions", () => {
   // the placement invariant → arrows + props render for any prop.
   it("FIX — normalized motions render prop + arrow assets (staff)", async () => {
     const { props, arrows } = await assetsFor(true, PropType.STAFF);
-    expect(props).toEqual(expect.arrayContaining(["blue", "red"]));
-    expect(arrows).toEqual(expect.arrayContaining(["blue", "red"]));
+    expect(props).toEqual(expect.arrayContaining(["left", "right"]));
+    expect(arrows).toEqual(expect.arrayContaining(["left", "right"]));
   });
 
   it("FIX — normalized motions render prop + arrow assets (poi)", async () => {
     const { props, arrows } = await assetsFor(true, PropType.POI);
-    expect(props).toEqual(expect.arrayContaining(["blue", "red"]));
-    expect(arrows).toEqual(expect.arrayContaining(["blue", "red"]));
+    expect(props).toEqual(expect.arrayContaining(["left", "right"]));
+    expect(arrows).toEqual(expect.arrayContaining(["left", "right"]));
   });
 });

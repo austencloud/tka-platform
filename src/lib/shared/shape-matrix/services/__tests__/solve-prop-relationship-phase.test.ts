@@ -67,14 +67,14 @@ function overlayFor(pair: { left: Flower; right: Flower }): FlowerParityTarget {
   const leftSequence = buildFlowerSequence(
     leftArchetype,
     pair.left,
-    "blue",
+    "left",
     edges,
     PropType.STAFF
   );
   const rightSequence = buildFlowerSequence(
     rightArchetype,
     pair.right,
-    "blue",
+    "left",
     edges,
     PropType.STAFF
   );

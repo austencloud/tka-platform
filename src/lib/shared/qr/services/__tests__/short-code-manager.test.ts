@@ -443,7 +443,7 @@ describe("ShortCodeManager allocation", () => {
     expect(record?.payloadWord).toBeUndefined();
     expect(getSequenceMotionProfile(resolved!)).toEqual({
       kind: "solo",
-      color: "blue",
+      hand: "left",
       authoredHand: "left",
     });
     expect(resolved?.displayName).toBe("Left-hand choreography");
@@ -486,7 +486,7 @@ describe("ShortCodeManager allocation", () => {
     });
     expect(getSequenceMotionProfile(resolved!)).toEqual({
       kind: "solo",
-      color: "red",
+      hand: "right",
       authoredHand: "right",
     });
     expect(warn).not.toHaveBeenCalled();

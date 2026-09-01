@@ -15,12 +15,14 @@ import {
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { normalizeLegacyStep } from "@tka/tka-types";
 
 export type CreateStepDataInput = Omit<Partial<StepData>, "motions"> & {
   readonly motions?: Partial<Record<HandSide, MotionData | undefined>>;
 };
 
 export function createStepData(data: CreateStepDataInput = {}): StepData {
+  data = normalizeLegacyStep(data);
   const motions: StepMotions = {
     left: data.motions?.left ?? createPlaceholderMotion(HandSide.LEFT),
     right: data.motions?.right ?? createPlaceholderMotion(HandSide.RIGHT),

@@ -81,10 +81,10 @@ describe("scan activity decoded-shortcode hydration", () => {
 
     const availableKeys = proPlacementKeys();
     const step = hydrated.steps.find(
-      (candidate) => candidate.motions?.blue?.motionType === "pro"
+      (candidate) => candidate.motions?.left?.motionType === "pro"
     );
     expect(step).toBeDefined();
-    const blue = step!.motions.blue!;
+    const left = step!.motions.left!;
 
     const lettered = {
       letter: step!.letter,
@@ -97,12 +97,12 @@ describe("scan activity decoded-shortcode hydration", () => {
 
     // Letterless: falls all the way back to the bare motion type, which the
     // placement file does not define — that miss is the (0,0) adjustment.
-    const missKey = generatePlacementKey(blue, letterless, availableKeys);
+    const missKey = generatePlacementKey(left, letterless, availableKeys);
     expect(missKey).toBe("pro");
     expect(availableKeys).not.toContain(missKey);
 
     // Lettered: resolves to a key the file actually holds.
-    const hitKey = generatePlacementKey(blue, lettered, availableKeys);
+    const hitKey = generatePlacementKey(left, lettered, availableKeys);
     expect(availableKeys).toContain(hitKey);
   });
 });

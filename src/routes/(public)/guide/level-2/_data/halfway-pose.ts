@@ -52,7 +52,7 @@ function pathShapeFor(type: MotionType): "arc" | "linear" {
 /** The staff pose (viewBox coords + degrees) at an arbitrary stepProgress `t`
  *  (0 = start, 0.5 = halfway, 1 = end). Used by the 2-turn pedagogy pages that
  *  break a double turn into thirds/quarters. */
-export function poseAt(m: HalfwayMotion, t: number, color: HandSide = HandSide.RIGHT): StaffPose {
+export function poseAt(m: HalfwayMotion, t: number, hand: HandSide = HandSide.RIGHT): StaffPose {
   const motion = createMotionData({
     motionType: m.type,
     rotationDirection: m.rot,
@@ -61,7 +61,7 @@ export function poseAt(m: HalfwayMotion, t: number, color: HandSide = HandSide.R
     startOrientation: m.startOri,
     endOrientation: m.endOri,
     turns: m.turns ?? 0,
-    hand: color,
+    hand,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
     pathShape: pathShapeFor(m.type),
@@ -70,11 +70,11 @@ export function poseAt(m: HalfwayMotion, t: number, color: HandSide = HandSide.R
     id: "poseat",
     letter: null,
     gridMode: GridMode.DIAMOND,
-    motions: { [color === HandSide.LEFT ? "blue" : "red"]: motion },
+    motions: { [hand]: motion },
   } as unknown as StepData;
 
   const result = interpolatePropAngles(step, t);
-  const angles = color === HandSide.LEFT ? result.leftAngles : result.rightAngles;
+  const angles = hand === HandSide.LEFT ? result.leftAngles : result.rightAngles;
   if (!angles) return { cx: CENTER, cy: CENTER, deg: 0 };
 
   const { x, y } =
@@ -90,7 +90,7 @@ export function poseAt(m: HalfwayMotion, t: number, color: HandSide = HandSide.R
 }
 
 /** The halfway staff pose (viewBox coords + degrees) for one hand's motion. */
-export function halfwayPose(m: HalfwayMotion, color: HandSide = HandSide.RIGHT): StaffPose {
+export function halfwayPose(m: HalfwayMotion, hand: HandSide = HandSide.RIGHT): StaffPose {
   const motion = createMotionData({
     motionType: m.type,
     rotationDirection: m.rot,
@@ -99,7 +99,7 @@ export function halfwayPose(m: HalfwayMotion, color: HandSide = HandSide.RIGHT):
     startOrientation: m.startOri,
     endOrientation: m.endOri,
     turns: m.turns ?? 0,
-    hand: color,
+    hand,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
     pathShape: pathShapeFor(m.type),
@@ -108,11 +108,11 @@ export function halfwayPose(m: HalfwayMotion, color: HandSide = HandSide.RIGHT):
     id: "halfway",
     letter: null,
     gridMode: GridMode.DIAMOND,
-    motions: { [color === HandSide.LEFT ? "blue" : "red"]: motion },
+    motions: { [hand]: motion },
   } as unknown as StepData;
 
   const result = interpolatePropAngles(step, 0.5);
-  const angles = color === HandSide.LEFT ? result.leftAngles : result.rightAngles;
+  const angles = hand === HandSide.LEFT ? result.leftAngles : result.rightAngles;
   // Static motion with 0 turns never moves - no meaningful halfway; caller
   // should not request one, but guard anyway.
   if (!angles) return { cx: CENTER, cy: CENTER, deg: 0 };

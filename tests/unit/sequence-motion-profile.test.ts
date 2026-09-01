@@ -24,7 +24,7 @@ describe("getSequenceMotionProfile", () => {
   it("ignores invisible placeholders and classifies left-only choreography", () => {
     expect(getSequenceMotionProfile({ steps: [step(true, false)] })).toEqual({
       kind: "solo",
-      color: "blue",
+      hand: HandSide.LEFT,
       authoredHand: "left",
     });
   });
@@ -32,7 +32,7 @@ describe("getSequenceMotionProfile", () => {
   it("classifies right-only choreography", () => {
     expect(getSequenceMotionProfile({ steps: [step(false, true)] })).toEqual({
       kind: "solo",
-      color: "red",
+      hand: HandSide.RIGHT,
       authoredHand: "right",
     });
   });
@@ -76,7 +76,7 @@ describe("getSequenceMotionProfile", () => {
       getSequenceMotionProfile({
         steps: [step(false, false), step(true, false)],
       })
-    ).toMatchObject({ kind: "solo", color: "blue" });
+    ).toMatchObject({ kind: "solo", hand: HandSide.LEFT });
     expect(getSequenceMotionProfile({ steps: [step(false, false)] })).toEqual({
       kind: "empty",
     });

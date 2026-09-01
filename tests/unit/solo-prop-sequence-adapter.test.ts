@@ -41,7 +41,7 @@ describe("soloPropToSequence", () => {
     const sequence = soloPropToSequence(SOLO, "left");
     expect(getSequenceMotionProfile(sequence)).toMatchObject({
       kind: "solo",
-      color: "blue",
+      hand: "left",
       authoredHand: "left",
     });
     expect(hashSoloProp(extractLeftSoloProp(sequence))).toBe(SOLO.contentHash);
@@ -51,7 +51,7 @@ describe("soloPropToSequence", () => {
     const sequence = soloPropToSequence(SOLO, "right");
     expect(getSequenceMotionProfile(sequence)).toMatchObject({
       kind: "solo",
-      color: "red",
+      hand: "right",
       authoredHand: "right",
     });
     expect(hashSoloProp(extractRightSoloProp(sequence))).toBe(SOLO.contentHash);

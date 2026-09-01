@@ -384,7 +384,7 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
       );
 
       expect(regular).not.toBe(classic);
-      expect(classic).toContain('"bluePropType":"classic_club"');
+      expect(classic).toContain('"leftPropType":"classic_club"');
     });
   });
 

@@ -25,6 +25,7 @@ import type { LOOPSpecWire } from "@tka/sequence-engine/loop";
 import type { SoloPropData } from "./solo-prop-data";
 import type { StepPairingData } from "./step-pairing-data";
 import type { WallFeasibilityMetadata } from "$lib/shared/3d/domain/models/wall-feasibility";
+import { normalizeLegacySequence } from "@tka/tka-types";
 
 export interface SequenceData {
   readonly id: string;
@@ -242,6 +243,7 @@ export interface SequenceData {
 export function createSequenceData(
   data: Partial<SequenceData> & { beats?: readonly StepData[] } = {}
 ): SequenceData {
+  data = normalizeLegacySequence(data);
   // Backwards compatibility: support old 'beats' property name
   const steps = data.steps ?? data.beats ?? [];
   const result: SequenceData = {

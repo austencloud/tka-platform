@@ -7,23 +7,23 @@ describe("AnimatorState", () => {
     const b = createAnimatorState();
 
     expect(a.isInitialized).toBe(false);
-    expect(a.currentBluePropType).toBe("staff");
+    expect(a.currentLeftPropType).toBe("staff");
     expect(a.displayedTurnsTuple).toBe("(s, 0, 0)");
     expect(a.visibilityState.mandala).toBe(true);
 
     a.setInitialized(true);
-    a.setBluePropType("fan");
+    a.setLeftPropType("fan");
 
     expect(a.isInitialized).toBe(true);
-    expect(a.currentBluePropType).toBe("fan");
+    expect(a.currentLeftPropType).toBe("fan");
     expect(b.isInitialized).toBe(false);
-    expect(b.currentBluePropType).toBe("staff");
+    expect(b.currentLeftPropType).toBe("staff");
   });
 
   it("keeps the object-dimension reference stable on an equal-value set", () => {
     const s = createAnimatorState();
     const before = s.leftPropDimensions;
-    s.setBluePropDimensions({ ...before }); // new ref, equal w/h
+    s.setLeftPropDimensions({ ...before }); // new ref, equal w/h
     expect(s.leftPropDimensions).toBe(before); // guard suppressed the reassignment
   });
 });
