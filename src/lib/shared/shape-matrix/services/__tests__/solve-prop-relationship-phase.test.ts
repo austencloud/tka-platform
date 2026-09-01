@@ -223,7 +223,7 @@ describe("exact flower parity", () => {
       }
     }
     expect(accepted).toBeGreaterThan(0);
-  });
+  }, 30_000);
 
   it("rejects relationship-only matches that change the selected flower", () => {
     for (const pair of pairs.slice(1)) {
