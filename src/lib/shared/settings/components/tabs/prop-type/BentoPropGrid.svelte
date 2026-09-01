@@ -339,7 +339,7 @@
             forceMount
           >
             {#snippet child({ open, wrapperProps, props })}
-              <div {...wrapperProps}>
+              <div {...wrapperProps} style:z-index="var(--z-dropdown, 300)">
                 {#if open}
                   <section
                     {...props}
@@ -533,7 +533,7 @@
   }
 
   .variant-popover {
-    z-index: 60;
+    z-index: var(--z-dropdown, 300);
     container-type: inline-size;
     display: flex;
     width: min(420px, calc(100vw - 24px));
@@ -566,7 +566,7 @@
   :global(.variant-popover-overlay) {
     position: fixed;
     inset: 0;
-    z-index: 59;
+    z-index: calc(var(--z-dropdown, 300) - 1);
     background: transparent;
   }
 
