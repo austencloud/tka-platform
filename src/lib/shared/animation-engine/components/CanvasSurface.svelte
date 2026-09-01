@@ -70,6 +70,7 @@ captureEffectDiagnostics to the context menu.
   import type { QualityTier } from "../domain/types/quality-types";
   import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
   import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { GlyphOverlayFrameMode } from "../domain/glyph-overlay-frame";
 
   let {
     // Engine-driving props
@@ -110,6 +111,7 @@ captureEffectDiagnostics to the context menu.
     effectiveTkaGlyphVisible = false,
     elementalGlyphVisible = false,
     propElementalType = null,
+    glyphFrame = "pictograph",
     effectiveBeatNumbersVisible = false,
     positionGlyphVisible = false,
     leftPathLinesVisible = false,
@@ -171,6 +173,7 @@ captureEffectDiagnostics to the context menu.
     effectiveTkaGlyphVisible?: boolean;
     elementalGlyphVisible?: boolean;
     propElementalType?: ElementalType | null;
+    glyphFrame?: GlyphOverlayFrameMode;
     effectiveBeatNumbersVisible?: boolean;
     /** Show the α/β/γ start→end position indicator (guide hand-path exploration). */
     positionGlyphVisible?: boolean;
@@ -509,6 +512,7 @@ captureEffectDiagnostics to the context menu.
       tkaGlyphVisible={effectiveTkaGlyphVisible}
       {elementalGlyphVisible}
       {propElementalType}
+      {glyphFrame}
       stepNumbersVisible={effectiveBeatNumbersVisible}
       {positionGlyphVisible}
       darkMode={darkModeEnabled}

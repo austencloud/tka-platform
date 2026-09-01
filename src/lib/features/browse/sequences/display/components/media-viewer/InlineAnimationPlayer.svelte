@@ -26,6 +26,7 @@
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { QualityTier } from "$lib/shared/animation-engine/domain/types/quality-types";
   import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { GlyphOverlayFrameMode } from "$lib/shared/animation-engine/domain/glyph-overlay-frame";
 
   // Per-instance playback stack imports (avoid shared singleton)
   import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
@@ -139,6 +140,7 @@
     onLoadError = undefined,
     visibilityManagerOverride = undefined,
     propElementalType = null,
+    glyphFrame = "pictograph",
     initialQualityTier = undefined,
     initialStep = null,
   }: {
@@ -308,6 +310,9 @@
     visibilityManagerOverride?: AnimationVisibilityStateManager;
     /** Optional prop timing/direction relationship for the canvas's top-right corner. */
     propElementalType?: ElementalType | null;
+    /** Let annotation chrome use a rectangular host while preserving the
+     *  centered square motion plane. */
+    glyphFrame?: GlyphOverlayFrameMode;
     /** Optional adaptive-quality ceiling for performance-sensitive embeds. */
     initialQualityTier?: QualityTier;
     /** Fractional playback position applied immediately after each load. */
@@ -780,6 +785,7 @@
         {rightPropType}
         positionGlyphVisible={showPositionGlyph}
         {propElementalType}
+        {glyphFrame}
         tapToToggle={minimal && interactive}
         progressLine={minimal && interactive}
         hoverHint={minimal && interactive ? hoverHint : "none"}
