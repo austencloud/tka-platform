@@ -321,12 +321,15 @@
     const outerPanelGroup = document.querySelector<HTMLElement>(
       ".viewer-and-export > .panel-group"
     );
+    const inspectorPanelSelector =
+      '[data-panel-id="export-inspector"], [data-panel-id="export-inspector-stacked"]';
 
     const cardPanel = elementBounds(".preview-column");
+    const inspectorPanel = elementBounds(inspectorPanelSelector);
     const cardRoot = elementBounds(".preview-column .choreo-card-root");
     const cardContent = elementBounds(".preview-column .preview-stack");
     const cardSettings = elementBounds(
-      ".export-panel:not(.inline) .panel-center-inner"
+      '[aria-label="Card settings"] .panel-center-inner'
     );
     const mandalaCanvas = document.querySelector<HTMLCanvasElement>(
       '.animation-column canvas[data-animation-layer="mandala"]'
@@ -431,19 +434,23 @@
         ".preview-column .choreo-card-root",
         "autoLayoutLockRows"
       ),
-      inspectorSize: elementSize(
-        '[data-panel-id="export-inspector"]',
-        direction
-      ),
-      inspectorFlexGrow: elementFlexGrow('[data-panel-id="export-inspector"]'),
-      inspectorIdentity: elementIdentity('[data-panel-id="export-inspector"]'),
+      inspectorSize: elementSize(inspectorPanelSelector, direction),
+      inspectorFlexGrow: elementFlexGrow(inspectorPanelSelector),
+      inspectorIdentity: elementIdentity(inspectorPanelSelector),
+      effectsInspectorOpacity: elementOpacity("[data-effects-inspector]"),
+      cardEffectsSeamGap:
+        cardPanel.width > 0 && inspectorPanel.width > 0
+          ? direction === "horizontal"
+            ? Math.abs(cardPanel.left + cardPanel.width - inspectorPanel.left)
+            : Math.abs(cardPanel.top + cardPanel.height - inspectorPanel.top)
+          : 0,
       desktopInspectorExpected: Boolean(
         document.querySelector(".viewer-and-export.desktop")
       ),
       cardSettingsWidth: cardSettings.width,
       cardSettingsHeight: cardSettings.height,
       cardSettingsCenterY: cardSettings.top + cardSettings.height / 2,
-      cardSettingsOpacity: elementOpacity(".export-panel:not(.inline)"),
+      cardSettingsOpacity: elementOpacity('[aria-label="Card settings"]'),
       dissolveActive: document.documentElement.classList.contains(
         VIEWER_MODE_DISSOLVE_CLASS
       ),
