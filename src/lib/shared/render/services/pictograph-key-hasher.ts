@@ -37,6 +37,7 @@ interface PictographKeyInput {
   betaSwapped: boolean;
   // Present only when a narrowly-scoped render algorithm revision changes
   // this pictograph's pixels. Unaffected cells keep their established key.
+  arrowRenderRevision?: string;
   propGeometryRevision?: string;
   propAppearanceRevision?: string;
   turnGlyphRevision?: string;
@@ -65,6 +66,7 @@ interface PictographKeyInput {
 }
 
 const BETA_SHIFT_MAP_REVISION = "beta-shift-map-v2";
+const CANONICAL_HAND_ARROW_RENDER_REVISION = "canonical-hand-arrows-v1";
 const FIRST_QUARTER_TURN_GLYPH_REVISION = "quarter-turn-glyph-v1";
 const COMPLETE_QUARTER_TURN_GLYPH_REVISION = "quarter-turn-glyph-v2";
 const COMPLETED_QUARTER_TURN_VALUES = new Set([0.75, 1.25, 1.75, 2.25, 2.75]);
@@ -214,6 +216,9 @@ export class PictographKeyHasher {
     const resolvedRightProp = visibility.rightPropType ?? "staff";
     const includeMotionVisibility =
       motions.left?.isVisible === false || motions.right?.isVisible === false;
+    const hasVisibleMotion = Object.values(motions).some(
+      (motion) => motion && motion.isVisible !== false
+    );
 
     // Flags only affect the image when the reversal layer actually draws;
     // neutralize them when showReversals is off so a flagged and unflagged
@@ -237,6 +242,9 @@ export class PictographKeyHasher {
       leftReversal: reversalsVisible ? (step.leftReversal ?? false) : false,
       rightReversal: reversalsVisible ? (step.rightReversal ?? false) : false,
       betaSwapped: data.betaSwapped ?? false,
+      ...(hasVisibleMotion && {
+        arrowRenderRevision: CANONICAL_HAND_ARROW_RENDER_REVISION,
+      }),
       ...(propGeometryRevision && { propGeometryRevision }),
       ...(propAppearanceRevision && { propAppearanceRevision }),
       ...(turnGlyphRevision && { turnGlyphRevision }),
