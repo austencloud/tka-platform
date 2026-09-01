@@ -30062,3 +30062,21 @@ index 0000000000000000000000000000000000000000..525b1b46458e2aae1c4110ab138eb859
 +export function propHasFanAppearanceOptions(propType: PropType): boolean {
 +	return PROPS_WITH_FAN_APPEARANCE.has(propType);
 +}
+diff --git a/dist/lib/components/Staff3D.svelte b/dist/lib/components/Staff3D.svelte
+--- a/dist/lib/components/Staff3D.svelte
++++ b/dist/lib/components/Staff3D.svelte
+@@ -137,4 +137,4 @@
+   const effectiveLength = $derived(length ?? userProportionsState.staffLength);
+   const effectiveThickness = $derived(
+-    thickness ?? userProportionsState.dimensions.staffRadius * 2
++    thickness ?? userProportionsState.dimensions.staffRadius
+   );
+diff --git a/src/lib/components/Staff3D.svelte b/src/lib/components/Staff3D.svelte
+--- a/src/lib/components/Staff3D.svelte
++++ b/src/lib/components/Staff3D.svelte
+@@ -137,4 +137,4 @@
+   const effectiveLength = $derived(length ?? userProportionsState.staffLength);
+   const effectiveThickness = $derived(
+-    thickness ?? userProportionsState.dimensions.staffRadius * 2
++    thickness ?? userProportionsState.dimensions.staffRadius
+   );
