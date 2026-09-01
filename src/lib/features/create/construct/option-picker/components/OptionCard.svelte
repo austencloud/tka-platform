@@ -117,6 +117,7 @@ Receives pre-calculated data, just renders it.
 
   @media (hover: hover) {
     .option-card:hover {
+      z-index: 1;
       transform: scale(1.05);
       filter: brightness(1.05);
       box-shadow: var(--option-card-shadow-hover);
