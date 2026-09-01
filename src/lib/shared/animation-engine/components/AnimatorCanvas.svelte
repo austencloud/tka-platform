@@ -64,6 +64,7 @@ Last audit: 2025-12-27
   import type { QualityTier } from "../domain/types/quality-types";
   import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
   import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { GlyphOverlayFrameMode } from "../domain/glyph-overlay-frame";
 
   // Props
   let {
@@ -95,6 +96,7 @@ Last audit: 2025-12-27
     hideStepNumbers = false,
     positionGlyphVisible = false,
     propElementalType = null,
+    glyphFrame = "pictograph",
     hidePathLines = false,
     hideProgressBar = false,
     hideHeader = false,
@@ -169,6 +171,9 @@ Last audit: 2025-12-27
     positionGlyphVisible?: boolean;
     /** Optional prop timing/direction relationship shown opposite the hand element. */
     propElementalType?: ElementalType | null;
+    /** Coordinate frame for pictograph annotations. Stage embeds may use the
+     *  full rectangular canvas wrapper without stretching the motion plane. */
+    glyphFrame?: GlyphOverlayFrameMode;
     /** Force-hide the dotted prop-center path lines regardless of the visibility
      *  manager (e.g. the Tunnel art view, which never wants path overlays). */
     hidePathLines?: boolean;
@@ -630,6 +635,7 @@ Last audit: 2025-12-27
   data-focused={focused || undefined}
   data-fill={fillContainer || undefined}
   data-disassembly-layout={disassemblyLayout}
+  data-glyph-frame={glyphFrame}
   data-no-progress={hideProgressBar || undefined}
   data-hide-header={hideHeader || undefined}
   data-hover-hint={hoverHint !== "none" ? hoverHint : undefined}
@@ -706,6 +712,7 @@ Last audit: 2025-12-27
       {effectiveTkaGlyphVisible}
       elementalGlyphVisible={effectiveElementalGlyphVisible}
       {propElementalType}
+      {glyphFrame}
       {effectiveBeatNumbersVisible}
       leftPathLinesVisible={effectiveLeftPathLinesVisible}
       rightPathLinesVisible={effectiveRightPathLinesVisible}
@@ -1490,6 +1497,16 @@ Last audit: 2025-12-27
     .content-wrapper {
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
     column-gap: clamp(0.25rem, 1cqw, 0.75rem);
+  }
+
+  /* A stage-framed embed deliberately uses a rectangular canvas wrapper. The
+     normal constrained-player rule hides the header in a landscape box, but
+     this composition reserves the full-width header as part of the stage
+     chrome. An explicit hideHeader request still wins. */
+  .animation-container[data-glyph-frame="stage"]:not([data-hide-header])
+    .header-slot {
+    max-height: 100px;
+    opacity: 1;
   }
 
   @media (prefers-reduced-motion: reduce) {

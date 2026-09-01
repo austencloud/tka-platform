@@ -28,6 +28,10 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { motionDuration } from "$lib/shared/transitions/motion";
   import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import {
+    calculateGlyphOverlayFrame,
+    type GlyphOverlayFrameMode,
+  } from "$lib/shared/animation-engine/domain/glyph-overlay-frame";
 
   let {
     // Current glyph state
@@ -52,6 +56,9 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     isAtStartPosition = false,
     // End position indicator - shows "End" in top-left when at end position (freeform sequences only)
     isAtEndPosition = false,
+    // Pictographs keep their canonical square. Stage embeds may let the four
+    // annotations use a rectangular frame while the motion plane stays square.
+    glyphFrame = "pictograph",
   }: {
     letter?: Letter | null;
     displayedLetter?: Letter | null;
@@ -67,7 +74,14 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     darkMode?: boolean;
     isAtStartPosition?: boolean;
     isAtEndPosition?: boolean;
+    glyphFrame?: GlyphOverlayFrameMode;
   } = $props();
+
+  let overlayWidth = $state(0);
+  let overlayHeight = $state(0);
+  const frame = $derived(
+    calculateGlyphOverlayFrame(glyphFrame, overlayWidth, overlayHeight)
+  );
 
   // Cross-fade duration in ms
   const FADE_DURATION = DURATION.normal;
@@ -149,10 +163,17 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   );
 </script>
 
-<div class="glyph-overlay" class:dark-mode={darkMode} data-controlled="true">
+<div
+  class="glyph-overlay"
+  class:dark-mode={darkMode}
+  data-controlled="true"
+  data-glyph-frame={glyphFrame}
+  bind:clientWidth={overlayWidth}
+  bind:clientHeight={overlayHeight}
+>
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 950 950"
+    viewBox={`0 0 ${frame.width} ${frame.height}`}
     class="glyph-svg"
   >
     <!-- TKA Glyph with cross-fade using {#key} block -->
@@ -161,6 +182,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
       {#key glyphKey}
         <g
           class="glyph-group"
+          transform={`translate(0 ${frame.bottomOffset})`}
           in:fade={{
             duration: motionDuration(FADE_DURATION),
             easing: cubicOut,
@@ -202,6 +224,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
       {#key elementalKey}
         <g
           class="elemental-glyph-transition"
+          transform={`translate(${frame.rightOffset} ${frame.bottomOffset})`}
           in:fade|global={{
             duration: motionDuration(FADE_DURATION),
             easing: cubicOut,
@@ -227,6 +250,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
       {#key propElementalKey}
         <g
           class="prop-elemental-glyph-transition"
+          transform={`translate(${frame.rightOffset} 0)`}
           in:fade|global={{
             duration: motionDuration(FADE_DURATION),
             easing: cubicOut,
@@ -254,7 +278,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
         endPosition={stepEndPosition as GridPosition}
         {letter}
         visible={true}
-        centerX={475}
+        centerX={frame.centerX}
       />
     {/if}
 
@@ -354,6 +378,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   @media (prefers-reduced-motion: reduce) {
     .glyph-group,
     .elemental-glyph-transition,
+    .prop-elemental-glyph-transition,
     .beat-number-group {
       transition: none !important;
       animation: none !important;

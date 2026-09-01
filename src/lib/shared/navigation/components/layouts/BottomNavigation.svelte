@@ -3,7 +3,10 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { Section } from "$lib/shared/navigation/domain/types";
+  import type {
+    Section,
+    SectionHomeDestination,
+  } from "$lib/shared/navigation/domain/types";
   import NavButton from "$lib/shared/navigation/components/buttons/NavButton.svelte";
   import ModuleSwitcherButton from "$lib/shared/navigation/components/buttons/ModuleSwitcherButton.svelte";
   import PropNavButton from "$lib/shared/navigation/components/buttons/PropNavButton.svelte";
@@ -24,6 +27,8 @@
     sections = [],
     currentSection = "",
     onSectionChange = () => {},
+    sectionHome = null,
+    onSectionHomeSelect = () => {},
     onModuleSwitcherTap = () => {},
     onHeightChange = () => {},
     showModuleSwitcher = true,
@@ -35,6 +40,8 @@
     sections: Section[];
     currentSection: string;
     onSectionChange?: (sectionId: string) => void;
+    sectionHome?: SectionHomeDestination | null;
+    onSectionHomeSelect?: () => void;
     onModuleSwitcherTap?: () => void;
     onHeightChange?: (height: number) => void;
     showModuleSwitcher?: boolean;
@@ -69,9 +76,12 @@
     sections.length * BUTTON_WIDTH + FIXED_BUTTONS_WIDTH
   );
 
-  // Use overflow selector when tabs don't fit in available space
+  // A module home is hierarchy, not another tab. Present it together with the
+  // peer sections in one selector so the backing tab never looks selected
+  // while the user is actually standing on the module landing surface.
   let shouldUseOverflowSelector = $derived(
-    availableWidth > 0 && availableWidth < requiredWidth
+    sectionHome !== null ||
+      (availableWidth > 0 && availableWidth < requiredWidth),
   );
 
   // Handle tap on peek indicator to reveal navigation
@@ -187,7 +197,14 @@
   <!-- Current Module's Sections - Use overflow selector for modules with >4 tabs -->
   {#if shouldUseOverflowSelector}
     <div class="sections-overflow" class:hidden={shouldHideNav}>
-      <TabOverflowSelector {sections} {currentSection} {onSectionChange} />
+      <TabOverflowSelector
+        {sections}
+        {currentSection}
+        {onSectionChange}
+        {sectionHome}
+        {onSectionHomeSelect}
+        selectorLabel={sectionHome ? "Choose creation method" : "Select tab"}
+      />
     </div>
   {:else}
     <div class="sections" class:hidden={shouldHideNav}>
@@ -195,7 +212,7 @@
         <NavButton
           icon={section.icon}
           label={section.label}
-          active={currentSection === section.id}
+          active={sectionHome?.active !== true && currentSection === section.id}
           disabled={section.disabled}
           color={section.color || "var(--muted-foreground)"}
           gradient={section.gradient ||
