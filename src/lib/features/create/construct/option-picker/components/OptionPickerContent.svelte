@@ -50,9 +50,11 @@ Uses organizer and sizer services for section grouping and sizing.
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import { selectOptionInteractionHintPresentation } from "../services/option-interaction-hint-presentation";
   import { selectOptionControlsPresentation } from "../services/option-controls-presentation";
+  import OptionAvailabilityStatus from "./OptionAvailabilityStatus.svelte";
 
   interface Props {
     options: PreparedPictographData[];
+    optionAvailability?: { shownCount: number; hiddenCount: number };
     organizerService:
       | ((
           pictographs: PictographData[],
@@ -93,6 +95,7 @@ Uses organizer and sizer services for section grouping and sizing.
 
   const {
     options,
+    optionAvailability = undefined,
     organizerService,
     sizerService,
     onSelect,
@@ -189,8 +192,25 @@ Uses organizer and sizer services for section grouping and sizing.
   // Only show filter toggle when we have at least 2 steps (start position + 1 actual beat)
   // Without a previous beat, there's no rotation context to filter against
   const shouldShowFilterToggle = $derived(() => {
-    return options.length > 0 && currentSequence.length >= 2;
+    const availableBeforeDirectionFiltering =
+      optionAvailability === undefined
+        ? options.length
+        : optionAvailability.shownCount + optionAvailability.hiddenCount;
+    return availableBeforeDirectionFiltering > 0 && currentSequence.length >= 2;
   });
+
+  const availability = $derived(
+    optionAvailability ?? { shownCount: options.length, hiddenCount: 0 }
+  );
+  const hasPendingTurns = $derived(leftTurns !== 0 || rightTurns !== 0);
+  const showAvailabilityStatus = $derived(
+    isContinuousOnly &&
+      !hideFilters &&
+      turnControlsEditable &&
+      currentSequence.length >= 2 &&
+      hasPendingTurns &&
+      availability.shownCount + availability.hiddenCount > 0
+  );
 
   // Organize options into sections
   const organizedSections = $derived(() => {
@@ -548,6 +568,14 @@ Uses organizer and sizer services for section grouping and sizing.
           {@render inlineControls()}
         </div>
       {/if}
+
+      <OptionAvailabilityStatus
+        active={showAvailabilityStatus}
+        shownCount={availability.shownCount}
+        hiddenCount={availability.hiddenCount}
+        sharesSettingsTrigger={useDisclosedCompactControls &&
+          !shouldUseSwipeLayout()}
+      />
 
       <!-- Continuous mode has no letter-type header, so its settings trigger
            keeps the established corner position. Swipe mode places the same

@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { countDirectionReversals, getReversalCount } from "./reversal-checker";
+import {
+  countDirectionReversals,
+  filterDirectionContinuousOptions,
+  getReversalCount,
+} from "./reversal-checker";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
@@ -93,5 +97,35 @@ describe("countDirectionReversals", () => {
     expect(
       getReversalCount(floatStep(RotationDirection.COUNTER_CLOCKWISE), [prev])
     ).toBe(1);
+  });
+});
+
+describe("filterDirectionContinuousOptions", () => {
+  it("reports only the options hidden by direction continuity", () => {
+    const previous = step(RotationDirection.CLOCKWISE);
+    const matching = step(RotationDirection.CLOCKWISE);
+    const reversing = step(RotationDirection.COUNTER_CLOCKWISE);
+
+    const result = filterDirectionContinuousOptions(
+      [matching, reversing],
+      [previous]
+    );
+
+    expect(result.options).toEqual([matching]);
+    expect(result.totalCount).toBe(2);
+    expect(result.hiddenCount).toBe(1);
+  });
+
+  it("keeps every option when there is no prior direction context", () => {
+    const options = [
+      step(RotationDirection.CLOCKWISE),
+      step(RotationDirection.COUNTER_CLOCKWISE),
+    ];
+
+    const result = filterDirectionContinuousOptions(options);
+
+    expect(result.options).toEqual(options);
+    expect(result.totalCount).toBe(2);
+    expect(result.hiddenCount).toBe(0);
   });
 });
