@@ -986,6 +986,7 @@
             autoPlayDelay: 0,
             chrome: "minimal",
             fill: true,
+            disassemblyLayout: "sidecar",
             showWordHeader: true,
             beatIndicators: false,
             leftPropType: layer.propType,

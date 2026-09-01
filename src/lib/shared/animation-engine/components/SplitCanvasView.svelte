@@ -57,6 +57,8 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     rightProp,
     gridVisible = true,
     gridMode = GridMode.DIAMOND,
+    backgroundAlpha = 1,
+    layout = "stacked",
     letter = null,
     stepData = null,
     sequenceData = null,
@@ -90,6 +92,8 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     rightProp: PropState | null;
     gridVisible?: boolean;
     gridMode?: GridMode | null;
+    backgroundAlpha?: number;
+    layout?: "stacked" | "sidecar";
     letter?: Letter | null;
     stepData?: StartPositionData | StepData | null;
     sequenceData?: SequenceData | null;
@@ -164,6 +168,7 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
 <div
   class="split-canvases"
   class:expanded={splitExpanded}
+  class:sidecar={layout === "sidecar"}
   bind:this={splitCanvasesEl}
   ontransitionend={handleSplitTransitionEnd}
 >
@@ -173,7 +178,7 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
       rightProp={null}
       {gridVisible}
       {gridMode}
-      backgroundAlpha={1}
+      {backgroundAlpha}
       {darkModeEnabled}
       {letter}
       {stepData}
@@ -201,7 +206,7 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
       {rightProp}
       {gridVisible}
       {gridMode}
-      backgroundAlpha={1}
+      {backgroundAlpha}
       {darkModeEnabled}
       {letter}
       {stepData}
@@ -252,6 +257,26 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     transition:
       max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1),
       opacity 0.3s ease-out 0.2s;
+  }
+
+  /* Embedded square stages place the split pair beside the hero instead of
+     stacking a third square beneath it. Both leaves remain square and share
+     the parent's transparent atmospheric surface. */
+  .split-canvases.sidecar {
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.25rem, 1cqw, 0.75rem);
+  }
+
+  .split-canvases.sidecar.expanded {
+    max-height: 100cqh;
+  }
+
+  .split-canvases.sidecar .split-canvas {
+    width: 100%;
+    flex: 0 1 auto;
   }
 
   .split-canvas {
