@@ -25,13 +25,19 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
  * way to tighten the lens without moving the rig, no way to tilt the
  * horizon. Scene 3 states all three in one breath: a truck, a zoom, and a
  * roll, each proven by an invariant the old moves couldn't produce.
+ *
+ * Gap 3, the camera tracks a walker. Before this wave the camera framed the
+ * cast where it stood when the scene opened and stayed aimed there, so a
+ * performer who walked out of that framing walked out of the film. Scene 4
+ * says `track: "follow"` on its subject: camera and target both travel with
+ * the walker, so the framing holds while the forest slides past behind them.
  */
 export const provingGroundsFilm: FilmDirectorInput = {
   version: 5,
   id: "proving-grounds-r1",
   title: "Proving Grounds",
   brief:
-    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll.",
+    "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them.",
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
   // The grammar only guarantees distinctness PER axis; three blues and three
@@ -159,6 +165,50 @@ export const provingGroundsFilm: FilmDirectorInput = {
           { move: "roll", direction: "cw", amount: { degrees: 10 }, durationBeats: 4 },
           { move: "hold", durationBeats: 4 },
         ],
+      },
+    },
+    {
+      id: "tracking-shot",
+      title: "Tracking Shot",
+      intent:
+        "Gap 3: the camera follows a walking performer. A medium shot on the walker holds the same framing for the whole crossing — the walker stays put in frame while the forest slides past behind them — then the frame stops when they do.",
+      durationBeats: 16,
+      transition: { kind: "cut" },
+      location: { environmentId: "forest" },
+      performance: {
+        bpm: 120,
+        formation: "side-by-side",
+        cast: {
+          count: 2,
+          defaults: { effect: "none" },
+          performers: [
+            {
+              id: "performer-2",
+              // Side-by-side puts performer-2 at (0.9, 0). A 3 m crossing in
+              // the four seconds eight beats buy is 0.75 m/s — a walk.
+              blocking: [
+                {
+                  move: "walk",
+                  to: { x: -2.1, z: 0 },
+                  durationBeats: 8,
+                  facing: "travel",
+                },
+                { move: "stand" },
+              ],
+            },
+          ],
+        },
+      },
+      camera: {
+        subject: {
+          kind: "performer",
+          performerId: "performer-2",
+          track: "follow",
+        },
+        shotSize: "medium",
+        angle: "eye",
+        position: "front",
+        moves: [{ move: "hold" }],
       },
     },
   ],

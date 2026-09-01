@@ -187,3 +187,33 @@ describe("rollDeg sampling", () => {
     expect(midZoom).toBeLessThan(50);
   });
 });
+
+describe("camera tracking resolution", () => {
+  const grammar = (track?: true | "follow") => ({
+    subject: {
+      kind: "performer" as const,
+      performerId: "performer-2",
+      ...(track ? { track } : {}),
+    },
+    shotSize: "medium" as const,
+    moves: [{ move: "hold" as const }],
+  });
+
+  it("carries an aim request into the resolved track", () => {
+    expect(resolveDirectorCameraTrack(grammar(true), CONTEXT).tracking).toEqual({
+      performerId: "performer-2",
+      mode: "aim",
+    });
+  });
+
+  it("carries a follow request into the resolved track", () => {
+    expect(
+      resolveDirectorCameraTrack(grammar("follow"), CONTEXT).tracking
+    ).toEqual({ performerId: "performer-2", mode: "follow" });
+  });
+
+  it("leaves the key absent when nothing asked to be tracked", () => {
+    const resolved = resolveDirectorCameraTrack(grammar(), CONTEXT);
+    expect("tracking" in resolved).toBe(false);
+  });
+});
