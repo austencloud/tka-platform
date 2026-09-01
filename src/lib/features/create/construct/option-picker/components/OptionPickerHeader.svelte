@@ -323,11 +323,11 @@
     display: none;
   }
 
-  /* Two genuine 44px targets plus the control's own padding. Keeping this at
-     seven rem also survives the app's compact root type scale; six rem made the
-     visible All / Continuous targets narrower than the touch-target floor. */
+  /* Two genuine 44px targets plus the control's padding. This must derive from
+     the touch-target token rather than rem: the app intentionally scales its
+     root type size, which made rem-based filter buttons narrower than 44px. */
   .filter-seg {
-    width: 7rem;
+    width: calc(var(--min-touch-target, 44px) * 2 + 8px);
   }
 
   /* The wide picker starts at 750px, before the full 608px level rail can sit
@@ -337,11 +337,9 @@
      the tighter padding keeps the longest label comfortable at the floor. */
   @container (width < 900px) {
     .oph:not(.compact) .oph-bar:not(.filter-only) {
-      grid-template-columns: minmax(7rem, 1fr) auto minmax(7rem, 1fr);
-    }
-
-    .oph:not(.compact) .filter-seg {
-      width: 7rem;
+      grid-template-columns:
+        minmax(calc(var(--min-touch-target, 44px) * 2 + 8px), 1fr) auto
+        minmax(calc(var(--min-touch-target, 44px) * 2 + 8px), 1fr);
     }
 
     .oph:not(.compact) :global(.level-selector) {
