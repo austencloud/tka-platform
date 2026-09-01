@@ -1,5 +1,5 @@
 diff --git a/dist/backgrounds/autumn/services/AutumnSceneryRenderer.d.ts b/dist/backgrounds/autumn/services/AutumnSceneryRenderer.d.ts
-index 440cfe7..8e1746e 100644
+index 440cfe77e03e1d190c0f3ef41c975cf056ed8a60..8e1746ed8f7a9feaf0cd69672449d69effe456c4 100644
 --- a/dist/backgrounds/autumn/services/AutumnSceneryRenderer.d.ts
 +++ b/dist/backgrounds/autumn/services/AutumnSceneryRenderer.d.ts
 @@ -16,9 +16,14 @@ export declare class AutumnSceneryRenderer {
@@ -17,15 +17,8 @@ index 440cfe7..8e1746e 100644
      update(frameMultiplier: number): void;
      draw(ctx: CanvasRenderingContext2D, dimensions: Dimensions, layers: AutumnSceneryLayers): void;
      private usesMultiplaneArtwork;
-@@ -39,4 +44,4 @@ export declare class AutumnSceneryRenderer {
-     getLoadedMatteCount(): number;
-     cleanup(): void;
- }
--//# sourceMappingURL=AutumnSceneryRenderer.d.ts.map
-\ No newline at end of file
-+//# sourceMappingURL=AutumnSceneryRenderer.d.ts.map
 diff --git a/dist/backgrounds/autumn/services/AutumnSceneryRenderer.js b/dist/backgrounds/autumn/services/AutumnSceneryRenderer.js
-index 1786fd1..3c43b68 100644
+index 1786fd1f41ef95d383ef0167ec6d1e116aa2464f..3c43b68cf4ca568c555afff193c2bef0fc40dd66 100644
 --- a/dist/backgrounds/autumn/services/AutumnSceneryRenderer.js
 +++ b/dist/backgrounds/autumn/services/AutumnSceneryRenderer.js
 @@ -3,6 +3,7 @@ import { getAutumnComposition, } from "../domain/autumn-composition.js";
@@ -122,7 +115,7 @@ index 1786fd1..3c43b68 100644
      }
      update(frameMultiplier) {
          if (!this.reducedMotion)
-@@ -254,9 +293,10 @@ export class AutumnSceneryRenderer {
+@@ -254,6 +293,7 @@ export class AutumnSceneryRenderer {
      }
      cleanup() {
          this.loadGeneration += 1;
@@ -130,13 +123,260 @@ index 1786fd1..3c43b68 100644
          this.artwork = {};
          this.activeAspect = null;
          this.parallax.initialize();
-     }
+diff --git a/dist/backgrounds/ocean/domain/models/OceanModels.d.ts b/dist/backgrounds/ocean/domain/models/OceanModels.d.ts
+index 0176a8118f17325476b1b7a73e8f259222a0a5ac..35f86bfceb9a4fabeace543a7545ac220c705b93 100644
+--- a/dist/backgrounds/ocean/domain/models/OceanModels.d.ts
++++ b/dist/backgrounds/ocean/domain/models/OceanModels.d.ts
+@@ -39,6 +39,12 @@ export interface Bubble {
+         x: number;
+         y: number;
+     };
++    /** True while the tapped film is collapsing into a pop burst. */
++    popping?: boolean;
++    /** Normalized pop animation progress in [0, 1]. */
++    popAge?: number;
++    /** Stable angular offset so fragments do not jitter between frames. */
++    popSeed?: number;
+     age: number;
+     fadeZone: number;
  }
--//# sourceMappingURL=AutumnSceneryRenderer.js.map
-\ No newline at end of file
-+//# sourceMappingURL=AutumnSceneryRenderer.js.map
+diff --git a/dist/backgrounds/ocean/services/OceanBackgroundOrchestrator.d.ts b/dist/backgrounds/ocean/services/OceanBackgroundOrchestrator.d.ts
+index 924f4f61901312942ae8010baca2b0305b5eebeb..9c4787725ec9576bbc8f5345dc4985e04e377618 100644
+--- a/dist/backgrounds/ocean/services/OceanBackgroundOrchestrator.d.ts
++++ b/dist/backgrounds/ocean/services/OceanBackgroundOrchestrator.d.ts
+@@ -63,6 +63,10 @@ export declare class OceanBackgroundOrchestrator implements IBackgroundSystem {
+     draw(ctx: CanvasRenderingContext2D, dimensions: Dimensions): void;
+     setQuality(quality: QualityLevel): void;
+     setPointer(x: number, y: number, active: boolean): void;
++    private findClosestJelly;
++    private findClosestBubble;
++    /** Return the topmost ocean interaction without mutating the scene. */
++    interactionAt(x: number, y: number): "jellyfish" | "bubble" | null;
+     /**
+      * Hit-test a tap against the jellyfish swarm. Finds the closest jelly whose bell
+      * covers (x, y) and, on a hit, lights its bell from within (flashTimer) and
+@@ -80,6 +84,12 @@ export declare class OceanBackgroundOrchestrator implements IBackgroundSystem {
+         pitch01: number;
+         pan: number;
+     };
++    /** Collapse the closest bubble film and replace it after the burst completes. */
++    popBubbleAt(x: number, y: number): {
++        hit: boolean;
++        size01: number;
++        pan: number;
++    };
+     setAccessibilitySettings(settings: AccessibilitySettings): void;
+     setThumbnailMode(enabled: boolean): void;
+     setLayerVisibility(layers: Partial<OceanLayers>): void;
+diff --git a/dist/backgrounds/ocean/services/OceanBackgroundOrchestrator.js b/dist/backgrounds/ocean/services/OceanBackgroundOrchestrator.js
+index 4d0556f8e2c57e5d995ed3a2980d85b63c870589..cdbc29cecbb80f028afeaae5588935862ca19a01 100644
+--- a/dist/backgrounds/ocean/services/OceanBackgroundOrchestrator.js
++++ b/dist/backgrounds/ocean/services/OceanBackgroundOrchestrator.js
+@@ -190,6 +190,52 @@ export class OceanBackgroundOrchestrator {
+     setPointer(x, y, active) {
+         this.pointer = { x, y, active };
+     }
++    findClosestJelly(x, y) {
++        if (!this.layerVisibility.jellyfish)
++            return null;
++        let closest = null;
++        let closestDistSq = Infinity;
++        for (const jelly of this.state.jellyfish) {
++            const radius = jelly.size * 0.6;
++            const dx = jelly.x - x;
++            const dy = jelly.y - y;
++            const distSq = dx * dx + dy * dy;
++            if (distSq <= radius * radius && distSq < closestDistSq) {
++                closest = jelly;
++                closestDistSq = distSq;
++            }
++        }
++        return closest;
++    }
++    findClosestBubble(x, y) {
++        if (!this.layerVisibility.bubbles)
++            return null;
++        let closest = null;
++        let closestDistSq = Infinity;
++        for (const bubble of this.state.bubbles) {
++            if (bubble.popping || bubble.opacity <= 0.03)
++                continue;
++            // The halo is part of the drawn bubble, so it is also part of the
++            // target. A 10px floor keeps the smallest films realistically pokeable.
++            const radius = Math.max(10, bubble.radius * 1.5);
++            const dx = bubble.x - x;
++            const dy = bubble.y - y;
++            const distSq = dx * dx + dy * dy;
++            if (distSq <= radius * radius && distSq < closestDistSq) {
++                closest = bubble;
++                closestDistSq = distSq;
++            }
++        }
++        return closest;
++    }
++    /** Return the topmost ocean interaction without mutating the scene. */
++    interactionAt(x, y) {
++        if (this.findClosestJelly(x, y))
++            return "jellyfish";
++        if (this.findClosestBubble(x, y))
++            return "bubble";
++        return null;
++    }
+     /**
+      * Hit-test a tap against the jellyfish swarm. Finds the closest jelly whose bell
+      * covers (x, y) and, on a hit, lights its bell from within (flashTimer) and
+@@ -205,18 +251,7 @@ export class OceanBackgroundOrchestrator {
+     pokeAt(x, y) {
+         const width = this.lastDimensions?.width ?? 0;
+         const height = this.lastDimensions?.height ?? 0;
+-        let closest = null;
+-        let closestDistSq = Infinity;
+-        for (const jelly of this.state.jellyfish) {
+-            const radius = jelly.size * 0.6;
+-            const dx = jelly.x - x;
+-            const dy = jelly.y - y;
+-            const distSq = dx * dx + dy * dy;
+-            if (distSq <= radius * radius && distSq < closestDistSq) {
+-                closest = jelly;
+-                closestDistSq = distSq;
+-            }
+-        }
++        const closest = this.findClosestJelly(x, y);
+         if (!closest) {
+             return { hit: false, pitch01: 0, pan: 0 };
+         }
+@@ -227,6 +262,31 @@ export class OceanBackgroundOrchestrator {
+         const pan = width > 0 ? Math.max(-1, Math.min(1, (closest.x / width) * 2 - 1)) : 0;
+         return { hit: true, pitch01, pan };
+     }
++    /** Collapse the closest bubble film and replace it after the burst completes. */
++    popBubbleAt(x, y) {
++        const width = this.lastDimensions?.width ?? 0;
++        const closest = this.findClosestBubble(x, y);
++        if (!closest) {
++            return { hit: false, size01: 0, pan: 0 };
++        }
++        // If this was a cluster leader, release its followers before replacing
++        // it so no orphaned bubbles remain tied to a missing leader forever.
++        if (closest.clusterId !== undefined) {
++            const clusterId = closest.clusterId;
++            for (const bubble of this.state.bubbles) {
++                if (bubble.clusterId === clusterId) {
++                    delete bubble.clusterId;
++                    delete bubble.clusterOffset;
++                }
++            }
++        }
++        closest.popping = true;
++        closest.popAge = this.accessibility.reducedMotion ? 1 : 0;
++        closest.popSeed = Math.random() * Math.PI * 2;
++        const size01 = Math.max(0, Math.min(1, (closest.radius - 2) / 13));
++        const pan = width > 0 ? Math.max(-1, Math.min(1, (closest.x / width) * 2 - 1)) : 0;
++        return { hit: true, size01, pan };
++    }
+     setAccessibilitySettings(settings) {
+         this.accessibility = settings;
+     }
+diff --git a/dist/backgrounds/ocean/services/implementations/BubblePhysics.js b/dist/backgrounds/ocean/services/implementations/BubblePhysics.js
+index b3b3664df39334bf96f7a235b2d34b69b6908137..da4d79cb47846eae628d82386d65b4cc524624f8 100644
+--- a/dist/backgrounds/ocean/services/implementations/BubblePhysics.js
++++ b/dist/backgrounds/ocean/services/implementations/BubblePhysics.js
+@@ -61,6 +61,7 @@ const BUBBLE_CONFIG = {
+     clusterSize: { min: 2, max: 3 },
+     clusterSpread: 20, // Pixels between clustered bubbles
+ };
++const BUBBLE_POP_DURATION_SECONDS = 0.18;
+ export class BubblePhysics {
+     nextClusterId = 1;
+     initializeBubbles(dimensions, count) {
+@@ -164,6 +165,17 @@ export class BubblePhysics {
+             }
+         }
+         for (const bubble of bubbles) {
++            if (bubble.popping) {
++                bubble.popAge = (bubble.popAge ?? 0) +
++                    (0.016 / BUBBLE_POP_DURATION_SECONDS) * frameMultiplier;
++                if (bubble.popAge >= 1) {
++                    updatedBubbles.push(this.createBubble(dimensions));
++                }
++                else {
++                    updatedBubbles.push(bubble);
++                }
++                continue;
++            }
+             // Update physics
+             this.updateBubblePhysics(bubble, dimensions, frameMultiplier, animationTime);
+             // Update cluster position (followers track leaders)
+diff --git a/dist/backgrounds/ocean/services/implementations/BubbleRenderer.d.ts b/dist/backgrounds/ocean/services/implementations/BubbleRenderer.d.ts
+index dbf264a78ddb9c6563efa53e3d8c01c6abd21962..6f18a2223b912ce1dcc5b5a0d53b832e3fb3a056 100644
+--- a/dist/backgrounds/ocean/services/implementations/BubbleRenderer.d.ts
++++ b/dist/backgrounds/ocean/services/implementations/BubbleRenderer.d.ts
+@@ -15,6 +15,7 @@ import type { IBubbleRenderer } from "../contracts/IBubbleRenderer.js";
+ export declare class BubbleRenderer implements IBubbleRenderer {
+     drawBubbles(ctx: CanvasRenderingContext2D, bubbles: Bubble[]): void;
+     private drawSingleBubble;
++    private drawBubblePop;
+     /**
+      * Draw trail particles (micro-bubbles following larger bubble)
+      */
+diff --git a/dist/backgrounds/ocean/services/implementations/BubbleRenderer.js b/dist/backgrounds/ocean/services/implementations/BubbleRenderer.js
+index 8b69fb2ef098e6b2c557b0384146cab31f83bff1..deb624aef5fe6b7ca5b20d6810dcfecedad36fed 100644
+--- a/dist/backgrounds/ocean/services/implementations/BubbleRenderer.js
++++ b/dist/backgrounds/ocean/services/implementations/BubbleRenderer.js
+@@ -25,6 +25,10 @@ export class BubbleRenderer {
+             !Number.isFinite(bubble.opacity)) {
+             return;
+         }
++        if (bubble.popping) {
++            this.drawBubblePop(ctx, bubble);
++            return;
++        }
+         ctx.save();
+         // Apply depth-based opacity (far = more transparent for depth-of-field effect)
+         // depth 0 = close = full opacity, depth 1 = far = reduced opacity
+@@ -43,6 +47,40 @@ export class BubbleRenderer {
+         this.drawRimHighlight(ctx, bubble, wobbleX, wobbleY);
+         ctx.restore();
+     }
++    drawBubblePop(ctx, bubble) {
++        const age = Math.max(0, Math.min(1, bubble.popAge ?? 0));
++        const remaining = 1 - age;
++        const radius = bubble.radius;
++        const seed = bubble.popSeed ?? 0;
++        ctx.save();
++        ctx.translate(bubble.x, bubble.y);
++        ctx.globalCompositeOperation = "screen";
++        // The film pinches flat while its bright rim separates, then vanishes.
++        ctx.globalAlpha = remaining * bubble.opacity * 1.8;
++        ctx.strokeStyle = "rgba(225, 246, 255, 0.9)";
++        ctx.lineWidth = Math.max(0.5, radius * 0.12 * remaining);
++        ctx.beginPath();
++        ctx.ellipse(0, 0, radius * (1 + age * 0.18), Math.max(0.35, radius * remaining), seed * 0.15, 0, Math.PI * 2);
++        ctx.stroke();
++        // Stable film flecks travel outward. Deriving every angle from popSeed
++        // keeps the burst crisp instead of resampling into glitter each frame.
++        const fragmentCount = bubble.sizeCategory === "large" ? 8 : bubble.sizeCategory === "medium" ? 6 : 4;
++        for (let i = 0; i < fragmentCount; i++) {
++            const angle = seed + (i / fragmentCount) * Math.PI * 2;
++            const distance = radius * (0.35 + age * 1.9);
++            const x = Math.cos(angle) * distance;
++            const y = Math.sin(angle) * distance - age * radius * 0.35;
++            const fragmentRadius = Math.max(0.45, radius * 0.12 * remaining);
++            ctx.globalAlpha = remaining * bubble.opacity * 1.6;
++            ctx.fillStyle = i % 2 === 0
++                ? "rgba(255, 255, 255, 0.9)"
++                : "rgba(150, 220, 255, 0.8)";
++            ctx.beginPath();
++            ctx.arc(x, y, fragmentRadius, 0, Math.PI * 2);
++            ctx.fill();
++        }
++        ctx.restore();
++    }
+     /**
+      * Draw trail particles (micro-bubbles following larger bubble)
+      */
 diff --git a/dist/core/contracts/IBackgroundController.d.ts b/dist/core/contracts/IBackgroundController.d.ts
-index d8d0dc1..869d68b 100644
+index d8d0dc1508c33d0df7f2a7eb8371ffd72ca5f169..d7e13a303184dc638226db5bad63c082f010caa9 100644
 --- a/dist/core/contracts/IBackgroundController.d.ts
 +++ b/dist/core/contracts/IBackgroundController.d.ts
 @@ -76,6 +76,10 @@ export interface IBackgroundController {
@@ -150,15 +390,56 @@ index d8d0dc1..869d68b 100644
      /**
       * Set the background type with optional customization.
       *
-@@ -131,4 +135,4 @@ export interface IBackgroundController {
+@@ -95,6 +99,8 @@ export interface IBackgroundController {
+     setQuality(quality: QualityLevel): void;
+     /** Forward pointer input to the active background system. */
+     setPointer(x: number, y: number, active: boolean, pointerType?: string): void;
++    /** Return the topmost active-background interaction without mutating it. */
++    interactionAt(x: number, y: number): "jellyfish" | "bubble" | null | undefined;
+     /**
+      * Tap the active background at (x, y) in canvas-logical px. Returns the note
+      * mapping from the active system's pokeAt (e.g. ocean jellyfish), or undefined
+@@ -105,6 +111,12 @@ export interface IBackgroundController {
+         pitch01: number;
+         pan: number;
+     } | void;
++    /** Pop an ambient bubble in the active background, when supported. */
++    popBubbleAt(x: number, y: number): {
++        hit: boolean;
++        size01: number;
++        pan: number;
++    } | void;
+     /**
+      * Get the currently displayed background type.
+      * Returns null if no background is set.
+diff --git a/dist/core/contracts/IBackgroundSystem.d.ts b/dist/core/contracts/IBackgroundSystem.d.ts
+index edefd367c5831dcd18c9af3253ae7b4c86e0d138..acf529c2fb07ac9f2a0555744cf693522038d491 100644
+--- a/dist/core/contracts/IBackgroundSystem.d.ts
++++ b/dist/core/contracts/IBackgroundSystem.d.ts
+@@ -39,6 +39,8 @@ export interface IBackgroundSystem {
+      * pointerType lets motion effects keep touch input flat.
       */
-     onEvent(callback: (event: BackgroundEvent) => void): void;
- }
--//# sourceMappingURL=IBackgroundController.d.ts.map
-\ No newline at end of file
-+//# sourceMappingURL=IBackgroundController.d.ts.map
+     setPointer?(x: number, y: number, active: boolean, pointerType?: string): void;
++    /** Return the topmost interaction at (x, y) without mutating the system. */
++    interactionAt?(x: number, y: number): "jellyfish" | "bubble" | null;
+     /**
+      * Tap-test the background at (x, y) in canvas-logical px. Interactive
+      * backgrounds (e.g. ocean jellyfish) hit-test their elements and, on a hit,
+@@ -50,6 +52,12 @@ export interface IBackgroundSystem {
+         pitch01: number;
+         pan: number;
+     } | void;
++    /** Pop an ambient bubble at (x, y), if the system owns one there. */
++    popBubbleAt?(x: number, y: number): {
++        hit: boolean;
++        size01: number;
++        pan: number;
++    } | void;
+     /**
+      * Set accessibility settings (optional)
+      */
 diff --git a/dist/core/services/BackgroundController.d.ts b/dist/core/services/BackgroundController.d.ts
-index 6f9952d..0b62896 100644
+index 6f9952dbb2671ccc70b357a791694c4a2ce5c288..8056a9ce3a946eb943bcf61d8597f8f798bc8a1b 100644
 --- a/dist/core/services/BackgroundController.d.ts
 +++ b/dist/core/services/BackgroundController.d.ts
 @@ -28,6 +28,11 @@ export declare class BackgroundController implements IBackgroundController {
@@ -188,7 +469,25 @@ index 6f9952d..0b62896 100644
      /**
       * Set the background type.
       */
-@@ -79,6 +92,7 @@ export declare class BackgroundController implements IBackgroundController {
+@@ -50,11 +63,17 @@ export declare class BackgroundController implements IBackgroundController {
+      */
+     setQuality(quality: QualityLevel): void;
+     setPointer(x: number, y: number, active: boolean, pointerType?: string): void;
++    interactionAt(x: number, y: number): "jellyfish" | "bubble" | null | undefined;
+     pokeAt(x: number, y: number): {
+         hit: boolean;
+         pitch01: number;
+         pan: number;
+     } | void;
++    popBubbleAt(x: number, y: number): {
++        hit: boolean;
++        size01: number;
++        pan: number;
++    } | void;
+     /**
+      * Get current background type.
+      */
+@@ -79,6 +98,7 @@ export declare class BackgroundController implements IBackgroundController {
      onEvent(callback: (event: import("../domain/types.js").BackgroundEvent) => void): void;
      private createCanvases;
      private verifyCanvases;
@@ -196,7 +495,7 @@ index 6f9952d..0b62896 100644
      private setupResizeObserver;
      private updateCanvasDimensions;
      private handleResize;
-@@ -88,6 +102,9 @@ export declare class BackgroundController implements IBackgroundController {
+@@ -88,6 +108,9 @@ export declare class BackgroundController implements IBackgroundController {
      private performCrossfade;
      private startAnimation;
      private stopAnimation;
@@ -206,15 +505,8 @@ index 6f9952d..0b62896 100644
      private waitForFrame;
      private delay;
  }
-@@ -98,4 +115,4 @@ export declare class BackgroundController implements IBackgroundController {
-  * This ensures the canvas state survives code changes during development.
-  */
- export declare function getBackgroundController(): BackgroundController;
--//# sourceMappingURL=BackgroundController.d.ts.map
-\ No newline at end of file
-+//# sourceMappingURL=BackgroundController.d.ts.map
 diff --git a/dist/core/services/BackgroundController.js b/dist/core/services/BackgroundController.js
-index 70fed35..ae10e8d 100644
+index 70fed35010d4d591ff7b1d3ae0782c7713ae00b5..f4d5e70c54c928e6431d7ca5854d91c39969ee8c 100644
 --- a/dist/core/services/BackgroundController.js
 +++ b/dist/core/services/BackgroundController.js
 @@ -12,6 +12,8 @@ const CROSSFADE_DURATION_MS = 800;
@@ -321,7 +613,23 @@ index 70fed35..ae10e8d 100644
          // If same type and already initialized → no-op
          // Note: We no longer pixel-read the canvas here. The isActiveCanvasBlank()
          // check was racy: the animation loop calls clearRect() before draw(), and
-@@ -172,6 +234,14 @@ export class BackgroundController {
+@@ -152,9 +214,15 @@ export class BackgroundController {
+         this.systemA?.setPointer?.(x, y, active, pointerType);
+         this.systemB?.setPointer?.(x, y, active, pointerType);
+     }
++    interactionAt(x, y) {
++        return this.systemA?.interactionAt?.(x, y) ?? this.systemB?.interactionAt?.(x, y);
++    }
+     pokeAt(x, y) {
+         return this.systemA?.pokeAt?.(x, y) ?? this.systemB?.pokeAt?.(x, y);
+     }
++    popBubbleAt(x, y) {
++        return this.systemA?.popBubbleAt?.(x, y) ?? this.systemB?.popBubbleAt?.(x, y);
++    }
+     /**
+      * Get current background type.
+      */
+@@ -172,6 +240,14 @@ export class BackgroundController {
       */
      forceRefresh() {
          if (this.currentType && this.mounted) {
@@ -336,7 +644,7 @@ index 70fed35..ae10e8d 100644
              this.initialized = false;
              void this.initializeBackground(this.currentType, this.currentOptions);
          }
-@@ -200,10 +270,12 @@ export class BackgroundController {
+@@ -200,10 +276,12 @@ export class BackgroundController {
          this.canvasA = document.createElement('canvas');
          this.canvasA.className = 'background-canvas canvas-a';
          this.canvasA.setAttribute('aria-hidden', 'true');
@@ -349,7 +657,7 @@ index 70fed35..ae10e8d 100644
          // Set initial active state
          this.updateActiveCanvasClass();
          // Append to container
-@@ -229,6 +301,18 @@ export class BackgroundController {
+@@ -229,6 +307,18 @@ export class BackgroundController {
              }
          }
      }
@@ -368,7 +676,7 @@ index 70fed35..ae10e8d 100644
      setupResizeObserver() {
          if (!this.container || typeof ResizeObserver === 'undefined')
              return;
-@@ -305,9 +389,10 @@ export class BackgroundController {
+@@ -305,9 +395,10 @@ export class BackgroundController {
      // PRIVATE METHODS - Background Initialization & Transitions
      // ═══════════════════════════════════════════════════════════════════════════
      async initializeBackground(type, options) {
@@ -380,7 +688,7 @@ index 70fed35..ae10e8d 100644
          this.initializationInProgress = true;
          try {
              // Clean up any existing systems
-@@ -318,24 +403,17 @@ export class BackgroundController {
+@@ -318,24 +409,17 @@ export class BackgroundController {
              this.systemA = null;
              this.systemB = null;
              // Create the background system
@@ -416,7 +724,7 @@ index 70fed35..ae10e8d 100644
                  return;
              }
              // Store and activate on canvas A
-@@ -349,14 +427,25 @@ export class BackgroundController {
+@@ -349,14 +433,25 @@ export class BackgroundController {
              };
              system.initialize(dimensions, this.quality);
              // Start the animation loop
@@ -444,7 +752,7 @@ index 70fed35..ae10e8d 100644
          // Process any pending request
          if (this.pendingType && this.pendingType !== type) {
              const pending = this.pendingType;
-@@ -371,6 +460,7 @@ export class BackgroundController {
+@@ -371,6 +466,7 @@ export class BackgroundController {
          }
      }
      async performCrossfade(newType, options) {
@@ -452,7 +760,7 @@ index 70fed35..ae10e8d 100644
          this.isTransitioning = true;
          const incomingCanvas = this.activeCanvas === 'A' ? 'B' : 'A';
          const canvas = incomingCanvas === 'A' ? this.canvasA : this.canvasB;
-@@ -379,72 +469,99 @@ export class BackgroundController {
+@@ -379,72 +475,99 @@ export class BackgroundController {
              return;
          }
          // Create the new background system
@@ -599,7 +907,7 @@ index 70fed35..ae10e8d 100644
              return;
          const ctx = canvas.getContext('2d', { willReadFrequently: false });
          if (!ctx)
-@@ -492,6 +609,46 @@ export class BackgroundController {
+@@ -492,6 +615,46 @@ export class BackgroundController {
              this.animationIdB = null;
          }
      }
@@ -646,10 +954,3 @@ index 70fed35..ae10e8d 100644
      // ═══════════════════════════════════════════════════════════════════════════
      // PRIVATE METHODS - Utilities
      // ═══════════════════════════════════════════════════════════════════════════
-@@ -526,4 +683,4 @@ export function getBackgroundController() {
-     }
-     return controllerInstance;
- }
--//# sourceMappingURL=BackgroundController.js.map
-\ No newline at end of file
-+//# sourceMappingURL=BackgroundController.js.map
