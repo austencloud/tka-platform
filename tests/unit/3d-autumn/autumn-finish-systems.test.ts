@@ -82,7 +82,8 @@ describe("Autumn finish systems", () => {
     const shader = {
       uniforms: {},
       vertexShader: "#include <common>\n#include <uv_vertex>",
-      fragmentShader: "#include <common>\n#include <map_fragment>",
+      fragmentShader:
+        "#include <common>\n#include <map_fragment>\n#include <opaque_fragment>",
     };
 
     material.onBeforeCompile(shader as never, {} as never);
@@ -91,9 +92,11 @@ describe("Autumn finish systems", () => {
     expect(shader.uniforms.uAutumnGroundDetailStrength.value).toBe(0.72);
     expect(shader.vertexShader).toContain("vAutumnGroundDetailUv = uv");
     expect(shader.fragmentShader).toContain("autumnGroundModulation");
-    expect(shader.fragmentShader).toContain("vec3(1.10, 0.80, 0.62)");
+    expect(shader.fragmentShader).toContain("vec3(1.15, 0.67, 0.42)");
+    expect(shader.fragmentShader).toContain("vec3(1.18, 0.62, 0.38)");
+    expect(shader.fragmentShader).toContain("autumnGroundCopper");
     expect(material.customProgramCacheKey()).toContain(
-      "autumn-ground-detail-v3"
+      "autumn-ground-detail-v5"
     );
     expect(shader.fragmentShader).toContain("autumnCabinLane");
     expect(shader.fragmentShader).toContain("autumnGroundRouteMask");

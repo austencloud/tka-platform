@@ -77,9 +77,7 @@
     ? getAvatarSequenceCollisionAudit()
     : null;
 
-  function resolveUpperBodyStance(
-    performer: CharacterInstanceState
-  ) {
+  function resolveUpperBodyStance(performer: CharacterInstanceState) {
     const mode = PLANE_MODE_CONFIGS[performer.planeMode];
     const gridOffset = GRID_OFFSETS[performer.planeMode];
     return planUpperBodyStance({
@@ -543,6 +541,11 @@
       visiblePerformerCount ?? performerManager.performers.length
     )
   );
+  const environmentPerformerPositions = $derived(
+    performerManager.performers
+      .slice(0, performerCount)
+      .map((performer) => performer.position)
+  );
 
   // The deck is a property of the venue, not of where the cast happens to be
   // standing this frame. Measuring live positions made the floor grow as a
@@ -615,6 +618,7 @@
   <Environment3D
     {backgroundType}
     {performerCount}
+    performerPositions={environmentPerformerPositions}
     stageWidth={stageDimensions.width}
     stageDepth={stageDimensions.depth}
     stageRadius={stageDimensions.radius}

@@ -42,10 +42,10 @@
 </script>
 
 <!-- Moon key: cool, from the moon's own direction, and the scene's only shadow
-     caster. The camera spans ±20 rather than the clearing alone: hero trees
-     stand 13-20m out and throw shadows ~1.7x their height, so a clearing-tight
-     box clipped them mid-shadow and left a visible straight edge across the
-     ground. Texel density is bought back with a 2048 map on the high tier. -->
+     caster. The camera spans ±20 because the deliberately small prop-caster
+     set reaches from the pond shore to the owl perch; a clearing-tight box
+     clipped those local contacts at its edges. Texel density is bought back
+     with a 2048 map on the high tier. -->
 <T.DirectionalLight
   color="#b9c6f2"
   intensity={2.05}
@@ -61,10 +61,10 @@
   shadow.camera.right={20}
   shadow.camera.top={20}
   shadow.camera.bottom={-20}
-  shadow.bias={-0.0007}
-  shadow.normalBias={0.04}
-  shadow.radius={3}
-  shadow.intensity={0.58}
+  shadow.bias={-0.00035}
+  shadow.normalBias={0.055}
+  shadow.radius={5}
+  shadow.intensity={0.38}
 />
 
 <!-- Warm ember light from the opposite horizon: the last of the sunset behind
@@ -86,7 +86,7 @@
      shadow into a shaded area. -->
 <T.DirectionalLight
   color="#6f6396"
-  intensity={0.5}
+  intensity={0.62}
   position.x={-8}
   position.y={5}
   position.z={26}
