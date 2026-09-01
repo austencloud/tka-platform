@@ -133,7 +133,7 @@ describe("OptionPickerContent desktop layout", () => {
     );
   });
 
-  it("keeps the filter and explanation when direction settings hide every option", async () => {
+  it("keeps the filter when direction settings hide every option", async () => {
     render(OptionPickerDesktopLayoutHarness, {
       width: 1200,
       height: 700,
@@ -148,13 +148,6 @@ describe("OptionPickerContent desktop layout", () => {
     await expect
       .element(page.getByRole("button", { name: "Continuous" }))
       .toBeInTheDocument();
-    await expect
-      .element(page.getByRole("status"))
-      .toHaveTextContent(
-        "Every option would reverse a hand, so Continuous mode hides them"
-      );
-    expect(
-      document.querySelector(".availability-status")?.textContent
-    ).toContain("No options shown · every option would reverse a hand");
+    expect(document.querySelector(".availability-status")).toBeNull();
   });
 });
