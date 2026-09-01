@@ -52,6 +52,22 @@ describe("migrateEffectsConfig", () => {
     expect(result.activePresets.fire).toBe("fire-intense");
   });
 
+  it("moves the former factory trail width to the quieter current default", () => {
+    const legacy = structuredClone(DEFAULT_EFFECTS_CONFIG);
+    legacy.version = 36;
+    legacy.trails.thickness = 5;
+
+    expect(migrateEffectsConfig(legacy).trails.thickness).toBe(4);
+  });
+
+  it("preserves a deliberate non-default trail width", () => {
+    const legacy = structuredClone(DEFAULT_EFFECTS_CONFIG);
+    legacy.version = 36;
+    legacy.trails.thickness = 7;
+
+    expect(migrateEffectsConfig(legacy).trails.thickness).toBe(7);
+  });
+
   it("adds Bloom core strength and maps the retired Ring falloff to Smooth", () => {
     const legacy = structuredClone(DEFAULT_EFFECTS_CONFIG) as unknown as Record<
       string,

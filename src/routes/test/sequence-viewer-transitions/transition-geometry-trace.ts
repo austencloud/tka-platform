@@ -146,6 +146,7 @@ export interface TransitionGeometrySummary {
   cardReturnVisualWidth: TransitionEndpointUndershoot | null;
   cardReturnVisualHeight: TransitionEndpointUndershoot | null;
   cardReturnTravel: TransitionTravelSummary | null;
+  animationReturnSizeTravel: TransitionTravelSummary | null;
   cardSettingsFocusWidth: TransitionValueRange | null;
   cardSettingsFocusHeight: TransitionValueRange | null;
   cardSettingsFocusCenterY: TransitionValueRange | null;
@@ -742,6 +743,10 @@ export function summarizeTransitionGeometry(
     cardReturnTravel: travelSummary(
       trace.samples,
       (sample) => sample.cardContentCenterX
+    ),
+    animationReturnSizeTravel: travelSummary(
+      trace.samples,
+      (sample) => sample.animationSize
     ),
     cardSettingsFocusWidth: visiblePhaseRange(
       trace.samples,

@@ -27,8 +27,8 @@ describe("resolveTrails2D", () => {
     expect(out.minOpacity).toBeCloseTo(0.3, 5);
   });
 
-  it("defaults glowBlur to 3 when no override", () => {
-    expect(resolveTrails2D(intent).glowBlur).toBe(3);
+  it("uses the restrained factory glow when no override is supplied", () => {
+    expect(resolveTrails2D(intent).glowBlur).toBe(2.5);
   });
 
   it("override glowBlur wins", () => {

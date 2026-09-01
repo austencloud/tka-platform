@@ -108,6 +108,7 @@ Last audit: 2025-12-27
     tipEffortMap: cellTipEffortMap = undefined,
     disableContextMenu = false,
     fillContainer = false,
+    disassemblyLayout = "stacked",
     prewarmEffects = undefined,
     showNonRadialPoints = true,
     resizePaused = false,
@@ -191,6 +192,9 @@ Last audit: 2025-12-27
     tipEffortMap?: TipEffortMap;
     disableContextMenu?: boolean;
     fillContainer?: boolean;
+    /** How the combined hero and two isolated canvases share their host while
+     *  disassembled. Sidecar is designed for square, fill-mode embeds. */
+    disassemblyLayout?: "stacked" | "sidecar";
     /** WebGL overlay effects (today: "fire") to warm at engine startup so the
      *  first switch never freezes. Forwarded to CanvasSurface → AnimationEngine. */
     prewarmEffects?: EffectType[];
@@ -621,6 +625,7 @@ Last audit: 2025-12-27
   class="animation-container"
   data-focused={focused || undefined}
   data-fill={fillContainer || undefined}
+  data-disassembly-layout={disassemblyLayout}
   data-no-progress={hideProgressBar || undefined}
   data-hide-header={hideHeader || undefined}
   data-hover-hint={hoverHint !== "none" ? hoverHint : undefined}
@@ -721,6 +726,8 @@ Last audit: 2025-12-27
         {rightProp}
         {gridVisible}
         {gridMode}
+        {backgroundAlpha}
+        layout={disassemblyLayout}
         {letter}
         {stepData}
         {sequenceData}
@@ -1391,7 +1398,7 @@ Last audit: 2025-12-27
     container-type: size;
   }
 
-  .animation-container[data-fill] :global(.canvas-wrapper) {
+  .animation-container[data-fill] .content-wrapper > :global(.canvas-wrapper) {
     flex: 1;
     height: auto !important;
     min-height: 0;
@@ -1401,8 +1408,14 @@ Last audit: 2025-12-27
      same wrapper must instead fit one full-width hero plus two half-width
      canvases beneath it. Without this later override, fill mode wins the
      cascade and the three canvases are forced into a full-width column. */
-  .animation-container[data-fill][data-view="disassembling"] .content-wrapper,
-  .animation-container[data-fill][data-view="disassembled"] .content-wrapper {
+  .animation-container[data-fill]:not(
+      [data-disassembly-layout="sidecar"]
+    )[data-view="disassembling"]
+    .content-wrapper,
+  .animation-container[data-fill]:not(
+      [data-disassembly-layout="sidecar"]
+    )[data-view="disassembled"]
+    .content-wrapper {
     width: min(calc(100cqw - 12px), calc((100cqh - 7rem) * 2 / 3)) !important;
     max-width: calc((100cqh - 7rem) * 2 / 3) !important;
   }
@@ -1410,12 +1423,68 @@ Last audit: 2025-12-27
   /* A relocated/hidden transport leaves only the word header above the three
      canvases. Reclaim that space so the disassembled composition uses the
      full height available to embedded players such as Shape Matrix. */
-  .animation-container[data-fill][data-no-progress][data-view="disassembling"]
+  .animation-container[data-fill]:not(
+      [data-disassembly-layout="sidecar"]
+    )[data-no-progress][data-view="disassembling"]
     .content-wrapper,
-  .animation-container[data-fill][data-no-progress][data-view="disassembled"]
+  .animation-container[data-fill]:not(
+      [data-disassembly-layout="sidecar"]
+    )[data-no-progress][data-view="disassembled"]
     .content-wrapper {
     width: min(calc(100cqw - 12px), calc((100cqh - 3.5rem) * 2 / 3)) !important;
     max-width: calc((100cqh - 3.5rem) * 2 / 3) !important;
+  }
+
+  /* A square embedded stage cannot fit the default 1.5-square vertical stack.
+     Sidecar keeps the combined motion and both isolated views inside the same
+     stage: the hero owns two tracks and the split pair owns one. The tracks
+     animate together while the engine's ResizeObserver is paused by the
+     existing disassembly state machine. */
+  .animation-container[data-disassembly-layout="sidecar"] .content-wrapper {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    column-gap: 0;
+    transition:
+      grid-template-columns var(--transition-dramatic),
+      column-gap var(--transition-dramatic);
+  }
+
+  .animation-container[data-disassembly-layout="sidecar"] .header-slot,
+  .animation-container[data-disassembly-layout="sidecar"] .progress-slot {
+    grid-column: 1 / -1;
+  }
+
+  .animation-container[data-disassembly-layout="sidecar"] .header-slot {
+    grid-row: 1;
+  }
+
+  .animation-container[data-disassembly-layout="sidecar"]
+    .content-wrapper
+    > :global(.canvas-wrapper) {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    min-height: 0;
+  }
+
+  .animation-container[data-disassembly-layout="sidecar"]
+    .content-wrapper
+    > :global(.split-canvases) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .animation-container[data-disassembly-layout="sidecar"] .progress-slot {
+    grid-row: 3;
+  }
+
+  .animation-container[data-disassembly-layout="sidecar"][data-view="disassembling"]
+    .content-wrapper,
+  .animation-container[data-disassembly-layout="sidecar"][data-view="disassembled"]
+    .content-wrapper {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    column-gap: clamp(0.25rem, 1cqw, 0.75rem);
   }
 
   @media (prefers-reduced-motion: reduce) {
