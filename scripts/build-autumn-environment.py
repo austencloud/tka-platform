@@ -722,7 +722,12 @@ def terrain_height(x, y):
 
 TERRAIN_HALF_SIZE = 31.0
 TERRAIN_SEGMENTS = 96
-APRON_OUTER_HALF_SIZE = float(GROUND_LAYOUT["worldExtent"])
+GROUND_ATLAS_HALF_SIZE = float(GROUND_LAYOUT["worldExtent"])
+# The authored ecology and its macro atlas end at 165m. The visible ground must
+# continue much farther: high review cameras can look through the tree belt and
+# intersect the floor hundreds of metres away. At 1,024m the shipped fog has
+# effectively zero remaining transmittance, so the geometric edge cannot read.
+APRON_OUTER_HALF_SIZE = 1_024.0
 
 
 def chaikin_path(points, iterations=2):
@@ -811,7 +816,7 @@ def world_surface_height(x, y):
     blend = min(
         1.0,
         (half_size - TERRAIN_HALF_SIZE)
-        / (APRON_OUTER_HALF_SIZE - TERRAIN_HALF_SIZE),
+        / (GROUND_ATLAS_HALF_SIZE - TERRAIN_HALF_SIZE),
     )
     far = -1.0 - 7.5 * blend**1.15
     far += (1.4 * math.sin(x * 0.041) + 1.1 * math.cos(y * 0.035)) * blend
@@ -828,10 +833,10 @@ def autumn_ground_uv(x, y):
 
 def autumn_ground_macro_uv(x, y):
     """Map every ground mesh into the same baked world-space ecology."""
-    world_extent = float(GROUND_LAYOUT["worldExtent"])
+    world_extent = GROUND_ATLAS_HALF_SIZE
     return (
-        (x + world_extent) / (world_extent * 2.0),
-        (y + world_extent) / (world_extent * 2.0),
+        min(1.0, max(0.0, (x + world_extent) / (world_extent * 2.0))),
+        min(1.0, max(0.0, (y + world_extent) / (world_extent * 2.0))),
     )
 
 
@@ -910,11 +915,12 @@ def create_terrain_apron():
     out and the performance camera sits ~34m back, so the edge is at roughly the
     same depth as the trees framing it - any fog thick enough to hide the rim
     also erases the scene. The fix is geometric: keep going. This apron carries
-    the ground out to 165m, which at the scene's fog density is around 99%
-    extinction, so it fades into the sky rather than ending.
+    the ground out to 1,024m. The first 165m retain the authored macro atlas;
+    beyond that the texture edge is extended under accumulating fog. At the
+    scene's density, the outer edge has effectively zero transmittance.
 
-    It is deliberately cheap: 5 quad rings on the same perimeter
-    parametrisation as the terrain boundary, ~3.8k triangles total, one
+    It is deliberately cheap: logarithmic quad rings on the same perimeter
+    parametrisation as the terrain boundary, ~7.7k triangles total, one
     material, no textures of its own.
     """
     ring_half_sizes = (
@@ -923,6 +929,11 @@ def create_terrain_apron():
         52.0,
         76.0,
         112.0,
+        GROUND_ATLAS_HALF_SIZE,
+        256.0,
+        384.0,
+        512.0,
+        768.0,
         APRON_OUTER_HALF_SIZE,
     )
     segments = TERRAIN_SEGMENTS
@@ -958,6 +969,7 @@ def create_terrain_apron():
     apron["tka_ground_treatment"] = "baked-living-floor"
     apron["tka_ground_layout_version"] = int(GROUND_LAYOUT["version"])
     apron["tka_ground_layout_sha256"] = GROUND_LAYOUT_SHA256
+    apron["tka_ground_visible_extent"] = APRON_OUTER_HALF_SIZE
     return len(faces)
 
 
@@ -3528,7 +3540,7 @@ for label, path in QA_PATHS.items():
 print(f"Mesh objects:    {sum(1 for obj in bpy.data.objects if obj.type == 'MESH' and obj.visible_get())}")
 print(f"Unique meshes:   {len(bpy.data.meshes)}")
 print(f"Materials:       {len(bpy.data.materials)}")
-print(f"Terrain apron:   {apron_face_count} quads out to 165m")
+print(f"Terrain apron:   {apron_face_count} quads out to {APRON_OUTER_HALF_SIZE:.0f}m")
 print(
     f"Settlement paths: {path_lengths['cabin_lane']:.1f}m to shack + "
     f"{path_lengths['forest_trail']:.1f}m to golden larch sentinel"

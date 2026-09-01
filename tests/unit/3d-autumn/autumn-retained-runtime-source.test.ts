@@ -100,6 +100,24 @@ describe("Autumn retained runtime lifecycle", () => {
     expect(postProcessing).toContain("oceanRendererState.shadowMapEnabled");
   });
 
+  it("replays the reported ground-edge view against a deterministic production load", () => {
+    const route = source("src/routes/test/autumn-scene/+page.svelte");
+    const harness = source(
+      "src/routes/test/autumn-scene/AutumnProductionHarness.svelte"
+    );
+
+    expect(route).toContain("overlook:");
+    expect(route).toContain("position: [-51.21, 43.81, 25.07]");
+    expect(route).toContain("target: [1.27, 8.56, -4.99]");
+    expect(route).toContain("{cameraPreset}");
+    expect(harness).toContain("performers: REVIEW_PERFORMERS");
+    expect(harness).toContain('effect: "trails"');
+    expect(harness).toContain('effect: "fire"');
+    expect(harness).toContain('effect: "led"');
+    expect(harness).toContain("cameraMaxOrbitDistance={128}");
+    expect(harness).toContain("cameraFov={cameraPreset.fov}");
+  });
+
   it("routes cancellation into an Autumn-owned GLTF transport", () => {
     const scene = source(
       "src/lib/shared/3d/environments/scenes/AutumnScene.svelte"

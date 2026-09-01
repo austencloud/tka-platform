@@ -69,6 +69,11 @@
       target: [0, 2, 0],
       fov: 52,
     },
+    overlook: {
+      position: [-51.21, 43.81, 25.07],
+      target: [1.27, 8.56, -4.99],
+      fov: 48,
+    },
     reverse: {
       position: [0, 9, -30],
       target: [0, 2, 2],
@@ -219,7 +224,9 @@
 
 <div class="page" data-autumn-ready={reviewReady ? "true" : "false"}>
   {#if productionGraph}
-    <AutumnProductionHarness onSample={recordRenderSample} />
+    {#key cameraKey}
+      <AutumnProductionHarness onSample={recordRenderSample} {cameraPreset} />
+    {/key}
   {:else}
     <Canvas
       dpr={renderDpr}
