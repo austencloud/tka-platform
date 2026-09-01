@@ -17,11 +17,13 @@
   --codex-cell-border: var(--theme-stroke, oklch(0.42 0.04 270 / 0.42));
   --codex-cell-frame: none;
   --codex-cell-overlap: 0;
+  --codex-cell-gap: clamp(2px, 0.2cqi, 3px);
+  --codex-cell-radius: clamp(4px, 3cqi, 10px);
   --codex-caption: var(--theme-text-muted, oklch(0.72 0.015 270));
   --codex-name: var(--theme-text-muted, oklch(0.72 0.015 270));
 
   /* Box */
-  --codex-box-bg: var(--theme-panel-bg, oklch(0.16 0.02 270));
+  --codex-box-bg: transparent;
   --codex-transition: var(--theme-text, oklch(0.96 0.01 270));
   --codex-mode: var(--theme-text-muted, oklch(0.72 0.015 270));
 
@@ -52,6 +54,7 @@
 
   /* PictographTypeFrame supplies the historical nested type borders. */
   --pictograph-border: none;
+  --pictograph-type-frame-radius: var(--codex-cell-radius);
 }
 
 /* The type headings are serif italic on paper. On screen they sit next to the

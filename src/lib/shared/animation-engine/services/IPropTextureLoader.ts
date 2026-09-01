@@ -9,6 +9,7 @@ import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/I
 import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import type { ISVGGenerator } from "$lib/shared/animation-engine/services/ISVGGenerator";
 import type { ITrailCapturer } from "$lib/shared/animation-engine/services/ITrailCapturer";
+import { parseFanRenderKey } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
 /**
  * Prop dimensions
@@ -161,6 +162,12 @@ export const DEFAULT_PROP_DIMENSIONS: PropDimensions = {
  */
 export function getPropDimensions(propType: string): PropDimensions {
   const normalized = propType.toLowerCase();
+  const fanRenderKey = parseFanRenderKey(normalized);
+  if (fanRenderKey) {
+    return fanRenderKey.propType === "bigfan"
+      ? { width: 600, height: 566.9 }
+      : { width: 260, height: 207 };
+  }
   return PROP_DIMENSIONS[normalized] ?? { ...DEFAULT_PROP_DIMENSIONS };
 }
 

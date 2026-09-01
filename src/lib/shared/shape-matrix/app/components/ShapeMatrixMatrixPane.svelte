@@ -5,10 +5,7 @@
   const state = getShapeMatrixAppContext();
 </script>
 
-<section
-  class="matrix-pane"
-  aria-label="Shape matrix"
->
+<section class="matrix-pane" aria-label="Shape matrix">
   <div class="matrix-stage">
     {#if state.loadError}
       <div class="status error" role="alert">
@@ -39,17 +36,22 @@
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
     border-radius: 16px;
-    background: rgb(16 23 33 / 0.82);
+    background: var(--theme-panel-bg, rgb(16 23 33 / 0.82));
   }
 
   .status button {
     min-height: var(--min-touch-target, 44px);
-    border: 1px solid rgb(245 158 11 / 0.45);
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #f59e0b) 45%, transparent);
     border-radius: 999px;
-    background: rgb(245 158 11 / 0.1);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 10%,
+      transparent
+    );
     color: var(--theme-text, #fff);
     font: inherit;
-    font-size: 0.8rem;
+    font-size: var(--font-size-min, 0.875rem);
     cursor: pointer;
   }
 
@@ -57,7 +59,7 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-    background: #0a0f14;
+    background: var(--theme-panel-bg, #0a0f14);
   }
 
   .status {
@@ -67,18 +69,20 @@
     width: 100%;
     height: 100%;
     padding: 1rem;
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 0.875rem);
     text-align: center;
   }
 
   .status.error {
-    color: #fb8a8a;
+    color: var(--semantic-error, #fb8a8a);
   }
   .status button {
     padding: 0.4rem 1rem;
   }
 
   button:focus-visible {
-    outline: 2px solid #f59e0b;
+    outline: 2px solid var(--theme-accent, #f59e0b);
     outline-offset: 2px;
   }
 
@@ -87,6 +91,5 @@
       border: 0;
       border-radius: 0;
     }
-
   }
 </style>

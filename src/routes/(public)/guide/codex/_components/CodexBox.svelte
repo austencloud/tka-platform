@@ -165,6 +165,7 @@
   .box-cells {
     display: flex;
     justify-content: center;
+    gap: var(--codex-cell-gap, 0);
     background: var(--codex-box-bg, #fff);
   }
 

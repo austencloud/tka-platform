@@ -1,6 +1,6 @@
 <script lang="ts">
   import { T, useTask, useThrelte } from "@threlte/core";
-  import { Vector3, Color } from "three";
+  import { Vector3, Color, type Object3D } from "three";
   import { onDestroy, untrack } from "svelte";
   import { TrailRenderer3D } from "./trail-renderer-3d";
   import type { TrailMode } from "./trail-renderer-3d";
@@ -10,6 +10,7 @@
   } from "../lighting/dynamic-light-manager";
   import type { QualityTier } from "../types";
   import { Canvas2DVisibilityFadeManager } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-visibility-fade-manager";
+  import type { SceneEffectsManager3D } from "../scene-effects/scene-effects-manager-3d";
 
   const TRAIL_FADE_IN_MS = 300;
   const TRAIL_FADE_OUT_MS = 200;
@@ -25,6 +26,10 @@
     enabled?: boolean;
     qualityTier?: QualityTier;
     lightManager?: DynamicLightManager | null;
+    /** Scene owner for the one shared, shader-stable light budget. */
+    sceneEffectsManager?: SceneEffectsManager3D | null;
+    /** Converts rig-local prop tips into the shared light pool's world space. */
+    lightSpaceRoot?: Object3D;
     mode?: TrailMode;
     fadeDuration?: number;
     /** HDR core multiplier; >1 so scene bloom (HIGH/MED tier) catches the trail. */
@@ -42,6 +47,8 @@
     enabled = true,
     qualityTier = "medium" as QualityTier,
     lightManager = null,
+    sceneEffectsManager = null,
+    lightSpaceRoot,
     mode = "fade" as TrailMode,
     fadeDuration = 2.0,
     emissiveStrength = 2.5,
@@ -90,9 +97,11 @@
   });
 
   let lightHandle: LightHandle | null = null;
+  let lightOwner: DynamicLightManager | null = null;
   const lightColor = untrack(
     () => new Color(color === "rainbow" ? "#ffffff" : color)
   );
+  const lightPosition = new Vector3();
 
   useTask((delta) => {
     // Threlte's delta follows both live playback and the synthetic offline
@@ -111,28 +120,32 @@
       renderer.update(cam.position);
     }
 
-    if (lightManager && tipPosition && visibility.alpha > 0) {
+    const resolvedLightManager =
+      lightManager ?? sceneEffectsManager?.getDynamicLightManager() ?? null;
+    if (resolvedLightManager && tipPosition && visibility.alpha > 0) {
+      lightPosition.copy(tipPosition);
+      lightSpaceRoot?.localToWorld(lightPosition);
       const lightIntensity = 0.5 * visibility.alpha;
       if (!lightHandle) {
-        lightHandle = lightManager.requestLight(
-          tipPosition,
+        lightHandle = resolvedLightManager.requestLight(
+          lightPosition,
           lightColor,
           lightIntensity,
           3.0
         );
+        if (lightHandle) lightOwner = resolvedLightManager;
       } else {
-        lightManager.updateLight(lightHandle, tipPosition, lightIntensity);
+        lightOwner?.updateLight(lightHandle, lightPosition, lightIntensity);
       }
-    } else if (lightHandle && lightManager) {
-      lightManager.releaseLight(lightHandle);
+    } else if (lightHandle && lightOwner) {
+      lightOwner.releaseLight(lightHandle);
       lightHandle = null;
+      lightOwner = null;
     }
   });
 
   onDestroy(() => {
-    if (lightHandle && lightManager) {
-      lightManager.releaseLight(lightHandle);
-    }
+    if (lightHandle && lightOwner) lightOwner.releaseLight(lightHandle);
     renderer.dispose();
   });
 </script>

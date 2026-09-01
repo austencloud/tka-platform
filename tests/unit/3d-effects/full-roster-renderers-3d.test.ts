@@ -34,6 +34,8 @@ const base = {
   velocity: { x: 2, y: 0.5, z: 0 },
   speed: Math.hypot(2, 0.5),
   currentStep: 0,
+  totalSteps: 16,
+  seamlesslyLoopable: false,
   propColor: "#3575e2",
 };
 
@@ -237,7 +239,7 @@ describe("native 3D full-roster renderers", () => {
     renderer.dispose();
   });
 
-  it("resets Animal history on a loop instead of bridging across the stage", () => {
+  it("resets Animal history on a non-looping restart instead of bridging across the stage", () => {
     const scene = new Scene();
     const renderer = new AnimalRenderer3D();
     renderer.initialize(scene);
@@ -266,6 +268,39 @@ describe("native 3D full-roster renderers", () => {
       expect(centers.getX(segment)).toBeGreaterThan(6);
     }
     expect(centers.getY(source.params.segmentCount - 1)).toBeLessThan(-1);
+    renderer.dispose();
+  });
+
+  it("keeps Animal body history through a seamless LOOP seam", () => {
+    const scene = new Scene();
+    const renderer = new AnimalRenderer3D();
+    renderer.initialize(scene);
+    const source: AnimalTipSource3D = {
+      ...base,
+      currentStep: 14,
+      seamlesslyLoopable: true,
+      position: { ...base.position },
+      velocity: { x: 1.8, y: 0, z: 0 },
+      speed: 1.8,
+      effect: "animal",
+      params: resolveAnimal3D(DEFAULT_EFFECTS_CONFIG.animal),
+    };
+
+    for (let frame = 0; frame < 120; frame++) {
+      source.position.x += 0.03;
+      source.currentStep = 14 + (frame / 120) * 1.9;
+      renderer.update([source], 1 / 60);
+    }
+    source.position.x += 0.03;
+    source.currentStep = 0.1;
+    renderer.update([source], 1 / 60);
+
+    const centers = meshAtRenderOrder(scene, 111).geometry.getAttribute(
+      "aCenter"
+    );
+    const tailIndex = source.params.segmentCount - 1;
+    expect(centers.getX(0) - centers.getX(tailIndex)).toBeGreaterThan(0.5);
+    expect(centers.getY(tailIndex)).toBeGreaterThan(-0.5);
     renderer.dispose();
   });
 

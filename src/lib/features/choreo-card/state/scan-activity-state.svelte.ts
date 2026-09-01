@@ -7,6 +7,7 @@ import {
   type ScanPropConfig,
 } from "$lib/shared/qr/services/scan-prop-resolver";
 import { hydrateSequence as hydrateDecodedForRender } from "$lib/shared/navigation/services/sequence-hydrator";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { hydrateSequence } from "../services/sequence-render-hydrator";
 import type {
   IScanActivityWatcher,
@@ -128,7 +129,9 @@ function codeWord(data: Record<string, unknown>): string {
   // 2:21:45 PM", "Assemble Sequence"), so the stored name can't be trusted as
   // the display word. Returns raw joined letters; callers simplify.
   const fromSteps = Array.isArray(embedded?.steps)
-    ? deriveWordFromBeats(embedded.steps as Parameters<typeof deriveWordFromBeats>[0])
+    ? deriveWordFromBeats(
+        embedded.steps as Parameters<typeof deriveWordFromBeats>[0]
+      )
     : "";
   return (
     fromSteps ||
@@ -183,7 +186,7 @@ export function buildScanMapPins(
       id: event.id,
       lat: event.lat,
       lng: event.lng,
-      label: `${wordFor?.(event.code) || event.code} · ${event.city}`,
+      label: `${simplifyRepeatedWord(wordFor?.(event.code) || event.code)} · ${event.city}`,
       styleClass: pins.length === 0 ? "pin-new" : "pin",
     });
   }
@@ -268,9 +271,7 @@ function entryFromDocument(document: ScanActivityCardDocument): CodeEntry {
     decoded: initialPreview,
     previewSource: initialPreview ? "embedded" : null,
     integrityOk: hasPreviewSource,
-    integrityReason: hasPreviewSource
-      ? undefined
-      : "Card data is unavailable.",
+    integrityReason: hasPreviewSource ? undefined : "Card data is unavailable.",
     decoding: false,
   };
 }

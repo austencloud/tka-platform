@@ -942,9 +942,8 @@ describe("scan activity state", () => {
                 propType: PropType.FAN,
               },
             },
-          },
-        ],
-      }) as unknown as SequenceData
+          ],
+        }) as unknown as SequenceData
     );
     const state = createScanActivityState({
       data: {
@@ -1138,18 +1137,41 @@ describe("GlobalUserMap scan marker contract", () => {
     "utf8"
   );
 
-  it("uses click listeners supported by the weekly Maps channel", () => {
+  it("keeps weekly-channel click listeners and enables keyboard interaction", () => {
     expect(source.match(/marker\.addListener\("click"/g)).toHaveLength(2);
     expect(source).not.toContain('addEventListener("gmp-click"');
+    expect(source).toContain("gmpClickable: true");
+    expect(source).toContain("gmpClickable: Boolean(onScanMarkerClick)");
   });
 
-  it("keeps imperative marker rebuilds outside effect tracking", () => {
+  it("reconciles stable marker handles outside effect tracking", () => {
     expect(source).toContain('import { onMount, untrack } from "svelte"');
+    expect(source).toContain("const userMarkerHandles = new Map");
+    expect(source).toContain("const scanMarkerHandles = new Map");
     expect(source).toMatch(
       /untrack\(\(\) => \{\s*try \{\s*createMarkers\(incoming\)/s
     );
     expect(source).toMatch(
       /untrack\(\(\) => \{\s*try \{\s*createScanMarkers\(incoming\)/s
     );
+  });
+
+  it("clusters both map layers without replacing marker objects", () => {
+    expect(source).toContain(
+      'import { MarkerClusterer } from "@googlemaps/markerclusterer"'
+    );
+    expect(source).toContain("current.clearMarkers(true)");
+    expect(source).toContain("current.addMarkers(currentMarkers)");
+    expect(source).not.toContain("injectedScanMarkers = []");
+  });
+
+  it("gives scan marker interactions a full touch target", () => {
+    expect(source).toContain("width: var(--min-touch-target, 44px)");
+    expect(source).toContain("height: var(--min-touch-target, 44px)");
+  });
+
+  it("announces the selected scan through the marker title", () => {
+    expect(source).toContain("Selected scan: ${label}");
+    expect(source).toContain("scanMarkerTitle(scan)");
   });
 });

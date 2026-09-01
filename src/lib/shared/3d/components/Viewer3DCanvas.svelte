@@ -49,6 +49,7 @@
     releaseBackground,
   } from "$lib/shared/background/shared/state/background-hold.svelte";
   import SceneShaderWarmup from "./SceneShaderWarmup.svelte";
+  import InteractivePropAssetWarmup from "./InteractivePropAssetWarmup.svelte";
   import { createCharacterPlaybackAdapter } from "$lib/shared/timeline/adapters/character-playback-adapter.svelte";
   import type { PlaybackMode } from "$lib/shared/timeline/unified-playback-context";
   import { sceneLoadingPlaybackTransition } from "../domain/scene-loading-playback";
@@ -345,6 +346,8 @@
   // ready. Never flips back if the user toggles a feature on later (matches the
   // curtain's own latch), so the rail/playback gate only fires on first load.
   let rendererReady = $state(false);
+  let interactivePropsReady = $state(false);
+  let effectsRuntimeReady = $state(!enableEffects);
   let sceneReady = $state(false);
   let readyPerformerCount = $state(0);
   let totalPerformerCount = $state(0);
@@ -495,11 +498,16 @@
             <GaitProbe />
           {/if}
           {#if adaptiveQuality.initialized}
+            <InteractivePropAssetWarmup
+              onReadyChange={(ready) => (interactivePropsReady = ready)}
+            />
             <SceneShaderWarmup
               onReadyChange={handleRendererReadyChange}
               waitForAllFeatures={initialRevealMode === "streaming"}
               cacheKey={shaderWarmupCacheKey}
-              additionalReady={performersReady}
+              additionalReady={performersReady &&
+                interactivePropsReady &&
+                effectsRuntimeReady}
             />
             {#snippet sceneContent()}
               <Viewer3DCamera
@@ -530,6 +538,8 @@
                 {environmentTransitionVisualMode}
                 onPerformerReadinessChange={handlePerformerReadinessChange}
                 onEnvironmentTransitionChange={handleEnvironmentTransitionChange}
+                onEffectsRuntimeReadyChange={(ready) =>
+                  (effectsRuntimeReady = ready)}
               />
             {/snippet}
             {@render sceneContent()}

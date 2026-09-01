@@ -18,6 +18,7 @@
     onBpmChange,
     onSaveToLibrary,
     onPropChange,
+    onFanAppearanceChange,
     onRenderProgress,
     onUnfocusPane,
     onStepClick,
@@ -51,6 +52,12 @@
   const videos = createPaneKeepAlive(() => selectedPane === "videos");
   const mandala = createPaneKeepAlive(() => selectedPane === "mandala");
   const tunnel = createPaneKeepAlive(() => selectedPane === "tunnel");
+
+  // A focused Card has no neighboring playback surface for a seek to explain.
+  // Keep its cells static; split view retains click-to-seek beside the motion.
+  const cardStepClick = $derived(
+    layout.focusedPane === "image" ? undefined : onStepClick
+  );
 
   function handleCloseClick(event: MouseEvent | KeyboardEvent): void {
     event.stopPropagation();
@@ -87,15 +94,16 @@
       showHighlight={side === "right" && layout.focusedPane === "image"
         ? false
         : playback.isPlaying || playback.highlightedStepIndex !== null}
-      {onStepClick}
+      onStepClick={cardStepClick}
       {onQrPlayClick}
-      clickableStart
+      clickableStart={!!cardStepClick}
       {onRenderProgress}
       showWord={imageComposition.showWord}
       showStepNumbers={imageComposition.showStepNumbers}
       showDifficultyLevel={imageComposition.showDifficulty}
       includeStartPosition={imageComposition.showStartPos}
       showNotes={imageComposition.showNotes}
+      customNotesText={imageComposition.customNotesText}
       showQRCode={imageComposition.showQRCode}
       showMandala={imageComposition.showMandala ?? false}
       showLoopGlyph={imageComposition.showLoopGlyph ?? true}
@@ -163,6 +171,8 @@
       onPlaybackToggle={onPlaybackToggle ?? (() => {})}
       layout={layout.isMobile ? "bottom" : "sidebar"}
       {onPropChange}
+      fanAppearance={propRendering.fanAppearance}
+      {onFanAppearanceChange}
       {onArtExport}
       {onArtShare}
       {artShareActive}
@@ -208,6 +218,8 @@
       onPlaybackToggle={onPlaybackToggle ?? (() => {})}
       layout={layout.isMobile ? "bottom" : "sidebar"}
       {onPropChange}
+      fanAppearance={propRendering.fanAppearance}
+      {onFanAppearanceChange}
       {onArtExport}
       {onArtShare}
       {artShareActive}

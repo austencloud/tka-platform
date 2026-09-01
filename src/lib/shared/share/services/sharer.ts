@@ -7,6 +7,7 @@ import { buildCardRenderOptions } from "./card-render-options";
 import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
 import { hashString } from "$lib/shared/foundation/services/content-hasher";
 import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
+import type { CardPresentation } from "$lib/shared/share/domain/models/card-presentation";
 
 export const CARD_BLOB_CACHE_MAX_ENTRIES = 3;
 export const CARD_BLOB_CACHE_MAX_BYTES = 24 * 1024 * 1024;
@@ -96,6 +97,8 @@ export class Sharer {
        * card on screen. Callers with a preview pass theirs.
        */
       resolvedAutoLayout?: ResolvedAutoLayout | null;
+      /** Current card or one-share footer override. */
+      cardPresentation?: CardPresentation;
     },
     onProgress?: ImageGenerationProgressCallback
   ): Promise<Blob> {
@@ -107,6 +110,7 @@ export class Sharer {
         darkMode: opts.darkMode,
         isHandPath: !!sequence.metadata?.isHandPathVisualization,
         resolvedAutoLayout: opts.resolvedAutoLayout ?? null,
+        cardPresentation: opts.cardPresentation,
       }),
     };
 

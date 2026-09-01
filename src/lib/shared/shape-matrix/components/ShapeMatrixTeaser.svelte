@@ -68,9 +68,9 @@
     place-items: center;
     height: 100%;
     color: oklch(0.72 0.012 270);
-    background: #0a0f14;
+    background: var(--theme-panel-bg, #0a0f14);
   }
   .teaser-status.err {
-    color: #fb8a8a;
+    color: var(--semantic-error, #fb8a8a);
   }
 </style>

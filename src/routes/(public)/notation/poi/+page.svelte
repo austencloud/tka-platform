@@ -87,7 +87,7 @@
         will be presented as working only when it is. In the meantime the <a
           href="/guide">guide</a
         >, the
-        <a href="/glossary">glossary</a>, and the
+        <a href="/glossary">Kinetic Atlas</a>, and the
         <a href="/notation">notation overview</a> all read fine through a poi spinner's
         eyes, and the momentum-friendly slice of what you build in the composer will
         be spinnable.

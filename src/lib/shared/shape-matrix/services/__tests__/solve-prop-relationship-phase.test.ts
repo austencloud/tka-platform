@@ -10,6 +10,7 @@ vi.mock("$lib/shared/auth/firebase", () => ({
 import type { CsvEdge } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
 import { parseCsvEdges } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
 import { applyVariationDescriptor } from "$lib/features/choreo-card/services/deck-variation";
+import { hydrateSequence } from "$lib/features/choreo-card/services/sequence-render-hydrator";
 import { buildFlowerSequence } from "$lib/features/lab/vtg-lab/services/build-flower-sequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
@@ -45,7 +46,7 @@ import {
   type VtgMode,
 } from "../shape-matrix-realizations";
 
-const words = baseWords as unknown as SequenceData[];
+const words = baseWords.map((record) => hydrateSequence(record));
 let index: Map<string, SequenceData>;
 let edges: CsvEdge[];
 let matrices: RotationStyleArchetype[];

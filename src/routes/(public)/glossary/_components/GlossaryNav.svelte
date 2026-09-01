@@ -67,7 +67,7 @@
         name="glossary-search"
         type="search"
         placeholder="Filter terms"
-        aria-label="Filter glossary terms"
+        aria-label="Filter Atlas terms"
         autocomplete="off"
         bind:value={query}
       />
@@ -89,7 +89,7 @@
   </p>
 
   {#if showCats}
-    <nav class="gnav-list" aria-label="Glossary categories">
+    <nav class="gnav-list" aria-label="Atlas categories">
       {#each groups as g (g.key)}
         {@const groupActive =
           g.key === activeCat || g.terms.some((t) => t.slug === activeSlug)}

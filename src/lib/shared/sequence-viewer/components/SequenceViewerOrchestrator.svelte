@@ -55,6 +55,12 @@
   import { sceneEnvironmentIdForBackground } from "$lib/shared/3d/environments/domain/scene-environment";
   import { viewportFits3D } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
   import { setViewerVisibilityContext } from "../context/viewer-visibility-context";
+  import { propFinishState } from "@austencloud/scene-3d";
+  import {
+    fanAppearanceSignature,
+    normalizeFanAppearance,
+    type FanAppearance,
+  } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
   import { createPlaybackController } from "./playback-controller.svelte";
   import { createExportCoordinator } from "./export-coordinator.svelte";
@@ -186,6 +192,48 @@
     appDefaultProp: getSettings().leftPropType ?? null,
   });
   setViewer3DContext(viewer3DState);
+
+  // AppSettings owns the shared fan appearance. The scene package keeps a
+  // legacy default-build adapter for performer inheritance, so synchronize the
+  // two without replacing performer-scoped overrides.
+  let lastSettingsFanSignature: string | null = null;
+  let lastSceneFanSignature: string | null = null;
+  $effect(() => {
+    const settingsAppearance = normalizeFanAppearance(
+      getSettings().fanAppearance
+    );
+    const sceneAppearance: FanAppearance = {
+      build: propFinishState.fanBuild,
+      frameColor: propFinishState.fanFrameColor,
+      cover: propFinishState.fanCover,
+    };
+    const settingsSignature = fanAppearanceSignature(settingsAppearance);
+    const sceneSignature = fanAppearanceSignature(sceneAppearance);
+
+    if (
+      lastSettingsFanSignature === null ||
+      settingsSignature !== lastSettingsFanSignature
+    ) {
+      if (sceneSignature !== settingsSignature) {
+        propFinishState.setFanBuild(settingsAppearance.build);
+        propFinishState.setFanFrameColor(settingsAppearance.frameColor);
+        propFinishState.setFanCover(settingsAppearance.cover);
+      }
+      lastSettingsFanSignature = settingsSignature;
+      lastSceneFanSignature = settingsSignature;
+      return;
+    }
+
+    if (sceneSignature !== lastSceneFanSignature) {
+      lastSceneFanSignature = sceneSignature;
+      lastSettingsFanSignature = sceneSignature;
+      void updateSettings({ fanAppearance: sceneAppearance });
+    }
+  });
+
+  function handleFanAppearanceChange(appearance: FanAppearance): void {
+    void updateSettings({ fanAppearance: normalizeFanAppearance(appearance) });
+  }
 
   const accessibilityHelper = createModalAccessibilityHelper();
 
@@ -666,6 +714,7 @@
       setResolvedCardAutoLayout,
       onRenderProgress: handleRenderProgress,
       handlePropTypeChange: propVisibility.handlePropTypeChange,
+      handleFanAppearanceChange,
       enterEditMode: editMode.enterEditMode,
       exitEditMode: editMode.exitEditMode,
       handleExport: editMode.handleExport,
@@ -701,6 +750,7 @@
     getLeftPropType: () => propVisibility.activeLeftProp,
     getRightPropType: () => propVisibility.activeRightProp,
     getCatDogModeEnabled: () => propVisibility.activeCatDog,
+    getFanAppearance: () => normalizeFanAppearance(getSettings().fanAppearance),
     getIsLoggedIn: () => (forceGuest ? false : authState.isAuthenticated),
     getIsOwned: () => isOwned,
     getIsPublished: () => isPublished,

@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   onGuestSaveSucceeded: vi.fn(),
   hasMatchingContent: vi.fn(async () => false),
   getSequence: vi.fn(async () => null),
+  updateSequence: vi.fn(async () => undefined),
   computeHash: vi.fn(async () => "content-hash-1"),
   authState: { user: { uid: "viewer-test-user" } },
 }));
@@ -21,6 +22,7 @@ vi.mock("$lib/shared/library/get-library-repository", () => ({
   getLibraryRepository: () => ({
     hasMatchingContent: mocks.hasMatchingContent,
     getSequence: mocks.getSequence,
+    updateSequence: mocks.updateSequence,
     publishSequence: vi.fn(async () => undefined),
     unpublishSequence: vi.fn(async () => undefined),
     deleteSequence: vi.fn(async () => undefined),
@@ -80,10 +82,10 @@ const sequence = {
   metadata: {},
 };
 
-function makeHandler() {
+function makeHandler(isOwned = true) {
   const handler = createLibraryActionHandler({
     getSequence: () => sequence as never,
-    getIsOwned: () => true,
+    getIsOwned: () => isOwned,
     getLeftPropType: () => undefined,
     getRightPropType: () => undefined,
     getCatDogModeEnabled: () => false,
@@ -102,6 +104,7 @@ describe("sequence viewer library action feedback", () => {
     mocks.showToast.mockReset().mockReturnValue("pending-toast");
     mocks.hasMatchingContent.mockReset().mockResolvedValue(false);
     mocks.getSequence.mockReset().mockResolvedValue(null);
+    mocks.updateSequence.mockReset().mockResolvedValue(undefined);
     mocks.computeHash.mockReset().mockResolvedValue("content-hash-1");
 
     // 8f74d8edd9 moved the pending toast, duplicate handling and in-flight
@@ -230,5 +233,41 @@ describe("sequence viewer library action feedback", () => {
 
     expect(mocks.getSequence).toHaveBeenCalledWith("sequence-1");
     expect(handler.isSaved).toBe(true);
+  });
+
+  it("patches only cardPresentation on an owned saved record", async () => {
+    mocks.getSequence.mockResolvedValue({
+      ...sequence,
+      ownerId: "viewer-test-user",
+      contentHash: "content-hash-1",
+    });
+    const handler = makeHandler();
+    await vi.waitFor(() => expect(handler.isOwnedLibraryRecord).toBe(true));
+
+    await expect(
+      handler.saveCardPresentation({
+        schemaVersion: 1,
+        footer: { mode: "custom", text: "Shared from First Fire" },
+      })
+    ).resolves.toBe(true);
+
+    expect(mocks.updateSequence).toHaveBeenCalledWith("sequence-1", {
+      cardPresentation: {
+        schemaVersion: 1,
+        footer: { mode: "custom", text: "Shared from First Fire" },
+      },
+    });
+  });
+
+  it("refuses card presentation writes for records the viewer does not own", async () => {
+    const handler = makeHandler(false);
+
+    await expect(
+      handler.saveCardPresentation({
+        schemaVersion: 1,
+        footer: { mode: "credit" },
+      })
+    ).resolves.toBe(false);
+    expect(mocks.updateSequence).not.toHaveBeenCalled();
   });
 });

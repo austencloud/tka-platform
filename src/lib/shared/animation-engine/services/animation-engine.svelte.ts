@@ -21,6 +21,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import { type TrailSettings } from "../domain/types/trail-types";
 import type { AdditionalLayerProps } from "../domain/types/trail-capture-types";
+import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import {
   getAnimationVisibilityManager,
@@ -91,6 +92,8 @@ export interface AnimationEngineProps {
   // Prop type overrides - bypass settings when provided (useful for demos/previews)
   leftPropType?: string | null;
   rightPropType?: string | null;
+  /** Visual fan build. The notation prop remains fan/bigfan. */
+  fanAppearance?: FanAppearance;
   /** Per-document chirality overrides for isolated editors/previews. */
   leftBuugengFlipped?: boolean;
   rightBuugengFlipped?: boolean;

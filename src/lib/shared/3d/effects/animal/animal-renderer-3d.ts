@@ -5,6 +5,7 @@ import {
   type AnimalTipSource3D,
 } from "../scene-effects/scene-effect-source-3d";
 import type { Animal3DParams } from "$lib/shared/effects/translators/webgl3d-types";
+import { shouldResetEffectStateAtStepBoundary } from "$lib/shared/effects/domain/effect-step-boundary";
 import { AnimalAnatomy3D } from "./animal-anatomy-3d";
 import {
   applyAnimalSlither3D,
@@ -79,9 +80,17 @@ export class AnimalRenderer3D {
         };
         this.states.set(source.sourceId, state);
       }
-      // A loop or backward scrub teleports the head to an earlier pose. Keeping
-      // the old polyline would stretch one giant body segment across the stage.
-      if (source.currentStep + 0.001 < state.lastStep) {
+      // Scrubbing backward starts a different motion timeline. A seamless LOOP
+      // keeps the body it carried through the closing count instead of visibly
+      // rebuilding the creature on every pass.
+      if (
+        shouldResetEffectStateAtStepBoundary({
+          previousStep: state.lastStep,
+          currentStep: source.currentStep,
+          totalSteps: source.totalSteps,
+          seamlesslyLoopable: source.seamlesslyLoopable,
+        })
+      ) {
         state.path.clear();
         state.resetDynamics = true;
         state.hasHeadFrame = false;

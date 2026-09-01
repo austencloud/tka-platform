@@ -4,6 +4,7 @@ import type {
 } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 import type { ViewerPlaybackState } from "../../domain/viewer-prop-groups";
 import type { MandalaViewerController } from "../../state/mandala-viewer-controller.svelte";
 import type { TunnelViewController } from "../../tunnel/tunnel-view-controller.svelte";
@@ -59,6 +60,8 @@ export interface ArtSettingsPanelProps {
   leftPropType?: string | null;
   rightPropType?: string | null;
   onPropChange?: (propType: PropType) => void;
+  fanAppearance?: FanAppearance;
+  onFanAppearanceChange?: (appearance: FanAppearance) => void;
   onArtSettingChange?: ArtSettingChangeHandler;
   exporting?: boolean;
 }

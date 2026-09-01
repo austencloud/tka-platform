@@ -1,11 +1,18 @@
 <script lang="ts">
   import RailPropGlyph from "$lib/shared/components/RailPropGlyph.svelte";
+  import FanAppearancePicker from "$lib/shared/pictograph/prop/components/FanAppearancePicker.svelte";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import {
+    DEFAULT_FAN_APPEARANCE,
+    type FanAppearance,
+  } from "$lib/shared/pictograph/prop/domain/fan-appearance";
   import {
     getAllPropTypes,
     getPropTypeDisplayInfo,
   } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 
   const propTypes = getAllPropTypes();
+  let fanAppearance = $state<FanAppearance>(DEFAULT_FAN_APPEARANCE);
 </script>
 
 <svelte:head>
@@ -21,6 +28,32 @@
       geometry. Artwork should feel confident without touching the button edge.
     </p>
   </header>
+
+  <section class="fan-contract" aria-labelledby="fan-contract-title">
+    <div class="fan-contract-copy">
+      <span>Shared appearance owner</span>
+      <h2 id="fan-contract-title">One fan build across 2D, Tunnel, and 3D</h2>
+      <p>
+        Pick a physical fan build. The production rail glyph below follows the
+        exact selection without changing its button geometry.
+      </p>
+      <div class="fan-rail-preview" aria-label="Selected fan rail glyph">
+        <div class="rail-button">
+          <RailPropGlyph propType={PropType.FAN} {fanAppearance} size={30} />
+        </div>
+        <div>
+          <strong>{fanAppearance.build}</strong>
+          <small>Persistent fan appearance</small>
+        </div>
+      </div>
+    </div>
+    <div class="fan-picker-surface">
+      <FanAppearancePicker
+        value={fanAppearance}
+        onchange={(next) => (fanAppearance = next)}
+      />
+    </div>
+  </section>
 
   <section class="glyph-grid" aria-label="All prop rail glyphs">
     {#each propTypes as propType}
@@ -64,6 +97,7 @@
   }
 
   .glyph-review > header,
+  .fan-contract,
   .glyph-grid {
     width: min(100%, 1560px);
     margin-inline: auto;
@@ -80,6 +114,68 @@
   h1,
   p {
     margin: 0;
+  }
+
+  .fan-contract {
+    display: grid;
+    grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1.28fr);
+    gap: clamp(18px, 3vw, 42px);
+    align-items: center;
+    box-sizing: border-box;
+    margin-top: 24px;
+    padding: clamp(18px, 3vw, 32px);
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #8b6cff) 34%, transparent);
+    border-radius: 22px;
+    background:
+      radial-gradient(
+        circle at 8% 20%,
+        color-mix(in srgb, var(--theme-accent, #8b6cff) 13%, transparent),
+        transparent 42%
+      ),
+      var(--theme-card-bg, #11131c);
+  }
+
+  .fan-contract-copy > span {
+    color: var(--theme-accent, #9b7cff);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    max-width: 560px;
+    margin: 6px 0 0;
+    font-size: clamp(24px, 3vw, 38px);
+    line-height: 1.08;
+  }
+
+  .fan-picker-surface {
+    min-width: 0;
+    padding: clamp(12px, 2vw, 20px);
+    border-radius: 18px;
+    background: color-mix(in srgb, black 42%, transparent);
+  }
+
+  .fan-rail-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .fan-rail-preview > div:last-child {
+    display: grid;
+    gap: 2px;
+  }
+
+  .fan-rail-preview strong {
+    text-transform: capitalize;
+  }
+
+  .fan-rail-preview small {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.58));
   }
 
   h1 {
@@ -177,6 +273,11 @@
 
     .glyph-grid {
       grid-template-columns: 1fr;
+    }
+
+    .fan-contract {
+      grid-template-columns: 1fr;
+      border-radius: 16px;
     }
   }
 </style>

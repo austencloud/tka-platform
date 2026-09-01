@@ -86,6 +86,7 @@ describe("shape matrix app state", () => {
     state.selectPair({ left, right });
 
     expect(state.activeView).toBe("detail");
+    expect(state.compactFocusRequest).toEqual({ id: 1, target: "detail" });
     expect(state.selectedMode).not.toBeNull();
     expect(syncState).toHaveBeenCalledWith(
       expect.objectContaining({ pair: { left, right } })
@@ -101,7 +102,20 @@ describe("shape matrix app state", () => {
     state.showMatrix();
 
     expect(state.activeView).toBe("matrix");
+    expect(state.compactFocusRequest).toEqual({ id: 2, target: "matrix" });
     expect(state.selectedPair).toEqual({ left, right });
+  });
+
+  it("does not request compact focus for desktop selection or responsive changes", () => {
+    const { state } = createState(false);
+    const [left, right] = buildFlowerAxis();
+    if (!left || !right) throw new Error("Shape Matrix axis is empty");
+
+    state.selectPair({ left, right });
+    expect(state.compactFocusRequest).toBeNull();
+
+    state.setCompact(true);
+    expect(state.compactFocusRequest).toBeNull();
   });
 
   it("keeps both-pane selection state when responsive mode changes", () => {
@@ -193,7 +207,7 @@ describe("shape matrix app state", () => {
     expect(state.selectedPropMode).toBe("SS");
 
     state.setLevel(4);
-    state.setActiveAxis("blue");
+    state.setActiveAxis("left");
     state.setTurn(0.25);
     expect(state.selectedPropMode).toBeNull();
   });
@@ -224,7 +238,7 @@ describe("shape matrix app state", () => {
     if (!left || !right) throw new Error("Shape Matrix axis is empty");
     state.selectPair({ left, right });
     state.setLevel(4);
-    state.setActiveAxis("blue");
+    state.setActiveAxis("left");
     state.setTurn(0.75);
 
     expect(state.leftTurn).toBe(0.75);
@@ -247,7 +261,7 @@ describe("shape matrix app state", () => {
       state.setLabelMode("ratios");
       state.selectPair({ left, right });
 
-      state.setActiveAxis("blue");
+      state.setActiveAxis("left");
       for (const turn of LEVEL_FOUR_TURNS) {
         state.setTurn(turn);
         expect(semanticVariant(state.selectedPair!.left)).toBe(variant);
@@ -255,7 +269,7 @@ describe("shape matrix app state", () => {
         expect(state.rightTurn).toBe(0);
       }
 
-      state.setActiveAxis("red");
+      state.setActiveAxis("right");
       for (const turn of LEVEL_FOUR_TURNS) {
         state.setTurn(turn);
         expect(semanticVariant(state.selectedPair!.left)).toBe(variant);

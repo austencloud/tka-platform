@@ -127,4 +127,22 @@ describe("avatar head-clearance policy", () => {
       "rightChain.root.getWorldPosition(_boneVecs.rightShoulder)"
     );
   });
+
+  it.each([
+    ["source", animatorSource],
+    ["runtime", animatorRuntime],
+  ])("builds the solver face envelope from real arm roots in %s", (_label, animator) => {
+    expect(animator).toContain(
+      'leftChain?.root ?? state.bones.get("LeftShoulder")'
+    );
+    expect(animator).toContain(
+      'rightChain?.root ?? state.bones.get("RightShoulder")'
+    );
+    expect(animator).toMatch(
+      /applyReachEscalation\("left"[\s\S]{0,300}refreshFaceClearanceCenter/
+    );
+    expect(animator).toMatch(
+      /applyReachEscalation\("right"[\s\S]{0,300}refreshFaceClearanceCenter/
+    );
+  });
 });

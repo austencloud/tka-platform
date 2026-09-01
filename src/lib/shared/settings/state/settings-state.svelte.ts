@@ -12,6 +12,7 @@ import {
   type AppSettings,
   type PropPreset,
 } from "../domain/app-settings";
+import { DEFAULT_FAN_APPEARANCE } from "../../pictograph/prop/domain/fan-appearance";
 // Dynamic import: posthog-activity-logger → posthog → $env/dynamic/public.
 // Static import crashes the composition worker (no globalThis.__sveltekit_dev).
 async function logSettingChange(
@@ -93,6 +94,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   catDogMode: false,
   leftPropType: PropType.STAFF,
   rightPropType: PropType.STAFF,
+  fanAppearance: DEFAULT_FAN_APPEARANCE,
   blockedStartPositions: [],
   blockedStartPositionsByGridMode: {},
   propPresets: DEFAULT_PROP_PRESETS,
@@ -132,8 +134,7 @@ class SettingsState {
     (settings: AppSettings | null, userId: string) => void
   >();
   private lastRemoteApplication:
-    | { settings: AppSettings | null; userId: string }
-    | undefined;
+    { settings: AppSettings | null; userId: string } | undefined;
   private syncInitialized = false;
   private isSavingToFirebase = false;
   private pendingFirebaseSave: Promise<void> | null = null;

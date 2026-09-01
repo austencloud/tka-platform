@@ -31,7 +31,10 @@ import {
   createLedRibbonMaterial,
   type LedRibbonMaterialOptions,
 } from "./led-ribbon-material-3d";
-import { LedRibbonGeometry3D, type RibbonSample } from "./led-ribbon-geometry-3d";
+import {
+  LedRibbonGeometry3D,
+  type RibbonSample,
+} from "./led-ribbon-geometry-3d";
 import { QualityTier } from "../types";
 
 /** Maximum LED tips per prop (matches 2D system's MAX_TOTAL_TIPS / 2) */
@@ -103,7 +106,7 @@ class RibbonSampleBuffer {
     timestamp: number,
     r: number,
     g: number,
-    b: number,
+    b: number
   ): void {
     const entry = this.buffer[this.head]!;
     entry.position.copy(position);
@@ -120,7 +123,7 @@ class RibbonSampleBuffer {
   fillOrdered(
     out: RibbonSample[],
     currentTime: number,
-    maxAge: number,
+    maxAge: number
   ): number {
     if (this._count === 0) return 0;
     const start = this._count < this.capacity ? 0 : this.head;
@@ -173,9 +176,12 @@ export class LedRenderer3D {
   private qualityTier: QualityTier;
   private fadeDuration: number;
   private parent: Object3D | null = null;
-  private ribbonMaterial: ReturnType<typeof createLedRibbonMaterial> | null = null;
+  private ribbonMaterial: ReturnType<typeof createLedRibbonMaterial> | null =
+    null;
   /** Scratch array for fillOrdered - reused across frames/LEDs. */
-  private readonly sampleScratch: RibbonSample[] = new Array(MAX_SAMPLES_PER_RIBBON);
+  private readonly sampleScratch: RibbonSample[] = new Array(
+    MAX_SAMPLES_PER_RIBBON
+  );
   /** Scratch vectors reused every frame to avoid GC pressure in the hot path. */
   private readonly scratchCameraPosition = new Vector3();
   private readonly scratchInterp = new Vector3();
@@ -198,7 +204,7 @@ export class LedRenderer3D {
   initialize(
     parent: Object3D,
     materialOptions?: LedMaterialOptions,
-    ribbonOptions?: LedRibbonMaterialOptions,
+    ribbonOptions?: LedRibbonMaterialOptions
   ): void {
     if (this.headMesh) return;
     this.parent = parent;
@@ -254,9 +260,10 @@ export class LedRenderer3D {
         const normalizedSpeed = Math.min(
           (speed - LedRenderer3D.STRETCH_SPEED_MIN) /
             (LedRenderer3D.STRETCH_SPEED_MAX - LedRenderer3D.STRETCH_SPEED_MIN),
-          1.0,
+          1.0
         );
-        stretchFactor = 1.0 + normalizedSpeed * (LedRenderer3D.MAX_STRETCH - 1.0);
+        stretchFactor =
+          1.0 + normalizedSpeed * (LedRenderer3D.MAX_STRETCH - 1.0);
         stretchAngle = Math.atan2(tip.velocityY, tip.velocityX);
       }
 
@@ -294,18 +301,24 @@ export class LedRenderer3D {
           if (dist > RIBBON_SAMPLE_SPACING) {
             const steps = Math.min(
               Math.ceil(dist / RIBBON_SAMPLE_SPACING),
-              MAX_SUBSTEPS_PER_FRAME,
+              MAX_SUBSTEPS_PER_FRAME
             );
             for (let s = 1; s < steps; s++) {
               const a = s / steps;
               this.scratchInterp.lerpVectors(
                 state.lastPosition,
                 tip.position,
-                a,
+                a
               );
               const interpTime = state.lastTimestamp + dt * a;
               // push() copies by value, so reusing scratch is safe.
-              state.buffer.push(this.scratchInterp, interpTime, tip.r, tip.g, tip.b);
+              state.buffer.push(
+                this.scratchInterp,
+                interpTime,
+                tip.r,
+                tip.g,
+                tip.b
+              );
             }
           }
         } else if (dt > MAX_SUBSTEP_DT) {
@@ -323,7 +336,7 @@ export class LedRenderer3D {
       const sampleCount = state.buffer.fillOrdered(
         this.sampleScratch,
         currentTime,
-        this.fadeDuration,
+        this.fadeDuration
       );
       if (sampleCount < 2) {
         state.ribbon.hide();
@@ -335,7 +348,7 @@ export class LedRenderer3D {
           LED_RIBBON_HALF_WIDTH,
           currentTime,
           this.fadeDuration,
-          tip.brightness,
+          tip.brightness
         );
       }
     }
@@ -352,9 +365,15 @@ export class LedRenderer3D {
     this.headMesh.count = headIndex;
 
     const geo = this.headMesh.geometry;
-    const colorAttr = geo.getAttribute("instanceColor") as InstancedBufferAttribute;
-    const alphaAttr = geo.getAttribute("instanceAlpha") as InstancedBufferAttribute;
-    const stretchAttr = geo.getAttribute("instanceStretch") as InstancedBufferAttribute;
+    const colorAttr = geo.getAttribute(
+      "instanceColor"
+    ) as InstancedBufferAttribute;
+    const alphaAttr = geo.getAttribute(
+      "instanceAlpha"
+    ) as InstancedBufferAttribute;
+    const stretchAttr = geo.getAttribute(
+      "instanceStretch"
+    ) as InstancedBufferAttribute;
     if (colorAttr) colorAttr.needsUpdate = true;
     if (alphaAttr) alphaAttr.needsUpdate = true;
     if (stretchAttr) stretchAttr.needsUpdate = true;
@@ -381,6 +400,21 @@ export class LedRenderer3D {
     return state;
   }
 
+  /**
+   * Allocate the bounded ribbon histories before an effect can be selected.
+   * The live update path then only rewrites existing buffers.
+   */
+  primeTipCapacity(tipCount: number): void {
+    const count = Math.min(
+      MAX_HEAD_INSTANCES,
+      Math.max(0, Math.floor(tipCount))
+    );
+    for (let index = 0; index < count; index++) {
+      const key = `${index}`;
+      if (!this.trails.has(key)) this.createTrailState(key);
+    }
+  }
+
   updateMaterialUniforms(options: Partial<LedMaterialOptions>): void {
     if (!this.headMesh) return;
     const mat = this.headMesh.material as ReturnType<typeof createLedMaterial>;
@@ -401,7 +435,8 @@ export class LedRenderer3D {
       this.ribbonMaterial.uniforms.uBrightness!.value = options.brightness;
     }
     if (options.emissiveStrength !== undefined) {
-      this.ribbonMaterial.uniforms.uEmissiveStrength!.value = options.emissiveStrength;
+      this.ribbonMaterial.uniforms.uEmissiveStrength!.value =
+        options.emissiveStrength;
     }
     if (options.coreStrength !== undefined) {
       this.ribbonMaterial.uniforms.uCoreStrength!.value = options.coreStrength;

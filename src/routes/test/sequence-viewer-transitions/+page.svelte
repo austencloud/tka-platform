@@ -98,10 +98,11 @@
   const acceptanceItems = $derived(
     review.activeGateId === "2d-3d"
       ? [
-          "the live 2D frame remains visible until 3D is ready",
-          "the first ready 3D frame arrives without its loading curtain",
+          "3D owns the stage immediately after selection; 2D never masquerades as the chosen mode",
+          "engine, scene, cast, and warmup phases disclose the real preparation state",
+          "progress only moves forward and the first ready frame replaces the preparation surface cleanly",
           "repeat switches crossfade on the same clock in both directions",
-          "rapid reversals never expose a blank or unready stage",
+          "rapid reversals never expose a blank or unprotected scene",
         ]
       : review.activeGateId === "stage-tunnel"
         ? [

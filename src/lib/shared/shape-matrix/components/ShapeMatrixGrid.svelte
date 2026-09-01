@@ -61,17 +61,26 @@
     return Math.max(44, Math.min(maxCellPx, fit));
   });
 
-  // Cells/headers render once at a fixed resolution; CSS scales to `cell`, so
-  // resizing never triggers a re-render and the image stays crisp.
-  const RENDER_PX = 128;
+  // Cells and headers are cached as vector images. They can follow the grid
+  // from the 44px touch-target floor through the 320px 4K layout without
+  // stretching a small raster image or rebuilding geometry during resize.
+  const VECTOR_VIEWBOX_PX = 128;
 
-  const headerSrc = (f: Flower, hand: "left" | "right") =>
-    paintHeader(
-      (hand === "left" ? data.left : data.right).get(flowerKey(f))!,
-      hand,
-      RENDER_PX,
-      data.clubTipDx
-    );
+  const headerCache = new Map<string, string>();
+  function headerSrc(f: Flower, hand: "left" | "right"): string {
+    const k = `${data.propType}__${hand}__${flowerKey(f)}`;
+    let url = headerCache.get(k);
+    if (!url) {
+      url = paintHeader(
+        (hand === "left" ? data.left : data.right).get(flowerKey(f))!,
+        hand,
+        VECTOR_VIEWBOX_PX,
+        data.clubTipDx
+      );
+      headerCache.set(k, url);
+    }
+    return url;
+  }
 
   const cellCache = new Map<string, string>();
   function cellSrc(b: Flower, r: Flower): string {
@@ -81,7 +90,7 @@
       url = paintCell(
         data.left.get(flowerKey(b))!,
         data.right.get(flowerKey(r))!,
-        RENDER_PX,
+        VECTOR_VIEWBOX_PX,
         data.clubTipDx
       );
       cellCache.set(k, url);
@@ -126,11 +135,11 @@
   {:else}
     <table
       class="matrix"
-      aria-label="Shape matrix: blue flower rows by red flower columns; activate a cell for its TKA realizations"
+      aria-label="Shape matrix: left-hand flower rows by right-hand flower columns; activate a cell for its TKA realizations"
     >
       <thead>
         <tr>
-          <th class="corner" scope="col" aria-label="blue rows by red columns"
+          <th class="corner" scope="col" aria-label="left rows by right columns"
           ></th>
           {#each colAxis as rf, colIndex (colIndex)}
             {@const source = headerSrc(rf, "right")}
@@ -141,7 +150,7 @@
                 duration={DURATION.emphasis}
                 delay={STAGGER.micro}
               >
-                <img src={source} alt={`red ${flowerLabel(rf)}`} />
+                <img src={source} alt={`right ${flowerLabel(rf)}`} />
               </Crossfade>
             </th>
           {/each}
@@ -158,7 +167,7 @@
                 duration={DURATION.emphasis}
                 delay={STAGGER.micro}
               >
-                <img src={rowSource} alt={`blue ${flowerLabel(bf)}`} />
+                <img src={rowSource} alt={`left ${flowerLabel(bf)}`} />
               </Crossfade>
             </th>
             {#each colAxis as rf, colIndex (colIndex)}
@@ -175,7 +184,8 @@
                   class:v-unsure={verdict === "unsure"}
                   class:dim={dimFor?.(bf, rf) ?? false}
                   use:watch={slotKey}
-                  aria-label={`blue ${flowerLabel(bf)} over red ${flowerLabel(rf)}`}
+                  aria-label={`left ${flowerLabel(bf)} over right ${flowerLabel(rf)}`}
+                  aria-pressed={selectedKey === key}
                   onclick={() => {
                     sel = key;
                     onselect({ left: bf, right: rf });
@@ -205,16 +215,16 @@
 <style>
   .wrap {
     overflow: auto;
-    height: 100%;
-    background: var(--theme-panel-bg, #0a0f14);
     display: grid;
+    height: 100%;
     place-content: safe center;
+    background: var(--theme-panel-bg, #0a0f14);
   }
   .empty {
-    color: rgba(255, 255, 255, 0.82);
     padding: 48px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.82));
     text-align: center;
-    font-size: 14px;
+    font-size: var(--font-size-min, 14px);
   }
 
   table.matrix {
@@ -230,7 +240,7 @@
 
   /* The table needs this cell to align its sticky row and column headers. It is
      visually neutral because the colored flower headers already identify both
-     axes; another blue/red legend reads like a selectable matrix result. */
+     axes; another left/right legend reads like a selectable matrix result. */
   .corner {
     position: sticky;
     top: 0;
@@ -238,9 +248,9 @@
     z-index: 5;
     width: var(--cell);
     height: var(--cell);
+    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: var(--theme-card-bg, #111922);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .colhead {
@@ -249,8 +259,8 @@
     z-index: 4;
     width: var(--cell);
     height: var(--cell);
-    background: var(--theme-card-bg, #111922);
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, #111922);
   }
   .rowhead {
     position: sticky;
@@ -258,8 +268,8 @@
     z-index: 3;
     width: var(--cell);
     height: var(--cell);
-    background: var(--theme-card-bg, #111922);
     border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, #111922);
   }
   .colhead img,
   .rowhead img {
@@ -288,7 +298,7 @@
       var(--transition-easing, ease);
   }
   .cell:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
   }
   .cell.sel {
     outline: none;
@@ -319,16 +329,31 @@
 
   /* Verdict tints: inset ring + wash, so the cell box never changes size. */
   .cell.v-legal {
-    box-shadow: inset 0 0 0 2px rgba(74, 222, 128, 0.85);
-    background: rgba(74, 222, 128, 0.12);
+    box-shadow: inset 0 0 0 2px
+      color-mix(in srgb, var(--semantic-success, #4ade80) 85%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #4ade80) 12%,
+      transparent
+    );
   }
   .cell.v-illegal {
-    box-shadow: inset 0 0 0 2px rgba(248, 113, 113, 0.85);
-    background: rgba(248, 113, 113, 0.14);
+    box-shadow: inset 0 0 0 2px
+      color-mix(in srgb, var(--semantic-error, #f87171) 85%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #f87171) 14%,
+      transparent
+    );
   }
   .cell.v-unsure {
-    box-shadow: inset 0 0 0 2px rgba(250, 204, 21, 0.8);
-    background: rgba(250, 204, 21, 0.1);
+    box-shadow: inset 0 0 0 2px
+      color-mix(in srgb, var(--semantic-warning, #facc15) 80%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-warning, #facc15) 10%,
+      transparent
+    );
   }
   .cell.dim {
     opacity: 0.25;

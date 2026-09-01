@@ -1,6 +1,8 @@
 <script lang="ts">
   import { formatTimeAgo } from "$lib/shared/i18n/i18n-formatters";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import TkaLabel from "$lib/shared/components/TkaLabel.svelte";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { ScanEventRow } from "$lib/features/choreo-card/state/scan-activity-state.svelte";
 
   interface Props {
@@ -31,6 +33,10 @@
       ? formatTimeAgo(milliseconds)
       : "Time unavailable";
   }
+
+  function displayWord(code: string): string {
+    return simplifyRepeatedWord(wordFor(code) || code);
+  }
 </script>
 
 <div class="list" aria-busy={loading}>
@@ -46,14 +52,16 @@
     {#each rows as event (event.id)}
       <div class="row" class:selected={selectedEventId === event.id}>
         <button
+          id={`scan-event-${event.id}`}
           class="event-action"
           type="button"
-          aria-label="Inspect {wordFor(event.code) || event.code} scan"
+          aria-label="Inspect {displayWord(event.code)} scan"
           aria-pressed={selectedEventId === event.id}
           onclick={() => onEventClick(event.id)}
         >
           <span class="identity">
-            <strong>{wordFor(event.code) || event.code}</strong>
+            <strong><TkaLabel text={displayWord(event.code)} darkMode /></strong
+            >
             <span>{event.code}</span>
           </span>
           <span class="when">{relativeTime(event.timestamp)}</span>

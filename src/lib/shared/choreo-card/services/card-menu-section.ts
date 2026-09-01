@@ -17,6 +17,7 @@ import type {
   ContextMenuItem,
 } from "$lib/shared/components/context-menu/context-menu-types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { getCanonicalCardStepColumnCounts } from "$lib/shared/render/services/card-step-column-options";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 import { buildVisualSequenceSaveMenuItem } from "$lib/shared/library/services/visual-sequence-save-menu-item";
 
@@ -56,11 +57,7 @@ export function buildCardMenuSection(deps: CardMenuSectionDeps): ContextMenuEntr
     const currentCols = composition.getColumnCountForStepCount(deps.stepCount);
     const stepCount = deps.stepCount;
 
-    const maxCols = Math.min(stepCount, 8);
-    const columnChoices: number[] = [];
-    for (let n = 2; n <= maxCols; n += 2) {
-      columnChoices.push(n);
-    }
+    const columnChoices = getCanonicalCardStepColumnCounts(stepCount);
 
     if (columnChoices.length > 0) {
       const children: ContextMenuItem[] = [

@@ -18,16 +18,43 @@ vi.mock("$lib/shared/auth/firebase", () => ({
 }));
 
 import { buildBaseIndex, resolveBase } from "../build-realization-sequence";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
+import {
+  createSequenceData,
+  type SequenceData,
+} from "$lib/shared/foundation/domain/models/sequence-data";
+import {
+  HandSide,
+  MotionType,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
-const seq = (word: string, left: string, right: string): SequenceData =>
-  ({
+type TestMotionStyle = "pro" | "anti";
+
+const seq = (
+  word: string,
+  left: TestMotionStyle,
+  right: TestMotionStyle
+): SequenceData =>
+  createSequenceData({
     id: `l1-tnd-${word}`,
+    name: word,
     word,
     steps: [
-      { motions: { left: { motionType: left }, right: { motionType: right } } },
+      createStepData({
+        motions: {
+          left: createMotionData({
+            hand: HandSide.LEFT,
+            motionType: left === "pro" ? MotionType.PRO : MotionType.ANTI,
+          }),
+          right: createMotionData({
+            hand: HandSide.RIGHT,
+            motionType: right === "pro" ? MotionType.PRO : MotionType.ANTI,
+          }),
+        },
+      }),
     ],
-  }) as unknown as SequenceData;
+  });
 
 // A representative slice of the 22-word base catalog with real style pairs.
 const bases = [

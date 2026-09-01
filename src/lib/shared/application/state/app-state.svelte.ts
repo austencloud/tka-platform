@@ -11,7 +11,11 @@ import { BackgroundType } from "@austencloud/backgrounds";
 import type { PerformanceSnapshot } from "../../foundation/ui/ui-types";
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "../../pictograph/prop/domain/enums/prop-type";
-import type { AppSettings, PropPreset } from "../../settings/domain/app-settings";
+import { DEFAULT_FAN_APPEARANCE } from "../../pictograph/prop/domain/fan-appearance";
+import type {
+  AppSettings,
+  PropPreset,
+} from "../../settings/domain/app-settings";
 import {
   getIsInitialized,
   getIsInitializing,
@@ -35,7 +39,6 @@ import {
 import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
 
 // HMR Test Comment - This should trigger a full reload
-
 
 // Default prop presets for new users (10 commonly-used configurations)
 const DEFAULT_PROP_PRESETS: PropPreset[] = [
@@ -61,6 +64,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   propPresets: DEFAULT_PROP_PRESETS,
   leftPropType: PropType.STAFF,
   rightPropType: PropType.STAFF,
+  fanAppearance: DEFAULT_FAN_APPEARANCE,
   selectedPresetIndex: 0,
 };
 
@@ -128,7 +132,6 @@ export function isSettingsPreviewMode(): boolean {
   return userPreviewState.isActive && userPreviewState.data.settings !== null;
 }
 
-
 const performanceMetrics = $state({
   initializationTime: 0,
   lastRenderTime: 0,
@@ -138,7 +141,6 @@ const performanceMetrics = $state({
 export function getPerformanceMetrics() {
   return performanceMetrics;
 }
-
 
 export function getIsReady() {
   return (
@@ -215,7 +217,6 @@ export function updateMemoryUsage(): void {
   }
 }
 
-
 export async function restoreApplicationState(): Promise<void> {
   try {
     // Preload cached module services first to prevent UI flicker
@@ -227,7 +228,6 @@ export async function restoreApplicationState(): Promise<void> {
     // Don't throw - app should work even if persistence fails
   }
 }
-
 
 // Performance snapshot for debugging
 export function createPerformanceSnapshot(): PerformanceSnapshot {
@@ -277,7 +277,6 @@ export function resetAppState(): void {
   // TODO: Implement resetToDefaults in SettingsState interface
   console.warn("resetToDefaults not implemented in SettingsState");
 }
-
 
 declare global {
   interface Window {

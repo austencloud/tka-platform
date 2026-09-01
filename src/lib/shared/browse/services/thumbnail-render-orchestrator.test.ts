@@ -53,14 +53,17 @@ function makeOrchestrator() {
   // render throw "reportActivity is not a function" instead of exercising the
   // tiers under test.
   const reportActivity = vi.fn();
-  const queue = {
-    enqueue: (
+  const enqueue = vi.fn(
+    (
       _hash: string,
       task: (
         signal: AbortSignal,
         reportActivity: () => void
       ) => Promise<unknown>
-    ) => task(new AbortController().signal, reportActivity),
+    ) => task(new AbortController().signal, reportActivity)
+  );
+  const queue = {
+    enqueue,
     getStats: () => ({ queued: 0, active: 0 }),
     cancel: () => {},
   };
@@ -73,7 +76,7 @@ function makeOrchestrator() {
     { render } as never,
     localCache as never
   );
-  return { orchestrator, render, localCache };
+  return { orchestrator, render, localCache, enqueue };
 }
 
 beforeEach(() => {
@@ -144,6 +147,35 @@ describe("ThumbnailRenderOrchestrator cache tiers", () => {
     expect(render).toHaveBeenCalledTimes(1);
     expect(result.fromCache).toBe(false);
     expect(localCache.get).not.toHaveBeenCalled();
+  });
+
+  it("reserves the exclusive queue lane only for QR-bearing thumbnails", async () => {
+    const ordinary = makeOrchestrator();
+    await ordinary.orchestrator.getThumbnail({
+      sequence,
+      input,
+      skipCache: true,
+    });
+    expect(ordinary.enqueue).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.any(Function),
+      expect.objectContaining({ exclusive: false })
+    );
+
+    const qr = makeOrchestrator();
+    await qr.orchestrator.getThumbnail({
+      sequence,
+      input: {
+        ...input,
+        visibility: { showQRCode: true },
+      },
+      skipCache: true,
+    });
+    expect(qr.enqueue).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.any(Function),
+      expect.objectContaining({ exclusive: true })
+    );
   });
 
   it("does not turn an ordinary unknown cloud key into a failed network request", async () => {

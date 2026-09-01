@@ -4,6 +4,13 @@ import { describe, expect, it, vi } from "vitest";
 import RecentScansList from "./RecentScansList.svelte";
 import type { ScanEventRow } from "$lib/features/choreo-card/state/scan-activity-state.svelte";
 
+vi.mock("$lib/shared/render/get-glyph-cache", () => ({
+  getGlyphCache: () => ({
+    getGlyphDataUrl: () => null,
+    loadGlyphsByLetter: () => Promise.resolve(),
+  }),
+}));
+
 const events: ScanEventRow[] = [
   {
     id: "shortcodes/9XAK/scanEvents/live",
@@ -30,14 +37,21 @@ describe("RecentScansList", () => {
         selectedEventId: events[0]!.id,
         onEventClick,
         onCityClick: vi.fn(),
-        wordFor: () => "Assemble Sequence",
+        wordFor: () => "ABAB",
       },
     });
 
     const scan = page.getByRole("button", {
-      name: "Inspect Assemble Sequence scan",
+      name: "Inspect AB scan",
     });
     await expect.element(scan).toHaveAttribute("aria-pressed", "true");
+    await expect
+      .element(scan)
+      .toHaveAttribute("id", `scan-event-${events[0]!.id}`);
+    await expect.element(page.getByText("ABAB")).not.toBeInTheDocument();
+    expect(
+      document.querySelector(".identity .tka-label.glyphs")
+    ).not.toBeNull();
     await scan.click();
 
     expect(onEventClick).toHaveBeenCalledExactlyOnceWith(events[0]!.id);

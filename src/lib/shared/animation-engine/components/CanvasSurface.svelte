@@ -68,6 +68,7 @@ captureEffectDiagnostics to the context menu.
   import { getRenderContextRegistry } from "../get-render-context-registry";
   import { installAnimatorDiagnostics } from "../debug/animator-diagnostics";
   import type { QualityTier } from "../domain/types/quality-types";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
   let {
     // Engine-driving props
@@ -88,6 +89,7 @@ captureEffectDiagnostics to the context menu.
     trailSettings: externalTrailSettings = $bindable(),
     leftPropType = null,
     rightPropType = null,
+    fanAppearance = undefined,
     leftBuugengFlipped = undefined,
     rightBuugengFlipped = undefined,
     previewDarkMode = null,
@@ -145,6 +147,7 @@ captureEffectDiagnostics to the context menu.
     trailSettings?: TrailSettings;
     leftPropType?: string | null;
     rightPropType?: string | null;
+    fanAppearance?: FanAppearance;
     leftBuugengFlipped?: boolean;
     rightBuugengFlipped?: boolean;
     previewDarkMode?: boolean | null;
@@ -418,6 +421,7 @@ captureEffectDiagnostics to the context menu.
       externalTrailSettings,
       leftPropType,
       rightPropType,
+      fanAppearance,
       leftBuugengFlipped,
       rightBuugengFlipped,
       previewDarkMode,

@@ -89,6 +89,13 @@
   } from "../tunnel/tunnel-composition";
   import { createViewerInspectorHostState } from "../state/viewer-inspector-host-state.svelte";
   import { setViewerInspectorHostContext } from "../context/viewer-inspector-host-context";
+  import { createCardPresentationState } from "$lib/shared/share/state/card-presentation-state.svelte";
+  import {
+    cardPresentationFromFooterSettings,
+    resolveCardFooter,
+    type CardPresentation,
+  } from "$lib/shared/share/domain/models/card-presentation";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 
   /** Host-owned export pipeline (such as the scan-origin account gate).
       Absent → the orchestrator's own ctx.handleExport pipeline (the app). */
@@ -185,6 +192,41 @@
   const inspectorHost = createViewerInspectorHostState();
   setViewerInspectorHostContext(inspectorHost);
   $effect(() => inspectorHost.setTarget(artInspectorTarget));
+
+  const imageCompositionDefaults = getImageCompositionManager();
+  const cardPresentation = createCardPresentationState({
+    getDefault: () =>
+      cardPresentationFromFooterSettings(
+        imageCompositionDefaults.showNotes,
+        imageCompositionDefaults.customNotesText
+      ),
+  });
+  $effect(() => {
+    const current = ctx.effectiveSequence ?? sequence;
+    cardPresentation.load(current);
+  });
+  const resolvedCardFooter = $derived(
+    resolveCardFooter(cardPresentation.value)
+  );
+  const currentCardImageComposition = $derived({
+    ...ctx.splitPaneImageComposition,
+    showNotes: resolvedCardFooter.show,
+    customNotesText: resolvedCardFooter.text,
+  });
+
+  async function persistCardPresentation(
+    value: CardPresentation = cardPresentation.value
+  ): Promise<boolean> {
+    if (cardPresentation.saving) return false;
+    cardPresentation.saving = true;
+    try {
+      const saved = await ctx.saveCardPresentation(value);
+      if (saved) cardPresentation.markSaved(value);
+      return saved;
+    } finally {
+      cardPresentation.saving = false;
+    }
+  }
 
   const scanInstrumentationEnabled = isScanVisit();
   const layout = createViewerShellLayoutState(
@@ -638,14 +680,15 @@
                     onSaveToLibrary={interactions.handleSave}
                     onPropChange={(prop) =>
                       interactions.handlePropChange(prop, "viewer")}
+                    onFanAppearanceChange={ctx.handleFanAppearanceChange}
                     playback={ctx.splitPanePlayback}
                     imageComposition={layout.isImageExportActive
                       ? {
-                          ...ctx.splitPaneImageComposition,
+                          ...currentCardImageComposition,
                           darkMode: ctx.exportOptions.imageDarkMode,
                           forceContain: true,
                         }
-                      : ctx.splitPaneImageComposition}
+                      : currentCardImageComposition}
                     propRendering={ctx.splitPanePropRendering}
                     layout={{
                       isFullscreen: ctx.isFullscreen,
@@ -839,6 +882,8 @@
                         renderMode={ctx.renderMode}
                         playbackMode={ctx.playbackMode}
                         selectedPropType={ctx.leftPropType}
+                        fanAppearance={ctx.fanAppearance}
+                        onFanAppearanceChange={ctx.handleFanAppearanceChange}
                         propChirality={createGlobalChiralitySeam()}
                         sequence={ctx.effectiveSequence}
                         showInlineExportProgress={false}
@@ -875,6 +920,16 @@
                     resolvedAutoLayout={ctx.resolvedCardAutoLayout}
                     layout={layout.effectiveMobile ? "bottom" : "sidebar"}
                     onSettingChange={interactions.handleCardSettingChange}
+                    cardPresentation={cardPresentation.value}
+                    onCardPresentationChange={cardPresentation.set}
+                    onSaveCardPresentation={ctx.isOwned &&
+                    ctx.isOwnedLibraryRecord
+                      ? async () => {
+                          await persistCardPresentation();
+                        }
+                      : undefined}
+                    cardPresentationDirty={cardPresentation.dirty}
+                    cardPresentationSaving={cardPresentation.saving}
                   />
                 {/if}
               </div>
@@ -892,6 +947,15 @@
               layout="bottom"
               onClose={interactions.handleUnfocusPane}
               onSettingChange={interactions.handleCardSettingChange}
+              cardPresentation={cardPresentation.value}
+              onCardPresentationChange={cardPresentation.set}
+              onSaveCardPresentation={ctx.isOwned && ctx.isOwnedLibraryRecord
+                ? async () => {
+                    await persistCardPresentation();
+                  }
+                : undefined}
+              cardPresentationDirty={cardPresentation.dirty}
+              cardPresentationSaving={cardPresentation.saving}
             />
           </div>
         {/if}
@@ -1011,6 +1075,10 @@
       ? "video"
       : "card"}
     resolvedCardAutoLayout={ctx.resolvedCardAutoLayout}
+    initialCardPresentation={cardPresentation.value}
+    onSaveCardPresentation={ctx.isOwned && ctx.isOwnedLibraryRecord
+      ? persistCardPresentation
+      : undefined}
     onSendInTka={() => share.sendToInbox()}
     onOpenPostStudio={canAccessPostStudio()
       ? () => layout.selectViewerMode("post-studio")

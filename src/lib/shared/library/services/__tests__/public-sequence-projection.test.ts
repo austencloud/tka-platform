@@ -128,6 +128,10 @@ function buildSourceSequence(
     animationFormat: "webp",
     // Private — must not reach the public document.
     notes: "my private tagline",
+    cardPresentation: {
+      schemaVersion: 1,
+      footer: { mode: "custom", text: "Shared footer" },
+    },
     performanceVideoUrl: "https://example.test/private.mp4",
     performanceVideoPath: "users/u1/private.mp4",
     animatedSequencePath: "users/u1/anim.webp",
@@ -383,6 +387,7 @@ describe("buildPublicSequenceProjection — field coverage", () => {
 
     for (const key of [
       "notes",
+      "cardPresentation",
       "performanceVideoUrl",
       "performanceVideoPath",
       "animatedSequencePath",

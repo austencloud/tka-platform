@@ -46,9 +46,11 @@ describe("CollisionDetector arm/body coverage", () => {
       0.4
     );
 
-    expect(events.some((event) => event.zone === "arm-through-neck")).toBe(
-      true
+    const neckEvent = events.find(
+      (event) => event.zone === "arm-through-neck"
     );
+    expect(neckEvent).toBeDefined();
+    expect(neckEvent?.description).toContain("endpoint");
     expect(events.some((event) => event.zone === "arm-through-face")).toBe(
       false
     );
@@ -68,9 +70,31 @@ describe("CollisionDetector arm/body coverage", () => {
       0.6
     );
 
-    expect(events.some((event) => event.zone === "arm-through-torso")).toBe(
-      true
+    const torsoEvent = events.find(
+      (event) => event.zone === "arm-through-torso"
     );
+    expect(torsoEvent).toBeDefined();
+    expect(torsoEvent?.description).toContain("endpoint");
+  });
+
+  it("reports the hand distance for a face intersection", () => {
+    detector = new CollisionDetector();
+    const events = detector.detect(
+      body({
+        leftElbow: point(-0.25, 1.78, 0.18),
+        leftHand: point(0.25, 1.78, 0.18),
+      }),
+      null,
+      null,
+      6,
+      0.5
+    );
+
+    const faceEvent = events.find(
+      (event) => event.zone === "arm-through-face"
+    );
+    expect(faceEvent).toBeDefined();
+    expect(faceEvent?.description).toContain("hand");
   });
 
   it("does not flag the attached shoulder root as a torso collision", () => {
