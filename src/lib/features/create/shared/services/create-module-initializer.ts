@@ -282,7 +282,7 @@ export class CreateModuleInitializer {
         panelState.openBatchEditPanel(stepsData as StepData[]);
       } else {
         // Single beat: open Sequence Actions panel (auto-open effect will handle it based on selection)
-        panelState.openSequenceActionsPanel();
+        panelState.openSequenceActionsPanel("step_edit");
       }
     };
 

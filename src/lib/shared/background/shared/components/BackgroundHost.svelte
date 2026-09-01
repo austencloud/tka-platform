@@ -18,7 +18,10 @@
 		buildPentatonicNotes,
 		midiToFreq
 	} from '$lib/shared/3d/environments/scenes/ocean/runtime/fauna/jellyfish/jellyfish-chime';
-	import { isBackgroundInteractionBlocked } from '../background-interaction-routing';
+	import {
+		isBackgroundInteractionBlocked,
+		toBackgroundCoordinates
+	} from '../background-interaction-routing';
 	import { createOceanBubblePop } from '../ocean-bubble-pop';
 	import { isBackgroundSuppressed } from '../state/background-suppression.svelte';
 	import { holdBackground, releaseBackground } from '../state/background-hold.svelte';
@@ -93,6 +96,16 @@
 		return isBackgroundInteractionBlocked(document.elementFromPoint(event.clientX, event.clientY));
 	}
 
+	function backgroundCoordinates(event: PointerEvent, rect: DOMRect): { x: number; y: number } {
+		const canvas =
+			containerRef?.querySelector<HTMLCanvasElement>('canvas.background-canvas.active') ??
+			containerRef?.querySelector<HTMLCanvasElement>('canvas.background-canvas');
+		return toBackgroundCoordinates(event.clientX, event.clientY, rect, {
+			width: canvas?.width ?? rect.width,
+			height: canvas?.height ?? rect.height
+		});
+	}
+
 	// On a genuinely low-capability device (explicit data-saver, or a slow 3g-or-worse
 	// radio bucket) the device is usually a phone that can't comfortably repaint the
 	// background at full viewport resolution every frame. In that case we cap the
@@ -150,9 +163,9 @@
 		}
 
 		// App-wide cursor flee: the container is pointer-events:none, so listen on
-		// window and map client coords to container-relative px. The canvas is sized
-		// to the container (patchCanvasResolution), so container CSS px == canvas
-		// logical px. setPointer is method-optional-chained: it no-ops for
+		// window and map client coords to backing-canvas px. This preserves accurate
+		// hit targets when a constrained device uses a smaller internal buffer.
+		// setPointer is method-optional-chained: it no-ops for
 		// non-ocean backgrounds (their systems lack setPointer) AND for a stale
 		// HMR-persisted controller singleton from a pre-0.6.2 build that predates
 		// the setPointer API. Safe app-wide; a hard reload picks up the new method.
@@ -162,9 +175,8 @@
 		// hover. The container is pointer-events:none behind the app, so the cursor is
 		// set on <body> — an inherited property, so descendants that don't set their
 		// own cursor pick it up, while buttons/inputs keep theirs. On desktop the canvas
-		// is sized 1:1 to the container (the constrained-res cap only trips on
-		// phones/data-saver), so container CSS px == the canvas-logical px the jelly
-		// positions live in — the same space pokeAt() hit-tests.
+		// usually renders 1:1 with the container; backgroundCoordinates also covers
+		// the constrained-resolution path.
 		const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 		let cursorOverJelly = false;
 		const setJellyCursor = (over: boolean) => {
@@ -176,9 +188,12 @@
 		const onPointerMove = (e: PointerEvent) => {
 			if (!controller || !containerRef) return;
 			const rect = containerRef.getBoundingClientRect();
-			const x = e.clientX - rect.left;
-			const y = e.clientY - rect.top;
-			const inside = x >= 0 && y >= 0 && x <= rect.width && y <= rect.height;
+			const { x, y } = backgroundCoordinates(e, rect);
+			const inside =
+				e.clientX >= rect.left &&
+				e.clientY >= rect.top &&
+				e.clientX <= rect.right &&
+				e.clientY <= rect.bottom;
 			controller.setPointer?.(x, y, inside, e.pointerType);
 			if (finePointer.matches) {
 				// Only claim the pointer cursor where a poke would actually fire — not
@@ -211,8 +226,7 @@
 			// inside it. Empty drawer and viewer space must never ring the ocean behind.
 			if (foregroundOwnsPointer(e)) return;
 			const rect = containerRef.getBoundingClientRect();
-			const x = e.clientX - rect.left;
-			const y = e.clientY - rect.top;
+			const { x, y } = backgroundCoordinates(e, rect);
 			const r = controller.pokeAt?.(x, y);
 			if (r?.hit) {
 				const idx = Math.round(r.pitch01 * (notes.length - 1));

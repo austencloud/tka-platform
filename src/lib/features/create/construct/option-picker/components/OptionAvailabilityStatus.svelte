@@ -18,15 +18,19 @@
   }: Props = $props();
 
   const visualMessage = $derived(
-    hiddenCount > 0
-      ? `Continuous: ${shownCount} shown · ${hiddenCount} hidden by CW/CCW to avoid reversals.`
-      : `Continuous: ${shownCount} shown · none hidden by CW/CCW.`
+    hiddenCount === 0
+      ? `${shownCount} shown · none would reverse a hand.`
+      : shownCount === 0
+        ? "No options shown · every option would reverse a hand."
+        : `${shownCount} shown · ${hiddenCount} hidden: ${hiddenCount === 1 ? "it would" : "they would"} reverse a hand.`
   );
   const announcement = $derived(
     active
-      ? hiddenCount > 0
-        ? `Continuous mode. ${shownCount} options shown. ${hiddenCount} options hidden by the clockwise and counterclockwise settings to avoid reversals.`
-        : `Continuous mode. ${shownCount} options shown. No options hidden by the clockwise and counterclockwise settings.`
+      ? hiddenCount === 0
+        ? `${shownCount} options shown. None would reverse a hand.`
+        : shownCount === 0
+          ? "No options shown. Every option would reverse a hand, so Continuous mode hides them."
+          : `${shownCount} options shown. ${hiddenCount} options would reverse a hand, so Continuous mode hides them.`
       : ""
   );
 </script>
@@ -43,7 +47,7 @@
       aria-hidden="true"
       transition:growFade={{ axis: "y", duration: DURATION.emphasis }}
     >
-      <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+      <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
       <div class="availability-copy">
         <Crossfade key={visualMessage} duration={DURATION.fast}>
           <span>{visualMessage}</span>
