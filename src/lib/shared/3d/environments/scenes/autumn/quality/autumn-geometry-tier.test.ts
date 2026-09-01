@@ -3,6 +3,7 @@ import {
   BoxGeometry,
   Group,
   InstancedMesh,
+  Matrix4,
   Mesh,
   MeshStandardMaterial,
 } from "three";
@@ -18,10 +19,19 @@ function instanced(materialName: string, count: number): InstancedMesh {
   return new InstancedMesh(new BoxGeometry(1, 1, 1), material, count);
 }
 
+function place(mesh: InstancedMesh, positions: readonly number[]): void {
+  positions.forEach((x, index) => {
+    mesh.setMatrixAt(index, new Matrix4().makeTranslation(x, 0, 0));
+  });
+  mesh.instanceMatrix.needsUpdate = true;
+}
+
 describe("Autumn geometry tiers", () => {
-  it("keeps high intact and makes medium and low materially cheaper", () => {
+  it("keeps every authored placement at every quality tier", () => {
     const scene = new Group();
-    scene.add(instanced("Autumn Fern PBR", 54));
+    const ferns = instanced("Autumn Fern PBR", 10);
+    place(ferns, [0, 1, 2, 3, 4, 64, 65, 66, 67, 68]);
+    scene.add(ferns);
     scene.add(instanced("Autumn Birch PBR", 12));
     scene.add(new Mesh(new BoxGeometry(1, 1, 1), new MeshStandardMaterial()));
 
@@ -30,20 +40,37 @@ describe("Autumn geometry tiers", () => {
     const low = applyAutumnGeometryTier(scene, "low");
 
     expect(high.visibleTriangles).toBe(high.authoredTriangles);
-    expect(medium.visibleTriangles).toBeLessThan(high.visibleTriangles * 0.8);
-    expect(low.visibleTriangles).toBeLessThan(high.visibleTriangles * 0.5);
+    expect(medium.visibleTriangles).toBe(high.visibleTriangles);
+    expect(low.visibleTriangles).toBe(high.visibleTriangles);
+    expect(low.trimmedInstances).toBe(0);
     expect(getAutumnRenderedTriangleCount(scene)).toBe(low.visibleTriangles);
   });
 
-  it("restores the authored counts when the scene owner unmounts", () => {
+  it("partitions broad repeated families into exact spatial culling cells", () => {
     const scene = new Group();
-    const ferns = instanced("Autumn Fern PBR", 54);
+    const ferns = instanced("Autumn Fern PBR", 10);
+    place(ferns, [0, 1, 2, 3, 4, 64, 65, 66, 67, 68]);
     scene.add(ferns);
 
-    applyAutumnGeometryTier(scene, "low");
-    expect(ferns.count).toBe(18);
+    const report = applyAutumnGeometryTier(scene, "low");
+    const buckets = scene.children.filter(
+      (child): child is InstancedMesh =>
+        child instanceof InstancedMesh && child !== ferns
+    );
+
+    expect(report.spatialBatches).toBe(2);
+    expect(scene.matrixAutoUpdate).toBe(true);
+    expect(ferns.matrixAutoUpdate).toBe(false);
+    expect(scene.children).not.toContain(ferns);
+    expect(buckets.map((bucket) => bucket.count)).toEqual([5, 5]);
+    expect(buckets.every((bucket) => bucket.geometry === ferns.geometry)).toBe(
+      true
+    );
+
     restoreAutumnGeometryTier(scene);
-    expect(ferns.count).toBe(54);
+    expect(scene.children).toContain(ferns);
+    expect(ferns.count).toBe(10);
+    expect(ferns.matrixAutoUpdate).toBe(true);
   });
 
   it("leaves unknown instanced batches untouched", () => {

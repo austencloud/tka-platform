@@ -64,4 +64,16 @@ describe("Autumn retained runtime lifecycle", () => {
       'window.removeEventListener("pointermove", onPointerMove)'
     );
   });
+
+  it("keeps the interactive framebuffer discardable without breaking capture", () => {
+    const viewer = source("src/lib/shared/3d/components/Viewer3DCanvas.svelte");
+    const postProcessing = source(
+      "src/lib/shared/3d/effects/post-processing/ScenePostProcessing.svelte"
+    );
+
+    expect(viewer).toContain("preserveDrawingBuffer: false");
+    expect(viewer).toContain("<InteractiveCanvasFrameBridge />");
+    expect(postProcessing).toContain("registerInteractiveCanvasFrameProvider");
+    expect(postProcessing).toContain("renderCurrentFrame(0, true)");
+  });
 });

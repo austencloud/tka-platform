@@ -1,6 +1,12 @@
 import { getAutumnEnvironmentUrl } from "./autumn-boot-state";
 
-export const AUTUMN_ENVIRONMENT_TIMEOUT_MS = 15_000;
+export const AUTUMN_ENVIRONMENT_STALL_TIMEOUT_MS = 15_000;
+export const AUTUMN_ENVIRONMENT_TOTAL_TIMEOUT_MS = 90_000;
+
+export interface AutumnEnvironmentProgress {
+  loaded: number;
+  total?: number;
+}
 
 export interface AutumnEnvironmentFailure {
   reason: "rejected" | "timeout";
@@ -10,10 +16,14 @@ export interface AutumnEnvironmentFailure {
 
 interface StartAutumnEnvironmentRequestOptions<T> {
   retryRequest: number;
-  load: (url: string) => Promise<T>;
+  load: (
+    url: string,
+    onProgress: (progress: AutumnEnvironmentProgress) => void
+  ) => PromiseLike<T>;
   onReady: (value: T) => void;
   onFailure: (failure: AutumnEnvironmentFailure) => void;
-  timeoutMs?: number;
+  stallTimeoutMs?: number;
+  totalTimeoutMs?: number;
 }
 
 /**
@@ -27,34 +37,62 @@ export function startAutumnEnvironmentRequest<T>({
   load,
   onReady,
   onFailure,
-  timeoutMs = AUTUMN_ENVIRONMENT_TIMEOUT_MS,
+  stallTimeoutMs = AUTUMN_ENVIRONMENT_STALL_TIMEOUT_MS,
+  totalTimeoutMs = AUTUMN_ENVIRONMENT_TOTAL_TIMEOUT_MS,
 }: StartAutumnEnvironmentRequestOptions<T>): () => void {
   let cancelled = false;
   let settled = false;
+  let lastLoadedBytes = -1;
+  let stallTimer: ReturnType<typeof setTimeout>;
 
-  const timer = setTimeout(() => {
+  function failForTimeout(message: string): void {
     if (cancelled || settled) return;
     settled = true;
+    clearTimeout(stallTimer);
+    clearTimeout(totalTimer);
     onFailure({
       reason: "timeout",
-      message:
-        "Autumn is taking too long to load. Check the connection and retry.",
+      message,
     });
-  }, timeoutMs);
+  }
+
+  function armStallTimer(): void {
+    clearTimeout(stallTimer);
+    stallTimer = setTimeout(() => {
+      failForTimeout(
+        "Autumn stopped receiving data. Check the connection and retry."
+      );
+    }, stallTimeoutMs);
+  }
+
+  function reportProgress(progress: AutumnEnvironmentProgress): void {
+    if (cancelled || settled || progress.loaded <= lastLoadedBytes) return;
+    lastLoadedBytes = progress.loaded;
+    armStallTimer();
+  }
+
+  const totalTimer = setTimeout(() => {
+    failForTimeout(
+      "Autumn is taking too long to finish loading. Check the connection and retry."
+    );
+  }, totalTimeoutMs);
+  armStallTimer();
 
   Promise.resolve()
-    .then(() => load(getAutumnEnvironmentUrl(retryRequest)))
+    .then(() => load(getAutumnEnvironmentUrl(retryRequest), reportProgress))
     .then(
       (value) => {
         if (cancelled || settled) return;
         settled = true;
-        clearTimeout(timer);
+        clearTimeout(stallTimer);
+        clearTimeout(totalTimer);
         onReady(value);
       },
       (error: unknown) => {
         if (cancelled || settled) return;
         settled = true;
-        clearTimeout(timer);
+        clearTimeout(stallTimer);
+        clearTimeout(totalTimer);
         onFailure({
           reason: "rejected",
           message: "Autumn couldn't load. Retry the environment.",
@@ -65,6 +103,7 @@ export function startAutumnEnvironmentRequest<T>({
 
   return () => {
     cancelled = true;
-    clearTimeout(timer);
+    clearTimeout(stallTimer);
+    clearTimeout(totalTimer);
   };
 }

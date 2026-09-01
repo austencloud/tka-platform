@@ -90,7 +90,7 @@
 <AutumnDepthCohesion scene={environmentScene} />
 
 <!-- Moon-aligned dusk light rig -->
-<AutumnLighting {quality} {groundY} />
+<AutumnLighting {quality} {groundY} {active} />
 
 <!-- The distant wayfinding lantern breathes through its existing emissive
      material. It adds no point light, shadow pass, or draw call. -->

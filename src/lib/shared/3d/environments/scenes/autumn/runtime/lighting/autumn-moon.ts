@@ -14,6 +14,9 @@
  */
 export const AUTUMN_MOON_DIRECTION: [number, number, number] = [-6, 26, -56];
 
+/** Four times the projected 4K hero-shot diameter, without a 15 MB RGBA decode. */
+export const AUTUMN_MOON_TEXTURE_URL = "/textures/autumn/moon-512.png";
+
 /**
  * Art-directed disk placement for performance cameras.
  *
