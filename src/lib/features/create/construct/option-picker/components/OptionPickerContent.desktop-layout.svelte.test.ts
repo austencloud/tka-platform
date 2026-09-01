@@ -131,4 +131,29 @@ describe("OptionPickerContent desktop layout", () => {
       settingsPanel!.clientHeight
     );
   });
+
+  it("keeps the filter and explanation when direction settings hide every option", async () => {
+    render(OptionPickerDesktopLayoutHarness, {
+      width: 1200,
+      height: 700,
+      continuous: true,
+      sequenceLength: 2,
+      leftTurns: 2,
+      rightTurns: 2,
+      shownCount: 0,
+      hiddenCount: 6,
+    });
+
+    await expect
+      .element(page.getByRole("button", { name: "Continuous" }))
+      .toBeInTheDocument();
+    await expect
+      .element(page.getByRole("status"))
+      .toHaveTextContent(
+        "6 options hidden by the clockwise and counterclockwise settings"
+      );
+    expect(
+      document.querySelector(".availability-status")?.textContent
+    ).toContain("0 shown · 6 hidden by CW/CCW to avoid reversals");
+  });
 });

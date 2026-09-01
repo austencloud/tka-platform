@@ -24,7 +24,7 @@ Delegates all rendering to child components.
     type TurnLevel,
     type TurnValue,
   } from "$lib/shared/create/services/level-turn-values";
-  import { countDirectionReversals } from "$lib/features/create/construct/option-picker/services/reversal-checker";
+  import { filterDirectionContinuousOptions } from "$lib/features/create/construct/option-picker/services/reversal-checker";
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
   import { calculateDeviceAwareSize } from "../services/option-grid-fit-calculator";
@@ -104,6 +104,7 @@ Delegates all rendering to child components.
     null
   );
   let preparedOptions = $state<PreparedPictographData[]>([]);
+  let optionAvailability = $state({ shownCount: 0, hiddenCount: 0 });
   let isReady = $state(false);
   let isSelecting = $state(false);
   let initError = $state<string | null>(null);
@@ -203,9 +204,10 @@ Delegates all rendering to child components.
   }
 
   // Apply sticky turns to each option, then prepare for rendering.
-  function prepareWithTurns(
-    filtered: PictographData[]
-  ): Promise<PreparedPictographData[]> {
+  async function prepareWithTurns(filtered: PictographData[]): Promise<{
+    options: PreparedPictographData[];
+    availability: { shownCount: number; hiddenCount: number };
+  }> {
     // One tile per option: apply the chosen per-hand spin direction to dash/static
     // hands rather than fanning out CW/CCW tiles (keeps the grid scannable).
     const noTurns = effectiveLeftTurns === 0 && effectiveRightTurns === 0;
@@ -225,17 +227,25 @@ Delegates all rendering to child components.
     // direction reverses against the established direction. Direction-only (not
     // full getReversalCount) so the turns>1 magnitude heuristic doesn't nuke
     // every option at 2+ turns.
-    if (!noTurns && internalContinuousOnly && currentSequence.length >= 2) {
-      turned = turned.filter(
-        (o) => countDirectionReversals(o, currentSequence) === 0
-      );
-    }
+    const directionResult =
+      !noTurns && internalContinuousOnly && currentSequence.length >= 2
+        ? filterDirectionContinuousOptions(turned, currentSequence)
+        : { options: turned, totalCount: turned.length, hiddenCount: 0 };
+    turned = directionResult.options;
 
     const s = getSettings();
-    return preparer!.prepareBatch(turned, {
+    const options = await preparer!.prepareBatch(turned, {
       leftPropType: leftPropTypeOverride ?? s.leftPropType,
       rightPropType: rightPropTypeOverride ?? s.rightPropType,
     });
+
+    return {
+      options,
+      availability: {
+        shownCount: options.length,
+        hiddenCount: directionResult.hiddenCount,
+      },
+    };
   }
 
   // Single effect: always push the prop value to both internal state and pickerState
@@ -326,6 +336,7 @@ Delegates all rendering to child components.
   $effect(() => {
     if (!pickerState || !preparer) {
       preparedOptions = [];
+      optionAvailability = { shownCount: 0, hiddenCount: 0 };
       return;
     }
 
@@ -356,6 +367,7 @@ Delegates all rendering to child components.
       // Loading returns above, so an empty ready state is authoritative. Clear
       // stale tiles instead of offering an option from the prior filter state.
       preparedOptions = [];
+      optionAvailability = { shownCount: 0, hiddenCount: 0 };
       isSelecting = false;
       return;
     }
@@ -370,8 +382,9 @@ Delegates all rendering to child components.
     void _leftRotation;
     void _rightRotation;
 
-    prepareWithTurns(filtered).then((prepared) => {
-      preparedOptions = prepared;
+    prepareWithTurns(filtered).then((frame) => {
+      preparedOptions = frame.options;
+      optionAvailability = frame.availability;
       isSelecting = false;
     });
   });
@@ -412,8 +425,12 @@ Delegates all rendering to child components.
           filtered = filtered.filter(filterPredicate);
         }
         if (preparer && filtered.length > 0) {
-          const prepared = await prepareWithTurns(filtered);
-          preparedOptions = prepared;
+          const frame = await prepareWithTurns(filtered);
+          preparedOptions = frame.options;
+          optionAvailability = frame.availability;
+        } else if (filtered.length === 0) {
+          preparedOptions = [];
+          optionAvailability = { shownCount: 0, hiddenCount: 0 };
         }
       } finally {
         isSelecting = false;
@@ -514,6 +531,7 @@ Delegates all rendering to child components.
 {:else}
   <OptionPickerContent
     options={preparedOptions}
+    {optionAvailability}
     {organizerService}
     {sizerService}
     onSelect={handleSelect}

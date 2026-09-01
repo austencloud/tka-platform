@@ -36,6 +36,18 @@ export interface Section {
   groupId?: string;
 }
 
+/** A module landing surface that sits above its peer sections without becoming
+ * a fake section in routing state. */
+export interface SectionHomeDestination {
+  label: string;
+  optionLabel?: string;
+  ariaLabel?: string;
+  icon: string;
+  color?: string;
+  gradient?: string;
+  active: boolean;
+}
+
 /**
  * Section Group
  * A collapsible cluster of sections within a single module's sidebar.
