@@ -95,6 +95,7 @@ captureEffectDiagnostics to the context menu.
     previewDarkMode = null,
     isSeamlesslyLoopable = undefined,
     showNonRadialPoints = true,
+    mandalaVisibleOverride = undefined,
     fireConfig = undefined,
     ledConfig = undefined,
     tipEffectMap: cellTipEffectMap = undefined,
@@ -153,6 +154,7 @@ captureEffectDiagnostics to the context menu.
     previewDarkMode?: boolean | null;
     isSeamlesslyLoopable?: boolean;
     showNonRadialPoints?: boolean;
+    mandalaVisibleOverride?: boolean;
     fireConfig?: Partial<FireOverlayConfig>;
     ledConfig?: Partial<LedOverlayConfig>;
     tipEffectMap?: TipEffectMap;
@@ -428,6 +430,7 @@ captureEffectDiagnostics to the context menu.
       isSeamlesslyLoopable,
       virtualTime,
       showNonRadialPoints,
+      mandalaVisibleOverride,
     };
     untrack(() => {
       if (currentFireConfig) {
