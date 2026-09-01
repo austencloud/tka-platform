@@ -169,12 +169,10 @@
     {/if}
   </div>
 
-  <!-- Row 2: blue (left half) / red (right half), present whenever the level has
-       turns. The buttons fill each half; the CW/CCW spin button is pinned to the
-       half's outer (colored) edge — absolutely positioned into a gutter that is
-       reserved only while that hand has turns (the .has-spin state). The gutter
-       padding animates, so the button and its room appear/collapse together
-       rather than snapping. -->
+  <!-- Row 2: blue then red, present whenever the level has turns. Each hand uses
+       the same reading order: turn amount first, spin direction at the trailing
+       edge. The matching columns make the two settings easy to compare when the
+       hand panels stack. -->
   {#if showTurnControls && turnsAvailable}
     <!-- growFade (not svelte's slide) so the row's own height drives the reflow
          AND reduced motion collapses it — svelte's JS transitions ignore the
@@ -387,9 +385,8 @@
     }
   }
 
-  /* Row 2: two equal halves — blue (left), red (right) — revealed by sliding
-     down. Each half centers [label][stepper]; the spin button is pinned to the
-     half's colored edge, out of flow. */
+  /* Row 2: two equal halves — blue then red — revealed by sliding down. Each
+     half keeps its spin direction at the trailing edge, out of flow. */
   .oph-turns-row {
     display: flex;
     gap: 10px;
@@ -403,7 +400,7 @@
     align-items: center;
     gap: 10px;
     /* The turn buttons fill the half; the spin button is pinned out of flow on
-       the colored edge. Its gutter is reserved only while this hand has turns
+       the trailing edge. Its gutter is reserved only while this hand has turns
        (.has-spin) — the padding animates so the turn buttons slide as the gutter
        and its CW/CCW button appear or collapse together, never a snap. The
        gutter is a touch wider than the button so it clears the panel edge (outer
@@ -416,10 +413,7 @@
     transition: padding var(--duration-normal, 200ms) ease;
   }
 
-  .hand-half.blue.has-spin {
-    padding-left: var(--spin-gutter);
-  }
-
+  .hand-half.blue.has-spin,
   .hand-half.red.has-spin {
     padding-right: var(--spin-gutter);
   }
@@ -496,7 +490,7 @@
     transform: scale(0.96);
   }
 
-  /* Pin the spin button to the half's outer (colored) edge, vertically centered.
+  /* Pin the spin button to the half's trailing edge, vertically centered.
      Out of flow, so it has its own room and never shifts the centered stepper. */
   .spin-inline.edge {
     position: absolute;
@@ -504,10 +498,7 @@
     transform: translateY(-50%);
   }
 
-  .hand-half.blue .spin-inline.edge {
-    left: 14px;
-  }
-
+  .hand-half.blue .spin-inline.edge,
   .hand-half.red .spin-inline.edge {
     right: 14px;
   }
@@ -571,10 +562,7 @@
       border-radius: 10px;
     }
 
-    .oph:not(.compact) .hand-half.blue .spin-inline.edge {
-      left: 8px;
-    }
-
+    .oph:not(.compact) .hand-half.blue .spin-inline.edge,
     .oph:not(.compact) .hand-half.red .spin-inline.edge {
       right: 8px;
     }
@@ -674,9 +662,9 @@
   .oph.compact .hand-half {
     flex: 0 0 auto;
     display: grid;
-    /* [spin 44px][turn palette]. The Blue/Red word column is gone — colour
-       carries hand identity — so the palette gets that 30px back. */
-    grid-template-columns: var(--min-touch-target, 44px) minmax(0, 1fr);
+    /* [turn palette][spin 44px]. Both hands use the same trailing action column
+       here and in the inline header. */
+    grid-template-columns: minmax(0, 1fr) var(--min-touch-target, 44px);
     align-items: center;
     gap: 6px;
     width: 100%;
@@ -710,11 +698,10 @@
     );
   }
 
-  /* hand-meta falls back to the base display:contents, so its only remaining
-     child — the spin slot — is the hand-half grid's first (44px) column. */
-
   .oph.compact .spin-slot {
     display: flex;
+    grid-column: 2;
+    grid-row: 1;
     align-items: center;
     justify-content: center;
     width: var(--min-touch-target, 44px);
@@ -722,6 +709,8 @@
   }
 
   .oph.compact .turn-seg {
+    grid-column: 1;
+    grid-row: 1;
     width: 100%;
   }
 
