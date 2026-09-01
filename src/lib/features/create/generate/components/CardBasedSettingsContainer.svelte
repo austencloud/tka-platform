@@ -155,10 +155,10 @@ Delegates ALL logic to services (SRP compliant)
   // persistence. Keep the Level vocabulary invariant true on those paths too.
   $effect(() => {
     const level = config.level;
-    constleftStartOrientationn = startEndState?.optionsleftStartOrientationn;
-    constrightStartOrientationn = startEndState?.optionsrightStartOrientationn;
-    voidleftStartOrientationn;
-    voidrightStartOrientationn;
+    const leftStartOrientation = startEndState?.options.leftStartOrientation;
+    const rightStartOrientation = startEndState?.options.rightStartOrientation;
+    void leftStartOrientation;
+    void rightStartOrientation;
     startEndState?.normalizeOrientationsForLevel(level);
   });
 
@@ -780,7 +780,6 @@ Delegates ALL logic to services (SRP compliant)
 </div>
 
 <style>
-
   .card-settings-container {
     /* Position relative for LOOP expanded overlay */
     position: relative;

@@ -33,6 +33,12 @@ import { panelPersistenceState } from "./panel-persistence-state.svelte";
 
 import { hasMimeErrorOccurred, verifyTabSwitch } from "../../hmr-helper";
 
+export type CreateFrontDoorSource =
+  | "direct"
+  | "navigation"
+  | "workspace"
+  | "history";
+
 export {
   CREATE_TABS,
   LEARN_TABS,
@@ -61,6 +67,12 @@ export {
 export function createNavigationState() {
   let currentCreateMode = $state<string>("construct");
   let currentLearnMode = $state<string>("concepts");
+
+  // The Create home is navigation intent, not a fake tab. Keep a valid backing
+  // method so drafts and mode-specific state survive while the chooser is open.
+  let isCreateFrontDoorOpen = $state(true);
+  let createFrontDoorSource = $state<CreateFrontDoorSource>("direct");
+  let hasRememberedCreateMode = $state(false);
 
   let currentModule = $state<ModuleId>("create");
   let activeTab = $state<string>(DEFAULT_CREATE_TAB);
@@ -147,6 +159,7 @@ export function createNavigationState() {
     const savedCreateMode = localStorage.getItem(CURRENT_CREATE_MODE_KEY);
     if (savedCreateMode && CREATE_TABS.some((t) => t.id === savedCreateMode)) {
       currentCreateMode = savedCreateMode;
+      hasRememberedCreateMode = true;
     }
 
     const savedLearnMode = localStorage.getItem(CURRENT_LEARN_MODE_KEY);
@@ -227,10 +240,18 @@ export function createNavigationState() {
 
               if (validTab && urlTab) {
                 activeTab = urlTab;
+                if (normalizedModule === "create") {
+                  isCreateFrontDoorOpen = false;
+                  hasRememberedCreateMode = true;
+                }
               } else if (normalizedModule === "create") {
-                // Bare /create always lands on the default tab (construct),
-                // never a remembered sub-tab like assemble.
-                activeTab = DEFAULT_CREATE_TAB;
+                // Bare /create is a generic creation intent. Keep the last
+                // valid method as the backing tab so returning through the
+                // chooser can restore its state without pretending it is a
+                // separate navigation section.
+                activeTab = currentCreateMode || DEFAULT_CREATE_TAB;
+                isCreateFrontDoorOpen = true;
+                createFrontDoorSource = "direct";
               } else {
                 const savedTab = loadModuleTab(normalizedModule);
                 if (
@@ -249,6 +270,8 @@ export function createNavigationState() {
         } else {
           currentModule = "create";
           activeTab = DEFAULT_CREATE_TAB;
+          isCreateFrontDoorOpen = true;
+          createFrontDoorSource = "direct";
         }
       }
     }
@@ -289,7 +312,11 @@ export function createNavigationState() {
     }
   }
 
-  function setCurrentModule(moduleId: ModuleId, targetTab?: string) {
+  function setCurrentModule(
+    moduleId: ModuleId,
+    targetTab?: string,
+    entrySource: CreateFrontDoorSource = "navigation"
+  ) {
     if (MODULE_DEFINITIONS.some((m) => m.id === moduleId)) {
       const previousModuleLocal = currentModule;
 
@@ -338,6 +365,16 @@ export function createNavigationState() {
       }
 
       activeTab = nextTab;
+
+      if (moduleId === "create") {
+        if (normalizedTargetTab) {
+          isCreateFrontDoorOpen = false;
+          hasRememberedCreateMode = true;
+        } else {
+          isCreateFrontDoorOpen = true;
+          createFrontDoorSource = entrySource;
+        }
+      }
 
       if (previousModuleLocal !== moduleId) {
         try {
@@ -402,6 +439,11 @@ export function createNavigationState() {
 
     if (!moduleDefinition || !tabExists) {
       return;
+    }
+
+    if (currentModule === "create") {
+      isCreateFrontDoorOpen = false;
+      hasRememberedCreateMode = true;
     }
 
     const previousTab = activeTab;
@@ -478,12 +520,29 @@ export function createNavigationState() {
     }
   }
 
+  function openCreateFrontDoor(
+    source: CreateFrontDoorSource = "navigation"
+  ): void {
+    if (currentModule !== "create") return;
+    isCreateFrontDoorOpen = true;
+    createFrontDoorSource = source;
+  }
+
   return {
     get currentCreateMode() {
       return currentCreateMode;
     },
     get currentLearnMode() {
       return currentLearnMode;
+    },
+    get isCreateFrontDoorOpen() {
+      return isCreateFrontDoorOpen;
+    },
+    get createFrontDoorSource() {
+      return createFrontDoorSource;
+    },
+    get hasRememberedCreateMode() {
+      return hasRememberedCreateMode;
     },
 
     get currentModule() {
@@ -565,6 +624,7 @@ export function createNavigationState() {
 
     setCurrentModule,
     setActiveTab,
+    openCreateFrontDoor,
     getCurrentModule,
     getActiveTab,
     getTabsForModule,

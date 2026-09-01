@@ -77,8 +77,6 @@ export interface SequenceLoadResult {
   sequenceLoaded: boolean;
   /** Tab to navigate to (from deep link) */
   targetTab?: string;
-  /** Whether creation method should be marked as selected */
-  shouldMarkMethodSelected: boolean;
 }
 
 export class CreateModuleInitializer {
@@ -219,7 +217,6 @@ export class CreateModuleInitializer {
       return {
         sequenceLoaded: true,
         targetTab: loadResult.targetTab,
-        shouldMarkMethodSelected: true,
       };
     }
 
@@ -228,24 +225,7 @@ export class CreateModuleInitializer {
 
     return {
       sequenceLoaded: false,
-      shouldMarkMethodSelected: false,
     };
-  }
-
-  detectCreationMethodSelection(
-    _activeTab: string,
-    isWorkspaceEmpty: boolean,
-    currentSelection: boolean
-  ): boolean {
-    // If already selected (from localStorage), keep it
-    if (currentSelection) {
-      return true;
-    }
-
-    // Only auto-skip tutorial if workspace has content (deep link, restored sequence)
-    // This indicates an existing user, not a first-timer
-    // Don't skip based on current tab - let the tutorial show for new users
-    return !isWorkspaceEmpty;
   }
 
   configureEventCallbacks(
@@ -258,7 +238,8 @@ export class CreateModuleInitializer {
     // Set up sequence state callbacks for CreateModuleEventHandler
     CreateModuleEventHandler.setSequenceStateCallbacks(
       () => CreateModuleState.sequenceState.getCurrentSequence(),
-      (sequence) => CreateModuleState.sequenceState.setCurrentSequence(sequence),
+      (sequence) =>
+        CreateModuleState.sequenceState.setCurrentSequence(sequence),
       () => CreateModuleState.sequenceState.whenCurrentSequenceReady()
     );
 

@@ -260,6 +260,16 @@ const MODULE_ORDER = [
   "settings",
 ];
 
+function historySectionFor(
+  moduleId: ModuleId,
+  requestedSection?: string
+): string | undefined {
+  if (moduleId === "create" && navigationState.isCreateFrontDoorOpen) {
+    return undefined;
+  }
+  return requestedSection ?? navigationState.activeTab;
+}
+
 // Module change handler with View Transitions
 // targetTab: Optional tab to navigate to (used when clicking a section in a different module)
 // options.forceViewTransition: Force View Transition even when leaving Dashboard (for keyboard shortcuts)
@@ -284,9 +294,13 @@ export async function handleModuleChange(
 
   // Skip transition logic if same module
   if (moduleId === currentMod) {
-    navigationState.setCurrentModule(moduleId, targetTab);
+    navigationState.setCurrentModule(
+      moduleId,
+      targetTab,
+      options?.initiatedByHistory ? "history" : "navigation"
+    );
     if (!shouldSkipHistory) {
-      pushHistoryState(moduleId, targetTab ?? navigationState.activeTab);
+      pushHistoryState(moduleId, historySectionFor(moduleId, targetTab));
     }
     return;
   }
@@ -320,14 +334,18 @@ export async function handleModuleChange(
       document.documentElement.classList.add("settings-portal-enter");
 
       const transition = doc.startViewTransition(async () => {
-        navigationState.setCurrentModule(moduleId, targetTab);
+        navigationState.setCurrentModule(
+          moduleId,
+          targetTab,
+          options?.initiatedByHistory ? "history" : "navigation"
+        );
         await switchModule(moduleId);
       });
 
       const finishSettingsEntry = (): void => {
         document.documentElement.classList.remove("settings-portal-enter");
         if (!shouldSkipHistory) {
-          pushHistoryState(moduleId, targetTab ?? navigationState.activeTab);
+          pushHistoryState(moduleId, historySectionFor(moduleId, targetTab));
         }
       };
       afterViewTransitionSettles(transition, finishSettingsEntry);
@@ -338,7 +356,11 @@ export async function handleModuleChange(
       document.documentElement.classList.add("settings-portal-exit");
 
       const transition = doc.startViewTransition(async () => {
-        navigationState.setCurrentModule(moduleId, targetTab);
+        navigationState.setCurrentModule(
+          moduleId,
+          targetTab,
+          options?.initiatedByHistory ? "history" : "navigation"
+        );
         await switchModule(moduleId);
       });
 
@@ -347,7 +369,7 @@ export async function handleModuleChange(
         navigationCoordinator.previousModuleBeforeSettings = null;
         savePreviousModule(null);
         if (!shouldSkipHistory) {
-          pushHistoryState(moduleId, targetTab ?? navigationState.activeTab);
+          pushHistoryState(moduleId, historySectionFor(moduleId, targetTab));
         }
       };
       afterViewTransitionSettles(transition, finishSettingsExit);
@@ -362,7 +384,11 @@ export async function handleModuleChange(
       );
 
       const transition = doc.startViewTransition(async () => {
-        navigationState.setCurrentModule(moduleId, targetTab);
+        navigationState.setCurrentModule(
+          moduleId,
+          targetTab,
+          options?.initiatedByHistory ? "history" : "navigation"
+        );
         await switchModule(moduleId);
       });
 
@@ -372,17 +398,21 @@ export async function handleModuleChange(
           "module-slide-right"
         );
         if (!shouldSkipHistory) {
-          pushHistoryState(moduleId, targetTab ?? navigationState.activeTab);
+          pushHistoryState(moduleId, historySectionFor(moduleId, targetTab));
         }
       };
       afterViewTransitionSettles(transition, finishModuleSlide);
     }
   } else {
     // Fallback for browsers without View Transitions
-    navigationState.setCurrentModule(moduleId, targetTab);
+    navigationState.setCurrentModule(
+      moduleId,
+      targetTab,
+      options?.initiatedByHistory ? "history" : "navigation"
+    );
     await switchModule(moduleId);
     if (!shouldSkipHistory) {
-      pushHistoryState(moduleId, targetTab ?? navigationState.activeTab);
+      pushHistoryState(moduleId, historySectionFor(moduleId, targetTab));
     }
   }
 }
@@ -464,8 +494,13 @@ export function handleSectionChange(
     return;
   }
 
-  // Don't switch if same section
-  if (sectionId === currentSectionId) {
+  // Selecting the backing method from the Create home still changes the
+  // visible surface and URL, even when the remembered tab ID already matches.
+  const entersCreateWorkspace =
+    module === "create" && navigationState.isCreateFrontDoorOpen;
+
+  // Don't switch if same section and no surface transition is required.
+  if (sectionId === currentSectionId && !entersCreateWorkspace) {
     navDebug("SKIPPED: Already on this section");
     return;
   }
@@ -491,7 +526,7 @@ export function handleSectionChange(
   };
 
   // Use View Transitions if available
-  if (typeof doc.startViewTransition === "function") {
+  if (typeof doc.startViewTransition === "function" && !entersCreateWorkspace) {
     // Add direction class for CSS to target
     document.documentElement.classList.remove(
       "tab-slide-left",
@@ -521,6 +556,17 @@ export function handleSectionChange(
     if (!shouldSkipHistory) {
       pushHistoryState(module as ModuleId, sectionId);
     }
+  }
+}
+
+export function handleCreateFrontDoor(
+  source: "navigation" | "workspace" | "history" = "workspace",
+  options?: { skipHistory?: boolean }
+): void {
+  if (navigationState.currentModule !== "create") return;
+  navigationState.openCreateFrontDoor(source);
+  if (options?.skipHistory !== true) {
+    pushHistoryState("create", undefined);
   }
 }
 
@@ -874,7 +920,10 @@ export function initializeNavigationHistory() {
   }
 
   // Seed initial state so back/forward has a valid entry
-  replaceHistoryState(navigationState.currentModule, navigationState.activeTab);
+  replaceHistoryState(
+    navigationState.currentModule,
+    historySectionFor(navigationState.currentModule)
+  );
 
   window.addEventListener("popstate", async (event: PopStateEvent) => {
     const state = readHistoryState(event.state);
@@ -927,11 +976,17 @@ export function initializeNavigationHistory() {
         skipHistory: true,
         initiatedByHistory: true,
       });
-    } else if (targetSection && targetSection !== navigationState.activeTab) {
+    } else if (
+      targetSection &&
+      (targetSection !== navigationState.activeTab ||
+        (targetModule === "create" && navigationState.isCreateFrontDoorOpen))
+    ) {
       handleSectionChange(targetSection, {
         skipHistory: true,
         initiatedByHistory: true,
       });
+    } else if (!targetSection && targetModule === "create") {
+      handleCreateFrontDoor("history", { skipHistory: true });
     } else if (!targetSection && navigationState.activeTab) {
       // Module with no stored tab; clear any lingering tab state
       navigationState.setActiveTab("");
