@@ -143,6 +143,10 @@
     /** Production-graph instrumentation hook used by focused benchmark hosts. */
     onPerformanceSample?: (sample: RendererPerformanceSample) => void;
     performanceWarmupMs?: number;
+    /** Review-only escape hatch for reproducing world-scale camera poses. */
+    cameraMaxOrbitDistance?: number;
+    /** Review-only field-of-view override; ordinary viewers retain 50 degrees. */
+    cameraFov?: number;
   }
 
   let {
@@ -187,6 +191,8 @@
     renderEmptyScene = false,
     onPerformanceSample,
     performanceWarmupMs = 0,
+    cameraMaxOrbitDistance,
+    cameraFov,
   }: Props = $props();
 
   type ScenePostProcessingModule =
@@ -525,6 +531,8 @@
                 cameraPlayerAvatar={cameraPlayer.avatarState}
                 cameraPlayerPhysics={cameraPlayer.physicsProvider}
                 {onSettingChange}
+                maxOrbitDistance={cameraMaxOrbitDistance}
+                fov={cameraFov}
               />
               <Viewer3DScene
                 {sequenceData}

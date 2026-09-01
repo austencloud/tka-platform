@@ -97,9 +97,13 @@ introduced.
 ### Visual parity
 
 - Deterministic stills freeze wind, particles, wisps, water, and camera time.
-- Hero, walk, world, reverse, depth, settlement, shack, pond, fungi, ferns,
-  root-contact, and owl views are compared at 1920×1080, 2560×1440,
+- Hero, walk, world, overlook, reverse, depth, settlement, shack, pond, fungi,
+  ferns, root-contact, and owl views are compared at 1920×1080, 2560×1440,
   3840×2160, 1440×900, 820×1180, 960×412, and 375×667.
+- The overlook view reproduces the reported 70-meter, high-oblique camera in
+  both the empty review graph and a deterministic production graph with three
+  animated performers, distinct efforts and effects, live shadows, and the
+  production postprocessing composer.
 - Static SSIM is at least 0.995; 99.9% of changed pixels remain below ΔE2000 1;
   and silhouette displacement remains below 0.5 physical pixel.
 - Motion samples retain the same trajectories, counts, interaction radii, and

@@ -49,6 +49,7 @@ Uses organizer and sizer services for section grouping and sizing.
   } from "../services/option-interaction-hint-marker";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import { selectOptionInteractionHintPresentation } from "../services/option-interaction-hint-presentation";
+  import { selectOptionControlsPresentation } from "../services/option-controls-presentation";
 
   interface Props {
     options: PreparedPictographData[];
@@ -292,28 +293,37 @@ Uses organizer and sizer services for section grouping and sizing.
     return shouldSwipe && !shouldUseCompact4x4();
   });
 
-  // The unified header (filter + turns) replaces the standalone filter pill on the
-  // wide desktop layout. It's pinned to the top of the picker; the grid scrolls
-  // beneath it. Matches the wide-layout branch condition.
-  const useUnifiedHeader = $derived(
+  const shouldShowFilterControl = $derived(() => {
+    return shouldShowFilterToggle() && !hideFilters;
+  });
+
+  // Width decides which header density fits; height decides whether compact
+  // controls need disclosure at all. A tall split-screen pane should keep every
+  // choice visible even when it is too narrow for the full desktop rail.
+  const controlsAvailable = $derived(
+    shouldShowFilterControl() || turnControlsEditable
+  );
+  const wideInlineControlsEligible = $derived(
     !shouldUseCompact4x4() &&
       !shouldUseSwipeLayout() &&
       shouldUseWideLayout &&
       !isMobileStackedLayout()
   );
-
-  const shouldShowFilterControl = $derived(() => {
-    return shouldShowFilterToggle() && !hideFilters;
-  });
-
-  // Every narrow layout gets the same controls as the wide header. The filter
-  // can be unavailable on the first beat, but Level and turns still need a way
-  // in. Embedded surfaces with pinned turns keep only the filter control.
-  const showCompactControls = $derived(() => {
-    return (
-      !useUnifiedHeader && (shouldShowFilterControl() || turnControlsEditable)
-    );
-  });
+  const controlsPresentation = $derived(
+    selectOptionControlsPresentation({
+      hasControls: controlsAvailable,
+      wideInlineEligible: wideInlineControlsEligible,
+      containerHeight,
+      hasTurnRows: turnControlsEditable && level > 1,
+    })
+  );
+  const useUnifiedHeader = $derived(controlsPresentation === "wide-inline");
+  const useInlineCompactControls = $derived(
+    controlsPresentation === "compact-inline"
+  );
+  const useDisclosedCompactControls = $derived(
+    controlsPresentation === "disclosed"
+  );
 
   // For swipe layout: combine Types 4-6 into a single grouped panel
   const swipeSections = $derived(() => {
@@ -478,6 +488,26 @@ Uses organizer and sizer services for section grouping and sizing.
   };
 </script>
 
+{#snippet compactControls()}
+  <OptionPickerHeader
+    layout="compact"
+    showFilter={shouldShowFilterControl()}
+    showTurnControls={turnControlsEditable}
+    {isContinuousOnly}
+    {onToggleContinuous}
+    {leftTurns}
+    {rightTurns}
+    {level}
+    {onLevelChange}
+    {leftRotation}
+    {rightRotation}
+    onLeftChange={onLeftTurnsChange}
+    onRightChange={onRightTurnsChange}
+    {onLeftRotationChange}
+    {onRightRotationChange}
+  />
+{/snippet}
+
 <div
   class="option-picker-content"
   data-testid="option-picker"
@@ -489,7 +519,7 @@ Uses organizer and sizer services for section grouping and sizing.
     <div class="animated-content">
       <!-- Unified header: pinned to the top of the picker (outside the scrolling
            grid) so its position is consistent. Desktop wide layout only. -->
-      {#if useUnifiedHeader && (shouldShowFilterControl() || turnControlsEditable)}
+      {#if useUnifiedHeader && controlsAvailable}
         <div class="picker-header-slot">
           <OptionPickerHeader
             showFilter={shouldShowFilterControl()}
@@ -510,10 +540,16 @@ Uses organizer and sizer services for section grouping and sizing.
         </div>
       {/if}
 
+      {#if useInlineCompactControls}
+        <div class="compact-header-slot">
+          {@render compactControls()}
+        </div>
+      {/if}
+
       <!-- Continuous mode has no letter-type header, so its settings trigger
            keeps the established corner position. Swipe mode places the same
            trigger inside its three-part header below. -->
-      {#if showCompactControls() && !shouldUseSwipeLayout()}
+      {#if useDisclosedCompactControls && !shouldUseSwipeLayout()}
         <div class="controls-corner">
           <OptionPickerControlsPopover
             showFilter={shouldShowFilterControl()}
@@ -574,28 +610,12 @@ Uses organizer and sizer services for section grouping and sizing.
             {onSlotClicked}
             {getContinuationIndex}
             onLetterTypeGroupSelected={notifyLetterTypeGroupSelected}
-            settingsEnabled={showCompactControls()}
+            settingsEnabled={useDisclosedCompactControls}
             settingsHasTurnRows={turnControlsEditable && level > 1}
             openIntoWorkspace={isMobileStackedLayout()}
           >
             {#snippet settingsContent()}
-              <OptionPickerHeader
-                layout="compact"
-                showFilter={shouldShowFilterControl()}
-                showTurnControls={turnControlsEditable}
-                {isContinuousOnly}
-                {onToggleContinuous}
-                {leftTurns}
-                {rightTurns}
-                {level}
-                {onLevelChange}
-                {leftRotation}
-                {rightRotation}
-                onLeftChange={onLeftTurnsChange}
-                onRightChange={onRightTurnsChange}
-                {onLeftRotationChange}
-                {onRightRotationChange}
-              />
+              {@render compactControls()}
             {/snippet}
           </OptionViewerSwipeLayout>
         </div>
@@ -706,6 +726,19 @@ Uses organizer and sizer services for section grouping and sizing.
     position: sticky;
     top: 0;
     z-index: 5;
+  }
+
+  /* Narrow does not mean short. Tall split-screen, tablet, and embedded panes
+     keep the compact controls in front of the user and spend their remaining
+     height on the option surface. Disclosure is reserved for genuinely short
+     panes where the header would take usable rows away from the grid. */
+  .compact-header-slot {
+    position: relative;
+    z-index: 6;
+    width: 100%;
+    flex: 0 0 auto;
+    background: var(--theme-panel-bg, rgba(0, 0, 0, 0.75));
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   /* Continuous mode has no letter-type header to host this trigger. */

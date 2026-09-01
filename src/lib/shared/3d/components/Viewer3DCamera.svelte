@@ -33,18 +33,25 @@
     /** Physics provider for fly mode (noclip). Null for orbit/walk. */
     cameraPlayerPhysics?: PhysicsProvider | null;
     onSettingChange?: ViewerControlSink;
+    /** Focused review hosts can audit views beyond the interactive viewer's orbit cap. */
+    maxOrbitDistance?: number;
+    /** Focused review hosts can reproduce an authored camera's exact field of view. */
+    fov?: number;
   }
 
   let {
     cameraPlayerAvatar = null,
     cameraPlayerPhysics = null,
     onSettingChange,
+    maxOrbitDistance,
+    fov = 50,
   }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
   const navMode = $derived(viewer3DState.navMode);
-  const maxOrbitDistance = $derived(
-    viewer3DState.seededBackgroundType === BackgroundType.BLOSSOM ? 82 : 25
+  const resolvedMaxOrbitDistance = $derived(
+    maxOrbitDistance ??
+      (viewer3DState.seededBackgroundType === BackgroundType.BLOSSOM ? 82 : 25)
   );
 
   // Grid center in 3D world space.
@@ -54,7 +61,6 @@
   const GRID_CENTER_Y = 0;
   const GRID_CENTER_Z = 0.3;
   const GRID_RADIUS_3D = 0.52; // meters
-  const FOV_DEG = 50;
 
   /**
    * Compute camera Z distance so the 3D grid matches the 2D canvas grid size.
@@ -122,7 +128,7 @@
     // Visible width at distance d = 2 * d * tan(hFov/2)
     // hFov = 2 * atan(tan(vFov/2) * aspect)
     const aspect = paneRect.width / paneRect.height;
-    const vFovRad = ((FOV_DEG / 2) * Math.PI) / 180;
+    const vFovRad = ((fov / 2) * Math.PI) / 180;
     const hFovHalf = Math.atan(Math.tan(vFovRad) * aspect);
     const visibleWidthAtD1 = 2 * Math.tan(hFovHalf); // visible width per meter of distance
     const dist = (GRID_RADIUS_3D * 2) / (diamPct * visibleWidthAtD1);
@@ -509,13 +515,13 @@
   bind:ref={cameraRef}
   makeDefault
   position={[initialPosition.x, initialPosition.y, initialPosition.z]}
-  fov={50}
+  {fov}
 />
 
 {#if navMode === "orbit" && cameraRef}
   <OrbitControls
     minDistance={1}
-    maxDistance={maxOrbitDistance}
+    maxDistance={resolvedMaxOrbitDistance}
     maxPolarAngle={Math.PI / 2}
     paused={viewer3DState.isExporting}
     autoRotate={viewer3DState.seededAutoOrbit}

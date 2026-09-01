@@ -1,9 +1,13 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
+  import { Plane } from "@austencloud/scene-3d";
   import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
   import type { RendererPerformanceSample } from "$lib/shared/3d/components/renderer-performance-window";
-  import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
+  import {
+    createViewer3DState,
+    type StoredPerformerSnapshot,
+  } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
@@ -12,14 +16,69 @@
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import demoSequenceJson from "$lib/shared/landing/data/demo-sequence.json";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { EnvironmentReviewCameraPreset } from "$lib/shared/3d/environments/review/environment-review-camera";
 
   interface Props {
     onSample?: (sample: RendererPerformanceSample) => void;
+    cameraPreset: EnvironmentReviewCameraPreset;
   }
 
-  let { onSample }: Props = $props();
+  let { onSample, cameraPreset }: Props = $props();
 
-  const viewer = createViewer3DState({ renderMode: "3d" });
+  const REVIEW_PERFORMERS: StoredPerformerSnapshot[] = [
+    {
+      position: { x: -2.4, z: 0 },
+      facingAngle: 0,
+      customLeftPlane: Plane.WALL,
+      customRightPlane: Plane.WALL,
+      settings: {
+        prop: "staff",
+        effortId: "glide",
+        effect: "trails",
+        staffLengthCm: 150,
+      },
+    },
+    {
+      position: { x: 0, z: 0 },
+      facingAngle: 0,
+      customLeftPlane: Plane.WALL,
+      customRightPlane: Plane.WALL,
+      settings: {
+        prop: "staff",
+        effortId: "punch",
+        effect: "fire",
+        staffLengthCm: 150,
+      },
+    },
+    {
+      position: { x: 2.4, z: 0 },
+      facingAngle: 0,
+      customLeftPlane: Plane.WALL,
+      customRightPlane: Plane.WALL,
+      settings: {
+        prop: "staff",
+        effortId: "elastic",
+        effect: "led",
+        staffLengthCm: 150,
+      },
+    },
+  ];
+
+  const [cameraX, cameraY, cameraZ] = cameraPreset.position;
+  const [targetX, targetY, targetZ] = cameraPreset.target;
+
+  const viewer = createViewer3DState({
+    renderMode: "3d",
+    environmentId: BackgroundType.AUTUMN,
+    performers: REVIEW_PERFORMERS,
+    camera: {
+      position: { x: cameraX, y: cameraY, z: cameraZ },
+      rotation: { x: 0, y: 0, z: 0 },
+      fov: cameraPreset.fov,
+      target: { x: targetX, y: targetY, z: targetZ },
+      timestamp: 0,
+    },
+  });
   setViewer3DContext(viewer);
   setEffectsConfigContext(
     createEffectsConfigState(undefined, { persist: false })
@@ -85,4 +144,6 @@
   fullScreen={true}
   performanceWarmupMs={5_000}
   onPerformanceSample={onSample}
+  cameraMaxOrbitDistance={128}
+  cameraFov={cameraPreset.fov}
 />

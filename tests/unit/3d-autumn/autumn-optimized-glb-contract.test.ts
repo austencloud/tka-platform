@@ -23,6 +23,7 @@ interface OptimizedAutumnGltf {
   nodes?: Array<{
     name?: string;
     mesh?: number;
+    extras?: Record<string, unknown>;
     extensions?: {
       EXT_mesh_gpu_instancing?: {
         attributes?: Record<string, number>;
@@ -175,6 +176,20 @@ describe("optimized Autumn GLB contracts", () => {
 
     expect(triangles).toBeGreaterThan(1_900_000);
     expect(triangles).toBeLessThan(2_050_000);
+  });
+
+  it("carries the fogged ground beyond every supported review sightline", () => {
+    const apron = (gltf.nodes ?? []).find(
+      (node) => node.name === "Autumn_Terrain_Apron"
+    );
+
+    expect(
+      apron,
+      "Autumn terrain apron disappeared from the GLB"
+    ).toBeDefined();
+    expect(
+      Number(apron?.extras?.tka_ground_visible_extent)
+    ).toBeGreaterThanOrEqual(1_024);
   });
 
   it("contains no authored shadow impostors", () => {
