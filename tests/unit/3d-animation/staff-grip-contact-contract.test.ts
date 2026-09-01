@@ -27,6 +27,19 @@ const gripTestPage = readFileSync(
   "utf8"
 );
 
+const gripTestStage = readFileSync(
+  resolve(process.cwd(), "src/routes/test/staff-grip/StaffGripStage.svelte"),
+  "utf8"
+);
+
+const liveSequencePerformer = readFileSync(
+  resolve(
+    process.cwd(),
+    "src/lib/shared/3d/performers/LiveSequencePerformer3D.svelte"
+  ),
+  "utf8"
+);
+
 describe("staff grip contact contract", () => {
   it.each([
     ["source", staffSource],
@@ -48,5 +61,43 @@ describe("staff grip contact contract", () => {
       'rightDragAction === "rotate"\n        ? CameraControls.ACTION.ROTATE'
     );
     expect(gripTestPage).toContain('rightDragAction="rotate"');
+  });
+
+  it("plays checked-in sequence data through the shared live performer", () => {
+    expect(gripTestPage).toContain(
+      'import { FALG } from "$lib/shared/combination/domain/demo-fixtures"'
+    );
+    expect(gripTestPage).toContain("const sequence = FALG;");
+    expect(gripTestPage).toContain(
+      'data-sequence-source="validated-production-fixture"'
+    );
+    expect(gripTestStage).toContain("<LiveSequencePerformer3D");
+    expect(gripTestStage).toContain("weldGrip={true}");
+    expect(gripTestStage).toContain("enableLocomotion={false}");
+    expect(gripTestStage).toContain("enableFootPlanting={false}");
+    expect(gripTestStage).not.toContain("useTask");
+    expect(gripTestStage).not.toContain("Math.sin");
+  });
+
+  it("maps sequence hands into the rig's blue and red prop inputs", () => {
+    expect(liveSequencePerformer).toContain(
+      "bluePropState={performerState.leftPropState}"
+    );
+    expect(liveSequencePerformer).toContain(
+      "redPropState={performerState.rightPropState}"
+    );
+    expect(liveSequencePerformer).toContain(
+      "bluePropType={toScenePropType(props.propType)}"
+    );
+    expect(liveSequencePerformer).toContain(
+      "redPropType={toScenePropType(props.propType)}"
+    );
+    expect(liveSequencePerformer).toContain("groundOffset={rigGroundOffset}");
+  });
+
+  it("does not cover the test scene with explanatory copy", () => {
+    expect(gripTestPage).not.toContain("scene-label");
+    expect(gripTestPage).not.toContain("Production grip test");
+    expect(gripTestPage).not.toContain("Two staffs. One real rig.");
   });
 });

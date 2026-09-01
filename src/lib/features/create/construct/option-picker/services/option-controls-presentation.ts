@@ -8,7 +8,7 @@ interface OptionControlsPresentationInput {
   hasControls: boolean;
   wideInlineEligible: boolean;
   containerHeight: number;
-  hasTurnRows: boolean;
+  canShowTurnRows: boolean;
 }
 
 // The compact 4×4 grid remains usable at 320px tall. Everything above that is
@@ -19,12 +19,12 @@ const COMPACT_HEADER_HEIGHT = 88;
 const COMPACT_TURN_ROWS_HEIGHT = 136;
 const INLINE_LAYOUT_BUFFER = 16;
 
-export function minimumInlineControlsHeight(hasTurnRows: boolean): number {
+export function minimumInlineControlsHeight(canShowTurnRows: boolean): number {
   return (
     MIN_OPTION_SURFACE_HEIGHT +
     COMPACT_HEADER_HEIGHT +
     INLINE_LAYOUT_BUFFER +
-    (hasTurnRows ? COMPACT_TURN_ROWS_HEIGHT : 0)
+    (canShowTurnRows ? COMPACT_TURN_ROWS_HEIGHT : 0)
   );
 }
 
@@ -32,12 +32,12 @@ export function selectOptionControlsPresentation({
   hasControls,
   wideInlineEligible,
   containerHeight,
-  hasTurnRows,
+  canShowTurnRows,
 }: OptionControlsPresentationInput): OptionControlsPresentation {
   if (!hasControls) return "hidden";
   if (wideInlineEligible) return "wide-inline";
 
-  return containerHeight >= minimumInlineControlsHeight(hasTurnRows)
+  return containerHeight >= minimumInlineControlsHeight(canShowTurnRows)
     ? "compact-inline"
     : "disclosed";
 }

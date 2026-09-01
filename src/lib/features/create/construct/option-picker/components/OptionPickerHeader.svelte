@@ -323,10 +323,12 @@
     display: none;
   }
 
-  /* Icon-sized. Two 44px targets plus the control's own padding — the ~130px
-     this gives back goes to the level buttons and the turn rows. */
+  /* Two genuine 44px targets plus the control's padding, gap, and border. This
+     must derive from the touch-target token rather than rem: the app
+     intentionally scales its root type size, which made rem-based filter
+     buttons narrower than 44px. */
   .filter-seg {
-    width: 7rem;
+    width: calc(var(--min-touch-target, 44px) * 2 + 10px);
   }
 
   /* The wide picker starts at 750px, before the full 608px level rail can sit
@@ -336,11 +338,9 @@
      the tighter padding keeps the longest label comfortable at the floor. */
   @container (width < 900px) {
     .oph:not(.compact) .oph-bar:not(.filter-only) {
-      grid-template-columns: minmax(6rem, 1fr) auto minmax(6rem, 1fr);
-    }
-
-    .oph:not(.compact) .filter-seg {
-      width: 6rem;
+      grid-template-columns:
+        minmax(calc(var(--min-touch-target, 44px) * 2 + 10px), 1fr) auto
+        minmax(calc(var(--min-touch-target, 44px) * 2 + 10px), 1fr);
     }
 
     .oph:not(.compact) :global(.level-selector) {

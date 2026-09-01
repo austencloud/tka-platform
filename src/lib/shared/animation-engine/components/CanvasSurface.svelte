@@ -69,6 +69,7 @@ captureEffectDiagnostics to the context menu.
   import { installAnimatorDiagnostics } from "../debug/animator-diagnostics";
   import type { QualityTier } from "../domain/types/quality-types";
   import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+  import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   let {
     // Engine-driving props
@@ -108,6 +109,7 @@ captureEffectDiagnostics to the context menu.
     darkModeEnabled = false,
     effectiveTkaGlyphVisible = false,
     elementalGlyphVisible = false,
+    propElementalType = null,
     effectiveBeatNumbersVisible = false,
     positionGlyphVisible = false,
     leftPathLinesVisible = false,
@@ -168,6 +170,7 @@ captureEffectDiagnostics to the context menu.
     darkModeEnabled?: boolean;
     effectiveTkaGlyphVisible?: boolean;
     elementalGlyphVisible?: boolean;
+    propElementalType?: ElementalType | null;
     effectiveBeatNumbersVisible?: boolean;
     /** Show the α/β/γ start→end position indicator (guide hand-path exploration). */
     positionGlyphVisible?: boolean;
@@ -505,6 +508,7 @@ captureEffectDiagnostics to the context menu.
       {stepData}
       tkaGlyphVisible={effectiveTkaGlyphVisible}
       {elementalGlyphVisible}
+      {propElementalType}
       stepNumbersVisible={effectiveBeatNumbersVisible}
       {positionGlyphVisible}
       darkMode={darkModeEnabled}
