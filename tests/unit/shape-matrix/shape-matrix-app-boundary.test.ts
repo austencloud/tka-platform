@@ -54,6 +54,9 @@ describe("Shape Matrix app boundary", () => {
     expect(drillSource).toContain("includeStartPosition: false");
     expect(drillSource).toContain("currentStep: visibleStep");
     expect(drillSource).toContain("propElementalType: railPropElementalType");
+    expect(drillSource).toContain(
+      "propElementalType: propElementalTypeOf(layer.realization)"
+    );
     expect(drillSource).toContain("initialQualityTier: QualityTier.LOW");
     expect(drillSource).toContain("resolveRealizationEntryStep");
     expect(drillSource).toContain("initialStep: layer.initialStep");
@@ -65,6 +68,39 @@ describe("Shape Matrix app boundary", () => {
       '<i class="fas fa-arrow-right derivation-arrow" aria-hidden="true"></i>'
     );
     expect(drillSource).toContain('<span class="sr-only">produces</span>');
+  });
+
+  it("threads the optional prop element through the canonical animation overlay", () => {
+    const inlinePlayerSource = readFileSync(
+      resolve(
+        "src/lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
+      ),
+      "utf8"
+    );
+    const animatorSource = readFileSync(
+      resolve(
+        "src/lib/shared/animation-engine/components/AnimatorCanvas.svelte"
+      ),
+      "utf8"
+    );
+    const surfaceSource = readFileSync(
+      resolve(
+        "src/lib/shared/animation-engine/components/CanvasSurface.svelte"
+      ),
+      "utf8"
+    );
+    const overlaySource = readFileSync(
+      resolve(
+        "src/lib/shared/animation-engine/components/layers/GlyphOverlay.svelte"
+      ),
+      "utf8"
+    );
+
+    expect(inlinePlayerSource).toContain("{propElementalType}");
+    expect(animatorSource).toContain("{propElementalType}");
+    expect(surfaceSource).toContain("{propElementalType}");
+    expect(overlaySource).toContain('corner="top-right"');
+    expect(overlaySource).toContain("Prop timing and direction element:");
   });
 
   it("keeps embedded disassembly inside the Shape Matrix atmosphere", () => {

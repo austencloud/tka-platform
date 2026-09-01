@@ -448,11 +448,15 @@
   });
 
   const activeReal = $derived(activeBuiltRealization);
-  const railPropElementalType = $derived(
-    railRealization?.propRelationship.kind === "full"
-      ? (railRealization.propRelationship.element.element as ElementalType)
-      : null
-  );
+  function propElementalTypeOf(
+    realization: ModeRealization | null
+  ): ElementalType | null {
+    return realization?.propRelationship.kind === "full"
+      ? (realization.propRelationship.element.element as ElementalType)
+      : null;
+  }
+
+  const railPropElementalType = $derived(propElementalTypeOf(railRealization));
   const availableHandModes = $derived(
     MODE_ORDER.filter((mode) =>
       realizations.some((realization) => realization.mode === mode)
@@ -1014,6 +1018,7 @@
               source === "first" ? firstPlaybackAllowed : secondPlaybackAllowed,
             resumeWhenPlaybackAllowed: true,
             initialStep: layer.initialStep,
+            propElementalType: propElementalTypeOf(layer.realization),
             onReady: playerCallbacks[source].onReady,
             onCanvasInitialized: playerCallbacks[source].onCanvasInitialized,
             onStepChange: playerCallbacks[source].onStepChange,
