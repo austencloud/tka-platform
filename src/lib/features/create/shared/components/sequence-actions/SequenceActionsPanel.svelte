@@ -300,9 +300,9 @@
         }
       } else if (restoreEffect === "start-extend-flow") {
         // Extend is transient and never auto-persisted (see auto-save effect),
-        // so a stored "extend" only comes from an explicit launch
-        // (AltHotkeyOverlay's Extend button). Recompute the analysis against the
-        // CURRENT sequence instead of restoring a stale empty view. handleExtend
+        // so a stored "extend" only comes from a direct persisted launch.
+        // Recompute the analysis against the CURRENT sequence instead of
+        // restoring a stale empty view. handleExtend
         // sets subView="extend" on success, or leaves the actions grid showing
         // (subView stays null) when the sequence isn't extendable.
         void handleExtend();

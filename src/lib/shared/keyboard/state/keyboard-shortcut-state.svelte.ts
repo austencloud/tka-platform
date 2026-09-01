@@ -19,6 +19,11 @@ import {
 } from "../domain/shortcut-settings-codec";
 import { browser } from "$app/environment";
 
+export interface ShortcutHelpLaunchOptions {
+  view?: "current" | "all" | "changed";
+  query?: string;
+}
+
 /**
  * Load settings from localStorage
  */
@@ -84,6 +89,11 @@ export function createKeyboardShortcutState() {
 
   // Help dialog state
   let showHelp = $state(false);
+  let helpLaunch = $state<Required<ShortcutHelpLaunchOptions>>({
+    view: "current",
+    query: "",
+  });
+  let helpLaunchVersion = $state(0);
 
   // Command palette state
   let showCommandPalette = $state(false);
@@ -147,7 +157,18 @@ export function createKeyboardShortcutState() {
     get showHelp() {
       return showHelp;
     },
-    openHelp() {
+    get helpLaunch() {
+      return helpLaunch;
+    },
+    get helpLaunchVersion() {
+      return helpLaunchVersion;
+    },
+    openHelp(options: ShortcutHelpLaunchOptions = {}) {
+      helpLaunch = {
+        view: options.view ?? "current",
+        query: options.query ?? "",
+      };
+      helpLaunchVersion += 1;
       showHelp = true;
     },
     closeHelp() {
