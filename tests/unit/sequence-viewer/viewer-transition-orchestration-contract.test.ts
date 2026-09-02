@@ -58,6 +58,9 @@ const companionSurface = read(
 const choreoCard = read(
   "src/lib/shared/sequence-viewer/components/ChoreoCard.svelte"
 );
+const cardSizingState = read(
+  "src/lib/shared/choreo-card/state/choreo-card-sizing-state.svelte.ts"
+);
 const artPane = read(
   "src/lib/shared/sequence-viewer/components/ArtPane.svelte"
 );
@@ -460,5 +463,40 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(geometryTrace).toContain("Visible inspector layout changes:");
     expect(geometryTrace).toContain("Maximum performance players:");
     expect(geometryTrace).toContain("Shared-background dip:");
+  });
+
+  it("animates the Card's contained box to its destination instead of freezing it", () => {
+    // The contained box used to be frozen to a size captured on a previous
+    // focus and held for the whole motion, so the distance to the real
+    // destination was crossed in one untransitioned frame when the freeze
+    // expired. Nothing may reintroduce a stale captured size.
+    expect(cardSizingState).not.toContain("splitContainedSize");
+    expect(cardSizingState).toContain("MIN_MEASURABLE_MOTION_SIZE");
+    expect(cardSizingState).toContain(
+      "availableWidth < MIN_MEASURABLE_MOTION_SIZE"
+    );
+    expect(cardSizingState).toContain(
+      "availableHeight < MIN_MEASURABLE_MOTION_SIZE"
+    );
+
+    // Only this phase attribute carries the width and height transition, so it
+    // has to outlive the workspace allocation and release on settled paints
+    // rather than on the motion clock alone.
+    expect(choreoCard).toContain(
+      '.choreo-card-root[data-contain-size-motion="restore"] .preview-stack'
+    );
+    expect(shellLayoutState).toContain(
+      "spatialDuration + motionDuration(DURATION.emphasis)"
+    );
+    expect(shellLayoutState).toContain("cancelCardContainSizeMotionRelease");
+    expect(shellLayoutState).toContain("cardContainSizeMotionSettleFrame");
+
+    // The review harness has to keep sampling past that release, and grade the
+    // frames after it, or the jump is invisible to the trace.
+    expect(reviewFrame).toContain("SETTLE_TAIL_MS");
+    expect(reviewFrame).toContain('setTracePhase("settle")');
+    expect(reviewFrame).toContain('message.command === "card-performances"');
+    expect(reviewFrame).toContain("cardContainSizeMotion: elementDataValue(");
+    expect(geometryTrace).toContain("Card size pin release:");
   });
 });

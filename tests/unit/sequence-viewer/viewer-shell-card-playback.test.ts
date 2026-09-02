@@ -14,6 +14,14 @@ import type {
   ViewerMode,
 } from "$lib/shared/sequence-viewer/state/viewer-state.svelte";
 
+/**
+ * Slack for the two settled paints the Card size pin waits on before it clears.
+ *
+ * The pin releases on requestAnimationFrame rather than on the timer itself, so
+ * a test that only advances to the clock would read the pin as still set.
+ */
+const SETTLE_FRAMES_MS = 64;
+
 const sequence = {
   id: "card-playback",
   word: "AB",
@@ -272,22 +280,29 @@ describe("sequence viewer Card playback", () => {
     expect(harness.viewerMode).toBe("split");
   });
 
-  it("keeps contained Card sizing on only for the workspace handoff", () => {
+  it("keeps contained Card sizing on for the workspace handoff and its settle", () => {
     vi.useFakeTimers();
     const harness = createHarness(false);
     disposals.push(harness.dispose);
 
+    // The pin is the only thing that puts a width and height transition on the
+    // Card's contained box, so it outlives the workspace allocation by one
+    // emphasis and is then released two settled paints later. A ResizeObserver
+    // delivery landing on the frame the clock expires is still carried by the
+    // transition it was measured under.
+    const pinLifetime = DURATION.emphasis + DURATION.normal + DURATION.emphasis;
+
     harness.layout.selectSplitMode();
     harness.layout.selectViewerMode("card");
     expect(harness.layout.cardContainSizeMotion).toBe("focus");
-    vi.advanceTimersByTime(DURATION.emphasis + DURATION.normal - 1);
+    vi.advanceTimersByTime(pinLifetime - 1);
     expect(harness.layout.cardContainSizeMotion).toBe("focus");
-    vi.advanceTimersByTime(1);
+    vi.advanceTimersByTime(1 + SETTLE_FRAMES_MS);
     expect(harness.layout.cardContainSizeMotion).toBeNull();
 
     harness.layout.selectSplitMode();
     expect(harness.layout.cardContainSizeMotion).toBe("return");
-    vi.advanceTimersByTime(DURATION.emphasis + DURATION.normal);
+    vi.advanceTimersByTime(pinLifetime + SETTLE_FRAMES_MS);
     expect(harness.layout.cardContainSizeMotion).toBeNull();
   });
 
@@ -302,15 +317,32 @@ describe("sequence viewer Card playback", () => {
     expect(harness.layout.cardContainSizeMotion).toBe("focus");
     vi.advanceTimersByTime(DURATION.normal + STAGGER.normal - 1);
     expect(harness.layout.cardContainSizeMotion).toBe("focus");
-    vi.advanceTimersByTime(1);
+    vi.advanceTimersByTime(1 + SETTLE_FRAMES_MS);
     expect(harness.layout.cardContainSizeMotion).toBeNull();
 
     harness.layout.selectSplitMode();
     expect(harness.layout.cardContainSizeMotion).toBe("return");
-    vi.advanceTimersByTime(DURATION.normal + STAGGER.normal);
+    vi.advanceTimersByTime(DURATION.normal + STAGGER.normal + SETTLE_FRAMES_MS);
     expect(harness.layout.cardContainSizeMotion).toBeNull();
   });
 
+  it("cancels a pending pin release when another transition starts", () => {
+    vi.useFakeTimers();
+    const harness = createHarness(false);
+    disposals.push(harness.dispose);
+
+    const pinLifetime = DURATION.emphasis + DURATION.normal + DURATION.emphasis;
+
+    harness.layout.selectSplitMode();
+    harness.layout.selectViewerMode("card");
+    vi.advanceTimersByTime(pinLifetime);
+    // The release is scheduled but has not painted yet. Returning to the split
+    // now must not have its own pin cleared by the previous phase's release.
+    harness.layout.selectSplitMode();
+    expect(harness.layout.cardContainSizeMotion).toBe("return");
+    vi.advanceTimersByTime(SETTLE_FRAMES_MS);
+    expect(harness.layout.cardContainSizeMotion).toBe("return");
+  });
   it("keeps the stable Card layout leased throughout a 2D focus visit", () => {
     vi.useFakeTimers();
     const resolved = {

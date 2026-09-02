@@ -806,6 +806,19 @@
         )} ms</span
       >
     {/if}
+    <!-- The Card's size pin outlives the last mode step, so this reads the
+         settle tail rather than any one gate's phase. -->
+    {#if summary.cardSizePinRelease}
+      <span data-problem={summary.cardSizePinRelease.stepPx > 2}
+        >Card size pin release: {Math.round(summary.cardSizePinRelease.stepPx)} px
+        step · {Math.round(summary.cardSizePinRelease.travelPx)} px over {summary
+          .cardSizePinRelease.frames} frames · {Math.round(
+          summary.cardSizePinRelease.ms
+        )} ms · fill {summary.cardSizePinRelease.fillBefore.toFixed(2)} → {summary.cardSizePinRelease.fillAfter.toFixed(
+          2
+        )}</span
+      >
+    {/if}
     {#each summary.inspectorReveal as reveal (reveal.layer)}
       <span data-problem={revealBroken(reveal)}
         >{reveal.layer} reveal: {formatReveal(reveal)}</span
