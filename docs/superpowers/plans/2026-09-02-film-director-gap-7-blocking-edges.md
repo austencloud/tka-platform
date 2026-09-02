@@ -189,7 +189,7 @@ changes meaning, so `FILM_DIRECTOR_SCHEMA_VERSION` does not move.
 No production code changes in this task. The output is a decision recorded in
 this file and reported in the final message.
 
-- [ ] **Step 1: Read the code that would have to tolerate it.**
+- [x] **Step 1: Read the code that would have to tolerate it.**
 
   1. `src/routes/test/film-director/_lib/director-viewer-adapter.ts` in full.
      Note both load paths quoted in the research section above.
@@ -206,7 +206,7 @@ this file and reported in the final message.
      `hasSequence`, `loadedSequence`, `stepConfigs`, and `currentStep` and read
      each hit that lives on the render path rather than a control panel.
 
-- [ ] **Step 2: Answer these three questions in writing**, each with a file and
+- [x] **Step 2: Answer these three questions in writing**, each with a file and
       line:
 
   - Does a performer whose `loadSequence` is never called still render a body in
@@ -215,7 +215,7 @@ this file and reported in the final message.
   - Does the prop render for such a performer? (A performer standing and
     watching should be empty-handed or holding a still prop, not flickering.)
 
-- [ ] **Step 3: Pick the branch.**
+- [x] **Step 3: Pick the branch.**
 
   - **Branch A** if all three answers are benign: renders an idle body, nothing
     throws, and the prop either does not render or renders statically. Do Task 4A.
@@ -227,11 +227,11 @@ this file and reported in the final message.
   into every performer with `!hasSequence`. That is a change branch A makes, not
   evidence against branch A.
 
-- [ ] **Step 4: Record it.** Append a short "Spike result (branch A|B)" block to
+- [x] **Step 4: Record it.** Append a short "Spike result (branch A|B)" block to
       the end of this plan file with the three answers and their file:line
       citations, and say which branch you took in the final report.
 
-- [ ] **Step 5: Commit** the plan file with the spike result.
+- [x] **Step 5: Commit** the plan file with the spike result.
 
 ```bash
 git commit -m "docs(film-director): record the stand-and-watch verification spike" -- docs/superpowers/plans/2026-09-02-film-director-gap-7-blocking-edges.md
@@ -246,7 +246,7 @@ git commit -m "docs(film-director): record the stand-and-watch verification spik
 `tests/unit/film-director/blocking-language.test.ts`,
 `tests/unit/film-director/film-director-schema.test.ts`.
 
-- [ ] **Step 1: Write the failing tests.** Append to `blocking-language.test.ts`:
+- [x] **Step 1: Write the failing tests.** Append to `blocking-language.test.ts`:
 
 ```ts
 describe("run", () => {
@@ -283,7 +283,7 @@ it("parses a run move so the compiler can reject it by name", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure.**
+- [x] **Step 2: Run to verify failure.**
 
 ```bash
 node node_modules/vitest/vitest.mjs run --config tests/config/vitest.config.ts tests/unit/film-director/blocking-language.test.ts tests/unit/film-director/film-director-schema.test.ts
@@ -293,7 +293,7 @@ Expected: FAIL. The schema enum has no `"run"`, and `compileBlockingMoves`
 crashes on `MOVE_RULES["run"]` being `undefined` rather than throwing the
 message.
 
-- [ ] **Step 3: Implement.** In `blocking-language.ts`, widen the verb and add
+- [x] **Step 3: Implement.** In `blocking-language.ts`, widen the verb and add
       the rejection.
 
 ```ts
@@ -331,10 +331,10 @@ In `film-director-schema.ts` line 570:
     move: z.enum(["stand", "walk", "turn", "run"]),
 ```
 
-- [ ] **Step 4: Run** both test files, then the whole folder. Expected: PASS,
+- [x] **Step 4: Run** both test files, then the whole folder. Expected: PASS,
       snapshot untouched (no shipped film says `run`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(film-director): speak run so it rejects with its reason" -- src/routes/test/film-director/_lib/blocking-language.ts src/routes/test/film-director/_lib/film-director-schema.ts tests/unit/film-director/blocking-language.test.ts tests/unit/film-director/film-director-schema.test.ts
@@ -349,7 +349,7 @@ git commit -m "feat(film-director): speak run so it rejects with its reason" -- 
 `tests/unit/film-director/blocking-language.test.ts`,
 `tests/unit/film-director/film-director-schema.test.ts`.
 
-- [ ] **Step 1: Write the failing tests.** Append to `blocking-language.test.ts`:
+- [x] **Step 1: Write the failing tests.** Append to `blocking-language.test.ts`:
 
 ```ts
 describe("arc paths", () => {
@@ -557,11 +557,11 @@ it("rejects an unknown arc side", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure** — the same two-file command as Task 2.
+- [x] **Step 2: Run to verify failure** — the same two-file command as Task 2.
       Expected: FAIL (`along` is rejected by the strict object; `compile`
       ignores it).
 
-- [ ] **Step 3: Implement the schema.** In `film-director-schema.ts`, inside
+- [x] **Step 3: Implement the schema.** In `film-director-schema.ts`, inside
       `blockingMoveSchema`'s object, after the `to` field on line 571:
 
 ```ts
@@ -577,7 +577,7 @@ it("rejects an unknown arc side", () => {
       .optional(),
 ```
 
-- [ ] **Step 4: Implement the compiler.** In `blocking-language.ts`:
+- [x] **Step 4: Implement the compiler.** In `blocking-language.ts`:
 
 Extend the move type (after the `to` field in `DirectorBlockingMove`):
 
@@ -800,10 +800,10 @@ function assertWalkable(
   Grep for other callers before changing it: `grep -rn "assertWalkable" src/`.
   As of 2026-09-02 the only call is the one inside `compileBlockingMoves`.
 
-- [ ] **Step 5: Run** the two test files, then the whole folder. Expected: PASS.
+- [x] **Step 5: Run** the two test files, then the whole folder. Expected: PASS.
       The snapshot must be untouched — no shipped film says `along` yet.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -m "feat(film-director): a walk can bow along an arc to its mark" -- src/routes/test/film-director/_lib/blocking-language.ts src/routes/test/film-director/_lib/film-director-schema.ts tests/unit/film-director/blocking-language.test.ts tests/unit/film-director/film-director-schema.test.ts
@@ -821,7 +821,7 @@ Skip this task entirely if the Task 1 spike chose branch B.
 `film-director-schema.test.ts`, `director-sequence-library.test.ts`,
 `director-viewer-adapter.test.ts`.
 
-- [ ] **Step 1: Failing tests.**
+- [x] **Step 1: Failing tests.**
 
 `tests/unit/film-director/sequence-language.test.ts`:
 
@@ -908,9 +908,9 @@ describe("idle performers", () => {
 });
 ```
 
-- [ ] **Step 2: Run** those four files. Expected: FAIL.
+- [x] **Step 2: Run** those four files. Expected: FAIL.
 
-- [ ] **Step 3: Implement `sequence-language.ts`.** Change the `demo` member of
+- [x] **Step 3: Implement `sequence-language.ts`.** Change the `demo` member of
       `DirectorPerformerSequence` to carry both literals and add the classifier:
 
 ```ts
@@ -938,7 +938,7 @@ In `sequenceDirectiveKey`, before the final `demo` fallthrough:
   if (isIdleSequence(sequence)) return "none";
 ```
 
-- [ ] **Step 4: Implement the schema.** Change the source field:
+- [x] **Step 4: Implement the schema.** Change the source field:
 
 ```ts
     source: z.enum(["demo", "none"]).optional(),
@@ -961,7 +961,7 @@ Also update the no-source message to name it:
 'A sequence names one source: {source: "demo"}, {source: "none"} to stand and watch, a "word" to spell, a "length" to improvise, a "mirrorOf" to reflect, a "transformOf" to change, or a "library" id to play.'
 ```
 
-- [ ] **Step 5: Implement the library.** In `director-sequence-library.ts`'s
+- [x] **Step 5: Implement the library.** In `director-sequence-library.ts`'s
       `resolveScene`, at the top of the per-performer body inside
       `performers.map`:
 
@@ -976,7 +976,7 @@ Also update the no-source message to name it:
 
 Import `isIdleSequence` from `./sequence-language`.
 
-- [ ] **Step 6: Implement the adapter.** In `director-viewer-adapter.ts`, export
+- [x] **Step 6: Implement the adapter.** In `director-viewer-adapter.ts`, export
       the helper and consult it in both load paths:
 
 ```ts
@@ -1022,10 +1022,10 @@ now falls through to no load, which is the whole point. Update the options
 doc comment at lines 25-28 to say that a performer whose scene sequence is
 `{source: "none"}` is skipped by name rather than falling back.
 
-- [ ] **Step 7: Run** the four files, then the whole folder. Expected: PASS,
+- [x] **Step 7: Run** the four files, then the whole folder. Expected: PASS,
       snapshot untouched.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git commit -m "feat(film-director): a performer can stand and watch with no sequence" -- src/routes/test/film-director/_lib/sequence-language.ts src/routes/test/film-director/_lib/film-director-schema.ts src/routes/test/film-director/_lib/director-sequence-library.ts src/routes/test/film-director/_lib/director-viewer-adapter.ts tests/unit/film-director/sequence-language.test.ts tests/unit/film-director/film-director-schema.test.ts tests/unit/film-director/director-sequence-library.test.ts tests/unit/film-director/director-viewer-adapter.test.ts
@@ -1040,7 +1040,7 @@ Skip this task entirely if the Task 1 spike chose branch A.
 **Files:** Modify `src/routes/test/film-director/_lib/film-director-schema.ts`;
 Test `tests/unit/film-director/film-director-schema.test.ts`.
 
-- [ ] **Step 1: Failing test.**
+- [x] **Step 1: Failing test.**
 
 ```ts
 it("rejects a performer who stands and watches, and says why", () => {
@@ -1056,11 +1056,11 @@ it("rejects a performer who stands and watches, and says why", () => {
 });
 ```
 
-- [ ] **Step 2: Run** the schema test file. Expected: FAIL — `"none"` is not a
+- [x] **Step 2: Run** the schema test file. Expected: FAIL — `"none"` is not a
       legal value for `source`, so the rejection is zod's generic enum message
       rather than the spoken one.
 
-- [ ] **Step 3: Implement.** Widen the field so the spelling parses far enough
+- [x] **Step 3: Implement.** Widen the field so the spelling parses far enough
       to be rejected in the director's own words:
 
 ```ts
@@ -1085,10 +1085,10 @@ Replace the second sentence with the concrete finding from the Task 1 spike
 sentences. Also add `{source: "none"}` to nothing else: it stays absent from
 `SEQUENCE_SOURCE_KEYS` semantics, since it never resolves.
 
-- [ ] **Step 4: Run** the schema tests, then the whole folder. Expected: PASS,
+- [x] **Step 4: Run** the schema tests, then the whole folder. Expected: PASS,
       snapshot untouched.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(film-director): reject stand-and-watch with its reason" -- src/routes/test/film-director/_lib/film-director-schema.ts tests/unit/film-director/film-director-schema.test.ts
@@ -1100,11 +1100,11 @@ git commit -m "feat(film-director): reject stand-and-watch with its reason" -- s
 
 **Files:** Modify `src/routes/test/film-director/_films/proving-grounds.ts`.
 
-- [ ] **Step 1: Re-read the film.** The Gap 5 and Gap 6 agents append scenes to
+- [x] **Step 1: Re-read the film.** The Gap 5 and Gap 6 agents append scenes to
       the same array. Open `proving-grounds.ts`, find the LAST entry of
       `scenes`, and append after it. Do not renumber or reorder anything.
 
-- [ ] **Step 2: Append the scene.**
+- [x] **Step 2: Append the scene.**
 
 ```ts
     {
@@ -1166,7 +1166,7 @@ git commit -m "feat(film-director): reject stand-and-watch with its reason" -- s
   " Performer 1 stands and watches: `{source: \"none\"}`, no prop phrase, body
   idling while the other two spin."
 
-- [ ] **Step 3: Header comment.** Append a Gap 7 paragraph to the file's
+- [x] **Step 3: Header comment.** Append a Gap 7 paragraph to the file's
       top-of-file comment block, in the voice of the five already there:
 
 ```
@@ -1179,16 +1179,16 @@ git commit -m "feat(film-director): reject stand-and-watch with its reason" -- s
  * rather than across the chord.
 ```
 
-- [ ] **Step 4: Brief.** Append one sentence to the film's `brief`:
+- [x] **Step 4: Brief.** Append one sentence to the film's `brief`:
       "A seventh scene walks a performer in from off camera along a bowed
       path." Under branch A, extend it: "...while a third stands and watches
       with no sequence at all."
 
-- [ ] **Step 5: Run the folder.** Expected: the film-library and snapshot tests
+- [x] **Step 5: Run the folder.** Expected: the film-library and snapshot tests
       fail (new scene); nothing else does. That is Task 6's job — do not
       regenerate the snapshot yet.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -m "feat(film-director): prove the stage edges in the proving grounds" -- src/routes/test/film-director/_films/proving-grounds.ts
@@ -1201,7 +1201,7 @@ git commit -m "feat(film-director): prove the stage edges in the proving grounds
 **Files:** Modify `tests/unit/film-director/film-library.test.ts`,
 `tests/unit/film-director/__snapshots__/film-resolution-snapshot.test.ts.snap`.
 
-- [ ] **Step 1: Add the assertions.** Inside
+- [x] **Step 1: Add the assertions.** Inside
       `it("Proving Grounds exercises the gaps it advertises", ...)` (line 193),
       after the `three-shots` block and any block the Gap 5 or Gap 6 agent has
       added:
@@ -1262,7 +1262,7 @@ git commit -m "feat(film-director): prove the stage edges in the proving grounds
     ).toEqual({ source: "none" });
 ```
 
-- [ ] **Step 2: Run** `film-library.test.ts` alone and fix any assertion that
+- [x] **Step 2: Run** `film-library.test.ts` alone and fix any assertion that
       the actual numbers contradict. Read the failure rather than loosening the
       assertion: an eight-chord count or a 0.5m off-chord distance that comes
       out different means the geometry is not what this plan computed, and that
@@ -1270,7 +1270,7 @@ git commit -m "feat(film-director): prove the stage edges in the proving grounds
       the chord count if the Gap 3 comment's `FORMATION_WALL_OFFSET` has changed
       in a newer `@austencloud/scene-3d` — re-derive from the live value.
 
-- [ ] **Step 3: Snapshot.**
+- [x] **Step 3: Snapshot.**
 
 ```bash
 node node_modules/vitest/vitest.mjs run --config tests/config/vitest.config.ts tests/unit/film-director -u
@@ -1281,7 +1281,7 @@ Confirm the diff touches ONLY the `proving` block and only by adding the new
 scene. Any change to another film's block means something in Task 2, 3, or 4
 altered existing behavior — stop and find it.
 
-- [ ] **Step 4: Full folder plus a type check.**
+- [x] **Step 4: Full folder plus a type check.**
 
 ```bash
 node node_modules/vitest/vitest.mjs run --config tests/config/vitest.config.ts tests/unit/film-director
@@ -1292,7 +1292,7 @@ Report the test counts and confirm no new type errors in `film-director` files.
 Per `resource-budget.md`, check that no other `svelte-check` is running before
 starting this one.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "test(film-director): assert the stage-edge scene and refresh the snapshot" -- tests/unit/film-director/film-library.test.ts tests/unit/film-director/__snapshots__/film-resolution-snapshot.test.ts.snap
@@ -1305,7 +1305,7 @@ git commit -m "test(film-director): assert the stage-edge scene and refresh the 
 **Files:** Modify `docs/reference/film-director-capability-matrix.md`, and tick
 Gap 7 in `docs/superpowers/plans/2026-08-30-film-director-gap-campaign.md`.
 
-- [ ] **Step 1: Blocking row (line 71).** Change the Grammar cell to include the
+- [x] **Step 1: Blocking row (line 71).** Change the Grammar cell to include the
       two new spellings:
 
 ```
@@ -1322,7 +1322,7 @@ literal array of 1–16 moves: `{move: "stand" \| "walk" \| "turn" \| "run", to?
   `{source: "none"}` among the sources and note that such a performer is skipped
   by both load paths in `director-viewer-adapter.ts`.
 
-- [ ] **Step 2: Grammar gaps bullet.** Append to the list under
+- [x] **Step 2: Grammar gaps bullet.** Append to the list under
       `## Grammar gaps` (line 199), in the voice of the bullets already there:
 
 ```
@@ -1351,7 +1351,7 @@ literal array of 1–16 moves: `{move: "stand" \| "walk" \| "turn" \| "run", to?
   a watcher can walk on and stand. `run` remains a rejection — see 'Spoken but
   not real'."
 
-- [ ] **Step 3: Spoken but not real bullets.** Append under
+- [x] **Step 3: Spoken but not real bullets.** Append under
       `## Spoken but not real (proven rejections)` (line 292):
 
 ```
@@ -1380,15 +1380,15 @@ literal array of 1–16 moves: `{move: "stand" \| "walk" \| "turn" \| "run", to?
   `{effect: "none"}`.
 ```
 
-- [ ] **Step 4: Tick the ledger.** In
+- [x] **Step 4: Tick the ledger.** In
       `docs/superpowers/plans/2026-08-30-film-director-gap-campaign.md`, change
       the Gap 7 item at line 128 from `- [ ]` to `- [x]` and append a one-line
       outcome naming which of the four edges shipped as capability and which as
       rejection, plus the branch the spike chose.
 
-- [ ] **Step 5: Run the folder one last time** and confirm green.
+- [x] **Step 5: Run the folder one last time** and confirm green.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -m "docs(film-director): close gap 7 and record the blocking edges" -- docs/reference/film-director-capability-matrix.md docs/superpowers/plans/2026-08-30-film-director-gap-campaign.md docs/superpowers/plans/2026-09-02-film-director-gap-7-blocking-edges.md
