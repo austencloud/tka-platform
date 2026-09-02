@@ -515,8 +515,9 @@
     background: var(--theme-app-bg, #16213e);
   }
   .shell {
+    /* The authored composition band; grows with the canvas at 4K instead of
+       stranding the tool in an island. */
     width: min(100%, var(--shell-w, 1440px));
-    max-width: 1600px;
     margin-inline: auto;
   }
 
