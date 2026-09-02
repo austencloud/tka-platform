@@ -407,6 +407,67 @@ export function compileCameraMoves(
   return frames;
 }
 
+export interface DirectorCameraShot extends DirectorFramingInput {
+  moves?: DirectorCameraMove[];
+  durationSeconds?: number;
+}
+
+/**
+ * Gap 4. Several framings inside one scene, joined by hard cuts. Each shot is
+ * framed and its moves compiled exactly as a single-framing camera would be,
+ * inside its own time window, then shifted to where that window sits in the
+ * scene. The last keyframe of every shot but the final one is a step so the
+ * sampler holds it until the next shot's first keyframe, which starts at the
+ * same instant: the cut.
+ */
+export function compileCameraShots(
+  shots: readonly DirectorCameraShot[],
+  context: CameraLanguageContext
+): ResolvedDirectorCameraKeyframe[] {
+  const windows = allocateMoveWindows(
+    shots,
+    context.durationSeconds,
+    "Camera shots"
+  );
+  const frames: ResolvedDirectorCameraKeyframe[] = [];
+  shots.forEach((shot, index) => {
+    const { start, end } = windows[index]!;
+    const length = end - start;
+    if (length <= 1e-6) {
+      throw new Error(
+        `Camera shot ${index + 1} has no time. Every shot needs a duration, stated or left over.`
+      );
+    }
+    const shotContext = { ...context, durationSeconds: length };
+    const framing = computeCameraFraming(
+      {
+        subject: shot.subject,
+        shotSize: shot.shotSize,
+        angle: shot.angle,
+        position: shot.position,
+      },
+      shotContext
+    );
+    const compiled = compileCameraMoves(
+      shot.moves ?? [{ move: "hold" }],
+      framing,
+      shotContext
+    );
+    const isLast = index === shots.length - 1;
+    compiled.forEach((frame, frameIndex) => {
+      const shifted: ResolvedDirectorCameraKeyframe = {
+        ...frame,
+        atSeconds: frame.atSeconds + start,
+      };
+      if (!isLast && frameIndex === compiled.length - 1) {
+        shifted.interpolation = "step";
+      }
+      frames.push(shifted);
+    });
+  });
+  return frames;
+}
+
 function validateMove(move: DirectorCameraMove): void {
   const rules = MOVE_RULES[move.move];
   if (move.amount) {

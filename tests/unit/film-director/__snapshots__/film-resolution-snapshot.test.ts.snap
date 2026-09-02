@@ -1288,7 +1288,7 @@ exports[`film resolution snapshots > "Chance Suite" (chance) resolves to its fro
       "durationSeconds": 10,
       "transition": {
         "kind": "cut",
-        "durationSeconds": 0.8
+        "durationSeconds": 0
       },
       "location": {
         "environmentId": "ember",
@@ -3004,7 +3004,7 @@ exports[`film resolution snapshots > "Ember" (ember) resolves to its frozen spec
       "durationSeconds": 14,
       "transition": {
         "kind": "cut",
-        "durationSeconds": 0.8
+        "durationSeconds": 0
       },
       "location": {
         "environmentId": "ember",
@@ -4093,7 +4093,7 @@ exports[`film resolution snapshots > "Figures" (figures) resolves to its frozen 
       "durationSeconds": 15,
       "transition": {
         "kind": "cut",
-        "durationSeconds": 0.8
+        "durationSeconds": 0
       },
       "location": {
         "environmentId": "blossom",
@@ -8205,7 +8205,7 @@ exports[`film resolution snapshots > "Nine Planes" (planes) resolves to its froz
       "durationSeconds": 10,
       "transition": {
         "kind": "cut",
-        "durationSeconds": 0.8
+        "durationSeconds": 0
       },
       "location": {
         "environmentId": "ember",
@@ -9430,7 +9430,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
   "version": 5,
   "id": "proving-grounds-r1",
   "title": "Proving Grounds",
-  "brief": "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them.",
+  "brief": "One scene per closed gap. Three performers draw distinct left and right planes with the wall ruled out, then a counted scene states its whole clock in beats — sixteen of them at 120 bpm, an eight-beat push, and an eight-beat crossing. A third scene tests the frame's edges: a one-meter truck, a fifteen-degree zoom, and a ten-degree clockwise roll. A fourth scene follows a walker with a medium shot that never loses them. A fifth scene cuts between three framings without a single glide.",
   "format": {
     "width": 1920,
     "height": 1080,
@@ -9699,7 +9699,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
       "durationSeconds": 8,
       "transition": {
         "kind": "cut",
-        "durationSeconds": 0.8
+        "durationSeconds": 0
       },
       "location": {
         "environmentId": "cosmic",
@@ -10152,7 +10152,7 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
       "durationSeconds": 8,
       "transition": {
         "kind": "cut",
-        "durationSeconds": 0.8
+        "durationSeconds": 0
       },
       "location": {
         "environmentId": "forest",
@@ -10347,9 +10347,259 @@ exports[`film resolution snapshots > "Proving Grounds" (proving) resolves to its
           "mode": "follow"
         }
       }
+    },
+    {
+      "id": "three-shots",
+      "title": "Three Shots",
+      "intent": "Gap 4: one scene, three framings, two hard cuts. A wide front two-shot for six beats, then a cut to a low close-up on the left performer that pushes in for six beats, then a cut to a high medium shot from behind for the last four. The frame jumps at each cut; nothing glides between framings.",
+      "startSeconds": 40,
+      "durationSeconds": 8,
+      "transition": {
+        "kind": "cut",
+        "durationSeconds": 0
+      },
+      "location": {
+        "environmentId": "cosmic",
+        "showStage": false,
+        "showAudience": false,
+        "sceneFeatures": {
+          "environment": true,
+          "stage": false,
+          "audience": false,
+          "campfire": false,
+          "tent": false
+        },
+        "visiblePlanes": []
+      },
+      "performance": {
+        "bpm": 120,
+        "sequence": {
+          "source": "demo",
+          "loop": true
+        },
+        "formation": "side-by-side",
+        "performers": [
+          {
+            "id": "performer-1",
+            "name": "Performer 1",
+            "characterId": "x-bot",
+            "prop": "staff",
+            "effect": "none",
+            "effort": "linear",
+            "sequence": {
+              "source": "demo"
+            },
+            "position": {
+              "x": -0.9,
+              "z": 0
+            },
+            "facingAngle": 3.141593,
+            "blocking": [
+              {
+                "atSeconds": 0,
+                "position": {
+                  "x": -0.9,
+                  "z": 0
+                },
+                "facingAngle": 3.141593,
+                "walking": false,
+                "easing": "linear"
+              },
+              {
+                "atSeconds": 8,
+                "position": {
+                  "x": -0.9,
+                  "z": 0
+                },
+                "facingAngle": 3.141593,
+                "walking": false,
+                "easing": "linear"
+              }
+            ],
+            "beatOffset": 0,
+            "staffLengthCm": null,
+            "leftPlane": "wall",
+            "rightPlane": "wall",
+            "stepPlanes": []
+          },
+          {
+            "id": "performer-2",
+            "name": "Performer 2",
+            "characterId": "y-bot",
+            "prop": "staff",
+            "effect": "none",
+            "effort": "linear",
+            "sequence": {
+              "source": "demo"
+            },
+            "position": {
+              "x": 0.9,
+              "z": 0
+            },
+            "facingAngle": 3.141593,
+            "blocking": [
+              {
+                "atSeconds": 0,
+                "position": {
+                  "x": 0.9,
+                  "z": 0
+                },
+                "facingAngle": 3.141593,
+                "walking": false,
+                "easing": "linear"
+              },
+              {
+                "atSeconds": 8,
+                "position": {
+                  "x": 0.9,
+                  "z": 0
+                },
+                "facingAngle": 3.141593,
+                "walking": false,
+                "easing": "linear"
+              }
+            ],
+            "beatOffset": 0,
+            "staffLengthCm": null,
+            "leftPlane": "wall",
+            "rightPlane": "wall",
+            "stepPlanes": []
+          }
+        ],
+        "stageExtent": [
+          {
+            "x": -0.9,
+            "z": 0
+          },
+          {
+            "x": -0.9,
+            "z": 0
+          },
+          {
+            "x": -0.9,
+            "z": 0
+          },
+          {
+            "x": 0.9,
+            "z": 0
+          },
+          {
+            "x": 0.9,
+            "z": 0
+          },
+          {
+            "x": 0.9,
+            "z": 0
+          }
+        ]
+      },
+      "effectPresets": {},
+      "effectOverrides": {},
+      "camera": {
+        "preset": "custom",
+        "substitutedFor": null,
+        "keyframes": [
+          {
+            "atSeconds": 0,
+            "position": [
+              0,
+              0.852639,
+              -4.532137
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "step",
+            "easing": "ease-in-out"
+          },
+          {
+            "atSeconds": 3,
+            "position": [
+              0,
+              0.852639,
+              -4.532137
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "step",
+            "easing": "ease-in-out"
+          },
+          {
+            "atSeconds": 3,
+            "position": [
+              -0.9,
+              0.147258,
+              -1.367361
+            ],
+            "target": [
+              -0.9,
+              0.4379,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "smooth",
+            "easing": "ease-in-out"
+          },
+          {
+            "atSeconds": 6,
+            "position": [
+              -0.9,
+              0.230423,
+              -0.976102
+            ],
+            "target": [
+              -0.9,
+              0.4379,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "step",
+            "easing": "ease-in-out"
+          },
+          {
+            "atSeconds": 6,
+            "position": [
+              0,
+              1.766244,
+              2.314275
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "step",
+            "easing": "ease-in-out"
+          },
+          {
+            "atSeconds": 8,
+            "position": [
+              0,
+              1.766244,
+              2.314275
+            ],
+            "target": [
+              0,
+              0.535721,
+              0
+            ],
+            "fovDeg": 50,
+            "interpolation": "step",
+            "easing": "ease-in-out"
+          }
+        ]
+      }
     }
   ],
-  "durationSeconds": 40
+  "durationSeconds": 48
 }"
 `;
 
@@ -13457,7 +13707,7 @@ exports[`film resolution snapshots > "Understudy Night" (understudy) resolves to
       "durationSeconds": 8,
       "transition": {
         "kind": "cut",
-        "durationSeconds": 0.8
+        "durationSeconds": 0
       },
       "location": {
         "environmentId": "blossom",

@@ -287,6 +287,44 @@ describe("film library", () => {
     const standing = sampleAt(6);
     expect(standing.position).toEqual(crossed.position);
     expect(standing.target).toEqual(crossed.target);
+
+    const shots = resolved.scenes.find((s) => s.id === "three-shots")!;
+    expect(shots.durationSeconds).toBe(8);
+    const shotKeyframes = shots.camera.keyframes;
+    const atCut = (t: number) =>
+      shotKeyframes.filter((frame) => Math.abs(frame.atSeconds - t) < 1e-6);
+    // Six beats at 120bpm is 3s; the third shot takes what is left.
+    expect(atCut(3)).toHaveLength(2);
+    expect(atCut(6)).toHaveLength(2);
+    expect(atCut(3)[0]!.interpolation).toBe("step");
+    expect(atCut(6)[0]!.interpolation).toBe("step");
+
+    const shotSample = (offset: number) =>
+      sampleFilmDirector(resolved, shots.startSeconds + offset).camera;
+    const jump = (a: number, b: number) => {
+      const from = shotSample(a).position;
+      const to = shotSample(b).position;
+      return Math.hypot(to[0]! - from[0]!, to[1]! - from[1]!, to[2]! - from[2]!);
+    };
+    // A cut, not a glide: a metre of travel inside ten milliseconds.
+    expect(jump(2.99, 3)).toBeGreaterThan(1);
+    expect(jump(5.99, 6)).toBeGreaterThan(1);
+
+    const opener = shotKeyframes[0]!;
+    expect(opener.atSeconds).toBe(0);
+    const range = (frame: (typeof shotKeyframes)[number]) =>
+      Math.hypot(
+        frame.position[0]! - frame.target[0]!,
+        frame.position[1]! - frame.target[1]!,
+        frame.position[2]! - frame.target[2]!
+      );
+    // Shot one is wide; shot two is a close-up, so it sits nearer its subject.
+    expect(range(opener)).toBeGreaterThan(range(atCut(3)[1]!));
+
+    // Every scene that says "cut" cuts: no dissolve window anywhere.
+    for (const scene of [onBeat, tracking, shots]) {
+      expect(scene.transition).toEqual({ kind: "cut", durationSeconds: 0 });
+    }
   });
 
   it("Chance Suite's identical directives on different scenes draw from different streams", () => {

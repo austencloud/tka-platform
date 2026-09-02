@@ -795,6 +795,11 @@ function resolveScene(
     })),
   });
 
+  // A cut is instantaneous by definition: it has no window to dissolve over.
+  // Only a stated duration can give one a length.
+  const transitionKind =
+    scene.transition?.kind ?? (sceneIndex === 0 ? "cut" : "environment-dissolve");
+
   return {
     id: scene.id,
     title: scene.title,
@@ -802,11 +807,10 @@ function resolveScene(
     startSeconds,
     durationSeconds,
     transition: {
-      kind:
-        scene.transition?.kind ??
-        (sceneIndex === 0 ? "cut" : "environment-dissolve"),
+      kind: transitionKind,
       durationSeconds:
-        scene.transition?.durationSeconds ?? (sceneIndex === 0 ? 0 : 0.8),
+        scene.transition?.durationSeconds ??
+        (sceneIndex === 0 || transitionKind === "cut" ? 0 : 0.8),
     },
     location: {
       environmentId,

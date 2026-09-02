@@ -111,6 +111,42 @@ describe("convertSceneBeatTimes", () => {
     ).toBe(2);
   });
 
+  it("converts a camera shot's own duration and the moves inside it", () => {
+    const input = baseScene({
+      camera: {
+        shots: [
+          {
+            subject: { kind: "group" },
+            shotSize: "wide",
+            durationBeats: 8,
+            moves: [{ move: "push-in", durationBeats: 4 }],
+          },
+          { subject: { kind: "group" }, shotSize: "medium" },
+        ],
+      },
+    } as unknown as Partial<DirectorSceneInput>);
+    const scene = convertSceneBeatTimes(input, bpm(120));
+    expect(scene.camera?.shots?.[0]?.durationSeconds).toBe(4);
+    expect(scene.camera?.shots?.[0]?.moves?.[0]?.durationSeconds).toBe(2);
+    expect(
+      scene.camera?.shots?.[0] && "durationBeats" in scene.camera.shots[0]
+    ).toBe(false);
+    // The input keeps its beats: conversion clones, never rewrites in place.
+    expect(input.camera?.shots?.[0]?.durationBeats).toBe(8);
+  });
+
+  it("returns the same camera object when shots state only seconds", () => {
+    const input = baseScene({
+      camera: {
+        shots: [
+          { subject: { kind: "group" }, durationSeconds: 4 },
+          { subject: { kind: "group" } },
+        ],
+      },
+    } as unknown as Partial<DirectorSceneInput>);
+    expect(convertSceneBeatTimes(input, bpm(120))).toBe(input);
+  });
+
   it("converts camera keyframe atBeats to atSeconds", () => {
     const scene = convertSceneBeatTimes(
       baseScene({
