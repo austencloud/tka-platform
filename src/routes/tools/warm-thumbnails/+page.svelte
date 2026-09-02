@@ -55,6 +55,13 @@
   // and report the resolved state; the write site re-checks on its own.
   let identityState = $state<"pending" | "ready" | "unavailable">("pending");
   onMount(() => {
+    // Standalone surface: no module ever reports boot completion here, so the
+    // app.html splash would sit over the page until its safety timeout.
+    (
+      window as unknown as {
+        __tkaLoadProgress?: (percent: number, message: string) => void;
+      }
+    ).__tkaLoadProgress?.(100, "Ready");
     void (async () => {
       await ensureGuestIdentity("thumbnail_upload");
       const auth = await getAuthInstance();
