@@ -235,7 +235,7 @@ import type { QuickAccessUser } from "../services/types";
    * Lean one-click warm: renders + uploads the observed cold set (staff + fan,
    * dark, QR + non-QR) through the real orchestrator so those cloud thumbnails exist.
    * Clicking again while running cancels. Full-matrix control lives at
-   * /admin/generate-thumbnails. Follow a run with `npm run thumbnails:manifest`
+   * /tools/warm-thumbnails. Follow a run with `npm run thumbnails:manifest`
    * + `npm run thumbnails:sync` to index + bundle the results.
    */
   async function warmGalleryThumbnails() {
