@@ -39,12 +39,17 @@ export const SHAPE_MATRIX_ACTIVE_MANDALA_NAME = "shape-matrix-active-mandala";
 export const SHAPE_MATRIX_ACTIVE_STAGE_NAME = "shape-matrix-active-stage";
 
 /**
- * The pictograph carousel under the detail stage. It is its own container,
- * not part of the canvas box the tile flies into, so it carries its own name
- * during the morph: it rises in under the landed stage instead of riding
- * inside the travelling rectangle or popping in with the page crossfade.
+ * The three frames around the flying stage: the element and prop-relationship
+ * chips above it, the pictograph carousel below it, and the playback control
+ * bar at the foot. None of them is part of the rectangle that flies, so each
+ * carries its own name during the morph and settles into its landed position
+ * on a staggered wave. Without a name they are trapped in the page's single
+ * root snapshot, which is painted complete for the whole flight and then
+ * swapped for the live DOM: the pop this exists to remove.
  */
+export const SHAPE_MATRIX_MODES_NAME = "shape-matrix-modes";
 export const SHAPE_MATRIX_STRIP_NAME = "shape-matrix-strip";
+export const SHAPE_MATRIX_CONTROLS_NAME = "shape-matrix-controls";
 
 export interface ShapeMatrixArtworkPainter {
   cell: (
