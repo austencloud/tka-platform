@@ -2,7 +2,7 @@
   ComposerTunnelDemo
 
   The Tunnel section's live embed: the real kaleidoscope renderer
-  (TunnelArtView) multiplying the baked demo fixture across a 4-fold ring.
+  (TunnelArtView) multiplying the baked demo fixture across a ring.
 
   Follows TunnelDetailPreview's per-instance seam (the proven pattern for
   mounting the tunnel outside the sequence viewer): local TunnelViewController,
@@ -25,6 +25,11 @@
     loadTunnelViewState,
     saveTunnelViewState,
   } from "$lib/shared/sequence-viewer/tunnel/tunnel-view-state";
+  import {
+    MAX_IMAGES,
+    MAX_IMAGES_RM,
+    imageCount,
+  } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import {
@@ -34,16 +39,71 @@
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { ViewerPlaybackState } from "$lib/shared/sequence-viewer/domain/viewer-prop-groups";
 
-  /** The per-visit demo sequence, provided by the page (no baked canon). */
-  let { sequence: sourceSequence }: { sequence: SequenceData } = $props();
+  /**
+   * `layout`:
+   *   "square" (default) — the original centered square plus the Performers
+   *     row. Any existing consumer renders exactly as before.
+   *   "band" — a two-column composition: the square stage left (the renderer
+   *     is square-only), a control column right.
+   */
+  let {
+    sequence: sourceSequence,
+    layout = "square",
+  }: { sequence: SequenceData; layout?: "square" | "band" } = $props();
 
   const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
   let playing = $state(!reduceMotion.current);
-  let fold = $state(4);
+  let fold = $state(layout === "band" ? 8 : 4);
+
+  /** Band-only arrangement — three points in the shipped TunnelConfig space. */
+  type Arrangement = "ring" | "mirrored" | "canon";
+  const ARRANGEMENTS: {
+    value: Arrangement;
+    label: string;
+    mirror: boolean;
+    staggerSteps: number;
+  }[] = [
+    { value: "ring", label: "Ring", mirror: false, staggerSteps: 0 },
+    { value: "mirrored", label: "Mirrored", mirror: true, staggerSteps: 0 },
+    { value: "canon", label: "Canon", mirror: false, staggerSteps: 1 },
+  ];
+  let arrangement = $state<Arrangement>("ring");
+  const current = $derived(
+    ARRANGEMENTS.find((a) => a.value === arrangement) ?? ARRANGEMENTS[0]!
+  );
 
   $effect(() => {
     if (reduceMotion.current) playing = false;
   });
+
+  /** The controller's live image budget (reduced motion tightens it). A combo
+   *  that would exceed it is disabled, never silently clamped. */
+  const budget = $derived(reduceMotion.current ? MAX_IMAGES_RM : MAX_IMAGES);
+  const fits = (f: number, mirror: boolean) =>
+    imageCount({
+      fold: f,
+      mirror,
+      flip: false,
+      invert: false,
+      echo: false,
+      staggerSteps: 0,
+      speedOverrides: {},
+    }) <= budget;
+
+  const foldOptions = $derived(
+    [2, 4, 8].map((f) => ({
+      value: String(f),
+      label: String(f),
+      disabled: layout === "band" ? !fits(f, current.mirror) : false,
+    }))
+  );
+  const arrangementOptions = $derived(
+    ARRANGEMENTS.map((a) => ({
+      value: a.value,
+      label: a.label,
+      disabled: !fits(fold, a.mirror),
+    }))
+  );
 
   const prevTunnelViewState = loadTunnelViewState();
 
@@ -64,11 +124,11 @@
   $effect(() => {
     controller.applyConfig({
       fold,
-      mirror: false,
+      mirror: layout === "band" ? current.mirror : false,
       flip: false,
       invert: false,
       echo: false,
-      staggerSteps: 0,
+      staggerSteps: layout === "band" ? current.staggerSteps : 0,
       speedOverrides: {},
     });
   });
@@ -82,14 +142,16 @@
   });
 </script>
 
-<div class="tunnel-demo">
+{#snippet stage()}
   <div class="stage">
     <div
       class="art"
       role="img"
       aria-label="Live tunnel performance of {simplifyRepeatedWord(
         sequence.word
-      )}, multiplied across {fold} copies"
+      )}, multiplied across {fold} copies{layout === 'band'
+        ? `, ${current.label.toLowerCase()} arrangement`
+        : ''}"
     >
       <TunnelArtView
         {sequence}
@@ -110,23 +172,54 @@
       <i class="fas {playing ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
     </button>
   </div>
+{/snippet}
 
-  <div class="fold-row">
-    <span class="control-label">Performers</span>
-    <SegmentedControl
-      options={[
-        { value: "2", label: "2" },
-        { value: "4", label: "4" },
-        { value: "8", label: "8" },
-      ]}
-      value={String(fold)}
-      onchange={(v) => (fold = Number(v))}
-      ariaLabel="Tunnel performers"
-      color="accent"
-      size="sm"
-    />
+{#snippet performers()}
+  <SegmentedControl
+    options={foldOptions}
+    value={String(fold)}
+    onchange={(v) => (fold = Number(v))}
+    ariaLabel="Tunnel performers"
+    color="accent"
+    size="sm"
+  />
+{/snippet}
+
+{#if layout === "band"}
+  <div class="tunnel-demo band">
+    <div class="band-stage">
+      {@render stage()}
+    </div>
+    <div class="band-controls">
+      <h3 class="band-title">Tunnel</h3>
+      <p class="band-caption">The same movement, repeated around the ring.</p>
+      <div class="control-row">
+        <span class="control-label">Performers</span>
+        {@render performers()}
+      </div>
+      <div class="control-row">
+        <span class="control-label">Arrangement</span>
+        <SegmentedControl
+          options={arrangementOptions}
+          value={arrangement}
+          onchange={(v) => (arrangement = v as Arrangement)}
+          ariaLabel="Tunnel arrangement"
+          color="accent"
+          size="sm"
+        />
+      </div>
+    </div>
   </div>
-</div>
+{:else}
+  <div class="tunnel-demo">
+    {@render stage()}
+
+    <div class="fold-row">
+      <span class="control-label">Performers</span>
+      {@render performers()}
+    </div>
+  </div>
+{/if}
 
 <style>
   /* Spacing to the prose above is owned by the host's duo grid gap. */
@@ -199,7 +292,84 @@
     color: oklch(0.74 0.018 270);
   }
 
-  .fold-row :global(.segment) {
+  .fold-row :global(.segment),
+  .control-row :global(.segment) {
     min-height: max(var(--min-touch-target, 48px), 48px);
+  }
+
+  /* Band: square stage left, control column right. The renderer is square-only,
+     so the stage keeps aspect-ratio 1 and is height-keyed. */
+  .tunnel-demo.band {
+    display: grid;
+    /* The stage track is sized here, not on .band-stage: a percentage width
+       inside an `auto` track is cyclic and resolves to zero. */
+    grid-template-columns: minmax(0, min(46rem, 62vh)) minmax(16rem, 30rem);
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: center;
+    justify-content: center;
+  }
+  .band-stage {
+    width: 100%;
+    min-width: 0;
+  }
+  .tunnel-demo.band .stage {
+    max-width: 100%;
+  }
+  .band-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 30rem;
+  }
+  .band-title {
+    margin: 0;
+    font-size: var(--font-size-lg, 1.25rem);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+  .band-caption {
+    margin: 0 0 0.5rem;
+    color: oklch(0.78 0.02 270);
+    line-height: 1.5;
+  }
+  /* Deterministic footprint: fixed label column and fixed row height, so the
+     row never moves when the selected value changes (no-layout-shift). */
+  .control-row {
+    display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+    min-height: max(var(--min-touch-target, 48px), 48px);
+  }
+
+  @media (max-width: 959.98px) {
+    .tunnel-demo.band {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .band-stage {
+      width: min(46rem, 62vh, 100%);
+      margin-inline: auto;
+    }
+    .band-controls {
+      align-items: center;
+      text-align: center;
+      margin-inline: auto;
+    }
+    /* Stacked: the control keeps a real track, not its intrinsic width,
+       so three short labels never collapse into 29px segments. */
+    .control-row {
+      grid-template-columns: 7.5rem minmax(14rem, 22rem);
+      justify-content: center;
+    }
+  }
+
+  /* Phone width: the label sits above its control so three segments never
+     press against the frame edge. */
+  @media (max-width: 30rem) {
+    .control-row {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      row-gap: 0.4rem;
+    }
   }
 </style>

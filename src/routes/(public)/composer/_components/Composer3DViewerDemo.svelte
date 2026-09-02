@@ -39,6 +39,7 @@
   } from "$lib/shared/foundation/domain/models/sequence-data";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import SceneControlWorkspace from "$lib/shared/3d/components/controls/SceneControlWorkspace.svelte";
+  import ComposerEffectStrip from "./ComposerEffectStrip.svelte";
   import {
     COMPOSER_3D_DEMO_SEED,
     normalizeComposer3DDemoState,
@@ -50,7 +51,7 @@
   // ── contexts (must be set during component init, not onMount) ────────────
   const viewer = createViewer3DState(COMPOSER_3D_DEMO_SEED);
   setViewer3DContext(viewer);
-  setEffectsConfigContext(
+  const effects = setEffectsConfigContext(
     createEffectsConfigState(undefined, { persist: false })
   );
   setScene3DRenderContext(createScene3DRenderState());
@@ -89,6 +90,17 @@
 
   let ready = $state(false);
 
+  // The strip starts on a lit effect so the stage shows what it does before
+  // the visitor touches anything. It is armed once the scene reports ready,
+  // after shader warmup: switching effect materials while compileAsync is
+  // still polling a program it just built throws inside three's timer.
+  let effectArmed = false;
+  function armDefaultEffect(sceneReady: boolean): void {
+    if (!sceneReady || effectArmed) return;
+    effectArmed = true;
+    effects.setActiveEffect("fire");
+  }
+
   onMount(() => {
     viewer.enter3D(sequence);
     normalizeComposer3DDemoState(viewer);
@@ -122,6 +134,7 @@
           {isPlaying}
           bpm={BPM}
           hideOverlays
+          onSceneReadyChange={armDefaultEffect}
         />
       {:else}
         <div class="stage-curtain" aria-hidden="true"></div>
@@ -150,6 +163,10 @@
       ></i>
     </button>
   </div>
+
+  {#if ready}
+    <ComposerEffectStrip />
+  {/if}
 </div>
 
 <style>

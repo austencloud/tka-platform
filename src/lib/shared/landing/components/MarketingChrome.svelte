@@ -18,6 +18,7 @@
   import { isNamedRouteMorphActive } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import { motionDuration } from "$lib/shared/transitions/motion";
   import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
+  import { marketingBackground } from "../state/marketing-background-state.svelte";
   import SiteHeader from "./SiteHeader.svelte";
   import SiteFooter from "./SiteFooter.svelte";
 
@@ -29,8 +30,19 @@
   // A type-only import keeps the backgrounds package out of the first-paint
   // module graph. Its public index re-exports every renderer, even though this
   // shell only needs the string value until the live host is loaded.
-  const BG = "cosmic" as BackgroundType;
   let LiveBackground = $state<BackgroundHostComponent | null>(null);
+  let applyTheme = $state<
+    ((type: BackgroundType) => void) | null
+  >(null);
+
+  // Re-tune the interface colors whenever the chosen background changes, and
+  // once when the calculator module finishes loading. A page that drives
+  // marketingBackground (the composer showcase) gets the matching theme
+  // without knowing when the lazy import resolved.
+  $effect(() => {
+    const type = marketingBackground.type;
+    applyTheme?.(type);
+  });
 
   onMount(() => {
     if (isConstrainedConnection()) return;
@@ -51,7 +63,7 @@
 
         void import("$lib/shared/settings/utils/background-theme-calculator").then(
           ({ applyThemeForBackground }) => {
-            if (mounted) applyThemeForBackground(BG);
+            if (mounted) applyTheme = applyThemeForBackground;
           }
         );
       });
@@ -83,7 +95,7 @@
   <div class="mkt-fallback" aria-hidden="true"></div>
   <div class="mkt-bg">
     {#if LiveBackground}
-      <LiveBackground backgroundType={BG} />
+      <LiveBackground backgroundType={marketingBackground.type} />
     {/if}
   </div>
 
