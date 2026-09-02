@@ -48,6 +48,16 @@ async function candidatesFor(leftKey: string, rightKey: string) {
 }
 
 describe("mixed whole-turn and quarter-turn cells", () => {
+  it("builds every hand relationship for the 1:2 negative-quarter band", async () => {
+    const counts = await candidatesFor(
+      "pro--0.25-in-diamond",
+      "anti--0.25-out-diamond"
+    );
+    for (const mode of MODE_ORDER) {
+      expect(counts[mode], mode).toBeGreaterThanOrEqual(1);
+    }
+  }, 60_000);
+
   it("builds every hand relationship for a whole-turn hand against a quarter-turn hand", async () => {
     // The Level 4 configuration that could not pick anything: the pair
     // closes on the eight-step wheel, so the whole-turn hand traces its

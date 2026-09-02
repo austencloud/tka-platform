@@ -661,12 +661,14 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   turns: {
     definition:
-      "Additional prop rotation beyond the motion's base rotation. One turn equals 180 degrees. Level 1 uses zero turns, Level 2 adds whole turns, Level 3 adds half turns, and Level 4 adds quarter turns. Turn values are nonnegative; float is a separate shift state with no turn count.",
+      "Additional prop rotation beyond the motion's base rotation. One turn equals 180 degrees. Level 1 uses zero turns, Level 2 adds whole turns, Level 3 adds half turns, and Level 4 adds quarter turns. Standard turn palettes are nonnegative, while the Shape Matrix also uses -0.25 for the VTG 1:2 ratio. Float remains a separate shift state with no numeric turn count and is the VTG 0:1 ratio.",
     examples: [
       "0 turns on a pro shift uses only its base rotation",
       "1 turn adds 180 degrees",
       "0.5 turns adds 90 degrees",
       "0.25 turns adds 45 degrees",
+      "-0.25 turns is the Shape Matrix's TKA value for the VTG 1:2 ratio",
+      "Float is the TKA state corresponding to the VTG 0:1 ratio",
     ],
     relatedTerms: [
       "rotation",

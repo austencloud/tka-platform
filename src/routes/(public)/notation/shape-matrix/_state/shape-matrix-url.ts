@@ -2,12 +2,14 @@ import {
   buildShapeMatrixAxis,
   flowerKey,
 } from "$lib/shared/shape-matrix/domain/flower-signature";
-import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
+import {
+  matrixTurnsForLevel,
+  type MatrixLabelMode,
+} from "$lib/shared/shape-matrix/domain/matrix-turn-band";
 import {
   asTurnLevel,
   keyToTurnValue,
   turnValueToKey,
-  turnValuesForLevel,
   type TurnLevel,
   type TurnValue,
 } from "$lib/shared/create/services/level-turn-values";
@@ -48,9 +50,9 @@ function readTurn(
         : legacySize && legacySize in LEGACY_SIZE_TURNS
           ? LEGACY_SIZE_TURNS[legacySize]
           : 2;
-  return turnValuesForLevel(level).includes(raw)
+  return matrixTurnsForLevel(level).includes(raw)
     ? raw
-    : (turnValuesForLevel(level)[0] ?? 0);
+    : (matrixTurnsForLevel(level)[0] ?? 0);
 }
 
 export function readShapeMatrixRouteState(
