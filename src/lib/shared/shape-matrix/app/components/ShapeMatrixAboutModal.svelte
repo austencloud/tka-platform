@@ -42,11 +42,9 @@
       animation, and pictograph readouts are additions made here.
     </p>
     <p>
-      <strong>Hands and props.</strong> In the shape detail pane, choose a hand
-      path to see the prop relationship it produces, or choose a prop
-      relationship to find a matching hand path. The paired result stays below
-      the animation. Both controls describe the same shape from a different
-      starting point.
+      <strong>Element relationships.</strong> Choose a hand timing and direction.
+      The prop result follows automatically. When the selected flowers support two
+      exact prop phases, both choices appear so you can pick the result you want.
     </p>
     <div class="source-links">
       <a

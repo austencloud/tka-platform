@@ -96,28 +96,50 @@ proving-film scenes author at version 4.
       standing (≈7 s) frames with the forest sliding behind; the first staging
       walked through the partner's mark along z = 0 and was moved downstage
       to (-1.5, -1.8). 611/611 tests.
-- [ ] **Gap 4 — mid-scene cut.** `camera.shots: [...]` — a list of framing
+- [x] **Gap 4 — mid-scene cut.** `camera.shots: [...]` — a list of framing
       blocks each with its own subject/shotSize/angle/position/moves and a
       duration (seconds or beats); hard cut between consecutive shots.
       Exclusive with single-framing fields, presets, and raw keyframes.
       Compiles to one keyframe track with step-interpolation boundaries.
-- [ ] **Gap 5 — sequence transforms + library source.** Sequence sources gain
+      **Accepted 2026-09-02** (worktree `c5b004dcec` + close-out): suite
+      632/632; proving scene 5 sampled on the running workbench at 1920×1080 —
+      wide front hold through scene time 2.99 s, close-up at 3.01 s pushing
+      0.4 m to 5.99 s, high-behind at 6.01 s; three frames read wide two-shot /
+      low close-up on performer 1 / high behind two-shot with no glide. Cut
+      transition default duration is now 0, which changed only
+      `transition.durationSeconds` in five shipped films' snapshots.
+- [x] **Gap 5 — sequence transforms + library source.** Sequence sources gain
       `{transformOf: performer, transforms: [...]}` for the operations
       `sequence-transformer.ts` already owns (rotate/invert/swap/retrograde…;
       exact speakable list fixed at design time after reading the transformer),
       with `mirrorOf` kept as sugar. Plus a saved-library-sequence source if
       the loader seam is workbench-safe (async like word generation) — verify
       first, descope honestly if not.
+      **Accepted 2026-09-02** (commits `8ee379c537`..`08f34afe1c`): ops
+      mirror/flip/invert/rewind (optional hand), rotate (45° multiples, cw/ccw),
+      swap-hands, start-at; `{library: <publicSequences id>}` loads through
+      `batchFetchPublicSequences` (world-readable). Suite 659/659; snapshot
+      changed only in the proving block. Visual gate on the workbench at
+      1920×1080, film time 50 s and 53.2 s: Firestore fetch observed, no
+      fallback warning in the console, and the three performers show three
+      different pictures (library source, rotated + swapped hands, retrograde).
 - [ ] **Gap 2 — per-beat changes.** Per-performer `stepEffects` (and
       `stepEfforts` if the adapter seam allows live effort swap) following the
       stepPlanes shape; freeze/hold on a beat only if the playback seam
       supports per-performer step remapping cheaply. Design task reads
       `director-viewer-adapter.ts` + `FilmDirectorScene.svelte` fully first.
-- [ ] **Gap 6 — per-performer effect presets/overrides.** Design task first:
+- [x] **Gap 6 — per-performer effect presets/overrides.** Design task first:
       determine whether the effects engine can hold two configs of one effect
       id in one scene. If yes: `performer.effectPreset`/`effectOverrides`
       override scene-scoped ones. If no: a clear rejection message naming the
       constraint, plus capability-matrix documentation. No pretending.
+      **Ruled NO and closed 2026-09-02** (commit `2998cb963b`). The design
+      pass found `EffectsConfigState` is one `Record<effectId, Intent>` per
+      scene, replaced once by `applyDirectorEffectPresets`, and read flat by
+      `EffectOrchestrator3D` for every performer's tips. `effectPresets` /
+      `effectOverrides` on a performer or in cast defaults now reject with
+      `PERFORMER_EFFECT_CONFIG_MESSAGE`; documented under "Spoken but not
+      real". 663/663 tests; snapshot untouched. Non-visual, no frame needed.
 - [ ] **Gap 7 — blocking edges.** `run` (only if the locomotion owner has a
       run gait — locomotion.md forbids inventing one), arc paths
       (`along: "arc"` resolved into chord segments at compile time, no runtime

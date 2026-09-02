@@ -303,7 +303,7 @@
             </button>
 
             <a
-              href="/admin/generate-thumbnails"
+              href="/tools/warm-thumbnails"
               class="dropdown-item"
               onclick={() => (isActionsOpen = false)}
             >

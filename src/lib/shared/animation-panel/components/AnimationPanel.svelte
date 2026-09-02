@@ -109,6 +109,10 @@
       steps?: ReadonlyArray<{ letter?: string | null }> | null;
     } | null;
     onPropChange?: (propType: PropType) => void;
+    /** Let a host route the Props destination into its canonical picker drawer
+     * instead of squeezing the catalogue into the bottom dock tray. Sidebar
+     * consumers keep the inline catalogue by omitting this callback. */
+    onPropPickerRequest?: () => void;
     /**
      * Buugeng chirality seam forwarded to the props pill's picker. Optional
      * because two hosts (ProfilePhotoPicker, PostStudio) keep prop type local
@@ -119,6 +123,9 @@
     onExport?: () => void;
     onCancel?: () => void;
     secondaryActions?: (ControlDockLink | ControlDockAction)[];
+    /** Compact action at the end of the bottom dock. Export still takes this
+     * slot when the panel owns an export workflow. */
+    dockTrailingAction?: ControlDockAction;
     /** Render the panel's own inline export progress bar while exporting. Set
      *  false when the parent shows a full ExportTakeover over the canvas — the
      *  panel sits outside the takeover scrim, so its inline bar would be a second,
@@ -129,8 +136,19 @@
      *  (the landing spinner). Viewer/export already own Left/Right in their
      *  header, so they leave it false to avoid a duplicate. */
     showMotionVisibility?: boolean;
+    /** Experimental interpolation shapes stay available to study surfaces,
+     * while ordinary playback hosts can retain canonical motion geometry. */
+    showPathShape?: boolean;
     /** Optional semantic sink. Existing hosts keep the same behavior when absent. */
     onSettingChange?: ViewerControlSink;
+    /** Reports the open bottom-dock section. Sidebar hosts never close their
+     *  active page, so this callback is only meaningful for layout="bottom". */
+    onActiveSectionChange?: (section: PillId | null) => void;
+    /** Increment to close an open bottom tray from the host before another
+     *  structural transition begins. */
+    closeRequest?: number;
+    /** Accessible region name for non-export hosts. */
+    regionLabel?: string;
   }
 
   let {
@@ -154,13 +172,19 @@
     onFanAppearanceChange,
     sequence = null,
     onPropChange,
+    onPropPickerRequest,
     propChirality,
     onExport,
     onCancel,
     secondaryActions = [],
+    dockTrailingAction,
     showInlineExportProgress = true,
     showMotionVisibility = false,
+    showPathShape = true,
     onSettingChange,
+    onActiveSectionChange,
+    closeRequest = 0,
+    regionLabel = "Animation controls",
   }: Props = $props();
 
   const exportButtonLabel = $derived(
@@ -181,6 +205,22 @@
 
   function handlePillSelect(id: PillId): void {
     const previous = resolvedPill;
+    if (layout === "bottom" && id === "props" && onPropPickerRequest) {
+      if (activePill !== null) {
+        activePill = null;
+        reportViewerControlChange(
+          onSettingChange,
+          "animation_panel",
+          "section",
+          previous,
+          null
+        );
+        onActiveSectionChange?.(null);
+      }
+      onPropPickerRequest();
+      return;
+    }
+
     if (layout === "bottom") {
       activePill = previous === id ? null : id;
     } else {
@@ -198,7 +238,27 @@
       previous,
       activePill
     );
+    onActiveSectionChange?.(activePill);
   }
+
+  let handledCloseRequest = closeRequest;
+  $effect(() => {
+    const request = closeRequest;
+    if (request === handledCloseRequest) return;
+    handledCloseRequest = request;
+    if (layout !== "bottom" || activePill === null) return;
+
+    const previous = activePill;
+    activePill = null;
+    reportViewerControlChange(
+      onSettingChange,
+      "animation_panel",
+      "section",
+      previous,
+      null
+    );
+    onActiveSectionChange?.(null);
+  });
 
   function reportSetting(
     group: string,
@@ -563,7 +623,7 @@
           disabled: exportDisabled,
           busy: !canvasReady,
         }
-      : undefined
+      : dockTrailingAction
   );
 
   // ── SR announcer ──
@@ -638,15 +698,21 @@
            Mode have nothing to hold and Paths runs the full width above
            Effort instead of stranding an empty second column. -->
       <div class="motion-stack">
-        {#if showTempoControls || onPlaybackModeChange}
+        {#if showPathShape}
+          {#if showTempoControls || onPlaybackModeChange}
+            <div class="motion-col">
+              {@render tempoModeBody()}
+            </div>
+            <div class="motion-col">
+              {@render pathsBody()}
+            </div>
+          {:else}
+            {@render pathsBody()}
+          {/if}
+        {:else if showTempoControls || onPlaybackModeChange}
           <div class="motion-col">
             {@render tempoModeBody()}
           </div>
-          <div class="motion-col">
-            {@render pathsBody()}
-          </div>
-        {:else}
-          {@render pathsBody()}
         {/if}
         {@render effortBody(true)}
       </div>
@@ -680,7 +746,9 @@
 
 {#snippet playbackBody()}
   {@render tempoModeBody()}
-  {@render pathsBody()}
+  {#if showPathShape}
+    {@render pathsBody()}
+  {/if}
 {/snippet}
 
 <!-- Split out of playbackBody so the merged Motion page can put Paths in the
@@ -909,7 +977,7 @@
     class="mobile-export"
     transition:fade={{ duration: reduceMotion ? 0 : 200 }}
     role="region"
-    aria-label="Animation export"
+    aria-label={regionLabel}
   >
     {#if isExporting && showInlineExportProgress}
       <div class="mobile-progress" role="status" aria-live="polite">

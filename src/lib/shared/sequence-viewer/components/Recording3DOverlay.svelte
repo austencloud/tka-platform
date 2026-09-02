@@ -8,6 +8,8 @@
 -->
 <script lang="ts">
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
+  import RenderFilmCard from "./record-scene/RenderFilmCard.svelte";
+  import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   interface Props {
     countdownValue: number;
     isRecording: boolean;
@@ -17,6 +19,11 @@
     exportProgress: VideoExportProgress | null;
     isExporting: boolean;
     onCancelExport: () => void;
+    /** Non-null between Stop and the offline render: the person is choosing
+     *  how good the render should be, or backing out to record again. */
+    pendingRender: { durationSeconds: number } | null;
+    onConfirmRender: () => void;
+    onDiscardRender: () => void;
   }
 
   let {
@@ -27,7 +34,12 @@
     exportProgress,
     isExporting,
     onCancelExport,
+    pendingRender,
+    onConfirmRender,
+    onDiscardRender,
   }: Props = $props();
+
+  const exportOptions = getExportOptionsState();
 
   const progressPercent = $derived(
     exportProgress ? Math.round(exportProgress.progress * 100) : 0
@@ -68,6 +80,17 @@
     <button class="stop-btn" onclick={onStop} aria-label="Stop recording">
       <div class="stop-icon"></div>
     </button>
+  </div>
+{/if}
+
+{#if pendingRender && !isRecording}
+  <div class="overlay export-overlay">
+    <RenderFilmCard
+      durationSeconds={pendingRender.durationSeconds}
+      {exportOptions}
+      onRender={onConfirmRender}
+      onDiscard={onDiscardRender}
+    />
   </div>
 {/if}
 
@@ -123,8 +146,11 @@
   }
 
   .recording-badge {
-    top: 16px;
-    left: 16px;
+    /* Anchored where the Record Scene pill lives, so recording reads as that
+       control changing state. The top-left corner belongs to the performer
+       selector and must stay visible while the camera path is captured. */
+    bottom: var(--record-scene-bottom, 80px);
+    right: var(--record-scene-right, 12px);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -266,6 +292,12 @@
   .cancel-btn:hover {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
     color: white;
+  }
+
+  @media (max-width: 600px) {
+    .recording-badge {
+      right: 8px;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
