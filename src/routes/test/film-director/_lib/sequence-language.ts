@@ -132,7 +132,13 @@ export interface DirectorSequenceControls {
   startPosition?: DirectorPositionRef;
   startOrientation?: DirectorStartOrientation;
   turns?: DirectorTurns;
-  level?: DirectorSequenceLevel;
+  /**
+   * Gap 20. One level, or a ramp the cast walks from `from` to `to`. The ramp
+   * is only sayable in cast defaults; the schema rejects it on one performer.
+   */
+  level?:
+    | DirectorSequenceLevel
+    | { ramp: { from: DirectorSequenceLevel; to: DirectorSequenceLevel } };
   gridMode?: GridMode;
   /** Prop spin continuity. */
   flow?: DirectorContinuity;
@@ -517,7 +523,12 @@ export function compileSequenceDirective(
   sequence: DirectorGeneratedSequence,
   where = "sequence"
 ): GenerationOptions {
-  const level = sequence.level ?? DEFAULT_SEQUENCE_LEVEL;
+  // Gap 20. A cast-wide level ramp is spent during resolution, where the
+  // performer's place in the cast is known, so what reaches the compiler is
+  // always a plain level. The narrowing states that rather than assuming it.
+  const spokenLevel = sequence.level;
+  const level =
+    typeof spokenLevel === "number" ? spokenLevel : DEFAULT_SEQUENCE_LEVEL;
   const turns = compileTurns(sequence.turns, level, where);
   const startPosition = sequence.startPosition
     ? resolvePositionRef(sequence.startPosition, `${where} start position`)
