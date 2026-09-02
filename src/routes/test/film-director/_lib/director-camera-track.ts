@@ -6,6 +6,7 @@ import {
   compileCameraShots,
   computeCameraFraming,
   directorFloorY,
+  subjectAnchorHeight,
 } from "./camera-language";
 import {
   fitPresetKeyframes,
@@ -150,11 +151,18 @@ function resolveTarget(
       `Camera target references missing performer "${input.performerId}".`
     );
   }
+  // Gap 12. A hand or a prop tip names its own height above the floor; a
+  // performer target takes the one the director stated, or the group's.
+  const anchorHeight = subjectAnchorHeight(input.kind);
+  const height =
+    anchorHeight !== null
+      ? anchorHeight
+      : input.kind === "performer"
+        ? input.height
+        : undefined;
   return [
     performer.position.x,
-    input.height !== undefined
-      ? directorFloorY(groundOffset) + input.height
-      : groupTarget[1],
+    height !== undefined ? directorFloorY(groundOffset) + height : groupTarget[1],
     performer.position.z,
   ];
 }
