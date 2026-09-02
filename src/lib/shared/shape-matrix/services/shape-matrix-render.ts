@@ -10,10 +10,12 @@ import type {
 } from "$lib/shared/mandala/domain/mandala-types";
 import { DEFAULT_MANDALA_OVERLAY_CONFIG } from "$lib/shared/mandala/domain/mandala-overlay-types";
 import {
+  mandalaGuideScale,
   renderMandalaGuideImage,
   type MandalaGuideFit,
   type MandalaGuideImageDependencies,
 } from "$lib/shared/mandala/services/mandala-guide-image";
+import { computeEngineAlignedMandalaScale } from "$lib/shared/mandala/services/mandala-path-preparer";
 import { HERO_TRAIL_PRESET } from "$lib/shared/landing/data/hero-trail-preset";
 
 /**
@@ -61,10 +63,10 @@ function paint(
 
 /**
  * Overlay one left-hand flower (rows) with one right-hand flower (columns).
- * Painted at engine alignment: a tile is the detail hero's floor, and the
- * live animation canvas behind it, shrunk to the tile. The shared-element
- * morph between them is therefore a uniform scale and translate of one
- * picture, never a crossfade between two fits.
+ * Painted at extent fit: the drawing fills the tile. The detail hero shows
+ * this same extent-fit picture in a box sized by `engineExtentBoxRatio`, so
+ * the shared-element morph between them is a uniform scale and translate of
+ * one picture, never a crossfade between two fits.
  */
 export function renderCell(
   left: MandalaPaths,
@@ -74,10 +76,10 @@ export function renderCell(
   options?: ShapeMatrixPaintOptions
 ): string {
   const merged: MandalaPaths = { left: left.left, right: right.right, purple: [] };
-  return paint(merged, "both", sizePx, tipDx, "engine", options);
+  return renderExtentFit(merged, sizePx, tipDx, options);
 }
 
-/** A single axis-header flower, at the same engine alignment as the cells. */
+/** A single axis-header flower, filling its box like the cells. */
 export function renderHeader(
   paths: MandalaPaths,
   hand: "left" | "right",
@@ -85,7 +87,35 @@ export function renderHeader(
   tipDx: number,
   options?: ShapeMatrixPaintOptions
 ): string {
-  return paint(paths, hand, sizePx, tipDx, "engine", options);
+  return paint(paths, hand, sizePx, tipDx, "extent", options);
+}
+
+/** Both hands filling a square of `sizePx`: the tile's fit. */
+export function renderExtentFit(
+  paths: MandalaPaths,
+  sizePx: number,
+  tipDx: number,
+  options?: ShapeMatrixPaintOptions
+): string {
+  return paint(paths, "both", sizePx, tipDx, "extent", options);
+}
+
+/**
+ * The side of the extent-fit box that holds exactly the drawing the engine
+ * paints in a square, as a fraction of that square. Both fits are linear in
+ * their box, so the ratio is a property of the paths alone. The detail hero
+ * sizes its still to `square * ratio` and paints it at extent fit: the same
+ * pixels the live canvas draws in the full square, and the same picture a
+ * matrix tile shows.
+ */
+export function engineExtentBoxRatio(paths: MandalaPaths, tipDx: number): number {
+  const extentScale = mandalaGuideScale(paths, {
+    size: 1,
+    fit: "extent",
+    show: "both",
+    tipDx,
+  });
+  return computeEngineAlignedMandalaScale(1) / extentScale;
 }
 
 /**

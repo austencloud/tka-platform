@@ -1,9 +1,12 @@
 <!-- src/lib/shared/shape-matrix/components/MandalaHeroLayer.svelte
-  Engine-aligned still mandala floor. Fills its parent (which must be the
-  SAME square AnimatorCanvas renders into — that shared frame is the whole
-  alignment contract) and renders the shared ShapeMatrixMandalaArt primitive
-  painted at engine alignment by the animator's own guide painter, so the
-  floor is pixel-for-pixel the guide the live canvas will draw over it.
+  Still mandala floor. Fills its parent (which must be the SAME square
+  AnimatorCanvas renders into — that shared frame is the whole alignment
+  contract). Inside that square it sizes a tight box, `engineExtentBoxRatio`
+  of the square, and renders the shared ShapeMatrixMandalaArt primitive there
+  at the matrix tile's extent fit. That box holds exactly the drawing the
+  engine paints in the full square, so the floor is pixel-for-pixel the
+  guide the live canvas will draw over it, and the box that carries the
+  shared-element name is the tile's picture at the hero's size.
   Opacity animates via CSS so the still-mandala → live-guide transition never
   re-rasterizes. During a shared-element handoff the floor is forced fully
   visible with no transition so the transition snapshot has artwork in it. -->
@@ -12,11 +15,13 @@
   import { motionDuration } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { pathsArtworkSrc } from "../services/shape-matrix-artwork";
+  import { engineExtentBoxRatio } from "../services/shape-matrix-render";
   import ShapeMatrixMandalaArt from "./ShapeMatrixMandalaArt.svelte";
 
   let {
     paths,
     artKey,
+    tipDx,
     opacity = 1,
     claim = false,
     handoff = false,
@@ -24,6 +29,8 @@
     paths: MandalaPaths;
     /** Identity of the pair these paths belong to; a change crossfades. */
     artKey: string;
+    /** Tip reach the tiles were painted with; the extent fit depends on it. */
+    tipDx: number;
     opacity?: number;
     /** This floor owns the shared tile↔hero transition name right now. */
     claim?: boolean;
@@ -33,7 +40,10 @@
 
   const transitionDuration = motionDuration(DURATION.normal);
   const effectiveOpacity = $derived(handoff ? 1 : opacity);
-  const paint = $derived((sizePx: number) => pathsArtworkSrc(paths, sizePx));
+  const paint = $derived((sizePx: number) =>
+    pathsArtworkSrc(paths, sizePx, tipDx)
+  );
+  const extentRatio = $derived(engineExtentBoxRatio(paths, tipDx));
 </script>
 
 <!-- The square's box comes from container units, not a measurement, so it is
@@ -47,7 +57,9 @@
   aria-hidden="true"
 >
   <div class="mandala-square">
-    <ShapeMatrixMandalaArt {paint} {artKey} {claim} instant={handoff} />
+    <div class="mandala-extent" style={`--extent-ratio: ${extentRatio}`}>
+      <ShapeMatrixMandalaArt {paint} {artKey} {claim} instant={handoff} />
+    </div>
   </div>
 </div>
 
@@ -69,7 +81,15 @@
   .mandala-square {
     width: min(100cqw, 100cqh);
     height: min(100cqw, 100cqh);
+    display: grid;
+    place-items: center;
     overflow: visible;
+  }
+  /* The tile's picture at the hero's size: the extent-fit box whose drawing
+     coincides with the engine's drawing in the full square. */
+  .mandala-extent {
+    width: calc(100% * var(--extent-ratio));
+    height: calc(100% * var(--extent-ratio));
   }
   @media (prefers-reduced-motion: reduce) {
     .mandala-layer {

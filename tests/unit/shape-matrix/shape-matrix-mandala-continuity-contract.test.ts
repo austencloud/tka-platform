@@ -6,7 +6,10 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { SHAPE_MATRIX_ACTIVE_MANDALA_NAME } from "$lib/shared/shape-matrix/services/shape-matrix-artwork";
+import {
+  SHAPE_MATRIX_ACTIVE_MANDALA_NAME,
+  SHAPE_MATRIX_ACTIVE_STAGE_NAME,
+} from "$lib/shared/shape-matrix/services/shape-matrix-artwork";
 
 const ROOT = resolve(process.cwd(), "src/lib/shared/shape-matrix");
 const read = (relative: string) =>
@@ -15,10 +18,11 @@ const readSrc = (relative: string) =>
   readFileSync(resolve(process.cwd(), "src", relative), "utf8");
 
 describe("shape matrix mandala continuity", () => {
-  it("uses one fixed shared-element name", () => {
+  it("uses two fixed shared-element names, stage around mandala", () => {
     expect(SHAPE_MATRIX_ACTIVE_MANDALA_NAME).toBe(
       "shape-matrix-active-mandala"
     );
+    expect(SHAPE_MATRIX_ACTIVE_STAGE_NAME).toBe("shape-matrix-active-stage");
   });
 
   it("routes both endpoints through the artwork primitive", () => {
@@ -47,11 +51,13 @@ describe("shape matrix mandala continuity", () => {
     expect(render).toContain("DEFAULT_MANDALA_OVERLAY_CONFIG.strokeWidth");
     expect(render).not.toMatch(/renderMandalaSVG|strokeWidth:\s*2\.4/);
 
-    // The hero floor is painted at engine alignment; no CSS align scale, no
-    // glow the live guide does not have.
+    // The hero floor is the tile's extent-fit picture in the engine-sized
+    // box; no CSS align scale, no glow the live guide does not have.
     const hero = read("components/MandalaHeroLayer.svelte");
     const art = read("components/ShapeMatrixMandalaArt.svelte");
-    expect(hero).toContain("pathsArtworkSrc(paths, sizePx)");
+    expect(hero).toContain("pathsArtworkSrc(paths, sizePx, tipDx)");
+    expect(hero).toContain("engineExtentBoxRatio(paths, tipDx)");
+    expect(hero).toContain("calc(100% * var(--extent-ratio))");
     expect(hero).not.toMatch(/alignScale|glowColor/);
     expect(art).not.toMatch(/--art-scale|drop-shadow|glow/);
     expect(art).toContain("new ResizeObserver");
@@ -59,11 +65,20 @@ describe("shape matrix mandala continuity", () => {
   });
 
   it("moves one picture between tile and hero: same fit, same square, no overshoot", () => {
-    // Tiles and headers paint at engine fit, the hero floor's fit, so the
-    // shared-element morph scales one drawing instead of crossfading two.
+    // Tiles fill their box (extent fit). The hero paints that same extent-fit
+    // picture in a box of engineExtentBoxRatio times the animator's square,
+    // so the shared-element morph scales one drawing instead of crossfading
+    // two, and the tiles keep their size.
     const render = read("services/shape-matrix-render.ts");
-    expect(render).not.toMatch(/"extent"/);
-    expect(render.match(/"engine"/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(render).toMatch(
+      /export function renderCell[\s\S]*?renderExtentFit\(merged, sizePx, tipDx, options\)/
+    );
+    expect(render).toMatch(
+      /export function renderHeader[\s\S]*?"extent", options\)/
+    );
+    expect(render).toContain("export function engineExtentBoxRatio");
+    const artwork = read("services/shape-matrix-artwork.ts");
+    expect(artwork).toMatch(/renderExtentFit\(paths, size, tipDx\)/);
 
     // The word header lives above the square in a drill-owned band, so the
     // hero frame IS the canvas region and both inscribed squares coincide.
@@ -112,8 +127,47 @@ describe("shape matrix mandala continuity", () => {
     const loop = readSrc(
       "lib/shared/animation-engine/services/animation-render-loop.ts"
     );
-    expect(drill).toContain("visibleSource ? 0 : MANDALA_GUIDE_FLOOR_OPACITY");
+    expect(drill).toContain(
+      "livePlayerShowsPair ? 0 : MANDALA_GUIDE_FLOOR_OPACITY"
+    );
     expect(loop).toContain("opacity: MANDALA_GUIDE_FLOOR_OPACITY");
+  });
+
+  it("keeps one mandala on stage: a canvas for another pair, or mid-capture, is offstage", () => {
+    const drill = read("components/ShapeMatrixDrill.svelte");
+    expect(drill).toMatch(
+      /class:offstage=\{layer\.pairKey !== pairKey \|\| mandalaTransition\.handoff\}/
+    );
+    expect(drill).toMatch(/\.player-layer\.offstage \{\s*visibility: hidden;/);
+    expect(drill).toMatch(
+      /getLayer\(visibleSource\)\?\.pairKey === pairKey/
+    );
+  });
+
+  it("flies the whole stage rectangle, with the mandala riding it", () => {
+    // The selected tile's box and the detail stage share the stage name;
+    // the mandala inside each keeps its own, so it is left out of the stage
+    // snapshot and travels as a second, nested picture.
+    const grid = read("components/ShapeMatrixGrid.svelte");
+    expect(grid).toMatch(
+      /<button[\s\S]*?use:claimedViewTransitionName=\{\{\s*name: SHAPE_MATRIX_ACTIVE_STAGE_NAME,\s*enabled: claimSelected && selectedKey === key,/
+    );
+    const drill = read("components/ShapeMatrixDrill.svelte");
+    expect(drill).toMatch(
+      /class="hero-stage"\s*use:claimedViewTransitionName=\{\{\s*name: SHAPE_MATRIX_ACTIVE_STAGE_NAME,\s*enabled: mandalaTransition\.claim,/
+    );
+    const shell = read("app/components/ShapeMatrixAppShell.svelte");
+    expect(shell).toMatch(
+      /view-transition-group\(shape-matrix-active-stage\)[\s\S]*?--ease-in-out/
+    );
+    expect(shell).toMatch(
+      /view-transition-new\(shape-matrix-active-stage\)\s*\)\s*\{[^}]*object-fit: cover/
+    );
+    expect(shell).not.toContain("--ease-spring");
+    // The tile's hairline rings sit out the flight; the wash may travel.
+    expect(grid).toMatch(
+      /html\.shape-matrix-morph\) \.cell\.sel::after \{\s*opacity: 0;/
+    );
   });
 
   it("claims the name only through the primitive, only on the active endpoint", () => {
@@ -149,14 +203,38 @@ describe("shape matrix mandala continuity", () => {
   });
 
   it("keeps the compact detail turn editor on the detail pane", () => {
-    const tray = read("app/components/ShapeMatrixTurnTray.svelte");
-    expect(tray).toContain("stayOnDetail: true");
-    expect(tray).toContain("ShapeMatrixTurnControls");
+    const popover = read("app/components/ShapeMatrixTurnPopover.svelte");
+    expect(popover).toContain("stayOnDetail: true");
+    expect(popover).toContain("ShapeMatrixTurnControls");
+    // An anchored popover sized to its controls, not a full-width drawer.
+    expect(popover).toContain("<Popover.Root");
+    expect(popover).toMatch(/\.turn-popover \{[^}]*width: max-content/);
+    expect(popover).not.toMatch(/Drawer/);
     const shell = read("app/components/ShapeMatrixAppShell.svelte");
     expect(shell).toContain(
       "<ShapeMatrixTurnControls onturn={appState.setTurn} />"
     );
-    expect(shell).toContain("<ShapeMatrixTurnTray />");
+    expect(shell).toContain("<ShapeMatrixTurnPopover />");
     expect(shell).toContain("runMandalaMorph");
+  });
+
+  it("keeps the compact topbar as the only chrome row on the detail view", () => {
+    // The shell owns the animation state so the relationships toggle can
+    // live in the topbar; the pane heading is a wide-layout row only.
+    const shell = read("app/components/ShapeMatrixAppShell.svelte");
+    expect(shell).toContain("setShapeMatrixAnimationContext(");
+    expect(shell).toContain('class="top-action relationships-action"');
+    expect(shell).toContain(
+      'appState.activeView === "detail" && animationState.activeSection !== null'
+    );
+    const detailPane = read("app/components/ShapeMatrixDetailPane.svelte");
+    expect(detailPane).toContain("getShapeMatrixAnimationContext()");
+    expect(detailPane).toMatch(
+      /\{#if !state\.compact\}\s*<header class="pane-heading">/
+    );
+    // The toggle never borrows the back arrow the Matrix button owns.
+    expect(detailPane).not.toContain("fa-arrow-left");
+    const controls = read("app/components/ShapeMatrixTurnControls.svelte");
+    expect(controls).not.toMatch(/\.turn-editor\.tray[^{]*\{[^}]*(?<![-\w])width: 100%/);
   });
 });
