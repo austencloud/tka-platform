@@ -167,10 +167,21 @@ export interface PsSliceSource {
   notationMirrored: boolean;
 }
 
-export function capturePsSlice(source: PsSliceSource): PsSlicePayload | null {
+/**
+ * `full` always emits `propType` (Share/Copy Link — the recipient's own prop
+ * preference must not leak into a borrowed view). `audioMode` stays gated on
+ * the touched flag in both modes: its untouched value is an async probe
+ * result the recipient re-derives from the same video. `notationMirrored`
+ * is a `true`-only flag in both modes; absent already means the default.
+ */
+export function capturePsSlice(
+  source: PsSliceSource,
+  options: { full?: boolean } = {}
+): PsSlicePayload | null {
+  const full = options.full === true;
   const payload: PsSlicePayload = {};
 
-  if (source.propType !== source.defaultPropType) {
+  if (full || source.propType !== source.defaultPropType) {
     payload.propType = source.propType;
   }
   // Touched-flag diffing, not value diffing — see the module doc comment.
